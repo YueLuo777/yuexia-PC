@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
+import { Sparkles } from 'lucide-react';
+import { useEffect, useRef, useState, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 
 import { ChapterEditor } from '@/features/workbench/components/ChapterEditor';
@@ -20,13 +21,68 @@ type ModalKey = 'workInfo' | 'settings' | 'outline' | 'notes';
 type ManagementModalKey = 'models' | 'agents';
 type FindScope = 'chapter' | 'book';
 type PendingPublish = { type: 'single'; volumeId: number; chapterId: number; title: string } | { type: 'all'; count: number };
+type WorkbenchRailTool = 'models' | 'ai';
+type WorkbenchRailSlot = WorkbenchRailTool | null;
 const AI_PANEL_MIN_WIDTH = 520;
 const AI_PANEL_DEFAULT_WIDTH = 640;
 const PUBLISH_CONFIRM_KEY = 'xinyuexia_workbench_publish_confirm';
+const APP_SCALE_KEY = 'xinyuexia_app_scale';
+const BASE_APP_SCALE = 1.1;
+const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
+const RAIL_SLOT_COUNT = 6;
+const RAIL_LAYOUT_KEY = 'xinyuexia_workbench_rail_layout';
+const DEFAULT_RAIL_SLOTS: WorkbenchRailSlot[] = ['models', 'ai', null, null, null, null];
+const RAIL_TOOLS: WorkbenchRailTool[] = ['models', 'ai'];
+
+function isRailTool(value: unknown): value is WorkbenchRailTool {
+  return value === 'models' || value === 'ai';
+}
+
+function normalizeRailSlots(value: unknown): WorkbenchRailSlot[] {
+  const slots: WorkbenchRailSlot[] = Array.from({ length: RAIL_SLOT_COUNT }, () => null);
+  const used = new Set<WorkbenchRailTool>();
+
+  if (Array.isArray(value)) {
+    value.slice(0, RAIL_SLOT_COUNT).forEach((item, index) => {
+      if (!isRailTool(item) || used.has(item)) return;
+      slots[index] = item;
+      used.add(item);
+    });
+  }
+
+  RAIL_TOOLS.forEach((tool) => {
+    if (used.has(tool)) return;
+    const emptyIndex = slots.findIndex((slot) => slot === null);
+    if (emptyIndex >= 0) slots[emptyIndex] = tool;
+  });
+
+  return slots;
+}
+
+function readRailSlots() {
+  if (typeof window === 'undefined') return DEFAULT_RAIL_SLOTS;
+  try {
+    return normalizeRailSlots(JSON.parse(localStorage.getItem(RAIL_LAYOUT_KEY) ?? 'null'));
+  } catch {
+    return DEFAULT_RAIL_SLOTS;
+  }
+}
+
+function getEffectiveAppScale() {
+  if (typeof window === 'undefined') return BASE_APP_SCALE;
+  const cssScale = Number.parseFloat(
+    window.getComputedStyle(document.documentElement).getPropertyValue(APP_EFFECTIVE_SCALE_CSS_VAR),
+  );
+  if (Number.isFinite(cssScale) && cssScale > 0) return cssScale;
+
+  const savedScale = Number.parseFloat(localStorage.getItem(APP_SCALE_KEY) ?? '1');
+  const appScale = Number.isFinite(savedScale) ? Math.max(0.8, Math.min(1.5, savedScale)) : 1;
+  return BASE_APP_SCALE * appScale;
+}
 
 function getAiPanelMaxWidth() {
   if (typeof window === 'undefined') return AI_PANEL_DEFAULT_WIDTH;
-  return Math.max(360, Math.floor(window.innerWidth / 2));
+  return Math.max(360, Math.floor(window.innerWidth / (2 * getEffectiveAppScale())));
 }
 
 function normalizeAiPanelWidth(value: number) {
@@ -139,7 +195,7 @@ function WorkbenchFindReplaceModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[230] flex items-center justify-center bg-black/30 px-6 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[230] flex items-center justify-center bg-black/30 px-6 py-6">
       <section
         className="w-[700px] max-w-[94vw] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]"
         style={draggable.style}
@@ -216,7 +272,7 @@ function ManagementModal({
   const title = type === 'models' ? '模型管理' : '智能体管理';
 
   return (
-    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/35 px-8 py-8 backdrop-blur-sm" onMouseDown={(event) => {
+    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/35 px-8 py-8" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
       <section
@@ -257,7 +313,7 @@ function EditorSettingsModal({
   const draggable = useDraggableModal('workbench_editor_settings');
 
   return (
-    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/35 px-6 py-6 backdrop-blur-sm" onMouseDown={(event) => {
+    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/35 px-6 py-6" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
       <section
@@ -302,6 +358,8 @@ export function WorkbenchPage() {
   const [publishConfirm, setPublishConfirm] = useState(() => localStorage.getItem(PUBLISH_CONFIRM_KEY) === 'true');
   const [pendingPublish, setPendingPublish] = useState<PendingPublish | null>(null);
   const [activeAITool, setActiveAITool] = useState<WorkbenchAITool | null>(null);
+  const [railSlots, setRailSlots] = useState<WorkbenchRailSlot[]>(readRailSlots);
+  const [draggingRailTool, setDraggingRailTool] = useState<WorkbenchRailTool | null>(null);
   const [notes, setNotes] = useState(() => localStorage.getItem('xinyuexia_workbench_notes') ?? '');
   const [showPublished, setShowPublished] = useState(false);
   const [aiPanelWidth, setAiPanelWidth] = useState(() => {
@@ -359,6 +417,10 @@ export function WorkbenchPage() {
   }, [aiPanelWidth]);
 
   useEffect(() => {
+    localStorage.setItem(RAIL_LAYOUT_KEY, JSON.stringify(railSlots));
+  }, [railSlots]);
+
+  useEffect(() => {
     const handleResize = () => setAiPanelWidth((prev) => normalizeAiPanelWidth(prev));
     window.addEventListener('resize', handleResize);
     handleResize();
@@ -391,6 +453,32 @@ export function WorkbenchPage() {
     setIsDraggingPanel(true);
     document.body.style.cursor = 'ew-resize';
     document.body.style.userSelect = 'none';
+  };
+
+  const moveRailTool = (tool: WorkbenchRailTool, targetIndex: number) => {
+    setRailSlots((prev) => {
+      const next = normalizeRailSlots(prev);
+      const sourceIndex = next.findIndex((slot) => slot === tool);
+      if (sourceIndex === targetIndex) return next;
+
+      const targetTool = next[targetIndex];
+      next[targetIndex] = tool;
+      if (sourceIndex >= 0) next[sourceIndex] = targetTool;
+      return next;
+    });
+  };
+
+  const handleRailDragStart = (event: ReactDragEvent<HTMLButtonElement>, tool: WorkbenchRailTool) => {
+    setDraggingRailTool(tool);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', tool);
+  };
+
+  const handleRailDrop = (event: ReactDragEvent<HTMLDivElement>, targetIndex: number) => {
+    event.preventDefault();
+    const tool = event.dataTransfer.getData('text/plain') || draggingRailTool;
+    if (isRailTool(tool)) moveRailTool(tool, targetIndex);
+    setDraggingRailTool(null);
   };
 
   useEffect(() => {
@@ -572,15 +660,51 @@ export function WorkbenchPage() {
     input.click();
   };
 
+  const renderRailToolButton = (tool: WorkbenchRailTool) => {
+    if (tool === 'models') {
+      return (
+        <button
+          draggable
+          onDragStart={(event) => handleRailDragStart(event, tool)}
+          onDragEnd={() => setDraggingRailTool(null)}
+          onClick={() => setManagementModal('models')}
+          className="flex h-14 w-11 cursor-grab items-center justify-center rounded-xl border border-gray-200 bg-white px-1 text-sm font-bold text-gray-500 transition-all hover:-translate-y-0.5 hover:border-brand hover:bg-gray-50 hover:text-brand active:cursor-grabbing"
+          title="模型管理，拖动可调整位置"
+        >
+          模型
+        </button>
+      );
+    }
+
+    return (
+      <button
+        draggable
+        onDragStart={(event) => handleRailDragStart(event, tool)}
+        onDragEnd={() => setDraggingRailTool(null)}
+        onClick={() => setActiveAITool((prev) => (prev === 'ai' ? null : 'ai'))}
+        className={`flex h-14 w-11 cursor-grab flex-col items-center justify-center gap-0.5 rounded-xl border text-[15px] font-black shadow-sm transition-all active:cursor-grabbing ${
+          activeAITool === 'ai'
+            ? 'border-brand bg-brand text-white shadow-brand/25'
+            : 'border-cyan-200 bg-cyan-50 text-cyan-700 hover:-translate-y-0.5 hover:border-brand hover:bg-brand hover:text-white hover:shadow-md'
+        }`}
+        title="AI，拖动可调整位置"
+      >
+        <Sparkles className="h-3.5 w-3.5" />
+        <span>AI</span>
+      </button>
+    );
+  };
+
   return (
     <div className="flex h-full flex-col bg-gray-50">
       <WorkbenchHeader
+        workTitle={currentNovel.title}
         onOpenWorkInfo={() => setActiveModal('workInfo')}
         onOpenSettings={() => setActiveModal('settings')}
         onOpenOutline={() => setActiveModal('outline')}
         onOpenNotes={() => setActiveModal('notes')}
-        onOpenFind={() => setIsFindOpen(true)}
-        onOpenEditorSettings={() => setIsEditorSettingsOpen(true)}
+        onOpenModelManage={() => setManagementModal('models')}
+        onOpenAgentManage={() => setManagementModal('agents')}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -628,6 +752,8 @@ export function WorkbenchPage() {
             if (!selectedChapter) return;
             deleteChapter(selectedChapter.volumeId, chapterId);
           }}
+          onOpenFind={() => setIsFindOpen(true)}
+          onOpenEditorSettings={() => setIsEditorSettingsOpen(true)}
         />
 
         {activeAITool && (
@@ -640,36 +766,41 @@ export function WorkbenchPage() {
               <div className="h-8 w-[2px] rounded-full bg-gray-300 opacity-0 transition-opacity group-hover:opacity-100" />
             </div>
 
-            <aside className="shrink-0 border-l border-gray-200 bg-white" style={{ width: aiPanelWidth }}>
+            <aside
+              className="shrink-0 border-l border-gray-200 bg-white"
+              style={{
+                width: aiPanelWidth,
+                maxWidth: `calc(50vw / var(${APP_EFFECTIVE_SCALE_CSS_VAR}, 1))`,
+              }}
+            >
               <WorkbenchAIPanel
                 activeTool={activeAITool}
                 selectedChapterContent={editorContent}
                 onClose={() => setActiveAITool(null)}
                 onReplaceContent={replaceEditorContent}
-                onOpenModelManage={() => setManagementModal('models')}
-                onOpenAgentManage={() => setManagementModal('agents')}
               />
             </aside>
           </>
         )}
 
-        <aside className="flex w-[48px] shrink-0 flex-col items-center border-l border-gray-200 bg-white py-5">
-          <button
-            onClick={() => setManagementModal('models')}
-            className="mb-6 w-full px-1 py-2 text-sm font-bold text-gray-500 transition-colors hover:bg-gray-100 hover:text-brand"
-            title="模型管理"
-          >
-            模型
-          </button>
-          <button
-            onClick={() => setActiveAITool((prev) => (prev === 'ai' ? null : 'ai'))}
-            className={`mb-8 w-full px-1 py-2 text-sm font-bold transition-colors ${
-              activeAITool === 'ai' ? 'bg-brand-light text-brand' : 'text-gray-500 hover:bg-gray-50 hover:text-brand'
-            }`}
-            title="AI"
-          >
-            AI
-          </button>
+        <aside className="flex w-[48px] shrink-0 flex-col items-center border-l border-gray-200 bg-white py-3">
+          {railSlots.map((tool, index) => (
+            <div
+              key={index}
+              onDragOver={(event) => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+              }}
+              onDrop={(event) => handleRailDrop(event, index)}
+              className={`flex h-16 w-full items-center justify-center transition-colors ${
+                draggingRailTool ? 'bg-cyan-50/40' : ''
+              }`}
+            >
+              {tool ? renderRailToolButton(tool) : (
+                <div className="h-14 w-11 rounded-xl border border-dashed border-gray-100 bg-gray-50/50" />
+              )}
+            </div>
+          ))}
         </aside>
       </div>
 

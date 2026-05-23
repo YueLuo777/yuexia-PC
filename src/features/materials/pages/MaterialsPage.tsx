@@ -38,7 +38,11 @@ function downloadText(fileName: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-export function MaterialsPage() {
+interface MaterialsPageProps {
+  embedded?: boolean;
+}
+
+export function MaterialsPage({ embedded = false }: MaterialsPageProps = {}) {
   const navigate = useNavigate();
   const { novels } = useNovelLibrary();
   const { items, addMaterial, updateMaterial, deleteMaterial, clearAll, stats } = useMaterials();
@@ -185,13 +189,15 @@ export function MaterialsPage() {
       <div className="shrink-0 border-b border-gray-200 bg-white px-4 py-2.5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleBack}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
-              title="返回资料库"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
+            {!embedded && (
+              <button
+                onClick={handleBack}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
+                title="返回资料库"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+            )}
             <Library className="h-5 w-5 text-brand" />
             <div>
               <h1 className="text-base font-bold text-gray-900">设定库</h1>
@@ -469,7 +475,7 @@ export function MaterialsPage() {
       </div>
 
       {showClearConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowClearConfirm(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowClearConfirm(false)}>
           <div className="w-[360px] rounded-xl bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <h3 className="text-base font-bold text-gray-900">确认清空</h3>
             <p className="mt-2 text-sm text-gray-500">清空后当前设定库内容无法恢复。</p>
@@ -490,7 +496,7 @@ export function MaterialsPage() {
       )}
 
       {showImport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowImport(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowImport(false)}>
           <div className="flex h-[560px] w-[680px] max-w-[92vw] flex-col rounded-xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <div>

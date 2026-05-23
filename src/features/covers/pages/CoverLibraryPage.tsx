@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom';
 
 import { useCoverLibrary } from '@/features/covers/hooks/useCoverLibrary';
 
-export function CoverLibraryPage() {
+interface CoverLibraryPageProps {
+  embedded?: boolean;
+}
+
+export function CoverLibraryPage({ embedded = false }: CoverLibraryPageProps = {}) {
   const navigate = useNavigate();
   const { items, deleteItem } = useCoverLibrary();
 
@@ -19,13 +23,15 @@ export function CoverLibraryPage() {
     <div className="flex h-full flex-col bg-slate-50">
       <div className="border-b border-slate-100 bg-white px-7 py-6">
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleBack}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
-            title="返回资料库"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
+          {!embedded && (
+            <button
+              onClick={handleBack}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
+              title="返回资料库"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+          )}
           <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-light text-brand">
             <Image className="h-5 w-5" />
           </div>

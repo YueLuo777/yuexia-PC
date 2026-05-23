@@ -1,5 +1,6 @@
 import {
   ChevronDown,
+  Settings,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -33,6 +34,8 @@ interface ChapterEditorProps {
   onChangeContent: (content: string) => void;
   onUpdateSerialNumber: (chapterId: number, serialNumber: number) => void;
   onDeleteChapter: (chapterId: number) => void;
+  onOpenFind: () => void;
+  onOpenEditorSettings: () => void;
 }
 
 export function ChapterEditor({
@@ -45,6 +48,8 @@ export function ChapterEditor({
   onChangeContent,
   onUpdateSerialNumber,
   onDeleteChapter,
+  onOpenFind,
+  onOpenEditorSettings,
 }: ChapterEditorProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isFontSettingsOpen, setIsFontSettingsOpen] = useState(false);
@@ -245,19 +250,26 @@ export function ChapterEditor({
         >
           标题优化
         </button>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <button
+            onClick={onOpenFind}
+            className="rounded-full border border-gray-200 bg-white px-4 py-1.5 text-base font-medium text-gray-600 transition-colors hover:border-brand hover:text-brand"
+            title="查找替换"
+          >
+            查找
+          </button>
+          <button
+            onClick={onOpenEditorSettings}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:border-brand hover:text-brand"
+            title="作品编辑器设定"
+            aria-label="作品编辑器设定"
+          >
+            <Settings className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 border-b border-gray-200 bg-white px-4 py-2">
-        <button
-          onClick={() => onChangeContent(prevContentRef.current)}
-          className="px-2 py-1 text-sm text-gray-500 transition-colors hover:text-brand"
-        >
-          撤销
-        </button>
-        <button className="cursor-not-allowed px-2 py-1 text-sm text-gray-300">
-          恢复
-        </button>
-        <div className="mx-1 h-5 w-px bg-gray-200" />
         <button onClick={() => setIsFontSettingsOpen(true)} className="rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
           字体设置
         </button>

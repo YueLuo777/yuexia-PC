@@ -79,32 +79,32 @@ export function TestCollectionPage() {
 
   return (
     <div className="flex h-full flex-col bg-slate-50">
-      <header className="shrink-0 border-b border-slate-100 bg-white px-7 py-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+      <header className="flex h-16 shrink-0 items-center border-b border-slate-100 bg-white px-6">
+        <div className="flex w-full items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-brand" />
+            <div>
+              <h1 className="text-xl font-bold text-slate-900">测试合集</h1>
+              <p className="mt-0.5 text-xs text-slate-400">已收纳 {totalCount} 个测试内容</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
             <button
               onClick={handleBack}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
               title="返回"
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-light text-brand">
-              <Sparkles className="h-5 w-5" />
+            <div className="relative w-[280px] max-w-full">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="搜索测试内容"
+                className="h-8 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs outline-none transition-colors focus:border-brand focus:bg-white"
+              />
             </div>
-            <div>
-              <h1 className="text-[18px] font-bold text-slate-900">测试合集</h1>
-              <p className="mt-1 text-sm text-slate-400">已收纳 {totalCount} 个测试内容</p>
-            </div>
-          </div>
-          <div className="relative w-[280px] max-w-full">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="搜索测试内容"
-              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-none transition-colors focus:border-brand focus:bg-white"
-            />
           </div>
         </div>
       </header>

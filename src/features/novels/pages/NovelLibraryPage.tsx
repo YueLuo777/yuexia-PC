@@ -103,7 +103,7 @@ function CardSettingsModal({
   while (slots.length < totalSlots) slots.push('');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="flex h-[580px] w-[720px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-3 shrink-0">
           <div>
@@ -316,7 +316,7 @@ function CardSettingsModal({
 function DeleteConfirmModal({ isOpen, onClose, onConfirm, title }: { isOpen: boolean; onClose: () => void; onConfirm: () => void; title: string }) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="w-[420px] rounded-xl bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="mb-3 flex items-center gap-3">
           <AlertTriangle className="h-5 w-5 text-amber-500" />

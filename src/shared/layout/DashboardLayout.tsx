@@ -17,6 +17,7 @@ import { ShortcutSettingsModal } from '@/shared/shortcuts/ShortcutSettingsModal'
 
 const USER_NAME_KEY = 'xinyuexia_sidebar_user_name';
 const USER_AVATAR_KEY = 'xinyuexia_sidebar_user_avatar';
+const USER_NAME_UPDATED_EVENT = 'xinyuexia_user_name_updated';
 
 function readUserName() {
   return localStorage.getItem(USER_NAME_KEY) || '月下作者';
@@ -95,6 +96,7 @@ export function DashboardLayout() {
     setUserName(next);
     setUserNameDraft(next);
     localStorage.setItem(USER_NAME_KEY, next);
+    window.dispatchEvent(new CustomEvent(USER_NAME_UPDATED_EVENT, { detail: { userName: next } }));
     setIsEditingUserName(false);
   };
 
@@ -120,7 +122,7 @@ export function DashboardLayout() {
               event.target.value = '';
             }}
           />
-          <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2.5">
+          <div className="flex items-center gap-3 px-3 py-2.5">
             <button
               onClick={() => avatarInputRef.current?.click()}
               className="group relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-slate-400 transition-colors hover:border-brand/50 hover:text-brand"

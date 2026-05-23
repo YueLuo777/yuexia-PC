@@ -73,11 +73,11 @@ export function deleteRecordsByModel(modelId: string, modelInstanceId?: string) 
 export function pruneRecordsByModels(models: Array<{ id: string; instanceId?: string }>) {
   const records = loadRecords();
   const currentInstanceIds = new Set(models.map((model) => model.instanceId ?? model.id));
-  const currentLegacyIds = currentInstanceIds;
+  const currentModelIds = new Set(models.map((model) => model.id));
 
   const next = records.filter((record) => {
     if (record.modelInstanceId) return currentInstanceIds.has(record.modelInstanceId);
-    return currentLegacyIds.has(record.modelId);
+    return currentModelIds.has(record.modelId) || currentInstanceIds.has(record.modelId);
   });
 
   if (next.length !== records.length) saveRecords(next);

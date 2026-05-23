@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Minus, Moon, Plus, Search, Square, X } from 'lucide-react';
+import { Minus, Moon, PanelLeft, Plus, Search, Square, X } from 'lucide-react';
 
 import { useNovelLibrary } from '@/features/novels/hooks/useNovelLibrary';
 import {
@@ -21,6 +21,9 @@ declare global {
       close: () => Promise<void>;
       isMaximized: () => Promise<boolean>;
       reload: () => Promise<void>;
+      beginTitlebarDrag: (input: TitlebarDragPayload) => Promise<TitlebarDragResult>;
+      moveTitlebarDrag: (input: TitlebarDragPayload) => Promise<boolean>;
+      onMaximizedChange?: (callback: (isMaximized: boolean) => void) => () => void;
     };
   }
 }
@@ -28,6 +31,24 @@ declare global {
 const APP_SCALE_KEY = 'xinyuexia_app_scale';
 const DARK_THEME_KEY = 'xinyuexia_dark_theme';
 const BASE_APP_SCALE = 1.1;
+const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
+const TITLEBAR_DRAG_THRESHOLD = 4;
+
+type TitlebarDragPayload = {
+  screenX: number;
+  screenY: number;
+  clientX?: number;
+  clientY?: number;
+  windowWidth?: number;
+  dragOffsetX?: number;
+  dragOffsetY?: number;
+};
+
+type TitlebarDragResult = {
+  isMaximized: boolean;
+  dragOffsetX: number;
+  dragOffsetY: number;
+} | null;
 
 function loadScale() {
   try {
@@ -51,6 +72,23 @@ interface AppFrameProps {
   children: ReactNode;
 }
 
+type TitlebarDragState = {
+  pointerId: number;
+  startClientX: number;
+  startClientY: number;
+  dragOffsetX: number;
+  dragOffsetY: number;
+  started: boolean;
+  pending: boolean;
+};
+
+function isTitlebarInteractiveTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return true;
+  return Boolean(
+    target.closest('button,input,textarea,select,a,[contenteditable="true"],[data-titlebar-no-drag="true"]'),
+  );
+}
+
 export function AppFrame({ children }: AppFrameProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -60,12 +98,21 @@ export function AppFrame({ children }: AppFrameProps) {
   const [appScale, setAppScale] = useState(loadScale);
   const [isDarkTheme, setIsDarkTheme] = useState(loadDarkTheme);
   const [shortcutBindings, setShortcutBindings] = useState(loadShortcutBindings);
+  const titlebarDragRef = useRef<TitlebarDragState | null>(null);
+  const suppressTitlebarClickRef = useRef(false);
 
   const effectiveScale = useMemo(() => Number((BASE_APP_SCALE * appScale).toFixed(3)), [appScale]);
 
   useEffect(() => {
     localStorage.setItem(APP_SCALE_KEY, String(appScale));
   }, [appScale]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(APP_EFFECTIVE_SCALE_CSS_VAR, String(effectiveScale));
+    return () => {
+      document.documentElement.style.removeProperty(APP_EFFECTIVE_SCALE_CSS_VAR);
+    };
+  }, [effectiveScale]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-dark', isDarkTheme);
@@ -102,6 +149,12 @@ export function AppFrame({ children }: AppFrameProps) {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    return window.xinyuexiaWindow?.onMaximizedChange?.((value) => {
+      setIsMaximized(value);
+    });
   }, []);
 
   useEffect(() => {
@@ -276,10 +329,6 @@ export function AppFrame({ children }: AppFrameProps) {
         navigate(fallbackTab.path);
         return;
       }
-      if (id === 'theme_colors') {
-        navigate('/theme-colors');
-        return;
-      }
       dispatchShortcutAction(id);
     };
 
@@ -353,60 +402,139 @@ export function AppFrame({ children }: AppFrameProps) {
   };
 
   const handleTitlebarDoubleClick = (event: MouseEvent<HTMLElement>) => {
-    if ((event.target as HTMLElement).closest('button')) return;
+    if ((event.target as HTMLElement).closest('button,[data-titlebar-no-drag="true"]')) return;
     void toggleMaximizeWindow();
+  };
+
+  const handleTitlebarPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (event.button !== 0 || event.detail > 1 || isTitlebarInteractiveTarget(event.target)) return;
+    titlebarDragRef.current = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      dragOffsetX: 0,
+      dragOffsetY: 0,
+      started: false,
+      pending: false,
+    };
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture is best-effort; window-level drag still starts on the next move event.
+    }
+  };
+
+  const handleTitlebarPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
+    const dragState = titlebarDragRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    const moved = Math.hypot(event.clientX - dragState.startClientX, event.clientY - dragState.startClientY);
+    if (!dragState.started && !dragState.pending && moved < TITLEBAR_DRAG_THRESHOLD) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!dragState.started) {
+      if (dragState.pending) return;
+      dragState.pending = true;
+      void window.xinyuexiaWindow?.beginTitlebarDrag({
+        screenX: event.screenX,
+        screenY: event.screenY,
+        clientX: dragState.startClientX,
+        clientY: dragState.startClientY,
+        windowWidth: window.innerWidth,
+      }).then((result) => {
+        const current = titlebarDragRef.current;
+        if (!current || current.pointerId !== dragState.pointerId) return;
+        if (!result) {
+          titlebarDragRef.current = null;
+          return;
+        }
+        current.pending = false;
+        current.started = true;
+        current.dragOffsetX = result.dragOffsetX;
+        current.dragOffsetY = result.dragOffsetY;
+        setIsMaximized(result.isMaximized);
+      }).catch(() => {
+        const current = titlebarDragRef.current;
+        if (current?.pointerId === dragState.pointerId) titlebarDragRef.current = null;
+      });
+      return;
+    }
+
+    void window.xinyuexiaWindow?.moveTitlebarDrag({
+      screenX: event.screenX,
+      screenY: event.screenY,
+      dragOffsetX: dragState.dragOffsetX,
+      dragOffsetY: dragState.dragOffsetY,
+    });
+  };
+
+  const finishTitlebarPointerDrag = (event: ReactPointerEvent<HTMLElement>) => {
+    const dragState = titlebarDragRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+    if (dragState.started || dragState.pending) {
+      suppressTitlebarClickRef.current = true;
+      window.setTimeout(() => {
+        suppressTitlebarClickRef.current = false;
+      }, 0);
+    }
+    titlebarDragRef.current = null;
+  };
+
+  const handleTitlebarClickCapture = (event: MouseEvent<HTMLElement>) => {
+    if (!suppressTitlebarClickRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
   };
 
   return (
     <div className={`flex h-screen w-screen flex-col overflow-hidden bg-slate-50 ${isDarkTheme ? 'theme-dark' : ''}`}>
       <header
-        className="app-titlebar flex h-12 shrink-0 items-center border-b border-slate-200 bg-white px-3"
-        style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+        className="app-titlebar flex h-12 shrink-0 items-center border-b border-slate-300 bg-[#dfe5ec] px-3"
+        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        onPointerDown={handleTitlebarPointerDown}
+        onPointerMove={handleTitlebarPointerMove}
+        onPointerUp={finishTitlebarPointerDrag}
+        onPointerCancel={finishTitlebarPointerDrag}
+        onClickCapture={handleTitlebarClickCapture}
+        onDoubleClick={handleTitlebarDoubleClick}
       >
-        <div className="flex shrink-0 items-center gap-2 pr-4">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-500 text-sm font-bold text-white shadow-sm">
-            月
-          </div>
-          <span className="whitespace-nowrap text-[14px] font-semibold text-slate-700">月下写作</span>
-        </div>
-        <div className="h-5 w-px shrink-0 bg-slate-200" />
-
         <nav
-          className="flex h-full min-w-0 flex-1 items-end overflow-x-auto pl-2"
+          className="flex h-full min-w-0 flex-1 items-end overflow-x-auto"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-          onDoubleClick={handleTitlebarDoubleClick}
         >
           {tabs.map((tab, index) => {
             const isActive = activeTabId === tab.id;
             const isHomeTab = tab.id === HOME_TAB.id;
             return (
-              <div key={tab.id} className={`flex h-10 shrink-0 items-center ${index === 0 ? '' : '-ml-px'}`}>
+              <div key={tab.id} className={`flex h-10 shrink-0 items-end ${index === 0 ? '' : '-ml-px'}`}>
                 <div
                   role="button"
                   tabIndex={0}
                   onClick={() => activateTab(tab)}
-                  onDoubleClick={handleTitlebarDoubleClick}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') activateTab(tab);
                   }}
-                  className={`workspace-tab group relative flex h-9 min-w-[104px] max-w-[184px] shrink-0 cursor-pointer items-center gap-2 border px-3 text-left text-sm font-semibold transition-colors ${
+                  className={`workspace-tab group relative flex h-9 min-w-[142px] max-w-[188px] shrink-0 cursor-pointer items-center gap-2 border px-3 text-left text-[15px] font-semibold transition-colors ${
                     isActive
-                      ? `workspace-tab-active rounded-t-xl border-slate-200 border-b-slate-100 bg-slate-100 text-slate-950 shadow-[0_-2px_8px_rgba(15,23,42,0.08)] ${isHomeTab ? 'workspace-tab-home' : ''}`
-                      : `workspace-tab-inactive border-transparent bg-transparent text-slate-500 shadow-none hover:text-slate-900 ${isHomeTab ? 'workspace-tab-home-inactive text-blue-600' : ''}`
+                      ? `workspace-tab-active rounded-t-lg border-slate-300 border-b-white bg-white text-slate-950 shadow-[0_-1px_0_rgba(255,255,255,0.7)] ${isHomeTab ? 'workspace-tab-home' : ''}`
+                      : `workspace-tab-inactive border-transparent bg-transparent text-slate-700 shadow-none hover:text-slate-900 ${isHomeTab ? 'workspace-tab-home-inactive' : ''}`
                   }`}
                   title={tab.title}
                 >
-                  <span className={`min-w-0 flex-1 truncate ${isHomeTab ? 'text-base font-bold' : ''}`}>{tab.title}</span>
+                  <PanelLeft className={`h-4 w-4 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-500'}`} />
+                  <span className="min-w-0 flex-1 truncate">{tab.title}</span>
                   {!tab.fixed && (
                     <button
                       type="button"
                       onClick={(event) => handleCloseTab(event, tab)}
-                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md transition-colors ${
-                        isActive ? 'text-slate-500 hover:bg-slate-200 hover:text-slate-800' : 'text-slate-400 hover:bg-slate-200 hover:text-slate-700'
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors ${
+                        isActive ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-500 hover:bg-slate-300/50 hover:text-slate-700'
                       }`}
                       aria-label={`关闭${tab.title}`}
                     >
-                      <X className="h-3.5 w-3.5" />
+                      <X className="h-4 w-4" />
                     </button>
                   )}
                 </div>
@@ -415,7 +543,11 @@ export function AppFrame({ children }: AppFrameProps) {
           })}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-1.5" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+        <div
+          className="flex shrink-0 items-center gap-1.5"
+          data-titlebar-no-drag="true"
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        >
           <button
             onClick={() => setIsDarkTheme((prev) => !prev)}
             className={`mr-2 flex h-8 items-center gap-1.5 rounded-lg border px-3 text-sm transition-colors ${

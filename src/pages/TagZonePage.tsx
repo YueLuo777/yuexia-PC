@@ -141,7 +141,7 @@ export default function TagZonePage() {
 
   return (
     <div className="flex h-full flex-col bg-gray-50">
-      <header className="flex shrink-0 items-center justify-between border-b border-gray-100 bg-white px-5 py-3">
+      <header className="flex h-24 shrink-0 items-center justify-between border-b border-gray-100 bg-white px-6">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50">
             <Tag className="h-4 w-4 text-violet-600" />

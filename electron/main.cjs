@@ -13,8 +13,8 @@ const DEV_URL = process.env.XINYUEXIA_URL || 'http://127.0.0.1:18328/#/dashboard
 const DIST_ENTRY = path.join(__dirname, '..', 'dist', 'index.html');
 const PRELOAD_ENTRY = path.join(__dirname, 'preload.cjs');
 const APP_ICON = path.join(__dirname, '..', 'build', 'app-icon.ico');
-const APP_ID = 'com.xinyuexia.desktop';
-const APP_NAME = '新月下写作';
+const APP_ID = 'com.yuexia.writer.desktop';
+const APP_NAME = '月下写作';
 const SHARED_STATE_DIR_NAME = 'xinyuexia-desktop';
 const USER_DATA_NAME =
   process.env.XINYUEXIA_LOAD_DIST === '1' || app.isPackaged
@@ -448,6 +448,83 @@ function saveWindowState(targetWindow) {
   });
 }
 
+function notifyWindowMaximizedState(targetWindow) {
+  if (!targetWindow || targetWindow.isDestroyed()) return;
+  targetWindow.webContents.send('window:maximized-change', targetWindow.isMaximized());
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function clampWindowDragX(x, width, workArea) {
+  if (width >= workArea.width) return workArea.x;
+  const visibleWidth = Math.min(120, Math.max(40, Math.round(width * 0.15)));
+  return clamp(x, workArea.x - width + visibleWidth, workArea.x + workArea.width - visibleWidth);
+}
+
+function clampWindowDragY(y, workArea) {
+  return Math.max(workArea.y, y);
+}
+
+function normalizeTitlebarDragInput(input) {
+  if (!input || typeof input !== 'object') return null;
+  const screenX = Number(input.screenX);
+  const screenY = Number(input.screenY);
+  if (!Number.isFinite(screenX) || !Number.isFinite(screenY)) return null;
+  return {
+    screenX: Math.round(screenX),
+    screenY: Math.round(screenY),
+    clientX: Number(input.clientX),
+    clientY: Number(input.clientY),
+    windowWidth: Number(input.windowWidth),
+    dragOffsetX: Number(input.dragOffsetX),
+    dragOffsetY: Number(input.dragOffsetY),
+  };
+}
+
+function beginTitlebarDrag(input) {
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isFullScreen()) return null;
+  const drag = normalizeTitlebarDragInput(input);
+  if (!drag) return null;
+
+  if (mainWindow.isMaximized()) {
+    mainWindow.unmaximize();
+  }
+
+  const bounds = mainWindow.getBounds();
+  const display = screen.getDisplayNearestPoint({ x: drag.screenX, y: drag.screenY });
+  const widthRatio =
+    Number.isFinite(drag.clientX) && Number.isFinite(drag.windowWidth) && drag.windowWidth > 0
+      ? clamp(drag.clientX / drag.windowWidth, 0.08, 0.92)
+      : 0.5;
+  const titlebarOffsetY = Number.isFinite(drag.clientY) ? clamp(drag.clientY, 0, 56) : 16;
+  const dragOffsetX = Math.round(bounds.width * widthRatio);
+  const dragOffsetY = Math.round(titlebarOffsetY);
+  const x = clampWindowDragX(drag.screenX - dragOffsetX, bounds.width, display.workArea);
+  const y = clampWindowDragY(drag.screenY - dragOffsetY, display.workArea);
+
+  mainWindow.setBounds({ x, y, width: bounds.width, height: bounds.height }, false);
+  return {
+    isMaximized: false,
+    dragOffsetX: drag.screenX - x,
+    dragOffsetY: drag.screenY - y,
+  };
+}
+
+function moveTitlebarDrag(input) {
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isMaximized() || mainWindow.isFullScreen()) return false;
+  const drag = normalizeTitlebarDragInput(input);
+  if (!drag || !Number.isFinite(drag.dragOffsetX) || !Number.isFinite(drag.dragOffsetY)) return false;
+
+  const bounds = mainWindow.getBounds();
+  const display = screen.getDisplayNearestPoint({ x: drag.screenX, y: drag.screenY });
+  const x = clampWindowDragX(Math.round(drag.screenX - drag.dragOffsetX), bounds.width, display.workArea);
+  const y = clampWindowDragY(Math.round(drag.screenY - drag.dragOffsetY), display.workArea);
+  mainWindow.setPosition(x, y, false);
+  return true;
+}
+
 function focusMainWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   if (mainWindow.isMinimized()) mainWindow.restore();
@@ -492,8 +569,14 @@ function attachWindowStateTracking(targetWindow) {
   const persist = () => saveWindowState(targetWindow);
   targetWindow.on('resize', persist);
   targetWindow.on('move', persist);
-  targetWindow.on('maximize', persist);
-  targetWindow.on('unmaximize', persist);
+  targetWindow.on('maximize', () => {
+    persist();
+    notifyWindowMaximizedState(targetWindow);
+  });
+  targetWindow.on('unmaximize', () => {
+    persist();
+    notifyWindowMaximizedState(targetWindow);
+  });
   targetWindow.on('close', persist);
 }
 
@@ -536,6 +619,12 @@ function createWindow() {
     }
   });
 
+  mainWindow.webContents.on('page-title-updated', (event) => {
+    event.preventDefault();
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    mainWindow.setTitle(APP_NAME);
+  });
+
   void loadStartUrl(mainWindow);
   return mainWindow;
 }
@@ -559,6 +648,8 @@ ipcMain.handle('window:is-maximized', () => mainWindow?.isMaximized() ?? false);
 ipcMain.handle('window:reload', () => {
   mainWindow?.webContents.reloadIgnoringCache();
 });
+ipcMain.handle('window:begin-titlebar-drag', (_event, input) => beginTitlebarDrag(input));
+ipcMain.handle('window:move-titlebar-drag', (_event, input) => moveTitlebarDrag(input));
 
 ipcMain.handle('model:request', async (_event, input) => {
   const request = normalizeModelRequestInput(input);

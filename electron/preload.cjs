@@ -6,6 +6,13 @@ contextBridge.exposeInMainWorld('xinyuexiaWindow', {
   close: () => ipcRenderer.invoke('window:close'),
   isMaximized: () => ipcRenderer.invoke('window:is-maximized'),
   reload: () => ipcRenderer.invoke('window:reload'),
+  beginTitlebarDrag: (input) => ipcRenderer.invoke('window:begin-titlebar-drag', input),
+  moveTitlebarDrag: (input) => ipcRenderer.invoke('window:move-titlebar-drag', input),
+  onMaximizedChange: (callback) => {
+    const listener = (_event, value) => callback(Boolean(value));
+    ipcRenderer.on('window:maximized-change', listener);
+    return () => ipcRenderer.removeListener('window:maximized-change', listener);
+  },
 });
 
 contextBridge.exposeInMainWorld('xinyuexiaModel', {

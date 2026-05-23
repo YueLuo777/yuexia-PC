@@ -431,7 +431,7 @@ function ChapterSelectModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
         className="flex h-[76vh] w-[820px] max-w-[94vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
@@ -708,7 +708,7 @@ export function ExtractTestPage() {
   }, [dragBaseModules, draggingId, dragOverId, modules]);
 
   const selectedFiles = files.filter((file) => file.selected);
-  const previewModules = activeModules.filter((module) => module.zone === 'output' && !module.hidePreview);
+  const previewModules = activeModules.filter((module) => module.zone === 'output');
   const filledResults = results.filter(hasResultContent);
   const pendingImportResults = filledResults.filter((result) => !importedResultIds.includes(result.id));
   const resultGroups = useMemo(() => buildResultGroups(results), [results]);
@@ -985,7 +985,7 @@ export function ExtractTestPage() {
       setShowExportMenu(false);
     }}>
       <header className="shrink-0 border-b border-gray-200 bg-white">
-        <div className="flex items-center justify-between px-6 py-4">
+        <div className="flex h-16 items-center justify-between px-6">
           <div>
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-brand" />
@@ -994,7 +994,7 @@ export function ExtractTestPage() {
           </div>
 
           <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
-            {selectedNovel && <span className="text-xs font-medium text-gray-500">已关联：</span>}
+            {selectedNovel && <span className="text-xs font-medium text-brand">已关联：</span>}
             <button
               onClick={() => setShowLinkNovel(true)}
               className="flex h-8 max-w-[240px] items-center justify-center gap-1 rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-dark"
@@ -1032,17 +1032,8 @@ export function ExtractTestPage() {
                   className="inline-flex w-[92px] shrink-0 items-center justify-center gap-1 rounded-lg bg-brand px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-brand-dark"
                   title={isModulePreviewOpen ? '收起模块预览' : '展开模块预览'}
                 >
-                  {isModulePreviewOpen ? (
-                    <>
-                      <ChevronLeft className="h-3.5 w-3.5" />
-                      收起
-                    </>
-                  ) : (
-                    <>
-                      模块预览
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </>
-                  )}
+                  <span>模块预览</span>
+                  {isModulePreviewOpen ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                 </button>
               </div>
             </div>
@@ -1129,7 +1120,7 @@ export function ExtractTestPage() {
                         <span className="min-w-0 truncate">{module.label}</span>
                         {collapsed ? <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" /> : <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />}
                       </button>
-                      {!collapsed && (
+                      {!collapsed && !module.hidePreview && (
                         <div className="min-w-0 whitespace-pre-wrap break-words p-3 text-xs leading-6 text-gray-600 [overflow-wrap:anywhere]">
                           {module.instruction}
                         </div>
@@ -1364,10 +1355,10 @@ export function ExtractTestPage() {
             </button>
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-50 p-4">
-            <div className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border-2 border-brand/40 bg-white shadow-lg shadow-blue-100/70 ring-2 ring-brand/10">
-              <aside className="flex w-[218px] shrink-0 flex-col border-r-2 border-brand/25 bg-white">
-                <div className="shrink-0 border-b border-brand/20 bg-brand-light/40 px-2 py-3 text-center text-xs font-bold text-slate-700">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white p-4">
+            <div className="flex min-h-0 flex-1 overflow-hidden border border-gray-100 bg-white">
+              <aside className="flex w-[218px] shrink-0 flex-col border-r border-gray-100 bg-white">
+                <div className="shrink-0 border-b border-gray-100 bg-white px-2 py-3 text-center text-xs font-bold text-slate-600">
                   目录
                 </div>
                 <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
@@ -1375,10 +1366,10 @@ export function ExtractTestPage() {
                     const collapsed = collapsedResultGroups[group.key] ?? false;
                     const filledCount = group.items.filter(hasResultContent).length;
                     return (
-                      <section key={group.key} className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                      <section key={group.key} className="overflow-hidden rounded-xl border border-gray-100 bg-white">
                         <button
                           onClick={() => emitExtractRuntime({ collapsedResultGroups: { ...collapsedResultGroups, [group.key]: !collapsed } })}
-                          className="flex w-full items-center gap-1.5 border-b border-slate-200 bg-white px-2 py-2 text-left transition-colors hover:bg-slate-50"
+                          className="flex w-full items-center gap-1.5 border-b border-gray-100 bg-white px-2 py-2 text-left transition-colors hover:bg-slate-50"
                         >
                           {collapsed ? <ChevronRight className="h-3.5 w-3.5 text-slate-400" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
                           <span className="min-w-0 flex-1 text-xs font-bold text-slate-700">
@@ -1397,7 +1388,7 @@ export function ExtractTestPage() {
                                   onClick={() => emitExtractRuntime({ activeResultIndex: index })}
                                   className={`flex h-8 w-8 items-center justify-center rounded-xl border text-sm font-bold transition-all ${
                                     activeResultIndex === index
-                                      ? 'border-brand bg-brand text-white shadow-sm'
+                                      ? 'border-brand/40 bg-brand-light text-brand shadow-sm'
                                       : isEmpty
                                         ? 'border-dashed border-slate-200 bg-white text-slate-300 hover:bg-slate-50'
                                         : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
@@ -1418,7 +1409,7 @@ export function ExtractTestPage() {
 
               {results[activeResultIndex] ? (
                 <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-                  <div className="shrink-0 border-b border-brand/15 bg-brand-light/20 px-4 py-3">
+                  <div className="shrink-0 border-b border-gray-100 bg-white px-4 py-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="text-sm font-bold text-slate-900">剧情点 {activeResultIndex + 1}</div>
@@ -1449,14 +1440,13 @@ export function ExtractTestPage() {
                 {extractProgress || saveMessage}
               </div>
             )}
-            <div className="flex items-end justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="grid grid-cols-4 gap-2">
-                  <div className="relative" onClick={(event) => event.stopPropagation()}>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                  <div className="relative w-[168px]" onClick={(event) => event.stopPropagation()}>
                     <button
                       onClick={() => setShowExportMenu((prev) => !prev)}
                       disabled={filledResults.length === 0}
-                      className="w-full rounded-xl border border-brand/30 bg-white px-3 py-2 text-xs font-medium text-brand transition-colors hover:bg-brand-light disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-300"
+                      className="w-full rounded-lg border border-brand/30 bg-white px-6 py-2.5 text-sm font-medium text-brand transition-colors hover:bg-brand-light disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-300"
                     >
                       导出 TXT
                     </button>
@@ -1488,13 +1478,12 @@ export function ExtractTestPage() {
                   <button
                     onClick={handleImportCurrentResults}
                     disabled={pendingImportResults.length === 0}
-                    className="w-full rounded-xl bg-brand px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
+                    className="w-[168px] rounded-lg bg-brand px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
                   >
                     导入剧情库
                   </button>
-                </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 items-center justify-end gap-2">
                 <button
                   onClick={isExtractPaused ? resumeExtractRun : pauseExtractRun}
                   disabled={!isExtracting}
@@ -1542,7 +1531,7 @@ export function ExtractTestPage() {
       />
 
       {showHistory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="flex max-h-[80vh] w-[640px] flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <h3 className="text-base font-bold text-gray-900">提炼历史</h3>

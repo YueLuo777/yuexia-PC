@@ -16,8 +16,6 @@ interface WorkbenchAIPanelProps {
   selectedChapterContent: string;
   onClose: () => void;
   onReplaceContent: (content: string) => void;
-  onOpenModelManage?: () => void;
-  onOpenAgentManage?: () => void;
 }
 
 function readConfig() {
@@ -40,8 +38,6 @@ export function WorkbenchAIPanel({
   selectedChapterContent,
   onClose,
   onReplaceContent,
-  onOpenModelManage,
-  onOpenAgentManage,
 }: WorkbenchAIPanelProps) {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
@@ -153,13 +149,6 @@ export function WorkbenchAIPanel({
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={onOpenAgentManage}
-            className="rounded-md px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-            title="智能体管理"
-          >
-            智能体管理
-          </button>
-          <button
             onClick={onClose}
             className="rounded-md px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700"
             title="收起"
@@ -236,6 +225,27 @@ export function WorkbenchAIPanel({
               清空
             </button>
           </div>
+          <div className="mt-3 shrink-0">
+            <textarea
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  void sendMessage();
+                }
+              }}
+              placeholder="请输入你的要求..."
+              className="h-10 w-full resize-none rounded-full border border-gray-200 px-4 py-2 text-sm leading-5 outline-none focus:border-brand"
+            />
+            <button
+              onClick={() => void sendMessage()}
+              disabled={isLoading || !input.trim()}
+              className="mt-3 w-full rounded-lg bg-brand px-3 py-3 text-base font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
+            >
+              {isLoading ? '生成中...' : '发送'}
+            </button>
+          </div>
         </section>
 
         <div
@@ -254,8 +264,7 @@ export function WorkbenchAIPanel({
                 <select
                   value={selectedModel?.id ?? ''}
                   onChange={(event) => setSelectedModelId(event.target.value)}
-                  onDoubleClick={onOpenModelManage}
-                  className="h-11 w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 pr-8 text-lg font-semibold text-gray-700 outline-none focus:border-brand"
+                  className="h-11 w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 pr-8 text-base font-semibold text-gray-700 outline-none focus:border-brand"
                 >
                   {enabledModels.length === 0 ? (
                     <option value="">无可用模型</option>
@@ -276,8 +285,7 @@ export function WorkbenchAIPanel({
                 <select
                   value={selectedPrompt?.id ?? ''}
                   onChange={(event) => setSelectedPromptId(event.target.value)}
-                  onDoubleClick={onOpenAgentManage}
-                  className="h-11 w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 pr-8 text-lg font-semibold text-gray-700 outline-none focus:border-brand"
+                  className="h-11 w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 pr-8 text-base font-semibold text-gray-700 outline-none focus:border-brand"
                 >
                   <option value="">默认提示词</option>
                   {prompts.map((prompt) => (
@@ -306,13 +314,7 @@ export function WorkbenchAIPanel({
               placeholder="请输入你的要求..."
               className="h-10 w-full resize-none rounded-full border border-gray-200 px-4 py-2 text-sm leading-5 outline-none focus:border-brand"
             />
-            <div className="mt-3 grid grid-cols-[1fr_1fr_72px] gap-2">
-              <button
-                onClick={() => flashStatus('输出内容在左侧区域')}
-                className="rounded-lg bg-brand px-3 py-3 text-base font-bold text-white hover:bg-brand-dark"
-              >
-                输出内容
-              </button>
+            <div className="mt-3 grid grid-cols-[minmax(0,1fr)_72px] gap-2">
               <button
                 onClick={() => void sendMessage()}
                 disabled={isLoading || !input.trim()}

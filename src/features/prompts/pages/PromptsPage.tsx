@@ -48,7 +48,7 @@ function PromptEditorModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
         className="w-[980px] max-w-[94vw] rounded-[28px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
         onClick={(event) => event.stopPropagation()}
@@ -147,7 +147,7 @@ function PromptRecycleModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="flex h-[560px] w-[680px] max-w-[94vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div>
@@ -175,7 +175,7 @@ function PromptRecycleModal({
                         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">{TAB_LABELS[item.promptType ?? 'novel']}</span>
                         <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] text-blue-500">{item.category}</span>
                       </div>
-                      <p className="mt-1 truncate text-xs text-slate-400">{item.description || item.content}</p>
+                      <p className="mt-1 truncate text-xs text-slate-400">{item.description || '暂无说明'}</p>
                       <p className="mt-1 text-[10px] text-slate-300">删除于 {item.deletedAt ? new Date(item.deletedAt).toLocaleString('zh-CN') : '-'}</p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
@@ -267,24 +267,22 @@ export function PromptsPage() {
 
   return (
     <div className="flex h-full flex-col bg-slate-50">
-      <div className="border-b border-slate-100 bg-white px-7 py-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-light text-brand">
-              <BookOpen className="h-5 w-5" />
-            </div>
+      <div className="flex h-16 shrink-0 items-center border-b border-slate-100 bg-white px-6">
+        <div className="flex w-full items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-brand" />
             <div>
-              <h1 className="text-[18px] font-bold text-slate-900">提示词管理</h1>
-              <p className="mt-1 text-sm text-slate-400">管理和发现 AI 写作提示词</p>
+              <h1 className="text-xl font-bold text-slate-900">提示词管理</h1>
+              <p className="mt-0.5 text-xs text-slate-400">管理和发现 AI 写作提示词</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button onClick={() => setShowRecycle(true)} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-base text-slate-600 hover:bg-slate-50">
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowRecycle(true)} className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-600 hover:bg-slate-50">
               回收站{recycleBin.length > 0 ? ` (${recycleBin.length})` : ''}
             </button>
-            <button onClick={openCreate} className="flex items-center gap-2 rounded-2xl bg-brand px-6 py-3 text-base text-white hover:bg-brand-dark">
-              <Plus className="h-4 w-4" />
+            <button onClick={openCreate} className="flex h-8 items-center gap-1.5 rounded-lg bg-brand px-3 text-xs text-white hover:bg-brand-dark">
+              <Plus className="h-3.5 w-3.5" />
               创建提示词
             </button>
           </div>
@@ -293,18 +291,18 @@ export function PromptsPage() {
 
       <div className="flex-1 overflow-y-auto px-7 py-7">
         <div className="mb-6 flex items-center justify-between gap-5">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {(Object.keys(TAB_LABELS) as PromptTab[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`rounded-full px-6 py-3 text-[18px] transition-colors ${
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                   activeTab === tab
                     ? 'bg-slate-900 text-white'
                     : 'border border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
                 }`}
               >
-                {TAB_LABELS[tab]} <span className="ml-1 text-sm opacity-70">{prompts.filter((item) => (item.promptType ?? 'novel') === tab).length}</span>
+                {TAB_LABELS[tab]} <span className="ml-1 text-xs opacity-70">{prompts.filter((item) => (item.promptType ?? 'novel') === tab).length}</span>
               </button>
             ))}
           </div>
@@ -321,10 +319,10 @@ export function PromptsPage() {
           </div>
         </div>
 
-        <div className="mb-7 flex flex-wrap items-center gap-3">
+        <div className="mb-7 flex flex-wrap items-center gap-2">
           <button
             onClick={() => setActiveCategory(null)}
-            className={`rounded-full px-5 py-2 text-base transition-colors ${
+            className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
               activeCategory === null
                 ? 'bg-slate-900 text-white'
                 : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
@@ -336,7 +334,7 @@ export function PromptsPage() {
             <button
               key={category}
               onClick={() => setActiveCategory(category)}
-              className={`rounded-full px-5 py-2 text-base transition-colors ${
+              className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
                 activeCategory === category
                   ? 'bg-white text-brand border border-brand/30'
                   : 'border border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
@@ -357,19 +355,19 @@ export function PromptsPage() {
               )}
             </button>
           ))}
-          <div className="ml-2 flex items-center gap-2">
+          <div className="ml-2 flex items-center gap-1.5">
             <input
               value={newCategory}
               onChange={(event) => setNewCategory(event.target.value)}
               placeholder="新增分类"
-              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-brand"
+              className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-brand"
             />
             <button
               onClick={() => {
                 addCategory(newCategory);
                 setNewCategory('');
               }}
-              className="rounded-full border border-brand/30 px-4 py-2 text-sm text-brand hover:bg-brand-light"
+              className="rounded-full border border-brand/30 px-3 py-1.5 text-xs text-brand hover:bg-brand-light"
             >
               + 新建
             </button>
@@ -397,36 +395,40 @@ export function PromptsPage() {
                   </div>
                   <button
                     onClick={() => toggleLock(prompt.id)}
-                    className="rounded-lg p-1.5 text-slate-300 transition-colors hover:bg-slate-50 hover:text-slate-500"
+                    className={`rounded-lg p-1.5 transition-colors ${
+                      prompt.isLocked
+                        ? 'text-orange-500 hover:bg-orange-50 hover:text-orange-600'
+                        : 'text-slate-300 hover:bg-slate-50 hover:text-slate-500'
+                    }`}
                   >
                     {prompt.isLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                   </button>
                 </div>
 
-                <div className="mt-3 line-clamp-4 text-sm leading-7 text-slate-500">{prompt.description || prompt.content}</div>
+                <div className="mt-3 line-clamp-4 text-sm leading-7 text-slate-500">{prompt.description || '暂无说明'}</div>
 
                 <div className="mt-auto">
                   <p className="mb-3 text-left text-sm font-medium text-blue-500">{prompt.content.length} 字</p>
-                  <div className="flex items-center gap-3">
+                  <div className="grid grid-cols-4 gap-1">
                     <button
                       onClick={() => {
                         void navigator.clipboard?.writeText(prompt.content);
                         usePrompt(prompt.id);
                       }}
-                      className="flex flex-1 items-center justify-center rounded-2xl bg-emerald-50 py-3 text-base text-emerald-600 hover:bg-emerald-100"
+                      className="rounded-lg bg-brand py-2 text-[13px] font-medium text-white transition-colors hover:bg-brand-dark"
                     >
                       复制
                     </button>
                     <button
                       onClick={() => toggleFavorite(prompt.id)}
-                      className="flex flex-1 items-center justify-center rounded-2xl bg-orange-50 py-3 text-base text-orange-500 hover:bg-orange-100"
+                      className="rounded-lg bg-brand py-2 text-[13px] font-medium text-white transition-colors hover:bg-brand-dark"
                     >
                       收藏
                     </button>
                     <button
                       onClick={() => openEdit(prompt)}
                       disabled={prompt.isLocked}
-                      className="flex flex-1 items-center justify-center rounded-2xl bg-blue-50 py-3 text-base text-blue-500 hover:bg-blue-100 disabled:text-slate-300"
+                      className="rounded-lg bg-brand py-2 text-[13px] font-medium text-white transition-colors hover:bg-brand-dark disabled:bg-gray-100 disabled:text-gray-400"
                     >
                       编辑
                     </button>
@@ -435,10 +437,10 @@ export function PromptsPage() {
                         if (!prompt.isLocked) setDeleteTarget(prompt);
                       }}
                       disabled={prompt.isLocked}
-                      className={`flex flex-1 items-center justify-center rounded-2xl py-3 text-base ${
+                      className={`rounded-lg py-2 text-[13px] font-medium transition-colors ${
                         prompt.isLocked
-                          ? 'cursor-not-allowed bg-slate-100 text-slate-300'
-                          : 'bg-red-50 text-red-500 hover:bg-red-100'
+                          ? 'cursor-not-allowed bg-gray-100 text-gray-400'
+                          : 'bg-red-500 text-white hover:bg-red-600'
                       }`}
                     >
                       删除

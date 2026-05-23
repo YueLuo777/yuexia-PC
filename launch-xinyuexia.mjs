@@ -1,5 +1,5 @@
-import { execFileSync, spawn } from 'node:child_process';
-import { createWriteStream, existsSync, openSync, readFileSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
+import { createWriteStream, existsSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,6 +15,7 @@ const pidFile = path.join(root, 'dev-server.pid');
 const viteEntry = path.join(root, 'node_modules', 'vite', 'bin', 'vite.js');
 const electronExe = path.join(root, 'node_modules', 'electron', 'dist', 'electron.exe');
 const electronMain = path.join(root, 'electron', 'main.cjs');
+const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 const logStream = createWriteStream(launcherLogFile, { flags: 'a' });
 const log = (message) => {
@@ -45,11 +46,58 @@ function ensureFileExists(filePath, label) {
   }
 }
 
+function removeIfExists(targetPath) {
+  if (!existsSync(targetPath)) return;
+  try {
+    rmSync(targetPath, { recursive: true, force: true });
+    log(`removed stale dependency path ${targetPath}`);
+  } catch (error) {
+    log(`could not remove stale dependency path ${targetPath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+function getProcessCommandLine(pid) {
+  try {
+    return execFileSync('powershell.exe', [
+      '-NoProfile',
+      '-Command',
+      `(Get-CimInstance Win32_Process -Filter "ProcessId=${pid}").CommandLine`,
+    ], { encoding: 'utf8', windowsHide: true }).trim();
+  } catch {
+    return '';
+  }
+}
+
+function isViteDevServerProcess(pid) {
+  if (!Number.isFinite(pid) || !isProcessAlive(pid)) return false;
+  const commandLine = getProcessCommandLine(pid).toLowerCase();
+  return commandLine.includes('vite') && commandLine.includes(String(port)) && commandLine.includes(root.toLowerCase());
+}
+
+function ensureDependencies() {
+  if (existsSync(viteEntry) && existsSync(electronExe)) return;
+
+  log('dependencies missing; running npm install');
+  removeIfExists(path.join(root, 'node_modules', '.vite-temp'));
+  const result = spawnSync(npmCmd, ['install'], {
+    cwd: root,
+    encoding: 'utf8',
+    windowsHide: true,
+  });
+
+  if (result.stdout) log(`npm install stdout:\n${result.stdout}`);
+  if (result.stderr) log(`npm install stderr:\n${result.stderr}`);
+
+  if (result.status !== 0) {
+    throw new Error(`npm install failed with exit code ${result.status}. Close any running Electron or Yuexia windows and try again.`);
+  }
+}
+
 function cleanupPidFile() {
   try {
     if (existsSync(pidFile)) {
       const pid = Number.parseInt(readFileSync(pidFile, 'utf8').trim(), 10);
-      if (!Number.isFinite(pid) || !isProcessAlive(pid)) {
+      if (!isViteDevServerProcess(pid)) {
         writeFileSync(pidFile, '');
         log(`stale pid file cleared pid=${pid}`);
       }
@@ -177,6 +225,7 @@ async function ensureElectronWindow(loadDist = false) {
 
 async function main() {
   log(`launcher mode=${mode} root=${root} port=${port} node=${process.version}`);
+  ensureDependencies();
 
   if (mode === 'dist') {
     await ensureElectronWindow(true);

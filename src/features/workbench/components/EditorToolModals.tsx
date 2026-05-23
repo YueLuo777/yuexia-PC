@@ -239,7 +239,7 @@ function ModalShell({ title, icon, children, onClose, widthClass = 'w-[520px]' }
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[240] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[240] flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
         className={`${widthClass} max-h-[88vh] max-w-[94vw] overflow-hidden rounded-xl bg-white shadow-2xl`}
         data-draggable-managed="true"

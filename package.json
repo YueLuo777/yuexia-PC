@@ -2,7 +2,7 @@
   "name": "xinyuexia",
   "private": true,
   "version": "0.1.0",
-  "description": "新月下写作桌面版",
+  "description": "月下写作桌面版",
   "author": "OpenAI Codex",
   "type": "module",
   "main": "electron/main.cjs",
@@ -48,8 +48,8 @@
     "vitest": "^4.1.7"
   },
   "build": {
-    "appId": "com.xinyuexia.desktop",
-    "productName": "新月下写作",
+    "appId": "com.yuexia.writer.desktop",
+    "productName": "月下写作",
     "electronDist": "node_modules/electron/dist",
     "directories": {
       "output": "release"

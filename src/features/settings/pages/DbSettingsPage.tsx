@@ -14,9 +14,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { readIdeaSnapshot } from '@/features/ideas/hooks/useIdeaStorage';
 import { readMaterialSnapshot } from '@/features/materials/hooks/useMaterials';
-import { readModelSnapshot } from '@/features/models/hooks/useModels';
 import { useNovelLibrary } from '@/features/novels/hooks/useNovelLibrary';
 import { readPlotLibrarySnapshot } from '@/features/plot-library/hooks/usePlotLibrary';
 import { readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
@@ -69,8 +67,6 @@ export function DbSettingsPage() {
       novels: novels.length,
       materials: readMaterialSnapshot().length,
       prompts: readPromptSnapshot().prompts.length,
-      models: readModelSnapshot().length,
-      ideas: readIdeaSnapshot().length,
       plots: readPlotLibrarySnapshot().items.length,
     }),
     [novels.length],
@@ -199,17 +195,17 @@ export function DbSettingsPage() {
 
   return (
     <div className="flex h-full flex-col bg-gray-50">
-      <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6">
-        <div>
-          <h1 className="flex items-center gap-2 text-lg font-bold text-gray-900">
+      <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-gray-200 bg-white px-6">
+        <div className="min-w-0">
+          <h1 className="flex items-center gap-2 text-xl font-bold text-gray-900">
             <Shield className="h-5 w-5 text-sky-500" />
             数据库设置
           </h1>
-          <p className="mt-0.5 text-xs text-gray-400">
+          <p className="mt-0.5 truncate text-xs text-gray-400">
             默认保存到当前项目文件夹下的 shujuku，先建立 PostgreSQL + pgvector 的本地目录和表结构。
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -222,21 +218,21 @@ export function DbSettingsPage() {
           />
           <button
             onClick={exportBackup}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-xs text-gray-600 hover:bg-gray-50"
           >
             <Download className="h-4 w-4" />
             导出备份
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-xs text-gray-600 hover:bg-gray-50"
           >
             <Upload className="h-4 w-4" />
             导入备份
           </button>
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-xs text-gray-600 hover:bg-gray-50"
           >
             <RefreshCw className="h-4 w-4" />
             刷新
@@ -244,15 +240,9 @@ export function DbSettingsPage() {
         </div>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-y-auto p-4">
-        <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-          {notice && (
-            <div className="xl:col-span-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
-              {notice}
-            </div>
-          )}
-
-          <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+      <main className="min-h-0 flex-1 overflow-y-auto p-6">
+        <section className="grid gap-5 xl:grid-cols-3">
+          <div className="flex min-h-[520px] flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
@@ -337,9 +327,15 @@ export function DbSettingsPage() {
                 保存数据库配置
               </button>
             </div>
+
+            {notice && (
+              <div className="mt-auto rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-700">
+                {notice}
+              </div>
+            )}
           </div>
 
-          <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex min-h-[520px] flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
                 <FileCode2 className="h-4 w-4 text-sky-500" />
@@ -363,21 +359,27 @@ export function DbSettingsPage() {
             </div>
           </div>
 
-          <div className="xl:col-span-2 grid gap-4 md:grid-cols-4">
+          <div className="flex min-h-[520px] flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2 text-sm font-bold text-gray-900">
+              <Database className="h-4 w-4 text-sky-500" />
+              数据概览
+            </div>
+            <div className="grid flex-1 gap-3">
             {[
               ['作品', stats.novels],
               ['资料', stats.materials],
-              ['提示词 / 模型 / 脑洞', stats.prompts + stats.models + stats.ideas],
+              ['提示词', stats.prompts],
               ['剧情点', stats.plots],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+              <div key={label} className="flex flex-col justify-center rounded-xl border border-gray-100 bg-gray-50 px-5 py-4">
                 <p className="text-xs text-gray-400">{label}</p>
-                <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
+                <p className="mt-2 text-3xl font-bold text-gray-900">{value}</p>
               </div>
             ))}
+            </div>
           </div>
 
-          <div className="xl:col-span-2 rounded-xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-400 shadow-sm">
+          <div className="xl:col-span-3 rounded-xl border border-dashed border-gray-200 bg-white p-5 text-sm text-gray-400 shadow-sm">
             <div className="mb-2 flex items-center gap-2 font-medium text-gray-600">
               <Database className="h-4 w-4" />
               本地维护

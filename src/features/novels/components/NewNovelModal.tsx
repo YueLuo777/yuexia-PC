@@ -53,7 +53,7 @@ export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: N
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="w-[420px] rounded-xl bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-base font-bold text-gray-900">新建{typeLabel}</h3>

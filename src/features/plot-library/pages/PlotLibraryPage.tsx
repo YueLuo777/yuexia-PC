@@ -195,12 +195,12 @@ export function PlotLibraryPage() {
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
-      <div className="px-4 py-2.5 bg-white border-b border-gray-200 shrink-0">
-        <div className="flex items-center justify-between">
+      <div className="flex h-16 shrink-0 items-center border-b border-gray-200 bg-white px-6">
+        <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-2">
             <Library className="w-5 h-5 text-brand" />
             <div>
-              <h1 className="text-base font-bold text-gray-900">剧情库</h1>
+              <h1 className="text-xl font-bold text-gray-900">剧情库</h1>
               <p className="text-[10px] text-gray-400">
                 共 {items.length} 条剧情点
                 {search.trim() && ` · 搜索 ${filtered.length} 条`}
@@ -215,7 +215,7 @@ export function PlotLibraryPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="搜索..."
-                className="w-full pl-8 pr-6 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-brand"
+                className="h-8 w-full rounded-lg border border-gray-200 pl-8 pr-6 text-xs focus:border-brand focus:outline-none"
               />
               {search && (
                 <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -228,7 +228,7 @@ export function PlotLibraryPage() {
               <select
                 value={sortMode}
                 onChange={(e) => setSortMode(e.target.value as SortMode)}
-                className="text-sm border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-brand bg-white"
+                className="h-8 rounded-lg border border-gray-200 bg-white px-2.5 text-xs focus:border-brand focus:outline-none"
               >
                 <option value="time">最新</option>
                 <option value="wordCount-desc">字数高</option>
@@ -239,14 +239,14 @@ export function PlotLibraryPage() {
             </div>
             <button
               onClick={() => setShowRecycle(true)}
-              className="flex items-center gap-1 px-3 py-1.5 text-[11px] text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+              className="flex h-8 items-center gap-1 rounded-lg bg-slate-100 px-3 text-[11px] text-slate-600 transition-colors hover:bg-slate-200"
             >
               <Trash2 className="w-3 h-3" /> 回收站{recycleItems.length > 0 ? ` ${recycleItems.length}` : ''}
             </button>
             {items.length > 0 && (
               <button
                 onClick={() => setShowClearConfirm(true)}
-                className="flex items-center gap-1 px-3 py-1.5 text-[11px] text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                className="flex h-8 items-center gap-1 rounded-lg bg-red-50 px-3 text-[11px] text-red-600 transition-colors hover:bg-red-100"
               >
                 <Trash2 className="w-3 h-3" /> 清空
               </button>
@@ -369,7 +369,7 @@ export function PlotLibraryPage() {
       </div>
 
       {showDetail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => { setShowDetail(null); setEditingId(null); }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => { setShowDetail(null); setEditingId(null); }}>
           <div className="w-[600px] max-h-[80vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
               <div>
@@ -468,7 +468,7 @@ export function PlotLibraryPage() {
       )}
 
       {showRecycle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setShowRecycle(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowRecycle(false)}>
           <div className="flex max-h-[82vh] w-[760px] flex-col overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <div className="flex items-center gap-3">
@@ -542,7 +542,7 @@ export function PlotLibraryPage() {
       )}
 
       {showClearConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="w-[400px] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
               <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">

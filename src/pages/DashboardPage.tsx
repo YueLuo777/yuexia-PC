@@ -1,10 +1,10 @@
-import { BookOpen, MoveDown, MoveUp, Plus, RotateCcw, Settings, SlidersHorizontal, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { BookOpen, MoveDown, MoveUp, RotateCcw, ScrollText, SlidersHorizontal, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { NewNovelModal } from '@/features/novels/components/NewNovelModal';
 import { useNovelLibrary } from '@/features/novels/hooks/useNovelLibrary';
 import type { WorkType } from '@/features/novels/model/novelTypes';
+import { readWritingSummary, WRITING_STATS_UPDATED_EVENT } from '@/shared/stats/writingStats';
 
 type DashboardSectionId = 'welcome' | 'recent' | 'stats';
 
@@ -15,6 +15,8 @@ interface DashboardSection {
 }
 
 const DASHBOARD_SECTIONS_KEY = 'xinyuexia_dashboard_sections_v1';
+const USER_NAME_KEY = 'xinyuexia_sidebar_user_name';
+const USER_NAME_UPDATED_EVENT = 'xinyuexia_user_name_updated';
 const DEFAULT_SECTIONS: DashboardSection[] = [
   { id: 'welcome', label: '欢迎区', visible: true },
   { id: 'recent', label: '最近编辑', visible: true },
@@ -38,6 +40,14 @@ function loadSections() {
 
 function saveSections(sections: DashboardSection[]) {
   localStorage.setItem(DASHBOARD_SECTIONS_KEY, JSON.stringify(sections));
+}
+
+function readUserName() {
+  return localStorage.getItem(USER_NAME_KEY) || '月下作者';
+}
+
+function formatWords(value: number) {
+  return new Intl.NumberFormat('zh-CN').format(value);
 }
 
 function SettingsModal({
@@ -119,30 +129,19 @@ function SettingsModal({
 
 export function DashboardPage() {
   const navigate = useNavigate();
-  const { novels, categories, stats, createNovel, selectNovel } = useNovelLibrary();
-  const [isNewOpen, setIsNewOpen] = useState(false);
-  const [newType, setNewType] = useState<WorkType>('novel');
+  const { novels, stats, selectNovel } = useNovelLibrary();
   const [sections, setSections] = useState<DashboardSection[]>(loadSections);
   const [showSettings, setShowSettings] = useState(false);
+  const [userName, setUserName] = useState(readUserName);
+  const [writingSummary, setWritingSummary] = useState(readWritingSummary);
 
   const recentNovels = [...novels]
     .sort((a, b) => String(b.lastModifiedAt ?? '').localeCompare(String(a.lastModifiedAt ?? ''), 'zh-CN'))
     .slice(0, 4);
 
-  const openNew = (type: WorkType) => {
-    setNewType(type);
-    setIsNewOpen(true);
-  };
-
   const openNovel = (novelId: number, type: WorkType) => {
     selectNovel(novelId);
     navigate(type === 'script' ? '/script-editor-v2' : '/workbench');
-  };
-
-  const handleCreate = (input: Parameters<typeof createNovel>[0]) => {
-    const id = createNovel(input);
-    setIsNewOpen(false);
-    openNovel(id, input.type);
   };
 
   const handleSectionsChange = (next: DashboardSection[]) => {
@@ -150,16 +149,32 @@ export function DashboardPage() {
     saveSections(next);
   };
 
+  useEffect(() => {
+    const updateUserName = () => setUserName(readUserName());
+    window.addEventListener(USER_NAME_UPDATED_EVENT, updateUserName);
+    window.addEventListener('storage', updateUserName);
+    return () => {
+      window.removeEventListener(USER_NAME_UPDATED_EVENT, updateUserName);
+      window.removeEventListener('storage', updateUserName);
+    };
+  }, []);
+
+  useEffect(() => {
+    const updateWritingSummary = () => setWritingSummary(readWritingSummary());
+    window.addEventListener(WRITING_STATS_UPDATED_EVENT, updateWritingSummary);
+    window.addEventListener('storage', updateWritingSummary);
+    return () => {
+      window.removeEventListener(WRITING_STATS_UPDATED_EVENT, updateWritingSummary);
+      window.removeEventListener('storage', updateWritingSummary);
+    };
+  }, []);
+
   const visibleSections = useMemo(() => sections.filter((section) => section.visible), [sections]);
 
   return (
     <main className="relative flex-1 overflow-y-auto p-6">
       <div className="mb-4 flex items-center justify-end">
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowSettings(true)} className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-500 transition-colors hover:bg-slate-50">
-            <Settings className="h-3.5 w-3.5" />
-            编辑工作台
-          </button>
           <button onClick={() => setShowSettings(true)} className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-500 transition-colors hover:bg-slate-50">
             <SlidersHorizontal className="h-3.5 w-3.5" />
             卡片设置
@@ -171,23 +186,23 @@ export function DashboardPage() {
         <div className="space-y-5">
           {visibleSections.some((section) => section.id === 'welcome') && (
             <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-              <div className="flex items-start justify-between">
+              <div>
                 <div>
                   <p className="text-xs text-slate-400">欢迎回来</p>
-                  <h1 className="mt-1 text-2xl font-bold text-slate-900">月下</h1>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">继续整理作品、提炼剧情和维护设定资料。</p>
+                  <h1 className="mt-1 text-2xl font-bold text-slate-900">{userName}</h1>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-lg font-bold text-white">月</div>
-              </div>
-              <div className="mt-5 grid grid-cols-2 gap-2">
-                <button onClick={() => openNew('novel')} className="flex items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm text-white hover:bg-brand-dark">
-                  <Plus className="h-4 w-4" />
-                  新建小说
-                </button>
-                <button onClick={() => openNew('script')} className="flex items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-sm text-white hover:bg-brand-dark">
-                  <Plus className="h-4 w-4" />
-                  新建剧本
-                </button>
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  {[
+                    ['昨日新增', writingSummary.yesterdayWords],
+                    ['本月新增', writingSummary.monthWords],
+                    ['总字数', stats.totalWords],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                      <p className="text-xs text-slate-400">{label}</p>
+                      <p className="mt-1 text-xl font-bold text-slate-900">{formatWords(Number(value))}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </section>
           )}
@@ -204,11 +219,26 @@ export function DashboardPage() {
                     onClick={() => openNovel(novel.id, novel.type)}
                     className="flex w-full items-center gap-3 rounded-lg border border-slate-100 px-3 py-2 text-left transition-colors hover:bg-slate-50"
                   >
-                    <BookOpen className="h-4 w-4 text-brand" />
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                        novel.type === 'script' ? 'bg-orange-50 text-orange-500' : 'bg-sky-50 text-brand'
+                      }`}
+                    >
+                      {novel.type === 'script' ? <ScrollText className="h-5 w-5" /> : <BookOpen className="h-5 w-5" />}
+                    </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-slate-800">{novel.title}</p>
                       <p className="text-[11px] text-slate-400">{novel.lastModifiedAt ?? novel.createdAt}</p>
                     </div>
+                    <span
+                      className={`shrink-0 rounded-lg border px-3 py-1 text-sm font-medium ${
+                        novel.type === 'script'
+                          ? 'border-orange-200 bg-orange-50 text-orange-600'
+                          : 'border-blue-200 bg-blue-50 text-blue-600'
+                      }`}
+                    >
+                      {novel.type === 'script' ? '剧本' : '小说'}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -236,14 +266,6 @@ export function DashboardPage() {
           )}
         </div>
       </div>
-
-      <NewNovelModal
-        isOpen={isNewOpen}
-        type={newType}
-        categories={categories}
-        onClose={() => setIsNewOpen(false)}
-        onCreate={handleCreate}
-      />
 
       <SettingsModal
         isOpen={showSettings}

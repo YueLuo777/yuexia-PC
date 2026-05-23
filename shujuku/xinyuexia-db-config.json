@@ -1,0 +1,13 @@
+{
+  "engine": "postgresql-pgvector",
+  "dataDir": "E:\\0yuexia\\0,月下PC\\shujuku",
+  "postgresDataDir": "E:\\0yuexia\\0,月下PC\\shujuku\\postgres-data",
+  "backupsDir": "E:\\0yuexia\\0,月下PC\\shujuku\\backups",
+  "exportsDir": "E:\\0yuexia\\0,月下PC\\shujuku\\exports",
+  "vectorsDir": "E:\\0yuexia\\0,月下PC\\shujuku\\vectors",
+  "databaseName": "yuexia",
+  "host": "127.0.0.1",
+  "port": 5432,
+  "status": "initialized",
+  "updatedAt": "2026-05-23T13:01:38.513Z"
+}

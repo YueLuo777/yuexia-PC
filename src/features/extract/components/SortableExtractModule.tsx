@@ -1,4 +1,4 @@
-import { Check, EyeOff, Layers, Lock, Unlock } from 'lucide-react';
+import { Check, Eye, EyeOff, FileCode2, FileText, Layers } from 'lucide-react';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
 import type { ExtractModule } from '@/features/extract/model/extractTypes';
@@ -102,8 +102,13 @@ export function SortableExtractModule({
           isDragging ? 'scale-[1.02] rounded-lg bg-white opacity-70 shadow-lg ring-2 ring-brand/20' : ''
         }`}
       >
-        <button
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => onSelect(module.id)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') onSelect(module.id);
+          }}
           className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 px-2 py-2 text-left"
         >
           <span
@@ -164,9 +169,9 @@ export function SortableExtractModule({
                 ? 'text-violet-600 hover:bg-violet-50'
                 : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
             }`}
-            title={module.hidePreview ? '已隐藏右侧预览' : '隐藏右侧预览'}
+            title={module.hidePreview ? '显示模块预览说明' : '隐藏模块预览说明'}
           >
-            <EyeOff className="h-3 w-3" />
+            {module.hidePreview ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
           </button>
 
           <button
@@ -179,9 +184,9 @@ export function SortableExtractModule({
             }`}
             title={isSystem ? '切换为输出模块' : '切换为系统指令'}
           >
-            {isSystem ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+            {isSystem ? <FileText className="h-3 w-3" /> : <FileCode2 className="h-3 w-3" />}
           </button>
-        </button>
+        </div>
       </div>
     </div>
   );

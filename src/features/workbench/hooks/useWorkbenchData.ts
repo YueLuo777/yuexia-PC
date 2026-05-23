@@ -4,6 +4,7 @@ import { applyFormat, getStoredFormatSettings, saveSnapshot } from '@/features/w
 import type { Chapter, RecycledChapter, Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
 import { countWords, ensureOneSelected, getSelectedChapter } from '@/features/workbench/model/workbenchRules';
 import { emitWorkspaceNovelSelected, WORKSPACE_NOVEL_SELECTED_EVENT, type WorkspaceNovelSelectedDetail } from '@/shared/events/workspaceEvents';
+import { recordWritingWords } from '@/shared/stats/writingStats';
 
 const NOVELS_KEY = 'xinyuexia_novels_v1';
 const CURRENT_ID_KEY = 'xinyuexia_current_novel_id';
@@ -447,6 +448,7 @@ export function useWorkbenchData() {
     if (!currentNovelId || !selectedChapter) return;
     writeChapterContent(currentNovelId, selectedChapter.chapter.id, content);
     const wordCount = countWords(content);
+    recordWritingWords(wordCount - selectedChapter.chapter.wordCount);
     const nextVolumes = volumes.map((volume) => ({
       ...volume,
       chapters: volume.chapters.map((chapter) => (chapter.id === selectedChapter.chapter.id ? { ...chapter, wordCount } : chapter)),
@@ -469,11 +471,12 @@ export function useWorkbenchData() {
 
     const nextVolumes = volumes.map((volume) => ({
       ...volume,
-      chapters: volume.chapters.map((chapter) => (
-        ids.has(chapter.id)
-          ? { ...chapter, wordCount: countWords(updates[chapter.id]) }
-          : chapter
-      )),
+      chapters: volume.chapters.map((chapter) => {
+        if (!ids.has(chapter.id)) return chapter;
+        const wordCount = countWords(updates[chapter.id]);
+        recordWritingWords(wordCount - chapter.wordCount);
+        return { ...chapter, wordCount };
+      }),
     }));
     const nextMap = { ...volumesMap, [currentNovelId]: nextVolumes };
     setVolumesMap(nextMap);
@@ -491,7 +494,11 @@ export function useWorkbenchData() {
     const targetVolumes = volumesMap[novelId] ?? [];
     const nextVolumes = targetVolumes.map((volume) => ({
       ...volume,
-      chapters: volume.chapters.map((chapter) => (chapter.id === chapterId ? { ...chapter, wordCount } : chapter)),
+      chapters: volume.chapters.map((chapter) => {
+        if (chapter.id !== chapterId) return chapter;
+        recordWritingWords(wordCount - chapter.wordCount);
+        return { ...chapter, wordCount };
+      }),
     }));
     const nextMap = { ...volumesMap, [novelId]: nextVolumes };
     setVolumesMap(nextMap);

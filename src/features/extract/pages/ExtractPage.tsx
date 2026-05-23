@@ -401,7 +401,7 @@ function ChapterSelectModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
         className="flex h-[76vh] w-[820px] max-w-[94vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
@@ -666,7 +666,7 @@ export function ExtractPage() {
   }, [dragBaseModules, draggingId, dragOverId, modules]);
 
   const selectedFiles = files.filter((file) => file.selected);
-  const previewModules = activeModules.filter((module) => module.zone === 'output' && !module.hidePreview);
+  const previewModules = activeModules.filter((module) => module.zone === 'output');
   const pendingImportResults = results.filter((result) => !importedResultIds.includes(result.id));
 
   const canExtract = Boolean(
@@ -995,8 +995,8 @@ export function ExtractPage() {
                     className="inline-flex items-center justify-center gap-1 rounded-lg bg-brand px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-brand-dark"
                     title={isModulePreviewOpen ? '折叠模块预览' : '展开模块预览'}
                   >
+                    <span>模块预览</span>
                     {isModulePreviewOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                    预览
                   </button>
                 </div>
               </div>
@@ -1076,8 +1076,8 @@ export function ExtractPage() {
                   className="inline-flex items-center justify-center gap-1 rounded-lg bg-brand px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-brand-dark"
                   title="折叠模块预览"
                 >
+                  <span>模块预览</span>
                   <ChevronDown className="h-3.5 w-3.5" />
-                  折叠
                 </button>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto bg-gray-50/60 p-3">
@@ -1093,7 +1093,7 @@ export function ExtractPage() {
                           <span className="min-w-0 truncate">{module.label}</span>
                           {collapsed ? <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" /> : <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />}
                         </button>
-                        {!collapsed && (
+                        {!collapsed && !module.hidePreview && (
                           <div className="whitespace-pre-wrap p-3 text-xs leading-6 text-gray-600">
                             {module.instruction}
                           </div>
@@ -1434,8 +1434,8 @@ export function ExtractPage() {
             )}
 
             {results[activeResultIndex] ? (
-              <div className="overflow-hidden rounded-2xl border-2 border-brand/40 bg-white shadow-lg shadow-blue-100/70 ring-2 ring-brand/10">
-                <div className="border-b border-brand/15 bg-brand-light/20 px-4 py-3">
+              <div className="overflow-hidden border border-gray-100 bg-white">
+                <div className="border-b border-gray-100 bg-white px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-sm font-bold text-slate-900">剧情点 {activeResultIndex + 1}</div>
@@ -1449,7 +1449,7 @@ export function ExtractPage() {
                 </div>
               </div>
             ) : (
-              <div className="flex min-h-[420px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-brand/30 bg-white px-6 text-center shadow-lg shadow-blue-100/60 ring-2 ring-brand/10">
+              <div className="flex min-h-[420px] flex-col items-center justify-center border border-dashed border-gray-100 bg-white px-6 text-center">
                 <Sparkles className="mb-3 h-8 w-8 text-slate-300" />
                 <div className="text-base font-bold text-slate-400">{isExtracting ? '等待首个结果' : '等待开始提炼'}</div>
                 <div className="mt-2 text-xs leading-5 text-slate-400">
@@ -1497,7 +1497,7 @@ export function ExtractPage() {
       />
 
       {showHistory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="flex max-h-[80vh] w-[640px] flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <h3 className="text-base font-bold text-gray-900">提炼历史</h3>

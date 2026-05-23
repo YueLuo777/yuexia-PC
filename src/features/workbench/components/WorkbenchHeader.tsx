@@ -1,19 +1,21 @@
 interface WorkbenchHeaderProps {
+  workTitle: string;
   onOpenWorkInfo: () => void;
   onOpenSettings: () => void;
   onOpenOutline: () => void;
   onOpenNotes: () => void;
-  onOpenFind: () => void;
-  onOpenEditorSettings: () => void;
+  onOpenModelManage: () => void;
+  onOpenAgentManage: () => void;
 }
 
 export function WorkbenchHeader({
+  workTitle,
   onOpenWorkInfo,
   onOpenSettings,
   onOpenOutline,
   onOpenNotes,
-  onOpenFind,
-  onOpenEditorSettings,
+  onOpenModelManage,
+  onOpenAgentManage,
 }: WorkbenchHeaderProps) {
   const navItems = [
     { key: 'workInfo', label: '作品信息', onClick: onOpenWorkInfo },
@@ -23,8 +25,14 @@ export function WorkbenchHeader({
   ];
 
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4">
-      <nav className="flex items-center gap-1">
+    <header className="relative flex h-12 shrink-0 items-center justify-end border-b border-gray-200 bg-white px-4">
+      <div className="absolute left-0 top-0 flex h-full max-w-[360px] items-center px-4">
+        <h1 className="line-clamp-2 text-base font-bold leading-5 text-gray-900" title={workTitle}>
+          {workTitle}
+        </h1>
+      </div>
+
+      <nav className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1">
         {navItems.map(({ key, label, onClick }) => (
           <button
             key={key}
@@ -36,20 +44,18 @@ export function WorkbenchHeader({
         ))}
       </nav>
 
-      <div className="flex items-center justify-end gap-2">
+      <div className="absolute right-[142px] top-1/2 flex -translate-y-1/2 items-center gap-1">
         <button
-          onClick={onOpenFind}
-          className="rounded-full border border-gray-200 bg-white px-4 py-1.5 text-base font-medium text-gray-600 transition-colors hover:border-brand hover:text-brand"
-          title="查找替换"
+          onClick={onOpenModelManage}
+          className="rounded-full bg-brand px-4 py-1.5 text-base font-medium text-white transition-colors hover:bg-brand-dark"
         >
-          查找
+          模型管理
         </button>
         <button
-          onClick={onOpenEditorSettings}
-          className="rounded-full border border-gray-200 bg-white px-4 py-1.5 text-base font-medium text-gray-600 transition-colors hover:border-brand hover:text-brand"
-          title="作品编辑器设定"
+          onClick={onOpenAgentManage}
+          className="rounded-full bg-brand px-4 py-1.5 text-base font-medium text-white transition-colors hover:bg-brand-dark"
         >
-          设定
+          智能体管理
         </button>
       </div>
     </header>
