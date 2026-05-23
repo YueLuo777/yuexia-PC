@@ -125,16 +125,16 @@ export function DashboardLayout() {
           <div className="flex items-center gap-3 px-3 py-2.5">
             <button
               onClick={() => avatarInputRef.current?.click()}
-              className="group relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-slate-400 transition-colors hover:border-brand/50 hover:text-brand"
+              className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-slate-400 transition-colors hover:border-brand/50 hover:text-brand"
               title="点击上传头像"
             >
               {avatar ? (
                 <img src={avatar} alt="用户头像" className="h-full w-full object-cover" />
               ) : (
-                <UserRound className="h-5 w-5" />
+                <UserRound className="h-7 w-7" />
               )}
               <span className="absolute inset-0 hidden items-center justify-center bg-black/35 text-white group-hover:flex">
-                <Camera className="h-4 w-4" />
+                <Camera className="h-5 w-5" />
               </span>
             </button>
 
@@ -167,7 +167,6 @@ export function DashboardLayout() {
                   {userName}
                 </button>
               )}
-              <p className="mt-0.5 truncate text-[11px] text-slate-400">个人创作空间</p>
             </div>
           </div>
         </div>

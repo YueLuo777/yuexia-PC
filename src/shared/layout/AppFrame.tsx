@@ -512,6 +512,7 @@ export function AppFrame({ children }: AppFrameProps) {
                 <div
                   role="button"
                   tabIndex={0}
+                  data-titlebar-no-drag="true"
                   onClick={() => activateTab(tab)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') activateTab(tab);
