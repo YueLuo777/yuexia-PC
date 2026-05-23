@@ -67,6 +67,8 @@ interface DatabaseCollectionResult<T = unknown> {
 interface AppIconResult {
   ok: boolean;
   isCustom?: boolean;
+  projectIconDir?: string;
+  acceptedFileNames?: string[];
   iconPath?: string;
   dataUrl?: string;
   canceled?: boolean;

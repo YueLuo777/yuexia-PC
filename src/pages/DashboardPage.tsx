@@ -50,6 +50,9 @@ function SystemSettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   const [iconInfo, setIconInfo] = useState<AppIconResult | null>(null);
   const [status, setStatus] = useState('');
   const [isBusy, setIsBusy] = useState(false);
+  const fallbackIconDir = 'E:\\0yuexia\\0,月下PC\\custom-app-icon';
+  const acceptedFileNames = iconInfo?.acceptedFileNames ?? ['app-icon.png', 'app-icon.jpg', 'app-icon.jpeg', 'app-icon.webp', 'app-icon.ico'];
+  const iconDir = iconInfo?.projectIconDir ?? fallbackIconDir;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -61,7 +64,7 @@ function SystemSettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
   const selectIcon = async () => {
     if (!window.xinyuexiaAppIcon) {
-      setStatus('当前运行环境不支持设置任务栏图标。');
+      setStatus(`当前运行环境不支持直接上传。可以把图片放到 ${iconDir}，文件名改成 app-icon.png，然后重启软件。`);
       return;
     }
     setIsBusy(true);
@@ -74,7 +77,7 @@ function SystemSettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
   const resetIcon = async () => {
     if (!window.xinyuexiaAppIcon) {
-      setStatus('当前运行环境不支持设置任务栏图标。');
+      setStatus(`当前运行环境不支持直接恢复。请删除 ${iconDir} 里的自定义图标文件，然后重启软件。`);
       return;
     }
     setIsBusy(true);
@@ -111,6 +114,12 @@ function SystemSettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
               <p className="mt-1 truncate text-xs text-slate-400">{iconInfo?.iconPath ?? '未读取到图标路径'}</p>
               <p className="mt-2 text-xs leading-5 text-slate-500">建议上传正方形 PNG 图片，透明背景效果最好。</p>
             </div>
+          </div>
+
+          <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs leading-6 text-blue-700">
+            <p className="font-bold">自动读取文件夹</p>
+            <p className="mt-1 break-all">{iconDir}</p>
+            <p className="mt-1">把图片放进这个文件夹，并命名为 {acceptedFileNames.join(' / ')} 之一，重启软件后自动生效。</p>
           </div>
 
           <div className="flex items-center justify-end gap-3">

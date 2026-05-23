@@ -36,6 +36,8 @@ const DATABASE_COLLECTION_FILES = {
   materials: 'materials.json',
 };
 const CUSTOM_APP_ICON_FILE_NAME = 'custom-app-icon.png';
+const PROJECT_APP_ICON_DIR = path.join(path.resolve(__dirname, '..'), 'custom-app-icon');
+const PROJECT_APP_ICON_FILE_NAMES = ['app-icon.png', 'app-icon.jpg', 'app-icon.jpeg', 'app-icon.webp', 'app-icon.ico'];
 const DATABASE_SCHEMA_SQL = `CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS app_settings (
@@ -406,9 +408,18 @@ function getCustomAppIconPath() {
   return path.join(app.getPath('userData'), CUSTOM_APP_ICON_FILE_NAME);
 }
 
+function getProjectAppIconPath() {
+  return PROJECT_APP_ICON_FILE_NAMES
+    .map((fileName) => path.join(PROJECT_APP_ICON_DIR, fileName))
+    .find((filePath) => fs.existsSync(filePath)) ?? null;
+}
+
 function getCurrentAppIconPath() {
   const customIcon = getCustomAppIconPath();
-  return fs.existsSync(customIcon) ? customIcon : APP_ICON;
+  const projectIcon = getProjectAppIconPath();
+  if (fs.existsSync(customIcon)) return customIcon;
+  if (projectIcon) return projectIcon;
+  return APP_ICON;
 }
 
 function readCurrentAppIcon() {
@@ -417,6 +428,8 @@ function readCurrentAppIcon() {
   return {
     ok: !image.isEmpty(),
     isCustom: iconPath !== APP_ICON,
+    projectIconDir: PROJECT_APP_ICON_DIR,
+    acceptedFileNames: PROJECT_APP_ICON_FILE_NAMES,
     iconPath,
     dataUrl: image.isEmpty() ? '' : image.toDataURL(),
   };

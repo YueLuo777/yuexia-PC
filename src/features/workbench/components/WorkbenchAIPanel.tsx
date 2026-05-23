@@ -265,13 +265,13 @@ export function WorkbenchAIPanel({
   ) => (
     <>
       <div className="shrink-0 rounded-lg border border-gray-200 bg-gray-50 p-2">
-        <div className="grid grid-cols-[52px_minmax(0,1fr)_84px_38px] items-center gap-1.5">
+        <div className="grid grid-cols-[52px_250px_84px_38px] items-center gap-1.5 overflow-x-auto">
           <span className="whitespace-nowrap text-sm text-gray-500">模型</span>
-          <div className="relative min-w-0">
+          <div className="relative w-[250px]">
             <select
               value={model?.id ?? modelId}
               onChange={(event) => onModelChange(event.target.value)}
-              className="h-9 w-full min-w-0 appearance-none rounded-lg border border-gray-200 bg-white px-2.5 pr-7 text-sm font-semibold text-gray-700 outline-none focus:border-brand"
+              className="h-9 w-[250px] appearance-none rounded-lg border border-gray-200 bg-white px-2.5 pr-7 text-sm font-semibold text-gray-700 outline-none focus:border-brand"
             >
               {enabledModels.length === 0 ? (
                 <option value="" className="text-base">无可用模型</option>
@@ -296,11 +296,11 @@ export function WorkbenchAIPanel({
           </span>
 
           <span className="whitespace-nowrap text-sm text-gray-500">提示词</span>
-          <div className="relative min-w-0">
+          <div className="relative w-[250px]">
             <select
               value={prompt?.id ?? prompts[0]?.id ?? promptId}
               onChange={(event) => onPromptChange(event.target.value)}
-              className="h-9 w-full min-w-0 appearance-none rounded-lg border border-gray-200 bg-white px-2.5 pr-7 text-sm font-semibold text-gray-700 outline-none focus:border-brand"
+              className="h-9 w-[250px] appearance-none rounded-lg border border-gray-200 bg-white px-2.5 pr-7 text-sm font-semibold text-gray-700 outline-none focus:border-brand"
             >
               {prompts.length === 0 ? (
                 <option value="" className="text-sm">无可用提示词</option>
@@ -327,10 +327,10 @@ export function WorkbenchAIPanel({
         <button
           onClick={addSession}
           disabled={sessions.length >= 10}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-base font-bold leading-none text-gray-700 hover:border-brand hover:text-brand disabled:text-gray-300"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:border-brand hover:text-brand disabled:text-gray-300"
           title="新建会话"
         >
-          +
+          <span className="-mt-px block text-[20px] font-bold leading-none">+</span>
         </button>
         {sessions.map((session, index) => (
           <div key={session.id} className="relative shrink-0">
