@@ -1,0 +1,76 @@
+{
+  "name": "xinyuexia",
+  "private": true,
+  "version": "0.1.0",
+  "description": "新月下写作桌面版",
+  "author": "OpenAI Codex",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "desktop": "electron electron/main.cjs",
+    "desktop:dist": "npm run build && cross-env XINYUEXIA_LOAD_DIST=1 electron electron/main.cjs",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "verify": "npm run check && npm run test:run && npm run build",
+    "pack:win": "npm run build && electron-builder --win portable"
+  },
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.2.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.562.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.14.2",
+    "tailwind-merge": "^3.4.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "autoprefixer": "^10.4.23",
+    "cross-env": "^7.0.3",
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3",
+    "jsdom": "^29.1.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.19",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "~5.9.3",
+    "vite": "^7.2.4",
+    "vitest": "^4.1.7"
+  },
+  "build": {
+    "appId": "com.xinyuexia.desktop",
+    "productName": "新月下写作",
+    "electronDist": "node_modules/electron/dist",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "build/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/app-icon.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  }
+}

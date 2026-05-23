@@ -1,0 +1,97 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import type { MaterialItem, NewMaterialInput } from '@/features/materials/model/materialTypes';
+import { hydrateDatabaseCollection, writeDatabaseCollection } from '@/features/settings/model/databaseCollectionStore';
+import { APP_EVENTS } from '@/shared/events/appEvents';
+
+const MATERIALS_KEY = 'xinyuexia_materials_v1';
+export const MATERIALS_UPDATED_EVENT = APP_EVENTS.materialsUpdated;
+
+function readItems() {
+  try {
+    const raw = localStorage.getItem(MATERIALS_KEY);
+    return raw ? (JSON.parse(raw) as MaterialItem[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeItems(items: MaterialItem[]) {
+  localStorage.setItem(MATERIALS_KEY, JSON.stringify(items));
+  writeDatabaseCollection('materials', items);
+  window.dispatchEvent(new CustomEvent(MATERIALS_UPDATED_EVENT));
+}
+
+function createId() {
+  return `material-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export function readMaterialSnapshot() {
+  return readItems();
+}
+
+export function useMaterials() {
+  const [items, setItems] = useState<MaterialItem[]>(readItems);
+
+  useEffect(() => {
+    void hydrateDatabaseCollection<MaterialItem>('materials', readItems(), (next) => {
+      localStorage.setItem(MATERIALS_KEY, JSON.stringify(next));
+      setItems(next);
+      window.dispatchEvent(new CustomEvent(MATERIALS_UPDATED_EVENT));
+    });
+  }, []);
+
+  const persist = useCallback((next: MaterialItem[]) => {
+    setItems(next);
+    writeItems(next);
+  }, []);
+
+  const addMaterial = useCallback((input: NewMaterialInput) => {
+    const now = new Date().toISOString();
+    const item: MaterialItem = {
+      id: createId(),
+      novelId: input.novelId,
+      novelTitle: input.novelTitle,
+      type: input.type,
+      title: input.title.trim(),
+      content: input.content,
+      chapterName: input.chapterName?.trim() || undefined,
+      chapterSerial: input.chapterSerial,
+      tags: input.tags ?? [],
+      rating: input.rating,
+      createdAt: now,
+      updatedAt: now,
+    };
+    persist([item, ...items]);
+    return item;
+  }, [items, persist]);
+
+  const updateMaterial = useCallback((id: string, updates: Partial<Pick<MaterialItem, 'title' | 'content' | 'chapterName' | 'chapterSerial' | 'novelId' | 'novelTitle' | 'type' | 'tags' | 'rating'>>) => {
+    persist(items.map((item) => item.id === id
+      ? { ...item, ...updates, updatedAt: new Date().toISOString() }
+      : item));
+  }, [items, persist]);
+
+  const deleteMaterial = useCallback((id: string) => {
+    persist(items.filter((item) => item.id !== id));
+  }, [items, persist]);
+
+  const clearAll = useCallback(() => {
+    persist([]);
+  }, [persist]);
+
+  const stats = useMemo(() => ({
+    count: items.length,
+    novelCount: new Set(items.map((item) => item.novelId)).size,
+    tagCount: new Set(items.flatMap((item) => item.tags ?? [])).size,
+  }), [items]);
+
+  return {
+    items,
+    addMaterial,
+    updateMaterial,
+    deleteMaterial,
+    clearAll,
+    stats,
+  };
+}
