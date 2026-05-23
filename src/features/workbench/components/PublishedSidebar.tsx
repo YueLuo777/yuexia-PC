@@ -1,0 +1,197 @@
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react';
+
+import type { Volume } from '@/features/workbench/model/workbenchTypes';
+
+function getContextMenuPoint(event: ReactMouseEvent<HTMLElement>) {
+  const target = event.currentTarget;
+  let container: HTMLElement | null = target;
+  while (container && window.getComputedStyle(container).transform === 'none') {
+    container = container.parentElement;
+  }
+
+  if (!container) return { x: event.clientX, y: event.clientY };
+
+  const rect = container.getBoundingClientRect();
+  const scaleX = rect.width / container.offsetWidth || 1;
+  const scaleY = rect.height / container.offsetHeight || scaleX;
+  return {
+    x: (event.clientX - rect.left) / scaleX,
+    y: (event.clientY - rect.top) / scaleY,
+  };
+}
+
+interface PublishedSidebarProps {
+  volumes: Volume[];
+  onSelectChapter: (volumeId: number, chapterId: number) => void;
+  onUnpublishChapter: (chapterId: number) => void;
+  onDeleteChapter: (volumeId: number, chapterId: number) => void;
+  getChapterWordCount: (chapterId: number) => number;
+}
+
+export function PublishedSidebar({
+  volumes,
+  onSelectChapter,
+  onUnpublishChapter,
+  onDeleteChapter,
+  getChapterWordCount,
+}: PublishedSidebarProps) {
+  const [sortAsc, setSortAsc] = useState(true);
+  const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; y: number; volumeId: number | null; chapterId: number | null }>(
+    { visible: false, x: 0, y: 0, volumeId: null, chapterId: null },
+  );
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(
+    () => new Set(volumes.filter((volume) => volume.isExpanded).map((volume) => volume.id)),
+  );
+
+  useEffect(() => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      volumes.forEach((volume) => {
+        if (!next.has(volume.id) && volume.isExpanded) next.add(volume.id);
+      });
+      return next;
+    });
+  }, [volumes]);
+
+  useEffect(() => {
+    if (!contextMenu.visible) return;
+    const close = () => setContextMenu({ visible: false, x: 0, y: 0, volumeId: null, chapterId: null });
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [contextMenu.visible]);
+
+  const publishedVolumes = useMemo(() => (
+    volumes.map((volume) => ({
+      ...volume,
+      chapters: volume.chapters.filter((chapter) => chapter.isPublished),
+    }))
+  ), [volumes]);
+
+  const displayVolumes = useMemo(() => (
+    publishedVolumes.map((volume) => ({
+      ...volume,
+      chapters: [...volume.chapters].sort((a, b) => (
+        sortAsc ? a.serialNumber - b.serialNumber : b.serialNumber - a.serialNumber
+      )),
+    }))
+  ), [publishedVolumes, sortAsc]);
+
+  const totalChapters = displayVolumes.reduce((sum, volume) => sum + volume.chapters.length, 0);
+
+  return (
+    <aside className="flex w-[190px] shrink-0 flex-col border-r border-gray-300 bg-white">
+      <div className="flex h-[42px] items-center justify-between border-b border-gray-100 px-3 py-2.5">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-bold text-gray-900">已发布</h2>
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand/10 text-xs font-medium text-brand-dark">
+            {totalChapters}
+          </span>
+        </div>
+        <button
+          onClick={() => setSortAsc((prev) => !prev)}
+          className="rounded-md px-2 py-1 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+          title={sortAsc ? '正序' : '倒序'}
+        >
+          {sortAsc ? '正序' : '倒序'}
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-2 py-2">
+        {displayVolumes.map((volume) => (
+          <div key={volume.id} className="mb-1">
+            <div className="flex h-[36px] items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10">
+              <button
+                onClick={() => {
+                  setExpandedIds((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(volume.id)) next.delete(volume.id);
+                    else next.add(volume.id);
+                    return next;
+                  });
+                }}
+                className="flex flex-1 items-center gap-1.5 text-left"
+              >
+                {expandedIds.has(volume.id) ? (
+                  <ChevronDown className="h-3.5 w-3.5 text-brand-dark" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5 text-brand-dark" />
+                )}
+                <span className="text-sm font-medium text-brand-dark">{volume.name}</span>
+                <span className="ml-1 text-xs text-gray-400">{volume.chapters.length}章</span>
+              </button>
+            </div>
+
+            {expandedIds.has(volume.id) && (
+              <div className="ml-1 mt-0.5 space-y-0.5">
+                {volume.chapters.map((chapter) => (
+                  <div
+                    key={chapter.id}
+                    className={`group relative flex items-center gap-2 rounded-md border-l-[3px] px-3 py-2 transition-colors ${
+                      chapter.isSelected ? 'border-orange-400 bg-orange-50' : 'border-transparent hover:bg-gray-50'
+                    }`}
+                    onClick={() => onSelectChapter(volume.id, chapter.id)}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setContextMenu({ visible: true, ...getContextMenuPoint(event), volumeId: volume.id, chapterId: chapter.id });
+                    }}
+                  >
+                    <span className={`flex-1 truncate whitespace-nowrap text-sm font-medium ${chapter.isSelected ? 'text-orange-600' : 'text-gray-700'}`}>
+                      第{chapter.serialNumber}章<span className="hidden">{chapter.title ? ` ${chapter.title}` : ''}</span>
+                    </span>
+                    <span className="shrink-0 text-xs text-gray-400 transition-opacity group-hover:opacity-0">
+                      {getChapterWordCount(chapter.id)}
+                    </span>
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onUnpublishChapter(chapter.id);
+                      }}
+                      className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded bg-gray-400 px-2 py-1 text-xs leading-none text-white opacity-0 transition-all hover:bg-gray-500 group-hover:opacity-100"
+                    >
+                      撤回
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+
+        {displayVolumes.every((volume) => volume.chapters.length === 0) && (
+          <div className="flex flex-col items-center justify-center py-10 text-gray-400">
+            <p className="text-xs">暂无已发布章节</p>
+          </div>
+        )}
+      </div>
+
+      {contextMenu.visible && (
+        <div
+          className="fixed z-[100] min-w-[120px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <button
+            onClick={() => {
+              if (contextMenu.chapterId) onUnpublishChapter(contextMenu.chapterId);
+              setContextMenu({ visible: false, x: 0, y: 0, volumeId: null, chapterId: null });
+            }}
+            className="w-full px-3 py-2 text-left text-base text-gray-600 transition-colors hover:bg-gray-50"
+          >
+            撤回章节
+          </button>
+          <div className="mx-2 h-px bg-gray-100" />
+          <button
+            onClick={() => {
+              if (contextMenu.volumeId && contextMenu.chapterId) onDeleteChapter(contextMenu.volumeId, contextMenu.chapterId);
+              setContextMenu({ visible: false, x: 0, y: 0, volumeId: null, chapterId: null });
+            }}
+            className="w-full px-3 py-2 text-left text-base text-red-500 transition-colors hover:bg-red-50"
+          >
+            删除章节
+          </button>
+        </div>
+      )}
+    </aside>
+  );
+}

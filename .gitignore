@@ -1,0 +1,13 @@
+node_modules/
+dist/
+release/
+.vite/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dev-server.log
+electron-dev.log
+launcher.log
+*.pid
