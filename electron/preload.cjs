@@ -19,6 +19,12 @@ contextBridge.exposeInMainWorld('xinyuexiaModel', {
   request: (input) => ipcRenderer.invoke('model:request', input),
 });
 
+contextBridge.exposeInMainWorld('xinyuexiaAppIcon', {
+  read: () => ipcRenderer.invoke('app-icon:read'),
+  select: () => ipcRenderer.invoke('app-icon:select'),
+  reset: () => ipcRenderer.invoke('app-icon:reset'),
+});
+
 contextBridge.exposeInMainWorld('xinyuexiaDatabase', {
   ensureDefaultDir: () => ipcRenderer.invoke('database:ensure-default-dir'),
   selectDirectory: () => ipcRenderer.invoke('database:select-directory'),

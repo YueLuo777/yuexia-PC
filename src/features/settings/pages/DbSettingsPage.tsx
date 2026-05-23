@@ -249,28 +249,28 @@ export function DbSettingsPage() {
                   <Database className="h-4 w-4" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-gray-900">本地数据库</h2>
-                  <p className="text-xs text-gray-400">PostgreSQL + pgvector，适合剧情点和资料的向量搜索。</p>
+                  <h2 className="text-base font-bold text-gray-900">本地数据库</h2>
+                  <p className="text-sm text-gray-400">PostgreSQL + pgvector，适合剧情点和资料的向量搜索。</p>
                 </div>
               </div>
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${directoryStatus.exists ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+              <span className={`rounded-full px-3 py-1 text-sm font-semibold ${directoryStatus.exists ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                 {directoryStatus.exists ? '目录已创建' : '未初始化'}
               </span>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
               <label className="md:col-span-2 block">
-                <span className="mb-1.5 block text-xs font-medium text-gray-500">数据库保存位置</span>
+                <span className="mb-1.5 block text-sm font-medium text-gray-500">数据库保存位置</span>
                 <div className="flex gap-2">
                   <input
                     value={settings.dataDir}
                     onChange={(event) => setSettings(normalizeDatabaseSettings({ ...settings, dataDir: event.target.value }))}
-                    className="h-10 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700"
+                    className="h-11 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 text-base text-gray-700"
                   />
                   <button
                     onClick={selectDirectory}
                     disabled={isBusy}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-base text-gray-600 hover:bg-gray-50 disabled:opacity-50"
                   >
                     <FolderOpen className="h-4 w-4" />
                     选择
@@ -279,32 +279,32 @@ export function DbSettingsPage() {
               </label>
 
               <label className="block">
-                <span className="mb-1.5 block text-xs font-medium text-gray-500">数据库名</span>
+                <span className="mb-1.5 block text-sm font-medium text-gray-500">数据库名</span>
                 <input
                   value={settings.databaseName}
                   onChange={(event) => setSettings({ ...settings, databaseName: event.target.value })}
-                  className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700"
+                  className="h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-base text-gray-700"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1.5 block text-xs font-medium text-gray-500">端口</span>
+                <span className="mb-1.5 block text-sm font-medium text-gray-500">端口</span>
                 <input
                   value={settings.port}
                   type="number"
                   min={1}
                   max={65535}
                   onChange={(event) => setSettings({ ...settings, port: Number(event.target.value) })}
-                  className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700"
+                  className="h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-base text-gray-700"
                 />
               </label>
 
               <label className="md:col-span-2 block">
-                <span className="mb-1.5 block text-xs font-medium text-gray-500">主机</span>
+                <span className="mb-1.5 block text-sm font-medium text-gray-500">主机</span>
                 <input
                   value={settings.host}
                   onChange={(event) => setSettings({ ...settings, host: event.target.value })}
-                  className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700"
+                  className="h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-base text-gray-700"
                 />
               </label>
             </div>
@@ -313,7 +313,7 @@ export function DbSettingsPage() {
               <button
                 onClick={initializeDefaultDir}
                 disabled={isBusy}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-brand px-4 text-sm font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-brand px-4 text-base font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
               >
                 <HardDrive className="h-4 w-4" />
                 初始化默认数据库目录
@@ -321,7 +321,7 @@ export function DbSettingsPage() {
               <button
                 onClick={() => void saveSettings(settings)}
                 disabled={isBusy}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 text-base font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
                 <Server className="h-4 w-4" />
                 保存数据库配置
@@ -364,18 +364,18 @@ export function DbSettingsPage() {
               <Database className="h-4 w-4 text-sky-500" />
               数据概览
             </div>
-            <div className="grid flex-1 gap-3">
-            {[
-              ['作品', stats.novels],
-              ['资料', stats.materials],
-              ['提示词', stats.prompts],
-              ['剧情点', stats.plots],
-            ].map(([label, value]) => (
-              <div key={label} className="flex flex-col justify-center rounded-xl border border-gray-100 bg-gray-50 px-5 py-4">
-                <p className="text-xs text-gray-400">{label}</p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">{value}</p>
-              </div>
-            ))}
+            <div className="grid flex-1 auto-rows-min grid-cols-2 content-start gap-3">
+              {[
+                ['作品', stats.novels],
+                ['资料', stats.materials],
+                ['提示词', stats.prompts],
+                ['剧情点', stats.plots],
+              ].map(([label, value]) => (
+                <div key={label} className="flex min-h-[104px] flex-col justify-center rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                  <p className="text-xs text-gray-400">{label}</p>
+                  <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
+                </div>
+              ))}
             </div>
           </div>
 

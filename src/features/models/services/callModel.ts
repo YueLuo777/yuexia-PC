@@ -24,6 +24,15 @@ function normalizeAnthropicBaseUrl(baseUrl: string) {
 
 const PINAI_ORIGIN = 'https://us.pinai-cn.com';
 
+function formatModelError(status: number, text: string, model: ModelItem) {
+  const normalizedText = text.slice(0, 500);
+  if (status === 401 || /INVALID_API_KEY|invalid api key/i.test(normalizedText)) {
+    return `当前模型「${model.name}」的 API Key 无效。请到“模型管理”重新填写 API Key，然后先点“API 测试”。服务端返回：${normalizedText}`;
+  }
+  const statusText = status > 0 ? String(status) : 'network';
+  return `Model request failed (${statusText}): ${normalizedText}`;
+}
+
 function resolveBrowserEndpoint(endpoint: string) {
   if (endpoint.startsWith(PINAI_ORIGIN)) {
     return endpoint.replace(PINAI_ORIGIN, '/pinai-proxy');
@@ -159,8 +168,7 @@ export async function callModel({
       endpoint,
       error: response.text.slice(0, 500),
     });
-    const statusText = response.status > 0 ? String(response.status) : 'network';
-    throw new Error(`Model request failed (${statusText}): ${response.text.slice(0, 500)}`);
+    throw new Error(formatModelError(response.status, response.text, model));
   }
 
   const data = JSON.parse(response.text);

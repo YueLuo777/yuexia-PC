@@ -1,5 +1,5 @@
-import { Sparkles } from 'lucide-react';
-import { useEffect, useRef, useState, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent } from 'react';
+import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 
 import { ChapterEditor } from '@/features/workbench/components/ChapterEditor';
@@ -8,7 +8,7 @@ import { ChapterSidebar } from '@/features/workbench/components/ChapterSidebar';
 import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
 import { PublishedSidebar } from '@/features/workbench/components/PublishedSidebar';
 import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
-import { WorkbenchAIPanel, type WorkbenchAITool } from '@/features/workbench/components/WorkbenchAIPanel';
+import { WorkbenchAIPanel } from '@/features/workbench/components/WorkbenchAIPanel';
 import { WorkbenchHeader } from '@/features/workbench/components/WorkbenchHeader';
 import { WorkbenchLibraryPanel } from '@/features/workbench/components/WorkbenchLibraryPanel';
 import { WorkbenchModal } from '@/features/workbench/components/WorkbenchModal';
@@ -21,52 +21,18 @@ type ModalKey = 'workInfo' | 'settings' | 'outline' | 'notes';
 type ManagementModalKey = 'models' | 'agents';
 type FindScope = 'chapter' | 'book';
 type PendingPublish = { type: 'single'; volumeId: number; chapterId: number; title: string } | { type: 'all'; count: number };
-type WorkbenchRailTool = 'models' | 'ai';
-type WorkbenchRailSlot = WorkbenchRailTool | null;
-const AI_PANEL_MIN_WIDTH = 520;
-const AI_PANEL_DEFAULT_WIDTH = 640;
+type MemoScope = 'global' | 'work';
+type MemoItem = { id: string; title: string; content: string; updatedAt: string };
+const AI_PANEL_MIN_WIDTH = 312;
+const AI_PANEL_DEFAULT_WIDTH = 384;
 const PUBLISH_CONFIRM_KEY = 'xinyuexia_workbench_publish_confirm';
+const GLOBAL_NOTES_KEY = 'xinyuexia_workbench_notes';
+const WORK_NOTES_KEY_PREFIX = 'xinyuexia_workbench_notes_';
+const GLOBAL_NOTES_LIST_KEY = 'xinyuexia_workbench_notes_list_v1';
+const WORK_NOTES_LIST_KEY_PREFIX = 'xinyuexia_workbench_notes_list_v1_';
 const APP_SCALE_KEY = 'xinyuexia_app_scale';
 const BASE_APP_SCALE = 1.1;
 const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
-const RAIL_SLOT_COUNT = 6;
-const RAIL_LAYOUT_KEY = 'xinyuexia_workbench_rail_layout';
-const DEFAULT_RAIL_SLOTS: WorkbenchRailSlot[] = ['models', 'ai', null, null, null, null];
-const RAIL_TOOLS: WorkbenchRailTool[] = ['models', 'ai'];
-
-function isRailTool(value: unknown): value is WorkbenchRailTool {
-  return value === 'models' || value === 'ai';
-}
-
-function normalizeRailSlots(value: unknown): WorkbenchRailSlot[] {
-  const slots: WorkbenchRailSlot[] = Array.from({ length: RAIL_SLOT_COUNT }, () => null);
-  const used = new Set<WorkbenchRailTool>();
-
-  if (Array.isArray(value)) {
-    value.slice(0, RAIL_SLOT_COUNT).forEach((item, index) => {
-      if (!isRailTool(item) || used.has(item)) return;
-      slots[index] = item;
-      used.add(item);
-    });
-  }
-
-  RAIL_TOOLS.forEach((tool) => {
-    if (used.has(tool)) return;
-    const emptyIndex = slots.findIndex((slot) => slot === null);
-    if (emptyIndex >= 0) slots[emptyIndex] = tool;
-  });
-
-  return slots;
-}
-
-function readRailSlots() {
-  if (typeof window === 'undefined') return DEFAULT_RAIL_SLOTS;
-  try {
-    return normalizeRailSlots(JSON.parse(localStorage.getItem(RAIL_LAYOUT_KEY) ?? 'null'));
-  } catch {
-    return DEFAULT_RAIL_SLOTS;
-  }
-}
 
 function getEffectiveAppScale() {
   if (typeof window === 'undefined') return BASE_APP_SCALE;
@@ -82,7 +48,7 @@ function getEffectiveAppScale() {
 
 function getAiPanelMaxWidth() {
   if (typeof window === 'undefined') return AI_PANEL_DEFAULT_WIDTH;
-  return Math.max(360, Math.floor(window.innerWidth / (2 * getEffectiveAppScale())));
+  return Math.max(AI_PANEL_MIN_WIDTH, Math.floor(window.innerWidth / (3 * getEffectiveAppScale())));
 }
 
 function normalizeAiPanelWidth(value: number) {
@@ -105,6 +71,40 @@ function findOccurrences(text: string, search: string) {
     index = text.indexOf(search, index + Math.max(search.length, 1));
   }
   return result;
+}
+
+function formatMemoTime() {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function createMemoItem(scope: MemoScope, index: number, content = ''): MemoItem {
+  return {
+    id: `${scope}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    title: `${scope === 'global' ? '全局' : '作品'}备忘录 ${index}`,
+    content,
+    updatedAt: formatMemoTime(),
+  };
+}
+
+function readMemoItems(listKey: string, legacyKey: string, scope: MemoScope) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(listKey) ?? '[]') as Partial<MemoItem>[];
+    const valid = parsed
+      .filter((item): item is MemoItem => Boolean(item.id && item.title))
+      .map((item) => ({
+        id: String(item.id),
+        title: String(item.title),
+        content: String(item.content ?? ''),
+        updatedAt: String(item.updatedAt ?? ''),
+      }));
+    if (valid.length > 0) return valid;
+  } catch {
+    // Fall back to the legacy single-text memo below.
+  }
+
+  const legacyContent = localStorage.getItem(legacyKey) ?? '';
+  return legacyContent.trim() ? [createMemoItem(scope, 1, legacyContent)] : [];
 }
 
 function WorkbenchFindReplaceModal({
@@ -269,7 +269,7 @@ function ManagementModal({
   onClose: () => void;
 }) {
   const draggable = useDraggableModal(`workbench_${type}_management`);
-  const title = type === 'models' ? '模型管理' : '智能体管理';
+  const title = type === 'models' ? '模型管理' : '提示词管理';
 
   return (
     <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/35 px-8 py-8" onMouseDown={(event) => {
@@ -357,11 +357,13 @@ export function WorkbenchPage() {
   const [managementModal, setManagementModal] = useState<ManagementModalKey | null>(null);
   const [publishConfirm, setPublishConfirm] = useState(() => localStorage.getItem(PUBLISH_CONFIRM_KEY) === 'true');
   const [pendingPublish, setPendingPublish] = useState<PendingPublish | null>(null);
-  const [activeAITool, setActiveAITool] = useState<WorkbenchAITool | null>(null);
-  const [railSlots, setRailSlots] = useState<WorkbenchRailSlot[]>(readRailSlots);
-  const [draggingRailTool, setDraggingRailTool] = useState<WorkbenchRailTool | null>(null);
-  const [notes, setNotes] = useState(() => localStorage.getItem('xinyuexia_workbench_notes') ?? '');
+  const [globalNotes, setGlobalNotes] = useState<MemoItem[]>(() => readMemoItems(GLOBAL_NOTES_LIST_KEY, GLOBAL_NOTES_KEY, 'global'));
+  const [workNotes, setWorkNotes] = useState<MemoItem[]>([]);
+  const [workNotesNovelId, setWorkNotesNovelId] = useState<number | null>(null);
+  const [selectedMemo, setSelectedMemo] = useState<{ scope: MemoScope; id: string } | null>(null);
+  const [collapsedMemoSections, setCollapsedMemoSections] = useState<Record<MemoScope, boolean>>({ global: false, work: false });
   const [showPublished, setShowPublished] = useState(false);
+  const [replaceUndoSnapshot, setReplaceUndoSnapshot] = useState<{ chapterId: number; content: string } | null>(null);
   const [aiPanelWidth, setAiPanelWidth] = useState(() => {
     const saved = Number.parseInt(localStorage.getItem('xinyuexia_ai_panel_width') ?? String(AI_PANEL_DEFAULT_WIDTH), 10);
     return normalizeAiPanelWidth(saved);
@@ -417,10 +419,6 @@ export function WorkbenchPage() {
   }, [aiPanelWidth]);
 
   useEffect(() => {
-    localStorage.setItem(RAIL_LAYOUT_KEY, JSON.stringify(railSlots));
-  }, [railSlots]);
-
-  useEffect(() => {
     const handleResize = () => setAiPanelWidth((prev) => normalizeAiPanelWidth(prev));
     window.addEventListener('resize', handleResize);
     handleResize();
@@ -428,12 +426,36 @@ export function WorkbenchPage() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('xinyuexia_workbench_notes', notes);
-  }, [notes]);
+    localStorage.setItem(GLOBAL_NOTES_LIST_KEY, JSON.stringify(globalNotes));
+  }, [globalNotes]);
+
+  useEffect(() => {
+    if (!currentNovelId) return;
+    setWorkNotes(readMemoItems(`${WORK_NOTES_LIST_KEY_PREFIX}${currentNovelId}`, `${WORK_NOTES_KEY_PREFIX}${currentNovelId}`, 'work'));
+    setWorkNotesNovelId(currentNovelId);
+  }, [currentNovelId]);
+
+  useEffect(() => {
+    if (!currentNovelId || workNotesNovelId !== currentNovelId) return;
+    localStorage.setItem(`${WORK_NOTES_LIST_KEY_PREFIX}${currentNovelId}`, JSON.stringify(workNotes));
+  }, [currentNovelId, workNotes, workNotesNovelId]);
+
+  useEffect(() => {
+    const currentExists = selectedMemo?.scope === 'global'
+      ? globalNotes.some((note) => note.id === selectedMemo.id)
+      : workNotes.some((note) => note.id === selectedMemo?.id);
+    if (currentExists) return;
+    const fallback = globalNotes[0] ? { scope: 'global' as const, id: globalNotes[0].id } : workNotes[0] ? { scope: 'work' as const, id: workNotes[0].id } : null;
+    setSelectedMemo(fallback);
+  }, [globalNotes, selectedMemo, workNotes]);
 
   useEffect(() => {
     localStorage.setItem(PUBLISH_CONFIRM_KEY, String(publishConfirm));
   }, [publishConfirm]);
+
+  useEffect(() => {
+    setReplaceUndoSnapshot(null);
+  }, [selectedChapter?.chapter.id]);
 
   useEffect(() => {
     const handleShortcut = (event: Event) => {
@@ -453,32 +475,6 @@ export function WorkbenchPage() {
     setIsDraggingPanel(true);
     document.body.style.cursor = 'ew-resize';
     document.body.style.userSelect = 'none';
-  };
-
-  const moveRailTool = (tool: WorkbenchRailTool, targetIndex: number) => {
-    setRailSlots((prev) => {
-      const next = normalizeRailSlots(prev);
-      const sourceIndex = next.findIndex((slot) => slot === tool);
-      if (sourceIndex === targetIndex) return next;
-
-      const targetTool = next[targetIndex];
-      next[targetIndex] = tool;
-      if (sourceIndex >= 0) next[sourceIndex] = targetTool;
-      return next;
-    });
-  };
-
-  const handleRailDragStart = (event: ReactDragEvent<HTMLButtonElement>, tool: WorkbenchRailTool) => {
-    setDraggingRailTool(tool);
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', tool);
-  };
-
-  const handleRailDrop = (event: ReactDragEvent<HTMLDivElement>, targetIndex: number) => {
-    event.preventDefault();
-    const tool = event.dataTransfer.getData('text/plain') || draggingRailTool;
-    if (isRailTool(tool)) moveRailTool(tool, targetIndex);
-    setDraggingRailTool(null);
   };
 
   useEffect(() => {
@@ -523,8 +519,50 @@ export function WorkbenchPage() {
     ? volumes.find((volume) => volume.id === selectedChapter.volumeId)?.name ?? '未选择卷'
     : '未选择卷';
 
+  const canUndoReplace = Boolean(
+    selectedChapter && replaceUndoSnapshot?.chapterId === selectedChapter.chapter.id,
+  );
+  const activeMemo = selectedMemo?.scope === 'global'
+    ? globalNotes.find((note) => note.id === selectedMemo.id) ?? null
+    : workNotes.find((note) => note.id === selectedMemo?.id) ?? null;
+
+  const selectMemo = (scope: MemoScope, id: string) => setSelectedMemo({ scope, id });
+
+  const addMemo = (scope: MemoScope) => {
+    const list = scope === 'global' ? globalNotes : workNotes;
+    const next = createMemoItem(scope, list.length + 1);
+    if (scope === 'global') setGlobalNotes((prev) => [next, ...prev]);
+    else setWorkNotes((prev) => [next, ...prev]);
+    setSelectedMemo({ scope, id: next.id });
+    setCollapsedMemoSections((prev) => ({ ...prev, [scope]: false }));
+  };
+
+  const updateMemo = (updates: Partial<Pick<MemoItem, 'title' | 'content'>>) => {
+    if (!selectedMemo) return;
+    const patch = { ...updates, updatedAt: formatMemoTime() };
+    const updater = (items: MemoItem[]) => items.map((item) => (item.id === selectedMemo.id ? { ...item, ...patch } : item));
+    if (selectedMemo.scope === 'global') setGlobalNotes(updater);
+    else setWorkNotes(updater);
+  };
+
+  const toggleMemoSection = (scope: MemoScope) => {
+    setCollapsedMemoSections((prev) => ({ ...prev, [scope]: !prev[scope] }));
+  };
+
   const replaceEditorContent = (content: string) => {
+    if (selectedChapter) {
+      setReplaceUndoSnapshot({
+        chapterId: selectedChapter.chapter.id,
+        content: editorContent,
+      });
+    }
     saveContent(content);
+  };
+
+  const undoReplaceEditorContent = () => {
+    if (!selectedChapter || replaceUndoSnapshot?.chapterId !== selectedChapter.chapter.id) return;
+    saveContent(replaceUndoSnapshot.content);
+    setReplaceUndoSnapshot(null);
   };
 
   const downloadTextFile = (fileName: string, content: string, type = 'text/plain;charset=utf-8') => {
@@ -660,41 +698,6 @@ export function WorkbenchPage() {
     input.click();
   };
 
-  const renderRailToolButton = (tool: WorkbenchRailTool) => {
-    if (tool === 'models') {
-      return (
-        <button
-          draggable
-          onDragStart={(event) => handleRailDragStart(event, tool)}
-          onDragEnd={() => setDraggingRailTool(null)}
-          onClick={() => setManagementModal('models')}
-          className="flex h-14 w-11 cursor-grab items-center justify-center rounded-xl border border-gray-200 bg-white px-1 text-sm font-bold text-gray-500 transition-all hover:-translate-y-0.5 hover:border-brand hover:bg-gray-50 hover:text-brand active:cursor-grabbing"
-          title="模型管理，拖动可调整位置"
-        >
-          模型
-        </button>
-      );
-    }
-
-    return (
-      <button
-        draggable
-        onDragStart={(event) => handleRailDragStart(event, tool)}
-        onDragEnd={() => setDraggingRailTool(null)}
-        onClick={() => setActiveAITool((prev) => (prev === 'ai' ? null : 'ai'))}
-        className={`flex h-14 w-11 cursor-grab flex-col items-center justify-center gap-0.5 rounded-xl border text-[15px] font-black shadow-sm transition-all active:cursor-grabbing ${
-          activeAITool === 'ai'
-            ? 'border-brand bg-brand text-white shadow-brand/25'
-            : 'border-cyan-200 bg-cyan-50 text-cyan-700 hover:-translate-y-0.5 hover:border-brand hover:bg-brand hover:text-white hover:shadow-md'
-        }`}
-        title="AI，拖动可调整位置"
-      >
-        <Sparkles className="h-3.5 w-3.5" />
-        <span>AI</span>
-      </button>
-    );
-  };
-
   return (
     <div className="flex h-full flex-col bg-gray-50">
       <WorkbenchHeader
@@ -703,8 +706,6 @@ export function WorkbenchPage() {
         onOpenSettings={() => setActiveModal('settings')}
         onOpenOutline={() => setActiveModal('outline')}
         onOpenNotes={() => setActiveModal('notes')}
-        onOpenModelManage={() => setManagementModal('models')}
-        onOpenAgentManage={() => setManagementModal('agents')}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -753,54 +754,32 @@ export function WorkbenchPage() {
             deleteChapter(selectedChapter.volumeId, chapterId);
           }}
           onOpenFind={() => setIsFindOpen(true)}
-          onOpenEditorSettings={() => setIsEditorSettingsOpen(true)}
         />
 
-        {activeAITool && (
-          <>
-            <div
-              className="group z-10 flex w-[4px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent transition-colors hover:bg-brand/30"
-              onMouseDown={handlePanelDragStart}
-              title="拖拽调整宽度"
-            >
-              <div className="h-8 w-[2px] rounded-full bg-gray-300 opacity-0 transition-opacity group-hover:opacity-100" />
-            </div>
+        <div
+          className="group z-10 flex w-[4px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent transition-colors hover:bg-brand/30"
+          onMouseDown={handlePanelDragStart}
+          title="拖拽调整宽度"
+        >
+          <div className="h-8 w-[2px] rounded-full bg-gray-300 opacity-0 transition-opacity group-hover:opacity-100" />
+        </div>
 
-            <aside
-              className="shrink-0 border-l border-gray-200 bg-white"
-              style={{
-                width: aiPanelWidth,
-                maxWidth: `calc(50vw / var(${APP_EFFECTIVE_SCALE_CSS_VAR}, 1))`,
-              }}
-            >
-              <WorkbenchAIPanel
-                activeTool={activeAITool}
-                selectedChapterContent={editorContent}
-                onClose={() => setActiveAITool(null)}
-                onReplaceContent={replaceEditorContent}
-              />
-            </aside>
-          </>
-        )}
-
-        <aside className="flex w-[48px] shrink-0 flex-col items-center border-l border-gray-200 bg-white py-3">
-          {railSlots.map((tool, index) => (
-            <div
-              key={index}
-              onDragOver={(event) => {
-                event.preventDefault();
-                event.dataTransfer.dropEffect = 'move';
-              }}
-              onDrop={(event) => handleRailDrop(event, index)}
-              className={`flex h-16 w-full items-center justify-center transition-colors ${
-                draggingRailTool ? 'bg-cyan-50/40' : ''
-              }`}
-            >
-              {tool ? renderRailToolButton(tool) : (
-                <div className="h-14 w-11 rounded-xl border border-dashed border-gray-100 bg-gray-50/50" />
-              )}
-            </div>
-          ))}
+        <aside
+          className="shrink-0 border-l border-gray-200 bg-white"
+          style={{
+            width: aiPanelWidth,
+            maxWidth: `calc(33.333vw / var(${APP_EFFECTIVE_SCALE_CSS_VAR}, 1))`,
+          }}
+        >
+          <WorkbenchAIPanel
+            activeTool="ai"
+            selectedChapterContent={editorContent}
+            onReplaceContent={replaceEditorContent}
+            onUndoReplace={undoReplaceEditorContent}
+            canUndoReplace={canUndoReplace}
+            onOpenModelManage={() => setManagementModal('models')}
+            onOpenAgentManage={() => setManagementModal('agents')}
+          />
         </aside>
       </div>
 
@@ -888,17 +867,98 @@ export function WorkbenchPage() {
       </WorkbenchModal>
 
       <WorkbenchModal title="概要库" isOpen={activeModal === 'outline'} onClose={() => setActiveModal(null)} widthClass="w-[min(1500px,96vw)]">
-        <WorkbenchLibraryPanel storageKey={`xinyuexia_workbench_outline_${currentNovel.id}`} tabs={['章节概要', '卷概要']} emptyText="暂无概要内容" />
+        <WorkbenchLibraryPanel storageKey={`xinyuexia_workbench_outline_${currentNovel.id}`} tabs={['章节概要', '卷概要']} emptyText="暂无概要内容" volumes={volumes} />
       </WorkbenchModal>
 
-      <WorkbenchModal title="备忘录" isOpen={activeModal === 'notes'} onClose={() => setActiveModal(null)} widthClass="w-[920px]">
-        <div className="flex h-full flex-col bg-white p-5">
-          <textarea
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            placeholder="在这里记录灵感、待办和临时备注..."
-            className="editor-scrollbar flex-1 resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm leading-7 text-gray-700 outline-none focus:border-brand"
-          />
+      <WorkbenchModal title="备忘录" isOpen={activeModal === 'notes'} onClose={() => setActiveModal(null)} widthClass="w-[min(1180px,96vw)]">
+        <div className="grid min-h-0 flex-1 grid-cols-[330px_minmax(0,1fr)] bg-white">
+          <aside className="flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
+            {([
+              { scope: 'global' as const, title: '全局备忘录', items: globalNotes },
+              { scope: 'work' as const, title: '作品备忘录', items: workNotes },
+            ]).map(({ scope, title, items }) => (
+              <section key={scope} className="mb-4 flex min-h-0 flex-1 flex-col rounded-xl border border-gray-200 bg-white">
+                <div className="flex h-12 shrink-0 items-center gap-2 border-b border-gray-100 px-3">
+                  <button
+                    onClick={() => toggleMemoSection(scope)}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-brand"
+                    title={collapsedMemoSections[scope] ? '展开' : '折叠'}
+                  >
+                    {collapsedMemoSections[scope] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </button>
+                  <button
+                    onClick={() => toggleMemoSection(scope)}
+                    className="min-w-0 flex-1 truncate text-left text-sm font-bold text-gray-900"
+                  >
+                    {title}
+                  </button>
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-bold text-gray-500">{items.length}</span>
+                  <button
+                    onClick={() => addMemo(scope)}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand/30 bg-white text-brand hover:bg-brand-light"
+                    title="新建备忘录"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+                {!collapsedMemoSections[scope] && (
+                  <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
+                    {items.length === 0 ? (
+                      <p className="px-3 py-8 text-center text-xs leading-5 text-gray-400">暂无备忘录</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {items.map((item) => {
+                          const selected = selectedMemo?.scope === scope && selectedMemo.id === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => selectMemo(scope, item.id)}
+                              className={`w-full rounded-lg border px-3 py-2 text-left transition-colors ${
+                                selected ? 'border-brand bg-brand-light/70' : 'border-gray-100 bg-gray-50 hover:border-brand/40 hover:bg-white'
+                              }`}
+                            >
+                              <div className="truncate text-sm font-bold text-gray-800">{item.title}</div>
+                              <div className="mt-1 line-clamp-2 text-xs leading-5 text-gray-400">{item.content || '暂无内容'}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
+            ))}
+          </aside>
+
+          <main className="flex min-h-0 flex-col p-5">
+            {activeMemo ? (
+              <>
+                <div className="mb-4 flex shrink-0 items-center gap-3">
+                  <input
+                    value={activeMemo.title}
+                    onChange={(event) => updateMemo({ title: event.target.value })}
+                    className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 text-base font-bold text-gray-900 outline-none focus:border-brand"
+                  />
+                  <span className="shrink-0 rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-500">
+                    {selectedMemo?.scope === 'global' ? '全局' : '作品'}
+                  </span>
+                </div>
+                <textarea
+                  value={activeMemo.content}
+                  onChange={(event) => updateMemo({ content: event.target.value })}
+                  placeholder={selectedMemo?.scope === 'global'
+                    ? '全局备忘录会在整个软件中共通...'
+                    : '作品备忘录只属于当前作品...'}
+                  className="editor-scrollbar flex-1 resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm leading-7 text-gray-700 outline-none focus:border-brand"
+                />
+                <div className="mt-3 text-right text-xs text-gray-400">更新于 {activeMemo.updatedAt || '-'}</div>
+              </>
+            ) : (
+              <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-gray-200 text-sm text-gray-400">
+                请在左侧新建或选择备忘录
+              </div>
+            )}
+          </main>
         </div>
       </WorkbenchModal>
     </div>

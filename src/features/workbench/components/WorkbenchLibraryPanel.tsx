@@ -11,11 +11,13 @@ import {
   writeWorkbenchLibraryEntries,
   type WorkbenchLibraryEntry,
 } from '@/features/workbench/model/workbenchLibraryStorage';
+import type { Volume } from '@/features/workbench/model/workbenchTypes';
 
 interface WorkbenchLibraryPanelProps {
   storageKey: string;
   tabs: string[];
   emptyText: string;
+  volumes?: Volume[];
 }
 
 interface RoleContent {
@@ -67,7 +69,7 @@ function stringifyRoleContent(value: RoleContent) {
   return JSON.stringify(value);
 }
 
-export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText }: WorkbenchLibraryPanelProps) {
+export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [] }: WorkbenchLibraryPanelProps) {
   const normalizedTabs = useMemo(() => tabs.map(normalizeTabName), [tabs]);
   const [entries, setEntries] = useState<WorkbenchLibraryEntry[]>(() => readNormalizedEntries(storageKey));
   const [activeTab, setActiveTab] = useState(normalizedTabs[0] ?? '');
@@ -78,6 +80,10 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText }: Workbench
   const [libraryTitleDraft, setLibraryTitleDraft] = useState('');
   const [outlineStart, setOutlineStart] = useState('1');
   const [outlineEnd, setOutlineEnd] = useState('50');
+  const [selectedOutlineChapterId, setSelectedOutlineChapterId] = useState<number | null>(null);
+  const [selectedOutlineVolumeId, setSelectedOutlineVolumeId] = useState<number | null>(null);
+  const [outlineSelectionType, setOutlineSelectionType] = useState<'chapter' | 'volume'>('chapter');
+  const [expandedOutlineVolumeIds, setExpandedOutlineVolumeIds] = useState<Set<number>>(() => new Set());
   const [expandedRoleTypes, setExpandedRoleTypes] = useState<Set<string>>(() => new Set(['未分类']));
   const [aiInput, setAiInput] = useState('');
   const [tabPortalTarget, setTabPortalTarget] = useState<HTMLElement | null>(null);
@@ -116,6 +122,14 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText }: Workbench
   useEffect(() => {
     setSelectedId(null);
   }, [activeTab]);
+
+  useEffect(() => {
+    setExpandedOutlineVolumeIds((prev) => {
+      const next = new Set(prev);
+      volumes.forEach((volume) => next.add(volume.id));
+      return next;
+    });
+  }, [volumes]);
 
   useEffect(() => {
     const updateTarget = () => setTabPortalTarget(document.getElementById('workbench-modal-header-extra'));
@@ -558,95 +572,141 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText }: Workbench
   }
 
   if (tabs.includes('章节概要') && tabs.includes('卷概要')) {
-    const volumeEntries = entries.filter((entry) => entry.tab === '卷概要');
     const chapterEntries = entries.filter((entry) => entry.tab === '章节概要');
-    const outlineSelectedEntry = entries.find((entry) => entry.id === selectedId) ?? chapterEntries[0] ?? volumeEntries[0] ?? null;
+    const volumeEntries = entries.filter((entry) => entry.tab === '卷概要');
+    const outlineChapters = volumes.flatMap((volume) => (
+      [...volume.chapters]
+        .sort((a, b) => a.serialNumber - b.serialNumber)
+        .map((chapter) => ({ volume, chapter }))
+    ));
+    const selectedOutlineChapter = outlineChapters.find((item) => item.chapter.id === selectedOutlineChapterId) ?? outlineChapters[0] ?? null;
+    const selectedOutlineVolume = volumes.find((volume) => volume.id === selectedOutlineVolumeId) ?? volumes[0] ?? null;
+    const getChapterSummaryTitle = (serialNumber: number) => `第${serialNumber}章概要`;
+    const getVolumeSummaryTitle = (volumeName: string) => `${volumeName}概要`;
+    const getChapterSummaryEntry = (serialNumber: number) => (
+      chapterEntries.find((entry) => entry.title === getChapterSummaryTitle(serialNumber))
+    );
+    const getVolumeSummaryEntry = (volumeName: string) => (
+      volumeEntries.find((entry) => entry.title === getVolumeSummaryTitle(volumeName))
+    );
+    const selectedOutlineEntry = selectedOutlineChapter
+      ? getChapterSummaryEntry(selectedOutlineChapter.chapter.serialNumber)
+      : null;
+    const selectedVolumeEntry = selectedOutlineVolume
+      ? getVolumeSummaryEntry(selectedOutlineVolume.name)
+      : null;
+    const updateChapterSummary = (serialNumber: number, content: string) => {
+      const title = getChapterSummaryTitle(serialNumber);
+      const existing = getChapterSummaryEntry(serialNumber);
+      if (existing) {
+        updateEntry(existing.id, { content });
+        return;
+      }
+      const entry = {
+        ...createWorkbenchLibraryEntry('章节概要', title),
+        content,
+      };
+      persist([entry, ...entries]);
+      setSelectedId(entry.id);
+    };
+    const updateVolumeSummary = (volumeName: string, content: string) => {
+      const title = getVolumeSummaryTitle(volumeName);
+      const existing = getVolumeSummaryEntry(volumeName);
+      if (existing) {
+        updateEntry(existing.id, { content });
+        return;
+      }
+      const entry = {
+        ...createWorkbenchLibraryEntry('卷概要', title),
+        content,
+      };
+      persist([entry, ...entries]);
+      setSelectedId(entry.id);
+    };
+    const selectOutlineChapter = (chapterId: number, serialNumber: number) => {
+      setOutlineSelectionType('chapter');
+      setSelectedOutlineChapterId(chapterId);
+      const entry = getChapterSummaryEntry(serialNumber);
+      setSelectedId(entry?.id ?? null);
+    };
+    const selectOutlineVolume = (volume: Volume) => {
+      setOutlineSelectionType('volume');
+      setSelectedOutlineVolumeId(volume.id);
+      const entry = getVolumeSummaryEntry(volume.name);
+      setSelectedId(entry?.id ?? null);
+    };
+    const toggleOutlineVolume = (volumeId: number) => {
+      setExpandedOutlineVolumeIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(volumeId)) next.delete(volumeId);
+        else next.add(volumeId);
+        return next;
+      });
+    };
 
     return (
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(230px,0.8fr)_minmax(230px,0.8fr)_minmax(280px,1.35fr)_minmax(330px,0.95fr)] overflow-hidden bg-white">
+      <div className="grid min-h-0 flex-1 grid-cols-[430px_minmax(0,1fr)_350px] overflow-hidden bg-white">
         <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
           <section className="flex min-h-0 flex-1 flex-col rounded-xl border border-gray-200 bg-white p-4">
-            <h3 className="text-base font-bold text-gray-900">卷概要</h3>
-            <div className="mt-4 grid grid-cols-[1fr_auto_1fr] gap-2">
-              <input
-                value={outlineStart}
-                onChange={(event) => setOutlineStart(event.target.value)}
-                className="h-10 min-w-0 rounded-lg border border-gray-200 bg-white text-center text-sm text-gray-700 outline-none focus:border-brand"
-              />
-              <span className="self-center text-gray-300">-</span>
-              <input
-                value={outlineEnd}
-                onChange={(event) => setOutlineEnd(event.target.value)}
-                className="h-10 min-w-0 rounded-lg border border-gray-200 bg-white text-center text-sm text-gray-700 outline-none focus:border-brand"
-              />
-              <button
-                onClick={() => addEntryToTab('卷概要', `第${outlineStart}-${outlineEnd}章概要`)}
-                className="col-span-3 h-10 rounded-lg bg-brand px-3 text-xs font-bold text-white hover:bg-brand-dark"
-              >
-                生成第一卷
-              </button>
-            </div>
+            <h3 className="text-base font-bold text-gray-900">章节概要</h3>
             <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
-              {volumeEntries.length === 0 ? (
-                <p className="pt-10 text-center text-xs text-gray-400">暂无卷概要</p>
+              {volumes.length === 0 ? (
+                <p className="pt-10 text-center text-xs text-gray-400">暂无章节</p>
               ) : (
-                <div className="space-y-2">
-                  {volumeEntries.map((entry) => (
-                    <button
-                      key={entry.id}
-                      onClick={() => setSelectedId(entry.id)}
-                      className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
-                        outlineSelectedEntry?.id === entry.id ? 'border-brand bg-brand-light text-brand-dark' : 'border-gray-100 bg-gray-50 text-gray-700 hover:bg-white'
-                      }`}
-                    >
-                      <div className="truncate font-bold">{entry.title}</div>
-                      <div className="mt-1 truncate text-[10px] text-gray-400">{entry.updatedAt}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
-        </aside>
-
-        <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
-          <section className="flex min-h-0 flex-1 flex-col rounded-xl border border-gray-200 bg-white p-4">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-base font-bold text-gray-900">章节概要</h3>
-              <button
-                onClick={() => addEntryToTab('章节概要', `第${chapterEntries.length + 1}章概要`)}
-                className="rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white hover:bg-brand-dark"
-              >
-                新增章节
-              </button>
-            </div>
-            <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
-              {chapterEntries.length === 0 ? (
-                <p className="pt-10 text-center text-xs text-gray-400">暂无章节概要</p>
-              ) : (
-                <div className="space-y-2">
-                  {chapterEntries.map((entry, index) => (
-                    <button
-                      key={entry.id}
-                      onClick={() => setSelectedId(entry.id)}
-                      className={`group w-full rounded-lg border px-3 py-2 text-left transition-colors ${
-                        outlineSelectedEntry?.id === entry.id ? 'border-brand bg-brand-light text-brand-dark' : 'border-gray-100 bg-gray-50 hover:bg-white'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-bold text-gray-800">{entry.title || `第${index + 1}章概要`}</span>
-                        <span
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            deleteEntry(entry.id);
-                          }}
-                          className="text-gray-300 opacity-0 hover:text-red-500 group-hover:opacity-100"
+                <div className="space-y-3">
+                  {volumes.map((volume) => (
+                    <div key={volume.id}>
+                      <div className="flex items-center gap-2 rounded-lg bg-gray-100 px-2 py-2">
+                        <button
+                          onClick={() => toggleOutlineVolume(volume.id)}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-500 hover:bg-white hover:text-brand"
+                          title={expandedOutlineVolumeIds.has(volume.id) ? '收起' : '展开'}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </span>
+                          {expandedOutlineVolumeIds.has(volume.id) ? (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                        <span className="min-w-0 flex-1 truncate text-sm font-bold text-gray-800">{volume.name}</span>
+                        <button
+                          onClick={() => selectOutlineVolume(volume)}
+                          className={`shrink-0 rounded-md border px-2.5 py-1.5 text-xs font-bold transition-colors ${
+                            outlineSelectionType === 'volume' && selectedOutlineVolume?.id === volume.id
+                              ? 'border-brand bg-brand text-white'
+                              : 'border-brand/30 bg-white text-brand hover:bg-brand-light'
+                          }`}
+                        >
+                          卷概要
+                        </button>
                       </div>
-                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-gray-400">{entry.content || '暂无内容'}</p>
-                    </button>
+                      {expandedOutlineVolumeIds.has(volume.id) && (
+                        <div className="mt-1 grid grid-cols-10 gap-1.5">
+                          {[...volume.chapters].sort((a, b) => a.serialNumber - b.serialNumber).map((chapter) => {
+                            const selected = outlineSelectionType === 'chapter' && selectedOutlineChapter?.chapter.id === chapter.id;
+                            const hasSummary = Boolean(getChapterSummaryEntry(chapter.serialNumber)?.content.trim());
+                            return (
+                              <button
+                                key={chapter.id}
+                                onClick={() => selectOutlineChapter(chapter.id, chapter.serialNumber)}
+                                className={`relative h-9 rounded-lg border text-sm font-bold transition-colors ${
+                                  selected
+                                    ? 'border-brand bg-brand text-white'
+                                    : hasSummary
+                                      ? 'border-brand/30 bg-brand-light text-brand-dark hover:border-brand'
+                                      : 'border-gray-100 bg-gray-50 text-gray-600 hover:bg-white'
+                                }`}
+                              >
+                                {chapter.serialNumber}
+                                {!hasSummary && (
+                                  <span className={`absolute bottom-0.5 left-1 text-[9px] leading-none ${selected ? 'text-white/80' : 'text-gray-400'}`}>无</span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
@@ -654,24 +714,68 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText }: Workbench
           </section>
         </aside>
 
-        <main className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-white">
-          {outlineSelectedEntry ? (
-            <div className="flex min-h-0 flex-1 flex-col p-4">
-              <input
-                value={outlineSelectedEntry.title}
-                onChange={(event) => updateEntry(outlineSelectedEntry.id, { title: event.target.value })}
-                className="mb-3 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-brand"
-              />
-              <textarea
-                value={outlineSelectedEntry.content}
-                onChange={(event) => updateEntry(outlineSelectedEntry.id, { content: event.target.value })}
-                placeholder="请选择左侧概要，或在这里填写概要内容..."
-                className="editor-scrollbar flex-1 resize-none rounded-lg border border-gray-200 bg-gray-50/40 px-4 py-3 text-sm leading-7 text-gray-700 outline-none focus:border-brand focus:bg-white"
-              />
+        <main className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-white p-4">
+          <div className="mb-4 flex shrink-0 items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-gray-900">概要预览区</h3>
+              <p className="mt-1 text-xs text-gray-400">按章节显示概要内容</p>
             </div>
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-gray-400">请选择左侧概要</div>
-          )}
+            {outlineSelectionType === 'chapter' && selectedOutlineChapter && (
+              <span className="rounded-full bg-brand-light px-3 py-1 text-xs font-bold text-brand-dark">
+                第{selectedOutlineChapter.chapter.serialNumber}章
+              </span>
+            )}
+            {outlineSelectionType === 'volume' && selectedOutlineVolume && (
+              <span className="rounded-full bg-brand-light px-3 py-1 text-xs font-bold text-brand-dark">
+                {selectedOutlineVolume.name}
+              </span>
+            )}
+          </div>
+          <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto">
+            {outlineChapters.length === 0 ? (
+              <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-gray-200 text-sm text-gray-400">暂无章节可预览</div>
+            ) : outlineSelectionType === 'volume' && selectedOutlineVolume ? (
+              <section className="rounded-xl border border-brand bg-brand-light/40 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h4 className="min-w-0 truncate text-sm font-bold text-gray-900">{selectedOutlineVolume.name}概要</h4>
+                  <span className="shrink-0 text-xs text-gray-400">{selectedOutlineVolume.chapters.length}章</span>
+                </div>
+                <textarea
+                  value={selectedVolumeEntry?.content ?? ''}
+                  onChange={(event) => updateVolumeSummary(selectedOutlineVolume.name, event.target.value)}
+                  placeholder="这一卷的概要会显示在这里，内容是该卷下所有章节内容的总结。"
+                  className="editor-scrollbar h-[460px] w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm leading-6 text-gray-700 outline-none focus:border-brand"
+                />
+              </section>
+            ) : (
+              <div className="space-y-3">
+                {outlineChapters.map(({ volume, chapter }) => {
+                  const entry = getChapterSummaryEntry(chapter.serialNumber);
+                  const selected = outlineSelectionType === 'chapter' && selectedOutlineChapter?.chapter.id === chapter.id;
+                  return (
+                    <section
+                      key={chapter.id}
+                      className={`rounded-xl border bg-gray-50/40 p-4 transition-colors ${
+                        selected ? 'border-brand bg-brand-light/40' : 'border-gray-200'
+                      }`}
+                    >
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <h4 className="min-w-0 truncate text-sm font-bold text-gray-900">第{chapter.serialNumber}章概要</h4>
+                        <span className="shrink-0 truncate text-xs text-gray-400">{volume.name}</span>
+                      </div>
+                      <textarea
+                        value={entry?.content ?? ''}
+                        onChange={(event) => updateChapterSummary(chapter.serialNumber, event.target.value)}
+                        onFocus={() => selectOutlineChapter(chapter.id, chapter.serialNumber)}
+                        placeholder="该章概要会显示在这里，可由 AI 根据章节内容生成。"
+                        className="editor-scrollbar h-28 w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm leading-6 text-gray-700 outline-none focus:border-brand"
+                      />
+                    </section>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </main>
 
         <aside className="min-w-0 flex min-h-0 flex-col bg-gray-50 p-4">
@@ -691,19 +795,26 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText }: Workbench
               </select>
             </label>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <button className="rounded-lg bg-brand px-3 py-2 text-sm font-bold text-white hover:bg-brand-dark">生成剧情</button>
-            <button className="rounded-lg bg-brand px-3 py-2 text-sm font-bold text-white hover:bg-brand-dark">生成细纲</button>
-            <button className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-100">复制内容</button>
-            <button
-              onClick={() => outlineSelectedEntry && updateEntry(outlineSelectedEntry.id, { content: '' })}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-100"
-            >
-              清空概要
-            </button>
-          </div>
           <div className="mt-4 flex-1 rounded-xl border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-400">
-            可以在这里生成剧情、细纲，并继续通过对话细化。
+            {outlineSelectionType === 'volume' && selectedOutlineVolume ? (
+              <div>
+                <p className="font-bold text-gray-700">当前卷</p>
+                <p className="mt-2">{selectedOutlineVolume.name}</p>
+                <p className="mt-4 whitespace-pre-wrap text-gray-500">
+                  {selectedVolumeEntry?.content || '暂无卷概要，可在预览区填写或由 AI 生成。'}
+                </p>
+              </div>
+            ) : selectedOutlineChapter ? (
+              <div>
+                <p className="font-bold text-gray-700">当前章节</p>
+                <p className="mt-2">第{selectedOutlineChapter.chapter.serialNumber}章</p>
+                <p className="mt-4 whitespace-pre-wrap text-gray-500">
+                  {selectedOutlineEntry?.content || '暂无概要，可在预览区填写或由 AI 生成。'}
+                </p>
+              </div>
+            ) : (
+              '请选择左侧章节后生成概要。'
+            )}
           </div>
           <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4">
             <textarea
@@ -713,6 +824,23 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText }: Workbench
               className="h-12 w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand"
             />
             <div className="mt-3 grid grid-cols-2 gap-2">
+              <button className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-100">复制内容</button>
+              <button
+                onClick={() => {
+                  if (outlineSelectionType === 'volume' && selectedOutlineVolume) {
+                    updateVolumeSummary(selectedOutlineVolume.name, '');
+                    return;
+                  }
+                  if (selectedOutlineChapter) {
+                    updateChapterSummary(selectedOutlineChapter.chapter.serialNumber, '');
+                  }
+                }}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-100"
+              >
+                清空概要
+              </button>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
               <button className="rounded-lg bg-brand px-3 py-2 text-sm font-bold text-white">发送</button>
               <button className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100">暂停</button>
             </div>
@@ -721,7 +849,6 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText }: Workbench
       </div>
     );
   }
-
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-white">
       {renderTopTabs()}

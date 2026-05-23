@@ -4,8 +4,6 @@ interface WorkbenchHeaderProps {
   onOpenSettings: () => void;
   onOpenOutline: () => void;
   onOpenNotes: () => void;
-  onOpenModelManage: () => void;
-  onOpenAgentManage: () => void;
 }
 
 export function WorkbenchHeader({
@@ -14,8 +12,6 @@ export function WorkbenchHeader({
   onOpenSettings,
   onOpenOutline,
   onOpenNotes,
-  onOpenModelManage,
-  onOpenAgentManage,
 }: WorkbenchHeaderProps) {
   const navItems = [
     { key: 'workInfo', label: '作品信息', onClick: onOpenWorkInfo },
@@ -43,21 +39,6 @@ export function WorkbenchHeader({
           </button>
         ))}
       </nav>
-
-      <div className="absolute right-[142px] top-1/2 flex -translate-y-1/2 items-center gap-1">
-        <button
-          onClick={onOpenModelManage}
-          className="rounded-full bg-brand px-4 py-1.5 text-base font-medium text-white transition-colors hover:bg-brand-dark"
-        >
-          模型管理
-        </button>
-        <button
-          onClick={onOpenAgentManage}
-          className="rounded-full bg-brand px-4 py-1.5 text-base font-medium text-white transition-colors hover:bg-brand-dark"
-        >
-          智能体管理
-        </button>
-      </div>
     </header>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Minus, Moon, PanelLeft, Plus, Search, Square, X } from 'lucide-react';
+import { Minus, Moon, PanelLeft, Plus, Square, X } from 'lucide-react';
 
 import { useNovelLibrary } from '@/features/novels/hooks/useNovelLibrary';
 import {
@@ -560,13 +560,6 @@ export function AppFrame({ children }: AppFrameProps) {
           >
             <Moon className="h-4 w-4" />
             黑色主题
-          </button>
-          <button
-            onClick={() => navigate('/novels')}
-            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-            title="打开作品列表"
-          >
-            <Search className="h-[18px] w-[18px]" />
           </button>
           <div className="ml-1 flex items-center rounded-xl border border-slate-200 bg-white">
             <button

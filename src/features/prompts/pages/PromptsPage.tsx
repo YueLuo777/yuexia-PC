@@ -277,15 +277,7 @@ export function PromptsPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button onClick={() => setShowRecycle(true)} className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-600 hover:bg-slate-50">
-              回收站{recycleBin.length > 0 ? ` (${recycleBin.length})` : ''}
-            </button>
-            <button onClick={openCreate} className="flex h-8 items-center gap-1.5 rounded-lg bg-brand px-3 text-xs text-white hover:bg-brand-dark">
-              <Plus className="h-3.5 w-3.5" />
-              创建提示词
-            </button>
-          </div>
+          <div />
         </div>
       </div>
 
@@ -296,26 +288,34 @@ export function PromptsPage() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                className={`rounded-full px-5 py-2.5 text-base font-bold transition-colors ${
                   activeTab === tab
-                    ? 'bg-slate-900 text-white'
-                    : 'border border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                    ? 'bg-brand text-white'
+                    : 'border border-brand/30 bg-white text-brand hover:bg-brand-light'
                 }`}
               >
-                {TAB_LABELS[tab]} <span className="ml-1 text-xs opacity-70">{prompts.filter((item) => (item.promptType ?? 'novel') === tab).length}</span>
+                {TAB_LABELS[tab]} <span className="ml-1 text-sm opacity-70">{prompts.filter((item) => (item.promptType ?? 'novel') === tab).length}</span>
               </button>
             ))}
           </div>
 
-          <div className="relative w-[300px]">
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-300" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="搜索提示词..."
-              className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-12 pr-4 text-base outline-none focus:border-brand"
-            />
+          <div className="flex shrink-0 items-center gap-3">
+            <button
+              onClick={() => setShowRecycle(true)}
+              className="h-12 rounded-2xl border border-brand/30 bg-white px-5 text-base font-bold text-brand transition-colors hover:bg-brand-light"
+            >
+              提示词回收站{recycleBin.length > 0 ? ` (${recycleBin.length})` : ''}
+            </button>
+            <div className="relative w-[300px]">
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-300" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="搜索提示词..."
+                className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-12 pr-4 text-base outline-none focus:border-brand"
+              />
+            </div>
           </div>
         </div>
 
@@ -374,14 +374,23 @@ export function PromptsPage() {
           </div>
         </div>
 
-        {filteredPrompts.length === 0 ? (
-          <div className="flex min-h-[420px] flex-col items-center justify-center rounded-[28px] border border-dashed border-slate-200 bg-white">
-            <Sparkles className="mb-4 h-12 w-12 text-slate-300" />
-            <p className="text-base text-slate-400">暂无提示词</p>
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-5">
-            {filteredPrompts.map((prompt) => (
+        <div className="flex flex-wrap gap-5">
+          <button
+            onClick={openCreate}
+            className="flex h-[290px] w-[300px] flex-col items-center justify-center rounded-[28px] border border-dashed border-blue-400 bg-white text-blue-600 transition-colors hover:border-blue-500 hover:bg-blue-50/40"
+          >
+            <span className="flex h-14 w-14 items-center justify-center rounded-full border border-blue-300 bg-blue-50/50">
+              <Plus className="h-7 w-7" />
+            </span>
+            <span className="mt-5 text-lg font-medium">创建提示词</span>
+          </button>
+          {filteredPrompts.length === 0 && (
+            <div className="flex h-[290px] w-[300px] flex-col items-center justify-center rounded-[28px] border border-dashed border-slate-200 bg-white">
+              <Sparkles className="mb-4 h-12 w-12 text-slate-300" />
+              <p className="text-base text-slate-400">暂无提示词</p>
+            </div>
+          )}
+          {filteredPrompts.map((prompt) => (
               <article
                 key={prompt.id}
                 className="flex h-[290px] w-[300px] flex-col rounded-[28px] border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
@@ -448,9 +457,8 @@ export function PromptsPage() {
                   </div>
                 </div>
               </article>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
       </div>
 
       <PromptEditorModal

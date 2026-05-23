@@ -64,9 +64,23 @@ interface DatabaseCollectionResult<T = unknown> {
   message?: string;
 }
 
+interface AppIconResult {
+  ok: boolean;
+  isCustom?: boolean;
+  iconPath?: string;
+  dataUrl?: string;
+  canceled?: boolean;
+  message?: string;
+}
+
 interface Window {
   xinyuexiaModel?: {
     request(input: ModelRequestInput): Promise<ModelRequestResult>;
+  };
+  xinyuexiaAppIcon?: {
+    read(): Promise<AppIconResult>;
+    select(): Promise<AppIconResult>;
+    reset(): Promise<AppIconResult>;
   };
   xinyuexiaDatabase?: {
     ensureDefaultDir(): Promise<DatabaseActionResult>;

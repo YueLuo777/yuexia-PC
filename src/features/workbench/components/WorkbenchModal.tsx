@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import { useEffect, type ReactNode } from 'react';
 
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
 
 interface WorkbenchModalProps {
@@ -14,20 +15,16 @@ interface WorkbenchModalProps {
 
 export function WorkbenchModal({ title, isOpen, onClose, children, widthClass = 'w-[720px]' }: WorkbenchModalProps) {
   const draggable = useDraggableModal(`workbench_${title}`);
+  useTopModalEscape(isOpen, onClose);
 
   useEffect(() => {
     if (!isOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
     const handleShortcut = (event: Event) => {
       const action = event as CustomEvent<{ id?: string }>;
       if (action.detail?.id === 'close_floating') onClose();
     };
-    window.addEventListener('keydown', handleKeyDown, true);
     window.addEventListener(SHORTCUT_ACTION_EVENT, handleShortcut);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown, true);
       window.removeEventListener(SHORTCUT_ACTION_EVENT, handleShortcut);
     };
   }, [isOpen, onClose]);

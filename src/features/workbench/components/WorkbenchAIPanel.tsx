@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { readModelSnapshot } from '@/features/models/hooks/useModels';
 import type { ModelItem } from '@/features/models/model/modelTypes';
@@ -11,11 +11,30 @@ import { usePersistentState } from '@/shared/hooks/usePersistentState';
 
 export type WorkbenchAITool = 'ai';
 
+interface AiSession {
+  id: number;
+  input: string;
+  output: string;
+  messages: AiMessage[];
+  linkChapter: boolean;
+  hasSentChapterContext: boolean;
+}
+
+interface AiMessage {
+  id: number;
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 interface WorkbenchAIPanelProps {
   activeTool: WorkbenchAITool;
   selectedChapterContent: string;
-  onClose: () => void;
+  onClose?: () => void;
   onReplaceContent: (content: string) => void;
+  onUndoReplace?: () => void;
+  canUndoReplace?: boolean;
+  onOpenModelManage?: () => void;
+  onOpenAgentManage?: () => void;
 }
 
 function readConfig() {
@@ -23,10 +42,6 @@ function readConfig() {
     models: readModelSnapshot(),
     prompts: readPromptSnapshot().prompts,
   };
-}
-
-function getToolName(_tool: WorkbenchAITool) {
-  return 'AI';
 }
 
 function getDefaultInstruction(_tool: WorkbenchAITool) {
@@ -38,24 +53,50 @@ export function WorkbenchAIPanel({
   selectedChapterContent,
   onClose,
   onReplaceContent,
+  onUndoReplace,
+  canUndoReplace = false,
+  onOpenModelManage,
+  onOpenAgentManage,
 }: WorkbenchAIPanelProps) {
-  const [input, setInput] = useState('');
-  const [output, setOutput] = useState('');
+  const [sessions, setSessions] = useState<AiSession[]>([{
+    id: 1,
+    input: '',
+    output: '',
+    messages: [],
+    linkChapter: false,
+    hasSentChapterContext: false,
+  }]);
+  const [activeSessionId, setActiveSessionId] = useState(1);
+  const [deleteSessionMenu, setDeleteSessionMenu] = useState<{ sessionId: number; x: number; y: number } | null>(null);
   const [models, setModels] = useState<ModelItem[]>(() => readConfig().models);
   const [prompts, setPrompts] = useState<PromptItem[]>(() => readConfig().prompts);
-  const [selectedModelId, setSelectedModelId] = usePersistentState<string>('xinyuexia_workbench_ai_model', '');
-  const [selectedPromptId, setSelectedPromptId] = usePersistentState<string>('xinyuexia_workbench_ai_prompt', '');
+  const [selectedModelId, setSelectedModelId] = usePersistentState<string>('xinyuexia_workbench_ai_left_model', '');
+  const [selectedPromptId, setSelectedPromptId] = usePersistentState<string>('xinyuexia_workbench_ai_left_prompt', '');
   const [isLoading, setIsLoading] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [outputFontSize, setOutputFontSize] = useState(20);
-  const [splitPercent, setSplitPercent] = usePersistentState<number>('xinyuexia_workbench_ai_split_percent', 54);
-  const contentRef = useRef<HTMLDivElement>(null);
+  const nextSessionIdRef = useRef(2);
+  const nextMessageIdRef = useRef(1);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
+  const activeSession = sessions.find((session) => session.id === activeSessionId) ?? sessions[0];
+  const input = activeSession?.input ?? '';
+  const output = activeSession?.output ?? '';
   const enabledModels = useMemo(() => models.filter((model) => model.enabled), [models]);
   const selectedModel = enabledModels.find((model) => model.id === selectedModelId) ?? enabledModels[0] ?? null;
   const selectedPrompt = prompts.find((prompt) => prompt.id === selectedPromptId) ?? null;
-  const toolName = getToolName(activeTool);
   const outputWordCount = output.replace(/\s/g, '').length;
+
+  const updateSession = (sessionId: number, patch: Partial<Omit<AiSession, 'id'>>) => {
+    setSessions((prev) => prev.map((session) => (
+      session.id === sessionId ? { ...session, ...patch } : session
+    )));
+  };
+
+  const updateActiveSession = (patch: Partial<Omit<AiSession, 'id'>>) => {
+    if (!activeSession) return;
+    updateSession(activeSession.id, patch);
+  };
 
   useEffect(() => {
     const updateConfig = () => {
@@ -77,34 +118,131 @@ export function WorkbenchAIPanel({
     }
   }, [enabledModels, selectedModelId, setSelectedModelId]);
 
+  useEffect(() => {
+    if (prompts.length === 0) {
+      if (selectedPromptId) setSelectedPromptId('');
+      return;
+    }
+    if (!prompts.some((prompt) => prompt.id === selectedPromptId)) {
+      setSelectedPromptId(prompts[0].id);
+    }
+  }, [prompts, selectedPromptId, setSelectedPromptId]);
+
+  useEffect(() => () => {
+    abortControllerRef.current?.abort();
+  }, []);
+
+  useEffect(() => {
+    const closeDeleteMenu = () => setDeleteSessionMenu(null);
+    window.addEventListener('click', closeDeleteMenu);
+    return () => window.removeEventListener('click', closeDeleteMenu);
+  }, []);
+
   const flashStatus = (text: string) => {
     setStatusText(text);
     window.setTimeout(() => setStatusText(''), 1600);
   };
 
-  const sendMessage = async () => {
+  const sendMessage = async (configModel = selectedModel, configPrompt = selectedPrompt) => {
+    if (!activeSession) return;
+    const sessionId = activeSession.id;
     const text = input.trim();
     if (!text || isLoading) return;
-    if (!selectedModel) {
-      setOutput('尚未配置可用模型。请先到“模型管理”中新增并启用模型。');
+    const shouldAttachChapter = activeSession.linkChapter && !activeSession.hasSentChapterContext && selectedChapterContent.trim();
+    const userMessage: AiMessage = { id: nextMessageIdRef.current++, role: 'user', content: text };
+    const assistantMessage: AiMessage = { id: nextMessageIdRef.current++, role: 'assistant', content: '正在生成...' };
+    const nextMessages = [...activeSession.messages, userMessage, assistantMessage];
+    updateSession(sessionId, {
+      input: '',
+      messages: nextMessages,
+      output: '正在生成...',
+      hasSentChapterContext: activeSession.hasSentChapterContext || Boolean(shouldAttachChapter),
+    });
+
+    if (!configModel) {
+      const errorText = '尚未配置可用模型。请先到“模型管理”中新增并启用模型。';
+      updateSession(sessionId, {
+        output: errorText,
+        messages: nextMessages.map((message) => (
+          message.id === assistantMessage.id ? { ...message, content: errorText } : message
+        )),
+      });
       return;
     }
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     setIsLoading(true);
-    setOutput((prev) => prev || '正在生成...');
     try {
       const content = await callModel({
-        model: selectedModel,
-        prompt: selectedPrompt?.content ?? getDefaultInstruction(activeTool),
+        model: configModel,
+        prompt: configPrompt?.content ?? getDefaultInstruction(activeTool),
         userContent: text,
-        chapterContext: selectedChapterContent.trim(),
+        chapterContext: shouldAttachChapter ? selectedChapterContent.trim() : '',
+        signal: controller.signal,
       });
-      setOutput(content);
+      updateSession(sessionId, {
+        output: content,
+        messages: nextMessages.map((message) => (
+          message.id === assistantMessage.id ? { ...message, content } : message
+        )),
+      });
     } catch (error) {
-      setOutput(error instanceof Error ? `【错误】${error.message}` : '【错误】模型请求失败。');
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        flashStatus('已停止输出');
+      } else {
+        const errorText = error instanceof Error ? `【错误】${error.message}` : '【错误】模型请求失败。';
+        updateSession(sessionId, {
+          output: errorText,
+          messages: nextMessages.map((message) => (
+            message.id === assistantMessage.id ? { ...message, content: errorText } : message
+          )),
+        });
+      }
     } finally {
+      if (abortControllerRef.current === controller) abortControllerRef.current = null;
       setIsLoading(false);
     }
+  };
+
+  const addSession = () => {
+    if (sessions.length >= 10) {
+      flashStatus('最多10个会话');
+      return;
+    }
+    const nextId = nextSessionIdRef.current;
+    nextSessionIdRef.current += 1;
+    setSessions((prev) => [...prev, {
+      id: nextId,
+      input: '',
+      output: '',
+      messages: [],
+      linkChapter: false,
+      hasSentChapterContext: false,
+    }]);
+    setActiveSessionId(nextId);
+    setDeleteSessionMenu(null);
+  };
+
+  const deleteSession = (sessionId: number) => {
+    if (sessions.length <= 1) {
+      flashStatus('至少保留1个会话');
+      setDeleteSessionMenu(null);
+      return;
+    }
+    setSessions((prev) => {
+      const next = prev.filter((session) => session.id !== sessionId);
+      if (activeSessionId === sessionId) {
+        setActiveSessionId(next[Math.max(0, prev.findIndex((session) => session.id === sessionId) - 1)]?.id ?? next[0].id);
+      }
+      return next;
+    });
+    setDeleteSessionMenu(null);
+  };
+
+  const stopMessage = () => {
+    abortControllerRef.current?.abort();
+    setIsLoading(false);
   };
 
   const copyOutput = async () => {
@@ -117,82 +255,230 @@ export function WorkbenchAIPanel({
     }
   };
 
-  const startSplitResize = (event: ReactMouseEvent) => {
-    event.preventDefault();
-    const rect = contentRef.current?.getBoundingClientRect();
-    if (!rect) return;
+  const renderConfigPanel = (
+    model: ModelItem | null,
+    modelId: string,
+    onModelChange: (value: string) => void,
+    prompt: PromptItem | null,
+    promptId: string,
+    onPromptChange: (value: string) => void,
+  ) => (
+    <>
+      <div className="shrink-0 rounded-lg border border-gray-200 bg-gray-50 p-2">
+        <div className="grid grid-cols-[52px_minmax(0,1fr)_84px_38px] items-center gap-1.5">
+          <span className="whitespace-nowrap text-sm text-gray-500">模型</span>
+          <div className="relative min-w-0">
+            <select
+              value={model?.id ?? modelId}
+              onChange={(event) => onModelChange(event.target.value)}
+              className="h-9 w-full min-w-0 appearance-none rounded-lg border border-gray-200 bg-white px-2.5 pr-7 text-sm font-semibold text-gray-700 outline-none focus:border-brand"
+            >
+              {enabledModels.length === 0 ? (
+                <option value="" className="text-base">无可用模型</option>
+              ) : (
+                enabledModels.map((item) => (
+                  <option key={item.id} value={item.id} className="text-base">{item.name}</option>
+                ))
+              )}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+          </div>
+          {onOpenModelManage ? (
+            <button
+              onClick={onOpenModelManage}
+              className="h-9 shrink-0 rounded-lg bg-brand px-2 text-sm font-bold text-white transition-colors hover:bg-brand-dark"
+            >
+              模型管理
+            </button>
+          ) : <span />}
+          <span className={`text-sm ${model ? 'text-emerald-500' : 'text-red-500'}`}>
+            {model ? '正常' : '失败'}
+          </span>
 
-    const handleMove = (moveEvent: MouseEvent) => {
-      const next = ((moveEvent.clientX - rect.left) / rect.width) * 100;
-      setSplitPercent(Math.max(35, Math.min(70, Math.round(next))));
-    };
-
-    const handleUp = () => {
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleUp);
-    };
-
-    document.body.style.cursor = 'ew-resize';
-    document.body.style.userSelect = 'none';
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleUp);
-  };
+          <span className="whitespace-nowrap text-sm text-gray-500">提示词</span>
+          <div className="relative min-w-0">
+            <select
+              value={prompt?.id ?? prompts[0]?.id ?? promptId}
+              onChange={(event) => onPromptChange(event.target.value)}
+              className="h-9 w-full min-w-0 appearance-none rounded-lg border border-gray-200 bg-white px-2.5 pr-7 text-sm font-semibold text-gray-700 outline-none focus:border-brand"
+            >
+              {prompts.length === 0 ? (
+                <option value="" className="text-sm">无可用提示词</option>
+              ) : (
+                prompts.map((item) => (
+                  <option key={item.id} value={item.id} className="text-sm">{item.name}</option>
+                ))
+              )}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+          </div>
+          {onOpenAgentManage ? (
+            <button
+              onClick={onOpenAgentManage}
+              className="h-9 shrink-0 rounded-lg bg-brand px-2 text-sm font-bold text-white transition-colors hover:bg-brand-dark"
+            >
+              提示词管理
+            </button>
+          ) : <span />}
+          <span />
+        </div>
+      </div>
+      <div className="mt-2 flex h-9 shrink-0 items-center gap-1.5 overflow-x-auto rounded-full border border-gray-200 bg-gray-50 px-2.5">
+        <button
+          onClick={addSession}
+          disabled={sessions.length >= 10}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-base font-bold leading-none text-gray-700 hover:border-brand hover:text-brand disabled:text-gray-300"
+          title="新建会话"
+        >
+          +
+        </button>
+        {sessions.map((session, index) => (
+          <div key={session.id} className="relative shrink-0">
+            <button
+              onClick={() => {
+                setActiveSessionId(session.id);
+                setDeleteSessionMenu(null);
+              }}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setDeleteSessionMenu({ sessionId: session.id, x: event.clientX, y: event.clientY });
+              }}
+              className={`flex h-7 min-w-7 items-center justify-center rounded-lg border px-2 text-sm font-bold leading-none transition-colors ${
+                session.id === activeSessionId
+                  ? 'border-brand/30 bg-brand/10 text-brand'
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-brand hover:text-brand'
+              }`}
+            >
+              {index + 1}
+            </button>
+          </div>
+        ))}
+      </div>
+      {deleteSessionMenu && (
+        <button
+          onClick={(event) => {
+            event.stopPropagation();
+            deleteSession(deleteSessionMenu.sessionId);
+          }}
+          className="fixed z-[300] rounded-md bg-gray-900 px-2.5 py-1.5 text-xs font-bold text-white shadow-lg hover:bg-red-600"
+          style={{ left: deleteSessionMenu.x, top: deleteSessionMenu.y }}
+        >
+          删除
+        </button>
+      )}
+    </>
+  );
 
   return (
     <aside className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-white">
-      <div className="flex h-[42px] shrink-0 items-center justify-between border-b border-gray-100 px-3">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-gray-900">{toolName}智能体</span>
+      <div className="flex h-9 shrink-0 items-center justify-between border-b border-gray-100 px-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="text-sm font-bold text-gray-900">AI对话</span>
           {statusText && <span className="text-[11px] text-brand">{statusText}</span>}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <button
-            onClick={onClose}
-            className="rounded-md px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-            title="收起"
+            onClick={() => window.dispatchEvent(new Event('open_chapter_associate'))}
+            className="rounded-full bg-brand px-2.5 py-1 text-xs font-bold text-white transition-colors hover:bg-brand-dark"
           >
-            收起
+            关联章节
           </button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="rounded-md px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              title="收起"
+            >
+              收起
+            </button>
+          )}
         </div>
       </div>
 
-      <div
-        ref={contentRef}
-        className="grid min-h-0 flex-1 overflow-hidden p-3"
-        style={{ gridTemplateColumns: `${splitPercent}% 8px minmax(0, 1fr)` }}
-      >
-        <section className="flex min-w-0 flex-col overflow-hidden">
-          <div className="min-h-0 flex-1 rounded-xl border border-gray-200 bg-gray-50">
-            <textarea
-              value={output}
-              onChange={(event) => setOutput(event.target.value)}
-              placeholder="暂无输出内容..."
-              className="editor-scrollbar h-full w-full resize-none rounded-xl border-0 bg-transparent p-4 leading-8 text-gray-700 outline-none"
-              style={{ fontSize: outputFontSize }}
-            />
-          </div>
-          <div className="mt-3 flex shrink-0 items-center justify-between gap-3 text-sm text-gray-400">
-            <span>替换后可按 Ctrl+Z 撤回上一次替换</span>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setOutputFontSize((prev) => Math.max(14, prev - 1))}
-                className="h-8 w-8 rounded-lg bg-brand text-lg font-bold text-white hover:bg-brand-dark"
-              >
-                -
-              </button>
-              <span className="min-w-8 text-center text-base font-bold text-gray-700">{outputFontSize}</span>
-              <button
-                onClick={() => setOutputFontSize((prev) => Math.min(32, prev + 1))}
-                className="h-8 w-8 rounded-lg bg-brand text-lg font-bold text-white hover:bg-brand-dark"
-              >
-                +
-              </button>
+      <section className="flex min-h-0 flex-1 flex-col overflow-hidden p-2.5">
+        {renderConfigPanel(
+          selectedModel,
+          selectedModelId,
+          setSelectedModelId,
+          selectedPrompt,
+          selectedPromptId,
+          setSelectedPromptId,
+        )}
+        <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-3">
+          {activeSession?.messages.length ? (
+            <div className="flex flex-col gap-3">
+              {activeSession.messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[82%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 leading-7 shadow-sm ${
+                      message.role === 'user'
+                        ? 'rounded-br-md bg-brand text-white'
+                        : 'rounded-bl-md border border-gray-200 bg-white text-gray-700'
+                    }`}
+                    style={{ fontSize: outputFontSize }}
+                  >
+                    {message.content}
+                  </div>
+                </div>
+              ))}
             </div>
-            <span className="text-xl font-bold text-brand">{outputWordCount}字</span>
+          ) : (
+            <div className="flex h-full items-start text-gray-400" style={{ fontSize: outputFontSize }}>
+              暂无对话内容...
+            </div>
+          )}
+        </div>
+        <div className="mt-2 flex shrink-0 items-center justify-between gap-2 text-xs text-gray-400">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              onClick={() => updateActiveSession({
+                linkChapter: !activeSession?.linkChapter,
+                hasSentChapterContext: false,
+              })}
+              className={`rounded-lg border px-3 py-1.5 text-sm font-bold transition-colors ${
+                activeSession?.linkChapter
+                  ? 'border-brand bg-brand text-white'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-brand hover:text-brand'
+              }`}
+            >
+              关联本章
+            </button>
           </div>
-          <div className="mt-3 grid shrink-0 grid-cols-3 gap-2">
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="shrink-0 text-base font-bold text-brand">{outputWordCount}字</span>
+            <button
+              onClick={() => setOutputFontSize((prev) => Math.max(14, prev - 1))}
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-[26px] font-bold leading-none text-white hover:bg-brand-dark"
+            >
+              -
+            </button>
+            <span className="min-w-8 text-center text-base font-bold text-gray-700">{outputFontSize}</span>
+            <button
+              onClick={() => setOutputFontSize((prev) => Math.min(32, prev + 1))}
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-[26px] font-bold leading-none text-white hover:bg-brand-dark"
+            >
+              +
+            </button>
+          </div>
+        </div>
+        <div className="mt-2 shrink-0">
+          <textarea
+            value={input}
+            onChange={(event) => updateActiveSession({ input: event.target.value })}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                void sendMessage();
+              }
+            }}
+            placeholder="请输入你的要求..."
+            className="h-9 w-full resize-none rounded-full border border-gray-200 px-3.5 py-1.5 text-sm leading-5 outline-none focus:border-brand"
+          />
+          <div className="mt-2 grid grid-cols-3 gap-2">
             <button
               onClick={() => {
                 if (!output.trim()) return;
@@ -200,139 +486,49 @@ export function WorkbenchAIPanel({
                 flashStatus('已替换正文');
               }}
               disabled={!output.trim()}
-              className="rounded-lg bg-brand px-3 py-3 text-base font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
+              className="rounded-lg bg-brand px-2 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
             >
               替换正文
             </button>
             <button
-              onClick={() => setOutput('')}
-              disabled={!output.trim()}
-              className="rounded-lg bg-blue-800 px-3 py-3 text-base font-bold text-white hover:bg-blue-900 disabled:bg-blue-900/45 disabled:text-white/45"
+              onClick={onUndoReplace}
+              disabled={!canUndoReplace}
+              className="rounded-lg border border-gray-200 px-2 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
             >
-              重置输出
+              撤回替换
             </button>
             <button
               onClick={copyOutput}
               disabled={!output.trim()}
-              className="rounded-lg bg-brand px-3 py-3 text-base font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
+              className="rounded-lg bg-brand px-2 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
             >
               复制
             </button>
+          </div>
+          <div className="mt-2 grid grid-cols-[minmax(0,1fr)_64px_64px] gap-2">
             <button
-              onClick={() => setOutput('')}
-              className="col-start-3 rounded-lg bg-red-600 px-3 py-3 text-base font-bold text-white hover:bg-red-700"
+              onClick={() => void sendMessage()}
+              disabled={isLoading || !input.trim()}
+              className="rounded-lg bg-brand px-3 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
+            >
+              {isLoading ? '生成中...' : '发送'}
+            </button>
+            <button
+              onClick={stopMessage}
+              disabled={!isLoading}
+              className="rounded-lg border border-gray-200 px-2 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
+            >
+              停止
+            </button>
+            <button
+              onClick={() => updateActiveSession({ output: '', messages: [] })}
+              className="rounded-lg bg-red-600 px-2 py-2 text-sm font-bold text-white hover:bg-red-700"
             >
               清空
             </button>
           </div>
-          <div className="mt-3 shrink-0">
-            <textarea
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  void sendMessage();
-                }
-              }}
-              placeholder="请输入你的要求..."
-              className="h-10 w-full resize-none rounded-full border border-gray-200 px-4 py-2 text-sm leading-5 outline-none focus:border-brand"
-            />
-            <button
-              onClick={() => void sendMessage()}
-              disabled={isLoading || !input.trim()}
-              className="mt-3 w-full rounded-lg bg-brand px-3 py-3 text-base font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
-            >
-              {isLoading ? '生成中...' : '发送'}
-            </button>
-          </div>
-        </section>
-
-        <div
-          onMouseDown={startSplitResize}
-          className="group flex cursor-ew-resize items-center justify-center"
-          title="拖拽调整左右区域宽度"
-        >
-          <div className="h-full w-[3px] rounded-full bg-gray-200 transition-colors group-hover:bg-brand" />
         </div>
-
-        <section className="flex min-w-0 flex-col overflow-hidden">
-          <div className="shrink-0 rounded-xl border border-gray-200 bg-gray-50 p-3">
-            <div className="grid grid-cols-[42px_minmax(0,1fr)_48px] items-center gap-2">
-              <span className="text-base text-gray-500">模型</span>
-              <div className="relative">
-                <select
-                  value={selectedModel?.id ?? ''}
-                  onChange={(event) => setSelectedModelId(event.target.value)}
-                  className="h-11 w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 pr-8 text-base font-semibold text-gray-700 outline-none focus:border-brand"
-                >
-                  {enabledModels.length === 0 ? (
-                    <option value="">无可用模型</option>
-                  ) : (
-                    enabledModels.map((model) => (
-                      <option key={model.id} value={model.id}>{model.name}</option>
-                    ))
-                  )}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              </div>
-              <span className={`text-base ${selectedModel ? 'text-emerald-500' : 'text-red-500'}`}>
-                {selectedModel ? '正常' : '失败'}
-              </span>
-
-              <span className="text-base text-gray-500">提示词</span>
-              <div className="relative">
-                <select
-                  value={selectedPrompt?.id ?? ''}
-                  onChange={(event) => setSelectedPromptId(event.target.value)}
-                  className="h-11 w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 pr-8 text-base font-semibold text-gray-700 outline-none focus:border-brand"
-                >
-                  <option value="">默认提示词</option>
-                  {prompts.map((prompt) => (
-                    <option key={prompt.id} value={prompt.id}>{prompt.name}</option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              </div>
-            </div>
-          </div>
-          <div className="mt-3 flex h-10 shrink-0 items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3">
-            <button className="h-7 w-7 rounded-lg bg-gray-100 text-sm font-bold text-gray-700">+</button>
-            <span className="rounded-md bg-brand/10 px-2 py-1 text-xs font-bold text-brand">1</span>
-          </div>
-          <div className="mt-3 min-h-0 flex-1 rounded-xl border border-gray-200 bg-gray-50" />
-          <div className="mt-3 shrink-0">
-            <textarea
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  void sendMessage();
-                }
-              }}
-              placeholder="请输入你的要求..."
-              className="h-10 w-full resize-none rounded-full border border-gray-200 px-4 py-2 text-sm leading-5 outline-none focus:border-brand"
-            />
-            <div className="mt-3 grid grid-cols-[minmax(0,1fr)_72px] gap-2">
-              <button
-                onClick={() => void sendMessage()}
-                disabled={isLoading || !input.trim()}
-                className="rounded-lg bg-brand px-3 py-3 text-base font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
-              >
-                {isLoading ? '生成中' : '发送'}
-              </button>
-              <button
-                onClick={() => setIsLoading(false)}
-                disabled={!isLoading}
-                className="rounded-lg border border-gray-200 px-3 py-3 text-base font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
-              >
-                停止
-              </button>
-            </div>
-          </div>
-        </section>
-      </div>
+      </section>
     </aside>
   );
 }

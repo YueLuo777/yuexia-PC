@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, shell, screen } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, screen } = require('electron');
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -35,6 +35,7 @@ const DATABASE_COLLECTION_FILES = {
   plotRecycle: 'plot-library-recycle.json',
   materials: 'materials.json',
 };
+const CUSTOM_APP_ICON_FILE_NAME = 'custom-app-icon.png';
 const DATABASE_SCHEMA_SQL = `CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS app_settings (
@@ -401,6 +402,33 @@ function isVisibleOnSomeDisplay(bounds) {
   });
 }
 
+function getCustomAppIconPath() {
+  return path.join(app.getPath('userData'), CUSTOM_APP_ICON_FILE_NAME);
+}
+
+function getCurrentAppIconPath() {
+  const customIcon = getCustomAppIconPath();
+  return fs.existsSync(customIcon) ? customIcon : APP_ICON;
+}
+
+function readCurrentAppIcon() {
+  const iconPath = getCurrentAppIconPath();
+  const image = nativeImage.createFromPath(iconPath);
+  return {
+    ok: !image.isEmpty(),
+    isCustom: iconPath !== APP_ICON,
+    iconPath,
+    dataUrl: image.isEmpty() ? '' : image.toDataURL(),
+  };
+}
+
+function applyWindowIcon(targetWindow = mainWindow) {
+  if (!targetWindow || targetWindow.isDestroyed()) return readCurrentAppIcon();
+  const icon = nativeImage.createFromPath(getCurrentAppIconPath());
+  if (!icon.isEmpty()) targetWindow.setIcon(icon);
+  return readCurrentAppIcon();
+}
+
 function getWindowOptions(savedState) {
   const bounds = {
     ...DEFAULT_WINDOW_BOUNDS,
@@ -417,7 +445,7 @@ function getWindowOptions(savedState) {
     minWidth: MIN_WINDOW_WIDTH,
     minHeight: MIN_WINDOW_HEIGHT,
     title: APP_NAME,
-    icon: APP_ICON,
+    icon: getCurrentAppIconPath(),
     backgroundColor: '#f9fafb',
     autoHideMenuBar: true,
     frame: false,
@@ -650,6 +678,53 @@ ipcMain.handle('window:reload', () => {
 });
 ipcMain.handle('window:begin-titlebar-drag', (_event, input) => beginTitlebarDrag(input));
 ipcMain.handle('window:move-titlebar-drag', (_event, input) => moveTitlebarDrag(input));
+
+ipcMain.handle('app-icon:read', async () => readCurrentAppIcon());
+
+ipcMain.handle('app-icon:select', async () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return { ok: false, message: '窗口未就绪。' };
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: '选择软件图标图片',
+    properties: ['openFile'],
+    filters: [
+      { name: '图片文件', extensions: ['png', 'jpg', 'jpeg', 'webp', 'ico'] },
+      { name: '所有文件', extensions: ['*'] },
+    ],
+  });
+  if (result.canceled || result.filePaths.length === 0) return { ok: false, canceled: true };
+
+  const sourcePath = result.filePaths[0];
+  const sourceImage = nativeImage.createFromPath(sourcePath);
+  if (sourceImage.isEmpty()) {
+    return { ok: false, message: '无法读取这个图片，请换一张 PNG、JPG、WEBP 或 ICO。' };
+  }
+
+  try {
+    const targetPath = getCustomAppIconPath();
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    const squareIcon = sourceImage.resize({ width: 256, height: 256, quality: 'best' });
+    fs.writeFileSync(targetPath, squareIcon.toPNG());
+    return { ...applyWindowIcon(mainWindow), ok: true, message: '图标已更新。' };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : '保存图标失败。',
+    };
+  }
+});
+
+ipcMain.handle('app-icon:reset', async () => {
+  try {
+    const customIcon = getCustomAppIconPath();
+    if (fs.existsSync(customIcon)) fs.unlinkSync(customIcon);
+    return { ...applyWindowIcon(mainWindow), ok: true, message: '已恢复默认图标。' };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : '恢复默认图标失败。',
+    };
+  }
+});
 
 ipcMain.handle('model:request', async (_event, input) => {
   const request = normalizeModelRequestInput(input);
