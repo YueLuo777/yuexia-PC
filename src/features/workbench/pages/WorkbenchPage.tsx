@@ -32,19 +32,23 @@ const WORK_NOTES_KEY_PREFIX = 'xinyuexia_workbench_notes_';
 const GLOBAL_NOTES_LIST_KEY = 'xinyuexia_workbench_notes_list_v1';
 const WORK_NOTES_LIST_KEY_PREFIX = 'xinyuexia_workbench_notes_list_v1_';
 const APP_SCALE_KEY = 'xinyuexia_app_scale';
-const BASE_APP_SCALE = 1.1;
+const APP_SCALE_VERSION_KEY = 'xinyuexia_app_scale_version';
+const APP_SCALE_BASE = 1.1;
+const APP_SCALE_STORAGE_VERSION = '2';
 const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
 
 function getEffectiveAppScale() {
-  if (typeof window === 'undefined') return BASE_APP_SCALE;
+  if (typeof window === 'undefined') return APP_SCALE_BASE;
   const cssScale = Number.parseFloat(
     window.getComputedStyle(document.documentElement).getPropertyValue(APP_EFFECTIVE_SCALE_CSS_VAR),
   );
   if (Number.isFinite(cssScale) && cssScale > 0) return cssScale;
 
   const savedScale = Number.parseFloat(localStorage.getItem(APP_SCALE_KEY) ?? '1');
-  const appScale = Number.isFinite(savedScale) ? Math.max(0.8, Math.min(1.5, savedScale)) : 1;
-  return BASE_APP_SCALE * appScale;
+  if (!Number.isFinite(savedScale)) return APP_SCALE_BASE;
+  const isCurrentVersion = localStorage.getItem(APP_SCALE_VERSION_KEY) === APP_SCALE_STORAGE_VERSION;
+  const effectiveScale = isCurrentVersion ? savedScale : savedScale * APP_SCALE_BASE;
+  return Math.max(APP_SCALE_BASE, Math.min(APP_SCALE_BASE * 2, effectiveScale));
 }
 
 function getAiPanelMaxWidth() {

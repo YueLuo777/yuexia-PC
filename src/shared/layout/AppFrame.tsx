@@ -29,8 +29,14 @@ declare global {
 }
 
 const APP_SCALE_KEY = 'xinyuexia_app_scale';
+const APP_SCALE_VERSION_KEY = 'xinyuexia_app_scale_version';
 const DARK_THEME_KEY = 'xinyuexia_dark_theme';
-const BASE_APP_SCALE = 1.1;
+const APP_SCALE_BASE = 1.1;
+const APP_SCALE_STORAGE_VERSION = '2';
+const APP_SCALE_OPTIONS = [1, 1.1, 1.25, 1.5, 1.75, 2].map((labelScale) => ({
+  labelScale,
+  effectiveScale: Number((APP_SCALE_BASE * labelScale).toFixed(3)),
+}));
 const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
 const TITLEBAR_DRAG_THRESHOLD = 4;
 
@@ -53,11 +59,17 @@ type TitlebarDragResult = {
 function loadScale() {
   try {
     const raw = Number(localStorage.getItem(APP_SCALE_KEY) ?? '1');
-    if (!Number.isFinite(raw)) return 1;
-    return Math.max(0.8, Math.min(1.5, raw));
+    if (!Number.isFinite(raw)) return APP_SCALE_BASE;
+    const isCurrentVersion = localStorage.getItem(APP_SCALE_VERSION_KEY) === APP_SCALE_STORAGE_VERSION;
+    const effectiveScale = isCurrentVersion ? raw : raw * APP_SCALE_BASE;
+    return Math.max(APP_SCALE_BASE, Math.min(APP_SCALE_BASE * 2, effectiveScale));
   } catch {
-    return 1;
+    return APP_SCALE_BASE;
   }
+}
+
+function getScaleLabel(scale: number) {
+  return Math.round((scale / APP_SCALE_BASE) * 100);
 }
 
 function loadDarkTheme() {
@@ -96,15 +108,17 @@ export function AppFrame({ children }: AppFrameProps) {
   const { tabs, activeTabId, setActiveTabId, openWorkTab, closeTab } = useWorkspaceTabs();
   const [isMaximized, setIsMaximized] = useState(false);
   const [appScale, setAppScale] = useState(loadScale);
+  const [isScaleMenuOpen, setIsScaleMenuOpen] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(loadDarkTheme);
   const [shortcutBindings, setShortcutBindings] = useState(loadShortcutBindings);
   const titlebarDragRef = useRef<TitlebarDragState | null>(null);
   const suppressTitlebarClickRef = useRef(false);
 
-  const effectiveScale = useMemo(() => Number((BASE_APP_SCALE * appScale).toFixed(3)), [appScale]);
+  const effectiveScale = useMemo(() => Number(appScale.toFixed(3)), [appScale]);
 
   useEffect(() => {
     localStorage.setItem(APP_SCALE_KEY, String(appScale));
+    localStorage.setItem(APP_SCALE_VERSION_KEY, APP_SCALE_STORAGE_VERSION);
   }, [appScale]);
 
   useEffect(() => {
@@ -570,7 +584,39 @@ export function AppFrame({ children }: AppFrameProps) {
             <Moon className="h-4 w-4" />
             黑色主题
           </button>
-          <div className="ml-1 flex items-center rounded-xl border border-slate-200 bg-white">
+          <div className="relative ml-1">
+            <button
+              onClick={() => setIsScaleMenuOpen((prev) => !prev)}
+              className="h-8 min-w-[70px] rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800"
+              title="界面比例"
+            >
+              {getScaleLabel(appScale)}%
+            </button>
+            {isScaleMenuOpen && (
+              <div className="absolute right-0 top-10 z-[80] w-[104px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                {APP_SCALE_OPTIONS.map((option) => {
+                  const isSelected = Math.abs(appScale - option.effectiveScale) < 0.001;
+                  return (
+                    <button
+                      key={option.labelScale}
+                      onClick={() => {
+                        setAppScale(option.effectiveScale);
+                        setIsScaleMenuOpen(false);
+                      }}
+                      className={`grid h-9 w-full grid-cols-[22px_1fr] items-center px-3 text-left text-sm transition-colors ${
+                        isSelected
+                          ? 'bg-slate-100 font-semibold text-slate-900'
+                          : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="text-center text-base leading-none">{isSelected ? '✓' : ''}</span>
+                      <span>{Math.round(option.labelScale * 100)}%</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <div className="hidden">
             <button
               onClick={() => setAppScale((prev) => Math.max(0.8, Number((prev - 0.1).toFixed(1))))}
               className="px-2.5 py-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
@@ -586,6 +632,7 @@ export function AppFrame({ children }: AppFrameProps) {
             >
               <Plus className="h-4 w-4" />
             </button>
+            </div>
           </div>
           <button
             onClick={() => void window.xinyuexiaWindow?.minimize()}
