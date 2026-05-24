@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { usePrompts } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 type PromptTab = 'novel' | 'script' | 'default';
@@ -17,6 +18,7 @@ function PromptEditorModal({
   isOpen,
   title,
   categories,
+  defaultCategory,
   initial,
   onClose,
   onSave,
@@ -24,15 +26,18 @@ function PromptEditorModal({
   isOpen: boolean;
   title: string;
   categories: string[];
+  defaultCategory?: string | null;
   initial?: PromptItem | null;
   onClose: () => void;
   onSave: (draft: { name: string; description: string; content: string; category: string }) => void;
 }) {
+  useTopModalEscape(isOpen, onClose);
+  const fallbackCategory = defaultCategory && categories.includes(defaultCategory) ? defaultCategory : categories[0] ?? '未分类';
   const [draft, setDraft] = useState({
     name: '',
     description: '',
     content: '',
-    category: categories[0] ?? '未分类',
+    category: fallbackCategory,
   });
 
   useEffect(() => {
@@ -41,14 +46,14 @@ function PromptEditorModal({
       name: initial?.name ?? '',
       description: initial?.description ?? '',
       content: initial?.content ?? '',
-      category: initial?.category ?? categories[0] ?? '未分类',
+      category: initial?.category ?? fallbackCategory,
     });
-  }, [categories, initial, isOpen]);
+  }, [fallbackCategory, initial, isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/40">
       <div
         className="w-[980px] max-w-[94vw] rounded-[28px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
         onClick={(event) => event.stopPropagation()}
@@ -144,6 +149,7 @@ function PromptRecycleModal({
   onPermanentDelete: (id: string) => void;
 }) {
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  useTopModalEscape(isOpen, onClose);
   if (!isOpen) return null;
 
   return (
@@ -218,9 +224,8 @@ export function PromptsPage() {
     deletePrompt,
     restorePrompt,
     permanentDelete,
-    toggleFavorite,
+    togglePin,
     toggleLock,
-    usePrompt,
     addCategory,
     removeCategory,
   } = usePrompts();
@@ -232,6 +237,7 @@ export function PromptsPage() {
   const [newCategory, setNewCategory] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<PromptItem | null>(null);
   const [showRecycle, setShowRecycle] = useState(false);
+  const [categoryDeleteMode, setCategoryDeleteMode] = useState(false);
 
   const filteredPrompts = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();
@@ -244,6 +250,12 @@ export function PromptsPage() {
         || item.description.toLowerCase().includes(keyword)
         || item.content.toLowerCase().includes(keyword);
       return matchType && matchCategory && matchKeyword;
+    }).sort((a, b) => {
+      if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
+      if (a.isFavorite && b.isFavorite) {
+        return (a.pinnedAt ?? a.updatedAt).localeCompare(b.pinnedAt ?? b.updatedAt);
+      }
+      return 0;
     });
   }, [activeCategory, activeTab, prompts, searchQuery]);
 
@@ -261,6 +273,8 @@ export function PromptsPage() {
   const savePrompt = (draft: { name: string; description: string; content: string; category: string }) => {
     if (editingItem) updatePrompt(editingItem.id, draft);
     else addPrompt({ ...draft, promptType: activeTab });
+    setActiveCategory(draft.category);
+    setSearchQuery('');
     setShowForm(false);
     setEditingItem(null);
   };
@@ -338,7 +352,7 @@ export function PromptsPage() {
               }`}
             >
               {category}
-              {category !== '未分类' && activeCategory === category && (
+              {categoryDeleteMode && category !== '未分类' && (
                 <span
                   onClick={(event) => {
                     event.stopPropagation();
@@ -367,6 +381,16 @@ export function PromptsPage() {
               className="rounded-full border border-brand/30 px-3 py-1.5 text-xs text-brand hover:bg-brand-light"
             >
               + 新建
+            </button>
+            <button
+              onClick={() => setCategoryDeleteMode((prev) => !prev)}
+              className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                categoryDeleteMode
+                  ? 'border-red-200 bg-red-50 text-red-500'
+                  : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+              }`}
+            >
+              {categoryDeleteMode ? '退出删除' : '删除分类'}
             </button>
           </div>
         </div>
@@ -406,21 +430,14 @@ export function PromptsPage() {
 
                 <div className="mt-auto">
                   <p className="mb-2 text-left text-[13px] font-medium text-blue-500">{prompt.content.length} 字</p>
-                  <div className="grid grid-cols-4 gap-1">
+                  <div className="grid grid-cols-3 gap-1">
                     <button
-                      onClick={() => {
-                        void navigator.clipboard?.writeText(prompt.content);
-                        usePrompt(prompt.id);
-                      }}
-                      className="rounded-lg bg-brand py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-dark"
+                      onClick={() => togglePin(prompt.id)}
+                      className={`rounded-lg py-1.5 text-xs font-medium text-white transition-colors ${
+                        prompt.isFavorite ? 'bg-orange-500 hover:bg-orange-600' : 'bg-brand hover:bg-brand-dark'
+                      }`}
                     >
-                      复制
-                    </button>
-                    <button
-                      onClick={() => toggleFavorite(prompt.id)}
-                      className="rounded-lg bg-brand py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-dark"
-                    >
-                      收藏
+                      置顶
                     </button>
                     <button
                       onClick={() => openEdit(prompt)}
@@ -462,6 +479,7 @@ export function PromptsPage() {
         isOpen={showForm}
         title={editingItem ? '编辑提示词' : '创建提示词'}
         categories={categories}
+        defaultCategory={activeCategory}
         initial={editingItem}
         onClose={() => {
           setShowForm(false);

@@ -137,8 +137,16 @@ export function usePrompts() {
     persistRecycle(recycleBin.filter((prompt) => prompt.id !== id));
   };
 
-  const toggleFavorite = (id: string) => {
-    persistPrompts(prompts.map((prompt) => (prompt.id === id ? { ...prompt, isFavorite: !prompt.isFavorite } : prompt)));
+  const togglePin = (id: string) => {
+    persistPrompts(prompts.map((prompt) => (
+      prompt.id === id
+        ? {
+            ...prompt,
+            isFavorite: !prompt.isFavorite,
+            pinnedAt: prompt.isFavorite ? undefined : new Date().toISOString(),
+          }
+        : prompt
+    )));
   };
 
   const toggleLock = (id: string) => {
@@ -175,7 +183,7 @@ export function usePrompts() {
     deletePrompt,
     restorePrompt,
     permanentDelete,
-    toggleFavorite,
+    togglePin,
     toggleLock,
     usePrompt,
     addCategory,

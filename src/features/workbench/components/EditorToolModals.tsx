@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 
 export interface FormatOptions {
   indent: boolean;
@@ -233,14 +234,7 @@ function ModalShell({ title, icon, children, onClose, widthClass = 'w-[520px]' }
   widthClass?: string;
 }) {
   const draggable = useDraggableModal(`editor_tool_${title}`);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown, true);
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [onClose]);
+  useTopModalEscape(true, onClose);
 
   return (
     <div className="fixed inset-0 z-[240] flex items-center justify-center bg-black/40" onClick={onClose}>

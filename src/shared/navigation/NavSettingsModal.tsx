@@ -1,6 +1,7 @@
 import { Plus, RotateCcw, Settings, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { getIconByName } from '@/shared/navigation/navConfig';
 import type { NavGroupConfig, NavItemConfig } from '@/shared/navigation/navConfig';
 
@@ -13,6 +14,7 @@ interface NavSettingsModalProps {
 }
 
 export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: NavSettingsModalProps) {
+  useTopModalEscape(isOpen, onClose);
   const [draft, setDraft] = useState<NavGroupConfig[]>([]);
   const [editingItem, setEditingItem] = useState<{ gi: number; ii: number } | null>(null);
   const [editingValue, setEditingValue] = useState('');

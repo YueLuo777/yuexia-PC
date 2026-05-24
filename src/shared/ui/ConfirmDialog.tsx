@@ -1,6 +1,7 @@
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export function ConfirmDialog({
   onConfirm,
 }: ConfirmDialogProps) {
   const draggable = useDraggableModal(`confirm_${title}`);
+  useTopModalEscape(isOpen, onClose);
 
   if (!isOpen) return null;
 

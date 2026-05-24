@@ -10,6 +10,7 @@ import {
   shortcutActions,
   type ShortcutActionId,
 } from '@/shared/shortcuts/shortcutConfig';
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 
 interface ShortcutSettingsModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface ShortcutSettingsModalProps {
 export function ShortcutSettingsModal({ isOpen, onClose }: ShortcutSettingsModalProps) {
   const [bindings, setBindings] = useState(loadShortcutBindings);
   const [editingId, setEditingId] = useState<ShortcutActionId | null>(null);
+  useTopModalEscape(isOpen && !editingId, onClose);
 
   useEffect(() => {
     if (isOpen) setBindings(loadShortcutBindings());
@@ -41,16 +43,6 @@ export function ShortcutSettingsModal({ isOpen, onClose }: ShortcutSettingsModal
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [editingId, isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (editingId) return;
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [editingId, isOpen, onClose]);
 
   const groups = useMemo(() => {
     const map = new Map<string, typeof shortcutActions>();

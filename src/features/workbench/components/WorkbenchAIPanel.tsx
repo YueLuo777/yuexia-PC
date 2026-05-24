@@ -1,4 +1,4 @@
-import { ChevronDown } from 'lucide-react';
+import { Check, ChevronDown, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { readModelSnapshot } from '@/features/models/hooks/useModels';
@@ -369,8 +369,15 @@ export function WorkbenchAIPanel({
   ) => (
     <>
       <div className="shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-2">
-        <div className="grid grid-cols-[52px_160px_56px_38px] items-center gap-1.5">
-          <span className="whitespace-nowrap text-sm text-gray-500">模型</span>
+        <div className="grid grid-cols-[70px_160px_56px] items-center gap-1.5">
+          <span className="flex items-center gap-1 whitespace-nowrap text-sm text-gray-500">
+            模型
+            {model ? (
+              <Check className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <X className="h-3.5 w-3.5 text-red-500" />
+            )}
+          </span>
           <div className="relative min-w-0">
             <select
               value={model?.id ?? modelId}
@@ -395,9 +402,6 @@ export function WorkbenchAIPanel({
               管理
             </button>
           ) : <span />}
-          <span className={`min-w-0 truncate text-sm ${model ? 'text-emerald-500' : 'text-red-500'}`}>
-            {model ? '正常' : '失败'}
-          </span>
 
           <span className="whitespace-nowrap text-sm text-gray-500">提示词</span>
           <div className="relative min-w-0">
@@ -424,7 +428,6 @@ export function WorkbenchAIPanel({
               管理
             </button>
           ) : <span />}
-          <span />
         </div>
       </div>
       <div className="mt-2 flex h-9 shrink-0 items-center gap-1.5 overflow-x-auto rounded-full border border-gray-200 bg-gray-50 px-2.5">

@@ -1,6 +1,8 @@
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
+
 type SettingsTab = 'appIcon';
 
 const tabs: Array<{ id: SettingsTab; label: string }> = [
@@ -8,6 +10,7 @@ const tabs: Array<{ id: SettingsTab; label: string }> = [
 ];
 
 export function SystemSettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  useTopModalEscape(isOpen, onClose);
   const [activeTab, setActiveTab] = useState<SettingsTab>('appIcon');
   const [iconInfo, setIconInfo] = useState<AppIconResult | null>(null);
   const [status, setStatus] = useState('');

@@ -15,6 +15,7 @@ import { WorkbenchModal } from '@/features/workbench/components/WorkbenchModal';
 import { readChapterContent, useWorkbenchData } from '@/features/workbench/hooks/useWorkbenchData';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
@@ -130,6 +131,7 @@ function WorkbenchFindReplaceModal({
   onUpdateChapterContents: (updates: Record<number, string>) => void;
 }) {
   const draggable = useDraggableModal('workbench_find_replace');
+  useTopModalEscape(true, onClose);
   const [scope, setScope] = useState<FindScope>('chapter');
   const [searchText, setSearchText] = useState('');
   const [replaceText, setReplaceText] = useState('');
@@ -316,6 +318,7 @@ function EditorSettingsModal({
   onClose: () => void;
 }) {
   const draggable = useDraggableModal('workbench_editor_settings');
+  useTopModalEscape(true, onClose);
 
   return (
     <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/35 px-6 py-6" onMouseDown={(event) => {

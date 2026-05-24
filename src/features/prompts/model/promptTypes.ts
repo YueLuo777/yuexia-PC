@@ -7,6 +7,7 @@ export interface PromptItem {
   promptType: 'novel' | 'script' | 'default';
   usageCount: number;
   isFavorite: boolean;
+  pinnedAt?: string;
   isLocked: boolean;
   createdAt: string;
   updatedAt: string;
