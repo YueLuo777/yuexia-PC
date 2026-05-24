@@ -36,8 +36,10 @@ const DATABASE_COLLECTION_FILES = {
   materials: 'materials.json',
 };
 const CUSTOM_APP_ICON_FILE_NAME = 'custom-app-icon.png';
-const PROJECT_APP_ICON_DIR = path.join(path.resolve(__dirname, '..'), 'custom-app-icon');
-const PROJECT_APP_ICON_FILE_NAMES = ['app-icon.png', 'app-icon.jpg', 'app-icon.jpeg', 'app-icon.webp', 'app-icon.ico'];
+const CUSTOM_APP_ICON_SOURCE_FILE_NAME = 'custom-app-icon-source.json';
+const PROJECT_APP_ICON_DIR = path.join(path.resolve(__dirname, '..'), 'ruanjianfengmian');
+const PROJECT_APP_ICON_FILE_NAMES = ['fengmian.png', 'fengmian.jpg', 'fengmian.jpeg', 'fengmian.webp', 'fengmian.ico'];
+const PROJECT_APP_ICON_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.ico']);
 const DATABASE_SCHEMA_SQL = `CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS app_settings (
@@ -408,10 +410,71 @@ function getCustomAppIconPath() {
   return path.join(app.getPath('userData'), CUSTOM_APP_ICON_FILE_NAME);
 }
 
+function getCustomAppIconSourcePath() {
+  return path.join(app.getPath('userData'), CUSTOM_APP_ICON_SOURCE_FILE_NAME);
+}
+
+function readSelectedProjectIconFileName() {
+  try {
+    const sourcePath = getCustomAppIconSourcePath();
+    if (!fs.existsSync(sourcePath)) return '';
+    const parsed = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
+    return typeof parsed?.fileName === 'string' ? parsed.fileName : '';
+  } catch {
+    return '';
+  }
+}
+
+function saveSelectedProjectIconFileName(fileName) {
+  fs.mkdirSync(path.dirname(getCustomAppIconSourcePath()), { recursive: true });
+  fs.writeFileSync(getCustomAppIconSourcePath(), JSON.stringify({ fileName }, null, 2), 'utf8');
+}
+
+function clearSelectedProjectIconFileName() {
+  const sourcePath = getCustomAppIconSourcePath();
+  if (fs.existsSync(sourcePath)) fs.unlinkSync(sourcePath);
+}
+
 function getProjectAppIconPath() {
   return PROJECT_APP_ICON_FILE_NAMES
     .map((fileName) => path.join(PROJECT_APP_ICON_DIR, fileName))
     .find((filePath) => fs.existsSync(filePath)) ?? null;
+}
+
+function readProjectAppIcons() {
+  if (!fs.existsSync(PROJECT_APP_ICON_DIR)) return [];
+  const selectedFileName = readSelectedProjectIconFileName();
+  return fs.readdirSync(PROJECT_APP_ICON_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && PROJECT_APP_ICON_EXTENSIONS.has(path.extname(entry.name).toLowerCase()))
+    .map((entry) => {
+      const filePath = path.join(PROJECT_APP_ICON_DIR, entry.name);
+      const image = nativeImage.createFromPath(filePath);
+      if (image.isEmpty()) return null;
+      const previewImage = image.resize({ width: 128, height: 128, quality: 'best' });
+      return {
+        fileName: entry.name,
+        filePath,
+        dataUrl: previewImage.toDataURL(),
+        isSelected: entry.name === selectedFileName,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.fileName.localeCompare(b.fileName, 'zh-CN'));
+}
+
+function saveCustomAppIconFromPath(sourcePath, sourceFileName = '') {
+  const sourceImage = nativeImage.createFromPath(sourcePath);
+  if (sourceImage.isEmpty()) {
+    return { ok: false, message: '无法读取这个图片，请换一张 PNG、JPG、WEBP 或 ICO。' };
+  }
+
+  const targetPath = getCustomAppIconPath();
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  const squareIcon = sourceImage.resize({ width: 256, height: 256, quality: 'best' });
+  fs.writeFileSync(targetPath, squareIcon.toPNG());
+  if (sourceFileName) saveSelectedProjectIconFileName(sourceFileName);
+  else clearSelectedProjectIconFileName();
+  return { ok: true };
 }
 
 function getCurrentAppIconPath() {
@@ -425,11 +488,14 @@ function getCurrentAppIconPath() {
 function readCurrentAppIcon() {
   const iconPath = getCurrentAppIconPath();
   const image = nativeImage.createFromPath(iconPath);
+  const selectedProjectIconFileName = readSelectedProjectIconFileName();
   return {
     ok: !image.isEmpty(),
     isCustom: iconPath !== APP_ICON,
     projectIconDir: PROJECT_APP_ICON_DIR,
     acceptedFileNames: PROJECT_APP_ICON_FILE_NAMES,
+    selectedProjectIconFileName,
+    projectIcons: readProjectAppIcons(),
     iconPath,
     dataUrl: image.isEmpty() ? '' : image.toDataURL(),
   };
@@ -491,7 +557,12 @@ function saveWindowState(targetWindow) {
 
 function notifyWindowMaximizedState(targetWindow) {
   if (!targetWindow || targetWindow.isDestroyed()) return;
-  targetWindow.webContents.send('window:maximized-change', targetWindow.isMaximized());
+  if (targetWindow.webContents.isDestroyed()) return;
+  try {
+    targetWindow.webContents.send('window:maximized-change', targetWindow.isMaximized());
+  } catch (error) {
+    console.warn('Failed to notify maximized state:', error);
+  }
 }
 
 function clamp(value, min, max) {
@@ -627,6 +698,20 @@ function applySavedWindowState(targetWindow, savedState) {
   targetWindow.maximize();
 }
 
+function attachRendererDiagnostics(targetWindow) {
+  if (!targetWindow || targetWindow.isDestroyed()) return;
+  targetWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.warn('Renderer did-fail-load:', errorCode, errorDescription, validatedURL);
+  });
+  targetWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.warn('Renderer process gone:', details);
+  });
+  targetWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    if (level < 2) return;
+    console.warn(`Renderer console level=${level} ${sourceId}:${line} ${message}`);
+  });
+}
+
 function createWindow() {
   if (mainWindow && !mainWindow.isDestroyed()) {
     focusMainWindow();
@@ -637,6 +722,7 @@ function createWindow() {
   mainWindow = new BrowserWindow(getWindowOptions(savedState));
 
   attachWindowStateTracking(mainWindow);
+  attachRendererDiagnostics(mainWindow);
   applySavedWindowState(mainWindow, savedState);
 
   mainWindow.once('ready-to-show', () => {
@@ -706,17 +792,9 @@ ipcMain.handle('app-icon:select', async () => {
   });
   if (result.canceled || result.filePaths.length === 0) return { ok: false, canceled: true };
 
-  const sourcePath = result.filePaths[0];
-  const sourceImage = nativeImage.createFromPath(sourcePath);
-  if (sourceImage.isEmpty()) {
-    return { ok: false, message: '无法读取这个图片，请换一张 PNG、JPG、WEBP 或 ICO。' };
-  }
-
   try {
-    const targetPath = getCustomAppIconPath();
-    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-    const squareIcon = sourceImage.resize({ width: 256, height: 256, quality: 'best' });
-    fs.writeFileSync(targetPath, squareIcon.toPNG());
+    const saved = saveCustomAppIconFromPath(result.filePaths[0]);
+    if (!saved.ok) return saved;
     return { ...applyWindowIcon(mainWindow), ok: true, message: '图标已更新。' };
   } catch (error) {
     return {
@@ -726,10 +804,36 @@ ipcMain.handle('app-icon:select', async () => {
   }
 });
 
+ipcMain.handle('app-icon:use-project-icon', async (_event, fileName) => {
+  if (typeof fileName !== 'string' || path.basename(fileName) !== fileName) {
+    return { ...readCurrentAppIcon(), ok: false, message: '图标文件名无效。' };
+  }
+  if (!PROJECT_APP_ICON_EXTENSIONS.has(path.extname(fileName).toLowerCase())) {
+    return { ...readCurrentAppIcon(), ok: false, message: '只能选择 PNG、JPG、WEBP 或 ICO 图片。' };
+  }
+
+  const sourcePath = path.join(PROJECT_APP_ICON_DIR, fileName);
+  if (!fs.existsSync(sourcePath)) {
+    return { ...readCurrentAppIcon(), ok: false, message: '没有找到这张图标图片。' };
+  }
+
+  try {
+    const saved = saveCustomAppIconFromPath(sourcePath, fileName);
+    if (!saved.ok) return { ...readCurrentAppIcon(), ...saved };
+    return { ...applyWindowIcon(mainWindow), ok: true, message: '软件图标已切换。' };
+  } catch (error) {
+    return {
+      ...readCurrentAppIcon(),
+      ok: false,
+      message: error instanceof Error ? error.message : '切换图标失败。',
+    };
+  }
+});
 ipcMain.handle('app-icon:reset', async () => {
   try {
     const customIcon = getCustomAppIconPath();
     if (fs.existsSync(customIcon)) fs.unlinkSync(customIcon);
+    clearSelectedProjectIconFileName();
     return { ...applyWindowIcon(mainWindow), ok: true, message: '已恢复默认图标。' };
   } catch (error) {
     return {

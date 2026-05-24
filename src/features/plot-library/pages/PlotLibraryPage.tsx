@@ -197,16 +197,13 @@ export function PlotLibraryPage() {
     <div className="h-full flex flex-col bg-gray-50">
       <div className="flex h-16 shrink-0 items-center border-b border-gray-200 bg-white px-6">
         <div className="flex w-full items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Library className="w-5 h-5 text-brand" />
-            <div>
+          <div className="min-w-0">
               <h1 className="text-xl font-bold text-gray-900">剧情库</h1>
               <p className="text-[10px] text-gray-400">
                 共 {items.length} 条剧情点
                 {search.trim() && ` · 搜索 ${filtered.length} 条`}
                 {activeTagFilter && ` · 筛选「${activeTagFilter}」${filtered.length} 条`}
               </p>
-            </div>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative w-48">

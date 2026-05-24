@@ -17,6 +17,7 @@ import {
   getStoredFormatSettings,
   getStoredFontSettings,
   saveSnapshot,
+  stripLineIndents,
   type FormatOptions,
   type FontSettings,
 } from '@/features/workbench/components/EditorToolModals';
@@ -76,6 +77,7 @@ export function ChapterEditor({
   const serialValue = chapter?.serialNumber ?? 1;
   const safeVolumeName = volumeName ?? '第一卷';
   const wordCount = useMemo(() => content.replace(/\s/g, '').length, [content]);
+  const visualIndentEnabled = formatSettings.indent;
 
   const showToast = (text: string) => setCopyToast(text);
 
@@ -114,6 +116,12 @@ export function ChapterEditor({
   }, [copyToast]);
 
   useEffect(() => {
+    if (!visualIndentEnabled) return;
+    const cleaned = stripLineIndents(content);
+    if (cleaned !== content) onChangeContent(cleaned);
+  }, [content, onChangeContent, visualIndentEnabled]);
+
+  useEffect(() => {
     const handleShortcut = (event: Event) => {
       const action = event as CustomEvent<{ id?: string }>;
       if (!chapter) return;
@@ -142,7 +150,7 @@ export function ChapterEditor({
   }
 
   const handleContentChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    commitContentWithCursor(event.target.value, event.target.selectionStart);
+    commitContentWithCursor(stripLineIndents(event.target.value), event.target.selectionStart);
   };
 
   const handlePaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -151,10 +159,7 @@ export function ChapterEditor({
     const target = event.currentTarget;
     const start = target.selectionStart;
     const end = target.selectionEnd;
-    const indent = '\u3000\u3000';
-    const pastedWithIndent = pasted.split('\n').map((line) => (
-      line.trim() && !line.startsWith(indent) ? `${indent}${line}` : line
-    )).join('\n');
+    const pastedWithIndent = stripLineIndents(pasted);
     const next = content.slice(0, start) + pastedWithIndent + content.slice(end);
     commitContentWithCursor(next, start + pastedWithIndent.length);
   };
@@ -165,9 +170,8 @@ export function ChapterEditor({
     const target = event.currentTarget;
     const start = target.selectionStart;
     const end = target.selectionEnd;
-    const indent = '\u3000\u3000';
-    const next = content.slice(0, start) + `\n${indent}` + content.slice(end);
-    commitContentWithCursor(next, start + 1 + indent.length);
+    const next = content.slice(0, start) + '\n' + content.slice(end);
+    commitContentWithCursor(next, start + 1);
   };
 
   const copyText = async (text: string, message: string) => {
@@ -283,7 +287,7 @@ export function ChapterEditor({
         </div>
         <div className="mx-1 h-5 w-px bg-gray-200" />
         <button
-          onClick={() => void copyText(content.replace(/^[\s\u3000]+/, ''), '已复制正文')}
+          onClick={() => void copyText(stripLineIndents(content), '已复制正文')}
           className="rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light"
         >
           复制正文
@@ -342,6 +346,7 @@ export function ChapterEditor({
             caretColor: fontSettings.fontColor,
             fontSize: `${fontSettings.fontSize}px`,
             lineHeight: fontSettings.lineHeight,
+            textIndent: visualIndentEnabled ? '2em' : undefined,
           }}
         />
       </div>

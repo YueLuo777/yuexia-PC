@@ -197,10 +197,7 @@ export function DbSettingsPage() {
     <div className="flex h-full flex-col bg-gray-50">
       <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-gray-200 bg-white px-6">
         <div className="min-w-0">
-          <h1 className="flex items-center gap-2 text-xl font-bold text-gray-900">
-            <Shield className="h-5 w-5 text-sky-500" />
-            数据库设置
-          </h1>
+          <h1 className="text-xl font-bold text-gray-900">数据库设置</h1>
           <p className="mt-0.5 truncate text-xs text-gray-400">
             默认保存到当前项目文件夹下的 shujuku，先建立 PostgreSQL + pgvector 的本地目录和表结构。
           </p>

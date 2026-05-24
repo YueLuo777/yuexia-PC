@@ -69,6 +69,13 @@ interface AppIconResult {
   isCustom?: boolean;
   projectIconDir?: string;
   acceptedFileNames?: string[];
+  selectedProjectIconFileName?: string;
+  projectIcons?: Array<{
+    fileName: string;
+    filePath: string;
+    dataUrl: string;
+    isSelected?: boolean;
+  }>;
   iconPath?: string;
   dataUrl?: string;
   canceled?: boolean;
@@ -82,6 +89,7 @@ interface Window {
   xinyuexiaAppIcon?: {
     read(): Promise<AppIconResult>;
     select(): Promise<AppIconResult>;
+    useProjectIcon(fileName: string): Promise<AppIconResult>;
     reset(): Promise<AppIconResult>;
   };
   xinyuexiaDatabase?: {

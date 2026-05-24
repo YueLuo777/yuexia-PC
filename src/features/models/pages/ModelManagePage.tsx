@@ -376,8 +376,7 @@ export function ModelManagePage() {
   return (
     <div className="flex h-full flex-col bg-slate-50">
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-6">
-        <div className="flex items-center gap-2">
-          <Server className="h-5 w-5 text-brand" />
+        <div className="flex min-w-0 items-center gap-3">
           <h1 className="text-xl font-bold text-slate-900">模型管理</h1>
           <span className="flex h-7 items-center rounded-lg bg-orange-500 px-3 text-xs text-white">已启用 {enabledCount} 个模型</span>
         </div>

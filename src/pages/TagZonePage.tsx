@@ -141,12 +141,9 @@ export default function TagZonePage() {
 
   return (
     <div className="flex h-full flex-col bg-gray-50">
-      <header className="flex h-24 shrink-0 items-center justify-between border-b border-gray-100 bg-white px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50">
-            <Tag className="h-4 w-4 text-violet-600" />
-          </div>
-          <h1 className="text-base font-bold text-gray-900">标签专区</h1>
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-100 bg-white px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <h1 className="text-xl font-bold text-gray-900">标签专区</h1>
           <span className="rounded-md bg-violet-500 px-2 py-0.5 text-xs text-white">{tags.length} 个标签</span>
         </div>
         <button

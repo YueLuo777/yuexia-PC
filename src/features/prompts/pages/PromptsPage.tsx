@@ -269,12 +269,9 @@ export function PromptsPage() {
     <div className="flex h-full flex-col bg-slate-50">
       <div className="flex h-16 shrink-0 items-center border-b border-slate-100 bg-white px-6">
         <div className="flex w-full items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-brand" />
-            <div>
+          <div className="min-w-0">
               <h1 className="text-xl font-bold text-slate-900">提示词管理</h1>
               <p className="mt-0.5 text-xs text-slate-400">管理和发现 AI 写作提示词</p>
-            </div>
           </div>
 
           <div />
@@ -374,31 +371,22 @@ export function PromptsPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-5">
-          <button
-            onClick={openCreate}
-            className="flex h-[290px] w-[300px] flex-col items-center justify-center rounded-[28px] border border-dashed border-blue-400 bg-white text-blue-600 transition-colors hover:border-blue-500 hover:bg-blue-50/40"
-          >
-            <span className="flex h-14 w-14 items-center justify-center rounded-full border border-blue-300 bg-blue-50/50">
-              <Plus className="h-7 w-7" />
-            </span>
-            <span className="mt-5 text-lg font-medium">创建提示词</span>
-          </button>
+        <div className="flex flex-wrap gap-4">
           {filteredPrompts.length === 0 && (
-            <div className="flex h-[290px] w-[300px] flex-col items-center justify-center rounded-[28px] border border-dashed border-slate-200 bg-white">
-              <Sparkles className="mb-4 h-12 w-12 text-slate-300" />
-              <p className="text-base text-slate-400">暂无提示词</p>
+            <div className="flex h-[247px] w-[255px] flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-white">
+              <Sparkles className="mb-3 h-10 w-10 text-slate-300" />
+              <p className="text-sm text-slate-400">暂无提示词</p>
             </div>
           )}
           {filteredPrompts.map((prompt) => (
               <article
                 key={prompt.id}
-                className="flex h-[290px] w-[300px] flex-col rounded-[28px] border border-slate-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+                className="flex h-[247px] w-[255px] flex-col rounded-[24px] border border-slate-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h2 className="truncate text-[20px] font-bold text-slate-900">{prompt.name}</h2>
+                      <h2 className="truncate text-[17px] font-bold text-slate-900">{prompt.name}</h2>
                       <span className="rounded-xl border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-500">{prompt.category}</span>
                     </div>
                   </div>
@@ -414,30 +402,30 @@ export function PromptsPage() {
                   </button>
                 </div>
 
-                <div className="mt-3 line-clamp-4 text-sm leading-7 text-slate-500">{prompt.description || '暂无说明'}</div>
+                <div className="mt-2 line-clamp-4 text-[13px] leading-6 text-slate-500">{prompt.description || '暂无说明'}</div>
 
                 <div className="mt-auto">
-                  <p className="mb-3 text-left text-sm font-medium text-blue-500">{prompt.content.length} 字</p>
+                  <p className="mb-2 text-left text-[13px] font-medium text-blue-500">{prompt.content.length} 字</p>
                   <div className="grid grid-cols-4 gap-1">
                     <button
                       onClick={() => {
                         void navigator.clipboard?.writeText(prompt.content);
                         usePrompt(prompt.id);
                       }}
-                      className="rounded-lg bg-brand py-2 text-[13px] font-medium text-white transition-colors hover:bg-brand-dark"
+                      className="rounded-lg bg-brand py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-dark"
                     >
                       复制
                     </button>
                     <button
                       onClick={() => toggleFavorite(prompt.id)}
-                      className="rounded-lg bg-brand py-2 text-[13px] font-medium text-white transition-colors hover:bg-brand-dark"
+                      className="rounded-lg bg-brand py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-dark"
                     >
                       收藏
                     </button>
                     <button
                       onClick={() => openEdit(prompt)}
                       disabled={prompt.isLocked}
-                      className="rounded-lg bg-brand py-2 text-[13px] font-medium text-white transition-colors hover:bg-brand-dark disabled:bg-gray-100 disabled:text-gray-400"
+                      className="rounded-lg bg-brand py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-dark disabled:bg-gray-100 disabled:text-gray-400"
                     >
                       编辑
                     </button>
@@ -446,7 +434,7 @@ export function PromptsPage() {
                         if (!prompt.isLocked) setDeleteTarget(prompt);
                       }}
                       disabled={prompt.isLocked}
-                      className={`rounded-lg py-2 text-[13px] font-medium transition-colors ${
+                      className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
                         prompt.isLocked
                           ? 'cursor-not-allowed bg-gray-100 text-gray-400'
                           : 'bg-red-500 text-white hover:bg-red-600'
@@ -458,6 +446,15 @@ export function PromptsPage() {
                 </div>
               </article>
           ))}
+          <button
+            onClick={openCreate}
+            className="flex h-[247px] w-[255px] flex-col items-center justify-center rounded-[24px] border border-dashed border-blue-400 bg-white text-blue-600 transition-colors hover:border-blue-500 hover:bg-blue-50/40"
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-full border border-blue-300 bg-blue-50/50">
+              <Plus className="h-6 w-6" />
+            </span>
+            <span className="mt-4 text-base font-medium">创建提示词</span>
+          </button>
         </div>
       </div>
 

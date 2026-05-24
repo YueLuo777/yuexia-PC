@@ -36,12 +36,9 @@ export function MaterialsCollectionPage() {
   return (
     <div className="flex h-full flex-col bg-slate-50">
       <header className="flex h-16 shrink-0 items-center border-b border-slate-100 bg-white px-6">
-        <div className="flex items-center gap-2">
-          <Library className="h-5 w-5 text-brand" />
-          <div>
+        <div className="min-w-0">
             <h1 className="text-xl font-bold text-slate-900">资料库</h1>
             <p className="mt-0.5 text-xs text-slate-400">设定、封面等资料统一收纳在这里</p>
-          </div>
         </div>
       </header>
 

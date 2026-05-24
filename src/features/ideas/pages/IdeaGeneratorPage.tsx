@@ -196,11 +196,8 @@ export function IdeaGeneratorPage() {
   return (
     <div className="flex h-full flex-col bg-gray-50">
       <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6">
-        <div>
-          <h1 className="flex items-center gap-2 text-lg font-bold text-gray-900">
-            <Lightbulb className="h-5 w-5 text-amber-500" />
-            脑洞生成器
-          </h1>
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-gray-900">脑洞生成器</h1>
           <p className="mt-0.5 text-xs text-gray-400">选择提示词与 AI 模型，生成小说脑洞。</p>
         </div>
         <div className="flex items-center gap-2">

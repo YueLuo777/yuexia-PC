@@ -21,8 +21,12 @@ export function CoverLibraryPage({ embedded = false }: CoverLibraryPageProps = {
 
   return (
     <div className="flex h-full flex-col bg-slate-50">
-      <div className="border-b border-slate-100 bg-white px-7 py-6">
-        <div className="flex items-center gap-3">
+      <div className="flex h-16 shrink-0 items-center border-b border-slate-100 bg-white px-6">
+        <div className="flex w-full items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-slate-900">封面库</h1>
+            <p className="mt-0.5 text-xs text-slate-400">保存的小说封面和剧本封面会显示在这里。</p>
+          </div>
           {!embedded && (
             <button
               onClick={handleBack}
@@ -32,13 +36,6 @@ export function CoverLibraryPage({ embedded = false }: CoverLibraryPageProps = {
               <ArrowLeft className="h-4 w-4" />
             </button>
           )}
-          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-light text-brand">
-            <Image className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-[18px] font-bold text-slate-900">封面库</h1>
-            <p className="mt-1 text-sm text-slate-400">保存的小说封面和剧本封面会显示在这里。</p>
-          </div>
         </div>
       </div>
 

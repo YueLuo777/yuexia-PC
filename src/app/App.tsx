@@ -9,6 +9,7 @@ const ExtractTestPage = lazy(() => import('@/features/extract/pages/ExtractTestP
 const AiChatPage = lazy(() => import('@/features/ai-chat/pages/AiChatPage').then((module) => ({ default: module.AiChatPage })));
 const TestCollectionPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })));
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
+const OutlineEmptyStateTestPage = lazy(() => import('@/features/tests/pages/OutlineEmptyStateTestPage').then((module) => ({ default: module.OutlineEmptyStateTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 const IdeaGeneratorPage = lazy(() => import('@/features/ideas/pages/IdeaGeneratorPage').then((module) => ({ default: module.IdeaGeneratorPage })));
 const IdeaLibraryPage = lazy(() => import('@/features/ideas/pages/IdeaLibraryPage').then((module) => ({ default: module.IdeaLibraryPage })));
@@ -68,6 +69,7 @@ export default function App() {
               <Route path="/test-collection" element={<TestCollectionPage />} />
               <Route path="/theme-colors" element={<DarkThemeColorPage />} />
               <Route path="/dark-theme-colors" element={<DarkThemeColorPage />} />
+              <Route path="/outline-empty-state-test" element={<OutlineEmptyStateTestPage />} />
               <Route path="/test-browser" element={<TestBrowserPage />} />
               <Route path="/button-test" element={<ButtonTestPage />} />
               <Route path="/extract-test" element={<Navigate to="/extract" replace />} />

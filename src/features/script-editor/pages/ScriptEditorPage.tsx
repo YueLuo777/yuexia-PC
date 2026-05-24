@@ -22,6 +22,7 @@ import { readChapterContent, useWorkbenchData } from '@/features/workbench/hooks
 import { addWorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 import type { Chapter, Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
+import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 type EditorMode = 'dual' | 'script' | 'browser';
@@ -810,6 +811,7 @@ export function ScriptEditorPage() {
     updateNovelChapterContent,
   } = useWorkbenchData();
   const { items: materials } = useMaterials();
+  const { tabs, activeTabId } = useWorkspaceTabs();
 
   const [editorMode, setEditorMode] = useState<EditorMode>(() => (
     (localStorage.getItem(EDITOR_MODE_KEY) as EditorMode) || 'dual'
@@ -846,6 +848,13 @@ export function ScriptEditorPage() {
     () => materials.find((material) => material.id === selectedMaterialId) ?? null,
     [materials, selectedMaterialId],
   );
+
+  useEffect(() => {
+    const activeTab = tabs.find((tab) => tab.id === activeTabId);
+    if (!activeTab?.workId) return;
+    if (currentNovelId === activeTab.workId) return;
+    setCurrentNovel(activeTab.workId);
+  }, [activeTabId, currentNovelId, setCurrentNovel, tabs]);
 
   useEffect(() => {
     if (currentScript) return;
@@ -1166,6 +1175,7 @@ export function ScriptEditorPage() {
               <aside className="shrink-0 overflow-hidden border-l border-gray-200 bg-white" style={{ width: widths.ai }}>
                 <WorkbenchAIPanel
                   activeTool="ai"
+                  workId={`script-${currentScript.id}`}
                   selectedChapterContent={editorContent}
                   onClose={handleToggleAI}
                   onReplaceContent={saveContent}

@@ -203,21 +203,30 @@ export function AppFrame({ children }: AppFrameProps) {
       try {
         const parsed = JSON.parse(localStorage.getItem(key) || '{}') as { x?: number; y?: number };
         return {
-          x: Number.isFinite(parsed.x) ? Number(parsed.x) : 0,
-          y: Number.isFinite(parsed.y) ? Number(parsed.y) : 0,
+          x: Number.isFinite(parsed.x) ? Math.round(Number(parsed.x)) : 0,
+          y: Number.isFinite(parsed.y) ? Math.round(Number(parsed.y)) : 0,
         };
       } catch {
         return { x: 0, y: 0 };
       }
     };
+    const applyTransform = (dialog: HTMLElement, x: number, y: number) => {
+      const roundedX = Math.round(x);
+      const roundedY = Math.round(y);
+      dialog.dataset.globalDragX = String(roundedX);
+      dialog.dataset.globalDragY = String(roundedY);
+      if (roundedX === 0 && roundedY === 0) {
+        dialog.style.transform = '';
+        dialog.style.willChange = '';
+        return;
+      }
+      dialog.style.transform = `translate(${roundedX}px, ${roundedY}px)`;
+    };
     const applyDialogPosition = (dialog: HTMLElement) => {
       if (dialog.dataset.draggableManaged === 'true' || dialog.dataset.globalDraggableApplied === 'true') return;
       const position = readDialogPosition(getDialogKey(dialog));
       dialog.dataset.globalDraggableApplied = 'true';
-      dialog.dataset.globalDragX = String(position.x);
-      dialog.dataset.globalDragY = String(position.y);
-      dialog.style.transform = `translate(${position.x}px, ${position.y}px)`;
-      dialog.style.willChange = 'transform';
+      applyTransform(dialog, position.x, position.y);
     };
     const applyAllPositions = () => {
       document.querySelectorAll<HTMLElement>('.fixed.inset-0').forEach((overlay) => {
@@ -262,14 +271,14 @@ export function AppFrame({ children }: AppFrameProps) {
       event.preventDefault();
       const x = dragState.originX + event.clientX - dragState.startX;
       const y = dragState.originY + event.clientY - dragState.startY;
-      dragState.dialog.dataset.globalDragX = String(x);
-      dragState.dialog.dataset.globalDragY = String(y);
-      dragState.dialog.style.transform = `translate(${x}px, ${y}px)`;
+      dragState.dialog.style.willChange = 'transform';
+      applyTransform(dragState.dialog, x, y);
     };
     const handlePointerUp = (event: PointerEvent) => {
       if (!dragState || dragState.pointerId !== event.pointerId) return;
-      const x = Number(dragState.dialog.dataset.globalDragX || 0);
-      const y = Number(dragState.dialog.dataset.globalDragY || 0);
+      const x = Math.round(Number(dragState.dialog.dataset.globalDragX || 0));
+      const y = Math.round(Number(dragState.dialog.dataset.globalDragY || 0));
+      applyTransform(dragState.dialog, x, y);
       localStorage.setItem(dragState.key, JSON.stringify({ x, y }));
       dragState = null;
     };
@@ -508,7 +517,7 @@ export function AppFrame({ children }: AppFrameProps) {
             const isActive = activeTabId === tab.id;
             const isHomeTab = tab.id === HOME_TAB.id;
             return (
-              <div key={tab.id} className={`flex h-10 shrink-0 items-end ${index === 0 ? '' : '-ml-px'}`}>
+              <div key={tab.id} className={`flex h-11 shrink-0 items-end ${index === 0 ? '' : '-ml-px'}`}>
                 <div
                   role="button"
                   tabIndex={0}
@@ -517,7 +526,7 @@ export function AppFrame({ children }: AppFrameProps) {
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') activateTab(tab);
                   }}
-                  className={`workspace-tab group relative flex h-9 min-w-[142px] max-w-[188px] shrink-0 cursor-pointer items-center gap-2 border px-3 text-left text-[15px] font-semibold transition-colors ${
+                  className={`workspace-tab group relative flex h-10 min-w-[142px] max-w-[188px] shrink-0 cursor-pointer items-center gap-2 border px-3 text-left text-[15px] font-semibold transition-colors ${
                     isActive
                       ? `workspace-tab-active rounded-t-lg border-slate-300 border-b-white bg-white text-slate-950 shadow-[0_-1px_0_rgba(255,255,255,0.7)] ${isHomeTab ? 'workspace-tab-home' : ''}`
                       : `workspace-tab-inactive border-transparent bg-transparent text-slate-700 shadow-none hover:text-slate-900 ${isHomeTab ? 'workspace-tab-home-inactive' : ''}`

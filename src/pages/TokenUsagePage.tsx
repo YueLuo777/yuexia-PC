@@ -147,8 +147,7 @@ export default function TokenUsagePage() {
   return (
     <div className="flex h-full flex-col bg-gray-50">
       <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-gray-100 bg-white px-6">
-        <div className="flex min-w-0 items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-brand" />
+        <div className="flex min-w-0 items-center gap-3">
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-gray-900">Token用量</h1>
             <p className="truncate text-xs text-gray-400">合并展示模型调用记录、Token 消耗、成功失败与延迟数据。</p>

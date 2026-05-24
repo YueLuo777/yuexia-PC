@@ -14,6 +14,7 @@ import {
   type NavGroupConfig,
 } from '@/shared/navigation/navConfig';
 import { ShortcutSettingsModal } from '@/shared/shortcuts/ShortcutSettingsModal';
+import { SystemSettingsModal } from '@/shared/settings/SystemSettingsModal';
 
 const USER_NAME_KEY = 'xinyuexia_sidebar_user_name';
 const USER_AVATAR_KEY = 'xinyuexia_sidebar_user_avatar';
@@ -63,6 +64,7 @@ export function DashboardLayout() {
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => loadCollapsedSections());
   const [showNavSettings, setShowNavSettings] = useState(false);
   const [showShortcutSettings, setShowShortcutSettings] = useState(false);
+  const [showSystemSettings, setShowSystemSettings] = useState(false);
   const [userName, setUserName] = useState(readUserName);
   const [avatar, setAvatar] = useState(readUserAvatar);
   const [isEditingUserName, setIsEditingUserName] = useState(false);
@@ -153,7 +155,7 @@ export function DashboardLayout() {
                   }}
                   maxLength={18}
                   autoFocus
-                  className="h-8 w-full rounded-lg border border-brand bg-white px-2 text-sm font-bold text-slate-900 outline-none"
+                  className="h-9 w-full rounded-lg border border-brand bg-white px-2 text-[18px] font-bold text-slate-900 outline-none"
                 />
               ) : (
                 <button
@@ -161,7 +163,7 @@ export function DashboardLayout() {
                     setUserNameDraft(userName);
                     setIsEditingUserName(true);
                   }}
-                  className="block max-w-full truncate text-left text-sm font-bold text-slate-800 transition-colors hover:text-brand"
+                  className="block max-w-full truncate text-left text-[18px] font-bold text-slate-800 transition-colors hover:text-brand"
                   title="双击修改用户名"
                 >
                   {userName}
@@ -214,6 +216,12 @@ export function DashboardLayout() {
 
         <div className="mt-auto space-y-2 border-t border-slate-100 p-4">
           <button
+            onClick={() => setShowSystemSettings(true)}
+            className="flex w-full items-center justify-center whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-[13px] font-bold text-slate-700 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
+          >
+            系统设置
+          </button>
+          <button
             onClick={() => setShowShortcutSettings(true)}
             className="flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-[13px] text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
           >
@@ -250,6 +258,10 @@ export function DashboardLayout() {
       <ShortcutSettingsModal
         isOpen={showShortcutSettings}
         onClose={() => setShowShortcutSettings(false)}
+      />
+      <SystemSettingsModal
+        isOpen={showSystemSettings}
+        onClose={() => setShowSystemSettings(false)}
       />
     </div>
   );

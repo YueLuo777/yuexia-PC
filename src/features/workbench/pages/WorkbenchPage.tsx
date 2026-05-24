@@ -13,6 +13,7 @@ import { WorkbenchHeader } from '@/features/workbench/components/WorkbenchHeader
 import { WorkbenchLibraryPanel } from '@/features/workbench/components/WorkbenchLibraryPanel';
 import { WorkbenchModal } from '@/features/workbench/components/WorkbenchModal';
 import { readChapterContent, useWorkbenchData } from '@/features/workbench/hooks/useWorkbenchData';
+import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
@@ -23,8 +24,8 @@ type FindScope = 'chapter' | 'book';
 type PendingPublish = { type: 'single'; volumeId: number; chapterId: number; title: string } | { type: 'all'; count: number };
 type MemoScope = 'global' | 'work';
 type MemoItem = { id: string; title: string; content: string; updatedAt: string };
-const AI_PANEL_MIN_WIDTH = 312;
-const AI_PANEL_DEFAULT_WIDTH = 384;
+const AI_PANEL_MIN_WIDTH = 430;
+const AI_PANEL_DEFAULT_WIDTH = 430;
 const PUBLISH_CONFIRM_KEY = 'xinyuexia_workbench_publish_confirm';
 const GLOBAL_NOTES_KEY = 'xinyuexia_workbench_notes';
 const WORK_NOTES_KEY_PREFIX = 'xinyuexia_workbench_notes_';
@@ -371,6 +372,7 @@ export function WorkbenchPage() {
   const [isDraggingPanel, setIsDraggingPanel] = useState(false);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(290);
+  const { tabs, activeTabId } = useWorkspaceTabs();
 
   const {
     currentNovel,
@@ -396,6 +398,7 @@ export function WorkbenchPage() {
     saveContent,
     updateChapterContents,
     getChapterWordCount,
+    setCurrentNovel,
   } = useWorkbenchData();
 
   useEffect(() => {
@@ -417,6 +420,13 @@ export function WorkbenchPage() {
   useEffect(() => {
     localStorage.setItem('xinyuexia_ai_panel_width', String(aiPanelWidth));
   }, [aiPanelWidth]);
+
+  useEffect(() => {
+    const activeTab = tabs.find((tab) => tab.id === activeTabId);
+    if (!activeTab?.workId) return;
+    if (currentNovelId === activeTab.workId) return;
+    setCurrentNovel(activeTab.workId);
+  }, [activeTabId, currentNovelId, setCurrentNovel, tabs]);
 
   useEffect(() => {
     const handleResize = () => setAiPanelWidth((prev) => normalizeAiPanelWidth(prev));
@@ -773,6 +783,7 @@ export function WorkbenchPage() {
         >
           <WorkbenchAIPanel
             activeTool="ai"
+            workId={currentNovel.id}
             selectedChapterContent={editorContent}
             onReplaceContent={replaceEditorContent}
             onUndoReplace={undoReplaceEditorContent}

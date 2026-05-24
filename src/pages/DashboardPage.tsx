@@ -1,4 +1,4 @@
-import { BookOpen, ScrollText, X } from 'lucide-react';
+import { BookOpen, ScrollText } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -46,111 +46,10 @@ function formatWords(value: number) {
   return new Intl.NumberFormat('zh-CN').format(value);
 }
 
-function SystemSettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const [iconInfo, setIconInfo] = useState<AppIconResult | null>(null);
-  const [status, setStatus] = useState('');
-  const [isBusy, setIsBusy] = useState(false);
-  const fallbackIconDir = 'E:\\0yuexia\\0,月下PC\\custom-app-icon';
-  const acceptedFileNames = iconInfo?.acceptedFileNames ?? ['app-icon.png', 'app-icon.jpg', 'app-icon.jpeg', 'app-icon.webp', 'app-icon.ico'];
-  const iconDir = iconInfo?.projectIconDir ?? fallbackIconDir;
-
-  useEffect(() => {
-    if (!isOpen) return;
-    setStatus('');
-    void window.xinyuexiaAppIcon?.read().then(setIconInfo);
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  const selectIcon = async () => {
-    if (!window.xinyuexiaAppIcon) {
-      setStatus(`当前运行环境不支持直接上传。可以把图片放到 ${iconDir}，文件名改成 app-icon.png，然后重启软件。`);
-      return;
-    }
-    setIsBusy(true);
-    const result = await window.xinyuexiaAppIcon.select();
-    setIsBusy(false);
-    if (result.canceled) return;
-    setIconInfo(result);
-    setStatus(result.message ?? (result.ok ? '图标已更新。' : '图标更新失败。'));
-  };
-
-  const resetIcon = async () => {
-    if (!window.xinyuexiaAppIcon) {
-      setStatus(`当前运行环境不支持直接恢复。请删除 ${iconDir} 里的自定义图标文件，然后重启软件。`);
-      return;
-    }
-    setIsBusy(true);
-    const result = await window.xinyuexiaAppIcon.reset();
-    setIsBusy(false);
-    setIconInfo(result);
-    setStatus(result.message ?? (result.ok ? '已恢复默认图标。' : '恢复失败。'));
-  };
-
-  return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="w-[520px] max-w-[92vw] overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">系统设置</h2>
-            <p className="mt-0.5 text-xs text-slate-400">上传图片后，会作为软件在任务栏显示的图标。</p>
-          </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="space-y-5 p-6">
-          <div className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              {iconInfo?.dataUrl ? (
-                <img src={iconInfo.dataUrl} alt="当前软件图标" className="h-full w-full object-contain p-2" />
-              ) : (
-                <span className="text-sm font-bold text-brand">月</span>
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-slate-900">{iconInfo?.isCustom ? '当前使用自定义图标' : '当前使用默认图标'}</p>
-              <p className="mt-1 truncate text-xs text-slate-400">{iconInfo?.iconPath ?? '未读取到图标路径'}</p>
-              <p className="mt-2 text-xs leading-5 text-slate-500">建议上传正方形 PNG 图片，透明背景效果最好。</p>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs leading-6 text-blue-700">
-            <p className="font-bold">自动读取文件夹</p>
-            <p className="mt-1 break-all">{iconDir}</p>
-            <p className="mt-1">把图片放进这个文件夹，并命名为 {acceptedFileNames.join(' / ')} 之一，重启软件后自动生效。</p>
-          </div>
-
-          <div className="flex items-center justify-end gap-3">
-            <button
-              onClick={resetIcon}
-              disabled={isBusy}
-              className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
-            >
-              恢复默认
-            </button>
-            <button
-              onClick={selectIcon}
-              disabled={isBusy}
-              className="rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-slate-300"
-            >
-              上传图片
-            </button>
-          </div>
-
-          {status && <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">{status}</p>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function DashboardPage() {
   const navigate = useNavigate();
   const { novels, stats, selectNovel } = useNovelLibrary();
   const [sections] = useState<DashboardSection[]>(loadSections);
-  const [showSystemSettings, setShowSystemSettings] = useState(false);
   const [userName, setUserName] = useState(readUserName);
   const [writingSummary, setWritingSummary] = useState(readWritingSummary);
 
@@ -187,12 +86,6 @@ export function DashboardPage() {
 
   return (
     <main className="relative flex-1 overflow-y-auto p-6">
-      <button
-        onClick={() => setShowSystemSettings(true)}
-        className="fixed bottom-6 left-6 z-20 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
-      >
-        系统设置
-      </button>
 
       <div className="grid gap-5 xl:grid-cols-3">
         <div className="space-y-5">
@@ -200,7 +93,7 @@ export function DashboardPage() {
             <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
               <div>
                 <div>
-                  <p className="text-xs text-slate-400">欢迎回来</p>
+                  <p className="text-sm font-medium text-slate-400">欢迎回来</p>
                   <h1 className="mt-1 text-2xl font-bold text-slate-900">{userName}</h1>
                 </div>
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -281,7 +174,6 @@ export function DashboardPage() {
         <div className="space-y-5" />
       </div>
 
-      <SystemSettingsModal isOpen={showSystemSettings} onClose={() => setShowSystemSettings(false)} />
     </main>
   );
 }

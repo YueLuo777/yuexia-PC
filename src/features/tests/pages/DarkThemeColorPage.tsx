@@ -234,11 +234,8 @@ export function DarkThemeColorPage() {
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: page.button, color: page.title }}>
-              <Palette className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-[18px] font-bold" style={{ color: page.title }}>主题颜色</h1>
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold" style={{ color: page.title }}>主题颜色</h1>
               <p className="mt-1 text-sm" style={{ color: page.muted }}>先选择颜色，再点击右侧位置进行填色。每个位置都可以使用任意颜色。</p>
             </div>
           </div>

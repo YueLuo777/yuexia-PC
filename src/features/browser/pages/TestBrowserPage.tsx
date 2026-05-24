@@ -239,16 +239,11 @@ export function TestBrowserPage() {
 
   return (
     <div className={`flex h-full min-h-0 flex-col bg-slate-50 ${isFullscreen ? 'fixed inset-x-0 bottom-0 top-12 z-[180]' : ''}`}>
-      <header className="shrink-0 border-b border-slate-100 bg-white px-5 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50">
-              <Globe className="h-4 w-4 text-sky-600" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-base font-bold text-slate-900">内置浏览器</h1>
-              <p className="truncate text-xs text-slate-400">{pageTitle}</p>
-            </div>
+      <header className="flex h-16 shrink-0 items-center border-b border-slate-100 bg-white px-6">
+        <div className="flex w-full items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-slate-900">内置浏览器</h1>
+            <p className="truncate text-xs text-slate-400">{pageTitle}</p>
           </div>
           <button
             onClick={() => setIsFullscreen((prev) => !prev)}

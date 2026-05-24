@@ -186,8 +186,16 @@ export function MaterialsPage({ embedded = false }: MaterialsPageProps = {}) {
 
   return (
     <div className="flex h-full flex-col bg-gray-50">
-      <div className="shrink-0 border-b border-gray-200 bg-white px-4 py-2.5">
-        <div className="flex items-center justify-between gap-3">
+      <div className="flex h-16 shrink-0 items-center border-b border-gray-200 bg-white px-6">
+        <div className="flex w-full items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold text-gray-900">设定库</h1>
+              <p className="mt-0.5 text-xs text-gray-400">
+                共 {stats.count} 条资料，关联 {stats.novelCount} 个作品
+              </p>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             {!embedded && (
               <button
@@ -198,15 +206,6 @@ export function MaterialsPage({ embedded = false }: MaterialsPageProps = {}) {
                 <ArrowLeft className="h-4 w-4" />
               </button>
             )}
-            <Library className="h-5 w-5 text-brand" />
-            <div>
-              <h1 className="text-base font-bold text-gray-900">设定库</h1>
-              <p className="text-[10px] text-gray-400">
-                共 {stats.count} 条资料，关联 {stats.novelCount} 个作品
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
             <label className="relative w-48">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
               <input

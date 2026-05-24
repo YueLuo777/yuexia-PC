@@ -1,4 +1,4 @@
-import { ArrowLeft, Globe, Moon, Palette, Search, Sparkles } from 'lucide-react';
+import { ArrowLeft, BookOpenCheck, Globe, Moon, Palette, Search, Sparkles } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,6 +19,13 @@ const testGroups = [
         path: '/theme-colors',
         icon: Moon,
         badge: 'Theme',
+      },
+      {
+        title: '章节概要空状态',
+        description: '对比章节没有概要时，数字按钮的几种空状态显示方案。',
+        path: '/outline-empty-state-test',
+        icon: BookOpenCheck,
+        badge: 'Outline',
       },
     ],
   },
@@ -81,12 +88,9 @@ export function TestCollectionPage() {
     <div className="flex h-full flex-col bg-slate-50">
       <header className="flex h-16 shrink-0 items-center border-b border-slate-100 bg-white px-6">
         <div className="flex w-full items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-brand" />
-            <div>
+          <div className="min-w-0">
               <h1 className="text-xl font-bold text-slate-900">测试合集</h1>
               <p className="mt-0.5 text-xs text-slate-400">已收纳 {totalCount} 个测试内容</p>
-            </div>
           </div>
           <div className="flex items-center gap-2">
             <button

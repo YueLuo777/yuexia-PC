@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight, Plus, Send, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { readModelSnapshot } from '@/features/models/hooks/useModels';
@@ -87,6 +87,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
   const [expandedRoleTypes, setExpandedRoleTypes] = useState<Set<string>>(() => new Set(['未分类']));
   const [aiInput, setAiInput] = useState('');
   const [tabPortalTarget, setTabPortalTarget] = useState<HTMLElement | null>(null);
+  const outlinePreviewRefs = useRef<Record<number, HTMLElement | null>>({});
   const models = useMemo(() => readModelSnapshot().filter((model) => model.enabled), []);
   const prompts = useMemo(() => readPromptSnapshot().prompts, []);
 
@@ -118,6 +119,14 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
     if (normalizedTabs.includes(activeTab)) return;
     setActiveTab(normalizedTabs[0] ?? '');
   }, [activeTab, normalizedTabs]);
+
+  useEffect(() => {
+    if (!tabs.includes('章节概要') || !tabs.includes('卷概要')) return;
+    setExpandedOutlineVolumeIds((prev) => {
+      if (prev.size > 0 || volumes.length === 0) return prev;
+      return new Set(volumes.map((volume) => volume.id));
+    });
+  }, [tabs, volumes]);
 
   useEffect(() => {
     setSelectedId(null);
@@ -628,6 +637,9 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
       setSelectedOutlineChapterId(chapterId);
       const entry = getChapterSummaryEntry(serialNumber);
       setSelectedId(entry?.id ?? null);
+      window.setTimeout(() => {
+        outlinePreviewRefs.current[chapterId]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
     };
     const selectOutlineVolume = (volume: Volume) => {
       setOutlineSelectionType('volume');
@@ -656,10 +668,20 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
                 <div className="space-y-3">
                   {volumes.map((volume) => (
                     <div key={volume.id}>
-                      <div className="flex items-center gap-2 rounded-lg bg-gray-100 px-2 py-2">
-                        <button
-                          onClick={() => toggleOutlineVolume(volume.id)}
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-500 hover:bg-white hover:text-brand"
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => toggleOutlineVolume(volume.id)}
+                        onKeyDown={(event) => {
+                          if (event.key !== 'Enter' && event.key !== ' ') return;
+                          event.preventDefault();
+                          toggleOutlineVolume(volume.id);
+                        }}
+                        className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-white transition-colors hover:brightness-95"
+                        style={{ backgroundColor: '#08B3D9' }}
+                      >
+                        <span
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/15 text-white"
                           title={expandedOutlineVolumeIds.has(volume.id) ? '收起' : '展开'}
                         >
                           {expandedOutlineVolumeIds.has(volume.id) ? (
@@ -667,40 +689,41 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
                           ) : (
                             <ChevronRight className="h-3.5 w-3.5" />
                           )}
-                        </button>
-                        <span className="min-w-0 flex-1 truncate text-sm font-bold text-gray-800">{volume.name}</span>
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">{volume.name}</span>
                         <button
-                          onClick={() => selectOutlineVolume(volume)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            selectOutlineVolume(volume);
+                          }}
                           className={`shrink-0 rounded-md border px-2.5 py-1.5 text-xs font-bold transition-colors ${
                             outlineSelectionType === 'volume' && selectedOutlineVolume?.id === volume.id
-                              ? 'border-brand bg-brand text-white'
-                              : 'border-brand/30 bg-white text-brand hover:bg-brand-light'
+                              ? 'border-white bg-white text-[#08B3D9]'
+                              : 'border-white/70 bg-white/15 text-white hover:bg-white hover:text-[#08B3D9]'
                           }`}
                         >
                           卷概要
                         </button>
                       </div>
                       {expandedOutlineVolumeIds.has(volume.id) && (
-                        <div className="mt-1 grid grid-cols-10 gap-1.5">
+                        <div className="mt-1 grid grid-cols-10 gap-2 px-1.5 py-1.5">
                           {[...volume.chapters].sort((a, b) => a.serialNumber - b.serialNumber).map((chapter) => {
-                            const selected = outlineSelectionType === 'chapter' && selectedOutlineChapter?.chapter.id === chapter.id;
+                            const selected = outlineSelectionType === 'chapter' && selectedOutlineChapterId === chapter.id;
                             const hasSummary = Boolean(getChapterSummaryEntry(chapter.serialNumber)?.content.trim());
                             return (
                               <button
                                 key={chapter.id}
                                 onClick={() => selectOutlineChapter(chapter.id, chapter.serialNumber)}
                                 className={`relative h-9 rounded-lg border text-sm font-bold transition-colors ${
-                                  selected
-                                    ? 'border-brand bg-brand text-white'
-                                    : hasSummary
-                                      ? 'border-brand/30 bg-brand-light text-brand-dark hover:border-brand'
-                                      : 'border-gray-100 bg-gray-50 text-gray-600 hover:bg-white'
-                                }`}
+                                  hasSummary
+                                    ? 'border-[#08B3D9] bg-[#08B3D9] text-white hover:border-[#067B96] hover:bg-[#067B96]'
+                                    : 'border-slate-200 text-slate-500 hover:border-[#08B3D9]'
+                                } ${selected ? 'ring-2 ring-[#08B3D9] ring-offset-2' : ''}`}
+                                style={hasSummary ? undefined : {
+                                  backgroundImage: 'repeating-linear-gradient(135deg, #f8fafc 0, #f8fafc 5px, #e2e8f0 5px, #e2e8f0 6px)',
+                                }}
                               >
                                 {chapter.serialNumber}
-                                {!hasSummary && (
-                                  <span className={`absolute bottom-0.5 left-1 text-[9px] leading-none ${selected ? 'text-white/80' : 'text-gray-400'}`}>无</span>
-                                )}
                               </button>
                             );
                           })}
@@ -718,18 +741,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
           <div className="mb-4 flex shrink-0 items-center justify-between gap-3">
             <div>
               <h3 className="text-base font-bold text-gray-900">概要预览区</h3>
-              <p className="mt-1 text-xs text-gray-400">按章节显示概要内容</p>
             </div>
-            {outlineSelectionType === 'chapter' && selectedOutlineChapter && (
-              <span className="rounded-full bg-brand-light px-3 py-1 text-xs font-bold text-brand-dark">
-                第{selectedOutlineChapter.chapter.serialNumber}章
-              </span>
-            )}
-            {outlineSelectionType === 'volume' && selectedOutlineVolume && (
-              <span className="rounded-full bg-brand-light px-3 py-1 text-xs font-bold text-brand-dark">
-                {selectedOutlineVolume.name}
-              </span>
-            )}
           </div>
           <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto">
             {outlineChapters.length === 0 ? (
@@ -748,13 +760,16 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
                 />
               </section>
             ) : (
-              <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
                 {outlineChapters.map(({ volume, chapter }) => {
                   const entry = getChapterSummaryEntry(chapter.serialNumber);
                   const selected = outlineSelectionType === 'chapter' && selectedOutlineChapter?.chapter.id === chapter.id;
                   return (
                     <section
                       key={chapter.id}
+                      ref={(element) => {
+                        outlinePreviewRefs.current[chapter.id] = element;
+                      }}
                       className={`rounded-xl border bg-gray-50/40 p-4 transition-colors ${
                         selected ? 'border-brand bg-brand-light/40' : 'border-gray-200'
                       }`}
@@ -768,7 +783,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
                         onChange={(event) => updateChapterSummary(chapter.serialNumber, event.target.value)}
                         onFocus={() => selectOutlineChapter(chapter.id, chapter.serialNumber)}
                         placeholder="该章概要会显示在这里，可由 AI 根据章节内容生成。"
-                        className="editor-scrollbar h-28 w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm leading-6 text-gray-700 outline-none focus:border-brand"
+                        className="editor-scrollbar h-36 w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm leading-6 text-gray-700 outline-none focus:border-brand"
                       />
                     </section>
                   );

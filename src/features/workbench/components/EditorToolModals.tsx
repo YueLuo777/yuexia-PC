@@ -127,6 +127,13 @@ export function setSmartFormatEnabled(value: boolean) {
   window.dispatchEvent(new CustomEvent('xinyuexia_smart_format_updated'));
 }
 
+export function stripLineIndents(text: string) {
+  return text
+    .split('\n')
+    .map((line) => line.replace(/^[\u3000 ]+/, ''))
+    .join('\n');
+}
+
 function getStoredHighFreqWords() {
   return [
     ...readJson<string[]>(LEGACY_HIGH_FREQ_WORDS_KEY, []),
@@ -148,7 +155,7 @@ function setHighFreqEnabled(value: boolean) {
 
 export function applyFormat(text: string, options: FormatOptions) {
   if (!text.trim()) return '';
-  let result = text;
+  let result = stripLineIndents(text);
   result = result.replace(/([\u4e00-\u9fff])\s+([\u4e00-\u9fff])/g, '$1$2');
   result = result.replace(/(\d)\s+(\d)/g, '$1$2');
   if (options.mergeParagraphs) {
@@ -160,10 +167,7 @@ export function applyFormat(text: string, options: FormatOptions) {
       .join('\n');
   }
   if (options.indent) {
-    result = result
-      .split('\n')
-      .map((line) => (line.trim() ? `　　${line.trim()}` : line))
-      .join('\n');
+    result = stripLineIndents(result);
   }
   if (options.smartBreak) {
     const sentences = result.replace(/([。！？.!?]+)/g, '$1\x00').split('\x00').filter((item) => item.trim());
@@ -652,7 +656,7 @@ export function SmartFormatModal({ isOpen, onClose, currentText, settings, onApp
   return (
     <ModalShell title="智能排版" icon={<Wand2 className="h-5 w-5 text-brand" />} onClose={onClose} widthClass="w-[560px]">
       <div className="space-y-1 p-5">
-        <ToggleRow label="首行缩进" desc="每段开头自动添加两个全角空格" checked={options.indent} onChange={(value) => setOptions((prev) => ({ ...prev, indent: value }))} />
+        <ToggleRow label="首行缩进" desc="用编辑器显示缩进，不写入正文空格" checked={options.indent} onChange={(value) => setOptions((prev) => ({ ...prev, indent: value }))} />
         <ToggleRow label="合并空段落" desc="合并空行并整理成连续正文段落" checked={options.mergeParagraphs} onChange={(value) => setOptions((prev) => ({ ...prev, mergeParagraphs: value }))} />
         <ToggleRow label="智能断句" desc="按句子数量自动换行" checked={options.smartBreak} onChange={(value) => setOptions((prev) => ({ ...prev, smartBreak: value }))} />
         {options.smartBreak && (

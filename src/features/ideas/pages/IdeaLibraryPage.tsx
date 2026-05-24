@@ -57,11 +57,8 @@ export function IdeaLibraryPage() {
   return (
     <div className="flex h-full flex-col bg-gray-50">
       <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6">
-        <div>
-          <h1 className="flex items-center gap-2 text-lg font-bold text-gray-900">
-            <Library className="h-5 w-5 text-violet-500" />
-            脑洞库
-          </h1>
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-gray-900">脑洞库</h1>
           <p className="mt-0.5 text-xs text-gray-400">管理已生成的脑洞，并继续导入生成器或转大纲。</p>
         </div>
         <div className="flex items-center gap-2">

@@ -681,6 +681,12 @@ export function ExtractTestPage() {
   }, [filesLoaded]);
 
   const selectedModel = models.find((model) => model.id === selectedModelId) ?? null;
+  const orderedModels = useMemo(() => {
+    if (!selectedModelId) return models;
+    const selected = models.find((model) => model.id === selectedModelId);
+    if (!selected) return models;
+    return [selected, ...models.filter((model) => model.id !== selectedModelId)];
+  }, [models, selectedModelId]);
   const selectedNovel = novels.find((novel) => novel.id === selectedNovelId) ?? null;
   const selectedModule = modules.find((module) => module.id === selectedModuleId) ?? null;
 
@@ -987,10 +993,9 @@ export function ExtractTestPage() {
       <header className="shrink-0 border-b border-gray-200 bg-white">
         <div className="flex h-16 items-center justify-between px-6">
           <div>
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-brand" />
-              <h1 className="text-xl font-bold text-gray-900">提炼剧情</h1>
-            </div>
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-gray-900">提炼剧情</h1>
+          </div>
           </div>
 
           <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
@@ -1156,20 +1161,23 @@ export function ExtractTestPage() {
                   </button>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <div className="relative">
-                    <select
-                      id="extract-test-model-select"
-                      value={selectedModel?.id ?? ''}
-                      onChange={(event) => setSelectedModelId(event.target.value)}
-                      className="h-9 w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 pr-9 text-[15px] font-medium text-gray-700 outline-none transition-colors hover:border-gray-300 focus:border-brand"
+                <div className="space-y-1.5">
+                  {orderedModels.map((model) => (
+                    <button
+                      key={model.id}
+                      onClick={() => setSelectedModelId(model.id)}
+                      className={`w-full rounded-lg border px-2.5 py-1.5 text-left text-[15px] transition-all ${
+                        selectedModel?.id === model.id
+                          ? 'border-brand bg-brand-light font-medium text-brand'
+                          : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
                     >
-                      {models.map((model) => (
-                        <option key={model.id} value={model.id}>{model.name}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="truncate">{model.name}</span>
+                        {selectedModel?.id === model.id && <span className="text-brand">✓</span>}
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
             </section>
@@ -1356,9 +1364,9 @@ export function ExtractTestPage() {
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white p-4">
-            <div className="flex min-h-0 flex-1 overflow-hidden border border-gray-100 bg-white">
-              <aside className="flex w-[218px] shrink-0 flex-col border-r border-gray-100 bg-white">
-                <div className="shrink-0 border-b border-gray-100 bg-white px-2 py-3 text-center text-xs font-bold text-slate-600">
+            <div className="flex min-h-0 flex-1 overflow-hidden border border-gray-200 bg-white">
+              <aside className="flex w-[218px] shrink-0 flex-col border-r border-gray-200 bg-white">
+                <div className="shrink-0 border-b border-gray-200 bg-white px-2 py-3 text-center text-xs font-bold text-slate-600">
                   目录
                 </div>
                 <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
@@ -1366,10 +1374,10 @@ export function ExtractTestPage() {
                     const collapsed = collapsedResultGroups[group.key] ?? false;
                     const filledCount = group.items.filter(hasResultContent).length;
                     return (
-                      <section key={group.key} className="overflow-hidden rounded-xl border border-gray-100 bg-white">
+                      <section key={group.key} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
                         <button
                           onClick={() => emitExtractRuntime({ collapsedResultGroups: { ...collapsedResultGroups, [group.key]: !collapsed } })}
-                          className="flex w-full items-center gap-1.5 border-b border-gray-100 bg-white px-2 py-2 text-left transition-colors hover:bg-slate-50"
+                          className="flex w-full items-center gap-1.5 border-b border-gray-200 bg-white px-2 py-2 text-left transition-colors hover:bg-slate-50"
                         >
                           {collapsed ? <ChevronRight className="h-3.5 w-3.5 text-slate-400" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
                           <span className="min-w-0 flex-1 text-xs font-bold text-slate-700">
@@ -1409,7 +1417,7 @@ export function ExtractTestPage() {
 
               {results[activeResultIndex] ? (
                 <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-                  <div className="shrink-0 border-b border-gray-100 bg-white px-4 py-3">
+                  <div className="shrink-0 border-b border-gray-200 bg-white px-4 py-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="text-sm font-bold text-slate-900">剧情点 {activeResultIndex + 1}</div>
@@ -1441,8 +1449,8 @@ export function ExtractTestPage() {
               </div>
             )}
             <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-2">
-                  <div className="relative w-[168px]" onClick={(event) => event.stopPropagation()}>
+              <div className="flex flex-col gap-2">
+                  <div className="relative w-full" onClick={(event) => event.stopPropagation()}>
                     <button
                       onClick={() => setShowExportMenu((prev) => !prev)}
                       disabled={filledResults.length === 0}
@@ -1478,7 +1486,7 @@ export function ExtractTestPage() {
                   <button
                     onClick={handleImportCurrentResults}
                     disabled={pendingImportResults.length === 0}
-                    className="w-[168px] rounded-lg bg-brand px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
+                    className="w-full rounded-lg bg-brand px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
                   >
                     导入剧情库
                   </button>
@@ -1487,7 +1495,7 @@ export function ExtractTestPage() {
                 <button
                   onClick={isExtractPaused ? resumeExtractRun : pauseExtractRun}
                   disabled={!isExtracting}
-                  className={`flex w-[92px] items-center justify-center rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                  className={`order-2 flex w-[92px] items-center justify-center rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
                     isExtractPaused
                       ? 'border-brand bg-brand-light text-brand hover:bg-brand-light/80'
                       : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
@@ -1504,7 +1512,7 @@ export function ExtractTestPage() {
                     setShowExtractConfirm(true);
                   }}
                   disabled={!isExtracting && !canExtract}
-                  className={`flex w-[168px] items-center justify-center gap-1.5 rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:bg-gray-300 ${
+                  className={`order-1 flex w-[168px] items-center justify-center gap-1.5 rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:bg-gray-300 ${
                     isExtracting ? 'bg-red-500 hover:bg-red-600' : 'bg-brand hover:bg-brand-dark'
                   }`}
                 >

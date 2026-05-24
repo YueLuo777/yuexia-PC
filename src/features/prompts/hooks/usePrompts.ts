@@ -7,7 +7,8 @@ import { createJsonStorage } from '@/shared/storage/jsonStorage';
 const PROMPTS_KEY = 'xinyuexia_prompts_v1';
 const PROMPT_RECYCLE_KEY = 'xinyuexia_prompt_recycle_v1';
 const PROMPT_CATEGORIES_KEY = 'xinyuexia_prompt_categories_v1';
-const DEFAULT_CATEGORIES = ['未分类', '提炼', '正文', '大纲', '细纲', '审核', '更新'];
+const UNCATEGORIZED = '未分类';
+const DEFAULT_CATEGORIES = ['脑洞', '大纲', '细纲', '正文', '审核', '润色', '更新', '概要', '提炼', UNCATEGORIZED];
 
 const PROMPTS_UPDATED_EVENT = APP_EVENTS.promptsUpdated;
 const promptsStorage = createJsonStorage<PromptItem[]>(PROMPTS_KEY, [], {
@@ -18,8 +19,21 @@ const promptRecycleStorage = createJsonStorage<PromptItem[]>(PROMPT_RECYCLE_KEY,
   normalize: (value) => Array.isArray(value) ? (value as PromptItem[]) : [],
   eventName: PROMPTS_UPDATED_EVENT,
 });
+function orderCategories(value: string[]) {
+  const seen = new Set<string>();
+  const cleaned = value
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0 && item !== '全部');
+  const custom = cleaned.filter((item) => !DEFAULT_CATEGORIES.includes(item));
+  return [...DEFAULT_CATEGORIES.slice(0, -1), ...custom, UNCATEGORIZED].filter((item) => {
+    if (seen.has(item)) return false;
+    seen.add(item);
+    return true;
+  });
+}
+
 const promptCategoriesStorage = createJsonStorage<string[]>(PROMPT_CATEGORIES_KEY, DEFAULT_CATEGORIES, {
-  normalize: (value) => Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : DEFAULT_CATEGORIES,
+  normalize: (value) => orderCategories(Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : DEFAULT_CATEGORIES),
 });
 
 function nowText() {
@@ -31,7 +45,7 @@ function createId() {
 }
 
 function normalizeCategory(category: string) {
-  return category.trim() || '未分类';
+  return category.trim() || UNCATEGORIZED;
 }
 
 export function readPromptSnapshot() {
@@ -67,8 +81,9 @@ export function usePrompts() {
   };
 
   const persistCategories = (next: string[]) => {
-    setCategories(next);
-    promptCategoriesStorage.write(next);
+    const ordered = orderCategories(next);
+    setCategories(ordered);
+    promptCategoriesStorage.write(ordered);
   };
 
   const addPrompt = (input: NewPromptInput) => {
@@ -139,14 +154,14 @@ export function usePrompts() {
   const addCategory = (category: string) => {
     const trimmed = normalizeCategory(category);
     if (categories.includes(trimmed)) return;
-    persistCategories([...categories, trimmed]);
+    persistCategories([...categories.filter((item) => item !== UNCATEGORIZED), trimmed, UNCATEGORIZED]);
   };
 
   const removeCategory = (category: string) => {
-    if (category === '未分类') return;
+    if (category === UNCATEGORIZED) return;
     persistCategories(categories.filter((item) => item !== category));
     persistPrompts(prompts.map((prompt) => (
-      prompt.category === category ? { ...prompt, category: '未分类', updatedAt: nowText() } : prompt
+      prompt.category === category ? { ...prompt, category: UNCATEGORIZED, updatedAt: nowText() } : prompt
     )));
   };
 

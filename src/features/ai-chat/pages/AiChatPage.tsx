@@ -116,12 +116,9 @@ export function AiChatPage() {
   return (
     <div className="flex h-full flex-col bg-slate-50">
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">
-        <div className="flex items-center gap-2">
-          <Bot className="h-5 w-5 text-brand" />
-          <div>
+        <div className="min-w-0">
             <h1 className="text-xl font-bold text-slate-900">AI对话</h1>
             <p className="mt-0.5 text-xs text-slate-400">测试专区</p>
-          </div>
         </div>
         <div className="flex items-center gap-2">
           <button

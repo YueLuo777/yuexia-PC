@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('xinyuexiaModel', {
 contextBridge.exposeInMainWorld('xinyuexiaAppIcon', {
   read: () => ipcRenderer.invoke('app-icon:read'),
   select: () => ipcRenderer.invoke('app-icon:select'),
+  useProjectIcon: (fileName) => ipcRenderer.invoke('app-icon:use-project-icon', fileName),
   reset: () => ipcRenderer.invoke('app-icon:reset'),
 });
 

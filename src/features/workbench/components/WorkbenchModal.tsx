@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
@@ -31,7 +32,7 @@ export function WorkbenchModal({ title, isOpen, onClose, children, widthClass = 
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
         className={`flex h-[78vh] max-h-[86vh] ${widthClass} max-w-[96vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl`}
@@ -56,6 +57,7 @@ export function WorkbenchModal({ title, isOpen, onClose, children, widthClass = 
         </div>
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

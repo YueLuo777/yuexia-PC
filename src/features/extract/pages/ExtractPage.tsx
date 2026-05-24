@@ -639,6 +639,12 @@ export function ExtractPage() {
   }, [filesLoaded]);
 
   const selectedModel = models.find((model) => model.id === selectedModelId) ?? null;
+  const orderedModels = useMemo(() => {
+    if (!selectedModelId) return models;
+    const selected = models.find((model) => model.id === selectedModelId);
+    if (!selected) return models;
+    return [selected, ...models.filter((model) => model.id !== selectedModelId)];
+  }, [models, selectedModelId]);
   const selectedNovel = novels.find((novel) => novel.id === selectedNovelId) ?? null;
   const selectedModule = modules.find((module) => module.id === selectedModuleId) ?? null;
 
@@ -932,11 +938,8 @@ export function ExtractPage() {
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-gray-50" onClick={() => setSelectedModuleId(null)}>
       <header className="shrink-0 border-b border-gray-200 bg-white">
         <div className="flex items-center justify-between px-6 py-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-brand" />
-              <h1 className="text-xl font-bold text-gray-900">旧提炼</h1>
-            </div>
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-gray-900">提炼剧情</h1>
             <p className="mt-1 text-xs text-gray-400">勾选模块 → 上传文件 → 配置 → AI 提炼 → 导出</p>
           </div>
 
@@ -1130,7 +1133,7 @@ export function ExtractPage() {
                 </div>
               ) : (
                 <div className="space-y-1.5">
-                  {models.map((model) => (
+                  {orderedModels.map((model) => (
                     <button
                       key={model.id}
                       onClick={() => setSelectedModelId(model.id)}
@@ -1373,7 +1376,7 @@ export function ExtractPage() {
               <button
                 onClick={isExtractPaused ? resumeExtractRun : pauseExtractRun}
                 disabled={!isExtracting}
-                className={`flex w-[92px] items-center justify-center rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                className={`order-2 flex w-[92px] items-center justify-center rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
                   isExtractPaused
                     ? 'border-brand bg-brand-light text-brand hover:bg-brand-light/80'
                     : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
@@ -1390,7 +1393,7 @@ export function ExtractPage() {
                   setShowExtractConfirm(true);
                 }}
                 disabled={!isExtracting && !canExtract}
-                className={`flex w-[168px] items-center justify-center gap-1.5 rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:bg-gray-300 ${
+                className={`order-1 flex w-[168px] items-center justify-center gap-1.5 rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:bg-gray-300 ${
                   isExtracting ? 'bg-red-500 hover:bg-red-600' : 'bg-brand hover:bg-brand-dark'
                 }`}
               >
@@ -1434,8 +1437,8 @@ export function ExtractPage() {
             )}
 
             {results[activeResultIndex] ? (
-              <div className="overflow-hidden border border-gray-100 bg-white">
-                <div className="border-b border-gray-100 bg-white px-4 py-3">
+              <div className="overflow-hidden border border-gray-200 bg-white">
+                <div className="border-b border-gray-200 bg-white px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-sm font-bold text-slate-900">剧情点 {activeResultIndex + 1}</div>
@@ -1449,7 +1452,7 @@ export function ExtractPage() {
                 </div>
               </div>
             ) : (
-              <div className="flex min-h-[420px] flex-col items-center justify-center border border-dashed border-gray-100 bg-white px-6 text-center">
+              <div className="flex min-h-[420px] flex-col items-center justify-center border border-dashed border-gray-200 bg-white px-6 text-center">
                 <Sparkles className="mb-3 h-8 w-8 text-slate-300" />
                 <div className="text-base font-bold text-slate-400">{isExtracting ? '等待首个结果' : '等待开始提炼'}</div>
                 <div className="mt-2 text-xs leading-5 text-slate-400">
@@ -1463,18 +1466,18 @@ export function ExtractPage() {
             <div className="mb-3 line-clamp-2 text-xs leading-5 text-gray-500">
               {extractProgress || saveMessage || '准备就绪'}
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-2">
               <button
                 onClick={handleExportResults}
                 disabled={results.length === 0}
-                className="rounded-xl border border-brand/30 bg-white px-3 py-2 text-xs font-medium text-brand transition-colors hover:bg-brand-light disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-300"
+                className="w-full rounded-xl border border-brand/30 bg-white px-3 py-2 text-xs font-medium text-brand transition-colors hover:bg-brand-light disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-300"
               >
                 导出 TXT
               </button>
               <button
                 onClick={handleImportCurrentResults}
                 disabled={pendingImportResults.length === 0}
-                className="rounded-xl bg-brand px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
+                className="w-full rounded-xl bg-brand px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
               >
                 导入剧情库{pendingImportResults.length > 0 ? ` ${pendingImportResults.length}` : ''}
               </button>

@@ -28,6 +28,7 @@ interface AiMessage {
 
 interface WorkbenchAIPanelProps {
   activeTool: WorkbenchAITool;
+  workId: number | string;
   selectedChapterContent: string;
   onClose?: () => void;
   onReplaceContent: (content: string) => void;
@@ -48,8 +49,89 @@ function getDefaultInstruction(_tool: WorkbenchAITool) {
   return '请根据我的要求处理当前章节正文。';
 }
 
+function createDefaultSession(id = 1): AiSession {
+  return {
+    id,
+    input: '',
+    output: '',
+    messages: [],
+    linkChapter: false,
+    hasSentChapterContext: false,
+  };
+}
+
+function normalizeSessions(value: unknown): AiSession[] {
+  if (!Array.isArray(value)) return [createDefaultSession()];
+  const sessions = value
+    .map((item, index): AiSession | null => {
+      if (!item || typeof item !== 'object') return null;
+      const session = item as Partial<AiSession>;
+      const id = Number.isFinite(session.id) ? Number(session.id) : index + 1;
+      return {
+        id,
+        input: typeof session.input === 'string' ? session.input : '',
+        output: typeof session.output === 'string' ? session.output : '',
+        messages: Array.isArray(session.messages)
+          ? session.messages
+              .filter((message): message is AiMessage => Boolean(message && typeof message === 'object' && 'content' in message))
+              .map((message, messageIndex) => ({
+                id: Number.isFinite(message.id) ? Number(message.id) : messageIndex + 1,
+                role: message.role === 'user' ? 'user' : 'assistant',
+                content: typeof message.content === 'string' ? message.content : '',
+              }))
+          : [],
+        linkChapter: Boolean(session.linkChapter),
+        hasSentChapterContext: Boolean(session.hasSentChapterContext),
+      };
+    })
+    .filter((session): session is AiSession => Boolean(session));
+  return sessions.length > 0 ? sessions : [createDefaultSession()];
+}
+
+function readStoredAiState(storageKey: string) {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) {
+      return {
+        sessions: [createDefaultSession()],
+        activeSessionId: 1,
+        nextSessionId: 2,
+        nextMessageId: 1,
+      };
+    }
+    const parsed = JSON.parse(raw) as {
+      sessions?: unknown;
+      activeSessionId?: number;
+      nextSessionId?: number;
+      nextMessageId?: number;
+    };
+    const sessions = normalizeSessions(parsed.sessions);
+    const activeSessionId = sessions.some((session) => session.id === parsed.activeSessionId)
+      ? Number(parsed.activeSessionId)
+      : sessions[0].id;
+    return {
+      sessions,
+      activeSessionId,
+      nextSessionId: Number.isFinite(parsed.nextSessionId)
+        ? Math.max(Number(parsed.nextSessionId), Math.max(...sessions.map((session) => session.id)) + 1)
+        : Math.max(...sessions.map((session) => session.id)) + 1,
+      nextMessageId: Number.isFinite(parsed.nextMessageId)
+        ? Number(parsed.nextMessageId)
+        : Math.max(0, ...sessions.flatMap((session) => session.messages.map((message) => message.id))) + 1,
+    };
+  } catch {
+    return {
+      sessions: [createDefaultSession()],
+      activeSessionId: 1,
+      nextSessionId: 2,
+      nextMessageId: 1,
+    };
+  }
+}
+
 export function WorkbenchAIPanel({
   activeTool,
+  workId,
   selectedChapterContent,
   onClose,
   onReplaceContent,
@@ -58,15 +140,10 @@ export function WorkbenchAIPanel({
   onOpenModelManage,
   onOpenAgentManage,
 }: WorkbenchAIPanelProps) {
-  const [sessions, setSessions] = useState<AiSession[]>([{
-    id: 1,
-    input: '',
-    output: '',
-    messages: [],
-    linkChapter: false,
-    hasSentChapterContext: false,
-  }]);
-  const [activeSessionId, setActiveSessionId] = useState(1);
+  const storageKey = `xinyuexia_workbench_ai_sessions_${workId}`;
+  const initialAiState = useMemo(() => readStoredAiState(storageKey), [storageKey]);
+  const [sessions, setSessions] = useState<AiSession[]>(() => initialAiState.sessions);
+  const [activeSessionId, setActiveSessionId] = useState(() => initialAiState.activeSessionId);
   const [deleteSessionMenu, setDeleteSessionMenu] = useState<{ sessionId: number; x: number; y: number } | null>(null);
   const [models, setModels] = useState<ModelItem[]>(() => readConfig().models);
   const [prompts, setPrompts] = useState<PromptItem[]>(() => readConfig().prompts);
@@ -75,9 +152,10 @@ export function WorkbenchAIPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [outputFontSize, setOutputFontSize] = useState(20);
-  const nextSessionIdRef = useRef(2);
-  const nextMessageIdRef = useRef(1);
+  const nextSessionIdRef = useRef(initialAiState.nextSessionId);
+  const nextMessageIdRef = useRef(initialAiState.nextMessageId);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const skipNextSaveRef = useRef(true);
 
   const activeSession = sessions.find((session) => session.id === activeSessionId) ?? sessions[0];
   const input = activeSession?.input ?? '';
@@ -86,6 +164,7 @@ export function WorkbenchAIPanel({
   const selectedModel = enabledModels.find((model) => model.id === selectedModelId) ?? enabledModels[0] ?? null;
   const selectedPrompt = prompts.find((prompt) => prompt.id === selectedPromptId) ?? null;
   const outputWordCount = output.replace(/\s/g, '').length;
+  const linkedChapterWordCount = selectedChapterContent.replace(/\s/g, '').length;
 
   const updateSession = (sessionId: number, patch: Partial<Omit<AiSession, 'id'>>) => {
     setSessions((prev) => prev.map((session) => (
@@ -111,6 +190,31 @@ export function WorkbenchAIPanel({
       window.removeEventListener(APP_EVENTS.promptsUpdated, updateConfig);
     };
   }, []);
+
+  useEffect(() => {
+    const next = readStoredAiState(storageKey);
+    skipNextSaveRef.current = true;
+    setSessions(next.sessions);
+    setActiveSessionId(next.activeSessionId);
+    nextSessionIdRef.current = next.nextSessionId;
+    nextMessageIdRef.current = next.nextMessageId;
+    abortControllerRef.current?.abort();
+    setIsLoading(false);
+    setDeleteSessionMenu(null);
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (skipNextSaveRef.current) {
+      skipNextSaveRef.current = false;
+      return;
+    }
+    localStorage.setItem(storageKey, JSON.stringify({
+      sessions,
+      activeSessionId,
+      nextSessionId: nextSessionIdRef.current,
+      nextMessageId: nextMessageIdRef.current,
+    }));
+  }, [activeSessionId, sessions, storageKey]);
 
   useEffect(() => {
     if (!selectedModelId && enabledModels[0]) {
@@ -264,20 +368,20 @@ export function WorkbenchAIPanel({
     onPromptChange: (value: string) => void,
   ) => (
     <>
-      <div className="shrink-0 rounded-lg border border-gray-200 bg-gray-50 p-2">
-        <div className="grid grid-cols-[52px_250px_84px_38px] items-center gap-1.5 overflow-x-auto">
+      <div className="shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-2">
+        <div className="grid grid-cols-[52px_160px_56px_38px] items-center gap-1.5">
           <span className="whitespace-nowrap text-sm text-gray-500">模型</span>
-          <div className="relative w-[250px]">
+          <div className="relative min-w-0">
             <select
               value={model?.id ?? modelId}
               onChange={(event) => onModelChange(event.target.value)}
-              className="h-9 w-[250px] appearance-none rounded-lg border border-gray-200 bg-white px-2.5 pr-7 text-sm font-semibold text-gray-700 outline-none focus:border-brand"
+              className="h-9 w-full appearance-none rounded-lg border border-gray-200 bg-white px-2.5 pr-7 text-sm font-semibold text-gray-700 outline-none focus:border-brand"
             >
               {enabledModels.length === 0 ? (
-                <option value="" className="text-base">无可用模型</option>
+                <option value="" className="h-9 py-2 text-sm leading-9">无可用模型</option>
               ) : (
                 enabledModels.map((item) => (
-                  <option key={item.id} value={item.id} className="text-base">{item.name}</option>
+                  <option key={item.id} value={item.id} className="h-9 py-2 text-sm leading-9">{item.name}</option>
                 ))
               )}
             </select>
@@ -288,25 +392,25 @@ export function WorkbenchAIPanel({
               onClick={onOpenModelManage}
               className="h-9 shrink-0 rounded-lg bg-brand px-2 text-sm font-bold text-white transition-colors hover:bg-brand-dark"
             >
-              模型管理
+              管理
             </button>
           ) : <span />}
-          <span className={`text-sm ${model ? 'text-emerald-500' : 'text-red-500'}`}>
+          <span className={`min-w-0 truncate text-sm ${model ? 'text-emerald-500' : 'text-red-500'}`}>
             {model ? '正常' : '失败'}
           </span>
 
           <span className="whitespace-nowrap text-sm text-gray-500">提示词</span>
-          <div className="relative w-[250px]">
+          <div className="relative min-w-0">
             <select
               value={prompt?.id ?? prompts[0]?.id ?? promptId}
               onChange={(event) => onPromptChange(event.target.value)}
-              className="h-9 w-[250px] appearance-none rounded-lg border border-gray-200 bg-white px-2.5 pr-7 text-sm font-semibold text-gray-700 outline-none focus:border-brand"
+              className="h-9 w-full appearance-none rounded-lg border border-gray-200 bg-white px-2.5 pr-7 text-sm font-semibold text-gray-700 outline-none focus:border-brand"
             >
               {prompts.length === 0 ? (
-                <option value="" className="text-sm">无可用提示词</option>
+                <option value="" className="h-9 py-2 text-sm leading-9">无可用提示词</option>
               ) : (
                 prompts.map((item) => (
-                  <option key={item.id} value={item.id} className="text-sm">{item.name}</option>
+                  <option key={item.id} value={item.id} className="h-9 py-2 text-sm leading-9">{item.name}</option>
                 ))
               )}
             </select>
@@ -317,7 +421,7 @@ export function WorkbenchAIPanel({
               onClick={onOpenAgentManage}
               className="h-9 shrink-0 rounded-lg bg-brand px-2 text-sm font-bold text-white transition-colors hover:bg-brand-dark"
             >
-              提示词管理
+              管理
             </button>
           ) : <span />}
           <span />
@@ -445,8 +549,13 @@ export function WorkbenchAIPanel({
                   : 'border-gray-200 bg-white text-gray-600 hover:border-brand hover:text-brand'
               }`}
             >
-              关联本章
+              {activeSession?.linkChapter ? '已关联本章' : '关联本章'}
             </button>
+            {activeSession?.linkChapter && (
+              <span className="shrink-0 text-sm font-bold text-brand">
+                关联字数：{linkedChapterWordCount}字
+              </span>
+            )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <span className="shrink-0 text-base font-bold text-brand">{outputWordCount}字</span>
