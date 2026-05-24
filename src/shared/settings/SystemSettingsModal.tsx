@@ -73,7 +73,7 @@ export function SystemSettingsModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex h-[min(720px,calc(100vh-32px))] w-[720px] max-w-[92vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+      <div className="flex h-[min(720px,calc(100vh-32px))] w-[936px] max-w-[96vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3">
           <div>
             <h2 className="text-base font-bold text-slate-900">系统设置</h2>

@@ -385,10 +385,10 @@ export function WorkbenchAIPanel({
               className="h-9 w-full appearance-none rounded-lg border border-gray-200 bg-white px-2.5 pr-7 text-sm font-semibold text-gray-700 outline-none focus:border-brand"
             >
               {enabledModels.length === 0 ? (
-                <option value="" className="h-9 py-2 text-sm leading-9">无可用模型</option>
+                <option value="" className="h-[55px] py-4 text-sm leading-[55px]">无可用模型</option>
               ) : (
                 enabledModels.map((item) => (
-                  <option key={item.id} value={item.id} className="h-9 py-2 text-sm leading-9">{item.name}</option>
+                  <option key={item.id} value={item.id} className="h-[55px] py-4 text-sm leading-[55px]">{item.name}</option>
                 ))
               )}
             </select>

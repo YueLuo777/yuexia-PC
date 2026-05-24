@@ -113,7 +113,7 @@ export function DashboardLayout() {
   return (
     <div className="flex h-full overflow-hidden bg-slate-50">
       <aside ref={sidebarRef} className="flex w-[198px] shrink-0 flex-col overflow-y-auto overflow-x-hidden border-r border-slate-200 bg-white">
-        <div className="shrink-0 border-b border-slate-100 px-3 py-3">
+        <div className="shrink-0 border-b border-slate-100 px-3 py-2">
           <input
             ref={avatarInputRef}
             type="file"
@@ -124,7 +124,7 @@ export function DashboardLayout() {
               event.target.value = '';
             }}
           />
-          <div className="flex items-center gap-3 px-3 py-2.5">
+          <div className="flex items-center gap-3 px-3 py-2">
             <button
               onClick={() => avatarInputRef.current?.click()}
               className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-slate-400 transition-colors hover:border-brand/50 hover:text-brand"
@@ -182,7 +182,7 @@ export function DashboardLayout() {
               <button
                 onClick={() => toggleSection(group.title)}
                 className="mx-1.5 mt-1.5 flex w-[calc(100%-12px)] items-center justify-between rounded-lg bg-brand-light px-3.5 py-2 font-medium text-brand-dark transition-colors hover:bg-brand/10"
-                style={{ fontSize: '13px' }}
+                style={{ fontSize: '16px' }}
               >
                 <span className="flex items-center gap-1.5">
                   <GroupIcon className="h-4 w-4" />

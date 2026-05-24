@@ -12,6 +12,7 @@ interface ExtractDropZoneProps {
   onSelect: (id: string) => void;
   onToggleActive: (id: string) => void;
   onToggleZone?: (id: string) => void;
+  onTogglePreviewHidden?: (id: string) => void;
   onDragStart: (id: string) => void;
   onDragEnd: () => void;
   onDragOverModule: (id: string) => void;
@@ -31,6 +32,7 @@ export function ExtractDropZone({
   onSelect,
   onToggleActive,
   onToggleZone,
+  onTogglePreviewHidden,
   onDragStart,
   onDragEnd,
   onDragOverModule,
@@ -81,7 +83,7 @@ export function ExtractDropZone({
             onSelect={onSelect}
             onToggleActive={onToggleActive}
             onToggleZone={onToggleZone ?? (() => {})}
-            onTogglePreviewHidden={() => {}}
+            onTogglePreviewHidden={onTogglePreviewHidden ?? (() => {})}
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
             onDragOver={onDragOverModule}

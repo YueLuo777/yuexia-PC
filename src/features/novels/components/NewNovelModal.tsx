@@ -2,6 +2,7 @@ import { Image, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import type { NewNovelInput, WorkType } from '@/features/novels/model/novelTypes';
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 
 interface NewNovelModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface NewNovelModalProps {
 }
 
 export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: NewNovelModalProps) {
+  useTopModalEscape(isOpen, onClose);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState(categories[0] ?? '未分类');
   const [synopsis, setSynopsis] = useState('');
@@ -24,15 +26,6 @@ export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: N
     setSynopsis('');
     setCover(undefined);
   }, [categories, isOpen, type]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

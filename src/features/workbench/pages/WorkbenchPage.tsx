@@ -276,6 +276,7 @@ function ManagementModal({
   onClose: () => void;
 }) {
   const draggable = useDraggableModal(`workbench_${type}_management`);
+  useTopModalEscape(true, onClose);
   const title = type === 'models' ? '模型管理' : '提示词管理';
 
   return (

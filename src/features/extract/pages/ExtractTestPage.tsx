@@ -1034,7 +1034,7 @@ export function ExtractTestPage() {
                 <div className="text-sm font-bold text-gray-900">模块列表</div>
                 <button
                   onClick={() => setIsModulePreviewOpen((prev) => !prev)}
-                  className="inline-flex w-[92px] shrink-0 items-center justify-center gap-1 rounded-lg bg-brand px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-brand-dark"
+                  className="inline-flex min-w-[104px] shrink-0 items-center justify-center gap-1 rounded-lg bg-brand px-3 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-brand-dark"
                   title={isModulePreviewOpen ? '收起模块预览' : '展开模块预览'}
                 >
                   <span>模块预览</span>
@@ -1076,30 +1076,28 @@ export function ExtractTestPage() {
             </div>
             <div className="flex min-h-0 flex-1 flex-col p-3">
               {selectedModule ? (
-                <div className="flex min-h-0 flex-1 flex-col gap-3">
+                <div className="flex min-h-0 flex-1 flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <label className="shrink-0 text-xs font-medium text-gray-500">模块名称</label>
+                    <label className="shrink-0 text-xs font-medium text-gray-500">名称：</label>
                     <input
                       value={moduleDraft.label}
                       onChange={(event) => setModuleDraft((prev) => ({ ...prev, label: event.target.value }))}
                       className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand"
                     />
+                    <button
+                      onClick={handleSaveModuleDraft}
+                      className="shrink-0 rounded-lg bg-brand px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-dark"
+                    >
+                      保存内容
+                    </button>
                   </div>
                   <div className="flex min-h-0 flex-1 flex-col">
                     <label className="mb-1 block text-xs font-medium text-gray-500">模块内容</label>
                     <textarea
                       value={moduleDraft.instruction}
                       onChange={(event) => setModuleDraft((prev) => ({ ...prev, instruction: event.target.value }))}
-                      className="min-h-0 flex-1 resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm leading-6 outline-none focus:border-brand"
+                      className="h-full min-h-0 flex-1 resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm leading-6 outline-none focus:border-brand"
                     />
-                  </div>
-                  <div className="flex shrink-0 justify-end border-t border-gray-100 pt-3">
-                    <button
-                      onClick={handleSaveModuleDraft}
-                      className="rounded-lg bg-brand px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-dark"
-                    >
-                      保存设置
-                    </button>
                   </div>
                 </div>
               ) : (
@@ -1161,12 +1159,12 @@ export function ExtractTestPage() {
                   </button>
                 </div>
               ) : (
-                <div className="space-y-1.5">
+                <div className="max-h-[138px] space-y-1.5 overflow-y-auto pr-1">
                   {orderedModels.map((model) => (
                     <button
                       key={model.id}
                       onClick={() => setSelectedModelId(model.id)}
-                      className={`w-full rounded-lg border px-2.5 py-1.5 text-left text-[15px] transition-all ${
+                      className={`flex h-[42px] w-full items-center rounded-lg border px-2.5 text-left text-[15px] transition-all ${
                         selectedModel?.id === model.id
                           ? 'border-brand bg-brand-light font-medium text-brand'
                           : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
@@ -1347,7 +1345,7 @@ export function ExtractTestPage() {
             <div className="flex min-w-0 items-center gap-2">
               {isExtracting && <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent" />}
               <div className="flex min-w-0 items-center gap-2">
-                <h3 className="text-sm font-bold text-gray-900">{isExtracting ? '提炼中' : '提炼结果'}</h3>
+                <h3 className="text-[18px] font-bold text-gray-900">{isExtracting ? '提炼中' : '提炼结果'}</h3>
                 <span className="text-[11px] font-bold text-brand">
                   {filledResults.length}/{Math.max(extractTotal || results.length, 1)}
                 </span>
@@ -1369,12 +1367,17 @@ export function ExtractTestPage() {
                 <div className="shrink-0 border-b border-gray-200 bg-white px-2 py-3 text-center text-xs font-bold text-slate-600">
                   目录
                 </div>
-                <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+                <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
                   {resultGroups.map((group) => {
                     const collapsed = collapsedResultGroups[group.key] ?? false;
                     const filledCount = group.items.filter(hasResultContent).length;
                     return (
-                      <section key={group.key} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                      <section
+                        key={group.key}
+                        className={`overflow-hidden rounded-xl border border-gray-200 bg-white ${
+                          resultGroups.length === 1 ? 'flex min-h-0 flex-1 flex-col' : ''
+                        }`}
+                      >
                         <button
                           onClick={() => emitExtractRuntime({ collapsedResultGroups: { ...collapsedResultGroups, [group.key]: !collapsed } })}
                           className="flex w-full items-center gap-1.5 border-b border-gray-200 bg-white px-2 py-2 text-left transition-colors hover:bg-slate-50"

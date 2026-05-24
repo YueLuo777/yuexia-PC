@@ -600,11 +600,17 @@ function beginTitlebarDrag(input) {
   const drag = normalizeTitlebarDragInput(input);
   if (!drag) return null;
 
-  if (mainWindow.isMaximized()) {
-    mainWindow.unmaximize();
+  const wasMaximized = mainWindow.isMaximized();
+  const bounds = wasMaximized ? mainWindow.getNormalBounds() : mainWindow.getBounds();
+
+  if (!wasMaximized) {
+    return {
+      isMaximized: false,
+      dragOffsetX: drag.screenX - bounds.x,
+      dragOffsetY: drag.screenY - bounds.y,
+    };
   }
 
-  const bounds = mainWindow.getBounds();
   const display = screen.getDisplayNearestPoint({ x: drag.screenX, y: drag.screenY });
   const widthRatio =
     Number.isFinite(drag.clientX) && Number.isFinite(drag.windowWidth) && drag.windowWidth > 0
@@ -616,6 +622,7 @@ function beginTitlebarDrag(input) {
   const x = clampWindowDragX(drag.screenX - dragOffsetX, bounds.width, display.workArea);
   const y = clampWindowDragY(drag.screenY - dragOffsetY, display.workArea);
 
+  mainWindow.unmaximize();
   mainWindow.setBounds({ x, y, width: bounds.width, height: bounds.height }, false);
   return {
     isMaximized: false,
@@ -625,7 +632,7 @@ function beginTitlebarDrag(input) {
 }
 
 function moveTitlebarDrag(input) {
-  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isMaximized() || mainWindow.isFullScreen()) return false;
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isFullScreen()) return false;
   const drag = normalizeTitlebarDragInput(input);
   if (!drag || !Number.isFinite(drag.dragOffsetX) || !Number.isFinite(drag.dragOffsetY)) return false;
 
@@ -633,7 +640,11 @@ function moveTitlebarDrag(input) {
   const display = screen.getDisplayNearestPoint({ x: drag.screenX, y: drag.screenY });
   const x = clampWindowDragX(Math.round(drag.screenX - drag.dragOffsetX), bounds.width, display.workArea);
   const y = clampWindowDragY(Math.round(drag.screenY - drag.dragOffsetY), display.workArea);
-  mainWindow.setPosition(x, y, false);
+  if (mainWindow.isMaximized()) {
+    mainWindow.setBounds({ x, y, width: bounds.width, height: bounds.height }, false);
+  } else {
+    mainWindow.setPosition(x, y, false);
+  }
   return true;
 }
 

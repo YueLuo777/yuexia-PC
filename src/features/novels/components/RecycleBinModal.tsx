@@ -2,6 +2,7 @@ import { RefreshCw, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import type { RecycledNovel, WorkType } from '@/features/novels/model/novelTypes';
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 
 interface RecycleBinModalProps {
   isOpen: boolean;
@@ -14,15 +15,7 @@ interface RecycleBinModalProps {
 
 export function RecycleBinModal({ isOpen, type, items, onClose, onRestore, onPermanentDelete }: RecycleBinModalProps) {
   const [, forceRefresh] = useState(0);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  useTopModalEscape(isOpen, onClose);
 
   if (!isOpen) return null;
 

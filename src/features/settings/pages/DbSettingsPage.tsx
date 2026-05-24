@@ -5,9 +5,7 @@ import {
   Download,
   FileCode2,
   FolderOpen,
-  HardDrive,
   RefreshCw,
-  Server,
   Shield,
   Trash2,
   Upload,
@@ -312,7 +310,6 @@ export function DbSettingsPage() {
                 disabled={isBusy}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-brand px-4 text-base font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
               >
-                <HardDrive className="h-4 w-4" />
                 初始化默认数据库目录
               </button>
               <button
@@ -320,7 +317,6 @@ export function DbSettingsPage() {
                 disabled={isBusy}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 text-base font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
-                <Server className="h-4 w-4" />
                 保存数据库配置
               </button>
             </div>

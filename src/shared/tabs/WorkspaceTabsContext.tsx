@@ -31,7 +31,7 @@ const ACTIVE_KEY = 'xinyuexia_workspace_active_tab_v1';
 
 export const HOME_TAB: WorkspaceTab = {
   id: 'home',
-  title: '月下写作',
+  title: '首页',
   path: '/dashboard',
   fixed: true,
 };

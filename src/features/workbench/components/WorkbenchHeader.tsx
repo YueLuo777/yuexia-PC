@@ -24,7 +24,7 @@ export function WorkbenchHeader({
     <header className="relative flex h-12 shrink-0 items-center justify-end border-b border-gray-200 bg-white px-4">
       <div className="absolute left-0 top-0 flex h-full max-w-[360px] items-center px-4">
         <h1 className="line-clamp-2 text-base font-bold leading-5 text-gray-900" title={workTitle}>
-          {workTitle}
+          小说名：{workTitle}
         </h1>
       </div>
 

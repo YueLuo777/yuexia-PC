@@ -36,6 +36,10 @@ function removeEntry(id: symbol) {
   if (index >= 0) escapeStack.splice(index, 1);
 }
 
+export function hasTopModalEscapeHandler() {
+  return escapeStack.length > 0;
+}
+
 export function useTopModalEscape(isOpen: boolean, onClose: CloseHandler) {
   const closeRef = useRef(onClose);
 

@@ -11,6 +11,7 @@ import {
   shortcutActions,
   type ShortcutActionId,
 } from '@/shared/shortcuts/shortcutConfig';
+import { hasTopModalEscapeHandler } from '@/shared/hooks/useTopModalEscape';
 import { HOME_TAB, useWorkspaceTabs, type WorkspaceTab } from '@/shared/tabs/WorkspaceTabsContext';
 
 declare global {
@@ -362,6 +363,7 @@ export function AppFrame({ children }: AppFrameProps) {
       const editable = isEditableTarget(event.target);
       if (editable && (matched.id === 'delete_chapter' || matched.id === 'undo_edit')) return;
       if (matched.id === 'close_floating') {
+        if (hasTopModalEscapeHandler()) return;
         executeShortcut(matched.id);
         return;
       }

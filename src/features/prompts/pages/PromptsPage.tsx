@@ -53,7 +53,7 @@ function PromptEditorModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/40">
+    <div className="fixed inset-0 z-[260] flex items-center justify-center bg-black/40">
       <div
         className="w-[980px] max-w-[94vw] rounded-[28px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
         onClick={(event) => event.stopPropagation()}
@@ -153,7 +153,7 @@ function PromptRecycleModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-[270] flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="flex h-[560px] w-[680px] max-w-[94vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div>

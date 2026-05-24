@@ -17,7 +17,7 @@ interface FullCardSettings extends NovelCardSettings {
   cardHeight: 'small' | 'medium' | 'large';
   statFontSize: 'small' | 'medium' | 'large';
   buttonFontSize: 'small' | 'medium' | 'large';
-  buttonFontWeight: 'normal' | 'medium' | 'bold';
+  buttonFontWeight: 'normal' | 'bold';
   btnPerRow: 2 | 3;
   btnRows: 1 | 2 | 3;
   btnOrder: string[];
@@ -39,7 +39,7 @@ const defaultCardSettings: FullCardSettings = {
   cardHeight: 'medium',
   statFontSize: 'large',
   buttonFontSize: 'large',
-  buttonFontWeight: 'medium',
+  buttonFontWeight: 'bold',
   btnPerRow: 3,
   btnRows: 2,
   btnOrder: [...defaultBtnOrder],
@@ -70,7 +70,7 @@ function loadCardSettings(): FullCardSettings {
       cardHeight: ['small', 'medium', 'large'].includes(parsed.cardHeight) ? parsed.cardHeight : defaultCardSettings.cardHeight,
       statFontSize: ['small', 'medium', 'large'].includes(parsed.statFontSize) ? parsed.statFontSize : defaultCardSettings.statFontSize,
       buttonFontSize: ['small', 'medium', 'large'].includes(parsed.buttonFontSize) ? parsed.buttonFontSize : defaultCardSettings.buttonFontSize,
-      buttonFontWeight: ['normal', 'medium', 'bold'].includes(parsed.buttonFontWeight) ? parsed.buttonFontWeight : defaultCardSettings.buttonFontWeight,
+      buttonFontWeight: ['normal', 'bold'].includes(parsed.buttonFontWeight) ? parsed.buttonFontWeight : defaultCardSettings.buttonFontWeight,
       btnPerRow: [2, 3].includes(parsed.btnPerRow) ? parsed.btnPerRow : defaultCardSettings.btnPerRow,
       btnRows: [1, 2, 3].includes(parsed.btnRows) ? parsed.btnRows : defaultCardSettings.btnRows,
       btnOrder: savedOrder,
@@ -177,9 +177,9 @@ function CardSettingsModal({
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-600">按钮字重</label>
                   <div className="flex gap-1">
-                    {(['normal', 'medium', 'bold'] as const).map((value, index) => (
+                    {(['normal', 'bold'] as const).map((value, index) => (
                       <button key={value} onClick={() => onChange({ ...settings, buttonFontWeight: value })} className={`flex-1 rounded-md border px-2 py-1.5 text-xs transition-colors ${settings.buttonFontWeight === value ? 'border-brand bg-brand-light text-brand font-medium' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                        {['常规', '中等', '粗体'][index]}
+                        {['常规', '粗体'][index]}
                       </button>
                     ))}
                   </div>
@@ -218,7 +218,7 @@ function CardSettingsModal({
             <div>
               <label className="mb-1.5 block text-sm font-medium text-gray-600">拖拽填空（{settings.btnRows}行×{settings.btnPerRow}个）</label>
               <div className="mx-auto flex w-[240px] flex-col rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-                <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${settings.btnPerRow}, 1fr)` }}>
+                <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${settings.btnPerRow}, 1fr)`, gridAutoRows: '36px' }}>
                   {slots.map((label, index) => (
                     <div
                       key={index}
@@ -236,7 +236,7 @@ function CardSettingsModal({
                         while (newOrder.length > 0 && newOrder[newOrder.length - 1] === '') newOrder.pop();
                         onChange({ ...settings, btnOrder: newOrder });
                       }}
-                      className={`rounded py-2 text-center text-sm transition-all ${
+                      className={`flex h-full items-center justify-center rounded text-center text-sm transition-all ${
                         label
                           ? `${label === '删除' ? 'bg-red-500 text-white' : 'bg-brand text-white'} cursor-move`
                           : 'border border-dashed border-gray-300 bg-gray-50 text-gray-300'
@@ -284,7 +284,7 @@ function CardSettingsModal({
                           key={`${label}-${option.value}`}
                           onClick={() => onChange({ ...settings, btnColors: { ...settings.btnColors, [label]: option.value } })}
                           className={`h-3.5 w-3.5 rounded-full border transition-all ${(settings.btnColors[label] || 'gray') === option.value ? 'scale-110 border-gray-800' : 'border-transparent hover:scale-110'}`}
-                          style={{ backgroundColor: option.value === 'blue' ? '#3B82F6' : option.value === 'red' ? '#EF4444' : '#9CA3AF' }}
+                          style={{ backgroundColor: option.value === 'blue' ? '#08B3D9' : option.value === 'red' ? '#EF4444' : '#9CA3AF' }}
                           title={option.label}
                         />
                       ))}

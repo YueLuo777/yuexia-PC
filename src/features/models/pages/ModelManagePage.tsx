@@ -5,6 +5,7 @@ import { useModels } from '@/features/models/hooks/useModels';
 import type { ModelItem, ModelProvider } from '@/features/models/model/modelTypes';
 import { callModel } from '@/features/models/services/callModel';
 import { addRecord, useCallRecords } from '@/hooks/useCallRecords';
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 type ModelDraft = {
@@ -94,6 +95,7 @@ function ModelEditorModal({
   onClose: () => void;
   onSave: (draft: ModelDraft) => void;
 }) {
+  useTopModalEscape(isOpen, onClose);
   const [draft, setDraft] = useState<ModelDraft>(initial);
   const [showKey, setShowKey] = useState(false);
   const currentProvider = providerMeta[draft.provider];
@@ -105,7 +107,7 @@ function ModelEditorModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/40">
+    <div className="fixed inset-0 z-[260] flex items-center justify-center bg-black/40">
       <div
         className="w-[620px] max-w-[92vw] rounded-[28px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
       >
@@ -242,10 +244,11 @@ function ModelManageSettingsModal({
   onChange: (value: ModelCardsPerRow) => void;
   onClose: () => void;
 }) {
+  useTopModalEscape(isOpen, onClose);
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[145] flex items-center justify-center bg-black/35 px-6" onClick={onClose}>
+    <div className="fixed inset-0 z-[265] flex items-center justify-center bg-black/35 px-6" onClick={onClose}>
       <div
         className="w-[420px] max-w-[92vw] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}

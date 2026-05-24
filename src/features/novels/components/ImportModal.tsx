@@ -3,6 +3,7 @@ import { BookOpen, CheckCircle, Loader2, RotateCcw, Sparkles, Upload, X } from '
 
 import { useNovelLibrary, type ImportedChapterInput } from '@/features/novels/hooks/useNovelLibrary';
 import type { WorkType } from '@/features/novels/model/novelTypes';
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 
 type ImportMode = 'smart' | 'local';
 
@@ -122,6 +123,7 @@ function convertToImportedChapters(result: SmartImportResult, mode: ImportMode, 
 
 export function ImportModal({ isOpen, onClose, defaultType = 'novel' }: ImportModalProps) {
   const { importNovelWithChapters } = useNovelLibrary();
+  useTopModalEscape(isOpen, onClose);
   const [importMode, setImportMode] = useState<ImportMode>('smart');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);

@@ -40,19 +40,7 @@ const testGroups = [
         badge: 'Browser',
       },
     ],
-  },
-  {
-    title: '旧版页面',
-    items: [
-      {
-        title: '旧提炼',
-        description: '保留原提炼剧情页面，方便对照新版流程和布局。',
-        path: '/extract-1',
-        icon: Sparkles,
-        badge: 'Legacy',
-      },
-    ],
-  },
+  }
 ];
 
 export function TestCollectionPage() {

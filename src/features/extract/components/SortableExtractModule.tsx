@@ -160,6 +160,8 @@ export function SortableExtractModule({
           </span>
 
           <button
+            type="button"
+            onMouseDown={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.stopPropagation();
               onTogglePreviewHidden(module.id);
@@ -175,6 +177,8 @@ export function SortableExtractModule({
           </button>
 
           <button
+            type="button"
+            onMouseDown={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.stopPropagation();
               onToggleZone(module.id);

@@ -1,6 +1,7 @@
 import { ArchiveRestore, Trash2, X } from 'lucide-react';
 
 import type { RecycledChapter } from '@/features/workbench/model/workbenchTypes';
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 
 interface ChapterRecycleModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface ChapterRecycleModalProps {
 }
 
 export function ChapterRecycleModal({ isOpen, chapters, onClose, onRestore, onPermanentDelete }: ChapterRecycleModalProps) {
+  useTopModalEscape(isOpen, onClose);
   if (!isOpen) return null;
 
   return (

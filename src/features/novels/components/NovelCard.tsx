@@ -7,7 +7,7 @@ export interface NovelCardSettings {
   coverHeight: 'small' | 'medium' | 'large';
   statFontSize?: 'small' | 'medium' | 'large';
   buttonFontSize?: 'small' | 'medium' | 'large';
-  buttonFontWeight?: 'normal' | 'medium' | 'bold';
+  buttonFontWeight?: 'normal' | 'bold';
   btnPerRow?: 2 | 3;
   btnRows?: 1 | 2 | 3;
   btnOrder?: string[];
@@ -51,7 +51,6 @@ const btnFontMap = {
 
 const btnWeightMap = {
   normal: 'font-normal',
-  medium: 'font-medium',
   bold: 'font-bold',
 } as const;
 
@@ -80,7 +79,7 @@ export function NovelCard({ novel, settings, onOpen, onRename, onCover, onExport
   const btnColors = settings.btnColors ?? { 重命名: 'blue', 封面: 'blue', 导出: 'blue', 删除: 'red' };
   const statFont = statFontMap[settings.statFontSize ?? 'medium'];
   const btnFont = btnFontMap[settings.buttonFontSize ?? 'medium'];
-  const btnWeight = btnWeightMap[settings.buttonFontWeight ?? 'medium'];
+  const btnWeight = btnWeightMap[settings.buttonFontWeight ?? 'bold'];
 
   const actions: Record<string, (event: React.MouseEvent) => void> = {
     重命名: (event) => {
@@ -133,14 +132,20 @@ export function NovelCard({ novel, settings, onOpen, onRename, onCover, onExport
           <span className="truncate text-right">{novel.lastModifiedAt || novel.createdAt}</span>
         </div>
 
-        <div className="mt-auto grid gap-1" style={{ gridTemplateColumns: `repeat(${btnPerRow}, 1fr)` }}>
+        <div
+          className="mt-auto grid gap-1"
+          style={{
+            gridTemplateColumns: `repeat(${btnPerRow}, 1fr)`,
+            gridAutoRows: '36px',
+          }}
+        >
           {slots.map((label, index) => {
-            if (!label) return <div key={index} className="py-1.5" />;
+            if (!label) return <div key={index} className="h-full" />;
             return (
               <button
                 key={`${label}-${index}`}
                 onClick={actions[label]}
-                className={`rounded-lg py-2 transition-colors ${getBtnColorClasses(btnColors[label] || 'gray')} ${btnFont} ${btnWeight}`}
+                className={`h-full rounded-lg transition-colors ${getBtnColorClasses(btnColors[label] || 'gray')} ${btnFont} ${btnWeight}`}
               >
                 {label}
               </button>
