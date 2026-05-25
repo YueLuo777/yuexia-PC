@@ -12,7 +12,6 @@ const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeCo
 const ExtractPlotTabsTestPage = lazy(() => import('@/features/tests/pages/ExtractPlotTabsTestPage').then((module) => ({ default: module.ExtractPlotTabsTestPage })));
 const SettingLibraryTabsTestPage = lazy(() => import('@/features/tests/pages/SettingLibraryTabsTestPage').then((module) => ({ default: module.SettingLibraryTabsTestPage })));
 const BrainstormAiChainTestPage = lazy(() => import('@/features/tests/pages/BrainstormAiChainTestPage').then((module) => ({ default: module.BrainstormAiChainTestPage })));
-const ResizableModalTestPage = lazy(() => import('@/features/tests/pages/ResizableModalTestPage').then((module) => ({ default: module.ResizableModalTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 const BrainstormLibraryPage = lazy(() => import('@/features/brainstorm-library/pages/BrainstormLibraryPage').then((module) => ({ default: module.BrainstormLibraryPage })));
 const IdeaGeneratorPage = lazy(() => import('@/features/ideas/pages/IdeaGeneratorPage').then((module) => ({ default: module.IdeaGeneratorPage })));
@@ -114,7 +113,6 @@ export default function App() {
                 <Route path="/extract-plot-tabs-test" element={<ExtractPlotTabsTestPage />} />
                 <Route path="/setting-library-tabs-test" element={<SettingLibraryTabsTestPage />} />
                 <Route path="/brainstorm-ai-chain-test" element={<BrainstormAiChainTestPage />} />
-                <Route path="/resizable-modal-test" element={<ResizableModalTestPage />} />
                 <Route path="/theme-colors" element={<DarkThemeColorPage />} />
                 <Route path="/dark-theme-colors" element={<DarkThemeColorPage />} />
                 <Route path="/test-browser" element={<TestBrowserPage />} />

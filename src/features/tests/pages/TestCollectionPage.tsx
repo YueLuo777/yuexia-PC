@@ -1,4 +1,4 @@
-import { ArrowLeft, Globe, Maximize2, Moon, Palette, Search, Sparkles } from 'lucide-react';
+import { ArrowLeft, Globe, Moon, Palette, Search, Sparkles } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,13 +26,6 @@ const testGroups = [
         path: '/brainstorm-ai-chain-test',
         icon: Sparkles,
         badge: 'AI',
-      },
-      {
-        title: '弹窗自由缩放',
-        description: '测试弹窗像软件窗口一样拖拽四边和四角，自由调整大小。',
-        path: '/resizable-modal-test',
-        icon: Maximize2,
-        badge: 'Modal',
       },
     ],
   },
