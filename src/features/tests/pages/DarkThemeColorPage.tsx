@@ -299,7 +299,7 @@ export function DarkThemeColorPage({ variant = 'page', onClose }: DarkThemeColor
               }}
               className="flex h-9 w-9 items-center justify-center rounded-lg border transition-colors"
               style={{ backgroundColor: page.button, borderColor: page.border, color: page.body }}
-              title="返回测试合集"
+              title="返回其他测试"
             >
               <ArrowLeft className="h-4 w-4" />
             </button>

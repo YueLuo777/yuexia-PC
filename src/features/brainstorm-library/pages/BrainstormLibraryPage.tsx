@@ -16,7 +16,11 @@ function readCurrentNovel() {
   }
 }
 
-export function BrainstormLibraryPage() {
+interface BrainstormLibraryPageProps {
+  embedded?: boolean;
+}
+
+export function BrainstormLibraryPage({ embedded = false }: BrainstormLibraryPageProps = {}) {
   const currentNovel = readCurrentNovel();
 
   if (!currentNovel) {
@@ -37,12 +41,14 @@ export function BrainstormLibraryPage() {
 
   return (
     <div className="flex h-full flex-col bg-gray-50">
-      <header className="shrink-0 border-b border-gray-200 bg-white px-6 py-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">脑洞库</h1>
-          <p className="mt-1 text-sm text-gray-400">当前作品：{currentNovel.title}</p>
-        </div>
-      </header>
+      {!embedded && (
+        <header className="shrink-0 border-b border-gray-200 bg-white px-6 py-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">脑洞库</h1>
+            <p className="mt-1 text-sm text-gray-400">当前作品：{currentNovel.title}</p>
+          </div>
+        </header>
+      )}
       <main className="min-h-0 flex-1 p-5">
         <div className="flex h-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
           <WorkbenchLibraryPanel

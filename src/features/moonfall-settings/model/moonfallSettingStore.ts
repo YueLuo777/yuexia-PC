@@ -1,5 +1,6 @@
 ﻿import {
   MOONFALL_CATEGORIES,
+  MOONFALL_VECTOR_DIMENSION,
   MOONFALL_USER_ID,
   type MoonfallCategory,
   type MoonfallConfig,
@@ -14,6 +15,7 @@
   type MoonfallSourceType,
   type MoonfallState,
   type MoonfallStatus,
+  type MoonfallRagBundle,
   type RetrievedMoonfallSetting,
 } from '@/features/moonfall-settings/model/moonfallSettingTypes';
 
@@ -26,7 +28,7 @@ const DEFAULT_CONFIG: MoonfallConfig = {
   embeddingBaseUrl: '',
   embeddingApiKey: '',
   embeddingModel: '',
-  embeddingDimension: 1536,
+  embeddingDimension: MOONFALL_VECTOR_DIMENSION,
   retrievalLimit: 10,
   similarityThreshold: 0.2,
   autoRag: false,
@@ -466,7 +468,7 @@ function norm(a: number[]) {
   return Math.sqrt(dot(a, a)) || 1;
 }
 
-export function hashEmbedding(text: string, dimension = 96) {
+export function hashEmbedding(text: string, dimension = MOONFALL_VECTOR_DIMENSION) {
   const vector = Array.from({ length: dimension }, () => 0);
   const tokens = Array.from(tokenSet(text));
   tokens.forEach((token) => {
@@ -571,7 +573,7 @@ export function buildMoonfallRagContext(results: RetrievedMoonfallSetting[]) {
 export function buildMoonfallRagBundle(
   state: MoonfallState,
   input: { projectId: string; userId?: string; query: string; categories?: string[]; tags?: string[]; limit?: number; purpose?: MoonfallPurpose; includeUnverified?: boolean; similarityThreshold?: number },
-) {
+): MoonfallRagBundle {
   const purpose = input.purpose ?? 'writing';
   const results = retrieveRelevantMoonfallSettings(state, { ...input, purpose });
   return {

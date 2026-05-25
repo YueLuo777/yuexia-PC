@@ -1,16 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import JSZip from 'jszip';
 
 import { useModels } from '@/features/models/hooks/useModels';
 import { callModel } from '@/features/models/services/callModel';
 import {
   MOONFALL_CATEGORIES,
   MOONFALL_IMPORT_SCOPES,
+  MOONFALL_VECTOR_DIMENSION,
   type MoonfallCategory,
   type MoonfallConfig,
+  type MoonfallRagBundle,
   type MoonfallReviewItem,
   type MoonfallSettingItem,
   type MoonfallSourceType,
+  type MoonfallState,
 } from '@/features/moonfall-settings/model/moonfallSettingTypes';
 import {
   buildMoonfallRagBundle,
@@ -25,9 +29,8 @@ import {
   normalizeCategory,
   parseAiJsonCards,
   readMoonfallState,
-  writeMoonfallState,
 } from '@/features/moonfall-settings/model/moonfallSettingStore';
-import { hydrateMoonfallStateFromDatabase } from '@/features/moonfall-settings/model/moonfallSettingPersistence';
+import { hydrateMoonfallStateFromDatabase, persistMoonfallState } from '@/features/moonfall-settings/model/moonfallSettingPersistence';
 
 type PageMode = '设定提取' | '总设定库';
 type DetailTab = '整理内容' | '原始内容' | '关联设定' | '向量信息' | '修改记录';
@@ -80,6 +83,87 @@ function copyText(text: string) {
   if (text.trim()) void navigator.clipboard?.writeText(text);
 }
 
+function stripControlText(text: string) {
+  return text
+    .replace(/\u0000/g, '')
+    .replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]+/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function decodeDocxXml(xml: string) {
+  try {
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+    const paragraphs = Array.from(doc.getElementsByTagName('w:p'))
+      .map((paragraph) => Array.from(paragraph.getElementsByTagName('w:t')).map((node) => node.textContent ?? '').join(''))
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean);
+    if (paragraphs.length > 0) return paragraphs.join('\n');
+  } catch {
+    // Fall back to regex extraction below.
+  }
+
+  return Array.from(xml.matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g))
+    .map((match) => match[1]
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'"))
+    .join('');
+}
+
+async function readDocxFile(file: File) {
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const documentXml = await zip.file('word/document.xml')?.async('string');
+  if (!documentXml) throw new Error('没有在 docx 中找到正文内容。');
+  const footnotesXml = await zip.file('word/footnotes.xml')?.async('string');
+  const endnotesXml = await zip.file('word/endnotes.xml')?.async('string');
+  const parts = [documentXml, footnotesXml, endnotesXml].filter((item): item is string => Boolean(item));
+  return stripControlText(parts.map(decodeDocxXml).filter(Boolean).join('\n'));
+}
+
+async function readLegacyDocFile(file: File) {
+  const buffer = await file.arrayBuffer();
+  const utf8 = stripControlText(new TextDecoder('utf-8', { fatal: false }).decode(buffer));
+  const utf16 = stripControlText(new TextDecoder('utf-16le', { fatal: false }).decode(buffer));
+  const best = utf16.length > utf8.length * 1.2 ? utf16 : utf8;
+  const readable = best
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => /[\u4e00-\u9fa5A-Za-z0-9]/.test(line))
+    .join('\n');
+  if (readable.length < 20) {
+    throw new Error('旧版 .doc 文档无法稳定解析，请先另存为 .docx 或 .txt 后再导入。');
+  }
+  return readable;
+}
+
+async function readImportFile(file: File) {
+  const ext = file.name.split('.').pop()?.toLowerCase();
+  if (ext === 'docx') return readDocxFile(file);
+  if (ext === 'doc') return readLegacyDocFile(file);
+  return stripControlText(await file.text());
+}
+
+function withLocalEmbedding(item: MoonfallSettingItem, modelName = 'local-hash-pgvector') {
+  const embeddingText = buildEmbeddingText(item);
+  return {
+    ...item,
+    embeddingText,
+    embeddingVector: hashEmbedding(embeddingText, MOONFALL_VECTOR_DIMENSION),
+    embeddingDimension: MOONFALL_VECTOR_DIMENSION,
+    embeddingModel: modelName,
+    embeddingCreatedAt: new Date().toLocaleString('zh-CN'),
+    vectorStatus: '已生成向量' as const,
+  };
+}
+
+function isMoonfallRagBundle(value: unknown): value is MoonfallRagBundle {
+  return Boolean(value && typeof value === 'object' && 'contextText' in value && 'log' in value);
+}
+
 function Badge({ label }: { label: string }) {
   return (
     <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${BADGE_STYLES[label] ?? 'border-slate-200 bg-slate-50 text-slate-500'}`}>
@@ -123,10 +207,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function Modal({ title, children, onClose, width = 'w-[760px]' }: { title: string; children: React.ReactNode; onClose: () => void; width?: string }) {
+  const modalId = `moonfall-${title}`;
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/25 px-5 py-10">
-      <section className={`${width} max-h-[calc(100vh-96px)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl`}>
-        <header className="flex h-12 items-center justify-between border-b border-slate-100 px-4">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/25 px-5 py-10" data-modal-id={modalId}>
+      <section className={`${width} max-h-[calc(100vh-96px)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl`} data-modal-id={modalId}>
+        <header className="flex h-12 items-center justify-between border-b border-slate-100 px-4" data-modal-drag-handle="true">
           <h2 className="text-base font-bold text-slate-900">{title}</h2>
           <button onClick={onClose} className="h-8 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-500 hover:bg-slate-50">关闭</button>
         </header>
@@ -255,10 +340,12 @@ export function MoonfallSettingsPage() {
     });
   }, [libraryCategory, projectSettings, search, tagFilter]);
 
-  const persist = (updater: (prev: typeof state) => typeof state) => {
+  const persist = (updater: (prev: MoonfallState) => MoonfallState) => {
     setState((prev) => {
       const next = updater(prev);
-      writeMoonfallState(next);
+      void persistMoonfallState(next).catch((error) => {
+        setMessage(error instanceof Error ? `设定库保存到数据库失败：${error.message}` : '设定库保存到数据库失败。');
+      });
       return next;
     });
   };
@@ -270,8 +357,17 @@ export function MoonfallSettingsPage() {
       ...prev,
       settings: prev.settings.map((item) => {
         if (item.id !== id) return item;
+        const patchKeys = Object.keys(patch);
+        const shouldRefreshVector = patchKeys.some((key) => ['title', 'category', 'subcategory', 'tags', 'keywords', 'summary', 'organizedText', 'relatedItems'].includes(key))
+          && !('embeddingVector' in patch);
         const next = { ...item, ...patch, updatedAt: new Date().toLocaleString('zh-CN') };
         next.embeddingText = buildEmbeddingText(next);
+        if (shouldRefreshVector) {
+          next.embeddingVector = undefined;
+          next.embeddingDimension = undefined;
+          next.embeddingCreatedAt = undefined;
+          next.vectorStatus = '未生成向量';
+        }
         next.changeLogs = [{ id: createMoonfallId('log'), action, detail: Object.keys(patch).join('、') || '资料更新', createdAt: new Date().toLocaleString('zh-CN') }, ...item.changeLogs];
         if (detailItem?.id === id) setDetailItem(next);
         return next;
@@ -339,7 +435,7 @@ export function MoonfallSettingsPage() {
     const targets = reviewItems.filter((item) => (ids ? ids.has(item.id) : item.selected));
     const created = targets.map((draft) => {
       const item = createSettingFromReview(activeProject.id, draft);
-      if (mode === 'verified') return { ...item, status: '已整理' as const, isVerified: true, allowRag: true };
+      if (mode === 'verified') return withLocalEmbedding({ ...item, status: '已整理' as const, isVerified: true, allowRag: true }, state.config.embeddingModel || 'local-hash-pgvector');
       return { ...item, status: '待确认' as const, isVerified: false, allowRag: false, importance: '素材' as const };
     });
     persist((prev) => ({ ...prev, settings: [...created, ...prev.settings] }));
@@ -351,20 +447,38 @@ export function MoonfallSettingsPage() {
   };
 
   const generateEmbeddingForItem = (item: MoonfallSettingItem) => {
-    const embeddingText = buildEmbeddingText(item);
-    const vector = hashEmbedding(embeddingText, Math.min(384, Math.max(32, state.config.embeddingDimension || 96)));
-    updateItem(item.id, {
-      embeddingText,
-      embeddingVector: vector,
-      embeddingDimension: vector.length,
-      embeddingModel: state.config.embeddingModel || 'local-hash-preview',
-      embeddingCreatedAt: new Date().toLocaleString('zh-CN'),
-      vectorStatus: '已生成向量',
-    }, '重新生成向量');
+    updateItem(item.id, withLocalEmbedding(item, state.config.embeddingModel || 'local-hash-pgvector'), '重新生成向量');
   };
 
-  const buildRagPreview = () => {
+  const buildRagPreview = async () => {
     const query = search.trim() || detailItem?.organizedText || detailItem?.summary || '';
+    if (!query.trim()) {
+      setRetrievalPreview('请先输入搜索内容，或打开一条设定后再预览召回。');
+      return;
+    }
+    if (window.xinyuexiaDatabase?.retrieveMoonfallRag) {
+      try {
+        const result = await window.xinyuexiaDatabase.retrieveMoonfallRag<MoonfallRagBundle>({
+          projectId: activeProject.id,
+          userId: activeProject.userId,
+          query,
+          limit: state.config.retrievalLimit,
+          purpose: 'debug',
+          includeUnverified: true,
+          similarityThreshold: state.config.similarityThreshold,
+        });
+        const bundle = result.data.find(isMoonfallRagBundle);
+        if (result.ok && bundle) {
+          persist((prev) => ({ ...prev, retrievalLogs: [bundle.log, ...prev.retrievalLogs].slice(0, 200) }));
+          setRetrievalPreview(bundle.contextText || '没有召回到相关设定。');
+          setMessage('已通过 PostgreSQL + pgvector 完成召回预览。');
+          return;
+        }
+        if (result.message) setMessage(`pgvector 召回失败，已改用本地召回：${result.message}`);
+      } catch (error) {
+        setMessage(error instanceof Error ? `pgvector 召回失败，已改用本地召回：${error.message}` : 'pgvector 召回失败，已改用本地召回。');
+      }
+    }
     const bundle = buildMoonfallRagBundle(state, {
       projectId: activeProject.id,
       userId: activeProject.userId,
@@ -385,18 +499,24 @@ export function MoonfallSettingsPage() {
   };
 
   const readFileToDraft = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
     const file = event.target.files?.[0];
     if (!file) return;
     const ext = file.name.split('.').pop()?.toLowerCase();
     const nextType = ext === 'md' || ext === 'markdown' ? 'markdown' : ext === 'txt' ? 'txt' : ext === 'doc' || ext === 'docx' ? ext : 'other';
     setSourceType(nextType);
-    if (nextType === 'doc' || nextType === 'docx') {
-      setMessage('doc/docx 入口已保留，当前需要接入解析器后读取。');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => setDraftText(String(reader.result ?? ''));
-    reader.readAsText(file);
+    setMessage(`正在读取 ${file.name}...`);
+    void readImportFile(file)
+      .then((text) => {
+        setDraftText(text);
+        setMessage(`已读取 ${file.name}，共 ${text.length} 字。`);
+      })
+      .catch((error) => {
+        setMessage(error instanceof Error ? error.message : '文件读取失败。');
+      })
+      .finally(() => {
+        input.value = '';
+      });
   };
 
   return (
@@ -423,6 +543,13 @@ export function MoonfallSettingsPage() {
             })}
           </div>
         </div>
+        <div className="min-w-0 flex-1 px-4">
+          {message && (
+            <div className="mx-auto flex h-9 max-w-[640px] items-center rounded-xl border border-sky-100 bg-sky-50 px-4 text-sm font-bold text-sky-600">
+              <span className="truncate">{message}</span>
+            </div>
+          )}
+        </div>
         <div className="flex shrink-0 items-center gap-2">
           <span className="text-sm font-bold text-slate-500">模型</span>
           <select value={state.config.aiModelId || selectedAiModel?.id || ''} onChange={(event) => updateConfig({ aiModelId: event.target.value })} className="h-9 w-[180px] rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-brand">
@@ -432,8 +559,6 @@ export function MoonfallSettingsPage() {
           <TextButton onClick={() => setIsSettingsOpen(true)}>设置</TextButton>
         </div>
       </header>
-
-      {message && <div className="mx-6 mt-4 rounded-xl border border-sky-100 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-600">{message}</div>}
 
       {pageMode === '设定提取' ? renderExtractPage() : renderLibraryPage()}
 
@@ -607,7 +732,7 @@ export function MoonfallSettingsPage() {
           <Field label="自动调用设定库"><label className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-600"><input type="checkbox" checked={state.config.autoRag} onChange={(event) => updateConfig({ autoRag: event.target.checked })} className="h-4 w-4 accent-brand" />写作时自动带入相关设定</label></Field>
           <Field label="AI模型配置"><select value={state.config.aiModelId || selectedAiModel?.id || ''} onChange={(event) => updateConfig({ aiModelId: event.target.value })} className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand">{enabledModels.length === 0 && <option value="">暂无模型</option>}{enabledModels.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}</select></Field>
           <Field label="Embedding模型名称"><input value={state.config.embeddingModel} onChange={(event) => updateConfig({ embeddingModel: event.target.value })} className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand" /></Field>
-          <Field label="向量维度"><input type="number" value={state.config.embeddingDimension} onChange={(event) => updateConfig({ embeddingDimension: Number(event.target.value) || 1536 })} className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand" /></Field>
+          <Field label="向量维度"><input type="number" value={MOONFALL_VECTOR_DIMENSION} readOnly className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-500 outline-none" /></Field>
           <Field label="召回数量"><input type="number" value={state.config.retrievalLimit} onChange={(event) => updateConfig({ retrievalLimit: Number(event.target.value) || 10 })} className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand" /></Field>
           <Field label="RAG调用模板"><select value={state.config.ragTemplate} onChange={(event) => updateConfig({ ragTemplate: event.target.value as MoonfallConfig['ragTemplate'] })} className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand">{['续写模式', '战斗模式', '世界观解释模式', '人物塑造模式', '设定校验模式', '文风模仿模式'].map((item) => <option key={item} value={item}>{item}</option>)}</select></Field>
           <Field label="提取范围"><div className="max-h-36 overflow-y-auto rounded-lg border border-slate-200 p-2">{MOONFALL_IMPORT_SCOPES.map((scope) => <div key={scope} className="mb-1 text-xs font-bold text-slate-500">{scope}</div>)}</div></Field>

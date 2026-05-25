@@ -73,23 +73,29 @@ export function DashboardLayout() {
   const [avatar, setAvatar] = useState(readUserAvatar);
   const [isEditingUserName, setIsEditingUserName] = useState(false);
   const [userNameDraft, setUserNameDraft] = useState(userName);
+  const [isSidebarScrolling, setIsSidebarScrolling] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const sidebarScrollTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const el = sidebarRef.current;
     if (!el) return;
     const saved = Number.parseInt(localStorage.getItem('xinyuexia_nav_scroll') ?? '0', 10);
     if (saved > 0) el.scrollTop = saved;
-    let saveTimer = 0;
     const saveScroll = () => localStorage.setItem('xinyuexia_nav_scroll', String(el.scrollTop));
     const onScroll = () => {
-      window.clearTimeout(saveTimer);
-      saveTimer = window.setTimeout(saveScroll, 120);
+      setIsSidebarScrolling(true);
+      if (sidebarScrollTimerRef.current !== null) window.clearTimeout(sidebarScrollTimerRef.current);
+      sidebarScrollTimerRef.current = window.setTimeout(() => {
+        saveScroll();
+        setIsSidebarScrolling(false);
+        sidebarScrollTimerRef.current = null;
+      }, 650);
     };
     el.addEventListener('scroll', onScroll);
     return () => {
-      window.clearTimeout(saveTimer);
+      if (sidebarScrollTimerRef.current !== null) window.clearTimeout(sidebarScrollTimerRef.current);
       saveScroll();
       el.removeEventListener('scroll', onScroll);
     };
@@ -124,7 +130,10 @@ export function DashboardLayout() {
 
   return (
     <div className="flex h-full overflow-hidden bg-slate-50">
-      <aside ref={sidebarRef} className="flex w-[198px] shrink-0 flex-col overflow-y-auto overflow-x-hidden border-r border-slate-200 bg-white">
+      <aside
+        ref={sidebarRef}
+        className={`scrollbar-scroll-only flex w-[198px] shrink-0 flex-col overflow-y-auto overflow-x-hidden border-r border-slate-200 bg-white ${isSidebarScrolling ? 'scrollbar-active' : ''}`}
+      >
         <div className="shrink-0 border-b border-slate-100 px-3 py-2">
           <input
             ref={avatarInputRef}

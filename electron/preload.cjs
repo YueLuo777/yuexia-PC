@@ -43,4 +43,5 @@ contextBridge.exposeInMainWorld('xinyuexiaDatabase', {
   writeCollection: (collection, items, dataDir) => ipcRenderer.invoke('database:write-collection', collection, items, dataDir),
   readMoonfallPostgres: (dataDir) => ipcRenderer.invoke('database:read-moonfall-postgres', dataDir),
   writeMoonfallPostgres: (state, dataDir) => ipcRenderer.invoke('database:write-moonfall-postgres', state, dataDir),
+  retrieveMoonfallRag: (input, dataDir) => ipcRenderer.invoke('database:retrieve-moonfall-rag', input, dataDir),
 });

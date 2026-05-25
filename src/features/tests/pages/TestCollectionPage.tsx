@@ -1,24 +1,17 @@
-import { ArrowLeft, Globe, Moon, Palette, Search, Sparkles } from 'lucide-react';
+import { ArrowLeft, Globe, MessageSquare, Sparkles, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const testGroups = [
   {
-    title: '界面测试',
+    title: 'AI 链路测试',
     items: [
       {
-        title: '按钮颜色',
-        description: '集中查看按钮色彩、悬停状态和卡片按钮效果。',
-        path: '/button-test',
-        icon: Palette,
-        badge: 'UI',
-      },
-      {
-        title: '主题颜色',
-        description: '切换白色/黑色主题，给不同界面位置测试填色效果。',
-        path: '/theme-colors',
-        icon: Moon,
-        badge: 'Theme',
+        title: 'AI 对话',
+        description: '测试独立 AI 对话页面、模型选择和基础发送链路。',
+        path: '/ai-chat',
+        icon: MessageSquare,
+        badge: 'Chat',
       },
       {
         title: 'AI 生成链路测试中心',
@@ -40,7 +33,7 @@ const testGroups = [
         badge: 'Browser',
       },
     ],
-  }
+  },
 ];
 
 export function TestCollectionPage() {
@@ -77,8 +70,8 @@ export function TestCollectionPage() {
       <header className="flex h-16 shrink-0 items-center border-b border-slate-100 bg-white px-6">
         <div className="flex w-full items-center justify-between gap-4">
           <div className="min-w-0">
-              <h1 className="text-xl font-bold text-slate-900">测试合集</h1>
-              <p className="mt-0.5 text-xs text-slate-400">已收纳 {totalCount} 个测试内容</p>
+            <h1 className="text-xl font-bold text-slate-900">其他测试</h1>
+            <p className="mt-0.5 text-xs text-slate-400">已收纳 {totalCount} 个测试内容</p>
           </div>
           <div className="flex items-center gap-2">
             <button

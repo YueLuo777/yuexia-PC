@@ -427,7 +427,7 @@ export function BrainstormAiChainTestPage() {
         </div>
         <div className="flex gap-2">
           <button onClick={() => navigate('/test-collection')} className="h-9 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 hover:bg-slate-50">
-            返回测试合集
+            返回其他测试
           </button>
           <button onClick={() => navigate('/workbench')} className="h-9 rounded-xl bg-brand px-4 text-sm font-bold text-white hover:bg-brand-dark">
             打开作品编辑器

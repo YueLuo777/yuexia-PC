@@ -39,7 +39,7 @@ export function ExtractPlotTabsTestPage() {
           <p className="mt-0.5 text-xs text-slate-400">预览把剧情库合并到提炼剧情页面后的顶部胶囊标签。</p>
         </div>
         <div className="flex gap-2">
-          <TextButton onClick={() => navigate('/test-collection')}>返回测试合集</TextButton>
+          <TextButton onClick={() => navigate('/test-collection')}>返回其他测试</TextButton>
           <TextButton onClick={() => navigate('/extract')} tone="primary">打开提炼剧情</TextButton>
         </div>
       </header>

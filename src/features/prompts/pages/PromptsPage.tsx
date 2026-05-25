@@ -1,5 +1,6 @@
 import { BookOpen, Lock, Plus, RefreshCw, Search, Sparkles, Trash2, Unlock, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { isDefaultPromptCategory, usePrompts } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
@@ -215,6 +216,7 @@ function PromptRecycleModal({
 }
 
 export function PromptsPage() {
+  const [searchParams] = useSearchParams();
   const {
     prompts,
     recycleBin,
@@ -238,6 +240,13 @@ export function PromptsPage() {
   const [deleteTarget, setDeleteTarget] = useState<PromptItem | null>(null);
   const [showRecycle, setShowRecycle] = useState(false);
   const [categoryDeleteMode, setCategoryDeleteMode] = useState(false);
+
+  useEffect(() => {
+    const category = searchParams.get('category');
+    if (category && categories.includes(category)) {
+      setActiveCategory(category);
+    }
+  }, [categories, searchParams]);
 
   const filteredPrompts = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();

@@ -85,6 +85,18 @@ interface DatabaseCollectionResult<T = unknown> {
   message?: string;
 }
 
+interface MoonfallRagRequestInput {
+  projectId: string;
+  userId?: string;
+  query: string;
+  categories?: string[];
+  tags?: string[];
+  limit?: number;
+  purpose?: string;
+  includeUnverified?: boolean;
+  similarityThreshold?: number;
+}
+
 interface AppIconResult {
   ok: boolean;
   isCustom?: boolean;
@@ -131,5 +143,6 @@ interface Window {
     writeCollection<T = unknown>(collection: DatabaseCollectionName, items: T[], dataDir?: string): Promise<DatabaseCollectionResult<T>>;
     readMoonfallPostgres<T = unknown>(dataDir?: string): Promise<DatabaseCollectionResult<T>>;
     writeMoonfallPostgres<T = unknown>(state: T, dataDir?: string): Promise<DatabaseCollectionResult<T>>;
+    retrieveMoonfallRag<T = unknown>(input: MoonfallRagRequestInput, dataDir?: string): Promise<DatabaseCollectionResult<T>>;
   };
 }

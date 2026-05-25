@@ -51,7 +51,7 @@ export function ConfirmDialog({
       onClick={onClose}
     >
       <div
-        className="modal-sharp w-[460px] max-w-[92vw] rounded-[24px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
+        className="modal-sharp relative w-[460px] max-w-[92vw] rounded-[24px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
         data-draggable-managed="true"
         style={draggable.style}
         onClick={(event) => event.stopPropagation()}
@@ -84,6 +84,18 @@ export function ConfirmDialog({
           <button onClick={onConfirm} className={`rounded-2xl px-6 py-3 text-base transition-colors ${confirmClass}`}>
             {confirmText}
           </button>
+        </div>
+        <div data-no-modal-drag="true" {...draggable.getResizeHandleProps('top')} className="absolute left-4 right-4 top-0 z-20 h-2 cursor-ns-resize" />
+        <div data-no-modal-drag="true" {...draggable.getResizeHandleProps('bottom')} className="absolute bottom-0 left-4 right-4 z-20 h-2 cursor-ns-resize" />
+        <div data-no-modal-drag="true" {...draggable.getResizeHandleProps('left')} className="absolute bottom-4 left-0 top-4 z-20 w-2 cursor-ew-resize" />
+        <div data-no-modal-drag="true" {...draggable.getResizeHandleProps('right')} className="absolute bottom-4 right-0 top-4 z-20 w-2 cursor-ew-resize" />
+        <div
+          data-no-modal-drag="true"
+          {...draggable.resizeHandleProps}
+          className="absolute bottom-0 right-0 z-20 h-5 w-5 cursor-nwse-resize"
+          title="拖动调整弹窗大小"
+        >
+          <div className="absolute bottom-1 right-1 h-3 w-3 rounded-br-lg border-b-2 border-r-2 border-gray-300" />
         </div>
       </div>
     </div>

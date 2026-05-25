@@ -13,11 +13,13 @@ import {
   Lightbulb,
   ListTree,
   MessageSquare,
+  Moon,
   Palette,
   Settings,
   Sparkles,
   Star,
   Tag,
+  Type,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -50,11 +52,13 @@ const iconMap: Record<string, LucideIcon> = {
   Lightbulb,
   ListTree,
   MessageSquare,
+  Moon,
   Palette,
   Settings,
   Sparkles,
   Star,
   Tag,
+  Type,
 };
 
 export function getIconByName(name: string): LucideIcon {
@@ -70,7 +74,7 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
       { iconName: 'Film', label: '我的剧本', to: '/scripts' },
       { iconName: 'Sparkles', label: '提炼剧情', to: '/extract' },
       { iconName: 'Database', label: '提取设定', to: '/moonfall-settings' },
-      { iconName: 'Library', label: '脑洞库', to: '/brainstorm-library' },
+      { iconName: 'Library', label: '库', to: '/library' },
     ],
   },
   {
@@ -81,6 +85,7 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
       { iconName: 'Tag', label: '提示词管理', to: '/prompts' },
       { iconName: 'Settings', label: '模型管理', to: '/model-manage' },
       { iconName: 'Cloud', label: '数据库设置', to: '/db-settings' },
+      { iconName: 'Type', label: '文案修改', to: '/text-overrides' },
     ],
   },
   {
@@ -96,18 +101,35 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
     title: '测试专区',
     iconName: 'FlaskConical',
     items: [
-      { iconName: 'MessageSquare', label: 'AI对话', to: '/ai-chat' },
-      { iconName: 'FlaskConical', label: '测试合集', to: '/test-collection' },
+      { iconName: 'Palette', label: '软件 UI 记录', to: '/software-ui-catalog' },
+      { iconName: 'Moon', label: '主题颜色', to: '/theme-colors' },
+      { iconName: 'FlaskConical', label: '其他测试', to: '/test-collection' },
     ],
   },
 ];
 
 const NAV_CONFIG_KEY = 'xinyuexia_nav_config_v1';
 const COLLAPSED_KEY = 'xinyuexia_sidebar_collapsed_v1';
-const REMOVED_ROUTES = new Set(['/dashboard', '/call-data', '/test-browser', '/button-test', '/extract-test', '/extract-1', '/cover-library', '/plot-library', '/idea-library']);
+const REMOVED_ROUTES = new Set([
+  '/dashboard',
+  '/ai-chat',
+  '/call-data',
+  '/button-test',
+  '/brainstorm-library',
+  '/extract-test',
+  '/extract-1',
+  '/cover-library',
+  '/plot-library',
+  '/idea-library',
+]);
 const REMOVED_GROUP_TITLES = new Set(['首页专区']);
 const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
   '/db-settings': '数据库设置',
+  '/library': '库',
+  '/text-overrides': '文案修改',
+  '/software-ui-catalog': '软件 UI 记录',
+  '/theme-colors': '主题颜色',
+  '/test-collection': '其他测试',
 };
 
 function cloneDefaultConfig() {

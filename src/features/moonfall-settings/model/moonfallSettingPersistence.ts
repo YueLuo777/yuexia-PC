@@ -180,7 +180,10 @@ export async function persistMoonfallState(state: MoonfallState) {
 export async function hydrateMoonfallStateFromDatabase(): Promise<MoonfallHydrationResult> {
   const localState = readMoonfallState();
   const databaseState = await readDatabaseMoonfallState();
-  const databaseAvailable = Boolean(window.xinyuexiaDatabase?.readCollection && window.xinyuexiaDatabase?.writeCollection);
+  const databaseAvailable = Boolean(
+    (window.xinyuexiaDatabase?.readMoonfallPostgres && window.xinyuexiaDatabase?.writeMoonfallPostgres)
+    || (window.xinyuexiaDatabase?.readCollection && window.xinyuexiaDatabase?.writeCollection),
+  );
 
   if (!databaseAvailable) {
     return {

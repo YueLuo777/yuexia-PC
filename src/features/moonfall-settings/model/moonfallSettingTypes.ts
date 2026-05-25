@@ -45,6 +45,7 @@ export type MoonfallImportance = '核心' | '重要' | '普通' | '素材' | '�
 export type MoonfallSourceType = 'manual' | 'txt' | 'doc' | 'docx' | 'markdown' | 'other';
 export type MoonfallPurpose = 'writing' | 'rewrite' | 'worldbuilding' | 'style_transfer' | 'qa' | 'debug';
 export type MoonfallVectorStatus = '未生成向量' | '已生成向量' | '生成失败';
+export const MOONFALL_VECTOR_DIMENSION = 1536;
 
 export interface MoonfallProject {
   id: string;
@@ -232,4 +233,10 @@ export interface RetrievedMoonfallSetting {
   distance: number;
   score: number;
   reason: string;
+}
+
+export interface MoonfallRagBundle {
+  results: RetrievedMoonfallSetting[];
+  contextText: string;
+  log: MoonfallRetrievalLog;
 }

@@ -111,7 +111,7 @@ export function SettingLibraryTabsTestPage() {
           <p className="mt-0.5 text-xs text-slate-400">把“极简/高级模式”的 UI 套用到角色、设定、大纲、细纲四个页面切换。</p>
         </div>
         <div className="flex gap-2">
-          <TextButton onClick={() => navigate('/test-collection')}>返回测试合集</TextButton>
+          <TextButton onClick={() => navigate('/test-collection')}>返回其他测试</TextButton>
           <TextButton onClick={() => navigate('/workbench')} tone="primary">打开作品编辑器</TextButton>
         </div>
       </header>

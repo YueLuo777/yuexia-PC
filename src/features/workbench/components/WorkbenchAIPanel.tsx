@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { readModelSnapshot } from '@/features/models/hooks/useModels';
 import type { ModelItem } from '@/features/models/model/modelTypes';
 import { callModel } from '@/features/models/services/callModel';
+import type { MoonfallRagBundle } from '@/features/moonfall-settings/model/moonfallSettingTypes';
 import {
   buildMoonfallRagBundle,
   readMoonfallState,
@@ -57,13 +58,35 @@ function getDefaultInstruction(_tool: WorkbenchAITool) {
   return '请根据我的要求处理当前章节正文。';
 }
 
-function buildAutoRagContext(userInput: string, chapterContext: string) {
+function isMoonfallRagBundle(value: unknown): value is MoonfallRagBundle {
+  return Boolean(value && typeof value === 'object' && 'contextText' in value && 'log' in value);
+}
+
+async function buildAutoRagContext(userInput: string, chapterContext: string) {
   const state = readMoonfallState();
   if (!state.config.autoRag) return '';
   const activeProject = state.projects.find((project) => project.id === state.activeProjectId) ?? state.projects[0];
   if (!activeProject) return '';
   const query = [userInput, chapterContext.slice(-4000)].filter(Boolean).join('\n\n');
   if (!query.trim()) return '';
+
+  if (window.xinyuexiaDatabase?.retrieveMoonfallRag) {
+    try {
+      const result = await window.xinyuexiaDatabase.retrieveMoonfallRag<MoonfallRagBundle>({
+        projectId: activeProject.id,
+        userId: activeProject.userId,
+        query,
+        limit: state.config.retrievalLimit,
+        purpose: 'writing',
+        similarityThreshold: state.config.similarityThreshold,
+      });
+      const bundle = result.data.find(isMoonfallRagBundle);
+      if (result.ok && bundle?.contextText) return bundle.contextText;
+    } catch {
+      // Fall back to the local cache search below.
+    }
+  }
+
   const bundle = buildMoonfallRagBundle(state, {
     projectId: activeProject.id,
     userId: activeProject.userId,
@@ -337,7 +360,7 @@ export function WorkbenchAIPanel({
     abortControllerRef.current = controller;
     setIsLoading(true);
     try {
-      const ragContext = buildAutoRagContext(text, chapterPayload || selectedChapterContent.trim());
+      const ragContext = await buildAutoRagContext(text, chapterPayload || selectedChapterContent.trim());
       const modelContext = [chapterPayload, ragContext].filter(Boolean).join('\n\n');
       const content = await callModel({
         model: configModel,

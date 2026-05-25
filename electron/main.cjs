@@ -35,6 +35,7 @@ const MIN_WINDOW_WIDTH = 1100;
 const MIN_WINDOW_HEIGHT = 680;
 const DEFAULT_DATABASE_DIR = path.join(path.resolve(__dirname, '..'), 'shujuku');
 const DEFAULT_EMBEDDED_POSTGRES_PORT = 55432;
+const POSTGRES_VECTOR_DIMENSION = 1536;
 const EMBEDDED_POSTGRES_DIR_NAME = 'postgres';
 const DATABASE_SETTINGS_FILE_NAME = 'xinyuexia-db-config.json';
 const DATABASE_SCHEMA_FILE_NAME = 'xinyuexia-schema.sql';
@@ -1006,6 +1007,295 @@ function parsePostgresVector(value) {
     .filter(Number.isFinite);
 }
 
+function createRuntimeId(prefix) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function tokenSet(text) {
+  return new Set(
+    String(text || '')
+      .toLowerCase()
+      .split(/[\s,，、。！？；;:："'“”‘’（）()【】\[\]<>《》\n\r]+/)
+      .filter((item) => item.length >= 2),
+  );
+}
+
+function dotProduct(left, right) {
+  const length = Math.min(left.length, right.length);
+  let total = 0;
+  for (let index = 0; index < length; index += 1) total += left[index] * right[index];
+  return total;
+}
+
+function vectorNorm(vector) {
+  return Math.sqrt(dotProduct(vector, vector)) || 1;
+}
+
+function hashTextEmbedding(text, dimension = POSTGRES_VECTOR_DIMENSION) {
+  const vector = Array.from({ length: dimension }, () => 0);
+  Array.from(tokenSet(text)).forEach((token) => {
+    let hash = 2166136261;
+    for (let index = 0; index < token.length; index += 1) {
+      hash ^= token.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    const slot = Math.abs(hash) % dimension;
+    vector[slot] += hash % 2 === 0 ? 1 : -1;
+  });
+  const length = vectorNorm(vector);
+  return vector.map((value) => Number((value / length).toFixed(6)));
+}
+
+function keywordScore(query, row) {
+  const words = tokenSet(query);
+  if (words.size === 0) return 0;
+  const haystack = [
+    row.title,
+    row.canonical_name,
+    parsePostgresArray(row.aliases).join(' '),
+    parsePostgresArray(row.tags).join(' '),
+    parsePostgresArray(row.keywords).join(' '),
+    row.summary,
+    row.organized_text,
+    row.original_text,
+  ].join(' ').toLowerCase();
+  let score = 0;
+  words.forEach((word) => {
+    if (haystack.includes(word)) score += 1;
+  });
+  return score / words.size;
+}
+
+function importanceBoost(importance) {
+  if (importance === '核心') return 1.4;
+  if (importance === '重要') return 1.2;
+  if (importance === '素材') return 0.85;
+  if (importance === '废案') return 0.2;
+  return 1;
+}
+
+function buildRetrievedSetting(row, distance, reason, query) {
+  const keyword = keywordScore(query, row);
+  const similarity = Math.max(0, 1 - Number(distance || 0));
+  const priority = importanceBoost(String(row.importance || '普通')) * Math.max(0.2, Number(row.rag_weight) || 1);
+  const score = ((similarity * 0.58) + (keyword * 0.42)) * priority + (row.is_favorite ? 0.08 : 0);
+  return {
+    item: {
+      id: String(row.id),
+      projectId: String(row.project_id),
+      userId: String(row.user_id || 'local-user'),
+      sourceId: row.source_id ? String(row.source_id) : undefined,
+      sourceChunkId: row.source_chunk_id ? String(row.source_chunk_id) : undefined,
+      title: String(row.title || ''),
+      canonicalName: String(row.canonical_name || row.title || ''),
+      aliases: parsePostgresArray(row.aliases),
+      category: String(row.category || '未分类'),
+      subcategory: String(row.subcategory || ''),
+      tags: parsePostgresArray(row.tags),
+      keywords: parsePostgresArray(row.keywords),
+      summary: String(row.summary || ''),
+      originalText: String(row.original_text || ''),
+      organizedText: String(row.organized_text || ''),
+      evidenceText: String(row.evidence_text || ''),
+      evidenceLocation: String(row.evidence_location || ''),
+      status: String(row.status || '待确认'),
+      confidence: Number(row.confidence) || 0.65,
+      allowRag: Boolean(row.allow_rag),
+      isVerified: Boolean(row.is_verified),
+      isFavorite: Boolean(row.is_favorite),
+      isLocked: Boolean(row.is_locked),
+      importance: String(row.importance || '普通'),
+      ragWeight: Number(row.rag_weight) || 1,
+      worldline: String(row.worldline || '主线'),
+      relatedItems: parsePostgresArray(row.related_items),
+      metadata: plainObject(row.metadata),
+      vectorStatus: '已生成向量',
+      embeddingModel: String(row.embedding_model || ''),
+      embeddingText: String(row.embedding_text || ''),
+      embeddingCreatedAt: row.embedding_created_at?.toISOString?.() ?? (row.embedding_created_at ? String(row.embedding_created_at) : undefined),
+      createdAt: row.created_at?.toISOString?.() ?? String(row.created_at || ''),
+      updatedAt: row.updated_at?.toISOString?.() ?? String(row.updated_at || ''),
+      changeLogs: [],
+    },
+    distance: Number(Number(distance || 0).toFixed(4)),
+    score: Number(score.toFixed(4)),
+    reason,
+  };
+}
+
+function buildMoonfallRagContext(results) {
+  if (!Array.isArray(results) || results.length === 0) return '';
+  const grouped = new Map();
+  results.forEach((result) => {
+    const category = result.item.category || '未分类';
+    const list = grouped.get(category) ?? [];
+    list.push(result);
+    grouped.set(category, list);
+  });
+  return [
+    '以下是本次写作必须参考的设定资料，请严格遵守，不要违背：',
+    ...Array.from(grouped.entries()).flatMap(([category, items]) => [
+      '',
+      `【${category}】`,
+      ...items.map((result, index) => {
+        const content = result.item.organizedText || result.item.summary || result.item.originalText;
+        return `${index + 1}. 标题：${result.item.title}\n内容：${content}`;
+      }),
+    ]),
+    '',
+    '请基于以上设定继续写作。',
+  ].join('\n');
+}
+
+function normalizeRagInput(input) {
+  const value = input && typeof input === 'object' ? input : {};
+  return {
+    projectId: String(value.projectId || '').trim(),
+    userId: String(value.userId || 'local-user').trim(),
+    query: String(value.query || '').trim(),
+    categories: textArray(value.categories),
+    tags: textArray(value.tags),
+    limit: Math.max(1, Math.min(50, Number(value.limit) || 10)),
+    purpose: String(value.purpose || 'writing'),
+    includeUnverified: Boolean(value.includeUnverified),
+    similarityThreshold: Number.isFinite(Number(value.similarityThreshold)) ? Number(value.similarityThreshold) : 0,
+  };
+}
+
+function buildMoonfallWhereClause(input, startIndex = 2) {
+  const clauses = [
+    `si.project_id = $${startIndex}`,
+    `($${startIndex + 1}::text = '' OR si.user_id = $${startIndex + 1})`,
+    `si.status <> '废案'`,
+    `si.importance <> '废案'`,
+  ];
+  const params = [input.projectId, input.userId];
+  let index = startIndex + 2;
+  if (!input.includeUnverified) {
+    clauses.push('si.allow_rag = true');
+    clauses.push('si.is_verified = true');
+  }
+  if (input.categories.length > 0) {
+    clauses.push(`si.category = ANY($${index}::text[])`);
+    params.push(input.categories);
+    index += 1;
+  }
+  if (input.tags.length > 0) {
+    clauses.push(`si.tags && $${index}::text[]`);
+    params.push(input.tags);
+    index += 1;
+  }
+  return { clause: clauses.join(' AND '), params, nextIndex: index };
+}
+
+async function retrieveMoonfallRagFromPostgres(inputValue, dataDir = DEFAULT_DATABASE_DIR) {
+  const input = normalizeRagInput(inputValue);
+  if (!input.projectId || !input.query) {
+    return { ok: false, exists: false, data: [], message: 'Missing projectId or query.' };
+  }
+
+  return withPostgresClient(dataDir, async (client) => {
+    const queryVector = `[${hashTextEmbedding(input.query, POSTGRES_VECTOR_DIMENSION).join(',')}]`;
+    const where = buildMoonfallWhereClause(input, 2);
+    const vectorLimitIndex = where.nextIndex;
+    const vectorLimit = Math.max(input.limit * 4, input.limit);
+    const vectorResult = await client.query(
+      `SELECT
+         si.*,
+         se.embedding_model,
+         se.embedding_text,
+         se.created_at AS embedding_created_at,
+         se.embedding <=> $1::vector AS distance
+       FROM setting_embeddings se
+       JOIN setting_items si ON si.id = se.setting_item_id
+       WHERE ${where.clause}
+       AND se.embedding IS NOT NULL
+       ORDER BY se.embedding <=> $1::vector
+       LIMIT $${vectorLimitIndex}`,
+      [queryVector, ...where.params, vectorLimit],
+    );
+
+    const keywordWords = Array.from(tokenSet(input.query)).slice(0, 10);
+    const keywordRows = [];
+    if (keywordWords.length > 0) {
+      const keywordWhere = buildMoonfallWhereClause(input, 1);
+      const patternIndex = keywordWhere.nextIndex;
+      const limitIndex = patternIndex + 1;
+      const keywordResult = await client.query(
+        `SELECT
+           si.*,
+           se.embedding_model,
+           se.embedding_text,
+           se.created_at AS embedding_created_at,
+           0.75::double precision AS distance
+         FROM setting_items si
+         LEFT JOIN setting_embeddings se ON si.id = se.setting_item_id
+         WHERE ${keywordWhere.clause}
+         AND concat_ws(' ', si.title, si.canonical_name, si.summary, si.organized_text, si.original_text) ILIKE ANY($${patternIndex}::text[])
+         ORDER BY si.updated_at DESC
+         LIMIT $${limitIndex}`,
+        [...keywordWhere.params, keywordWords.map((word) => `%${word}%`), vectorLimit],
+      );
+      keywordRows.push(...keywordResult.rows);
+    }
+
+    const merged = new Map();
+    vectorResult.rows.forEach((row) => {
+      merged.set(String(row.id), buildRetrievedSetting(row, row.distance, 'pgvector 语义检索', input.query));
+    });
+    keywordRows.forEach((row) => {
+      const id = String(row.id);
+      const existing = merged.get(id);
+      const next = buildRetrievedSetting(row, row.distance, existing ? 'pgvector+关键词混合检索' : '关键词检索', input.query);
+      if (!existing || next.score > existing.score) merged.set(id, next);
+    });
+
+    const results = Array.from(merged.values())
+      .filter((result) => input.similarityThreshold <= 0 || 1 - result.distance >= input.similarityThreshold || result.reason.includes('关键词'))
+      .sort((left, right) => right.score - left.score)
+      .slice(0, input.limit);
+    const log = {
+      id: createRuntimeId('retrieval'),
+      projectId: input.projectId,
+      userId: input.userId || 'local-user',
+      query: input.query,
+      retrievedSettingIds: results.map((result) => result.item.id),
+      retrievedChunkIds: results.map((result) => result.item.sourceChunkId).filter(Boolean),
+      purpose: input.purpose,
+      metadata: { engine: 'postgresql-pgvector', scores: results.map((result) => ({ id: result.item.id, score: result.score, distance: result.distance, reason: result.reason })) },
+      createdAt: new Date().toISOString(),
+    };
+
+    await client.query(
+      `INSERT INTO retrieval_logs (id, project_id, user_id, query, retrieved_setting_ids, retrieved_chunk_ids, purpose, metadata, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (id) DO NOTHING`,
+      [
+        log.id,
+        log.projectId,
+        log.userId,
+        log.query,
+        log.retrievedSettingIds,
+        log.retrievedChunkIds,
+        log.purpose,
+        log.metadata,
+        dateValue(log.createdAt),
+      ],
+    );
+
+    return {
+      ok: true,
+      exists: true,
+      data: [{
+        results,
+        contextText: buildMoonfallRagContext(results),
+        log,
+      }],
+      message: 'Moonfall settings retrieved with PostgreSQL pgvector.',
+    };
+  });
+}
+
 async function writeMoonfallStateToPostgres(stateInput, dataDir = DEFAULT_DATABASE_DIR) {
   const state = stateInput && typeof stateInput === 'object' ? stateInput : null;
   if (!state || !Array.isArray(state.projects)) {
@@ -1169,10 +1459,8 @@ async function writeMoonfallStateToPostgres(stateInput, dataDir = DEFAULT_DATABA
           ],
         );
 
-        if (item.embeddingText || item.embeddingVector?.length) {
-          const vector = Array.isArray(item.embeddingVector) && item.embeddingVector.length === 1536
-            ? `[${item.embeddingVector.join(',')}]`
-            : null;
+        if (Array.isArray(item.embeddingVector) && item.embeddingVector.length === POSTGRES_VECTOR_DIMENSION) {
+          const vector = `[${item.embeddingVector.join(',')}]`;
           await client.query(
             `INSERT INTO setting_embeddings (id, project_id, setting_item_id, embedding_model, embedding, embedding_text, created_at)
              VALUES ($1, $2, $3, $4, $5::vector, $6, $7)
@@ -1369,6 +1657,7 @@ async function readMoonfallStateFromPostgres(dataDir = DEFAULT_DATABASE_DIR) {
       })),
       settings: settingsResult.rows.map((row) => {
         const embedding = embeddingsBySetting.get(row.id);
+        const embeddingVector = embedding?.embedding ? parsePostgresVector(embedding.embedding) : undefined;
         return {
           id: String(row.id),
           projectId: String(row.project_id),
@@ -1399,10 +1688,10 @@ async function readMoonfallStateFromPostgres(dataDir = DEFAULT_DATABASE_DIR) {
           version: String(row.version || ''),
           relatedItems: parsePostgresArray(row.related_items),
           metadata: plainObject(row.metadata),
-          vectorStatus: embedding ? '已生成向量' : '未生成向量',
+          vectorStatus: embeddingVector?.length === POSTGRES_VECTOR_DIMENSION ? '已生成向量' : '未生成向量',
           embeddingModel: embedding ? String(embedding.embedding_model || '') : undefined,
           embeddingText: embedding ? String(embedding.embedding_text || '') : undefined,
-          embeddingVector: embedding?.embedding ? parsePostgresVector(embedding.embedding) : undefined,
+          embeddingVector,
           embeddingCreatedAt: embedding?.created_at?.toISOString?.() ?? (embedding?.created_at ? String(embedding.created_at) : undefined),
           createdAt: row.created_at?.toISOString?.() ?? String(row.created_at || ''),
           updatedAt: row.updated_at?.toISOString?.() ?? String(row.updated_at || ''),
@@ -2249,6 +2538,11 @@ ipcMain.handle('database:read-moonfall-postgres', async (_event, dataDir) => {
 ipcMain.handle('database:write-moonfall-postgres', async (_event, state, dataDir) => {
   const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
   return writeMoonfallStateToPostgres(state, dir);
+});
+
+ipcMain.handle('database:retrieve-moonfall-rag', async (_event, input, dataDir) => {
+  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
+  return retrieveMoonfallRagFromPostgres(input, dir);
 });
 
 app.on('before-quit', () => {

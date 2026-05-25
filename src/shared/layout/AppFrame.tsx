@@ -14,6 +14,7 @@ import {
 } from '@/shared/shortcuts/shortcutConfig';
 import { hasTopModalEscapeHandler } from '@/shared/hooks/useTopModalEscape';
 import { HOME_TAB, useWorkspaceTabs, type WorkspaceTab } from '@/shared/tabs/WorkspaceTabsContext';
+import { TextOverrideLayer } from '@/shared/text-overrides/TextOverrideLayer';
 
 declare global {
   interface Window {
@@ -43,6 +44,8 @@ const APP_SCALE_OPTIONS = [1, 1.1, 1.25, 1.5, 1.75, 2].map((labelScale) => ({
 const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
 const TITLEBAR_DRAG_THRESHOLD = 8;
 const TITLEBAR_DOUBLE_CLICK_MAX_DURATION_MS = 260;
+const TITLEBAR_DOUBLE_CLICK_GAP_MS = 320;
+const TITLEBAR_DOUBLE_CLICK_DISTANCE = 8;
 const RIGHT_MOUSE_GESTURE_THRESHOLD = 90;
 const RIGHT_MOUSE_GESTURE_VERTICAL_TOLERANCE = 80;
 const RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD = 18;
@@ -137,6 +140,7 @@ export function AppFrame({ children }: AppFrameProps) {
   const titlebarDragRef = useRef<TitlebarDragState | null>(null);
   const suppressTitlebarClickRef = useRef(false);
   const lastTitlebarDragAtRef = useRef(0);
+  const titlebarClickRef = useRef({ lastAt: 0, lastClientX: 0, lastClientY: 0 });
   const titlebarPointerMetaRef = useRef({ startedAt: 0, startClientX: 0, startClientY: 0, moved: false });
 
   const effectiveScale = useMemo(() => Number(appScale.toFixed(3)), [appScale]);
@@ -332,8 +336,26 @@ export function AppFrame({ children }: AppFrameProps) {
       startY: number;
       originX: number;
       originY: number;
+      fixed: boolean;
+    };
+    type ResizeState = {
+      dialog: HTMLElement;
+      key: string;
+      pointerId: number;
+      direction: 'left' | 'right' | 'top' | 'bottom' | 'bottom-right';
+      startX: number;
+      startY: number;
+      originLeft: number;
+      originTop: number;
+      originWidth: number;
+      originHeight: number;
     };
     let dragState: DragState | null = null;
+    let resizeState: ResizeState | null = null;
+    const minModalWidth = 360;
+    const minModalHeight = 260;
+    const viewportPadding = 32;
+    const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
     const isOverlay = (element: HTMLElement) => (
       element.classList.contains('fixed') && element.classList.contains('inset-0')
@@ -360,20 +382,39 @@ export function AppFrame({ children }: AppFrameProps) {
       const handle = findDialogDragHandle(dialog);
       return Boolean(handle?.contains(target));
     };
-    const getDialogKey = (dialog: HTMLElement) => {
-      const title = dialog.querySelector('h1,h2,h3')?.textContent?.trim() || dialog.className || 'modal';
+    const getDialogKey = (dialog: HTMLElement, overlay?: HTMLElement) => {
+      const explicitId = dialog.dataset.modalId
+        || dialog.dataset.globalModalId
+        || overlay?.dataset.modalId
+        || overlay?.dataset.globalModalId;
+      if (explicitId) return `xinyuexia_global_modal_position_${explicitId.slice(0, 80)}`;
+      const title = dialog.querySelector('[data-modal-title="true"],h1,h2,h3')?.textContent?.trim() || dialog.className || 'modal';
       return `xinyuexia_global_modal_position_${title.slice(0, 40)}`;
     };
-    const readDialogPosition = (key: string) => {
+    const readDialogGeometry = (key: string) => {
       try {
-        const parsed = JSON.parse(localStorage.getItem(key) || '{}') as { x?: number; y?: number };
+        const parsed = JSON.parse(localStorage.getItem(key) || '{}') as { x?: number; y?: number; left?: number; top?: number; width?: number; height?: number };
         return {
           x: Number.isFinite(parsed.x) ? Math.round(Number(parsed.x)) : 0,
           y: Number.isFinite(parsed.y) ? Math.round(Number(parsed.y)) : 0,
+          left: Number.isFinite(parsed.left) ? Math.round(Number(parsed.left)) : undefined,
+          top: Number.isFinite(parsed.top) ? Math.round(Number(parsed.top)) : undefined,
+          width: Number.isFinite(parsed.width) ? Math.round(Number(parsed.width)) : undefined,
+          height: Number.isFinite(parsed.height) ? Math.round(Number(parsed.height)) : undefined,
         };
       } catch {
         return { x: 0, y: 0 };
       }
+    };
+    const saveDialogGeometry = (key: string, dialog: HTMLElement) => {
+      localStorage.setItem(key, JSON.stringify({
+        x: Math.round(Number(dialog.dataset.globalDragX || 0)),
+        y: Math.round(Number(dialog.dataset.globalDragY || 0)),
+        left: Number.isFinite(Number(dialog.dataset.globalFixedLeft)) ? Math.round(Number(dialog.dataset.globalFixedLeft)) : undefined,
+        top: Number.isFinite(Number(dialog.dataset.globalFixedTop)) ? Math.round(Number(dialog.dataset.globalFixedTop)) : undefined,
+        width: Number.isFinite(Number(dialog.dataset.globalResizeWidth)) ? Math.round(Number(dialog.dataset.globalResizeWidth)) : undefined,
+        height: Number.isFinite(Number(dialog.dataset.globalResizeHeight)) ? Math.round(Number(dialog.dataset.globalResizeHeight)) : undefined,
+      }));
     };
     const applyTransform = (dialog: HTMLElement, x: number, y: number) => {
       const roundedX = Math.round(x);
@@ -387,21 +428,126 @@ export function AppFrame({ children }: AppFrameProps) {
       }
       dialog.style.transform = `translate(${roundedX}px, ${roundedY}px)`;
     };
-    const applyDialogPosition = (dialog: HTMLElement) => {
+    const applyFixedPosition = (dialog: HTMLElement, left: number, top: number) => {
+      const roundedLeft = Math.round(left);
+      const roundedTop = Math.round(top);
+      dialog.dataset.globalFixedLeft = String(roundedLeft);
+      dialog.dataset.globalFixedTop = String(roundedTop);
+      dialog.dataset.globalDragX = '0';
+      dialog.dataset.globalDragY = '0';
+      dialog.style.position = 'fixed';
+      dialog.style.left = `${roundedLeft}px`;
+      dialog.style.top = `${roundedTop}px`;
+      dialog.style.right = 'auto';
+      dialog.style.bottom = 'auto';
+      dialog.style.margin = '0';
+      dialog.style.transform = '';
+      dialog.style.willChange = '';
+    };
+    const applySize = (dialog: HTMLElement, width?: number, height?: number) => {
+      if (width) {
+        const nextWidth = Math.round(width);
+        dialog.dataset.globalResizeWidth = String(nextWidth);
+        dialog.style.width = `${nextWidth}px`;
+      }
+      if (height) {
+        const nextHeight = Math.round(height);
+        dialog.dataset.globalResizeHeight = String(nextHeight);
+        dialog.style.height = `${nextHeight}px`;
+      }
+    };
+    const ensureResizeHandle = (dialog: HTMLElement) => {
+      if (dialog.dataset.globalResizableApplied === 'true') return;
+      dialog.dataset.globalResizableApplied = 'true';
+      if (getComputedStyle(dialog).position === 'static') dialog.style.position = 'relative';
+      const createResizeHandle = (
+        direction: 'left' | 'right' | 'top' | 'bottom' | 'bottom-right',
+        style: Partial<CSSStyleDeclaration>,
+      ) => {
+        const handle = document.createElement('div');
+        handle.dataset.noModalDrag = 'true';
+        handle.dataset.globalModalResizeHandle = 'true';
+        handle.dataset.globalModalResizeDirection = direction;
+        handle.title = '拖动调整弹窗大小';
+        Object.assign(handle.style, {
+          position: 'absolute',
+          zIndex: '30',
+          touchAction: 'none',
+          ...style,
+        });
+        dialog.appendChild(handle);
+        return handle;
+      };
+      createResizeHandle('top', {
+        left: '16px',
+        right: '16px',
+        top: '0px',
+        height: '8px',
+        cursor: 'ns-resize',
+      });
+      createResizeHandle('bottom', {
+        left: '16px',
+        right: '16px',
+        bottom: '0px',
+        height: '8px',
+        cursor: 'ns-resize',
+      });
+      createResizeHandle('left', {
+        left: '0px',
+        top: '16px',
+        bottom: '16px',
+        width: '8px',
+        cursor: 'ew-resize',
+      });
+      createResizeHandle('right', {
+        right: '0px',
+        top: '16px',
+        bottom: '16px',
+        width: '8px',
+        cursor: 'ew-resize',
+      });
+      const handle = createResizeHandle('bottom-right', {
+        right: '0px',
+        bottom: '0px',
+        width: '20px',
+        height: '20px',
+        cursor: 'nwse-resize',
+      });
+      const mark = document.createElement('div');
+      Object.assign(mark.style, {
+        position: 'absolute',
+        right: '4px',
+        bottom: '4px',
+        width: '12px',
+        height: '12px',
+        borderRight: '2px solid rgb(209 213 219)',
+        borderBottom: '2px solid rgb(209 213 219)',
+        borderBottomRightRadius: '8px',
+        pointerEvents: 'none',
+      });
+      handle.appendChild(mark);
+    };
+    const applyDialogPosition = (dialog: HTMLElement, overlay?: HTMLElement) => {
       if (dialog.dataset.draggableManaged === 'true' || dialog.dataset.globalDraggableApplied === 'true') return;
-      const position = readDialogPosition(getDialogKey(dialog));
+      const geometry = readDialogGeometry(getDialogKey(dialog, overlay));
       dialog.dataset.globalDraggableApplied = 'true';
       const handle = findDialogDragHandle(dialog);
       if (handle) {
         handle.style.cursor = 'move';
         handle.style.touchAction = 'none';
       }
-      applyTransform(dialog, position.x, position.y);
+      ensureResizeHandle(dialog);
+      if (Number.isFinite(geometry.left) && Number.isFinite(geometry.top)) {
+        applyFixedPosition(dialog, Number(geometry.left), Number(geometry.top));
+      } else {
+        applyTransform(dialog, geometry.x, geometry.y);
+      }
+      applySize(dialog, geometry.width, geometry.height);
     };
     const applyAllPositions = () => {
       document.querySelectorAll<HTMLElement>('.fixed.inset-0').forEach((overlay) => {
         Array.from(overlay.children).forEach((child) => {
-          if (child instanceof HTMLElement) applyDialogPosition(child);
+          if (child instanceof HTMLElement) applyDialogPosition(child, overlay);
         });
       });
     };
@@ -410,24 +556,60 @@ export function AppFrame({ children }: AppFrameProps) {
     );
 
     const handlePointerDown = (event: PointerEvent) => {
-      if (event.button !== 0 || !(event.target instanceof HTMLElement) || isInteractive(event.target)) return;
+      if (event.button !== 0 || !(event.target instanceof HTMLElement)) return;
       const overlay = findOverlay(event.target);
       if (!overlay) return;
       const dialog = findDialog(overlay, event.target);
       if (!dialog || dialog.dataset.draggableManaged === 'true') return;
+      if (event.target.closest('[data-global-modal-resize-handle="true"]')) {
+        event.preventDefault();
+        event.stopPropagation();
+        applyDialogPosition(dialog, overlay);
+        const rect = dialog.getBoundingClientRect();
+        const direction = event.target.dataset.globalModalResizeDirection as ResizeState['direction'] | undefined;
+        const resizeDirection = direction ?? 'bottom-right';
+        applyFixedPosition(dialog, rect.left, rect.top);
+        resizeState = {
+          dialog,
+          key: getDialogKey(dialog, overlay),
+          pointerId: event.pointerId,
+          direction: resizeDirection,
+          startX: event.clientX,
+          startY: event.clientY,
+          originLeft: Math.round(rect.left),
+          originTop: Math.round(rect.top),
+          originWidth: Number(dialog.dataset.globalResizeWidth || 0) || rect.width,
+          originHeight: Number(dialog.dataset.globalResizeHeight || 0) || rect.height,
+        };
+        document.body.style.cursor = resizeDirection === 'left' || resizeDirection === 'right'
+          ? 'ew-resize'
+          : resizeDirection === 'top' || resizeDirection === 'bottom'
+            ? 'ns-resize'
+            : 'nwse-resize';
+        document.body.style.userSelect = 'none';
+        try {
+          event.target.setPointerCapture(event.pointerId);
+        } catch {
+          // Window-level listeners still receive resize events in capture phase.
+        }
+        return;
+      }
+      if (isInteractive(event.target)) return;
       if (!isInDialogDragHandle(dialog, event.target)) return;
       event.preventDefault();
       event.stopPropagation();
-      applyDialogPosition(dialog);
-      const key = getDialogKey(dialog);
+      applyDialogPosition(dialog, overlay);
+      const key = getDialogKey(dialog, overlay);
+      const fixed = Number.isFinite(Number(dialog.dataset.globalFixedLeft)) && Number.isFinite(Number(dialog.dataset.globalFixedTop));
       dragState = {
         dialog,
         key,
         pointerId: event.pointerId,
         startX: event.clientX,
         startY: event.clientY,
-        originX: Number(dialog.dataset.globalDragX || 0),
-        originY: Number(dialog.dataset.globalDragY || 0),
+        originX: fixed ? Number(dialog.dataset.globalFixedLeft || 0) : Number(dialog.dataset.globalDragX || 0),
+        originY: fixed ? Number(dialog.dataset.globalFixedTop || 0) : Number(dialog.dataset.globalDragY || 0),
+        fixed,
       };
       try {
         dialog.setPointerCapture(event.pointerId);
@@ -436,20 +618,58 @@ export function AppFrame({ children }: AppFrameProps) {
       }
     };
     const handlePointerMove = (event: PointerEvent) => {
-      if (!dragState || dragState.pointerId !== event.pointerId) return;
-      event.preventDefault();
-      const x = dragState.originX + event.clientX - dragState.startX;
-      const y = dragState.originY + event.clientY - dragState.startY;
-      dragState.dialog.style.willChange = 'transform';
-      applyTransform(dragState.dialog, x, y);
+      if (dragState && dragState.pointerId === event.pointerId) {
+        event.preventDefault();
+        const x = dragState.originX + event.clientX - dragState.startX;
+        const y = dragState.originY + event.clientY - dragState.startY;
+        if (dragState.fixed) {
+          applyFixedPosition(dragState.dialog, x, y);
+        } else {
+          dragState.dialog.style.willChange = 'transform';
+          applyTransform(dragState.dialog, x, y);
+        }
+        return;
+      }
+      if (resizeState && resizeState.pointerId === event.pointerId) {
+        event.preventDefault();
+        const maxWidth = Math.max(minModalWidth, window.innerWidth - viewportPadding);
+        const maxHeight = Math.max(minModalHeight, window.innerHeight - viewportPadding);
+        const deltaX = event.clientX - resizeState.startX;
+        const deltaY = event.clientY - resizeState.startY;
+        const rightEdge = resizeState.originLeft + resizeState.originWidth;
+        const bottomEdge = resizeState.originTop + resizeState.originHeight;
+        const maxLeftResizeWidth = Math.max(minModalWidth, rightEdge - viewportPadding / 2);
+        const maxTopResizeHeight = Math.max(minModalHeight, bottomEdge - viewportPadding / 2);
+        const width = resizeState.direction === 'left'
+          ? clamp(resizeState.originWidth - deltaX, minModalWidth, maxLeftResizeWidth)
+          : resizeState.direction === 'right' || resizeState.direction === 'bottom-right'
+            ? clamp(resizeState.originWidth + deltaX, minModalWidth, maxWidth)
+            : resizeState.originWidth;
+        const height = resizeState.direction === 'top'
+          ? clamp(resizeState.originHeight - deltaY, minModalHeight, maxTopResizeHeight)
+          : resizeState.direction === 'bottom' || resizeState.direction === 'bottom-right'
+            ? clamp(resizeState.originHeight + deltaY, minModalHeight, maxHeight)
+            : resizeState.originHeight;
+        const left = resizeState.direction === 'left' ? rightEdge - width : resizeState.originLeft;
+        const top = resizeState.direction === 'top' ? bottomEdge - height : resizeState.originTop;
+        applyFixedPosition(resizeState.dialog, left, top);
+        applySize(resizeState.dialog, width, height);
+      }
     };
     const handlePointerUp = (event: PointerEvent) => {
-      if (!dragState || dragState.pointerId !== event.pointerId) return;
-      const x = Math.round(Number(dragState.dialog.dataset.globalDragX || 0));
-      const y = Math.round(Number(dragState.dialog.dataset.globalDragY || 0));
-      applyTransform(dragState.dialog, x, y);
-      localStorage.setItem(dragState.key, JSON.stringify({ x, y }));
-      dragState = null;
+      if (dragState && dragState.pointerId === event.pointerId) {
+        const x = Math.round(Number(dragState.dialog.dataset.globalDragX || 0));
+        const y = Math.round(Number(dragState.dialog.dataset.globalDragY || 0));
+        applyTransform(dragState.dialog, x, y);
+        saveDialogGeometry(dragState.key, dragState.dialog);
+        dragState = null;
+      }
+      if (resizeState && resizeState.pointerId === event.pointerId) {
+        saveDialogGeometry(resizeState.key, resizeState.dialog);
+        resizeState = null;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
     };
 
     let applyFrameId = 0;
@@ -593,21 +813,28 @@ export function AppFrame({ children }: AppFrameProps) {
     if (typeof next === 'boolean') setIsMaximized(next);
   };
 
-  const handleTitlebarDoubleClick = (event: MouseEvent<HTMLElement>) => {
-    if ((event.target as HTMLElement).closest('button,[data-titlebar-no-drag="true"]')) return;
-    if (Date.now() - lastTitlebarDragAtRef.current < 420) {
-      event.preventDefault();
-      event.stopPropagation();
+  const registerTitlebarClick = (event: ReactPointerEvent<HTMLElement>, heldMs: number, moved: number) => {
+    if (heldMs > TITLEBAR_DOUBLE_CLICK_MAX_DURATION_MS || moved >= TITLEBAR_DRAG_THRESHOLD) {
+      titlebarClickRef.current = { lastAt: 0, lastClientX: 0, lastClientY: 0 };
       return;
     }
-    const meta = titlebarPointerMetaRef.current;
-    const heldMs = Date.now() - meta.startedAt;
-    if (meta.moved || heldMs > TITLEBAR_DOUBLE_CLICK_MAX_DURATION_MS) {
-      event.preventDefault();
-      event.stopPropagation();
+    if (Date.now() - lastTitlebarDragAtRef.current < 420) return;
+
+    const previous = titlebarClickRef.current;
+    const now = Date.now();
+    const isSecondClick = now - previous.lastAt <= TITLEBAR_DOUBLE_CLICK_GAP_MS
+      && Math.hypot(event.clientX - previous.lastClientX, event.clientY - previous.lastClientY) <= TITLEBAR_DOUBLE_CLICK_DISTANCE;
+    if (isSecondClick) {
+      titlebarClickRef.current = { lastAt: 0, lastClientX: 0, lastClientY: 0 };
+      void toggleMaximizeWindow();
       return;
     }
-    void toggleMaximizeWindow();
+
+    titlebarClickRef.current = {
+      lastAt: now,
+      lastClientX: event.clientX,
+      lastClientY: event.clientY,
+    };
   };
 
   const handleTitlebarPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
@@ -618,7 +845,6 @@ export function AppFrame({ children }: AppFrameProps) {
       startClientY: event.clientY,
       moved: false,
     };
-    if (event.detail > 1) return;
     titlebarDragRef.current = {
       pointerId: event.pointerId,
       startClientX: event.clientX,
@@ -690,12 +916,17 @@ export function AppFrame({ children }: AppFrameProps) {
   const finishTitlebarPointerDrag = (event: ReactPointerEvent<HTMLElement>) => {
     const dragState = titlebarDragRef.current;
     if (!dragState || dragState.pointerId !== event.pointerId) return;
+    const heldMs = Date.now() - titlebarPointerMetaRef.current.startedAt;
+    const moved = Math.hypot(event.clientX - dragState.startClientX, event.clientY - dragState.startClientY);
     if (dragState.started || dragState.pending) {
       lastTitlebarDragAtRef.current = Date.now();
+      titlebarClickRef.current = { lastAt: 0, lastClientX: 0, lastClientY: 0 };
       suppressTitlebarClickRef.current = true;
       window.setTimeout(() => {
         suppressTitlebarClickRef.current = false;
-      }, 0);
+      }, 450);
+    } else {
+      registerTitlebarClick(event, heldMs, moved);
     }
     void window.xinyuexiaWindow?.endTitlebarDrag?.({ dragSessionId: dragState.dragSessionId, screenX: event.screenX, screenY: event.screenY });
     titlebarDragRef.current = null;
@@ -726,7 +957,6 @@ export function AppFrame({ children }: AppFrameProps) {
         onPointerUp={finishTitlebarPointerDrag}
         onPointerCancel={finishTitlebarPointerDrag}
         onClickCapture={handleTitlebarClickCapture}
-        onDoubleClick={handleTitlebarDoubleClick}
       >
         <nav
           className="flex h-full min-w-0 flex-1 items-end overflow-x-auto"
@@ -909,6 +1139,7 @@ export function AppFrame({ children }: AppFrameProps) {
           </div>
         </div>
       )}
+      <TextOverrideLayer />
     </div>
   );
 }
