@@ -13,6 +13,7 @@ interface WorkbenchModalProps {
   children: ReactNode;
   widthClass?: string;
   heightClass?: string;
+  titleClassName?: string;
   closeOnBackdrop?: boolean;
 }
 
@@ -23,6 +24,7 @@ export function WorkbenchModal({
   children,
   widthClass = 'w-[720px]',
   heightClass = 'h-[78vh] max-h-[86vh]',
+  titleClassName = 'text-base',
   closeOnBackdrop = true,
 }: WorkbenchModalProps) {
   const draggable = useDraggableModal(`workbench_${title}`);
@@ -54,10 +56,10 @@ export function WorkbenchModal({
         onClick={(event) => event.stopPropagation()}
       >
         <div
-          className="flex shrink-0 cursor-move items-center justify-between gap-4 border-b border-gray-100 px-5 py-3"
+          className="group flex shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-3"
           {...draggable.dragHandleProps}
         >
-          <h2 className="shrink-0 text-base font-bold text-gray-900">{title}</h2>
+          <h2 className={`shrink-0 cursor-move font-bold text-gray-900 ${titleClassName}`}>{title}</h2>
           <div id="workbench-modal-header-extra" className="min-w-0 flex-1" />
           <button
             onClick={onClose}

@@ -11,6 +11,7 @@ interface ModelRequestInput {
   endpoint: string;
   headers: Record<string, string>;
   body: string;
+  timeoutMs?: number;
 }
 
 interface ModelRequestResult {

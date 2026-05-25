@@ -26,7 +26,7 @@ import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import type { Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
 
-type ModalKey = 'workInfo' | 'settings' | 'outline' | 'notes';
+type ModalKey = 'workInfo' | 'notes' | 'settingLibrary' | 'detailOutlineLibrary' | 'summaryLibrary';
 type ManagementModalKey = 'models' | 'agents';
 type FindScope = 'chapter' | 'book';
 type ChapterExportFormat = 'txt' | 'doc';
@@ -1099,9 +1099,10 @@ export function WorkbenchPage() {
       <WorkbenchHeader
         workTitle={currentNovel.title}
         onOpenWorkInfo={() => setActiveModal('workInfo')}
-        onOpenSettings={() => setActiveModal('settings')}
-        onOpenOutline={() => setActiveModal('outline')}
         onOpenNotes={() => setActiveModal('notes')}
+        onOpenSettingLibrary={() => setActiveModal('settingLibrary')}
+        onOpenDetailOutlineLibrary={() => setActiveModal('detailOutlineLibrary')}
+        onOpenSummaryLibrary={() => setActiveModal('summaryLibrary')}
       />
 
       <WorkbenchQuickNav
@@ -1351,12 +1352,16 @@ export function WorkbenchPage() {
         </div>
       </WorkbenchModal>
 
-      <WorkbenchModal title="作品设定库" isOpen={activeModal === 'settings'} onClose={() => setActiveModal(null)} widthClass="w-[1452px]" heightClass="h-[86vh] max-h-[95vh]" closeOnBackdrop={false}>
-        <WorkbenchLibraryPanel storageKey={settingsStorageKey} outlineStorageKey={outlineStorageKey} tabs={['角色', '大纲', '细纲', '概要']} emptyText="暂无设定内容" volumes={volumes} scale={1.1} />
+      <WorkbenchModal title="大纲设定" isOpen={activeModal === 'settingLibrary'} onClose={() => setActiveModal(null)} widthClass="w-[1452px]" heightClass="h-[86vh] max-h-[95vh]" titleClassName="text-3xl" closeOnBackdrop={false}>
+        <WorkbenchLibraryPanel storageKey={settingsStorageKey} outlineStorageKey={outlineStorageKey} tabs={['大纲', '角色', '脑洞']} emptyText="暂无内容" volumes={volumes} scale={1.1} defaultActiveTab="脑洞" />
       </WorkbenchModal>
 
-      <WorkbenchModal title="概要" isOpen={activeModal === 'outline'} onClose={() => setActiveModal(null)} widthClass="w-[min(1500px,96vw)]">
-        <WorkbenchLibraryPanel storageKey={`xinyuexia_workbench_outline_${currentNovel.id}`} tabs={['章节概要', '卷概要']} emptyText="暂无概要内容" volumes={volumes} />
+      <WorkbenchModal title="细纲" isOpen={activeModal === 'detailOutlineLibrary'} onClose={() => setActiveModal(null)} widthClass="w-[1452px]" heightClass="h-[86vh] max-h-[95vh]" titleClassName="text-3xl" closeOnBackdrop={false}>
+        <WorkbenchLibraryPanel storageKey={settingsStorageKey} outlineStorageKey={outlineStorageKey} tabs={['细纲']} emptyText="暂无细纲内容" volumes={volumes} scale={1.1} />
+      </WorkbenchModal>
+
+      <WorkbenchModal title="概要" isOpen={activeModal === 'summaryLibrary'} onClose={() => setActiveModal(null)} widthClass="w-[1452px]" heightClass="h-[86vh] max-h-[95vh]" titleClassName="text-3xl" closeOnBackdrop={false}>
+        <WorkbenchLibraryPanel storageKey={settingsStorageKey} outlineStorageKey={outlineStorageKey} tabs={['概要']} emptyText="暂无概要内容" volumes={volumes} scale={1.1} />
       </WorkbenchModal>
 
       <WorkbenchModal title="备忘录" isOpen={activeModal === 'notes'} onClose={() => setActiveModal(null)} widthClass="w-[min(1180px,96vw)]">

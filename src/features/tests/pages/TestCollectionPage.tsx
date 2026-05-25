@@ -1,4 +1,4 @@
-import { ArrowLeft, Globe, Moon, Palette, Search, Sparkles } from 'lucide-react';
+import { ArrowLeft, Globe, Maximize2, Moon, Palette, Search, Sparkles } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,11 +21,18 @@ const testGroups = [
         badge: 'Theme',
       },
       {
-        title: '作品设定库标签',
-        description: '测试把极简/高级模式的切换 UI 改成角色、设定、大纲、细纲四个标签。',
-        path: '/setting-library-tabs-test',
+        title: 'AI 生成链路测试中心',
+        description: '集中测试脑洞、大纲、细纲、概要、提炼、续写、审核、更新等 AI 生成链路。',
+        path: '/brainstorm-ai-chain-test',
         icon: Sparkles,
-        badge: 'Tabs',
+        badge: 'AI',
+      },
+      {
+        title: '弹窗自由缩放',
+        description: '测试弹窗像软件窗口一样拖拽四边和四角，自由调整大小。',
+        path: '/resizable-modal-test',
+        icon: Maximize2,
+        badge: 'Modal',
       },
     ],
   },

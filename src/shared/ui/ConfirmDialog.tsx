@@ -47,11 +47,11 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40"
+      className="modal-sharp fixed inset-0 z-[300] flex items-center justify-center bg-black/40"
       onClick={onClose}
     >
       <div
-        className="w-[460px] max-w-[92vw] rounded-[24px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
+        className="modal-sharp w-[460px] max-w-[92vw] rounded-[24px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
         data-draggable-managed="true"
         style={draggable.style}
         onClick={(event) => event.stopPropagation()}

@@ -5,6 +5,7 @@ import { Minus, Moon, PanelLeft, Plus, Square, X } from 'lucide-react';
 import { useNovelLibrary } from '@/features/novels/hooks/useNovelLibrary';
 import {
   loadShortcutBindings,
+  loadMouseGestureSettings,
   matchesShortcut,
   SHORTCUT_ACTION_EVENT,
   SHORTCUT_UPDATED_EVENT,
@@ -24,6 +25,7 @@ declare global {
       reload: () => Promise<void>;
       beginTitlebarDrag: (input: TitlebarDragPayload) => Promise<TitlebarDragResult>;
       moveTitlebarDrag: (input: TitlebarDragPayload) => Promise<boolean>;
+      endTitlebarDrag?: (input: TitlebarDragPayload) => Promise<boolean>;
       onMaximizedChange?: (callback: (isMaximized: boolean) => void) => () => void;
     };
   }
@@ -53,9 +55,11 @@ type TitlebarDragPayload = {
   windowWidth?: number;
   dragOffsetX?: number;
   dragOffsetY?: number;
+  dragSessionId?: string;
 };
 
 type TitlebarDragResult = {
+  dragSessionId?: string;
   isMaximized: boolean;
   dragOffsetX: number;
   dragOffsetY: number;
@@ -68,6 +72,8 @@ type MouseGesturePreview = {
   currentY: number;
   points: Array<{ x: number; y: number }>;
   ready: boolean;
+  invalid: boolean;
+  direction: 'left' | 'right' | null;
 };
 
 function loadScale() {
@@ -104,6 +110,7 @@ type TitlebarDragState = {
   startClientY: number;
   dragOffsetX: number;
   dragOffsetY: number;
+  dragSessionId: string;
   started: boolean;
   pending: boolean;
 };
@@ -125,9 +132,11 @@ export function AppFrame({ children }: AppFrameProps) {
   const [isScaleMenuOpen, setIsScaleMenuOpen] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(loadDarkTheme);
   const [shortcutBindings, setShortcutBindings] = useState(loadShortcutBindings);
+  const [mouseGestureSettings, setMouseGestureSettings] = useState(loadMouseGestureSettings);
   const [mouseGesturePreview, setMouseGesturePreview] = useState<MouseGesturePreview | null>(null);
   const titlebarDragRef = useRef<TitlebarDragState | null>(null);
   const suppressTitlebarClickRef = useRef(false);
+  const lastTitlebarDragAtRef = useRef(0);
   const titlebarPointerMetaRef = useRef({ startedAt: 0, startClientX: 0, startClientY: 0, moved: false });
 
   const effectiveScale = useMemo(() => Number(appScale.toFixed(3)), [appScale]);
@@ -199,13 +208,17 @@ export function AppFrame({ children }: AppFrameProps) {
   }, []);
 
   useEffect(() => {
+    if (!mouseGestureSettings.goHomeLeftSwipe && !mouseGestureSettings.forwardRightSwipe) {
+      setMouseGesturePreview(null);
+      return;
+    }
     let gesture: {
       startX: number;
       startY: number;
       visible: boolean;
       ready: boolean;
       invalidated: boolean;
-      hasMovedLeft: boolean;
+      direction: 'left' | 'right' | null;
       points: Array<{ x: number; y: number }>;
     } | null = null;
     let suppressNextContextMenu = false;
@@ -213,6 +226,9 @@ export function AppFrame({ children }: AppFrameProps) {
     const goHome = () => {
       setActiveTabId(HOME_TAB.id);
       navigate('/dashboard');
+    };
+    const goForward = () => {
+      navigate(1);
     };
 
     const handleMouseDown = (event: globalThis.MouseEvent) => {
@@ -223,7 +239,7 @@ export function AppFrame({ children }: AppFrameProps) {
         visible: false,
         ready: false,
         invalidated: false,
-        hasMovedLeft: false,
+        direction: null,
         points: [{ x: event.clientX, y: event.clientY }],
       };
       setMouseGesturePreview(null);
@@ -234,23 +250,32 @@ export function AppFrame({ children }: AppFrameProps) {
       const deltaX = event.clientX - gesture.startX;
       const deltaY = event.clientY - gesture.startY;
       const distance = Math.hypot(deltaX, deltaY);
-      if (deltaX > -RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD && !gesture.visible) return;
+      if (Math.abs(deltaX) < RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD && !gesture.visible) return;
       if (distance < RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD) return;
       const lastPoint = gesture.points[gesture.points.length - 1];
       const segmentDx = lastPoint ? event.clientX - lastPoint.x : 0;
       const segmentDy = lastPoint ? event.clientY - lastPoint.y : 0;
-      if (gesture.visible && gesture.hasMovedLeft) {
-        if (segmentDx > 4 || Math.abs(segmentDy) > 14) {
+      if (!gesture.direction) {
+        if (deltaX <= -RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD) gesture.direction = 'left';
+        if (deltaX >= RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD) gesture.direction = 'right';
+      }
+      if (gesture.visible && gesture.direction) {
+        const reversed = gesture.direction === 'left' ? segmentDx > 0 : segmentDx < 0;
+        if (reversed || Math.abs(segmentDy) > 14) {
           gesture.invalidated = true;
           gesture.ready = false;
         }
       }
-      if (segmentDx < -2) gesture.hasMovedLeft = true;
       gesture.visible = true;
+      const directionEnabled = (
+        (gesture.direction === 'left' && mouseGestureSettings.goHomeLeftSwipe) ||
+        (gesture.direction === 'right' && mouseGestureSettings.forwardRightSwipe)
+      );
       gesture.ready = !gesture.invalidated
-        && gesture.hasMovedLeft
-        && deltaX <= -RIGHT_MOUSE_GESTURE_THRESHOLD
+        && directionEnabled
         && Math.abs(deltaY) <= RIGHT_MOUSE_GESTURE_VERTICAL_TOLERANCE;
+      if (gesture.direction === 'left') gesture.ready = gesture.ready && deltaX <= -RIGHT_MOUSE_GESTURE_THRESHOLD;
+      if (gesture.direction === 'right') gesture.ready = gesture.ready && deltaX >= RIGHT_MOUSE_GESTURE_THRESHOLD;
       if (!lastPoint || Math.hypot(event.clientX - lastPoint.x, event.clientY - lastPoint.y) >= 3) {
         gesture.points = [...gesture.points, { x: event.clientX, y: event.clientY }].slice(-220);
       }
@@ -264,13 +289,16 @@ export function AppFrame({ children }: AppFrameProps) {
         currentY: event.clientY,
         points: gesture.points,
         ready: gesture.ready,
+        invalid: gesture.invalidated,
+        direction: gesture.direction,
       });
     };
 
     const handleMouseUp = () => {
       if (gesture?.ready && !gesture.invalidated) {
         suppressNextContextMenu = true;
-        goHome();
+        if (gesture.direction === 'left') goHome();
+        if (gesture.direction === 'right') goForward();
       }
       gesture = null;
       setMouseGesturePreview(null);
@@ -293,7 +321,7 @@ export function AppFrame({ children }: AppFrameProps) {
       window.removeEventListener('mouseup', handleMouseUp, true);
       window.removeEventListener('contextmenu', handleContextMenu, true);
     };
-  }, [navigate, setActiveTabId]);
+  }, [mouseGestureSettings.forwardRightSwipe, mouseGestureSettings.goHomeLeftSwipe, navigate, setActiveTabId]);
 
   useEffect(() => {
     type DragState = {
@@ -424,8 +452,17 @@ export function AppFrame({ children }: AppFrameProps) {
       dragState = null;
     };
 
-    applyAllPositions();
-    const observer = new MutationObserver(applyAllPositions);
+    let applyFrameId = 0;
+    const scheduleApplyAllPositions = () => {
+      if (applyFrameId) return;
+      applyFrameId = window.requestAnimationFrame(() => {
+        applyFrameId = 0;
+        applyAllPositions();
+      });
+    };
+
+    scheduleApplyAllPositions();
+    const observer = new MutationObserver(scheduleApplyAllPositions);
     observer.observe(document.body, { childList: true, subtree: true });
     window.addEventListener('pointerdown', handlePointerDown, true);
     window.addEventListener('pointermove', handlePointerMove, true);
@@ -433,6 +470,7 @@ export function AppFrame({ children }: AppFrameProps) {
     window.addEventListener('pointercancel', handlePointerUp, true);
     return () => {
       observer.disconnect();
+      if (applyFrameId) window.cancelAnimationFrame(applyFrameId);
       window.removeEventListener('pointerdown', handlePointerDown, true);
       window.removeEventListener('pointermove', handlePointerMove, true);
       window.removeEventListener('pointerup', handlePointerUp, true);
@@ -441,7 +479,10 @@ export function AppFrame({ children }: AppFrameProps) {
   }, []);
 
   useEffect(() => {
-    const updateShortcuts = () => setShortcutBindings(loadShortcutBindings());
+    const updateShortcuts = () => {
+      setShortcutBindings(loadShortcutBindings());
+      setMouseGestureSettings(loadMouseGestureSettings());
+    };
     window.addEventListener(SHORTCUT_UPDATED_EVENT, updateShortcuts);
     return () => window.removeEventListener(SHORTCUT_UPDATED_EVENT, updateShortcuts);
   }, []);
@@ -554,6 +595,11 @@ export function AppFrame({ children }: AppFrameProps) {
 
   const handleTitlebarDoubleClick = (event: MouseEvent<HTMLElement>) => {
     if ((event.target as HTMLElement).closest('button,[data-titlebar-no-drag="true"]')) return;
+    if (Date.now() - lastTitlebarDragAtRef.current < 420) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     const meta = titlebarPointerMetaRef.current;
     const heldMs = Date.now() - meta.startedAt;
     if (meta.moved || heldMs > TITLEBAR_DOUBLE_CLICK_MAX_DURATION_MS) {
@@ -579,6 +625,7 @@ export function AppFrame({ children }: AppFrameProps) {
       startClientY: event.clientY,
       dragOffsetX: 0,
       dragOffsetY: 0,
+      dragSessionId: '',
       started: false,
       pending: false,
     };
@@ -622,6 +669,7 @@ export function AppFrame({ children }: AppFrameProps) {
         current.started = true;
         current.dragOffsetX = result.dragOffsetX;
         current.dragOffsetY = result.dragOffsetY;
+        current.dragSessionId = result.dragSessionId ?? '';
         setIsMaximized(result.isMaximized);
       }).catch(() => {
         const current = titlebarDragRef.current;
@@ -635,6 +683,7 @@ export function AppFrame({ children }: AppFrameProps) {
       screenY: event.screenY,
       dragOffsetX: dragState.dragOffsetX,
       dragOffsetY: dragState.dragOffsetY,
+      dragSessionId: dragState.dragSessionId,
     });
   };
 
@@ -642,11 +691,13 @@ export function AppFrame({ children }: AppFrameProps) {
     const dragState = titlebarDragRef.current;
     if (!dragState || dragState.pointerId !== event.pointerId) return;
     if (dragState.started || dragState.pending) {
+      lastTitlebarDragAtRef.current = Date.now();
       suppressTitlebarClickRef.current = true;
       window.setTimeout(() => {
         suppressTitlebarClickRef.current = false;
       }, 0);
     }
+    void window.xinyuexiaWindow?.endTitlebarDrag?.({ dragSessionId: dragState.dragSessionId, screenX: event.screenX, screenY: event.screenY });
     titlebarDragRef.current = null;
   };
 
@@ -661,6 +712,9 @@ export function AppFrame({ children }: AppFrameProps) {
       .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
       .join(' ')
     : '';
+  const mouseGestureDirectionLabel = mouseGesturePreview?.direction === 'right' ? '前进' : '返回首页';
+  const mouseGestureContinueLabel = mouseGesturePreview?.direction === 'right' ? '继续右滑' : '继续左滑';
+  const mouseGestureArrow = mouseGesturePreview?.direction === 'right' ? '→' : '←';
 
   return (
     <div className={`flex h-screen w-screen flex-col overflow-hidden bg-slate-50 ${isDarkTheme ? 'theme-dark' : ''}`}>
@@ -833,21 +887,25 @@ export function AppFrame({ children }: AppFrameProps) {
             <path
               d={mouseGesturePath}
               fill="none"
-              stroke={mouseGesturePreview.ready ? '#0284c7' : '#0ea5e9'}
+              stroke={mouseGesturePreview.invalid ? '#ef4444' : mouseGesturePreview.ready ? '#0284c7' : '#0ea5e9'}
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth="5"
             />
           </svg>
           <div
-            className="absolute flex min-w-[140px] items-center gap-3 rounded-2xl border border-slate-700 bg-slate-950 px-5 py-4 text-white shadow-2xl"
+            className={`absolute flex min-w-[140px] items-center gap-3 rounded-2xl border px-5 py-4 text-white shadow-2xl ${
+              mouseGesturePreview.invalid ? 'border-red-500 bg-red-600' : 'border-slate-700 bg-slate-950'
+            }`}
             style={{
               left: Math.max(20, mouseGesturePreview.startX - 92),
               top: Math.max(58, mouseGesturePreview.startY - 96),
             }}
           >
-            <span className="text-4xl leading-none">←</span>
-            <span className="text-lg font-black text-white">{mouseGesturePreview.ready ? '返回首页' : '继续左滑'}</span>
+            <span className="text-4xl leading-none">{mouseGestureArrow}</span>
+            <span className="text-lg font-black text-white">
+              {mouseGesturePreview.invalid ? '无效手势' : mouseGesturePreview.ready ? mouseGestureDirectionLabel : mouseGestureContinueLabel}
+            </span>
           </div>
         </div>
       )}

@@ -60,6 +60,16 @@
   #root {
     min-height: 100vh;
   }
+
+  .modal-sharp,
+  .modal-sharp * {
+    -webkit-font-smoothing: subpixel-antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .modal-sharp {
+    isolation: isolate;
+  }
 }
 
 *:focus,
@@ -88,15 +98,40 @@
 
 .editor-scrollbar::-webkit-scrollbar {
   width: 8px;
+  cursor: default;
+}
+
+textarea.editor-scrollbar::-webkit-scrollbar {
+  width: 14px;
+  cursor: default;
+}
+
+textarea.editor-scrollbar::-webkit-scrollbar-track {
+  background: #eef2f7;
+  border-radius: 999px;
+  cursor: default;
 }
 
 .editor-scrollbar::-webkit-scrollbar-thumb {
   background: #c1c5cb;
   border-radius: 4px;
+  cursor: default;
   transition: background 0.2s ease;
 }
 
+textarea.editor-scrollbar::-webkit-scrollbar-thumb {
+  min-height: 48px;
+  background: #94a3b8;
+  border: 3px solid #eef2f7;
+  border-radius: 999px;
+  cursor: default;
+}
+
 .editor-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: #08B3D9;
+}
+
+textarea.editor-scrollbar:hover::-webkit-scrollbar-thumb {
   background: #08B3D9;
 }
 
@@ -242,6 +277,15 @@ html.theme-dark body {
 .theme-dark .editor-scrollbar::-webkit-scrollbar-thumb,
 html.theme-dark ::-webkit-scrollbar-thumb {
   background: #606060;
+}
+
+.theme-dark textarea.editor-scrollbar::-webkit-scrollbar-track {
+  background: #262626;
+}
+
+.theme-dark textarea.editor-scrollbar::-webkit-scrollbar-thumb {
+  background: #777777;
+  border-color: #262626;
 }
 
 .theme-dark .editor-scrollbar:hover::-webkit-scrollbar-thumb,
@@ -743,7 +787,20 @@ html.theme-dark ::-webkit-scrollbar-thumb {
   background: #5a5a5a !important;
 }
 
+.theme-dark textarea.editor-scrollbar::-webkit-scrollbar-track {
+  background: #262626 !important;
+}
+
+.theme-dark textarea.editor-scrollbar::-webkit-scrollbar-thumb {
+  background: #777777 !important;
+  border-color: #262626 !important;
+}
+
 .theme-dark .editor-scrollbar:hover::-webkit-scrollbar-thumb,
 html.theme-dark ::-webkit-scrollbar-thumb:hover {
   background: #777777 !important;
+}
+
+.theme-dark textarea.editor-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: #08B3D9 !important;
 }

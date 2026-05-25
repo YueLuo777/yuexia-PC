@@ -1,20 +1,24 @@
 interface WorkbenchHeaderProps {
   workTitle: string;
   onOpenWorkInfo: () => void;
-  onOpenSettings: () => void;
-  onOpenOutline: () => void;
   onOpenNotes: () => void;
+  onOpenSettingLibrary: () => void;
+  onOpenDetailOutlineLibrary: () => void;
+  onOpenSummaryLibrary: () => void;
 }
 
 export function WorkbenchHeader({
   workTitle,
   onOpenWorkInfo,
-  onOpenSettings,
-  onOpenOutline,
   onOpenNotes,
+  onOpenSettingLibrary,
+  onOpenDetailOutlineLibrary,
+  onOpenSummaryLibrary,
 }: WorkbenchHeaderProps) {
   const navItems = [
-    { key: 'settings', label: '作品设定库', onClick: onOpenSettings },
+    { key: 'settingLibrary', label: '大纲设定', onClick: onOpenSettingLibrary },
+    { key: 'detailOutlineLibrary', label: '生成细纲', onClick: onOpenDetailOutlineLibrary },
+    { key: 'summaryLibrary', label: '章节概要', onClick: onOpenSummaryLibrary },
     { key: 'notes', label: '备忘录', onClick: onOpenNotes },
   ];
 

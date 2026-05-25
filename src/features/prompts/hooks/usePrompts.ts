@@ -8,25 +8,43 @@ const PROMPTS_KEY = 'xinyuexia_prompts_v1';
 const PROMPT_RECYCLE_KEY = 'xinyuexia_prompt_recycle_v1';
 const PROMPT_CATEGORIES_KEY = 'xinyuexia_prompt_categories_v1';
 const UNCATEGORIZED = '未分类';
-const DEFAULT_CATEGORIES = ['脑洞', '大纲', '细纲', '正文', '审核', '润色', '更新', '概要', '提炼', UNCATEGORIZED];
+const PROMPT_CATEGORY_ALIASES: Record<string, string> = {
+  提炼: '提炼剧情',
+};
+const DEFAULT_CATEGORIES = ['脑洞', '大纲', '细纲', '正文', '审核', '润色', '更新', '概要', '提炼剧情', UNCATEGORIZED];
+
+function normalizePromptCategoryName(category: string) {
+  const trimmed = category.trim() || UNCATEGORIZED;
+  return PROMPT_CATEGORY_ALIASES[trimmed] ?? trimmed;
+}
 
 export function isDefaultPromptCategory(category: string) {
-  return DEFAULT_CATEGORIES.includes(category);
+  return DEFAULT_CATEGORIES.includes(normalizePromptCategoryName(category));
 }
 
 const PROMPTS_UPDATED_EVENT = APP_EVENTS.promptsUpdated;
 const promptsStorage = createJsonStorage<PromptItem[]>(PROMPTS_KEY, [], {
-  normalize: (value) => Array.isArray(value) ? (value as PromptItem[]) : [],
+  normalize: (value) => Array.isArray(value)
+    ? (value as PromptItem[]).map((prompt) => ({
+        ...prompt,
+        category: normalizePromptCategoryName(prompt.category ?? UNCATEGORIZED),
+      }))
+    : [],
   eventName: PROMPTS_UPDATED_EVENT,
 });
 const promptRecycleStorage = createJsonStorage<PromptItem[]>(PROMPT_RECYCLE_KEY, [], {
-  normalize: (value) => Array.isArray(value) ? (value as PromptItem[]) : [],
+  normalize: (value) => Array.isArray(value)
+    ? (value as PromptItem[]).map((prompt) => ({
+        ...prompt,
+        category: normalizePromptCategoryName(prompt.category ?? UNCATEGORIZED),
+      }))
+    : [],
   eventName: PROMPTS_UPDATED_EVENT,
 });
 function orderCategories(value: string[]) {
   const seen = new Set<string>();
   const cleaned = value
-    .map((item) => item.trim())
+    .map((item) => normalizePromptCategoryName(item))
     .filter((item) => item.length > 0 && item !== '全部');
   const custom = cleaned.filter((item) => !DEFAULT_CATEGORIES.includes(item));
   return [...DEFAULT_CATEGORIES.slice(0, -1), ...custom, UNCATEGORIZED].filter((item) => {
@@ -49,7 +67,7 @@ function createId() {
 }
 
 function normalizeCategory(category: string) {
-  return category.trim() || UNCATEGORIZED;
+  return normalizePromptCategoryName(category);
 }
 
 export function readPromptSnapshot() {

@@ -26,9 +26,20 @@ export interface ShortcutAction {
 }
 
 export const SHORTCUT_STORAGE_KEY = 'xinyuexia_shortcut_bindings_v1';
+export const MOUSE_GESTURE_SETTINGS_KEY = 'xinyuexia_mouse_gesture_settings_v1';
 export const SHORTCUT_UPDATED_EVENT = APP_EVENTS.shortcutsUpdated;
 export const SHORTCUT_ACTION_EVENT = APP_EVENTS.shortcutAction;
 const LEGACY_SMART_FORMAT_BINDING: ShortcutBinding = { key: 'r', ctrl: true, shift: true };
+
+export interface MouseGestureSettings {
+  goHomeLeftSwipe: boolean;
+  forwardRightSwipe: boolean;
+}
+
+export const defaultMouseGestureSettings: MouseGestureSettings = {
+  goHomeLeftSwipe: true,
+  forwardRightSwipe: true,
+};
 
 export const shortcutActions: ShortcutAction[] = [
   { id: 'close_floating', group: '界面与导航', title: '关闭浮层', desc: '关闭当前弹层或右侧栏', defaultBinding: { key: 'Escape' } },
@@ -131,5 +142,31 @@ export function loadShortcutBindings() {
 
 export function saveShortcutBindings(bindings: Record<ShortcutActionId, ShortcutBinding>) {
   localStorage.setItem(SHORTCUT_STORAGE_KEY, JSON.stringify(bindings));
+  window.dispatchEvent(new CustomEvent(SHORTCUT_UPDATED_EVENT));
+}
+
+export function normalizeMouseGestureSettings(value: unknown): MouseGestureSettings {
+  if (!value || typeof value !== 'object') return defaultMouseGestureSettings;
+  const raw = value as Partial<MouseGestureSettings>;
+  return {
+    goHomeLeftSwipe: typeof raw.goHomeLeftSwipe === 'boolean'
+      ? raw.goHomeLeftSwipe
+      : defaultMouseGestureSettings.goHomeLeftSwipe,
+    forwardRightSwipe: typeof raw.forwardRightSwipe === 'boolean'
+      ? raw.forwardRightSwipe
+      : defaultMouseGestureSettings.forwardRightSwipe,
+  };
+}
+
+export function loadMouseGestureSettings() {
+  try {
+    return normalizeMouseGestureSettings(JSON.parse(localStorage.getItem(MOUSE_GESTURE_SETTINGS_KEY) ?? 'null'));
+  } catch {
+    return defaultMouseGestureSettings;
+  }
+}
+
+export function saveMouseGestureSettings(settings: MouseGestureSettings) {
+  localStorage.setItem(MOUSE_GESTURE_SETTINGS_KEY, JSON.stringify(normalizeMouseGestureSettings(settings)));
   window.dispatchEvent(new CustomEvent(SHORTCUT_UPDATED_EVENT));
 }

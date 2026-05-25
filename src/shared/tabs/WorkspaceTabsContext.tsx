@@ -94,7 +94,7 @@ export function WorkspaceTabsProvider({ children }: { children: ReactNode }) {
   }, [activeTabId]);
 
   const setActiveTabId = useCallback((id: string) => {
-    setActiveTabIdState(id);
+    setActiveTabIdState((current) => (current === id ? current : id));
   }, []);
 
   const openWorkTab = useCallback((input: OpenWorkTabInput) => {

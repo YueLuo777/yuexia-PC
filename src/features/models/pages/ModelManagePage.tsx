@@ -107,9 +107,9 @@ function ModelEditorModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[260] flex items-center justify-center bg-black/40">
+    <div className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/40">
       <div
-        className="w-[620px] max-w-[92vw] rounded-[28px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
+        className="modal-sharp w-[620px] max-w-[92vw] rounded-[28px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
       >
         <div className="flex items-center justify-between border-b border-slate-100 px-8 py-6">
           <h2 className="text-[18px] font-bold text-slate-900">{title}</h2>
@@ -248,9 +248,9 @@ function ModelManageSettingsModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[265] flex items-center justify-center bg-black/35 px-6" onClick={onClose}>
+    <div className="modal-sharp fixed inset-0 z-[265] flex items-center justify-center bg-black/35 px-6" onClick={onClose}>
       <div
-        className="w-[420px] max-w-[92vw] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        className="modal-sharp w-[420px] max-w-[92vw] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">

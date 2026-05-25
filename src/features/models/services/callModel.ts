@@ -58,7 +58,7 @@ function normalizeTemperature(value: number | undefined) {
 async function postModelRequest(endpoint: string, headers: Record<string, string>, body: string, signal?: AbortSignal) {
   throwIfAborted(signal);
   if (window.xinyuexiaModel) {
-    const request = window.xinyuexiaModel.request({ endpoint, headers, body });
+    const request = window.xinyuexiaModel.request({ endpoint, headers, body, timeoutMs: 60000 });
     if (!signal) return request;
     return Promise.race([
       request,

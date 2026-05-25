@@ -3,9 +3,12 @@ import { useEffect, useMemo, useState } from 'react';
 
 import {
   bindingFromKeyboardEvent,
+  defaultMouseGestureSettings,
   formatShortcut,
   getDefaultShortcutBindings,
   loadShortcutBindings,
+  loadMouseGestureSettings,
+  saveMouseGestureSettings,
   saveShortcutBindings,
   shortcutActions,
   type ShortcutActionId,
@@ -19,11 +22,14 @@ interface ShortcutSettingsModalProps {
 
 export function ShortcutSettingsModal({ isOpen, onClose }: ShortcutSettingsModalProps) {
   const [bindings, setBindings] = useState(loadShortcutBindings);
+  const [mouseGestureSettings, setMouseGestureSettings] = useState(loadMouseGestureSettings);
   const [editingId, setEditingId] = useState<ShortcutActionId | null>(null);
   useTopModalEscape(isOpen && !editingId, onClose);
 
   useEffect(() => {
-    if (isOpen) setBindings(loadShortcutBindings());
+    if (!isOpen) return;
+    setBindings(loadShortcutBindings());
+    setMouseGestureSettings(loadMouseGestureSettings());
   }, [isOpen]);
 
   useEffect(() => {
@@ -56,7 +62,15 @@ export function ShortcutSettingsModal({ isOpen, onClose }: ShortcutSettingsModal
     const defaults = getDefaultShortcutBindings();
     setBindings(defaults);
     saveShortcutBindings(defaults);
+    setMouseGestureSettings(defaultMouseGestureSettings);
+    saveMouseGestureSettings(defaultMouseGestureSettings);
     setEditingId(null);
+  };
+
+  const updateMouseGesture = (key: 'goHomeLeftSwipe' | 'forwardRightSwipe', enabled: boolean) => {
+    const next = { ...mouseGestureSettings, [key]: enabled };
+    setMouseGestureSettings(next);
+    saveMouseGestureSettings(next);
   };
 
   if (!isOpen) return null;
@@ -64,42 +78,42 @@ export function ShortcutSettingsModal({ isOpen, onClose }: ShortcutSettingsModal
   return (
     <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/45 p-4" onClick={onClose}>
       <div
-        className="flex max-h-[86vh] w-[980px] max-w-[96vw] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        className="flex max-h-[84vh] w-[900px] max-w-[96vw] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-light text-brand">
-              <Keyboard className="h-5 w-5" />
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-light text-brand">
+              <Keyboard className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-900">快捷键设置</h2>
-              <p className="mt-1 text-base text-slate-400">点击右侧快捷键按钮后，直接按下新的组合键即可替换。</p>
+              <h2 className="text-lg font-bold text-slate-900">快捷键设置</h2>
+              <p className="mt-0.5 text-sm text-slate-400">点击右侧快捷键按钮后，直接按下新的组合键即可替换。</p>
             </div>
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-5 w-5" />
+          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-          <div className="space-y-7">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          <div className="space-y-5">
             {groups.map(([group, actions]) => (
               <section key={group}>
-                <h3 className="mb-3 text-lg font-bold text-slate-800">{group}</h3>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                <h3 className="mb-2 text-base font-bold text-slate-800">{group}</h3>
+                <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
                   {actions.map((action) => {
                     const isEditing = editingId === action.id;
                     return (
-                      <article key={action.id} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                        <div className="flex items-center justify-between gap-3">
+                      <article key={action.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                        <div className="flex items-center justify-between gap-2.5">
                           <div className="min-w-0">
-                            <div className="truncate text-base font-bold text-slate-900">{action.title}</div>
-                            <div className="mt-1 text-sm text-slate-400">{action.desc}</div>
+                            <div className="truncate text-sm font-bold text-slate-900">{action.title}</div>
+                            <div className="mt-0.5 text-xs text-slate-400">{action.desc}</div>
                           </div>
                           <button
                             onClick={() => setEditingId(action.id)}
-                            className={`min-w-[128px] rounded-xl px-3 py-3 font-mono text-base font-bold transition-colors ${
+                            className={`min-w-[106px] rounded-lg px-2.5 py-2 font-mono text-sm font-bold transition-colors ${
                               isEditing
                                 ? 'bg-brand text-white'
                                 : 'bg-white text-slate-800 hover:bg-slate-100'
@@ -108,7 +122,7 @@ export function ShortcutSettingsModal({ isOpen, onClose }: ShortcutSettingsModal
                             {isEditing ? '按下快捷键' : formatShortcut(bindings[action.id])}
                           </button>
                         </div>
-                        <div className="mt-3 text-right text-sm text-slate-400">
+                        <div className="mt-2 text-right text-xs text-slate-400">
                           默认：{formatShortcut(action.defaultBinding)}
                         </div>
                       </article>
@@ -117,18 +131,62 @@ export function ShortcutSettingsModal({ isOpen, onClose }: ShortcutSettingsModal
                 </div>
               </section>
             ))}
+
+            <section>
+              <h3 className="mb-2 text-base font-bold text-slate-800">鼠标手势</h3>
+              <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
+                <article className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                  <div className="flex items-center justify-between gap-2.5">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-bold text-slate-900">右键左划回首页</div>
+                      <div className="mt-0.5 text-xs text-slate-400">按住鼠标右键向左滑，松开后回到首页。</div>
+                    </div>
+                    <button
+                      onClick={() => updateMouseGesture('goHomeLeftSwipe', !mouseGestureSettings.goHomeLeftSwipe)}
+                      className={`min-w-[76px] rounded-lg px-2.5 py-2 text-sm font-bold transition-colors ${
+                        mouseGestureSettings.goHomeLeftSwipe
+                          ? 'bg-brand text-white'
+                          : 'bg-white text-slate-500 hover:bg-slate-100'
+                      }`}
+                    >
+                      {mouseGestureSettings.goHomeLeftSwipe ? '已开启' : '已关闭'}
+                    </button>
+                  </div>
+                  <div className="mt-2 text-right text-xs text-slate-400">左划后再右划会判定为无效手势</div>
+                </article>
+                <article className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                  <div className="flex items-center justify-between gap-2.5">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-bold text-slate-900">右键右划前进</div>
+                      <div className="mt-0.5 text-xs text-slate-400">按住鼠标右键向右滑，松开后前进到下一页。</div>
+                    </div>
+                    <button
+                      onClick={() => updateMouseGesture('forwardRightSwipe', !mouseGestureSettings.forwardRightSwipe)}
+                      className={`min-w-[76px] rounded-lg px-2.5 py-2 text-sm font-bold transition-colors ${
+                        mouseGestureSettings.forwardRightSwipe
+                          ? 'bg-brand text-white'
+                          : 'bg-white text-slate-500 hover:bg-slate-100'
+                      }`}
+                    >
+                      {mouseGestureSettings.forwardRightSwipe ? '已开启' : '已关闭'}
+                    </button>
+                  </div>
+                  <div className="mt-2 text-right text-xs text-slate-400">右划后再左划会判定为无效手势</div>
+                </article>
+              </div>
+            </section>
           </div>
         </div>
 
-        <div className="flex shrink-0 justify-end gap-3 border-t border-slate-100 px-6 py-4">
+        <div className="flex shrink-0 justify-end gap-2.5 border-t border-slate-100 px-5 py-3">
           <button
             onClick={resetDefaults}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2 text-base font-bold text-slate-600 transition-colors hover:bg-slate-50"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-50"
           >
             <RotateCcw className="h-4 w-4" />
             恢复默认
           </button>
-          <button onClick={onClose} className="rounded-xl bg-slate-900 px-5 py-2 text-base font-bold text-white transition-colors hover:bg-slate-700">
+          <button onClick={onClose} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-700">
             关闭
           </button>
         </div>

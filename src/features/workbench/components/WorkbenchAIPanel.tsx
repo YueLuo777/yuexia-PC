@@ -16,6 +16,8 @@ import { usePersistentState } from '@/shared/hooks/usePersistentState';
 
 export type WorkbenchAITool = 'ai';
 
+const WORKBENCH_AI_EXCLUDED_PROMPT_CATEGORIES = new Set(['脑洞', '大纲', '更新', '概要', '提炼剧情', '设定提取']);
+
 interface AiSession {
   id: number;
   input: string;
@@ -179,9 +181,11 @@ export function WorkbenchAIPanel({
   const [prompts, setPrompts] = useState<PromptItem[]>(() => readConfig().prompts);
   const [selectedModelId, setSelectedModelId] = usePersistentState<string>('xinyuexia_workbench_ai_left_model', '');
   const [selectedPromptId, setSelectedPromptId] = usePersistentState<string>('xinyuexia_workbench_ai_left_prompt', '');
+  const [openConfigDropdown, setOpenConfigDropdown] = useState<'model' | 'prompt' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [outputFontSize, setOutputFontSize] = useState(20);
+  const [loadingDotCount, setLoadingDotCount] = useState(1);
   const nextSessionIdRef = useRef(initialAiState.nextSessionId);
   const nextMessageIdRef = useRef(initialAiState.nextMessageId);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -191,10 +195,15 @@ export function WorkbenchAIPanel({
   const input = activeSession?.input ?? '';
   const output = activeSession?.output ?? '';
   const enabledModels = useMemo(() => models.filter((model) => model.enabled), [models]);
+  const chatPrompts = useMemo(
+    () => prompts.filter((prompt) => !WORKBENCH_AI_EXCLUDED_PROMPT_CATEGORIES.has(prompt.category)),
+    [prompts],
+  );
   const selectedModel = enabledModels.find((model) => model.id === selectedModelId) ?? enabledModels[0] ?? null;
-  const selectedPrompt = prompts.find((prompt) => prompt.id === selectedPromptId) ?? null;
+  const selectedPrompt = chatPrompts.find((prompt) => prompt.id === selectedPromptId) ?? null;
   const outputWordCount = output.replace(/\s/g, '').length;
   const linkedChapterWordCount = selectedChapterContent.replace(/\s/g, '').length;
+  const loadingText = `正在生成${'.'.repeat(loadingDotCount)}`;
 
   const updateSession = (sessionId: number, patch: Partial<Omit<AiSession, 'id'>>) => {
     setSessions((prev) => prev.map((session) => (
@@ -253,18 +262,29 @@ export function WorkbenchAIPanel({
   }, [enabledModels, selectedModelId, setSelectedModelId]);
 
   useEffect(() => {
-    if (prompts.length === 0) {
+    if (chatPrompts.length === 0) {
       if (selectedPromptId) setSelectedPromptId('');
       return;
     }
-    if (!prompts.some((prompt) => prompt.id === selectedPromptId)) {
-      setSelectedPromptId(prompts[0].id);
+    if (!chatPrompts.some((prompt) => prompt.id === selectedPromptId)) {
+      setSelectedPromptId(chatPrompts[0].id);
     }
-  }, [prompts, selectedPromptId, setSelectedPromptId]);
+  }, [chatPrompts, selectedPromptId, setSelectedPromptId]);
 
   useEffect(() => () => {
     abortControllerRef.current?.abort();
   }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setLoadingDotCount(1);
+      return;
+    }
+    const timer = window.setInterval(() => {
+      setLoadingDotCount((current) => (current >= 3 ? 1 : current + 1));
+    }, 420);
+    return () => window.clearInterval(timer);
+  }, [isLoading]);
 
   useEffect(() => {
     if (!sessionMenu) return;
@@ -272,6 +292,13 @@ export function WorkbenchAIPanel({
     window.addEventListener('click', closeMenu);
     return () => window.removeEventListener('click', closeMenu);
   }, [sessionMenu]);
+
+  useEffect(() => {
+    if (!openConfigDropdown) return;
+    const closeDropdown = () => setOpenConfigDropdown(null);
+    window.addEventListener('click', closeDropdown);
+    return () => window.removeEventListener('click', closeDropdown);
+  }, [openConfigDropdown]);
 
   const flashStatus = (text: string) => {
     setStatusText(text);
@@ -296,7 +323,7 @@ export function WorkbenchAIPanel({
     });
 
     if (!configModel) {
-      const errorText = '尚未配置可用模型。请先到“模型管理”中新增模型。';
+      const errorText = '尚未配置可用模型。请先到模型管理中新增模型。';
       updateSession(sessionId, {
         output: errorText,
         messages: nextMessages.map((message) => (
@@ -415,6 +442,57 @@ export function WorkbenchAIPanel({
     return null;
   };
 
+  const renderConfigDropdown = (
+    kind: 'model' | 'prompt',
+    value: string,
+    options: Array<{ id: string; name: string }>,
+    emptyLabel: string,
+    onChange: (value: string) => void,
+  ) => {
+    const selectedOption = options.find((option) => option.id === value) ?? options[0] ?? null;
+    const isOpen = openConfigDropdown === kind;
+    return (
+      <div
+        className="relative min-w-0"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={() => setOpenConfigDropdown((current) => (current === kind ? null : kind))}
+          className="flex h-9 w-full items-center rounded-lg border border-gray-200 bg-white px-2.5 pr-7 text-left text-sm font-semibold text-gray-700 outline-none transition-colors hover:border-brand focus:border-brand"
+        >
+          <span className="min-w-0 flex-1 truncate">{selectedOption?.name ?? emptyLabel}</span>
+        </button>
+        <ChevronDown className="pointer-events-none absolute right-2 top-[18px] h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+        {isOpen && (
+          <div className="editor-scrollbar absolute left-0 top-[42px] z-[260] max-h-[152px] w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+            {options.length === 0 ? (
+              <div className="flex h-[38px] items-center px-3 text-sm font-semibold text-gray-400">{emptyLabel}</div>
+            ) : (
+              options.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(option.id);
+                    setOpenConfigDropdown(null);
+                  }}
+                  className={`flex h-[38px] w-full items-center px-3 text-left text-sm font-semibold transition-colors ${
+                    option.id === selectedOption?.id
+                      ? 'bg-brand text-white'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="min-w-0 flex-1 truncate">{option.name}</span>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderConfigPanel = (
     model: ModelItem | null,
     modelId: string,
@@ -424,25 +502,10 @@ export function WorkbenchAIPanel({
     onPromptChange: (value: string) => void,
   ) => (
     <>
-      <div className="shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-2">
+      <div className="shrink-0 overflow-visible rounded-lg border border-gray-200 bg-gray-50 p-2">
         <div className="grid grid-cols-[52px_160px_56px_minmax(48px,1fr)] items-center gap-1.5">
           <span className="whitespace-nowrap text-sm text-gray-500">模型</span>
-          <div className="relative min-w-0">
-            <select
-              value={model?.id ?? modelId}
-              onChange={(event) => onModelChange(event.target.value)}
-              className="h-9 w-full appearance-none rounded-lg border border-gray-200 bg-white px-2.5 pr-7 text-sm font-semibold text-gray-700 outline-none focus:border-brand"
-            >
-              {enabledModels.length === 0 ? (
-                <option value="" className="h-[55px] py-4 text-sm leading-[55px]">无可用模型</option>
-              ) : (
-                enabledModels.map((item) => (
-                  <option key={item.id} value={item.id} className="h-[55px] py-4 text-sm leading-[55px]">{item.name}</option>
-                ))
-              )}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
-          </div>
+          {renderConfigDropdown('model', model?.id ?? modelId, enabledModels, '无可用模型', onModelChange)}
           {onOpenModelManage ? (
             <button
               onClick={onOpenModelManage}
@@ -456,22 +519,7 @@ export function WorkbenchAIPanel({
           </span>
 
           <span className="whitespace-nowrap text-sm text-gray-500">提示词</span>
-          <div className="relative min-w-0">
-            <select
-              value={prompt?.id ?? prompts[0]?.id ?? promptId}
-              onChange={(event) => onPromptChange(event.target.value)}
-              className="h-9 w-full appearance-none rounded-lg border border-gray-200 bg-white px-2.5 pr-7 text-sm font-semibold text-gray-700 outline-none focus:border-brand"
-            >
-              {prompts.length === 0 ? (
-                <option value="" className="h-9 py-2 text-sm leading-9">无可用提示词</option>
-              ) : (
-                prompts.map((item) => (
-                  <option key={item.id} value={item.id} className="h-9 py-2 text-sm leading-9">{item.name}</option>
-                ))
-              )}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
-          </div>
+          {renderConfigDropdown('prompt', prompt?.id ?? chatPrompts[0]?.id ?? promptId, chatPrompts, '无可用提示词', onPromptChange)}
           {onOpenAgentManage ? (
             <button
               onClick={onOpenAgentManage}
@@ -603,7 +651,7 @@ export function WorkbenchAIPanel({
                     }`}
                     style={{ fontSize: outputFontSize }}
                   >
-                    {message.content}
+                    {isLoading && message.role === 'assistant' && message.content === '正在生成...' ? loadingText : message.content}
                   </div>
                 </div>
               ))}

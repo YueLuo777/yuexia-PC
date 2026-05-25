@@ -16,10 +16,12 @@ import {
 } from '@/shared/navigation/navConfig';
 import { ShortcutSettingsModal } from '@/shared/shortcuts/ShortcutSettingsModal';
 import { SystemSettingsModal } from '@/shared/settings/SystemSettingsModal';
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 
 const USER_NAME_KEY = 'xinyuexia_sidebar_user_name';
 const USER_AVATAR_KEY = 'xinyuexia_sidebar_user_avatar';
 const USER_NAME_UPDATED_EVENT = 'xinyuexia_user_name_updated';
+const SETTINGS_BUTTON_CLASS = 'flex h-11 w-full items-center justify-center whitespace-nowrap rounded-lg bg-brand px-3 text-[13px] font-medium text-white transition-colors hover:bg-brand-dark';
 
 function readUserName() {
   return localStorage.getItem(USER_NAME_KEY) || '月下作者';
@@ -79,22 +81,21 @@ export function DashboardLayout() {
     if (!el) return;
     const saved = Number.parseInt(localStorage.getItem('xinyuexia_nav_scroll') ?? '0', 10);
     if (saved > 0) el.scrollTop = saved;
-    const onScroll = () => localStorage.setItem('xinyuexia_nav_scroll', String(el.scrollTop));
+    let saveTimer = 0;
+    const saveScroll = () => localStorage.setItem('xinyuexia_nav_scroll', String(el.scrollTop));
+    const onScroll = () => {
+      window.clearTimeout(saveTimer);
+      saveTimer = window.setTimeout(saveScroll, 120);
+    };
     el.addEventListener('scroll', onScroll);
     return () => {
-      localStorage.setItem('xinyuexia_nav_scroll', String(el.scrollTop));
+      window.clearTimeout(saveTimer);
+      saveScroll();
       el.removeEventListener('scroll', onScroll);
     };
   }, []);
 
-  useEffect(() => {
-    if (!showThemeColors) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setShowThemeColors(false);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [showThemeColors]);
+  useTopModalEscape(showThemeColors, () => setShowThemeColors(false));
 
   const toggleSection = useCallback((title: string) => {
     setCollapsedSections((prev) => {
@@ -228,25 +229,25 @@ export function DashboardLayout() {
         <div className="mt-auto grid grid-cols-2 gap-2 border-t border-slate-100 p-4">
           <button
             onClick={() => setShowSystemSettings(true)}
-            className="flex w-full items-center justify-center whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-[13px] font-bold text-slate-700 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
+            className={SETTINGS_BUTTON_CLASS}
           >
             系统设置
           </button>
           <button
             onClick={() => setShowThemeColors(true)}
-            className="flex w-full items-center justify-center whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-[13px] font-bold text-slate-700 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
+            className={SETTINGS_BUTTON_CLASS}
           >
             主题颜色
           </button>
           <button
             onClick={() => setShowShortcutSettings(true)}
-            className="flex w-full items-center justify-center whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-[13px] text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+            className={SETTINGS_BUTTON_CLASS}
           >
             快捷键
           </button>
           <button
             onClick={() => setShowNavSettings(true)}
-            className="flex w-full items-center justify-center whitespace-nowrap rounded-lg bg-brand px-3 py-2.5 text-[13px] text-white transition-colors hover:bg-brand-dark"
+            className={SETTINGS_BUTTON_CLASS}
           >
             导航设置
           </button>

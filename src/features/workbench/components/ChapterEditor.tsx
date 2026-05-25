@@ -475,6 +475,15 @@ export function ChapterEditor({
         >
           标题优化
         </button>
+        {['正文续写', '审核点评', '更新状态'].map((label) => (
+          <button
+            key={label}
+            type="button"
+            className="rounded-md bg-brand px-3.5 py-1.5 text-sm text-white transition-colors hover:bg-brand-dark"
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <div className="flex items-center gap-2 border-b border-gray-200 bg-white px-4 py-2">
@@ -528,9 +537,6 @@ export function ChapterEditor({
         </button>
         <button onClick={() => setIsHistoryOpen(true)} className="rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
           历史
-        </button>
-        <button onClick={() => setShowDeleteConfirm(true)} className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-500 hover:bg-red-50">
-          删除
         </button>
         <button
           onClick={onOpenFind}
@@ -586,6 +592,12 @@ export function ChapterEditor({
             textIndent: visualIndentEnabled ? '2em' : undefined,
           }}
         />
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          className="absolute bottom-4 right-4 z-20 rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-500 shadow-sm transition-colors hover:bg-red-50"
+        >
+          删除
+        </button>
       </div>
 
       <div className="flex min-h-[39px] items-center justify-between border-t border-gray-100 bg-white px-5 py-3 text-sm text-gray-400">

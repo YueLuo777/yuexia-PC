@@ -1,11 +1,14 @@
-import { ChevronDown, ChevronRight, Plus, Settings, Trash2, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Lock, Plus, Settings, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import type { MouseEvent, PointerEvent as ReactPointerEvent } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 
 import { readModelSnapshot } from '@/features/models/hooks/useModels';
-import { readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
+import { callModel } from '@/features/models/services/callModel';
+import { usePrompts } from '@/features/prompts/hooks/usePrompts';
+import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import {
   WORKBENCH_LIBRARY_UPDATED_EVENT,
   createWorkbenchLibraryEntry,
@@ -14,6 +17,7 @@ import {
   type WorkbenchLibraryEntry,
 } from '@/features/workbench/model/workbenchLibraryStorage';
 import type { Volume } from '@/features/workbench/model/workbenchTypes';
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 interface WorkbenchLibraryPanelProps {
@@ -23,6 +27,7 @@ interface WorkbenchLibraryPanelProps {
   volumes?: Volume[];
   outlineStorageKey?: string;
   scale?: number;
+  defaultActiveTab?: string;
 }
 
 interface RoleContent {
@@ -50,15 +55,17 @@ interface SettingContent {
 }
 
 const DEFAULT_ROLE_TYPES = ['男女主', '正派配角', '重要反派', '反派配角', '龙套', '未分类'];
-const DEFAULT_SETTING_TYPES = ['核心设定', '主线剧情', '境界体系', '势力设定', '其他设定', '伏笔设定', '未分类'];
+const DEFAULT_SETTING_TYPES = ['核心设定', '主线剧情', '等级体系', '势力设定', '其他设定', '伏笔设定', '未分类'];
 const ROLE_TAB = '角色';
+const BRAINSTORM_TAB = '脑洞';
 const SETTING_TAB = '大纲';
 const DETAIL_OUTLINE_TAB = '细纲';
 const OUTLINE_LIBRARY_TAB = '概要';
+const BRAINSTORM_TYPE = '脑洞库';
 const CHAPTER_SUMMARY_TAB = '章节概要';
 const VOLUME_SUMMARY_TAB = '卷概要';
 const CHAPTER_DETAIL_OUTLINE_TAB = '章节细纲';
-const SETTING_LIBRARY_TABS = new Set([ROLE_TAB, SETTING_TAB, DETAIL_OUTLINE_TAB, OUTLINE_LIBRARY_TAB]);
+const SETTING_LIBRARY_TABS = new Set([ROLE_TAB, BRAINSTORM_TAB, SETTING_TAB, DETAIL_OUTLINE_TAB, OUTLINE_LIBRARY_TAB]);
 const OUTLINE_COLUMNS_KEY = 'xinyuexia_outline_library_columns';
 const OUTLINE_COLUMN_OPTIONS = [5, 6, 7, 8, 9, 10] as const;
 const UNCATEGORIZED_TYPE = '未分类';
@@ -66,6 +73,8 @@ const SETTING_LIBRARY_LEFT_WIDTH = 430;
 const SETTING_LIBRARY_LEFT_MIN_WIDTH = 180;
 const SETTING_LIBRARY_LEFT_MAX_WIDTH = 640;
 const SETTING_LIBRARY_RIGHT_WIDTH = 350;
+const SETTING_LIBRARY_RIGHT_MIN_WIDTH = 280;
+const SETTING_LIBRARY_RIGHT_MAX_WIDTH = 620;
 const ROLE_HISTORY_LIMIT = 20;
 
 type LibraryCategoryMenu = {
@@ -79,6 +88,7 @@ type LibraryEntryMenu = {
   entryId: string;
   title: string;
   tab: string;
+  pinnedAt?: number;
   x: number;
   y: number;
 } | null;
@@ -89,9 +99,12 @@ type LibraryTabConfig = {
   selectedId?: string | null;
   typeDraft?: string;
   titleDraft?: string;
+  createKind?: 'category' | 'setting';
   roleTypeDraft?: string;
   roleNameDraft?: string;
   aiInput?: string;
+  aiOutput?: string;
+  aiResult?: string;
   modelId?: string;
   promptId?: string;
 };
@@ -102,8 +115,28 @@ function getTabConfigsStorageKey(storageKey: string) {
   return `${storageKey}_tab_configs_v1`;
 }
 
+function getActiveTabStorageKey(storageKey: string) {
+  return `${storageKey}_active_tab`;
+}
+
+function readActiveTab(storageKey: string, tabs: string[], defaultActiveTab?: string) {
+  try {
+    const stored = normalizeTabName(localStorage.getItem(getActiveTabStorageKey(storageKey)) ?? '');
+    if (tabs.includes(stored)) return stored;
+  } catch {
+    // Ignore localStorage failures and fall back to the supplied default.
+  }
+  const normalizedDefault = normalizeTabName(defaultActiveTab ?? '');
+  if (tabs.includes(normalizedDefault)) return normalizedDefault;
+  return tabs[0] ?? '';
+}
+
 function getLeftWidthStorageKey(storageKey: string) {
   return `${storageKey}_left_width`;
+}
+
+function getRightWidthStorageKey(storageKey: string) {
+  return `${storageKey}_right_width`;
 }
 
 function readSettingLibraryLeftWidth(storageKey: string) {
@@ -113,6 +146,16 @@ function readSettingLibraryLeftWidth(storageKey: string) {
     return Math.min(SETTING_LIBRARY_LEFT_MAX_WIDTH, Math.max(SETTING_LIBRARY_LEFT_MIN_WIDTH, value));
   } catch {
     return SETTING_LIBRARY_LEFT_WIDTH;
+  }
+}
+
+function readSettingLibraryRightWidth(storageKey: string) {
+  try {
+    const value = Number(localStorage.getItem(getRightWidthStorageKey(storageKey)) ?? SETTING_LIBRARY_RIGHT_WIDTH);
+    if (!Number.isFinite(value)) return SETTING_LIBRARY_RIGHT_WIDTH;
+    return Math.min(SETTING_LIBRARY_RIGHT_MAX_WIDTH, Math.max(SETTING_LIBRARY_RIGHT_MIN_WIDTH, value));
+  } catch {
+    return SETTING_LIBRARY_RIGHT_WIDTH;
   }
 }
 
@@ -192,6 +235,10 @@ function normalizeTabName(tab: string) {
   return tab;
 }
 
+function isSettingLikeTab(tab: string) {
+  return tab === BRAINSTORM_TAB || tab === SETTING_TAB;
+}
+
 function normalizeEntries(entries: WorkbenchLibraryEntry[]) {
   return entries.map((entry) => ({ ...entry, tab: normalizeTabName(entry.tab) }));
 }
@@ -259,7 +306,7 @@ function parseSettingContent(content: string): SettingContent {
   try {
     const parsed = JSON.parse(content) as Partial<SettingContent>;
     return {
-      type: parsed.type || '未分类',
+      type: parsed.type === '境界体系' ? '等级体系' : parsed.type || '未分类',
       body: parsed.body || '',
     };
   } catch {
@@ -274,8 +321,92 @@ function stringifySettingContent(value: SettingContent) {
   return JSON.stringify(value);
 }
 
+function classifySettingText(text: string) {
+  const source = text.toLowerCase();
+  if (/(境界|等级|阶位|修炼|突破|修为|练气|筑基|金丹|元婴|化神|职业等级|异能等级|机甲等级|基因等级)/.test(source)) return '等级体系';
+  if (/(宗门|家族|王朝|帮派|军队|学院|公司|财团|组织|势力|联盟|官方|邪教)/.test(source)) return '势力设定';
+  if (/(主线|剧情|任务|目标|冲突|开局|转折|高潮|结局|章节|卷|事件)/.test(source)) return '主线剧情';
+  if (/(伏笔|线索|暗示|秘密|谜团|隐藏|后续|埋下|回收)/.test(source)) return '伏笔设定';
+  if (/(世界观|规则|背景|核心|设定|体系|灾变|时代|能量|天道|科技规则)/.test(source)) return '核心设定';
+  return '其他设定';
+}
+
+function createSmartSettingSegments(text: string) {
+  const normalized = text.replace(/\r\n/g, '\n').trim();
+  if (!normalized) return [];
+  const rawBlocks = normalized
+    .split(/\n{2,}|(?=\n\s*(?:第[一二三四五六七八九十百千万\d]+[章节卷]|[一二三四五六七八九十]+[、.．]|[0-9]+[、.．]|[-*]\s+))/)
+    .map((item) => item.replace(/^\s*[-*]\s*/, '').trim())
+    .filter(Boolean);
+  const blocks = rawBlocks.length > 0 ? rawBlocks : [normalized];
+  return blocks.map((body, index) => {
+    const firstLine = body.split('\n').find((line) => line.trim())?.trim() ?? '';
+    const title = firstLine
+      .replace(/^#+\s*/, '')
+      .replace(/^[一二三四五六七八九十]+[、.．]\s*/, '')
+      .replace(/^[0-9]+[、.．]\s*/, '')
+      .slice(0, 24) || `智能设定${index + 1}`;
+    return {
+      title,
+      type: classifySettingText(body),
+      body,
+    };
+  });
+}
+
 function countTextWords(content: string) {
   return content.replace(/\s/g, '').length;
+}
+
+function parseAiChatTurns(content: string) {
+  const turns: Array<{ role: 'user' | 'ai'; content: string }> = [];
+  const markerPattern = /\[\[(USER|AI)\]\]\n/g;
+  const matches = [...content.matchAll(markerPattern)];
+  if (matches.length === 0) {
+    if (content.trim()) turns.push({ role: 'ai', content: content.trim() });
+    return turns;
+  }
+  matches.forEach((match, index) => {
+    const start = (match.index ?? 0) + match[0].length;
+    const end = index + 1 < matches.length ? matches[index + 1].index ?? content.length : content.length;
+    const text = content.slice(start, end).trim();
+    if (!text) return;
+    turns.push({
+      role: match[1] === 'USER' ? 'user' : 'ai',
+      content: text,
+    });
+  });
+  return turns;
+}
+
+function renderAiChatContent(content: string) {
+  const loadingMatch = content.match(/^正在生成(\.{1,3})$/);
+  if (!loadingMatch) return content;
+  return (
+    <span className="inline-flex min-w-[88px] items-center">
+      <span>正在生成</span>
+      <span className="inline-block w-[24px]">{loadingMatch[1]}</span>
+    </span>
+  );
+}
+
+function getLatestUsefulAiText(content: string) {
+  const turns = parseAiChatTurns(content);
+  const latestAi = [...turns]
+    .reverse()
+    .find((turn) => turn.role === 'ai' && turn.content.trim() && !/^正在生成\.{1,3}$/.test(turn.content.trim()));
+  if (latestAi) return latestAi.content.trim();
+
+  const legacyAiMatches = [...content.matchAll(/(?:^|\n)AI[：:]\s*([\s\S]*?)(?=\n\s*用户[：:]|\n\s*\[\[USER\]\]|$)/g)]
+    .map((match) => match[1]?.trim() ?? '')
+    .filter((value) => value && !/^正在生成\.{1,3}$/.test(value));
+  if (legacyAiMatches.length > 0) return legacyAiMatches[legacyAiMatches.length - 1];
+
+  return content
+    .replace(/\[\[(?:USER|AI)\]\]\n?/g, '')
+    .replace(/^\s*(?:用户|AI)[：:].*$/gm, '')
+    .replace(/^正在生成\.{1,3}\s*$/gm, '')
+    .trim();
 }
 
 function getRoleCategoryButtonTone(type: string) {
@@ -286,7 +417,16 @@ function getRoleCategoryButtonTone(type: string) {
   };
 }
 
-export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [], outlineStorageKey, scale = 1 }: WorkbenchLibraryPanelProps) {
+export function WorkbenchLibraryPanel({
+  storageKey,
+  tabs,
+  emptyText,
+  volumes = [],
+  outlineStorageKey,
+  scale = 1,
+  defaultActiveTab,
+}: WorkbenchLibraryPanelProps) {
+  const navigate = useNavigate();
   const normalizedTabs = useMemo(() => tabs.map(normalizeTabName), [tabs]);
   const isSettingLibraryPanel = useMemo(
     () => normalizedTabs.every((tab) => SETTING_LIBRARY_TABS.has(tab)),
@@ -296,7 +436,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
   const [outlineEntries, setOutlineEntries] = useState<WorkbenchLibraryEntry[]>(() => (
     outlineStorageKey ? readNormalizedEntries(outlineStorageKey) : []
   ));
-  const [activeTab, setActiveTab] = useState(normalizedTabs[0] ?? '');
+  const [activeTab, setActiveTab] = useState(() => readActiveTab(storageKey, normalizedTabs, defaultActiveTab));
   const settingLibraryMode = 'advanced';
   const [tabConfigs, setTabConfigs] = useState<LibraryTabConfigs>(() => readTabConfigs(storageKey));
   const [roleSearch, setRoleSearch] = useState('');
@@ -315,16 +455,26 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
   const [outlineColumns, setOutlineColumns] = useState(loadOutlineColumns);
   const [isOutlineSettingsOpen, setIsOutlineSettingsOpen] = useState(false);
   const [settingLibraryLeftWidth, setSettingLibraryLeftWidth] = useState(() => readSettingLibraryLeftWidth(storageKey));
+  const [settingLibraryRightWidth, setSettingLibraryRightWidth] = useState(() => readSettingLibraryRightWidth(storageKey));
   const [expandedRoleTypes, setExpandedRoleTypes] = useState<Set<string>>(() => new Set(['未分类']));
   const [expandedSettingTypes, setExpandedSettingTypes] = useState<Set<string>>(() => new Set(['未分类']));
   const [categoryMenu, setCategoryMenu] = useState<LibraryCategoryMenu>(null);
   const [entryMenu, setEntryMenu] = useState<LibraryEntryMenu>(null);
   const [pendingEntryDelete, setPendingEntryDelete] = useState<PendingEntryDelete>(null);
   const [roleHistoryEntryId, setRoleHistoryEntryId] = useState<string | null>(null);
+  const [isBrainstormReaderOpen, setIsBrainstormReaderOpen] = useState(false);
+  const [isBrainstormPromptManagerOpen, setIsBrainstormPromptManagerOpen] = useState(false);
+  const [editingBrainstormPrompt, setEditingBrainstormPrompt] = useState<PromptItem | null>(null);
+  const [brainstormPromptDraft, setBrainstormPromptDraft] = useState({ name: '', description: '', content: '' });
+  const [isLibraryAiLoading, setIsLibraryAiLoading] = useState(false);
+  const [loadingDotCount, setLoadingDotCount] = useState(1);
   const [tabPortalTarget, setTabPortalTarget] = useState<HTMLElement | null>(null);
   const outlinePreviewRefs = useRef<Record<number, HTMLElement | null>>({});
+  const libraryAiAbortRef = useRef<AbortController | null>(null);
+  const libraryAiRequestSeqRef = useRef(0);
   const models = useMemo(() => readModelSnapshot().filter((model) => model.enabled), []);
-  const prompts = useMemo(() => readPromptSnapshot().prompts, []);
+  const { prompts, updatePrompt, deletePrompt, togglePin } = usePrompts();
+  const brainstormPrompts = useMemo(() => prompts.filter((prompt) => prompt.category === BRAINSTORM_TAB), [prompts]);
   const outlinePrompts = useMemo(() => prompts.filter((prompt) => prompt.category === '概要'), [prompts]);
   const scaleStyle = scale === 1 ? undefined : ({ zoom: scale } as CSSProperties);
   const activeTabConfig = tabConfigs[activeTab] ?? {};
@@ -333,7 +483,18 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
   const roleNameDraft = activeTabConfig.roleNameDraft ?? activeTabConfig.titleDraft ?? '';
   const settingTypeDraft = activeTabConfig.typeDraft ?? '';
   const settingTitleDraft = activeTabConfig.titleDraft ?? '';
+  const settingCreateKind = activeTabConfig.createKind ?? 'category';
   const aiInput = activeTabConfig.aiInput ?? '';
+  const aiOutput = activeTabConfig.aiOutput ?? '';
+  const aiResult = activeTabConfig.aiResult ?? '';
+  const animatedAiOutput = isLibraryAiLoading
+    ? aiOutput.replace(/正在生成\.\.\./g, `正在生成${'.'.repeat(loadingDotCount)}`)
+    : aiOutput;
+  const aiChatTurns = parseAiChatTurns(animatedAiOutput);
+  const aiInputHeight = Math.min(180, Math.max(48, aiInput.split('\n').length * 26 + 24));
+
+  useTopModalEscape(isBrainstormPromptManagerOpen && !editingBrainstormPrompt, closeBrainstormPromptManager);
+  useTopModalEscape(Boolean(editingBrainstormPrompt), () => setEditingBrainstormPrompt(null));
 
   const updateTabConfig = (tab: string, updates: LibraryTabConfig) => {
     setTabConfigs((prev) => {
@@ -355,7 +516,33 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
   const setRoleNameDraft = (value: string) => updateTabConfig(ROLE_TAB, { roleNameDraft: value, titleDraft: value });
   const setSettingTypeDraft = (value: string) => updateActiveTabConfig({ typeDraft: value });
   const setSettingTitleDraft = (value: string) => updateActiveTabConfig({ titleDraft: value });
+  const setSettingCreateKind = (value: 'category' | 'setting') => updateActiveTabConfig({ createKind: value });
   const setAiInput = (value: string) => updateActiveTabConfig({ aiInput: value });
+  const setAiOutput = (value: string) => updateActiveTabConfig({ aiOutput: value });
+  const setAiResult = (value: string) => updateActiveTabConfig({ aiResult: value });
+
+  useEffect(() => {
+    if (!isLibraryAiLoading) {
+      setLoadingDotCount(1);
+      return;
+    }
+    const timer = window.setInterval(() => {
+      setLoadingDotCount((current) => (current >= 3 ? 1 : current + 1));
+    }, 420);
+    return () => window.clearInterval(timer);
+  }, [isLibraryAiLoading]);
+
+  const setRememberedActiveTab = (tab: string) => {
+    const normalizedTab = normalizeTabName(tab);
+    setActiveTab(normalizedTab);
+    try {
+      if (normalizedTabs.includes(normalizedTab)) {
+        localStorage.setItem(getActiveTabStorageKey(storageKey), normalizedTab);
+      }
+    } catch {
+      // Local tab memory is a convenience; the panel should still work without it.
+    }
+  };
 
   const startLeftWidthResize = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -383,11 +570,47 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
     window.addEventListener('pointerup', stopResize);
   };
 
+  const startRightWidthResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = settingLibraryRightWidth;
+
+    const handleMove = (moveEvent: PointerEvent) => {
+      const nextWidth = Math.min(
+        SETTING_LIBRARY_RIGHT_MAX_WIDTH,
+        Math.max(SETTING_LIBRARY_RIGHT_MIN_WIDTH, startWidth + startX - moveEvent.clientX),
+      );
+      setSettingLibraryRightWidth(nextWidth);
+      localStorage.setItem(getRightWidthStorageKey(storageKey), String(nextWidth));
+    };
+    const stopResize = () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', stopResize);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', stopResize);
+  };
+
   const leftResizeHandle = (
     <div
       onPointerDown={startLeftWidthResize}
       className="group flex cursor-col-resize items-stretch justify-center bg-white transition-colors hover:bg-brand-light"
       title="拖拽调整左侧宽度"
+    >
+      <div className="my-3 w-1 rounded-full bg-gray-200 transition-colors group-hover:bg-brand" />
+    </div>
+  );
+
+  const rightResizeHandle = (
+    <div
+      onPointerDown={startRightWidthResize}
+      className="group flex cursor-col-resize items-stretch justify-center bg-white transition-colors hover:bg-brand-light"
+      title="拖拽调整右侧宽度"
     >
       <div className="my-3 w-1 rounded-full bg-gray-200 transition-colors group-hover:bg-brand" />
     </div>
@@ -400,7 +623,9 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
   useEffect(() => {
     setEntries(readNormalizedEntries(storageKey));
     setTabConfigs(readTabConfigs(storageKey));
+    setActiveTab(readActiveTab(storageKey, normalizedTabs, defaultActiveTab));
     setSettingLibraryLeftWidth(readSettingLibraryLeftWidth(storageKey));
+    setSettingLibraryRightWidth(readSettingLibraryRightWidth(storageKey));
     setCustomRoleTypes(readCustomRoleTypes(storageKey));
     setCustomSettingTypes(readCustomSettingTypes(storageKey));
     setHiddenRoleTypes(readStringList(getHiddenRoleTypesStorageKey(storageKey)));
@@ -421,7 +646,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
       window.removeEventListener(WORKBENCH_LIBRARY_UPDATED_EVENT, syncEntries);
       window.removeEventListener('storage', syncStorageEntries);
     };
-  }, [storageKey]);
+  }, [defaultActiveTab, normalizedTabs, storageKey]);
 
   useEffect(() => {
     if (!categoryMenu && !entryMenu) return;
@@ -465,7 +690,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
 
   useEffect(() => {
     if (normalizedTabs.includes(activeTab)) return;
-    setActiveTab(normalizedTabs[0] ?? '');
+    setRememberedActiveTab(normalizedTabs[0] ?? '');
   }, [activeTab, normalizedTabs]);
 
   useEffect(() => {
@@ -552,12 +777,12 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
   const addEntryToTab = (tab: string, title: string) => {
     const entry = createWorkbenchLibraryEntry(tab, title);
     persist([entry, ...entries]);
-    setActiveTab(tab);
+    setRememberedActiveTab(tab);
     setSelectedIdForTab(tab, entry.id);
   };
 
-  const addSettingType = () => {
-    const type = settingTypeDraft.trim();
+  const addSettingTypeByName = (name: string) => {
+    const type = name.trim();
     if (!type) return;
     setCustomSettingTypes((prev) => {
       if (prev.includes(type) || DEFAULT_SETTING_TYPES.includes(type)) return prev;
@@ -565,19 +790,195 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
       localStorage.setItem(getSettingTypesStorageKey(storageKey), JSON.stringify(next));
       return next;
     });
+    setExpandedSettingTypes((prev) => new Set(prev).add(type));
+  };
+
+  const addSettingType = () => {
+    addSettingTypeByName(settingTypeDraft);
     setSettingTypeDraft('');
   };
 
-  const addSetting = () => {
-    const title = settingTitleDraft.trim() || `新建${SETTING_TAB}`;
+  const addSetting = (tab = SETTING_TAB) => {
+    const title = settingTitleDraft.trim() || `新建${tab}`;
     const entry = {
-      ...createWorkbenchLibraryEntry(SETTING_TAB, title),
+      ...createWorkbenchLibraryEntry(tab, title),
       content: stringifySettingContent({ type: '未分类', body: '' }),
     };
     persist([entry, ...entries]);
-    setActiveTab(SETTING_TAB);
-    setSelectedIdForTab(SETTING_TAB, entry.id);
-    updateTabConfig(SETTING_TAB, { titleDraft: '' });
+    setRememberedActiveTab(tab);
+    setSelectedIdForTab(tab, entry.id);
+    updateTabConfig(tab, { titleDraft: '' });
+  };
+
+  const confirmSettingCreate = () => {
+    if (settingCreateKind === 'category') {
+      addSettingTypeByName(settingTitleDraft);
+      setSettingTitleDraft('');
+      return;
+    }
+    addSetting(activeTab);
+  };
+
+  const smartImportSettings = () => {
+    const segments = createSmartSettingSegments(aiInput);
+    if (segments.length === 0) return;
+    const importedEntries = segments.map((segment) => ({
+      ...createWorkbenchLibraryEntry(SETTING_TAB, segment.title),
+      content: stringifySettingContent({ type: segment.type, body: segment.body }),
+    }));
+    persist([...importedEntries, ...entries]);
+    setRememberedActiveTab(SETTING_TAB);
+    setSelectedIdForTab(SETTING_TAB, importedEntries[0]?.id ?? null);
+    setExpandedSettingTypes((prev) => {
+      const next = new Set(prev);
+      segments.forEach((segment) => next.add(segment.type));
+      return next;
+    });
+  };
+
+  const getNextBrainstormTitle = () => {
+    const maxNumber = entries
+      .filter((entry) => entry.tab === BRAINSTORM_TAB)
+      .map((entry) => entry.title.match(/^脑洞(\d+)$/)?.[1])
+      .filter((value): value is string => Boolean(value))
+      .reduce((max, value) => Math.max(max, Number(value) || 0), 0);
+    return `脑洞${maxNumber + 1}`;
+  };
+
+  const saveBrainstormOutputAsNew = () => {
+    const body = getLatestUsefulAiText(aiResult || aiOutput);
+    if (!body) return;
+    const entry = {
+      ...createWorkbenchLibraryEntry(BRAINSTORM_TAB, getNextBrainstormTitle()),
+      content: stringifySettingContent({ type: BRAINSTORM_TYPE, body }),
+    };
+    persist([entry, ...entries]);
+    setRememberedActiveTab(BRAINSTORM_TAB);
+    setSelectedIdForTab(BRAINSTORM_TAB, entry.id);
+    setExpandedSettingTypes((prev) => new Set(prev).add(BRAINSTORM_TYPE));
+  };
+
+  const saveBrainstormOutput = (targetId?: string | null) => {
+    const body = getLatestUsefulAiText(aiResult || aiOutput);
+    if (!body || !targetId) return;
+    updateEntry(targetId, {
+      content: stringifySettingContent({ type: BRAINSTORM_TYPE, body }),
+    });
+  };
+
+  const openBrainstormPromptEdit = (prompt: PromptItem) => {
+    setEditingBrainstormPrompt(prompt);
+    setBrainstormPromptDraft({
+      name: prompt.name,
+      description: prompt.description,
+      content: prompt.content,
+    });
+  };
+
+  function closeBrainstormPromptManager() {
+    setEditingBrainstormPrompt(null);
+    setIsBrainstormPromptManagerOpen(false);
+  }
+
+  function openBrainstormPromptManager() {
+    setEditingBrainstormPrompt(null);
+    setIsBrainstormPromptManagerOpen(true);
+  }
+
+  const saveBrainstormPromptEdit = () => {
+    if (!editingBrainstormPrompt) return;
+    const name = brainstormPromptDraft.name.trim();
+    if (!name) return;
+    updatePrompt(editingBrainstormPrompt.id, {
+      name,
+      description: brainstormPromptDraft.description,
+      content: brainstormPromptDraft.content,
+      category: BRAINSTORM_TAB,
+    });
+    setEditingBrainstormPrompt(null);
+  };
+
+  const deleteBrainstormPrompt = (prompt: PromptItem) => {
+    if (prompt.isLocked) return;
+    if (!window.confirm(`确定删除提示词「${prompt.name}」吗？删除后会进入提示词回收站。`)) return;
+    deletePrompt(prompt.id);
+  };
+
+  const sendLibraryAiMessage = async () => {
+    const text = aiInput.trim();
+    if (!text || isLibraryAiLoading) return;
+    const selectedModel = models.find((model) => model.id === activeTabConfig.modelId) ?? models[0] ?? null;
+    if (!selectedModel) {
+      setAiOutput('【错误】尚未配置可用模型。请先到模型管理中新增模型。');
+      return;
+    }
+    const promptCandidates = activeTab === ROLE_TAB
+      ? prompts
+      : prompts.filter((prompt) => prompt.category === activeTab);
+    const selectedPrompt = promptCandidates.find((prompt) => prompt.id === activeTabConfig.promptId) ?? null;
+    const controller = new AbortController();
+    const requestSeq = libraryAiRequestSeqRef.current + 1;
+    libraryAiRequestSeqRef.current = requestSeq;
+    libraryAiAbortRef.current = controller;
+    setIsLibraryAiLoading(true);
+    setAiInput('');
+    const pendingOutput = `${aiOutput.trim() ? `${aiOutput.trim()}\n\n` : ''}[[USER]]\n${text}\n\n[[AI]]\n正在生成...`;
+    const replacePendingOutput = (content: string) => (
+      pendingOutput.replace(/\[\[AI\]\]\n正在生成\.\.\.$/, `[[AI]]\n${content}`)
+    );
+    setAiOutput(pendingOutput);
+    const timeoutId = window.setTimeout(() => {
+      controller.abort();
+      if (libraryAiRequestSeqRef.current === requestSeq) {
+        setAiOutput(replacePendingOutput('【错误】请求超时，请检查模型地址和网络。'));
+      }
+    }, 60000);
+    try {
+      const content = await callModel({
+        model: selectedModel,
+        prompt: selectedPrompt?.content ?? `你是${activeTab}生成助手。请根据用户输入生成清晰、可编辑的中文内容。`,
+        userContent: text,
+        recordType: 'generate',
+        signal: controller.signal,
+      });
+      if (libraryAiRequestSeqRef.current !== requestSeq) return;
+      if (activeTab === BRAINSTORM_TAB) setAiResult(content.trim());
+      setAiOutput(replacePendingOutput(content));
+    } catch (error) {
+      if (libraryAiRequestSeqRef.current !== requestSeq) return;
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        if (activeTab === BRAINSTORM_TAB) setAiResult('');
+        setAiOutput(replacePendingOutput('【已中止】本次生成已停止。'));
+        return;
+      }
+      const message = error instanceof Error ? error.message : '模型请求失败。';
+      if (activeTab === BRAINSTORM_TAB) setAiResult('');
+      setAiOutput(replacePendingOutput(`【错误】${message}`));
+    } finally {
+      window.clearTimeout(timeoutId);
+      if (libraryAiAbortRef.current === controller) libraryAiAbortRef.current = null;
+      if (libraryAiRequestSeqRef.current === requestSeq) setIsLibraryAiLoading(false);
+    }
+  };
+
+  const stopLibraryAiMessage = () => {
+    libraryAiAbortRef.current?.abort();
+    libraryAiAbortRef.current = null;
+    setIsLibraryAiLoading(false);
+    setAiOutput(aiOutput.replace(/\[\[AI\]\]\n正在生成\.\.\.$/, '[[AI]]\n已暂停'));
+  };
+
+  const clearLibraryAiDialog = () => {
+    libraryAiAbortRef.current?.abort();
+    libraryAiAbortRef.current = null;
+    setIsLibraryAiLoading(false);
+    updateActiveTabConfig({ aiInput: '', aiOutput: '', aiResult: '' });
+  };
+
+  const handleLibraryAiInputKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== 'Enter' || event.shiftKey) return;
+    event.preventDefault();
+    void sendLibraryAiMessage();
   };
 
   const addRoleType = () => {
@@ -601,7 +1002,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
       content: stringifyRoleContent({ type, lifeStatus: '存活', personality: '', background: '', status: '', history: [] }),
     };
     persist([roleEntry, ...entries]);
-    setActiveTab(ROLE_TAB);
+    setRememberedActiveTab(ROLE_TAB);
     setSelectedIdForTab(ROLE_TAB, roleEntry.id);
     setExpandedRoleTypes((prev) => new Set(prev).add(type));
     setRoleNameDraft('');
@@ -670,7 +1071,14 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
     event.preventDefault();
     event.stopPropagation();
     setCategoryMenu(null);
-    setEntryMenu({ entryId: entry.id, title: entry.title, tab: entry.tab, x: event.clientX, y: event.clientY });
+    setEntryMenu({
+      entryId: entry.id,
+      title: entry.title,
+      tab: entry.tab,
+      pinnedAt: entry.pinnedAt,
+      x: event.clientX,
+      y: event.clientY,
+    });
   };
 
   const deleteRoleType = (type: string) => {
@@ -719,7 +1127,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
       return next;
     });
     persist(entries.map((entry) => {
-      if (entry.tab !== SETTING_TAB) return entry;
+      if (!isSettingLikeTab(entry.tab)) return entry;
       const setting = parseSettingContent(entry.content);
       if (setting.type !== type) return entry;
       return {
@@ -744,6 +1152,17 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
     confirmDeleteEntry(target);
   };
 
+  const toggleEntryPinnedFromMenu = () => {
+    if (!entryMenu || entryMenu.tab !== ROLE_TAB) return;
+    const nextPinnedAt = entryMenu.pinnedAt ? undefined : Date.now();
+    persist(entries.map((entry) => (
+      entry.id === entryMenu.entryId
+        ? { ...entry, pinnedAt: nextPinnedAt, updatedAt: new Date().toLocaleString('zh-CN') }
+        : entry
+    )));
+    setEntryMenu(null);
+  };
+
   const roleEntries = useMemo(() => entries.filter((entry) => entry.tab === ROLE_TAB), [entries]);
   const roleTypeOptions = useMemo(() => {
     const entryTypes = roleEntries.map((entry) => parseRoleContent(entry.content).type).filter(Boolean);
@@ -761,11 +1180,24 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
     return roleEntries.filter((entry) => entry.title.toLowerCase().includes(keyword));
   }, [roleEntries, roleSearch]);
 
-  const groupedRoles = useMemo(() => roleTypeOptions.map((type) => ({
-    type,
-    entries: searchedRoles.filter((entry) => parseRoleContent(entry.content).type === type),
-  })), [roleTypeOptions, searchedRoles]);
-  const settingEntries = useMemo(() => entries.filter((entry) => entry.tab === SETTING_TAB), [entries]);
+  const groupedRoles = useMemo(() => roleTypeOptions.map((type) => {
+    const entriesInType = searchedRoles.filter((entry) => parseRoleContent(entry.content).type === type);
+    return {
+      type,
+      entries: entriesInType
+        .map((entry, index) => ({ entry, index }))
+        .sort((left, right) => {
+          const leftPinned = typeof left.entry.pinnedAt === 'number';
+          const rightPinned = typeof right.entry.pinnedAt === 'number';
+          if (leftPinned && rightPinned) return (left.entry.pinnedAt ?? 0) - (right.entry.pinnedAt ?? 0);
+          if (leftPinned) return -1;
+          if (rightPinned) return 1;
+          return left.index - right.index;
+        })
+        .map(({ entry }) => entry),
+    };
+  }), [roleTypeOptions, searchedRoles]);
+  const settingEntries = useMemo(() => entries.filter((entry) => isSettingLikeTab(entry.tab)), [entries]);
   const settingTypeOptions = useMemo(() => {
     const entryTypes = settingEntries.map((entry) => parseSettingContent(entry.content).type).filter(Boolean);
     const hidden = new Set(hiddenSettingTypes);
@@ -778,30 +1210,31 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
   }, [customSettingTypes, hiddenSettingTypes, settingEntries]);
 
   const topTabs = isSettingLibraryPanel ? (
-    <div className="inline-flex w-fit shrink-0 rounded-[18px] bg-slate-100 p-1.5">
+    <div data-no-modal-drag="true" className="inline-flex w-fit shrink-0 cursor-default rounded-[18px] bg-slate-100 p-1.5">
       {normalizedTabs.map((tab) => {
         const active = activeTab === tab;
+        const tabLabel = tab === SETTING_TAB ? '设定' : tab;
         return (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => setRememberedActiveTab(tab)}
             className={`h-10 min-w-[78px] rounded-[15px] px-5 text-[18.5px] font-bold transition-all ${
               active
                 ? 'bg-white text-sky-500 shadow-sm'
                 : 'text-slate-500 hover:bg-white/70 hover:text-slate-700'
             }`}
           >
-            {tab}
+            {tabLabel}
           </button>
         );
       })}
     </div>
   ) : (
-    <div className="flex shrink-0 items-center gap-2">
+    <div data-no-modal-drag="true" className="flex shrink-0 cursor-default items-center gap-2">
       {normalizedTabs.map((tab) => (
         <button
           key={tab}
-          onClick={() => setActiveTab(tab)}
+          onClick={() => setRememberedActiveTab(tab)}
           className={`rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
             activeTab === tab ? 'bg-brand text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-800'
           }`}
@@ -813,9 +1246,13 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
   );
 
   const renderTopTabs = () => (
+    normalizedTabs.length <= 1
+      ? null
+      : (
     tabPortalTarget
       ? createPortal(topTabs, tabPortalTarget)
-      : <div className="flex shrink-0 items-center gap-2 border-b border-gray-100 bg-white px-4 py-3">{topTabs}</div>
+      : <div data-no-modal-drag="true" className="flex shrink-0 cursor-default items-center gap-2 border-b border-gray-100 bg-white px-4 py-3">{topTabs}</div>
+      )
   );
 
   const categoryContextMenu = categoryMenu ? createPortal(
@@ -844,6 +1281,14 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
       className="fixed z-[10000] min-w-[132px] rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
       style={{ left: entryMenu.x, top: entryMenu.y }}
     >
+      {entryMenu.tab === ROLE_TAB && (
+        <button
+          onClick={toggleEntryPinnedFromMenu}
+          className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-brand hover:bg-brand-light"
+        >
+          {entryMenu.pinnedAt ? '取消置顶' : '置顶'}
+        </button>
+      )}
       <button
         onClick={deleteEntryFromMenu}
         className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50"
@@ -866,6 +1311,220 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
       onConfirm={handleConfirmDeleteEntry}
     />
   );
+  const brainstormEntries = entries.filter((entry) => entry.tab === BRAINSTORM_TAB);
+  const brainstormReaderModal = isBrainstormReaderOpen ? createPortal(
+    <div
+      className="fixed inset-0 z-[260] flex items-center justify-center bg-black/35"
+      onClick={() => setIsBrainstormReaderOpen(false)}
+    >
+      <div
+        className="flex h-[72vh] w-[min(920px,92vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">读取脑洞</h3>
+            <p className="mt-1 text-xs text-gray-400">这里显示脑洞标签页下的内容，仅供查看参考。</p>
+          </div>
+          <button
+            onClick={() => setIsBrainstormReaderOpen(false)}
+            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            title="关闭"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto bg-gray-50 p-5">
+          {brainstormEntries.length === 0 ? (
+            <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white text-sm text-gray-400">
+              暂无脑洞内容
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {brainstormEntries.map((entry) => {
+                const parsed = parseSettingContent(entry.content);
+                const contentText = parsed.body || entry.content || '';
+                return (
+                  <article key={entry.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <h4 className="min-w-0 truncate text-base font-bold text-gray-900">{entry.title}</h4>
+                      <span className="shrink-0 rounded-full bg-brand-light px-3 py-1 text-xs font-bold text-brand">{parsed.type || '未分类'}</span>
+                    </div>
+                    <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-gray-600">
+                      {contentText || '暂无内容'}
+                    </p>
+                    <div className="mt-3 flex items-center justify-between text-xs text-gray-400">
+                      <span>字数：{countTextWords(contentText)} 字 · 评分：暂未评分</span>
+                      <span>{entry.updatedAt}</span>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  ) : null;
+  const brainstormPromptManagerModal = isBrainstormPromptManagerOpen ? createPortal(
+    <div
+      className="fixed inset-0 z-[260] flex items-center justify-center bg-black/35"
+      onClick={closeBrainstormPromptManager}
+    >
+      <div
+        className="flex h-[70vh] w-[min(880px,92vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">提示词管理</h3>
+            <p className="mt-1 text-xs text-gray-400">仅显示“脑洞”分类下的提示词。</p>
+          </div>
+          <button
+            onClick={closeBrainstormPromptManager}
+            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            title="关闭"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto bg-gray-50 p-5">
+            <div className="flex flex-wrap gap-4">
+              {brainstormPrompts.length === 0 && (
+                <div className="flex h-[247px] w-[255px] flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-white text-sm text-slate-400">
+                  暂无提示词
+                </div>
+              )}
+              {brainstormPrompts.map((prompt) => (
+                <article key={prompt.id} className="flex h-[247px] w-[255px] flex-col rounded-[24px] border border-slate-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="truncate text-[17px] font-bold text-slate-900">{prompt.name}</h4>
+                        <span className="rounded-xl border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs text-sky-500">脑洞</span>
+                      </div>
+                    </div>
+                    <Lock className={`h-4 w-4 shrink-0 ${prompt.isLocked ? 'text-orange-400' : 'text-slate-300'}`} />
+                  </div>
+                  <div className="mt-3 min-h-0 flex-1 overflow-hidden rounded-2xl bg-slate-50 p-3">
+                    <div className="editor-scrollbar h-full overflow-y-auto whitespace-pre-wrap break-words text-sm font-medium leading-7 text-slate-800">
+                      {prompt.description || '暂无说明'}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                    <span>说明 {(prompt.description || '').length} 字</span>
+                    <span>{prompt.updatedAt}</span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-3 gap-1">
+                    <button
+                      onClick={() => togglePin(prompt.id)}
+                      className={`rounded-[14px] px-3 py-1.5 text-xs font-medium text-white transition-colors ${
+                        prompt.isFavorite ? 'bg-orange-500 hover:bg-orange-600' : 'bg-brand hover:bg-brand-dark'
+                      }`}
+                    >
+                      {prompt.isFavorite ? '已置顶' : '置顶'}
+                    </button>
+                    <button
+                      onClick={() => openBrainstormPromptEdit(prompt)}
+                      disabled={prompt.isLocked}
+                      className="rounded-[14px] bg-sky-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                    >
+                      编辑
+                    </button>
+                    <button
+                      onClick={() => deleteBrainstormPrompt(prompt)}
+                      disabled={prompt.isLocked}
+                      className="rounded-[14px] bg-red-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                    >
+                      删除
+                    </button>
+                  </div>
+                </article>
+              ))}
+              <button
+                onClick={() => navigate('/prompts')}
+                className="flex h-[247px] w-[255px] flex-col items-center justify-center rounded-[24px] border border-dashed border-sky-300 bg-white text-sky-600 transition-colors hover:border-sky-400 hover:bg-sky-50/40"
+              >
+                <span className="flex h-16 w-16 items-center justify-center rounded-full border border-sky-300 bg-sky-50/60 text-4xl leading-none">
+                  +
+                </span>
+                <span className="mt-6 text-base font-medium">创建提示词</span>
+              </button>
+            </div>
+        </div>
+        {editingBrainstormPrompt && (
+          <div
+            className="modal-sharp fixed inset-0 z-[270] flex items-center justify-center bg-black/35"
+            onClick={() => setEditingBrainstormPrompt(null)}
+          >
+            <div
+              className="modal-sharp flex h-[min(744px,90vh)] w-[min(792px,94vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">编辑提示词</h3>
+                  <p className="mt-1 text-xs text-gray-400">只会保存到“脑洞”分类下。</p>
+                </div>
+                <button
+                  onClick={() => setEditingBrainstormPrompt(null)}
+                  className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                  title="关闭"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="editor-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+                <label className="block text-sm font-bold text-gray-700">
+                  名称
+                  <input
+                    value={brainstormPromptDraft.name}
+                    onChange={(event) => setBrainstormPromptDraft((prev) => ({ ...prev, name: event.target.value }))}
+                    className="mt-2 h-10 w-full rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-800 outline-none focus:border-brand"
+                  />
+                </label>
+                <label className="block text-sm font-bold text-gray-700">
+                  说明
+                  <textarea
+                    value={brainstormPromptDraft.description}
+                    onChange={(event) => setBrainstormPromptDraft((prev) => ({ ...prev, description: event.target.value }))}
+                    className="editor-scrollbar mt-2 h-24 w-full resize-none rounded-xl border border-gray-200 p-3 text-sm leading-6 text-gray-800 outline-none focus:border-brand"
+                    placeholder="这里填写给用户看的提示词说明。"
+                  />
+                </label>
+                <label className="flex min-h-[220px] flex-1 flex-col text-sm font-bold text-gray-700">
+                  提示词内容
+                  <textarea
+                    value={brainstormPromptDraft.content}
+                    onChange={(event) => setBrainstormPromptDraft((prev) => ({ ...prev, content: event.target.value }))}
+                    className="editor-scrollbar mt-2 min-h-[210px] flex-1 resize-none rounded-xl border border-gray-200 p-3 text-sm leading-6 text-gray-800 outline-none focus:border-brand"
+                    placeholder="这里填写实际发送给 AI 的提示词内容。"
+                  />
+                </label>
+              </div>
+              <div className="flex shrink-0 justify-end gap-3 border-t border-gray-100 px-5 py-4">
+                <button
+                  onClick={() => setEditingBrainstormPrompt(null)}
+                  className="rounded-xl border border-gray-200 bg-white px-5 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={saveBrainstormPromptEdit}
+                  disabled={!brainstormPromptDraft.name.trim()}
+                  className="rounded-xl bg-brand px-5 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
+                >
+                  保存
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body,
+  ) : null;
 
   if (activeTab === ROLE_TAB) {
     const roleHistoryModal = selectedEntry && selectedRole && roleHistoryEntryId === selectedEntry.id ? createPortal(
@@ -937,7 +1596,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
           className="grid min-h-0 flex-1 overflow-hidden bg-white"
           style={{
             gridTemplateColumns: settingLibraryMode === 'advanced'
-              ? `${settingLibraryLeftWidth}px 8px minmax(0,1fr) ${SETTING_LIBRARY_RIGHT_WIDTH}px`
+              ? `${settingLibraryLeftWidth}px 8px minmax(0,1fr) 8px ${settingLibraryRightWidth}px`
               : `${settingLibraryLeftWidth}px 8px minmax(0,1fr)`,
           }}
         >
@@ -995,7 +1654,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
                       {expanded ? <ChevronDown className={`h-3.5 w-3.5 ${tone.iconClassName}`} /> : <ChevronRight className={`h-3.5 w-3.5 ${tone.iconClassName}`} />}
                     </button>
                     {expanded && (
-                      <div className="mt-1 space-y-1">
+                      <div className="editor-scrollbar mt-1 max-h-[464px] space-y-1 overflow-y-auto pr-1">
                         {group.entries.map((entry) => (
                           <button
                             key={entry.id}
@@ -1007,7 +1666,14 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
                                 : 'border-transparent bg-white text-gray-600 hover:border-gray-200'
                             }`}
                           >
-                            {entry.title}
+                            <span className="flex items-center justify-between gap-2">
+                              <span className="min-w-0 truncate">{entry.title}</span>
+                              {entry.pinnedAt && (
+                                <span className="shrink-0 rounded-full bg-brand-light px-2 py-0.5 text-[10px] font-bold text-brand">
+                                  置顶
+                                </span>
+                              )}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -1117,6 +1783,8 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
           </main>
 
           {settingLibraryMode === 'advanced' && (
+          <>
+          {rightResizeHandle}
           <aside className="flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 p-4">
             <h3 className="text-base font-bold text-gray-900">角色生成</h3>
             <div className="mt-4 space-y-3">
@@ -1137,26 +1805,51 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
                   onChange={(event) => updateActiveTabConfig({ promptId: event.target.value })}
                   className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-brand"
                 >
-                  <option value="">设定大师</option>
-                  {prompts.map((prompt) => <option key={prompt.id} value={prompt.id}>{prompt.name}</option>)}
+                  {prompts.length === 0 ? <option value="">暂无提示词</option> : prompts.map((prompt) => <option key={prompt.id} value={prompt.id}>{prompt.name}</option>)}
                 </select>
               </label>
             </div>
-            <div className="mt-5 flex-1 rounded-2xl border border-gray-200 bg-white" />
+            <textarea
+              value={aiOutput}
+              onChange={(event) => setAiOutput(event.target.value)}
+              placeholder="AI 输出会显示在这里，也可以手动编辑。"
+              className="editor-scrollbar mt-5 min-h-0 flex-1 resize-none rounded-2xl border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-700 outline-none focus:border-brand"
+            />
             <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4">
               <textarea
                 value={aiInput}
                 onChange={(event) => setAiInput(event.target.value)}
+                onKeyDown={handleLibraryAiInputKeyDown}
                 placeholder="输入对话指令..."
-                className="h-14 w-full resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand"
+                className="w-full resize-none rounded-xl border border-gray-200 px-3 py-[11px] text-sm leading-6 outline-none focus:border-brand"
+                style={{ height: aiInputHeight }}
               />
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <button className="rounded-xl bg-brand px-3 py-2 text-sm font-bold text-white">发送</button>
-                <button className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100">暂停</button>
-                <button className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-bold text-gray-400">复制</button>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => void sendLibraryAiMessage()}
+                  disabled={isLibraryAiLoading || !aiInput.trim()}
+                  className="rounded-xl bg-brand px-3 py-2 text-sm font-bold text-white disabled:bg-gray-300"
+                >
+                  {isLibraryAiLoading ? '生成中...' : '发送'}
+                </button>
+                <button
+                  onClick={stopLibraryAiMessage}
+                  disabled={!isLibraryAiLoading}
+                  className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
+                >
+                  暂停
+                </button>
+                <button
+                  onClick={clearLibraryAiDialog}
+                  disabled={!aiInput.trim() && !aiOutput.trim() && !isLibraryAiLoading}
+                  className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
+                >
+                  清空
+                </button>
               </div>
             </div>
           </aside>
+          </>
           )}
         </div>
       </div>
@@ -1166,14 +1859,23 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
   if (isSettingLibraryPanel && SETTING_LIBRARY_TABS.has(activeTab) && activeTab !== OUTLINE_LIBRARY_TAB && activeTab !== DETAIL_OUTLINE_TAB) {
     const currentEntries = entries.filter((entry) => entry.tab === activeTab);
     const currentSelectedEntry = currentEntries.find((entry) => entry.id === selectedId) ?? currentEntries[0] ?? null;
-    const currentSelectedSetting = activeTab === SETTING_TAB && currentSelectedEntry ? parseSettingContent(currentSelectedEntry.content) : null;
-    const groupedSettingEntries = settingTypeOptions.map((type) => ({
+    const activeIsSettingLike = isSettingLikeTab(activeTab);
+    const activeIsBrainstorm = activeTab === BRAINSTORM_TAB;
+    const currentSelectedSetting = activeIsSettingLike && currentSelectedEntry ? parseSettingContent(currentSelectedEntry.content) : null;
+    const activeSettingTypeOptions = activeIsBrainstorm ? [BRAINSTORM_TYPE] : settingTypeOptions;
+    const currentBrainstormBody = activeIsBrainstorm ? getLatestUsefulAiText(currentSelectedSetting?.body ?? '') : '';
+    const currentBrainstormWordCount = activeIsBrainstorm ? countTextWords(currentBrainstormBody) : 0;
+    const latestUsefulAiOutput = activeIsBrainstorm ? getLatestUsefulAiText(aiResult || aiOutput) : aiOutput.trim();
+    const groupedSettingEntries = activeSettingTypeOptions.map((type) => ({
       type,
-      entries: currentEntries.filter((entry) => parseSettingContent(entry.content).type === type),
+      entries: currentEntries.filter((entry) => {
+        const parsed = parseSettingContent(entry.content);
+        if (activeIsBrainstorm) return (parsed.type || BRAINSTORM_TYPE) === type || parsed.type === UNCATEGORIZED_TYPE;
+        return parsed.type === type;
+      }),
     }));
-    const panelTitle = activeTab === SETTING_TAB ? `${SETTING_TAB}生成` : `${activeTab}生成`;
-    const agentName = activeTab === SETTING_TAB ? `${SETTING_TAB}助手` : '细纲助手';
-    const promptCategory = activeTab === SETTING_TAB ? '大纲' : activeTab;
+    const panelTitle = activeIsSettingLike ? `${activeTab}生成` : `${activeTab}生成`;
+    const promptCategory = activeTab;
     const activeTabPrompts = prompts.filter((prompt) => prompt.category === promptCategory);
     const activePromptId = activeTabPrompts.some((prompt) => prompt.id === activeTabConfig.promptId)
       ? activeTabConfig.promptId
@@ -1185,71 +1887,67 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
         {categoryContextMenu}
         {entryContextMenu}
         {deleteConfirmDialog}
+        {brainstormReaderModal}
+        {brainstormPromptManagerModal}
         <div
           className="grid min-h-0 flex-1 overflow-hidden bg-white"
           style={{
-            gridTemplateColumns: settingLibraryMode === 'advanced'
-              ? `${settingLibraryLeftWidth}px 8px minmax(0,1fr) ${SETTING_LIBRARY_RIGHT_WIDTH}px`
+            gridTemplateColumns: activeIsBrainstorm
+              ? `${settingLibraryLeftWidth}px 8px minmax(240px,0.95fr) minmax(280px,1.05fr) 8px ${settingLibraryRightWidth}px`
+              : settingLibraryMode === 'advanced'
+              ? `${settingLibraryLeftWidth}px 8px minmax(0,1fr) 8px ${settingLibraryRightWidth}px`
               : `${settingLibraryLeftWidth}px 8px minmax(0,1fr)`,
           }}
         >
           <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
-          <div className="grid grid-cols-[1fr_84px] gap-2">
-            <input
-              value={settingTypeDraft}
-              onChange={(event) => setSettingTypeDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') addSettingType();
-              }}
-              placeholder="分类名字"
-              className="h-11 min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-brand"
-            />
-            <button
-              onClick={activeTab === SETTING_TAB ? addSettingType : () => setSettingTypeDraft('')}
-              className="h-11 rounded-lg bg-brand px-3 text-sm font-bold text-white hover:bg-brand-dark"
-            >
-              新建分类
-            </button>
-            <input
-              value={settingTitleDraft}
-              onChange={(event) => setSettingTitleDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  if (activeTab === SETTING_TAB) addSetting();
-                  else {
-                    const title = settingTitleDraft.trim() || `新建${activeTab}`;
-                    addEntryToTab(activeTab, title);
-                    setSettingTitleDraft('');
-                  }
-                }
-              }}
-              placeholder={`${activeTab}名字`}
-              className="h-11 min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-brand"
-            />
-            <button
-              onClick={() => {
-                if (activeTab === SETTING_TAB) {
-                  addSetting();
-                  return;
-                }
-                const title = settingTitleDraft.trim() || `新建${activeTab}`;
-                addEntryToTab(activeTab, title);
-                setSettingTitleDraft('');
-              }}
-              className="h-11 rounded-lg bg-brand px-3 text-sm font-bold text-white hover:bg-brand-dark"
-            >
-              {activeTab === SETTING_TAB ? `新建${SETTING_TAB}` : `新建${activeTab}`}
-            </button>
-          </div>
+          {!activeIsBrainstorm && (
+            <div className="grid grid-cols-[40px_minmax(96px,1fr)_104px_52px] items-center gap-1.5">
+              <span className="text-sm font-bold text-gray-700">新建</span>
+              <input
+                value={settingTitleDraft}
+                onChange={(event) => setSettingTitleDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') confirmSettingCreate();
+                }}
+                placeholder="输入名字"
+                className="h-10 min-w-[96px] rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-brand"
+              />
+              <div className="flex h-10 items-center rounded-full border border-gray-200 bg-white p-1">
+                {([
+                  ['category', '分类'],
+                  ['setting', '设定'],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setSettingCreateKind(value)}
+                    className={`h-8 rounded-full px-2.5 text-xs font-bold transition-colors ${
+                      settingCreateKind === value
+                        ? 'bg-brand text-white'
+                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={confirmSettingCreate}
+                className="h-10 rounded-lg bg-brand px-2.5 text-xs font-bold text-white hover:bg-brand-dark"
+              >
+                确定
+              </button>
+            </div>
+          )}
 
-          <div className="mt-5 min-h-0 flex-1 overflow-y-auto space-y-2">
-            {(activeTab === SETTING_TAB ? groupedSettingEntries : [{ type: UNCATEGORIZED_TYPE, entries: currentEntries }]).map((group) => {
+          <div className={`${activeIsBrainstorm ? 'mt-0' : 'mt-5'} min-h-0 flex-1 overflow-y-auto space-y-2`}>
+            {(activeIsSettingLike ? groupedSettingEntries : [{ type: UNCATEGORIZED_TYPE, entries: currentEntries }]).map((group) => {
               const expanded = expandedSettingTypes.has(group.type);
               return (
                 <div key={group.type}>
                   <button
                     onContextMenu={(event) => {
-                      if (activeTab === SETTING_TAB) openCategoryMenu(event, 'setting', group.type);
+                      if (activeIsSettingLike && !activeIsBrainstorm) openCategoryMenu(event, 'setting', group.type);
                     }}
                     onClick={() => {
                       setExpandedSettingTypes((prev) => {
@@ -1266,11 +1964,11 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
                     {expanded ? <ChevronDown className="h-3.5 w-3.5 text-white" /> : <ChevronRight className="h-3.5 w-3.5 text-white" />}
                   </button>
                   {expanded && (
-                    <div className="mt-1 space-y-1">
+                    <div className="editor-scrollbar mt-1 max-h-[760px] space-y-1 overflow-y-auto pr-1">
                       {group.entries.length === 0 ? (
                         <p className="px-3 py-4 text-xs text-gray-400">该分类下暂无{activeTab}</p>
                       ) : group.entries.map((entry) => {
-                        const parsed = activeTab === SETTING_TAB ? parseSettingContent(entry.content) : null;
+                        const parsed = activeIsSettingLike ? parseSettingContent(entry.content) : null;
                         return (
                           <button
                             key={entry.id}
@@ -1310,9 +2008,24 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
           {leftResizeHandle}
 
           <main className={`min-w-0 flex min-h-0 flex-col bg-white ${settingLibraryMode === 'advanced' ? 'border-r border-gray-100' : ''}`}>
-          {currentSelectedEntry ? (
+          {activeIsBrainstorm ? (
             <div className="flex min-h-0 flex-1 flex-col p-5">
-              <div className={`mb-3 grid gap-3 ${activeTab === SETTING_TAB ? 'grid-cols-[minmax(0,1fr)_220px]' : 'grid-cols-1'}`}>
+              <h3 className="mb-3 shrink-0 text-base font-bold text-gray-900">脑洞预览</h3>
+              <textarea
+                value={currentBrainstormBody}
+                onChange={(event) => {
+                  if (!currentSelectedEntry || !currentSelectedSetting) return;
+                  updateEntry(currentSelectedEntry.id, {
+                    content: stringifySettingContent({ ...currentSelectedSetting, body: event.target.value }),
+                  });
+                }}
+                placeholder="这里显示选中的脑洞内容，也可以直接编辑。"
+                className="editor-scrollbar min-h-0 flex-1 resize-none rounded-lg border border-gray-200 bg-gray-50/40 px-4 py-3 text-sm leading-7 text-gray-700 outline-none focus:border-brand focus:bg-white"
+              />
+            </div>
+          ) : currentSelectedEntry ? (
+            <div className="flex min-h-0 flex-1 flex-col p-5">
+              <div className={`mb-3 grid gap-3 ${activeIsSettingLike ? 'grid-cols-[minmax(0,1fr)_220px]' : 'grid-cols-1'}`}>
                 <input
                   value={currentSelectedEntry.title}
                   onChange={(event) => updateEntry(currentSelectedEntry.id, { title: event.target.value })}
@@ -1326,7 +2039,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
                     })}
                     className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-brand"
                   >
-                    {settingTypeOptions.map((type) => <option key={type} value={type}>{type}</option>)}
+                    {activeSettingTypeOptions.map((type) => <option key={type} value={type}>{type}</option>)}
                   </select>
                 )}
               </div>
@@ -1337,7 +2050,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
                     ? stringifySettingContent({ ...currentSelectedSetting, body: event.target.value })
                     : event.target.value,
                 })}
-                placeholder={`填写${activeTab}内容...`}
+                placeholder={activeIsBrainstorm ? '这里显示选中的脑洞内容...' : `填写${activeTab}内容...`}
                 className="editor-scrollbar flex-1 resize-none rounded-lg border border-gray-200 bg-gray-50/40 px-4 py-3 text-sm leading-7 text-gray-700 outline-none focus:border-brand focus:bg-white"
               />
             </div>
@@ -1346,10 +2059,38 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
           )}
           </main>
 
+          {activeIsBrainstorm && (
+            <section className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-white">
+              <div className="border-b border-gray-100 px-4 py-3">
+                <h3 className="text-base font-bold text-gray-900">脑洞设定输出</h3>
+              </div>
+              <div className="min-h-0 flex-1 p-4">
+                <textarea
+                  value={aiResult || latestUsefulAiOutput}
+                  onChange={(event) => setAiResult(event.target.value)}
+                  placeholder="这里显示本次 AI 生成的脑洞设定正文，保存脑洞时只保存这里的内容。"
+                  className="editor-scrollbar h-full w-full resize-none rounded-xl border border-gray-200 bg-white p-4 text-sm leading-7 text-gray-700 outline-none focus:border-brand"
+                />
+              </div>
+            </section>
+          )}
+
           {settingLibraryMode === 'advanced' && (
+          <>
+          {rightResizeHandle}
           <aside className="min-w-0 flex min-h-0 flex-col bg-gray-50">
           <div className="border-b border-gray-100 p-4">
-            <h3 className="text-base font-bold text-gray-900">{panelTitle}</h3>
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-base font-bold text-gray-900">{panelTitle}</h3>
+              {activeIsBrainstorm && (
+                <button
+                  onClick={openBrainstormPromptManager}
+                  className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-brand-dark"
+                >
+                  提示词管理
+                </button>
+              )}
+            </div>
             <div className="mt-4 space-y-3">
               <label className="grid grid-cols-[48px_1fr] items-center gap-2 text-sm text-gray-500">
                 <span>模型</span>
@@ -1368,50 +2109,149 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
                   onChange={(event) => updateActiveTabConfig({ promptId: event.target.value })}
                   className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-brand"
                 >
-                  {activeTabPrompts.length === 0 ? (
-                    <option value="">暂无{promptCategory}提示词</option>
-                  ) : (
-                    <>
-                      <option value="">{agentName}</option>
-                      {activeTabPrompts.map((prompt) => <option key={prompt.id} value={prompt.id}>{prompt.name}</option>)}
-                    </>
-                  )}
+                  {activeTabPrompts.length === 0 ? <option value="">暂无{promptCategory}提示词</option> : activeTabPrompts.map((prompt) => <option key={prompt.id} value={prompt.id}>{prompt.name}</option>)}
                 </select>
               </label>
             </div>
           </div>
-          <div className="min-h-0 flex-1 p-4">
-            <div className="h-full rounded-xl border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-400">
-              可以在这里生成{activeTab}，并继续通过对话细化。
+          {activeIsBrainstorm ? (
+            <div className="min-h-0 flex-1 p-4">
+              <div className="editor-scrollbar h-full w-full overflow-y-auto rounded-xl border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-700">
+                {aiChatTurns.length === 0 ? (
+                  <div className="text-gray-400">这里显示脑洞生成过程。</div>
+                ) : (
+                  <div className="space-y-3">
+                    {aiChatTurns.map((turn, index) => (
+                      <div key={`${turn.role}-${index}`} className={`flex ${turn.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div
+                          className={`max-w-[82%] whitespace-pre-wrap break-words rounded-2xl px-4 py-3 ${
+                            turn.role === 'user'
+                              ? 'bg-brand text-white'
+                              : 'border border-gray-200 bg-gray-50 text-gray-800'
+                          }`}
+                        >
+                          {renderAiChatContent(turn.content)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="min-h-0 flex-1 p-4">
+              <div className="editor-scrollbar h-full w-full overflow-y-auto rounded-xl border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-700">
+                {aiChatTurns.length === 0 ? (
+                  <div className="text-gray-400">{`可以在这里生成${activeTab}，并继续通过对话细化。`}</div>
+                ) : (
+                  <div className="space-y-3">
+                    {aiChatTurns.map((turn, index) => (
+                      <div key={`${turn.role}-${index}`} className={`flex ${turn.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div
+                          className={`max-w-[82%] whitespace-pre-wrap break-words rounded-2xl px-4 py-3 ${
+                            turn.role === 'user'
+                              ? 'bg-brand text-white'
+                              : 'border border-gray-200 bg-gray-50 text-gray-800'
+                          }`}
+                        >
+                          {renderAiChatContent(turn.content)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           <div className="border-t border-gray-100 p-4">
             <div className="rounded-xl border border-gray-200 bg-white p-4">
+              {activeTab === SETTING_TAB && (
+                <div className="mb-3 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setIsBrainstormReaderOpen(true)}
+                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-100"
+                >
+                  读取脑洞
+                </button>
+                <div />
+                </div>
+              )}
+              {activeIsBrainstorm ? (
+                <div className="mb-3 grid grid-cols-[minmax(0,1fr)_92px_124px] items-center gap-2">
+                  <div className="min-w-0 truncate rounded-lg bg-gray-50 px-3 py-2 text-sm font-bold text-gray-700">
+                    当前脑洞：{currentBrainstormWordCount}字
+                  </div>
+                  <button
+                    onClick={() => saveBrainstormOutput(currentSelectedEntry?.id)}
+                    disabled={!currentSelectedEntry || !latestUsefulAiOutput}
+                    className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
+                  >
+                    保存脑洞
+                  </button>
+                  <button
+                    onClick={saveBrainstormOutputAsNew}
+                    disabled={!latestUsefulAiOutput}
+                    className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
+                  >
+                    保存为新脑洞
+                  </button>
+                </div>
+              ) : (
+                <div className="mb-3 grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      if (activeTab === SETTING_TAB) {
+                        smartImportSettings();
+                        return;
+                      }
+                      if (!currentSelectedEntry) {
+                        addEntryToTab(activeTab, `新建${activeTab}`);
+                        return;
+                      }
+                      updateEntry(currentSelectedEntry.id, { title: currentSelectedEntry.title || `新建${activeTab}` });
+                    }}
+                    className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-100"
+                  >
+                    {activeTab === SETTING_TAB ? '智能导入设定' : `保存为新${activeTab}`}
+                  </button>
+                  <div />
+                </div>
+              )}
               <textarea
                 value={aiInput}
                 onChange={(event) => setAiInput(event.target.value)}
+                onKeyDown={handleLibraryAiInputKeyDown}
                 placeholder="输入对话指令..."
-                className="h-12 w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand"
+                className="w-full resize-none rounded-lg border border-gray-200 px-3 py-[11px] text-sm leading-6 outline-none focus:border-brand"
+                style={{ height: aiInputHeight }}
               />
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <button className="rounded-lg bg-brand px-3 py-2 text-sm font-bold text-white">发送</button>
-                <button className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100">暂停</button>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => void sendLibraryAiMessage()}
+                  disabled={isLibraryAiLoading || !aiInput.trim()}
+                  className="rounded-lg bg-brand px-3 py-2 text-sm font-bold text-white disabled:bg-gray-300"
+                >
+                  {isLibraryAiLoading ? '生成中...' : '发送'}
+                </button>
+                <button
+                  onClick={stopLibraryAiMessage}
+                  disabled={!isLibraryAiLoading}
+                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
+                >
+                  暂停
+                </button>
+                <button
+                  onClick={clearLibraryAiDialog}
+                  disabled={!aiInput.trim() && !aiOutput.trim() && !isLibraryAiLoading}
+                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
+                >
+                  清空
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  if (!currentSelectedEntry) {
-                    addEntryToTab(activeTab, `新建${activeTab}`);
-                    return;
-                  }
-                  updateEntry(currentSelectedEntry.id, { title: currentSelectedEntry.title || `新建${activeTab}` });
-                }}
-                className="mt-3 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-100"
-              >
-                保存为新{activeTab}
-              </button>
             </div>
           </div>
           </aside>
+          </>
           )}
         </div>
       </div>
@@ -1548,7 +2388,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
         {deleteConfirmDialog}
         <div
           className="relative grid min-h-0 flex-1 overflow-hidden bg-white"
-          style={{ gridTemplateColumns: `${outlineSidebarWidth}px 8px minmax(0,1fr) ${SETTING_LIBRARY_RIGHT_WIDTH}px` }}
+          style={{ gridTemplateColumns: `${outlineSidebarWidth}px 8px minmax(0,1fr) 8px ${settingLibraryRightWidth}px` }}
         >
         <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
           <section className="flex min-h-0 flex-1 flex-col rounded-xl border border-gray-200 bg-white p-4">
@@ -1680,7 +2520,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
                 </div>
               </section>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid gap-3 ${isDetailOutlineTab ? 'grid-cols-1' : 'grid-cols-2'}`}>
                 {outlineChapters.map(({ volume, chapter }) => {
                   const entry = getChapterSummaryEntry(chapter.serialNumber);
                   const selected = effectiveSelectedOutlineChapterId === chapter.id;
@@ -1691,7 +2531,9 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
                         outlinePreviewRefs.current[chapter.id] = element;
                       }}
                       className={`rounded-xl border bg-gray-50/40 p-4 transition-colors ${
-                        selected ? 'border-brand bg-[#FFF7ED]' : 'border-gray-200'
+                        selected
+                          ? 'border-2 border-[#08AACE] bg-white shadow-sm'
+                          : 'border-gray-200'
                       }`}
                     >
                       <div className="mb-3 flex items-center justify-between gap-3">
@@ -1716,6 +2558,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
           </div>
         </main>
 
+        {rightResizeHandle}
         <aside className="min-w-0 flex min-h-0 flex-col bg-gray-50 p-4">
           <h3 className="text-base font-bold text-gray-900">{isDetailOutlineTab ? '细纲提示词' : '概要提示词'}</h3>
           <div className="mt-4 space-y-3">
@@ -1751,7 +2594,7 @@ export function WorkbenchLibraryPanel({ storageKey, tabs, emptyText, volumes = [
               ) : selectedOutlineChapter ? (
                 <>
                   <div className="font-bold text-gray-800">第{selectedOutlineChapter.chapter.serialNumber}章 {selectedChapterTitle}</div>
-                  <div className="mt-1 text-gray-700">{selectedOutlineChapter.chapter.wordCount}字</div>
+                  <div className="mt-1 text-gray-700">正文：{selectedOutlineChapter.chapter.wordCount}字</div>
                 </>
               ) : (
                 <span className="text-gray-400">请选择左侧章节。</span>

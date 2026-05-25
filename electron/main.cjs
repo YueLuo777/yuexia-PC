@@ -316,6 +316,7 @@ CREATE INDEX IF NOT EXISTS idx_call_records_created_at ON call_records(created_a
 `;
 
 let mainWindow = null;
+let titlebarDragSession = null;
 
 app.setName(APP_NAME);
 if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
@@ -347,6 +348,75 @@ function getRuntimeBinary(root, name) {
   return path.join(root, 'bin', executableName(name));
 }
 
+function hasNonAsciiPathSegment(value) {
+  return /[^\x00-\x7F]/.test(String(value || ''));
+}
+
+function getEmbeddedPostgresRuntimeSignature(root) {
+  const files = [
+    getRuntimeBinary(root, 'postgres'),
+    getRuntimeBinary(root, 'initdb'),
+    getRuntimeBinary(root, 'pg_ctl'),
+    getRuntimeBinary(root, 'psql'),
+    path.join(root, 'lib', 'vector.dll'),
+    path.join(root, 'share', 'extension', 'vector.control'),
+  ];
+  return files.map((filePath) => {
+    try {
+      const stat = fs.statSync(filePath);
+      return `${path.relative(root, filePath)}:${stat.size}:${Math.round(stat.mtimeMs)}`;
+    } catch {
+      return `${path.relative(root, filePath)}:missing`;
+    }
+  }).join('|');
+}
+
+function readJsonFile(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function stageEmbeddedPostgresRuntimeIfNeeded(sourceRoot) {
+  if (process.platform !== 'win32' || !hasNonAsciiPathSegment(sourceRoot)) return sourceRoot;
+
+  const userDataDir = app.getPath('userData');
+  const stageRoot = path.join(userDataDir, 'embedded-postgres-runtime');
+  const markerFile = path.join(stageRoot, '.yuexia-runtime-source.json');
+  const sourceSignature = getEmbeddedPostgresRuntimeSignature(sourceRoot);
+  const marker = readJsonFile(markerFile);
+  const stageReady = [
+    getRuntimeBinary(stageRoot, 'postgres'),
+    getRuntimeBinary(stageRoot, 'initdb'),
+    getRuntimeBinary(stageRoot, 'pg_ctl'),
+    getRuntimeBinary(stageRoot, 'psql'),
+    path.join(stageRoot, 'lib', 'vector.dll'),
+    path.join(stageRoot, 'share', 'extension', 'vector.control'),
+  ].every((filePath) => fs.existsSync(filePath));
+
+  if (stageReady && marker?.sourceRoot === sourceRoot && marker?.signature === sourceSignature) {
+    return stageRoot;
+  }
+
+  const resolvedStageRoot = path.resolve(stageRoot);
+  const resolvedUserDataDir = path.resolve(userDataDir);
+  if (!resolvedStageRoot.startsWith(resolvedUserDataDir + path.sep)) {
+    throw new Error(`Refusing to stage PostgreSQL runtime outside user data: ${stageRoot}`);
+  }
+
+  fs.rmSync(stageRoot, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(stageRoot), { recursive: true });
+  fs.cpSync(sourceRoot, stageRoot, { recursive: true });
+  fs.writeFileSync(markerFile, JSON.stringify({
+    sourceRoot,
+    signature: sourceSignature,
+    stagedAt: new Date().toISOString(),
+  }, null, 2), 'utf8');
+  return stageRoot;
+}
+
 function getEmbeddedPostgresCandidates() {
   const projectRoot = path.resolve(__dirname, '..');
   return [
@@ -361,13 +431,15 @@ function getEmbeddedPostgresCandidates() {
 function getEmbeddedPostgresRuntime() {
   const candidates = getEmbeddedPostgresCandidates();
   for (const root of candidates) {
+    const runtimeRoot = stageEmbeddedPostgresRuntimeIfNeeded(root);
     const runtime = {
-      root,
-      binDir: path.join(root, 'bin'),
-      postgres: getRuntimeBinary(root, 'postgres'),
-      initdb: getRuntimeBinary(root, 'initdb'),
-      pgCtl: getRuntimeBinary(root, 'pg_ctl'),
-      psql: getRuntimeBinary(root, 'psql'),
+      root: runtimeRoot,
+      sourceRoot: root,
+      binDir: path.join(runtimeRoot, 'bin'),
+      postgres: getRuntimeBinary(runtimeRoot, 'postgres'),
+      initdb: getRuntimeBinary(runtimeRoot, 'initdb'),
+      pgCtl: getRuntimeBinary(runtimeRoot, 'pg_ctl'),
+      psql: getRuntimeBinary(runtimeRoot, 'psql'),
     };
     const available = [runtime.postgres, runtime.initdb, runtime.pgCtl, runtime.psql].every((file) => fs.existsSync(file));
     if (available) return { ...runtime, available: true };
@@ -383,6 +455,8 @@ function getEmbeddedPostgresRuntime() {
 function getPostgresToolEnv(runtime) {
   return {
     ...process.env,
+    LANG: 'C',
+    LC_ALL: 'C',
     PATH: `${runtime.binDir}${path.delimiter}${process.env.PATH || ''}`,
   };
 }
@@ -739,7 +813,7 @@ async function initializeEmbeddedPostgres(dataDir = DEFAULT_DATABASE_DIR) {
     const init = runPostgresTool(
       runtime,
       runtime.initdb,
-      ['-D', postgresDataDir, '-U', 'postgres', '-A', 'trust', '-E', 'UTF8'],
+      ['-D', postgresDataDir, '-U', 'postgres', '-A', 'trust', '-E', 'UTF8', '--locale=C'],
       { timeout: 60000 },
     );
     if (!init.ok) {
@@ -1676,6 +1750,14 @@ function getCombinedWorkArea() {
   }, displays[0].workArea);
 }
 
+function getWorkAreaNearPoint(x, y) {
+  try {
+    return screen.getDisplayNearestPoint({ x: Math.round(x), y: Math.round(y) }).workArea;
+  } catch {
+    return screen.getPrimaryDisplay().workArea;
+  }
+}
+
 function clampWindowDragX(x, width) {
   const workArea = getCombinedWorkArea();
   const visibleWidth = Math.min(120, Math.max(40, Math.round(width * 0.15)));
@@ -1703,6 +1785,7 @@ function normalizeTitlebarDragInput(input) {
     windowWidth: Number(input.windowWidth),
     dragOffsetX: Number(input.dragOffsetX),
     dragOffsetY: Number(input.dragOffsetY),
+    dragSessionId: typeof input.dragSessionId === 'string' ? input.dragSessionId : '',
   };
 }
 
@@ -1713,28 +1796,53 @@ function beginTitlebarDrag(input) {
 
   const wasMaximized = mainWindow.isMaximized();
   const bounds = mainWindow.getBounds();
+  const dragSessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   if (!wasMaximized) {
+    titlebarDragSession = {
+      id: dragSessionId,
+      width: bounds.width,
+      height: bounds.height,
+      startedAt: Date.now(),
+    };
     return {
+      dragSessionId,
       isMaximized: false,
       dragOffsetX: drag.screenX - bounds.x,
       dragOffsetY: drag.screenY - bounds.y,
     };
   }
 
+  const workArea = getWorkAreaNearPoint(drag.screenX, drag.screenY);
+  const normalBounds = mainWindow.getNormalBounds();
+  const restoreWidth = Math.max(
+    MIN_WINDOW_WIDTH,
+    Math.min(normalBounds.width || DEFAULT_WINDOW_BOUNDS.width, Math.round(workArea.width * 0.85)),
+  );
+  const restoreHeight = Math.max(
+    MIN_WINDOW_HEIGHT,
+    Math.min(normalBounds.height || DEFAULT_WINDOW_BOUNDS.height, Math.round(workArea.height * 0.85)),
+  );
   const widthRatio =
     Number.isFinite(drag.clientX) && Number.isFinite(drag.windowWidth) && drag.windowWidth > 0
       ? clamp(drag.clientX / drag.windowWidth, 0.08, 0.92)
       : 0.5;
   const titlebarOffsetY = Number.isFinite(drag.clientY) ? clamp(drag.clientY, 0, 56) : 16;
-  const dragOffsetX = Math.round(bounds.width * widthRatio);
+  const dragOffsetX = Math.round(restoreWidth * widthRatio);
   const dragOffsetY = Math.round(titlebarOffsetY);
-  const x = clampWindowDragX(drag.screenX - dragOffsetX, bounds.width);
-  const y = clampWindowDragY(drag.screenY - dragOffsetY, bounds.height);
+  const x = clampWindowDragX(drag.screenX - dragOffsetX, restoreWidth);
+  const y = clampWindowDragY(drag.screenY - dragOffsetY, restoreHeight);
 
   mainWindow.unmaximize();
-  mainWindow.setBounds({ x, y, width: bounds.width, height: bounds.height }, false);
+  mainWindow.setBounds({ x, y, width: restoreWidth, height: restoreHeight }, false);
+  titlebarDragSession = {
+    id: dragSessionId,
+    width: restoreWidth,
+    height: restoreHeight,
+    startedAt: Date.now(),
+  };
   return {
+    dragSessionId,
     isMaximized: false,
     dragOffsetX: drag.screenX - x,
     dragOffsetY: drag.screenY - y,
@@ -1747,9 +1855,24 @@ function moveTitlebarDrag(input) {
   if (!drag || !Number.isFinite(drag.dragOffsetX) || !Number.isFinite(drag.dragOffsetY)) return false;
 
   const bounds = mainWindow.getBounds();
-  const x = clampWindowDragX(Math.round(drag.screenX - drag.dragOffsetX), bounds.width);
-  const y = clampWindowDragY(Math.round(drag.screenY - drag.dragOffsetY), bounds.height);
-  mainWindow.setPosition(x, y, false);
+  const activeSession = titlebarDragSession
+    && (!drag.dragSessionId || titlebarDragSession.id === drag.dragSessionId)
+    && Date.now() - titlebarDragSession.startedAt < 30000
+      ? titlebarDragSession
+      : null;
+  const width = activeSession?.width ?? bounds.width;
+  const height = activeSession?.height ?? bounds.height;
+  const x = clampWindowDragX(Math.round(drag.screenX - drag.dragOffsetX), width);
+  const y = clampWindowDragY(Math.round(drag.screenY - drag.dragOffsetY), height);
+  mainWindow.setBounds({ x, y, width, height }, false);
+  return true;
+}
+
+function endTitlebarDrag(input) {
+  const drag = normalizeTitlebarDragInput(input);
+  if (!drag?.dragSessionId || titlebarDragSession?.id === drag.dragSessionId) {
+    titlebarDragSession = null;
+  }
   return true;
 }
 
@@ -1893,6 +2016,7 @@ ipcMain.handle('window:reload', () => {
 });
 ipcMain.handle('window:begin-titlebar-drag', (_event, input) => beginTitlebarDrag(input));
 ipcMain.handle('window:move-titlebar-drag', (_event, input) => moveTitlebarDrag(input));
+ipcMain.handle('window:end-titlebar-drag', (_event, input) => endTitlebarDrag(input));
 
 ipcMain.handle('app-icon:read', async () => readCurrentAppIcon());
 
@@ -1994,11 +2118,15 @@ ipcMain.handle('model:request', async (_event, input) => {
     return { ok: false, status: 400, text: request.message };
   }
 
+  const timeoutMs = Number.isFinite(Number(input?.timeoutMs)) ? Math.max(1000, Number(input.timeoutMs)) : 60000;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(request.endpoint, {
       method: 'POST',
       headers: request.headers,
       body: request.body,
+      signal: controller.signal,
     });
     return {
       ok: response.ok,
@@ -2008,9 +2136,13 @@ ipcMain.handle('model:request', async (_event, input) => {
   } catch (error) {
     return {
       ok: false,
-      status: 0,
-      text: error instanceof Error ? error.message : 'Model request failed.',
+      status: error instanceof Error && error.name === 'AbortError' ? 408 : 0,
+      text: error instanceof Error && error.name === 'AbortError'
+        ? `Model request timed out after ${timeoutMs}ms.`
+        : error instanceof Error ? error.message : 'Model request failed.',
     };
+  } finally {
+    clearTimeout(timeout);
   }
 });
 
