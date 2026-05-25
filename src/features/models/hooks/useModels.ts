@@ -64,7 +64,7 @@ function syncEnvModel(models: ModelItem[]) {
             apiKey: model.apiKey || envModel.apiKey,
             model: model.model || envModel.model,
             provider: model.provider ?? envModel.provider,
-            enabled: model.enabled ?? envModel.enabled,
+            enabled: true,
             locked: model.locked ?? envModel.locked,
             connectionStatus: model.connectionStatus ?? envModel.connectionStatus,
             temperature: normalizeTemperature(model.temperature ?? envModel.temperature),
@@ -93,6 +93,7 @@ function readModels() {
           provider: 'openai-compatible' as const,
           ...textModel,
           instanceId: model.instanceId ?? model.id,
+          enabled: true,
           temperature: normalizeTemperature(textModel.temperature),
         };
       });
@@ -176,6 +177,7 @@ export function useModels() {
       return {
         ...model,
         ...safeUpdates,
+        enabled: true,
         temperature: safeUpdates.temperature === undefined ? model.temperature : normalizeTemperature(safeUpdates.temperature),
       };
     }));

@@ -1,7 +1,7 @@
 import { BookOpen, Lock, Plus, RefreshCw, Search, Sparkles, Trash2, Unlock, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { usePrompts } from '@/features/prompts/hooks/usePrompts';
+import { isDefaultPromptCategory, usePrompts } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
@@ -352,7 +352,7 @@ export function PromptsPage() {
               }`}
             >
               {category}
-              {categoryDeleteMode && category !== '未分类' && (
+              {categoryDeleteMode && !isDefaultPromptCategory(category) && (
                 <span
                   onClick={(event) => {
                     event.stopPropagation();
@@ -371,7 +371,7 @@ export function PromptsPage() {
               value={newCategory}
               onChange={(event) => setNewCategory(event.target.value)}
               placeholder="新增分类"
-              className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-brand"
+              className="w-[120px] rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-brand"
             />
             <button
               onClick={() => {
@@ -384,10 +384,10 @@ export function PromptsPage() {
             </button>
             <button
               onClick={() => setCategoryDeleteMode((prev) => !prev)}
-              className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+              className={`rounded-full px-3 py-1.5 text-xs font-medium text-white transition-colors ${
                 categoryDeleteMode
-                  ? 'border-red-200 bg-red-50 text-red-500'
-                  : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : 'bg-red-500 hover:bg-red-600'
               }`}
             >
               {categoryDeleteMode ? '退出删除' : '删除分类'}

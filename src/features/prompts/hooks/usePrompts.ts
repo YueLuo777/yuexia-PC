@@ -10,6 +10,10 @@ const PROMPT_CATEGORIES_KEY = 'xinyuexia_prompt_categories_v1';
 const UNCATEGORIZED = '未分类';
 const DEFAULT_CATEGORIES = ['脑洞', '大纲', '细纲', '正文', '审核', '润色', '更新', '概要', '提炼', UNCATEGORIZED];
 
+export function isDefaultPromptCategory(category: string) {
+  return DEFAULT_CATEGORIES.includes(category);
+}
+
 const PROMPTS_UPDATED_EVENT = APP_EVENTS.promptsUpdated;
 const promptsStorage = createJsonStorage<PromptItem[]>(PROMPTS_KEY, [], {
   normalize: (value) => Array.isArray(value) ? (value as PromptItem[]) : [],
@@ -166,7 +170,7 @@ export function usePrompts() {
   };
 
   const removeCategory = (category: string) => {
-    if (category === UNCATEGORIZED) return;
+    if (isDefaultPromptCategory(category)) return;
     persistCategories(categories.filter((item) => item !== category));
     persistPrompts(prompts.map((prompt) => (
       prompt.category === category ? { ...prompt, category: UNCATEGORIZED, updatedAt: nowText() } : prompt

@@ -1,8 +1,15 @@
 const { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, screen } = require('electron');
-const { spawnSync } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
+const net = require('node:net');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
+let PgClient = null;
+try {
+  ({ Client: PgClient } = require('pg'));
+} catch {
+  PgClient = null;
+}
 const {
   normalizeCollectionName,
   normalizeItemsArray,
@@ -27,6 +34,8 @@ const DEFAULT_WINDOW_BOUNDS = {
 const MIN_WINDOW_WIDTH = 1100;
 const MIN_WINDOW_HEIGHT = 680;
 const DEFAULT_DATABASE_DIR = path.join(path.resolve(__dirname, '..'), 'shujuku');
+const DEFAULT_EMBEDDED_POSTGRES_PORT = 55432;
+const EMBEDDED_POSTGRES_DIR_NAME = 'postgres';
 const DATABASE_SETTINGS_FILE_NAME = 'xinyuexia-db-config.json';
 const DATABASE_SCHEMA_FILE_NAME = 'xinyuexia-schema.sql';
 const DATABASE_DATA_DIR_NAME = 'data';
@@ -34,12 +43,16 @@ const DATABASE_COLLECTION_FILES = {
   plotLibrary: 'plot-library.json',
   plotRecycle: 'plot-library-recycle.json',
   materials: 'materials.json',
+  moonfallSettings: 'moonfall-settings.json',
 };
 const CUSTOM_APP_ICON_FILE_NAME = 'custom-app-icon.png';
 const CUSTOM_APP_ICON_SOURCE_FILE_NAME = 'custom-app-icon-source.json';
+const DEFAULT_APP_ICON_FILE_NAME = 'default-app-icon.png';
 const PROJECT_APP_ICON_DIR = path.join(path.resolve(__dirname, '..'), 'ruanjianfengmian');
 const PROJECT_APP_ICON_FILE_NAMES = ['fengmian.png', 'fengmian.jpg', 'fengmian.jpeg', 'fengmian.webp', 'fengmian.ico'];
 const PROJECT_APP_ICON_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.ico']);
+let embeddedPostgresProcess = null;
+let embeddedPostgresSettingsDir = DEFAULT_DATABASE_DIR;
 const DATABASE_SCHEMA_SQL = `CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS app_settings (
@@ -114,6 +127,127 @@ CREATE TABLE IF NOT EXISTS materials (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS projects (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'local-user',
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS sources (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL DEFAULT 'local-user',
+  title TEXT NOT NULL DEFAULT '',
+  source_type TEXT NOT NULL DEFAULT 'manual',
+  author TEXT NOT NULL DEFAULT '',
+  description TEXT NOT NULL DEFAULT '',
+  original_filename TEXT,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS source_chunks (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  source_id TEXT NOT NULL REFERENCES sources(id) ON DELETE CASCADE,
+  chunk_index INTEGER NOT NULL DEFAULT 0,
+  chapter_title TEXT NOT NULL DEFAULT '',
+  content TEXT NOT NULL DEFAULT '',
+  token_count INTEGER NOT NULL DEFAULT 0,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS setting_items (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL DEFAULT 'local-user',
+  source_id TEXT REFERENCES sources(id) ON DELETE SET NULL,
+  source_chunk_id TEXT REFERENCES source_chunks(id) ON DELETE SET NULL,
+  title TEXT NOT NULL DEFAULT '',
+  canonical_name TEXT NOT NULL DEFAULT '',
+  aliases TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  category TEXT NOT NULL DEFAULT '未分类',
+  subcategory TEXT NOT NULL DEFAULT '',
+  tags TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  keywords TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  summary TEXT NOT NULL DEFAULT '',
+  original_text TEXT NOT NULL DEFAULT '',
+  organized_text TEXT NOT NULL DEFAULT '',
+  evidence_text TEXT NOT NULL DEFAULT '',
+  evidence_location TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT '待确认',
+  confidence NUMERIC(4, 3) NOT NULL DEFAULT 0.65,
+  allow_rag BOOLEAN NOT NULL DEFAULT false,
+  is_verified BOOLEAN NOT NULL DEFAULT false,
+  is_favorite BOOLEAN NOT NULL DEFAULT false,
+  is_locked BOOLEAN NOT NULL DEFAULT false,
+  importance TEXT NOT NULL DEFAULT '普通',
+  rag_weight NUMERIC(6, 3) NOT NULL DEFAULT 1,
+  worldline TEXT NOT NULL DEFAULT '主线',
+  version TEXT NOT NULL DEFAULT '',
+  related_items TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS setting_embeddings (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  setting_item_id TEXT NOT NULL REFERENCES setting_items(id) ON DELETE CASCADE,
+  embedding_model TEXT NOT NULL DEFAULT '',
+  embedding vector(1536),
+  embedding_text TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS setting_relations (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  from_setting_id TEXT NOT NULL REFERENCES setting_items(id) ON DELETE CASCADE,
+  to_setting_id TEXT NOT NULL REFERENCES setting_items(id) ON DELETE CASCADE,
+  relation_type TEXT NOT NULL DEFAULT 'related_to',
+  description TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS retrieval_logs (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL DEFAULT 'local-user',
+  query TEXT NOT NULL DEFAULT '',
+  retrieved_setting_ids TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  retrieved_chunk_ids TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  purpose TEXT NOT NULL DEFAULT 'writing',
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS setting_chapter_bindings (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  work_id TEXT REFERENCES works(id) ON DELETE CASCADE,
+  chapter_id TEXT REFERENCES chapters(id) ON DELETE CASCADE,
+  setting_item_id TEXT NOT NULL REFERENCES setting_items(id) ON DELETE CASCADE,
+  purpose TEXT NOT NULL DEFAULT 'writing',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS setting_change_logs (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  setting_item_id TEXT NOT NULL REFERENCES setting_items(id) ON DELETE CASCADE,
+  action TEXT NOT NULL DEFAULT '',
+  detail TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS covers (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL DEFAULT '',
@@ -168,6 +302,16 @@ CREATE INDEX IF NOT EXISTS idx_chapters_work_serial ON chapters(work_id, serial_
 CREATE INDEX IF NOT EXISTS idx_plot_points_tags ON plot_points USING GIN(tags);
 CREATE INDEX IF NOT EXISTS idx_plot_points_not_deleted ON plot_points(created_at) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_materials_collection ON materials(collection);
+CREATE INDEX IF NOT EXISTS idx_sources_project ON sources(project_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_source_chunks_source ON source_chunks(source_id, chunk_index);
+CREATE INDEX IF NOT EXISTS idx_setting_items_project_category ON setting_items(project_id, category);
+CREATE INDEX IF NOT EXISTS idx_setting_items_project_status ON setting_items(project_id, status);
+CREATE INDEX IF NOT EXISTS idx_setting_items_tags ON setting_items USING GIN(tags);
+CREATE INDEX IF NOT EXISTS idx_setting_items_keywords ON setting_items USING GIN(keywords);
+CREATE INDEX IF NOT EXISTS idx_setting_items_rag ON setting_items(project_id, allow_rag, is_verified, importance);
+CREATE INDEX IF NOT EXISTS idx_setting_embeddings_project ON setting_embeddings(project_id);
+CREATE INDEX IF NOT EXISTS idx_setting_relations_from ON setting_relations(project_id, from_setting_id);
+CREATE INDEX IF NOT EXISTS idx_retrieval_logs_project ON retrieval_logs(project_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_call_records_created_at ON call_records(created_at DESC);
 `;
 
@@ -193,6 +337,108 @@ if (!gotLock) app.quit();
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function executableName(name) {
+  return process.platform === 'win32' ? `${name}.exe` : name;
+}
+
+function getRuntimeBinary(root, name) {
+  return path.join(root, 'bin', executableName(name));
+}
+
+function getEmbeddedPostgresCandidates() {
+  const projectRoot = path.resolve(__dirname, '..');
+  return [
+    process.env.XINYUEXIA_POSTGRES_DIR,
+    path.join(projectRoot, 'runtime', EMBEDDED_POSTGRES_DIR_NAME),
+    path.join(projectRoot, EMBEDDED_POSTGRES_DIR_NAME),
+    app.isPackaged ? path.join(process.resourcesPath, EMBEDDED_POSTGRES_DIR_NAME) : null,
+    app.isPackaged ? path.join(path.dirname(app.getPath('exe')), EMBEDDED_POSTGRES_DIR_NAME) : null,
+  ].filter((item) => typeof item === 'string' && item.trim());
+}
+
+function getEmbeddedPostgresRuntime() {
+  const candidates = getEmbeddedPostgresCandidates();
+  for (const root of candidates) {
+    const runtime = {
+      root,
+      binDir: path.join(root, 'bin'),
+      postgres: getRuntimeBinary(root, 'postgres'),
+      initdb: getRuntimeBinary(root, 'initdb'),
+      pgCtl: getRuntimeBinary(root, 'pg_ctl'),
+      psql: getRuntimeBinary(root, 'psql'),
+    };
+    const available = [runtime.postgres, runtime.initdb, runtime.pgCtl, runtime.psql].every((file) => fs.existsSync(file));
+    if (available) return { ...runtime, available: true };
+  }
+  return {
+    root: candidates[0] || '',
+    binDir: candidates[0] ? path.join(candidates[0], 'bin') : '',
+    available: false,
+    missing: ['postgres', 'initdb', 'pg_ctl', 'psql'].map(executableName),
+  };
+}
+
+function getPostgresToolEnv(runtime) {
+  return {
+    ...process.env,
+    PATH: `${runtime.binDir}${path.delimiter}${process.env.PATH || ''}`,
+  };
+}
+
+function runPostgresTool(runtime, toolPath, args, options = {}) {
+  const result = spawnSync(toolPath, args, {
+    cwd: runtime.root,
+    encoding: 'utf8',
+    env: getPostgresToolEnv(runtime),
+    windowsHide: true,
+    timeout: options.timeout ?? 15000,
+  });
+  return {
+    ok: result.status === 0,
+    status: result.status,
+    stdout: result.stdout || '',
+    stderr: result.stderr || '',
+    message: `${result.stdout || ''}${result.stderr || ''}`.trim(),
+  };
+}
+
+function getPostgresDataDir(settings) {
+  return settings.postgresDataDir || path.join(settings.dataDir, 'postgres-data');
+}
+
+function isPostgresDataDirInitialized(dataDir) {
+  return fs.existsSync(path.join(dataDir, 'PG_VERSION'));
+}
+
+function isPortAvailable(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once('error', () => resolve(false));
+    server.once('listening', () => {
+      server.close(() => resolve(true));
+    });
+    server.listen(port, '127.0.0.1');
+  });
+}
+
+async function findEmbeddedPostgresPort(preferredPort) {
+  const preferred = Number(preferredPort);
+  const candidates = [];
+  if (Number.isFinite(preferred) && preferred > 0 && preferred !== 5432) candidates.push(preferred);
+  for (let port = DEFAULT_EMBEDDED_POSTGRES_PORT; port < DEFAULT_EMBEDDED_POSTGRES_PORT + 80; port += 1) {
+    if (!candidates.includes(port)) candidates.push(port);
+  }
+  if (Number.isFinite(preferred) && preferred > 0 && !candidates.includes(preferred)) candidates.push(preferred);
+  for (const port of candidates) {
+    if (await isPortAvailable(port)) return port;
+  }
+  throw new Error('No available local port for embedded PostgreSQL.');
+}
+
+function quotePgIdentifier(value) {
+  return `"${String(value).replace(/"/g, '""')}"`;
 }
 
 function makeDatabaseSettings(input = {}) {
@@ -257,7 +503,7 @@ function getDatabaseDirectoryStatus(dataDir = DEFAULT_DATABASE_DIR) {
     exists: fs.existsSync(dataDir),
     settingsFileExists: fs.existsSync(getDatabaseSettingsFile(dataDir)),
     schemaFileExists: fs.existsSync(getDatabaseSchemaFile(dataDir)),
-    psqlAvailable: isPsqlAvailable(),
+    psqlAvailable: isPsqlAvailable() || getEmbeddedPostgresRuntime().available,
     subdirectories: {
       postgresData: fs.existsSync(postgresDataDir),
       backups: fs.existsSync(backupsDir),
@@ -340,6 +586,783 @@ function writeDatabaseCollection(collection, items, dataDir = DEFAULT_DATABASE_D
   }
 }
 
+function getPostgresConnectionConfig(settings) {
+  const connectionString = process.env.XINYUEXIA_DATABASE_URL || process.env.DATABASE_URL;
+  if (connectionString) {
+    return {
+      connectionString,
+      connectionTimeoutMillis: 2500,
+    };
+  }
+  return {
+    host: settings.host,
+    port: settings.port,
+    database: settings.databaseName,
+    user: process.env.PGUSER || process.env.POSTGRES_USER || 'postgres',
+    password: process.env.PGPASSWORD || process.env.POSTGRES_PASSWORD || undefined,
+    connectionTimeoutMillis: 2500,
+  };
+}
+
+function hasExternalDatabaseUrl() {
+  return Boolean(process.env.XINYUEXIA_DATABASE_URL || process.env.DATABASE_URL);
+}
+
+function getLocalPostgresConnectionConfig(settings, databaseName = settings.databaseName) {
+  return {
+    host: settings.host || '127.0.0.1',
+    port: settings.port,
+    database: databaseName,
+    user: process.env.PGUSER || process.env.POSTGRES_USER || 'postgres',
+    password: process.env.PGPASSWORD || process.env.POSTGRES_PASSWORD || undefined,
+    connectionTimeoutMillis: 1000,
+  };
+}
+
+async function waitForPostgresReady(settings, databaseName = 'postgres', timeoutMs = 15000) {
+  if (!PgClient) return { ok: false, message: 'PostgreSQL driver is not installed.' };
+  const startedAt = Date.now();
+  let lastError = null;
+  while (Date.now() - startedAt < timeoutMs) {
+    const client = new PgClient(getLocalPostgresConnectionConfig(settings, databaseName));
+    try {
+      await client.connect();
+      await client.query('SELECT 1');
+      await client.end();
+      return { ok: true };
+    } catch (error) {
+      lastError = error;
+      try {
+        await client.end();
+      } catch {
+        // Ignore close errors while waiting for startup.
+      }
+      await wait(400);
+    }
+  }
+  return {
+    ok: false,
+    message: lastError instanceof Error ? lastError.message : 'PostgreSQL did not become ready in time.',
+  };
+}
+
+async function ensureEmbeddedPostgresDatabase(settings) {
+  if (!PgClient) return { ok: false, message: 'PostgreSQL driver is not installed.' };
+  const databaseName = settings.databaseName || 'yuexia';
+  const adminClient = new PgClient(getLocalPostgresConnectionConfig(settings, 'postgres'));
+  try {
+    await adminClient.connect();
+    const existing = await adminClient.query('SELECT 1 FROM pg_database WHERE datname = $1', [databaseName]);
+    if (existing.rowCount === 0) {
+      await adminClient.query(`CREATE DATABASE ${quotePgIdentifier(databaseName)}`);
+    }
+  } finally {
+    try {
+      await adminClient.end();
+    } catch {
+      // Ignore close errors.
+    }
+  }
+
+  const appClient = new PgClient(getLocalPostgresConnectionConfig(settings, databaseName));
+  try {
+    await appClient.connect();
+    await appClient.query(DATABASE_SCHEMA_SQL);
+    return { ok: true, message: 'Embedded PostgreSQL schema is ready.' };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : 'Failed to initialize embedded PostgreSQL schema.',
+    };
+  } finally {
+    try {
+      await appClient.end();
+    } catch {
+      // Ignore close errors.
+    }
+  }
+}
+
+function getEmbeddedPostgresStatus(dataDir = DEFAULT_DATABASE_DIR) {
+  const settings = readDatabaseSettingsFromDisk(dataDir);
+  const runtime = getEmbeddedPostgresRuntime();
+  const postgresDataDir = getPostgresDataDir(settings);
+  const initialized = isPostgresDataDirInitialized(postgresDataDir);
+  let running = false;
+  let statusMessage = '';
+  if (runtime.available && initialized) {
+    const status = runPostgresTool(runtime, runtime.pgCtl, ['status', '-D', postgresDataDir], { timeout: 3500 });
+    running = status.ok;
+    statusMessage = status.message;
+  }
+  return {
+    ok: true,
+    runtimeAvailable: runtime.available,
+    runtimePath: runtime.root,
+    binDir: runtime.binDir,
+    missing: runtime.missing || [],
+    dataDir: postgresDataDir,
+    initialized,
+    running,
+    managedByApp: Boolean(embeddedPostgresProcess && !embeddedPostgresProcess.killed),
+    host: settings.host,
+    port: settings.port,
+    databaseName: settings.databaseName,
+    message: runtime.available
+      ? (statusMessage || 'Embedded PostgreSQL runtime is available.')
+      : `Place portable PostgreSQL files in ${runtime.root || 'runtime/postgres'}.`,
+  };
+}
+
+async function initializeEmbeddedPostgres(dataDir = DEFAULT_DATABASE_DIR) {
+  const runtime = getEmbeddedPostgresRuntime();
+  let settings = readDatabaseSettingsFromDisk(dataDir);
+  settings = writeDatabaseFiles({
+    ...settings,
+    host: '127.0.0.1',
+    port: settings.port === 5432 ? DEFAULT_EMBEDDED_POSTGRES_PORT : settings.port,
+  });
+
+  if (!runtime.available) {
+    return {
+      ok: false,
+      settings,
+      status: getDatabaseDirectoryStatus(settings.dataDir),
+      embedded: getEmbeddedPostgresStatus(settings.dataDir),
+      message: `未找到内置 PostgreSQL。请把便携版 PostgreSQL 放到 ${runtime.root || 'runtime/postgres'}。`,
+    };
+  }
+
+  const postgresDataDir = getPostgresDataDir(settings);
+  if (!isPostgresDataDirInitialized(postgresDataDir)) {
+    fs.mkdirSync(postgresDataDir, { recursive: true });
+    const init = runPostgresTool(
+      runtime,
+      runtime.initdb,
+      ['-D', postgresDataDir, '-U', 'postgres', '-A', 'trust', '-E', 'UTF8'],
+      { timeout: 60000 },
+    );
+    if (!init.ok) {
+      return {
+        ok: false,
+        settings,
+        status: getDatabaseDirectoryStatus(settings.dataDir),
+        embedded: getEmbeddedPostgresStatus(settings.dataDir),
+        message: init.message || '初始化内置 PostgreSQL 数据目录失败。',
+      };
+    }
+  }
+
+  return {
+    ok: true,
+    settings,
+    status: getDatabaseDirectoryStatus(settings.dataDir),
+    embedded: getEmbeddedPostgresStatus(settings.dataDir),
+    message: '内置 PostgreSQL 数据目录已准备。',
+  };
+}
+
+async function startEmbeddedPostgres(dataDir = DEFAULT_DATABASE_DIR) {
+  if (hasExternalDatabaseUrl()) {
+    const settings = readDatabaseSettingsFromDisk(dataDir);
+    return {
+      ok: false,
+      settings,
+      status: getDatabaseDirectoryStatus(settings.dataDir),
+      embedded: getEmbeddedPostgresStatus(settings.dataDir),
+      message: '当前配置了外部 DATABASE_URL，已跳过内置 PostgreSQL 启动。',
+    };
+  }
+
+  const init = await initializeEmbeddedPostgres(dataDir);
+  if (!init.ok) return init;
+  const runtime = getEmbeddedPostgresRuntime();
+  let settings = init.settings;
+  embeddedPostgresSettingsDir = settings.dataDir;
+  const postgresDataDir = getPostgresDataDir(settings);
+
+  const currentStatus = getEmbeddedPostgresStatus(settings.dataDir);
+  if (!currentStatus.running) {
+    const port = await findEmbeddedPostgresPort(settings.port);
+    settings = writeDatabaseFiles({ ...settings, host: '127.0.0.1', port });
+
+    embeddedPostgresProcess = spawn(
+      runtime.postgres,
+      ['-D', postgresDataDir, '-h', '127.0.0.1', '-p', String(port)],
+      {
+        cwd: runtime.root,
+        env: getPostgresToolEnv(runtime),
+        stdio: 'ignore',
+        windowsHide: true,
+      },
+    );
+    embeddedPostgresProcess.once('exit', () => {
+      embeddedPostgresProcess = null;
+    });
+
+    const ready = await waitForPostgresReady(settings, 'postgres', 18000);
+    if (!ready.ok) {
+      if (embeddedPostgresProcess && !embeddedPostgresProcess.killed) embeddedPostgresProcess.kill();
+      return {
+        ok: false,
+        settings,
+        status: getDatabaseDirectoryStatus(settings.dataDir),
+        embedded: getEmbeddedPostgresStatus(settings.dataDir),
+        message: ready.message || '内置 PostgreSQL 启动超时。',
+      };
+    }
+  }
+
+  const schema = await ensureEmbeddedPostgresDatabase(settings);
+  return {
+    ok: schema.ok,
+    settings,
+    status: getDatabaseDirectoryStatus(settings.dataDir),
+    embedded: getEmbeddedPostgresStatus(settings.dataDir),
+    message: schema.ok ? '内置 PostgreSQL 已启动，数据库结构已准备。' : schema.message,
+  };
+}
+
+async function stopEmbeddedPostgres(dataDir = DEFAULT_DATABASE_DIR) {
+  const settings = readDatabaseSettingsFromDisk(dataDir);
+  const runtime = getEmbeddedPostgresRuntime();
+  const postgresDataDir = getPostgresDataDir(settings);
+  let ok = true;
+  let message = '内置 PostgreSQL 已停止。';
+
+  if (runtime.available && isPostgresDataDirInitialized(postgresDataDir)) {
+    const stopped = runPostgresTool(runtime, runtime.pgCtl, ['stop', '-D', postgresDataDir, '-m', 'fast', '-w'], { timeout: 20000 });
+    ok = stopped.ok || stopped.message.includes('no server running');
+    message = ok ? message : (stopped.message || '停止内置 PostgreSQL 失败。');
+  }
+  if (embeddedPostgresProcess && !embeddedPostgresProcess.killed) {
+    embeddedPostgresProcess.kill();
+    embeddedPostgresProcess = null;
+  }
+
+  return {
+    ok,
+    settings,
+    status: getDatabaseDirectoryStatus(settings.dataDir),
+    embedded: getEmbeddedPostgresStatus(settings.dataDir),
+    message,
+  };
+}
+
+async function withPostgresClient(dataDir, action) {
+  if (!PgClient) {
+    return { ok: false, exists: false, data: [], message: 'PostgreSQL driver is not installed.' };
+  }
+  let settings = readDatabaseSettingsFromDisk(dataDir);
+  let client = new PgClient(getPostgresConnectionConfig(settings));
+  try {
+    await client.connect();
+    await client.query(DATABASE_SCHEMA_SQL);
+    return await action(client, settings);
+  } catch (error) {
+    if (!hasExternalDatabaseUrl() && getEmbeddedPostgresRuntime().available) {
+      try {
+        await client.end();
+      } catch {
+        // Ignore close errors before retrying with embedded PostgreSQL.
+      }
+      const started = await startEmbeddedPostgres(dataDir);
+      if (started.ok) {
+        settings = readDatabaseSettingsFromDisk(dataDir);
+        client = new PgClient(getPostgresConnectionConfig(settings));
+        try {
+          await client.connect();
+          await client.query(DATABASE_SCHEMA_SQL);
+          return await action(client, settings);
+        } catch (retryError) {
+          return {
+            ok: false,
+            exists: false,
+            data: [],
+            message: retryError instanceof Error ? retryError.message : 'PostgreSQL operation failed after embedded startup.',
+          };
+        }
+      }
+    }
+    return {
+      ok: false,
+      exists: false,
+      data: [],
+      message: error instanceof Error ? error.message : 'PostgreSQL operation failed.',
+    };
+  } finally {
+    try {
+      await client.end();
+    } catch {
+      // Ignore close errors after a failed connection.
+    }
+  }
+}
+
+function textArray(value) {
+  return Array.isArray(value) ? value.map((item) => String(item)).filter(Boolean) : [];
+}
+
+function plainObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function dateValue(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date() : date;
+}
+
+function parsePostgresArray(value) {
+  if (Array.isArray(value)) return value.map(String);
+  if (typeof value !== 'string') return [];
+  return value
+    .replace(/^\{|\}$/g, '')
+    .split(',')
+    .map((item) => item.replace(/^"|"$/g, '').trim())
+    .filter(Boolean);
+}
+
+function parsePostgresVector(value) {
+  if (Array.isArray(value)) return value.map(Number).filter(Number.isFinite);
+  if (typeof value !== 'string') return [];
+  return value
+    .replace(/^\[|\]$/g, '')
+    .split(',')
+    .map((item) => Number(item.trim()))
+    .filter(Number.isFinite);
+}
+
+async function writeMoonfallStateToPostgres(stateInput, dataDir = DEFAULT_DATABASE_DIR) {
+  const state = stateInput && typeof stateInput === 'object' ? stateInput : null;
+  if (!state || !Array.isArray(state.projects)) {
+    return { ok: false, exists: false, data: [], message: 'Invalid moonfall state.' };
+  }
+
+  return withPostgresClient(dataDir, async (client) => {
+    await client.query('BEGIN');
+    try {
+      for (const project of state.projects ?? []) {
+        await client.query(
+          `INSERT INTO projects (id, user_id, name, description, metadata, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (id) DO UPDATE SET
+             user_id = EXCLUDED.user_id,
+             name = EXCLUDED.name,
+             description = EXCLUDED.description,
+             metadata = EXCLUDED.metadata,
+             updated_at = EXCLUDED.updated_at
+           WHERE projects.updated_at <= EXCLUDED.updated_at`,
+          [
+            String(project.id),
+            String(project.userId || 'local-user'),
+            String(project.name || ''),
+            String(project.description || ''),
+            plainObject(project.metadata),
+            dateValue(project.createdAt),
+            dateValue(project.updatedAt),
+          ],
+        );
+      }
+
+      for (const source of state.sources ?? []) {
+        await client.query(
+          `INSERT INTO sources (id, project_id, user_id, title, source_type, author, description, original_filename, metadata, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           ON CONFLICT (id) DO UPDATE SET
+             project_id = EXCLUDED.project_id,
+             user_id = EXCLUDED.user_id,
+             title = EXCLUDED.title,
+             source_type = EXCLUDED.source_type,
+             author = EXCLUDED.author,
+             description = EXCLUDED.description,
+             original_filename = EXCLUDED.original_filename,
+             metadata = EXCLUDED.metadata,
+             updated_at = EXCLUDED.updated_at
+           WHERE sources.updated_at <= EXCLUDED.updated_at`,
+          [
+            String(source.id),
+            String(source.projectId),
+            String(source.userId || 'local-user'),
+            String(source.title || ''),
+            String(source.sourceType || 'manual'),
+            String(source.author || ''),
+            String(source.description || ''),
+            source.originalFilename ? String(source.originalFilename) : null,
+            plainObject(source.metadata),
+            dateValue(source.createdAt),
+            dateValue(source.updatedAt),
+          ],
+        );
+      }
+
+      for (const chunk of state.sourceChunks ?? []) {
+        await client.query(
+          `INSERT INTO source_chunks (id, project_id, source_id, chunk_index, chapter_title, content, token_count, metadata, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           ON CONFLICT (id) DO NOTHING`,
+          [
+            String(chunk.id),
+            String(chunk.projectId),
+            String(chunk.sourceId),
+            Number(chunk.chunkIndex) || 0,
+            String(chunk.chapterTitle || ''),
+            String(chunk.content || ''),
+            Number(chunk.tokenCount) || 0,
+            plainObject(chunk.metadata),
+            dateValue(chunk.createdAt),
+          ],
+        );
+      }
+
+      for (const item of state.settings ?? []) {
+        await client.query(
+          `INSERT INTO setting_items (
+            id, project_id, user_id, source_id, source_chunk_id, title, canonical_name, aliases,
+            category, subcategory, tags, keywords, summary, original_text, organized_text,
+            evidence_text, evidence_location, status, confidence, allow_rag, is_verified,
+            is_favorite, is_locked, importance, rag_weight, worldline, version, related_items,
+            metadata, created_at, updated_at
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8,
+            $9, $10, $11, $12, $13, $14, $15,
+            $16, $17, $18, $19, $20, $21,
+            $22, $23, $24, $25, $26, $27, $28,
+            $29, $30, $31
+          )
+          ON CONFLICT (id) DO UPDATE SET
+            project_id = EXCLUDED.project_id,
+            user_id = EXCLUDED.user_id,
+            source_id = EXCLUDED.source_id,
+            source_chunk_id = EXCLUDED.source_chunk_id,
+            title = EXCLUDED.title,
+            canonical_name = EXCLUDED.canonical_name,
+            aliases = EXCLUDED.aliases,
+            category = EXCLUDED.category,
+            subcategory = EXCLUDED.subcategory,
+            tags = EXCLUDED.tags,
+            keywords = EXCLUDED.keywords,
+            summary = EXCLUDED.summary,
+            original_text = EXCLUDED.original_text,
+            organized_text = EXCLUDED.organized_text,
+            evidence_text = EXCLUDED.evidence_text,
+            evidence_location = EXCLUDED.evidence_location,
+            status = EXCLUDED.status,
+            confidence = EXCLUDED.confidence,
+            allow_rag = EXCLUDED.allow_rag,
+            is_verified = EXCLUDED.is_verified,
+            is_favorite = EXCLUDED.is_favorite,
+            is_locked = EXCLUDED.is_locked,
+            importance = EXCLUDED.importance,
+            rag_weight = EXCLUDED.rag_weight,
+            worldline = EXCLUDED.worldline,
+            version = EXCLUDED.version,
+            related_items = EXCLUDED.related_items,
+            metadata = EXCLUDED.metadata,
+            updated_at = EXCLUDED.updated_at
+          WHERE setting_items.updated_at <= EXCLUDED.updated_at`,
+          [
+            String(item.id),
+            String(item.projectId),
+            String(item.userId || 'local-user'),
+            item.sourceId ? String(item.sourceId) : null,
+            item.sourceChunkId ? String(item.sourceChunkId) : null,
+            String(item.title || ''),
+            String(item.canonicalName || item.title || ''),
+            textArray(item.aliases),
+            String(item.category || '未分类'),
+            String(item.subcategory || ''),
+            textArray(item.tags),
+            textArray(item.keywords),
+            String(item.summary || ''),
+            String(item.originalText || ''),
+            String(item.organizedText || ''),
+            String(item.evidenceText || item.originalText || ''),
+            String(item.evidenceLocation || ''),
+            String(item.status || '待确认'),
+            Number(item.confidence) || 0.65,
+            Boolean(item.allowRag),
+            Boolean(item.isVerified),
+            Boolean(item.isFavorite),
+            Boolean(item.isLocked),
+            String(item.importance || '普通'),
+            Number(item.ragWeight) || 1,
+            String(item.worldline || '主线'),
+            String(item.version || ''),
+            textArray(item.relatedItems),
+            plainObject(item.metadata),
+            dateValue(item.createdAt),
+            dateValue(item.updatedAt),
+          ],
+        );
+
+        if (item.embeddingText || item.embeddingVector?.length) {
+          const vector = Array.isArray(item.embeddingVector) && item.embeddingVector.length === 1536
+            ? `[${item.embeddingVector.join(',')}]`
+            : null;
+          await client.query(
+            `INSERT INTO setting_embeddings (id, project_id, setting_item_id, embedding_model, embedding, embedding_text, created_at)
+             VALUES ($1, $2, $3, $4, $5::vector, $6, $7)
+             ON CONFLICT (id) DO UPDATE SET
+               project_id = EXCLUDED.project_id,
+               setting_item_id = EXCLUDED.setting_item_id,
+               embedding_model = CASE
+                 WHEN EXCLUDED.embedding_model <> '' THEN EXCLUDED.embedding_model
+                 ELSE setting_embeddings.embedding_model
+               END,
+               embedding = COALESCE(EXCLUDED.embedding, setting_embeddings.embedding),
+               embedding_text = CASE
+                 WHEN EXCLUDED.embedding_text <> '' THEN EXCLUDED.embedding_text
+                 ELSE setting_embeddings.embedding_text
+               END,
+               created_at = EXCLUDED.created_at
+             WHERE setting_embeddings.created_at <= EXCLUDED.created_at`,
+            [
+              `${item.id}-embedding`,
+              String(item.projectId),
+              String(item.id),
+              String(item.embeddingModel || ''),
+              vector,
+              String(item.embeddingText || ''),
+              dateValue(item.embeddingCreatedAt || item.updatedAt || item.createdAt),
+            ],
+          );
+        }
+
+        for (const log of item.changeLogs ?? []) {
+          await client.query(
+            `INSERT INTO setting_change_logs (id, project_id, setting_item_id, action, detail, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (id) DO NOTHING`,
+            [
+              String(log.id),
+              String(item.projectId),
+              String(item.id),
+              String(log.action || ''),
+              String(log.detail || ''),
+              dateValue(log.createdAt),
+            ],
+          );
+        }
+      }
+
+      for (const relation of state.relations ?? []) {
+        await client.query(
+          `INSERT INTO setting_relations (id, project_id, from_setting_id, to_setting_id, relation_type, description, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (id) DO UPDATE SET
+             project_id = EXCLUDED.project_id,
+             from_setting_id = EXCLUDED.from_setting_id,
+             to_setting_id = EXCLUDED.to_setting_id,
+             relation_type = EXCLUDED.relation_type,
+             description = EXCLUDED.description,
+             created_at = EXCLUDED.created_at
+           WHERE setting_relations.created_at <= EXCLUDED.created_at`,
+          [
+            String(relation.id),
+            String(relation.projectId),
+            String(relation.fromSettingId),
+            String(relation.toSettingId),
+            String(relation.relationType || 'related_to'),
+            String(relation.description || ''),
+            dateValue(relation.createdAt),
+          ],
+        );
+      }
+
+      for (const log of state.retrievalLogs ?? []) {
+        await client.query(
+          `INSERT INTO retrieval_logs (id, project_id, user_id, query, retrieved_setting_ids, retrieved_chunk_ids, purpose, metadata, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           ON CONFLICT (id) DO NOTHING`,
+          [
+            String(log.id),
+            String(log.projectId),
+            String(log.userId || 'local-user'),
+            String(log.query || ''),
+            textArray(log.retrievedSettingIds),
+            textArray(log.retrievedChunkIds),
+            String(log.purpose || 'writing'),
+            plainObject(log.metadata),
+            dateValue(log.createdAt),
+          ],
+        );
+      }
+
+      await client.query(
+        `INSERT INTO app_settings (key, value, updated_at)
+         VALUES ($1, $2, now())
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+        [
+          'moonfall_settings_state_meta',
+          {
+            activeProjectId: state.activeProjectId,
+            config: state.config ?? {},
+            importTasks: Array.isArray(state.importTasks) ? state.importTasks : [],
+          },
+        ],
+      );
+
+      await client.query('COMMIT');
+      return { ok: true, exists: true, data: [state], message: 'Moonfall settings incrementally synced to PostgreSQL.' };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    }
+  });
+}
+
+async function readMoonfallStateFromPostgres(dataDir = DEFAULT_DATABASE_DIR) {
+  return withPostgresClient(dataDir, async (client) => {
+    const projects = (await client.query(
+      `SELECT id, user_id, name, description, metadata, created_at, updated_at
+       FROM projects
+       ORDER BY created_at ASC`,
+    )).rows;
+    if (projects.length === 0) return { ok: true, exists: false, data: [] };
+
+    const projectIds = projects.map((project) => String(project.id));
+    const [
+      sourcesResult,
+      chunksResult,
+      settingsResult,
+      embeddingsResult,
+      relationsResult,
+      retrievalLogsResult,
+      changeLogsResult,
+      metaResult,
+    ] = await Promise.all([
+      client.query('SELECT * FROM sources WHERE project_id = ANY($1::text[]) ORDER BY created_at DESC', [projectIds]),
+      client.query('SELECT * FROM source_chunks WHERE project_id = ANY($1::text[]) ORDER BY source_id ASC, chunk_index ASC', [projectIds]),
+      client.query('SELECT * FROM setting_items WHERE project_id = ANY($1::text[]) ORDER BY updated_at DESC', [projectIds]),
+      client.query('SELECT * FROM setting_embeddings WHERE project_id = ANY($1::text[]) ORDER BY created_at DESC', [projectIds]),
+      client.query('SELECT * FROM setting_relations WHERE project_id = ANY($1::text[]) ORDER BY created_at DESC', [projectIds]),
+      client.query('SELECT * FROM retrieval_logs WHERE project_id = ANY($1::text[]) ORDER BY created_at DESC LIMIT 300', [projectIds]),
+      client.query('SELECT * FROM setting_change_logs WHERE project_id = ANY($1::text[]) ORDER BY created_at DESC', [projectIds]),
+      client.query('SELECT value FROM app_settings WHERE key = $1', ['moonfall_settings_state_meta']),
+    ]);
+
+    const embeddingsBySetting = new Map();
+    embeddingsResult.rows.forEach((row) => {
+      if (!embeddingsBySetting.has(row.setting_item_id)) embeddingsBySetting.set(row.setting_item_id, row);
+    });
+    const changeLogsBySetting = new Map();
+    changeLogsResult.rows.forEach((row) => {
+      const list = changeLogsBySetting.get(row.setting_item_id) ?? [];
+      list.push({
+        id: String(row.id),
+        action: String(row.action || ''),
+        detail: String(row.detail || ''),
+        createdAt: row.created_at?.toISOString?.() ?? String(row.created_at || ''),
+      });
+      changeLogsBySetting.set(row.setting_item_id, list);
+    });
+
+    const meta = plainObject(metaResult.rows[0]?.value);
+    const state = {
+      projects: projects.map((row) => ({
+        id: String(row.id),
+        userId: String(row.user_id || 'local-user'),
+        name: String(row.name || ''),
+        description: String(row.description || ''),
+        metadata: plainObject(row.metadata),
+        createdAt: row.created_at?.toISOString?.() ?? String(row.created_at || ''),
+        updatedAt: row.updated_at?.toISOString?.() ?? String(row.updated_at || ''),
+      })),
+      activeProjectId: String(meta.activeProjectId || projects[0].id),
+      sources: sourcesResult.rows.map((row) => ({
+        id: String(row.id),
+        projectId: String(row.project_id),
+        userId: String(row.user_id || 'local-user'),
+        title: String(row.title || ''),
+        sourceType: String(row.source_type || 'manual'),
+        author: String(row.author || ''),
+        description: String(row.description || ''),
+        originalFilename: row.original_filename ? String(row.original_filename) : undefined,
+        metadata: plainObject(row.metadata),
+        createdAt: row.created_at?.toISOString?.() ?? String(row.created_at || ''),
+        updatedAt: row.updated_at?.toISOString?.() ?? String(row.updated_at || ''),
+      })),
+      sourceChunks: chunksResult.rows.map((row) => ({
+        id: String(row.id),
+        projectId: String(row.project_id),
+        sourceId: String(row.source_id),
+        chunkIndex: Number(row.chunk_index) || 0,
+        chapterTitle: String(row.chapter_title || ''),
+        content: String(row.content || ''),
+        tokenCount: Number(row.token_count) || 0,
+        metadata: plainObject(row.metadata),
+        createdAt: row.created_at?.toISOString?.() ?? String(row.created_at || ''),
+      })),
+      settings: settingsResult.rows.map((row) => {
+        const embedding = embeddingsBySetting.get(row.id);
+        return {
+          id: String(row.id),
+          projectId: String(row.project_id),
+          userId: String(row.user_id || 'local-user'),
+          sourceId: row.source_id ? String(row.source_id) : undefined,
+          sourceChunkId: row.source_chunk_id ? String(row.source_chunk_id) : undefined,
+          title: String(row.title || ''),
+          canonicalName: String(row.canonical_name || row.title || ''),
+          aliases: parsePostgresArray(row.aliases),
+          category: String(row.category || '未分类'),
+          subcategory: String(row.subcategory || ''),
+          tags: parsePostgresArray(row.tags),
+          keywords: parsePostgresArray(row.keywords),
+          summary: String(row.summary || ''),
+          originalText: String(row.original_text || ''),
+          organizedText: String(row.organized_text || ''),
+          evidenceText: String(row.evidence_text || ''),
+          evidenceLocation: String(row.evidence_location || ''),
+          status: String(row.status || '待确认'),
+          confidence: Number(row.confidence) || 0.65,
+          allowRag: Boolean(row.allow_rag),
+          isVerified: Boolean(row.is_verified),
+          isFavorite: Boolean(row.is_favorite),
+          isLocked: Boolean(row.is_locked),
+          importance: String(row.importance || '普通'),
+          ragWeight: Number(row.rag_weight) || 1,
+          worldline: String(row.worldline || '主线'),
+          version: String(row.version || ''),
+          relatedItems: parsePostgresArray(row.related_items),
+          metadata: plainObject(row.metadata),
+          vectorStatus: embedding ? '已生成向量' : '未生成向量',
+          embeddingModel: embedding ? String(embedding.embedding_model || '') : undefined,
+          embeddingText: embedding ? String(embedding.embedding_text || '') : undefined,
+          embeddingVector: embedding?.embedding ? parsePostgresVector(embedding.embedding) : undefined,
+          embeddingCreatedAt: embedding?.created_at?.toISOString?.() ?? (embedding?.created_at ? String(embedding.created_at) : undefined),
+          createdAt: row.created_at?.toISOString?.() ?? String(row.created_at || ''),
+          updatedAt: row.updated_at?.toISOString?.() ?? String(row.updated_at || ''),
+          changeLogs: changeLogsBySetting.get(row.id) ?? [],
+        };
+      }),
+      relations: relationsResult.rows.map((row) => ({
+        id: String(row.id),
+        projectId: String(row.project_id),
+        fromSettingId: String(row.from_setting_id),
+        toSettingId: String(row.to_setting_id),
+        relationType: String(row.relation_type || 'related_to'),
+        description: String(row.description || ''),
+        createdAt: row.created_at?.toISOString?.() ?? String(row.created_at || ''),
+      })),
+      retrievalLogs: retrievalLogsResult.rows.map((row) => ({
+        id: String(row.id),
+        projectId: String(row.project_id),
+        userId: String(row.user_id || 'local-user'),
+        query: String(row.query || ''),
+        retrievedSettingIds: parsePostgresArray(row.retrieved_setting_ids),
+        retrievedChunkIds: parsePostgresArray(row.retrieved_chunk_ids),
+        purpose: String(row.purpose || 'writing'),
+        metadata: plainObject(row.metadata),
+        createdAt: row.created_at?.toISOString?.() ?? String(row.created_at || ''),
+      })),
+      importTasks: Array.isArray(meta.importTasks) ? meta.importTasks : [],
+      config: plainObject(meta.config),
+    };
+
+    return { ok: true, exists: true, data: [state], message: 'Moonfall settings loaded from PostgreSQL.' };
+  });
+}
+
 function resolveStartUrl() {
   if (process.env.XINYUEXIA_LOAD_DIST === '1' || app.isPackaged) {
     return `${pathToFileURL(DIST_ENTRY).href}#/dashboard`;
@@ -410,6 +1433,10 @@ function getCustomAppIconPath() {
   return path.join(app.getPath('userData'), CUSTOM_APP_ICON_FILE_NAME);
 }
 
+function getDefaultAppIconPath() {
+  return path.join(app.getPath('userData'), DEFAULT_APP_ICON_FILE_NAME);
+}
+
 function getCustomAppIconSourcePath() {
   return path.join(app.getPath('userData'), CUSTOM_APP_ICON_SOURCE_FILE_NAME);
 }
@@ -462,25 +1489,84 @@ function readProjectAppIcons() {
     .sort((a, b) => a.fileName.localeCompare(b.fileName, 'zh-CN'));
 }
 
-function saveCustomAppIconFromPath(sourcePath, sourceFileName = '') {
-  const sourceImage = nativeImage.createFromPath(sourcePath);
-  if (sourceImage.isEmpty()) {
+function getRoundedRectCoverage(x, y, width, height, radius) {
+  const samples = 3;
+  let covered = 0;
+  for (let sy = 0; sy < samples; sy += 1) {
+    for (let sx = 0; sx < samples; sx += 1) {
+      const cx = x + (sx + 0.5) / samples;
+      const cy = y + (sy + 0.5) / samples;
+      const innerX = Math.max(radius, Math.min(cx, width - radius));
+      const innerY = Math.max(radius, Math.min(cy, height - radius));
+      const dx = cx - innerX;
+      const dy = cy - innerY;
+      if (dx * dx + dy * dy <= radius * radius) covered += 1;
+    }
+  }
+  return covered / (samples * samples);
+}
+
+function roundAppIconImage(sourceImage) {
+  if (!sourceImage || sourceImage.isEmpty()) return sourceImage;
+  const image = sourceImage.resize({ width: 256, height: 256, quality: 'best' });
+  const size = image.getSize();
+  if (!size.width || !size.height) return image;
+  const bitmap = image.toBitmap();
+  const radius = Math.round(Math.min(size.width, size.height) * 0.22);
+
+  for (let y = 0; y < size.height; y += 1) {
+    for (let x = 0; x < size.width; x += 1) {
+      const offset = (y * size.width + x) * 4;
+      bitmap[offset + 3] = Math.round(bitmap[offset + 3] * getRoundedRectCoverage(x, y, size.width, size.height, radius));
+    }
+  }
+
+  return nativeImage.createFromBitmap(bitmap, size);
+}
+
+function saveIconImage(targetPath, sourceImage) {
+  if (!sourceImage || sourceImage.isEmpty()) {
     return { ok: false, message: '无法读取这个图片，请换一张 PNG、JPG、WEBP 或 ICO。' };
   }
 
-  const targetPath = getCustomAppIconPath();
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  const squareIcon = sourceImage.resize({ width: 256, height: 256, quality: 'best' });
-  fs.writeFileSync(targetPath, squareIcon.toPNG());
+  const roundedIcon = roundAppIconImage(sourceImage);
+  fs.writeFileSync(targetPath, roundedIcon.toPNG());
+  return { ok: true };
+}
+
+function saveCustomAppIconFromPath(sourcePath, sourceFileName = '') {
+  const sourceImage = nativeImage.createFromPath(sourcePath);
+  const saved = saveIconImage(getCustomAppIconPath(), sourceImage);
+  if (!saved.ok) return saved;
   if (sourceFileName) saveSelectedProjectIconFileName(sourceFileName);
   else clearSelectedProjectIconFileName();
   return { ok: true };
 }
 
+function saveCustomAppIconFromDataUrl(dataUrl, sourceFileName = '') {
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+    return { ok: false, message: '没有读取到可用的首页图标。' };
+  }
+  const sourceImage = nativeImage.createFromDataURL(dataUrl);
+  const saved = saveIconImage(getCustomAppIconPath(), sourceImage);
+  if (!saved.ok) return saved;
+  if (sourceFileName) saveSelectedProjectIconFileName(sourceFileName);
+  else clearSelectedProjectIconFileName();
+  return { ok: true };
+}
+
+function saveCurrentIconAsDefault() {
+  const sourceImage = nativeImage.createFromPath(getCurrentAppIconPath());
+  return saveIconImage(getDefaultAppIconPath(), sourceImage);
+}
+
 function getCurrentAppIconPath() {
   const customIcon = getCustomAppIconPath();
+  const defaultIcon = getDefaultAppIconPath();
   const projectIcon = getProjectAppIconPath();
   if (fs.existsSync(customIcon)) return customIcon;
+  if (fs.existsSync(defaultIcon)) return defaultIcon;
   if (projectIcon) return projectIcon;
   return APP_ICON;
 }
@@ -489,13 +1575,16 @@ function readCurrentAppIcon() {
   const iconPath = getCurrentAppIconPath();
   const image = nativeImage.createFromPath(iconPath);
   const selectedProjectIconFileName = readSelectedProjectIconFileName();
+  const defaultIconPath = getDefaultAppIconPath();
   return {
     ok: !image.isEmpty(),
-    isCustom: iconPath !== APP_ICON,
+    isCustom: iconPath !== APP_ICON && iconPath !== defaultIconPath,
+    isDefaultOverride: iconPath === defaultIconPath,
     projectIconDir: PROJECT_APP_ICON_DIR,
     acceptedFileNames: PROJECT_APP_ICON_FILE_NAMES,
     selectedProjectIconFileName,
     projectIcons: readProjectAppIcons(),
+    defaultIconPath,
     iconPath,
     dataUrl: image.isEmpty() ? '' : image.toDataURL(),
   };
@@ -569,14 +1658,36 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function clampWindowDragX(x, width, workArea) {
-  if (width >= workArea.width) return workArea.x;
+function getCombinedWorkArea() {
+  const displays = screen.getAllDisplays();
+  if (!displays.length) return screen.getPrimaryDisplay().workArea;
+  return displays.reduce((area, display) => {
+    const workArea = display.workArea;
+    const left = Math.min(area.x, workArea.x);
+    const top = Math.min(area.y, workArea.y);
+    const right = Math.max(area.x + area.width, workArea.x + workArea.width);
+    const bottom = Math.max(area.y + area.height, workArea.y + workArea.height);
+    return {
+      x: left,
+      y: top,
+      width: right - left,
+      height: bottom - top,
+    };
+  }, displays[0].workArea);
+}
+
+function clampWindowDragX(x, width) {
+  const workArea = getCombinedWorkArea();
   const visibleWidth = Math.min(120, Math.max(40, Math.round(width * 0.15)));
   return clamp(x, workArea.x - width + visibleWidth, workArea.x + workArea.width - visibleWidth);
 }
 
-function clampWindowDragY(y, workArea) {
-  return Math.max(workArea.y, y);
+function clampWindowDragY(y, height) {
+  const workArea = getCombinedWorkArea();
+  const visibleTitlebarHeight = 48;
+  const maxY = workArea.y + workArea.height - visibleTitlebarHeight;
+  if (height >= workArea.height) return clamp(y, workArea.y, maxY);
+  return clamp(y, workArea.y, maxY);
 }
 
 function normalizeTitlebarDragInput(input) {
@@ -601,7 +1712,7 @@ function beginTitlebarDrag(input) {
   if (!drag) return null;
 
   const wasMaximized = mainWindow.isMaximized();
-  const bounds = wasMaximized ? mainWindow.getNormalBounds() : mainWindow.getBounds();
+  const bounds = mainWindow.getBounds();
 
   if (!wasMaximized) {
     return {
@@ -611,7 +1722,6 @@ function beginTitlebarDrag(input) {
     };
   }
 
-  const display = screen.getDisplayNearestPoint({ x: drag.screenX, y: drag.screenY });
   const widthRatio =
     Number.isFinite(drag.clientX) && Number.isFinite(drag.windowWidth) && drag.windowWidth > 0
       ? clamp(drag.clientX / drag.windowWidth, 0.08, 0.92)
@@ -619,8 +1729,8 @@ function beginTitlebarDrag(input) {
   const titlebarOffsetY = Number.isFinite(drag.clientY) ? clamp(drag.clientY, 0, 56) : 16;
   const dragOffsetX = Math.round(bounds.width * widthRatio);
   const dragOffsetY = Math.round(titlebarOffsetY);
-  const x = clampWindowDragX(drag.screenX - dragOffsetX, bounds.width, display.workArea);
-  const y = clampWindowDragY(drag.screenY - dragOffsetY, display.workArea);
+  const x = clampWindowDragX(drag.screenX - dragOffsetX, bounds.width);
+  const y = clampWindowDragY(drag.screenY - dragOffsetY, bounds.height);
 
   mainWindow.unmaximize();
   mainWindow.setBounds({ x, y, width: bounds.width, height: bounds.height }, false);
@@ -637,14 +1747,9 @@ function moveTitlebarDrag(input) {
   if (!drag || !Number.isFinite(drag.dragOffsetX) || !Number.isFinite(drag.dragOffsetY)) return false;
 
   const bounds = mainWindow.getBounds();
-  const display = screen.getDisplayNearestPoint({ x: drag.screenX, y: drag.screenY });
-  const x = clampWindowDragX(Math.round(drag.screenX - drag.dragOffsetX), bounds.width, display.workArea);
-  const y = clampWindowDragY(Math.round(drag.screenY - drag.dragOffsetY), display.workArea);
-  if (mainWindow.isMaximized()) {
-    mainWindow.setBounds({ x, y, width: bounds.width, height: bounds.height }, false);
-  } else {
-    mainWindow.setPosition(x, y, false);
-  }
+  const x = clampWindowDragX(Math.round(drag.screenX - drag.dragOffsetX), bounds.width);
+  const y = clampWindowDragY(Math.round(drag.screenY - drag.dragOffsetY), bounds.height);
+  mainWindow.setPosition(x, y, false);
   return true;
 }
 
@@ -840,6 +1945,35 @@ ipcMain.handle('app-icon:use-project-icon', async (_event, fileName) => {
     };
   }
 });
+
+ipcMain.handle('app-icon:use-data-url', async (_event, dataUrl, sourceFileName = 'home-icon.png') => {
+  try {
+    const saved = saveCustomAppIconFromDataUrl(dataUrl, sourceFileName);
+    if (!saved.ok) return { ...readCurrentAppIcon(), ...saved };
+    return { ...applyWindowIcon(mainWindow), ok: true, message: '软件图标已切换为首页图标。' };
+  } catch (error) {
+    return {
+      ...readCurrentAppIcon(),
+      ok: false,
+      message: error instanceof Error ? error.message : '切换首页图标失败。',
+    };
+  }
+});
+
+ipcMain.handle('app-icon:make-default', async () => {
+  try {
+    const saved = saveCurrentIconAsDefault();
+    if (!saved.ok) return { ...readCurrentAppIcon(), ...saved };
+    return { ...applyWindowIcon(mainWindow), ok: true, message: '已将当前图标设为默认图标。' };
+  } catch (error) {
+    return {
+      ...readCurrentAppIcon(),
+      ok: false,
+      message: error instanceof Error ? error.message : '设置默认图标失败。',
+    };
+  }
+});
+
 ipcMain.handle('app-icon:reset', async () => {
   try {
     const customIcon = getCustomAppIconPath();
@@ -945,6 +2079,26 @@ ipcMain.handle('database:get-status', async (_event, dataDir) => {
   return getDatabaseDirectoryStatus(dir);
 });
 
+ipcMain.handle('database:get-embedded-postgres-status', async (_event, dataDir) => {
+  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
+  return getEmbeddedPostgresStatus(dir);
+});
+
+ipcMain.handle('database:initialize-embedded-postgres', async (_event, dataDir) => {
+  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
+  return initializeEmbeddedPostgres(dir);
+});
+
+ipcMain.handle('database:start-embedded-postgres', async (_event, dataDir) => {
+  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
+  return startEmbeddedPostgres(dir);
+});
+
+ipcMain.handle('database:stop-embedded-postgres', async (_event, dataDir) => {
+  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
+  return stopEmbeddedPostgres(dir);
+});
+
 ipcMain.handle('database:read-collection', async (_event, collection, dataDir) => {
   const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
   return readDatabaseCollection(collection, dir);
@@ -955,8 +2109,21 @@ ipcMain.handle('database:write-collection', async (_event, collection, items, da
   return writeDatabaseCollection(collection, items, dir);
 });
 
+ipcMain.handle('database:read-moonfall-postgres', async (_event, dataDir) => {
+  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
+  return readMoonfallStateFromPostgres(dir);
+});
+
+ipcMain.handle('database:write-moonfall-postgres', async (_event, state, dataDir) => {
+  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
+  return writeMoonfallStateToPostgres(state, dir);
+});
+
 app.on('before-quit', () => {
   saveWindowState(mainWindow);
+  if (embeddedPostgresProcess) {
+    void stopEmbeddedPostgres(embeddedPostgresSettingsDir);
+  }
 });
 
 app.on('second-instance', () => {
@@ -965,6 +2132,9 @@ app.on('second-instance', () => {
 
 app.whenReady().then(() => {
   createWindow();
+  if (getEmbeddedPostgresRuntime().available && !hasExternalDatabaseUrl()) {
+    void startEmbeddedPostgres(DEFAULT_DATABASE_DIR);
+  }
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
     else focusMainWindow();

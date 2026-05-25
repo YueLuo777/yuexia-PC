@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld('xinyuexiaAppIcon', {
   read: () => ipcRenderer.invoke('app-icon:read'),
   select: () => ipcRenderer.invoke('app-icon:select'),
   useProjectIcon: (fileName) => ipcRenderer.invoke('app-icon:use-project-icon', fileName),
+  useDataUrl: (dataUrl, sourceFileName) => ipcRenderer.invoke('app-icon:use-data-url', dataUrl, sourceFileName),
+  makeDefault: () => ipcRenderer.invoke('app-icon:make-default'),
   reset: () => ipcRenderer.invoke('app-icon:reset'),
 });
 
@@ -32,6 +34,12 @@ contextBridge.exposeInMainWorld('xinyuexiaDatabase', {
   readSettings: () => ipcRenderer.invoke('database:read-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('database:save-settings', settings),
   getStatus: (dataDir) => ipcRenderer.invoke('database:get-status', dataDir),
+  getEmbeddedPostgresStatus: (dataDir) => ipcRenderer.invoke('database:get-embedded-postgres-status', dataDir),
+  initializeEmbeddedPostgres: (dataDir) => ipcRenderer.invoke('database:initialize-embedded-postgres', dataDir),
+  startEmbeddedPostgres: (dataDir) => ipcRenderer.invoke('database:start-embedded-postgres', dataDir),
+  stopEmbeddedPostgres: (dataDir) => ipcRenderer.invoke('database:stop-embedded-postgres', dataDir),
   readCollection: (collection, dataDir) => ipcRenderer.invoke('database:read-collection', collection, dataDir),
   writeCollection: (collection, items, dataDir) => ipcRenderer.invoke('database:write-collection', collection, items, dataDir),
+  readMoonfallPostgres: (dataDir) => ipcRenderer.invoke('database:read-moonfall-postgres', dataDir),
+  writeMoonfallPostgres: (state, dataDir) => ipcRenderer.invoke('database:write-moonfall-postgres', state, dataDir),
 });

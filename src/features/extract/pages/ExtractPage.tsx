@@ -1095,7 +1095,7 @@ export function ExtractPage() {
                           {collapsed ? <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" /> : <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />}
                         </button>
                         {!collapsed && !module.hidePreview && (
-                          <div className="whitespace-pre-wrap p-3 text-xs leading-6 text-gray-600">
+                          <div className="whitespace-pre-wrap p-3 text-sm leading-7 text-gray-600">
                             {module.instruction}
                           </div>
                         )}
@@ -1130,20 +1130,20 @@ export function ExtractPage() {
                   </button>
                 </div>
               ) : (
-                <div className="max-h-[138px] space-y-1.5 overflow-y-auto pr-1">
+                <div className="max-h-[150px] space-y-1.5 overflow-y-auto pr-1">
                   {orderedModels.map((model) => (
                     <button
                       key={model.id}
                       onClick={() => setSelectedModelId(model.id)}
-                      className={`flex h-[42px] w-full items-center rounded-lg border px-2.5 text-left text-[15px] transition-all ${
+                      className={`flex h-[33px] w-full items-center rounded-lg border px-2.5 text-left text-[15px] transition-all ${
                         selectedModel?.id === model.id
                           ? 'border-brand bg-brand-light text-brand font-medium'
                           : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="truncate">{model.name}</span>
-                        {selectedModel?.id === model.id && <span className="text-brand">✓</span>}
+                      <div className="flex w-full min-w-0 items-center gap-3">
+                        <span className="min-w-0 flex-1 truncate">{model.name}</span>
+                        {selectedModel?.id === model.id && <span className="ml-auto shrink-0 text-brand">✓</span>}
                       </div>
                     </button>
                   ))}
@@ -1153,44 +1153,35 @@ export function ExtractPage() {
 
             <section className="rounded-xl border border-gray-200 bg-white p-3">
               <h3 className="mb-2 text-[15px] font-bold text-gray-900">提炼模式</h3>
-              <div className="space-y-2">
-                <label className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
+              <div className="max-h-[150px] space-y-1.5 overflow-y-auto pr-1">
+                <label className={`flex h-[33px] items-center gap-2 rounded-lg border px-2.5 text-[15px] transition-colors ${
                   extractMode === 'chapter' ? 'border-brand bg-brand-light' : 'border-gray-200 hover:border-gray-300'
                 }`}>
                   <input type="radio" checked={extractMode === 'chapter'} onChange={() => setExtractMode('chapter')} className="h-3 w-3 text-brand" />
-                  <div>
-                    <div className={`text-[15px] font-medium ${extractMode === 'chapter' ? 'text-brand' : 'text-gray-700'}`}>逐章提炼</div>
-                    <div className="text-[10px] text-gray-400">每章单独提炼</div>
-                  </div>
+                  <span className={`font-medium ${extractMode === 'chapter' ? 'text-brand' : 'text-gray-700'}`}>逐章提炼</span>
                 </label>
-                <label className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
+                <label className={`flex h-[33px] items-center gap-2 rounded-lg border px-2.5 text-[15px] transition-colors ${
                   extractMode === 'multi' ? 'border-brand bg-brand-light' : 'border-gray-200 hover:border-gray-300'
                 }`}>
                   <input type="radio" checked={extractMode === 'multi'} onChange={() => setExtractMode('multi')} className="h-3 w-3 text-brand" />
-                  <div className="flex-1">
-                    <div className={`text-[15px] font-medium ${extractMode === 'multi' ? 'text-brand' : 'text-gray-700'}`}>
-                      每
-                      <input
-                        type="number"
-                        min={2}
-                        max={50}
-                        value={chaptersPerBatch}
-                        onChange={(event) => setChaptersPerBatch(Math.max(2, Math.min(50, Number(event.target.value))))}
-                        className="mx-1 w-10 rounded border border-gray-200 bg-white px-1 py-0.5 text-center text-[15px] focus:border-brand focus:outline-none"
-                      />
-                      章合并
-                    </div>
-                    <div className="text-[10px] text-gray-400">N 章合并为一组</div>
-                  </div>
+                  <span className={`font-medium ${extractMode === 'multi' ? 'text-brand' : 'text-gray-700'}`}>
+                    每
+                    <input
+                      type="number"
+                      min={2}
+                      max={50}
+                      value={chaptersPerBatch}
+                      onChange={(event) => setChaptersPerBatch(Math.max(2, Math.min(50, Number(event.target.value))))}
+                      className="mx-1 h-6 w-10 rounded border border-gray-200 bg-white px-1 text-center text-sm focus:border-brand focus:outline-none"
+                    />
+                    章合并
+                  </span>
                 </label>
-                <label className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
+                <label className={`flex h-[33px] items-center gap-2 rounded-lg border px-2.5 text-[15px] transition-colors ${
                   extractMode === 'smart' ? 'border-brand bg-brand-light' : 'border-gray-200 hover:border-gray-300'
                 }`}>
                   <input type="radio" checked={extractMode === 'smart'} onChange={() => setExtractMode('smart')} className="h-3 w-3 text-brand" />
-                  <div>
-                    <div className={`text-[15px] font-medium ${extractMode === 'smart' ? 'text-brand' : 'text-gray-700'}`}>智能提炼</div>
-                    <div className="text-[10px] text-gray-400">AI 智能弹性分组提炼</div>
-                  </div>
+                  <span className={`font-medium ${extractMode === 'smart' ? 'text-brand' : 'text-gray-700'}`}>智能提炼</span>
                 </label>
               </div>
             </section>
@@ -1464,18 +1455,18 @@ export function ExtractPage() {
             <div className="mb-3 line-clamp-2 text-xs leading-5 text-gray-500">
               {extractProgress || saveMessage || '准备就绪'}
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-start gap-2">
               <button
                 onClick={handleExportResults}
                 disabled={results.length === 0}
-                className="w-full rounded-xl border border-brand/30 bg-white px-3 py-2 text-xs font-medium text-brand transition-colors hover:bg-brand-light disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-300"
+                className="w-1/5 rounded-xl border border-brand/30 bg-white px-2 py-2 text-xs font-medium text-brand transition-colors hover:bg-brand-light disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-300"
               >
                 导出 TXT
               </button>
               <button
                 onClick={handleImportCurrentResults}
                 disabled={pendingImportResults.length === 0}
-                className="w-full rounded-xl bg-brand px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
+                className="w-1/5 rounded-xl bg-brand px-2 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
               >
                 导入剧情库{pendingImportResults.length > 0 ? ` ${pendingImportResults.length}` : ''}
               </button>

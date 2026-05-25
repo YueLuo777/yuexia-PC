@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   BookOpen,
@@ -24,6 +24,11 @@ import type { Chapter, Volume, WorkbenchNovel } from '@/features/workbench/model
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+import {
+  loadNavConfig,
+  normalizeNavConfig,
+  type NavGroupConfig,
+} from '@/shared/navigation/navConfig';
 
 type EditorMode = 'dual' | 'script' | 'browser';
 type AIResultAction = 'replace' | 'append' | 'setting' | 'outline' | 'plot';
@@ -154,6 +159,93 @@ function LinkNovelModal({
         </div>
       </div>
     </div>
+  );
+}
+
+function ScriptEditorQuickNav({
+  isOpen,
+  navConfig,
+  currentPath,
+  onOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  navConfig: NavGroupConfig[];
+  currentPath: string;
+  onOpen: () => void;
+  onClose: () => void;
+}) {
+  const visibleGroups = navConfig
+    .filter((group) => !group.hidden)
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !item.hidden),
+    }))
+    .filter((group) => group.items.length > 0);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="absolute left-0 top-1/2 z-40 flex h-20 w-6 -translate-y-1/2 items-center justify-center rounded-r-xl border border-l-0 border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:bg-brand-light hover:text-brand"
+        title="打开导航栏"
+        aria-label="打开导航栏"
+      >
+        <ChevronRight className="h-5 w-5" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute inset-0 z-50 flex bg-black/10" onMouseDown={onClose}>
+          <aside
+            className="flex h-full w-[220px] shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white shadow-[12px_0_36px_rgba(15,23,42,0.16)]"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-4">
+              <div className="text-base font-bold text-slate-900">快速导航</div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                title="收起导航栏"
+                aria-label="收起导航栏"
+              >
+                <ChevronRight className="h-4 w-4 rotate-180" />
+              </button>
+            </header>
+
+            <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+              {visibleGroups.map((group) => (
+                <section key={group.title} className="mb-4">
+                  <div className="mb-2 rounded-lg bg-brand-light px-3 py-2 text-sm font-bold text-brand-dark">
+                    {group.title}
+                  </div>
+                  <div className="space-y-1">
+                    {group.items.map((item) => {
+                      const isActive = currentPath === item.to;
+                      return (
+                        <Link
+                          key={item.to}
+                          to={item.to}
+                          onClick={onClose}
+                          className={`block rounded-lg px-3 py-2.5 text-[15px] font-medium transition-colors ${
+                            isActive
+                              ? 'bg-orange-50 text-orange-500'
+                              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+            </nav>
+          </aside>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -394,10 +486,24 @@ function ScriptEditorArea({
   onDeleteChapter: () => void;
 }) {
   const [fontSize, setFontSize] = useState(() => Number(localStorage.getItem('xinyuexia_script_editor_font_size') ?? 16));
+  const [isFindOpen, setIsFindOpen] = useState(false);
+  const [findText, setFindText] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     localStorage.setItem('xinyuexia_script_editor_font_size', String(fontSize));
   }, [fontSize]);
+
+  useEffect(() => {
+    const handleFindShortcut = (event: KeyboardEvent) => {
+      if (!chapter || event.key.toLowerCase() !== 'f' || !event.ctrlKey || event.shiftKey || event.altKey || event.metaKey) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setIsFindOpen(true);
+    };
+    window.addEventListener('keydown', handleFindShortcut, true);
+    return () => window.removeEventListener('keydown', handleFindShortcut, true);
+  }, [chapter]);
 
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(content);
@@ -433,6 +539,17 @@ function ScriptEditorArea({
     requestAnimationFrame(() => {
       target.selectionStart = target.selectionEnd = start + nextLines.join('\n').length;
     });
+  };
+
+  const findNext = () => {
+    if (!findText) return;
+    const textarea = textareaRef.current;
+    const start = textarea ? textarea.selectionEnd : 0;
+    let index = content.indexOf(findText, start);
+    if (index < 0) index = content.indexOf(findText);
+    if (index < 0) return;
+    textarea?.focus();
+    textarea?.setSelectionRange(index, index + findText.length);
   };
 
   if (!chapter) {
@@ -506,7 +623,23 @@ function ScriptEditorArea({
         </button>
       </div>
       <div className="relative flex-1 overflow-hidden">
+        {isFindOpen && (
+          <div className="absolute right-5 top-4 z-30 flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
+            <input
+              value={findText}
+              onChange={(event) => setFindText(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') findNext();
+              }}
+              placeholder="查找"
+              className="h-8 w-40 rounded-lg border border-gray-200 px-2 text-xs outline-none focus:border-brand"
+            />
+            <button onClick={findNext} className="rounded-lg bg-brand px-3 py-1.5 text-xs text-white">查找</button>
+            <button onClick={() => setIsFindOpen(false)} className="rounded-lg px-2 py-1.5 text-xs text-gray-400 hover:bg-gray-100">关闭</button>
+          </div>
+        )}
         <textarea
+          ref={textareaRef}
           value={content}
           onChange={(event) => onChangeContent(event.target.value)}
           onKeyDown={handleKeyDown}
@@ -792,6 +925,7 @@ function MaterialSidebar({
 }
 
 export function ScriptEditorPage() {
+  const location = useLocation();
   const {
     novels,
     currentNovel,
@@ -812,6 +946,8 @@ export function ScriptEditorPage() {
   } = useWorkbenchData();
   const { items: materials } = useMaterials();
   const { tabs, activeTabId } = useWorkspaceTabs();
+  const [isQuickNavOpen, setIsQuickNavOpen] = useState(false);
+  const [quickNavConfig] = useState<NavGroupConfig[]>(() => normalizeNavConfig(loadNavConfig()));
 
   const [editorMode, setEditorMode] = useState<EditorMode>(() => (
     (localStorage.getItem(EDITOR_MODE_KEY) as EditorMode) || 'dual'
@@ -848,6 +984,7 @@ export function ScriptEditorPage() {
     () => materials.find((material) => material.id === selectedMaterialId) ?? null,
     [materials, selectedMaterialId],
   );
+  const activeTab = tabs.find((tab) => tab.id === activeTabId);
 
   useEffect(() => {
     const activeTab = tabs.find((tab) => tab.id === activeTabId);
@@ -858,9 +995,10 @@ export function ScriptEditorPage() {
 
   useEffect(() => {
     if (currentScript) return;
+    if (activeTab?.workType === 'novel') return;
     const firstScript = novels.find((novel) => novel.type === 'script');
     if (firstScript) setCurrentNovel(firstScript.id);
-  }, [currentScript, novels, setCurrentNovel]);
+  }, [activeTab?.workType, currentScript, novels, setCurrentNovel]);
 
   useEffect(() => {
     localStorage.setItem(EDITOR_MODE_KEY, editorMode);
@@ -1058,6 +1196,9 @@ export function ScriptEditorPage() {
   }, [editorContent, saveContent, selectedChapter, selectedScriptChapter]);
 
   if (!currentScript) {
+    if (activeTab?.workType === 'novel') {
+      return <div className="flex h-full flex-col bg-gray-50" />;
+    }
     return (
       <div className="flex h-full flex-col items-center justify-center bg-gray-50">
         <div className="rounded-xl border border-gray-100 bg-white p-8 text-center shadow-sm">
@@ -1077,7 +1218,14 @@ export function ScriptEditorPage() {
   const linkedNovelOptions = novels.filter((novel) => novel.type === 'novel');
 
   return (
-    <div className="script-editor-page flex h-full flex-col overflow-hidden bg-white">
+    <div className="script-editor-page relative flex h-full flex-col overflow-hidden bg-white">
+      <ScriptEditorQuickNav
+        isOpen={isQuickNavOpen}
+        navConfig={quickNavConfig}
+        currentPath={location.pathname}
+        onOpen={() => setIsQuickNavOpen(true)}
+        onClose={() => setIsQuickNavOpen(false)}
+      />
       <header className="script-editor-topbar flex h-11 shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4">
         <div className="flex items-center gap-1.5">
           <span className="shrink-0 text-xs text-gray-500">剧本名：</span>

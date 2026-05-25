@@ -55,7 +55,27 @@ interface DatabaseActionResult {
   message?: string;
 }
 
-type DatabaseCollectionName = 'plotLibrary' | 'plotRecycle' | 'materials';
+interface EmbeddedPostgresStatus {
+  ok: boolean;
+  runtimeAvailable: boolean;
+  runtimePath: string;
+  binDir: string;
+  missing: string[];
+  dataDir: string;
+  initialized: boolean;
+  running: boolean;
+  managedByApp: boolean;
+  host: string;
+  port: number;
+  databaseName: string;
+  message?: string;
+}
+
+interface EmbeddedPostgresActionResult extends DatabaseActionResult {
+  embedded: EmbeddedPostgresStatus;
+}
+
+type DatabaseCollectionName = 'plotLibrary' | 'plotRecycle' | 'materials' | 'moonfallSettings';
 
 interface DatabaseCollectionResult<T = unknown> {
   ok: boolean;
@@ -70,6 +90,8 @@ interface AppIconResult {
   projectIconDir?: string;
   acceptedFileNames?: string[];
   selectedProjectIconFileName?: string;
+  isDefaultOverride?: boolean;
+  defaultIconPath?: string;
   projectIcons?: Array<{
     fileName: string;
     filePath: string;
@@ -90,6 +112,8 @@ interface Window {
     read(): Promise<AppIconResult>;
     select(): Promise<AppIconResult>;
     useProjectIcon(fileName: string): Promise<AppIconResult>;
+    useDataUrl(dataUrl: string, sourceFileName?: string): Promise<AppIconResult>;
+    makeDefault(): Promise<AppIconResult>;
     reset(): Promise<AppIconResult>;
   };
   xinyuexiaDatabase?: {
@@ -98,7 +122,13 @@ interface Window {
     readSettings(): Promise<DatabaseActionResult>;
     saveSettings(settings: DatabaseSettings): Promise<DatabaseActionResult>;
     getStatus(dataDir?: string): Promise<DatabaseDirectoryStatus>;
+    getEmbeddedPostgresStatus(dataDir?: string): Promise<EmbeddedPostgresStatus>;
+    initializeEmbeddedPostgres(dataDir?: string): Promise<EmbeddedPostgresActionResult>;
+    startEmbeddedPostgres(dataDir?: string): Promise<EmbeddedPostgresActionResult>;
+    stopEmbeddedPostgres(dataDir?: string): Promise<EmbeddedPostgresActionResult>;
     readCollection<T = unknown>(collection: DatabaseCollectionName, dataDir?: string): Promise<DatabaseCollectionResult<T>>;
     writeCollection<T = unknown>(collection: DatabaseCollectionName, items: T[], dataDir?: string): Promise<DatabaseCollectionResult<T>>;
+    readMoonfallPostgres<T = unknown>(dataDir?: string): Promise<DatabaseCollectionResult<T>>;
+    writeMoonfallPostgres<T = unknown>(state: T, dataDir?: string): Promise<DatabaseCollectionResult<T>>;
   };
 }

@@ -20,7 +20,6 @@ interface ChapterSidebarProps {
   onPublishChapter: (volumeId: number, chapterId: number) => void;
   onOpenRecycle: () => void;
   onExportChapters: () => void;
-  onPublishAll: () => void;
   getChapterWordCount: (chapterId: number) => number;
 }
 
@@ -77,7 +76,6 @@ export function ChapterSidebar({
   onPublishChapter,
   onOpenRecycle,
   onExportChapters,
-  onPublishAll,
   getChapterWordCount,
 }: ChapterSidebarProps) {
   const [chapterMenu, setChapterMenu] = useState<ChapterContextMenu>(emptyChapterMenu);
@@ -228,13 +226,6 @@ export function ChapterSidebar({
         <button onClick={onToggleSort} className="flex-1 whitespace-nowrap rounded-md bg-brand px-1 py-1.5 text-sm text-white transition-colors hover:bg-brand-dark">
           {sortAsc ? '倒序' : '正序'}
         </button>
-        <button
-          onClick={onOpenRecycle}
-          className="relative flex-1 whitespace-nowrap rounded-md bg-red-500 px-1 py-1.5 text-sm text-white transition-colors hover:bg-red-600"
-        >
-          回收站
-          {recycledCount > 0 && <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-red-500" />}
-        </button>
       </div>
 
       <div className="border-t border-gray-200 p-2">
@@ -246,10 +237,11 @@ export function ChapterSidebar({
             导出章节
           </button>
           <button
-            onClick={onPublishAll}
-            className="flex-1 whitespace-nowrap rounded-md bg-brand px-1.5 py-1.5 text-sm text-white transition-colors hover:bg-brand-dark"
+            onClick={onOpenRecycle}
+            className="relative flex-1 whitespace-nowrap rounded-md bg-red-500 px-1.5 py-1.5 text-sm text-white transition-colors hover:bg-red-600"
           >
-            一键发布
+            回收站
+            {recycledCount > 0 && <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-red-500" />}
           </button>
         </div>
       </div>

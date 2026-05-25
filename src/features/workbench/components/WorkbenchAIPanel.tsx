@@ -1,9 +1,14 @@
-import { Check, ChevronDown, X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { readModelSnapshot } from '@/features/models/hooks/useModels';
 import type { ModelItem } from '@/features/models/model/modelTypes';
 import { callModel } from '@/features/models/services/callModel';
+import {
+  buildMoonfallRagBundle,
+  readMoonfallState,
+  writeMoonfallState,
+} from '@/features/moonfall-settings/model/moonfallSettingStore';
 import { readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import { APP_EVENTS } from '@/shared/events/appEvents';
@@ -36,6 +41,7 @@ interface WorkbenchAIPanelProps {
   canUndoReplace?: boolean;
   onOpenModelManage?: () => void;
   onOpenAgentManage?: () => void;
+  onOpenContextLibrary?: () => void;
 }
 
 function readConfig() {
@@ -47,6 +53,29 @@ function readConfig() {
 
 function getDefaultInstruction(_tool: WorkbenchAITool) {
   return '请根据我的要求处理当前章节正文。';
+}
+
+function buildAutoRagContext(userInput: string, chapterContext: string) {
+  const state = readMoonfallState();
+  if (!state.config.autoRag) return '';
+  const activeProject = state.projects.find((project) => project.id === state.activeProjectId) ?? state.projects[0];
+  if (!activeProject) return '';
+  const query = [userInput, chapterContext.slice(-4000)].filter(Boolean).join('\n\n');
+  if (!query.trim()) return '';
+  const bundle = buildMoonfallRagBundle(state, {
+    projectId: activeProject.id,
+    userId: activeProject.userId,
+    query,
+    limit: state.config.retrievalLimit,
+    purpose: 'writing',
+    similarityThreshold: state.config.similarityThreshold,
+  });
+  if (bundle.results.length === 0) return '';
+  writeMoonfallState({
+    ...state,
+    retrievalLogs: [bundle.log, ...state.retrievalLogs].slice(0, 200),
+  });
+  return bundle.contextText;
 }
 
 function createDefaultSession(id = 1): AiSession {
@@ -139,12 +168,13 @@ export function WorkbenchAIPanel({
   canUndoReplace = false,
   onOpenModelManage,
   onOpenAgentManage,
+  onOpenContextLibrary,
 }: WorkbenchAIPanelProps) {
   const storageKey = `xinyuexia_workbench_ai_sessions_${workId}`;
   const initialAiState = useMemo(() => readStoredAiState(storageKey), [storageKey]);
   const [sessions, setSessions] = useState<AiSession[]>(() => initialAiState.sessions);
   const [activeSessionId, setActiveSessionId] = useState(() => initialAiState.activeSessionId);
-  const [deleteSessionMenu, setDeleteSessionMenu] = useState<{ sessionId: number; x: number; y: number } | null>(null);
+  const [sessionMenu, setSessionMenu] = useState<{ sessionId: number; left: number; top: number } | null>(null);
   const [models, setModels] = useState<ModelItem[]>(() => readConfig().models);
   const [prompts, setPrompts] = useState<PromptItem[]>(() => readConfig().prompts);
   const [selectedModelId, setSelectedModelId] = usePersistentState<string>('xinyuexia_workbench_ai_left_model', '');
@@ -200,7 +230,7 @@ export function WorkbenchAIPanel({
     nextMessageIdRef.current = next.nextMessageId;
     abortControllerRef.current?.abort();
     setIsLoading(false);
-    setDeleteSessionMenu(null);
+    setSessionMenu(null);
   }, [storageKey]);
 
   useEffect(() => {
@@ -237,10 +267,11 @@ export function WorkbenchAIPanel({
   }, []);
 
   useEffect(() => {
-    const closeDeleteMenu = () => setDeleteSessionMenu(null);
-    window.addEventListener('click', closeDeleteMenu);
-    return () => window.removeEventListener('click', closeDeleteMenu);
-  }, []);
+    if (!sessionMenu) return;
+    const closeMenu = () => setSessionMenu(null);
+    window.addEventListener('click', closeMenu);
+    return () => window.removeEventListener('click', closeMenu);
+  }, [sessionMenu]);
 
   const flashStatus = (text: string) => {
     setStatusText(text);
@@ -253,6 +284,7 @@ export function WorkbenchAIPanel({
     const text = input.trim();
     if (!text || isLoading) return;
     const shouldAttachChapter = activeSession.linkChapter && !activeSession.hasSentChapterContext && selectedChapterContent.trim();
+    const chapterPayload = shouldAttachChapter ? selectedChapterContent.trim() : '';
     const userMessage: AiMessage = { id: nextMessageIdRef.current++, role: 'user', content: text };
     const assistantMessage: AiMessage = { id: nextMessageIdRef.current++, role: 'assistant', content: '正在生成...' };
     const nextMessages = [...activeSession.messages, userMessage, assistantMessage];
@@ -264,7 +296,7 @@ export function WorkbenchAIPanel({
     });
 
     if (!configModel) {
-      const errorText = '尚未配置可用模型。请先到“模型管理”中新增并启用模型。';
+      const errorText = '尚未配置可用模型。请先到“模型管理”中新增模型。';
       updateSession(sessionId, {
         output: errorText,
         messages: nextMessages.map((message) => (
@@ -278,11 +310,13 @@ export function WorkbenchAIPanel({
     abortControllerRef.current = controller;
     setIsLoading(true);
     try {
+      const ragContext = buildAutoRagContext(text, chapterPayload || selectedChapterContent.trim());
+      const modelContext = [chapterPayload, ragContext].filter(Boolean).join('\n\n');
       const content = await callModel({
         model: configModel,
         prompt: configPrompt?.content ?? getDefaultInstruction(activeTool),
         userContent: text,
-        chapterContext: shouldAttachChapter ? selectedChapterContent.trim() : '',
+        chapterContext: modelContext,
         signal: controller.signal,
       });
       updateSession(sessionId, {
@@ -325,13 +359,12 @@ export function WorkbenchAIPanel({
       hasSentChapterContext: false,
     }]);
     setActiveSessionId(nextId);
-    setDeleteSessionMenu(null);
+    setSessionMenu(null);
   };
 
   const deleteSession = (sessionId: number) => {
     if (sessions.length <= 1) {
       flashStatus('至少保留1个会话');
-      setDeleteSessionMenu(null);
       return;
     }
     setSessions((prev) => {
@@ -341,7 +374,19 @@ export function WorkbenchAIPanel({
       }
       return next;
     });
-    setDeleteSessionMenu(null);
+    setSessionMenu(null);
+  };
+
+  const resetSessions = () => {
+    abortControllerRef.current?.abort();
+    const fresh = createDefaultSession(1);
+    nextSessionIdRef.current = 2;
+    nextMessageIdRef.current = 1;
+    setSessions([fresh]);
+    setActiveSessionId(1);
+    setIsLoading(false);
+    setSessionMenu(null);
+    flashStatus('已清空会话');
   };
 
   const stopMessage = () => {
@@ -359,6 +404,17 @@ export function WorkbenchAIPanel({
     }
   };
 
+  const renderModelStatus = (currentModel: ModelItem | null) => {
+    if (!currentModel || currentModel.connectionStatus === 'failed') {
+      return <X className="h-3.5 w-3.5 text-red-500" />;
+    }
+    if (currentModel.connectionStatus === 'connected') {
+      const latency = typeof currentModel.connectionLatencyMs === 'number' ? currentModel.connectionLatencyMs : null;
+      return <span className="text-xs font-bold tabular-nums text-emerald-600">{latency === null ? '--ms' : `${latency}ms`}</span>;
+    }
+    return null;
+  };
+
   const renderConfigPanel = (
     model: ModelItem | null,
     modelId: string,
@@ -369,15 +425,8 @@ export function WorkbenchAIPanel({
   ) => (
     <>
       <div className="shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-2">
-        <div className="grid grid-cols-[70px_160px_56px] items-center gap-1.5">
-          <span className="flex items-center gap-1 whitespace-nowrap text-sm text-gray-500">
-            模型
-            {model ? (
-              <Check className="h-3.5 w-3.5 text-emerald-500" />
-            ) : (
-              <X className="h-3.5 w-3.5 text-red-500" />
-            )}
-          </span>
+        <div className="grid grid-cols-[52px_160px_56px_minmax(48px,1fr)] items-center gap-1.5">
+          <span className="whitespace-nowrap text-sm text-gray-500">模型</span>
           <div className="relative min-w-0">
             <select
               value={model?.id ?? modelId}
@@ -402,6 +451,9 @@ export function WorkbenchAIPanel({
               管理
             </button>
           ) : <span />}
+          <span className="flex min-w-0 items-center text-xs font-bold">
+            {renderModelStatus(model)}
+          </span>
 
           <span className="whitespace-nowrap text-sm text-gray-500">提示词</span>
           <div className="relative min-w-0">
@@ -428,6 +480,7 @@ export function WorkbenchAIPanel({
               管理
             </button>
           ) : <span />}
+          <span />
         </div>
       </div>
       <div className="mt-2 flex h-9 shrink-0 items-center gap-1.5 overflow-x-auto rounded-full border border-gray-200 bg-gray-50 px-2.5">
@@ -444,12 +497,18 @@ export function WorkbenchAIPanel({
             <button
               onClick={() => {
                 setActiveSessionId(session.id);
-                setDeleteSessionMenu(null);
+                setSessionMenu(null);
               }}
               onContextMenu={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                setDeleteSessionMenu({ sessionId: session.id, x: event.clientX, y: event.clientY });
+                const rect = event.currentTarget.getBoundingClientRect();
+                setActiveSessionId(session.id);
+                setSessionMenu({
+                  sessionId: session.id,
+                  left: rect.left,
+                  top: rect.bottom + 6,
+                });
               }}
               className={`flex h-7 min-w-7 items-center justify-center rounded-lg border px-2 text-sm font-bold leading-none transition-colors ${
                 session.id === activeSessionId
@@ -462,17 +521,26 @@ export function WorkbenchAIPanel({
           </div>
         ))}
       </div>
-      {deleteSessionMenu && (
-        <button
-          onClick={(event) => {
-            event.stopPropagation();
-            deleteSession(deleteSessionMenu.sessionId);
-          }}
-          className="fixed z-[300] rounded-md bg-gray-900 px-2.5 py-1.5 text-xs font-bold text-white shadow-lg hover:bg-red-600"
-          style={{ left: deleteSessionMenu.x, top: deleteSessionMenu.y }}
+      {sessionMenu && (
+        <div
+          className="fixed z-[300] flex overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
+          style={{ left: sessionMenu.left, top: sessionMenu.top }}
+          onClick={(event) => event.stopPropagation()}
         >
-          删除
-        </button>
+          <button
+            onClick={() => deleteSession(sessionMenu.sessionId)}
+            disabled={sessions.length <= 1}
+            className="h-8 px-3 text-xs font-bold text-red-500 hover:bg-red-50 disabled:text-gray-300 disabled:hover:bg-white"
+          >
+            删除
+          </button>
+          <button
+            onClick={resetSessions}
+            className="h-8 border-l border-gray-100 px-3 text-xs font-bold text-gray-600 hover:bg-red-50 hover:text-red-500"
+          >
+            清空
+          </button>
+        </div>
       )}
     </>
   );
@@ -486,10 +554,17 @@ export function WorkbenchAIPanel({
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <button
-            onClick={() => window.dispatchEvent(new Event('open_chapter_associate'))}
-            className="rounded-full bg-brand px-2.5 py-1 text-xs font-bold text-white transition-colors hover:bg-brand-dark"
+            onClick={() => setOutputFontSize((prev) => Math.max(14, prev - 1))}
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand text-[22px] font-bold leading-none text-white hover:bg-brand-dark"
           >
-            关联章节
+            -
+          </button>
+          <span className="min-w-7 text-center text-sm font-bold text-gray-700">{outputFontSize}</span>
+          <button
+            onClick={() => setOutputFontSize((prev) => Math.min(32, prev + 1))}
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand text-[22px] font-bold leading-none text-white hover:bg-brand-dark"
+          >
+            +
           </button>
           {onClose && (
             <button
@@ -539,42 +614,40 @@ export function WorkbenchAIPanel({
             </div>
           )}
         </div>
-        <div className="mt-2 flex shrink-0 items-center justify-between gap-2 text-xs text-gray-400">
-          <div className="flex min-w-0 items-center gap-2">
+        <div className="mt-2 flex shrink-0 items-start justify-between gap-2 text-xs text-gray-400">
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <button
+                onClick={() => updateActiveSession({
+                  linkChapter: !activeSession?.linkChapter,
+                  hasSentChapterContext: false,
+                })}
+                className={`rounded-lg border px-3 py-1.5 text-sm font-bold transition-colors ${
+                  activeSession?.linkChapter
+                    ? 'border-brand bg-brand text-white'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-brand hover:text-brand'
+                }`}
+              >
+                {activeSession?.linkChapter ? '已关联本章' : '关联本章'}
+              </button>
+              {activeSession?.linkChapter && (
+                <span className="shrink-0 text-sm font-bold text-brand">
+                  关联字数：{linkedChapterWordCount}字
+                </span>
+              )}
+            </div>
             <button
-              onClick={() => updateActiveSession({
-                linkChapter: !activeSession?.linkChapter,
-                hasSentChapterContext: false,
-              })}
-              className={`rounded-lg border px-3 py-1.5 text-sm font-bold transition-colors ${
-                activeSession?.linkChapter
-                  ? 'border-brand bg-brand text-white'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-brand hover:text-brand'
-              }`}
+              onClick={() => {
+                onOpenContextLibrary?.();
+                if (!onOpenContextLibrary) flashStatus('关联上下文稍后配置');
+              }}
+              className="w-fit rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-bold text-gray-600 transition-colors hover:border-brand hover:text-brand"
             >
-              {activeSession?.linkChapter ? '已关联本章' : '关联本章'}
+              关联上下文
             </button>
-            {activeSession?.linkChapter && (
-              <span className="shrink-0 text-sm font-bold text-brand">
-                关联字数：{linkedChapterWordCount}字
-              </span>
-            )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <span className="shrink-0 text-base font-bold text-brand">{outputWordCount}字</span>
-            <button
-              onClick={() => setOutputFontSize((prev) => Math.max(14, prev - 1))}
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-[26px] font-bold leading-none text-white hover:bg-brand-dark"
-            >
-              -
-            </button>
-            <span className="min-w-8 text-center text-base font-bold text-gray-700">{outputFontSize}</span>
-            <button
-              onClick={() => setOutputFontSize((prev) => Math.min(32, prev + 1))}
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-[26px] font-bold leading-none text-white hover:bg-brand-dark"
-            >
-              +
-            </button>
           </div>
         </div>
         <div className="mt-2 shrink-0">

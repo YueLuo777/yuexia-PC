@@ -11,6 +11,7 @@ const {
 describe('ipcValidation', () => {
   it('accepts only known database collection names', () => {
     expect(normalizeCollectionName('materials')).toBe('materials');
+    expect(normalizeCollectionName('moonfallSettings')).toBe('moonfallSettings');
     expect(normalizeCollectionName('unknown')).toBeNull();
   });
 

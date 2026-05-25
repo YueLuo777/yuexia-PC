@@ -39,7 +39,11 @@ const APP_SCALE_OPTIONS = [1, 1.1, 1.25, 1.5, 1.75, 2].map((labelScale) => ({
   effectiveScale: Number((APP_SCALE_BASE * labelScale).toFixed(3)),
 }));
 const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
-const TITLEBAR_DRAG_THRESHOLD = 4;
+const TITLEBAR_DRAG_THRESHOLD = 8;
+const TITLEBAR_DOUBLE_CLICK_MAX_DURATION_MS = 260;
+const RIGHT_MOUSE_GESTURE_THRESHOLD = 90;
+const RIGHT_MOUSE_GESTURE_VERTICAL_TOLERANCE = 80;
+const RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD = 18;
 
 type TitlebarDragPayload = {
   screenX: number;
@@ -56,6 +60,15 @@ type TitlebarDragResult = {
   dragOffsetX: number;
   dragOffsetY: number;
 } | null;
+
+type MouseGesturePreview = {
+  startX: number;
+  startY: number;
+  currentX: number;
+  currentY: number;
+  points: Array<{ x: number; y: number }>;
+  ready: boolean;
+};
 
 function loadScale() {
   try {
@@ -112,8 +125,10 @@ export function AppFrame({ children }: AppFrameProps) {
   const [isScaleMenuOpen, setIsScaleMenuOpen] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(loadDarkTheme);
   const [shortcutBindings, setShortcutBindings] = useState(loadShortcutBindings);
+  const [mouseGesturePreview, setMouseGesturePreview] = useState<MouseGesturePreview | null>(null);
   const titlebarDragRef = useRef<TitlebarDragState | null>(null);
   const suppressTitlebarClickRef = useRef(false);
+  const titlebarPointerMetaRef = useRef({ startedAt: 0, startClientX: 0, startClientY: 0, moved: false });
 
   const effectiveScale = useMemo(() => Number(appScale.toFixed(3)), [appScale]);
 
@@ -184,6 +199,103 @@ export function AppFrame({ children }: AppFrameProps) {
   }, []);
 
   useEffect(() => {
+    let gesture: {
+      startX: number;
+      startY: number;
+      visible: boolean;
+      ready: boolean;
+      invalidated: boolean;
+      hasMovedLeft: boolean;
+      points: Array<{ x: number; y: number }>;
+    } | null = null;
+    let suppressNextContextMenu = false;
+
+    const goHome = () => {
+      setActiveTabId(HOME_TAB.id);
+      navigate('/dashboard');
+    };
+
+    const handleMouseDown = (event: globalThis.MouseEvent) => {
+      if (event.button !== 2) return;
+      gesture = {
+        startX: event.clientX,
+        startY: event.clientY,
+        visible: false,
+        ready: false,
+        invalidated: false,
+        hasMovedLeft: false,
+        points: [{ x: event.clientX, y: event.clientY }],
+      };
+      setMouseGesturePreview(null);
+    };
+
+    const handleMouseMove = (event: globalThis.MouseEvent) => {
+      if (!gesture) return;
+      const deltaX = event.clientX - gesture.startX;
+      const deltaY = event.clientY - gesture.startY;
+      const distance = Math.hypot(deltaX, deltaY);
+      if (deltaX > -RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD && !gesture.visible) return;
+      if (distance < RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD) return;
+      const lastPoint = gesture.points[gesture.points.length - 1];
+      const segmentDx = lastPoint ? event.clientX - lastPoint.x : 0;
+      const segmentDy = lastPoint ? event.clientY - lastPoint.y : 0;
+      if (gesture.visible && gesture.hasMovedLeft) {
+        if (segmentDx > 4 || Math.abs(segmentDy) > 14) {
+          gesture.invalidated = true;
+          gesture.ready = false;
+        }
+      }
+      if (segmentDx < -2) gesture.hasMovedLeft = true;
+      gesture.visible = true;
+      gesture.ready = !gesture.invalidated
+        && gesture.hasMovedLeft
+        && deltaX <= -RIGHT_MOUSE_GESTURE_THRESHOLD
+        && Math.abs(deltaY) <= RIGHT_MOUSE_GESTURE_VERTICAL_TOLERANCE;
+      if (!lastPoint || Math.hypot(event.clientX - lastPoint.x, event.clientY - lastPoint.y) >= 3) {
+        gesture.points = [...gesture.points, { x: event.clientX, y: event.clientY }].slice(-220);
+      }
+      suppressNextContextMenu = true;
+      event.preventDefault();
+      event.stopPropagation();
+      setMouseGesturePreview({
+        startX: gesture.startX,
+        startY: gesture.startY,
+        currentX: event.clientX,
+        currentY: event.clientY,
+        points: gesture.points,
+        ready: gesture.ready,
+      });
+    };
+
+    const handleMouseUp = () => {
+      if (gesture?.ready && !gesture.invalidated) {
+        suppressNextContextMenu = true;
+        goHome();
+      }
+      gesture = null;
+      setMouseGesturePreview(null);
+    };
+
+    const handleContextMenu = (event: globalThis.MouseEvent) => {
+      if (!suppressNextContextMenu) return;
+      event.preventDefault();
+      event.stopPropagation();
+      suppressNextContextMenu = false;
+    };
+
+    window.addEventListener('mousedown', handleMouseDown, true);
+    window.addEventListener('mousemove', handleMouseMove, true);
+    window.addEventListener('mouseup', handleMouseUp, true);
+    window.addEventListener('contextmenu', handleContextMenu, true);
+    return () => {
+      window.removeEventListener('mousedown', handleMouseDown, true);
+      window.removeEventListener('mousemove', handleMouseMove, true);
+      window.removeEventListener('mouseup', handleMouseUp, true);
+      window.removeEventListener('contextmenu', handleContextMenu, true);
+    };
+  }, [navigate, setActiveTabId]);
+
+  useEffect(() => {
     type DragState = {
       dialog: HTMLElement;
       key: string;
@@ -209,6 +321,16 @@ export function AppFrame({ children }: AppFrameProps) {
     const findDialog = (overlay: HTMLElement, target: HTMLElement) => {
       const children = Array.from(overlay.children).filter((child): child is HTMLElement => child instanceof HTMLElement);
       return children.find((child) => child.contains(target)) ?? null;
+    };
+    const findDialogDragHandle = (dialog: HTMLElement) => {
+      const explicitHandle = dialog.querySelector<HTMLElement>('[data-modal-drag-handle="true"]');
+      if (explicitHandle) return explicitHandle;
+      const firstChild = Array.from(dialog.children).find((child): child is HTMLElement => child instanceof HTMLElement);
+      return firstChild ?? null;
+    };
+    const isInDialogDragHandle = (dialog: HTMLElement, target: HTMLElement) => {
+      const handle = findDialogDragHandle(dialog);
+      return Boolean(handle?.contains(target));
     };
     const getDialogKey = (dialog: HTMLElement) => {
       const title = dialog.querySelector('h1,h2,h3')?.textContent?.trim() || dialog.className || 'modal';
@@ -241,6 +363,11 @@ export function AppFrame({ children }: AppFrameProps) {
       if (dialog.dataset.draggableManaged === 'true' || dialog.dataset.globalDraggableApplied === 'true') return;
       const position = readDialogPosition(getDialogKey(dialog));
       dialog.dataset.globalDraggableApplied = 'true';
+      const handle = findDialogDragHandle(dialog);
+      if (handle) {
+        handle.style.cursor = 'move';
+        handle.style.touchAction = 'none';
+      }
       applyTransform(dialog, position.x, position.y);
     };
     const applyAllPositions = () => {
@@ -260,8 +387,7 @@ export function AppFrame({ children }: AppFrameProps) {
       if (!overlay) return;
       const dialog = findDialog(overlay, event.target);
       if (!dialog || dialog.dataset.draggableManaged === 'true') return;
-      const rect = dialog.getBoundingClientRect();
-      if (event.clientY > rect.top + 64) return;
+      if (!isInDialogDragHandle(dialog, event.target)) return;
       event.preventDefault();
       event.stopPropagation();
       applyDialogPosition(dialog);
@@ -428,11 +554,25 @@ export function AppFrame({ children }: AppFrameProps) {
 
   const handleTitlebarDoubleClick = (event: MouseEvent<HTMLElement>) => {
     if ((event.target as HTMLElement).closest('button,[data-titlebar-no-drag="true"]')) return;
+    const meta = titlebarPointerMetaRef.current;
+    const heldMs = Date.now() - meta.startedAt;
+    if (meta.moved || heldMs > TITLEBAR_DOUBLE_CLICK_MAX_DURATION_MS) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     void toggleMaximizeWindow();
   };
 
   const handleTitlebarPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
-    if (event.button !== 0 || event.detail > 1 || isTitlebarInteractiveTarget(event.target)) return;
+    if (event.button !== 0 || isTitlebarInteractiveTarget(event.target)) return;
+    titlebarPointerMetaRef.current = {
+      startedAt: Date.now(),
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      moved: false,
+    };
+    if (event.detail > 1) return;
     titlebarDragRef.current = {
       pointerId: event.pointerId,
       startClientX: event.clientX,
@@ -454,6 +594,9 @@ export function AppFrame({ children }: AppFrameProps) {
     if (!dragState || dragState.pointerId !== event.pointerId) return;
 
     const moved = Math.hypot(event.clientX - dragState.startClientX, event.clientY - dragState.startClientY);
+    if (moved >= TITLEBAR_DRAG_THRESHOLD) {
+      titlebarPointerMetaRef.current.moved = true;
+    }
     if (!dragState.started && !dragState.pending && moved < TITLEBAR_DRAG_THRESHOLD) return;
 
     event.preventDefault();
@@ -513,6 +656,12 @@ export function AppFrame({ children }: AppFrameProps) {
     event.stopPropagation();
   };
 
+  const mouseGesturePath = mouseGesturePreview?.points.length
+    ? mouseGesturePreview.points
+      .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+      .join(' ')
+    : '';
+
   return (
     <div className={`flex h-screen w-screen flex-col overflow-hidden bg-slate-50 ${isDarkTheme ? 'theme-dark' : ''}`}>
       <header
@@ -542,15 +691,17 @@ export function AppFrame({ children }: AppFrameProps) {
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') activateTab(tab);
                   }}
-                  className={`workspace-tab group relative flex h-10 min-w-[142px] max-w-[188px] shrink-0 cursor-pointer items-center gap-2 border px-3 text-left text-[15px] font-semibold transition-colors ${
+                  className={`workspace-tab group relative flex h-10 shrink-0 cursor-pointer items-center gap-2 border px-3 text-[15px] font-semibold transition-colors ${
                     isActive
                       ? `workspace-tab-active rounded-t-lg border-slate-300 border-b-white bg-white text-slate-950 shadow-[0_-1px_0_rgba(255,255,255,0.7)] ${isHomeTab ? 'workspace-tab-home' : ''}`
                       : `workspace-tab-inactive border-transparent bg-transparent text-slate-700 shadow-none hover:text-slate-900 ${isHomeTab ? 'workspace-tab-home-inactive' : ''}`
-                  }`}
+                  } ${isHomeTab ? 'w-[118px] justify-center text-center' : 'min-w-[112px] max-w-[260px] w-fit text-left'}`}
                   title={tab.title}
                 >
-                  <PanelLeft className={`h-4 w-4 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-500'}`} />
-                  <span className="min-w-0 flex-1 truncate">{tab.title}</span>
+                  {!isHomeTab && (
+                    <PanelLeft className={`h-4 w-4 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-500'}`} />
+                  )}
+                  <span className={`${isHomeTab ? 'shrink-0 text-[18px] font-bold' : 'min-w-0 flex-1 truncate'}`}>{tab.title}</span>
                   {!tab.fixed && (
                     <button
                       type="button"
@@ -676,6 +827,30 @@ export function AppFrame({ children }: AppFrameProps) {
           </div>
         </div>
       </div>
+      {mouseGesturePreview && (
+        <div className="pointer-events-none fixed inset-0 z-[9999]">
+          <svg className="absolute inset-0 h-full w-full">
+            <path
+              d={mouseGesturePath}
+              fill="none"
+              stroke={mouseGesturePreview.ready ? '#0284c7' : '#0ea5e9'}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="5"
+            />
+          </svg>
+          <div
+            className="absolute flex min-w-[140px] items-center gap-3 rounded-2xl border border-slate-700 bg-slate-950 px-5 py-4 text-white shadow-2xl"
+            style={{
+              left: Math.max(20, mouseGesturePreview.startX - 92),
+              top: Math.max(58, mouseGesturePreview.startY - 96),
+            }}
+          >
+            <span className="text-4xl leading-none">←</span>
+            <span className="text-lg font-black text-white">{mouseGesturePreview.ready ? '返回首页' : '继续左滑'}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

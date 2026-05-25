@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Camera, ChevronDown, ChevronRight, Keyboard, UserRound } from 'lucide-react';
+import { Camera, ChevronDown, ChevronRight, UserRound } from 'lucide-react';
 
+import { DarkThemeColorPage } from '@/features/tests/pages/DarkThemeColorPage';
 import { NavSettingsModal } from '@/shared/navigation/NavSettingsModal';
 import {
   getIconByName,
@@ -65,6 +66,7 @@ export function DashboardLayout() {
   const [showNavSettings, setShowNavSettings] = useState(false);
   const [showShortcutSettings, setShowShortcutSettings] = useState(false);
   const [showSystemSettings, setShowSystemSettings] = useState(false);
+  const [showThemeColors, setShowThemeColors] = useState(false);
   const [userName, setUserName] = useState(readUserName);
   const [avatar, setAvatar] = useState(readUserAvatar);
   const [isEditingUserName, setIsEditingUserName] = useState(false);
@@ -84,6 +86,15 @@ export function DashboardLayout() {
       el.removeEventListener('scroll', onScroll);
     };
   }, []);
+
+  useEffect(() => {
+    if (!showThemeColors) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowThemeColors(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showThemeColors]);
 
   const toggleSection = useCallback((title: string) => {
     setCollapsedSections((prev) => {
@@ -214,7 +225,7 @@ export function DashboardLayout() {
           );
         })}
 
-        <div className="mt-auto space-y-2 border-t border-slate-100 p-4">
+        <div className="mt-auto grid grid-cols-2 gap-2 border-t border-slate-100 p-4">
           <button
             onClick={() => setShowSystemSettings(true)}
             className="flex w-full items-center justify-center whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-[13px] font-bold text-slate-700 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
@@ -222,11 +233,16 @@ export function DashboardLayout() {
             系统设置
           </button>
           <button
-            onClick={() => setShowShortcutSettings(true)}
-            className="flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-[13px] text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+            onClick={() => setShowThemeColors(true)}
+            className="flex w-full items-center justify-center whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-[13px] font-bold text-slate-700 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
           >
-            <Keyboard className="h-4 w-4" />
-            快捷键设置
+            主题颜色
+          </button>
+          <button
+            onClick={() => setShowShortcutSettings(true)}
+            className="flex w-full items-center justify-center whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-[13px] text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+          >
+            快捷键
           </button>
           <button
             onClick={() => setShowNavSettings(true)}
@@ -240,6 +256,14 @@ export function DashboardLayout() {
       <main className="min-w-0 flex-1 overflow-hidden">
         <Outlet />
       </main>
+
+      {showThemeColors ? (
+        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/25 p-5">
+          <div className="flex h-[min(860px,calc(100vh-40px))] w-[min(1280px,calc(100vw-40px))] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+            <DarkThemeColorPage variant="modal" onClose={() => setShowThemeColors(false)} />
+          </div>
+        </div>
+      ) : null}
 
       <NavSettingsModal
         isOpen={showNavSettings}
@@ -262,6 +286,7 @@ export function DashboardLayout() {
       <SystemSettingsModal
         isOpen={showSystemSettings}
         onClose={() => setShowSystemSettings(false)}
+        homeAvatar={avatar}
       />
     </div>
   );

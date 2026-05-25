@@ -1,4 +1,4 @@
-const DATABASE_COLLECTION_NAMES = new Set(['plotLibrary', 'plotRecycle', 'materials']);
+const DATABASE_COLLECTION_NAMES = new Set(['plotLibrary', 'plotRecycle', 'materials', 'moonfallSettings']);
 
 function normalizeCollectionName(collection) {
   return typeof collection === 'string' && DATABASE_COLLECTION_NAMES.has(collection)

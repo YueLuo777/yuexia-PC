@@ -9,7 +9,8 @@ const ExtractTestPage = lazy(() => import('@/features/extract/pages/ExtractTestP
 const AiChatPage = lazy(() => import('@/features/ai-chat/pages/AiChatPage').then((module) => ({ default: module.AiChatPage })));
 const TestCollectionPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })));
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
-const OutlineEmptyStateTestPage = lazy(() => import('@/features/tests/pages/OutlineEmptyStateTestPage').then((module) => ({ default: module.OutlineEmptyStateTestPage })));
+const ExtractPlotTabsTestPage = lazy(() => import('@/features/tests/pages/ExtractPlotTabsTestPage').then((module) => ({ default: module.ExtractPlotTabsTestPage })));
+const SettingLibraryTabsTestPage = lazy(() => import('@/features/tests/pages/SettingLibraryTabsTestPage').then((module) => ({ default: module.SettingLibraryTabsTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 const IdeaGeneratorPage = lazy(() => import('@/features/ideas/pages/IdeaGeneratorPage').then((module) => ({ default: module.IdeaGeneratorPage })));
 const IdeaLibraryPage = lazy(() => import('@/features/ideas/pages/IdeaLibraryPage').then((module) => ({ default: module.IdeaLibraryPage })));
@@ -18,6 +19,7 @@ const DbSettingsPage = lazy(() => import('@/features/settings/pages/DbSettingsPa
 const MaterialsCollectionPage = lazy(() => import('@/features/materials/pages/MaterialsCollectionPage').then((module) => ({ default: module.MaterialsCollectionPage })));
 const MaterialsPage = lazy(() => import('@/features/materials/pages/MaterialsPage').then((module) => ({ default: module.MaterialsPage })));
 const ModelManagePage = lazy(() => import('@/features/models/pages/ModelManagePage').then((module) => ({ default: module.ModelManagePage })));
+const MoonfallSettingsPage = lazy(() => import('@/features/moonfall-settings/pages/MoonfallSettingsPage').then((module) => ({ default: module.MoonfallSettingsPage })));
 const NovelLibraryPage = lazy(() => import('@/features/novels/pages/NovelLibraryPage').then((module) => ({ default: module.NovelLibraryPage })));
 const PlotLibraryPage = lazy(() => import('@/features/plot-library/pages/PlotLibraryPage').then((module) => ({ default: module.PlotLibraryPage })));
 const PromptsPage = lazy(() => import('@/features/prompts/pages/PromptsPage').then((module) => ({ default: module.PromptsPage })));
@@ -54,6 +56,7 @@ export default function App() {
               <Route path="/extract" element={<ExtractTestPage />} />
               <Route path="/extract-1" element={<ExtractPage />} />
               <Route path="/plot-library" element={<PlotLibraryPage />} />
+              <Route path="/moonfall-settings" element={<MoonfallSettingsPage />} />
               <Route path="/cover-library" element={<CoverLibraryPage />} />
               <Route path="/materials" element={<MaterialsCollectionPage />} />
               <Route path="/materials/settings" element={<MaterialsPage />} />
@@ -67,9 +70,10 @@ export default function App() {
               <Route path="/call-data" element={<Navigate to="/token-usage" replace />} />
               <Route path="/ai-chat" element={<AiChatPage />} />
               <Route path="/test-collection" element={<TestCollectionPage />} />
+              <Route path="/extract-plot-tabs-test" element={<ExtractPlotTabsTestPage />} />
+              <Route path="/setting-library-tabs-test" element={<SettingLibraryTabsTestPage />} />
               <Route path="/theme-colors" element={<DarkThemeColorPage />} />
               <Route path="/dark-theme-colors" element={<DarkThemeColorPage />} />
-              <Route path="/outline-empty-state-test" element={<OutlineEmptyStateTestPage />} />
               <Route path="/test-browser" element={<TestBrowserPage />} />
               <Route path="/button-test" element={<ButtonTestPage />} />
               <Route path="/extract-test" element={<Navigate to="/extract" replace />} />

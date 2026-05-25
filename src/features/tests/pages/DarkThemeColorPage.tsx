@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, Copy, Moon, Paintbrush, Palette, RotateCcw, Sun } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Moon, Palette, RotateCcw, Sun } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -77,6 +77,32 @@ const colorGroups: ColorGroup[] = [
     ],
   },
 ];
+const extraColors: ColorItem[] = [
+  { id: 29, name: '月蓝', value: '#08B3D9', usage: '软件品牌色' },
+  { id: 30, name: '湖蓝', value: '#0ea5e9', usage: '清爽主色' },
+  { id: 31, name: '靛蓝', value: '#6366f1', usage: '强调与选中' },
+  { id: 32, name: '紫罗兰', value: '#8b5cf6', usage: '创意提示' },
+  { id: 33, name: '玫红', value: '#ec4899', usage: '高亮标签' },
+  { id: 34, name: '樱桃红', value: '#e11d48', usage: '强提醒' },
+  { id: 35, name: '朱红', value: '#ef4444', usage: '危险操作' },
+  { id: 36, name: '橙色', value: '#f97316', usage: '当前选择框' },
+  { id: 37, name: '琥珀', value: '#f59e0b', usage: '提示状态' },
+  { id: 38, name: '金黄', value: '#eab308', usage: '轻提示' },
+  { id: 39, name: '柠檬', value: '#84cc16', usage: '活跃状态' },
+  { id: 40, name: '嫩绿', value: '#22c55e', usage: '成功状态' },
+  { id: 41, name: '翡翠', value: '#10b981', usage: '确认操作' },
+  { id: 42, name: '青绿', value: '#14b8a6', usage: '资料与同步' },
+  { id: 43, name: '孔雀青', value: '#06b6d4', usage: '信息按钮' },
+  { id: 44, name: '浅蓝', value: '#bae6fd', usage: '浅色背景' },
+  { id: 45, name: '浅青', value: '#ccfbf1', usage: '柔和底色' },
+  { id: 46, name: '浅绿', value: '#dcfce7', usage: '成功底色' },
+  { id: 47, name: '浅黄', value: '#fef3c7', usage: '提示底色' },
+  { id: 48, name: '浅橙', value: '#fed7aa', usage: '警示底色' },
+  { id: 49, name: '浅粉', value: '#fce7f3', usage: '柔和标签' },
+  { id: 50, name: '浅紫', value: '#ede9fe', usage: '创意底色' },
+];
+
+const CUSTOM_COLOR_START_ID = 1000;
 
 const slots: ThemeSlot[] = [
   { key: 'page', title: '页面背景', desc: '应用最底层的大面积背景。' },
@@ -189,27 +215,64 @@ function getPagePalette(mode: ThemeMode) {
   };
 }
 
-export function DarkThemeColorPage() {
+function normalizeHexColor(input: string) {
+  const trimmed = input.trim();
+  const value = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+  return /^#[0-9a-fA-F]{6}$/.test(value) ? value.toUpperCase() : '';
+}
+
+type DarkThemeColorPageProps = {
+  variant?: 'page' | 'modal';
+  onClose?: () => void;
+};
+
+export function DarkThemeColorPage({ variant = 'page', onClose }: DarkThemeColorPageProps = {}) {
   const navigate = useNavigate();
   const [mode, setMode] = useState<ThemeMode>(loadThemeMode);
-  const [selectedColorId, setSelectedColorId] = useState(20);
+  const [pendingSlotKey, setPendingSlotKey] = useState<string | null>(null);
+  const [selectedColorId, setSelectedColorId] = useState<number | null>(null);
   const [assignments, setAssignments] = useState(defaultAssignments);
+  const [customColorValue, setCustomColorValue] = useState('');
+  const [customColors, setCustomColors] = useState<ColorItem[]>([]);
   const [copied, setCopied] = useState('');
 
-  const flatColors = useMemo(() => colorGroups.flatMap((group) => group.colors), []);
-  const selectedColor = flatColors.find((color) => color.id === selectedColorId) ?? flatColors[0];
+  const flatColors = useMemo(() => [...colorGroups.flatMap((group) => group.colors), ...extraColors, ...customColors], [customColors]);
   const current = assignments[mode];
   const preview = getSlotStyle(current);
   const page = getPagePalette(mode);
 
-  const fillSlot = (slotKey: string) => {
+  const handleColorClick = (color: ColorItem) => {
+    if (!pendingSlotKey) {
+      setSelectedColorId(color.id);
+      return;
+    }
     setAssignments((prev) => ({
       ...prev,
       [mode]: {
         ...prev[mode],
-        [slotKey]: selectedColor.value,
+        [pendingSlotKey]: color.value,
       },
     }));
+    setPendingSlotKey(null);
+    setSelectedColorId(null);
+  };
+
+  const addCustomColor = () => {
+    const normalized = normalizeHexColor(customColorValue);
+    if (!normalized) return;
+    setCustomColors((prev) => {
+      if (flatColors.some((color) => color.value.toLowerCase() === normalized.toLowerCase())) return prev;
+      return [
+        ...prev,
+        {
+          id: CUSTOM_COLOR_START_ID + prev.length,
+          name: '自定义',
+          value: normalized,
+          usage: '用户添加',
+        },
+      ];
+    });
+    setCustomColorValue('');
   };
 
   const copyColor = async (value: string) => {
@@ -220,14 +283,20 @@ export function DarkThemeColorPage() {
 
   return (
     <div className="h-full overflow-y-auto" style={{ backgroundColor: page.page, color: page.title }}>
-      <div className="space-y-6 px-7 py-6">
+      <div className={variant === 'modal' ? 'space-y-5 px-5 py-5' : 'space-y-6 px-7 py-6'}>
         <header
           className="flex min-h-[76px] flex-wrap items-center justify-between gap-4 rounded-xl border px-5 py-4"
           style={{ backgroundColor: page.header, borderColor: page.border }}
         >
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate('/test-collection')}
+              onClick={() => {
+                if (variant === 'modal') {
+                  onClose?.();
+                  return;
+                }
+                navigate('/test-collection');
+              }}
               className="flex h-9 w-9 items-center justify-center rounded-lg border transition-colors"
               style={{ backgroundColor: page.button, borderColor: page.border, color: page.body }}
               title="返回测试合集"
@@ -266,91 +335,110 @@ export function DarkThemeColorPage() {
           </div>
         </header>
 
-        <section className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(620px,1fr)_430px]">
-          <div className="space-y-5">
-            {colorGroups.map((group) => (
-              <section key={group.title} className="rounded-xl border p-5" style={{ backgroundColor: page.panel, borderColor: page.border }}>
-                <div className="mb-4 flex items-end justify-between gap-3">
-                  <div>
-                    <h2 className="text-base font-bold" style={{ color: page.title }}>{group.title}</h2>
-                    <p className="mt-1 text-sm" style={{ color: page.muted }}>{group.desc}</p>
-                  </div>
-                  <Paintbrush className="h-5 w-5" style={{ color: page.muted }} />
-                </div>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-4 2xl:grid-cols-8">
-                  {group.colors.map((color) => {
-                    const active = selectedColor.id === color.id;
-                    return (
-                      <button
-                        key={color.id}
-                        onClick={() => setSelectedColorId(color.id)}
-                        className={`min-h-[132px] rounded-xl border p-3 text-left transition-all ${
-                          active ? 'shadow-[0_0_0_1px_rgba(34,199,229,0.28)]' : ''
-                        }`}
-                        style={{
-                          backgroundColor: active ? page.buttonHover : page.card,
-                          borderColor: active ? page.strongBorder : page.border,
-                        }}
-                      >
-                        <div
-                          className="mb-3 flex h-12 items-center justify-between rounded-lg px-3 text-sm font-bold"
-                          style={{ backgroundColor: color.value, color: getContrastText(color.value) }}
-                        >
-                          <span>{color.id}</span>
-                          {active && <Check className="h-4 w-4" />}
-                        </div>
-                        <div className="font-bold" style={{ color: page.title }}>{color.name}</div>
-                        <div className="mt-1 text-xs" style={{ color: page.muted }}>{color.usage}</div>
-                        <div className="mt-2 font-mono text-xs" style={{ color: page.body }}>{color.value}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-          </div>
+        <section className="space-y-5">
+          <section className="rounded-xl border p-5" style={{ backgroundColor: page.panel, borderColor: page.border }}>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-bold" style={{ color: page.title }}>填色位置</h2>
+                <p className="mt-1 text-sm" style={{ color: page.muted }}>
+                  {pendingSlotKey ? '已选择位置，请点击下方颜色完成填色。' : '先选择一个位置，位置会出现橙色边框。'}
+                </p>
+              </div>
+              <button
+                onClick={() => setAssignments((prev) => ({ ...prev, [mode]: defaultAssignments[mode] }))}
+                className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs"
+                style={{ borderColor: page.border, color: page.body }}
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                恢复当前主题
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-6">
+              {slots.map((slot) => {
+                const color = current[slot.key];
+                const active = pendingSlotKey === slot.key;
+                return (
+                  <button
+                    key={slot.key}
+                    onClick={() => {
+                      setPendingSlotKey(slot.key);
+                      setSelectedColorId(null);
+                    }}
+                    className="min-h-[86px] rounded-xl border p-3 text-left transition-colors"
+                    style={{
+                      backgroundColor: page.card,
+                      borderColor: active ? '#f97316' : page.border,
+                      boxShadow: active ? '0 0 0 2px rgba(249, 115, 22, 0.22)' : 'none',
+                    }}
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="text-sm font-bold" style={{ color: page.title }}>{slot.title}</span>
+                      <span className="h-5 w-5 shrink-0 rounded border border-white/10" style={{ backgroundColor: color }} />
+                    </div>
+                    <div className="font-mono text-xs" style={{ color: page.body }}>{color}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
-          <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
-            <section className="rounded-xl border p-5" style={{ backgroundColor: page.panel, borderColor: page.border }}>
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-bold" style={{ color: page.title }}>填色位置</h2>
-                  <p className="mt-1 text-sm" style={{ color: page.muted }}>
-                    当前选中：<span className="font-bold" style={{ color: page.title }}>{selectedColor.name}</span>
-                  </p>
-                </div>
+          <section className="rounded-xl border p-5" style={{ backgroundColor: page.panel, borderColor: page.border }}>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-bold" style={{ color: page.title }}>颜色</h2>
+                <p className="mt-1 text-sm" style={{ color: page.muted }}>共 {flatColors.length} 种颜色，点击颜色后会填入当前橙框位置。</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  value={customColorValue}
+                  onChange={(event) => setCustomColorValue(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') addCustomColor();
+                  }}
+                  placeholder="#08B3D9"
+                  className="h-9 w-28 rounded-lg border px-3 font-mono text-sm outline-none"
+                  style={{ backgroundColor: page.card, borderColor: page.border, color: page.title }}
+                />
                 <button
-                  onClick={() => setAssignments((prev) => ({ ...prev, [mode]: defaultAssignments[mode] }))}
-                  className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs"
-                  style={{ borderColor: page.border, color: page.body }}
+                  onClick={addCustomColor}
+                  className="h-9 rounded-lg px-3 text-sm font-bold text-white"
+                  style={{ backgroundColor: preview.primary }}
                 >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  恢复当前主题
+                  添加颜色
                 </button>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {slots.map((slot) => {
-                  const color = current[slot.key];
-                  return (
-                    <button
-                      key={slot.key}
-                      onClick={() => fillSlot(slot.key)}
-                      className="rounded-xl border p-3 text-left transition-colors"
-                      style={{ backgroundColor: page.card, borderColor: page.border }}
-                      title={`点击后将 ${selectedColor.name} 填入 ${slot.title}`}
+            </div>
+            <div className="grid grid-cols-5 gap-2 md:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12">
+              {flatColors.map((color) => {
+                const active = selectedColorId === color.id;
+                return (
+                  <button
+                    key={color.id}
+                    onClick={() => handleColorClick(color)}
+                    className="min-h-[92px] rounded-xl border p-2 text-left transition-all"
+                    style={{
+                      backgroundColor: page.card,
+                      borderColor: active ? page.strongBorder : page.border,
+                      boxShadow: active ? '0 0 0 1px rgba(34,199,229,0.3)' : 'none',
+                    }}
+                    title={`${color.name} ${color.value}`}
+                  >
+                    <div
+                      className="mb-2 flex h-10 items-center justify-between rounded-lg px-2 text-xs font-bold"
+                      style={{ backgroundColor: color.value, color: getContrastText(color.value) }}
                     >
-                      <div className="mb-2 flex items-center justify-between gap-2">
-                        <span className="text-sm font-bold" style={{ color: page.title }}>{slot.title}</span>
-                        <span className="h-5 w-5 shrink-0 rounded border border-white/10" style={{ backgroundColor: color }} />
-                      </div>
-                      <p className="line-clamp-2 text-xs leading-5" style={{ color: page.muted }}>{slot.desc}</p>
-                      <div className="mt-2 font-mono text-xs" style={{ color: page.body }}>{color}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
+                      <span>{color.id}</span>
+                      {active && <Check className="h-3.5 w-3.5" />}
+                    </div>
+                    <div className="truncate text-xs font-bold" style={{ color: page.title }}>{color.name}</div>
+                    <div className="mt-1 truncate font-mono text-[11px]" style={{ color: page.body }}>{color.value}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(520px,1fr)_430px]">
             <section className="rounded-xl border border-[#3d3d3d] p-5" style={{ backgroundColor: preview.page }}>
               <div className="rounded-xl border p-4" style={{ backgroundColor: preview.panel, borderColor: preview.border }}>
                 <div className="mb-4 flex items-center justify-between">
@@ -371,24 +459,9 @@ export function DarkThemeColorPage() {
                     主角在危机中反向布局，用看似退让的选择换取关键筹码，最终完成绝境转机。
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      className="rounded-lg px-3 py-2 text-sm font-bold"
-                      style={{ backgroundColor: preview.primary, color: getContrastText(preview.primary) }}
-                    >
-                      主按钮
-                    </button>
-                    <button
-                      className="rounded-lg border px-3 py-2 text-sm font-bold"
-                      style={{ backgroundColor: preview.secondary, borderColor: preview.border, color: preview.body }}
-                    >
-                      次按钮
-                    </button>
-                    <button
-                      className="rounded-lg px-3 py-2 text-sm font-bold"
-                      style={{ backgroundColor: preview.danger, color: getContrastText(preview.danger) }}
-                    >
-                      删除
-                    </button>
+                    <button className="rounded-lg px-3 py-2 text-sm font-bold" style={{ backgroundColor: preview.primary, color: getContrastText(preview.primary) }}>主按钮</button>
+                    <button className="rounded-lg border px-3 py-2 text-sm font-bold" style={{ backgroundColor: preview.secondary, borderColor: preview.border, color: preview.body }}>次按钮</button>
+                    <button className="rounded-lg px-3 py-2 text-sm font-bold" style={{ backgroundColor: preview.danger, color: getContrastText(preview.danger) }}>删除</button>
                   </div>
                 </div>
               </div>
@@ -420,7 +493,7 @@ export function DarkThemeColorPage() {
                 })}
               </div>
             </section>
-          </aside>
+          </div>
         </section>
       </div>
     </div>

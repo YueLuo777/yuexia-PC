@@ -90,7 +90,7 @@ export function AiChatPage() {
     setInput('');
 
     if (!selectedModel) {
-      setMessages([...nextMessages, createMessage('assistant', '尚未配置可用模型。请先到“模型管理”中新增并启用模型。')]);
+      setMessages([...nextMessages, createMessage('assistant', '尚未配置可用模型。请先到“模型管理”中新增模型。')]);
       return;
     }
 
@@ -238,7 +238,7 @@ export function AiChatPage() {
               )}
             </select>
             <div className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
-              {selectedModel ? `当前模型ID：${selectedModel.model || selectedModel.id}` : '请先启用模型'}
+              {selectedModel ? `当前模型ID：${selectedModel.model || selectedModel.id}` : '请先选择模型'}
             </div>
           </div>
 

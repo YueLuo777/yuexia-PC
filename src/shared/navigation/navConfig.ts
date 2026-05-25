@@ -69,7 +69,7 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
       { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
       { iconName: 'Film', label: '我的剧本', to: '/scripts' },
       { iconName: 'Sparkles', label: '提炼剧情', to: '/extract' },
-      { iconName: 'Star', label: '剧情库', to: '/plot-library' },
+      { iconName: 'Database', label: '月落设定库', to: '/moonfall-settings' },
     ],
   },
   {
@@ -104,7 +104,7 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
 
 const NAV_CONFIG_KEY = 'xinyuexia_nav_config_v1';
 const COLLAPSED_KEY = 'xinyuexia_sidebar_collapsed_v1';
-const REMOVED_ROUTES = new Set(['/dashboard', '/call-data', '/test-browser', '/button-test', '/extract-test', '/extract-1', '/cover-library']);
+const REMOVED_ROUTES = new Set(['/dashboard', '/call-data', '/test-browser', '/button-test', '/extract-test', '/extract-1', '/cover-library', '/plot-library']);
 const REMOVED_GROUP_TITLES = new Set(['首页专区']);
 const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
   '/db-settings': '数据库设置',

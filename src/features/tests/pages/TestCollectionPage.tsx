@@ -1,4 +1,4 @@
-import { ArrowLeft, BookOpenCheck, Globe, Moon, Palette, Search, Sparkles } from 'lucide-react';
+import { ArrowLeft, Globe, Moon, Palette, Search, Sparkles } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,11 +21,11 @@ const testGroups = [
         badge: 'Theme',
       },
       {
-        title: '章节概要空状态',
-        description: '对比章节没有概要时，数字按钮的几种空状态显示方案。',
-        path: '/outline-empty-state-test',
-        icon: BookOpenCheck,
-        badge: 'Outline',
+        title: '作品设定库标签',
+        description: '测试把极简/高级模式的切换 UI 改成角色、设定、大纲、细纲四个标签。',
+        path: '/setting-library-tabs-test',
+        icon: Sparkles,
+        badge: 'Tabs',
       },
     ],
   },

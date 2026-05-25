@@ -16,13 +16,16 @@
     "test": "vitest",
     "test:run": "vitest run",
     "verify": "npm run check && npm run test:run && npm run build",
+    "prepare:postgres": "node scripts/prepare-embedded-postgres.cjs",
     "pack:win": "npm run build && electron-builder --win portable"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.562.0",
+    "pg": "^8.21.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.14.2",
@@ -58,7 +61,17 @@
       "dist/**/*",
       "electron/**/*",
       "build/**/*",
+      "runtime/postgres/README.md",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "runtime/postgres",
+        "to": "postgres",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
     "win": {
       "icon": "build/app-icon.ico",

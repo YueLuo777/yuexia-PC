@@ -9,7 +9,7 @@ const tabs: Array<{ id: SettingsTab; label: string }> = [
   { id: 'appIcon', label: '软件图标' },
 ];
 
-export function SystemSettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '' }: { isOpen: boolean; onClose: () => void; homeAvatar?: string }) {
   useTopModalEscape(isOpen, onClose);
   const [activeTab, setActiveTab] = useState<SettingsTab>('appIcon');
   const [iconInfo, setIconInfo] = useState<AppIconResult | null>(null);
@@ -71,13 +71,40 @@ export function SystemSettingsModal({ isOpen, onClose }: { isOpen: boolean; onCl
     setStatus(result.message ?? (result.ok ? '已恢复默认图标。' : '恢复失败。'));
   };
 
+  const useHomeAvatarIcon = async () => {
+    if (!homeAvatar) {
+      setStatus('首页图标为空，请先在首页左上角上传图标。');
+      return;
+    }
+    if (!window.xinyuexiaAppIcon?.useDataUrl) {
+      setStatus('当前运行环境不支持将首页图标设置为软件图标。');
+      return;
+    }
+    setIsBusy(true);
+    const result = await window.xinyuexiaAppIcon.useDataUrl(homeAvatar, 'home-avatar.png');
+    setIsBusy(false);
+    setIconInfo(result);
+    setStatus(result.message ?? (result.ok ? '软件图标已切换为首页图标。' : '切换失败。'));
+  };
+
+  const makeDefaultIcon = async () => {
+    if (!window.xinyuexiaAppIcon?.makeDefault) {
+      setStatus('当前运行环境不支持设置默认图标。');
+      return;
+    }
+    setIsBusy(true);
+    const result = await window.xinyuexiaAppIcon.makeDefault();
+    setIsBusy(false);
+    setIconInfo(result);
+    setStatus(result.message ?? (result.ok ? '已将当前图标设为默认图标。' : '设置默认图标失败。'));
+  };
+
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div className="flex h-[min(720px,calc(100vh-32px))] w-[936px] max-w-[96vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3">
           <div>
             <h2 className="text-base font-bold text-slate-900">系统设置</h2>
-            <p className="mt-0.5 text-xs text-slate-400">管理软件本身的显示与运行偏好。</p>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
             <X className="h-4 w-4" />
@@ -114,6 +141,41 @@ export function SystemSettingsModal({ isOpen, onClose }: { isOpen: boolean; onCl
                     <p className="text-sm font-bold text-slate-900">{iconInfo?.isCustom ? '当前使用自定义图标' : '当前使用默认图标'}</p>
                     <p className="mt-1 truncate text-xs text-slate-400">{iconInfo?.iconPath ?? '未读取到图标路径'}</p>
                     <p className="mt-1 text-xs leading-5 text-slate-500">任务栏图标通常需要重启软件后完全刷新；如果 Windows 有缓存，可能还需要重新固定任务栏图标。</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                      {homeAvatar ? (
+                        <img src={homeAvatar} alt="首页图标" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-xs font-bold text-slate-400">首页</span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-slate-900">首页图标</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">把首页左上角的图标同步成软件图标。</p>
+                      <button
+                        onClick={useHomeAvatarIcon}
+                        disabled={isBusy || !homeAvatar}
+                        className="mt-2 rounded-lg border border-brand/30 px-3 py-1.5 text-xs font-bold text-brand hover:bg-brand-light disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300"
+                      >
+                        使用首页图标
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-100 bg-white p-3">
+                    <p className="text-sm font-bold text-slate-900">默认图标</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">把当前正在使用的图标保存为默认图标，恢复默认或下次启动时会优先使用它。</p>
+                    <button
+                      onClick={makeDefaultIcon}
+                      disabled={isBusy || !iconInfo?.ok}
+                      className="mt-3 rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-slate-300"
+                    >
+                      设为默认图标
+                    </button>
                   </div>
                 </div>
 

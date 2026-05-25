@@ -10,6 +10,7 @@ import type { ExtractModule } from '@/features/extract/model/extractTypes';
 import { readModelSnapshot } from '@/features/models/hooks/useModels';
 import type { ModelItem } from '@/features/models/model/modelTypes';
 import { callModel } from '@/features/models/services/callModel';
+import { PlotLibraryPage } from '@/features/plot-library/pages/PlotLibraryPage';
 import { savePlotItems } from '@/features/plot-library/hooks/usePlotLibrary';
 import { APP_EVENTS } from '@/shared/events/appEvents';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
@@ -17,6 +18,7 @@ import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 type ExtractMode = 'chapter' | 'multi' | 'smart';
 type OutputMode = 'single' | 'book' | 'multi';
+type ExtractMainTab = '提炼剧情' | '剧情库';
 
 interface UploadFileItem {
   id: string;
@@ -577,6 +579,7 @@ export function ExtractTestPage() {
   } = useExtractModules();
 
   const [models, setModels] = useState<ModelItem[]>(readEnabledModels);
+  const [mainTab, setMainTab] = useState<ExtractMainTab>('提炼剧情');
   const [selectedModelId, setSelectedModelId] = usePersistentState<string>(EXTRACT_MODEL_KEY, '');
   const [selectedNovelId, setSelectedNovelId] = usePersistentState<number | null>(
     EXTRACT_SELECTED_NOVEL_KEY,
@@ -992,33 +995,63 @@ export function ExtractTestPage() {
     }}>
       <header className="shrink-0 border-b border-gray-200 bg-white">
         <div className="flex h-16 items-center justify-between px-6">
-          <div>
-          <div className="min-w-0">
-            <h1 className="text-xl font-bold text-gray-900">提炼剧情</h1>
+          <div className="flex min-w-0 items-center gap-3">
+            <h1 className="shrink-0 text-xl font-bold text-gray-900">提炼剧情</h1>
+            <div className="flex rounded-2xl bg-slate-100 p-1">
+            {(['提炼剧情', '剧情库'] as ExtractMainTab[]).map((tab) => {
+              const active = mainTab === tab;
+              return (
+                <button
+                  key={tab}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setMainTab(tab);
+                  }}
+                  className={`h-8 min-w-[86px] rounded-xl px-4 text-sm font-bold transition-all ${
+                    active
+                      ? 'bg-white text-sky-500 shadow-sm'
+                      : 'text-slate-500 hover:bg-white/70 hover:text-slate-700'
+                  }`}
+                >
+                  {tab}
+                </button>
+              );
+            })}
           </div>
           </div>
 
-          <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
-            {selectedNovel && <span className="text-xs font-medium text-brand">已关联：</span>}
-            <button
-              onClick={() => setShowLinkNovel(true)}
-              className="flex h-8 max-w-[240px] items-center justify-center gap-1 rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-dark"
-            >
-              <BookMarked className="h-3.5 w-3.5 shrink-0" />
-              <span className="min-w-0 truncate">{selectedNovel?.title || '关联小说'}</span>
-            </button>
-            {selectedNovelId !== null && (
-              <button
-                onClick={() => setSelectedNovelId(null)}
-                className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] text-red-600 transition-colors hover:bg-red-100"
-              >
-                取消关联
-              </button>
+          <div className="flex min-h-10 items-center gap-2" onClick={(event) => event.stopPropagation()}>
+            {mainTab === '剧情库' ? (
+              <div id="extract-plot-library-toolbar" className="flex items-center gap-2" />
+            ) : (
+              <>
+                {selectedNovel && <span className="text-xs font-medium text-brand">已关联：</span>}
+                <button
+                  onClick={() => setShowLinkNovel(true)}
+                  className="flex h-8 max-w-[240px] items-center justify-center gap-1 rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-dark"
+                >
+                  <BookMarked className="h-3.5 w-3.5 shrink-0" />
+                  <span className="min-w-0 truncate">{selectedNovel?.title || '关联小说'}</span>
+                </button>
+                {selectedNovelId !== null && (
+                  <button
+                    onClick={() => setSelectedNovelId(null)}
+                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] text-red-600 transition-colors hover:bg-red-100"
+                  >
+                    取消关联
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
       </header>
 
+      {mainTab === '剧情库' ? (
+        <div className="min-h-0 flex-1 overflow-hidden" onClick={(event) => event.stopPropagation()}>
+          <PlotLibraryPage embedded />
+        </div>
+      ) : (
       <div
         className={`grid min-h-0 flex-1 overflow-hidden ${
           isModulePreviewOpen
@@ -1124,7 +1157,7 @@ export function ExtractTestPage() {
                         {collapsed ? <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" /> : <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />}
                       </button>
                       {!collapsed && !module.hidePreview && (
-                        <div className="min-w-0 whitespace-pre-wrap break-words p-3 text-xs leading-6 text-gray-600 [overflow-wrap:anywhere]">
+                        <div className="min-w-0 whitespace-pre-wrap break-words p-3 text-sm leading-7 text-gray-600 [overflow-wrap:anywhere]">
                           {module.instruction}
                         </div>
                       )}
@@ -1146,7 +1179,6 @@ export function ExtractTestPage() {
             <section className="rounded-xl border border-gray-200 bg-white p-3">
               <h3 className="mb-2 flex items-center gap-1 text-[15px] font-bold text-gray-900">
                 <Settings className="h-3.5 w-3.5 text-brand" /> AI 模型
-                {models.length > 0 && <span className="ml-auto text-[10px] font-normal text-gray-400">已启用 {models.length} 个</span>}
               </h3>
               {models.length === 0 ? (
                 <div className="space-y-1">
@@ -1159,20 +1191,20 @@ export function ExtractTestPage() {
                   </button>
                 </div>
               ) : (
-                <div className="max-h-[138px] space-y-1.5 overflow-y-auto pr-1">
+                <div className="max-h-[150px] space-y-1.5 overflow-y-auto pr-1">
                   {orderedModels.map((model) => (
                     <button
                       key={model.id}
                       onClick={() => setSelectedModelId(model.id)}
-                      className={`flex h-[42px] w-full items-center rounded-lg border px-2.5 text-left text-[15px] transition-all ${
+                      className={`flex h-[33px] w-full items-center rounded-lg border px-2.5 text-left text-[15px] transition-all ${
                         selectedModel?.id === model.id
                           ? 'border-brand bg-brand-light font-medium text-brand'
                           : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="truncate">{model.name}</span>
-                        {selectedModel?.id === model.id && <span className="text-brand">✓</span>}
+                      <div className="flex w-full min-w-0 items-center gap-3">
+                        <span className="min-w-0 flex-1 truncate">{model.name}</span>
+                        {selectedModel?.id === model.id && <span className="ml-auto shrink-0 text-brand">✓</span>}
                       </div>
                     </button>
                   ))}
@@ -1182,24 +1214,24 @@ export function ExtractTestPage() {
 
             <section className="rounded-xl border border-gray-200 bg-white p-3">
               <h3 className="mb-2 text-[15px] font-bold text-gray-900">提炼模式</h3>
-              <div className="space-y-2">
-                <label className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
+              <div className="max-h-[150px] space-y-1.5 overflow-y-auto pr-1">
+                <label className={`flex h-[33px] items-center gap-2 rounded-lg border px-2.5 text-[15px] transition-colors ${
                   extractMode === 'chapter' ? 'border-brand bg-brand-light' : 'border-gray-200 hover:border-gray-300'
                 }`}>
                   <input type="radio" checked={extractMode === 'chapter'} onChange={() => setExtractMode('chapter')} className="h-3 w-3 text-brand" />
-                  <span className={`text-xs font-medium ${extractMode === 'chapter' ? 'text-brand' : 'text-gray-700'}`}>逐章提炼</span>
+                  <span className={`font-medium ${extractMode === 'chapter' ? 'text-brand' : 'text-gray-700'}`}>逐章提炼</span>
                 </label>
-                <label className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
+                <label className={`flex h-[33px] items-center gap-2 rounded-lg border px-2.5 text-[15px] transition-colors ${
                   extractMode === 'smart' ? 'border-brand bg-brand-light' : 'border-gray-200 hover:border-gray-300'
                 }`}>
                   <input type="radio" checked={extractMode === 'smart'} onChange={() => setExtractMode('smart')} className="h-3 w-3 text-brand" />
-                  <span className={`text-xs font-medium ${extractMode === 'smart' ? 'text-brand' : 'text-gray-700'}`}>智能提炼</span>
+                  <span className={`font-medium ${extractMode === 'smart' ? 'text-brand' : 'text-gray-700'}`}>智能提炼</span>
                 </label>
-                <label className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
+                <label className={`flex h-[33px] items-center gap-2 rounded-lg border px-2.5 text-[15px] transition-colors ${
                   extractMode === 'multi' ? 'border-brand bg-brand-light' : 'border-gray-200 hover:border-gray-300'
                 }`}>
                   <input type="radio" checked={extractMode === 'multi'} onChange={() => setExtractMode('multi')} className="h-3 w-3 text-brand" />
-                  <span className={`text-xs font-medium ${extractMode === 'multi' ? 'text-brand' : 'text-gray-700'}`}>
+                  <span className={`font-medium ${extractMode === 'multi' ? 'text-brand' : 'text-gray-700'}`}>
                     每
                     <input
                       type="number"
@@ -1207,7 +1239,7 @@ export function ExtractTestPage() {
                       max={50}
                       value={chaptersPerBatch}
                       onChange={(event) => setChaptersPerBatch(Math.max(2, Math.min(50, Number(event.target.value))))}
-                      className="mx-1 w-10 rounded border border-gray-200 bg-white px-1 py-0.5 text-center text-xs focus:border-brand focus:outline-none"
+                      className="mx-1 h-6 w-10 rounded border border-gray-200 bg-white px-1 text-center text-sm focus:border-brand focus:outline-none"
                     />
                     章合并
                   </span>
@@ -1363,12 +1395,9 @@ export function ExtractTestPage() {
 
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white p-4">
             <div className="flex min-h-0 flex-1 overflow-hidden border border-gray-200 bg-white">
-              <aside className="flex w-[218px] shrink-0 flex-col border-r border-gray-200 bg-white">
-                <div className="shrink-0 border-b border-gray-200 bg-white px-2 py-3 text-center text-xs font-bold text-slate-600">
-                  目录
-                </div>
+              <aside className="flex w-[176px] shrink-0 flex-col border-r border-gray-200 bg-white">
                 <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
-                  {resultGroups.map((group) => {
+                  {resultGroups.map((group, groupIndex) => {
                     const collapsed = collapsedResultGroups[group.key] ?? false;
                     const filledCount = group.items.filter(hasResultContent).length;
                     return (
@@ -1384,12 +1413,12 @@ export function ExtractTestPage() {
                         >
                           {collapsed ? <ChevronRight className="h-3.5 w-3.5 text-slate-400" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
                           <span className="min-w-0 flex-1 text-xs font-bold text-slate-700">
-                            {group.start}-{group.end}
+                            第{groupIndex + 1}组
                           </span>
                           <span className="shrink-0 text-[10px] font-medium text-slate-400">{filledCount}/{group.items.length}</span>
                         </button>
                         {!collapsed && (
-                          <div className="grid auto-rows-min grid-cols-5 gap-2 p-2">
+                          <div className="grid auto-rows-min grid-cols-4 gap-1.5 p-2">
                             {group.items.map((result, itemIndex) => {
                               const index = group.start - 1 + itemIndex;
                               const isEmpty = !hasResultContent(result);
@@ -1397,7 +1426,7 @@ export function ExtractTestPage() {
                                 <button
                                   key={result.id}
                                   onClick={() => emitExtractRuntime({ activeResultIndex: index })}
-                                  className={`flex h-8 w-8 items-center justify-center rounded-xl border text-sm font-bold transition-all ${
+                                  className={`flex h-7 w-7 items-center justify-center rounded-lg border text-sm font-bold transition-all ${
                                     activeResultIndex === index
                                       ? 'border-brand/40 bg-brand-light text-brand shadow-sm'
                                       : isEmpty
@@ -1527,6 +1556,7 @@ export function ExtractTestPage() {
           </div>
         </aside>
       </div>
+      )}
 
       <ConfirmDialog
         isOpen={showExtractConfirm}

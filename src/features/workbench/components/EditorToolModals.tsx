@@ -24,6 +24,7 @@ import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 
 export interface FormatOptions {
   indent: boolean;
+  paragraphIndent: boolean;
   mergeParagraphs: boolean;
   smartBreak: boolean;
   sentencesPerLine: number;
@@ -34,6 +35,12 @@ export interface FontSettings {
   fontColor: string;
   fontSize: number;
   lineHeight: number;
+}
+
+export interface SymbolReplaceRule {
+  id: string;
+  from: string;
+  to: string;
 }
 
 export interface HistorySnapshot {
@@ -58,6 +65,8 @@ const SMART_FORMAT_KEY = 'xinyuexia_smart_format_settings';
 const SMART_FORMAT_ENABLED_KEY = 'xinyuexia_smart_format_enabled';
 const HIGH_FREQ_WORDS_KEY = 'xinyuexia_high_freq_words';
 const HIGH_FREQ_ENABLED_KEY = 'xinyuexia_high_freq_enabled';
+const SYMBOL_REPLACE_KEY = 'xinyuexia_symbol_replace_settings';
+const SYMBOL_REPLACE_ENABLED_KEY = 'xinyuexia_symbol_replace_enabled';
 const LEGACY_SMART_FORMAT_KEY = 'smart_format_settings';
 const LEGACY_SMART_FORMAT_ENABLED_KEY = 'smart_format_enabled';
 const LEGACY_HIGH_FREQ_WORDS_KEY = 'high_freq_words';
@@ -74,10 +83,13 @@ const defaultFontSettings: FontSettings = {
 
 export const defaultFormatOptions: FormatOptions = {
   indent: true,
+  paragraphIndent: false,
   mergeParagraphs: true,
   smartBreak: false,
   sentencesPerLine: 3,
 };
+
+export const PARAGRAPH_INDENT = '\u3000\u3000';
 
 const fontOptions = [
   { label: '默认字体', value: 'PingFang SC, Microsoft YaHei, sans-serif' },
@@ -128,10 +140,72 @@ export function setSmartFormatEnabled(value: boolean) {
   window.dispatchEvent(new CustomEvent('xinyuexia_smart_format_updated'));
 }
 
+function normalizeSymbolReplaceRules(value: unknown): SymbolReplaceRule[] {
+  if (Array.isArray(value)) {
+    return value.map((item, index) => {
+      const rule = item as Partial<SymbolReplaceRule>;
+      return {
+        id: typeof rule.id === 'string' ? rule.id : `symbol-rule-${index}`,
+        from: typeof rule.from === 'string' ? rule.from : '',
+        to: typeof rule.to === 'string' ? rule.to : '',
+      };
+    });
+  }
+  if (value && typeof value === 'object') {
+    const item = value as Partial<SymbolReplaceRule>;
+    return [{
+      id: `symbol-rule-${Date.now()}`,
+      from: item.from ?? '',
+      to: item.to ?? '',
+    }];
+  }
+  return [];
+}
+
+export function getStoredSymbolReplaceSettings(): SymbolReplaceRule[] {
+  return normalizeSymbolReplaceRules(readJson<unknown>(SYMBOL_REPLACE_KEY, []));
+}
+
+export function isSymbolReplaceEnabled() {
+  return readJson<boolean>(SYMBOL_REPLACE_ENABLED_KEY, false);
+}
+
+export function setSymbolReplaceEnabled(value: boolean) {
+  writeJson(SYMBOL_REPLACE_ENABLED_KEY, value);
+  window.dispatchEvent(new CustomEvent('xinyuexia_symbol_replace_updated'));
+}
+
+export function applySymbolReplace(text: string, settings = getStoredSymbolReplaceSettings()) {
+  return settings.reduce((result, rule) => {
+    if (!rule.from || rule.from === rule.to) return result;
+    return result.split(rule.from).join(rule.to);
+  }, text);
+}
+
 export function stripLineIndents(text: string) {
   return text
     .split('\n')
     .map((line) => line.replace(/^[\u3000 ]+/, ''))
+    .join('\n');
+}
+
+function applyParagraphIndents(text: string) {
+  return text
+    .split('\n')
+    .map((line) => {
+      const trimmed = line.trim();
+      return trimmed ? `${PARAGRAPH_INDENT}${trimmed}` : '';
+    })
+    .join('\n');
+}
+
+export function normalizeParagraphIndents(text: string) {
+  return text
+    .split('\n')
+    .map((line) => {
+      if (!line.trim()) return '';
+      return `${PARAGRAPH_INDENT}${line.replace(/^[\u3000 ]+/, '')}`;
+    })
     .join('\n');
 }
 
@@ -177,6 +251,9 @@ export function applyFormat(text: string, options: FormatOptions) {
       grouped.push(sentences.slice(index, index + options.sentencesPerLine).join(''));
     }
     result = grouped.join('\n');
+  }
+  if (options.paragraphIndent) {
+    result = applyParagraphIndents(result);
   }
   return result;
 }
@@ -226,18 +303,19 @@ export function saveSnapshot(chapterId: number, content: string) {
   writeJson(HISTORY_KEY, all);
 }
 
-function ModalShell({ title, icon, children, onClose, widthClass = 'w-[520px]' }: {
+function ModalShell({ title, icon, children, onClose, widthClass = 'w-[520px]', closeOnBackdrop = true }: {
   title: string;
   icon?: ReactNode;
   children: ReactNode;
   onClose: () => void;
   widthClass?: string;
+  closeOnBackdrop?: boolean;
 }) {
   const draggable = useDraggableModal(`editor_tool_${title}`);
   useTopModalEscape(true, onClose);
 
   return (
-    <div className="fixed inset-0 z-[240] flex items-center justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-[240] flex items-center justify-center bg-black/40" onClick={closeOnBackdrop ? onClose : undefined}>
       <div
         className={`${widthClass} max-h-[88vh] max-w-[94vw] overflow-hidden rounded-xl bg-white shadow-2xl`}
         data-draggable-managed="true"
@@ -650,7 +728,18 @@ export function SmartFormatModal({ isOpen, onClose, currentText, settings, onApp
   return (
     <ModalShell title="智能排版" icon={<Wand2 className="h-5 w-5 text-brand" />} onClose={onClose} widthClass="w-[560px]">
       <div className="space-y-1 p-5">
-        <ToggleRow label="首行缩进" desc="用编辑器显示缩进，不写入正文空格" checked={options.indent} onChange={(value) => setOptions((prev) => ({ ...prev, indent: value }))} />
+        <ToggleRow
+          label="首行缩进"
+          desc="只在编辑器里显示缩进，不写入正文空格"
+          checked={options.indent}
+          onChange={(value) => setOptions((prev) => ({ ...prev, indent: value, paragraphIndent: value ? false : prev.paragraphIndent }))}
+        />
+        <ToggleRow
+          label="段落缩进"
+          desc="写入正文，每段开头加入两个全角空格"
+          checked={options.paragraphIndent}
+          onChange={(value) => setOptions((prev) => ({ ...prev, paragraphIndent: value, indent: value ? false : prev.indent }))}
+        />
         <ToggleRow label="合并空段落" desc="合并空行并整理成连续正文段落" checked={options.mergeParagraphs} onChange={(value) => setOptions((prev) => ({ ...prev, mergeParagraphs: value }))} />
         <ToggleRow label="智能断句" desc="按句子数量自动换行" checked={options.smartBreak} onChange={(value) => setOptions((prev) => ({ ...prev, smartBreak: value }))} />
         {options.smartBreak && (
@@ -776,6 +865,129 @@ export function HighFreqToggle() {
     window.dispatchEvent(new CustomEvent('xinyuexia_high_freq_updated'));
   };
   return <Switch checked={enabled} onClick={toggle} />;
+}
+
+export function SymbolReplaceToggle({ onEnable }: { onEnable?: () => void }) {
+  const [enabled, setEnabled] = useState(isSymbolReplaceEnabled);
+
+  useEffect(() => {
+    const sync = () => setEnabled(isSymbolReplaceEnabled());
+    window.addEventListener('xinyuexia_symbol_replace_updated', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener('xinyuexia_symbol_replace_updated', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
+  const toggle = () => {
+    const next = !enabled;
+    setEnabled(next);
+    setSymbolReplaceEnabled(next);
+    if (next) onEnable?.();
+  };
+
+  return <Switch checked={enabled} onClick={toggle} />;
+}
+
+export function SymbolReplaceModal({ isOpen, onClose }: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const [settings, setSettings] = useState<SymbolReplaceRule[]>(getStoredSymbolReplaceSettings);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setSettings(getStoredSymbolReplaceSettings());
+    setMessage('');
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const saveSettings = (next = settings) => {
+    writeJson(SYMBOL_REPLACE_KEY, next);
+    window.dispatchEvent(new CustomEvent('xinyuexia_symbol_replace_updated'));
+  };
+
+  const addRule = () => {
+    setSettings((prev) => [...prev, { id: `symbol-rule-${Date.now()}-${prev.length}`, from: '', to: '' }]);
+  };
+
+  const updateRule = (id: string, field: 'from' | 'to', value: string) => {
+    setSettings((prev) => prev.map((rule) => (rule.id === id ? { ...rule, [field]: value } : rule)));
+  };
+
+  const removeRule = (id: string) => {
+    setSettings((prev) => prev.filter((rule) => rule.id !== id));
+  };
+
+  return (
+    <ModalShell title="一键替换" onClose={onClose} widthClass="w-[420px]" closeOnBackdrop={false}>
+      <div className="flex max-h-[72vh] flex-col">
+        <div className="grid grid-cols-[86px_86px_56px] gap-2 px-5 pb-2 pt-5">
+          <span className="text-sm font-bold text-gray-700">原文</span>
+          <span className="text-sm font-bold text-gray-700">替换为</span>
+          <span />
+        </div>
+
+        <div className="mx-5 min-h-[120px] overflow-hidden rounded-xl border border-gray-100 bg-gray-50/40">
+          <div className="editor-scrollbar max-h-[260px] overflow-y-auto p-2.5">
+            {settings.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-gray-200 bg-white px-3 py-8 text-center text-sm text-gray-400">
+                暂无一键替换规则
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {settings.map((rule) => (
+                  <div key={rule.id} className="grid grid-cols-[86px_86px_56px] gap-2">
+                    <input
+                      value={rule.from}
+                      onChange={(event) => updateRule(rule.id, 'from', event.target.value)}
+                      placeholder="例如 ——、……、某个词"
+                      className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-sm outline-none focus:border-brand"
+                    />
+                    <input
+                      value={rule.to}
+                      onChange={(event) => updateRule(rule.id, 'to', event.target.value)}
+                      placeholder="例如 ……"
+                      className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-sm outline-none focus:border-brand"
+                    />
+                    <button
+                      onClick={() => removeRule(rule.id)}
+                      className="h-9 rounded-lg border border-gray-200 bg-white text-sm text-gray-500 hover:bg-red-50 hover:text-red-500"
+                    >
+                      删除
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 px-5 py-3">
+          <p className="text-xs leading-5 text-gray-400">自动模式下输入和粘贴正文时会自动替换。</p>
+          {message && <p className="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600">{message}</p>}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-3">
+          <button onClick={addRule} className="rounded-lg border border-brand px-4 py-2 text-sm font-bold text-brand hover:bg-brand-light">
+            新增规则
+          </button>
+          <button
+            onClick={() => {
+              saveSettings();
+              setMessage('已保存规则');
+            }}
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-dark"
+          >
+            保存规则
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
 }
 
 export function HighlightOverlay({ content, fontSettings, scrollTop = 0 }: { content: string; fontSettings: FontSettings; scrollTop?: number }) {

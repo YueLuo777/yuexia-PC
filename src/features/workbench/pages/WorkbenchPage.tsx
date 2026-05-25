@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { ChapterEditor } from '@/features/workbench/components/ChapterEditor';
 import { ChapterRecycleModal } from '@/features/workbench/components/ChapterRecycleModal';
@@ -13,18 +13,35 @@ import { WorkbenchHeader } from '@/features/workbench/components/WorkbenchHeader
 import { WorkbenchLibraryPanel } from '@/features/workbench/components/WorkbenchLibraryPanel';
 import { WorkbenchModal } from '@/features/workbench/components/WorkbenchModal';
 import { readChapterContent, useWorkbenchData } from '@/features/workbench/hooks/useWorkbenchData';
+import { readWorkbenchLibraryEntries } from '@/features/workbench/model/workbenchLibraryStorage';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
+import {
+  loadNavConfig,
+  normalizeNavConfig,
+  type NavGroupConfig,
+} from '@/shared/navigation/navConfig';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+import type { Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
 
 type ModalKey = 'workInfo' | 'settings' | 'outline' | 'notes';
 type ManagementModalKey = 'models' | 'agents';
 type FindScope = 'chapter' | 'book';
-type PendingPublish = { type: 'single'; volumeId: number; chapterId: number; title: string } | { type: 'all'; count: number };
+type ChapterExportFormat = 'txt' | 'doc';
+type PendingPublish = { type: 'single'; volumeId: number; chapterId: number; title: string };
 type MemoScope = 'global' | 'work';
 type MemoItem = { id: string; title: string; content: string; updatedAt: string };
+type ContextTab = '角色' | '大纲' | '细纲' | '概要';
+interface ChapterExportItem {
+  volumeId: number;
+  volumeName: string;
+  chapterId: number;
+  serialNumber: number;
+  title: string;
+  content: string;
+}
 const AI_PANEL_MIN_WIDTH = 430;
 const AI_PANEL_DEFAULT_WIDTH = 430;
 const PUBLISH_CONFIRM_KEY = 'xinyuexia_workbench_publish_confirm';
@@ -77,6 +94,81 @@ function findOccurrences(text: string, search: string) {
     index = text.indexOf(search, index + Math.max(search.length, 1));
   }
   return result;
+}
+
+function getChapterExportTitle(item: Pick<ChapterExportItem, 'serialNumber' | 'title'>, workType: WorkbenchNovel['type']) {
+  const chapterUnit = workType === 'script' ? '集' : '章';
+  return `第${item.serialNumber}${chapterUnit}${item.title ? ` ${item.title}` : ''}`;
+}
+
+function sanitizeExportFileName(fileName: string) {
+  return fileName.replace(/[\\/:*?"<>|]/g, '_').trim() || '导出章节';
+}
+
+function escapeDocHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function buildChapterExportText(novelTitle: string, workType: WorkbenchNovel['type'], items: ChapterExportItem[]) {
+  const lines: string[] = [`《${novelTitle}》`, ''];
+  let currentVolumeId: number | null = null;
+
+  items.forEach((item) => {
+    if (currentVolumeId !== item.volumeId) {
+      currentVolumeId = item.volumeId;
+      lines.push(`# ${item.volumeName}`, '');
+    }
+    lines.push(`## ${getChapterExportTitle(item, workType)}`);
+    if (item.content.trim()) lines.push(item.content.trim());
+    lines.push('');
+  });
+
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd();
+}
+
+function buildChapterExportDoc(novelTitle: string, workType: WorkbenchNovel['type'], items: ChapterExportItem[]) {
+  let currentVolumeId: number | null = null;
+  const body: string[] = [`<h1>《${escapeDocHtml(novelTitle)}》</h1>`];
+
+  items.forEach((item) => {
+    if (currentVolumeId !== item.volumeId) {
+      currentVolumeId = item.volumeId;
+      body.push(`<h2>${escapeDocHtml(item.volumeName)}</h2>`);
+    }
+    body.push(`<h3>${escapeDocHtml(getChapterExportTitle(item, workType))}</h3>`);
+    const paragraphs = item.content
+      .split(/\n+/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean);
+    if (paragraphs.length === 0) {
+      body.push('<p></p>');
+      return;
+    }
+    paragraphs.forEach((paragraph) => {
+      body.push(`<p>${escapeDocHtml(paragraph)}</p>`);
+    });
+  });
+
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { font-family: "Microsoft YaHei", SimSun, serif; font-size: 14pt; line-height: 1.85; color: #111827; }
+    h1 { text-align: center; font-size: 22pt; margin: 0 0 28pt; }
+    h2 { font-size: 17pt; margin: 24pt 0 12pt; border-bottom: 1px solid #e5e7eb; padding-bottom: 6pt; }
+    h3 { font-size: 15pt; margin: 18pt 0 10pt; }
+    p { margin: 0 0 8pt; text-indent: 2em; }
+  </style>
+</head>
+<body>
+${body.join('\n')}
+</body>
+</html>`;
 }
 
 function formatMemoTime() {
@@ -349,7 +441,7 @@ function EditorSettingsModal({
             />
             <span>
               <span className="block text-base font-bold text-gray-900">发布确认</span>
-              <span className="mt-1 block text-sm leading-6 text-gray-500">勾选后，点击发布章节或一键发布时，会先弹出确认窗口，避免误点发布。</span>
+              <span className="mt-1 block text-sm leading-6 text-gray-500">勾选后，点击发布章节时，会先弹出确认窗口，避免误点发布。</span>
             </span>
           </label>
         </div>
@@ -358,12 +450,288 @@ function EditorSettingsModal({
   );
 }
 
+function WorkbenchQuickNav({
+  isOpen,
+  navConfig,
+  currentPath,
+  onOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  navConfig: NavGroupConfig[];
+  currentPath: string;
+  onOpen: () => void;
+  onClose: () => void;
+}) {
+  const visibleGroups = navConfig
+    .filter((group) => !group.hidden)
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !item.hidden),
+    }))
+    .filter((group) => group.items.length > 0);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="absolute left-0 top-1/2 z-40 flex h-20 w-6 -translate-y-1/2 items-center justify-center rounded-r-xl border border-l-0 border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:bg-brand-light hover:text-brand"
+        title="打开导航栏"
+        aria-label="打开导航栏"
+      >
+        <ChevronRight className="h-5 w-5" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute inset-0 z-50 flex bg-black/10" onMouseDown={onClose}>
+          <aside
+            className="flex h-full w-[220px] shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white shadow-[12px_0_36px_rgba(15,23,42,0.16)]"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-4">
+              <div className="text-base font-bold text-slate-900">快速导航</div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                title="收起导航栏"
+                aria-label="收起导航栏"
+              >
+                <ChevronRight className="h-4 w-4 rotate-180" />
+              </button>
+            </header>
+
+            <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+              {visibleGroups.map((group) => (
+                <section key={group.title} className="mb-4">
+                  <div className="mb-2 rounded-lg bg-brand-light px-3 py-2 text-sm font-bold text-brand-dark">
+                    {group.title}
+                  </div>
+                  <div className="space-y-1">
+                    {group.items.map((item) => {
+                      const isActive = currentPath === item.to;
+                      return (
+                        <Link
+                          key={item.to}
+                          to={item.to}
+                          onClick={onClose}
+                          className={`block rounded-lg px-3 py-2.5 text-[15px] font-medium transition-colors ${
+                            isActive
+                              ? 'bg-orange-50 text-orange-500'
+                              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          }`}
+                        >
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+            </nav>
+          </aside>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ChapterExportPanel({
+  volumes,
+  workType,
+  getChapterWordCount,
+  onClose,
+  onExport,
+}: {
+  volumes: Volume[];
+  workType: WorkbenchNovel['type'];
+  getChapterWordCount: (chapterId: number) => number;
+  onClose: () => void;
+  onExport: (format: ChapterExportFormat, chapterIds: number[]) => void;
+}) {
+  const [format, setFormat] = useState<ChapterExportFormat>('txt');
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [notice, setNotice] = useState('');
+  const chapterGroups = volumes.map((volume) => ({
+    volume,
+    chapters: [...volume.chapters].sort((a, b) => a.serialNumber - b.serialNumber),
+  }));
+  const allChapterIds = chapterGroups.flatMap((group) => group.chapters.map((chapter) => chapter.id));
+  const chapterSignature = chapterGroups
+    .map((group) => `${group.volume.id}:${group.chapters.map((chapter) => chapter.id).join(',')}`)
+    .join('|');
+  const selectedSet = new Set(selectedIds);
+  const selectedWordCount = chapterGroups.reduce((sum, group) => (
+    sum + group.chapters.reduce((innerSum, chapter) => (
+      selectedSet.has(chapter.id) ? innerSum + getChapterWordCount(chapter.id) : innerSum
+    ), 0)
+  ), 0);
+  const chapterUnit = workType === 'script' ? '集' : '章';
+
+  useEffect(() => {
+    setSelectedIds(allChapterIds);
+    setNotice('');
+  }, [chapterSignature]);
+
+  const normalizeSelectedIds = (ids: Set<number>) => allChapterIds.filter((chapterId) => ids.has(chapterId));
+
+  const toggleAll = () => {
+    setNotice('');
+    setSelectedIds(selectedIds.length === allChapterIds.length ? [] : allChapterIds);
+  };
+
+  const toggleVolume = (chapterIds: number[]) => {
+    setNotice('');
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const isFullSelected = chapterIds.every((chapterId) => next.has(chapterId));
+      chapterIds.forEach((chapterId) => {
+        if (isFullSelected) next.delete(chapterId);
+        else next.add(chapterId);
+      });
+      return normalizeSelectedIds(next);
+    });
+  };
+
+  const toggleChapter = (chapterId: number) => {
+    setNotice('');
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(chapterId)) next.delete(chapterId);
+      else next.add(chapterId);
+      return normalizeSelectedIds(next);
+    });
+  };
+
+  const submitExport = () => {
+    if (selectedIds.length === 0) {
+      setNotice('请至少选择一个章节。');
+      return;
+    }
+    onExport(format, selectedIds);
+    onClose();
+  };
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col bg-white">
+      <div className="shrink-0 border-b border-gray-100 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-bold text-gray-900">选择要导出的章节</div>
+            <div className="mt-1 text-xs text-gray-400">
+              已选择 {selectedIds.length} 个{chapterUnit}，约 {selectedWordCount} 字
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {(['txt', 'doc'] as ChapterExportFormat[]).map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setFormat(item)}
+                className={`h-9 rounded-lg px-4 text-sm font-bold transition-colors ${
+                  format === item
+                    ? 'bg-brand text-white'
+                    : 'border border-gray-200 bg-white text-gray-600 hover:border-brand/50 hover:text-brand'
+                }`}
+              >
+                {item.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+        {allChapterIds.length === 0 ? (
+          <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-gray-200 text-sm text-gray-400">
+            当前作品还没有可导出的章节
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <input
+                type="checkbox"
+                checked={selectedIds.length === allChapterIds.length}
+                onChange={toggleAll}
+                className="h-4 w-4 accent-brand"
+              />
+              <span className="text-sm font-bold text-gray-800">全选 / 取消全选</span>
+            </label>
+
+            {chapterGroups.map(({ volume, chapters }) => {
+              const volumeChapterIds = chapters.map((chapter) => chapter.id);
+              const selectedCount = volumeChapterIds.filter((chapterId) => selectedSet.has(chapterId)).length;
+
+              return (
+                <section key={volume.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                  <label className="flex cursor-pointer items-center gap-3 border-b border-gray-100 bg-brand-light/60 px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedCount === volumeChapterIds.length && volumeChapterIds.length > 0}
+                      onChange={() => toggleVolume(volumeChapterIds)}
+                      className="h-4 w-4 accent-brand"
+                    />
+                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-brand-dark">{volume.name}</span>
+                    <span className="text-xs font-bold text-gray-500">{selectedCount}/{chapters.length}</span>
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-2 p-3">
+                    {chapters.map((chapter) => (
+                      <label
+                        key={chapter.id}
+                        className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 transition-colors ${
+                          selectedSet.has(chapter.id)
+                            ? 'border-brand/40 bg-orange-50'
+                            : 'border-gray-100 bg-white hover:border-brand/30 hover:bg-gray-50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedSet.has(chapter.id)}
+                          onChange={() => toggleChapter(chapter.id)}
+                          className="h-4 w-4 shrink-0 accent-brand"
+                        />
+                        <span className="min-w-0 flex-1 truncate text-sm text-gray-700">
+                          {getChapterExportTitle(chapter, workType)}
+                        </span>
+                        <span className="shrink-0 text-xs text-gray-400">{getChapterWordCount(chapter.id)} 字</span>
+                      </label>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="flex shrink-0 items-center justify-between border-t border-gray-100 px-5 py-4">
+        <div className="text-sm text-red-500">{notice}</div>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={onClose} className="h-10 rounded-lg border border-gray-200 bg-white px-5 text-sm font-bold text-gray-600 hover:bg-gray-50">
+            取消
+          </button>
+          <button type="button" onClick={submitExport} className="h-10 rounded-lg bg-brand px-6 text-sm font-bold text-white hover:bg-brand-dark">
+            开始导出
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function WorkbenchPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isRecycleOpen, setIsRecycleOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
   const [isFindOpen, setIsFindOpen] = useState(false);
   const [isEditorSettingsOpen, setIsEditorSettingsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalKey | null>(null);
   const [managementModal, setManagementModal] = useState<ManagementModalKey | null>(null);
+  const [isContextLibraryOpen, setIsContextLibraryOpen] = useState(false);
+  const [contextTab, setContextTab] = useState<ContextTab>('角色');
   const [publishConfirm, setPublishConfirm] = useState(() => localStorage.getItem(PUBLISH_CONFIRM_KEY) === 'true');
   const [pendingPublish, setPendingPublish] = useState<PendingPublish | null>(null);
   const [globalNotes, setGlobalNotes] = useState<MemoItem[]>(() => readMemoItems(GLOBAL_NOTES_LIST_KEY, GLOBAL_NOTES_KEY, 'global'));
@@ -372,6 +740,8 @@ export function WorkbenchPage() {
   const [selectedMemo, setSelectedMemo] = useState<{ scope: MemoScope; id: string } | null>(null);
   const [collapsedMemoSections, setCollapsedMemoSections] = useState<Record<MemoScope, boolean>>({ global: false, work: false });
   const [showPublished, setShowPublished] = useState(false);
+  const [isQuickNavOpen, setIsQuickNavOpen] = useState(false);
+  const [quickNavConfig] = useState<NavGroupConfig[]>(() => normalizeNavConfig(loadNavConfig()));
   const [replaceUndoSnapshot, setReplaceUndoSnapshot] = useState<{ chapterId: number; content: string } | null>(null);
   const [aiPanelWidth, setAiPanelWidth] = useState(() => {
     const saved = Number.parseInt(localStorage.getItem('xinyuexia_ai_panel_width') ?? String(AI_PANEL_DEFAULT_WIDTH), 10);
@@ -531,7 +901,6 @@ export function WorkbenchPage() {
     );
   }
 
-  const selectedChapterTitle = selectedChapter?.chapter.title ?? null;
   const chapterCount = volumes.reduce((sum, volume) => sum + volume.chapters.length, 0);
   const selectedVolumeName = selectedChapter
     ? volumes.find((volume) => volume.id === selectedChapter.volumeId)?.name ?? '未选择卷'
@@ -543,6 +912,18 @@ export function WorkbenchPage() {
   const activeMemo = selectedMemo?.scope === 'global'
     ? globalNotes.find((note) => note.id === selectedMemo.id) ?? null
     : workNotes.find((note) => note.id === selectedMemo?.id) ?? null;
+  const settingsStorageKey = `xinyuexia_workbench_settings_${currentNovel.id}`;
+  const outlineStorageKey = `xinyuexia_workbench_outline_${currentNovel.id}`;
+  const contextTabs: ContextTab[] = ['角色', '大纲', '细纲', '概要'];
+  const normalizeContextTab = (tab: string) => (tab === '设定' || tab === '设定库' ? '大纲' : tab);
+  const contextEntries = (() => {
+    const settingsEntries = readWorkbenchLibraryEntries(settingsStorageKey);
+    const outlineEntries = readWorkbenchLibraryEntries(outlineStorageKey);
+    if (contextTab === '概要') {
+      return outlineEntries.filter((entry) => entry.tab === '章节概要' || entry.tab === '卷概要');
+    }
+    return settingsEntries.filter((entry) => normalizeContextTab(entry.tab) === contextTab);
+  })();
 
   const selectMemo = (scope: MemoScope, id: string) => setSelectedMemo({ scope, id });
 
@@ -593,27 +974,47 @@ export function WorkbenchPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleExportChapters = () => {
-    const chapterUnit = currentNovel.type === 'script' ? '集' : '章';
-    const lines: string[] = [`《${currentNovel.title}》`, ''];
-
-    volumes.forEach((volume) => {
-      lines.push(`# ${volume.name}`);
+  const collectExportChapters = (chapterIds: number[]): ChapterExportItem[] => {
+    const targetIds = new Set(chapterIds);
+    return volumes.flatMap((volume) => (
       [...volume.chapters]
         .sort((a, b) => a.serialNumber - b.serialNumber)
-        .forEach((chapter) => {
-          const title = chapter.title || `第${chapter.serialNumber}${chapterUnit}`;
-          const body = selectedChapter?.chapter.id === chapter.id
+        .filter((chapter) => targetIds.has(chapter.id))
+        .map((chapter) => ({
+          volumeId: volume.id,
+          volumeName: volume.name,
+          chapterId: chapter.id,
+          serialNumber: chapter.serialNumber,
+          title: chapter.title,
+          content: selectedChapter?.chapter.id === chapter.id
             ? editorContent
-            : readChapterContent(currentNovel.id, chapter.id);
-          lines.push('');
-          lines.push(`## ${title}`);
-          if (body.trim()) lines.push(body);
-        });
-      lines.push('');
-    });
+            : readChapterContent(currentNovel.id, chapter.id),
+        }))
+    ));
+  };
 
-    downloadTextFile(`${currentNovel.title}_章节.txt`, lines.join('\n').replace(/\n{3,}/g, '\n\n'));
+  const handleExportSelectedChapters = (format: ChapterExportFormat, chapterIds: number[]) => {
+    const items = collectExportChapters(chapterIds);
+    if (items.length === 0) return;
+
+    const fileBaseName = sanitizeExportFileName(`${currentNovel.title}_章节`);
+    if (format === 'doc') {
+      downloadTextFile(
+        `${fileBaseName}.doc`,
+        buildChapterExportDoc(currentNovel.title, currentNovel.type, items),
+        'application/msword;charset=utf-8',
+      );
+      return;
+    }
+
+    downloadTextFile(
+      `${fileBaseName}.txt`,
+      buildChapterExportText(currentNovel.title, currentNovel.type, items),
+    );
+  };
+
+  const handleExportChapters = () => {
+    setIsExportOpen(true);
   };
 
   const publishChapterNow = (chapterId: number) => {
@@ -642,29 +1043,6 @@ export function WorkbenchPage() {
       return;
     }
     publishChapterNow(chapterId);
-  };
-
-  const publishAllNow = () => {
-    volumes.forEach((volume) => {
-      const publishedSerials = new Set<number>();
-      [...volume.chapters]
-        .sort((a, b) => a.serialNumber - b.serialNumber)
-        .forEach((chapter) => {
-          if (publishedSerials.has(chapter.serialNumber)) return;
-          publishedSerials.add(chapter.serialNumber);
-          if (!chapter.isPublished) setChapterPublished(chapter.id, true);
-        });
-      });
-  };
-
-  const handlePublishAll = () => {
-    if (publishConfirm) {
-      const count = volumes.reduce((sum, volume) => sum + volume.chapters.filter((chapter) => !chapter.isPublished).length, 0);
-      if (count === 0) return;
-      setPendingPublish({ type: 'all', count });
-      return;
-    }
-    publishAllNow();
   };
 
   const handleExportBackup = () => {
@@ -717,13 +1095,21 @@ export function WorkbenchPage() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-gray-50">
+    <div className="relative flex h-full flex-col bg-gray-50">
       <WorkbenchHeader
         workTitle={currentNovel.title}
         onOpenWorkInfo={() => setActiveModal('workInfo')}
         onOpenSettings={() => setActiveModal('settings')}
         onOpenOutline={() => setActiveModal('outline')}
         onOpenNotes={() => setActiveModal('notes')}
+      />
+
+      <WorkbenchQuickNav
+        isOpen={isQuickNavOpen}
+        navConfig={quickNavConfig}
+        currentPath={location.pathname}
+        onOpen={() => setIsQuickNavOpen(true)}
+        onClose={() => setIsQuickNavOpen(false)}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -744,7 +1130,6 @@ export function WorkbenchPage() {
           onPublishChapter={handlePublishChapter}
           onOpenRecycle={() => setIsRecycleOpen(true)}
           onExportChapters={handleExportChapters}
-          onPublishAll={handlePublishAll}
           getChapterWordCount={getChapterWordCount}
         />
 
@@ -798,9 +1183,26 @@ export function WorkbenchPage() {
             canUndoReplace={canUndoReplace}
             onOpenModelManage={() => setManagementModal('models')}
             onOpenAgentManage={() => setManagementModal('agents')}
+            onOpenContextLibrary={() => setIsContextLibraryOpen(true)}
           />
         </aside>
       </div>
+
+      <WorkbenchModal
+        title="导出章节"
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+        widthClass="w-[820px]"
+        heightClass="h-[78vh] max-h-[88vh]"
+      >
+        <ChapterExportPanel
+          volumes={volumes}
+          workType={currentNovel.type}
+          getChapterWordCount={getChapterWordCount}
+          onClose={() => setIsExportOpen(false)}
+          onExport={handleExportSelectedChapters}
+        />
+      </WorkbenchModal>
 
       <ChapterRecycleModal
         isOpen={isRecycleOpen}
@@ -818,6 +1220,71 @@ export function WorkbenchPage() {
           type={managementModal}
           onClose={() => setManagementModal(null)}
         />
+      )}
+
+      {isContextLibraryOpen && (
+        <WorkbenchModal
+          title="关联上下文"
+          isOpen={isContextLibraryOpen}
+          onClose={() => setIsContextLibraryOpen(false)}
+          widthClass="w-[980px]"
+          heightClass="h-[78vh]"
+        >
+          <div className="grid min-h-0 flex-1 grid-cols-[210px_minmax(0,1fr)] bg-white">
+            <aside className="flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
+              <div className="mb-3 text-sm font-bold text-gray-700">作品设定库</div>
+              <div className="space-y-2">
+                {contextTabs.map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setContextTab(tab)}
+                    className={`flex h-10 w-full items-center justify-between rounded-xl px-3 text-left text-sm font-bold transition-colors ${
+                      contextTab === tab
+                        ? 'bg-brand text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span>{tab}</span>
+                    <span className="text-xs opacity-75">
+                      {tab === '概要'
+                        ? readWorkbenchLibraryEntries(outlineStorageKey).filter((entry) => entry.tab === '章节概要' || entry.tab === '卷概要').length
+                        : readWorkbenchLibraryEntries(settingsStorageKey).filter((entry) => normalizeContextTab(entry.tab) === tab).length}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </aside>
+            <main className="min-h-0 overflow-y-auto p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">{contextTab}</h3>
+                  <p className="mt-1 text-xs text-gray-400">暂时只读取内容，后续再配置勾选、召回权重和拼接规则。</p>
+                </div>
+                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-500">{contextEntries.length} 条</span>
+              </div>
+              {contextEntries.length === 0 ? (
+                <div className="flex h-[360px] items-center justify-center rounded-2xl border border-dashed border-gray-200 text-sm text-gray-400">
+                  当前标签下暂无内容
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {contextEntries.map((entry) => (
+                    <article key={entry.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <h4 className="min-w-0 truncate text-sm font-bold text-gray-900">{entry.title}</h4>
+                        <span className="shrink-0 rounded-full bg-brand-light px-2.5 py-1 text-[11px] font-bold text-brand">{normalizeContextTab(entry.tab)}</span>
+                      </div>
+                      <p className="mt-2 line-clamp-5 whitespace-pre-wrap text-sm leading-6 text-gray-500">
+                        {entry.content || '暂无内容'}
+                      </p>
+                      <div className="mt-3 text-[11px] text-gray-400">{entry.updatedAt}</div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </main>
+          </div>
+        </WorkbenchModal>
       )}
 
       {isFindOpen && currentNovelId && (
@@ -843,49 +1310,52 @@ export function WorkbenchPage() {
       <ConfirmDialog
         isOpen={!!pendingPublish}
         title="确认发布"
-        description={pendingPublish?.type === 'single'
+        description={pendingPublish
           ? `确定要发布「${pendingPublish.title}」吗？发布后章节会移动到已发布。`
-          : `确定要发布 ${pendingPublish?.count ?? 0} 个未发布章节吗？`}
+          : ''}
         confirmText="确认发布"
         onClose={() => setPendingPublish(null)}
         onConfirm={() => {
-          if (pendingPublish?.type === 'single') publishChapterNow(pendingPublish.chapterId);
-          if (pendingPublish?.type === 'all') publishAllNow();
+          if (pendingPublish) publishChapterNow(pendingPublish.chapterId);
           setPendingPublish(null);
         }}
       />
 
-      <WorkbenchModal title="作品信息" isOpen={activeModal === 'workInfo'} onClose={() => setActiveModal(null)}>
-        <div className="flex-1 overflow-y-auto bg-white p-5">
-          <div className="space-y-4">
-            <section className="rounded-lg border border-gray-200 p-4">
-              <h3 className="mb-3 text-base font-bold text-gray-900">作品概览</h3>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-lg bg-gray-50 p-3"><p className="text-xs text-gray-400">作品名</p><p className="mt-1 text-sm font-bold text-gray-900">{currentNovel.title}</p></div>
-                <div className="rounded-lg bg-gray-50 p-3"><p className="text-xs text-gray-400">类型</p><p className="mt-1 text-sm font-bold text-gray-900">{currentNovel.type === 'script' ? '剧本' : '小说'}</p></div>
-                <div className="rounded-lg bg-gray-50 p-3"><p className="text-xs text-gray-400">分类</p><p className="mt-1 text-sm font-bold text-gray-900">{currentNovel.category ?? '未分类'}</p></div>
-                <div className="rounded-lg bg-gray-50 p-3"><p className="text-xs text-gray-400">卷数</p><p className="mt-1 text-sm font-bold text-gray-900">{volumes.length}</p></div>
-                <div className="rounded-lg bg-gray-50 p-3"><p className="text-xs text-gray-400">章节数</p><p className="mt-1 text-sm font-bold text-gray-900">{chapterCount}</p></div>
-                <div className="rounded-lg bg-gray-50 p-3"><p className="text-xs text-gray-400">总字数</p><p className="mt-1 text-sm font-bold text-gray-900">{currentNovel.wordCount ?? 0}</p></div>
+      <WorkbenchModal
+        title="作品信息"
+        isOpen={activeModal === 'workInfo'}
+        onClose={() => setActiveModal(null)}
+        widthClass="w-[864px]"
+        heightClass="h-[86vh] max-h-[92vh]"
+      >
+        <div className="flex-1 overflow-y-auto bg-white p-6">
+          <div className="space-y-5">
+            <section className="rounded-xl border border-gray-200 p-5">
+              <h3 className="mb-4 text-lg font-bold text-gray-900">作品概览</h3>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">作品名</p><p className="mt-1.5 text-base font-bold text-gray-900">{currentNovel.title}</p></div>
+                <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">类型</p><p className="mt-1.5 text-base font-bold text-gray-900">{currentNovel.type === 'script' ? '剧本' : '小说'}</p></div>
+                <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">分类</p><p className="mt-1.5 text-base font-bold text-gray-900">{currentNovel.category ?? '未分类'}</p></div>
+                <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">卷数</p><p className="mt-1.5 text-base font-bold text-gray-900">{volumes.length}</p></div>
+                <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">章节数</p><p className="mt-1.5 text-base font-bold text-gray-900">{chapterCount}</p></div>
+                <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">总字数</p><p className="mt-1.5 text-base font-bold text-gray-900">{currentNovel.wordCount ?? 0}</p></div>
               </div>
             </section>
-            <section className="rounded-lg border border-gray-200 p-4">
-              <h3 className="mb-3 text-base font-bold text-gray-900">时间与位置</h3>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-lg bg-gray-50 p-3"><p className="text-xs text-gray-400">创建时间</p><p className="mt-1 text-sm font-bold text-gray-900">{currentNovel.createdAt ?? '-'}</p></div>
-                <div className="rounded-lg bg-gray-50 p-3"><p className="text-xs text-gray-400">最近修改</p><p className="mt-1 text-sm font-bold text-gray-900">{currentNovel.lastModifiedAt ?? '-'}</p></div>
-                <div className="rounded-lg bg-gray-50 p-3"><p className="text-xs text-gray-400">当前卷 / 章节</p><p className="mt-1 text-sm font-bold text-gray-900">{selectedVolumeName} / {selectedChapterTitle ?? '未选择章节'}</p></div>
+            <section className="rounded-xl border border-gray-200 p-5">
+              <h3 className="mb-4 text-lg font-bold text-gray-900">作品简介</h3>
+              <div className="min-h-[180px] whitespace-pre-wrap rounded-lg bg-gray-50 p-4 text-base leading-8 text-gray-700">
+                {currentNovel.synopsis?.trim() || '暂无简介'}
               </div>
             </section>
           </div>
         </div>
       </WorkbenchModal>
 
-      <WorkbenchModal title="设定库" isOpen={activeModal === 'settings'} onClose={() => setActiveModal(null)} widthClass="w-[1320px]">
-        <WorkbenchLibraryPanel storageKey={`xinyuexia_workbench_settings_${currentNovel.id}`} tabs={['角色', '设定', '大纲', '细纲']} emptyText="暂无设定内容" />
+      <WorkbenchModal title="作品设定库" isOpen={activeModal === 'settings'} onClose={() => setActiveModal(null)} widthClass="w-[1452px]" heightClass="h-[86vh] max-h-[95vh]" closeOnBackdrop={false}>
+        <WorkbenchLibraryPanel storageKey={settingsStorageKey} outlineStorageKey={outlineStorageKey} tabs={['角色', '大纲', '细纲', '概要']} emptyText="暂无设定内容" volumes={volumes} scale={1.1} />
       </WorkbenchModal>
 
-      <WorkbenchModal title="概要库" isOpen={activeModal === 'outline'} onClose={() => setActiveModal(null)} widthClass="w-[min(1500px,96vw)]">
+      <WorkbenchModal title="概要" isOpen={activeModal === 'outline'} onClose={() => setActiveModal(null)} widthClass="w-[min(1500px,96vw)]">
         <WorkbenchLibraryPanel storageKey={`xinyuexia_workbench_outline_${currentNovel.id}`} tabs={['章节概要', '卷概要']} emptyText="暂无概要内容" volumes={volumes} />
       </WorkbenchModal>
 

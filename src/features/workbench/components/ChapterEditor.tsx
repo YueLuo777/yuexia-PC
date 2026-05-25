@@ -1,7 +1,7 @@
 import {
   ChevronDown,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import type { Chapter } from '@/features/workbench/model/workbenchTypes';
 import {
@@ -11,11 +11,18 @@ import {
   HighFreqToggle,
   HighlightOverlay,
   HistoryModal,
+  PARAGRAPH_INDENT,
   SmartFormatModal,
+  SymbolReplaceModal,
+  SymbolReplaceToggle,
   TitleOptimizeModal,
   applyFormat,
+  applySymbolReplace,
   getStoredFormatSettings,
   getStoredFontSettings,
+  getStoredSymbolReplaceSettings,
+  isSymbolReplaceEnabled,
+  normalizeParagraphIndents,
   saveSnapshot,
   stripLineIndents,
   type FormatOptions,
@@ -37,6 +44,32 @@ interface ChapterEditorProps {
   onOpenFind: () => void;
 }
 
+function getParagraphIndentInfo(text: string, cursorPos: number) {
+  const safePos = Math.max(0, Math.min(cursorPos, text.length));
+  const lineStart = text.lastIndexOf('\n', Math.max(0, safePos - 1)) + 1;
+  const nextLineBreak = text.indexOf('\n', lineStart);
+  const lineEnd = nextLineBreak >= 0 ? nextLineBreak : text.length;
+  const lineIndentEnd = lineStart + PARAGRAPH_INDENT.length;
+  const hasIndent = text.slice(lineStart, lineIndentEnd) === PARAGRAPH_INDENT;
+  const lineBody = hasIndent ? text.slice(lineIndentEnd, lineEnd) : text.slice(lineStart, lineEnd);
+  return {
+    lineStart,
+    lineEnd,
+    lineIndentEnd,
+    hasIndent,
+    isBlankAfterIndent: hasIndent && !lineBody.trim(),
+  };
+}
+
+function clampEditableCursor(cursorPos: number, text: string, paragraphIndent: boolean) {
+  if (!paragraphIndent) return Math.max(0, Math.min(cursorPos, text.length));
+  const safePos = Math.max(0, Math.min(cursorPos, text.length));
+  const { lineStart, lineIndentEnd, hasIndent } = getParagraphIndentInfo(text, safePos);
+  if (!hasIndent) return safePos;
+  if (safePos >= lineStart && safePos < lineIndentEnd) return Math.min(lineIndentEnd, text.length);
+  return safePos;
+}
+
 export function ChapterEditor({
   chapter,
   volumeName,
@@ -53,6 +86,7 @@ export function ChapterEditor({
   const [isFontSettingsOpen, setIsFontSettingsOpen] = useState(false);
   const [isSmartFormatOpen, setIsSmartFormatOpen] = useState(false);
   const [isHighFreqOpen, setIsHighFreqOpen] = useState(false);
+  const [isSymbolReplaceOpen, setIsSymbolReplaceOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isTitleOptimizeOpen, setIsTitleOptimizeOpen] = useState(false);
   const [isAssociateOpen, setIsAssociateOpen] = useState(false);
@@ -72,14 +106,24 @@ export function ChapterEditor({
   });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevContentRef = useRef('');
+  const pendingCursorRef = useRef<{ text: string; cursorPos: number; scrollTop: number } | null>(null);
 
   const titleCount = chapter?.title.length ?? 0;
   const serialValue = chapter?.serialNumber ?? 1;
   const safeVolumeName = volumeName ?? '第一卷';
   const wordCount = useMemo(() => content.replace(/\s/g, '').length, [content]);
-  const visualIndentEnabled = formatSettings.indent;
+  const visualIndentEnabled = formatSettings.indent && !formatSettings.paragraphIndent;
 
   const showToast = (text: string) => setCopyToast(text);
+  const restoreTextareaScroll = (textarea: HTMLTextAreaElement, scrollTop: number) => {
+    textarea.scrollTop = scrollTop;
+    setEditorScrollTop(textarea.scrollTop);
+    requestAnimationFrame(() => {
+      if (textareaRef.current !== textarea) return;
+      textarea.scrollTop = scrollTop;
+      setEditorScrollTop(textarea.scrollTop);
+    });
+  };
 
   const commitContent = (next: string) => {
     if (chapter && content !== next) saveSnapshot(chapter.id, content);
@@ -88,11 +132,47 @@ export function ChapterEditor({
   };
 
   const commitContentWithCursor = (next: string, cursorPos: number) => {
-    commitContent(next);
+    const scrollTop = textareaRef.current?.scrollTop ?? editorScrollTop;
+    pendingCursorRef.current = { text: next, cursorPos, scrollTop };
+    if (next !== content) commitContent(next);
     requestAnimationFrame(() => {
-      textareaRef.current?.setSelectionRange(cursorPos, cursorPos);
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      if (textarea.value !== next && next !== content) return;
+      const safeCursor = clampEditableCursor(
+        Math.min(cursorPos, textarea.value.length),
+        textarea.value,
+        formatSettings.paragraphIndent,
+      );
+      textarea.setSelectionRange(safeCursor, safeCursor);
+      restoreTextareaScroll(textarea, scrollTop);
+      if (textarea.value === next) pendingCursorRef.current = null;
     });
   };
+
+  useLayoutEffect(() => {
+    const pending = pendingCursorRef.current;
+    if (!pending) return;
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const applyCursor = () => {
+      const safeCursor = clampEditableCursor(
+        Math.min(pending.cursorPos, textarea.value.length),
+        textarea.value,
+        formatSettings.paragraphIndent,
+      );
+      textarea.setSelectionRange(safeCursor, safeCursor);
+      restoreTextareaScroll(textarea, pending.scrollTop);
+      pendingCursorRef.current = null;
+    };
+
+    if (textarea.value === pending.text) {
+      applyCursor();
+      return;
+    }
+    requestAnimationFrame(applyCursor);
+  }, [content, formatSettings.paragraphIndent]);
 
   useEffect(() => {
     const openAssociate = () => setIsAssociateOpen(true);
@@ -133,13 +213,22 @@ export function ChapterEditor({
       } else if (action.detail?.id === 'save_chapter') {
         onChangeContent(content);
         showToast('已保存');
-      } else if (action.detail?.id === 'find_replace') {
-        setIsFindOpen(true);
       }
     };
     window.addEventListener(SHORTCUT_ACTION_EVENT, handleShortcut);
     return () => window.removeEventListener(SHORTCUT_ACTION_EVENT, handleShortcut);
   }, [chapter, content, onChangeContent]);
+
+  useEffect(() => {
+    const handleFindShortcut = (event: KeyboardEvent) => {
+      if (!chapter || event.key.toLowerCase() !== 'f' || !event.ctrlKey || event.shiftKey || event.altKey || event.metaKey) return;
+      event.preventDefault();
+      event.stopPropagation();
+      onOpenFind();
+    };
+    window.addEventListener('keydown', handleFindShortcut, true);
+    return () => window.removeEventListener('keydown', handleFindShortcut, true);
+  }, [chapter, onOpenFind]);
 
   if (!chapter) {
     return (
@@ -149,29 +238,124 @@ export function ChapterEditor({
     );
   }
 
+  const normalizeEditorText = (value: string) => (
+    formatSettings.paragraphIndent ? normalizeParagraphIndents(value) : stripLineIndents(value)
+  );
+
+  const getParagraphIndentRange = (text: string, cursorPos: number) => {
+    return getParagraphIndentInfo(text, cursorPos);
+  };
+
+  const clampCursorToEditableText = (cursorPos: number, text = content) => {
+    return clampEditableCursor(cursorPos, text, formatSettings.paragraphIndent);
+  };
+
+  const getNormalizedCursor = (value: string, cursorPos: number) => (
+    clampCursorToEditableText(normalizeEditorText(value.slice(0, cursorPos)).length, normalizeEditorText(value))
+  );
+
+  const getActiveSymbolReplaceSettings = () => (
+    getStoredSymbolReplaceSettings().filter((rule) => rule.from && rule.from !== rule.to)
+  );
+
+  const keepCursorOutOfParagraphIndent = () => {
+    if (!formatSettings.paragraphIndent) return;
+    const textarea = textareaRef.current;
+    if (!textarea || textarea.selectionStart !== textarea.selectionEnd) return;
+    const safeCursor = clampCursorToEditableText(textarea.selectionStart);
+    if (safeCursor === textarea.selectionStart) return;
+    requestAnimationFrame(() => {
+      textarea.setSelectionRange(safeCursor, safeCursor);
+    });
+  };
+
   const handleContentChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    commitContentWithCursor(stripLineIndents(event.target.value), event.target.selectionStart);
+    const rawText = event.target.value;
+    const rawCursor = event.target.selectionStart;
+    const cleaned = normalizeEditorText(rawText);
+    const normalizedCursor = getNormalizedCursor(rawText, rawCursor);
+    if (!isSymbolReplaceEnabled()) {
+      commitContentWithCursor(cleaned, normalizedCursor);
+      return;
+    }
+    const settings = getActiveSymbolReplaceSettings();
+    if (settings.length === 0) {
+      commitContentWithCursor(cleaned, normalizedCursor);
+      return;
+    }
+    const next = applySymbolReplace(cleaned, settings);
+    const cursorPos = next === cleaned
+      ? normalizedCursor
+      : applySymbolReplace(cleaned.slice(0, normalizedCursor), settings).length;
+    commitContentWithCursor(next, cursorPos);
   };
 
   const handlePaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
     event.preventDefault();
     const pasted = event.clipboardData.getData('text');
     const target = event.currentTarget;
-    const start = target.selectionStart;
-    const end = target.selectionEnd;
-    const pastedWithIndent = stripLineIndents(pasted);
+    const start = clampCursorToEditableText(target.selectionStart);
+    const end = clampCursorToEditableText(target.selectionEnd);
+    const cleanedPaste = formatSettings.paragraphIndent ? normalizeParagraphIndents(pasted) : stripLineIndents(pasted);
+    const settings = isSymbolReplaceEnabled() ? getActiveSymbolReplaceSettings() : [];
+    const pastedWithIndent = settings.length > 0 ? applySymbolReplace(cleanedPaste, settings) : cleanedPaste;
     const next = content.slice(0, start) + pastedWithIndent + content.slice(end);
     commitContentWithCursor(next, start + pastedWithIndent.length);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key !== 'Enter') return;
-    event.preventDefault();
     const target = event.currentTarget;
     const start = target.selectionStart;
     const end = target.selectionEnd;
-    const next = content.slice(0, start) + '\n' + content.slice(end);
-    commitContentWithCursor(next, start + 1);
+    const currentText = target.value;
+    if ((event.key === 'Backspace' || event.key === 'Delete') && start === end) {
+      if (start === 0 && event.key === 'Backspace') {
+        event.preventDefault();
+        textareaRef.current?.setSelectionRange(0, 0);
+        return;
+      }
+      if (start === 0 && event.key === 'Delete' && isSymbolReplaceEnabled()) {
+        event.preventDefault();
+        const cleaned = normalizeEditorText(currentText.slice(1));
+        const settings = getActiveSymbolReplaceSettings();
+        const next = settings.length > 0 ? applySymbolReplace(cleaned, settings) : cleaned;
+        commitContentWithCursor(next, 0);
+        return;
+      }
+      if (formatSettings.paragraphIndent) {
+        const { lineStart, lineIndentEnd, hasIndent } = getParagraphIndentRange(currentText, start);
+        if (event.key === 'Backspace' && hasIndent && start === lineIndentEnd && lineStart > 0) {
+          event.preventDefault();
+          const next = currentText.slice(0, lineStart - 1) + currentText.slice(lineIndentEnd);
+          commitContentWithCursor(next, lineStart - 1);
+          return;
+        }
+
+        if (event.key === 'Delete' && currentText[start] === '\n') {
+          const nextLine = getParagraphIndentRange(currentText, start + 1);
+          if (nextLine.hasIndent && nextLine.lineStart === start + 1) {
+            event.preventDefault();
+            const next = currentText.slice(0, start) + currentText.slice(nextLine.lineIndentEnd);
+            commitContentWithCursor(next, start);
+            return;
+          }
+        }
+
+        const shouldProtectBackspace = event.key === 'Backspace' && hasIndent && start > lineStart && start < lineIndentEnd;
+        const shouldProtectDelete = event.key === 'Delete' && hasIndent && start >= lineStart && start < lineIndentEnd;
+        if (shouldProtectBackspace || shouldProtectDelete) {
+          event.preventDefault();
+          const safeCursor = Math.min(lineIndentEnd, currentText.length);
+          textareaRef.current?.setSelectionRange(safeCursor, safeCursor);
+          return;
+        }
+      }
+    }
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    const lineBreak = formatSettings.paragraphIndent ? `\n${PARAGRAPH_INDENT}` : '\n';
+    const next = content.slice(0, start) + lineBreak + content.slice(end);
+    commitContentWithCursor(next, start + lineBreak.length);
   };
 
   const copyText = async (text: string, message: string) => {
@@ -210,6 +394,41 @@ export function ChapterEditor({
   const handleSmartFormatNow = () => {
     commitContent(applyFormat(content, getStoredFormatSettings()));
     showToast('已自动排版');
+  };
+
+  const handleSymbolReplaceNow = () => {
+    const settings = getActiveSymbolReplaceSettings();
+    if (settings.length === 0) {
+      showToast('请先设置一键替换规则');
+      setIsSymbolReplaceOpen(true);
+      return;
+    }
+    const next = applySymbolReplace(content, settings);
+    if (next === content) {
+      showToast('当前章节没有可替换内容');
+      return;
+    }
+    const cursor = textareaRef.current?.selectionStart ?? 0;
+    const nextCursor = applySymbolReplace(content.slice(0, cursor), settings).length;
+    commitContentWithCursor(next, nextCursor);
+    showToast('已替换当前章节');
+  };
+
+  const handleSymbolAutoEnabled = () => {
+    const settings = getActiveSymbolReplaceSettings();
+    if (settings.length === 0) {
+      showToast('已开启自动替换，请先添加规则');
+      return;
+    }
+    const next = applySymbolReplace(content, settings);
+    if (next !== content) {
+      const cursor = textareaRef.current?.selectionStart ?? 0;
+      const nextCursor = applySymbolReplace(content.slice(0, cursor), settings).length;
+      commitContentWithCursor(next, nextCursor);
+      showToast('已按规则替换当前章节');
+      return;
+    }
+    showToast('已开启自动替换');
   };
 
   return (
@@ -267,13 +486,13 @@ export function ChapterEditor({
             onClick={handleSmartFormatNow}
             className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light"
           >
-            一键排版
+            智能排版
           </button>
           <div className="h-4 w-px bg-brand/30" />
           <button
             onClick={() => setIsSmartFormatOpen(true)}
             className="px-2 py-1.5 text-brand hover:bg-brand-light"
-            title="一键排版设置"
+            title="智能排版设置"
           >
             <ChevronDown className="h-4 w-4" />
           </button>
@@ -284,6 +503,21 @@ export function ChapterEditor({
           </button>
           <div className="h-4 w-px bg-brand/30" />
           <HighFreqToggle />
+        </div>
+        <div className="flex items-center overflow-hidden rounded-md border border-brand">
+          <button onClick={handleSymbolReplaceNow} className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
+            一键替换
+          </button>
+          <div className="h-4 w-px bg-brand/30" />
+          <button
+            onClick={() => setIsSymbolReplaceOpen(true)}
+            className="flex h-[31px] w-9 items-center justify-center text-brand hover:bg-brand-light"
+            title="一键替换设置"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
+          <div className="h-4 w-px bg-brand/30" />
+          <SymbolReplaceToggle onEnable={handleSymbolAutoEnabled} />
         </div>
         <div className="mx-1 h-5 w-px bg-gray-200" />
         <button
@@ -336,7 +570,10 @@ export function ChapterEditor({
           value={content}
           onChange={handleContentChange}
           onKeyDown={handleKeyDown}
+          onKeyUp={keepCursorOutOfParagraphIndent}
+          onMouseUp={keepCursorOutOfParagraphIndent}
           onPaste={handlePaste}
+          onSelect={keepCursorOutOfParagraphIndent}
           onScroll={(event) => setEditorScrollTop(event.currentTarget.scrollTop)}
           className="editor-scrollbar relative z-10 h-full w-full resize-none border-0 bg-transparent px-6 pb-6 pt-2 outline-none"
           placeholder="从这里开始写..."
@@ -381,6 +618,10 @@ export function ChapterEditor({
         }}
       />
       <HighFreqModal isOpen={isHighFreqOpen} onClose={() => setIsHighFreqOpen(false)} />
+      <SymbolReplaceModal
+        isOpen={isSymbolReplaceOpen}
+        onClose={() => setIsSymbolReplaceOpen(false)}
+      />
       <HistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} chapterId={chapter.id} onRestore={commitContent} />
       <TitleOptimizeModal
         isOpen={isTitleOptimizeOpen}

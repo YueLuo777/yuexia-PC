@@ -2,6 +2,7 @@ export interface WorkbenchLibraryEntry {
   id: string;
   tab: string;
   title: string;
+  type?: string;
   content: string;
   updatedAt: string;
 }

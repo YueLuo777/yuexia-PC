@@ -368,8 +368,7 @@ export function ModelManagePage() {
   };
 
   const statusText = (model: ModelItem) => {
-    const latencyText = typeof model.connectionLatencyMs === 'number' ? ` 延迟 ${model.connectionLatencyMs}ms` : '';
-    if (!model.enabled) return '未启用';
+    const latencyText = typeof model.connectionLatencyMs === 'number' ? ` ${model.connectionLatencyMs}ms` : '';
     if (model.connectionStatus === 'connected') return `正常${latencyText}`;
     if (model.connectionStatus === 'failed') return `失败${latencyText}`;
     if (model.connectionStatus === 'testing') return '测试中';
@@ -381,7 +380,7 @@ export function ModelManagePage() {
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-6">
         <div className="flex min-w-0 items-center gap-3">
           <h1 className="text-xl font-bold text-slate-900">模型管理</h1>
-          <span className="flex h-7 items-center rounded-lg bg-orange-500 px-3 text-xs text-white">已启用 {enabledCount} 个模型</span>
+          <span className="flex h-7 items-center rounded-lg bg-orange-500 px-3 text-xs text-white">模型 {enabledCount} 个</span>
         </div>
         <button
           onClick={() => setShowSettings(true)}
@@ -497,7 +496,6 @@ export function ModelManagePage() {
 
                 <div className="mb-4 min-w-0">
                   <div className="text-base font-bold leading-snug text-slate-900 [overflow-wrap:anywhere]" title={model.name}>{model.name}</div>
-                  <div className="mt-1.5 truncate text-[13px] text-slate-500">文字模型</div>
                 </div>
 
                 <div className="mt-auto space-y-2.5 border-t border-slate-100 pt-4">
@@ -511,10 +509,11 @@ export function ModelManagePage() {
                   </div>
                   <div className="grid grid-cols-2 gap-2.5">
                     <button
-                      onClick={() => updateModel(model.id, { enabled: !model.enabled })}
-                      className={`model-action-button ${model.enabled ? 'model-action-warning' : 'model-action-primary'} flex-1 rounded-lg border py-2.5 text-sm transition-colors ${model.enabled ? 'border-orange-300 text-orange-600 hover:bg-orange-50' : 'border-brand/30 text-brand hover:bg-brand-light'}`}
+                      disabled
+                      title="预留"
+                      className="model-action-button flex-1 rounded-lg border border-slate-200 bg-slate-50 py-2.5 text-sm text-slate-400 cursor-not-allowed"
                     >
-                      {model.enabled ? '取消启用' : '启用模型'}
+                      预留
                     </button>
                     <button
                       onClick={() => {

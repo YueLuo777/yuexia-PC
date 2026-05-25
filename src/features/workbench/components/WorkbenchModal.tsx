@@ -12,9 +12,19 @@ interface WorkbenchModalProps {
   onClose: () => void;
   children: ReactNode;
   widthClass?: string;
+  heightClass?: string;
+  closeOnBackdrop?: boolean;
 }
 
-export function WorkbenchModal({ title, isOpen, onClose, children, widthClass = 'w-[720px]' }: WorkbenchModalProps) {
+export function WorkbenchModal({
+  title,
+  isOpen,
+  onClose,
+  children,
+  widthClass = 'w-[720px]',
+  heightClass = 'h-[78vh] max-h-[86vh]',
+  closeOnBackdrop = true,
+}: WorkbenchModalProps) {
   const draggable = useDraggableModal(`workbench_${title}`);
   useTopModalEscape(isOpen, onClose);
 
@@ -33,9 +43,12 @@ export function WorkbenchModal({ title, isOpen, onClose, children, widthClass = 
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40"
+      onClick={closeOnBackdrop ? onClose : undefined}
+    >
       <div
-        className={`flex h-[78vh] max-h-[86vh] ${widthClass} max-w-[96vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl`}
+        className={`flex ${heightClass} ${widthClass} max-w-[96vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl`}
         data-draggable-managed="true"
         style={draggable.style}
         onClick={(event) => event.stopPropagation()}
