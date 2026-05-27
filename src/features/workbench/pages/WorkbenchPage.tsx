@@ -1161,11 +1161,11 @@ export function WorkbenchPage() {
         />
 
         <div
-          className="group z-10 flex w-[4px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent transition-colors hover:bg-brand/30"
+          className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent"
           onMouseDown={handlePanelDragStart}
           title="拖拽调整宽度"
         >
-          <div className="h-8 w-[2px] rounded-full bg-gray-300 opacity-0 transition-opacity group-hover:opacity-100" />
+          <div className="h-8 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
         </div>
 
         <aside

@@ -166,6 +166,20 @@ export function TextOverrideLayer() {
   }, []);
 
   useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (!readTextEditMode() && !editing) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      setEditing(null);
+      if (readTextEditMode()) setTextEditMode(false);
+    };
+    window.addEventListener('keydown', handleEscape, true);
+    return () => window.removeEventListener('keydown', handleEscape, true);
+  }, [editing]);
+
+  useEffect(() => {
     if (!editMode) return;
     const handleClick = (event: MouseEvent) => {
       const target = event.target instanceof HTMLElement ? event.target : null;
@@ -197,8 +211,8 @@ export function TextOverrideLayer() {
     <div data-text-override-layer="true">
       {editMode && (
         <div className="pointer-events-none fixed left-1/2 top-16 z-[10080] -translate-x-1/2 rounded-2xl border border-brand/30 bg-white px-5 py-3 text-sm font-bold text-slate-700 shadow-2xl">
-          <span className="text-brand">文案编辑模式已开启</span>
-          <span className="ml-3 text-slate-400">点击页面文字修改，可在快捷键设置里修改开关快捷键</span>
+          <span className="text-brand">文案调整已开启</span>
+          <span className="ml-3 text-slate-400">点击页面文字修改，同名文案会自动同步</span>
         </div>
       )}
       {editMode && activeOverrides.length > 0 && (

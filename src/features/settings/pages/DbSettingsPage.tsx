@@ -410,53 +410,55 @@ export function DbSettingsPage() {
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-              <label className="md:col-span-2 block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-500">数据库保存位置</span>
-                <div className="flex gap-2">
-                  <input
-                    value={settings.dataDir}
-                    onChange={(event) => setSettings(normalizeDatabaseSettings({ ...settings, dataDir: event.target.value }))}
-                    className="h-11 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 text-base text-gray-700"
-                  />
+              <div className="md:col-span-2">
+                <div className={`xy-floating-field xy-floating-compact xy-floating-with-side-action ${settings.dataDir.trim() ? 'xy-has-value' : ''}`}>
+                  <div className="xy-floating-control">
+                    <input
+                      value={settings.dataDir}
+                      onChange={(event) => setSettings(normalizeDatabaseSettings({ ...settings, dataDir: event.target.value }))}
+                      placeholder="数据库保存位置"
+                    />
+                    <label>数据库保存位置</label>
+                  </div>
                   <button
                     onClick={selectDirectory}
                     disabled={isBusy}
-                    className="inline-flex items-center rounded-lg border border-gray-200 bg-white px-3 text-base text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                    className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-3 text-base text-gray-600 hover:bg-gray-50 disabled:opacity-50"
                   >
                     选择
                   </button>
                 </div>
-              </label>
+              </div>
 
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-500">数据库名</span>
+              <div className={`xy-floating-field xy-floating-compact ${settings.databaseName.trim() ? 'xy-has-value' : ''}`}>
                 <input
                   value={settings.databaseName}
                   onChange={(event) => setSettings({ ...settings, databaseName: event.target.value })}
-                  className="h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-base text-gray-700"
+                  placeholder="数据库名"
                 />
-              </label>
+                <label>数据库名</label>
+              </div>
 
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-500">端口</span>
+              <div className={`xy-floating-field xy-floating-compact ${String(settings.port).trim() ? 'xy-has-value' : ''}`}>
                 <input
                   value={settings.port}
                   type="number"
                   min={1}
                   max={65535}
                   onChange={(event) => setSettings({ ...settings, port: Number(event.target.value) })}
-                  className="h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-base text-gray-700"
+                  placeholder="端口"
                 />
-              </label>
+                <label>端口</label>
+              </div>
 
-              <label className="md:col-span-2 block">
-                <span className="mb-1.5 block text-sm font-medium text-gray-500">主机</span>
+              <div className={`xy-floating-field xy-floating-compact md:col-span-2 ${settings.host.trim() ? 'xy-has-value' : ''}`}>
                 <input
                   value={settings.host}
                   onChange={(event) => setSettings({ ...settings, host: event.target.value })}
-                  className="h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-base text-gray-700"
+                  placeholder="主机"
                 />
-              </label>
+                <label>主机</label>
+              </div>
             </div>
 
             <div className="mt-4 grid gap-2 md:grid-cols-2">

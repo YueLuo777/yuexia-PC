@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { NewPromptInput, PromptItem } from '@/features/prompts/model/promptTypes';
 import { APP_EVENTS } from '@/shared/events/appEvents';
@@ -9,11 +9,12 @@ const PROMPT_RECYCLE_KEY = 'xinyuexia_prompt_recycle_v1';
 const PROMPT_CATEGORIES_KEY = 'xinyuexia_prompt_categories_v1';
 const UNCATEGORIZED = '未分类';
 const PROMPT_CATEGORY_ALIASES: Record<string, string> = {
+  大纲: '设定',
   提炼: '提炼剧情',
 };
-const DEFAULT_CATEGORIES = ['脑洞', '大纲', '细纲', '正文', '审核', '润色', '更新', '概要', '提炼剧情', UNCATEGORIZED];
+const DEFAULT_CATEGORIES = ['脑洞', '设定', '细纲', '正文', '审核', '润色', '更新', '概要', '提炼剧情', UNCATEGORIZED];
 
-function normalizePromptCategoryName(category: string) {
+export function normalizePromptCategoryName(category: string) {
   const trimmed = category.trim() || UNCATEGORIZED;
   return PROMPT_CATEGORY_ALIASES[trimmed] ?? trimmed;
 }
@@ -56,6 +57,7 @@ function orderCategories(value: string[]) {
 
 const promptCategoriesStorage = createJsonStorage<string[]>(PROMPT_CATEGORIES_KEY, DEFAULT_CATEGORIES, {
   normalize: (value) => orderCategories(Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : DEFAULT_CATEGORIES),
+  eventName: PROMPTS_UPDATED_EVENT,
 });
 
 function nowText() {
@@ -82,6 +84,30 @@ export function usePrompts() {
   const [prompts, setPrompts] = useState<PromptItem[]>(() => promptsStorage.read());
   const [recycleBin, setRecycleBin] = useState<PromptItem[]>(() => promptRecycleStorage.read());
   const [categories, setCategories] = useState<string[]>(() => promptCategoriesStorage.read());
+
+  useEffect(() => {
+    const syncPromptState = () => {
+      setPrompts(promptsStorage.read());
+      setRecycleBin(promptRecycleStorage.read());
+      setCategories(promptCategoriesStorage.read());
+    };
+    const syncPromptStorage = (event: StorageEvent) => {
+      if (
+        event.key
+        && ![PROMPTS_KEY, PROMPT_RECYCLE_KEY, PROMPT_CATEGORIES_KEY].includes(event.key)
+      ) {
+        return;
+      }
+      syncPromptState();
+    };
+
+    window.addEventListener(PROMPTS_UPDATED_EVENT, syncPromptState);
+    window.addEventListener('storage', syncPromptStorage);
+    return () => {
+      window.removeEventListener(PROMPTS_UPDATED_EVENT, syncPromptState);
+      window.removeEventListener('storage', syncPromptStorage);
+    };
+  }, []);
 
   const categoryStats = useMemo(
     () =>

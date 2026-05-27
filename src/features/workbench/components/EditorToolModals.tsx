@@ -21,6 +21,8 @@ import {
 
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
+import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
+import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
 
 export interface FormatOptions {
   indent: boolean;
@@ -443,14 +445,12 @@ export function AIGenerateModal({ isOpen, onClose, mode, currentChapterSerial, c
               <div className="mb-2 flex items-center gap-3">
                 <span className="shrink-0 text-sm text-gray-500">一次生成</span>
                 <div className="relative flex-1">
-                  <select
+                  <CapsuleSelect
                     value={chapterCount}
-                    onChange={(event) => setChapterCount(event.target.value)}
-                    className="w-full appearance-none rounded-md border border-gray-200 bg-white px-3 py-2 pr-8 text-sm outline-none focus:border-brand"
-                  >
-                    {[1, 2, 3, 4, 5].map((value) => <option key={value} value={value}>{value}</option>)}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    onChange={setChapterCount}
+                    buttonClassName="h-10 rounded-xl px-3 text-sm"
+                    options={[1, 2, 3, 4, 5].map((option) => ({ value: String(option), label: String(option) }))}
+                  />
                 </div>
                 <span className="shrink-0 text-sm text-gray-500">章</span>
               </div>
@@ -531,15 +531,15 @@ export function AIGenerateModal({ isOpen, onClose, mode, currentChapterSerial, c
                 </div>
                 <label className="mb-1.5 block text-sm text-gray-600">表情包和颜文字开关<span className="text-red-400">*</span></label>
                 <div className="relative">
-                  <select
+                  <CapsuleSelect
                     value={emojiSwitch}
-                    onChange={(event) => setEmojiSwitch(event.target.value)}
-                    className="w-full appearance-none rounded-md border border-gray-200 bg-white px-3 py-2 pr-8 text-sm outline-none focus:border-brand"
-                  >
-                    <option value="关闭">关闭</option>
-                    <option value="开启">开启</option>
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    onChange={setEmojiSwitch}
+                    buttonClassName="h-10 rounded-xl px-3 text-sm"
+                    options={[
+                      { value: '关闭', label: '关闭' },
+                      { value: '开启', label: '开启' },
+                    ]}
+                  />
                 </div>
               </section>
             )}
@@ -669,9 +669,13 @@ export function FontSettingsModal({ isOpen, onClose, settings, onChange }: {
           </div>
         </section>
         <SliderSetting label="字号" value={`${local.fontSize}px`} icon={<Type className="h-3.5 w-3.5 text-gray-400" />}>
-          <button onClick={() => update({ fontSize: Math.max(12, local.fontSize - 1) })} className="h-7 w-7 rounded border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">-</button>
-          <input type="range" min={12} max={30} value={local.fontSize} onChange={(event) => update({ fontSize: Number(event.target.value) })} className="flex-1" />
-          <button onClick={() => update({ fontSize: Math.min(30, local.fontSize + 1) })} className="h-7 w-7 rounded border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">+</button>
+          <FontSizeStepper
+            value={local.fontSize}
+            min={12}
+            max={30}
+            onChange={(fontSize) => update({ fontSize })}
+            ariaLabel="编辑器工具字号"
+          />
         </SliderSetting>
         <SliderSetting label="行高" value={String(local.lineHeight)} icon={<Rows3 className="h-3.5 w-3.5 text-gray-400" />}>
           <button onClick={() => update({ lineHeight: Math.max(1, Number((local.lineHeight - 0.1).toFixed(1))) })} className="h-7 w-7 rounded border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">-</button>

@@ -1,4 +1,4 @@
-import { AlertCircle, Eye, EyeOff, GripVertical, Plus, Server, Settings, X } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, GripVertical, Server, Settings, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useModels } from '@/features/models/hooks/useModels';
@@ -7,6 +7,8 @@ import { callModel } from '@/features/models/services/callModel';
 import { addRecord, useCallRecords } from '@/hooks/useCallRecords';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
+import { RadialCreateButton } from '@/shared/ui/RadialCreateButton';
 
 type ModelDraft = {
   name: string;
@@ -119,23 +121,23 @@ function ModelEditorModal({
         </div>
 
         <div className="space-y-5 px-8 py-7">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-600">模型名称</label>
-            <input
-              value={draft.name}
-              onChange={(event) => setDraft((prev) => ({ ...prev, name: event.target.value }))}
-              placeholder={currentProvider.namePlaceholder}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-brand"
-            />
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-600">模型 ID</label>
-            <input
-              value={draft.id}
-              onChange={(event) => setDraft((prev) => ({ ...prev, id: event.target.value }))}
-              placeholder={currentProvider.modelPlaceholder}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-brand"
-            />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className={`xy-floating-field ${draft.name.trim() ? 'xy-has-value' : ''}`}>
+              <input
+                value={draft.name}
+                onChange={(event) => setDraft((prev) => ({ ...prev, name: event.target.value }))}
+                placeholder={currentProvider.namePlaceholder}
+              />
+              <label>模型名称</label>
+            </div>
+            <div className={`xy-floating-field ${draft.id.trim() ? 'xy-has-value' : ''}`}>
+              <input
+                value={draft.id}
+                onChange={(event) => setDraft((prev) => ({ ...prev, id: event.target.value }))}
+                placeholder={currentProvider.modelPlaceholder}
+              />
+              <label>模型 ID</label>
+            </div>
           </div>
           <div>
             <div className="mb-2 flex items-center justify-between">
@@ -171,44 +173,41 @@ function ModelEditorModal({
           </div>
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-600">接口类型</label>
-            <select
+            <CapsuleSelect
               value={draft.provider}
-              onChange={(event) => {
-                const provider = event.target.value as ModelProvider;
+              onChange={(value) => {
+                const provider = value as ModelProvider;
                 setDraft((prev) => ({
                   ...prev,
                   provider,
                   baseUrl: prev.baseUrl,
                 }));
               }}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-brand"
-            >
-              {(Object.keys(providerMeta) as ModelProvider[]).map((provider) => (
-                <option key={provider} value={provider}>{providerMeta[provider].label}</option>
-              ))}
-            </select>
+              options={(Object.keys(providerMeta) as ModelProvider[]).map((provider) => ({
+                value: provider,
+                label: providerMeta[provider].label,
+              }))}
+            />
           </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-600">接口地址</label>
+          <div className={`xy-floating-field ${draft.baseUrl.trim() ? 'xy-has-value' : ''}`}>
             <input
               value={draft.baseUrl}
               onChange={(event) => setDraft((prev) => ({ ...prev, baseUrl: event.target.value }))}
               placeholder={currentProvider.defaultBaseUrl}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-brand"
             />
+            <label>接口地址</label>
           </div>
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-600">API Key</label>
-            <div className="relative">
+            <div className={`xy-floating-field xy-floating-with-action ${draft.apiKey.trim() ? 'xy-has-value' : ''}`}>
               <input
                 type={showKey ? 'text' : 'password'}
                 value={draft.apiKey}
                 onChange={(event) => setDraft((prev) => ({ ...prev, apiKey: event.target.value }))}
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 pr-11 text-sm outline-none transition-colors focus:border-brand"
               />
+              <label>API Key</label>
               <button
                 onClick={() => setShowKey((prev) => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 transition-colors hover:text-slate-500"
+                className="xy-floating-action"
               >
                 {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -436,17 +435,6 @@ export function ModelManagePage() {
                   cardsPerRow === 4 ? 'p-4 pr-[66px]' : 'p-5 pr-[78px]'
                 } ${dragOverIndex === index ? 'border-brand ring-1 ring-brand' : 'border-slate-200'}`}
               >
-                <button
-                  onClick={() => updateModel(model.id, { locked: !model.locked })}
-                  className={`absolute top-4 z-10 rounded-lg border px-2.5 py-1.5 text-center text-xs transition-colors ${
-                    cardsPerRow === 4 ? 'right-3 w-[62px]' : 'right-4 w-[72px]'
-                  } ${
-                    model.locked ? 'border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100' : 'border-slate-200 bg-white text-slate-400 hover:bg-slate-50'
-                  }`}
-                >
-                  {model.locked ? '已锁定' : '锁定'}
-                </button>
-
                 <div
                   className={`model-temp-slider absolute z-10 flex flex-col items-center rounded-full border border-slate-200 bg-slate-50 px-1.5 py-3 ${
                     cardsPerRow === 4 ? 'bottom-4 right-3 top-[92px] w-12' : 'bottom-5 right-4 top-[96px] w-14'
@@ -503,26 +491,25 @@ export function ModelManagePage() {
                     <div className="truncate text-[13px] text-slate-500" title={model.model}>模型ID: {model.model}</div>
                     <div className="truncate text-[13px] text-slate-500">状态：<span className={model.enabled ? 'text-emerald-600' : 'text-slate-400'}>{statusText(model)}</span></div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button onClick={() => openEdit(model)} className="model-action-button model-action-primary flex-1 rounded-lg border border-brand/30 py-2.5 text-sm text-brand hover:bg-brand-light">编辑模型</button>
-                    <button onClick={() => void testModel(model)} className="model-action-button model-action-info flex-1 rounded-lg border border-sky-300 py-2.5 text-sm text-sky-500 hover:bg-sky-50">API 测试</button>
+                  <div className="xy-capsule-group w-full">
+                    <button onClick={() => openEdit(model)} className="xy-capsule-button model-action-button model-action-primary flex-1">编辑模型</button>
+                    <button onClick={() => void testModel(model)} className="xy-capsule-button model-action-button model-action-info flex-1">API 测试</button>
                   </div>
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="xy-capsule-group w-full">
                     <button
-                      disabled
-                      title="预留"
-                      className="model-action-button flex-1 rounded-lg border border-slate-200 bg-slate-50 py-2.5 text-sm text-slate-400 cursor-not-allowed"
+                      onClick={() => updateModel(model.id, { locked: !model.locked })}
+                      className={`xy-capsule-button model-action-button ${model.locked ? 'xy-active' : ''} flex-1`}
                     >
-                      预留
+                      {model.locked ? '已锁定' : '锁定'}
                     </button>
                     <button
                       onClick={() => {
                         if (!model.locked) setDeleteTarget(model);
                       }}
                       disabled={model.locked}
-                      className={`model-action-button ${model.locked ? 'model-action-disabled' : 'model-action-danger'} flex-1 rounded-lg border py-2.5 text-sm transition-colors ${model.locked ? 'cursor-not-allowed border-slate-200 text-slate-300' : 'border-red-300 text-red-500 hover:bg-red-50'}`}
+                      className={`xy-capsule-button model-action-button ${model.locked ? 'model-action-disabled' : 'model-action-danger xy-danger'} flex-1`}
                     >
-                      {model.locked ? '已锁定' : '删除'}
+                      删除
                     </button>
                   </div>
                 </div>
@@ -530,12 +517,9 @@ export function ModelManagePage() {
             ))}
             <button
               onClick={openAdd}
-              className="model-card model-add-card flex h-full min-h-[296px] flex-col items-center justify-center rounded-[20px] border border-dashed border-blue-400 bg-white text-blue-600 transition-colors hover:border-blue-500 hover:bg-blue-50/40"
+              className="xy-radial-create-card model-card model-add-card flex h-full min-h-[296px] flex-col items-center justify-center rounded-[20px] border border-dashed border-blue-400 bg-white text-blue-600 transition-colors hover:border-blue-500 hover:bg-blue-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
             >
-              <span className="flex h-14 w-14 items-center justify-center rounded-full border border-blue-300 bg-blue-50/50">
-                <Plus className="h-7 w-7" />
-              </span>
-              <span className="mt-5 text-lg font-medium">新增模型</span>
+              <RadialCreateButton label="新增模型" />
             </button>
           </div>
         </div>

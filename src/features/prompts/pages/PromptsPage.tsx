@@ -1,11 +1,12 @@
-import { BookOpen, Lock, Plus, RefreshCw, Search, Sparkles, Trash2, Unlock, X } from 'lucide-react';
+import { BookOpen, Lock, RefreshCw, Search, Sparkles, Trash2, Unlock, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { isDefaultPromptCategory, usePrompts } from '@/features/prompts/hooks/usePrompts';
+import { isDefaultPromptCategory, normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+import { RadialCreateButton } from '@/shared/ui/RadialCreateButton';
 
 type PromptTab = 'novel' | 'script' | 'default';
 
@@ -68,24 +69,22 @@ function PromptEditorModal({
 
         <div className="grid grid-cols-[360px_minmax(0,1fr)] gap-6 px-8 py-7">
           <div className="space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-600">提示词名称 <span className="text-red-400">*</span></label>
+            <div className={`xy-floating-field ${draft.name.trim() ? 'xy-has-value' : ''}`}>
               <input
                 value={draft.name}
                 onChange={(event) => setDraft((prev) => ({ ...prev, name: event.target.value }))}
-                placeholder="如：章节润色"
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-brand"
+                placeholder="提示词名称"
               />
+              <label>提示词名称</label>
             </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-600">提示词说明</label>
+            <div className={`xy-floating-field ${draft.description.trim() ? 'xy-has-value' : ''}`}>
               <textarea
                 value={draft.description}
                 onChange={(event) => setDraft((prev) => ({ ...prev, description: event.target.value }))}
-                placeholder="简短描述这个提示词的用途和效果"
+                placeholder="提示词说明"
                 rows={4}
-                className="w-full resize-none rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-brand"
               />
+              <label>提示词说明</label>
             </div>
             <div>
               <label className="mb-3 block text-sm font-medium text-slate-600">分类</label>
@@ -107,15 +106,15 @@ function PromptEditorModal({
             </div>
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-600">提示词内容 <span className="text-red-400">*</span></label>
+          <div className={`xy-floating-field xy-floating-compact xy-floating-fill ${draft.content.trim() ? 'xy-has-value' : ''}`}>
             <textarea
               value={draft.content}
               onChange={(event) => setDraft((prev) => ({ ...prev, content: event.target.value }))}
-              placeholder="输入完整的提示词内容..."
+              placeholder="提示词内容"
               rows={18}
-              className="h-[440px] w-full resize-none rounded-2xl border border-slate-200 px-4 py-3 font-mono text-sm leading-7 outline-none transition-colors focus:border-brand"
+              className="h-[440px] font-mono"
             />
+            <label>提示词内容</label>
           </div>
         </div>
 
@@ -185,8 +184,8 @@ function PromptRecycleModal({
                       <p className="mt-1 truncate text-xs text-slate-400">{item.description || '暂无说明'}</p>
                       <p className="mt-1 text-[10px] text-slate-300">删除于 {item.deletedAt ? new Date(item.deletedAt).toLocaleString('zh-CN') : '-'}</p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <button onClick={() => onRestore(item.id)} className="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">
+                    <div className="xy-capsule-group shrink-0">
+                      <button onClick={() => onRestore(item.id)} className="xy-capsule-button">
                         <RefreshCw className="h-3 w-3" />
                         恢复
                       </button>
@@ -199,7 +198,7 @@ function PromptRecycleModal({
                             setConfirmId(item.id);
                           }
                         }}
-                        className="rounded-lg border border-red-200 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50"
+                        className="xy-capsule-button xy-danger"
                       >
                         {confirmId === item.id ? '确认删除' : '彻底删除'}
                       </button>
@@ -215,7 +214,7 @@ function PromptRecycleModal({
   );
 }
 
-export function PromptsPage() {
+export function PromptsPage({ initialCategory }: { initialCategory?: string } = {}) {
   const [searchParams] = useSearchParams();
   const {
     prompts,
@@ -242,11 +241,12 @@ export function PromptsPage() {
   const [categoryDeleteMode, setCategoryDeleteMode] = useState(false);
 
   useEffect(() => {
-    const category = searchParams.get('category');
+    const rawCategory = initialCategory ?? searchParams.get('category');
+    const category = rawCategory ? normalizePromptCategoryName(rawCategory) : null;
     if (category && categories.includes(category)) {
       setActiveCategory(category);
     }
-  }, [categories, searchParams]);
+  }, [categories, initialCategory, searchParams]);
 
   const filteredPrompts = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();
@@ -290,29 +290,14 @@ export function PromptsPage() {
 
   return (
     <div className="flex h-full flex-col bg-slate-50">
-      <div className="flex h-16 shrink-0 items-center border-b border-slate-100 bg-white px-6">
-        <div className="flex w-full items-center justify-between">
-          <div className="min-w-0">
-              <h1 className="text-xl font-bold text-slate-900">提示词管理</h1>
-              <p className="mt-0.5 text-xs text-slate-400">管理和发现 AI 写作提示词</p>
-          </div>
-
-          <div />
-        </div>
-      </div>
-
       <div className="flex-1 overflow-y-auto px-7 py-7">
         <div className="mb-6 flex items-center justify-between gap-5">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="xy-radio-inputs">
             {(Object.keys(TAB_LABELS) as PromptTab[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`rounded-full px-5 py-2.5 text-base font-bold transition-colors ${
-                  activeTab === tab
-                    ? 'bg-brand text-white'
-                    : 'border border-brand/30 bg-white text-brand hover:bg-brand-light'
-                }`}
+                className={`xy-radio-option ${activeTab === tab ? 'xy-active' : ''}`}
               >
                 {TAB_LABELS[tab]} <span className="ml-1 text-sm opacity-70">{prompts.filter((item) => (item.promptType ?? 'novel') === tab).length}</span>
               </button>
@@ -326,27 +311,23 @@ export function PromptsPage() {
             >
               提示词回收站{recycleBin.length > 0 ? ` (${recycleBin.length})` : ''}
             </button>
-            <div className="relative w-[300px]">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-300" />
+            <div className="xy-ui132-search">
+              <Search />
               <input
-                type="text"
+                type="search"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="搜索提示词..."
-                className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-12 pr-4 text-base outline-none focus:border-brand"
               />
             </div>
           </div>
         </div>
 
-        <div className="mb-7 flex flex-wrap items-center gap-2">
+        <div className="mb-7 flex flex-wrap items-center gap-3">
+          <div className="xy-category-capsules min-w-0">
           <button
             onClick={() => setActiveCategory(null)}
-            className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-              activeCategory === null
-                ? 'bg-slate-900 text-white'
-                : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-            }`}
+            className={`xy-category-capsule ${activeCategory === null ? 'xy-active' : ''}`}
           >
             全部
           </button>
@@ -354,11 +335,7 @@ export function PromptsPage() {
             <button
               key={category}
               onClick={() => setActiveCategory(category)}
-              className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-                activeCategory === category
-                  ? 'bg-white text-brand border border-brand/30'
-                  : 'border border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
-              }`}
+              className={`xy-category-capsule ${activeCategory === category ? 'xy-active' : ''}`}
             >
               {category}
               {categoryDeleteMode && !isDefaultPromptCategory(category) && (
@@ -368,39 +345,38 @@ export function PromptsPage() {
                     removeCategory(category);
                     setActiveCategory(null);
                   }}
-                  className="ml-2 text-xs opacity-60 hover:opacity-100"
+                  className="xy-category-capsule-delete"
                 >
                   ×
                 </span>
               )}
             </button>
           ))}
-          <div className="ml-2 flex items-center gap-1.5">
+          </div>
+          <div className="flex items-center gap-1.5">
             <input
               value={newCategory}
               onChange={(event) => setNewCategory(event.target.value)}
               placeholder="新增分类"
               className="w-[120px] rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-brand"
             />
-            <button
-              onClick={() => {
-                addCategory(newCategory);
-                setNewCategory('');
-              }}
-              className="rounded-full border border-brand/30 px-3 py-1.5 text-xs text-brand hover:bg-brand-light"
-            >
-              + 新建
-            </button>
-            <button
-              onClick={() => setCategoryDeleteMode((prev) => !prev)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium text-white transition-colors ${
-                categoryDeleteMode
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : 'bg-red-500 hover:bg-red-600'
-              }`}
-            >
-              {categoryDeleteMode ? '退出删除' : '删除分类'}
-            </button>
+            <div className="xy-capsule-group">
+              <button
+                onClick={() => {
+                  addCategory(newCategory);
+                  setNewCategory('');
+                }}
+                className="xy-capsule-button"
+              >
+                新增分类
+              </button>
+              <button
+                onClick={() => setCategoryDeleteMode((prev) => !prev)}
+                className={`xy-capsule-button xy-danger ${categoryDeleteMode ? 'xy-active' : ''}`}
+              >
+                {categoryDeleteMode ? '退出删除' : '删除分类'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -474,12 +450,9 @@ export function PromptsPage() {
           ))}
           <button
             onClick={openCreate}
-            className="flex h-[247px] w-[255px] flex-col items-center justify-center rounded-[24px] border border-dashed border-blue-400 bg-white text-blue-600 transition-colors hover:border-blue-500 hover:bg-blue-50/40"
+            className="xy-radial-create-card flex h-[247px] w-[255px] flex-col items-center justify-center rounded-[24px] border border-dashed border-blue-400 bg-white text-blue-600 transition-colors hover:border-blue-500 hover:bg-blue-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
           >
-            <span className="flex h-12 w-12 items-center justify-center rounded-full border border-blue-300 bg-blue-50/50">
-              <Plus className="h-6 w-6" />
-            </span>
-            <span className="mt-4 text-base font-medium">创建提示词</span>
+            <RadialCreateButton label="创建提示词" />
           </button>
         </div>
       </div>

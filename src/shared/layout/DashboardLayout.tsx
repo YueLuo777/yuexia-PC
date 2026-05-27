@@ -21,7 +21,7 @@ import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 const USER_NAME_KEY = 'xinyuexia_sidebar_user_name';
 const USER_AVATAR_KEY = 'xinyuexia_sidebar_user_avatar';
 const USER_NAME_UPDATED_EVENT = 'xinyuexia_user_name_updated';
-const SETTINGS_BUTTON_CLASS = 'flex h-11 w-full items-center justify-center whitespace-nowrap rounded-lg bg-brand px-3 text-[13px] font-medium text-white transition-colors hover:bg-brand-dark';
+const SETTINGS_BUTTON_CLASS = 'flex h-[29px] w-full items-center justify-center whitespace-nowrap rounded-lg bg-brand px-3 text-[13px] font-medium text-white transition-colors hover:bg-brand-dark';
 
 function readUserName() {
   return localStorage.getItem(USER_NAME_KEY) || '月下作者';
@@ -74,7 +74,7 @@ export function DashboardLayout() {
   const [isEditingUserName, setIsEditingUserName] = useState(false);
   const [userNameDraft, setUserNameDraft] = useState(userName);
   const [isSidebarScrolling, setIsSidebarScrolling] = useState(false);
-  const sidebarRef = useRef<HTMLElement>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const sidebarScrollTimerRef = useRef<number | null>(null);
 
@@ -131,8 +131,7 @@ export function DashboardLayout() {
   return (
     <div className="flex h-full overflow-hidden bg-slate-50">
       <aside
-        ref={sidebarRef}
-        className={`scrollbar-scroll-only flex w-[198px] shrink-0 flex-col overflow-y-auto overflow-x-hidden border-r border-slate-200 bg-white ${isSidebarScrolling ? 'scrollbar-active' : ''}`}
+        className="flex w-[198px] shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white"
       >
         <div className="shrink-0 border-b border-slate-100 px-3 py-2">
           <input
@@ -194,48 +193,53 @@ export function DashboardLayout() {
           </div>
         </div>
 
-        {navConfig.filter((group) => !group.hidden).map((group) => {
-          const GroupIcon = getIconByName(group.iconName);
-          const isCollapsed = collapsedSections[group.title] ?? false;
+        <div
+          ref={sidebarRef}
+          className={`scrollbar-scroll-only min-h-0 flex-1 overflow-y-auto overflow-x-hidden ${isSidebarScrolling ? 'scrollbar-active' : ''}`}
+        >
+          {navConfig.filter((group) => !group.hidden).map((group) => {
+            const GroupIcon = getIconByName(group.iconName);
+            const isCollapsed = collapsedSections[group.title] ?? false;
 
-          return (
-            <div key={group.title} className="mb-1">
-              <button
-                onClick={() => toggleSection(group.title)}
-                className="mx-1.5 mt-1.5 flex w-[calc(100%-12px)] items-center justify-between rounded-lg bg-brand-light px-3.5 py-2 font-medium text-brand-dark transition-colors hover:bg-brand/10"
-                style={{ fontSize: '16px' }}
-              >
-                <span className="flex items-center gap-1.5">
-                  <GroupIcon className="h-4 w-4" />
-                  <span>{group.title}</span>
-                </span>
-                {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </button>
+            return (
+              <div key={group.title} className="mb-1">
+                <button
+                  onClick={() => toggleSection(group.title)}
+                  className="mx-1.5 mt-1.5 flex w-[calc(100%-12px)] items-center justify-between rounded-lg bg-brand-light px-3.5 py-2 font-medium text-brand-dark transition-colors hover:bg-brand/10"
+                  style={{ fontSize: '16px' }}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <GroupIcon className="h-4 w-4" />
+                    <span>{group.title}</span>
+                  </span>
+                  {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </button>
 
-              {!isCollapsed && group.items.filter((item) => !item.hidden).map((item) => {
-                const ItemIcon = getIconByName(item.iconName);
-                const isActive = location.pathname === item.to;
+                {!isCollapsed && group.items.filter((item) => !item.hidden).map((item) => {
+                  const ItemIcon = getIconByName(item.iconName);
+                  const isActive = location.pathname === item.to;
 
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
-                      isActive
-                        ? 'border-l-[3px] border-orange-500 bg-orange-50 font-medium text-orange-500'
-                        : 'border-l-[3px] border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                    }`}
-                  >
-                    <ItemIcon className="h-[17px] w-[17px]" />
-                    <span className="text-[15px] leading-none">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          );
-        })}
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
+                        isActive
+                          ? 'border-l-[3px] border-orange-500 bg-orange-50 font-medium text-orange-500'
+                          : 'border-l-[3px] border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <ItemIcon className="h-[17px] w-[17px]" />
+                      <span className="text-[15px] leading-none">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
 
-        <div className="mt-auto grid grid-cols-2 gap-2 border-t border-slate-100 p-4">
+        <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-slate-100 bg-white p-4">
           <button
             onClick={() => setShowSystemSettings(true)}
             className={SETTINGS_BUTTON_CLASS}

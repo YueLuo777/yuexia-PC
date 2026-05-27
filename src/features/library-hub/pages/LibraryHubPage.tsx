@@ -2,13 +2,11 @@ import { useState } from 'react';
 
 import { BrainstormLibraryPage } from '@/features/brainstorm-library/pages/BrainstormLibraryPage';
 import { CoverLibraryPage } from '@/features/covers/pages/CoverLibraryPage';
-import { MaterialsPage } from '@/features/materials/pages/MaterialsPage';
 
-type LibraryTab = 'brainstorm' | 'settings' | 'covers';
+type LibraryTab = 'brainstorm' | 'covers';
 
 const libraryTabs: Array<{ id: LibraryTab; label: string }> = [
   { id: 'brainstorm', label: '脑洞库' },
-  { id: 'settings', label: '设定库' },
   { id: 'covers', label: '封面库' },
 ];
 
@@ -38,7 +36,6 @@ export function LibraryHubPage() {
 
       <main className="min-h-0 flex-1 overflow-hidden">
         {activeTab === 'brainstorm' && <BrainstormLibraryPage embedded />}
-        {activeTab === 'settings' && <MaterialsPage embedded />}
         {activeTab === 'covers' && <CoverLibraryPage embedded />}
       </main>
     </div>

@@ -10,6 +10,7 @@ import { readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import { APP_EVENTS } from '@/shared/events/appEvents';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
+import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 type IdeaResult = { title: string; content: string };
@@ -281,15 +282,19 @@ export function IdeaGeneratorPage() {
           <div className="flex-1 space-y-4 overflow-y-auto p-5">
             <label className="space-y-1.5">
               <span className="text-sm font-medium text-gray-700">模型</span>
-              <select value={modelId} onChange={(event) => setModelId(event.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand">
-                {models.length === 0 ? <option value="">无可用模型</option> : models.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-              </select>
+              <CapsuleSelect
+                value={modelId}
+                onChange={setModelId}
+                options={models.length === 0 ? [{ value: '', label: '无可用模型', disabled: true }] : models.map((item) => ({ value: item.id, label: item.name }))}
+              />
             </label>
             <label className="space-y-1.5">
               <span className="text-sm font-medium text-gray-700">提示词</span>
-              <select value={promptId} onChange={(event) => setPromptId(event.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand">
-                {prompts.length === 0 ? <option value="">无提示词</option> : prompts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-              </select>
+              <CapsuleSelect
+                value={promptId}
+                onChange={setPromptId}
+                options={prompts.length === 0 ? [{ value: '', label: '无提示词', disabled: true }] : prompts.map((item) => ({ value: item.id, label: item.name }))}
+              />
             </label>
             <label className="space-y-1.5">
               <span className="text-sm font-medium text-gray-700">核心创意</span>

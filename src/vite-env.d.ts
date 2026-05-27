@@ -118,8 +118,16 @@ interface AppIconResult {
 }
 
 interface Window {
+  xinyuexiaLaunch?: {
+    disableAdjustmentMode: boolean;
+  };
   xinyuexiaModel?: {
     request(input: ModelRequestInput): Promise<ModelRequestResult>;
+    stream(
+      input: ModelRequestInput & { requestId?: string },
+      onChunk: (payload: string | { type: 'content' | 'reasoning'; text: string }) => void,
+    ): Promise<ModelRequestResult>;
+    cancelStream(requestId: string): Promise<boolean>;
   };
   xinyuexiaAppIcon?: {
     read(): Promise<AppIconResult>;

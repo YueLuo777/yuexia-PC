@@ -28,12 +28,11 @@ packagedExe = root & "\release\月下写作 0.1.0.exe"
 nodeExe = ResolveNodeExe(root)
 
 shell.CurrentDirectory = root
-shell.Environment("Process")("XINYUEXIA_START_HASH") = "#/dashboard"
-shell.Environment("Process")("XINYUEXIA_DISABLE_ADJUSTMENT_MODE") = "1"
+shell.Environment("Process")("XINYUEXIA_START_HASH") = "#/adjustment-mode"
 If fso.FileExists(packagedExe) Then
   command = """" & packagedExe & """"
   shell.Run command, 1, False
 Else
-  command = """" & nodeExe & """ """ & launcher & """ desktop"
+  command = """" & nodeExe & """ """ & launcher & """ adjustment"
   shell.Run command, 0, True
 End If

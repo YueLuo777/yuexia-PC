@@ -8,6 +8,12 @@ interface CallModelInput {
   chapterContext?: string;
   recordType?: 'api_test' | 'chat' | 'generate' | 'stream';
   signal?: AbortSignal;
+  timeoutMs?: number;
+}
+
+interface CallModelStreamInput extends CallModelInput {
+  onChunk: (text: string) => void;
+  onReasoning?: (text: string) => void;
 }
 
 function normalizeBaseUrl(baseUrl: string) {
@@ -55,10 +61,63 @@ function normalizeTemperature(value: number | undefined) {
   return Math.max(0.1, Math.min(1, Number(stepped.toFixed(2))));
 }
 
-async function postModelRequest(endpoint: string, headers: Record<string, string>, body: string, signal?: AbortSignal) {
+function createModelRequestPayload(model: ModelItem, prompt: string, userContent: string, chapterContext?: string, stream = false) {
+  const provider = model.provider ?? 'openai-compatible';
+  const endpoint = provider === 'anthropic' ? normalizeAnthropicBaseUrl(model.baseUrl) : normalizeBaseUrl(model.baseUrl);
+  const temperature = normalizeTemperature(model.temperature);
+  const systemPrompt = prompt.trim();
+  const userMessage = chapterContext
+    ? `Current chapter:\n${chapterContext}\n\nRequest:\n${userContent}`
+    : userContent;
+
+  if (provider === 'anthropic') {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-api-key': model.apiKey,
+      'anthropic-version': '2023-06-01',
+    };
+    return {
+      provider,
+      endpoint,
+      headers,
+      body: JSON.stringify({
+        model: model.model || model.id,
+        ...(systemPrompt ? { system: systemPrompt } : {}),
+        messages: [{ role: 'user', content: userMessage }],
+        max_tokens: 4096,
+        temperature,
+        stream,
+      }),
+    };
+  }
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${model.apiKey}`,
+  };
+  return {
+    provider,
+    endpoint,
+    headers,
+    body: JSON.stringify({
+      model: model.model || model.id,
+      messages: [
+        ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
+        {
+          role: 'user',
+          content: userMessage,
+        },
+      ],
+      temperature,
+      stream,
+    }),
+  };
+}
+
+async function postModelRequest(endpoint: string, headers: Record<string, string>, body: string, signal?: AbortSignal, timeoutMs = 60000) {
   throwIfAborted(signal);
   if (window.xinyuexiaModel) {
-    const request = window.xinyuexiaModel.request({ endpoint, headers, body, timeoutMs: 60000 });
+    const request = window.xinyuexiaModel.request({ endpoint, headers, body, timeoutMs });
     if (!signal) return request;
     return Promise.race([
       request,
@@ -97,61 +156,30 @@ export async function callModel({
   chapterContext,
   recordType = 'generate',
   signal,
+  timeoutMs = 60000,
 }: CallModelInput) {
   if (!model.baseUrl.trim()) throw new Error('Model is missing Base URL');
   if (!model.apiKey.trim()) throw new Error('Model is missing API Key');
   throwIfAborted(signal);
 
-  const provider = model.provider ?? 'openai-compatible';
-  const endpoint = provider === 'anthropic' ? normalizeAnthropicBaseUrl(model.baseUrl) : normalizeBaseUrl(model.baseUrl);
+  const { provider, endpoint, headers, body } = createModelRequestPayload(model, prompt, userContent, chapterContext, false);
   const startedAt = performance.now();
-  const temperature = normalizeTemperature(model.temperature);
   const modelApiId = model.model || model.id;
-
-  const systemPrompt = prompt || 'You are a writing assistant. Answer clearly and concretely.';
-  const userMessage = chapterContext
-    ? `Current chapter:\n${chapterContext}\n\nRequest:\n${userContent}`
-    : userContent;
 
   const response = provider === 'anthropic'
     ? await postModelRequest(
         endpoint,
-        {
-          'Content-Type': 'application/json',
-          'x-api-key': model.apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        JSON.stringify({
-          model: model.model || model.id,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: userMessage }],
-          max_tokens: 4096,
-          temperature,
-        }),
+        headers,
+        body,
         signal,
+        timeoutMs,
       )
     : await postModelRequest(
         endpoint,
-        {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${model.apiKey}`,
-        },
-        JSON.stringify({
-          model: model.model || model.id,
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt,
-            },
-            {
-              role: 'user',
-              content: userMessage,
-            },
-          ],
-          temperature,
-          stream: false,
-        }),
+        headers,
+        body,
         signal,
+        timeoutMs,
       );
 
   throwIfAborted(signal);
@@ -197,4 +225,83 @@ export async function callModel({
   });
 
   return String(content);
+}
+
+export async function callModelStream({
+  model,
+  prompt,
+  userContent,
+  chapterContext,
+  recordType = 'generate',
+  signal,
+  timeoutMs = 180000,
+  onChunk,
+  onReasoning,
+}: CallModelStreamInput) {
+  if (!model.baseUrl.trim()) throw new Error('Model is missing Base URL');
+  if (!model.apiKey.trim()) throw new Error('Model is missing API Key');
+  throwIfAborted(signal);
+
+  const { endpoint, headers, body } = createModelRequestPayload(model, prompt, userContent, chapterContext, true);
+  const startedAt = performance.now();
+  const modelApiId = model.model || model.id;
+  const requestId = `model-stream-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  let response: ModelRequestResult;
+  if (window.xinyuexiaModel?.stream) {
+    const abortHandler = () => {
+      void window.xinyuexiaModel?.cancelStream?.(requestId);
+    };
+    signal?.addEventListener('abort', abortHandler, { once: true });
+    try {
+      response = await window.xinyuexiaModel.stream({ endpoint, headers, body, timeoutMs, requestId }, (payload) => {
+        if (typeof payload === 'string') {
+          onChunk(payload);
+          return;
+        }
+        if (payload.type === 'reasoning') {
+          onReasoning?.(payload.text);
+          return;
+        }
+        onChunk(payload.text);
+      });
+    } finally {
+      signal?.removeEventListener('abort', abortHandler);
+    }
+  } else {
+    // Browser fallback: if streaming is blocked by CORS, fall back to the normal request.
+    const content = await callModel({ model, prompt, userContent, chapterContext, recordType, signal, timeoutMs });
+    onChunk(content);
+    return content;
+  }
+
+  throwIfAborted(signal);
+
+  if (!response.ok) {
+    addRecord({
+      modelId: model.id,
+      modelApiId,
+      modelInstanceId: model.instanceId ?? model.id,
+      modelName: model.name,
+      type: recordType,
+      status: 'failed',
+      latencyMs: Math.round(performance.now() - startedAt),
+      endpoint,
+      error: response.text.slice(0, 500),
+    });
+    throw new Error(formatModelError(response.status, response.text, model));
+  }
+
+  addRecord({
+    modelId: model.id,
+    modelApiId,
+    modelInstanceId: model.instanceId ?? model.id,
+    modelName: model.name,
+    type: recordType,
+    status: 'success',
+    latencyMs: Math.round(performance.now() - startedAt),
+    endpoint,
+  });
+
+  return response.text;
 }

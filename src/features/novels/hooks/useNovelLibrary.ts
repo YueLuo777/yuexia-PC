@@ -8,6 +8,7 @@ const NOVELS_KEY = 'xinyuexia_novels_v1';
 const RECYCLE_KEY = 'xinyuexia_recycled_novels_v1';
 const CATEGORIES_KEY = 'xinyuexia_categories_v1';
 const CURRENT_ID_KEY = 'xinyuexia_current_novel_id';
+const CURRENT_ID_STARTUP_RESET_KEY = 'xinyuexia_current_novel_reset_this_session_v1';
 const VOLUMES_KEY = 'xinyuexia_volumes_v1';
 
 const DEFAULT_CATEGORIES = ['未分类', '玄幻', '都市', '仙侠', '科幻', '历史', '游戏', '悬疑'];
@@ -39,6 +40,21 @@ function readJson<T>(key: string, fallback: T): T {
 
 function writeJson<T>(key: string, value: T) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function readInitialCurrentNovelId() {
+  try {
+    if (sessionStorage.getItem(CURRENT_ID_STARTUP_RESET_KEY) !== '1') {
+      sessionStorage.setItem(CURRENT_ID_STARTUP_RESET_KEY, '1');
+      localStorage.removeItem(CURRENT_ID_KEY);
+      return null;
+    }
+  } catch {
+    // Fall through to localStorage so selecting works in restricted environments.
+  }
+
+  const raw = localStorage.getItem(CURRENT_ID_KEY);
+  return raw ? Number(raw) : null;
 }
 
 function createDefaultNovels(): Novel[] {
@@ -164,10 +180,7 @@ export function useNovelLibrary() {
   const [novels, setNovels] = useState<Novel[]>(() => readJson(NOVELS_KEY, createDefaultNovels()));
   const [recycledNovels, setRecycledNovels] = useState<RecycledNovel[]>(() => readJson(RECYCLE_KEY, []));
   const [categories, setCategories] = useState<string[]>(() => readJson(CATEGORIES_KEY, DEFAULT_CATEGORIES));
-  const [currentNovelId, setCurrentNovelId] = useState<number | null>(() => {
-    const raw = localStorage.getItem(CURRENT_ID_KEY);
-    return raw ? Number(raw) : null;
-  });
+  const [currentNovelId, setCurrentNovelId] = useState<number | null>(readInitialCurrentNovelId);
 
   const persistNovels = useCallback((next: Novel[]) => {
     setNovels(next);

@@ -1025,22 +1025,17 @@ export function ExtractTestPage() {
               <div id="extract-plot-library-toolbar" className="flex items-center gap-2" />
             ) : (
               <>
-                {selectedNovel && <span className="text-xs font-medium text-brand">已关联：</span>}
-                <button
-                  onClick={() => setShowLinkNovel(true)}
-                  className="flex h-8 max-w-[240px] items-center justify-center gap-1 rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-dark"
-                >
-                  <BookMarked className="h-3.5 w-3.5 shrink-0" />
-                  <span className="min-w-0 truncate">{selectedNovel?.title || '关联小说'}</span>
-                </button>
-                {selectedNovelId !== null && (
-                  <button
-                    onClick={() => setSelectedNovelId(null)}
-                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] text-red-600 transition-colors hover:bg-red-100"
-                  >
-                    取消关联
+                <div className="xy-capsule-group">
+                  <button onClick={() => setShowLinkNovel(true)} className={`xy-capsule-button max-w-[240px] ${selectedNovel ? 'xy-active' : ''}`}>
+                    <BookMarked className="h-3.5 w-3.5 shrink-0" />
+                    <span className="min-w-0 truncate">{selectedNovel?.title || '关联小说'}</span>
                   </button>
-                )}
+                  {selectedNovelId !== null && (
+                    <button onClick={() => setSelectedNovelId(null)} className="xy-capsule-button xy-danger">
+                      取消关联
+                    </button>
+                  )}
+                </div>
               </>
             )}
           </div>
@@ -1111,12 +1106,14 @@ export function ExtractTestPage() {
               {selectedModule ? (
                 <div className="flex min-h-0 flex-1 flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <label className="shrink-0 text-xs font-medium text-gray-500">名称：</label>
-                    <input
-                      value={moduleDraft.label}
-                      onChange={(event) => setModuleDraft((prev) => ({ ...prev, label: event.target.value }))}
-                      className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand"
-                    />
+                    <div className={`xy-floating-field xy-floating-compact min-w-0 flex-1 ${moduleDraft.label.trim() ? 'xy-has-value' : ''}`}>
+                      <input
+                        value={moduleDraft.label}
+                        onChange={(event) => setModuleDraft((prev) => ({ ...prev, label: event.target.value }))}
+                        placeholder="名称"
+                      />
+                      <label>名称</label>
+                    </div>
                     <button
                       onClick={handleSaveModuleDraft}
                       className="shrink-0 rounded-lg bg-brand px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-brand-dark"
@@ -1481,17 +1478,24 @@ export function ExtractTestPage() {
               </div>
             )}
             <div className="flex flex-col gap-2">
-              <div className="flex flex-col gap-2">
-                  <div className="relative w-full" onClick={(event) => event.stopPropagation()}>
+              <div className="xy-capsule-group w-1/3 min-w-[360px] max-w-full">
+                  <button
+                    onClick={handleImportCurrentResults}
+                    disabled={pendingImportResults.length === 0}
+                    className="xy-capsule-button min-w-0 flex-1 whitespace-nowrap px-5"
+                  >
+                    导入剧情库
+                  </button>
+                  <div className="relative min-w-0 flex-1" onClick={(event) => event.stopPropagation()}>
                     <button
                       onClick={() => setShowExportMenu((prev) => !prev)}
                       disabled={filledResults.length === 0}
-                      className="w-full rounded-lg border border-brand/30 bg-white px-6 py-2.5 text-sm font-medium text-brand transition-colors hover:bg-brand-light disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-300"
+                      className="xy-capsule-button w-full whitespace-nowrap px-5"
                     >
                       导出 TXT
                     </button>
                     {showExportMenu && (
-                      <div className="absolute bottom-full left-0 z-30 mb-2 w-[190px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                      <div className="absolute bottom-full right-0 z-30 mb-2 w-[190px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
                         <button
                           onClick={() => {
                             setOutputMode('single');
@@ -1515,26 +1519,8 @@ export function ExtractTestPage() {
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={handleImportCurrentResults}
-                    disabled={pendingImportResults.length === 0}
-                    className="w-full rounded-lg bg-brand px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
-                  >
-                    导入剧情库
-                  </button>
               </div>
-              <div className="flex shrink-0 items-center justify-end gap-2">
-                <button
-                  onClick={isExtractPaused ? resumeExtractRun : pauseExtractRun}
-                  disabled={!isExtracting}
-                  className={`order-2 flex w-[92px] items-center justify-center rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isExtractPaused
-                      ? 'border-brand bg-brand-light text-brand hover:bg-brand-light/80'
-                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                  } disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-300`}
-                >
-                  {isExtractPaused ? '继续' : '暂停'}
-                </button>
+              <div className="xy-capsule-group w-1/3 min-w-[360px] max-w-full">
                 <button
                   onClick={() => {
                     if (isExtracting) {
@@ -1544,12 +1530,17 @@ export function ExtractTestPage() {
                     setShowExtractConfirm(true);
                   }}
                   disabled={!isExtracting && !canExtract}
-                  className={`order-1 flex w-[168px] items-center justify-center gap-1.5 rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:bg-gray-300 ${
-                    isExtracting ? 'bg-red-500 hover:bg-red-600' : 'bg-brand hover:bg-brand-dark'
-                  }`}
+                  className={`xy-capsule-button min-w-0 flex-1 whitespace-nowrap px-5 ${isExtracting ? 'xy-danger' : 'xy-active'}`}
                 >
                   <Play className="h-4 w-4" />
                   {isExtracting ? '中止提炼' : '开始提炼'}
+                </button>
+                <button
+                  onClick={isExtractPaused ? resumeExtractRun : pauseExtractRun}
+                  disabled={!isExtracting}
+                  className={`xy-capsule-button min-w-0 flex-1 whitespace-nowrap px-5 ${isExtractPaused ? 'xy-active' : ''}`}
+                >
+                  {isExtractPaused ? '继续提炼' : '暂停'}
                 </button>
               </div>
             </div>

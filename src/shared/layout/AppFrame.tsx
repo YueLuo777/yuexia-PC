@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Minus, Moon, PanelLeft, Plus, Square, X } from 'lucide-react';
+import { BookOpen, FlaskConical, Minus, Plus, Square, X } from 'lucide-react';
 
 import { useNovelLibrary } from '@/features/novels/hooks/useNovelLibrary';
 import {
@@ -12,9 +12,10 @@ import {
   shortcutActions,
   type ShortcutActionId,
 } from '@/shared/shortcuts/shortcutConfig';
-import { hasTopModalEscapeHandler } from '@/shared/hooks/useTopModalEscape';
+import { hasTopModalEscapeHandler, useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { HOME_TAB, useWorkspaceTabs, type WorkspaceTab } from '@/shared/tabs/WorkspaceTabsContext';
 import { TextOverrideLayer } from '@/shared/text-overrides/TextOverrideLayer';
+import { AdjustmentModeLayer } from '@/shared/adjustment-mode/AdjustmentModeLayer';
 
 declare global {
   interface Window {
@@ -42,6 +43,7 @@ const APP_SCALE_OPTIONS = [1, 1.1, 1.25, 1.5, 1.75, 2].map((labelScale) => ({
   effectiveScale: Number((APP_SCALE_BASE * labelScale).toFixed(3)),
 }));
 const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
+const HOME_LAST_ROUTE_KEY = 'xinyuexia_home_last_route_this_session_v1';
 const TITLEBAR_DRAG_THRESHOLD = 8;
 const TITLEBAR_DOUBLE_CLICK_MAX_DURATION_MS = 260;
 const TITLEBAR_DOUBLE_CLICK_GAP_MS = 320;
@@ -103,9 +105,29 @@ function loadDarkTheme() {
   }
 }
 
+function readLastHomeRoute() {
+  try {
+    return sessionStorage.getItem(HOME_LAST_ROUTE_KEY) || HOME_TAB.path;
+  } catch {
+    return HOME_TAB.path;
+  }
+}
+
+function rememberHomeRoute(pathname: string) {
+  if (pathname === HOME_TAB.path) return;
+  try {
+    sessionStorage.setItem(HOME_LAST_ROUTE_KEY, pathname);
+  } catch {
+    // Session storage may be unavailable in restricted contexts.
+  }
+}
+
 interface AppFrameProps {
   children: ReactNode;
 }
+
+const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
+const TestCollectionPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })));
 
 type TitlebarDragState = {
   pointerId: number;
@@ -134,6 +156,8 @@ export function AppFrame({ children }: AppFrameProps) {
   const [appScale, setAppScale] = useState(loadScale);
   const [isScaleMenuOpen, setIsScaleMenuOpen] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(loadDarkTheme);
+  const [showTestCollection, setShowTestCollection] = useState(false);
+  const [showSoftwareUiCatalog, setShowSoftwareUiCatalog] = useState(false);
   const [shortcutBindings, setShortcutBindings] = useState(loadShortcutBindings);
   const [mouseGestureSettings, setMouseGestureSettings] = useState(loadMouseGestureSettings);
   const [mouseGesturePreview, setMouseGesturePreview] = useState<MouseGesturePreview | null>(null);
@@ -144,6 +168,14 @@ export function AppFrame({ children }: AppFrameProps) {
   const titlebarPointerMetaRef = useRef({ startedAt: 0, startClientX: 0, startClientY: 0, moved: false });
 
   const effectiveScale = useMemo(() => Number(appScale.toFixed(3)), [appScale]);
+
+  useTopModalEscape(showTestCollection, () => setShowTestCollection(false));
+  useTopModalEscape(showSoftwareUiCatalog, () => setShowSoftwareUiCatalog(false));
+
+  const activateHomeTab = useCallback(() => {
+    setActiveTabId(HOME_TAB.id);
+    navigate(readLastHomeRoute());
+  }, [navigate, setActiveTabId]);
 
   useEffect(() => {
     localStorage.setItem(APP_SCALE_KEY, String(appScale));
@@ -227,10 +259,7 @@ export function AppFrame({ children }: AppFrameProps) {
     } | null = null;
     let suppressNextContextMenu = false;
 
-    const goHome = () => {
-      setActiveTabId(HOME_TAB.id);
-      navigate('/dashboard');
-    };
+    const goHome = () => activateHomeTab();
     const goForward = () => {
       navigate(1);
     };
@@ -325,7 +354,7 @@ export function AppFrame({ children }: AppFrameProps) {
       window.removeEventListener('mouseup', handleMouseUp, true);
       window.removeEventListener('contextmenu', handleContextMenu, true);
     };
-  }, [mouseGestureSettings.forwardRightSwipe, mouseGestureSettings.goHomeLeftSwipe, navigate, setActiveTabId]);
+  }, [activateHomeTab, mouseGestureSettings.forwardRightSwipe, mouseGestureSettings.goHomeLeftSwipe, navigate]);
 
   useEffect(() => {
     type DragState = {
@@ -375,8 +404,7 @@ export function AppFrame({ children }: AppFrameProps) {
     const findDialogDragHandle = (dialog: HTMLElement) => {
       const explicitHandle = dialog.querySelector<HTMLElement>('[data-modal-drag-handle="true"]');
       if (explicitHandle) return explicitHandle;
-      const firstChild = Array.from(dialog.children).find((child): child is HTMLElement => child instanceof HTMLElement);
-      return firstChild ?? null;
+      return dialog.querySelector<HTMLElement>('header');
     };
     const isInDialogDragHandle = (dialog: HTMLElement, target: HTMLElement) => {
       const handle = findDialogDragHandle(dialog);
@@ -723,8 +751,7 @@ export function AppFrame({ children }: AppFrameProps) {
         return;
       }
       if (id === 'go_home') {
-        setActiveTabId(HOME_TAB.id);
-        navigate('/dashboard');
+        activateHomeTab();
         return;
       }
       if (id === 'close_work_tab') {
@@ -762,15 +789,14 @@ export function AppFrame({ children }: AppFrameProps) {
 
     window.addEventListener('keydown', handleShortcut, true);
     return () => window.removeEventListener('keydown', handleShortcut, true);
-  }, [activeTabId, closeTab, navigate, selectNovel, setActiveTabId, shortcutBindings, tabs]);
+  }, [activateHomeTab, activeTabId, closeTab, navigate, selectNovel, setActiveTabId, shortcutBindings, tabs]);
 
   useEffect(() => {
-    if (location.pathname === '/dashboard') {
+    if (location.pathname !== '/workbench' && location.pathname !== '/script-editor-v2') {
       setActiveTabId(HOME_TAB.id);
+      rememberHomeRoute(location.pathname);
       return;
     }
-
-    if (location.pathname !== '/workbench' && location.pathname !== '/script-editor-v2') return;
 
     const raw = localStorage.getItem('xinyuexia_current_novel_id');
     const workId = raw ? Number(raw) : null;
@@ -790,6 +816,10 @@ export function AppFrame({ children }: AppFrameProps) {
   }, [location.pathname, novels, openWorkTab, setActiveTabId]);
 
   const activateTab = (tab: WorkspaceTab) => {
+    if (tab.id === HOME_TAB.id) {
+      activateHomeTab();
+      return;
+    }
     if (tab.workId) selectNovel(tab.workId);
     setActiveTabId(tab.id);
     navigate(tab.path);
@@ -959,15 +989,16 @@ export function AppFrame({ children }: AppFrameProps) {
         onClickCapture={handleTitlebarClickCapture}
       >
         <nav
-          className="flex h-full min-w-0 flex-1 items-end overflow-x-auto"
+          className="flex h-full min-w-0 flex-1 items-center overflow-x-auto"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
         >
-          {tabs.map((tab, index) => {
+          <div className="flex max-w-full shrink-0 items-center overflow-hidden rounded-xl bg-[#eeeeee] p-1 shadow-[0_0_0_1px_rgba(0,0,0,0.06)]">
+          {tabs.map((tab) => {
             const isActive = activeTabId === tab.id;
             const isHomeTab = tab.id === HOME_TAB.id;
             return (
-              <div key={tab.id} className={`flex h-11 shrink-0 items-end ${index === 0 ? '' : '-ml-px'}`}>
                 <div
+                  key={tab.id}
                   role="button"
                   tabIndex={0}
                   data-titlebar-no-drag="true"
@@ -975,33 +1006,30 @@ export function AppFrame({ children }: AppFrameProps) {
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') activateTab(tab);
                   }}
-                  className={`workspace-tab group relative flex h-10 shrink-0 cursor-pointer items-center gap-2 border px-3 text-[15px] font-semibold transition-colors ${
+                  className={`workspace-tab group relative flex h-9 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-[15px] font-semibold text-slate-700 transition-all hover:text-slate-950 ${
                     isActive
-                      ? `workspace-tab-active rounded-t-lg border-slate-300 border-b-white bg-white text-slate-950 shadow-[0_-1px_0_rgba(255,255,255,0.7)] ${isHomeTab ? 'workspace-tab-home' : ''}`
-                      : `workspace-tab-inactive border-transparent bg-transparent text-slate-700 shadow-none hover:text-slate-900 ${isHomeTab ? 'workspace-tab-home-inactive' : ''}`
-                  } ${isHomeTab ? 'w-[118px] justify-center text-center' : 'min-w-[112px] max-w-[260px] w-fit text-left'}`}
+                      ? `workspace-tab-active bg-white font-bold text-slate-950 shadow-[0_1px_2px_rgba(15,23,42,0.08)] ${isHomeTab ? 'workspace-tab-home' : ''}`
+                      : `workspace-tab-inactive bg-transparent ${isHomeTab ? 'workspace-tab-home-inactive' : ''}`
+                  } ${isHomeTab ? 'w-[150px] text-center' : 'min-w-[150px] max-w-[260px] text-left'}`}
                   title={tab.title}
                 >
-                  {!isHomeTab && (
-                    <PanelLeft className={`h-4 w-4 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-500'}`} />
-                  )}
-                  <span className={`${isHomeTab ? 'shrink-0 text-[18px] font-bold' : 'min-w-0 flex-1 truncate'}`}>{tab.title}</span>
+                  <span className={`${isHomeTab ? 'shrink-0' : 'min-w-0 flex-1 truncate text-center'}`}>{tab.title}</span>
                   {!tab.fixed && (
                     <button
                       type="button"
                       onClick={(event) => handleCloseTab(event, tab)}
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors ${
-                        isActive ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-500 hover:bg-slate-300/50 hover:text-slate-700'
+                      className={`grid h-6 w-6 shrink-0 place-items-center rounded-md transition-colors ${
+                        isActive ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'
                       }`}
                       aria-label={`关闭${tab.title}`}
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>
-              </div>
             );
           })}
+          </div>
         </nav>
 
         <div
@@ -1010,16 +1038,35 @@ export function AppFrame({ children }: AppFrameProps) {
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
         >
           <button
-            onClick={() => setIsDarkTheme((prev) => !prev)}
-            className={`mr-2 flex h-8 items-center gap-1.5 rounded-lg border px-3 text-sm transition-colors ${
-              isDarkTheme
-                ? 'border-blue-500/50 bg-blue-500/15 text-blue-200 hover:bg-blue-500/25'
-                : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-            }`}
-            title="黑色主题"
+            onClick={() => {
+              setShowSoftwareUiCatalog(false);
+              setShowTestCollection(true);
+            }}
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+            title="测试"
           >
-            <Moon className="h-4 w-4" />
-            黑色主题
+            <FlaskConical className="h-4 w-4" />
+            测试
+          </button>
+          <button
+            onClick={() => {
+              setShowTestCollection(false);
+              setShowSoftwareUiCatalog(true);
+            }}
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+            title="UI库"
+          >
+            <BookOpen className="h-4 w-4" />
+            UI库
+          </button>
+          <button
+            onClick={() => setIsDarkTheme((prev) => !prev)}
+            className={`xy-dark-theme-switch mr-2 ${isDarkTheme ? 'xy-dark-active' : ''}`}
+            title="主题"
+            aria-pressed={isDarkTheme}
+          >
+            <span className="xy-dark-theme-switch-track" aria-hidden="true" />
+            <span className="xy-dark-theme-switch-text">主题</span>
           </button>
           <div className="relative ml-1">
             <button
@@ -1139,7 +1186,44 @@ export function AppFrame({ children }: AppFrameProps) {
           </div>
         </div>
       )}
+      {showTestCollection && (
+        <div
+          className="fixed inset-0 z-[335] flex items-center justify-center bg-slate-950/45 p-5"
+          data-titlebar-no-drag="true"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setShowTestCollection(false);
+          }}
+        >
+          <div
+            className="flex h-[min(820px,90vh)] w-[min(1180px,94vw)] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <Suspense fallback={<div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">正在打开测试...</div>}>
+              <TestCollectionPage embedded onClose={() => setShowTestCollection(false)} />
+            </Suspense>
+          </div>
+        </div>
+      )}
+      {showSoftwareUiCatalog && (
+        <div
+          className="fixed inset-0 z-[340] flex items-center justify-center bg-slate-950/45 p-5"
+          data-titlebar-no-drag="true"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setShowSoftwareUiCatalog(false);
+          }}
+        >
+          <div
+            className="flex h-[min(900px,92vh)] w-[min(1520px,96vw)] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <Suspense fallback={<div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">正在打开 UI库...</div>}>
+              <SoftwareUiCatalogPage embedded onClose={() => setShowSoftwareUiCatalog(false)} />
+            </Suspense>
+          </div>
+        </div>
+      )}
       <TextOverrideLayer />
+      <AdjustmentModeLayer />
     </div>
   );
 }

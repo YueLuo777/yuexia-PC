@@ -6,6 +6,7 @@ export interface WorkbenchLibraryEntry {
   content: string;
   updatedAt: string;
   pinnedAt?: number;
+  deletedAt?: string;
 }
 
 export const WORKBENCH_LIBRARY_UPDATED_EVENT = 'xinyuexia_workbench_library_updated';

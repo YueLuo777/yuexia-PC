@@ -1,5 +1,5 @@
 import { AlertTriangle, Image as ImageIcon, Plus, RefreshCw, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { ImportModal } from '@/features/novels/components/ImportModal';
@@ -40,7 +40,7 @@ const defaultCardSettings: FullCardSettings = {
   statFontSize: 'large',
   buttonFontSize: 'large',
   buttonFontWeight: 'bold',
-  btnPerRow: 3,
+  btnPerRow: 2,
   btnRows: 2,
   btnOrder: [...defaultBtnOrder],
   btnColors: { ...defaultBtnColors },
@@ -51,6 +51,38 @@ const colorOptions: { value: BtnColor; label: string }[] = [
   { value: 'red', label: '红色' },
   { value: 'gray', label: '灰色' },
 ];
+
+function PillSegmentGroup({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex h-10 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-0.5 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)]">
+      {children}
+    </div>
+  );
+}
+
+function PillSegmentButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`min-w-0 flex-1 rounded-[9px] text-sm font-semibold transition-colors ${
+        active
+          ? 'bg-white text-[#08AACE] shadow-sm'
+          : 'text-slate-500 hover:bg-white/70 hover:text-slate-700'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
 
 function loadCardSettings(): FullCardSettings {
   try {
@@ -122,31 +154,31 @@ function CardSettingsModal({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-600">卡片宽度</label>
-                  <div className="flex gap-1">
+                  <PillSegmentGroup>
                     {(['small', 'medium', 'large'] as const).map((value, index) => (
-                      <button
+                      <PillSegmentButton
                         key={value}
                         onClick={() => onChange({ ...settings, cardWidth: value })}
-                        className={`flex-1 rounded-md border px-2 py-1.5 text-xs transition-colors ${settings.cardWidth === value ? 'border-brand bg-brand-light text-brand font-medium' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                        active={settings.cardWidth === value}
                       >
                         {['小', '中', '大'][index]}
-                      </button>
+                      </PillSegmentButton>
                     ))}
-                  </div>
+                  </PillSegmentGroup>
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-600">封面高度</label>
-                  <div className="flex gap-1">
+                  <PillSegmentGroup>
                     {(['small', 'medium', 'large'] as const).map((value, index) => (
-                      <button
+                      <PillSegmentButton
                         key={value}
                         onClick={() => onChange({ ...settings, coverHeight: value })}
-                        className={`flex-1 rounded-md border px-2 py-1.5 text-xs transition-colors ${settings.coverHeight === value ? 'border-brand bg-brand-light text-brand font-medium' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                        active={settings.coverHeight === value}
                       >
                         {['小', '中', '大'][index]}
-                      </button>
+                      </PillSegmentButton>
                     ))}
-                  </div>
+                  </PillSegmentGroup>
                 </div>
               </div>
             </div>
@@ -156,33 +188,33 @@ function CardSettingsModal({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-600">统计文字</label>
-                  <div className="flex gap-1">
+                  <PillSegmentGroup>
                     {(['small', 'medium', 'large'] as const).map((value, index) => (
-                      <button key={value} onClick={() => onChange({ ...settings, statFontSize: value })} className={`flex-1 rounded-md border px-2 py-1.5 text-xs transition-colors ${settings.statFontSize === value ? 'border-brand bg-brand-light text-brand font-medium' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                      <PillSegmentButton key={value} onClick={() => onChange({ ...settings, statFontSize: value })} active={settings.statFontSize === value}>
                         {['小', '中', '大'][index]}
-                      </button>
+                      </PillSegmentButton>
                     ))}
-                  </div>
+                  </PillSegmentGroup>
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-600">按钮文字</label>
-                  <div className="flex gap-1">
+                  <PillSegmentGroup>
                     {(['small', 'medium', 'large'] as const).map((value, index) => (
-                      <button key={value} onClick={() => onChange({ ...settings, buttonFontSize: value })} className={`flex-1 rounded-md border px-2 py-1.5 text-xs transition-colors ${settings.buttonFontSize === value ? 'border-brand bg-brand-light text-brand font-medium' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                      <PillSegmentButton key={value} onClick={() => onChange({ ...settings, buttonFontSize: value })} active={settings.buttonFontSize === value}>
                         {['小', '中', '大'][index]}
-                      </button>
+                      </PillSegmentButton>
                     ))}
-                  </div>
+                  </PillSegmentGroup>
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-600">按钮字重</label>
-                  <div className="flex gap-1">
+                  <PillSegmentGroup>
                     {(['normal', 'bold'] as const).map((value, index) => (
-                      <button key={value} onClick={() => onChange({ ...settings, buttonFontWeight: value })} className={`flex-1 rounded-md border px-2 py-1.5 text-xs transition-colors ${settings.buttonFontWeight === value ? 'border-brand bg-brand-light text-brand font-medium' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                      <PillSegmentButton key={value} onClick={() => onChange({ ...settings, buttonFontWeight: value })} active={settings.buttonFontWeight === value}>
                         {['常规', '粗体'][index]}
-                      </button>
+                      </PillSegmentButton>
                     ))}
-                  </div>
+                  </PillSegmentGroup>
                 </div>
               </div>
             </div>
@@ -192,23 +224,23 @@ function CardSettingsModal({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-600">每行按钮</label>
-                  <div className="flex gap-1">
+                  <PillSegmentGroup>
                     {[2, 3].map((value) => (
-                      <button key={value} onClick={() => onChange({ ...settings, btnPerRow: value as 2 | 3 })} className={`flex-1 rounded-md border px-2 py-1.5 text-xs transition-colors ${settings.btnPerRow === value ? 'border-brand bg-brand-light text-brand font-medium' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                      <PillSegmentButton key={value} onClick={() => onChange({ ...settings, btnPerRow: value as 2 | 3 })} active={settings.btnPerRow === value}>
                         {value}个
-                      </button>
+                      </PillSegmentButton>
                     ))}
-                  </div>
+                  </PillSegmentGroup>
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-600">按钮行数</label>
-                  <div className="flex gap-1">
+                  <PillSegmentGroup>
                     {[1, 2, 3].map((value) => (
-                      <button key={value} onClick={() => onChange({ ...settings, btnRows: value as 1 | 2 | 3 })} className={`flex-1 rounded-md border px-2 py-1.5 text-xs transition-colors ${settings.btnRows === value ? 'border-brand bg-brand-light text-brand font-medium' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                      <PillSegmentButton key={value} onClick={() => onChange({ ...settings, btnRows: value as 1 | 2 | 3 })} active={settings.btnRows === value}>
                         {value}行
-                      </button>
+                      </PillSegmentButton>
                     ))}
-                  </div>
+                  </PillSegmentGroup>
                 </div>
               </div>
             </div>
@@ -605,31 +637,26 @@ export function NovelLibraryPage() {
         )}
 
         <div className="mb-6 flex items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="xy-category-capsules min-w-0">
             {filters.map((filter) => (
               <button
                 key={filter}
                 onClick={() => setActiveFilter(filter)}
-                className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm transition-colors ${
-                  activeFilter === filter
-                    ? 'bg-brand text-white'
-                    : 'border border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
-                }`}
+                className={`xy-category-capsule ${activeFilter === filter ? 'xy-active' : ''}`}
               >
                 <span>{filter}</span>
-                <span className={`text-xs ${activeFilter === filter ? 'text-white/70' : 'text-gray-400'}`}>
+                <span className="xy-category-capsule-count">
                   {filter === '全部' ? sourceNovels.length : sourceNovels.filter((novel) => novel.category === filter).length}
                 </span>
               </button>
             ))}
           </div>
 
-          <label className="relative w-[200px] shrink-0">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <label className="xy-ui132-search shrink-0">
+            <Search />
             <input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              className="w-full rounded-md border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm transition-colors focus:border-brand"
               placeholder={`搜索${typeLabel}`}
             />
           </label>

@@ -1,4 +1,4 @@
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown, Send, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { readModelSnapshot } from '@/features/models/hooks/useModels';
@@ -14,10 +14,37 @@ import { readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import { APP_EVENTS } from '@/shared/events/appEvents';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
+import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
 
 export type WorkbenchAITool = 'ai';
 
-const WORKBENCH_AI_EXCLUDED_PROMPT_CATEGORIES = new Set(['脑洞', '大纲', '更新', '概要', '提炼剧情', '设定提取']);
+const WORKBENCH_AI_EXCLUDED_PROMPT_CATEGORIES = new Set(['脑洞', '设定', '大纲', '更新', '概要', '提炼剧情', '设定提取']);
+
+const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
+const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 162;
+const SESSION_CONTEXT_MENU_WIDTH = 104;
+const SESSION_CONTEXT_MENU_HEIGHT = 76;
+const SESSION_CONTEXT_MENU_MARGIN = 8;
+
+function resizeFloatingAiTextarea(textarea: HTMLTextAreaElement | null) {
+  if (!textarea) return;
+  textarea.style.height = 'auto';
+  const nextHeight = Math.min(
+    FLOATING_AI_TEXTAREA_MAX_HEIGHT,
+    Math.max(FLOATING_AI_TEXTAREA_MIN_HEIGHT, textarea.scrollHeight),
+  );
+  textarea.style.height = `${nextHeight}px`;
+  textarea.style.overflowY = textarea.scrollHeight > FLOATING_AI_TEXTAREA_MAX_HEIGHT ? 'auto' : 'hidden';
+}
+
+function getSessionMenuPosition(clientX: number, clientY: number) {
+  const maxLeft = window.innerWidth - SESSION_CONTEXT_MENU_WIDTH - SESSION_CONTEXT_MENU_MARGIN;
+  const maxTop = window.innerHeight - SESSION_CONTEXT_MENU_HEIGHT - SESSION_CONTEXT_MENU_MARGIN;
+  return {
+    left: Math.max(SESSION_CONTEXT_MENU_MARGIN, Math.min(clientX, maxLeft)),
+    top: Math.max(SESSION_CONTEXT_MENU_MARGIN, Math.min(clientY + 6, maxTop)),
+  };
+}
 
 interface AiSession {
   id: number;
@@ -213,6 +240,7 @@ export function WorkbenchAIPanel({
   const nextMessageIdRef = useRef(initialAiState.nextMessageId);
   const abortControllerRef = useRef<AbortController | null>(null);
   const skipNextSaveRef = useRef(true);
+  const inputTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const activeSession = sessions.find((session) => session.id === activeSessionId) ?? sessions[0];
   const input = activeSession?.input ?? '';
@@ -315,6 +343,10 @@ export function WorkbenchAIPanel({
     window.addEventListener('click', closeMenu);
     return () => window.removeEventListener('click', closeMenu);
   }, [sessionMenu]);
+
+  useEffect(() => {
+    resizeFloatingAiTextarea(inputTextareaRef.current);
+  }, [input]);
 
   useEffect(() => {
     if (!openConfigDropdown) return;
@@ -516,6 +548,31 @@ export function WorkbenchAIPanel({
     );
   };
 
+  const renderManageSegment = () => (
+    onOpenModelManage || onOpenAgentManage ? (
+      <div className="xy-management-segment shrink-0">
+        {onOpenModelManage && (
+          <button
+            type="button"
+            onClick={onOpenModelManage}
+            className="xy-management-segment-button"
+          >
+            模型管理
+          </button>
+        )}
+        {onOpenAgentManage && (
+          <button
+            type="button"
+            onClick={onOpenAgentManage}
+            className="xy-management-segment-button"
+          >
+            提示词管理
+          </button>
+        )}
+      </div>
+    ) : null
+  );
+
   const renderConfigPanel = (
     model: ModelItem | null,
     modelId: string,
@@ -526,32 +583,15 @@ export function WorkbenchAIPanel({
   ) => (
     <>
       <div className="shrink-0 overflow-visible rounded-lg border border-gray-200 bg-gray-50 p-2">
-        <div className="grid grid-cols-[52px_160px_56px_minmax(48px,1fr)] items-center gap-1.5">
+        <div className="grid grid-cols-[52px_122px_minmax(48px,1fr)] items-center gap-1.5">
           <span className="whitespace-nowrap text-sm text-gray-500">模型</span>
           {renderConfigDropdown('model', model?.id ?? modelId, enabledModels, '无可用模型', onModelChange)}
-          {onOpenModelManage ? (
-            <button
-              onClick={onOpenModelManage}
-              className="h-9 shrink-0 rounded-lg bg-brand px-2 text-sm font-bold text-white transition-colors hover:bg-brand-dark"
-            >
-              管理
-            </button>
-          ) : <span />}
           <span className="flex min-w-0 items-center text-xs font-bold">
             {renderModelStatus(model)}
           </span>
 
           <span className="whitespace-nowrap text-sm text-gray-500">提示词</span>
           {renderConfigDropdown('prompt', prompt?.id ?? chatPrompts[0]?.id ?? promptId, chatPrompts, '无可用提示词', onPromptChange)}
-          {onOpenAgentManage ? (
-            <button
-              onClick={onOpenAgentManage}
-              className="h-9 shrink-0 rounded-lg bg-brand px-2 text-sm font-bold text-white transition-colors hover:bg-brand-dark"
-            >
-              管理
-            </button>
-          ) : <span />}
-          <span />
         </div>
       </div>
       <div className="mt-2 flex h-9 shrink-0 items-center gap-1.5 overflow-x-auto rounded-full border border-gray-200 bg-gray-50 px-2.5">
@@ -573,12 +613,12 @@ export function WorkbenchAIPanel({
               onContextMenu={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                const rect = event.currentTarget.getBoundingClientRect();
+                const position = getSessionMenuPosition(event.clientX, event.clientY);
                 setActiveSessionId(session.id);
                 setSessionMenu({
                   sessionId: session.id,
-                  left: rect.left,
-                  top: rect.bottom + 6,
+                  left: position.left,
+                  top: position.top,
                 });
               }}
               className={`flex h-7 min-w-7 items-center justify-center rounded-lg border px-2 text-sm font-bold leading-none transition-colors ${
@@ -594,20 +634,20 @@ export function WorkbenchAIPanel({
       </div>
       {sessionMenu && (
         <div
-          className="fixed z-[300] flex overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg"
-          style={{ left: sessionMenu.left, top: sessionMenu.top }}
+          className="fixed z-[300] w-[104px] overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-xl"
+          style={{ left: sessionMenu.left, top: sessionMenu.top, width: SESSION_CONTEXT_MENU_WIDTH }}
           onClick={(event) => event.stopPropagation()}
         >
           <button
             onClick={() => deleteSession(sessionMenu.sessionId)}
             disabled={sessions.length <= 1}
-            className="h-8 px-3 text-xs font-bold text-red-500 hover:bg-red-50 disabled:text-gray-300 disabled:hover:bg-white"
+            className="flex h-8 w-full items-center px-3 text-left text-xs font-bold text-red-500 hover:bg-red-50 disabled:text-gray-300 disabled:hover:bg-white"
           >
             删除
           </button>
           <button
             onClick={resetSessions}
-            className="h-8 border-l border-gray-100 px-3 text-xs font-bold text-gray-600 hover:bg-red-50 hover:text-red-500"
+            className="flex h-8 w-full items-center px-3 text-left text-xs font-bold text-gray-600 hover:bg-slate-50 hover:text-slate-900"
           >
             清空
           </button>
@@ -619,24 +659,19 @@ export function WorkbenchAIPanel({
   return (
     <aside className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-white">
       <div className="flex h-9 shrink-0 items-center justify-between border-b border-gray-100 px-3">
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <span className="text-sm font-bold text-gray-900">AI对话</span>
+          {renderManageSegment()}
           {statusText && <span className="text-[11px] text-brand">{statusText}</span>}
         </div>
-        <div className="flex shrink-0 items-center gap-1">
-          <button
-            onClick={() => setOutputFontSize((prev) => Math.max(14, prev - 1))}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand text-[22px] font-bold leading-none text-white hover:bg-brand-dark"
-          >
-            -
-          </button>
-          <span className="min-w-7 text-center text-sm font-bold text-gray-700">{outputFontSize}</span>
-          <button
-            onClick={() => setOutputFontSize((prev) => Math.min(32, prev + 1))}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand text-[22px] font-bold leading-none text-white hover:bg-brand-dark"
-          >
-            +
-          </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <FontSizeStepper
+            value={outputFontSize}
+            min={14}
+            max={32}
+            onChange={setOutputFontSize}
+            ariaLabel="AI 输出字号"
+          />
           {onClose && (
             <button
               onClick={onClose}
@@ -722,66 +757,81 @@ export function WorkbenchAIPanel({
           </div>
         </div>
         <div className="mt-2 shrink-0">
-          <textarea
-            value={input}
-            onChange={(event) => updateActiveSession({ input: event.target.value })}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                void sendMessage();
-              }
-            }}
-            placeholder="请输入你的要求..."
-            className="h-9 w-full resize-none rounded-full border border-gray-200 px-3.5 py-1.5 text-sm leading-5 outline-none focus:border-brand"
-          />
-          <div className="mt-2 grid grid-cols-3 gap-2">
-            <button
-              onClick={() => {
-                if (!output.trim()) return;
-                onReplaceContent(output);
-                flashStatus('已替换正文');
+          <div className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${input.trim() ? 'xy-has-value' : ''}`}>
+            <textarea
+              ref={inputTextareaRef}
+              rows={1}
+              value={input}
+              onChange={(event) => {
+                updateActiveSession({ input: event.target.value });
+                resizeFloatingAiTextarea(event.currentTarget);
               }}
-              disabled={!output.trim()}
-              className="rounded-lg bg-brand px-2 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
-            >
-              替换正文
-            </button>
-            <button
-              onClick={onUndoReplace}
-              disabled={!canUndoReplace}
-              className="rounded-lg border border-gray-200 px-2 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
-            >
-              撤回替换
-            </button>
-            <button
-              onClick={copyOutput}
-              disabled={!output.trim()}
-              className="rounded-lg bg-brand px-2 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
-            >
-              复制
-            </button>
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  void sendMessage();
+                }
+              }}
+              placeholder="请输入你的要求..."
+              className="scrollbar-hidden"
+            />
+            <label>AI 输入框</label>
+            <div className="xy-ai-inline-actions">
+              <button
+                type="button"
+                onClick={() => void sendMessage()}
+                disabled={isLoading || !input.trim()}
+                className="xy-ai-inline-send"
+              >
+                <span className="xy-ai-inline-send-icon"><Send className="h-5 w-5" /></span>
+                发送
+              </button>
+              <button
+                type="button"
+                onClick={stopMessage}
+                disabled={!isLoading}
+                className="xy-ai-inline-stop"
+              >
+                停止
+              </button>
+            </div>
           </div>
-          <div className="mt-2 grid grid-cols-[minmax(0,1fr)_64px_64px] gap-2">
-            <button
-              onClick={() => void sendMessage()}
-              disabled={isLoading || !input.trim()}
-              className="rounded-lg bg-brand px-3 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
-            >
-              {isLoading ? '生成中...' : '发送'}
-            </button>
-            <button
-              onClick={stopMessage}
-              disabled={!isLoading}
-              className="rounded-lg border border-gray-200 px-2 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
-            >
-              停止
-            </button>
-            <button
-              onClick={() => updateActiveSession({ output: '', messages: [] })}
-              className="rounded-lg bg-red-600 px-2 py-2 text-sm font-bold text-white hover:bg-red-700"
-            >
-              清空
-            </button>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="flex min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white">
+              <button
+                onClick={() => {
+                  if (!output.trim()) return;
+                  onReplaceContent(output);
+                  flashStatus('已替换正文');
+                }}
+                disabled={!output.trim()}
+                className="min-w-0 flex-1 bg-brand px-2 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
+              >
+                替换正文
+              </button>
+              <button
+                onClick={onUndoReplace}
+                disabled={!canUndoReplace}
+                className="min-w-0 flex-1 border-l border-gray-200 bg-white px-2 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
+              >
+                撤回
+              </button>
+            </div>
+            <div className="flex min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white">
+              <button
+                onClick={copyOutput}
+                disabled={!output.trim()}
+                className="min-w-0 flex-1 bg-brand px-2 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
+              >
+                复制
+              </button>
+              <button
+                onClick={() => updateActiveSession({ output: '', messages: [] })}
+                className="min-w-0 flex-1 border-l border-red-200 bg-red-600 px-2 py-2 text-sm font-bold text-white hover:bg-red-700"
+              >
+                清空
+              </button>
+            </div>
           </div>
         </div>
       </section>

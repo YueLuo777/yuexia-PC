@@ -81,11 +81,10 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
     title: '数据专区',
     iconName: 'Database',
     items: [
-      { iconName: 'Database', label: '资料库', to: '/materials' },
       { iconName: 'Tag', label: '提示词管理', to: '/prompts' },
       { iconName: 'Settings', label: '模型管理', to: '/model-manage' },
       { iconName: 'Cloud', label: '数据库设置', to: '/db-settings' },
-      { iconName: 'Type', label: '文案修改', to: '/text-overrides' },
+      { iconName: 'Palette', label: '调整模式', to: '/adjustment-mode' },
     ],
   },
   {
@@ -101,9 +100,7 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
     title: '测试专区',
     iconName: 'FlaskConical',
     items: [
-      { iconName: 'Palette', label: '软件 UI 记录', to: '/software-ui-catalog' },
-      { iconName: 'Moon', label: '主题颜色', to: '/theme-colors' },
-      { iconName: 'FlaskConical', label: '其他测试', to: '/test-collection' },
+      { iconName: 'FlaskConical', label: '测试', to: '/test-collection' },
     ],
   },
 ];
@@ -119,17 +116,23 @@ const REMOVED_ROUTES = new Set([
   '/extract-test',
   '/extract-1',
   '/cover-library',
+  '/materials',
+  '/materials/settings',
   '/plot-library',
   '/idea-library',
+  '/software-ui-catalog',
+  '/theme-colors',
+  '/text-overrides',
 ]);
 const REMOVED_GROUP_TITLES = new Set(['首页专区']);
 const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
   '/db-settings': '数据库设置',
   '/library': '库',
   '/text-overrides': '文案修改',
-  '/software-ui-catalog': '软件 UI 记录',
+  '/adjustment-mode': '调整模式',
+  '/software-ui-catalog': 'UI库',
   '/theme-colors': '主题颜色',
-  '/test-collection': '其他测试',
+  '/test-collection': '测试',
 };
 
 function cloneDefaultConfig() {

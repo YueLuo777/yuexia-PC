@@ -1,13 +1,14 @@
-import { ChevronDown, ChevronRight, Lock, Plus, Settings, Trash2, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Lock, Plus, Send, Settings, Trash2, Unlock, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { DragEvent as ReactDragEvent, KeyboardEvent as ReactKeyboardEvent, MouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
 
+import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
 import { readModelSnapshot } from '@/features/models/hooks/useModels';
-import { callModel } from '@/features/models/services/callModel';
-import { usePrompts } from '@/features/prompts/hooks/usePrompts';
+import { callModel, callModelStream } from '@/features/models/services/callModel';
+import { normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
+import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import {
   WORKBENCH_LIBRARY_UPDATED_EVENT,
@@ -17,8 +18,25 @@ import {
   type WorkbenchLibraryEntry,
 } from '@/features/workbench/model/workbenchLibraryStorage';
 import type { Volume } from '@/features/workbench/model/workbenchTypes';
+import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
+import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
+
+const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
+const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 162;
+
+function resizeFloatingAiTextarea(textarea: HTMLTextAreaElement | null) {
+  if (!textarea) return;
+  textarea.style.height = 'auto';
+  const nextHeight = Math.min(
+    FLOATING_AI_TEXTAREA_MAX_HEIGHT,
+    Math.max(FLOATING_AI_TEXTAREA_MIN_HEIGHT, textarea.scrollHeight),
+  );
+  textarea.style.height = `${nextHeight}px`;
+  textarea.style.overflowY = textarea.scrollHeight > FLOATING_AI_TEXTAREA_MAX_HEIGHT ? 'auto' : 'hidden';
+}
 
 interface WorkbenchLibraryPanelProps {
   storageKey: string;
@@ -55,10 +73,11 @@ interface SettingContent {
 }
 
 const DEFAULT_ROLE_TYPES = ['男女主', '正派配角', '重要反派', '反派配角', '龙套', '未分类'];
-const DEFAULT_SETTING_TYPES = ['核心设定', '主线剧情', '等级体系', '势力设定', '其他设定', '伏笔设定', '未分类'];
+const DEFAULT_SETTING_TYPES = ['核心设定', '主线剧情', '等级体系', '势力设定', '伏笔设定', '其他设定', '未分类'];
 const ROLE_TAB = '角色';
 const BRAINSTORM_TAB = '脑洞';
 const SETTING_TAB = '大纲';
+const PROMPT_SETTING_CATEGORY = '设定';
 const DETAIL_OUTLINE_TAB = '细纲';
 const OUTLINE_LIBRARY_TAB = '概要';
 const BRAINSTORM_TYPE = '脑洞库';
@@ -97,6 +116,21 @@ type LibraryEntryMenu = {
 } | null;
 
 type PendingEntryDelete = Pick<WorkbenchLibraryEntry, 'id' | 'title' | 'tab'> | null;
+type LibraryManagementModalState =
+  | { type: 'models' }
+  | { type: 'prompts'; category: string }
+  | null;
+type LibraryAiRequestLog = {
+  createdAt: string;
+  tab: string;
+  modelName: string;
+  promptName: string;
+  hasLinkedBrainstorm: boolean;
+  linkedBrainstormTitle: string;
+  visibleUserText: string;
+  systemPrompt: string;
+  userContent: string;
+};
 
 type LibraryEntryDragState = {
   entryId: string;
@@ -124,6 +158,11 @@ type LibraryTabConfig = {
   brainstormRequirement?: string;
   brainstormPreviewFontSize?: number;
   brainstormOutputFontSize?: number;
+  brainstormStreamEnabled?: boolean;
+  loadedBrainstormId?: string | null;
+  loadedBrainstormTitle?: string;
+  loadedBrainstormText?: string;
+  smartImportLocked?: boolean;
   settingPreviewFontSize?: number;
 };
 
@@ -141,11 +180,11 @@ const BRAINSTORM_QUESTION_FIELDS: Array<{
   label: string;
   placeholder: string;
 }> = [
-  { key: 'brainstormGenre', label: '1.题材', placeholder: '如都市高武、玄幻脑洞、都市脑洞' },
-  { key: 'brainstormBackground', label: '2.故事主题', placeholder: '升级流、系统流、灵气复苏' },
-  { key: 'brainstormIdea', label: '3.主角金手指', placeholder: '系统、能力等特殊点' },
-  { key: 'brainstormCheat', label: '4.你的构思', placeholder: '任何灵感都可以' },
-  { key: 'brainstormRequirement', label: '5.补充内容', placeholder: '主角名字、性格、女主设定等' },
+  { key: 'brainstormGenre', label: '题材', placeholder: '如都市高武、玄幻脑洞、都市脑洞' },
+  { key: 'brainstormBackground', label: '故事主题', placeholder: '升级流、系统流、灵气复苏' },
+  { key: 'brainstormIdea', label: '主角金手指', placeholder: '系统、能力等特殊点' },
+  { key: 'brainstormCheat', label: '你的构思', placeholder: '任何灵感都可以' },
+  { key: 'brainstormRequirement', label: '补充内容', placeholder: '主角名字、性格、女主设定等' },
 ];
 
 const BRAINSTORM_PREVIEW_MIN_FONT_SIZE = 12;
@@ -154,6 +193,7 @@ const BRAINSTORM_OUTPUT_MIN_FONT_SIZE = 12;
 const BRAINSTORM_OUTPUT_MAX_FONT_SIZE = 28;
 const SETTING_PREVIEW_MIN_FONT_SIZE = 12;
 const SETTING_PREVIEW_MAX_FONT_SIZE = 28;
+const LIBRARY_AI_TIMEOUT_MS = 180000;
 
 type LibraryTabConfigs = Record<string, LibraryTabConfig>;
 
@@ -179,6 +219,51 @@ function readActiveTab(storageKey: string, tabs: string[], defaultActiveTab?: st
 
 function getSettingLibraryWidthStorageKey(storageKey: string, tab: string, side: 'left' | 'right' | 'brainstormPreview') {
   return `${storageKey}_${normalizeTabName(tab)}_${side}_width`;
+}
+
+function getExpandedStringSetStorageKey(storageKey: string, tab: string, name: string) {
+  return `${storageKey}_${normalizeTabName(tab)}_${name}_expanded_v1`;
+}
+
+function readExpandedStringSet(storageKey: string, tab: string, name: string, fallback: string[] = [UNCATEGORIZED_TYPE]) {
+  try {
+    const raw = localStorage.getItem(getExpandedStringSetStorageKey(storageKey, tab, name));
+    const parsed = raw ? JSON.parse(raw) as string[] : fallback;
+    const values = parsed.filter((item) => typeof item === 'string' && item.trim());
+    return new Set(values.length > 0 ? values : fallback);
+  } catch {
+    return new Set(fallback);
+  }
+}
+
+function persistExpandedStringSet(storageKey: string, tab: string, name: string, values: Set<string>) {
+  localStorage.setItem(getExpandedStringSetStorageKey(storageKey, tab, name), JSON.stringify([...values]));
+}
+
+function getExpandedNumberSetStorageKey(storageKey: string, tab: string, name: string) {
+  return `${storageKey}_${normalizeTabName(tab)}_${name}_expanded_v1`;
+}
+
+function readExpandedNumberSet(storageKey: string, tab: string, name: string) {
+  try {
+    const raw = localStorage.getItem(getExpandedNumberSetStorageKey(storageKey, tab, name));
+    const parsed = raw ? JSON.parse(raw) as number[] : [];
+    return new Set(parsed.filter((item) => Number.isFinite(item)));
+  } catch {
+    return new Set<number>();
+  }
+}
+
+function hasStoredExpandedNumberSet(storageKey: string, tab: string, name: string) {
+  try {
+    return localStorage.getItem(getExpandedNumberSetStorageKey(storageKey, tab, name)) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function persistExpandedNumberSet(storageKey: string, tab: string, name: string, values: Set<number>) {
+  localStorage.setItem(getExpandedNumberSetStorageKey(storageKey, tab, name), JSON.stringify([...values]));
 }
 
 function readSettingLibraryLeftWidth(storageKey: string, tab: string) {
@@ -303,6 +388,19 @@ function readNormalizedEntries(storageKey: string) {
   return normalizeEntries(readWorkbenchLibraryEntries(storageKey));
 }
 
+function getBrainstormRecycleStorageKey(storageKey: string) {
+  return `${storageKey}_brainstorm_recycle_v1`;
+}
+
+function readBrainstormRecycleEntries(storageKey: string) {
+  return normalizeEntries(readWorkbenchLibraryEntries(getBrainstormRecycleStorageKey(storageKey)))
+    .filter((entry) => entry.tab === BRAINSTORM_TAB);
+}
+
+function writeBrainstormRecycleEntries(storageKey: string, entries: WorkbenchLibraryEntry[]) {
+  writeWorkbenchLibraryEntries(getBrainstormRecycleStorageKey(storageKey), entries);
+}
+
 function parseRoleContent(content: string): RoleContent {
   try {
     const parsed = JSON.parse(content) as Partial<RoleContent>;
@@ -387,6 +485,35 @@ function classifySettingText(text: string) {
   return '其他设定';
 }
 
+function createTaggedSettingSegments(text: string) {
+  const normalized = text.replace(/\r\n/g, '\n').trim();
+  if (!normalized) return [];
+  const segments: Array<{ title: string; type: string; body: string }> = [];
+  const sectionPattern = /<([^<>/]+)>\s*([\s\S]*?)\s*<\/\1>/g;
+
+  for (const sectionMatch of normalized.matchAll(sectionPattern)) {
+    const type = (sectionMatch[1] ?? '').trim();
+    const sectionBody = (sectionMatch[2] ?? '').trim();
+    if (!type || !sectionBody) continue;
+
+    const itemPattern = /^\s*(?:\*([^*\n]+)\*|#([^#\n]+)#)\s*[：:]\s*/gm;
+    const itemMatches = [...sectionBody.matchAll(itemPattern)];
+    itemMatches.forEach((itemMatch, index) => {
+      const title = (itemMatch[1] ?? itemMatch[2] ?? '').trim();
+      if (!title) return;
+      const bodyStart = (itemMatch.index ?? 0) + itemMatch[0].length;
+      const bodyEnd = index + 1 < itemMatches.length
+        ? itemMatches[index + 1].index ?? sectionBody.length
+        : sectionBody.length;
+      const body = sectionBody.slice(bodyStart, bodyEnd).trim();
+      if (!body) return;
+      segments.push({ title, type, body });
+    });
+  }
+
+  return segments;
+}
+
 function createSmartSettingSegments(text: string) {
   const normalized = text.replace(/\r\n/g, '\n').trim();
   if (!normalized) return [];
@@ -408,6 +535,70 @@ function createSmartSettingSegments(text: string) {
       body,
     };
   });
+}
+
+function cleanMarkdownHeadingTitle(text: string) {
+  return text
+    .replace(/^#+\s*/, '')
+    .replace(/\s*#+\s*$/, '')
+    .trim();
+}
+
+function createMarkdownSettingSegments(text: string) {
+  const normalized = text.replace(/\r\n/g, '\n').trim();
+  if (!normalized) return [];
+  const segments: Array<{ title: string; type: string; body: string }> = [];
+  let currentType = '';
+  let currentTitle = '';
+  let bodyLines: string[] = [];
+
+  const flush = () => {
+    const title = currentTitle.trim();
+    if (!title) {
+      bodyLines = [];
+      return;
+    }
+    const body = bodyLines
+      .join('\n')
+      .replace(/^#{1,6}\s*/gm, '')
+      .trim();
+    segments.push({
+      title,
+      type: currentType.trim() || classifySettingText(`${title}\n${body}`),
+      body,
+    });
+    bodyLines = [];
+  };
+
+  normalized.split('\n').forEach((line) => {
+    const heading = line.match(/^(#{1,6})\s+(.+?)\s*#*\s*$/);
+    if (!heading) {
+      if (currentTitle) bodyLines.push(line);
+      return;
+    }
+
+    const level = heading[1].length;
+    const title = cleanMarkdownHeadingTitle(heading[2] ?? '');
+    if (!title) return;
+
+    if (level === 1) {
+      flush();
+      currentType = title;
+      currentTitle = '';
+      return;
+    }
+
+    if (level === 2) {
+      flush();
+      currentTitle = title;
+      return;
+    }
+
+    if (currentTitle) bodyLines.push(title);
+  });
+
+  flush();
+  return segments;
 }
 
 function countTextWords(content: string) {
@@ -442,7 +633,48 @@ function parseAiChatTurns(content: string) {
   return turns;
 }
 
+function formatAiThinkingResponse(content: string, reasoning: string, seconds: number, done: boolean) {
+  const reasoningText = reasoning.trim();
+  const body = content.trimStart();
+  if (!reasoningText) return body || (done ? '' : '正在思考...');
+  return [
+    `[[THINKING seconds=${Math.max(0, seconds)} status=${done ? 'done' : 'thinking'}]]`,
+    reasoningText,
+    '[[/THINKING]]',
+    body ? `\n${body}` : '',
+  ].join('\n').trimEnd();
+}
+
+function stripAiThinkingBlock(content: string) {
+  return content
+    .replace(/\[\[THINKING seconds=\d+ status=(?:thinking|done)\]\]\n[\s\S]*?\n\[\[\/THINKING\]\]\n?/g, '')
+    .trim();
+}
+
 function renderAiChatContent(content: string) {
+  const thinkingMatch = content.match(/^\[\[THINKING seconds=(\d+) status=(thinking|done)\]\]\n([\s\S]*?)\n\[\[\/THINKING\]\]\n?\n?([\s\S]*)$/);
+  if (thinkingMatch) {
+    const seconds = thinkingMatch[1] ?? '0';
+    const done = thinkingMatch[2] === 'done';
+    const reasoning = thinkingMatch[3]?.trim() ?? '';
+    const answer = thinkingMatch[4]?.trimStart() ?? '';
+    return (
+      <div className="space-y-3">
+        <details open={!done} className="group rounded-xl border border-gray-100 bg-white/80 px-3 py-2 text-gray-600">
+          <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-gray-600">
+            {done ? <ChevronDown className="h-4 w-4 text-brand" /> : <ChevronRight className="h-4 w-4 text-brand" />}
+            <span>{done ? `已思考（用时 ${seconds} 秒）` : `正在思考（${seconds} 秒）`}</span>
+          </summary>
+          {reasoning && (
+            <div className="mt-2 border-l-2 border-gray-200 pl-3 text-sm leading-7 text-gray-500">
+              {reasoning}
+            </div>
+          )}
+        </details>
+        {answer && <div>{answer}</div>}
+      </div>
+    );
+  }
   const loadingMatch = content.match(/^正在生成(\.{1,3})$/);
   if (!loadingMatch) return content;
   return (
@@ -458,7 +690,7 @@ function getLatestUsefulAiText(content: string) {
   const latestAi = [...turns]
     .reverse()
     .find((turn) => turn.role === 'ai' && turn.content.trim() && !/^正在生成\.{1,3}$/.test(turn.content.trim()));
-  if (latestAi) return latestAi.content.trim();
+  if (latestAi) return stripAiThinkingBlock(latestAi.content);
 
   const legacyAiMatches = [...content.matchAll(/(?:^|\n)AI[：:]\s*([\s\S]*?)(?=\n\s*用户[：:]|\n\s*\[\[USER\]\]|$)/g)]
     .map((match) => match[1]?.trim() ?? '')
@@ -467,9 +699,16 @@ function getLatestUsefulAiText(content: string) {
 
   return content
     .replace(/\[\[(?:USER|AI)\]\]\n?/g, '')
+    .replace(/\[\[THINKING seconds=\d+ status=(?:thinking|done)\]\]\n[\s\S]*?\n\[\[\/THINKING\]\]\n?/g, '')
     .replace(/^\s*(?:用户|AI)[：:].*$/gm, '')
     .replace(/^正在生成\.{1,3}\s*$/gm, '')
     .trim();
+}
+
+function getBrainstormEntryBody(entry: WorkbenchLibraryEntry | null | undefined) {
+  if (!entry) return '';
+  const parsed = parseSettingContent(entry.content);
+  return getLatestUsefulAiText(parsed.body || entry.content);
 }
 
 function getRoleCategoryButtonTone(type: string) {
@@ -478,6 +717,51 @@ function getRoleCategoryButtonTone(type: string) {
     badgeClassName: 'bg-white/20 text-white',
     iconClassName: 'text-white',
   };
+}
+
+function LibraryManagementModal({
+  modal,
+  onClose,
+}: {
+  modal: Exclude<LibraryManagementModalState, null>;
+  onClose: () => void;
+}) {
+  const draggable = useDraggableModal(`workbench_library_${modal.type}_${modal.type === 'prompts' ? modal.category : 'models'}`);
+  useTopModalEscape(true, onClose);
+  const title = modal.type === 'models' ? '模型管理' : `${modal.category}提示词管理`;
+
+  return createPortal(
+    <div
+      className="modal-sharp fixed inset-0 z-[280] flex items-center justify-center bg-black/35 px-8 py-8"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        className="modal-sharp flex h-[min(820px,88vh)] w-[min(1500px,94vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]"
+        style={draggable.style}
+      >
+        <header
+          {...draggable.dragHandleProps}
+          className="flex h-11 shrink-0 cursor-move items-center justify-between border-b border-slate-200 bg-white px-4"
+        >
+          <h2 className="text-sm font-bold text-slate-900">{title}</h2>
+          <button
+            data-no-modal-drag="true"
+            onClick={onClose}
+            className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            title="关闭"
+          >
+            关闭
+          </button>
+        </header>
+        <div className="min-h-0 flex-1 overflow-hidden">
+          {modal.type === 'models' ? <ModelManagePage /> : <PromptsPage initialCategory={modal.category} />}
+        </div>
+      </section>
+    </div>,
+    document.body,
+  );
 }
 
 export function WorkbenchLibraryPanel({
@@ -489,13 +773,15 @@ export function WorkbenchLibraryPanel({
   scale = 1,
   defaultActiveTab,
 }: WorkbenchLibraryPanelProps) {
-  const navigate = useNavigate();
   const normalizedTabs = useMemo(() => tabs.map(normalizeTabName), [tabs]);
   const isSettingLibraryPanel = useMemo(
     () => normalizedTabs.every((tab) => SETTING_LIBRARY_TABS.has(tab)),
     [normalizedTabs],
   );
   const [entries, setEntries] = useState<WorkbenchLibraryEntry[]>(() => readNormalizedEntries(storageKey));
+  const [brainstormRecycleEntries, setBrainstormRecycleEntries] = useState<WorkbenchLibraryEntry[]>(() => (
+    readBrainstormRecycleEntries(storageKey)
+  ));
   const [outlineEntries, setOutlineEntries] = useState<WorkbenchLibraryEntry[]>(() => (
     outlineStorageKey ? readNormalizedEntries(outlineStorageKey) : []
   ));
@@ -514,39 +800,62 @@ export function WorkbenchLibraryPanel({
   const [outlineSelectionType, setOutlineSelectionType] = useState<'chapter' | 'volume'>('chapter');
   const [outlinePreviewDraft, setOutlinePreviewDraft] = useState('');
   const [, forceOutlineSelectionRefresh] = useState(0);
-  const [expandedOutlineVolumeIds, setExpandedOutlineVolumeIds] = useState<Set<number>>(() => new Set());
+  const [expandedOutlineVolumeIds, setExpandedOutlineVolumeIds] = useState<Set<number>>(() => (
+    readExpandedNumberSet(outlineStorageKey ?? storageKey, activeTab, 'outline_volumes')
+  ));
   const [outlineColumns, setOutlineColumns] = useState(loadOutlineColumns);
   const [isOutlineSettingsOpen, setIsOutlineSettingsOpen] = useState(false);
   const [settingLibraryLeftWidth, setSettingLibraryLeftWidth] = useState(() => readSettingLibraryLeftWidth(storageKey, activeTab));
   const [settingLibraryRightWidth, setSettingLibraryRightWidth] = useState(() => readSettingLibraryRightWidth(storageKey, activeTab));
   const [brainstormPreviewWidth, setBrainstormPreviewWidth] = useState(() => readBrainstormPreviewWidth(storageKey, activeTab));
-  const [expandedRoleTypes, setExpandedRoleTypes] = useState<Set<string>>(() => new Set(['未分类']));
-  const [expandedSettingTypes, setExpandedSettingTypes] = useState<Set<string>>(() => new Set(['未分类']));
+  const [expandedRoleTypes, setExpandedRoleTypes] = useState<Set<string>>(() => (
+    readExpandedStringSet(storageKey, ROLE_TAB, 'role_types')
+  ));
+  const [expandedSettingTypes, setExpandedSettingTypes] = useState<Set<string>>(() => (
+    readExpandedStringSet(storageKey, activeTab, 'setting_types')
+  ));
   const [categoryMenu, setCategoryMenu] = useState<LibraryCategoryMenu>(null);
   const [entryMenu, setEntryMenu] = useState<LibraryEntryMenu>(null);
   const [pendingEntryDelete, setPendingEntryDelete] = useState<PendingEntryDelete>(null);
+  const [isClearSettingsConfirmOpen, setIsClearSettingsConfirmOpen] = useState(false);
+  const [managementModal, setManagementModal] = useState<LibraryManagementModalState>(null);
   const [draggingLibraryEntry, setDraggingLibraryEntry] = useState<LibraryEntryDragState>(null);
   const [libraryDropTarget, setLibraryDropTarget] = useState<{ tab: string; type: string } | null>(null);
   const [roleHistoryEntryId, setRoleHistoryEntryId] = useState<string | null>(null);
   const [isBrainstormReaderOpen, setIsBrainstormReaderOpen] = useState(false);
   const [selectedBrainstormReaderId, setSelectedBrainstormReaderId] = useState<string | null>(null);
+  const [isBrainstormRecycleOpen, setIsBrainstormRecycleOpen] = useState(false);
+  const [isClearBrainstormRecycleConfirmOpen, setIsClearBrainstormRecycleConfirmOpen] = useState(false);
   const [isBrainstormPromptManagerOpen, setIsBrainstormPromptManagerOpen] = useState(false);
   const [editingBrainstormPrompt, setEditingBrainstormPrompt] = useState<PromptItem | null>(null);
+  const [isCreatingBrainstormPrompt, setIsCreatingBrainstormPrompt] = useState(false);
   const [brainstormPromptDraft, setBrainstormPromptDraft] = useState({ name: '', description: '', content: '' });
   const [brainstormGenerateDraft, setBrainstormGenerateDraft] = useState<BrainstormQuestionDraft | null>(null);
   const [isBrainstormConfirmScrolling, setIsBrainstormConfirmScrolling] = useState(false);
   const [settingCreateDialog, setSettingCreateDialog] = useState<'category' | 'setting' | null>(null);
   const [isLibraryAiLoading, setIsLibraryAiLoading] = useState(false);
+  const [isLibraryAiLogOpen, setIsLibraryAiLogOpen] = useState(false);
+  const [lastLibraryAiRequestLog, setLastLibraryAiRequestLog] = useState<LibraryAiRequestLog | null>(null);
   const [loadingDotCount, setLoadingDotCount] = useState(1);
   const [tabPortalTarget, setTabPortalTarget] = useState<HTMLElement | null>(null);
   const outlinePreviewRefs = useRef<Record<number, HTMLElement | null>>({});
+  const libraryAiOutputRef = useRef<HTMLDivElement | null>(null);
+  const libraryAiAutoScrollRef = useRef(true);
+  const libraryAiProgrammaticScrollRef = useRef(false);
   const libraryAiAbortRef = useRef<AbortController | null>(null);
+  const libraryAiInputRef = useRef<HTMLTextAreaElement | null>(null);
   const libraryAiRequestSeqRef = useRef(0);
   const brainstormConfirmScrollTimerRef = useRef<number | null>(null);
+  const roleExpandedReloadRef = useRef(false);
+  const settingExpandedReloadRef = useRef(false);
+  const outlineExpandedReloadRef = useRef(false);
   const models = useMemo(() => readModelSnapshot().filter((model) => model.enabled), []);
-  const { prompts, updatePrompt, deletePrompt, togglePin } = usePrompts();
+  const { prompts, addPrompt, updatePrompt, deletePrompt, togglePin } = usePrompts();
   const brainstormPrompts = useMemo(() => prompts.filter((prompt) => prompt.category === BRAINSTORM_TAB), [prompts]);
-  const rolePromptOptions = useMemo(() => prompts.filter((prompt) => prompt.category === '大纲'), [prompts]);
+  const rolePromptOptions = useMemo(
+    () => prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === PROMPT_SETTING_CATEGORY),
+    [prompts],
+  );
   const outlinePrompts = useMemo(() => prompts.filter((prompt) => prompt.category === '概要'), [prompts]);
   const scaleStyle = scale === 1 ? undefined : ({ zoom: scale } as CSSProperties);
   const activeTabConfig = tabConfigs[activeTab] ?? {};
@@ -556,15 +865,17 @@ export function WorkbenchLibraryPanel({
   const settingTypeDraft = activeTabConfig.typeDraft ?? '';
   const settingTitleDraft = activeTabConfig.titleDraft ?? '';
   const aiInput = activeTabConfig.aiInput ?? '';
+  const canSendLibraryAiMessage = activeTab === SETTING_TAB || aiInput.trim().length > 0;
   const aiOutput = activeTabConfig.aiOutput ?? '';
   const aiResult = activeTabConfig.aiResult ?? '';
   const animatedAiOutput = isLibraryAiLoading
     ? aiOutput.replace(/正在生成\.\.\./g, `正在生成${'.'.repeat(loadingDotCount)}`)
     : aiOutput;
   const aiChatTurns = parseAiChatTurns(animatedAiOutput);
-  const aiInputRows = aiInput.split('\n').length;
-  const aiInputHeight = Math.min(162, Math.max(43, aiInputRows * 24 + 20));
-  const aiInputShouldScroll = aiInputRows >= 4 || Array.from(aiInput).length > 120;
+  useEffect(() => {
+    resizeFloatingAiTextarea(libraryAiInputRef.current);
+  }, [activeTab, aiInput]);
+
   const brainstormPreviewFontSize = Math.min(
     BRAINSTORM_PREVIEW_MAX_FONT_SIZE,
     Math.max(BRAINSTORM_PREVIEW_MIN_FONT_SIZE, activeTabConfig.brainstormPreviewFontSize ?? 14),
@@ -573,6 +884,7 @@ export function WorkbenchLibraryPanel({
     BRAINSTORM_OUTPUT_MAX_FONT_SIZE,
     Math.max(BRAINSTORM_OUTPUT_MIN_FONT_SIZE, activeTabConfig.brainstormOutputFontSize ?? 14),
   );
+  const brainstormStreamEnabled = activeTabConfig.brainstormStreamEnabled !== false;
   const settingPreviewFontSize = Math.min(
     SETTING_PREVIEW_MAX_FONT_SIZE,
     Math.max(SETTING_PREVIEW_MIN_FONT_SIZE, activeTabConfig.settingPreviewFontSize ?? 14),
@@ -585,10 +897,12 @@ export function WorkbenchLibraryPanel({
     brainstormRequirement: activeTabConfig.brainstormRequirement ?? '',
   };
 
-  useTopModalEscape(isBrainstormPromptManagerOpen && !editingBrainstormPrompt, closeBrainstormPromptManager);
-  useTopModalEscape(Boolean(editingBrainstormPrompt), () => setEditingBrainstormPrompt(null));
+  useTopModalEscape(isBrainstormPromptManagerOpen && !editingBrainstormPrompt && !isCreatingBrainstormPrompt, closeBrainstormPromptManager);
+  useTopModalEscape(Boolean(editingBrainstormPrompt || isCreatingBrainstormPrompt), () => closeBrainstormPromptEdit());
   useTopModalEscape(Boolean(brainstormGenerateDraft), () => setBrainstormGenerateDraft(null));
   useTopModalEscape(Boolean(settingCreateDialog), () => setSettingCreateDialog(null));
+  useTopModalEscape(isLibraryAiLogOpen, () => setIsLibraryAiLogOpen(false));
+  useTopModalEscape(isBrainstormRecycleOpen && !isClearBrainstormRecycleConfirmOpen, () => setIsBrainstormRecycleOpen(false));
   useTopModalEscape(isBrainstormReaderOpen, closeBrainstormReader);
 
   useEffect(() => () => {
@@ -669,6 +983,23 @@ export function WorkbenchLibraryPanel({
     setBrainstormGenerateDraft({ ...brainstormQuestionDraft });
   };
 
+  const scrollLibraryAiOutputToBottom = () => {
+    const output = libraryAiOutputRef.current;
+    if (!output) return;
+    libraryAiProgrammaticScrollRef.current = true;
+    output.scrollTop = output.scrollHeight;
+    window.requestAnimationFrame(() => {
+      libraryAiProgrammaticScrollRef.current = false;
+    });
+  };
+
+  const handleLibraryAiOutputScroll = () => {
+    const output = libraryAiOutputRef.current;
+    if (!output || libraryAiProgrammaticScrollRef.current) return;
+    const distanceToBottom = output.scrollHeight - output.scrollTop - output.clientHeight;
+    libraryAiAutoScrollRef.current = distanceToBottom <= 24;
+  };
+
   useEffect(() => {
     if (!isLibraryAiLoading) {
       setLoadingDotCount(1);
@@ -679,6 +1010,12 @@ export function WorkbenchLibraryPanel({
     }, 420);
     return () => window.clearInterval(timer);
   }, [isLibraryAiLoading]);
+
+  useEffect(() => {
+    if (!isLibraryAiLoading) return;
+    if (!libraryAiAutoScrollRef.current) return;
+    scrollLibraryAiOutputToBottom();
+  }, [animatedAiOutput, isLibraryAiLoading]);
 
   const setRememberedActiveTab = (tab: string) => {
     const normalizedTab = normalizeTabName(tab);
@@ -773,30 +1110,30 @@ export function WorkbenchLibraryPanel({
   const leftResizeHandle = (
     <div
       onPointerDown={startLeftWidthResize}
-      className="group flex cursor-col-resize items-stretch justify-center bg-white transition-colors hover:bg-brand-light"
+      className="group flex w-2 shrink-0 cursor-col-resize items-stretch justify-center bg-transparent"
       title="拖拽调整左侧宽度"
     >
-      <div className="my-3 w-1 rounded-full bg-gray-200 transition-colors group-hover:bg-brand" />
+      <div className="my-3 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
     </div>
   );
 
   const rightResizeHandle = (
     <div
       onPointerDown={startRightWidthResize}
-      className="group flex cursor-col-resize items-stretch justify-center bg-white transition-colors hover:bg-brand-light"
+      className="group flex w-2 shrink-0 cursor-col-resize items-stretch justify-center bg-transparent"
       title="拖拽调整右侧宽度"
     >
-      <div className="my-3 w-1 rounded-full bg-gray-200 transition-colors group-hover:bg-brand" />
+      <div className="my-3 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
     </div>
   );
 
   const brainstormPreviewResizeHandle = (
     <div
       onPointerDown={startBrainstormPreviewWidthResize}
-      className="group flex cursor-col-resize items-stretch justify-center bg-white transition-colors hover:bg-brand-light"
+      className="group flex w-2 shrink-0 cursor-col-resize items-stretch justify-center bg-transparent"
       title="拖拽调整脑洞预览宽度"
     >
-      <div className="my-3 w-1 rounded-full bg-gray-200 transition-colors group-hover:bg-brand" />
+      <div className="my-3 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
     </div>
   );
 
@@ -814,6 +1151,7 @@ export function WorkbenchLibraryPanel({
   useEffect(() => {
     const nextActiveTab = readActiveTab(storageKey, normalizedTabs, defaultActiveTab);
     setEntries(readNormalizedEntries(storageKey));
+    setBrainstormRecycleEntries(readBrainstormRecycleEntries(storageKey));
     setTabConfigs(readTabConfigs(storageKey));
     setActiveTab(nextActiveTab);
     if (SETTING_LIBRARY_TABS.has(nextActiveTab)) {
@@ -830,16 +1168,28 @@ export function WorkbenchLibraryPanel({
       if (event instanceof CustomEvent && event.detail?.storageKey !== storageKey) return;
       setEntries(readNormalizedEntries(storageKey));
     };
+    const syncBrainstormRecycleEntries = (event: Event) => {
+      if (event instanceof CustomEvent && event.detail?.storageKey !== getBrainstormRecycleStorageKey(storageKey)) return;
+      setBrainstormRecycleEntries(readBrainstormRecycleEntries(storageKey));
+    };
     const syncStorageEntries = (event: StorageEvent) => {
       if (event.key && event.key !== storageKey) return;
       setEntries(readNormalizedEntries(storageKey));
     };
+    const syncStorageBrainstormRecycleEntries = (event: StorageEvent) => {
+      if (event.key && event.key !== getBrainstormRecycleStorageKey(storageKey)) return;
+      setBrainstormRecycleEntries(readBrainstormRecycleEntries(storageKey));
+    };
 
     window.addEventListener(WORKBENCH_LIBRARY_UPDATED_EVENT, syncEntries);
+    window.addEventListener(WORKBENCH_LIBRARY_UPDATED_EVENT, syncBrainstormRecycleEntries);
     window.addEventListener('storage', syncStorageEntries);
+    window.addEventListener('storage', syncStorageBrainstormRecycleEntries);
     return () => {
       window.removeEventListener(WORKBENCH_LIBRARY_UPDATED_EVENT, syncEntries);
+      window.removeEventListener(WORKBENCH_LIBRARY_UPDATED_EVENT, syncBrainstormRecycleEntries);
       window.removeEventListener('storage', syncStorageEntries);
+      window.removeEventListener('storage', syncStorageBrainstormRecycleEntries);
     };
   }, [defaultActiveTab, normalizedTabs, storageKey]);
 
@@ -889,20 +1239,61 @@ export function WorkbenchLibraryPanel({
   }, [activeTab, normalizedTabs]);
 
   useEffect(() => {
+    roleExpandedReloadRef.current = true;
+    setExpandedRoleTypes(readExpandedStringSet(storageKey, ROLE_TAB, 'role_types'));
+  }, [storageKey]);
+
+  useEffect(() => {
+    settingExpandedReloadRef.current = true;
+    setExpandedSettingTypes(readExpandedStringSet(storageKey, activeTab, 'setting_types'));
+  }, [activeTab, storageKey]);
+
+  useEffect(() => {
+    outlineExpandedReloadRef.current = true;
+    setExpandedOutlineVolumeIds(readExpandedNumberSet(outlineStorageKey ?? storageKey, activeTab, 'outline_volumes'));
+  }, [activeTab, outlineStorageKey, storageKey]);
+
+  useEffect(() => {
+    if (roleExpandedReloadRef.current) {
+      roleExpandedReloadRef.current = false;
+      return;
+    }
+    persistExpandedStringSet(storageKey, ROLE_TAB, 'role_types', expandedRoleTypes);
+  }, [expandedRoleTypes, storageKey]);
+
+  useEffect(() => {
+    if (settingExpandedReloadRef.current) {
+      settingExpandedReloadRef.current = false;
+      return;
+    }
+    persistExpandedStringSet(storageKey, activeTab, 'setting_types', expandedSettingTypes);
+  }, [activeTab, expandedSettingTypes, storageKey]);
+
+  useEffect(() => {
+    if (outlineExpandedReloadRef.current) {
+      outlineExpandedReloadRef.current = false;
+      return;
+    }
+    persistExpandedNumberSet(outlineStorageKey ?? storageKey, activeTab, 'outline_volumes', expandedOutlineVolumeIds);
+  }, [activeTab, expandedOutlineVolumeIds, outlineStorageKey, storageKey]);
+
+  useEffect(() => {
     if ((!tabs.includes(CHAPTER_SUMMARY_TAB) || !tabs.includes(VOLUME_SUMMARY_TAB)) && activeTab !== OUTLINE_LIBRARY_TAB && activeTab !== DETAIL_OUTLINE_TAB) return;
+    if (hasStoredExpandedNumberSet(outlineStorageKey ?? storageKey, activeTab, 'outline_volumes')) return;
     setExpandedOutlineVolumeIds((prev) => {
       if (prev.size > 0 || volumes.length === 0) return prev;
       return new Set(volumes.map((volume) => volume.id));
     });
-  }, [tabs, volumes]);
+  }, [activeTab, outlineStorageKey, storageKey, tabs, volumes]);
 
   useEffect(() => {
+    if (hasStoredExpandedNumberSet(outlineStorageKey ?? storageKey, activeTab, 'outline_volumes')) return;
     setExpandedOutlineVolumeIds((prev) => {
       const next = new Set(prev);
       volumes.forEach((volume) => next.add(volume.id));
       return next;
     });
-  }, [volumes]);
+  }, [activeTab, outlineStorageKey, storageKey, volumes]);
 
   useEffect(() => {
     localStorage.setItem(OUTLINE_COLUMNS_KEY, String(outlineColumns));
@@ -951,6 +1342,12 @@ export function WorkbenchLibraryPanel({
     const normalized = normalizeEntries(next);
     setEntries(normalized);
     writeWorkbenchLibraryEntries(storageKey, normalized);
+  };
+
+  const persistBrainstormRecycle = (next: WorkbenchLibraryEntry[]) => {
+    const normalized = normalizeEntries(next).filter((entry) => entry.tab === BRAINSTORM_TAB);
+    setBrainstormRecycleEntries(normalized);
+    writeBrainstormRecycleEntries(storageKey, normalized);
   };
 
   const persistOutline = (next: WorkbenchLibraryEntry[]) => {
@@ -1023,11 +1420,22 @@ export function WorkbenchLibraryPanel({
   };
 
   const smartImportSettings = () => {
-    const segments = createSmartSettingSegments(aiInput);
+    const sourceText = stripAiThinkingBlock(getLatestUsefulAiText(activeTab === SETTING_TAB ? aiOutput : (aiResult || aiOutput)));
+    const taggedSegments = createTaggedSettingSegments(sourceText);
+    const markdownSegments = createMarkdownSettingSegments(sourceText);
+    const resolvedSettingTypes = new Set(settingTypeOptions);
+    const segments = taggedSegments.length > 0
+      ? taggedSegments.filter((segment) => resolvedSettingTypes.has(segment.type))
+      : markdownSegments.length > 0
+        ? markdownSegments
+        : createSmartSettingSegments(sourceText);
     if (segments.length === 0) return;
     const importedEntries = segments.map((segment) => ({
       ...createWorkbenchLibraryEntry(SETTING_TAB, segment.title),
-      content: stringifySettingContent({ type: segment.type, body: segment.body }),
+      content: stringifySettingContent({
+        type: resolvedSettingTypes.has(segment.type) ? segment.type : UNCATEGORIZED_TYPE,
+        body: segment.body,
+      }),
     }));
     persist([...importedEntries, ...entries]);
     setRememberedActiveTab(SETTING_TAB);
@@ -1037,6 +1445,12 @@ export function WorkbenchLibraryPanel({
       segments.forEach((segment) => next.add(segment.type));
       return next;
     });
+  };
+
+  const clearAllSettings = () => {
+    persist(entries.filter((entry) => entry.tab !== SETTING_TAB));
+    if (activeTab === SETTING_TAB) setSelectedId(null);
+    setIsClearSettingsConfirmOpen(false);
   };
 
   const getNextBrainstormTitle = () => {
@@ -1071,6 +1485,7 @@ export function WorkbenchLibraryPanel({
 
   const openBrainstormPromptEdit = (prompt: PromptItem) => {
     setEditingBrainstormPrompt(prompt);
+    setIsCreatingBrainstormPrompt(false);
     setBrainstormPromptDraft({
       name: prompt.name,
       description: prompt.description,
@@ -1078,8 +1493,24 @@ export function WorkbenchLibraryPanel({
     });
   };
 
+  const openBrainstormPromptCreate = () => {
+    setEditingBrainstormPrompt(null);
+    setIsCreatingBrainstormPrompt(true);
+    setBrainstormPromptDraft({
+      name: '',
+      description: '',
+      content: '',
+    });
+  };
+
+  function closeBrainstormPromptEdit() {
+    setEditingBrainstormPrompt(null);
+    setIsCreatingBrainstormPrompt(false);
+  }
+
   function closeBrainstormPromptManager() {
     setEditingBrainstormPrompt(null);
+    setIsCreatingBrainstormPrompt(false);
     setIsBrainstormPromptManagerOpen(false);
   }
 
@@ -1088,8 +1519,64 @@ export function WorkbenchLibraryPanel({
     setIsBrainstormReaderOpen(false);
   }
 
+  function confirmBrainstormReaderSelection() {
+    const selectedEntry = entries.find((entry) => entry.tab === BRAINSTORM_TAB && entry.id === selectedBrainstormReaderId);
+    if (!selectedEntry) return;
+    const selectedText = getBrainstormEntryBody(selectedEntry);
+    updateActiveTabConfig({
+      loadedBrainstormId: selectedEntry.id,
+      loadedBrainstormTitle: selectedEntry.title,
+      loadedBrainstormText: selectedText,
+    });
+    closeBrainstormReader();
+  }
+
+  const getActiveLinkedBrainstormSnapshot = () => {
+    if (activeTab !== SETTING_TAB) return { title: '', text: '' };
+    const linkedId = activeTabConfig.loadedBrainstormId;
+    const linkedEntry = linkedId
+      ? entries.find((entry) => entry.tab === BRAINSTORM_TAB && entry.id === linkedId)
+      : null;
+    if (linkedEntry) {
+      return {
+        title: linkedEntry.title,
+        text: getBrainstormEntryBody(linkedEntry),
+      };
+    }
+    return {
+      title: activeTabConfig.loadedBrainstormTitle ?? '',
+      text: activeTabConfig.loadedBrainstormText ?? '',
+    };
+  };
+
+  useEffect(() => {
+    if (activeTab !== SETTING_TAB) return;
+    const linkedId = activeTabConfig.loadedBrainstormId;
+    if (!linkedId) return;
+    const linkedEntry = entries.find((entry) => entry.tab === BRAINSTORM_TAB && entry.id === linkedId);
+    if (!linkedEntry) return;
+    const latestText = getBrainstormEntryBody(linkedEntry);
+    if (
+      activeTabConfig.loadedBrainstormTitle === linkedEntry.title
+      && activeTabConfig.loadedBrainstormText === latestText
+    ) {
+      return;
+    }
+    updateTabConfig(SETTING_TAB, {
+      loadedBrainstormTitle: linkedEntry.title,
+      loadedBrainstormText: latestText,
+    });
+  }, [
+    activeTab,
+    activeTabConfig.loadedBrainstormId,
+    activeTabConfig.loadedBrainstormText,
+    activeTabConfig.loadedBrainstormTitle,
+    entries,
+  ]);
+
   function openBrainstormPromptManager() {
     setEditingBrainstormPrompt(null);
+    setIsCreatingBrainstormPrompt(false);
     setIsBrainstormPromptManagerOpen(true);
   }
 
@@ -1105,16 +1592,20 @@ export function WorkbenchLibraryPanel({
   };
 
   const saveBrainstormPromptEdit = () => {
-    if (!editingBrainstormPrompt) return;
     const name = brainstormPromptDraft.name.trim();
     if (!name) return;
-    updatePrompt(editingBrainstormPrompt.id, {
+    const payload = {
       name,
       description: brainstormPromptDraft.description,
       content: brainstormPromptDraft.content,
       category: BRAINSTORM_TAB,
-    });
-    setEditingBrainstormPrompt(null);
+    };
+    if (editingBrainstormPrompt) {
+      updatePrompt(editingBrainstormPrompt.id, payload);
+    } else if (isCreatingBrainstormPrompt) {
+      addPrompt({ ...payload, promptType: 'novel' });
+    }
+    closeBrainstormPromptEdit();
   };
 
   const deleteBrainstormPrompt = (prompt: PromptItem) => {
@@ -1123,20 +1614,67 @@ export function WorkbenchLibraryPanel({
     deletePrompt(prompt.id);
   };
 
+  const buildSettingLibraryRequestText = (promptText: string, userText: string) => {
+    const parts = [promptText.trim()].filter(Boolean);
+    const linkedBrainstormText = getActiveLinkedBrainstormSnapshot().text.trim();
+    if (linkedBrainstormText) {
+      parts.push(linkedBrainstormText);
+    }
+    parts.push([
+      '【用户要求】',
+      userText.trim() || '（无额外要求）',
+    ].join('\n'));
+    return parts.join('\n\n');
+  };
+
+  const buildLibraryAiRequestPayload = (text: string, overrideText?: string) => {
+    const selectedModel = models.find((model) => model.id === activeTabConfig.modelId) ?? models[0] ?? null;
+    const promptCandidates = activeTab === ROLE_TAB
+      ? rolePromptOptions
+      : prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === (activeTab === SETTING_TAB ? PROMPT_SETTING_CATEGORY : activeTab));
+    const selectedPrompt = activeTabConfig.promptDisabled
+      ? null
+      : promptCandidates.find((prompt) => prompt.id === activeTabConfig.promptId) ?? promptCandidates[0] ?? null;
+    const baseModelPrompt = activeTabConfig.promptDisabled
+      ? ''
+      : selectedPrompt?.content ?? `你是${activeTab}生成助手。请根据用户输入生成清晰、可编辑的中文内容。`;
+    const modelPrompt = activeTab === SETTING_TAB
+      ? ''
+      : baseModelPrompt;
+    const linkedBrainstorm = getActiveLinkedBrainstormSnapshot();
+    const hasLinkedBrainstorm = activeTab === SETTING_TAB && Boolean(activeTabConfig.loadedBrainstormId || linkedBrainstorm.text.trim());
+    const requestText = activeTab === SETTING_TAB && overrideText === undefined
+      ? buildSettingLibraryRequestText(baseModelPrompt, text)
+      : text;
+    return {
+      selectedModel,
+      selectedPrompt,
+      modelPrompt,
+      requestText,
+      log: {
+        createdAt: new Date().toLocaleString('zh-CN'),
+        tab: activeTab,
+        modelName: selectedModel?.name ?? '未配置模型',
+        promptName: activeTabConfig.promptDisabled ? '已禁用提示词' : selectedPrompt?.name ?? '默认提示词',
+        hasLinkedBrainstorm,
+        linkedBrainstormTitle: linkedBrainstorm.title || '未关联脑洞',
+        visibleUserText: text || '（无额外要求）',
+        systemPrompt: modelPrompt,
+        userContent: requestText,
+      } satisfies LibraryAiRequestLog,
+    };
+  };
+
   const sendLibraryAiMessage = async (overrideText?: string) => {
     const text = (overrideText ?? aiInput).trim();
-    if (!text || isLibraryAiLoading) return;
-    const selectedModel = models.find((model) => model.id === activeTabConfig.modelId) ?? models[0] ?? null;
+    if (isLibraryAiLoading || (!text && activeTab !== SETTING_TAB)) return;
+    const { selectedModel, modelPrompt, requestText, log } = buildLibraryAiRequestPayload(text, overrideText);
     if (!selectedModel) {
       setAiOutput('【错误】尚未配置可用模型。请先到模型管理中新增模型。');
       return;
     }
-    const promptCandidates = activeTab === ROLE_TAB
-      ? rolePromptOptions
-      : prompts.filter((prompt) => prompt.category === activeTab);
-    const selectedPrompt = activeTabConfig.promptDisabled
-      ? null
-      : promptCandidates.find((prompt) => prompt.id === activeTabConfig.promptId) ?? null;
+    libraryAiAutoScrollRef.current = true;
+    setLastLibraryAiRequestLog(log);
     const controller = new AbortController();
     const requestSeq = libraryAiRequestSeqRef.current + 1;
     libraryAiRequestSeqRef.current = requestSeq;
@@ -1144,7 +1682,8 @@ export function WorkbenchLibraryPanel({
     setIsLibraryAiLoading(true);
     if (overrideText === undefined) setAiInput('');
     if (activeTab === BRAINSTORM_TAB) setAiResult('');
-    const pendingOutput = `${aiOutput.trim() ? `${aiOutput.trim()}\n\n` : ''}[[USER]]\n${text}\n\n[[AI]]\n正在生成...`;
+    const visibleUserText = text || '（无额外要求）';
+    const pendingOutput = `${aiOutput.trim() ? `${aiOutput.trim()}\n\n` : ''}[[USER]]\n${visibleUserText}\n\n[[AI]]\n正在生成...`;
     const replacePendingOutput = (content: string) => (
       pendingOutput.replace(/\[\[AI\]\]\n正在生成\.\.\.$/, `[[AI]]\n${content}`)
     );
@@ -1152,21 +1691,60 @@ export function WorkbenchLibraryPanel({
     const timeoutId = window.setTimeout(() => {
       controller.abort();
       if (libraryAiRequestSeqRef.current === requestSeq) {
-        setAiOutput(replacePendingOutput('【错误】请求超时，请检查模型地址和网络。'));
+        setAiOutput(replacePendingOutput('【错误】请求超时，请检查模型地址、网络，或换响应更快的模型后重试。'));
       }
-    }, 60000);
+    }, LIBRARY_AI_TIMEOUT_MS);
     try {
-      const content = await callModel({
-        model: selectedModel,
-        prompt: activeTabConfig.promptDisabled
-          ? ''
-          : selectedPrompt?.content ?? `你是${activeTab}生成助手。请根据用户输入生成清晰、可编辑的中文内容。`,
-        userContent: text,
-        recordType: 'generate',
-        signal: controller.signal,
-      });
+      const shouldStream = activeTab === SETTING_TAB || (activeTab === BRAINSTORM_TAB && brainstormStreamEnabled);
+      let content = '';
+      if (shouldStream) {
+        let streamedContent = '';
+        let reasoningContent = '';
+        const streamStartedAt = performance.now();
+        const getThinkingSeconds = () => Math.max(1, Math.round((performance.now() - streamStartedAt) / 1000));
+        setAiResult('正在思考...');
+        setAiOutput(replacePendingOutput('正在思考...'));
+        content = await callModelStream({
+          model: selectedModel,
+          prompt: modelPrompt,
+          userContent: requestText,
+          recordType: 'generate',
+          signal: controller.signal,
+          timeoutMs: LIBRARY_AI_TIMEOUT_MS,
+          onChunk: (chunk) => {
+            if (libraryAiRequestSeqRef.current !== requestSeq) return;
+            streamedContent += chunk;
+            if (activeTab === BRAINSTORM_TAB) setAiResult(streamedContent.trimStart());
+            setAiOutput(replacePendingOutput(formatAiThinkingResponse(
+              streamedContent || '正在生成...',
+              reasoningContent,
+              getThinkingSeconds(),
+              false,
+            )));
+          },
+          onReasoning: (chunk) => {
+            if (libraryAiRequestSeqRef.current !== requestSeq || streamedContent) return;
+            reasoningContent += chunk;
+            const temporaryOutput = formatAiThinkingResponse('', reasoningContent, getThinkingSeconds(), false);
+            if (activeTab === BRAINSTORM_TAB) setAiResult(temporaryOutput);
+            setAiOutput(replacePendingOutput(temporaryOutput));
+          },
+        });
+        if (reasoningContent.trim()) {
+          content = formatAiThinkingResponse(content, reasoningContent, getThinkingSeconds(), true);
+        }
+      } else {
+        content = await callModel({
+          model: selectedModel,
+          prompt: modelPrompt,
+          userContent: requestText,
+          recordType: 'generate',
+          signal: controller.signal,
+          timeoutMs: LIBRARY_AI_TIMEOUT_MS,
+        });
+      }
       if (libraryAiRequestSeqRef.current !== requestSeq) return;
-      if (activeTab === BRAINSTORM_TAB) setAiResult(content.trim());
+      if (activeTab === BRAINSTORM_TAB) setAiResult(stripAiThinkingBlock(content));
       setAiOutput(replacePendingOutput(content));
     } catch (error) {
       if (libraryAiRequestSeqRef.current !== requestSeq) return;
@@ -1359,8 +1937,42 @@ export function WorkbenchLibraryPanel({
   };
 
   const deleteEntry = (id: string) => {
+    const target = entries.find((entry) => entry.id === id);
+    if (target?.tab === BRAINSTORM_TAB) {
+      persist(entries.filter((entry) => entry.id !== id));
+      persistBrainstormRecycle([
+        { ...target, deletedAt: new Date().toISOString(), updatedAt: new Date().toLocaleString('zh-CN') },
+        ...brainstormRecycleEntries.filter((entry) => entry.id !== id),
+      ]);
+      if (selectedId === id) setSelectedId(null);
+      return;
+    }
     persist(entries.filter((entry) => entry.id !== id));
     if (selectedId === id) setSelectedId(null);
+  };
+
+  const restoreBrainstormEntry = (id: string) => {
+    const target = brainstormRecycleEntries.find((entry) => entry.id === id);
+    if (!target) return;
+    const { deletedAt: _deletedAt, ...restored } = target;
+    const nextEntry = { ...restored, tab: BRAINSTORM_TAB, updatedAt: new Date().toLocaleString('zh-CN') };
+    persistBrainstormRecycle(brainstormRecycleEntries.filter((entry) => entry.id !== id));
+    persist([nextEntry, ...entries.filter((entry) => entry.id !== id)]);
+    setRememberedActiveTab(BRAINSTORM_TAB);
+    setSelectedIdForTab(BRAINSTORM_TAB, nextEntry.id);
+    setExpandedSettingTypes((prev) => new Set(prev).add(BRAINSTORM_TYPE));
+  };
+
+  const permanentlyDeleteBrainstormEntry = (id: string) => {
+    const target = brainstormRecycleEntries.find((entry) => entry.id === id);
+    if (!target) return;
+    persistBrainstormRecycle(brainstormRecycleEntries.filter((entry) => entry.id !== id));
+  };
+
+  const clearBrainstormRecycle = () => {
+    if (brainstormRecycleEntries.length === 0) return;
+    persistBrainstormRecycle([]);
+    setIsClearBrainstormRecycleConfirmOpen(false);
   };
 
   const confirmDeleteRole = (entry: WorkbenchLibraryEntry) => {
@@ -1630,11 +2242,14 @@ export function WorkbenchLibraryPanel({
     document.body,
   ) : null;
   const pendingDeleteLabel = pendingEntryDelete?.tab === ROLE_TAB ? '角色' : pendingEntryDelete?.tab;
+  const pendingDeleteDescription = pendingEntryDelete?.tab === BRAINSTORM_TAB
+    ? `确定要删除脑洞「${pendingEntryDelete?.title ?? ''}」吗？\n删除后会进入脑洞回收站，可以恢复。`
+    : `确定要删除${pendingDeleteLabel ?? '内容'}「${pendingEntryDelete?.title ?? ''}」吗？\n删除后无法恢复。`;
   const deleteConfirmDialog = (
     <ConfirmDialog
       isOpen={Boolean(pendingEntryDelete)}
       title="确认删除"
-      description={`确定要删除${pendingDeleteLabel ?? '内容'}「${pendingEntryDelete?.title ?? ''}」吗？\n删除后无法恢复。`}
+      description={pendingDeleteDescription}
       confirmText="删除"
       cancelText="取消"
       confirmVariant="danger"
@@ -1642,14 +2257,24 @@ export function WorkbenchLibraryPanel({
       onConfirm={handleConfirmDeleteEntry}
     />
   );
+  const clearSettingsConfirmDialog = (
+    <ConfirmDialog
+      isOpen={isClearSettingsConfirmOpen}
+      title="清空设定"
+      description={`确定要清空全部设定吗？当前共有 ${settingEntries.length} 条设定会被删除，分类树会保留。`}
+      confirmText="清空设定"
+      cancelText="再看看"
+      confirmVariant="danger"
+      onClose={() => setIsClearSettingsConfirmOpen(false)}
+      onConfirm={clearAllSettings}
+    />
+  );
   const brainstormEntries = entries.filter((entry) => entry.tab === BRAINSTORM_TAB);
   const selectedBrainstormReaderEntry = brainstormEntries.find((entry) => entry.id === selectedBrainstormReaderId) ?? null;
   const selectedBrainstormReaderContent = selectedBrainstormReaderEntry
     ? parseSettingContent(selectedBrainstormReaderEntry.content)
     : null;
-  const selectedBrainstormReaderText = selectedBrainstormReaderContent
-    ? selectedBrainstormReaderContent.body || selectedBrainstormReaderEntry?.content || ''
-    : '';
+  const selectedBrainstormReaderText = getBrainstormEntryBody(selectedBrainstormReaderEntry);
   const brainstormReaderModal = isBrainstormReaderOpen ? createPortal(
     <div
       className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/35"
@@ -1661,8 +2286,8 @@ export function WorkbenchLibraryPanel({
       >
         <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
           <div>
-            <h3 className="text-xl font-bold text-gray-900">读取脑洞</h3>
-            <p className="mt-1 text-xs text-gray-400">左侧选择脑洞，右侧查看预览内容。</p>
+            <h3 className="text-xl font-bold text-gray-900">关联脑洞</h3>
+            <p className="mt-1 text-xs text-gray-400">左侧选择脑洞，右侧查看预览内容；关联内容会隐藏发送给 AI。</p>
           </div>
           <button
             onClick={closeBrainstormReader}
@@ -1706,7 +2331,7 @@ export function WorkbenchLibraryPanel({
                 );
               })}
             </div>
-          </aside>
+</aside>
           <main className="flex min-h-0 flex-col p-5">
             <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
               <div className="min-w-0">
@@ -1733,10 +2358,134 @@ export function WorkbenchLibraryPanel({
             />
           </main>
         </div>
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 bg-white px-5 py-4">
+          <div className="min-w-0 truncate text-sm font-bold text-gray-500">
+            {selectedBrainstormReaderEntry
+              ? `已关联：${selectedBrainstormReaderEntry.title} · ${countTextWords(selectedBrainstormReaderText)} 字`
+              : '请选择一个脑洞后关联'}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={closeBrainstormReader}
+              className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-50"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              onClick={confirmBrainstormReaderSelection}
+              disabled={!selectedBrainstormReaderEntry}
+              className="rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
+            >
+              关联脑洞
+            </button>
+          </div>
+        </div>
       </div>
     </div>,
     document.body,
   ) : null;
+  const brainstormRecycleModal = isBrainstormRecycleOpen ? createPortal(
+    <div
+      className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/35"
+      onClick={() => {
+        setIsClearBrainstormRecycleConfirmOpen(false);
+        setIsBrainstormRecycleOpen(false);
+      }}
+    >
+      <div
+        className="modal-sharp flex h-[min(720px,86vh)] w-[min(760px,92vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
+          <div className="min-w-0">
+            <h3 className="text-xl font-bold text-gray-900">脑洞回收站</h3>
+            <p className="mt-1 text-xs font-medium text-gray-400">{brainstormRecycleEntries.length} 个已删除脑洞，可以恢复或永久删除。</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsClearBrainstormRecycleConfirmOpen(true)}
+              disabled={brainstormRecycleEntries.length === 0}
+              className="rounded-xl border border-red-100 bg-red-50 px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-300"
+            >
+              清空回收站
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsClearBrainstormRecycleConfirmOpen(false);
+                setIsBrainstormRecycleOpen(false);
+              }}
+              className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+              title="关闭"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+        <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto bg-gray-50 p-5">
+          {brainstormRecycleEntries.length === 0 ? (
+            <div className="flex h-full min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-white text-sm font-bold text-gray-400">
+              暂无删除的脑洞
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {brainstormRecycleEntries.map((entry) => {
+                const parsed = parseSettingContent(entry.content);
+                const body = parsed.body || entry.content;
+                const entryWordCount = countTextWords(body);
+                return (
+                  <article key={entry.id} className="flex min-h-[170px] flex-col rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h4 className="truncate text-base font-bold text-gray-900">{entry.title}</h4>
+                        <div className="mt-1 text-xs font-bold text-[#08AACE]">{entryWordCount}字</div>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-bold text-gray-400">
+                        {parsed.type || BRAINSTORM_TYPE}
+                      </span>
+                    </div>
+                    <p className="mt-3 line-clamp-3 flex-1 whitespace-pre-wrap text-xs leading-5 text-gray-500">{body || '暂无内容'}</p>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => restoreBrainstormEntry(entry.id)}
+                        className="rounded-xl bg-brand px-3 py-2 text-sm font-bold text-white hover:bg-brand-dark"
+                      >
+                        恢复
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => permanentlyDeleteBrainstormEntry(entry.id)}
+                        className="rounded-xl border border-red-100 bg-white px-3 py-2 text-sm font-bold text-red-500 hover:bg-red-50"
+                      >
+                        永久删除
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  ) : null;
+  const clearBrainstormRecycleConfirmDialog = (
+    <ConfirmDialog
+      isOpen={isClearBrainstormRecycleConfirmOpen}
+      title="清空脑洞回收站"
+      description={`确定要清空 ${brainstormRecycleEntries.length} 个已删除脑洞吗？\n清空后无法恢复。`}
+      confirmText="清空回收站"
+      cancelText="再看看"
+      confirmVariant="danger"
+      onClose={() => setIsClearBrainstormRecycleConfirmOpen(false)}
+      onConfirm={clearBrainstormRecycle}
+    />
+  );
   const brainstormPromptManagerModal = isBrainstormPromptManagerOpen ? createPortal(
     <div
       className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/35"
@@ -1813,7 +2562,7 @@ export function WorkbenchLibraryPanel({
                 </article>
               ))}
               <button
-                onClick={() => navigate('/prompts')}
+                onClick={openBrainstormPromptCreate}
                 className="flex h-[247px] w-[255px] flex-col items-center justify-center rounded-[24px] border border-dashed border-sky-300 bg-white text-sky-600 transition-colors hover:border-sky-400 hover:bg-sky-50/40"
               >
                 <span className="flex h-16 w-16 items-center justify-center rounded-full border border-sky-300 bg-sky-50/60 text-4xl leading-none">
@@ -1823,74 +2572,75 @@ export function WorkbenchLibraryPanel({
               </button>
             </div>
         </div>
-        {editingBrainstormPrompt && (
-          <div
-            className="modal-sharp fixed inset-0 z-[270] flex items-center justify-center bg-black/35"
-            onClick={() => setEditingBrainstormPrompt(null)}
-          >
-            <div
-              className="modal-sharp flex h-[min(744px,90vh)] w-[min(792px,94vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">编辑提示词</h3>
-                  <p className="mt-1 text-xs text-gray-400">只会保存到“脑洞”分类下。</p>
-                </div>
-                <button
-                  onClick={() => setEditingBrainstormPrompt(null)}
-                  className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                  title="关闭"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="editor-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
-                <label className="block text-sm font-bold text-gray-700">
-                  名称
-                  <input
-                    value={brainstormPromptDraft.name}
-                    onChange={(event) => setBrainstormPromptDraft((prev) => ({ ...prev, name: event.target.value }))}
-                    className="mt-2 h-10 w-full rounded-xl border border-gray-200 px-3 text-sm font-medium text-gray-800 outline-none focus:border-brand"
-                  />
-                </label>
-                <label className="block text-sm font-bold text-gray-700">
-                  说明
-                  <textarea
-                    value={brainstormPromptDraft.description}
-                    onChange={(event) => setBrainstormPromptDraft((prev) => ({ ...prev, description: event.target.value }))}
-                    className="editor-scrollbar mt-2 h-24 w-full resize-none rounded-xl border border-gray-200 p-3 text-sm leading-6 text-gray-800 outline-none focus:border-brand"
-                    placeholder="这里填写给用户看的提示词说明。"
-                  />
-                </label>
-                <label className="flex min-h-[220px] flex-1 flex-col text-sm font-bold text-gray-700">
-                  提示词内容
-                  <textarea
-                    value={brainstormPromptDraft.content}
-                    onChange={(event) => setBrainstormPromptDraft((prev) => ({ ...prev, content: event.target.value }))}
-                    className="editor-scrollbar mt-2 min-h-[210px] flex-1 resize-none rounded-xl border border-gray-200 p-3 text-sm leading-6 text-gray-800 outline-none focus:border-brand"
-                    placeholder="这里填写实际发送给 AI 的提示词内容。"
-                  />
-                </label>
-              </div>
-              <div className="flex shrink-0 justify-end gap-3 border-t border-gray-100 px-5 py-4">
-                <button
-                  onClick={() => setEditingBrainstormPrompt(null)}
-                  className="rounded-xl border border-gray-200 bg-white px-5 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={saveBrainstormPromptEdit}
-                  disabled={!brainstormPromptDraft.name.trim()}
-                  className="rounded-xl bg-brand px-5 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
-                >
-                  保存
-                </button>
-              </div>
-            </div>
+      </div>
+    </div>,
+    document.body,
+  ) : null;
+  const brainstormPromptEditModal = (editingBrainstormPrompt || isCreatingBrainstormPrompt) ? createPortal(
+    <div
+      className="modal-sharp fixed inset-0 z-[290] flex items-center justify-center bg-black/35"
+      onClick={closeBrainstormPromptEdit}
+    >
+      <div
+        className="modal-sharp flex h-[min(820px,92vh)] w-[min(960px,94vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">{isCreatingBrainstormPrompt ? '创建提示词' : '编辑提示词'}</h3>
+            <p className="mt-1 text-xs text-gray-400">只会保存到“脑洞”分类下。</p>
           </div>
-        )}
+          <button
+            onClick={closeBrainstormPromptEdit}
+            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            title="关闭"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="editor-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+          <div className={`xy-floating-field xy-floating-compact ${brainstormPromptDraft.name.trim() ? 'xy-has-value' : ''}`}>
+            <input
+              value={brainstormPromptDraft.name}
+              onChange={(event) => setBrainstormPromptDraft((prev) => ({ ...prev, name: event.target.value }))}
+              placeholder="名称"
+            />
+            <label>名称</label>
+          </div>
+          <div className={`xy-floating-field xy-floating-compact ${brainstormPromptDraft.description.trim() ? 'xy-has-value' : ''}`}>
+            <textarea
+              value={brainstormPromptDraft.description}
+              onChange={(event) => setBrainstormPromptDraft((prev) => ({ ...prev, description: event.target.value }))}
+              className="editor-scrollbar h-24"
+              placeholder="说明"
+            />
+            <label>说明</label>
+          </div>
+          <div className={`xy-floating-field xy-floating-compact xy-floating-fill flex min-h-[260px] flex-1 flex-col ${brainstormPromptDraft.content.trim() ? 'xy-has-value' : ''}`}>
+            <textarea
+              value={brainstormPromptDraft.content}
+              onChange={(event) => setBrainstormPromptDraft((prev) => ({ ...prev, content: event.target.value }))}
+              className="editor-scrollbar min-h-[260px] flex-1"
+              placeholder="提示词内容"
+            />
+            <label>提示词内容</label>
+          </div>
+        </div>
+        <div className="flex shrink-0 justify-end gap-3 border-t border-gray-100 px-5 py-4">
+          <button
+            onClick={closeBrainstormPromptEdit}
+            className="rounded-xl border border-gray-200 bg-white px-5 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50"
+          >
+            取消
+          </button>
+          <button
+            onClick={saveBrainstormPromptEdit}
+            disabled={!brainstormPromptDraft.name.trim()}
+            className="rounded-xl bg-brand px-5 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
+          >
+            保存
+          </button>
+        </div>
       </div>
     </div>,
     document.body,
@@ -1980,8 +2730,7 @@ export function WorkbenchLibraryPanel({
           </button>
         </div>
         <div className="p-5">
-          <label className="block text-sm font-bold text-gray-700">
-            名称
+          <div className={`xy-floating-field ${settingTitleDraft.trim() ? 'xy-has-value' : ''}`}>
             <input
               autoFocus
               value={settingTitleDraft}
@@ -1990,9 +2739,9 @@ export function WorkbenchLibraryPanel({
                 if (event.key === 'Enter') confirmSettingCreate();
               }}
               placeholder={settingCreateDialog === 'category' ? '输入分类名字' : '输入设定名字'}
-              className="mt-2 h-11 w-full rounded-xl border border-gray-200 px-4 text-sm font-bold text-gray-900 outline-none focus:border-brand"
             />
-          </label>
+            <label>{settingCreateDialog === 'category' ? '分类名字' : '设定名字'}</label>
+          </div>
         </div>
         <div className="flex shrink-0 justify-end gap-3 border-t border-gray-100 px-5 py-4">
           <button
@@ -2080,6 +2829,7 @@ export function WorkbenchLibraryPanel({
         {entryContextMenu}
         {roleHistoryModal}
         {deleteConfirmDialog}
+        {managementModal && <LibraryManagementModal modal={managementModal} onClose={() => setManagementModal(null)} />}
         <div
           className="grid min-h-0 flex-1 overflow-hidden bg-white"
           style={{
@@ -2090,12 +2840,14 @@ export function WorkbenchLibraryPanel({
         >
           <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
             <div className="flex shrink-0 gap-2">
-              <input
-                value={roleSearch}
-                onChange={(event) => setRoleSearch(event.target.value)}
-                placeholder="搜索角色..."
-                className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
-              />
+              <div className={`xy-floating-field xy-floating-compact min-w-0 flex-1 ${roleSearch.trim() ? 'xy-has-value' : ''}`}>
+                <input
+                  value={roleSearch}
+                  onChange={(event) => setRoleSearch(event.target.value)}
+                  placeholder="搜索角色..."
+                />
+                <label>搜索角色</label>
+              </div>
               <button className="rounded-xl bg-brand px-4 py-2 text-sm font-bold text-white">搜索</button>
             </div>
 
@@ -2171,30 +2923,34 @@ export function WorkbenchLibraryPanel({
             </div>
 
             <div className="mt-3 grid shrink-0 grid-cols-[1fr_84px] gap-2">
-              <input
-                value={roleTypeDraft}
-                onChange={(event) => setRoleTypeDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') addRoleType();
-                }}
-                placeholder="分类名字"
-                className="h-11 min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-brand"
-              />
+              <div className={`xy-floating-field xy-floating-compact min-w-0 ${roleTypeDraft.trim() ? 'xy-has-value' : ''}`}>
+                <input
+                  value={roleTypeDraft}
+                  onChange={(event) => setRoleTypeDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') addRoleType();
+                  }}
+                  placeholder="分类名字"
+                />
+                <label>分类名字</label>
+              </div>
               <button
                 onClick={addRoleType}
                 className="h-11 rounded-lg bg-brand px-3 text-sm font-bold text-white hover:bg-brand-dark"
               >
                 新建分类
               </button>
-              <input
-                value={roleNameDraft}
-                onChange={(event) => setRoleNameDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') addRole('未分类');
-                }}
-                placeholder="角色名字"
-                className="h-11 min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-brand"
-              />
+              <div className={`xy-floating-field xy-floating-compact min-w-0 ${roleNameDraft.trim() ? 'xy-has-value' : ''}`}>
+                <input
+                  value={roleNameDraft}
+                  onChange={(event) => setRoleNameDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') addRole('未分类');
+                  }}
+                  placeholder="角色名字"
+                />
+                <label>角色名字</label>
+              </div>
               <button onClick={() => addRole('未分类')} className="h-11 rounded-lg bg-brand px-3 text-sm font-bold text-white hover:bg-brand-dark">
                 新建角色
               </button>
@@ -2208,27 +2964,25 @@ export function WorkbenchLibraryPanel({
                 <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto p-5">
                   <div className="flex min-h-full flex-col gap-5">
                     <div className="grid shrink-0 grid-cols-3 items-center gap-2">
-                      <label className="grid min-w-0 grid-cols-[max-content_minmax(0,1fr)] items-center gap-1">
-                        <span className="text-sm font-bold text-gray-700">角色名</span>
+                      <div className={`xy-floating-field xy-floating-compact min-w-0 ${selectedEntry.title.trim() ? 'xy-has-value' : ''}`}>
                         <input
                           value={selectedEntry.title}
                           onChange={(event) => updateSelectedRoleTitle(event.target.value)}
-                          className="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm font-bold text-gray-900 outline-none focus:border-brand"
+                          placeholder="角色名"
                         />
-                      </label>
+                        <label>角色名</label>
+                      </div>
                       <label className="grid min-w-0 grid-cols-[max-content_minmax(0,1fr)] items-center gap-1">
                         <span className="text-sm font-bold text-gray-700">分类</span>
-                        <select
+                        <CapsuleSelect
                           value={selectedRole.type}
-                          onChange={(event) => updateRole({ type: event.target.value })}
-                          className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-bold text-gray-900 outline-none focus:border-brand"
-                        >
-                          {roleTypeOptions.map((type) => <option key={type} value={type}>{type}</option>)}
-                        </select>
+                          onChange={(value) => updateRole({ type: value })}
+                          options={roleTypeOptions.map((type) => ({ value: type, label: type }))}
+                          buttonClassName="h-11 rounded-xl px-4 text-sm"
+                        />
                       </label>
-                      <div className="grid min-w-0 grid-cols-[max-content_minmax(0,1fr)] items-center gap-1">
-                        <span className="text-sm font-bold text-gray-700">存活状态</span>
-                        <div className="inline-flex h-11 w-full rounded-xl border border-gray-200 bg-slate-100 p-1">
+                      <div className="min-w-0">
+                        <div className="inline-flex h-11 w-full rounded-[20px] bg-slate-100 p-1">
                           {(['存活', '死亡'] as const).map((status) => {
                             const active = selectedRole.lifeStatus === status;
                             return (
@@ -2236,10 +2990,10 @@ export function WorkbenchLibraryPanel({
                                 key={status}
                                 type="button"
                                 onClick={() => updateRole({ lifeStatus: status })}
-                                className={`flex-1 rounded-lg text-sm font-bold transition-colors ${
+                                className={`flex-1 rounded-2xl text-base font-black transition-colors ${
                                   active
-                                    ? 'bg-[#08AACE] text-white shadow-sm'
-                                    : 'text-gray-500 hover:bg-white hover:text-gray-700'
+                                    ? 'bg-white text-[#08AACE] shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
                                 }`}
                               >
                                 {status}
@@ -2304,86 +3058,101 @@ export function WorkbenchLibraryPanel({
           <>
           {rightResizeHandle}
           <aside className="flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 p-4">
-            <h3 className="text-base font-bold text-gray-900">角色生成</h3>
+            <div className="flex items-center gap-3">
+              <h3 className="shrink-0 text-base font-bold text-gray-900">角色生成</h3>
+              <div className="xy-management-segment shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setManagementModal({ type: 'models' })}
+                  className="xy-management-segment-button"
+                >
+                  模型管理
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setManagementModal({ type: 'prompts', category: PROMPT_SETTING_CATEGORY })}
+                  className="xy-management-segment-button"
+                >
+                  提示词管理
+                </button>
+              </div>
+            </div>
             <div className="mt-4 space-y-3">
-              <label className="grid grid-cols-[48px_minmax(0,1fr)_72px] items-center gap-2 text-sm text-gray-500">
+              <label className="grid grid-cols-[48px_minmax(0,1fr)] items-center gap-2 text-sm text-gray-500">
                 <span>模型</span>
-                <select
+                <CapsuleSelect
                   value={activeTabConfig.modelId ?? ''}
-                  onChange={(event) => updateActiveTabConfig({ modelId: event.target.value })}
-                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-base font-semibold text-gray-700 outline-none focus:border-brand"
-                >
-                  {models.length === 0 ? <option value="">暂无可用模型</option> : models.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => navigate('/model-manage')}
-                  className="h-11 rounded-xl bg-brand px-3 text-sm font-bold text-white shadow-sm hover:bg-brand-dark"
-                >
-                  管理
-                </button>
+                  onChange={(value) => updateActiveTabConfig({ modelId: value })}
+                  options={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
+                  buttonClassName="h-11 rounded-xl px-3 text-sm"
+                />
               </label>
-              <label className="grid grid-cols-[48px_minmax(0,1fr)_72px_72px] items-center gap-2 text-sm text-gray-500">
+              <label className="grid grid-cols-[48px_minmax(0,1fr)] items-center gap-2 text-sm text-gray-500">
                 <span>提示词</span>
-                <select
-                  value={activeTabConfig.promptId ?? ''}
-                  onChange={(event) => updateActiveTabConfig({ promptId: event.target.value })}
-                  disabled={Boolean(activeTabConfig.promptDisabled)}
-                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-brand disabled:bg-gray-100 disabled:text-gray-400"
-                >
-                  {rolePromptOptions.length === 0 ? <option value="">暂无大纲提示词</option> : rolePromptOptions.map((prompt) => <option key={prompt.id} value={prompt.id}>{prompt.name}</option>)}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => navigate('/prompts?category=大纲')}
-                  disabled={Boolean(activeTabConfig.promptDisabled)}
-                  className="h-11 rounded-xl bg-brand px-3 text-sm font-bold text-white shadow-sm hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
-                >
-                  管理
-                </button>
-                <button
-                  type="button"
-                  onClick={() => updateActiveTabConfig({ promptDisabled: !activeTabConfig.promptDisabled })}
-                  className={`h-11 rounded-xl px-3 text-sm font-bold shadow-sm ${
-                    activeTabConfig.promptDisabled
-                      ? 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-100'
-                      : 'bg-gray-700 text-white hover:bg-gray-800'
-                  }`}
-                >
-                  {activeTabConfig.promptDisabled ? '启用' : '禁用'}
-                </button>
+                <div className="xy-capsule-group min-w-0">
+                  <CapsuleSelect
+                    value={activeTabConfig.promptId ?? ''}
+                    onChange={(value) => updateActiveTabConfig({ promptId: value })}
+                    disabled={Boolean(activeTabConfig.promptDisabled)}
+                    className="min-w-0 flex-1"
+                    buttonClassName="h-10 rounded-l-xl rounded-r-none border-0 px-3 text-sm shadow-none"
+                    options={rolePromptOptions.length === 0 ? [{ value: '', label: '暂无设定提示词', disabled: true }] : rolePromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => updateActiveTabConfig({ promptDisabled: !activeTabConfig.promptDisabled })}
+                    className={`xy-capsule-button w-16 ${activeTabConfig.promptDisabled ? 'xy-active' : 'xy-danger'}`}
+                  >
+                    {activeTabConfig.promptDisabled ? '启用' : '禁用'}
+                  </button>
+                </div>
               </label>
             </div>
-            <textarea
-              value={aiOutput}
-              onChange={(event) => setAiOutput(event.target.value)}
-              placeholder="AI 输出会显示在这里，也可以手动编辑。"
-              className="editor-scrollbar mt-5 min-h-0 flex-1 resize-none rounded-2xl border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-700 outline-none focus:border-brand"
-            />
-            <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4">
+            <div className={`xy-floating-field xy-floating-label-fixed xy-floating-fill mt-5 min-h-0 flex-1 ${aiOutput.trim() ? 'xy-has-value' : ''}`}>
               <textarea
+                value={aiOutput}
+                onChange={(event) => setAiOutput(event.target.value)}
+                placeholder="AI输出框"
+                className="editor-scrollbar"
+              />
+              <label>AI输出框</label>
+            </div>
+            <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4">
+              <div className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${aiInput.trim() ? 'xy-has-value' : ''}`}>
+              <textarea
+                ref={libraryAiInputRef}
+                rows={1}
                 value={aiInput}
-                onChange={(event) => setAiInput(event.target.value)}
+                onChange={(event) => {
+                  setAiInput(event.target.value);
+                  resizeFloatingAiTextarea(event.currentTarget);
+                }}
                 onKeyDown={handleLibraryAiInputKeyDown}
                 placeholder="输入对话指令..."
-                className="w-full resize-none rounded-xl border border-gray-200 px-3 py-[11px] text-sm leading-6 outline-none focus:border-brand"
-                style={{ height: aiInputHeight }}
+                className="scrollbar-hidden"
               />
-              <div className="mt-3 grid grid-cols-3 gap-2">
+              <label>AI 输入框</label>
+              <div className="xy-ai-inline-actions">
                 <button
+                  type="button"
                   onClick={() => void sendLibraryAiMessage()}
-                  disabled={isLibraryAiLoading || !aiInput.trim()}
-                  className="rounded-xl bg-brand px-3 py-2 text-sm font-bold text-white disabled:bg-gray-300"
+                  disabled={isLibraryAiLoading || !canSendLibraryAiMessage}
+                  className="xy-ai-inline-send"
                 >
-                  {isLibraryAiLoading ? '生成中...' : '发送'}
+                  <span className="xy-ai-inline-send-icon"><Send className="h-5 w-5" /></span>
+                  发送
                 </button>
                 <button
+                  type="button"
                   onClick={stopLibraryAiMessage}
                   disabled={!isLibraryAiLoading}
-                  className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
+                  className="xy-ai-inline-stop"
                 >
-                  暂停
+                  停止
                 </button>
+              </div>
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-2">
                 <button
                   onClick={clearLibraryAiDialog}
                   disabled={!aiInput.trim() && !aiOutput.trim() && !isLibraryAiLoading}
@@ -2408,9 +3177,13 @@ export function WorkbenchLibraryPanel({
     const activeIsBrainstorm = activeTab === BRAINSTORM_TAB;
     const currentSelectedSetting = activeIsSettingLike && currentSelectedEntry ? parseSettingContent(currentSelectedEntry.content) : null;
     const activeSettingTypeOptions = activeIsBrainstorm ? [BRAINSTORM_TYPE] : settingTypeOptions;
-    const currentBrainstormBody = activeIsBrainstorm ? getLatestUsefulAiText(currentSelectedSetting?.body ?? '') : '';
+    const currentBrainstormBody = activeIsBrainstorm ? currentSelectedSetting?.body ?? '' : '';
     const currentBrainstormPreviewWordCount = activeIsBrainstorm ? countTextWords(currentBrainstormBody) : 0;
+    const currentLinkedBrainstorm = getActiveLinkedBrainstormSnapshot();
+    const hasLinkedBrainstorm = Boolean(activeTabConfig.loadedBrainstormId || currentLinkedBrainstorm.text.trim());
+    const loadedBrainstormWordCount = countTextWords(currentLinkedBrainstorm.text);
     const latestUsefulAiOutput = activeIsBrainstorm ? getLatestUsefulAiText(aiResult || aiOutput) : aiOutput.trim();
+    const smartImportLocked = Boolean(activeTabConfig.smartImportLocked);
     const groupedSettingEntries = activeSettingTypeOptions.map((type) => ({
       type,
       entries: currentEntries.filter((entry) => {
@@ -2420,24 +3193,128 @@ export function WorkbenchLibraryPanel({
       }),
     }));
     const panelTitle = activeIsSettingLike ? `${activeTab}生成` : `${activeTab}生成`;
-    const promptCategory = activeTab;
-    const activeTabPrompts = prompts.filter((prompt) => prompt.category === promptCategory);
+    const promptCategory = activeTab === SETTING_TAB ? PROMPT_SETTING_CATEGORY : activeTab;
+    const activeTabPrompts = prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === promptCategory);
     const activePromptId = activeTabPrompts.some((prompt) => prompt.id === activeTabConfig.promptId)
       ? activeTabConfig.promptId
-      : '';
+      : activeTabPrompts[0]?.id ?? '';
     const brainstormOutputValue = activeIsBrainstorm && isLibraryAiLoading && !aiResult
       ? `正在生成${'.'.repeat(loadingDotCount)}`
       : aiResult || latestUsefulAiOutput;
     const brainstormOutputWordCount = activeIsBrainstorm ? countTextWords(brainstormOutputValue) : 0;
-
+    const previewAiRequestText = activeIsBrainstorm
+      ? buildBrainstormPromptFromQuestions(brainstormQuestionDraft)
+      : aiInput.trim();
+    const previewAiRequestLog = activeTab === SETTING_TAB || activeIsBrainstorm
+      ? buildLibraryAiRequestPayload(previewAiRequestText, activeIsBrainstorm ? previewAiRequestText : undefined).log
+      : null;
+    const visibleAiRequestLog = previewAiRequestLog ?? lastLibraryAiRequestLog;
+    const libraryAiLogModal = isLibraryAiLogOpen && visibleAiRequestLog ? createPortal(
+      <div
+        className="modal-sharp fixed inset-0 z-[285] flex items-center justify-center bg-black/35 px-6 py-6"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setIsLibraryAiLogOpen(false);
+        }}
+      >
+        <section className="modal-sharp flex h-[min(820px,88vh)] w-[min(1120px,94vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]">
+          <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-5">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">输出日志</h2>
+              <p className="mt-0.5 text-xs text-slate-400">
+                当前预览：点击发送后会按这里的内容发给 AI
+              </p>
+            </div>
+            <button
+              onClick={() => setIsLibraryAiLogOpen(false)}
+              className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            >
+              关闭
+            </button>
+          </header>
+          <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)]">
+            <aside className="border-r border-slate-100 bg-slate-50 p-4 text-sm">
+              <div className="space-y-3">
+                <div className="rounded-xl bg-white p-3">
+                  <div className="text-xs text-slate-400">链路</div>
+                  <div className="mt-1 font-bold text-slate-800">{visibleAiRequestLog.tab}生成</div>
+                </div>
+                <div className="rounded-xl bg-white p-3">
+                  <div className="text-xs text-slate-400">模型</div>
+                  <div className="mt-1 font-bold text-slate-800">{visibleAiRequestLog.modelName}</div>
+                </div>
+                <div className="rounded-xl bg-white p-3">
+                  <div className="text-xs text-slate-400">提示词</div>
+                  <div className="mt-1 font-bold text-slate-800">{visibleAiRequestLog.promptName}</div>
+                </div>
+                <div className="rounded-xl bg-white p-3">
+                  <div className="text-xs text-slate-400">脑洞关联</div>
+                  <div className={`mt-1 font-bold ${visibleAiRequestLog.hasLinkedBrainstorm ? 'text-brand' : 'text-slate-500'}`}>
+                    {visibleAiRequestLog.hasLinkedBrainstorm ? visibleAiRequestLog.linkedBrainstormTitle : '未关联'}
+                  </div>
+                </div>
+                <div className="rounded-xl bg-white p-3">
+                  <div className="text-xs text-slate-400">用户可见输入</div>
+                  <div className="mt-1 break-words font-bold text-slate-800">{visibleAiRequestLog.visibleUserText}</div>
+                </div>
+              </div>
+            </aside>
+            <div className="min-h-0 overflow-y-auto p-5">
+              <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs leading-5 text-amber-700">
+                这里展示的是实际发给 AI 的完整内容。关联脑洞时，脑洞正文会隐藏拼进用户内容；未关联时不会出现脑洞段落。
+              </div>
+              {visibleAiRequestLog.systemPrompt && (
+                <section className="mb-4">
+                  <h3 className="mb-2 text-sm font-bold text-slate-900">System Prompt</h3>
+                  <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4">
+                    {visibleAiRequestLog.systemPrompt}
+                  </div>
+                </section>
+              )}
+              <section>
+                <h3 className="mb-2 text-sm font-bold text-slate-900">User Content</h3>
+                <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4">
+                  {visibleAiRequestLog.userContent || '空内容'}
+                </div>
+              </section>
+              {lastLibraryAiRequestLog && (
+                <section className="mt-5">
+                  <h3 className="mb-2 text-sm font-bold text-slate-900">最近一次实际发送</h3>
+                  <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4">
+                    {[
+                      `时间：${lastLibraryAiRequestLog.createdAt}`,
+                      `模型：${lastLibraryAiRequestLog.modelName}`,
+                      `提示词：${lastLibraryAiRequestLog.promptName}`,
+                      `脑洞：${lastLibraryAiRequestLog.hasLinkedBrainstorm ? lastLibraryAiRequestLog.linkedBrainstormTitle : '未关联'}`,
+                      '',
+                      ...(lastLibraryAiRequestLog.systemPrompt
+                        ? ['【System Prompt】', lastLibraryAiRequestLog.systemPrompt, '']
+                        : []),
+                      '【User Content】',
+                      lastLibraryAiRequestLog.userContent || '空内容',
+                    ].join('\n')}
+                  </div>
+                </section>
+              )}
+            </div>
+          </div>
+        </section>
+      </div>,
+      document.body,
+    ) : null;
     return (
       <div className="flex min-h-0 flex-1 flex-col bg-white" style={scaleStyle}>
         {renderTopTabs()}
         {categoryContextMenu}
         {entryContextMenu}
         {deleteConfirmDialog}
+        {managementModal && <LibraryManagementModal modal={managementModal} onClose={() => setManagementModal(null)} />}
+        {libraryAiLogModal}
+        {clearSettingsConfirmDialog}
         {brainstormReaderModal}
+        {brainstormRecycleModal}
+        {clearBrainstormRecycleConfirmDialog}
         {brainstormPromptManagerModal}
+        {brainstormPromptEditModal}
         {brainstormGenerateConfirmModal}
         {settingCreateModal}
         <div
@@ -2452,16 +3329,18 @@ export function WorkbenchLibraryPanel({
         >
           <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
           {!activeIsBrainstorm && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex h-10 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               <button
+                type="button"
                 onClick={() => openSettingCreateDialog('category')}
-                className="h-10 rounded-xl bg-brand px-3 text-sm font-bold text-white hover:bg-brand-dark"
+                className="min-w-0 flex-1 bg-brand px-3 text-sm font-bold text-white transition-colors hover:bg-brand-dark"
               >
                 新建分类
               </button>
               <button
+                type="button"
                 onClick={() => openSettingCreateDialog('setting')}
-                className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 hover:bg-gray-100"
+                className="min-w-0 flex-1 border-l border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-100"
               >
                 新建设定
               </button>
@@ -2501,7 +3380,7 @@ export function WorkbenchLibraryPanel({
                   {expanded && (
                     <div className="editor-scrollbar mt-1 max-h-[760px] space-y-1 overflow-y-auto pr-1">
                       {group.entries.length === 0 ? (
-                        <p className="px-3 py-4 text-xs text-gray-400">该分类下暂无{activeTab}</p>
+                        <p className="px-3 py-4 text-xs text-gray-400">{activeTab === SETTING_TAB ? '暂无设定' : `该分类下暂无${activeTab}`}</p>
                       ) : group.entries.map((entry) => {
                         const parsed = activeIsSettingLike ? parseSettingContent(entry.content) : null;
                         const entryWordCount = countTextWords(parsed ? parsed.body : entry.content);
@@ -2535,7 +3414,39 @@ export function WorkbenchLibraryPanel({
                 </div>
               );
             })}
+
           </div>
+          {activeTab === SETTING_TAB && (
+            <div className="shrink-0 border-t border-gray-100 bg-gray-50 pt-3">
+              <button
+                type="button"
+                onClick={() => setIsClearSettingsConfirmOpen(true)}
+                disabled={settingEntries.length === 0}
+                className="flex h-11 w-full items-center justify-center rounded-2xl border border-red-100 bg-red-50 text-sm font-bold text-red-500 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-300"
+              >
+                清空设定
+              </button>
+            </div>
+          )}
+          {activeIsBrainstorm && (
+            <div className="shrink-0 border-t border-gray-100 bg-gray-50 pt-3">
+              <button
+                type="button"
+                onClick={() => setIsBrainstormRecycleOpen(true)}
+                className="flex w-full items-center justify-between gap-3 rounded-2xl border border-[#7BDDF0] bg-[#EAFBFF] px-4 py-3 text-left shadow-sm transition-colors hover:border-brand/50 hover:bg-brand-light"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-bold text-gray-800">脑洞回收站</div>
+                  <div className="mt-0.5 text-[11px] font-medium text-gray-400">
+                    {brainstormRecycleEntries.length} 个已删除脑洞
+                  </div>
+                </div>
+                <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-bold text-[#08AACE]">
+                  打开
+                </span>
+              </button>
+            </div>
+          )}
           </aside>
           {leftResizeHandle}
 
@@ -2549,27 +3460,13 @@ export function WorkbenchLibraryPanel({
                     {currentBrainstormPreviewWordCount}字
                   </span>
                 </div>
-                <div className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-1">
-                  <button
-                    type="button"
-                    onClick={() => setBrainstormPreviewFontSize(brainstormPreviewFontSize - 1)}
-                    disabled={brainstormPreviewFontSize <= BRAINSTORM_PREVIEW_MIN_FONT_SIZE}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-2xl font-black leading-none text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
-                    title="缩小字号"
-                  >
-                    -
-                  </button>
-                  <span className="min-w-8 text-center text-xs font-bold text-gray-500">{brainstormPreviewFontSize}</span>
-                  <button
-                    type="button"
-                    onClick={() => setBrainstormPreviewFontSize(brainstormPreviewFontSize + 1)}
-                    disabled={brainstormPreviewFontSize >= BRAINSTORM_PREVIEW_MAX_FONT_SIZE}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-2xl font-black leading-none text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
-                    title="放大字号"
-                  >
-                    +
-                  </button>
-                </div>
+                <FontSizeStepper
+                  value={brainstormPreviewFontSize}
+                  min={BRAINSTORM_PREVIEW_MIN_FONT_SIZE}
+                  max={BRAINSTORM_PREVIEW_MAX_FONT_SIZE}
+                  onChange={setBrainstormPreviewFontSize}
+                  ariaLabel="脑洞预览字号"
+                />
               </div>
               <div className="flex min-h-0 flex-1 flex-col p-5">
               <textarea
@@ -2588,55 +3485,25 @@ export function WorkbenchLibraryPanel({
             </div>
           ) : currentSelectedEntry ? (
             <div className="flex min-h-0 flex-1 flex-col p-5">
-              <div className="mb-4 grid shrink-0 grid-cols-2 gap-4">
-                <label className="block min-w-0">
-                  <span className="mb-2 block text-sm font-bold text-gray-700">设定名</span>
+              <div className="mb-4 w-1/5 min-w-[160px] shrink-0">
+                <div className={`xy-floating-field xy-floating-compact ${currentSelectedEntry.title.trim() ? 'xy-has-value' : ''}`}>
                   <input
                     value={currentSelectedEntry.title}
                     onChange={(event) => updateEntry(currentSelectedEntry.id, { title: event.target.value })}
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-bold text-gray-900 outline-none focus:border-brand"
+                    placeholder="设定名"
                   />
-                </label>
-                <label className="block min-w-0">
-                  <span className="mb-2 block text-sm font-bold text-gray-700">设定分类</span>
-                  <select
-                    value={currentSelectedSetting?.type ?? UNCATEGORIZED_TYPE}
-                    onChange={(event) => {
-                      if (!currentSelectedSetting) return;
-                      updateEntry(currentSelectedEntry.id, {
-                        content: stringifySettingContent({ ...currentSelectedSetting, type: event.target.value }),
-                      });
-                    }}
-                    disabled={!currentSelectedSetting}
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-bold text-gray-900 outline-none focus:border-brand disabled:bg-gray-50 disabled:text-gray-400"
-                  >
-                    {activeSettingTypeOptions.map((type) => <option key={type} value={type}>{type}</option>)}
-                  </select>
-                </label>
+                  <label>设定名</label>
+                </div>
               </div>
               <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
                 <h3 className="text-base font-bold text-gray-900">设定预览</h3>
-                <div className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-1">
-                  <button
-                    type="button"
-                    onClick={() => setSettingPreviewFontSize(settingPreviewFontSize - 1)}
-                    disabled={settingPreviewFontSize <= SETTING_PREVIEW_MIN_FONT_SIZE}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-2xl font-black leading-none text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
-                    title="缩小字号"
-                  >
-                    -
-                  </button>
-                  <span className="min-w-8 text-center text-xs font-bold text-gray-500">{settingPreviewFontSize}</span>
-                  <button
-                    type="button"
-                    onClick={() => setSettingPreviewFontSize(settingPreviewFontSize + 1)}
-                    disabled={settingPreviewFontSize >= SETTING_PREVIEW_MAX_FONT_SIZE}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-2xl font-black leading-none text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
-                    title="放大字号"
-                  >
-                    +
-                  </button>
-                </div>
+                <FontSizeStepper
+                  value={settingPreviewFontSize}
+                  min={SETTING_PREVIEW_MIN_FONT_SIZE}
+                  max={SETTING_PREVIEW_MAX_FONT_SIZE}
+                  onChange={setSettingPreviewFontSize}
+                  ariaLabel="设定预览字号"
+                />
               </div>
               <textarea
                 value={currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content}
@@ -2661,50 +3528,25 @@ export function WorkbenchLibraryPanel({
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 flex-col p-5">
-              <div className="mb-4 grid shrink-0 grid-cols-2 gap-4">
-                <label className="block min-w-0">
-                  <span className="mb-2 block text-sm font-bold text-gray-700">设定名</span>
+              <div className="mb-4 w-1/5 min-w-[160px] shrink-0">
+                <div className="xy-floating-field xy-floating-compact">
                   <input
                     readOnly
                     value=""
                     placeholder="未选择设定"
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm font-bold text-gray-400 outline-none"
                   />
-                </label>
-                <label className="block min-w-0">
-                  <span className="mb-2 block text-sm font-bold text-gray-700">设定分类</span>
-                  <select
-                    disabled
-                    value={UNCATEGORIZED_TYPE}
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm font-bold text-gray-400 outline-none"
-                  >
-                    <option value={UNCATEGORIZED_TYPE}>{UNCATEGORIZED_TYPE}</option>
-                  </select>
-                </label>
+                  <label>设定名</label>
+                </div>
               </div>
               <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
                 <h3 className="text-base font-bold text-gray-900">设定预览</h3>
-                <div className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-1">
-                  <button
-                    type="button"
-                    onClick={() => setSettingPreviewFontSize(settingPreviewFontSize - 1)}
-                    disabled={settingPreviewFontSize <= SETTING_PREVIEW_MIN_FONT_SIZE}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-2xl font-black leading-none text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
-                    title="缩小字号"
-                  >
-                    -
-                  </button>
-                  <span className="min-w-8 text-center text-xs font-bold text-gray-500">{settingPreviewFontSize}</span>
-                  <button
-                    type="button"
-                    onClick={() => setSettingPreviewFontSize(settingPreviewFontSize + 1)}
-                    disabled={settingPreviewFontSize >= SETTING_PREVIEW_MAX_FONT_SIZE}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-2xl font-black leading-none text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
-                    title="放大字号"
-                  >
-                    +
-                  </button>
-                </div>
+                <FontSizeStepper
+                  value={settingPreviewFontSize}
+                  min={SETTING_PREVIEW_MIN_FONT_SIZE}
+                  max={SETTING_PREVIEW_MAX_FONT_SIZE}
+                  onChange={setSettingPreviewFontSize}
+                  ariaLabel="设定预览字号"
+                />
               </div>
               <textarea
                 readOnly
@@ -2722,32 +3564,33 @@ export function WorkbenchLibraryPanel({
           {activeIsBrainstorm && (
             <section className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-white">
               <div className="flex h-[56px] shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-5">
-                <h3 className="text-base font-bold text-gray-900">脑洞输出框</h3>
+                <div className="flex min-w-0 items-center gap-3">
+                  <h3 className="text-base font-bold text-gray-900">脑洞输出框</h3>
+                  <label className="xy-animated-checkbox shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={brainstormStreamEnabled}
+                      onChange={(event) => updateActiveTabConfig({ brainstormStreamEnabled: event.target.checked })}
+                    />
+                    <span className="xy-animated-checkbox-box">
+                      <svg viewBox="0 0 12 10" height="10px" width="12px" aria-hidden="true">
+                        <polyline points="1.5 6 4.5 9 10.5 1" />
+                      </svg>
+                    </span>
+                    <span>流式输出</span>
+                  </label>
+                </div>
                 <div className="flex min-w-0 items-center gap-2">
                   <div className="min-w-0 truncate rounded-lg bg-gray-50 px-3 py-2 text-xs font-bold text-[#08AACE]">
                     {brainstormOutputWordCount}字
                   </div>
-                  <div className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white p-1">
-                    <button
-                      type="button"
-                      onClick={() => setBrainstormOutputFontSize(brainstormOutputFontSize - 1)}
-                      disabled={brainstormOutputFontSize <= BRAINSTORM_OUTPUT_MIN_FONT_SIZE}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-2xl font-black leading-none text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
-                      title="缩小字号"
-                    >
-                      -
-                    </button>
-                    <span className="min-w-8 text-center text-xs font-bold text-gray-500">{brainstormOutputFontSize}</span>
-                    <button
-                      type="button"
-                      onClick={() => setBrainstormOutputFontSize(brainstormOutputFontSize + 1)}
-                      disabled={brainstormOutputFontSize >= BRAINSTORM_OUTPUT_MAX_FONT_SIZE}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-2xl font-black leading-none text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
-                      title="放大字号"
-                    >
-                      +
-                    </button>
-                  </div>
+                  <FontSizeStepper
+                    value={brainstormOutputFontSize}
+                    min={BRAINSTORM_OUTPUT_MIN_FONT_SIZE}
+                    max={BRAINSTORM_OUTPUT_MAX_FONT_SIZE}
+                    onChange={setBrainstormOutputFontSize}
+                    ariaLabel="脑洞输出字号"
+                  />
                 </div>
               </div>
               <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
@@ -2761,45 +3604,63 @@ export function WorkbenchLibraryPanel({
                   />
                 </div>
                 <div className="shrink-0 rounded-xl border border-gray-200 bg-white p-3">
+                  <div className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${aiInput.trim() ? 'xy-has-value' : ''}`}>
                   <textarea
+                    ref={libraryAiInputRef}
+                    rows={1}
                     value={aiInput}
-                    onChange={(event) => setAiInput(event.target.value)}
+                    onChange={(event) => {
+                      setAiInput(event.target.value);
+                      resizeFloatingAiTextarea(event.currentTarget);
+                    }}
                     onKeyDown={handleLibraryAiInputKeyDown}
-                    placeholder="输入你想让 AI 调整、补充或继续生成的要求..."
-                    className="editor-scrollbar w-full resize-none rounded-lg border border-gray-200 px-3 py-2.5 text-sm leading-6 text-gray-700 outline-none focus:border-brand"
-                    style={{ height: aiInputHeight, overflowY: aiInputShouldScroll ? 'auto' : 'hidden' }}
+                    placeholder="输入对话指令..."
+                    className="scrollbar-hidden"
                   />
+                  <label>脑洞 AI 输入框</label>
+                  <div className="xy-ai-inline-actions">
+                    <button
+                      type="button"
+                      onClick={() => void sendLibraryAiMessage()}
+                      disabled={isLibraryAiLoading || !canSendLibraryAiMessage}
+                      className="xy-ai-inline-send"
+                    >
+                      <span className="xy-ai-inline-send-icon"><Send className="h-5 w-5" /></span>
+                      发送
+                    </button>
+                    <button
+                      type="button"
+                      onClick={stopLibraryAiMessage}
+                      disabled={!isLibraryAiLoading}
+                      className="xy-ai-inline-stop"
+                    >
+                      停止
+                    </button>
+                  </div>
+                  </div>
                   <div className="mt-3 flex items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2">
+                      <div className="xy-capsule-group">
                       <button
                         onClick={() => saveBrainstormOutput(currentSelectedEntry?.id)}
                         disabled={!currentSelectedEntry || !latestUsefulAiOutput}
-                        className="rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
+                        className="xy-capsule-button"
                       >
                         替换脑洞
                       </button>
                       <button
                         onClick={saveBrainstormOutputAsNew}
                         disabled={!latestUsefulAiOutput}
-                        className="rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
+                        className="xy-capsule-button"
                       >
                         保存为新脑洞
                       </button>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
+                      </div>
                       <button
-                        onClick={() => void sendLibraryAiMessage()}
-                        disabled={isLibraryAiLoading || !aiInput.trim()}
-                        className="rounded-xl bg-brand px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
+                        onClick={clearLibraryAiDialog}
+                        className="rounded-xl border border-red-200 bg-white px-5 py-2.5 text-sm font-bold text-red-500 shadow-sm hover:border-red-300 hover:bg-red-50"
                       >
-                        发送
-                      </button>
-                      <button
-                        onClick={stopLibraryAiMessage}
-                        disabled={!isLibraryAiLoading}
-                        className="rounded-xl border border-gray-200 bg-white px-6 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-300"
-                      >
-                        停止
+                        清空
                       </button>
                     </div>
                   </div>
@@ -2814,36 +3675,91 @@ export function WorkbenchLibraryPanel({
           <aside className="min-w-0 flex min-h-0 flex-col bg-gray-50">
           <div className="border-b border-gray-100 p-4">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-base font-bold text-gray-900">{panelTitle}</h3>
-              {activeIsBrainstorm && (
+              <div className="flex min-w-0 items-center gap-2">
+                <h3 className="shrink-0 text-base font-bold text-gray-900">{panelTitle}</h3>
+                {(activeTab === SETTING_TAB || activeIsBrainstorm || activeTab === ROLE_TAB) && (
+                  <div className="xy-management-segment shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setManagementModal({ type: 'models' })}
+                      className="xy-management-segment-button"
+                    >
+                      模型管理
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setManagementModal({
+                        type: 'prompts',
+                        category: activeIsBrainstorm
+                          ? BRAINSTORM_TAB
+                          : activeTab === SETTING_TAB
+                            ? PROMPT_SETTING_CATEGORY
+                        : activeTab,
+                      })}
+                      className="xy-management-segment-button"
+                    >
+                      提示词管理
+                    </button>
+                  </div>
+                )}
+              </div>
+              {(activeTab === SETTING_TAB || activeIsBrainstorm) && (
                 <button
-                  onClick={openBrainstormPromptManager}
-                  className="rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-brand-dark"
+                  type="button"
+                  onClick={() => setIsLibraryAiLogOpen(true)}
+                  className="shrink-0 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm hover:border-brand hover:text-brand"
                 >
-                  提示词管理
+                  输出日志
                 </button>
               )}
             </div>
             <div className="mt-4 space-y-3">
-              <label className="grid grid-cols-[48px_1fr] items-center gap-2 text-sm text-gray-500">
+              <label className={`grid items-center gap-2 text-sm text-gray-500 ${activeTab === SETTING_TAB || activeIsBrainstorm || activeTab === ROLE_TAB ? 'grid-cols-[48px_minmax(0,1fr)]' : 'grid-cols-[48px_minmax(0,1fr)_64px]'}`}>
                 <span>模型</span>
-                <select
+                <CapsuleSelect
                   value={activeTabConfig.modelId ?? ''}
-                  onChange={(event) => updateActiveTabConfig({ modelId: event.target.value })}
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-base font-semibold text-gray-700 outline-none focus:border-brand"
-                >
-                  {models.length === 0 ? <option value="">暂无可用模型</option> : models.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}
-                </select>
+                  onChange={(value) => updateActiveTabConfig({ modelId: value })}
+                  options={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
+                  buttonClassName="h-11 rounded-xl px-3 text-sm"
+                />
+                {activeTab !== SETTING_TAB && !activeIsBrainstorm && activeTab !== ROLE_TAB && (
+                  <button
+                    type="button"
+                    onClick={() => setManagementModal({ type: 'models' })}
+                    className="h-10 w-16 rounded-xl bg-brand text-[18px] font-bold text-white shadow-sm hover:bg-brand-dark"
+                  >
+                    管理
+                  </button>
+                )}
               </label>
-              <label className="grid grid-cols-[48px_1fr] items-center gap-2 text-sm text-gray-500">
+              <label className={`grid items-center gap-2 text-sm text-gray-500 ${activeTab === SETTING_TAB || activeIsBrainstorm || activeTab === ROLE_TAB ? 'grid-cols-[48px_minmax(0,1fr)]' : 'grid-cols-[48px_minmax(0,1fr)_64px]'}`}>
                 <span>提示词</span>
-                <select
-                  value={activePromptId}
-                  onChange={(event) => updateActiveTabConfig({ promptId: event.target.value })}
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-brand"
-                >
-                  {activeTabPrompts.length === 0 ? <option value="">暂无{promptCategory}提示词</option> : activeTabPrompts.map((prompt) => <option key={prompt.id} value={prompt.id}>{prompt.name}</option>)}
-                </select>
+                <div className="xy-capsule-group min-w-0">
+                  <CapsuleSelect
+                    value={activePromptId ?? ''}
+                    onChange={(value) => updateActiveTabConfig({ promptId: value })}
+                    disabled={Boolean(activeTabConfig.promptDisabled)}
+                    className="min-w-0 flex-1"
+                    buttonClassName="h-10 rounded-l-xl rounded-r-none border-0 px-3 text-sm shadow-none"
+                    options={activeTabPrompts.length === 0 ? [{ value: '', label: `暂无${promptCategory}提示词`, disabled: true }] : activeTabPrompts.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => updateActiveTabConfig({ promptDisabled: !activeTabConfig.promptDisabled })}
+                    className={`xy-capsule-button w-16 ${activeTabConfig.promptDisabled ? 'xy-active' : 'xy-danger'}`}
+                  >
+                    {activeTabConfig.promptDisabled ? '启用' : '禁用'}
+                  </button>
+                </div>
+                {activeTab !== SETTING_TAB && !activeIsBrainstorm && activeTab !== ROLE_TAB && (
+                  <button
+                    type="button"
+                    onClick={() => setManagementModal({ type: 'prompts', category: activeIsBrainstorm ? BRAINSTORM_TAB : PROMPT_SETTING_CATEGORY })}
+                    className="h-10 w-16 rounded-xl bg-brand text-[18px] font-bold text-white shadow-sm hover:bg-brand-dark"
+                  >
+                    管理
+                  </button>
+                )}
               </label>
             </div>
           </div>
@@ -2855,20 +3771,22 @@ export function WorkbenchLibraryPanel({
                     const isLastField = index === BRAINSTORM_QUESTION_FIELDS.length - 1;
                     const questionRows = getBrainstormQuestionRows(brainstormQuestionDraft[field.key]);
                     return (
-                    <label key={field.key} className={`${isLastField ? 'flex min-h-[180px] flex-1 flex-col' : 'block'} text-sm font-bold text-gray-700`}>
-                      <span className="mb-1.5 block leading-5">{field.label}</span>
+                    <div key={field.key} className={`${isLastField ? 'flex min-h-[180px] flex-1 flex-col' : 'block'} text-sm font-bold text-gray-700`}>
+                      <div className={`xy-floating-field xy-floating-compact ${isLastField ? 'flex flex-1 flex-col' : ''} ${brainstormQuestionDraft[field.key].trim() ? 'xy-has-value' : ''}`}>
                       <textarea
                         value={brainstormQuestionDraft[field.key]}
                         onChange={(event) => setBrainstormQuestionField(field.key, event.target.value)}
                         placeholder={field.placeholder}
                         rows={1}
-                        className={`${isLastField ? 'min-h-0 flex-1' : 'w-full'} resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium leading-6 text-gray-700 outline-none focus:border-brand`}
+                        className={`${isLastField ? 'min-h-0 flex-1' : ''} font-medium`}
                         style={{
                           height: isLastField ? undefined : `${Math.max(40, questionRows * 24 + 16)}px`,
                           overflowY: isLastField || questionRows >= 4 ? 'auto' : 'hidden',
                         }}
                       />
-                    </label>
+                      <label>{field.label}</label>
+                      </div>
+                    </div>
                     );
                   })}
                 </div>
@@ -2885,7 +3803,11 @@ export function WorkbenchLibraryPanel({
             </div>
           ) : (
             <div className="min-h-0 flex-1 p-4">
-              <div className="editor-scrollbar h-full w-full overflow-y-auto rounded-xl border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-700">
+              <div
+                ref={libraryAiOutputRef}
+                onScroll={handleLibraryAiOutputScroll}
+                className="editor-scrollbar h-full w-full overflow-y-auto rounded-xl border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-700"
+              >
                 {aiChatTurns.length === 0 ? (
                   <div className="text-gray-400">{`可以在这里生成${activeTab}，并继续通过对话细化。`}</div>
                 ) : (
@@ -2893,10 +3815,10 @@ export function WorkbenchLibraryPanel({
                     {aiChatTurns.map((turn, index) => (
                       <div key={`${turn.role}-${index}`} className={`flex ${turn.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div
-                          className={`max-w-[82%] whitespace-pre-wrap break-words rounded-2xl px-4 py-3 ${
+                          className={`whitespace-pre-wrap break-words rounded-2xl px-4 py-3 ${
                             turn.role === 'user'
-                              ? 'bg-brand text-white'
-                              : 'border border-gray-200 bg-gray-50 text-gray-800'
+                              ? 'max-w-[82%] bg-brand text-white'
+                              : 'max-w-[96%] border border-gray-200 bg-gray-50 text-gray-800'
                           }`}
                         >
                           {renderAiChatContent(turn.content)}
@@ -2912,68 +3834,133 @@ export function WorkbenchLibraryPanel({
           <div className="border-t border-gray-100 p-4">
             <div className="rounded-xl border border-gray-200 bg-white p-4">
               {activeTab === SETTING_TAB && (
-                <div className="mb-3 grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => {
-                    setSelectedBrainstormReaderId(null);
-                    setIsBrainstormReaderOpen(true);
-                  }}
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-100"
-                >
-                  读取脑洞
-                </button>
-                <div />
+                <div className="mb-3 flex items-center gap-2">
+                  {hasLinkedBrainstorm ? (
+                    <div className="flex h-10 w-1/3 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedBrainstormReaderId(activeTabConfig.loadedBrainstormId ?? null);
+                          setIsBrainstormReaderOpen(true);
+                        }}
+                        className="min-w-0 flex-1 px-3 text-sm font-bold text-gray-700 hover:bg-gray-100"
+                      >
+                        已关联脑洞
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateActiveTabConfig({
+                            loadedBrainstormId: null,
+                            loadedBrainstormTitle: '',
+                            loadedBrainstormText: '',
+                          });
+                          setSelectedBrainstormReaderId(null);
+                        }}
+                        className="flex h-full w-10 shrink-0 items-center justify-center border-l border-gray-200 bg-white text-gray-500 transition-colors hover:bg-red-50 hover:text-red-500"
+                        title="取消关联"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedBrainstormReaderId(activeTabConfig.loadedBrainstormId ?? null);
+                        setIsBrainstormReaderOpen(true);
+                      }}
+                      className="h-10 w-1/3 rounded-lg border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 hover:bg-gray-100"
+                    >
+                      关联脑洞
+                    </button>
+                  )}
+                  {hasLinkedBrainstorm && (
+                    <div className="ml-auto flex min-w-0 items-center px-3 text-sm font-bold text-[#08AACE]">
+                      {loadedBrainstormWordCount}字
+                    </div>
+                  )}
                 </div>
               )}
-              <div className="mb-3 grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => {
-                    if (activeTab === SETTING_TAB) {
-                      smartImportSettings();
-                      return;
-                    }
-                    if (!currentSelectedEntry) {
-                      addEntryToTab(activeTab, `新建${activeTab}`);
-                      return;
-                    }
-                    updateEntry(currentSelectedEntry.id, { title: currentSelectedEntry.title || `新建${activeTab}` });
-                  }}
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-100"
-                >
-                  {activeTab === SETTING_TAB ? '智能导入设定' : `保存为新${activeTab}`}
-                </button>
-                <div />
-              </div>
-              <textarea
-                value={aiInput}
-                onChange={(event) => setAiInput(event.target.value)}
-                onKeyDown={handleLibraryAiInputKeyDown}
-                placeholder="输入对话指令..."
-                className="w-full resize-none rounded-lg border border-gray-200 px-3 py-[11px] text-sm leading-6 outline-none focus:border-brand"
-                style={{ height: aiInputHeight }}
-              />
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => void sendLibraryAiMessage()}
-                  disabled={isLibraryAiLoading || !aiInput.trim()}
-                  className="rounded-lg bg-brand px-3 py-2 text-sm font-bold text-white disabled:bg-gray-300"
-                >
-                  {isLibraryAiLoading ? '生成中...' : '发送'}
-                </button>
-                <button
-                  onClick={stopLibraryAiMessage}
-                  disabled={!isLibraryAiLoading}
-                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
-                >
-                  暂停
-                </button>
+              <div className="mb-3 flex items-center gap-2">
+                {activeTab === SETTING_TAB ? (
+                  <div className="flex h-10 w-1/3 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                    <button
+                      type="button"
+                      onClick={smartImportSettings}
+                      disabled={smartImportLocked}
+                      className="min-w-0 flex-1 px-3 text-sm font-bold text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-300"
+                    >
+                      智能导入设定
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateActiveTabConfig({ smartImportLocked: !smartImportLocked })}
+                      className={`flex h-full w-10 shrink-0 items-center justify-center border-l border-gray-200 transition-colors ${
+                        smartImportLocked
+                          ? 'bg-red-50 text-red-500 hover:bg-red-100'
+                          : 'bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                      }`}
+                      title={smartImportLocked ? '解锁智能导入设定' : '锁定智能导入设定'}
+                    >
+                      {smartImportLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (!currentSelectedEntry) {
+                        addEntryToTab(activeTab, `新建${activeTab}`);
+                        return;
+                      }
+                      updateEntry(currentSelectedEntry.id, { title: currentSelectedEntry.title || `新建${activeTab}` });
+                    }}
+                    className="h-10 w-1/3 rounded-lg border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 hover:bg-gray-100"
+                  >
+                    保存为新{activeTab}
+                  </button>
+                )}
                 <button
                   onClick={clearLibraryAiDialog}
                   disabled={!aiInput.trim() && !aiOutput.trim() && !isLibraryAiLoading}
-                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
+                  className="h-10 w-1/3 rounded-lg border border-gray-200 px-3 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
                 >
                   清空
                 </button>
+              </div>
+              <div className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${aiInput.trim() ? 'xy-has-value' : ''}`}>
+              <textarea
+                ref={libraryAiInputRef}
+                rows={1}
+                value={aiInput}
+                onChange={(event) => {
+                  setAiInput(event.target.value);
+                  resizeFloatingAiTextarea(event.currentTarget);
+                }}
+                onKeyDown={handleLibraryAiInputKeyDown}
+                placeholder="输入对话指令..."
+                className="scrollbar-hidden"
+              />
+              <label>AI 输入框</label>
+              <div className="xy-ai-inline-actions">
+                <button
+                  type="button"
+                  onClick={() => void sendLibraryAiMessage()}
+                  disabled={isLibraryAiLoading || !canSendLibraryAiMessage}
+                  className="xy-ai-inline-send"
+                >
+                  <span className="xy-ai-inline-send-icon"><Send className="h-5 w-5" /></span>
+                  发送
+                </button>
+                <button
+                  type="button"
+                  onClick={stopLibraryAiMessage}
+                  disabled={!isLibraryAiLoading}
+                  className="xy-ai-inline-stop"
+                >
+                  停止
+                </button>
+              </div>
               </div>
             </div>
           </div>
@@ -3114,6 +4101,7 @@ export function WorkbenchLibraryPanel({
       <div className="flex min-h-0 flex-1 flex-col bg-white" style={scaleStyle}>
         {(activeTab === OUTLINE_LIBRARY_TAB || activeTab === DETAIL_OUTLINE_TAB) && renderTopTabs()}
         {deleteConfirmDialog}
+        {managementModal && <LibraryManagementModal modal={managementModal} onClose={() => setManagementModal(null)} />}
         <div
           className="relative grid min-h-0 flex-1 overflow-hidden bg-white"
           style={{ gridTemplateColumns: `${outlineSidebarWidth}px 8px minmax(0,1fr) 8px ${settingLibraryRightWidth}px` }}
@@ -3292,23 +4280,21 @@ export function WorkbenchLibraryPanel({
           <div className="mt-4 space-y-3">
             <label className="grid grid-cols-[48px_1fr] items-center gap-2 text-sm text-gray-500">
               <span>模型</span>
-              <select
+              <CapsuleSelect
                 value={activeTabConfig.modelId ?? ''}
-                onChange={(event) => updateActiveTabConfig({ modelId: event.target.value })}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-base font-semibold text-gray-700 outline-none focus:border-brand"
-              >
-                {models.length === 0 ? <option value="">暂无可用模型</option> : models.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}
-              </select>
+                onChange={(value) => updateActiveTabConfig({ modelId: value })}
+                options={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
+                buttonClassName="h-11 rounded-xl px-3 text-sm"
+              />
             </label>
             <label className="grid grid-cols-[48px_1fr] items-center gap-2 text-sm text-gray-500">
               <span>提示词</span>
-              <select
-                value={activeOutlinePromptId}
-                onChange={(event) => updateActiveTabConfig({ promptId: event.target.value })}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-brand"
-              >
-                {outlinePromptOptions.length === 0 ? <option value="">{isDetailOutlineTab ? '暂无细纲提示词' : '暂无概要提示词'}</option> : outlinePromptOptions.map((prompt) => <option key={prompt.id} value={prompt.id}>{prompt.name}</option>)}
-              </select>
+              <CapsuleSelect
+                value={activeOutlinePromptId ?? ''}
+                onChange={(value) => updateActiveTabConfig({ promptId: value })}
+                options={outlinePromptOptions.length === 0 ? [{ value: '', label: isDetailOutlineTab ? '暂无细纲提示词' : '暂无概要提示词', disabled: true }] : outlinePromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                buttonClassName="h-11 rounded-xl px-3 text-sm"
+              />
             </label>
           </div>
           <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4">

@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react';
 
 import type { Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
@@ -220,8 +220,8 @@ export function ChapterSidebar({
       </div>
 
       <div className="flex items-center gap-1.5 border-t border-gray-100 px-2 py-2">
-        <button onClick={onAddVolume} className="flex-1 whitespace-nowrap rounded-md bg-brand px-1 py-1.5 text-sm text-white transition-colors hover:bg-brand-dark">
-          新增{volumeUnit}
+        <button onClick={onAddVolume} className="xy-ui125-plus-button" title={`新增${volumeUnit}`}>
+          <Plus />
         </button>
         <button onClick={onToggleSort} className="flex-1 whitespace-nowrap rounded-md bg-brand px-1 py-1.5 text-sm text-white transition-colors hover:bg-brand-dark">
           {sortAsc ? '倒序' : '正序'}
@@ -232,7 +232,7 @@ export function ChapterSidebar({
         <div className="flex items-center gap-1.5">
           <button
             onClick={onExportChapters}
-            className="flex-1 whitespace-nowrap rounded-md border border-gray-300 bg-white px-1.5 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-50"
+            className="flex-1 whitespace-nowrap rounded-md bg-[#0695B5] px-1.5 py-1.5 text-sm text-white transition-colors hover:bg-[#057f9a]"
           >
             导出章节
           </button>

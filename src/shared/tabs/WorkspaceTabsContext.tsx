@@ -28,6 +28,7 @@ interface WorkspaceTabsContextValue {
 
 const STORAGE_KEY = 'xinyuexia_workspace_tabs_v1';
 const ACTIVE_KEY = 'xinyuexia_workspace_active_tab_v1';
+const STARTUP_RESET_KEY = 'xinyuexia_workspace_tabs_reset_this_session_v1';
 
 export const HOME_TAB: WorkspaceTab = {
   id: 'home',
@@ -66,7 +67,20 @@ function normalizeTabs(value: unknown): WorkspaceTab[] {
   return tabs;
 }
 
+function shouldResetTabsForSession() {
+  try {
+    if (sessionStorage.getItem(STARTUP_RESET_KEY) === '1') return false;
+    sessionStorage.setItem(STARTUP_RESET_KEY, '1');
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(ACTIVE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function loadTabs() {
+  if (shouldResetTabsForSession()) return [HOME_TAB];
   try {
     return normalizeTabs(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]'));
   } catch {

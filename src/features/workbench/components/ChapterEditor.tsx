@@ -529,22 +529,30 @@ export function ChapterEditor({
           <SymbolReplaceToggle onEnable={handleSymbolAutoEnabled} />
         </div>
         <div className="mx-1 h-5 w-px bg-gray-200" />
-        <button
-          onClick={() => void copyText(stripLineIndents(content), '已复制正文')}
-          className="rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light"
-        >
-          复制正文
-        </button>
-        <button onClick={() => setIsHistoryOpen(true)} className="rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
-          历史
-        </button>
-        <button
-          onClick={onOpenFind}
-          className="rounded-full bg-brand px-4 py-1.5 text-base font-medium text-white transition-colors hover:bg-brand-dark"
-          title="查找替换"
-        >
-          查找
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={() => void copyText(stripLineIndents(content), '已复制正文')}
+            className="rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light"
+          >
+            复制正文
+          </button>
+          <button onClick={() => setIsHistoryOpen(true)} className="rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
+            历史
+          </button>
+          <button
+            onClick={onOpenFind}
+            className="rounded-full bg-brand px-4 py-1.5 text-base font-medium text-white transition-colors hover:bg-brand-dark"
+            title="查找替换"
+          >
+            查找
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="h-[37px] w-[67px] rounded-md border border-red-200 bg-white text-sm font-medium text-red-500 shadow-sm transition-colors hover:bg-red-50"
+          >
+            删除
+          </button>
+        </div>
       </div>
 
       <div className="relative flex-1 bg-white">
@@ -592,17 +600,11 @@ export function ChapterEditor({
             textIndent: visualIndentEnabled ? '2em' : undefined,
           }}
         />
-        <button
-          onClick={() => setShowDeleteConfirm(true)}
-          className="absolute bottom-4 right-4 z-20 rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-500 shadow-sm transition-colors hover:bg-red-50"
-        >
-          删除
-        </button>
       </div>
 
       <div className="flex min-h-[39px] items-center justify-between border-t border-gray-100 bg-white px-5 py-3 text-sm text-gray-400">
-        <span>字数 <span className="font-medium text-brand">{wordCount || chapter.wordCount}</span> · {lastSavedAt ? `已保存 ${lastSavedAt}` : '自动保存'}</span>
         {associatedCount > 0 && <span>已关联 <span className="font-medium text-brand">{associatedCount}</span> 章</span>}
+        <span className="ml-auto">字数 <span className="font-medium text-brand">{wordCount || chapter.wordCount}</span> · {lastSavedAt ? `已保存 ${lastSavedAt}` : '自动保存'}</span>
       </div>
 
       <ConfirmDialog

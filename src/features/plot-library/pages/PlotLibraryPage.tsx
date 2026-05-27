@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  AlertTriangle, ArrowUpDown, Check, Edit3, Library, Minus, Plus, Search,
+  AlertTriangle, ArrowUpDown, Check, Edit3, Library, Search,
   Tag, Trash2, X,
 } from 'lucide-react';
 
 import { usePlotLibrary } from '@/features/plot-library/hooks/usePlotLibrary';
 import type { PlotLibraryItem } from '@/features/plot-library/model/plotLibraryTypes';
+import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
+import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
 
 type SortMode = 'time' | 'wordCount-desc' | 'wordCount-asc' | 'score-desc' | 'score-asc';
 
@@ -228,17 +230,19 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
       </div>
       <div className="flex items-center gap-1">
         <ArrowUpDown className="h-3.5 w-3.5 text-gray-400" />
-        <select
+        <CapsuleSelect
           value={sortMode}
-          onChange={(e) => setSortMode(e.target.value as SortMode)}
-          className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm leading-10 focus:border-brand focus:outline-none"
-        >
-          <option className="h-10 py-2 text-sm" value="time">最新</option>
-          <option className="h-10 py-2 text-sm" value="wordCount-desc">字数多</option>
-          <option className="h-10 py-2 text-sm" value="wordCount-asc">字数少</option>
-          <option className="h-10 py-2 text-sm" value="score-desc">评分高</option>
-          <option className="h-10 py-2 text-sm" value="score-asc">评分低</option>
-        </select>
+          onChange={(value) => setSortMode(value as SortMode)}
+          className="w-[132px]"
+          buttonClassName="h-10 rounded-xl px-3 text-sm"
+          options={[
+            { value: 'time', label: '最新' },
+            { value: 'wordCount-desc', label: '字数多' },
+            { value: 'wordCount-asc', label: '字数少' },
+            { value: 'score-desc', label: '评分高' },
+            { value: 'score-asc', label: '评分低' },
+          ]}
+        />
       </div>
       <button
         onClick={() => setShowRecycle(true)}
@@ -291,17 +295,19 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
             </div>
             <div className="flex items-center gap-1">
               <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />
-              <select
+              <CapsuleSelect
                 value={sortMode}
-                onChange={(e) => setSortMode(e.target.value as SortMode)}
-                className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm leading-10 focus:border-brand focus:outline-none"
-              >
-                <option className="h-10 py-2 text-sm" value="time">最新</option>
-                <option className="h-10 py-2 text-sm" value="wordCount-desc">字数多</option>
-                <option className="h-10 py-2 text-sm" value="wordCount-asc">字数少</option>
-                <option className="h-10 py-2 text-sm" value="score-desc">评分高</option>
-                <option className="h-10 py-2 text-sm" value="score-asc">评分低</option>
-              </select>
+                onChange={(value) => setSortMode(value as SortMode)}
+                className="w-[132px]"
+                buttonClassName="h-10 rounded-xl px-3 text-sm"
+                options={[
+                  { value: 'time', label: '最新' },
+                  { value: 'wordCount-desc', label: '字数多' },
+                  { value: 'wordCount-asc', label: '字数少' },
+                  { value: 'score-desc', label: '评分高' },
+                  { value: 'score-asc', label: '评分低' },
+                ]}
+              />
             </div>
             <button
               onClick={() => setShowRecycle(true)}
@@ -468,27 +474,13 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
                   </>
                 ) : (
                   <>
-                    <div className="flex items-center bg-gray-50 rounded-lg border border-gray-100 overflow-hidden">
-                      <button
-                        onClick={() => setModalFontSize((s) => Math.max(MIN_FONT_SIZE, s - 1))}
-                        disabled={modalFontSize <= MIN_FONT_SIZE}
-                        className="flex items-center justify-center px-2.5 py-1.5 text-gray-500 hover:text-brand hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        title="减小字号"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="text-[11px] text-gray-500 px-1 min-w-[22px] text-center tabular-nums font-medium">
-                        {modalFontSize}
-                      </span>
-                      <button
-                        onClick={() => setModalFontSize((s) => Math.min(MAX_FONT_SIZE, s + 1))}
-                        disabled={modalFontSize >= MAX_FONT_SIZE}
-                        className="flex items-center justify-center px-2.5 py-1.5 text-gray-500 hover:text-brand hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        title="放大字号"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <FontSizeStepper
+                      value={modalFontSize}
+                      min={MIN_FONT_SIZE}
+                      max={MAX_FONT_SIZE}
+                      onChange={setModalFontSize}
+                      ariaLabel="剧情详情字号"
+                    />
                     <button
                       onClick={() => { setEditingId(showDetail.id); setEditContent(showDetail.content); }}
                       className="flex items-center gap-1 px-3 py-1.5 text-[11px] text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"

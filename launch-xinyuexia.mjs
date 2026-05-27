@@ -161,7 +161,7 @@ function startVite() {
   log(`vite started pid=${child.pid}`);
 }
 
-function startElectron(loadDist = false) {
+function startElectron(loadDist = false, startHash = '', disableAdjustmentMode = false) {
   ensureFileExists(electronExe, 'Electron 可执行文件');
   ensureFileExists(electronMain, 'Electron 主进程文件');
   cleanupElectronMainProcesses();
@@ -174,6 +174,8 @@ function startElectron(loadDist = false) {
     env: {
       ...process.env,
       ...(loadDist ? { XINYUEXIA_LOAD_DIST: '1' } : {}),
+      ...(startHash ? { XINYUEXIA_START_HASH: startHash } : {}),
+      ...(disableAdjustmentMode ? { XINYUEXIA_DISABLE_ADJUSTMENT_MODE: '1' } : {}),
     },
   });
   child.unref();
@@ -218,8 +220,8 @@ async function ensureDevServer() {
   throw new Error('dev server timeout');
 }
 
-async function ensureElectronWindow(loadDist = false) {
-  startElectron(loadDist);
+async function ensureElectronWindow(loadDist = false, startHash = '', disableAdjustmentMode = false) {
+  startElectron(loadDist, startHash, disableAdjustmentMode);
   await wait(loadDist ? 1000 : 1800);
 }
 
@@ -234,8 +236,13 @@ async function main() {
 
   await ensureDevServer();
 
+  if (mode === 'adjustment') {
+    await ensureElectronWindow(false, '#/adjustment-mode');
+    return;
+  }
+
   if (mode === 'desktop') {
-    await ensureElectronWindow(false);
+    await ensureElectronWindow(false, '#/dashboard', true);
     return;
   }
 

@@ -4,37 +4,34 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppFrame } from '@/shared/layout/AppFrame';
 import { WorkspaceTabsProvider } from '@/shared/tabs/WorkspaceTabsContext';
 
-const ExtractPage = lazy(() => import('@/features/extract/pages/ExtractPage').then((module) => ({ default: module.ExtractPage })));
 const ExtractTestPage = lazy(() => import('@/features/extract/pages/ExtractTestPage').then((module) => ({ default: module.ExtractTestPage })));
-const AiChatPage = lazy(() => import('@/features/ai-chat/pages/AiChatPage').then((module) => ({ default: module.AiChatPage })));
 const TestCollectionPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })));
+const DropdownAScenariosTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.DropdownAScenariosTestPage })));
+const UiLandingScenariosTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.UiLandingScenariosTestPage })));
+const NovelCardActionsBTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.NovelCardActionsBTestPage })));
+const SearchUi132TestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.SearchUi132TestPage })));
+const AiInlineIconActionsTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.AiInlineIconActionsTestPage })));
+const ContextLinkerTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.ContextLinkerTestPage })));
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
-const ExtractPlotTabsTestPage = lazy(() => import('@/features/tests/pages/ExtractPlotTabsTestPage').then((module) => ({ default: module.ExtractPlotTabsTestPage })));
-const SettingLibraryTabsTestPage = lazy(() => import('@/features/tests/pages/SettingLibraryTabsTestPage').then((module) => ({ default: module.SettingLibraryTabsTestPage })));
 const BrainstormAiChainTestPage = lazy(() => import('@/features/tests/pages/BrainstormAiChainTestPage').then((module) => ({ default: module.BrainstormAiChainTestPage })));
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
+const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
-const BrainstormLibraryPage = lazy(() => import('@/features/brainstorm-library/pages/BrainstormLibraryPage').then((module) => ({ default: module.BrainstormLibraryPage })));
 const IdeaGeneratorPage = lazy(() => import('@/features/ideas/pages/IdeaGeneratorPage').then((module) => ({ default: module.IdeaGeneratorPage })));
 const IdeaLibraryPage = lazy(() => import('@/features/ideas/pages/IdeaLibraryPage').then((module) => ({ default: module.IdeaLibraryPage })));
 const LibraryHubPage = lazy(() => import('@/features/library-hub/pages/LibraryHubPage').then((module) => ({ default: module.LibraryHubPage })));
 const OutlineGeneratorPage = lazy(() => import('@/features/ideas/pages/OutlineGeneratorPage').then((module) => ({ default: module.OutlineGeneratorPage })));
 const DbSettingsPage = lazy(() => import('@/features/settings/pages/DbSettingsPage').then((module) => ({ default: module.DbSettingsPage })));
-const MaterialsCollectionPage = lazy(() => import('@/features/materials/pages/MaterialsCollectionPage').then((module) => ({ default: module.MaterialsCollectionPage })));
-const MaterialsPage = lazy(() => import('@/features/materials/pages/MaterialsPage').then((module) => ({ default: module.MaterialsPage })));
 const ModelManagePage = lazy(() => import('@/features/models/pages/ModelManagePage').then((module) => ({ default: module.ModelManagePage })));
 const MoonfallSettingsPage = lazy(() => import('@/features/moonfall-settings/pages/MoonfallSettingsPage').then((module) => ({ default: module.MoonfallSettingsPage })));
 const NovelLibraryPage = lazy(() => import('@/features/novels/pages/NovelLibraryPage').then((module) => ({ default: module.NovelLibraryPage })));
-const PlotLibraryPage = lazy(() => import('@/features/plot-library/pages/PlotLibraryPage').then((module) => ({ default: module.PlotLibraryPage })));
 const PromptsPage = lazy(() => import('@/features/prompts/pages/PromptsPage').then((module) => ({ default: module.PromptsPage })));
 const ScriptEditorPage = lazy(() => import('@/features/script-editor/pages/ScriptEditorPage'));
 const WorkbenchPage = lazy(() => import('@/features/workbench/pages/WorkbenchPage').then((module) => ({ default: module.WorkbenchPage })));
-const ButtonTestPage = lazy(() => import('@/pages/ButtonTestPage'));
-const CoverLibraryPage = lazy(() => import('@/features/covers/pages/CoverLibraryPage').then((module) => ({ default: module.CoverLibraryPage })));
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
-const TagZonePage = lazy(() => import('@/pages/TagZonePage'));
 const TokenUsagePage = lazy(() => import('@/pages/TokenUsagePage'));
 const TextOverridesPage = lazy(() => import('@/features/text-overrides/pages/TextOverridesPage').then((module) => ({ default: module.TextOverridesPage })));
+const AdjustmentModePage = lazy(() => import('@/features/adjustment-mode/pages/AdjustmentModePage').then((module) => ({ default: module.AdjustmentModePage })));
 const DashboardLayout = lazy(() => import('@/shared/layout/DashboardLayout').then((module) => ({ default: module.DashboardLayout })));
 
 function AppFallback() {
@@ -96,38 +93,32 @@ export default function App() {
                 <Route path="/novels" element={<NovelLibraryPage />} />
                 <Route path="/scripts" element={<NovelLibraryPage />} />
                 <Route path="/extract" element={<ExtractTestPage />} />
-                <Route path="/extract-1" element={<ExtractPage />} />
-                <Route path="/plot-library" element={<PlotLibraryPage />} />
                 <Route path="/moonfall-settings" element={<MoonfallSettingsPage />} />
                 <Route path="/library" element={<LibraryHubPage />} />
-                <Route path="/brainstorm-library" element={<BrainstormLibraryPage />} />
-                <Route path="/cover-library" element={<CoverLibraryPage />} />
-                <Route path="/materials" element={<MaterialsCollectionPage />} />
-                <Route path="/materials/settings" element={<MaterialsPage />} />
                 <Route path="/prompts" element={<PromptsPage />} />
                 <Route path="/model-manage" element={<ModelManagePage />} />
                 <Route path="/db-settings" element={<DbSettingsPage />} />
                 <Route path="/text-overrides" element={<TextOverridesPage />} />
+                <Route path="/adjustment-mode" element={<AdjustmentModePage />} />
                 <Route path="/idea-generator" element={<IdeaGeneratorPage />} />
                 <Route path="/outline-generator" element={<OutlineGeneratorPage />} />
                 <Route path="/idea-library" element={<IdeaLibraryPage />} />
                 <Route path="/token-usage" element={<TokenUsagePage />} />
-                <Route path="/call-data" element={<Navigate to="/token-usage" replace />} />
-                <Route path="/ai-chat" element={<AiChatPage />} />
                 <Route path="/test-collection" element={<TestCollectionPage />} />
-                <Route path="/extract-plot-tabs-test" element={<ExtractPlotTabsTestPage />} />
-                <Route path="/setting-library-tabs-test" element={<SettingLibraryTabsTestPage />} />
+                <Route path="/dropdown-a-scenarios-test" element={<DropdownAScenariosTestPage />} />
+                <Route path="/ui-landing-scenarios-test" element={<UiLandingScenariosTestPage />} />
+                <Route path="/novel-card-actions-b-test" element={<NovelCardActionsBTestPage />} />
+                <Route path="/search-ui132-test" element={<SearchUi132TestPage />} />
+                <Route path="/ai-inline-icon-actions-test" element={<AiInlineIconActionsTestPage />} />
+                <Route path="/context-linker-test" element={<ContextLinkerTestPage />} />
                 <Route path="/brainstorm-ai-chain-test" element={<BrainstormAiChainTestPage />} />
                 <Route path="/software-ui-catalog" element={<SoftwareUiCatalogPage />} />
+                <Route path="/hidden-pages-test" element={<HiddenPagesTestPage />} />
                 <Route path="/theme-colors" element={<DarkThemeColorPage />} />
-                <Route path="/dark-theme-colors" element={<DarkThemeColorPage />} />
                 <Route path="/test-browser" element={<TestBrowserPage />} />
-                <Route path="/button-test" element={<ButtonTestPage />} />
-                <Route path="/extract-test" element={<Navigate to="/extract" replace />} />
               </Route>
               <Route path="/workbench" element={<WorkbenchPage />} />
               <Route path="/script-editor-v2" element={<ScriptEditorPage />} />
-              <Route path="/tag-zone" element={<TagZonePage />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </Suspense>

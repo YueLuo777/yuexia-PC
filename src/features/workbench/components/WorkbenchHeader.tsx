@@ -24,16 +24,21 @@ export function WorkbenchHeader({
 
   return (
     <header className="relative flex h-12 shrink-0 items-center justify-end border-b border-gray-200 bg-white px-4">
-      <div className="absolute left-0 top-0 flex h-full max-w-[560px] items-center gap-2 px-4">
-        <h1 className="min-w-0 max-w-[390px] truncate text-base font-bold leading-5 text-gray-900" title={workTitle}>
-          小说名：{workTitle}
-        </h1>
-        <button
-          onClick={onOpenWorkInfo}
-          className="shrink-0 rounded-full bg-brand px-4 py-1.5 text-base font-medium text-white transition-colors hover:bg-brand-dark"
-        >
-          作品信息
-        </button>
+      <div className="absolute left-0 top-0 flex h-full max-w-[620px] items-center px-4">
+        <div className="xy-capsule-group min-w-0">
+          <div
+            className="flex min-h-9 min-w-0 max-w-[390px] items-center px-3.5 text-[0.8125rem] font-extrabold text-slate-700"
+            title={workTitle}
+          >
+            <span className="min-w-0 truncate">{workTitle}</span>
+          </div>
+          <button
+            onClick={onOpenWorkInfo}
+            className="xy-capsule-button shrink-0"
+          >
+            作品信息
+          </button>
+        </div>
       </div>
 
       <nav className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1">

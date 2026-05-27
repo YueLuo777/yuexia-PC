@@ -19,6 +19,7 @@ import { readModelSnapshot } from '@/features/models/hooks/useModels';
 import { getStatsByModel, pruneRecordsByModels, type CallRecord, useCallRecords } from '@/hooks/useCallRecords';
 import { APP_EVENTS } from '@/shared/events/appEvents';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
+import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 type SortField = 'timestamp' | 'latencyMs' | 'totalTokens';
@@ -264,19 +265,29 @@ export default function TokenUsagePage() {
                     <Filter className="h-3.5 w-3.5" />
                     <span>筛选</span>
                   </div>
-                  <select value={filterType} onChange={(event) => setFilterType(event.target.value as typeof filterType)} className="rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-sm focus:border-cyan-300">
-                    <option value="all">全部类型</option>
-                    <option value="api_test">API 测试</option>
-                    <option value="chat">对话</option>
-                    <option value="generate">生成</option>
-                    <option value="stream">流式</option>
-                  </select>
-                  <select value={filterModel} onChange={(event) => setFilterModel(event.target.value)} className="rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-sm focus:border-cyan-300">
-                    <option value="all">全部模型</option>
-                    {modelOptions.map(([id, name]) => (
-                      <option key={id} value={id}>{name}</option>
-                    ))}
-                  </select>
+                  <CapsuleSelect
+                    value={filterType}
+                    onChange={(value) => setFilterType(value as typeof filterType)}
+                    className="w-[150px]"
+                    buttonClassName="h-9 rounded-xl px-3 text-sm"
+                    options={[
+                      { value: 'all', label: '全部类型' },
+                      { value: 'api_test', label: 'API 测试' },
+                      { value: 'chat', label: '对话' },
+                      { value: 'generate', label: '生成' },
+                      { value: 'stream', label: '流式' },
+                    ]}
+                  />
+                  <CapsuleSelect
+                    value={filterModel}
+                    onChange={setFilterModel}
+                    className="w-[180px]"
+                    buttonClassName="h-9 rounded-xl px-3 text-sm"
+                    options={[
+                      { value: 'all', label: '全部模型' },
+                      ...modelOptions.map(([id, name]) => ({ value: id, label: name })),
+                    ]}
+                  />
                 </div>
               </div>
 

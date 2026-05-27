@@ -24,6 +24,7 @@ import type { Chapter, Volume, WorkbenchNovel } from '@/features/workbench/model
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
 import {
   loadNavConfig,
   normalizeNavConfig,
@@ -101,9 +102,9 @@ function ResizeHandle({ onMouseDown }: { onMouseDown: (event: ReactMouseEvent) =
   return (
     <div
       onMouseDown={onMouseDown}
-      className="group z-10 flex w-[4px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent transition-colors hover:bg-brand/30"
+      className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent"
     >
-      <div className="h-8 w-[2px] rounded-full bg-gray-300 opacity-0 transition-opacity group-hover:opacity-100" />
+      <div className="h-8 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
     </div>
   );
 }
@@ -284,10 +285,10 @@ function ScriptSidebar({
         extra={(
           <button
             onClick={onAddVolume}
-            className="rounded p-1 text-gray-400 transition-colors hover:bg-brand-light hover:text-brand"
+            className="xy-ui125-plus-button"
             title="新增卷"
           >
-            <Plus className="h-4 w-4" />
+            <Plus />
           </button>
         )}
       />
@@ -591,18 +592,13 @@ function ScriptEditorArea({
         <span className="text-xs text-gray-400">{countText(content)} 字</span>
       </div>
       <div className="flex h-8 shrink-0 items-center gap-1 border-b border-gray-100 px-3">
-        <button
-          onClick={() => setFontSize((prev) => Math.max(12, prev - 1))}
-          className="rounded border border-brand px-2 py-0.5 text-xs text-brand transition-colors hover:bg-brand-light"
-        >
-          字号-
-        </button>
-        <button
-          onClick={() => setFontSize((prev) => Math.min(24, prev + 1))}
-          className="rounded border border-brand px-2 py-0.5 text-xs text-brand transition-colors hover:bg-brand-light"
-        >
-          字号+
-        </button>
+        <FontSizeStepper
+          value={fontSize}
+          min={12}
+          max={24}
+          onChange={setFontSize}
+          ariaLabel="剧本编辑器字号"
+        />
         <button
           onClick={() => onChangeContent(normalizeEditorContent(content))}
           className="rounded border border-brand px-2 py-0.5 text-xs text-brand transition-colors hover:bg-brand-light"
@@ -1248,37 +1244,26 @@ export function ScriptEditorPage() {
             </button>
           ))}
         </div>
-        {linkedNovel ? (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">关联书名：</span>
-            <span className="max-w-[220px] truncate rounded border border-brand px-2 py-1 text-xs font-bold text-brand">
-              {linkedNovel.title}
-            </span>
-            <button
-              onClick={() => setIsLinkModalOpen(true)}
-              className="rounded border border-brand px-3 py-1 text-xs text-brand transition-colors hover:bg-brand-light"
-            >
-              更换关联
-            </button>
+        <div className="xy-capsule-group">
+          <button
+            onClick={() => setIsLinkModalOpen(true)}
+            className={`xy-capsule-button max-w-[240px] ${linkedNovel ? 'xy-active' : ''}`}
+          >
+            <Link2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="min-w-0 truncate">{linkedNovel?.title || '关联小说'}</span>
+          </button>
+          {linkedNovelId !== null && (
             <button
               onClick={() => {
                 setLinkedNovelId(null);
                 setSelectedNovelChapterId(null);
               }}
-              className="rounded border border-red-500 px-2 py-1 text-xs text-red-500 transition-colors hover:bg-red-50"
+              className="xy-capsule-button xy-danger"
             >
-              断开关联
+              取消关联
             </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setIsLinkModalOpen(true)}
-            className="flex items-center gap-1 rounded-md bg-brand px-3 py-1.5 text-xs text-white transition-colors hover:bg-brand-dark"
-          >
-            <Link2 className="h-3.5 w-3.5" />
-            关联小说
-          </button>
-        )}
+          )}
+        </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">

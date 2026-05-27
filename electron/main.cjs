@@ -1727,10 +1727,14 @@ async function readMoonfallStateFromPostgres(dataDir = DEFAULT_DATABASE_DIR) {
 }
 
 function resolveStartUrl() {
-  if (process.env.XINYUEXIA_LOAD_DIST === '1' || app.isPackaged) {
-    return `${pathToFileURL(DIST_ENTRY).href}#/dashboard`;
+  if (process.env.XINYUEXIA_URL) {
+    return process.env.XINYUEXIA_URL;
   }
-  return DEV_URL;
+  const startHash = process.env.XINYUEXIA_START_HASH || '#/dashboard';
+  if (process.env.XINYUEXIA_LOAD_DIST === '1' || app.isPackaged) {
+    return new URL(startHash, pathToFileURL(DIST_ENTRY).href).href;
+  }
+  return new URL(startHash, DEV_URL).href;
 }
 
 function parseWindowState(filePath) {
@@ -2433,6 +2437,138 @@ ipcMain.handle('model:request', async (_event, input) => {
   } finally {
     clearTimeout(timeout);
   }
+});
+
+const modelStreamControllers = new Map();
+
+function extractModelStreamParts(payload) {
+  const choices = Array.isArray(payload?.choices) ? payload.choices : [];
+  const openAiText = choices
+    .map((choice) => choice?.delta?.content ?? choice?.message?.content ?? choice?.text ?? '')
+    .join('');
+  const openAiReasoning = choices
+    .map((choice) => (
+      choice?.delta?.reasoning_content
+      ?? choice?.delta?.reasoning
+      ?? choice?.delta?.reasoning_text
+      ?? choice?.delta?.thinking
+      ?? ''
+    ))
+    .join('');
+  if (openAiText || openAiReasoning) {
+    return { content: openAiText, reasoning: openAiReasoning };
+  }
+
+  if (payload?.type === 'content_block_delta' && typeof payload?.delta?.text === 'string') {
+    return { content: payload.delta.text, reasoning: '' };
+  }
+  if (
+    payload?.type === 'content_block_delta'
+    && (payload?.delta?.type === 'thinking_delta' || typeof payload?.delta?.thinking === 'string')
+  ) {
+    return { content: '', reasoning: payload.delta.thinking ?? '' };
+  }
+  if (payload?.type === 'message_delta' && typeof payload?.delta?.text === 'string') {
+    return { content: payload.delta.text, reasoning: '' };
+  }
+  if (typeof payload?.reasoning_content === 'string') return { content: '', reasoning: payload.reasoning_content };
+  if (typeof payload?.reasoning === 'string') return { content: '', reasoning: payload.reasoning };
+  if (typeof payload?.completion === 'string') return { content: payload.completion, reasoning: '' };
+  if (typeof payload?.content === 'string') return { content: payload.content, reasoning: '' };
+  return { content: '', reasoning: '' };
+}
+
+function consumeModelStreamBuffer(buffer, sendChunk) {
+  const lines = buffer.split(/\r?\n/);
+  const rest = lines.pop() ?? '';
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line.startsWith('data:')) continue;
+    const dataLine = line.slice(5).trim();
+    if (!dataLine || dataLine === '[DONE]') continue;
+    try {
+      const parts = extractModelStreamParts(JSON.parse(dataLine));
+      if (parts.reasoning) sendChunk(parts.reasoning, 'reasoning');
+      if (parts.content) sendChunk(parts.content, 'content');
+    } catch {
+      // Ignore malformed event fragments and keep reading the stream.
+    }
+  }
+  return rest;
+}
+
+ipcMain.handle('model:stream', async (event, input) => {
+  const request = normalizeModelRequestInput(input);
+  if (!request.ok) {
+    return { ok: false, status: 400, text: request.message };
+  }
+
+  const requestId = typeof input?.requestId === 'string' && input.requestId ? input.requestId : `model-stream-${Date.now()}`;
+  const channel = `model:stream:${requestId}`;
+  const timeoutMs = Number.isFinite(Number(input?.timeoutMs)) ? Math.max(1000, Number(input.timeoutMs)) : 180000;
+  const controller = new AbortController();
+  modelStreamControllers.set(requestId, controller);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let fullText = '';
+
+  const sendChunk = (text, chunkType = 'content') => {
+    if (chunkType === 'content') fullText += text;
+    event.sender.send(channel, { type: 'chunk', chunkType, text });
+  };
+
+  try {
+    const response = await fetch(request.endpoint, {
+      method: 'POST',
+      headers: request.headers,
+      body: request.body,
+      signal: controller.signal,
+    });
+
+    if (!response.ok || !response.body) {
+      return {
+        ok: response.ok,
+        status: response.status,
+        text: await response.text(),
+      };
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      buffer = consumeModelStreamBuffer(buffer, sendChunk);
+    }
+    buffer += decoder.decode();
+    consumeModelStreamBuffer(`${buffer}\n`, sendChunk);
+
+    return {
+      ok: true,
+      status: response.status,
+      text: fullText,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: error instanceof Error && error.name === 'AbortError' ? 408 : 0,
+      text: error instanceof Error && error.name === 'AbortError'
+        ? `Model request timed out after ${timeoutMs}ms.`
+        : error instanceof Error ? error.message : 'Model stream request failed.',
+    };
+  } finally {
+    clearTimeout(timeout);
+    modelStreamControllers.delete(requestId);
+  }
+});
+
+ipcMain.handle('model:cancel-stream', async (_event, requestId) => {
+  const controller = modelStreamControllers.get(requestId);
+  if (!controller) return false;
+  controller.abort();
+  modelStreamControllers.delete(requestId);
+  return true;
 });
 
 ipcMain.handle('database:ensure-default-dir', async () => {

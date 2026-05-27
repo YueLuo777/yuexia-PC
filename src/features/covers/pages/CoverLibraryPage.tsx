@@ -16,7 +16,7 @@ export function CoverLibraryPage({ embedded = false }: CoverLibraryPageProps = {
       navigate(-1);
       return;
     }
-    navigate('/materials');
+    navigate('/library');
   };
 
   return (
@@ -31,7 +31,7 @@ export function CoverLibraryPage({ embedded = false }: CoverLibraryPageProps = {
             <button
               onClick={handleBack}
               className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
-              title="返回资料库"
+              title="返回库"
             >
               <ArrowLeft className="h-4 w-4" />
             </button>

@@ -4,14 +4,14 @@ import { useNavigate } from 'react-router-dom';
 
 import { readModelSnapshot } from '@/features/models/hooks/useModels';
 import type { ModelItem } from '@/features/models/model/modelTypes';
-import { callModel } from '@/features/models/services/callModel';
+import { callModelStream } from '@/features/models/services/callModel';
 import { readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 import { APP_EVENTS } from '@/shared/events/appEvents';
 
 type TestStatus = 'idle' | 'running' | 'success' | 'failed' | 'aborted';
-type ChainId = 'brainstorm' | 'outline' | 'detailOutline' | 'summary' | 'extract' | 'continue' | 'review' | 'update' | 'title';
+type ChainId = 'brainstorm' | 'brainstormOutline' | 'outline' | 'detailOutline' | 'summary' | 'extract' | 'continue' | 'review' | 'update' | 'title';
 
 interface ChainConfig {
   id: ChainId;
@@ -41,6 +41,50 @@ function parseSettingBody(content: string) {
   }
 }
 
+function parseSettingRaw(content: string) {
+  try {
+    return JSON.parse(content) as { type?: string; body?: string };
+  } catch {
+    return { body: content };
+  }
+}
+
+function parseAiChatTurns(content: string) {
+  const turns: Array<{ role: 'user' | 'ai'; content: string }> = [];
+  const markerPattern = /\[\[(USER|AI)\]\]\n/g;
+  const matches = [...content.matchAll(markerPattern)];
+  if (matches.length === 0) {
+    if (content.trim()) turns.push({ role: 'ai', content: content.trim() });
+    return turns;
+  }
+  matches.forEach((match, index) => {
+    const start = (match.index ?? 0) + match[0].length;
+    const end = index + 1 < matches.length ? matches[index + 1].index ?? content.length : content.length;
+    const text = content.slice(start, end).trim();
+    if (!text) return;
+    turns.push({ role: match[1] === 'USER' ? 'user' : 'ai', content: text });
+  });
+  return turns;
+}
+
+function stripThinking(content: string) {
+  return content
+    .replace(/\[\[THINKING seconds=\d+ status=(?:thinking|done)\]\]\n[\s\S]*?\n\[\[\/THINKING\]\]\n?/g, '')
+    .trim();
+}
+
+function getLatestUsefulAiText(content: string) {
+  const turns = parseAiChatTurns(content);
+  const latestAi = [...turns].reverse().find((turn) => turn.role === 'ai' && turn.content.trim());
+  if (latestAi) return stripThinking(latestAi.content);
+  return stripThinking(content);
+}
+
+function getBrainstormEntryBody(entry: WorkbenchLibraryEntry) {
+  const parsed = parseSettingRaw(entry.content);
+  return getLatestUsefulAiText(parsed.body || entry.content);
+}
+
 function readLocalStorageJson<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -50,25 +94,35 @@ function readLocalStorageJson<T>(key: string, fallback: T): T {
   }
 }
 
-function readLibraryEntriesByTab(tabs: string[], limit = 8) {
+function readStoredLibraryEntries() {
   const matched: WorkbenchLibraryEntry[] = [];
   try {
     for (let index = 0; index < localStorage.length; index += 1) {
       const key = localStorage.key(index) ?? '';
       if (!key.startsWith('xinyuexia_workbench_settings_') && !key.startsWith('xinyuexia_workbench_outline_')) continue;
-      const entries = readLocalStorageJson<WorkbenchLibraryEntry[]>(key, []);
-      entries.forEach((entry) => {
-        if (tabs.includes(entry.tab)) matched.push(entry);
-      });
+      matched.push(...readLocalStorageJson<WorkbenchLibraryEntry[]>(key, []));
     }
   } catch {
-    return '';
+    return [];
   }
-  return matched
-    .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
+  return matched.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+}
+
+function readLibraryEntriesByTab(tabs: string[], limit = 8) {
+  return readStoredLibraryEntries()
+    .filter((entry) => tabs.includes(entry.tab))
     .slice(0, limit)
-    .map((entry) => `【${entry.tab}】${entry.title}\n${parseSettingBody(entry.content).slice(0, 800)}`)
+    .map((entry) => {
+      const body = entry.tab === '脑洞' ? getBrainstormEntryBody(entry) : parseSettingBody(entry.content);
+      return `【${entry.tab}】${entry.title}\n${body.slice(0, 800)}`;
+    })
     .join('\n\n');
+}
+
+function readLatestBrainstormForOutlineTest() {
+  const entry = readStoredLibraryEntries().find((item) => item.tab === '脑洞');
+  if (!entry) return '';
+  return getBrainstormEntryBody(entry);
 }
 
 function readChapterDraftContext() {
@@ -100,10 +154,20 @@ function buildChainConfigs(): ChainConfig[] {
       readContext: () => readLibraryEntriesByTab(['脑洞'], 5),
     },
     {
+      id: 'brainstormOutline',
+      group: '作品设定',
+      title: '脑洞关联到大纲',
+      promptCategory: '设定',
+      description: '模拟真实大纲生成：读取设定提示词、关联最新脑洞，并展示最终发给 AI 的隐藏 userContent。',
+      defaultInput: '请根据关联脑洞扩写成可导入设定的 Markdown，一级标题用 # 分类，二级标题用 ## 设定名。',
+      contextLabel: '已读取最新关联脑洞',
+      readContext: () => readLatestBrainstormForOutlineTest(),
+    },
+    {
       id: 'outline',
       group: '作品设定',
       title: '大纲设定',
-      promptCategory: '大纲',
+      promptCategory: '设定',
       description: '读取脑洞、角色和已有大纲，让 AI 整理成可放入分类的大纲设定。',
       defaultInput: '请根据这些脑洞整理出小说主线、核心设定、等级体系和伏笔。',
       contextLabel: '已读取脑洞/角色/大纲',
@@ -315,7 +379,7 @@ export function BrainstormAiChainTestPage() {
       pushLog(`失败：没有读取到“${activeChain.promptCategory}”提示词。`);
       return;
     }
-    if (!input.trim()) {
+    if (!input.trim() && activeChain.id !== 'brainstormOutline') {
       setStartedAt(null);
       setStatus('failed');
       setOutput('【错误】请输入测试内容。');
@@ -328,10 +392,20 @@ export function BrainstormAiChainTestPage() {
     requestSeqRef.current = requestSeq;
     abortRef.current = controller;
     const contextText = context.trim();
-    const userContent = contextText
-      ? `【测试上下文】\n${contextText}\n\n【用户指令】\n${input.trim()}`
-      : input.trim();
     const promptContent = selectedPrompt.content.trim();
+    const isBrainstormOutlineChain = activeChain.id === 'brainstormOutline';
+    const userContent = isBrainstormOutlineChain
+      ? [
+          promptContent,
+          contextText,
+          ['【用户要求】', input.trim() || '（无额外要求）'].join('\n'),
+        ].filter(Boolean).join('\n\n')
+      : contextText
+        ? `【测试上下文】\n${contextText}\n\n【用户指令】\n${input.trim()}`
+        : input.trim();
+    const modelPrompt = isBrainstormOutlineChain
+      ? ''
+      : promptContent;
 
     setRequestPreview([
       `请求编号：${requestSeq}`,
@@ -343,7 +417,7 @@ export function BrainstormAiChainTestPage() {
       `提示词：${selectedPrompt.name}`,
       '',
       '【发送给 AI 的 system prompt】',
-      promptContent || '空提示词',
+      modelPrompt || '空提示词',
       '',
       '【发送给 AI 的用户内容】',
       userContent,
@@ -352,18 +426,25 @@ export function BrainstormAiChainTestPage() {
     pushLog(`模型：${selectedModel.name}`);
     pushLog(`提示词：${selectedPrompt.name}`);
 
+    const timeoutMs = 180000;
     const timeoutId = window.setTimeout(() => {
       controller.abort();
-      pushLog(`#${requestSeq} 已触发 60 秒超时保护。`);
-    }, 60000);
+      pushLog(`#${requestSeq} 已触发 180 秒超时保护。`);
+    }, timeoutMs);
 
     try {
-      const content = await callModel({
+      let streamedContent = '';
+      const content = await callModelStream({
         model: selectedModel,
-        prompt: promptContent,
+        prompt: modelPrompt,
         userContent,
         recordType: 'generate',
         signal: controller.signal,
+        timeoutMs,
+        onChunk: (chunk) => {
+          streamedContent += chunk;
+          setOutput(streamedContent);
+        },
       });
       if (requestSeqRef.current !== requestSeq) return;
       const usedMs = Math.round(performance.now() - start);
@@ -427,7 +508,7 @@ export function BrainstormAiChainTestPage() {
         </div>
         <div className="flex gap-2">
           <button onClick={() => navigate('/test-collection')} className="h-9 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 hover:bg-slate-50">
-            返回其他测试
+            返回测试
           </button>
           <button onClick={() => navigate('/workbench')} className="h-9 rounded-xl bg-brand px-4 text-sm font-bold text-white hover:bg-brand-dark">
             打开作品编辑器
