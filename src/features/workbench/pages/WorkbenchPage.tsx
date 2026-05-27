@@ -8,7 +8,7 @@ import { ChapterSidebar } from '@/features/workbench/components/ChapterSidebar';
 import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
 import { PublishedSidebar } from '@/features/workbench/components/PublishedSidebar';
 import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
-import { WorkbenchAIPanel } from '@/features/workbench/components/WorkbenchAIPanel';
+import { WorkbenchAIPanel, type WorkbenchLinkedContextItem, type WorkbenchLinkedContextSource } from '@/features/workbench/components/WorkbenchAIPanel';
 import { WorkbenchHeader } from '@/features/workbench/components/WorkbenchHeader';
 import { WorkbenchLibraryPanel } from '@/features/workbench/components/WorkbenchLibraryPanel';
 import { WorkbenchModal } from '@/features/workbench/components/WorkbenchModal';
@@ -33,7 +33,24 @@ type ChapterExportFormat = 'txt' | 'doc';
 type PendingPublish = { type: 'single'; volumeId: number; chapterId: number; title: string };
 type MemoScope = 'global' | 'work';
 type MemoItem = { id: string; title: string; content: string; updatedAt: string };
-type ContextTab = '角色' | '大纲' | '细纲' | '概要';
+type ContextLibraryTab = 'chapterSummary' | 'other';
+
+interface ContextColumn {
+  source: WorkbenchLinkedContextSource;
+  title: string;
+  subtitle: string;
+  items: WorkbenchLinkedContextItem[];
+}
+
+interface ContextChapterPair {
+  volumeId: number;
+  volumeName: string;
+  chapterId: number;
+  serialNumber: number;
+  title: string;
+  chapterItem: WorkbenchLinkedContextItem;
+  summaryItem: WorkbenchLinkedContextItem | null;
+}
 interface ChapterExportItem {
   volumeId: number;
   volumeName: string;
@@ -44,6 +61,9 @@ interface ChapterExportItem {
 }
 const AI_PANEL_MIN_WIDTH = 430;
 const AI_PANEL_DEFAULT_WIDTH = 430;
+const CHAPTER_SIDEBAR_MIN_WIDTH = 200;
+const CHAPTER_SIDEBAR_MAX_WIDTH = 420;
+const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 300;
 const PUBLISH_CONFIRM_KEY = 'xinyuexia_workbench_publish_confirm';
 const GLOBAL_NOTES_KEY = 'xinyuexia_workbench_notes';
 const WORK_NOTES_KEY_PREFIX = 'xinyuexia_workbench_notes_';
@@ -79,6 +99,11 @@ function normalizeAiPanelWidth(value: number) {
   const minWidth = Math.min(AI_PANEL_MIN_WIDTH, maxWidth);
   if (!Number.isFinite(value)) return Math.min(AI_PANEL_DEFAULT_WIDTH, maxWidth);
   return Math.max(minWidth, Math.min(maxWidth, value));
+}
+
+function normalizeChapterSidebarWidth(value: number) {
+  if (!Number.isFinite(value)) return CHAPTER_SIDEBAR_DEFAULT_WIDTH;
+  return Math.max(CHAPTER_SIDEBAR_MIN_WIDTH, Math.min(CHAPTER_SIDEBAR_MAX_WIDTH, value));
 }
 
 function replaceAt(text: string, index: number, search: string, replacement: string) {
@@ -183,6 +208,220 @@ function createMemoItem(scope: MemoScope, index: number, content = ''): MemoItem
     content,
     updatedAt: formatMemoTime(),
   };
+}
+
+function normalizeContextSource(tab: string): WorkbenchLinkedContextSource | null {
+  const value = tab.trim();
+  if (!value) return null;
+  if (/角色|角色库|瑙掕壊/.test(value)) return 'role';
+  if (/概要|梗概|章节概要|卷概要|姒傝|绔犺妭|鍗锋/.test(value)) return 'summary';
+  if (/设定|设定库|大纲|细纲|澶х翰|缁嗙翰|璁惧畾/.test(value)) return 'setting';
+  return null;
+}
+
+function getContextWordCount(text: string) {
+  return text.replace(/\s/g, '').length;
+}
+
+function getContextEntryGroup(tab: string, type?: string) {
+  return type?.trim() || tab.trim() || '未分类';
+}
+
+function getContextEntrySerial(title: string) {
+  const chapterMatch = title.match(/第\s*(\d+)\s*章/);
+  if (chapterMatch?.[1]) return Number.parseInt(chapterMatch[1], 10);
+  const numberMatch = title.match(/\d+/);
+  return numberMatch?.[0] ? Number.parseInt(numberMatch[0], 10) : null;
+}
+
+function ContextChapterSummaryList({
+  rows,
+  selectedIds,
+  searchText,
+  onSearchChange,
+  onToggleChapter,
+  onPickItem,
+  onSelectRecent,
+  onClear,
+}: {
+  rows: ContextChapterPair[];
+  selectedIds: Set<string>;
+  searchText: string;
+  onSearchChange: (value: string) => void;
+  onToggleChapter: (row: ContextChapterPair) => void;
+  onPickItem: (item: WorkbenchLinkedContextItem) => void;
+  onSelectRecent: (count: number) => void;
+  onClear: () => void;
+}) {
+  const normalizedSearch = searchText.trim().toLowerCase();
+  const filteredRows = normalizedSearch
+    ? rows.filter((row) => (
+      `${row.serialNumber} ${row.title} ${row.volumeName} ${row.chapterItem.content} ${row.summaryItem?.content ?? ''}`
+        .toLowerCase()
+        .includes(normalizedSearch)
+    ))
+    : rows;
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex shrink-0 gap-2">
+        <input
+          value={searchText}
+          onChange={(event) => onSearchChange(event.target.value)}
+          placeholder="搜索章节标题..."
+          className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-[#08AACE]"
+        />
+        <button type="button" onClick={onClear} className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 hover:bg-slate-50">
+          清空
+        </button>
+      </div>
+      <div className="mt-4 flex shrink-0 flex-wrap gap-2">
+        {[3, 5, 10].map((count) => (
+          <button key={count} type="button" onClick={() => onSelectRecent(count)} className="h-9 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 hover:border-[#08AACE] hover:text-[#08AACE]">
+            最近 {count} 章
+          </button>
+        ))}
+        <button type="button" onClick={() => onSelectRecent(10)} className="h-9 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 hover:border-[#08AACE] hover:text-[#08AACE]">
+          增选 10 章
+        </button>
+      </div>
+      <div className="editor-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto rounded-2xl border border-slate-100 bg-white">
+        {filteredRows.length === 0 ? (
+          <div className="flex h-full min-h-[260px] items-center justify-center text-sm font-bold text-slate-300">
+            没有匹配到章节
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-50">
+            {filteredRows.map((row) => {
+              const selectedChapter = selectedIds.has(row.chapterItem.id);
+              const selectedSummary = row.summaryItem ? selectedIds.has(row.summaryItem.id) : false;
+              const checked = selectedChapter || selectedSummary;
+              const activeItem = selectedSummary && row.summaryItem ? row.summaryItem : row.chapterItem;
+              return (
+                <div key={row.chapterId} className={`grid grid-cols-[36px_minmax(0,1fr)_88px_168px] items-center gap-3 px-4 py-3 text-sm ${checked ? 'bg-sky-50/45' : 'bg-white'}`}>
+                  <button
+                    type="button"
+                    onClick={() => onToggleChapter(row)}
+                    className={`grid h-5 w-5 place-items-center rounded-md border text-xs font-black ${
+                      checked ? 'border-[#08AACE] bg-[#08AACE] text-white' : 'border-slate-300 bg-white text-transparent'
+                    }`}
+                    aria-label={checked ? '取消关联章节' : '关联章节'}
+                  >
+                    ✓
+                  </button>
+                  <div className="min-w-0">
+                    <div className="truncate text-base font-black text-slate-900">
+                      第{row.serialNumber}章 {row.title || '未命名章节'}
+                    </div>
+                    <div className="mt-1 truncate text-xs font-bold text-slate-400">{row.volumeName}</div>
+                  </div>
+                  <div className="rounded-md bg-slate-50 px-2 py-1 text-center text-xs font-black text-slate-600">
+                    {getContextWordCount(activeItem.content)}字
+                  </div>
+                  <div className="flex items-center justify-end gap-3 text-sm font-bold">
+                    <label className="flex cursor-pointer items-center gap-1.5 text-slate-700">
+                      <input
+                        type="radio"
+                        checked={selectedChapter || (!checked && !selectedSummary)}
+                        onChange={() => onPickItem(row.chapterItem)}
+                        className="h-4 w-4 text-[#08AACE] focus:ring-[#08AACE]/20"
+                      />
+                      正文
+                    </label>
+                    <label className={`flex items-center gap-1.5 ${row.summaryItem ? 'cursor-pointer text-slate-700' : 'cursor-not-allowed text-slate-300'}`}>
+                      <input
+                        type="radio"
+                        disabled={!row.summaryItem}
+                        checked={selectedSummary}
+                        onChange={() => row.summaryItem && onPickItem(row.summaryItem)}
+                        className="h-4 w-4 text-[#08AACE] focus:ring-[#08AACE]/20 disabled:border-slate-200"
+                      />
+                      概要
+                    </label>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ContextSelectionColumn({
+  column,
+  selectedIds,
+  onToggle,
+}: {
+  column: ContextColumn;
+  selectedIds: Set<string>;
+  onToggle: (id: string) => void;
+}) {
+  const groupedItems = new Map<string, WorkbenchLinkedContextItem[]>();
+  column.items.forEach((item) => {
+    const group = item.group || '未分类';
+    groupedItems.set(group, [...(groupedItems.get(group) ?? []), item]);
+  });
+
+  return (
+    <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-100 bg-white">
+      <div className="border-b border-slate-100 px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-black text-slate-900">{column.title}</h3>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">{column.items.length}</span>
+        </div>
+        <p className="mt-0.5 text-[11px] font-bold text-slate-400">{column.subtitle}</p>
+      </div>
+      <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
+        {column.items.length === 0 ? (
+          <div className="flex h-44 items-center justify-center rounded-xl border border-dashed border-slate-200 text-sm font-bold text-slate-300">
+            暂无可关联内容
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {Array.from(groupedItems.entries()).map(([group, items]) => (
+              <div key={`${column.source}:${group}`}>
+                <div className="mb-1.5 flex items-center justify-between rounded-md bg-slate-50 px-2 py-1 text-[11px] font-black text-slate-500">
+                  <span className="truncate">{group}</span>
+                  <span>{items.length}</span>
+                </div>
+                <div className="space-y-1.5">
+                  {items.map((item) => {
+                    const checked = selectedIds.has(item.id);
+                    return (
+                      <label
+                        key={item.id}
+                        className={`block cursor-pointer rounded-lg border p-2 transition-colors ${
+                          checked ? 'border-[#08AACE] bg-sky-50/60' : 'border-slate-100 bg-white hover:border-sky-100 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-start gap-1.5">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => onToggle(item.id)}
+                            className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-[#08AACE] focus:ring-[#08AACE]/20"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-xs font-black text-slate-900">{item.title}</div>
+                            <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-[11px] font-semibold leading-4 text-slate-500">
+                              {item.content || '暂无内容'}
+                            </p>
+                            <div className="mt-2 text-[11px] font-black text-slate-400">{getContextWordCount(item.content)}字</div>
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }
 
 function readMemoItems(listKey: string, legacyKey: string, scope: MemoScope) {
@@ -731,7 +970,10 @@ export function WorkbenchPage() {
   const [activeModal, setActiveModal] = useState<ModalKey | null>(null);
   const [managementModal, setManagementModal] = useState<ManagementModalKey | null>(null);
   const [isContextLibraryOpen, setIsContextLibraryOpen] = useState(false);
-  const [contextTab, setContextTab] = useState<ContextTab>('角色');
+  const [contextLibraryTab, setContextLibraryTab] = useState<ContextLibraryTab>('chapterSummary');
+  const [contextSearchText, setContextSearchText] = useState('');
+  const [draftContextIds, setDraftContextIds] = useState<Set<string>>(() => new Set());
+  const [linkedContextItems, setLinkedContextItems] = useState<WorkbenchLinkedContextItem[]>([]);
   const [publishConfirm, setPublishConfirm] = useState(() => localStorage.getItem(PUBLISH_CONFIRM_KEY) === 'true');
   const [pendingPublish, setPendingPublish] = useState<PendingPublish | null>(null);
   const [globalNotes, setGlobalNotes] = useState<MemoItem[]>(() => readMemoItems(GLOBAL_NOTES_LIST_KEY, GLOBAL_NOTES_KEY, 'global'));
@@ -747,7 +989,12 @@ export function WorkbenchPage() {
     const saved = Number.parseInt(localStorage.getItem('xinyuexia_ai_panel_width') ?? String(AI_PANEL_DEFAULT_WIDTH), 10);
     return normalizeAiPanelWidth(saved);
   });
+  const [chapterSidebarWidth, setChapterSidebarWidth] = useState(() => {
+    const saved = Number.parseInt(localStorage.getItem('xinyuexia_chapter_sidebar_width') ?? String(CHAPTER_SIDEBAR_DEFAULT_WIDTH), 10);
+    return normalizeChapterSidebarWidth(saved);
+  });
   const [isDraggingPanel, setIsDraggingPanel] = useState(false);
+  const [isDraggingChapterSidebar, setIsDraggingChapterSidebar] = useState(false);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(290);
   const { tabs, activeTabId } = useWorkspaceTabs();
@@ -775,6 +1022,7 @@ export function WorkbenchPage() {
     permanentDeleteChapter,
     saveContent,
     updateChapterContents,
+    updateNovelChapterContent,
     getChapterWordCount,
     setCurrentNovel,
   } = useWorkbenchData();
@@ -798,6 +1046,10 @@ export function WorkbenchPage() {
   useEffect(() => {
     localStorage.setItem('xinyuexia_ai_panel_width', String(aiPanelWidth));
   }, [aiPanelWidth]);
+
+  useEffect(() => {
+    localStorage.setItem('xinyuexia_chapter_sidebar_width', String(chapterSidebarWidth));
+  }, [chapterSidebarWidth]);
 
   useEffect(() => {
     const activeTab = tabs.find((tab) => tab.id === activeTabId);
@@ -865,6 +1117,15 @@ export function WorkbenchPage() {
     document.body.style.userSelect = 'none';
   };
 
+  const handleChapterSidebarDragStart = (event: ReactMouseEvent) => {
+    event.preventDefault();
+    dragStartX.current = event.clientX;
+    dragStartWidth.current = chapterSidebarWidth;
+    setIsDraggingChapterSidebar(true);
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+  };
+
   useEffect(() => {
     if (!isDraggingPanel) return;
 
@@ -886,6 +1147,28 @@ export function WorkbenchPage() {
       document.removeEventListener('mouseup', handleUp);
     };
   }, [isDraggingPanel, aiPanelWidth]);
+
+  useEffect(() => {
+    if (!isDraggingChapterSidebar) return;
+
+    const handleMove = (event: MouseEvent) => {
+      const deltaX = event.clientX - dragStartX.current;
+      setChapterSidebarWidth(normalizeChapterSidebarWidth(dragStartWidth.current + deltaX));
+    };
+
+    const handleUp = () => {
+      setIsDraggingChapterSidebar(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleUp);
+    };
+  }, [isDraggingChapterSidebar]);
 
   if (!currentNovel) {
     return (
@@ -914,16 +1197,132 @@ export function WorkbenchPage() {
     : workNotes.find((note) => note.id === selectedMemo?.id) ?? null;
   const settingsStorageKey = `xinyuexia_workbench_settings_${currentNovel.id}`;
   const outlineStorageKey = `xinyuexia_workbench_outline_${currentNovel.id}`;
-  const contextTabs: ContextTab[] = ['角色', '大纲', '细纲', '概要'];
-  const normalizeContextTab = (tab: string) => (tab === '设定' || tab === '设定库' ? '大纲' : tab);
-  const contextEntries = (() => {
-    const settingsEntries = readWorkbenchLibraryEntries(settingsStorageKey);
-    const outlineEntries = readWorkbenchLibraryEntries(outlineStorageKey);
-    if (contextTab === '概要') {
-      return outlineEntries.filter((entry) => entry.tab === '章节概要' || entry.tab === '卷概要');
-    }
-    return settingsEntries.filter((entry) => normalizeContextTab(entry.tab) === contextTab);
-  })();
+  const settingsEntries = readWorkbenchLibraryEntries(settingsStorageKey);
+  const outlineEntries = readWorkbenchLibraryEntries(outlineStorageKey);
+  const settingContextItems: WorkbenchLinkedContextItem[] = settingsEntries
+    .filter((entry) => normalizeContextSource(entry.tab) === 'setting')
+    .map((entry) => ({
+      id: `setting:${entry.id}`,
+      source: 'setting',
+      group: getContextEntryGroup(entry.tab, entry.type),
+      title: entry.title || '未命名设定',
+      content: entry.content || '',
+    }));
+  const roleContextItems: WorkbenchLinkedContextItem[] = settingsEntries
+    .filter((entry) => normalizeContextSource(entry.tab) === 'role')
+    .map((entry) => ({
+      id: `role:${entry.id}`,
+      source: 'role',
+      group: getContextEntryGroup(entry.tab, entry.type),
+      title: entry.title || '未命名角色',
+      content: entry.content || '',
+    }));
+  const summaryContextItems: WorkbenchLinkedContextItem[] = outlineEntries
+    .filter((entry) => normalizeContextSource(entry.tab) === 'summary')
+    .map((entry) => ({
+      id: `summary:${entry.id}`,
+      source: 'summary',
+      group: getContextEntryGroup(entry.tab, entry.type),
+      title: entry.title || '未命名梗概',
+      content: entry.content || '',
+    }));
+  const chapterContextItems: WorkbenchLinkedContextItem[] = volumes.flatMap((volume) => (
+    volume.chapters.map((chapter) => ({
+      id: `chapter:${chapter.id}`,
+      source: 'chapter' as const,
+      group: volume.name,
+      title: chapter.title || `第${chapter.serialNumber}章`,
+      content: selectedChapter?.chapter.id === chapter.id ? editorContent : readChapterContent(currentNovel.id, chapter.id),
+    }))
+  ));
+  const summaryItemBySerial = new Map<number, WorkbenchLinkedContextItem>();
+  summaryContextItems.forEach((item) => {
+    const serial = getContextEntrySerial(item.title);
+    if (serial && !summaryItemBySerial.has(serial)) summaryItemBySerial.set(serial, item);
+  });
+  const contextChapterRows: ContextChapterPair[] = volumes.flatMap((volume) => (
+    [...volume.chapters]
+      .sort((a, b) => b.serialNumber - a.serialNumber)
+      .map((chapter) => {
+        const chapterItem = chapterContextItems.find((item) => item.id === `chapter:${chapter.id}`) ?? {
+          id: `chapter:${chapter.id}`,
+          source: 'chapter' as const,
+          group: volume.name,
+          title: chapter.title || `第${chapter.serialNumber}章`,
+          content: selectedChapter?.chapter.id === chapter.id ? editorContent : readChapterContent(currentNovel.id, chapter.id),
+        };
+        return {
+          volumeId: volume.id,
+          volumeName: volume.name,
+          chapterId: chapter.id,
+          serialNumber: chapter.serialNumber,
+          title: chapter.title,
+          chapterItem,
+          summaryItem: summaryItemBySerial.get(chapter.serialNumber) ?? null,
+        };
+      })
+  )).sort((a, b) => b.serialNumber - a.serialNumber);
+  const otherContextColumns: ContextColumn[] = [
+    { source: 'setting', title: '设定', subtitle: '读取大纲设定中的设定分类和卡片', items: settingContextItems },
+    { source: 'role', title: '角色', subtitle: '读取大纲设定中的角色分类和卡片', items: roleContextItems },
+  ];
+  const allContextItems = [...chapterContextItems, ...summaryContextItems, ...settingContextItems, ...roleContextItems];
+  const selectedDraftContextItems = allContextItems.filter((item) => draftContextIds.has(item.id));
+  const draftContextWordCount = selectedDraftContextItems.reduce((sum, item) => sum + getContextWordCount(item.content), 0);
+
+  const openContextLibrary = () => {
+    setDraftContextIds(new Set(linkedContextItems.map((item) => item.id)));
+    setContextLibraryTab('chapterSummary');
+    setIsContextLibraryOpen(true);
+  };
+
+  const toggleDraftContext = (id: string) => {
+    setDraftContextIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const pickDraftContextItem = (item: WorkbenchLinkedContextItem, siblingId?: string | null) => {
+    setDraftContextIds((current) => {
+      const next = new Set(current);
+      if (siblingId) next.delete(siblingId);
+      next.add(item.id);
+      return next;
+    });
+  };
+
+  const toggleChapterContextRow = (row: ContextChapterPair) => {
+    setDraftContextIds((current) => {
+      const next = new Set(current);
+      const rowIds = [row.chapterItem.id, row.summaryItem?.id].filter(Boolean) as string[];
+      const selected = rowIds.some((id) => next.has(id));
+      rowIds.forEach((id) => next.delete(id));
+      if (!selected) next.add(row.chapterItem.id);
+      return next;
+    });
+  };
+
+  const pickChapterContextItem = (row: ContextChapterPair, item: WorkbenchLinkedContextItem) => {
+    const siblingId = item.id === row.chapterItem.id ? row.summaryItem?.id : row.chapterItem.id;
+    pickDraftContextItem(item, siblingId);
+  };
+
+  const selectRecentChapterContexts = (count: number) => {
+    const rows = contextChapterRows.slice(0, count);
+    setDraftContextIds((current) => {
+      const next = new Set(current);
+      rows.forEach((row) => next.add(row.chapterItem.id));
+      return next;
+    });
+  };
+
+  const confirmContextLibrary = () => {
+    setLinkedContextItems(selectedDraftContextItems);
+    setIsContextLibraryOpen(false);
+  };
 
   const selectMemo = (scope: MemoScope, id: string) => setSelectedMemo({ scope, id });
 
@@ -1116,6 +1515,7 @@ export function WorkbenchPage() {
       <div className="flex flex-1 overflow-hidden">
         <ChapterSidebar
           volumes={volumes}
+          width={chapterSidebarWidth}
           sortAsc={sortAsc}
           recycledCount={recycledChapters.length}
           workType={currentNovel.type}
@@ -1144,12 +1544,26 @@ export function WorkbenchPage() {
           />
         )}
 
+        <div
+          className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent"
+          onMouseDown={handleChapterSidebarDragStart}
+          title="拖拽调整章节栏宽度"
+        >
+          <div className="h-full w-px rounded-full bg-[#08B3D9] opacity-0 transition-opacity group-hover:opacity-70" />
+        </div>
+
         <ChapterEditor
           chapter={selectedChapter?.chapter ?? null}
           volumeName={selectedVolumeName}
           content={editorContent}
           lastSavedAt={lastSavedAt}
           allChapters={volumes.flatMap((volume) => volume.chapters)}
+          settingsStorageKey={settingsStorageKey}
+          outlineStorageKey={outlineStorageKey}
+          getChapterContent={(chapterId) => (
+            selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
+          )}
+          onUpdateChapterContent={(chapterId, nextContent) => updateNovelChapterContent(currentNovel.id, chapterId, nextContent)}
           onRenameChapter={renameChapter}
           onChangeContent={saveContent}
           onUpdateSerialNumber={updateChapterSerialNumber}
@@ -1179,12 +1593,14 @@ export function WorkbenchPage() {
             activeTool="ai"
             workId={currentNovel.id}
             selectedChapterContent={editorContent}
+            linkedContextItems={linkedContextItems}
             onReplaceContent={replaceEditorContent}
             onUndoReplace={undoReplaceEditorContent}
             canUndoReplace={canUndoReplace}
             onOpenModelManage={() => setManagementModal('models')}
             onOpenAgentManage={() => setManagementModal('agents')}
-            onOpenContextLibrary={() => setIsContextLibraryOpen(true)}
+            onOpenContextLibrary={openContextLibrary}
+            onClearLinkedContext={() => setLinkedContextItems([])}
           />
         </aside>
       </div>
@@ -1228,61 +1644,43 @@ export function WorkbenchPage() {
           title="关联上下文"
           isOpen={isContextLibraryOpen}
           onClose={() => setIsContextLibraryOpen(false)}
-          widthClass="w-[980px]"
-          heightClass="h-[78vh]"
+          widthClass="w-[min(1180px,90vw)]"
+          heightClass="h-[76vh] min-h-[420px]"
         >
-          <div className="grid min-h-0 flex-1 grid-cols-[210px_minmax(0,1fr)] bg-white">
-            <aside className="flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
-              <div className="mb-3 text-sm font-bold text-gray-700">作品设定库</div>
-              <div className="space-y-2">
-                {contextTabs.map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setContextTab(tab)}
-                    className={`flex h-10 w-full items-center justify-between rounded-xl px-3 text-left text-sm font-bold transition-colors ${
-                      contextTab === tab
-                        ? 'bg-brand text-white'
-                        : 'bg-white text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    <span>{tab}</span>
-                    <span className="text-xs opacity-75">
-                      {tab === '概要'
-                        ? readWorkbenchLibraryEntries(outlineStorageKey).filter((entry) => entry.tab === '章节概要' || entry.tab === '卷概要').length
-                        : readWorkbenchLibraryEntries(settingsStorageKey).filter((entry) => normalizeContextTab(entry.tab) === tab).length}
-                    </span>
-                  </button>
-                ))}
+          <div className="flex min-h-0 flex-1 flex-col bg-slate-50">
+            <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white px-4">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-black text-slate-900">{currentNovel.title}</div>
+                <div className="mt-0.5 text-xs font-bold text-slate-400">
+                  已选 {selectedDraftContextItems.length} 项 · {draftContextWordCount} 字
+                </div>
               </div>
-            </aside>
-            <main className="min-h-0 overflow-y-auto p-5">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-bold text-gray-900">{contextTab}</h3>
-                  <p className="mt-1 text-xs text-gray-400">暂时只读取内容，后续再配置勾选、召回权重和拼接规则。</p>
-                </div>
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-500">{contextEntries.length} 条</span>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDraftContextIds(new Set())}
+                  className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-500 hover:bg-slate-50"
+                >
+                  清空选择
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmContextLibrary}
+                  className="h-8 rounded-lg bg-[#08AACE] px-3 text-xs font-black text-white hover:bg-[#0799ba]"
+                >
+                  确认关联
+                </button>
               </div>
-              {contextEntries.length === 0 ? (
-                <div className="flex h-[360px] items-center justify-center rounded-2xl border border-dashed border-gray-200 text-sm text-gray-400">
-                  当前标签下暂无内容
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  {contextEntries.map((entry) => (
-                    <article key={entry.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                      <div className="flex items-center justify-between gap-3">
-                        <h4 className="min-w-0 truncate text-sm font-bold text-gray-900">{entry.title}</h4>
-                        <span className="shrink-0 rounded-full bg-brand-light px-2.5 py-1 text-[11px] font-bold text-brand">{normalizeContextTab(entry.tab)}</span>
-                      </div>
-                      <p className="mt-2 line-clamp-5 whitespace-pre-wrap text-sm leading-6 text-gray-500">
-                        {entry.content || '暂无内容'}
-                      </p>
-                      <div className="mt-3 text-[11px] text-gray-400">{entry.updatedAt}</div>
-                    </article>
-                  ))}
-                </div>
-              )}
+            </div>
+            <main className="grid min-h-0 flex-1 grid-cols-4 gap-3 p-3">
+              {contextColumns.map((column) => (
+                <ContextSelectionColumn
+                  key={column.source}
+                  column={column}
+                  selectedIds={draftContextIds}
+                  onToggle={toggleDraftContext}
+                />
+              ))}
             </main>
           </div>
         </WorkbenchModal>
@@ -1360,8 +1758,16 @@ export function WorkbenchPage() {
         <WorkbenchLibraryPanel storageKey={settingsStorageKey} outlineStorageKey={outlineStorageKey} tabs={['细纲']} emptyText="暂无细纲内容" volumes={volumes} scale={1.1} />
       </WorkbenchModal>
 
-      <WorkbenchModal title="概要" isOpen={activeModal === 'summaryLibrary'} onClose={() => setActiveModal(null)} widthClass="w-[1452px]" heightClass="h-[86vh] max-h-[95vh]" titleClassName="text-3xl" closeOnBackdrop={false}>
-        <WorkbenchLibraryPanel storageKey={settingsStorageKey} outlineStorageKey={outlineStorageKey} tabs={['概要']} emptyText="暂无概要内容" volumes={volumes} scale={1.1} />
+      <WorkbenchModal title="章节概要" isOpen={activeModal === 'summaryLibrary'} onClose={() => setActiveModal(null)} widthClass="w-[1452px]" heightClass="h-[86vh] max-h-[95vh]" titleClassName="text-3xl" closeOnBackdrop={false}>
+        <WorkbenchLibraryPanel
+          storageKey={settingsStorageKey}
+          outlineStorageKey={outlineStorageKey}
+          tabs={['概要']}
+          emptyText="暂无概要内容"
+          volumes={volumes}
+          getChapterContent={(chapterId) => readChapterContent(currentNovel.id, chapterId)}
+          scale={1.1}
+        />
       </WorkbenchModal>
 
       <WorkbenchModal title="备忘录" isOpen={activeModal === 'notes'} onClose={() => setActiveModal(null)} widthClass="w-[min(1180px,96vw)]">

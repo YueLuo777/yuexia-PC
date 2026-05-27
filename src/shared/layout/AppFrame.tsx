@@ -597,6 +597,7 @@ export function AppFrame({ children }: AppFrameProps) {
         const direction = event.target.dataset.globalModalResizeDirection as ResizeState['direction'] | undefined;
         const resizeDirection = direction ?? 'bottom-right';
         applyFixedPosition(dialog, rect.left, rect.top);
+        applySize(dialog, rect.width, rect.height);
         resizeState = {
           dialog,
           key: getDialogKey(dialog, overlay),
@@ -606,8 +607,8 @@ export function AppFrame({ children }: AppFrameProps) {
           startY: event.clientY,
           originLeft: Math.round(rect.left),
           originTop: Math.round(rect.top),
-          originWidth: Number(dialog.dataset.globalResizeWidth || 0) || rect.width,
-          originHeight: Number(dialog.dataset.globalResizeHeight || 0) || rect.height,
+          originWidth: rect.width,
+          originHeight: rect.height,
         };
         document.body.style.cursor = resizeDirection === 'left' || resizeDirection === 'right'
           ? 'ew-resize'

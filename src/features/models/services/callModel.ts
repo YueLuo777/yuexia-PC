@@ -67,7 +67,7 @@ function createModelRequestPayload(model: ModelItem, prompt: string, userContent
   const temperature = normalizeTemperature(model.temperature);
   const systemPrompt = prompt.trim();
   const userMessage = chapterContext
-    ? `Current chapter:\n${chapterContext}\n\nRequest:\n${userContent}`
+    ? `Context:\n${chapterContext}\n\nRequest:\n${userContent}`
     : userContent;
 
   if (provider === 'anthropic') {

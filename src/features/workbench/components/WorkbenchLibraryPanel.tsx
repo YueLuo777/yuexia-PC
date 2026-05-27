@@ -1,5 +1,5 @@
-import { ChevronDown, ChevronRight, Lock, Plus, Send, Settings, Trash2, Unlock, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDown, ChevronRight, Lock, Plus, Send, Settings, Square, Trash2, Unlock, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { CSSProperties } from 'react';
 import type { DragEvent as ReactDragEvent, KeyboardEvent as ReactKeyboardEvent, MouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
@@ -43,6 +43,7 @@ interface WorkbenchLibraryPanelProps {
   tabs: string[];
   emptyText: string;
   volumes?: Volume[];
+  getChapterContent?: (chapterId: number) => string;
   outlineStorageKey?: string;
   scale?: number;
   defaultActiveTab?: string;
@@ -130,6 +131,9 @@ type LibraryAiRequestLog = {
   visibleUserText: string;
   systemPrompt: string;
   userContent: string;
+  contextTitle?: string;
+  contextText?: string;
+  contextWordCount?: number;
 };
 
 type LibraryEntryDragState = {
@@ -148,6 +152,7 @@ type LibraryTabConfig = {
   aiInput?: string;
   aiOutput?: string;
   aiResult?: string;
+  outlineAiInput?: string;
   modelId?: string;
   promptId?: string;
   promptDisabled?: boolean;
@@ -764,11 +769,68 @@ function LibraryManagementModal({
   );
 }
 
+function LibraryAiLogShell({
+  id,
+  subtitle,
+  onClose,
+  children,
+}: {
+  id: string;
+  subtitle: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const draggable = useDraggableModal(id);
+  useTopModalEscape(true, onClose);
+
+  return createPortal(
+    <div
+      className="modal-sharp fixed inset-0 z-[285] flex items-center justify-center bg-black/35 px-6 py-6"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        data-draggable-managed="true"
+        style={draggable.style}
+        className="modal-sharp relative flex h-[min(820px,88vh)] w-[min(1120px,94vw)] max-w-[94vw] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]"
+      >
+        <header
+          {...draggable.dragHandleProps}
+          className="flex h-14 shrink-0 cursor-move items-center justify-between border-b border-slate-100 px-5"
+        >
+          <div>
+            <h2 className="text-base font-bold text-slate-900">输出日志</h2>
+            <p className="mt-0.5 text-xs text-slate-400">{subtitle}</p>
+          </div>
+          <button
+            data-no-modal-drag="true"
+            onClick={onClose}
+            className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+          >
+            关闭
+          </button>
+        </header>
+        {children}
+        <div data-no-modal-drag="true" {...draggable.getResizeHandleProps('top')} className="absolute left-4 right-4 top-0 z-20 h-2 cursor-ns-resize" />
+        <div data-no-modal-drag="true" {...draggable.getResizeHandleProps('bottom')} className="absolute bottom-0 left-4 right-4 z-20 h-2 cursor-ns-resize" />
+        <div data-no-modal-drag="true" {...draggable.getResizeHandleProps('left')} className="absolute bottom-4 left-0 top-4 z-20 w-2 cursor-ew-resize" />
+        <div data-no-modal-drag="true" {...draggable.getResizeHandleProps('right')} className="absolute bottom-4 right-0 top-4 z-20 w-2 cursor-ew-resize" />
+        <div data-no-modal-drag="true" {...draggable.resizeHandleProps} className="absolute bottom-0 right-0 z-20 h-5 w-5 cursor-nwse-resize">
+          <div className="absolute bottom-1 right-1 h-3 w-3 rounded-br-lg border-b-2 border-r-2 border-gray-300" />
+        </div>
+      </section>
+    </div>,
+    document.body,
+  );
+}
+
 export function WorkbenchLibraryPanel({
   storageKey,
   tabs,
   emptyText,
   volumes = [],
+  getChapterContent,
   outlineStorageKey,
   scale = 1,
   defaultActiveTab,
@@ -856,7 +918,7 @@ export function WorkbenchLibraryPanel({
     () => prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === PROMPT_SETTING_CATEGORY),
     [prompts],
   );
-  const outlinePrompts = useMemo(() => prompts.filter((prompt) => prompt.category === '概要'), [prompts]);
+  const outlinePrompts = useMemo(() => prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === '概要'), [prompts]);
   const scaleStyle = scale === 1 ? undefined : ({ zoom: scale } as CSSProperties);
   const activeTabConfig = tabConfigs[activeTab] ?? {};
   const selectedId = activeTabConfig.selectedId ?? null;
@@ -3131,7 +3193,7 @@ export function WorkbenchLibraryPanel({
                 placeholder="输入对话指令..."
                 className="scrollbar-hidden"
               />
-              <label>AI 输入框</label>
+              <label>请输入要求</label>
               <div className="xy-ai-inline-actions">
                 <button
                   type="button"
@@ -3139,8 +3201,7 @@ export function WorkbenchLibraryPanel({
                   disabled={isLibraryAiLoading || !canSendLibraryAiMessage}
                   className="xy-ai-inline-send"
                 >
-                  <span className="xy-ai-inline-send-icon"><Send className="h-5 w-5" /></span>
-                  发送
+                  <span className="xy-ai-inline-send-icon"><Send className="h-6 w-6 stroke-[1.9]" /></span>
                 </button>
                 <button
                   type="button"
@@ -3148,7 +3209,7 @@ export function WorkbenchLibraryPanel({
                   disabled={!isLibraryAiLoading}
                   className="xy-ai-inline-stop"
                 >
-                  停止
+                  <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
                 </button>
               </div>
               </div>
@@ -3209,28 +3270,12 @@ export function WorkbenchLibraryPanel({
       ? buildLibraryAiRequestPayload(previewAiRequestText, activeIsBrainstorm ? previewAiRequestText : undefined).log
       : null;
     const visibleAiRequestLog = previewAiRequestLog ?? lastLibraryAiRequestLog;
-    const libraryAiLogModal = isLibraryAiLogOpen && visibleAiRequestLog ? createPortal(
-      <div
-        className="modal-sharp fixed inset-0 z-[285] flex items-center justify-center bg-black/35 px-6 py-6"
-        onMouseDown={(event) => {
-          if (event.target === event.currentTarget) setIsLibraryAiLogOpen(false);
-        }}
+    const libraryAiLogModal = isLibraryAiLogOpen && visibleAiRequestLog ? (
+      <LibraryAiLogShell
+        id={`workbench_library_ai_log_${activeTab}`}
+        subtitle="当前预览：点击发送后会按这里的内容发给 AI"
+        onClose={() => setIsLibraryAiLogOpen(false)}
       >
-        <section className="modal-sharp flex h-[min(820px,88vh)] w-[min(1120px,94vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]">
-          <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-5">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">输出日志</h2>
-              <p className="mt-0.5 text-xs text-slate-400">
-                当前预览：点击发送后会按这里的内容发给 AI
-              </p>
-            </div>
-            <button
-              onClick={() => setIsLibraryAiLogOpen(false)}
-              className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
-            >
-              关闭
-            </button>
-          </header>
           <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)]">
             <aside className="border-r border-slate-100 bg-slate-50 p-4 text-sm">
               <div className="space-y-3">
@@ -3297,9 +3342,7 @@ export function WorkbenchLibraryPanel({
               )}
             </div>
           </div>
-        </section>
-      </div>,
-      document.body,
+      </LibraryAiLogShell>
     ) : null;
     return (
       <div className="flex min-h-0 flex-1 flex-col bg-white" style={scaleStyle}>
@@ -3617,7 +3660,7 @@ export function WorkbenchLibraryPanel({
                     placeholder="输入对话指令..."
                     className="scrollbar-hidden"
                   />
-                  <label>脑洞 AI 输入框</label>
+                  <label>请输入要求</label>
                   <div className="xy-ai-inline-actions">
                     <button
                       type="button"
@@ -3625,8 +3668,7 @@ export function WorkbenchLibraryPanel({
                       disabled={isLibraryAiLoading || !canSendLibraryAiMessage}
                       className="xy-ai-inline-send"
                     >
-                      <span className="xy-ai-inline-send-icon"><Send className="h-5 w-5" /></span>
-                      发送
+                      <span className="xy-ai-inline-send-icon"><Send className="h-6 w-6 stroke-[1.9]" /></span>
                     </button>
                     <button
                       type="button"
@@ -3634,7 +3676,7 @@ export function WorkbenchLibraryPanel({
                       disabled={!isLibraryAiLoading}
                       className="xy-ai-inline-stop"
                     >
-                      停止
+                      <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
                     </button>
                   </div>
                   </div>
@@ -3836,14 +3878,14 @@ export function WorkbenchLibraryPanel({
               {activeTab === SETTING_TAB && (
                 <div className="mb-3 flex items-center gap-2">
                   {hasLinkedBrainstorm ? (
-                    <div className="flex h-10 w-1/3 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                    <div className="flex h-10 w-44 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white">
                       <button
                         type="button"
                         onClick={() => {
                           setSelectedBrainstormReaderId(activeTabConfig.loadedBrainstormId ?? null);
                           setIsBrainstormReaderOpen(true);
                         }}
-                        className="min-w-0 flex-1 px-3 text-sm font-bold text-gray-700 hover:bg-gray-100"
+                        className="min-w-0 flex-1 whitespace-nowrap px-3 text-sm font-bold text-gray-700 hover:bg-gray-100"
                       >
                         已关联脑洞
                       </button>
@@ -3884,12 +3926,12 @@ export function WorkbenchLibraryPanel({
               )}
               <div className="mb-3 flex items-center gap-2">
                 {activeTab === SETTING_TAB ? (
-                  <div className="flex h-10 w-1/3 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                  <div className="flex h-10 w-44 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white">
                     <button
                       type="button"
                       onClick={smartImportSettings}
                       disabled={smartImportLocked}
-                      className="min-w-0 flex-1 px-3 text-sm font-bold text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-300"
+                      className="min-w-0 flex-1 whitespace-nowrap px-3 text-sm font-bold text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-300"
                     >
                       智能导入设定
                     </button>
@@ -3923,7 +3965,7 @@ export function WorkbenchLibraryPanel({
                 <button
                   onClick={clearLibraryAiDialog}
                   disabled={!aiInput.trim() && !aiOutput.trim() && !isLibraryAiLoading}
-                  className="h-10 w-1/3 rounded-lg border border-gray-200 px-3 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
+                  className="h-10 w-1/3 rounded-lg border border-red-500 bg-red-500 px-3 text-sm font-bold text-white hover:bg-red-600 disabled:border-red-200 disabled:bg-red-100 disabled:text-red-300"
                 >
                   清空
                 </button>
@@ -3941,7 +3983,7 @@ export function WorkbenchLibraryPanel({
                 placeholder="输入对话指令..."
                 className="scrollbar-hidden"
               />
-              <label>AI 输入框</label>
+              <label>请输入要求</label>
               <div className="xy-ai-inline-actions">
                 <button
                   type="button"
@@ -3949,8 +3991,7 @@ export function WorkbenchLibraryPanel({
                   disabled={isLibraryAiLoading || !canSendLibraryAiMessage}
                   className="xy-ai-inline-send"
                 >
-                  <span className="xy-ai-inline-send-icon"><Send className="h-5 w-5" /></span>
-                  发送
+                  <span className="xy-ai-inline-send-icon"><Send className="h-6 w-6 stroke-[1.9]" /></span>
                 </button>
                 <button
                   type="button"
@@ -3958,7 +3999,7 @@ export function WorkbenchLibraryPanel({
                   disabled={!isLibraryAiLoading}
                   className="xy-ai-inline-stop"
                 >
-                  停止
+                  <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
                 </button>
               </div>
               </div>
@@ -4058,12 +4099,15 @@ export function WorkbenchLibraryPanel({
       setSelectedId(entry.id);
     };
     const saveOutlinePreviewDraft = () => {
+      const cleanDraft = stripAiThinkingBlock(outlinePreviewDraft);
       if (safeOutlineSelectionType === 'volume' && selectedOutlineVolume) {
-        updateVolumeSummary(selectedOutlineVolume.name, outlinePreviewDraft);
+        updateVolumeSummary(selectedOutlineVolume.name, cleanDraft);
+        setOutlinePreviewDraft(cleanDraft);
         return;
       }
       if (selectedOutlineChapter) {
-        updateChapterSummary(selectedOutlineChapter.chapter.serialNumber, outlinePreviewDraft);
+        updateChapterSummary(selectedOutlineChapter.chapter.serialNumber, cleanDraft);
+        setOutlinePreviewDraft(cleanDraft);
       }
     };
     const selectOutlineChapter = (chapterId: number, serialNumber: number) => {
@@ -4096,12 +4140,195 @@ export function WorkbenchLibraryPanel({
     const outlinePreviewTitle = isDetailOutlineTab ? '细纲预览' : (safeOutlineSelectionType === 'volume' ? '卷概要预览' : '章节概要');
     const outlinePromptOptions = isDetailOutlineTab ? prompts.filter((prompt) => prompt.category === DETAIL_OUTLINE_TAB) : outlinePrompts;
     const activeOutlinePromptId = outlinePromptOptions.some((prompt) => prompt.id === activeTabConfig.promptId) ? activeTabConfig.promptId : '';
+    const activeOutlinePrompt = outlinePromptOptions.find((prompt) => prompt.id === activeOutlinePromptId) ?? outlinePromptOptions[0] ?? null;
+    const selectedOutlineModel = models.find((model) => model.id === activeTabConfig.modelId) ?? models[0] ?? null;
+    const outlineAiInput = activeTabConfig.outlineAiInput ?? '';
+    const setOutlineAiInput = (value: string) => updateActiveTabConfig({ outlineAiInput: value });
+    const getSelectedOutlineContext = () => {
+      if (safeOutlineSelectionType === 'volume' && selectedOutlineVolume) {
+        return selectedOutlineVolume.chapters
+          .map((chapter) => {
+            const content = getChapterContent?.(chapter.id) ?? '';
+            return `第${chapter.serialNumber}章 ${chapter.title}\n${content}`;
+          })
+          .join('\n\n');
+      }
+      if (!selectedOutlineChapter) return '';
+      const { chapter } = selectedOutlineChapter;
+      const content = getChapterContent?.(chapter.id) ?? '';
+      return `第${chapter.serialNumber}章 ${chapter.title}\n${content}`;
+    };
+    const getOutlineContextTitle = () => {
+      if (safeOutlineSelectionType === 'volume' && selectedOutlineVolume) {
+        return `${selectedOutlineVolume.name} · ${selectedOutlineVolume.chapters.length}章`;
+      }
+      if (!selectedOutlineChapter) return '未选择章节';
+      return `第${selectedOutlineChapter.chapter.serialNumber}章 ${selectedOutlineChapter.chapter.title}`;
+    };
+    const getOutlineDefaultPrompt = () => (
+      isDetailOutlineTab
+        ? '请根据所选章节正文生成细纲。'
+        : '请根据所选章节正文生成章节概要。'
+    );
+    const buildOutlineAiRequestLog = (
+      userText: string,
+      contextText: string,
+      promptText: string,
+      createdAt = '当前预览',
+    ): LibraryAiRequestLog => ({
+      createdAt,
+      tab: isDetailOutlineTab ? '生成细纲' : '章节概要',
+      modelName: selectedOutlineModel?.name ?? '未选择模型',
+      promptName: activeOutlinePrompt?.name ?? '默认提示词',
+      hasLinkedBrainstorm: false,
+      linkedBrainstormTitle: '',
+      visibleUserText: userText || '空内容',
+      systemPrompt: promptText,
+      userContent: userText,
+      contextTitle: getOutlineContextTitle(),
+      contextText,
+      contextWordCount: countTextWords(contextText),
+    });
+    const previewOutlineContextText = getSelectedOutlineContext();
+    const previewOutlinePromptText = activeOutlinePrompt?.content ?? getOutlineDefaultPrompt();
+    const visibleOutlineAiRequestLog = (
+      isLibraryAiLogOpen
+        ? buildOutlineAiRequestLog(outlineAiInput.trim(), previewOutlineContextText, previewOutlinePromptText)
+        : null
+    ) ?? lastLibraryAiRequestLog;
+    const outlineAiLogModal = isLibraryAiLogOpen && visibleOutlineAiRequestLog ? (
+      <LibraryAiLogShell
+        id={`workbench_library_ai_log_${activeTab}`}
+        subtitle="当前预览：点击发送后会按这里的内容发给 AI"
+        onClose={() => setIsLibraryAiLogOpen(false)}
+      >
+          <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)]">
+            <aside className="border-r border-slate-100 bg-slate-50 p-4 text-sm">
+              <div className="space-y-3">
+                <div className="rounded-xl bg-white p-3">
+                  <div className="text-xs text-slate-400">链路</div>
+                  <div className="mt-1 font-bold text-slate-800">{visibleOutlineAiRequestLog.tab}</div>
+                </div>
+                <div className="rounded-xl bg-white p-3">
+                  <div className="text-xs text-slate-400">模型</div>
+                  <div className="mt-1 font-bold text-slate-800">{visibleOutlineAiRequestLog.modelName}</div>
+                </div>
+                <div className="rounded-xl bg-white p-3">
+                  <div className="text-xs text-slate-400">提示词</div>
+                  <div className="mt-1 font-bold text-slate-800">{visibleOutlineAiRequestLog.promptName}</div>
+                </div>
+                <div className="rounded-xl bg-white p-3">
+                  <div className="text-xs text-slate-400">关联正文</div>
+                  <div className="mt-1 font-bold text-brand">{visibleOutlineAiRequestLog.contextTitle}</div>
+                  <div className="mt-1 text-xs font-bold text-slate-400">{visibleOutlineAiRequestLog.contextWordCount ?? 0} 字</div>
+                </div>
+                <div className="rounded-xl bg-white p-3">
+                  <div className="text-xs text-slate-400">请输入内容</div>
+                  <div className="mt-1 break-words font-bold text-slate-800">{visibleOutlineAiRequestLog.visibleUserText}</div>
+                </div>
+              </div>
+            </aside>
+            <div className="min-h-0 overflow-y-auto p-5">
+              <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs leading-5 text-amber-700">
+                这里展示实际发送给 AI 的提示词、所选章节正文和输入内容。
+              </div>
+              <section className="mb-4">
+                <h3 className="mb-2 text-sm font-bold text-slate-900">System Prompt</h3>
+                <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4">
+                  {visibleOutlineAiRequestLog.systemPrompt || '空内容'}
+                </div>
+              </section>
+              <section className="mb-4">
+                <h3 className="mb-2 text-sm font-bold text-slate-900">Context</h3>
+                <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4">
+                  {visibleOutlineAiRequestLog.contextText || '未读取到正文内容'}
+                </div>
+              </section>
+              <section>
+                <h3 className="mb-2 text-sm font-bold text-slate-900">请输入内容</h3>
+                <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4">
+                  {visibleOutlineAiRequestLog.userContent || '空内容'}
+                </div>
+              </section>
+            </div>
+          </div>
+      </LibraryAiLogShell>
+    ) : null;
+    const sendOutlineAiMessage = async () => {
+      const userText = outlineAiInput.trim();
+      if (!userText || isLibraryAiLoading) return;
+      if (!selectedOutlineModel) {
+        setOutlinePreviewDraft('【错误】尚未配置可用模型。请先到模型管理中新增模型。');
+        return;
+      }
+      const contextText = getSelectedOutlineContext();
+      const promptText = activeOutlinePrompt?.content ?? getOutlineDefaultPrompt();
+      setLastLibraryAiRequestLog(buildOutlineAiRequestLog(userText, contextText, promptText, new Date().toLocaleString('zh-CN')));
+      const controller = new AbortController();
+      libraryAiAbortRef.current = controller;
+      setIsLibraryAiLoading(true);
+      setOutlinePreviewDraft('正在思考...');
+      try {
+        let content = '';
+        let reasoningContent = '';
+        const startedAt = Date.now();
+        const getThinkingSeconds = () => Math.max(0, Math.round((Date.now() - startedAt) / 1000));
+        content = await callModelStream({
+          model: selectedOutlineModel,
+          prompt: promptText,
+          userContent: userText,
+          chapterContext: [
+            contextText ? `【所选章节正文】\n${contextText}` : '【所选章节正文】\n当前没有读取到正文内容。',
+          ].join('\n\n'),
+          recordType: 'stream',
+          signal: controller.signal,
+          onReasoning: (chunk) => {
+            reasoningContent += chunk;
+            setOutlinePreviewDraft(formatAiThinkingResponse(content, reasoningContent, getThinkingSeconds(), false));
+          },
+          onChunk: (chunk) => {
+            content += chunk;
+            setOutlinePreviewDraft(formatAiThinkingResponse(content, reasoningContent, getThinkingSeconds(), false));
+          },
+        });
+        if (reasoningContent.trim()) {
+          content = formatAiThinkingResponse(content, reasoningContent, getThinkingSeconds(), true);
+        }
+        setOutlinePreviewDraft(content);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          setOutlinePreviewDraft((value) => value.trim() || '【已中止】本次生成已停止。');
+        } else {
+          const message = error instanceof Error ? error.message : '模型请求失败。';
+          setOutlinePreviewDraft(`【错误】${message}`);
+        }
+      } finally {
+        if (libraryAiAbortRef.current === controller) libraryAiAbortRef.current = null;
+        setIsLibraryAiLoading(false);
+      }
+    };
+    const stopOutlineAiMessage = () => {
+      libraryAiAbortRef.current?.abort();
+      setIsLibraryAiLoading(false);
+    };
+    const clearOutlinePreviewDraft = () => {
+      if (safeOutlineSelectionType === 'volume' && selectedOutlineVolume) {
+        updateVolumeSummary(selectedOutlineVolume.name, '');
+        setOutlinePreviewDraft('');
+        return;
+      }
+      if (selectedOutlineChapter) {
+        updateChapterSummary(selectedOutlineChapter.chapter.serialNumber, '');
+        setOutlinePreviewDraft('');
+      }
+    };
 
     return (
       <div className="flex min-h-0 flex-1 flex-col bg-white" style={scaleStyle}>
         {(activeTab === OUTLINE_LIBRARY_TAB || activeTab === DETAIL_OUTLINE_TAB) && renderTopTabs()}
         {deleteConfirmDialog}
         {managementModal && <LibraryManagementModal modal={managementModal} onClose={() => setManagementModal(null)} />}
+        {outlineAiLogModal}
         <div
           className="relative grid min-h-0 flex-1 overflow-hidden bg-white"
           style={{ gridTemplateColumns: `${outlineSidebarWidth}px 8px minmax(0,1fr) 8px ${settingLibraryRightWidth}px` }}
@@ -4276,7 +4503,34 @@ export function WorkbenchLibraryPanel({
 
         {rightResizeHandle}
         <aside className="min-w-0 flex min-h-0 flex-col bg-gray-50 p-4">
-          <h3 className="text-base font-bold text-gray-900">{isDetailOutlineTab ? '细纲提示词' : '概要提示词'}</h3>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <h3 className="shrink-0 text-base font-bold text-gray-900">{isDetailOutlineTab ? '细纲提示词' : '生成概要'}</h3>
+              <div className="xy-management-segment shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setManagementModal({ type: 'models' })}
+                  className="xy-management-segment-button"
+                >
+                  模型管理
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setManagementModal({ type: 'prompts', category: isDetailOutlineTab ? DETAIL_OUTLINE_TAB : '概要' })}
+                  className="xy-management-segment-button"
+                >
+                  提示词管理
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsLibraryAiLogOpen(true)}
+              className="shrink-0 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm hover:border-brand hover:text-brand"
+            >
+              输出日志
+            </button>
+          </div>
           <div className="mt-4 space-y-3">
             <label className="grid grid-cols-[48px_1fr] items-center gap-2 text-sm text-gray-500">
               <span>模型</span>
@@ -4316,50 +4570,77 @@ export function WorkbenchLibraryPanel({
             </div>
           </div>
           <h4 className="mt-4 text-sm font-bold text-gray-900">{isDetailOutlineTab ? '细纲预览' : '概要预览'}</h4>
-          <textarea
-            value={outlinePreviewDraft}
-            onChange={(event) => setOutlinePreviewDraft(event.target.value)}
-            placeholder={isDetailOutlineTab ? '生成后的细纲会显示在这里，也可以手动编辑后保存。' : '生成后的概要会显示在这里，也可以手动编辑后保存。'}
-            className="editor-scrollbar mt-3 flex-1 resize-none rounded-xl border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-600 outline-none focus:border-brand"
-          />
-          <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4">
-            <div className="mb-2 grid grid-cols-2 gap-2">
-              <button
-                className="rounded bg-brand px-2 py-1.5 text-base font-bold text-white hover:bg-brand-dark"
-              >
-                生成
-              </button>
-              <button
-                onClick={saveOutlinePreviewDraft}
-                className="rounded bg-brand px-2 py-1.5 text-base font-bold text-white hover:bg-brand-dark"
-              >
-                保存
-              </button>
+          {outlinePreviewDraft.startsWith('[[THINKING') ? (
+            <div className="editor-scrollbar mt-3 flex-1 overflow-y-auto rounded-xl border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-600">
+              {renderAiChatContent(outlinePreviewDraft)}
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => void navigator.clipboard.writeText(outlinePreviewDraft)}
-                className="rounded bg-brand px-2 py-1.5 text-base font-bold text-white hover:bg-brand-dark"
-              >
-                复制
-              </button>
-              <button
-                onClick={() => {
-                  if (safeOutlineSelectionType === 'volume' && selectedOutlineVolume) {
-                    updateVolumeSummary(selectedOutlineVolume.name, '');
-                    setOutlinePreviewDraft('');
-                    return;
-                  }
-                  if (selectedOutlineChapter) {
-                    updateChapterSummary(selectedOutlineChapter.chapter.serialNumber, '');
-                    setOutlinePreviewDraft('');
+          ) : (
+            <textarea
+              value={outlinePreviewDraft}
+              onChange={(event) => setOutlinePreviewDraft(event.target.value)}
+              placeholder={isDetailOutlineTab ? '生成后的细纲会显示在这里，也可以手动编辑后保存。' : '生成后的概要会显示在这里，也可以手动编辑后保存。'}
+              className="editor-scrollbar mt-3 flex-1 resize-none rounded-xl border border-gray-200 bg-white p-4 text-sm leading-6 text-gray-600 outline-none focus:border-brand"
+            />
+          )}
+          <div className="mt-3">
+            <div className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${outlineAiInput.trim() ? 'xy-has-value' : ''}`}>
+              <textarea
+                rows={1}
+                value={outlineAiInput}
+                onChange={(event) => {
+                  setOutlineAiInput(event.target.value);
+                  resizeFloatingAiTextarea(event.currentTarget);
+                }}
+                onKeyDown={(event) => {
+                  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                    event.preventDefault();
+                    void sendOutlineAiMessage();
                   }
                 }}
-                className="rounded bg-brand px-2 py-1.5 text-base font-bold text-white hover:bg-brand-dark"
-              >
-                清空
-              </button>
+                className="editor-scrollbar"
+              />
+              <label>请输入要求</label>
+              <div className="xy-ai-inline-actions">
+                <button
+                  type="button"
+                  onClick={() => void sendOutlineAiMessage()}
+                  disabled={isLibraryAiLoading || !outlineAiInput.trim()}
+                  className="xy-ai-inline-send"
+                >
+                  <span className="xy-ai-inline-send-icon"><Send className="h-6 w-6 stroke-[1.9]" /></span>
+                </button>
+                <button
+                  type="button"
+                  onClick={stopOutlineAiMessage}
+                  disabled={!isLibraryAiLoading}
+                  className="xy-ai-inline-stop"
+                >
+                  <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
+                </button>
+              </div>
             </div>
+          </div>
+          <div className="mt-3 flex overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <button
+              onClick={saveOutlinePreviewDraft}
+              disabled={!stripAiThinkingBlock(outlinePreviewDraft).trim()}
+              className="min-w-0 flex-1 bg-brand px-3 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
+            >
+              保存
+            </button>
+            <button
+              onClick={() => void navigator.clipboard.writeText(stripAiThinkingBlock(outlinePreviewDraft))}
+              disabled={!stripAiThinkingBlock(outlinePreviewDraft).trim()}
+              className="min-w-0 flex-1 border-l border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
+            >
+              复制
+            </button>
+            <button
+              onClick={clearOutlinePreviewDraft}
+              className="min-w-0 flex-1 border-l border-red-200 bg-red-600 px-3 py-2 text-sm font-bold text-white hover:bg-red-700"
+            >
+              清空
+            </button>
           </div>
           </aside>
         {isOutlineSettingsOpen && (

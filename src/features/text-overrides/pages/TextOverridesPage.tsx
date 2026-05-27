@@ -184,15 +184,15 @@ export function TextOverridesPage() {
                 <h2 className="text-base font-bold text-slate-900">文案列表</h2>
                 <p className="mt-1 text-xs text-slate-400">可以编辑、启用/停用、删除，也可以搜索原文案和新文案。</p>
               </div>
-              <div className="relative w-[320px]">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
+              <label className="xy-ui132-search w-[320px] max-w-full">
+                <Search />
                 <input
+                  type="search"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="搜索文案"
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-none focus:border-brand focus:bg-white"
                 />
-              </div>
+              </label>
             </div>
 
             <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto p-5">

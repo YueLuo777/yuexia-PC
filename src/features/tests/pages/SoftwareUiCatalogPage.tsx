@@ -4630,6 +4630,58 @@ const uiSamples: UiSample[] = [
       </div>
     ),
   },
+  {
+    id: 'UI-139',
+    group: '作品',
+    name: '作品卡片按钮方案 B',
+    usage: '作品卡片底部 3 列 x 2 行固定按钮，最多显示 6 个常用入口；剩余操作集中到“更多”白底弹层，适合以后扩展到 9 个按钮。',
+    preview: (
+      <div className="w-[320px] rounded-[28px] border border-slate-100 bg-white p-4 shadow-xl">
+        <div className="flex h-[190px] items-center justify-center rounded-[22px] bg-gradient-to-br from-sky-50 via-white to-cyan-50">
+          <div className="text-center">
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-white text-2xl font-black text-[#08AACE] shadow-sm">
+              <BookOpen className="h-8 w-8" />
+            </div>
+            <div className="mt-3 text-sm font-black text-slate-700">封面预览</div>
+          </div>
+        </div>
+        <div className="px-1 pb-1 pt-4">
+          <h3 className="truncate text-base font-black text-slate-900">月落长歌</h3>
+          <div className="mt-2 flex items-center justify-between text-xs font-bold text-slate-400">
+            <span>128000 字</span>
+            <span>2026-05-27</span>
+          </div>
+          <div className="relative mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-1.5">
+            <div className="grid grid-cols-3 gap-1.5">
+              {['继续阅读', '作品信息', '打开检查', '重命名', '封面', '更多'].map((action, index) => (
+                <button
+                  key={action}
+                  type="button"
+                  className={`h-9 min-w-0 rounded-xl px-2 text-xs font-black transition-all ${
+                    index === 0
+                      ? 'bg-[#08AACE] text-white shadow-[0_8px_18px_rgba(8,170,206,0.25)]'
+                      : 'bg-white text-slate-600 hover:bg-sky-50 hover:text-[#08AACE]'
+                  }`}
+                >
+                  <span className="block truncate">{action}</span>
+                </button>
+              ))}
+            </div>
+            <div className="absolute right-1.5 top-[calc(100%+8px)] z-20 w-[150px] overflow-hidden rounded-2xl border border-slate-100 bg-white p-1.5 shadow-2xl">
+              {['导出 txt', '关联小说', '复制书名'].map((action) => (
+                <button key={action} type="button" className="flex h-9 w-full items-center rounded-xl px-3 text-left text-xs font-black text-slate-600 hover:bg-sky-50 hover:text-[#08AACE]">
+                  {action}
+                </button>
+              ))}
+              <button type="button" className="flex h-9 w-full items-center rounded-xl px-3 text-left text-xs font-black text-red-500 hover:bg-red-50">
+                删除
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+  },
 ];
 
 const techItems: TechItem[] = [
@@ -5168,7 +5220,7 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
       </header>
 
       <main className="min-h-0 flex-1 overflow-hidden p-7">
-        <div className="grid h-full min-h-0 grid-cols-[220px_minmax(0,1fr)] gap-5">
+        <div className="grid h-full min-h-0 grid-cols-[260px_minmax(0,1fr)] gap-5">
           <aside className="flex min-h-0 flex-col rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
             <div className="mb-3 grid grid-cols-4 rounded-[18px] bg-slate-100 p-1.5">
               <button
@@ -5211,9 +5263,8 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
                     onClick={() => scrollToCatalogItem(item.id, item.tab)}
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left transition-colors hover:bg-sky-50 hover:text-[#08AACE]"
                   >
-                    <span className="w-14 shrink-0 text-xs font-black text-[#08AACE]">{item.id}</span>
+                    <span className="w-12 shrink-0 text-xs font-black text-[#08AACE]">{item.id}</span>
                     <span className="min-w-0 flex-1 truncate text-xs font-bold text-slate-600">{item.label}</span>
-                    <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-black text-slate-400">{item.group}</span>
                   </button>
                 ))
               )}

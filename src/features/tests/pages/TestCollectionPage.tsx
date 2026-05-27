@@ -71,13 +71,6 @@ const testGroups = [
         badge: 'Scene',
       },
       {
-        title: '作品卡片按钮方案 B',
-        description: '测试作品卡片底部 3 列 x 2 行固定按钮，最多显示 6 个，剩余按钮放进“更多”弹层。',
-        path: '/novel-card-actions-b-test',
-        icon: Palette,
-        badge: 'Card-B',
-      },
-      {
         title: '主题颜色',
         description: '查看主题颜色、深色主题配色和页面色板测试。',
         path: '/theme-colors',
@@ -90,6 +83,20 @@ const testGroups = [
         path: '/ai-inline-icon-actions-test',
         icon: Palette,
         badge: 'AI-Input',
+      },
+      {
+        title: 'AI 输入框描边颜色测试',
+        description: '测试 AI 输入框描边、发送按钮分割线和停止按钮分割线的不同颜色效果。',
+        path: '/ai-input-border-colors-test',
+        icon: Palette,
+        badge: 'AI-Color',
+      },
+      {
+        title: '模型下拉内嵌管理测试',
+        description: '测试把“模型管理”融合进模型下拉框最右侧，也就是箭头右侧的效果。',
+        path: '/model-select-manage-inline-test',
+        icon: Palette,
+        badge: 'Select',
       },
       {
         title: 'UI132 搜索框统一预览',
@@ -597,104 +604,6 @@ export function UiLandingScenariosTestPage() {
   );
 }
 
-const primaryNovelActions = ['继续阅读', '作品信息', '打开检查', '重命名', '封面', '更多'];
-const overflowNovelActions = ['导出 txt', '关联小说', '复制书名'];
-
-function NovelActionButton({ label, active = false, danger = false, onClick }: { label: string; active?: boolean; danger?: boolean; onClick?: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`h-9 min-w-0 rounded-xl px-2 text-xs font-black transition-all ${
-        active
-          ? 'bg-[#08AACE] text-white shadow-[0_8px_18px_rgba(8,170,206,0.25)]'
-          : danger
-            ? 'bg-red-50 text-red-500 hover:bg-red-100'
-            : 'bg-white text-slate-600 hover:bg-sky-50 hover:text-[#08AACE]'
-      }`}
-    >
-      <span className="block truncate">{label}</span>
-    </button>
-  );
-}
-
-export function NovelCardActionsBTestPage() {
-  const [moreOpen, setMoreOpen] = useState(true);
-
-  return (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-slate-50 p-7">
-      <div className="mx-auto grid w-full max-w-6xl gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
-        <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
-          <div className="mb-4">
-            <div className="text-sm font-black text-[#08AACE]">B-01 / 作品卡片按钮方案 B</div>
-            <h1 className="mt-1 text-xl font-black text-slate-950">3 列 x 2 行固定按钮 + 更多弹层</h1>
-            <p className="mt-2 text-sm font-bold leading-6 text-slate-400">
-              适合作品卡片以后扩展到 9 个按钮。卡片底部只显示 6 个入口，剩余操作集中到“更多”弹层。
-            </p>
-          </div>
-
-          <div className="rounded-[26px] border border-slate-100 bg-white p-3 shadow-xl">
-            <div className="flex h-[250px] items-center justify-center rounded-[22px] bg-gradient-to-br from-sky-50 via-white to-cyan-50">
-              <div className="text-center">
-                <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-white text-2xl font-black text-[#08AACE] shadow-sm">书</div>
-                <div className="mt-3 text-sm font-black text-slate-700">封面预览</div>
-              </div>
-            </div>
-            <div className="px-1 pb-1 pt-3">
-              <h2 className="truncate text-base font-black text-slate-900">月落长歌</h2>
-              <div className="mt-2 flex items-center justify-between text-xs font-bold text-slate-400">
-                <span>128000 字</span>
-                <span>2026-05-27</span>
-              </div>
-
-              <div className="relative mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-1.5">
-                <div className="grid grid-cols-3 gap-1.5">
-                  {primaryNovelActions.map((action, index) => (
-                    <NovelActionButton
-                      key={action}
-                      label={action}
-                      active={index === 0}
-                      onClick={action === '更多' ? () => setMoreOpen((current) => !current) : undefined}
-                    />
-                  ))}
-                </div>
-                {moreOpen && (
-                  <div className="absolute right-1.5 top-[calc(100%+8px)] z-20 w-[160px] overflow-hidden rounded-2xl border border-slate-100 bg-white p-1.5 shadow-2xl">
-                    {overflowNovelActions.map((action) => (
-                      <button key={action} className="flex h-9 w-full items-center rounded-xl px-3 text-left text-xs font-black text-slate-600 hover:bg-sky-50 hover:text-[#08AACE]">
-                        {action}
-                      </button>
-                    ))}
-                    <button className="flex h-9 w-full items-center rounded-xl px-3 text-left text-xs font-black text-red-500 hover:bg-red-50">删除</button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
-          <div className="mb-4 text-base font-black text-slate-900">编号说明</div>
-          <div className="space-y-3">
-            <div className="rounded-2xl bg-sky-50 p-4">
-              <div className="text-sm font-black text-[#08AACE]">B-01 固定区</div>
-              <p className="mt-2 text-sm font-bold leading-6 text-slate-500">第一行：继续阅读 / 作品信息 / 打开检查。第二行：重命名 / 封面 / 更多。</p>
-            </div>
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <div className="text-sm font-black text-slate-900">B-02 更多弹层</div>
-              <p className="mt-2 text-sm font-bold leading-6 text-slate-500">点击“更多”显示剩余按钮：导出 txt、关联小说、复制书名、删除。以后扩展到 9 个按钮也不会撑高卡片。</p>
-            </div>
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <div className="text-sm font-black text-slate-900">使用 UI</div>
-              <p className="mt-2 text-sm font-bold leading-6 text-slate-500">底部按钮使用“胶囊按钮组”思路，更多菜单使用“白底弹层菜单”。如果你确认，我再把它落地到真实作品卡片。</p>
-            </div>
-          </div>
-        </section>
-      </div>
-    </div>
-  );
-}
-
 export function AiInlineIconActionsTestPage() {
   return (
     <div className="flex h-full min-h-0 overflow-y-auto bg-slate-50 p-7">
@@ -880,6 +789,123 @@ export function SearchUi132TestPage() {
             </article>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+const aiInputBorderColorOptions = [
+  { name: '当前蓝色', value: '#08AACE', note: '正式应用颜色，清晰但不刺眼。' },
+  { name: '发送按钮蓝', value: '#08B3D9', note: '发送按钮当前使用色，整体更亮。' },
+  { name: '作品信息蓝', value: '#0695B5', note: '更稳重，和作品信息按钮接近。' },
+  { name: '亮青色', value: '#07A1C4', note: '比当前色略深一点，科技感更强。' },
+  { name: '品牌蓝', value: '#1f6ed4', note: '更偏系统蓝，识别度强。' },
+  { name: '柔和青', value: '#14b8a6', note: '更轻，适合弱化边框存在感。' },
+];
+
+function AiInputBorderPreview({ color, name, note }: { color: string; name: string; note: string }) {
+  return (
+    <article className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-base font-black text-slate-900">{name}</h3>
+          <p className="mt-1 text-xs font-bold leading-5 text-slate-400">{note}</p>
+        </div>
+        <span className="rounded-full px-2.5 py-1 text-[11px] font-black text-white" style={{ backgroundColor: color }}>{color}</span>
+      </div>
+      <div className="relative h-[64px] rounded-[18px] bg-slate-50 p-2">
+        <div className="relative h-[46px] rounded-2xl bg-white" style={{ border: `2px solid ${color}` }}>
+          <div className="absolute -top-[9px] left-4 bg-white px-1 text-xs font-bold text-slate-700">请输入要求</div>
+          <div
+            className="absolute bottom-0 right-0 top-0 grid w-[94px] grid-cols-[1.12fr_0.88fr] overflow-hidden rounded-r-[14px] bg-white"
+            style={{ borderLeft: `2px solid ${color}` }}
+          >
+            <button type="button" className="grid place-items-center bg-[#08B3D9] text-white">
+              <Send className="h-6 w-6 stroke-[1.9]" />
+            </button>
+            <button type="button" className="grid place-items-center bg-red-600 text-white" style={{ borderLeft: `2px solid ${color}` }}>
+              <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+export function AiInputBorderColorsTestPage() {
+  return (
+    <div className="h-full overflow-y-auto bg-slate-50 p-7">
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="mb-5">
+          <div className="text-sm font-black text-[#08AACE]">AI-Input / Border Color</div>
+          <h1 className="mt-1 text-2xl font-black text-slate-950">AI 输入框描边颜色测试</h1>
+          <p className="mt-2 text-sm font-bold leading-6 text-slate-400">
+            这里放几种同结构颜色，方便比较边框、发送分割线和停止分割线的观感。
+          </p>
+        </div>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
+          {aiInputBorderColorOptions.map((item) => (
+            <AiInputBorderPreview key={item.value} color={item.value} name={item.name} note={item.note} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ModelSelectManageInlineTestPage() {
+  const [open, setOpen] = useState(true);
+  const [value, setValue] = useState('GPT5.5');
+  const models = ['GPT5.5', 'DeepSeek V3', 'Claude Sonnet', 'Gemini Pro'];
+
+  return (
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-slate-50 p-7">
+      <div className="mx-auto w-full max-w-5xl">
+        <div className="mb-5">
+          <div className="text-sm font-black text-[#08AACE]">Select / Manage Inline</div>
+          <h1 className="mt-1 text-2xl font-black text-slate-950">模型管理嵌入下拉框测试</h1>
+          <p className="mt-2 text-sm font-bold leading-6 text-slate-400">
+            预览把“模型管理”放进模型下拉框最右侧，位于箭头右侧。
+          </p>
+        </div>
+        <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="grid max-w-[560px] grid-cols-[64px_minmax(0,1fr)] items-center gap-3">
+            <span className="text-sm font-bold text-slate-500">模型</span>
+            <div className="relative">
+              <div className="flex h-12 overflow-hidden rounded-2xl border-2 border-[#08AACE] bg-white shadow-[0_8px_18px_rgba(8,170,206,0.08)]">
+                <button type="button" onClick={() => setOpen((current) => !current)} className="min-w-0 flex-1 px-4 text-left text-base font-black text-slate-800">
+                  <span className="block truncate">{value}</span>
+                </button>
+                <button type="button" onClick={() => setOpen((current) => !current)} className="grid w-12 shrink-0 place-items-center border-l border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-[#08AACE]">
+                  <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+                </button>
+                <button type="button" className="shrink-0 border-l border-[#08AACE]/40 bg-[#EAF9FD] px-4 text-sm font-black text-[#078fb0] transition-colors hover:bg-[#08AACE] hover:text-white">
+                  模型管理
+                </button>
+              </div>
+              {open && (
+                <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1 shadow-xl">
+                  {models.map((model) => (
+                    <button
+                      key={model}
+                      type="button"
+                      onClick={() => {
+                        setValue(model);
+                        setOpen(false);
+                      }}
+                      className={`flex h-10 w-full items-center px-4 text-left text-sm font-black ${
+                        value === model ? 'bg-[#08AACE] text-white' : 'text-slate-700 hover:bg-sky-50 hover:text-[#08AACE]'
+                      }`}
+                    >
+                      {model}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );
@@ -1224,11 +1250,7 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
   };
 
   const openTestPage = (path: string) => {
-    if (embedded) {
-      setActivePath(path);
-      return;
-    }
-    navigate(path);
+    setActivePath(path);
   };
 
   const visibleGroups = useMemo(() => {
@@ -1260,10 +1282,12 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <DropdownAScenariosTestPage />;
       case '/ui-landing-scenarios-test':
         return <UiLandingScenariosTestPage />;
-      case '/novel-card-actions-b-test':
-        return <NovelCardActionsBTestPage />;
       case '/ai-inline-icon-actions-test':
         return <AiInlineIconActionsTestPage />;
+      case '/ai-input-border-colors-test':
+        return <AiInputBorderColorsTestPage />;
+      case '/model-select-manage-inline-test':
+        return <ModelSelectManageInlineTestPage />;
       case '/search-ui132-test':
         return <SearchUi132TestPage />;
       case '/context-linker-test':
@@ -1277,7 +1301,7 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
     }
   };
 
-  if (embedded && activePath) {
+  if (activePath) {
     return (
       <div className="flex h-full min-h-0 flex-col bg-slate-50">
         <header className="flex h-12 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-4">
@@ -1292,7 +1316,7 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
             {activeItem?.title ?? '测试内容'}
           </div>
           <button
-            onClick={onClose}
+            onClick={() => setActivePath(null)}
             className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
             title="关闭"
           >

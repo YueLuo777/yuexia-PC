@@ -1310,6 +1310,7 @@ export function ScriptEditorPage() {
                   activeTool="ai"
                   workId={`script-${currentScript.id}`}
                   selectedChapterContent={editorContent}
+                  chapterContextLabel="本集"
                   onClose={handleToggleAI}
                   onReplaceContent={saveContent}
                 />

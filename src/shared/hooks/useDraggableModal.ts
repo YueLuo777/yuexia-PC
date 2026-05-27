@@ -48,9 +48,44 @@ function saveGeometry(storageKey: string, geometry: ModalGeometry) {
   localStorage.setItem(storageKey, JSON.stringify(geometry));
 }
 
+function getViewportBounds() {
+  if (typeof window === 'undefined') {
+    return {
+      maxWidth: 1280,
+      maxHeight: 820,
+      maxLeft: 0,
+      maxTop: 0,
+    };
+  }
+  return {
+    maxWidth: Math.max(MIN_MODAL_WIDTH, window.innerWidth - VIEWPORT_PADDING),
+    maxHeight: Math.max(MIN_MODAL_HEIGHT, window.innerHeight - VIEWPORT_PADDING),
+    maxLeft: Math.max(VIEWPORT_PADDING / 2, window.innerWidth - VIEWPORT_PADDING / 2),
+    maxTop: Math.max(VIEWPORT_PADDING / 2, window.innerHeight - VIEWPORT_PADDING / 2),
+  };
+}
+
+function normalizeGeometryToViewport(geometry: ModalGeometry): ModalGeometry {
+  const { maxWidth, maxHeight } = getViewportBounds();
+  const next: ModalGeometry = { ...geometry };
+  if (Number.isFinite(next.width)) next.width = clamp(Number(next.width), MIN_MODAL_WIDTH, maxWidth);
+  if (Number.isFinite(next.height)) next.height = clamp(Number(next.height), MIN_MODAL_HEIGHT, maxHeight);
+
+  const fixed = Number.isFinite(next.left) && Number.isFinite(next.top);
+  if (fixed && typeof window !== 'undefined') {
+    const width = next.width ?? Math.min(maxWidth, Math.max(MIN_MODAL_WIDTH, window.innerWidth * 0.72));
+    const height = next.height ?? Math.min(maxHeight, Math.max(MIN_MODAL_HEIGHT, window.innerHeight * 0.72));
+    next.left = clamp(Number(next.left), VIEWPORT_PADDING / 2, Math.max(VIEWPORT_PADDING / 2, window.innerWidth - width - VIEWPORT_PADDING / 2));
+    next.top = clamp(Number(next.top), VIEWPORT_PADDING / 2, Math.max(VIEWPORT_PADDING / 2, window.innerHeight - height - VIEWPORT_PADDING / 2));
+    next.x = 0;
+    next.y = 0;
+  }
+  return next;
+}
+
 export function useDraggableModal(id: string) {
   const storageKey = `xinyuexia_modal_position_${id}`;
-  const [geometry, setGeometry] = useState<ModalGeometry>(() => readGeometry(storageKey));
+  const [geometry, setGeometry] = useState<ModalGeometry>(() => normalizeGeometryToViewport(readGeometry(storageKey)));
   const geometryRef = useRef(geometry);
   const dragRef = useRef<{
     pointerId: number;
@@ -61,6 +96,7 @@ export function useDraggableModal(id: string) {
   const resizeRef = useRef<{
     pointerId: number;
     direction: ResizeDirection;
+    element: HTMLElement;
     startX: number;
     startY: number;
     originLeft: number;
@@ -69,8 +105,18 @@ export function useDraggableModal(id: string) {
     originHeight: number;
   } | null>(null);
 
+  const applyFixedGeometry = (element: HTMLElement, next: ModalGeometry) => {
+    if (Number.isFinite(next.left)) element.style.left = `${Math.round(next.left ?? 0)}px`;
+    if (Number.isFinite(next.top)) element.style.top = `${Math.round(next.top ?? 0)}px`;
+    element.style.position = 'fixed';
+    element.style.transform = 'none';
+    element.style.margin = '0';
+    if (next.width) element.style.width = `${Math.round(next.width)}px`;
+    if (next.height) element.style.height = `${Math.round(next.height)}px`;
+  };
+
   useEffect(() => {
-    const next = readGeometry(storageKey);
+    const next = normalizeGeometryToViewport(readGeometry(storageKey));
     geometryRef.current = next;
     setGeometry(next);
   }, [storageKey]);
@@ -78,6 +124,17 @@ export function useDraggableModal(id: string) {
   useEffect(() => {
     geometryRef.current = geometry;
   }, [geometry]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const next = normalizeGeometryToViewport(geometryRef.current);
+      geometryRef.current = next;
+      setGeometry(next);
+      saveGeometry(storageKey, next);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [storageKey]);
 
   const style = useMemo<CSSProperties>(() => {
     const fixed = Number.isFinite(geometry.left) && Number.isFinite(geometry.top);
@@ -157,7 +214,7 @@ export function useDraggableModal(id: string) {
           height,
         };
         geometryRef.current = next;
-        setGeometry(next);
+        applyFixedGeometry(resize.element, next);
       }
     };
 
@@ -170,6 +227,7 @@ export function useDraggableModal(id: string) {
       }
       if (resize && resize.pointerId === event.pointerId) {
         resizeRef.current = null;
+        setGeometry(geometryRef.current);
         saveGeometry(storageKey, geometryRef.current);
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
@@ -257,18 +315,20 @@ export function useDraggableModal(id: string) {
     if (event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
-    const rect = event.currentTarget.parentElement?.getBoundingClientRect();
-    if (!rect) return;
+    const element = event.currentTarget.parentElement;
+    const rect = element?.getBoundingClientRect();
+    if (!element || !rect) return;
     const fixedGeometry = {
       ...geometryRef.current,
       x: 0,
       y: 0,
       left: Math.round(rect.left),
       top: Math.round(rect.top),
-      width: Math.round(geometryRef.current.width ?? rect.width),
-      height: Math.round(geometryRef.current.height ?? rect.height),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
     };
     geometryRef.current = fixedGeometry;
+    applyFixedGeometry(element, fixedGeometry);
     setGeometry(fixedGeometry);
     try {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -285,6 +345,7 @@ export function useDraggableModal(id: string) {
     resizeRef.current = {
       pointerId: event.pointerId,
       direction,
+      element,
       startX: event.clientX,
       startY: event.clientY,
       originLeft: fixedGeometry.left,

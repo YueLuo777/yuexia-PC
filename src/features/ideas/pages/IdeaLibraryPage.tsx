@@ -70,16 +70,17 @@ export function IdeaLibraryPage() {
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <aside className="flex w-[360px] shrink-0 flex-col border-r border-gray-200 bg-white">
           <div className="space-y-3 border-b border-gray-100 p-4">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <label className="xy-ui132-search max-w-full">
+              <Search />
               <input
+                type="search"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="搜索脑洞..."
-                className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-8 text-sm outline-none focus:border-brand"
+                style={{ paddingRight: search ? '2.25rem' : undefined }}
               />
-              {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"><X className="h-3.5 w-3.5" /></button>}
-            </div>
+              {search && <button type="button" onClick={() => setSearch('')} className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600"><X className="h-3.5 w-3.5" /></button>}
+            </label>
             <div className="flex gap-2">
               {(['all', 'draft', 'outlined', 'completed'] as const).map((item) => (
                 <button

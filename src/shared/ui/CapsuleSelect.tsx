@@ -1,5 +1,6 @@
 import { Check, ChevronDown } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export type CapsuleSelectOption = {
   value: string;
@@ -26,17 +27,43 @@ export function CapsuleSelect({
 }) {
   const id = useId();
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
+  const [dropdownRect, setDropdownRect] = useState({ left: 0, top: 0, width: 240 });
   const current = options.find((option) => option.value === value);
   const displayLabel = current?.label || options[0]?.label || placeholder;
+
+  const updateDropdownRect = () => {
+    const rect = rootRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setDropdownRect({
+      left: rect.left,
+      top: rect.bottom + 6,
+      width: rect.width,
+    });
+  };
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    updateDropdownRect();
+  }, [open, value, options.length]);
 
   useEffect(() => {
     if (!open) return;
     const close = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target) || dropdownRef.current?.contains(target)) return;
+      setOpen(false);
     };
+    const update = () => updateDropdownRect();
     window.addEventListener('mousedown', close);
-    return () => window.removeEventListener('mousedown', close);
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      window.removeEventListener('mousedown', close);
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
   }, [open]);
 
   return (
@@ -55,8 +82,16 @@ export function CapsuleSelect({
         <span className="min-w-0 truncate">{displayLabel}</span>
         <ChevronDown className={`h-4 w-4 shrink-0 text-slate-800 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[80] max-h-[240px] overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-2xl">
+      {open && !disabled && createPortal(
+        <div
+          ref={dropdownRef}
+          className="fixed z-[10050] max-h-[240px] overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-2xl"
+          style={{
+            left: dropdownRect.left,
+            top: dropdownRect.top,
+            width: dropdownRect.width,
+          }}
+        >
           {options.map((option) => {
             const selected = value === option.value;
             return (
@@ -82,7 +117,8 @@ export function CapsuleSelect({
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

@@ -1,9 +1,9 @@
-import { ChevronDown, Send, X } from 'lucide-react';
+import { Send, Square, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { readModelSnapshot } from '@/features/models/hooks/useModels';
 import type { ModelItem } from '@/features/models/model/modelTypes';
-import { callModel } from '@/features/models/services/callModel';
+import { callModelStream } from '@/features/models/services/callModel';
 import type { MoonfallRagBundle } from '@/features/moonfall-settings/model/moonfallSettingTypes';
 import {
   buildMoonfallRagBundle,
@@ -14,18 +14,25 @@ import { readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import { APP_EVENTS } from '@/shared/events/appEvents';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
+import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
+import { WorkbenchModal } from './WorkbenchModal';
 
 export type WorkbenchAITool = 'ai';
+export type WorkbenchLinkedContextSource = 'setting' | 'role' | 'summary' | 'chapter';
+
+export interface WorkbenchLinkedContextItem {
+  id: string;
+  source: WorkbenchLinkedContextSource;
+  group: string;
+  title: string;
+  content: string;
+}
 
 const WORKBENCH_AI_EXCLUDED_PROMPT_CATEGORIES = new Set(['脑洞', '设定', '大纲', '更新', '概要', '提炼剧情', '设定提取']);
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 162;
-const SESSION_CONTEXT_MENU_WIDTH = 104;
-const SESSION_CONTEXT_MENU_HEIGHT = 76;
-const SESSION_CONTEXT_MENU_MARGIN = 8;
-
 function resizeFloatingAiTextarea(textarea: HTMLTextAreaElement | null) {
   if (!textarea) return;
   textarea.style.height = 'auto';
@@ -35,15 +42,6 @@ function resizeFloatingAiTextarea(textarea: HTMLTextAreaElement | null) {
   );
   textarea.style.height = `${nextHeight}px`;
   textarea.style.overflowY = textarea.scrollHeight > FLOATING_AI_TEXTAREA_MAX_HEIGHT ? 'auto' : 'hidden';
-}
-
-function getSessionMenuPosition(clientX: number, clientY: number) {
-  const maxLeft = window.innerWidth - SESSION_CONTEXT_MENU_WIDTH - SESSION_CONTEXT_MENU_MARGIN;
-  const maxTop = window.innerHeight - SESSION_CONTEXT_MENU_HEIGHT - SESSION_CONTEXT_MENU_MARGIN;
-  return {
-    left: Math.max(SESSION_CONTEXT_MENU_MARGIN, Math.min(clientX, maxLeft)),
-    top: Math.max(SESSION_CONTEXT_MENU_MARGIN, Math.min(clientY + 6, maxTop)),
-  };
 }
 
 interface AiSession {
@@ -61,10 +59,25 @@ interface AiMessage {
   content: string;
 }
 
+interface WorkbenchAiRequestLog {
+  createdAt: string;
+  modelName: string;
+  promptName: string;
+  systemPrompt: string;
+  userContent: string;
+  contextTitle: string;
+  contextText: string;
+  linkedItems: WorkbenchLinkedContextItem[];
+  linkChapter: boolean;
+  contextWordCount: number;
+}
+
 interface WorkbenchAIPanelProps {
   activeTool: WorkbenchAITool;
   workId: number | string;
   selectedChapterContent: string;
+  linkedContextItems?: WorkbenchLinkedContextItem[];
+  chapterContextLabel?: string;
   onClose?: () => void;
   onReplaceContent: (content: string) => void;
   onUndoReplace?: () => void;
@@ -72,6 +85,7 @@ interface WorkbenchAIPanelProps {
   onOpenModelManage?: () => void;
   onOpenAgentManage?: () => void;
   onOpenContextLibrary?: () => void;
+  onClearLinkedContext?: () => void;
 }
 
 function readConfig() {
@@ -83,6 +97,120 @@ function readConfig() {
 
 function getDefaultInstruction(_tool: WorkbenchAITool) {
   return '请根据我的要求处理当前章节正文。';
+}
+
+function getTextWordCount(text: string) {
+  return text.replace(/\s/g, '').length;
+}
+
+function formatAiThinkingResponse(content: string, reasoning: string, seconds: number, done: boolean) {
+  const reasoningText = reasoning.trim();
+  const body = content.trimStart();
+  if (!reasoningText) return body || (done ? '' : '正在思考...');
+  return [
+    `[[THINKING seconds=${Math.max(0, seconds)} status=${done ? 'done' : 'thinking'}]]`,
+    reasoningText,
+    '[[/THINKING]]',
+    body,
+  ].join('\n');
+}
+
+function stripAiThinkingBlock(content: string) {
+  return content
+    .replace(/\[\[THINKING seconds=\d+ status=(?:thinking|done)\]\]\n[\s\S]*?\n\[\[\/THINKING\]\]\n?/g, '')
+    .trim();
+}
+
+function renderAiChatContent(content: string) {
+  const thinkingMatch = content.match(/^\[\[THINKING seconds=(\d+) status=(thinking|done)\]\]\n([\s\S]*?)\n\[\[\/THINKING\]\]\n?\n?([\s\S]*)$/);
+  if (thinkingMatch) {
+    const seconds = thinkingMatch[1] ?? '0';
+    const done = thinkingMatch[2] === 'done';
+    const reasoning = thinkingMatch[3]?.trim() ?? '';
+    const answer = thinkingMatch[4]?.trimStart() ?? '';
+    return (
+      <div className="space-y-3">
+        <div className="rounded-xl border border-[#08AACE]/25 bg-[#EAF9FD] p-3 text-xs leading-6 text-slate-600">
+          <div className="mb-1 flex items-center justify-between font-black text-[#078fb0]">
+            <span>{done ? `已思考（用时 ${seconds} 秒）` : `正在思考（${seconds} 秒）`}</span>
+          </div>
+          {reasoning && (
+            <div className="max-h-36 overflow-y-auto whitespace-pre-wrap break-words">
+              {reasoning}
+            </div>
+          )}
+        </div>
+        {answer && <div className="whitespace-pre-wrap break-words">{answer}</div>}
+      </div>
+    );
+  }
+  return content;
+}
+
+function buildEmptyContextGuard(chapterContextLabel: string) {
+  return [
+    '【空上下文保护】',
+    `当前${chapterContextLabel}正文为空，且用户没有选择任何关联上下文。`,
+    '请不要虚构前文、不要自动生成完整章节，也不要假装已经读取到正文。',
+    '只根据用户输入本身作答；如果用户是在要求续写，请先提示需要提供正文或选择关联上下文。',
+  ].join('\n');
+}
+
+function buildLinkedContextPayload(items: WorkbenchLinkedContextItem[]) {
+  const groups: Array<{ source: WorkbenchLinkedContextSource; title: string }> = [
+    { source: 'setting', title: '设定' },
+    { source: 'role', title: '角色' },
+    { source: 'summary', title: '梗概' },
+    { source: 'chapter', title: '正文' },
+  ];
+
+  return groups
+    .map(({ source, title }) => {
+      const groupItems = items.filter((item) => item.source === source && item.content.trim());
+      if (groupItems.length === 0) return '';
+      const body = groupItems
+        .map((item, index) => {
+          const itemTitle = item.title.trim() || `${title}${index + 1}`;
+          const prefix = item.group ? `${itemTitle}（${item.group}）` : itemTitle;
+          return `### ${prefix}\n${item.content.trim()}`;
+        })
+        .join('\n\n');
+      return `【${title}】\n${body}`;
+    })
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function getLinkedContextSourceLabel(source: WorkbenchLinkedContextSource) {
+  if (source === 'setting') return '设定';
+  if (source === 'role') return '角色';
+  if (source === 'summary') return '梗概';
+  return '正文';
+}
+
+function buildAiRequestLog({
+  createdAt,
+  modelName,
+  promptName,
+  systemPrompt,
+  userContent,
+  contextTitle,
+  contextText,
+  linkedItems,
+  linkChapter,
+}: Omit<WorkbenchAiRequestLog, 'contextWordCount'>): WorkbenchAiRequestLog {
+  return {
+    createdAt,
+    modelName,
+    promptName,
+    systemPrompt,
+    userContent,
+    contextTitle,
+    contextText,
+    linkedItems,
+    linkChapter,
+    contextWordCount: getTextWordCount(contextText),
+  };
 }
 
 function isMoonfallRagBundle(value: unknown): value is MoonfallRagBundle {
@@ -214,6 +342,8 @@ export function WorkbenchAIPanel({
   activeTool,
   workId,
   selectedChapterContent,
+  linkedContextItems = [],
+  chapterContextLabel = '本章',
   onClose,
   onReplaceContent,
   onUndoReplace,
@@ -221,21 +351,22 @@ export function WorkbenchAIPanel({
   onOpenModelManage,
   onOpenAgentManage,
   onOpenContextLibrary,
+  onClearLinkedContext,
 }: WorkbenchAIPanelProps) {
   const storageKey = `xinyuexia_workbench_ai_sessions_${workId}`;
   const initialAiState = useMemo(() => readStoredAiState(storageKey), [storageKey]);
   const [sessions, setSessions] = useState<AiSession[]>(() => initialAiState.sessions);
   const [activeSessionId, setActiveSessionId] = useState(() => initialAiState.activeSessionId);
-  const [sessionMenu, setSessionMenu] = useState<{ sessionId: number; left: number; top: number } | null>(null);
   const [models, setModels] = useState<ModelItem[]>(() => readConfig().models);
   const [prompts, setPrompts] = useState<PromptItem[]>(() => readConfig().prompts);
   const [selectedModelId, setSelectedModelId] = usePersistentState<string>('xinyuexia_workbench_ai_left_model', '');
   const [selectedPromptId, setSelectedPromptId] = usePersistentState<string>('xinyuexia_workbench_ai_left_prompt', '');
-  const [openConfigDropdown, setOpenConfigDropdown] = useState<'model' | 'prompt' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [outputFontSize, setOutputFontSize] = useState(20);
   const [loadingDotCount, setLoadingDotCount] = useState(1);
+  const [isRequestLogOpen, setIsRequestLogOpen] = useState(false);
+  const [lastRequestLog, setLastRequestLog] = useState<WorkbenchAiRequestLog | null>(null);
   const nextSessionIdRef = useRef(initialAiState.nextSessionId);
   const nextMessageIdRef = useRef(initialAiState.nextMessageId);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -254,6 +385,26 @@ export function WorkbenchAIPanel({
   const selectedPrompt = chatPrompts.find((prompt) => prompt.id === selectedPromptId) ?? null;
   const outputWordCount = output.replace(/\s/g, '').length;
   const linkedChapterWordCount = selectedChapterContent.replace(/\s/g, '').length;
+  const linkedContextWordCount = linkedContextItems.reduce((sum, item) => sum + getTextWordCount(item.content), 0);
+  const hasLinkedChapter = Boolean(activeSession?.linkChapter);
+  const hasLinkedContext = linkedContextWordCount > 0;
+  const activeLinkWordCount = hasLinkedContext ? linkedContextWordCount : (hasLinkedChapter ? linkedChapterWordCount : 0);
+  const activeLinkLabel = hasLinkedContext ? '上下文' : chapterContextLabel;
+  const previewLinkedContextPayload = buildLinkedContextPayload(linkedContextItems);
+  const previewUseChapter = !previewLinkedContextPayload && Boolean(activeSession?.linkChapter && selectedChapterContent.trim());
+  const previewContextText = previewLinkedContextPayload || (previewUseChapter ? `【${chapterContextLabel}内容】\n${selectedChapterContent.trim()}` : '');
+  const previewRequestLog = buildAiRequestLog({
+    createdAt: '当前预览',
+    modelName: selectedModel?.name ?? '未选择模型',
+    promptName: selectedPrompt?.name ?? '默认提示词',
+    systemPrompt: selectedPrompt?.content ?? getDefaultInstruction(activeTool),
+    userContent: input.trim(),
+    contextTitle: previewLinkedContextPayload ? '关联上下文' : `${chapterContextLabel}内容`,
+    contextText: previewContextText,
+    linkedItems: previewLinkedContextPayload ? linkedContextItems : [],
+    linkChapter: Boolean(activeSession?.linkChapter),
+  });
+  const visibleRequestLog = previewRequestLog ?? lastRequestLog;
   const loadingText = `正在生成${'.'.repeat(loadingDotCount)}`;
 
   const updateSession = (sessionId: number, patch: Partial<Omit<AiSession, 'id'>>) => {
@@ -265,6 +416,28 @@ export function WorkbenchAIPanel({
   const updateActiveSession = (patch: Partial<Omit<AiSession, 'id'>>) => {
     if (!activeSession) return;
     updateSession(activeSession.id, patch);
+  };
+
+  const toggleChapterContext = () => {
+    const nextLinkChapter = !activeSession?.linkChapter;
+    if (nextLinkChapter && hasLinkedContext) {
+      onClearLinkedContext?.();
+    }
+    updateActiveSession({
+      linkChapter: nextLinkChapter,
+      hasSentChapterContext: false,
+    });
+  };
+
+  const openLinkedContextLibrary = () => {
+    if (activeSession?.linkChapter) {
+      updateActiveSession({
+        linkChapter: false,
+        hasSentChapterContext: false,
+      });
+    }
+    onOpenContextLibrary?.();
+    if (!onOpenContextLibrary) flashStatus('关联上下文稍后配置');
   };
 
   useEffect(() => {
@@ -290,7 +463,6 @@ export function WorkbenchAIPanel({
     nextMessageIdRef.current = next.nextMessageId;
     abortControllerRef.current?.abort();
     setIsLoading(false);
-    setSessionMenu(null);
   }, [storageKey]);
 
   useEffect(() => {
@@ -338,22 +510,8 @@ export function WorkbenchAIPanel({
   }, [isLoading]);
 
   useEffect(() => {
-    if (!sessionMenu) return;
-    const closeMenu = () => setSessionMenu(null);
-    window.addEventListener('click', closeMenu);
-    return () => window.removeEventListener('click', closeMenu);
-  }, [sessionMenu]);
-
-  useEffect(() => {
     resizeFloatingAiTextarea(inputTextareaRef.current);
   }, [input]);
-
-  useEffect(() => {
-    if (!openConfigDropdown) return;
-    const closeDropdown = () => setOpenConfigDropdown(null);
-    window.addEventListener('click', closeDropdown);
-    return () => window.removeEventListener('click', closeDropdown);
-  }, [openConfigDropdown]);
 
   const flashStatus = (text: string) => {
     setStatusText(text);
@@ -365,15 +523,32 @@ export function WorkbenchAIPanel({
     const sessionId = activeSession.id;
     const text = input.trim();
     if (!text || isLoading) return;
-    const shouldAttachChapter = activeSession.linkChapter && !activeSession.hasSentChapterContext && selectedChapterContent.trim();
-    const chapterPayload = shouldAttachChapter ? selectedChapterContent.trim() : '';
+    const linkedContextPayload = buildLinkedContextPayload(linkedContextItems);
+    const shouldAttachChapter = !linkedContextPayload && activeSession.linkChapter && selectedChapterContent.trim();
+    const contextPayload = linkedContextPayload || (shouldAttachChapter ? `【${chapterContextLabel}内容】\n${selectedChapterContent.trim()}` : '');
+    const emptyContextGuard = contextPayload ? '' : buildEmptyContextGuard(chapterContextLabel);
+    const effectiveContextPayload = contextPayload || emptyContextGuard;
+    const contextTitle = linkedContextPayload ? '关联上下文' : (contextPayload ? `${chapterContextLabel}内容` : '空上下文保护');
+    const promptText = configPrompt?.content ?? getDefaultInstruction(activeTool);
+    const requestLog = buildAiRequestLog({
+      createdAt: new Date().toLocaleString('zh-CN'),
+      modelName: configModel?.name ?? '未选择模型',
+      promptName: configPrompt?.name ?? '默认提示词',
+      systemPrompt: promptText,
+      userContent: text,
+      contextTitle,
+      contextText: effectiveContextPayload,
+      linkedItems: linkedContextPayload ? linkedContextItems : [],
+      linkChapter: Boolean(activeSession.linkChapter),
+    });
+    setLastRequestLog(requestLog);
     const userMessage: AiMessage = { id: nextMessageIdRef.current++, role: 'user', content: text };
     const assistantMessage: AiMessage = { id: nextMessageIdRef.current++, role: 'assistant', content: '正在生成...' };
     const nextMessages = [...activeSession.messages, userMessage, assistantMessage];
     updateSession(sessionId, {
       input: '',
       messages: nextMessages,
-      output: '正在生成...',
+      output: '正在思考...',
       hasSentChapterContext: activeSession.hasSentChapterContext || Boolean(shouldAttachChapter),
     });
 
@@ -392,15 +567,37 @@ export function WorkbenchAIPanel({
     abortControllerRef.current = controller;
     setIsLoading(true);
     try {
-      const ragContext = await buildAutoRagContext(text, chapterPayload || selectedChapterContent.trim());
-      const modelContext = [chapterPayload, ragContext].filter(Boolean).join('\n\n');
-      const content = await callModel({
+      let content = '';
+      let reasoningContent = '';
+      const startedAt = Date.now();
+      const getThinkingSeconds = () => Math.max(0, Math.round((Date.now() - startedAt) / 1000));
+      const updateAssistantMessage = (nextContent: string) => {
+        updateSession(sessionId, {
+          output: nextContent,
+          messages: nextMessages.map((message) => (
+            message.id === assistantMessage.id ? { ...message, content: nextContent } : message
+          )),
+        });
+      };
+      content = await callModelStream({
         model: configModel,
-        prompt: configPrompt?.content ?? getDefaultInstruction(activeTool),
+        prompt: promptText,
         userContent: text,
-        chapterContext: modelContext,
+        chapterContext: effectiveContextPayload,
         signal: controller.signal,
+        recordType: 'stream',
+        onReasoning: (chunk) => {
+          reasoningContent += chunk;
+          updateAssistantMessage(formatAiThinkingResponse(content, reasoningContent, getThinkingSeconds(), false));
+        },
+        onChunk: (chunk) => {
+          content += chunk;
+          updateAssistantMessage(formatAiThinkingResponse(content, reasoningContent, getThinkingSeconds(), false));
+        },
       });
+      if (reasoningContent.trim()) {
+        content = formatAiThinkingResponse(content, reasoningContent, getThinkingSeconds(), true);
+      }
       updateSession(sessionId, {
         output: content,
         messages: nextMessages.map((message) => (
@@ -441,12 +638,24 @@ export function WorkbenchAIPanel({
       hasSentChapterContext: false,
     }]);
     setActiveSessionId(nextId);
-    setSessionMenu(null);
   };
 
   const deleteSession = (sessionId: number) => {
     if (sessions.length <= 1) {
-      flashStatus('至少保留1个会话');
+      abortControllerRef.current?.abort();
+      const nextId = nextSessionIdRef.current;
+      nextSessionIdRef.current += 1;
+      setSessions([{
+        id: nextId,
+        input: '',
+        output: '',
+        messages: [],
+        linkChapter: false,
+        hasSentChapterContext: false,
+      }]);
+      setActiveSessionId(nextId);
+      setIsLoading(false);
+      flashStatus('已删除当前会话并新建空会话');
       return;
     }
     setSessions((prev) => {
@@ -456,7 +665,6 @@ export function WorkbenchAIPanel({
       }
       return next;
     });
-    setSessionMenu(null);
   };
 
   const resetSessions = () => {
@@ -467,7 +675,6 @@ export function WorkbenchAIPanel({
     setSessions([fresh]);
     setActiveSessionId(1);
     setIsLoading(false);
-    setSessionMenu(null);
     flashStatus('已清空会话');
   };
 
@@ -477,9 +684,10 @@ export function WorkbenchAIPanel({
   };
 
   const copyOutput = async () => {
-    if (!output.trim()) return;
+    const cleanOutput = stripAiThinkingBlock(output);
+    if (!cleanOutput.trim()) return;
     try {
-      await navigator.clipboard.writeText(output);
+      await navigator.clipboard.writeText(cleanOutput);
       flashStatus('已复制输出内容');
     } catch {
       flashStatus('复制失败');
@@ -498,55 +706,21 @@ export function WorkbenchAIPanel({
   };
 
   const renderConfigDropdown = (
-    kind: 'model' | 'prompt',
     value: string,
     options: Array<{ id: string; name: string }>,
     emptyLabel: string,
     onChange: (value: string) => void,
-  ) => {
-    const selectedOption = options.find((option) => option.id === value) ?? options[0] ?? null;
-    const isOpen = openConfigDropdown === kind;
-    return (
-      <div
-        className="relative min-w-0"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={() => setOpenConfigDropdown((current) => (current === kind ? null : kind))}
-          className="flex h-9 w-full items-center rounded-lg border border-gray-200 bg-white px-2.5 pr-7 text-left text-sm font-semibold text-gray-700 outline-none transition-colors hover:border-brand focus:border-brand"
-        >
-          <span className="min-w-0 flex-1 truncate">{selectedOption?.name ?? emptyLabel}</span>
-        </button>
-        <ChevronDown className="pointer-events-none absolute right-2 top-[18px] h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
-        {isOpen && (
-          <div className="editor-scrollbar absolute left-0 top-[42px] z-[260] max-h-[152px] w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-            {options.length === 0 ? (
-              <div className="flex h-[38px] items-center px-3 text-sm font-semibold text-gray-400">{emptyLabel}</div>
-            ) : (
-              options.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => {
-                    onChange(option.id);
-                    setOpenConfigDropdown(null);
-                  }}
-                  className={`flex h-[38px] w-full items-center px-3 text-left text-sm font-semibold transition-colors ${
-                    option.id === selectedOption?.id
-                      ? 'bg-brand text-white'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <span className="min-w-0 flex-1 truncate">{option.name}</span>
-                </button>
-              ))
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
+  ) => (
+    <CapsuleSelect
+      value={value}
+      onChange={onChange}
+      className="min-w-0"
+      buttonClassName="h-10 rounded-xl px-3 text-sm"
+      options={options.length === 0
+        ? [{ value: '', label: emptyLabel, disabled: true }]
+        : options.map((option) => ({ value: option.id, label: option.name }))}
+    />
+  );
 
   const renderManageSegment = () => (
     onOpenModelManage || onOpenAgentManage ? (
@@ -583,86 +757,76 @@ export function WorkbenchAIPanel({
   ) => (
     <>
       <div className="shrink-0 overflow-visible rounded-lg border border-gray-200 bg-gray-50 p-2">
-        <div className="grid grid-cols-[52px_122px_minmax(48px,1fr)] items-center gap-1.5">
+        <div className="grid grid-cols-[52px_minmax(0,1fr)_minmax(48px,auto)] items-center gap-2">
           <span className="whitespace-nowrap text-sm text-gray-500">模型</span>
-          {renderConfigDropdown('model', model?.id ?? modelId, enabledModels, '无可用模型', onModelChange)}
+          {renderConfigDropdown(model?.id ?? modelId, enabledModels, '无可用模型', onModelChange)}
           <span className="flex min-w-0 items-center text-xs font-bold">
             {renderModelStatus(model)}
           </span>
 
           <span className="whitespace-nowrap text-sm text-gray-500">提示词</span>
-          {renderConfigDropdown('prompt', prompt?.id ?? chatPrompts[0]?.id ?? promptId, chatPrompts, '无可用提示词', onPromptChange)}
+          {renderConfigDropdown(prompt?.id ?? chatPrompts[0]?.id ?? promptId, chatPrompts, '无可用提示词', onPromptChange)}
         </div>
       </div>
-      <div className="mt-2 flex h-9 shrink-0 items-center gap-1.5 overflow-x-auto rounded-full border border-gray-200 bg-gray-50 px-2.5">
-        <button
-          onClick={addSession}
-          disabled={sessions.length >= 10}
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:border-brand hover:text-brand disabled:text-gray-300"
-          title="新建会话"
-        >
-          <span className="-mt-px block text-[20px] font-bold leading-none">+</span>
-        </button>
-        {sessions.map((session, index) => (
-          <div key={session.id} className="relative shrink-0">
-            <button
-              onClick={() => {
-                setActiveSessionId(session.id);
-                setSessionMenu(null);
-              }}
-              onContextMenu={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                const position = getSessionMenuPosition(event.clientX, event.clientY);
-                setActiveSessionId(session.id);
-                setSessionMenu({
-                  sessionId: session.id,
-                  left: position.left,
-                  top: position.top,
-                });
-              }}
-              className={`flex h-7 min-w-7 items-center justify-center rounded-lg border px-2 text-sm font-bold leading-none transition-colors ${
-                session.id === activeSessionId
-                  ? 'border-brand/30 bg-brand/10 text-brand'
-                  : 'border-gray-200 bg-white text-gray-500 hover:border-brand hover:text-brand'
-              }`}
-            >
-              {index + 1}
-            </button>
-          </div>
-        ))}
-      </div>
-      {sessionMenu && (
-        <div
-          className="fixed z-[300] w-[104px] overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-xl"
-          style={{ left: sessionMenu.left, top: sessionMenu.top, width: SESSION_CONTEXT_MENU_WIDTH }}
-          onClick={(event) => event.stopPropagation()}
-        >
+      <div className="mt-2 flex h-9 shrink-0 items-center gap-2 overflow-hidden rounded-full border border-gray-200 bg-gray-50 px-2.5">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
           <button
-            onClick={() => deleteSession(sessionMenu.sessionId)}
-            disabled={sessions.length <= 1}
-            className="flex h-8 w-full items-center px-3 text-left text-xs font-bold text-red-500 hover:bg-red-50 disabled:text-gray-300 disabled:hover:bg-white"
+            onClick={addSession}
+            disabled={sessions.length >= 10}
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:border-brand hover:text-brand disabled:text-gray-300"
+            title="新建会话"
+          >
+            <span className="-mt-px block text-[20px] font-bold leading-none">+</span>
+          </button>
+          {sessions.map((session, index) => (
+            <div key={session.id} className="relative shrink-0">
+              <button
+                onClick={() => {
+                  setActiveSessionId(session.id);
+                }}
+                className={`flex h-7 min-w-7 items-center justify-center rounded-lg border px-2 text-sm font-bold leading-none transition-colors ${
+                  session.id === activeSessionId
+                    ? 'border-brand/30 bg-brand/10 text-brand'
+                    : 'border-gray-200 bg-white text-gray-500 hover:border-brand hover:text-brand'
+                }`}
+              >
+                {index + 1}
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="flex h-7 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white">
+          <button
+            onClick={() => deleteSession(activeSessionId)}
+            className="px-3 text-xs font-bold text-red-500 hover:bg-red-50 disabled:text-gray-300 disabled:hover:bg-white"
           >
             删除
           </button>
           <button
             onClick={resetSessions}
-            className="flex h-8 w-full items-center px-3 text-left text-xs font-bold text-gray-600 hover:bg-slate-50 hover:text-slate-900"
+            className="border-l border-gray-200 px-3 text-xs font-bold text-gray-600 hover:bg-slate-50 hover:text-slate-900"
           >
             清空
           </button>
         </div>
-      )}
+      </div>
     </>
   );
 
   return (
     <aside className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-white">
-      <div className="flex h-9 shrink-0 items-center justify-between border-b border-gray-100 px-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span className="text-sm font-bold text-gray-900">AI对话</span>
+      <div className="flex min-h-10 shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-3 py-1.5">
+        <div className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto">
+          <span className="shrink-0 whitespace-nowrap text-sm font-bold text-gray-900">正文续写</span>
           {renderManageSegment()}
-          {statusText && <span className="text-[11px] text-brand">{statusText}</span>}
+          <button
+            type="button"
+            onClick={() => setIsRequestLogOpen(true)}
+            className="h-7 shrink-0 rounded-lg border border-gray-200 bg-white px-3 text-xs font-bold text-gray-600 transition-colors hover:border-brand hover:text-brand"
+          >
+            输出日志
+          </button>
+          {statusText && <span className="min-w-0 truncate text-[11px] text-brand">{statusText}</span>}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <FontSizeStepper
@@ -693,67 +857,74 @@ export function WorkbenchAIPanel({
           selectedPromptId,
           setSelectedPromptId,
         )}
-        <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-3">
-          {activeSession?.messages.length ? (
-            <div className="flex flex-col gap-3">
-              {activeSession.messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
+        <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+          <div className="editor-scrollbar h-full overflow-y-auto p-3 pb-8">
+            {activeSession?.messages.length ? (
+              <div className="flex flex-col gap-3">
+                {activeSession.messages.map((message) => (
                   <div
-                    className={`max-w-[82%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 leading-7 shadow-sm ${
-                      message.role === 'user'
-                        ? 'rounded-br-md bg-brand text-white'
-                        : 'rounded-bl-md border border-gray-200 bg-white text-gray-700'
-                    }`}
-                    style={{ fontSize: outputFontSize }}
+                    key={message.id}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    {isLoading && message.role === 'assistant' && message.content === '正在生成...' ? loadingText : message.content}
+                    <div
+                      className={`max-w-[82%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 leading-7 shadow-sm ${
+                        message.role === 'user'
+                          ? 'rounded-br-md bg-brand text-white'
+                          : 'rounded-bl-md border border-gray-200 bg-white text-gray-700'
+                      }`}
+                      style={{ fontSize: outputFontSize }}
+                    >
+                      {isLoading && message.role === 'assistant' && message.content === '正在生成...' ? loadingText : renderAiChatContent(message.content)}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex h-full items-start text-gray-400" style={{ fontSize: outputFontSize }}>
-              暂无对话内容...
-            </div>
-          )}
+                ))}
+              </div>
+            ) : (
+              <div className="flex h-full items-start text-gray-400" style={{ fontSize: outputFontSize }}>
+                暂无对话内容...
+              </div>
+            )}
+          </div>
+          <span className="pointer-events-none absolute bottom-2 right-3 rounded-full bg-white/90 px-2 py-0.5 text-xs font-bold text-brand shadow-sm">
+            {outputWordCount}字
+          </span>
         </div>
         <div className="mt-2 flex shrink-0 items-start justify-between gap-2 text-xs text-gray-400">
           <div className="flex min-w-0 flex-col gap-1">
-            <div className="flex min-w-0 items-center gap-2">
-              <button
-                onClick={() => updateActiveSession({
-                  linkChapter: !activeSession?.linkChapter,
-                  hasSentChapterContext: false,
-                })}
-                className={`rounded-lg border px-3 py-1.5 text-sm font-bold transition-colors ${
-                  activeSession?.linkChapter
-                    ? 'border-brand bg-brand text-white'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-brand hover:text-brand'
-                }`}
-              >
-                {activeSession?.linkChapter ? '已关联本章' : '关联本章'}
-              </button>
-              {activeSession?.linkChapter && (
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <div className="flex h-9 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                <div className="flex w-14 items-center justify-center border-r border-gray-200 bg-slate-50 text-sm font-black text-slate-500">
+                  关联
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleChapterContext}
+                  className={`w-28 px-3 text-sm font-bold transition-colors ${
+                    hasLinkedChapter
+                      ? 'bg-brand text-white'
+                      : 'bg-white text-gray-600 hover:bg-brand-light hover:text-brand'
+                  }`}
+                >
+                  {hasLinkedChapter ? `已关联${chapterContextLabel}` : chapterContextLabel}
+                </button>
+                <button
+                  type="button"
+                  onClick={openLinkedContextLibrary}
+                  className={`w-32 border-l border-gray-200 px-3 text-sm font-bold transition-colors ${
+                    hasLinkedContext
+                      ? 'bg-brand text-white'
+                      : 'bg-white text-gray-600 hover:bg-brand-light hover:text-brand'
+                  }`}
+                >
+                  {hasLinkedContext ? '已关联上下文' : '上下文'}
+                </button>
+              </div>
+              {activeLinkWordCount > 0 && (
                 <span className="shrink-0 text-sm font-bold text-brand">
-                  关联字数：{linkedChapterWordCount}字
+                  关联{activeLinkLabel}：{activeLinkWordCount}字
                 </span>
               )}
             </div>
-            <button
-              onClick={() => {
-                onOpenContextLibrary?.();
-                if (!onOpenContextLibrary) flashStatus('关联上下文稍后配置');
-              }}
-              className="w-fit rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-bold text-gray-600 transition-colors hover:border-brand hover:text-brand"
-            >
-              关联上下文
-            </button>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <span className="shrink-0 text-base font-bold text-brand">{outputWordCount}字</span>
           </div>
         </div>
         <div className="mt-2 shrink-0">
@@ -775,7 +946,7 @@ export function WorkbenchAIPanel({
               placeholder="请输入你的要求..."
               className="scrollbar-hidden"
             />
-            <label>AI 输入框</label>
+            <label>请输入要求</label>
             <div className="xy-ai-inline-actions">
               <button
                 type="button"
@@ -783,8 +954,7 @@ export function WorkbenchAIPanel({
                 disabled={isLoading || !input.trim()}
                 className="xy-ai-inline-send"
               >
-                <span className="xy-ai-inline-send-icon"><Send className="h-5 w-5" /></span>
-                发送
+                <span className="xy-ai-inline-send-icon"><Send className="h-6 w-6 stroke-[1.9]" /></span>
               </button>
               <button
                 type="button"
@@ -792,7 +962,7 @@ export function WorkbenchAIPanel({
                 disabled={!isLoading}
                 className="xy-ai-inline-stop"
               >
-                停止
+                <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
               </button>
             </div>
           </div>
@@ -801,7 +971,7 @@ export function WorkbenchAIPanel({
               <button
                 onClick={() => {
                   if (!output.trim()) return;
-                  onReplaceContent(output);
+                  onReplaceContent(stripAiThinkingBlock(output));
                   flashStatus('已替换正文');
                 }}
                 disabled={!output.trim()}
@@ -810,11 +980,15 @@ export function WorkbenchAIPanel({
                 替换正文
               </button>
               <button
-                onClick={onUndoReplace}
+                onClick={() => {
+                  onUndoReplace?.();
+                  flashStatus('已撤回替换');
+                }}
                 disabled={!canUndoReplace}
+                title="撤回上一次替换正文，恢复所选章节替换前的内容"
                 className="min-w-0 flex-1 border-l border-gray-200 bg-white px-2 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
               >
-                撤回
+                撤回替换
               </button>
             </div>
             <div className="flex min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white">
@@ -835,6 +1009,115 @@ export function WorkbenchAIPanel({
           </div>
         </div>
       </section>
+      {isRequestLogOpen && (
+        <WorkbenchModal
+          title="输出日志"
+          isOpen={isRequestLogOpen}
+          onClose={() => setIsRequestLogOpen(false)}
+          widthClass="w-[min(1120px,94vw)]"
+          heightClass="h-[min(820px,88vh)]"
+          closeOnBackdrop={false}
+        >
+            <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)]">
+              <aside className="border-r border-slate-100 bg-slate-50 p-4 text-sm">
+                <div className="space-y-3">
+                  <div className="rounded-xl bg-white p-3">
+                    <div className="text-xs text-slate-400">链路</div>
+                    <div className="mt-1 font-bold text-slate-800">作品编辑器 AI</div>
+                  </div>
+                  <div className="rounded-xl bg-white p-3">
+                    <div className="text-xs text-slate-400">模型</div>
+                    <div className="mt-1 font-bold text-slate-800">{visibleRequestLog.modelName}</div>
+                  </div>
+                  <div className="rounded-xl bg-white p-3">
+                    <div className="text-xs text-slate-400">提示词</div>
+                    <div className="mt-1 font-bold text-slate-800">{visibleRequestLog.promptName}</div>
+                  </div>
+                  <div className="rounded-xl bg-white p-3">
+                    <div className="text-xs text-slate-400">上下文来源</div>
+                    <div className={`mt-1 font-bold ${visibleRequestLog.contextText ? 'text-brand' : 'text-slate-500'}`}>
+                      {visibleRequestLog.linkedItems.length > 0
+                        ? `关联上下文 · ${visibleRequestLog.linkedItems.length}项`
+                        : visibleRequestLog.linkChapter
+                          ? `${chapterContextLabel}内容`
+                          : '未关联'}
+                    </div>
+                  </div>
+                  <div className="rounded-xl bg-white p-3">
+                    <div className="text-xs text-slate-400">上下文字数</div>
+                    <div className="mt-1 font-bold text-slate-800">{visibleRequestLog.contextWordCount} 字</div>
+                  </div>
+                  <div className="rounded-xl bg-white p-3">
+                    <div className="text-xs text-slate-400">用户可见输入</div>
+                    <div className="mt-1 break-words font-bold text-slate-800">{visibleRequestLog.userContent || '空内容'}</div>
+                  </div>
+                </div>
+              </aside>
+              <div className="editor-scrollbar min-h-0 overflow-y-auto p-5">
+                <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs leading-5 text-amber-700">
+                  这里展示的是实际发给 AI 的逻辑。发送顺序固定为：System Prompt（提示词）→ Context（{`${chapterContextLabel}内容`}或关联上下文，顺序为设定、角色、梗概、正文）→ Request（AI 输入框里的用户要求）。
+                </div>
+                {visibleRequestLog.linkedItems.length > 0 && (
+                  <section className="mb-4">
+                    <h3 className="mb-2 text-sm font-bold text-slate-900">关联预览</h3>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {visibleRequestLog.linkedItems.map((item) => (
+                        <article key={item.id} className="rounded-xl border border-slate-200 bg-white p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0 truncate text-sm font-bold text-slate-900">{item.title}</div>
+                            <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-500">
+                              {getLinkedContextSourceLabel(item.source)}
+                            </span>
+                          </div>
+                          <div className="mt-1 truncate text-[11px] font-bold text-slate-400">{item.group || '未分类'} · {getTextWordCount(item.content)}字</div>
+                          <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-xs leading-5 text-slate-500">{item.content || '暂无内容'}</p>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                )}
+                {visibleRequestLog.systemPrompt && (
+                  <section className="mb-4">
+                    <h3 className="mb-2 text-sm font-bold text-slate-900">System Prompt</h3>
+                    <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4">
+                      {visibleRequestLog.systemPrompt}
+                    </div>
+                  </section>
+                )}
+                <section className="mb-4">
+                  <h3 className="mb-2 text-sm font-bold text-slate-900">Context</h3>
+                  <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4">
+                    {visibleRequestLog.contextText || `未关联${chapterContextLabel}内容或关联上下文`}
+                  </div>
+                </section>
+                <section>
+                  <h3 className="mb-2 text-sm font-bold text-slate-900">User Content</h3>
+                  <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4">
+                    {visibleRequestLog.userContent || '空内容'}
+                  </div>
+                </section>
+                {lastRequestLog && (
+                  <section className="mt-5">
+                    <h3 className="mb-2 text-sm font-bold text-slate-900">最近一次实际发送</h3>
+                    <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4">
+                      {[
+                        `时间：${lastRequestLog.createdAt}`,
+                        `模型：${lastRequestLog.modelName}`,
+                        `提示词：${lastRequestLog.promptName}`,
+                        `上下文：${lastRequestLog.contextTitle || '未关联'} · ${lastRequestLog.contextWordCount}字`,
+                        '',
+                        ...(lastRequestLog.systemPrompt ? ['【System Prompt】', lastRequestLog.systemPrompt, ''] : []),
+                        ...(lastRequestLog.contextText ? ['【Context】', lastRequestLog.contextText, ''] : []),
+                        '【User Content】',
+                        lastRequestLog.userContent || '空内容',
+                      ].join('\n')}
+                    </div>
+                  </section>
+                )}
+              </div>
+            </div>
+        </WorkbenchModal>
+      )}
     </aside>
   );
 }

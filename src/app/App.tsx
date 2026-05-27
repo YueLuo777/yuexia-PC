@@ -8,10 +8,9 @@ const ExtractTestPage = lazy(() => import('@/features/extract/pages/ExtractTestP
 const TestCollectionPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })));
 const DropdownAScenariosTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.DropdownAScenariosTestPage })));
 const UiLandingScenariosTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.UiLandingScenariosTestPage })));
-const NovelCardActionsBTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.NovelCardActionsBTestPage })));
-const SearchUi132TestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.SearchUi132TestPage })));
-const AiInlineIconActionsTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.AiInlineIconActionsTestPage })));
 const ContextLinkerTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.ContextLinkerTestPage })));
+const AiInputBorderColorsTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.AiInputBorderColorsTestPage })));
+const ModelSelectManageInlineTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.ModelSelectManageInlineTestPage })));
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
 const BrainstormAiChainTestPage = lazy(() => import('@/features/tests/pages/BrainstormAiChainTestPage').then((module) => ({ default: module.BrainstormAiChainTestPage })));
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
@@ -107,10 +106,9 @@ export default function App() {
                 <Route path="/test-collection" element={<TestCollectionPage />} />
                 <Route path="/dropdown-a-scenarios-test" element={<DropdownAScenariosTestPage />} />
                 <Route path="/ui-landing-scenarios-test" element={<UiLandingScenariosTestPage />} />
-                <Route path="/novel-card-actions-b-test" element={<NovelCardActionsBTestPage />} />
-                <Route path="/search-ui132-test" element={<SearchUi132TestPage />} />
-                <Route path="/ai-inline-icon-actions-test" element={<AiInlineIconActionsTestPage />} />
                 <Route path="/context-linker-test" element={<ContextLinkerTestPage />} />
+                <Route path="/ai-input-border-colors-test" element={<AiInputBorderColorsTestPage />} />
+                <Route path="/model-select-manage-inline-test" element={<ModelSelectManageInlineTestPage />} />
                 <Route path="/brainstorm-ai-chain-test" element={<BrainstormAiChainTestPage />} />
                 <Route path="/software-ui-catalog" element={<SoftwareUiCatalogPage />} />
                 <Route path="/hidden-pages-test" element={<HiddenPagesTestPage />} />

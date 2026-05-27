@@ -927,39 +927,39 @@ export function SymbolReplaceModal({ isOpen, onClose }: {
   };
 
   return (
-    <ModalShell title="一键替换" onClose={onClose} widthClass="w-[420px]" closeOnBackdrop={false}>
+    <ModalShell title="一键替换" onClose={onClose} widthClass="w-[520px]" closeOnBackdrop={false}>
       <div className="flex max-h-[72vh] flex-col">
-        <div className="grid grid-cols-[86px_86px_56px] gap-2 px-5 pb-2 pt-5">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_78px] gap-3 px-7 pb-2 pt-5">
           <span className="text-sm font-bold text-gray-700">原文</span>
           <span className="text-sm font-bold text-gray-700">替换为</span>
           <span />
         </div>
 
-        <div className="mx-5 min-h-[120px] overflow-hidden rounded-xl border border-gray-100 bg-gray-50/40">
-          <div className="editor-scrollbar max-h-[260px] overflow-y-auto p-2.5">
+        <div className="mx-7 min-h-[120px] overflow-hidden rounded-2xl border border-gray-100 bg-gray-50/40">
+          <div className="editor-scrollbar max-h-[260px] overflow-y-auto p-3">
             {settings.length === 0 ? (
               <div className="rounded-lg border border-dashed border-gray-200 bg-white px-3 py-8 text-center text-sm text-gray-400">
                 暂无一键替换规则
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {settings.map((rule) => (
-                  <div key={rule.id} className="grid grid-cols-[86px_86px_56px] gap-2">
+                  <div key={rule.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_78px] gap-3">
                     <input
                       value={rule.from}
                       onChange={(event) => updateRule(rule.id, 'from', event.target.value)}
                       placeholder="例如 ——、……、某个词"
-                      className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-sm outline-none focus:border-brand"
+                      className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-base outline-none focus:border-brand"
                     />
                     <input
                       value={rule.to}
                       onChange={(event) => updateRule(rule.id, 'to', event.target.value)}
                       placeholder="例如 ……"
-                      className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-sm outline-none focus:border-brand"
+                      className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-base outline-none focus:border-brand"
                     />
                     <button
                       onClick={() => removeRule(rule.id)}
-                      className="h-9 rounded-lg border border-gray-200 bg-white text-sm text-gray-500 hover:bg-red-50 hover:text-red-500"
+                      className="h-11 rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-500 hover:bg-red-50 hover:text-red-500"
                     >
                       删除
                     </button>
@@ -970,13 +970,13 @@ export function SymbolReplaceModal({ isOpen, onClose }: {
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 px-5 py-3">
+        <div className="flex items-center justify-between gap-3 px-7 py-3">
           <p className="text-xs leading-5 text-gray-400">自动模式下输入和粘贴正文时会自动替换。</p>
           {message && <p className="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600">{message}</p>}
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-3">
-          <button onClick={addRule} className="rounded-lg border border-brand px-4 py-2 text-sm font-bold text-brand hover:bg-brand-light">
+        <div className="flex justify-end gap-3 border-t border-gray-100 px-7 py-4 pr-10">
+          <button onClick={addRule} className="h-11 min-w-[124px] rounded-xl border border-brand px-5 text-base font-bold text-brand hover:bg-brand-light">
             新增规则
           </button>
           <button
@@ -984,7 +984,7 @@ export function SymbolReplaceModal({ isOpen, onClose }: {
               saveSettings();
               setMessage('已保存规则');
             }}
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-dark"
+            className="h-11 min-w-[124px] rounded-xl bg-brand px-5 text-base font-bold text-white hover:bg-brand-dark"
           >
             保存规则
           </button>

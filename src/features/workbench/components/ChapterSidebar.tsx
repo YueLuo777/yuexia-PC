@@ -21,6 +21,7 @@ interface ChapterSidebarProps {
   onOpenRecycle: () => void;
   onExportChapters: () => void;
   getChapterWordCount: (chapterId: number) => number;
+  width?: number;
 }
 
 interface ChapterContextMenu {
@@ -77,6 +78,7 @@ export function ChapterSidebar({
   onOpenRecycle,
   onExportChapters,
   getChapterWordCount,
+  width = 200,
 }: ChapterSidebarProps) {
   const [chapterMenu, setChapterMenu] = useState<ChapterContextMenu>(emptyChapterMenu);
   const [volumeMenu, setVolumeMenu] = useState<VolumeContextMenu>(emptyVolumeMenu);
@@ -120,7 +122,7 @@ export function ChapterSidebar({
   };
 
   return (
-    <aside className="flex w-[200px] shrink-0 flex-col border-r border-gray-300 bg-white">
+    <aside className="flex shrink-0 flex-col border-r border-gray-300 bg-white" style={{ width }}>
       <div className="flex h-[42px] shrink-0 items-center justify-between border-b border-gray-100 px-3 py-2.5">
         <div className="flex items-center gap-2">
           <h2 className="whitespace-nowrap text-sm font-bold text-gray-900">未发布</h2>

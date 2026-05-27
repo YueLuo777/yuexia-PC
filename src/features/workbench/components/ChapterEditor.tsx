@@ -1,8 +1,21 @@
 import {
   ChevronDown,
+  Send,
+  Settings,
+  Square,
 } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
+import { readModelSnapshot } from '@/features/models/hooks/useModels';
+import { callModelStream } from '@/features/models/services/callModel';
+import { readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
+import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
+import {
+  readWorkbenchLibraryEntries,
+  writeWorkbenchLibraryEntries,
+  type WorkbenchLibraryEntry,
+} from '@/features/workbench/model/workbenchLibraryStorage';
 import type { Chapter } from '@/features/workbench/model/workbenchTypes';
 import {
   ChapterAssociateModal,
@@ -29,7 +42,22 @@ import {
   type FontSettings,
 } from '@/features/workbench/components/EditorToolModals';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
+import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+
+const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
+const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 150;
+
+function resizeFloatingAiTextarea(textarea: HTMLTextAreaElement | null) {
+  if (!textarea) return;
+  textarea.style.height = 'auto';
+  const nextHeight = Math.min(
+    FLOATING_AI_TEXTAREA_MAX_HEIGHT,
+    Math.max(FLOATING_AI_TEXTAREA_MIN_HEIGHT, textarea.scrollHeight),
+  );
+  textarea.style.height = `${nextHeight}px`;
+  textarea.style.overflowY = textarea.scrollHeight > FLOATING_AI_TEXTAREA_MAX_HEIGHT ? 'auto' : 'hidden';
+}
 
 interface ChapterEditorProps {
   chapter: Chapter | null;
@@ -37,6 +65,10 @@ interface ChapterEditorProps {
   content: string;
   lastSavedAt: string | null;
   allChapters: Chapter[];
+  settingsStorageKey: string;
+  outlineStorageKey?: string;
+  getChapterContent: (chapterId: number) => string;
+  onUpdateChapterContent: (chapterId: number, content: string) => void;
   onRenameChapter: (chapterId: number, title: string) => void;
   onChangeContent: (content: string) => void;
   onUpdateSerialNumber: (chapterId: number, serialNumber: number) => void;
@@ -70,12 +102,164 @@ function clampEditableCursor(cursorPos: number, text: string, paragraphIndent: b
   return safePos;
 }
 
+function getStatusTargetLabel(entry: WorkbenchLibraryEntry) {
+  return `${entry.tab}${entry.type ? ` / ${entry.type}` : ''}`;
+}
+
+function isStatusTargetEntry(entry: WorkbenchLibraryEntry) {
+  const source = `${entry.tab} ${entry.type ?? ''} ${entry.title} ${entry.content}`;
+  if (/脑洞|草稿|概要|细纲/.test(entry.tab)) return false;
+  return /角色|人物|主角|配角|反派|宝物|法宝|道具|装备|势力|组织|宗门|家族|王朝|学院/.test(source);
+}
+
+function getExistingStatusForChapter(content: string, chapterSerial: number) {
+  const pattern = new RegExp(`^- 更新到第${chapterSerial}章[^\\n]*：(.+)$`, 'm');
+  return content.match(pattern)?.[1]?.trim() ?? '';
+}
+
+function upsertEntryStatus(content: string, chapter: Chapter, status: string) {
+  const cleanStatus = status.trim();
+  const titlePart = chapter.title ? `《${chapter.title}》` : '';
+  const nextLine = `- 更新到第${chapter.serialNumber}章${titlePart}：${cleanStatus}`;
+  const linePattern = new RegExp(`^- 更新到第${chapter.serialNumber}章[^\\n]*$`, 'm');
+  if (linePattern.test(content)) return content.replace(linePattern, nextLine);
+  const marker = '【状态记录】';
+  if (content.includes(marker)) return `${content.trimEnd()}\n${nextLine}`;
+  return `${content.trimEnd()}\n\n${marker}\n${nextLine}`.trimStart();
+}
+
+function countCompactWords(text: string) {
+  return text.replace(/\s/g, '').length;
+}
+
+function formatAiThinkingResponse(content: string, reasoning: string, seconds: number, done: boolean) {
+  const reasoningText = reasoning.trim();
+  const body = content.trimStart();
+  if (!reasoningText) return body || (done ? '' : '正在思考...');
+  return [
+    `[[THINKING seconds=${Math.max(0, seconds)} status=${done ? 'done' : 'thinking'}]]`,
+    reasoningText,
+    '[[/THINKING]]',
+    body,
+  ].join('\n').trimEnd();
+}
+
+function renderAiThinkingContent(content: string) {
+  const thinkingMatch = content.match(/^\[\[THINKING seconds=(\d+) status=(thinking|done)\]\]\n([\s\S]*?)\n\[\[\/THINKING\]\]\n?\n?([\s\S]*)$/);
+  if (!thinkingMatch) return <div className="whitespace-pre-wrap break-words">{content}</div>;
+  const seconds = thinkingMatch[1] ?? '0';
+  const done = thinkingMatch[2] === 'done';
+  const reasoning = thinkingMatch[3]?.trim() ?? '';
+  const answer = thinkingMatch[4]?.trimStart() ?? '';
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl border border-[#08AACE]/25 bg-[#EAF9FD] p-3 text-xs leading-6 text-slate-600">
+        <div className="mb-1 font-black text-[#078fb0]">
+          {done ? `已思考（用时 ${seconds} 秒）` : `正在思考（${seconds} 秒）`}
+        </div>
+        {reasoning && <div className="max-h-36 overflow-y-auto whitespace-pre-wrap break-words">{reasoning}</div>}
+      </div>
+      {answer && <div className="whitespace-pre-wrap break-words">{answer}</div>}
+    </div>
+  );
+}
+
+function isReviewDetailOutlineEntry(entry: WorkbenchLibraryEntry) {
+  return /章节细纲|细纲|绔犺妭缁嗙翰|缁嗙翰/.test(`${entry.tab} ${entry.title} ${entry.type ?? ''}`);
+}
+
+function findReviewDetailOutline(entries: WorkbenchLibraryEntry[], chapter: Chapter | null) {
+  if (!chapter) return null;
+  const serialPatterns = [
+    new RegExp(`第\\s*${chapter.serialNumber}\\s*章`),
+    new RegExp(`绗\\s*${chapter.serialNumber}\\s*绔`),
+    new RegExp(`\\b${chapter.serialNumber}\\b`),
+  ];
+  return entries.find((entry) => (
+    isReviewDetailOutlineEntry(entry)
+    && serialPatterns.some((pattern) => pattern.test(`${entry.title} ${entry.type ?? ''}`))
+  )) ?? null;
+}
+
+function stripReviewThinkingBlock(content: string) {
+  return content
+    .replace(/\[\[THINKING seconds=\d+ status=(?:thinking|done)\]\]\n[\s\S]*?\n\[\[\/THINKING\]\]\n?/g, '')
+    .trim();
+}
+
+function extractReviewRevisedText(output: string) {
+  const clean = stripReviewThinkingBlock(output);
+  const marked = clean.match(/【修改后全文】\s*([\s\S]*?)(?=\n?【(?:审核|点评|修改说明|问题|建议|原文|说明)[^】]*】|$)/);
+  if (marked?.[1]?.trim()) return marked[1].trim();
+  const fenced = clean.match(/```(?:text|txt|markdown|md)?\s*([\s\S]*?)```/i);
+  if (fenced?.[1]?.trim()) return fenced[1].trim();
+  return '';
+}
+
+function splitReviewParagraphs(text: string) {
+  return text.replace(/\r\n/g, '\n').split('\n');
+}
+
+function buildReviewParagraphDiffs(originalText: string, revisedText: string) {
+  const original = splitReviewParagraphs(originalText);
+  const revised = splitReviewParagraphs(revisedText);
+  const maxLength = Math.max(original.length, revised.length);
+  return Array.from({ length: maxLength }, (_, index) => {
+    const before = original[index] ?? '';
+    const after = revised[index] ?? '';
+    return {
+      index,
+      before,
+      after,
+      changed: before !== after,
+    };
+  });
+}
+
+function renderInlineTextDiff(before: string, after: string, mode: 'before' | 'after') {
+  if (before === after) return before || <span className="text-slate-300">空段落</span>;
+  let prefixLength = 0;
+  while (
+    prefixLength < before.length
+    && prefixLength < after.length
+    && before[prefixLength] === after[prefixLength]
+  ) {
+    prefixLength += 1;
+  }
+  let suffixLength = 0;
+  while (
+    suffixLength < before.length - prefixLength
+    && suffixLength < after.length - prefixLength
+    && before[before.length - 1 - suffixLength] === after[after.length - 1 - suffixLength]
+  ) {
+    suffixLength += 1;
+  }
+  const source = mode === 'before' ? before : after;
+  const changed = source.slice(prefixLength, source.length - suffixLength);
+  const suffix = suffixLength > 0 ? source.slice(source.length - suffixLength) : '';
+  return (
+    <>
+      {source.slice(0, prefixLength)}
+      {changed && (
+        <mark className={mode === 'before' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}>
+          {changed}
+        </mark>
+      )}
+      {suffix}
+    </>
+  );
+}
+
 export function ChapterEditor({
   chapter,
   volumeName,
   content,
   lastSavedAt,
   allChapters,
+  settingsStorageKey,
+  outlineStorageKey,
+  getChapterContent,
+  onUpdateChapterContent,
   onRenameChapter,
   onChangeContent,
   onUpdateSerialNumber,
@@ -90,6 +274,26 @@ export function ChapterEditor({
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isTitleOptimizeOpen, setIsTitleOptimizeOpen] = useState(false);
   const [isAssociateOpen, setIsAssociateOpen] = useState(false);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [isStatusUpdateOpen, setIsStatusUpdateOpen] = useState(false);
+  const [reviewChapterId, setReviewChapterId] = useState<number | null>(() => chapter?.id ?? null);
+  const [statusChapterId, setStatusChapterId] = useState<number | null>(() => chapter?.id ?? null);
+  const [statusEntries, setStatusEntries] = useState<WorkbenchLibraryEntry[]>([]);
+  const [statusTargetIds, setStatusTargetIds] = useState<Set<string>>(() => new Set());
+  const [statusDraft, setStatusDraft] = useState('');
+  const [reviewModelId, setReviewModelId] = useState('');
+  const [reviewMode, setReviewMode] = useState<'audit' | 'comment'>('audit');
+  const [reviewAuditPromptId, setReviewAuditPromptId] = useState('');
+  const [reviewCommentPromptId, setReviewCommentPromptId] = useState('');
+  const [reviewAiInput, setReviewAiInput] = useState('');
+  const [reviewAiOutput, setReviewAiOutput] = useState('');
+  const [reviewRevisedDraft, setReviewRevisedDraft] = useState('');
+  const [reviewCompareView, setReviewCompareView] = useState<'preview' | 'paragraph' | 'full'>('preview');
+  const [reviewAppliedParagraphs, setReviewAppliedParagraphs] = useState<Set<number>>(() => new Set());
+  const [isReviewAiLoading, setIsReviewAiLoading] = useState(false);
+  const [isReviewLogOpen, setIsReviewLogOpen] = useState(false);
+  const [reviewManagementModal, setReviewManagementModal] = useState<'models' | 'prompts' | null>(null);
+  const [reviewRequestLog, setReviewRequestLog] = useState('');
   const [isFindOpen, setIsFindOpen] = useState(false);
   const [findText, setFindText] = useState('');
   const [replaceText, setReplaceText] = useState('');
@@ -105,6 +309,7 @@ export function ChapterEditor({
     }
   });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const reviewAiAbortRef = useRef<AbortController | null>(null);
   const prevContentRef = useRef('');
   const pendingCursorRef = useRef<{ text: string; cursorPos: number; scrollTop: number } | null>(null);
 
@@ -113,8 +318,306 @@ export function ChapterEditor({
   const safeVolumeName = volumeName ?? '第一卷';
   const wordCount = useMemo(() => content.replace(/\s/g, '').length, [content]);
   const visualIndentEnabled = formatSettings.indent && !formatSettings.paragraphIndent;
+  const reviewModels = useMemo(() => readModelSnapshot().filter((model) => model.enabled), []);
+  const reviewPrompts = useMemo(() => readPromptSnapshot().prompts, []);
+  const reviewAuditPrompts = useMemo(() => {
+    const filtered = reviewPrompts.filter((prompt) => /审核|审稿|校对|错别字/.test(`${prompt.name} ${prompt.category} ${prompt.description}`));
+    return filtered.length > 0 ? filtered : reviewPrompts;
+  }, [reviewPrompts]);
+  const reviewCommentPrompts = useMemo(() => {
+    const filtered = reviewPrompts.filter((prompt) => /点评|评价|吸引|节奏|爽点/.test(`${prompt.name} ${prompt.category} ${prompt.description}`));
+    return filtered.length > 0 ? filtered : reviewPrompts;
+  }, [reviewPrompts]);
+  const sortedReviewChapters = useMemo(() => [...allChapters].sort((a, b) => a.serialNumber - b.serialNumber), [allChapters]);
+  const activeReviewChapter = sortedReviewChapters.find((item) => item.id === reviewChapterId) ?? chapter ?? sortedReviewChapters[0] ?? null;
+  const activeReviewContent = activeReviewChapter
+    ? activeReviewChapter.id === chapter?.id
+      ? content
+      : getChapterContent(activeReviewChapter.id)
+    : '';
+  const activeReviewWordCount = activeReviewContent.replace(/\s/g, '').length;
+  const reviewDetailOutlineEntries = useMemo(() => {
+    const entries = readWorkbenchLibraryEntries(settingsStorageKey);
+    const outlineEntries = outlineStorageKey ? readWorkbenchLibraryEntries(outlineStorageKey) : [];
+    return [...entries, ...outlineEntries].filter(isReviewDetailOutlineEntry);
+  }, [outlineStorageKey, settingsStorageKey]);
+  const activeReviewDetailOutline = useMemo(
+    () => findReviewDetailOutline(reviewDetailOutlineEntries, activeReviewChapter),
+    [activeReviewChapter, reviewDetailOutlineEntries],
+  );
+  const activeReviewModel = reviewModels.find((model) => model.id === reviewModelId) ?? reviewModels[0] ?? null;
+  const activeAuditPrompt = reviewAuditPrompts.find((prompt) => prompt.id === reviewAuditPromptId) ?? reviewAuditPrompts[0] ?? null;
+  const activeCommentPrompt = reviewCommentPrompts.find((prompt) => prompt.id === reviewCommentPromptId) ?? reviewCommentPrompts[0] ?? null;
+  const activeReviewPrompt = reviewMode === 'audit' ? activeAuditPrompt : activeCommentPrompt;
+  const activeReviewPromptOptions = reviewMode === 'audit' ? reviewAuditPrompts : reviewCommentPrompts;
+  const activeReviewPromptId = reviewMode === 'audit' ? reviewAuditPromptId : reviewCommentPromptId;
+  const setActiveReviewPromptId = reviewMode === 'audit' ? setReviewAuditPromptId : setReviewCommentPromptId;
+  const activeReviewPromptLabel = reviewMode === 'audit' ? '审核提示词' : '点评提示词';
+  const activeReviewPromptCategory = reviewMode === 'audit' ? '审核' : '点评';
+  const reviewParagraphDiffs = useMemo(
+    () => buildReviewParagraphDiffs(activeReviewContent, reviewRevisedDraft),
+    [activeReviewContent, reviewRevisedDraft],
+  );
+  const reviewChangedParagraphs = reviewParagraphDiffs.filter((item) => item.changed);
+  const sortedStatusChapters = sortedReviewChapters;
+  const activeStatusChapter = sortedStatusChapters.find((item) => item.id === statusChapterId) ?? chapter ?? sortedStatusChapters[0] ?? null;
+  const statusPreviewChapters = activeStatusChapter
+    ? sortedStatusChapters.filter((item) => item.serialNumber <= activeStatusChapter.serialNumber)
+    : [];
+  const statusPreviewText = statusPreviewChapters
+    .map((item) => {
+      const body = item.id === chapter?.id ? content : getChapterContent(item.id);
+      return `第${item.serialNumber}章 ${item.title || '未命名章节'}\n${body || '暂无正文'}`;
+    })
+    .join('\n\n');
+  const statusPreviewWordCount = statusPreviewText.replace(/\s/g, '').length;
+  const statusTargetEntries = useMemo(() => statusEntries.filter(isStatusTargetEntry), [statusEntries]);
+  const selectedStatusTargets = statusTargetEntries.filter((entry) => statusTargetIds.has(entry.id));
+  const statusUpdateSourceEntries = selectedStatusTargets.length > 0 ? selectedStatusTargets : statusTargetEntries;
+  const statusUpdatedChapterIds = useMemo(() => new Set(
+    sortedStatusChapters
+      .filter((item) => statusUpdateSourceEntries.some((entry) => getExistingStatusForChapter(entry.content, item.serialNumber)))
+      .map((item) => item.id),
+  ), [sortedStatusChapters, statusUpdateSourceEntries]);
+
+  useEffect(() => {
+    if (chapter) {
+      setReviewChapterId(chapter.id);
+      setReviewRevisedDraft('');
+      setReviewAppliedParagraphs(new Set());
+      setReviewCompareView('preview');
+    }
+  }, [chapter?.id]);
+
+  useEffect(() => {
+    if (chapter) setStatusChapterId(chapter.id);
+  }, [chapter?.id]);
+
+  useEffect(() => {
+    if (!reviewModelId && reviewModels[0]) setReviewModelId(reviewModels[0].id);
+  }, [reviewModelId, reviewModels]);
+
+  useEffect(() => {
+    if (!reviewAuditPromptId && reviewAuditPrompts[0]) setReviewAuditPromptId(reviewAuditPrompts[0].id);
+  }, [reviewAuditPromptId, reviewAuditPrompts]);
+
+  useEffect(() => {
+    if (!reviewCommentPromptId && reviewCommentPrompts[0]) setReviewCommentPromptId(reviewCommentPrompts[0].id);
+  }, [reviewCommentPromptId, reviewCommentPrompts]);
+
+  useEffect(() => () => {
+    reviewAiAbortRef.current?.abort();
+  }, []);
+
+  const openReviewPanel = (mode: 'audit' | 'comment') => {
+    setReviewMode(mode);
+    setIsReviewLogOpen(false);
+    setReviewManagementModal(null);
+    setIsReviewOpen(true);
+  };
+
+  const openStatusUpdate = () => {
+    const entries = readWorkbenchLibraryEntries(settingsStorageKey);
+    const targets = entries.filter(isStatusTargetEntry);
+    const firstTarget = targets[0] ?? null;
+    const nextChapter = chapter ?? sortedStatusChapters[0] ?? null;
+    setStatusEntries(entries);
+    setStatusTargetIds(firstTarget ? new Set([firstTarget.id]) : new Set());
+    setStatusDraft(firstTarget && nextChapter ? getExistingStatusForChapter(firstTarget.content, nextChapter.serialNumber) : '');
+    setStatusChapterId(nextChapter?.id ?? null);
+    setIsStatusUpdateOpen(true);
+  };
+
+  const toggleStatusTarget = (entry: WorkbenchLibraryEntry) => {
+    setStatusTargetIds((current) => {
+      const next = new Set(current);
+      if (next.has(entry.id)) next.delete(entry.id);
+      else next.add(entry.id);
+      if (next.size === 1) {
+        const selectedId = Array.from(next)[0];
+        const selected = statusTargetEntries.find((item) => item.id === selectedId);
+        if (selected && activeStatusChapter) {
+          setStatusDraft(getExistingStatusForChapter(selected.content, activeStatusChapter.serialNumber));
+        }
+      }
+      return next;
+    });
+  };
+
+  const selectStatusChapter = (nextChapterId: number) => {
+    const nextChapter = sortedStatusChapters.find((item) => item.id === nextChapterId) ?? null;
+    setStatusChapterId(nextChapterId);
+    if (statusTargetIds.size === 1 && nextChapter) {
+      const selected = statusTargetEntries.find((item) => statusTargetIds.has(item.id));
+      setStatusDraft(selected ? getExistingStatusForChapter(selected.content, nextChapter.serialNumber) : '');
+    }
+  };
+
+  const saveStatusUpdate = () => {
+    if (!activeStatusChapter || statusTargetIds.size === 0 || !statusDraft.trim()) return;
+    const nextEntries = statusEntries.map((entry) => (
+      statusTargetIds.has(entry.id)
+        ? {
+            ...entry,
+            content: upsertEntryStatus(entry.content, activeStatusChapter, statusDraft),
+            updatedAt: new Date().toLocaleString('zh-CN'),
+          }
+        : entry
+    ));
+    setStatusEntries(nextEntries);
+    writeWorkbenchLibraryEntries(settingsStorageKey, nextEntries);
+    setIsStatusUpdateOpen(false);
+    showToast(`已更新 ${statusTargetIds.size} 个状态到第${activeStatusChapter.serialNumber}章`);
+  };
 
   const showToast = (text: string) => setCopyToast(text);
+
+  const buildReviewPayload = () => {
+    const modeTitle = reviewMode === 'audit' ? '审核' : '点评';
+    const modeInstruction = reviewMode === 'audit'
+      ? '请对文章内容进行审核：检查错别字、语病、逻辑问题，以及是否按照细纲来写。输出需要列出问题位置、问题说明和修改建议。'
+      : '请对文章内容进行点评：判断内容是否吸引人，重点点评开篇钩子、节奏、冲突、情绪张力和读者继续阅读欲望，并给出可执行的优化建议。';
+    const promptText = activeReviewPrompt?.content?.trim() || modeInstruction;
+    const compareInstruction = [
+      '如果你需要修改正文，请务必额外输出一个独立区块：',
+      '【修改后全文】',
+      '这里放完整修改后的正文，只放正文，不要夹杂点评说明。',
+      '【修改说明】',
+      '这里再说明具体修改原因。',
+      '这样用户可以在软件中按段落对比并逐段确认替换。',
+    ].join('\n');
+    const userText = [reviewAiInput.trim() || modeInstruction, compareInstruction].join('\n\n');
+    const chapterTitle = activeReviewChapter
+      ? `第${activeReviewChapter.serialNumber}章 ${activeReviewChapter.title || '未命名章节'}`
+      : '未选择章节';
+    const detailOutlineText = activeReviewDetailOutline?.content?.trim() || '';
+    const chapterContext = [
+      `【审核点评模式】${modeTitle}`,
+      `【所选章节】${chapterTitle}`,
+      detailOutlineText
+        ? `【关联细纲：${activeReviewDetailOutline?.title || '未命名细纲'}】\n${detailOutlineText}`
+        : '【关联细纲】未读取到当前章节细纲。',
+      activeReviewContent.trim()
+        ? `【章节正文】\n${activeReviewContent}`
+        : '【章节正文】当前章节正文为空。',
+    ].join('\n\n');
+    const requestLog = [
+      `模式：${modeTitle}`,
+      `模型：${activeReviewModel?.name ?? '未选择模型'}`,
+      `提示词：${activeReviewPrompt?.name ?? '未选择提示词，使用内置默认提示词'}`,
+      `章节：${chapterTitle}`,
+      `正文：${activeReviewWordCount} 字`,
+      `关联细纲：${detailOutlineText ? `${activeReviewDetailOutline?.title ?? '未命名细纲'}（${countCompactWords(detailOutlineText)} 字）` : '未关联 / 未读取到'}`,
+      '',
+      '【系统提示词】',
+      promptText,
+      '',
+      '【用户要求】',
+      userText,
+      '',
+      '【发送上下文】',
+      chapterContext,
+    ].join('\n');
+    return { promptText, userText, chapterContext, requestLog };
+  };
+
+  const sendReviewAiMessage = async () => {
+    if (isReviewAiLoading) return;
+    if (!activeReviewChapter) {
+      setReviewAiOutput('【错误】请先选择需要审核点评的章节。');
+      return;
+    }
+    if (!activeReviewModel) {
+      setReviewAiOutput('【错误】尚未配置可用模型，请先到模型管理中新增并启用模型。');
+      return;
+    }
+    const { promptText, userText, chapterContext, requestLog } = buildReviewPayload();
+    const controller = new AbortController();
+    reviewAiAbortRef.current = controller;
+    setIsReviewAiLoading(true);
+    setReviewRequestLog(requestLog);
+    setReviewAiOutput('正在思考...');
+    try {
+      let answer = '';
+      let reasoningContent = '';
+      const startedAt = Date.now();
+      const getThinkingSeconds = () => Math.max(0, Math.round((Date.now() - startedAt) / 1000));
+      answer = await callModelStream({
+        model: activeReviewModel,
+        prompt: promptText,
+        userContent: userText,
+        chapterContext,
+        recordType: 'stream',
+        signal: controller.signal,
+        onReasoning: (chunk) => {
+          reasoningContent += chunk;
+          setReviewAiOutput(formatAiThinkingResponse(answer, reasoningContent, getThinkingSeconds(), false));
+        },
+        onChunk: (chunk) => {
+          answer += chunk;
+          setReviewAiOutput(formatAiThinkingResponse(answer, reasoningContent, getThinkingSeconds(), false));
+        },
+      });
+      setReviewAiOutput(reasoningContent.trim()
+        ? formatAiThinkingResponse(answer, reasoningContent, getThinkingSeconds(), true)
+        : answer);
+      const revised = extractReviewRevisedText(answer);
+      if (revised) {
+        setReviewRevisedDraft(revised);
+        setReviewAppliedParagraphs(new Set());
+        setReviewCompareView('paragraph');
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setReviewAiOutput((value) => value.trim() || '【已停止】本次审核点评已停止。');
+      } else {
+        const message = error instanceof Error ? error.message : '模型请求失败。';
+        setReviewAiOutput(`【错误】${message}`);
+      }
+    } finally {
+      if (reviewAiAbortRef.current === controller) reviewAiAbortRef.current = null;
+      setIsReviewAiLoading(false);
+    }
+  };
+
+  const stopReviewAiMessage = () => {
+    reviewAiAbortRef.current?.abort();
+    setIsReviewAiLoading(false);
+  };
+
+  const syncReviewDraftFromOutput = (output = reviewAiOutput) => {
+    const extracted = extractReviewRevisedText(output) || stripReviewThinkingBlock(output);
+    setReviewRevisedDraft(extracted);
+    setReviewAppliedParagraphs(new Set());
+    setReviewCompareView('paragraph');
+  };
+
+  const applyReviewParagraph = (paragraphIndex: number) => {
+    if (!activeReviewChapter) return;
+    const nextParagraphs = splitReviewParagraphs(activeReviewContent);
+    const replacement = splitReviewParagraphs(reviewRevisedDraft)[paragraphIndex] ?? '';
+    nextParagraphs[paragraphIndex] = replacement;
+    const nextContent = nextParagraphs.join('\n');
+    if (activeReviewChapter.id === chapter?.id) {
+      commitContent(nextContent);
+    } else {
+      onUpdateChapterContent(activeReviewChapter.id, nextContent);
+    }
+    setReviewAppliedParagraphs((current) => new Set([...current, paragraphIndex]));
+    showToast(`已替换第 ${paragraphIndex + 1} 段`);
+  };
+
+  const applyAllReviewParagraphs = () => {
+    if (!activeReviewChapter || !reviewRevisedDraft.trim()) return;
+    if (activeReviewChapter.id === chapter?.id) {
+      commitContent(reviewRevisedDraft);
+    } else {
+      onUpdateChapterContent(activeReviewChapter.id, reviewRevisedDraft);
+    }
+    setReviewAppliedParagraphs(new Set(reviewParagraphDiffs.filter((item) => item.changed).map((item) => item.index)));
+    showToast('已替换全部修改段落');
+  };
+
   const restoreTextareaScroll = (textarea: HTMLTextAreaElement, scrollTop: number) => {
     textarea.scrollTop = scrollTop;
     setEditorScrollTop(textarea.scrollTop);
@@ -475,10 +978,28 @@ export function ChapterEditor({
         >
           标题优化
         </button>
-        {['正文续写', '审核点评', '更新状态'].map((label) => (
+        <div className="flex items-center overflow-hidden rounded-md border border-brand">
+          <button
+            type="button"
+            onClick={() => openReviewPanel('audit')}
+            className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light"
+          >
+            审核
+          </button>
+          <div className="h-4 w-px bg-brand/30" />
+          <button
+            type="button"
+            onClick={() => openReviewPanel('comment')}
+            className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light"
+          >
+            点评
+          </button>
+        </div>
+        {['更新状态'].map((label) => (
           <button
             key={label}
             type="button"
+            onClick={openStatusUpdate}
             className="rounded-md bg-brand px-3.5 py-1.5 text-sm text-white transition-colors hover:bg-brand-dark"
           >
             {label}
@@ -503,7 +1024,7 @@ export function ChapterEditor({
             className="px-2 py-1.5 text-brand hover:bg-brand-light"
             title="智能排版设置"
           >
-            <ChevronDown className="h-4 w-4" />
+            <Settings className="h-4 w-4 text-brand" />
           </button>
         </div>
         <div className="flex items-center overflow-hidden rounded-md border border-brand">
@@ -514,19 +1035,19 @@ export function ChapterEditor({
           <HighFreqToggle />
         </div>
         <div className="flex items-center overflow-hidden rounded-md border border-brand">
-          <button onClick={handleSymbolReplaceNow} className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
-            一键替换
-          </button>
-          <div className="h-4 w-px bg-brand/30" />
           <button
             onClick={() => setIsSymbolReplaceOpen(true)}
             className="flex h-[31px] w-9 items-center justify-center text-brand hover:bg-brand-light"
             title="一键替换设置"
           >
-            <ChevronDown className="h-4 w-4" />
+            <Settings className="h-4 w-4 text-brand" />
           </button>
           <div className="h-4 w-px bg-brand/30" />
           <SymbolReplaceToggle onEnable={handleSymbolAutoEnabled} />
+          <div className="h-4 w-px bg-brand/30" />
+          <button onClick={handleSymbolReplaceNow} className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
+            一键替换
+          </button>
         </div>
         <div className="mx-1 h-5 w-px bg-gray-200" />
         <div className="ml-auto flex items-center gap-2">
@@ -653,6 +1174,494 @@ export function ChapterEditor({
           window.dispatchEvent(new CustomEvent('chapter_associate_updated'));
         }}
       />
+      {isStatusUpdateOpen && (
+        <div className="fixed inset-0 z-[280] flex items-center justify-center bg-black/35 p-5" onClick={() => setIsStatusUpdateOpen(false)}>
+          <section
+            className="flex h-[78vh] max-h-[820px] w-[min(1280px,94vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-5">
+              <div>
+                <h2 className="text-lg font-black text-slate-900">更新状态</h2>
+                <p className="mt-0.5 text-xs font-bold text-slate-400">阅读前文后，把角色、宝物、势力的最新状态写入设定卡片，并记录更新到第几章。</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsStatusUpdateOpen(false)}
+                className="rounded-lg px-3 py-1.5 text-sm font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+              >
+                关闭
+              </button>
+            </header>
+            <div className="grid min-h-0 flex-1 grid-cols-[230px_minmax(0,1fr)_360px] bg-slate-50">
+              <aside className="min-h-0 border-r border-slate-100 bg-white p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-sm font-black text-slate-900">章节位置</span>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">{sortedStatusChapters.length}</span>
+                </div>
+                <div className="mb-3 flex items-center gap-3 text-[11px] font-black text-slate-400">
+                  <span className="inline-flex items-center gap-1"><i className="h-3 w-3 rounded bg-[#08B3D9]" />已更新</span>
+                  <span className="inline-flex items-center gap-1"><i className="h-3 w-3 rounded border border-slate-200 bg-slate-50" />未更新</span>
+                </div>
+                <div className="editor-scrollbar h-full overflow-y-auto pr-1">
+                  <div className="grid grid-cols-5 gap-2">
+                    {sortedStatusChapters.map((item) => {
+                      const selected = activeStatusChapter?.id === item.id;
+                      const updated = statusUpdatedChapterIds.has(item.id);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => selectStatusChapter(item.id)}
+                          title={`${updated ? '已更新状态到' : '未更新状态到'}第${item.serialNumber}章 ${item.title || ''}`}
+                          className={`relative h-9 rounded-lg border text-sm font-black transition-colors ${
+                            updated
+                              ? 'border-[#08B3D9] bg-[#08B3D9] text-white hover:border-[#067B96] hover:bg-[#067B96]'
+                              : 'border-slate-200 text-slate-500 hover:border-[#08B3D9] hover:text-[#078fb0]'
+                          } ${selected ? 'ring-2 ring-[#08B3D9] ring-offset-2' : ''}`}
+                          style={updated ? undefined : {
+                            backgroundImage: 'repeating-linear-gradient(135deg, #f8fafc 0, #f8fafc 5px, #e2e8f0 5px, #e2e8f0 6px)',
+                          }}
+                        >
+                          {item.serialNumber}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </aside>
+              <main className="min-h-0 p-4">
+                <div className="flex h-full min-h-0 flex-col rounded-2xl border border-slate-200 bg-white">
+                  <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-4">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-base font-black text-slate-900">
+                        {activeStatusChapter ? `截至第${activeStatusChapter.serialNumber}章：${activeStatusChapter.title || '未命名章节'}` : '暂无章节'}
+                      </h3>
+                      <p className="mt-0.5 text-xs font-bold text-slate-400">前文预览 · {statusPreviewChapters.length}章 · {statusPreviewWordCount}字</p>
+                    </div>
+                  </div>
+                  <textarea
+                    readOnly
+                    value={statusPreviewText}
+                    placeholder="这里会显示从第一章到所选章节的正文，方便判断状态变化。"
+                    className="editor-scrollbar min-h-0 flex-1 resize-none border-0 bg-white p-5 text-sm leading-7 text-slate-700 outline-none"
+                  />
+                </div>
+              </main>
+              <aside className="flex min-h-0 flex-col border-l border-slate-100 bg-white p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-base font-black text-slate-900">状态目标</h3>
+                  <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-black text-[#08AACE]">已选 {selectedStatusTargets.length}</span>
+                </div>
+                <div className="editor-scrollbar mt-3 max-h-[210px] shrink-0 space-y-2 overflow-y-auto pr-1">
+                  {statusTargetEntries.length === 0 ? (
+                    <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-slate-200 text-xs font-bold text-slate-300">
+                      暂无角色、宝物或势力卡片
+                    </div>
+                  ) : (
+                    statusTargetEntries.map((entry) => {
+                      const selected = statusTargetIds.has(entry.id);
+                      return (
+                        <label
+                          key={entry.id}
+                          className={`block cursor-pointer rounded-xl border p-3 transition-colors ${
+                            selected ? 'border-[#08AACE] bg-sky-50/70' : 'border-slate-100 bg-slate-50 hover:border-sky-100 hover:bg-white'
+                          }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={() => toggleStatusTarget(entry)}
+                              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#08AACE] focus:ring-[#08AACE]/20"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-black text-slate-900">{entry.title}</div>
+                              <div className="mt-1 truncate text-[11px] font-bold text-slate-400">{getStatusTargetLabel(entry)}</div>
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+                <label className="mt-4 flex min-h-0 flex-1 flex-col">
+                  <span className="mb-2 text-sm font-black text-slate-900">新的状态</span>
+                  <textarea
+                    value={statusDraft}
+                    onChange={(event) => setStatusDraft(event.target.value)}
+                    placeholder="例如：主角已从高中生变为大学生，当前就读玄都大学，心态更成熟，但仍隐藏真实实力。"
+                    className="editor-scrollbar min-h-[180px] flex-1 resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-700 outline-none focus:border-[#08AACE]"
+                  />
+                </label>
+                <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs font-bold leading-5 text-slate-500">
+                  保存规则：同一卡片同一章节只保留一条“更新到第 X 章”的状态记录；重复保存会覆盖旧状态，不会追加重复内容。
+                </div>
+                <button
+                  type="button"
+                  onClick={saveStatusUpdate}
+                  disabled={!activeStatusChapter || selectedStatusTargets.length === 0 || !statusDraft.trim()}
+                  className="mt-3 h-11 rounded-xl bg-[#08AACE] text-sm font-black text-white shadow-sm transition-colors hover:bg-[#0695B5] disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  保存状态到第{activeStatusChapter?.serialNumber ?? '-'}章
+                </button>
+              </aside>
+            </div>
+          </section>
+        </div>
+      )}
+      {isReviewOpen && (
+        <div className="fixed inset-0 z-[280] flex items-center justify-center bg-black/35 p-5" onClick={() => setIsReviewOpen(false)}>
+          <section
+            className="flex h-[86vh] w-[min(1452px,96vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-5">
+              <div>
+                <h2 className="text-lg font-black text-slate-900">{reviewMode === 'audit' ? '审核' : '点评'}</h2>
+                <p className="mt-0.5 text-xs font-bold text-slate-400">左侧选择章节，中间预览正文，右侧配置 AI {reviewMode === 'audit' ? '审核' : '点评'}参数。</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsReviewOpen(false)}
+                className="rounded-lg px-3 py-1.5 text-sm font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+              >
+                关闭
+              </button>
+            </header>
+            <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)_340px] bg-slate-50">
+              <aside className="min-h-0 border-r border-slate-100 bg-white p-4">
+                <div className="mb-3 text-sm font-black text-slate-900">章节目录</div>
+                <div className="editor-scrollbar h-full space-y-2 overflow-y-auto pr-1">
+                  {sortedReviewChapters.map((item) => {
+                    const selected = activeReviewChapter?.id === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setReviewChapterId(item.id)}
+                        className={`w-full rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                          selected
+                            ? 'border-[#08AACE] bg-[#EAFBFF] text-slate-950'
+                            : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-sky-100 hover:bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="shrink-0 text-sm font-black">第{item.serialNumber}章</span>
+                          <span className="text-[11px] font-bold text-[#08AACE]">{item.wordCount}字</span>
+                        </div>
+                        <div className="mt-1 truncate text-xs font-bold text-slate-400">{item.title || '未命名章节'}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </aside>
+              <main className="min-h-0 p-5">
+                <div className="flex h-full min-h-0 flex-col rounded-2xl border border-slate-200 bg-white">
+                  <div className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-base font-black text-slate-900">
+                        {activeReviewChapter ? `第${activeReviewChapter.serialNumber}章 ${activeReviewChapter.title || '未命名章节'}` : '暂无章节'}
+                      </h3>
+                      <p className="mt-0.5 text-xs font-bold text-slate-400">
+                        {reviewCompareView === 'preview' ? '正文预览' : reviewCompareView === 'paragraph' ? '段落对比' : '全文对比'}
+                        {' · '}{activeReviewWordCount}字
+                        {reviewRevisedDraft.trim() ? ` · ${reviewChangedParagraphs.length} 处修改` : ''}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-black">
+                      {([
+                        ['preview', '原文'] as const,
+                        ['paragraph', '段落'] as const,
+                        ['full', '全文'] as const,
+                      ]).map(([key, label]) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setReviewCompareView(key)}
+                          className={`h-8 rounded-lg px-3 transition-colors ${reviewCompareView === key ? 'bg-white text-[#078fb0] shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {reviewCompareView === 'preview' ? (
+                    <textarea
+                      readOnly
+                      value={activeReviewContent}
+                      placeholder="这里会显示所选章节正文。"
+                      className="editor-scrollbar min-h-0 flex-1 resize-none border-0 bg-white p-5 text-sm leading-7 text-slate-700 outline-none"
+                    />
+                  ) : !reviewRevisedDraft.trim() ? (
+                    <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+                      <div className="text-sm font-bold text-slate-400">还没有可对比的修改稿。</div>
+                      <button
+                        type="button"
+                        onClick={() => syncReviewDraftFromOutput()}
+                        disabled={!stripReviewThinkingBlock(reviewAiOutput).trim()}
+                        className="h-10 rounded-xl bg-[#08AACE] px-4 text-sm font-black text-white hover:bg-[#0695B5] disabled:bg-slate-300"
+                      >
+                        将 AI 输出设为修改稿
+                      </button>
+                    </div>
+                  ) : reviewCompareView === 'paragraph' ? (
+                    <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto bg-slate-50 p-4">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <div className="text-xs font-black text-slate-500">
+                          原文 / 修改后 · 共 {reviewChangedParagraphs.length} 处差异
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => syncReviewDraftFromOutput()}
+                            disabled={!stripReviewThinkingBlock(reviewAiOutput).trim()}
+                            className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-500 hover:bg-slate-50 disabled:text-slate-300"
+                          >
+                            重新读取AI输出
+                          </button>
+                          <button
+                            type="button"
+                            onClick={applyAllReviewParagraphs}
+                            disabled={reviewChangedParagraphs.length === 0}
+                            className="h-8 rounded-lg bg-[#08AACE] px-3 text-xs font-black text-white hover:bg-[#0695B5] disabled:bg-slate-300"
+                          >
+                            确认全部
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        {reviewParagraphDiffs.map((item) => {
+                          const applied = reviewAppliedParagraphs.has(item.index);
+                          if (!item.changed && !item.before.trim() && !item.after.trim()) return null;
+                          return (
+                            <section
+                              key={item.index}
+                              className={`overflow-hidden rounded-xl border bg-white ${item.changed ? 'border-slate-200' : 'border-slate-100 opacity-75'}`}
+                            >
+                              <div className="flex h-9 items-center justify-between border-b border-slate-100 bg-slate-50 px-3">
+                                <span className="text-xs font-black text-slate-500">第 {item.index + 1} 段</span>
+                                <button
+                                  type="button"
+                                  onClick={() => applyReviewParagraph(item.index)}
+                                  disabled={!item.changed || applied}
+                                  className="h-7 rounded-lg bg-[#08AACE] px-3 text-xs font-black text-white hover:bg-[#0695B5] disabled:bg-slate-300"
+                                >
+                                  {applied ? '已确认' : '确认替换'}
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-2 divide-x divide-slate-100">
+                                <div className="min-w-0 bg-red-50/35 p-3">
+                                  <div className="mb-2 text-[11px] font-black text-red-500">原文</div>
+                                  <p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-700">
+                                    {renderInlineTextDiff(item.before, item.after, 'before')}
+                                  </p>
+                                </div>
+                                <div className="min-w-0 bg-emerald-50/45 p-3">
+                                  <div className="mb-2 text-[11px] font-black text-emerald-600">修改后</div>
+                                  <p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-700">
+                                    {renderInlineTextDiff(item.before, item.after, 'after')}
+                                  </p>
+                                </div>
+                              </div>
+                            </section>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid min-h-0 flex-1 grid-cols-2 divide-x divide-slate-100">
+                      <label className="flex min-h-0 flex-col">
+                        <span className="shrink-0 border-b border-slate-100 bg-red-50/60 px-4 py-2 text-xs font-black text-red-500">原文全文</span>
+                        <textarea
+                          readOnly
+                          value={activeReviewContent}
+                          className="editor-scrollbar min-h-0 flex-1 resize-none border-0 bg-white p-4 text-sm leading-7 text-slate-700 outline-none"
+                        />
+                      </label>
+                      <label className="flex min-h-0 flex-col">
+                        <span className="shrink-0 border-b border-slate-100 bg-emerald-50/70 px-4 py-2 text-xs font-black text-emerald-600">修改后全文（可编辑）</span>
+                        <textarea
+                          value={reviewRevisedDraft}
+                          onChange={(event) => {
+                            setReviewRevisedDraft(event.target.value);
+                            setReviewAppliedParagraphs(new Set());
+                          }}
+                          className="editor-scrollbar min-h-0 flex-1 resize-none border-0 bg-white p-4 text-sm leading-7 text-slate-700 outline-none"
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </main>
+              <aside className="relative flex min-h-0 flex-col border-l border-slate-100 bg-white p-4">
+                <div className="flex shrink-0 items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <h3 className="shrink-0 text-base font-black text-slate-900">AI 配置</h3>
+                    <div className="xy-management-segment shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setReviewManagementModal('models')}
+                        className="xy-management-segment-button"
+                      >
+                        模型管理
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setReviewManagementModal('prompts')}
+                        className="xy-management-segment-button"
+                      >
+                        提示词管理
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsReviewLogOpen(true)}
+                    className="h-8 rounded-lg border border-[#08AACE]/30 bg-white px-3 text-xs font-black text-[#078fb0] transition-colors hover:bg-[#EAF9FD]"
+                  >
+                    输出日志
+                  </button>
+                </div>
+                <div className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-bold text-slate-500">模型</span>
+                    <CapsuleSelect
+                      value={reviewModelId}
+                      onChange={setReviewModelId}
+                      options={reviewModels.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : reviewModels.map((model) => ({ value: model.id, label: model.name }))}
+                      buttonClassName="h-11 rounded-xl px-3 text-sm"
+                    />
+                  </label>
+                  <label className="grid grid-cols-[78px_1fr] items-center gap-2 text-sm text-slate-500">
+                    <span className="font-bold">{activeReviewPromptLabel}</span>
+                    <CapsuleSelect
+                      value={activeReviewPromptId}
+                      onChange={setActiveReviewPromptId}
+                      options={activeReviewPromptOptions.length === 0 ? [{ value: '', label: `暂无${activeReviewPromptLabel}`, disabled: true }] : activeReviewPromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                      buttonClassName="h-11 rounded-xl px-3 text-sm"
+                    />
+                  </label>
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-xs leading-5 text-slate-500">
+                    <div><span className="font-black text-slate-800">当前章节：</span>{activeReviewChapter ? `第${activeReviewChapter.serialNumber}章` : '无'}</div>
+                    <div><span className="font-black text-slate-800">正文字数：</span>{activeReviewWordCount} 字</div>
+                    <div><span className="font-black text-slate-800">关联细纲：</span>{activeReviewDetailOutline ? `${activeReviewDetailOutline.title}（${countCompactWords(activeReviewDetailOutline.content)} 字）` : '未读取到'}</div>
+                  </div>
+                  <section className="flex min-h-[240px] flex-col rounded-2xl border border-[#08AACE] bg-white">
+                    <div className="flex h-10 shrink-0 items-center justify-between border-b border-slate-100 px-3">
+                      <span className="text-sm font-black text-slate-900">AI 输出框</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => syncReviewDraftFromOutput()}
+                          disabled={!stripReviewThinkingBlock(reviewAiOutput).trim()}
+                          className="text-xs font-black text-[#078fb0] hover:text-[#0695B5] disabled:text-slate-300"
+                        >
+                          生成对比
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReviewAiOutput('')}
+                          className="text-xs font-black text-red-500 hover:text-red-600"
+                        >
+                          清空
+                        </button>
+                      </div>
+                    </div>
+                    <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto p-3 text-sm leading-6 text-slate-700">
+                      {reviewAiOutput.trim() ? renderAiThinkingContent(reviewAiOutput) : (
+                        <span className="text-slate-400">审核或点评结果会显示在这里。</span>
+                      )}
+                    </div>
+                  </section>
+                  <div className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${reviewAiInput.trim() ? 'xy-has-value' : ''}`}>
+                    <textarea
+                      rows={1}
+                      value={reviewAiInput}
+                      onChange={(event) => {
+                        setReviewAiInput(event.target.value);
+                        resizeFloatingAiTextarea(event.currentTarget);
+                      }}
+                      onKeyDown={(event) => {
+                        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                          event.preventDefault();
+                          void sendReviewAiMessage();
+                        }
+                      }}
+                      className="editor-scrollbar"
+                    />
+                    <label>请输入要求</label>
+                    <div className="xy-ai-inline-actions">
+                      <button
+                        type="button"
+                        onClick={() => void sendReviewAiMessage()}
+                        disabled={isReviewAiLoading || !activeReviewChapter || !activeReviewModel}
+                        className="xy-ai-inline-send"
+                      >
+                        <span className="xy-ai-inline-send-icon"><Send className="h-6 w-6 stroke-[1.9]" /></span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={stopReviewAiMessage}
+                        disabled={!isReviewAiLoading}
+                        className="xy-ai-inline-stop"
+                      >
+                        <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {isReviewLogOpen && (
+                  <div className="absolute inset-4 z-10 flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                    <div className="flex h-12 shrink-0 items-center justify-between border-b border-slate-100 px-4">
+                      <h3 className="text-base font-black text-slate-900">输出日志</h3>
+                      <button
+                        type="button"
+                        onClick={() => setIsReviewLogOpen(false)}
+                        className="rounded-lg px-3 py-1.5 text-sm font-bold text-slate-500 hover:bg-slate-100"
+                      >
+                        关闭
+                      </button>
+                    </div>
+                    <pre className="editor-scrollbar min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words p-4 text-xs leading-5 text-slate-600">
+                      {reviewRequestLog || '还没有发送审核点评请求。发送后这里会显示关联内容、使用模型和使用提示词。'}
+                    </pre>
+                  </div>
+                )}
+                {reviewManagementModal && (
+                  <div
+                    className="fixed inset-0 z-[320] flex items-center justify-center bg-black/35 px-6 py-6"
+                    onClick={() => setReviewManagementModal(null)}
+                  >
+                    <section
+                      className="flex h-[min(820px,88vh)] w-[min(1500px,94vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <header className="flex h-11 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
+                        <h2 className="text-sm font-bold text-slate-900">
+                          {reviewManagementModal === 'models' ? '模型管理' : `${activeReviewPromptCategory}提示词管理`}
+                        </h2>
+                        <button
+                          type="button"
+                          onClick={() => setReviewManagementModal(null)}
+                          className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                        >
+                          关闭
+                        </button>
+                      </header>
+                      <div className="min-h-0 flex-1 overflow-hidden">
+                        {reviewManagementModal === 'models'
+                          ? <ModelManagePage />
+                          : <PromptsPage initialCategory={activeReviewPromptCategory} />}
+                      </div>
+                    </section>
+                  </div>
+                )}
+              </aside>
+            </div>
+          </section>
+        </div>
+      )}
       {copyToast && (
         <button
           onClick={() => setCopyToast('')}

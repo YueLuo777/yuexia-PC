@@ -214,20 +214,21 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
 
   const toolbar = (
     <div className="flex items-center gap-2">
-      <div className="relative w-48">
-        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+      <label className="xy-ui132-search w-48">
+        <Search />
         <input
+          type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="搜索..."
-          className="h-8 w-full rounded-lg border border-gray-200 pl-8 pr-6 text-xs focus:border-brand focus:outline-none"
+          style={{ paddingRight: search ? '2rem' : undefined }}
         />
         {search && (
-          <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+          <button type="button" onClick={() => setSearch('')} className="absolute right-1.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600">
             <X className="h-3 w-3" />
           </button>
         )}
-      </div>
+      </label>
       <div className="flex items-center gap-1">
         <ArrowUpDown className="h-3.5 w-3.5 text-gray-400" />
         <CapsuleSelect
@@ -279,20 +280,21 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
             <div className="min-w-0 text-xs font-bold text-gray-400">共 {items.length} 条剧情点</div>
           )}
           <div className="flex items-center gap-2">
-            <div className="relative w-48">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <label className="xy-ui132-search w-48">
+              <Search />
               <input
+                type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="搜索..."
-                className="h-8 w-full rounded-lg border border-gray-200 pl-8 pr-6 text-xs focus:border-brand focus:outline-none"
+                style={{ paddingRight: search ? '2rem' : undefined }}
               />
               {search && (
-                <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <button type="button" onClick={() => setSearch('')} className="absolute right-1.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600">
                   <X className="w-3 h-3" />
                 </button>
               )}
-            </div>
+            </label>
             <div className="flex items-center gap-1">
               <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />
               <CapsuleSelect

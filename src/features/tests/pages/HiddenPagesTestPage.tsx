@@ -223,15 +223,15 @@ export function HiddenPagesTestPage() {
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
-            <div className="relative w-[280px] max-w-full">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
+            <label className="xy-ui132-search w-[280px] max-w-full">
+              <Search />
               <input
+                type="search"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="搜索页面、路径或状态"
-                className="h-8 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs outline-none transition-colors focus:border-brand focus:bg-white"
               />
-            </div>
+            </label>
           </div>
         </div>
       </header>

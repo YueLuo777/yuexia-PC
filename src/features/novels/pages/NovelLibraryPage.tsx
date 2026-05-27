@@ -664,10 +664,7 @@ export function NovelLibraryPage() {
 
         {filteredNovels.length === 0 ? (
           <div className="flex h-[360px] flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white">
-            <p className="text-sm text-gray-500">暂无{typeLabel}</p>
-            <button onClick={() => setIsNewOpen(true)} className="mt-3 rounded-md bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark">
-              新建{typeLabel}
-            </button>
+            <p className="text-3xl text-gray-500">暂无{typeLabel}</p>
           </div>
         ) : (
           <div className="flex flex-wrap gap-5">
