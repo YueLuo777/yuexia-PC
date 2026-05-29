@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import JSZip from 'jszip';
 
 import { useModels } from '@/features/models/hooks/useModels';
@@ -31,6 +32,7 @@ import {
   readMoonfallState,
 } from '@/features/moonfall-settings/model/moonfallSettingStore';
 import { hydrateMoonfallStateFromDatabase, persistMoonfallState } from '@/features/moonfall-settings/model/moonfallSettingPersistence';
+import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 
 type PageMode = '设定提取' | '总设定库';
 type DetailTab = '整理内容' | '原始内容' | '关联设定' | '向量信息' | '修改记录';
@@ -267,6 +269,7 @@ function CategoryTree({
 }
 
 export function MoonfallSettingsPage() {
+  const navigate = useNavigate();
   const [state, setState] = useState(readMoonfallState);
   const { models } = useModels();
   const [pageMode, setPageMode] = useState<PageMode>('设定提取');
@@ -551,11 +554,16 @@ export function MoonfallSettingsPage() {
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="text-sm font-bold text-slate-500">模型</span>
-          <select value={state.config.aiModelId || selectedAiModel?.id || ''} onChange={(event) => updateConfig({ aiModelId: event.target.value })} className="h-9 w-[180px] rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-brand">
-            {enabledModels.length === 0 && <option value="">暂无模型</option>}
-            {enabledModels.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}
-          </select>
+          <CapsuleSelect
+            floatingLabel="模型"
+            value={state.config.aiModelId || selectedAiModel?.id || ''}
+            onChange={(value) => updateConfig({ aiModelId: value })}
+            className="w-[260px]"
+            buttonClassName="h-9 rounded-xl px-3 text-sm"
+            options={enabledModels.length === 0 ? [{ value: '', label: '暂无模型', disabled: true }] : enabledModels.map((model) => ({ value: model.id, label: model.name }))}
+            actionLabel="管理"
+            onActionClick={() => navigate('/model-manage')}
+          />
           <TextButton onClick={() => setIsSettingsOpen(true)}>设置</TextButton>
         </div>
       </header>
@@ -730,7 +738,7 @@ export function MoonfallSettingsPage() {
       <Modal title="月落设定库设置" onClose={() => setIsSettingsOpen(false)}>
         <div className="grid grid-cols-2 gap-4">
           <Field label="自动调用设定库"><label className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-600"><input type="checkbox" checked={state.config.autoRag} onChange={(event) => updateConfig({ autoRag: event.target.checked })} className="h-4 w-4 accent-brand" />写作时自动带入相关设定</label></Field>
-          <Field label="AI模型配置"><select value={state.config.aiModelId || selectedAiModel?.id || ''} onChange={(event) => updateConfig({ aiModelId: event.target.value })} className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand">{enabledModels.length === 0 && <option value="">暂无模型</option>}{enabledModels.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}</select></Field>
+          <Field label="AI模型配置"><CapsuleSelect floatingLabel="模型" value={state.config.aiModelId || selectedAiModel?.id || ''} onChange={(value) => updateConfig({ aiModelId: value })} buttonClassName="px-3 text-sm" options={enabledModels.length === 0 ? [{ value: '', label: '暂无模型', disabled: true }] : enabledModels.map((model) => ({ value: model.id, label: model.name }))} actionLabel="管理" onActionClick={() => navigate('/model-manage')} /></Field>
           <Field label="Embedding模型名称"><input value={state.config.embeddingModel} onChange={(event) => updateConfig({ embeddingModel: event.target.value })} className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand" /></Field>
           <Field label="向量维度"><input type="number" value={MOONFALL_VECTOR_DIMENSION} readOnly className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-500 outline-none" /></Field>
           <Field label="召回数量"><input type="number" value={state.config.retrievalLimit} onChange={(event) => updateConfig({ retrievalLimit: Number(event.target.value) || 10 })} className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand" /></Field>

@@ -157,7 +157,7 @@ function PromptRecycleModal({
       <div className="modal-sharp flex h-[560px] w-[680px] max-w-[94vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div>
-            <h2 className="text-base font-bold text-slate-900">提示词回收站</h2>
+            <h2 className="text-base font-bold text-slate-900">回收站</h2>
             <p className="mt-1 text-xs text-slate-400">可恢复误删提示词，彻底删除后无法找回。</p>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-500">
@@ -307,9 +307,9 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
           <div className="flex shrink-0 items-center gap-3">
             <button
               onClick={() => setShowRecycle(true)}
-              className="h-12 rounded-2xl border border-brand/30 bg-white px-5 text-base font-bold text-brand transition-colors hover:bg-brand-light"
+              className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-2xl border border-brand/30 bg-white px-5 text-base font-bold text-brand transition-colors hover:bg-brand-light"
             >
-              提示词回收站{recycleBin.length > 0 ? ` (${recycleBin.length})` : ''}
+              回收站{recycleBin.length > 0 ? `(${recycleBin.length})` : ''}
             </button>
             <div className="xy-ui132-search">
               <Search />

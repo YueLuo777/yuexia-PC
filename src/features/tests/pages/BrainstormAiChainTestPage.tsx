@@ -9,6 +9,7 @@ import { readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 import { APP_EVENTS } from '@/shared/events/appEvents';
+import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 
 type TestStatus = 'idle' | 'running' | 'success' | 'failed' | 'aborted';
 type ChainId = 'brainstorm' | 'brainstormOutline' | 'outline' | 'detailOutline' | 'summary' | 'extract' | 'continue' | 'review' | 'update' | 'title';
@@ -553,17 +554,27 @@ export function BrainstormAiChainTestPage() {
           <div className="flex min-h-0 flex-col rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
             <h2 className="text-lg font-bold text-slate-900">{activeChain.title}</h2>
             <p className="mt-1 text-xs leading-5 text-slate-500">{activeChain.description}</p>
-            <label className="mt-4 text-sm font-bold text-slate-600">
-              模型
-              <select value={selectedModel?.id ?? ''} onChange={(event) => setSelectedModelId(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-brand">
-                {models.length === 0 ? <option value="">暂无可用模型</option> : models.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}
-              </select>
+            <label className="mt-4 block text-sm font-bold text-slate-600">
+              <CapsuleSelect
+                floatingLabel="模型"
+                value={selectedModel?.id ?? ''}
+                onChange={setSelectedModelId}
+                buttonClassName="h-11 rounded-xl px-3 text-sm"
+                options={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
+                actionLabel="管理"
+                onActionClick={() => navigate('/model-manage')}
+              />
             </label>
-            <label className="mt-4 text-sm font-bold text-slate-600">
-              {activeChain.promptCategory}提示词
-              <select value={selectedPrompt?.id ?? ''} onChange={(event) => setChainPromptId(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-brand">
-                {promptOptions.length === 0 ? <option value="">暂无{activeChain.promptCategory}提示词</option> : promptOptions.map((prompt) => <option key={prompt.id} value={prompt.id}>{prompt.name}</option>)}
-              </select>
+            <label className="mt-4 block text-sm font-bold text-slate-600">
+              <CapsuleSelect
+                floatingLabel="提示词"
+                value={selectedPrompt?.id ?? ''}
+                onChange={setChainPromptId}
+                buttonClassName="h-11 rounded-xl px-3 text-sm"
+                options={promptOptions.length === 0 ? [{ value: '', label: `暂无${activeChain.promptCategory}提示词`, disabled: true }] : promptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                actionLabel="管理"
+                onActionClick={() => navigate('/prompts')}
+              />
             </label>
             <div className="mt-4 flex min-h-0 flex-1 flex-col">
               <div className="mb-2 flex items-center justify-between">

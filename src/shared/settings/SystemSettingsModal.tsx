@@ -2,19 +2,25 @@ import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
+import {
+  isRememberAssociationsEnabled,
+  setRememberAssociationsEnabled,
+} from '@/shared/settings/associationMemory';
 
-type SettingsTab = 'appIcon';
+type SettingsTab = 'association' | 'appIcon';
 
 const tabs: Array<{ id: SettingsTab; label: string }> = [
+  { id: 'association', label: '关联设置' },
   { id: 'appIcon', label: '软件图标' },
 ];
 
 export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '' }: { isOpen: boolean; onClose: () => void; homeAvatar?: string }) {
   useTopModalEscape(isOpen, onClose);
-  const [activeTab, setActiveTab] = useState<SettingsTab>('appIcon');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('association');
   const [iconInfo, setIconInfo] = useState<AppIconResult | null>(null);
   const [status, setStatus] = useState('');
   const [isBusy, setIsBusy] = useState(false);
+  const [rememberAssociations, setRememberAssociations] = useState(isRememberAssociationsEnabled);
   const fallbackIconDir = 'E:\\0yuexia\\0,月下PC\\ruanjianfengmian';
   const iconDir = iconInfo?.projectIconDir ?? fallbackIconDir;
   const projectIcons = iconInfo?.projectIcons ?? [];
@@ -28,7 +34,8 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '' }: { isOp
   useEffect(() => {
     if (!isOpen) return;
     setStatus('');
-    setActiveTab('appIcon');
+    setActiveTab('association');
+    setRememberAssociations(isRememberAssociationsEnabled());
     void refreshIconInfo();
   }, [isOpen]);
 
@@ -127,6 +134,35 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '' }: { isOp
           </div>
 
           <div className="min-w-0 flex-1 overflow-y-auto p-4">
+            {activeTab === 'association' && (
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-slate-100 bg-white p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-bold text-slate-900">记忆关联</h3>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        勾选后会记住本章、上下文、脑洞、关联小说等关联内容；取消勾选后，关闭页面时会自动取消这些关联。
+                      </p>
+                    </div>
+                    <label className="relative inline-flex h-8 w-14 shrink-0 cursor-pointer items-center">
+                      <input
+                        type="checkbox"
+                        checked={rememberAssociations}
+                        onChange={(event) => {
+                          const next = event.target.checked;
+                          setRememberAssociations(next);
+                          setRememberAssociationsEnabled(next);
+                        }}
+                        className="peer sr-only"
+                      />
+                      <span className="h-8 w-14 rounded-full bg-slate-200 transition-colors peer-checked:bg-brand" />
+                      <span className="absolute left-1 h-6 w-6 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-6" />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {activeTab === 'appIcon' && (
               <div className="space-y-4">
                 <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">

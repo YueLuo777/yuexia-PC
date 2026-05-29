@@ -1,24 +1,17 @@
 import {
   ArrowLeft,
-  BookOpen,
   Check,
   ChevronDown,
   EyeOff,
   Globe,
   Moon,
   Palette,
-  Send,
   Sparkles,
   Search,
-  Square,
   X,
 } from 'lucide-react';
 import { Suspense, lazy, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-import { readChapterContent } from '@/features/workbench/hooks/useWorkbenchData';
-import type { Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
-import { readWorkbenchLibraryEntries, type WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 
 const BrainstormAiChainTestPage = lazy(() => import('@/features/tests/pages/BrainstormAiChainTestPage').then((module) => ({ default: module.BrainstormAiChainTestPage })));
 const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })));
@@ -55,14 +48,7 @@ const testGroups = [
         path: '/software-ui-catalog',
         icon: Palette,
         badge: 'UI',
-      },
-      {
-        title: '下拉 A 落地场景',
-        description: '把之前列出的 24 个下拉适用场景全部做成方案 A 白底胶囊弹层预览。',
-        path: '/dropdown-a-scenarios-test',
-        icon: Palette,
-        badge: 'A-Select',
-      },
+      },
       {
         title: 'UI 落地场景预览',
         description: '按编号预览按钮、输入框、下拉、标签页、胶囊标签、弹窗、卡片等适合套 UI 库代码的场景。',
@@ -76,42 +62,14 @@ const testGroups = [
         path: '/theme-colors',
         icon: Moon,
         badge: 'Theme',
-      },
+      },
       {
-        title: 'AI 输入框图标按钮测试',
-        description: '测试把发送和停止做成贴合输入框右侧的两个图标按钮，避免右边出现空缝。',
-        path: '/ai-inline-icon-actions-test',
+        title: '选择框边框标签测试',
+        description: '测试把“模型”“提示词”嵌入到选择框上边框里，像设定名那种边框标签。',
+        path: '/select-floating-label-test',
         icon: Palette,
-        badge: 'AI-Input',
-      },
-      {
-        title: 'AI 输入框描边颜色测试',
-        description: '测试 AI 输入框描边、发送按钮分割线和停止按钮分割线的不同颜色效果。',
-        path: '/ai-input-border-colors-test',
-        icon: Palette,
-        badge: 'AI-Color',
-      },
-      {
-        title: '模型下拉内嵌管理测试',
-        description: '测试把“模型管理”融合进模型下拉框最右侧，也就是箭头右侧的效果。',
-        path: '/model-select-manage-inline-test',
-        icon: Palette,
-        badge: 'Select',
-      },
-      {
-        title: 'UI132 搜索框统一预览',
-        description: '把软件里可见的搜索框集中套成 UI132，先确认尺寸、位置和文字效果。',
-        path: '/search-ui132-test',
-        icon: Search,
-        badge: 'UI-132',
-      },
-      {
-        title: '关联上下文四列弹窗',
-        description: '真实读取设定、角色、概要和正文列表，测试勾选后统计关联内容总字数。',
-        path: '/context-linker-test',
-        icon: BookOpen,
-        badge: 'Context',
-      },
+        badge: 'Label',
+      },
     ],
   },
   {
@@ -200,12 +158,12 @@ function DropdownMock({
                       }}
                       className={`flex h-8 w-full items-center justify-between px-6 text-left text-base leading-none transition-colors ${
                         selected
-                          ? 'bg-[#1f6ed4] font-black text-white'
+                          ? 'bg-[#EAF9FD] font-black text-slate-900 hover:bg-[#EAF9FD]'
                           : 'bg-white font-medium text-slate-900 hover:bg-sky-50 hover:text-[#08AACE]'
                       }`}
                     >
                       <span>{option}</span>
-                      {selected && variant === 'capsule' && <Check className="h-4 w-4" />}
+                      {selected && variant === 'capsule' && <Check className="h-4 w-4 text-[#08AACE]" />}
                     </button>
                   );
                 })}
@@ -219,179 +177,6 @@ function DropdownMock({
         当前选择：<span className="text-[#08AACE]">{value}</span>
       </div>
     </section>
-  );
-}
-
-const dropdownScenarioSamples = [
-  { id: 'D-01', page: '新增作品弹窗', location: '我的小说/我的剧本 -> 右上角“新建”按钮 -> 新增作品弹窗', field: '作品分类', options: ['未分类', '玄幻', '都市', '仙侠', '科幻', '历史'] },
-  { id: 'D-07', page: '作品编辑器 > 角色生成', location: '打开小说 -> 作品编辑器 -> 大纲设定 -> 角色生成区域', field: '角色分类', options: ['男女主', '正派配角', '重要反派', '反派配角', '龙套', '未分类'] },
-  { id: 'D-18', page: '编辑器工具弹窗', location: '打开小说/剧本 -> 编辑器右侧或工具栏 -> 替换正文相关弹窗', field: '替换范围', options: ['当前章节', '当前卷', '全书', '选中章节'] },
-  { id: 'D-23', page: '提取设定', location: '创作专区 -> 提取设定 -> RAG/调用模板配置区', field: 'RAG 调用模板', options: ['续写模式', '战斗模式', '世界观解释模式', '人物塑造模式', '设定校验模式'] },
-  { id: 'D-24', page: '提取设定', location: '创作专区 -> 提取设定 -> 设定分类/知识分类配置区', field: '设定分类', options: ['世界观', '地点区域', '势力组织', '人物角色', '功法能力', '待定/冲突'] },
-];
-
-type DropdownScenarioDecision = 'todo' | 'deprecated';
-
-const DROPDOWN_A_DECISION_KEY = 'dropdown_a_scenario_decisions';
-
-function loadDropdownADecisions(): Record<string, DropdownScenarioDecision> {
-  try {
-    const saved = localStorage.getItem(DROPDOWN_A_DECISION_KEY);
-    if (!saved) return {};
-    const parsed = JSON.parse(saved);
-    if (!parsed || typeof parsed !== 'object') return {};
-    return Object.fromEntries(
-      Object.entries(parsed).filter(([, value]) => value === 'todo' || value === 'deprecated'),
-    ) as Record<string, DropdownScenarioDecision>;
-  } catch {
-    return {};
-  }
-}
-
-function CapsuleDropdownPreview({ id, label, options }: { id: string; label: string; options: string[] }) {
-  const [value, setValue] = useState(options[0] ?? '未选择');
-  const [open, setOpen] = useState(id === 'D-01');
-
-  return (
-    <div className="relative w-full max-w-[300px]">
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        className="flex h-12 w-full items-center justify-between gap-3 rounded-2xl border border-[#08AACE] bg-white px-5 text-left text-base font-black text-slate-900 shadow-[0_8px_18px_rgba(8,170,206,0.08)] transition-colors hover:bg-sky-50/40"
-      >
-        <span className="min-w-0 truncate">{value}</span>
-        <ChevronDown className={
-          'h-4 w-4 shrink-0 text-slate-800 transition-transform ' + (open ? 'rotate-180' : '')
-        } />
-      </button>
-      {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 max-h-[220px] overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-2xl">
-          {options.map((option) => {
-            const selected = value === option;
-            return (
-              <button
-                key={option}
-                type="button"
-                onClick={() => {
-                  setValue(option);
-                  setOpen(false);
-                }}
-                className={
-                  'flex h-9 w-full items-center justify-between gap-3 px-5 text-left text-sm transition-colors ' +
-                  (selected ? 'bg-[#1f6ed4] font-black text-white' : 'bg-white font-bold text-slate-800 hover:bg-sky-50 hover:text-[#08AACE]')
-                }
-              >
-                <span className="min-w-0 truncate">{option}</span>
-                {selected && <Check className="h-4 w-4 shrink-0" />}
-              </button>
-            );
-          })}
-        </div>
-      )}
-      <div className="mt-2 text-[11px] font-black text-slate-400">方案 A / {label}</div>
-    </div>
-  );
-}
-
-export function DropdownAScenariosTestPage() {
-  const [decisions, setDecisions] = useState<Record<string, DropdownScenarioDecision>>(loadDropdownADecisions);
-  const todoCount = Object.values(decisions).filter((value) => value === 'todo').length;
-  const deprecatedCount = Object.values(decisions).filter((value) => value === 'deprecated').length;
-
-  const toggleDecision = (id: string, nextValue: DropdownScenarioDecision) => {
-    setDecisions((current) => {
-      const updated = { ...current };
-      if (updated[id] === nextValue) {
-        delete updated[id];
-      } else {
-        updated[id] = nextValue;
-      }
-      localStorage.setItem(DROPDOWN_A_DECISION_KEY, JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  return (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-slate-50 p-7">
-      <div className="mx-auto w-full max-w-7xl">
-        <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-black text-slate-950">下拉 A 落地场景预览</h1>
-            <p className="mt-2 text-sm font-bold text-slate-400">
-              下面把 24 个可落地下拉场景都套成“方案 A：白底胶囊弹层”。勾选表示后续要做，废除表示后续删除。
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-slate-100 bg-white p-2 shadow-sm">
-            <span className="rounded-xl bg-sky-50 px-3 py-2 text-xs font-black text-[#08AACE]">已勾选 {todoCount}</span>
-            <span className="rounded-xl bg-red-50 px-3 py-2 text-xs font-black text-red-500">已废除 {deprecatedCount}</span>
-          </div>
-        </div>
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
-          {dropdownScenarioSamples.map((item) => {
-            const decision = decisions[item.id];
-            return (
-              <article
-                key={item.id}
-                className={`min-h-[260px] rounded-2xl border bg-white p-5 shadow-sm transition-colors ${
-                  decision === 'todo'
-                    ? 'border-[#08AACE]/50'
-                    : decision === 'deprecated'
-                      ? 'border-red-200 bg-red-50/30'
-                      : 'border-slate-100'
-                }`}
-              >
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-2xl font-black leading-none text-[#08AACE]">{item.id}</div>
-                    <h2 className="mt-2 truncate text-base font-black text-slate-900">{item.page}</h2>
-                    <p className="mt-1 text-xs font-bold text-slate-400">字段：{item.field}</p>
-                    <p className="mt-2 line-clamp-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold leading-5 text-slate-500">
-                      位置：{item.location}
-                    </p>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black text-[#08AACE]">方案 A</span>
-                </div>
-
-                <div className="mb-4 grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => toggleDecision(item.id, 'todo')}
-                    className={`flex h-9 items-center justify-center gap-2 rounded-xl border text-xs font-black transition-colors ${
-                      decision === 'todo'
-                        ? 'border-[#08AACE] bg-[#08AACE] text-white'
-                        : 'border-slate-200 bg-white text-slate-500 hover:border-[#08AACE]/50 hover:bg-sky-50 hover:text-[#08AACE]'
-                    }`}
-                  >
-                    <span className="flex h-4 w-4 items-center justify-center rounded border border-current">
-                      {decision === 'todo' && <Check className="h-3 w-3" />}
-                    </span>
-                    勾选
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleDecision(item.id, 'deprecated')}
-                    className={`flex h-9 items-center justify-center gap-2 rounded-xl border text-xs font-black transition-colors ${
-                      decision === 'deprecated'
-                        ? 'border-red-500 bg-red-500 text-white'
-                        : 'border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-500'
-                    }`}
-                  >
-                    <span className="flex h-4 w-4 items-center justify-center rounded border border-current">
-                      {decision === 'deprecated' && <X className="h-3 w-3" />}
-                    </span>
-                    废除
-                  </button>
-                </div>
-
-                <div className="flex min-h-[118px] items-start justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4">
-                  <CapsuleDropdownPreview id={item.id} label={item.field} options={item.options} />
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -604,622 +389,316 @@ export function UiLandingScenariosTestPage() {
   );
 }
 
-export function AiInlineIconActionsTestPage() {
-  return (
-    <div className="flex h-full min-h-0 overflow-y-auto bg-slate-50 p-7">
-      <div className="mx-auto w-full max-w-5xl space-y-5">
-        <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <div className="mb-5">
-            <div className="text-sm font-black text-[#08AACE]">AI-Input-01 / 图标发送框</div>
-            <h1 className="mt-1 text-xl font-black text-slate-950">AI 输入框右侧图标按钮测试</h1>
-            <p className="mt-2 text-sm font-bold leading-6 text-slate-400">
-              输入框按图 1 做，不带前面的加号；发送是框内右侧纸飞机图标，停止是贴在框外右侧的图标按钮。
-            </p>
-          </div>
-
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
-            <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6">
-              <div className="flex max-w-[720px] items-stretch">
-                <div className="relative h-[52px] min-w-0 flex-1 rounded-l-[16px] border-2 border-slate-900 bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
-                  <input
-                    placeholder="AI 输入框"
-                    className="h-full w-full rounded-l-[14px] border-0 bg-transparent py-0 pl-5 pr-[58px] text-base font-medium text-slate-950 outline-none placeholder:text-slate-400"
-                  />
-                  <button
-                    type="button"
-                    className="absolute bottom-0 right-0 top-0 grid w-[54px] place-items-center rounded-r-[14px] text-slate-950 transition-colors hover:bg-slate-50"
-                    title="发送"
-                    aria-label="发送"
-                  >
-                    <Send className="h-6 w-6 stroke-[1.9]" />
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  className="-ml-[2px] grid h-[52px] w-[52px] place-items-center rounded-r-[16px] border-2 border-l-0 border-slate-900 bg-white text-slate-950 transition-colors hover:bg-slate-50"
-                  title="停止"
-                  aria-label="停止"
-                >
-                  <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-3 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm">
-              <div className="text-sm font-black text-slate-900">结构</div>
-              <div className="grid gap-2 text-xs font-bold text-slate-500">
-                <div className="flex justify-between rounded-2xl bg-slate-50 px-3 py-2"><span>输入框高度</span><span>52px</span></div>
-                <div className="flex justify-between rounded-2xl bg-slate-50 px-3 py-2"><span>发送按钮</span><span>框内图标</span></div>
-                <div className="flex justify-between rounded-2xl bg-slate-50 px-3 py-2"><span>停止按钮</span><span>框外对接</span></div>
-                <div className="flex justify-between rounded-2xl bg-slate-50 px-3 py-2"><span>前置加号</span><span>已删除</span></div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <div className="mb-4 text-base font-black text-slate-900">紧凑尺寸预览</div>
-          <div className="flex max-w-[520px] items-stretch">
-            <div className="relative h-[46px] min-w-0 flex-1 rounded-l-[14px] border-2 border-slate-900 bg-white">
-              <input
-                placeholder="AI 输入框"
-                className="h-full w-full rounded-l-[12px] border-0 bg-transparent pl-4 pr-[54px] text-sm font-medium outline-none placeholder:text-slate-400"
-              />
-              <button type="button" className="absolute bottom-0 right-0 top-0 grid w-[50px] place-items-center text-slate-950 hover:bg-slate-50" aria-label="发送">
-                <Send className="h-6 w-6 stroke-[1.8]" />
-              </button>
-            </div>
-            <button type="button" className="-ml-[2px] grid h-[46px] w-[46px] place-items-center rounded-r-[14px] border-2 border-l-0 border-slate-900 bg-white text-slate-950 hover:bg-slate-50" aria-label="停止">
-              <Square className="h-4 w-4 fill-current" />
-            </button>
-          </div>
-        </section>
-      </div>
-    </div>
-  );
-}
-
-const searchUi132Scenarios = [
-  {
-    id: 'Q-01',
-    page: '我的小说',
-    location: '创作专区 -> 我的小说 -> 分类胶囊右侧',
-    placeholder: '搜索小说',
-    width: '260px',
-  },
-  {
-    id: 'Q-02',
-    page: '我的剧本',
-    location: '创作专区 -> 我的剧本 -> 分类胶囊右侧',
-    placeholder: '搜索剧本',
-    width: '260px',
-  },
-  {
-    id: 'Q-03',
-    page: '提示词管理',
-    location: '数据专区 -> 提示词管理 -> 回收站按钮右侧',
-    placeholder: '搜索提示词...',
-    width: '260px',
-  },
-  {
-    id: 'Q-04',
-    page: '剧情库',
-    location: '创作专区 -> 提炼剧情 -> 剧情库工具栏',
-    placeholder: '搜索...',
-    width: '220px',
-  },
-  {
-    id: 'Q-05',
-    page: '脑洞库',
-    location: '功能专区 -> 脑洞库侧栏',
-    placeholder: '搜索脑洞...',
-    width: '260px',
-  },
-  {
-    id: 'Q-06',
-    page: '文案修改',
-    location: '调整模式 -> 文案列表右上角',
-    placeholder: '搜索文案',
-    width: '320px',
-  },
-  {
-    id: 'Q-07',
-    page: 'UI库',
-    location: '测试 -> UI库 -> 右上角',
-    placeholder: '搜索编号、名称，例如 UI-138',
-    width: '420px',
-  },
-  {
-    id: 'Q-08',
-    page: '隐藏页面',
-    location: '测试 -> 隐藏页面 -> 右上角',
-    placeholder: '搜索页面、路径或状态',
-    width: '280px',
-  },
-  {
-    id: 'Q-09',
-    page: '测试',
-    location: '右上角测试弹窗 -> 测试列表右上角',
-    placeholder: '搜索测试内容',
-    width: '280px',
-  },
-];
-
-function SearchUi132Preview({ placeholder, width }: { placeholder: string; width: string }) {
-  return (
-    <label className="xy-ui132-search" style={{ width, maxWidth: '100%' }}>
-      <Search />
-      <input type="search" placeholder={placeholder} />
-    </label>
-  );
-}
-
-export function SearchUi132TestPage() {
-  return (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-slate-50 p-7">
-      <div className="mx-auto w-full max-w-7xl">
-        <div className="mb-5">
-          <div className="text-sm font-black text-[#08AACE]">UI-132 / 搜索框</div>
-          <h1 className="mt-1 text-2xl font-black text-slate-950">软件搜索框统一预览</h1>
-          <p className="mt-2 text-sm font-bold leading-6 text-slate-400">
-            这里先把软件里可见的搜索框都套成 UI132。确认后再替换正式页面。
-          </p>
-        </div>
-
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-4">
-          {searchUi132Scenarios.map((item) => (
-            <article key={item.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-xl font-black leading-none text-[#08AACE]">{item.id}</div>
-                  <h2 className="mt-2 truncate text-base font-black text-slate-900">{item.page}</h2>
-                  <p className="mt-2 line-clamp-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold leading-5 text-slate-500">
-                    {item.location}
-                  </p>
-                </div>
-                <span className="shrink-0 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-black text-[#08AACE]">UI132</span>
-              </div>
-              <div className="flex min-h-[96px] items-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4">
-                <SearchUi132Preview placeholder={item.placeholder} width={item.width} />
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-black text-slate-400">
-                <span className="rounded-full bg-slate-100 px-2 py-1">宽度 {item.width}</span>
-                <span className="rounded-full bg-slate-100 px-2 py-1">白底 / 黑字 / 左侧搜索图标</span>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const aiInputBorderColorOptions = [
-  { name: '当前蓝色', value: '#08AACE', note: '正式应用颜色，清晰但不刺眼。' },
-  { name: '发送按钮蓝', value: '#08B3D9', note: '发送按钮当前使用色，整体更亮。' },
-  { name: '作品信息蓝', value: '#0695B5', note: '更稳重，和作品信息按钮接近。' },
-  { name: '亮青色', value: '#07A1C4', note: '比当前色略深一点，科技感更强。' },
-  { name: '品牌蓝', value: '#1f6ed4', note: '更偏系统蓝，识别度强。' },
-  { name: '柔和青', value: '#14b8a6', note: '更轻，适合弱化边框存在感。' },
-];
-
-function AiInputBorderPreview({ color, name, note }: { color: string; name: string; note: string }) {
-  return (
-    <article className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <h3 className="text-base font-black text-slate-900">{name}</h3>
-          <p className="mt-1 text-xs font-bold leading-5 text-slate-400">{note}</p>
-        </div>
-        <span className="rounded-full px-2.5 py-1 text-[11px] font-black text-white" style={{ backgroundColor: color }}>{color}</span>
-      </div>
-      <div className="relative h-[64px] rounded-[18px] bg-slate-50 p-2">
-        <div className="relative h-[46px] rounded-2xl bg-white" style={{ border: `2px solid ${color}` }}>
-          <div className="absolute -top-[9px] left-4 bg-white px-1 text-xs font-bold text-slate-700">请输入要求</div>
-          <div
-            className="absolute bottom-0 right-0 top-0 grid w-[94px] grid-cols-[1.12fr_0.88fr] overflow-hidden rounded-r-[14px] bg-white"
-            style={{ borderLeft: `2px solid ${color}` }}
-          >
-            <button type="button" className="grid place-items-center bg-[#08B3D9] text-white">
-              <Send className="h-6 w-6 stroke-[1.9]" />
-            </button>
-            <button type="button" className="grid place-items-center bg-red-600 text-white" style={{ borderLeft: `2px solid ${color}` }}>
-              <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-export function AiInputBorderColorsTestPage() {
-  return (
-    <div className="h-full overflow-y-auto bg-slate-50 p-7">
-      <div className="mx-auto w-full max-w-6xl">
-        <div className="mb-5">
-          <div className="text-sm font-black text-[#08AACE]">AI-Input / Border Color</div>
-          <h1 className="mt-1 text-2xl font-black text-slate-950">AI 输入框描边颜色测试</h1>
-          <p className="mt-2 text-sm font-bold leading-6 text-slate-400">
-            这里放几种同结构颜色，方便比较边框、发送分割线和停止分割线的观感。
-          </p>
-        </div>
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
-          {aiInputBorderColorOptions.map((item) => (
-            <AiInputBorderPreview key={item.value} color={item.value} name={item.name} note={item.note} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function ModelSelectManageInlineTestPage() {
-  const [open, setOpen] = useState(true);
-  const [value, setValue] = useState('GPT5.5');
-  const models = ['GPT5.5', 'DeepSeek V3', 'Claude Sonnet', 'Gemini Pro'];
-
-  return (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-slate-50 p-7">
-      <div className="mx-auto w-full max-w-5xl">
-        <div className="mb-5">
-          <div className="text-sm font-black text-[#08AACE]">Select / Manage Inline</div>
-          <h1 className="mt-1 text-2xl font-black text-slate-950">模型管理嵌入下拉框测试</h1>
-          <p className="mt-2 text-sm font-bold leading-6 text-slate-400">
-            预览把“模型管理”放进模型下拉框最右侧，位于箭头右侧。
-          </p>
-        </div>
-        <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <div className="grid max-w-[560px] grid-cols-[64px_minmax(0,1fr)] items-center gap-3">
-            <span className="text-sm font-bold text-slate-500">模型</span>
-            <div className="relative">
-              <div className="flex h-12 overflow-hidden rounded-2xl border-2 border-[#08AACE] bg-white shadow-[0_8px_18px_rgba(8,170,206,0.08)]">
-                <button type="button" onClick={() => setOpen((current) => !current)} className="min-w-0 flex-1 px-4 text-left text-base font-black text-slate-800">
-                  <span className="block truncate">{value}</span>
-                </button>
-                <button type="button" onClick={() => setOpen((current) => !current)} className="grid w-12 shrink-0 place-items-center border-l border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-[#08AACE]">
-                  <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
-                </button>
-                <button type="button" className="shrink-0 border-l border-[#08AACE]/40 bg-[#EAF9FD] px-4 text-sm font-black text-[#078fb0] transition-colors hover:bg-[#08AACE] hover:text-white">
-                  模型管理
-                </button>
-              </div>
-              {open && (
-                <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1 shadow-xl">
-                  {models.map((model) => (
-                    <button
-                      key={model}
-                      type="button"
-                      onClick={() => {
-                        setValue(model);
-                        setOpen(false);
-                      }}
-                      className={`flex h-10 w-full items-center px-4 text-left text-sm font-black ${
-                        value === model ? 'bg-[#08AACE] text-white' : 'text-slate-700 hover:bg-sky-50 hover:text-[#08AACE]'
-                      }`}
-                    >
-                      {model}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-      </div>
-    </div>
-  );
-}
-
-type ContextSourceType = 'setting' | 'role' | 'summary' | 'chapter';
-
-type ContextSourceItem = {
-  id: string;
-  type: ContextSourceType;
-  group: string;
-  title: string;
-  content: string;
-  meta?: string;
-};
-
-const CURRENT_NOVEL_ID_KEY = 'xinyuexia_current_novel_id';
-const NOVELS_KEY = 'xinyuexia_novels_v1';
-const VOLUMES_KEY = 'xinyuexia_volumes_v1';
-
-function readTestJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) as T : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function normalizeContextEntryTab(tab: string) {
-  if (tab === '设定' || tab === '设定库') return '大纲';
-  if (tab === '角色库') return '角色';
-  if (tab === '概要库') return '概要';
-  return tab;
-}
-
-function getContextEntryType(entry: WorkbenchLibraryEntry) {
-  const normalizedTab = normalizeContextEntryTab(entry.tab);
-  return entry.type?.trim() || normalizedTab || '未分类';
-}
-
-function getContextWordCount(text: string) {
-  return text.replace(/\s/g, '').length;
-}
-
-function readContextLinkerData() {
-  const currentNovelIdRaw = localStorage.getItem(CURRENT_NOVEL_ID_KEY);
-  const currentNovelId = currentNovelIdRaw ? Number(currentNovelIdRaw) : null;
-  const novels = readTestJson<WorkbenchNovel[]>(NOVELS_KEY, []);
-  const currentNovel = currentNovelId ? novels.find((novel) => novel.id === currentNovelId) ?? null : null;
-
-  if (!currentNovelId || !currentNovel) {
-    return {
-      currentNovel: null,
-      settings: [] as ContextSourceItem[],
-      roles: [] as ContextSourceItem[],
-      summaries: [] as ContextSourceItem[],
-      chapters: [] as ContextSourceItem[],
-    };
-  }
-
-  const settingsStorageKey = `xinyuexia_workbench_settings_${currentNovelId}`;
-  const outlineStorageKey = `xinyuexia_workbench_outline_${currentNovelId}`;
-  const settingEntries = readWorkbenchLibraryEntries(settingsStorageKey);
-  const outlineEntries = readWorkbenchLibraryEntries(outlineStorageKey);
-  const volumesMap = readTestJson<Record<number, Volume[]>>(VOLUMES_KEY, {});
-  const volumes = volumesMap[currentNovelId] ?? [];
-
-  const settings = settingEntries
-    .filter((entry) => normalizeContextEntryTab(entry.tab) === '大纲')
-    .map((entry): ContextSourceItem => ({
-      id: `setting:${entry.id}`,
-      type: 'setting',
-      group: getContextEntryType(entry),
-      title: entry.title || '未命名设定',
-      content: entry.content || '',
-      meta: entry.updatedAt,
-    }));
-
-  const roles = settingEntries
-    .filter((entry) => normalizeContextEntryTab(entry.tab) === '角色')
-    .map((entry): ContextSourceItem => ({
-      id: `role:${entry.id}`,
-      type: 'role',
-      group: getContextEntryType(entry),
-      title: entry.title || '未命名角色',
-      content: entry.content || '',
-      meta: entry.updatedAt,
-    }));
-
-  const summaries = outlineEntries
-    .filter((entry) => entry.tab === '章节概要' || entry.tab === '卷概要' || entry.tab === '概要')
-    .map((entry): ContextSourceItem => ({
-      id: `summary:${entry.id}`,
-      type: 'summary',
-      group: entry.tab || '概要',
-      title: entry.title || '未命名概要',
-      content: entry.content || '',
-      meta: entry.updatedAt,
-    }));
-
-  const chapters = volumes.flatMap((volume) => (
-    volume.chapters.map((chapter): ContextSourceItem => {
-      const title = chapter.title || `第${chapter.serialNumber}章`;
-      const content = readChapterContent(currentNovelId, chapter.id);
-      return {
-        id: `chapter:${chapter.id}`,
-        type: 'chapter',
-        group: volume.name,
-        title,
-        content,
-        meta: `${volume.name} / ${chapter.wordCount ?? getContextWordCount(content)}字`,
-      };
-    })
-  ));
-
-  return { currentNovel, settings, roles, summaries, chapters };
-}
-
-function ContextLinkerColumn({
-  title,
-  subtitle,
-  items,
-  selectedIds,
-  onToggle,
+function FloatingLabelSelectMock({
+  label,
+  value,
+  options,
+  disabled = false,
+  showDisable = false,
+  disablePlacement = 'side',
+  disableVariant = 'text',
+  compact = false,
+  labelPosition = 'default',
 }: {
-  title: string;
-  subtitle: string;
-  items: ContextSourceItem[];
-  selectedIds: Set<string>;
-  onToggle: (itemId: string) => void;
+  label: string;
+  value: string;
+  options: string[];
+  disabled?: boolean;
+  showDisable?: boolean;
+  disablePlacement?: 'side' | 'label' | 'left' | 'both';
+  disableVariant?: 'slash' | 'labelPill' | 'leftTab' | 'text';
+  compact?: boolean;
+  labelPosition?: 'default' | 'redFrame';
 }) {
-  const groupedItems = useMemo(() => {
-    const groups = new Map<string, ContextSourceItem[]>();
-    items.forEach((item) => {
-      const group = item.group || '未分类';
-      groups.set(group, [...(groups.get(group) ?? []), item]);
-    });
-    return Array.from(groups.entries());
-  }, [items]);
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState(value);
+  const [isDisabled, setIsDisabled] = useState(disabled);
+  const visibleValue = isDisabled ? `${label || '提示词'}已禁用` : selected;
+  const showSideDisable = showDisable && disablePlacement === 'side';
+  const showLabelDisable = showDisable && (disablePlacement === 'label' || disablePlacement === 'both');
+  const showLeftDisable = showDisable && (disablePlacement === 'left' || disablePlacement === 'both');
+  const disableButtonTitle = isDisabled ? '启用提示词' : '禁用提示词';
+  const disableIconButton = (className = '') => {
+    if (disableVariant === 'labelPill') {
+      return (
+        <button
+          type="button"
+          onClick={() => setIsDisabled((current) => !current)}
+          className={`rounded-full border px-2 py-0.5 text-[11px] font-black leading-none transition-colors ${
+            isDisabled
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              : 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
+          } ${className}`}
+          title={disableButtonTitle}
+          aria-label={disableButtonTitle}
+          aria-pressed={isDisabled}
+        >
+          {isDisabled ? '启用' : '禁用'}
+        </button>
+      );
+    }
+
+    if (disableVariant === 'leftTab') {
+      return (
+        <button
+          type="button"
+          onClick={() => setIsDisabled((current) => !current)}
+          className={`grid h-8 w-8 shrink-0 place-items-center rounded-l-[18px] border-y-2 border-l-2 transition-colors ${
+            isDisabled
+              ? 'border-red-500 bg-red-50 text-red-600'
+              : 'border-red-300 bg-white text-red-500 hover:bg-red-50'
+          } ${className}`}
+          title={disableButtonTitle}
+          aria-label={disableButtonTitle}
+          aria-pressed={isDisabled}
+        >
+          <span className="relative h-4 w-4 rounded-full border-2 border-current">
+            <span className="absolute left-1/2 top-1/2 h-[2px] w-4 -translate-x-1/2 -translate-y-1/2 rotate-[-45deg] rounded-full bg-current" />
+          </span>
+        </button>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={() => setIsDisabled((current) => !current)}
+        className={`relative grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-colors ${
+          isDisabled
+            ? 'border-red-500 bg-red-50 text-red-600 shadow-[0_0_0_3px_rgba(239,68,68,0.08)]'
+            : 'border-red-300 bg-white text-red-500 hover:bg-red-50'
+        } ${className}`}
+        title={disableButtonTitle}
+        aria-label={disableButtonTitle}
+        aria-pressed={isDisabled}
+      >
+        <span className="absolute h-[2px] w-4 rotate-[-45deg] rounded-full bg-current" />
+      </button>
+    );
+  };
+
+  const useRedFrameLabel = labelPosition === 'redFrame' && Boolean(label);
 
   return (
-    <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white">
-      <div className="border-b border-slate-100 px-4 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-base font-black text-slate-900">{title}</h3>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">{items.length}</span>
-        </div>
-        <p className="mt-1 text-xs font-bold text-slate-400">{subtitle}</p>
-      </div>
-      <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto p-3">
-        {items.length === 0 ? (
-          <div className="flex h-44 items-center justify-center rounded-xl border border-dashed border-slate-200 text-sm font-bold text-slate-300">
-            暂无可关联内容
+    <div className={`grid ${showSideDisable ? 'grid-cols-[minmax(0,1fr)_52px]' : 'grid-cols-1'} items-center gap-2`}>
+      <div className={`relative min-w-0 ${useRedFrameLabel ? 'pt-2' : ''}`}>
+        {showLeftDisable && (
+          <div className={`absolute top-[calc(50%+4px)] z-10 -translate-y-1/2 bg-white py-1 ${disableVariant === 'leftTab' ? '-left-1' : '-left-3'}`}>
+            {disableIconButton(disableVariant === 'leftTab' ? '' : 'h-7 w-7')}
           </div>
-        ) : (
-          <div className="space-y-3">
-            {groupedItems.map(([group, groupItems]) => (
-              <div key={group}>
-                <div className="mb-2 flex items-center justify-between rounded-lg bg-slate-50 px-2 py-1 text-[11px] font-black text-slate-500">
-                  <span className="truncate">{group}</span>
-                  <span>{groupItems.length}</span>
-                </div>
-                <div className="space-y-2">
-                  {groupItems.map((item) => {
-                    const checked = selectedIds.has(item.id);
-                    const wordCount = getContextWordCount(item.content);
-                    return (
-                      <label
-                        key={item.id}
-                        className={`block cursor-pointer rounded-xl border p-3 transition-colors ${
-                          checked ? 'border-[#08AACE] bg-sky-50/60' : 'border-slate-100 bg-white hover:border-sky-100 hover:bg-slate-50'
-                        }`}
-                      >
-                        <div className="flex items-start gap-2">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => onToggle(item.id)}
-                            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#08AACE] focus:ring-[#08AACE]/20"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-black text-slate-900">{item.title}</div>
-                            <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-xs font-semibold leading-5 text-slate-500">
-                              {item.content || '暂无内容'}
-                            </p>
-                            <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-black text-slate-400">
-                              <span className="rounded-full bg-slate-100 px-2 py-0.5">{wordCount}字</span>
-                              {item.meta && <span className="rounded-full bg-slate-100 px-2 py-0.5">{item.meta}</span>}
-                            </div>
-                          </div>
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+        )}
+        <div
+          className={`relative min-w-0 overflow-hidden rounded-[24px] border-2 bg-white p-0 shadow-[0_8px_18px_rgba(8,170,206,0.08)] ${
+            isDisabled ? 'border-slate-200 text-slate-400' : 'border-[#08AACE] text-slate-900'
+          }`}
+        >
+          {label && (
+            <div className={`${useRedFrameLabel ? 'absolute left-7 top-0 z-10 -translate-y-1/2 bg-white' : 'absolute left-10 top-0 z-10 -translate-y-1/2 bg-white'} max-w-[120px] px-1 text-sm font-black leading-none text-slate-800`}>
+              <span className="inline-flex items-center gap-2">
+                {label}
+                {showLabelDisable && disableIconButton('-my-2')}
+              </span>
+            </div>
+          )}
+          <div className={`flex overflow-hidden ${compact ? 'h-10' : 'h-12'}`}>
+            <button
+              type="button"
+              disabled={isDisabled}
+              onClick={() => setOpen((current) => !current)}
+              className={`${useRedFrameLabel ? 'px-7' : 'px-10'} min-w-0 flex-1 text-left text-base font-black disabled:cursor-not-allowed`}
+            >
+              <span className="block truncate">{visibleValue}</span>
+            </button>
+            <button
+              type="button"
+              disabled={isDisabled}
+              onClick={() => setOpen((current) => !current)}
+              className="grid w-11 shrink-0 place-items-center bg-transparent text-slate-700 transition-colors hover:bg-transparent hover:text-[#08AACE] disabled:cursor-not-allowed disabled:text-slate-300"
+            >
+              <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+            </button>
+            <button
+              type="button"
+              className="w-11 shrink-0 bg-[#EAF9FD] text-[13px] font-black text-[#078fb0] transition-colors hover:bg-[#08AACE] hover:text-white"
+            >
+              管理
+            </button>
+          </div>
+        </div>
+        {open && !isDisabled && (
+          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1 shadow-xl">
+            {options.map((option) => {
+              const selectedOption = option === selected;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => {
+                    setSelected(option);
+                    setOpen(false);
+                  }}
+                  className={`flex h-9 w-full items-center justify-between gap-3 px-4 text-left text-sm font-black ${
+                    selectedOption ? 'bg-[#EAF9FD] text-slate-900 hover:bg-[#EAF9FD]' : 'text-slate-700 hover:bg-sky-50 hover:text-[#08AACE]'
+                  }`}
+                >
+                  <span className="min-w-0 truncate">{option}</span>
+                  {selectedOption && <Check className="h-4 w-4 shrink-0 text-[#08AACE]" />}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
-    </section>
+      {showSideDisable && disableVariant === 'text' && (
+        <button
+          type="button"
+          onClick={() => setIsDisabled((current) => !current)}
+          className={`mt-2 h-11 rounded-xl border px-2 text-xs font-black transition-colors ${
+            isDisabled
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              : 'border-red-200 bg-red-50 text-red-600'
+          }`}
+        >
+          {isDisabled ? '启用' : '禁用'}
+        </button>
+      )}
+      {showSideDisable && disableVariant !== 'text' && (
+        <div className="mt-2 flex h-11 items-center justify-center">
+          {disableIconButton()}
+        </div>
+      )}
+    </div>
   );
 }
 
-export function ContextLinkerTestPage() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
-  const contextData = useMemo(() => readContextLinkerData(), [isOpen]);
-  const allItems = useMemo(() => [
-    ...contextData.settings,
-    ...contextData.roles,
-    ...contextData.summaries,
-    ...contextData.chapters,
-  ], [contextData]);
-  const selectedItems = useMemo(() => allItems.filter((item) => selectedIds.has(item.id)), [allItems, selectedIds]);
-  const selectedWordCount = selectedItems.reduce((sum, item) => sum + getContextWordCount(item.content), 0);
-
-  const toggleItem = (itemId: string) => {
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      if (next.has(itemId)) next.delete(itemId);
-      else next.add(itemId);
-      return next;
-    });
-  };
+export function SelectFloatingLabelTestPage() {
+  const models = ['DS-v4-flash', 'DeepSeek V3', 'GPT-5.5', 'Claude Sonnet'];
+  const prompts = ['设定-测试', '脑洞-测试版', '正文续写默认', '细纲默认'];
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-slate-50 p-7">
-      <div className="mx-auto w-full max-w-7xl space-y-5">
-        <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="text-sm font-black text-[#08AACE]">Context-01 / 真实读取</div>
-              <h1 className="mt-1 text-2xl font-black text-slate-950">关联上下文四列弹窗</h1>
-              <p className="mt-2 max-w-3xl text-sm font-bold leading-6 text-slate-400">
-                读取当前作品的大纲设定、角色、概要库和正文列表。勾选后统计关联总字数，用于后续续写时控制上下文长度。
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsOpen(true)}
-              className="h-11 rounded-2xl bg-[#08AACE] px-5 text-sm font-black text-white shadow-sm hover:bg-[#0799ba]"
-            >
-              关联上下文{selectedWordCount > 0 ? ` · ${selectedWordCount}字` : ''}
-            </button>
-          </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-4">
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <div className="text-xs font-black text-slate-400">当前作品</div>
-              <div className="mt-1 truncate text-sm font-black text-slate-900">{contextData.currentNovel?.title ?? '未打开作品'}</div>
-            </div>
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <div className="text-xs font-black text-slate-400">设定 / 角色</div>
-              <div className="mt-1 text-sm font-black text-slate-900">{contextData.settings.length} / {contextData.roles.length}</div>
-            </div>
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <div className="text-xs font-black text-slate-400">概要 / 正文</div>
-              <div className="mt-1 text-sm font-black text-slate-900">{contextData.summaries.length} / {contextData.chapters.length}</div>
-            </div>
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <div className="text-xs font-black text-slate-400">已关联</div>
-              <div className="mt-1 text-sm font-black text-slate-900">{selectedItems.length} 项 · {selectedWordCount}字</div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {isOpen && (
-        <div className="fixed inset-0 z-[320] flex items-center justify-center bg-black/35 p-5" onClick={() => setIsOpen(false)}>
-          <div
-            className="flex h-[86vh] w-[min(1500px,96vw)] flex-col overflow-hidden rounded-3xl border border-slate-100 bg-slate-50 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-slate-100 bg-white px-6">
-              <div className="min-w-0">
-                <h2 className="text-lg font-black text-slate-950">关联上下文</h2>
-                <p className="mt-0.5 text-xs font-bold text-slate-400">
-                  {contextData.currentNovel?.title ?? '未打开作品'} · 已选 {selectedItems.length} 项 · {selectedWordCount} 字
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedIds(new Set())}
-                  className="h-9 rounded-xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-500 hover:bg-slate-50"
-                >
-                  清空选择
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="h-9 rounded-xl bg-[#08AACE] px-4 text-xs font-black text-white hover:bg-[#0799ba]"
-                >
-                  确认关联
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </header>
-            <main className="grid min-h-0 flex-1 grid-cols-4 gap-4 p-4">
-              <ContextLinkerColumn title="设定" subtitle="读取大纲设定里的设定分类和卡片" items={contextData.settings} selectedIds={selectedIds} onToggle={toggleItem} />
-              <ContextLinkerColumn title="角色" subtitle="读取大纲设定里的角色分类和卡片" items={contextData.roles} selectedIds={selectedIds} onToggle={toggleItem} />
-              <ContextLinkerColumn title="概要" subtitle="读取概要库里的章节概要和卷概要" items={contextData.summaries} selectedIds={selectedIds} onToggle={toggleItem} />
-              <ContextLinkerColumn title="正文列表" subtitle="读取当前作品卷和章节正文" items={contextData.chapters} selectedIds={selectedIds} onToggle={toggleItem} />
-            </main>
-          </div>
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="mb-5">
+          <div className="text-sm font-black text-[#08AACE]">Select / Floating Label</div>
+          <h1 className="mt-1 text-2xl font-black text-slate-950">选择框边框标签测试</h1>
+          <p className="mt-2 text-sm font-bold leading-6 text-slate-400">
+            测试把“模型”“提示词”放进选择框上边框缺口里，减少左侧文字占位，保留管理和禁用按钮。
+          </p>
         </div>
-      )}
+        <div className="grid gap-5 lg:grid-cols-2">
+          <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+            <h2 className="mb-5 text-base font-black text-slate-900">方案 A：只嵌入模型</h2>
+            <div className="space-y-4">
+              <FloatingLabelSelectMock label="模型" value="DS-v4-flash" options={models} />
+              <div className="grid grid-cols-[56px_minmax(0,1fr)_52px] items-center gap-2">
+                <span className="text-sm font-bold text-slate-500">提示词</span>
+                <FloatingLabelSelectMock label="" value="设定-测试" options={prompts} compact />
+                <button className="h-11 rounded-xl border border-red-200 bg-red-50 text-xs font-black text-red-600">禁用</button>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+            <h2 className="mb-5 text-base font-black text-slate-900">方案 B：模型和提示词都嵌入</h2>
+            <div className="space-y-4">
+              <FloatingLabelSelectMock label="模型" value="DS-v4-flash" options={models} />
+              <FloatingLabelSelectMock label="提示词" value="设定-测试" options={prompts} />
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+            <h2 className="mb-5 text-base font-black text-slate-900">方案 C：禁用按钮多版本</h2>
+            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-base font-black text-slate-900">脑洞生成</h3>
+                <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm">
+                  输出日志
+                </button>
+              </div>
+              <div className="grid gap-4 xl:grid-cols-2">
+                <div className="space-y-4">
+                  <div className="text-xs font-black text-slate-400">标签右侧小圆</div>
+                  <FloatingLabelSelectMock label="模型" value="DS-v4-flash" options={models} compact />
+                  <FloatingLabelSelectMock label="提示词" value="脑洞-测试版" options={prompts} showDisable disablePlacement="label" disableVariant="slash" compact />
+                </div>
+                <div className="space-y-4">
+                  <div className="text-xs font-black text-slate-400">标签右侧文字</div>
+                  <FloatingLabelSelectMock label="模型" value="DS-v4-flash" options={models} compact />
+                  <FloatingLabelSelectMock label="提示词" value="脑洞-测试版" options={prompts} showDisable disablePlacement="label" disableVariant="labelPill" compact />
+                </div>
+                <div className="space-y-4">
+                  <div className="text-xs font-black text-slate-400">左侧贴片</div>
+                  <FloatingLabelSelectMock label="模型" value="DS-v4-flash" options={models} compact />
+                  <FloatingLabelSelectMock label="提示词" value="脑洞-测试版" options={prompts} showDisable disablePlacement="left" disableVariant="leftTab" compact />
+                </div>
+                <div className="space-y-4">
+                  <div className="text-xs font-black text-slate-400">右侧文字按钮</div>
+                  <FloatingLabelSelectMock label="模型" value="DS-v4-flash" options={models} compact />
+                  <FloatingLabelSelectMock label="提示词" value="脑洞-测试版" options={prompts} showDisable disablePlacement="side" disableVariant="text" compact />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+            <h2 className="mb-5 text-base font-black text-slate-900">方案 D：无禁用窄栏</h2>
+            <div className="w-[360px] max-w-full rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-base font-black text-slate-900">脑洞生成</h3>
+                <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm">
+                  输出日志
+                </button>
+              </div>
+              <div className="space-y-4">
+                <FloatingLabelSelectMock label="模型" value="DS-v4-flash" options={models} compact />
+                <FloatingLabelSelectMock label="提示词" value="脑洞-测试版" options={prompts} compact />
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm lg:col-span-2">
+            <h2 className="mb-5 text-base font-black text-slate-900">方案 E：标签左移到红框位置</h2>
+            <div className="grid gap-5 xl:grid-cols-2">
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-base font-black text-slate-900">大纲生成</h3>
+                  <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm">
+                    输出日志
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <FloatingLabelSelectMock label="模型" value="GPT5.5" options={models} labelPosition="redFrame" />
+                  <FloatingLabelSelectMock label="提示词" value="生成细纲" options={prompts} labelPosition="redFrame" />
+                </div>
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-base font-black text-slate-900">脑洞生成</h3>
+                  <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm">
+                    输出日志
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-[minmax(0,1fr)_52px] items-start gap-2">
+                    <FloatingLabelSelectMock label="模型" value="DS-v4-flash" options={models} compact labelPosition="redFrame" />
+                    <div aria-hidden="true" className="mt-2 h-11 w-[52px]" />
+                  </div>
+                  <FloatingLabelSelectMock
+                    label="提示词"
+                    value="脑洞-测试版"
+                    options={prompts}
+                    showDisable
+                    disablePlacement="side"
+                    disableVariant="text"
+                    compact
+                    labelPosition="redFrame"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1278,20 +757,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <HiddenPagesTestPage />;
       case '/software-ui-catalog':
         return <SoftwareUiCatalogPage embedded onClose={() => setActivePath(null)} />;
-      case '/dropdown-a-scenarios-test':
-        return <DropdownAScenariosTestPage />;
       case '/ui-landing-scenarios-test':
         return <UiLandingScenariosTestPage />;
-      case '/ai-inline-icon-actions-test':
-        return <AiInlineIconActionsTestPage />;
-      case '/ai-input-border-colors-test':
-        return <AiInputBorderColorsTestPage />;
-      case '/model-select-manage-inline-test':
-        return <ModelSelectManageInlineTestPage />;
-      case '/search-ui132-test':
-        return <SearchUi132TestPage />;
-      case '/context-linker-test':
-        return <ContextLinkerTestPage />;
+      case '/select-floating-label-test':
+        return <SelectFloatingLabelTestPage />;
       case '/theme-colors':
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
       case '/test-browser':

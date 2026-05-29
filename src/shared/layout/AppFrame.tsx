@@ -133,11 +133,24 @@ type TitlebarDragState = {
   pointerId: number;
   startClientX: number;
   startClientY: number;
+  lastScreenX: number;
+  lastScreenY: number;
+  restoreFromMaximized: boolean;
   dragOffsetX: number;
   dragOffsetY: number;
   dragSessionId: string;
   started: boolean;
   pending: boolean;
+};
+
+type TitlebarPointerEventLike = {
+  pointerId: number;
+  clientX: number;
+  clientY: number;
+  screenX: number;
+  screenY: number;
+  preventDefault: () => void;
+  stopPropagation: () => void;
 };
 
 function isTitlebarInteractiveTarget(target: EventTarget | null) {
@@ -162,6 +175,7 @@ export function AppFrame({ children }: AppFrameProps) {
   const [mouseGestureSettings, setMouseGestureSettings] = useState(loadMouseGestureSettings);
   const [mouseGesturePreview, setMouseGesturePreview] = useState<MouseGesturePreview | null>(null);
   const titlebarDragRef = useRef<TitlebarDragState | null>(null);
+  const titlebarDragCleanupRef = useRef<(() => void) | null>(null);
   const suppressTitlebarClickRef = useRef(false);
   const lastTitlebarDragAtRef = useRef(0);
   const titlebarClickRef = useRef({ lastAt: 0, lastClientX: 0, lastClientY: 0 });
@@ -372,6 +386,7 @@ export function AppFrame({ children }: AppFrameProps) {
       key: string;
       pointerId: number;
       direction: 'left' | 'right' | 'top' | 'bottom' | 'bottom-right';
+      active: boolean;
       startX: number;
       startY: number;
       originLeft: number;
@@ -404,7 +419,13 @@ export function AppFrame({ children }: AppFrameProps) {
     const findDialogDragHandle = (dialog: HTMLElement) => {
       const explicitHandle = dialog.querySelector<HTMLElement>('[data-modal-drag-handle="true"]');
       if (explicitHandle) return explicitHandle;
-      return dialog.querySelector<HTMLElement>('header');
+      const semanticHeader = dialog.querySelector<HTMLElement>('header');
+      if (semanticHeader) return semanticHeader;
+      const firstBlock = Array.from(dialog.children).find((child): child is HTMLElement => child instanceof HTMLElement);
+      if (!firstBlock) return null;
+      const hasTitle = Boolean(firstBlock.querySelector('h1,h2,h3,[data-modal-title="true"]'));
+      const hasCloseButton = Boolean(firstBlock.querySelector('button,[aria-label*="关闭"],[title*="关闭"]'));
+      return hasTitle || hasCloseButton ? firstBlock : null;
     };
     const isInDialogDragHandle = (dialog: HTMLElement, target: HTMLElement) => {
       const handle = findDialogDragHandle(dialog);
@@ -556,7 +577,7 @@ export function AppFrame({ children }: AppFrameProps) {
       handle.appendChild(mark);
     };
     const applyDialogPosition = (dialog: HTMLElement, overlay?: HTMLElement) => {
-      if (dialog.dataset.draggableManaged === 'true' || dialog.dataset.globalDraggableApplied === 'true') return;
+      if (dialog.dataset.draggableManaged === 'true' || dialog.dataset.globalModalStatic === 'true' || dialog.dataset.globalDraggableApplied === 'true') return;
       const geometry = readDialogGeometry(getDialogKey(dialog, overlay));
       dialog.dataset.globalDraggableApplied = 'true';
       const handle = findDialogDragHandle(dialog);
@@ -588,7 +609,7 @@ export function AppFrame({ children }: AppFrameProps) {
       const overlay = findOverlay(event.target);
       if (!overlay) return;
       const dialog = findDialog(overlay, event.target);
-      if (!dialog || dialog.dataset.draggableManaged === 'true') return;
+      if (!dialog || dialog.dataset.draggableManaged === 'true' || dialog.dataset.globalModalStatic === 'true') return;
       if (event.target.closest('[data-global-modal-resize-handle="true"]')) {
         event.preventDefault();
         event.stopPropagation();
@@ -596,13 +617,12 @@ export function AppFrame({ children }: AppFrameProps) {
         const rect = dialog.getBoundingClientRect();
         const direction = event.target.dataset.globalModalResizeDirection as ResizeState['direction'] | undefined;
         const resizeDirection = direction ?? 'bottom-right';
-        applyFixedPosition(dialog, rect.left, rect.top);
-        applySize(dialog, rect.width, rect.height);
         resizeState = {
           dialog,
           key: getDialogKey(dialog, overlay),
           pointerId: event.pointerId,
           direction: resizeDirection,
+          active: false,
           startX: event.clientX,
           startY: event.clientY,
           originLeft: Math.round(rect.left),
@@ -661,10 +681,16 @@ export function AppFrame({ children }: AppFrameProps) {
       }
       if (resizeState && resizeState.pointerId === event.pointerId) {
         event.preventDefault();
-        const maxWidth = Math.max(minModalWidth, window.innerWidth - viewportPadding);
-        const maxHeight = Math.max(minModalHeight, window.innerHeight - viewportPadding);
         const deltaX = event.clientX - resizeState.startX;
         const deltaY = event.clientY - resizeState.startY;
+        if (!resizeState.active) {
+          if (Math.hypot(deltaX, deltaY) < 3) return;
+          resizeState.active = true;
+          applyFixedPosition(resizeState.dialog, resizeState.originLeft, resizeState.originTop);
+          applySize(resizeState.dialog, resizeState.originWidth, resizeState.originHeight);
+        }
+        const maxWidth = Math.max(minModalWidth, window.innerWidth - viewportPadding);
+        const maxHeight = Math.max(minModalHeight, window.innerHeight - viewportPadding);
         const rightEdge = resizeState.originLeft + resizeState.originWidth;
         const bottomEdge = resizeState.originTop + resizeState.originHeight;
         const maxLeftResizeWidth = Math.max(minModalWidth, rightEdge - viewportPadding / 2);
@@ -694,7 +720,7 @@ export function AppFrame({ children }: AppFrameProps) {
         dragState = null;
       }
       if (resizeState && resizeState.pointerId === event.pointerId) {
-        saveDialogGeometry(resizeState.key, resizeState.dialog);
+        if (resizeState.active) saveDialogGeometry(resizeState.key, resizeState.dialog);
         resizeState = null;
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
@@ -844,7 +870,7 @@ export function AppFrame({ children }: AppFrameProps) {
     if (typeof next === 'boolean') setIsMaximized(next);
   };
 
-  const registerTitlebarClick = (event: ReactPointerEvent<HTMLElement>, heldMs: number, moved: number) => {
+  const registerTitlebarClick = (event: TitlebarPointerEventLike, heldMs: number, moved: number) => {
     if (heldMs > TITLEBAR_DOUBLE_CLICK_MAX_DURATION_MS || moved >= TITLEBAR_DRAG_THRESHOLD) {
       titlebarClickRef.current = { lastAt: 0, lastClientX: 0, lastClientY: 0 };
       return;
@@ -868,40 +894,23 @@ export function AppFrame({ children }: AppFrameProps) {
     };
   };
 
-  const handleTitlebarPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
-    if (event.button !== 0 || isTitlebarInteractiveTarget(event.target)) return;
-    titlebarPointerMetaRef.current = {
-      startedAt: Date.now(),
-      startClientX: event.clientX,
-      startClientY: event.clientY,
-      moved: false,
-    };
-    titlebarDragRef.current = {
-      pointerId: event.pointerId,
-      startClientX: event.clientX,
-      startClientY: event.clientY,
-      dragOffsetX: 0,
-      dragOffsetY: 0,
-      dragSessionId: '',
-      started: false,
-      pending: false,
-    };
-    try {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    } catch {
-      // Pointer capture is best-effort; window-level drag still starts on the next move event.
-    }
+  const cleanupTitlebarDragListeners = () => {
+    titlebarDragCleanupRef.current?.();
+    titlebarDragCleanupRef.current = null;
   };
 
-  const handleTitlebarPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
+  const continueTitlebarPointerDrag = (event: TitlebarPointerEventLike) => {
     const dragState = titlebarDragRef.current;
     if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    dragState.lastScreenX = event.screenX;
+    dragState.lastScreenY = event.screenY;
 
     const moved = Math.hypot(event.clientX - dragState.startClientX, event.clientY - dragState.startClientY);
     if (moved >= TITLEBAR_DRAG_THRESHOLD) {
       titlebarPointerMetaRef.current.moved = true;
     }
-    if (!dragState.started && !dragState.pending && moved < TITLEBAR_DRAG_THRESHOLD) return;
+    if (!dragState.restoreFromMaximized && !dragState.started && !dragState.pending && moved < TITLEBAR_DRAG_THRESHOLD) return;
 
     event.preventDefault();
     event.stopPropagation();
@@ -919,6 +928,7 @@ export function AppFrame({ children }: AppFrameProps) {
         const current = titlebarDragRef.current;
         if (!current || current.pointerId !== dragState.pointerId) return;
         if (!result) {
+          cleanupTitlebarDragListeners();
           titlebarDragRef.current = null;
           return;
         }
@@ -928,9 +938,19 @@ export function AppFrame({ children }: AppFrameProps) {
         current.dragOffsetY = result.dragOffsetY;
         current.dragSessionId = result.dragSessionId ?? '';
         setIsMaximized(result.isMaximized);
+        void window.xinyuexiaWindow?.moveTitlebarDrag({
+          screenX: current.lastScreenX,
+          screenY: current.lastScreenY,
+          dragOffsetX: current.dragOffsetX,
+          dragOffsetY: current.dragOffsetY,
+          dragSessionId: current.dragSessionId,
+        });
       }).catch(() => {
         const current = titlebarDragRef.current;
-        if (current?.pointerId === dragState.pointerId) titlebarDragRef.current = null;
+        if (current?.pointerId === dragState.pointerId) {
+          cleanupTitlebarDragListeners();
+          titlebarDragRef.current = null;
+        }
       });
       return;
     }
@@ -944,9 +964,10 @@ export function AppFrame({ children }: AppFrameProps) {
     });
   };
 
-  const finishTitlebarPointerDrag = (event: ReactPointerEvent<HTMLElement>) => {
+  const finishTitlebarPointerDrag = (event: TitlebarPointerEventLike) => {
     const dragState = titlebarDragRef.current;
     if (!dragState || dragState.pointerId !== event.pointerId) return;
+    cleanupTitlebarDragListeners();
     const heldMs = Date.now() - titlebarPointerMetaRef.current.startedAt;
     const moved = Math.hypot(event.clientX - dragState.startClientX, event.clientY - dragState.startClientY);
     if (dragState.started || dragState.pending) {
@@ -962,6 +983,48 @@ export function AppFrame({ children }: AppFrameProps) {
     void window.xinyuexiaWindow?.endTitlebarDrag?.({ dragSessionId: dragState.dragSessionId, screenX: event.screenX, screenY: event.screenY });
     titlebarDragRef.current = null;
   };
+
+  const handleTitlebarPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (event.button !== 0 || isTitlebarInteractiveTarget(event.target)) return;
+    cleanupTitlebarDragListeners();
+    titlebarPointerMetaRef.current = {
+      startedAt: Date.now(),
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      moved: false,
+    };
+    titlebarDragRef.current = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      lastScreenX: event.screenX,
+      lastScreenY: event.screenY,
+      restoreFromMaximized: isMaximized,
+      dragOffsetX: 0,
+      dragOffsetY: 0,
+      dragSessionId: '',
+      started: false,
+      pending: false,
+    };
+    try {
+      const captureTarget = event.target instanceof HTMLElement ? event.target : event.currentTarget;
+      captureTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture is best-effort; window-level drag still starts on the next move event.
+    }
+    const handleWindowPointerMove = (nativeEvent: PointerEvent) => continueTitlebarPointerDrag(nativeEvent);
+    const handleWindowPointerEnd = (nativeEvent: PointerEvent) => finishTitlebarPointerDrag(nativeEvent);
+    window.addEventListener('pointermove', handleWindowPointerMove, true);
+    window.addEventListener('pointerup', handleWindowPointerEnd, true);
+    window.addEventListener('pointercancel', handleWindowPointerEnd, true);
+    titlebarDragCleanupRef.current = () => {
+      window.removeEventListener('pointermove', handleWindowPointerMove, true);
+      window.removeEventListener('pointerup', handleWindowPointerEnd, true);
+      window.removeEventListener('pointercancel', handleWindowPointerEnd, true);
+    };
+  };
+
+  const handleTitlebarPointerMove = (event: ReactPointerEvent<HTMLElement>) => continueTitlebarPointerDrag(event);
 
   const handleTitlebarClickCapture = (event: MouseEvent<HTMLElement>) => {
     if (!suppressTitlebarClickRef.current) return;
@@ -982,7 +1045,7 @@ export function AppFrame({ children }: AppFrameProps) {
     <div className={`flex h-screen w-screen flex-col overflow-hidden bg-slate-50 ${isDarkTheme ? 'theme-dark' : ''}`}>
       <header
         className="app-titlebar flex h-12 shrink-0 items-center border-b border-slate-300 bg-[#dfe5ec] px-3"
-        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
         onPointerDown={handleTitlebarPointerDown}
         onPointerMove={handleTitlebarPointerMove}
         onPointerUp={finishTitlebarPointerDrag}
@@ -991,9 +1054,12 @@ export function AppFrame({ children }: AppFrameProps) {
       >
         <nav
           className="flex h-full min-w-0 flex-1 items-center overflow-x-auto"
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
         >
-          <div className="flex max-w-full shrink-0 items-center overflow-hidden rounded-xl bg-[#eeeeee] p-1 shadow-[0_0_0_1px_rgba(0,0,0,0.06)]">
+          <div
+            className="flex max-w-full shrink-0 items-center overflow-hidden rounded-xl bg-[#eeeeee] p-1 shadow-[0_0_0_1px_rgba(0,0,0,0.06)]"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          >
           {tabs.map((tab) => {
             const isActive = activeTabId === tab.id;
             const isHomeTab = tab.id === HOME_TAB.id;
@@ -1003,6 +1069,7 @@ export function AppFrame({ children }: AppFrameProps) {
                   role="button"
                   tabIndex={0}
                   data-titlebar-no-drag="true"
+                  style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                   onClick={() => activateTab(tab)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') activateTab(tab);
@@ -1147,7 +1214,8 @@ export function AppFrame({ children }: AppFrameProps) {
 
       <div className="min-h-0 flex-1 overflow-hidden bg-slate-50">
         <div
-          className="origin-top-left overflow-hidden bg-slate-50"
+          className="relative origin-top-left overflow-hidden bg-slate-50"
+          data-capsule-select-portal-root="true"
           style={{
             width: `${100 / effectiveScale}%`,
             height: `${100 / effectiveScale}%`,

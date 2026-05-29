@@ -14,6 +14,7 @@ import { PlotLibraryPage } from '@/features/plot-library/pages/PlotLibraryPage';
 import { savePlotItems } from '@/features/plot-library/hooks/usePlotLibrary';
 import { APP_EVENTS } from '@/shared/events/appEvents';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
+import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 type ExtractMode = 'chapter' | 'multi' | 'smart';
@@ -583,7 +584,7 @@ export function ExtractTestPage() {
   const [selectedModelId, setSelectedModelId] = usePersistentState<string>(EXTRACT_MODEL_KEY, '');
   const [selectedNovelId, setSelectedNovelId] = usePersistentState<number | null>(
     EXTRACT_SELECTED_NOVEL_KEY,
-    novels.find((novel) => novel.type === 'novel')?.id ?? null,
+    null,
   );
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(modules[0]?.id ?? null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -621,6 +622,24 @@ export function ExtractTestPage() {
     }
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const clearSelectedNovel = () => {
+      if (isRememberAssociationsEnabled()) return;
+      setSelectedNovelId(null);
+      try {
+        localStorage.removeItem(EXTRACT_SELECTED_NOVEL_KEY);
+      } catch {
+        // Ignore storage failures.
+      }
+    };
+    clearSelectedNovel();
+    window.addEventListener('pagehide', clearSelectedNovel);
+    return () => {
+      window.removeEventListener('pagehide', clearSelectedNovel);
+      clearSelectedNovel();
+    };
+  }, []);
 
   useEffect(() => {
     const syncModels = () => setModels(readEnabledModels());
@@ -1336,7 +1355,7 @@ export function ExtractTestPage() {
                   </button>
                 </div>
               </div>
-              <div className="min-h-[112px] flex-1 divide-y divide-gray-100 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-sm [scrollbar-gutter:stable] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-track]:bg-gray-100">
+              <div className="min-h-[112px] flex-1 divide-y divide-gray-100 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-sm [scrollbar-gutter:stable] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#9a9a9a] [&::-webkit-scrollbar-track]:bg-transparent">
                 {files.length === 0 ? (
                   <div className="flex h-24 items-center justify-center px-4 text-center text-sm text-gray-400">
                     暂无记录，上传文件或载入章节后会显示在这里。

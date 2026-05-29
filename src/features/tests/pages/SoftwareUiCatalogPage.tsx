@@ -72,6 +72,7 @@ type CatalogMark = 'rare';
 
 const CATALOG_MARKS_STORAGE_KEY = 'xinyuexia_software_ui_catalog_marks_v1';
 const CATALOG_COLLECTION_STORAGE_KEY = 'xinyuexia_software_ui_catalog_collection_v1';
+const DEFAULT_CATALOG_COLLECTION_IDS = ['UI-140', 'UI-141', 'UI-142', 'UI-143'];
 const LANDING_PREVIEW_SELECTED_IDS = ['UI-119', 'UI-112', 'UI-102', 'UI-109', 'UI-115', 'UI-125', 'UI-132'];
 
 const fontSamples: FontSample[] = [
@@ -4682,6 +4683,178 @@ const uiSamples: UiSample[] = [
       </div>
     ),
   },
+  {
+    id: 'UI-140',
+    group: '输入框',
+    name: '固定顶标圆角输入框',
+    usage: '设定名、角色名、模块名等短字段。标签固定压在上边框并用白底切出缺口，输入区保持干净。',
+    preview: (
+      <div className="flex flex-col items-center gap-4 py-6">
+        <style>{`
+          .ui-140-field {
+            position: relative;
+            width: 220px;
+            height: 74px;
+          }
+          .ui-140-field input {
+            width: 100%;
+            height: 66px;
+            box-sizing: border-box;
+            border: 2px solid #111827;
+            border-radius: 23px;
+            background: #ffffff;
+            padding: 0 1.25rem;
+            font-size: 16px;
+            color: #111827;
+            outline: none;
+          }
+          .ui-140-field label {
+            position: absolute;
+            left: 22px;
+            top: -1px;
+            transform: translateY(-50%);
+            background: #ffffff;
+            padding: 0 0.35rem;
+            color: #111827;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 18px;
+            pointer-events: none;
+          }
+        `}</style>
+        <div className="ui-140-field">
+          <input readOnly aria-label="设定名" />
+          <label>设定名</label>
+        </div>
+        <code className="block rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-5 text-slate-500">
+          fixed label cuts a small white gap into the dark rounded border
+        </code>
+      </div>
+    ),
+  },
+  {
+    id: 'UI-141',
+    group: '输入框',
+    name: '边框内嵌工具文本框',
+    usage: '设定预览、角色背景、角色状态、脑洞预览、脑洞输出框。左上角固定标签，右上角放字号，右下角放字数统计。',
+    preview: (
+      <div className="flex w-full justify-center py-6">
+        <style>{`
+          .ui-141-field-wrap {
+            position: relative;
+            width: min(560px, 100%);
+            height: 260px;
+          }
+          .ui-141-field {
+            position: relative;
+            width: 100%;
+            height: 100%;
+          }
+          .ui-141-field textarea {
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            resize: none;
+            border: 2px solid #111827;
+            border-radius: 23px;
+            background: #ffffff;
+            padding: 1.35rem 1.25rem 3rem;
+            font-size: 16px;
+            line-height: 1.75;
+            color: #111827;
+            outline: none;
+          }
+          .ui-141-field label {
+            position: absolute;
+            left: 22px;
+            top: 0;
+            transform: translateY(-50%);
+            background: #ffffff;
+            padding: 0 0.35rem;
+            color: #111827;
+            font-size: 16px;
+            font-weight: 500;
+            line-height: 20px;
+            pointer-events: none;
+          }
+          .ui-141-tool {
+            position: absolute;
+            right: 18px;
+            top: 0;
+            z-index: 2;
+            transform: translateY(-50%);
+            background: #ffffff;
+            padding: 0 8px;
+          }
+          .ui-141-count {
+            position: absolute;
+            right: 20px;
+            bottom: 0;
+            z-index: 2;
+            transform: translateY(50%);
+            background: #ffffff;
+            padding: 0 7px;
+            color: #94a3b8;
+            font-size: 12px;
+            font-weight: 800;
+            line-height: 20px;
+          }
+        `}</style>
+        <div className="ui-141-field-wrap">
+          <div className="ui-141-field">
+            <textarea readOnly value="这里是带边框工具槽的长文本区域。字号放在右上角，字数统计放在右下角，主内容区域保持干净。" />
+            <label>设定预览</label>
+            <span className="ui-141-count">46 字</span>
+          </div>
+          <div className="ui-141-tool">
+            <FontSizeStepper value={16} min={12} max={28} onChange={() => undefined} ariaLabel="边框内嵌字号" />
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'UI-142',
+    group: '选择框',
+    name: '下拉内嵌管理选择框',
+    usage: '模型选择、提示词选择等需要在同一行保留“管理”入口的下拉框。右侧管理按钮嵌入边框内部，减少额外按钮挤占空间。',
+    preview: (
+      <div className="flex justify-center py-6">
+        <div className="w-[320px]">
+          <div className="relative pt-2">
+            <span className="absolute left-6 top-0 z-10 bg-white px-2 text-sm font-black leading-none text-slate-700">模型</span>
+            <div className="flex h-14 overflow-hidden rounded-[24px] border-2 border-[#08AACE] bg-white shadow-[0_8px_18px_rgba(8,170,206,0.08)]">
+              <button type="button" className="min-w-0 flex-1 px-5 pt-1 text-left text-lg font-black text-slate-950">
+                <span className="block truncate">DS-v4-flash</span>
+              </button>
+              <button type="button" className="grid w-11 shrink-0 place-items-center text-slate-700">⌄</button>
+              <button type="button" className="w-14 shrink-0 border-l border-[#08AACE]/40 bg-[#EAF9FD] text-sm font-black text-[#078fb0]">管理</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'UI-143',
+    group: '输入框',
+    name: 'AI 输入框右侧图标按钮',
+    usage: 'AI 用户输入框的发送、停止等贴边动作按钮。图标按钮并入输入框右侧，按钮之间用细分割线区分，避免输入框右边另起一组按钮。',
+    preview: (
+      <div className="flex justify-center py-6">
+        <div className="flex h-14 w-[420px] max-w-full overflow-hidden rounded-2xl border-2 border-[#08AACE] bg-white shadow-[0_8px_18px_rgba(8,170,206,0.08)]">
+          <div className="flex min-w-0 flex-1 items-center px-4 text-sm font-bold text-slate-400">请输入要求</div>
+          <button type="button" className="grid w-12 shrink-0 place-items-center border-l border-[#08AACE]/40 text-[#08AACE]">
+            <span className="text-lg leading-none">↑</span>
+          </button>
+          <button type="button" className="grid w-12 shrink-0 place-items-center border-l border-red-200 bg-red-500 text-white">
+            <span className="h-3 w-3 rounded-sm bg-current" />
+          </button>
+        </div>
+      </div>
+    ),
+  },
+
 ];
 
 const techItems: TechItem[] = [
@@ -4864,15 +5037,19 @@ function writeCatalogMarks(value: Record<string, CatalogMark>) {
 }
 
 function readCatalogCollection() {
+  const defaults = DEFAULT_CATALOG_COLLECTION_IDS.reduce<Record<string, boolean>>((acc, id) => {
+    acc[id] = true;
+    return acc;
+  }, {});
   try {
     const parsed = JSON.parse(localStorage.getItem(CATALOG_COLLECTION_STORAGE_KEY) ?? '{}') as unknown;
-    if (!parsed || typeof parsed !== 'object') return {};
+    if (!parsed || typeof parsed !== 'object') return defaults;
     return Object.entries(parsed as Record<string, unknown>).reduce<Record<string, boolean>>((acc, [key, value]) => {
-      if (value === true) acc[key] = true;
+      if (typeof value === 'boolean') acc[key] = value;
       return acc;
-    }, {});
+    }, { ...defaults });
   } catch {
-    return {};
+    return defaults;
   }
 }
 
@@ -5128,7 +5305,10 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
   const toggleCatalogCollection = (id: string) => {
     setCatalogCollection((prev) => {
       const next = { ...prev };
-      if (next[id]) delete next[id];
+      if (next[id]) {
+        if (DEFAULT_CATALOG_COLLECTION_IDS.includes(id)) next[id] = false;
+        else delete next[id];
+      }
       else next[id] = true;
       writeCatalogCollection(next);
       return next;

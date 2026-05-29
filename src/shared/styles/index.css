@@ -35,6 +35,10 @@
     --novel-tag-font-size: 14px;
     --sidebar-nav-font-size: 14px;
     --section-title-font-size: 12px;
+    --xy-scrollbar-track: transparent;
+    --xy-scrollbar-thumb: #9a9a9a;
+    --xy-scrollbar-thumb-hover: #b0b0b0;
+    --xy-scrollbar-thumb-active: #b0b0b0;
   }
 
   * {
@@ -109,71 +113,87 @@
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
-  background: transparent !important;
+  background: var(--xy-scrollbar-track, transparent) !important;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent !important;
+  background: var(--xy-scrollbar-track, transparent) !important;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #08AACE !important;
+  background: var(--xy-scrollbar-thumb, #9a9a9a) !important;
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #08AACE !important;
+  background: var(--xy-scrollbar-thumb-hover, #b0b0b0) !important;
 }
 
 .editor-scrollbar::-webkit-scrollbar {
   width: 8px;
   cursor: default;
-  background: transparent !important;
+  background: var(--xy-scrollbar-track, transparent) !important;
 }
 
 textarea.editor-scrollbar::-webkit-scrollbar {
   width: 14px;
   cursor: default;
-  background: transparent !important;
+  background: var(--xy-scrollbar-track, transparent) !important;
 }
 
 textarea.editor-scrollbar::-webkit-scrollbar-track {
-  background: transparent !important;
+  background: var(--xy-scrollbar-track, transparent) !important;
+  border-radius: 999px;
+  cursor: default;
+}
+
+.editor-scrollbar::-webkit-scrollbar-track {
+  background: var(--xy-scrollbar-track, transparent) !important;
   border-radius: 999px;
   cursor: default;
 }
 
 .editor-scrollbar::-webkit-scrollbar-thumb {
-  background: #08AACE !important;
-  border-radius: 4px;
+  min-height: 48px;
+  background: var(--xy-scrollbar-thumb, #9a9a9a) !important;
+  background-clip: content-box !important;
+  border: 2px solid transparent !important;
+  border-radius: 999px;
   cursor: default;
   transition: background 0.2s ease;
 }
 
 textarea.editor-scrollbar::-webkit-scrollbar-thumb {
   min-height: 48px;
-  background: #08AACE !important;
+  background: var(--xy-scrollbar-thumb, #9a9a9a) !important;
+  background-clip: content-box !important;
   border: 3px solid transparent !important;
   border-radius: 999px;
   cursor: default;
 }
 
 .editor-scrollbar:hover::-webkit-scrollbar-thumb {
-  background: #08AACE !important;
+  background: var(--xy-scrollbar-thumb-hover, #b0b0b0) !important;
 }
 
 textarea.editor-scrollbar:hover::-webkit-scrollbar-thumb {
-  background: #08AACE !important;
+  background: var(--xy-scrollbar-thumb-hover, #b0b0b0) !important;
 }
 
 .editor-scrollbar::-webkit-scrollbar-thumb:active {
-  background: #08AACE !important;
+  background: var(--xy-scrollbar-thumb-active, #b0b0b0) !important;
+}
+
+html,
+body,
+* {
+  scrollbar-color: var(--xy-scrollbar-thumb, #9a9a9a) var(--xy-scrollbar-track, transparent);
 }
 
 .editor-scrollbar,
 textarea.editor-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #08AACE transparent;
+  scrollbar-color: var(--xy-scrollbar-thumb, #9a9a9a) var(--xy-scrollbar-track, transparent);
 }
 
 .scrollbar-hidden {
@@ -200,7 +220,7 @@ textarea.editor-scrollbar {
 
 .scrollbar-scroll-only.scrollbar-active {
   scrollbar-width: thin;
-  scrollbar-color: #08AACE transparent;
+  scrollbar-color: var(--xy-scrollbar-thumb, #9a9a9a) var(--xy-scrollbar-track, transparent);
 }
 
 .scrollbar-scroll-only.scrollbar-active::-webkit-scrollbar {
@@ -209,11 +229,13 @@ textarea.editor-scrollbar {
 }
 
 .scrollbar-scroll-only.scrollbar-active::-webkit-scrollbar-track {
-  background: transparent !important;
+  background: var(--xy-scrollbar-track, transparent) !important;
 }
 
 .scrollbar-scroll-only.scrollbar-active::-webkit-scrollbar-thumb {
-  background: #08AACE !important;
+  background: var(--xy-scrollbar-thumb, #9a9a9a) !important;
+  background-clip: content-box !important;
+  border: 2px solid transparent !important;
   border-radius: 999px;
 }
 
@@ -354,21 +376,21 @@ html.theme-dark body {
 
 .theme-dark .editor-scrollbar::-webkit-scrollbar-thumb,
 html.theme-dark ::-webkit-scrollbar-thumb {
-  background: #08AACE;
+  background: var(--xy-scrollbar-thumb, #9a9a9a);
 }
 
 .theme-dark textarea.editor-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--xy-scrollbar-track, transparent);
 }
 
 .theme-dark textarea.editor-scrollbar::-webkit-scrollbar-thumb {
-  background: #08AACE;
+  background: var(--xy-scrollbar-thumb, #9a9a9a);
   border-color: transparent;
 }
 
 .theme-dark .editor-scrollbar:hover::-webkit-scrollbar-thumb,
 html.theme-dark ::-webkit-scrollbar-thumb:hover {
-  background: #08AACE;
+  background: var(--xy-scrollbar-thumb-hover, #b0b0b0);
 }
 
 .theme-dark mark,
@@ -862,25 +884,25 @@ html.theme-dark body,
 
 .theme-dark .editor-scrollbar::-webkit-scrollbar-thumb,
 html.theme-dark ::-webkit-scrollbar-thumb {
-  background: #08AACE !important;
+  background: var(--xy-scrollbar-thumb, #9a9a9a) !important;
 }
 
 .theme-dark textarea.editor-scrollbar::-webkit-scrollbar-track {
-  background: transparent !important;
+  background: var(--xy-scrollbar-track, transparent) !important;
 }
 
 .theme-dark textarea.editor-scrollbar::-webkit-scrollbar-thumb {
-  background: #08AACE !important;
+  background: var(--xy-scrollbar-thumb, #9a9a9a) !important;
   border-color: transparent !important;
 }
 
 .theme-dark .editor-scrollbar:hover::-webkit-scrollbar-thumb,
 html.theme-dark ::-webkit-scrollbar-thumb:hover {
-  background: #08AACE !important;
+  background: var(--xy-scrollbar-thumb-hover, #b0b0b0) !important;
 }
 
 .theme-dark textarea.editor-scrollbar:hover::-webkit-scrollbar-thumb {
-  background: #08AACE !important;
+  background: var(--xy-scrollbar-thumb-hover, #b0b0b0) !important;
 }
 
 .xy-capsule-group {
@@ -930,6 +952,17 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   cursor: not-allowed;
   background: #f8fafc;
   color: #cbd5e1;
+}
+
+.xy-work-info-primary {
+  background: #08b3d9;
+  color: #ffffff;
+}
+
+.xy-work-info-primary:hover,
+.xy-work-info-primary.xy-active {
+  background: #0695b5;
+  color: #ffffff;
 }
 
 .xy-work-info-neon-button {
@@ -1721,43 +1754,6 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   transition-delay: 0.16s;
 }
 
-.xy-management-segment {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.125rem;
-  overflow: hidden;
-  border-radius: 999px;
-  border: 1px solid #e2e8f0;
-  background: #eef3fa;
-  padding: 0.125rem;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 1px 2px rgba(15, 23, 42, 0.05);
-}
-
-.xy-management-segment-button {
-  display: inline-flex;
-  min-width: 4.75rem;
-  height: 1.75rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  padding: 0 0.625rem;
-  font-size: 0.75rem;
-  font-weight: 900;
-  color: #1e2a44;
-  white-space: nowrap;
-  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-}
-
-.xy-management-segment-button:hover {
-  background: #ffffff;
-  color: #08aace;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
-}
-
-.xy-management-segment-button:active {
-  transform: scale(0.98);
-}
-
 .xy-floating-field {
   position: relative;
   width: 100%;
@@ -1810,6 +1806,12 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   color: transparent;
 }
 
+.xy-floating-field.xy-floating-visible-placeholder input::placeholder,
+.xy-floating-field.xy-floating-visible-placeholder textarea::placeholder {
+  color: #9ca3af;
+  font-weight: 600;
+}
+
 .xy-floating-field:focus-within input,
 .xy-floating-field:focus-within textarea,
 .xy-floating-field.xy-has-value input,
@@ -1834,6 +1836,145 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   color: #111827;
 }
 
+.xy-floating-field.xy-floating-outline-fixed input,
+.xy-floating-field.xy-floating-outline-fixed textarea {
+  border: 2px solid #111827;
+  border-radius: 23px;
+  padding: 1.25rem;
+  font-size: 1rem;
+}
+
+.xy-floating-field.xy-floating-outline-fixed input {
+  height: 66px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.xy-floating-field.xy-floating-outline-fixed textarea {
+  padding-top: 1.35rem;
+}
+
+.xy-floating-field.xy-floating-outline-fixed label,
+.xy-floating-field.xy-floating-outline-fixed:has(input) label,
+.xy-floating-field.xy-floating-outline-fixed:focus-within label,
+.xy-floating-field.xy-floating-outline-fixed.xy-has-value label {
+  top: 0;
+  left: 22px;
+  transform: translateY(-50%) scale(1);
+  background-color: #ffffff;
+  padding: 0 0.35rem;
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.xy-floating-field.xy-floating-outline-compact input {
+  height: 50px;
+  border-radius: 18px;
+  padding-right: 1rem;
+  padding-left: 1rem;
+  font-size: 0.875rem;
+}
+
+.xy-floating-field.xy-floating-outline-compact label,
+.xy-floating-field.xy-floating-outline-compact:has(input) label,
+.xy-floating-field.xy-floating-outline-compact:focus-within label,
+.xy-floating-field.xy-floating-outline-compact.xy-has-value label {
+  left: 18px;
+  font-size: 0.875rem;
+  line-height: 18px;
+}
+
+.xy-floating-field.xy-floating-outline-role-compact input {
+  height: 44px;
+  border-radius: 16px;
+  padding-right: 0.85rem;
+  padding-left: 0.85rem;
+  font-size: 0.8125rem;
+}
+
+.xy-floating-field.xy-floating-outline-role-compact label,
+.xy-floating-field.xy-floating-outline-role-compact:has(input) label,
+.xy-floating-field.xy-floating-outline-role-compact:focus-within label,
+.xy-floating-field.xy-floating-outline-role-compact.xy-has-value label {
+  left: 16px;
+  font-size: 0.8125rem;
+  line-height: 16px;
+}
+
+.xy-floating-field.xy-floating-outline-compact-textarea textarea {
+  border-radius: 18px;
+  padding: 1.05rem 1rem 0.7rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.xy-floating-field.xy-floating-outline-compact-textarea label,
+.xy-floating-field.xy-floating-outline-compact-textarea:focus-within label,
+.xy-floating-field.xy-floating-outline-compact-textarea.xy-has-value label {
+  left: 18px;
+  padding: 0 0.3rem;
+  font-size: 0.875rem;
+  line-height: 18px;
+}
+
+.xy-floating-field.xy-floating-outline-preview textarea {
+  border-color: #d9e2ea;
+  border-radius: 20px;
+  background-color: #ffffff;
+}
+
+.xy-floating-field.xy-floating-outline-preview .xy-floating-rich-preview {
+  border: 2px solid #d9e2ea;
+  border-radius: 20px;
+  background-color: #ffffff;
+  padding: 1.35rem 1.25rem 3rem;
+}
+
+.xy-floating-field.xy-floating-outline-preview:focus-within textarea,
+.xy-floating-field.xy-floating-outline-preview.xy-outline-selected textarea {
+  border-color: #08AACE;
+}
+
+.xy-floating-field.xy-floating-outline-preview.xy-outline-selected textarea {
+  box-shadow: 0 8px 18px rgba(8, 170, 206, 0.08);
+}
+
+.xy-floating-field .xy-floating-count {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 0;
+  z-index: 2;
+  transform: translateY(50%);
+  background: #ffffff;
+  padding: 0 0.45rem;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  pointer-events: none;
+}
+
+.xy-floating-field.xy-floating-with-bottom-count {
+  margin-bottom: 0.875rem;
+}
+
+.xy-floating-edge-tool {
+  position: absolute;
+  right: 1.1rem;
+  top: 0;
+  z-index: 3;
+  transform: translateY(-50%);
+  background: #ffffff;
+  padding: 0 0.5rem;
+  line-height: normal;
+}
+
+.xy-floating-field.xy-floating-with-bottom-count textarea {
+  padding-bottom: 3rem;
+}
+
 .xy-floating-field.xy-floating-compact input,
 .xy-floating-field.xy-floating-compact textarea {
   padding: 0.875rem 1rem;
@@ -1848,6 +1989,11 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 .xy-floating-field.xy-floating-compact:has(input) label,
 .xy-floating-field.xy-floating-ai.xy-floating-compact label {
   transform: translateY(-50%);
+}
+
+.xy-floating-field.xy-floating-ai:not(:focus-within):not(.xy-has-value) label {
+  color: #9ca3af;
+  font-weight: 400;
 }
 
 .xy-floating-field.xy-floating-compact:focus-within label,
@@ -1907,7 +2053,7 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   width: 5.875rem;
   align-items: stretch;
   overflow: hidden;
-  border-left: 2px solid #08AACE;
+  border-left: 0;
   border-radius: 0 0.875rem 0.875rem 0;
   background: #ffffff;
   transform: none;
@@ -1928,16 +2074,16 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 
 .xy-ai-inline-send {
   flex: 1.12 1 0;
-  background: #08B3D9;
-  color: #ffffff;
+  background: #ffffff;
+  color: #08AACE;
 }
 
 .xy-ai-inline-send:hover:not(:disabled) {
-  background: #079fc2;
+  background: #EAF9FD;
 }
 
 .xy-ai-inline-send:active:not(:disabled) {
-  background: #078fb0;
+  background: #DDF5FB;
 }
 
 .xy-ai-inline-send-icon {
@@ -1954,19 +2100,19 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   flex: 0.88 1 0;
   border-left: 2px solid #08AACE;
   border-radius: 0 0.875rem 0.875rem 0;
-  background: #ef4444;
-  color: #ffffff;
+  background: #ffffff;
+  color: #ef4444;
 }
 
 .xy-ai-inline-stop:hover:not(:disabled) {
-  background: #dc2626;
-  color: #ffffff;
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 .xy-ai-inline-send:disabled,
 .xy-ai-inline-stop:disabled {
   cursor: not-allowed;
-  opacity: 0.48;
+  opacity: 1;
 }
 
 .xy-floating-field.xy-floating-with-side-action {

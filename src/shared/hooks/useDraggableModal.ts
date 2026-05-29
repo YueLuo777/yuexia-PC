@@ -53,15 +53,11 @@ function getViewportBounds() {
     return {
       maxWidth: 1280,
       maxHeight: 820,
-      maxLeft: 0,
-      maxTop: 0,
     };
   }
   return {
     maxWidth: Math.max(MIN_MODAL_WIDTH, window.innerWidth - VIEWPORT_PADDING),
     maxHeight: Math.max(MIN_MODAL_HEIGHT, window.innerHeight - VIEWPORT_PADDING),
-    maxLeft: Math.max(VIEWPORT_PADDING / 2, window.innerWidth - VIEWPORT_PADDING / 2),
-    maxTop: Math.max(VIEWPORT_PADDING / 2, window.innerHeight - VIEWPORT_PADDING / 2),
   };
 }
 
@@ -79,8 +75,39 @@ function normalizeGeometryToViewport(geometry: ModalGeometry): ModalGeometry {
     next.top = clamp(Number(next.top), VIEWPORT_PADDING / 2, Math.max(VIEWPORT_PADDING / 2, window.innerHeight - height - VIEWPORT_PADDING / 2));
     next.x = 0;
     next.y = 0;
+  } else if (typeof window !== 'undefined') {
+    const maxX = Math.max(0, window.innerWidth / 2 - VIEWPORT_PADDING);
+    const maxY = Math.max(0, window.innerHeight / 2 - VIEWPORT_PADDING);
+    next.x = clamp(Number.isFinite(next.x) ? Number(next.x) : 0, -maxX, maxX);
+    next.y = clamp(Number.isFinite(next.y) ? Number(next.y) : 0, -maxY, maxY);
   }
   return next;
+}
+
+function getSafeFixedGeometryFromRect(rect: DOMRect): ModalGeometry {
+  if (typeof window === 'undefined') {
+    return {
+      x: 0,
+      y: 0,
+      left: Math.round(rect.left),
+      top: Math.round(rect.top),
+      width: Math.round(Math.max(MIN_MODAL_WIDTH, rect.width)),
+      height: Math.round(Math.max(MIN_MODAL_HEIGHT, rect.height)),
+    };
+  }
+  const { maxWidth, maxHeight } = getViewportBounds();
+  const width = Math.round(clamp(rect.width, MIN_MODAL_WIDTH, maxWidth));
+  const height = Math.round(clamp(rect.height, MIN_MODAL_HEIGHT, maxHeight));
+  const maxLeft = Math.max(VIEWPORT_PADDING / 2, window.innerWidth - width - VIEWPORT_PADDING / 2);
+  const maxTop = Math.max(VIEWPORT_PADDING / 2, window.innerHeight - height - VIEWPORT_PADDING / 2);
+  return {
+    x: 0,
+    y: 0,
+    left: Math.round(clamp(rect.left, VIEWPORT_PADDING / 2, maxLeft)),
+    top: Math.round(clamp(rect.top, VIEWPORT_PADDING / 2, maxTop)),
+    width,
+    height,
+  };
 }
 
 export function useDraggableModal(id: string) {
@@ -96,6 +123,7 @@ export function useDraggableModal(id: string) {
   const resizeRef = useRef<{
     pointerId: number;
     direction: ResizeDirection;
+    active: boolean;
     element: HTMLElement;
     startX: number;
     startY: number;
@@ -180,10 +208,23 @@ export function useDraggableModal(id: string) {
       }
       if (resize && resize.pointerId === event.pointerId) {
         event.preventDefault();
-        const maxWidth = Math.max(MIN_MODAL_WIDTH, window.innerWidth - VIEWPORT_PADDING);
-        const maxHeight = Math.max(MIN_MODAL_HEIGHT, window.innerHeight - VIEWPORT_PADDING);
         const deltaX = event.clientX - resize.startX;
         const deltaY = event.clientY - resize.startY;
+        if (!resize.active) {
+          if (Math.hypot(deltaX, deltaY) < 3) return;
+          resize.active = true;
+          applyFixedGeometry(resize.element, {
+            ...geometryRef.current,
+            x: 0,
+            y: 0,
+            left: resize.originLeft,
+            top: resize.originTop,
+            width: resize.originWidth,
+            height: resize.originHeight,
+          });
+        }
+        const maxWidth = Math.max(MIN_MODAL_WIDTH, window.innerWidth - VIEWPORT_PADDING);
+        const maxHeight = Math.max(MIN_MODAL_HEIGHT, window.innerHeight - VIEWPORT_PADDING);
         const rightEdge = resize.originLeft + resize.originWidth;
         const bottomEdge = resize.originTop + resize.originHeight;
         const maxLeftResizeWidth = Math.max(MIN_MODAL_WIDTH, rightEdge - VIEWPORT_PADDING / 2);
@@ -202,8 +243,10 @@ export function useDraggableModal(id: string) {
               ? clamp(resize.originHeight + deltaY, MIN_MODAL_HEIGHT, maxHeight)
               : resize.originHeight,
         );
-        const left = resize.direction === 'left' ? rightEdge - width : resize.originLeft;
-        const top = resize.direction === 'top' ? bottomEdge - height : resize.originTop;
+        const rawLeft = resize.direction === 'left' ? rightEdge - width : resize.originLeft;
+        const rawTop = resize.direction === 'top' ? bottomEdge - height : resize.originTop;
+        const left = clamp(rawLeft, VIEWPORT_PADDING / 2, Math.max(VIEWPORT_PADDING / 2, window.innerWidth - width - VIEWPORT_PADDING / 2));
+        const top = clamp(rawTop, VIEWPORT_PADDING / 2, Math.max(VIEWPORT_PADDING / 2, window.innerHeight - height - VIEWPORT_PADDING / 2));
         const next = {
           ...geometryRef.current,
           x: 0,
@@ -227,8 +270,10 @@ export function useDraggableModal(id: string) {
       }
       if (resize && resize.pointerId === event.pointerId) {
         resizeRef.current = null;
-        setGeometry(geometryRef.current);
-        saveGeometry(storageKey, geometryRef.current);
+        if (resize.active) {
+          setGeometry(geometryRef.current);
+          saveGeometry(storageKey, geometryRef.current);
+        }
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
       }
@@ -315,21 +360,10 @@ export function useDraggableModal(id: string) {
     if (event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
-    const element = event.currentTarget.parentElement;
+    const element = event.currentTarget.closest('[data-draggable-managed="true"]') as HTMLElement | null;
     const rect = element?.getBoundingClientRect();
     if (!element || !rect) return;
-    const fixedGeometry = {
-      ...geometryRef.current,
-      x: 0,
-      y: 0,
-      left: Math.round(rect.left),
-      top: Math.round(rect.top),
-      width: Math.round(rect.width),
-      height: Math.round(rect.height),
-    };
-    geometryRef.current = fixedGeometry;
-    applyFixedGeometry(element, fixedGeometry);
-    setGeometry(fixedGeometry);
+    const fixedGeometry = getSafeFixedGeometryFromRect(rect);
     try {
       event.currentTarget.setPointerCapture(event.pointerId);
     } catch {
@@ -342,16 +376,18 @@ export function useDraggableModal(id: string) {
         : 'nwse-resize';
     document.body.style.cursor = cursor;
     document.body.style.userSelect = 'none';
+    const { left = 0, top = 0, width = MIN_MODAL_WIDTH, height = MIN_MODAL_HEIGHT } = fixedGeometry;
     resizeRef.current = {
       pointerId: event.pointerId,
       direction,
+      active: false,
       element,
       startX: event.clientX,
       startY: event.clientY,
-      originLeft: fixedGeometry.left,
-      originTop: fixedGeometry.top,
-      originWidth: fixedGeometry.width,
-      originHeight: fixedGeometry.height,
+      originLeft: left,
+      originTop: top,
+      originWidth: width,
+      originHeight: height,
     };
   };
 

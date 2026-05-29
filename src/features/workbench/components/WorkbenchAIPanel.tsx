@@ -12,8 +12,10 @@ import {
 } from '@/features/moonfall-settings/model/moonfallSettingStore';
 import { readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
+import { clearWorkbenchAiSessionLinksByStorageKey } from '@/features/workbench/model/workbenchAssociationCleanup';
 import { APP_EVENTS } from '@/shared/events/appEvents';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
+import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
 import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
 import { WorkbenchModal } from './WorkbenchModal';
@@ -271,6 +273,7 @@ function createDefaultSession(id = 1): AiSession {
 
 function normalizeSessions(value: unknown): AiSession[] {
   if (!Array.isArray(value)) return [createDefaultSession()];
+  const rememberAssociations = isRememberAssociationsEnabled();
   const sessions = value
     .map((item, index): AiSession | null => {
       if (!item || typeof item !== 'object') return null;
@@ -289,8 +292,8 @@ function normalizeSessions(value: unknown): AiSession[] {
                 content: typeof message.content === 'string' ? message.content : '',
               }))
           : [],
-        linkChapter: Boolean(session.linkChapter),
-        hasSentChapterContext: Boolean(session.hasSentChapterContext),
+        linkChapter: rememberAssociations ? Boolean(session.linkChapter) : false,
+        hasSentChapterContext: rememberAssociations ? Boolean(session.hasSentChapterContext) : false,
       };
     })
     .filter((session): session is AiSession => Boolean(session));
@@ -387,9 +390,9 @@ export function WorkbenchAIPanel({
   const linkedChapterWordCount = selectedChapterContent.replace(/\s/g, '').length;
   const linkedContextWordCount = linkedContextItems.reduce((sum, item) => sum + getTextWordCount(item.content), 0);
   const hasLinkedChapter = Boolean(activeSession?.linkChapter);
-  const hasLinkedContext = linkedContextWordCount > 0;
+  const hasLinkedContext = linkedContextItems.length > 0;
   const activeLinkWordCount = hasLinkedContext ? linkedContextWordCount : (hasLinkedChapter ? linkedChapterWordCount : 0);
-  const activeLinkLabel = hasLinkedContext ? '上下文' : chapterContextLabel;
+  const shouldShowActiveLinkStats = hasLinkedContext || hasLinkedChapter;
   const previewLinkedContextPayload = buildLinkedContextPayload(linkedContextItems);
   const previewUseChapter = !previewLinkedContextPayload && Boolean(activeSession?.linkChapter && selectedChapterContent.trim());
   const previewContextText = previewLinkedContextPayload || (previewUseChapter ? `【${chapterContextLabel}内容】\n${selectedChapterContent.trim()}` : '');
@@ -407,6 +410,12 @@ export function WorkbenchAIPanel({
   const visibleRequestLog = previewRequestLog ?? lastRequestLog;
   const loadingText = `正在生成${'.'.repeat(loadingDotCount)}`;
 
+  useEffect(() => {
+    return () => {
+      if (!isRememberAssociationsEnabled()) clearWorkbenchAiSessionLinksByStorageKey(storageKey);
+    };
+  }, [storageKey]);
+
   const updateSession = (sessionId: number, patch: Partial<Omit<AiSession, 'id'>>) => {
     setSessions((prev) => prev.map((session) => (
       session.id === sessionId ? { ...session, ...patch } : session
@@ -417,6 +426,14 @@ export function WorkbenchAIPanel({
     if (!activeSession) return;
     updateSession(activeSession.id, patch);
   };
+
+  useEffect(() => {
+    if (!activeSession?.linkChapter || linkedContextItems.length === 0) return;
+    updateSession(activeSession.id, {
+      linkChapter: false,
+      hasSentChapterContext: false,
+    });
+  }, [activeSession?.id, activeSession?.linkChapter, linkedContextItems.length]);
 
   const toggleChapterContext = () => {
     const nextLinkChapter = !activeSession?.linkChapter;
@@ -430,12 +447,6 @@ export function WorkbenchAIPanel({
   };
 
   const openLinkedContextLibrary = () => {
-    if (activeSession?.linkChapter) {
-      updateActiveSession({
-        linkChapter: false,
-        hasSentChapterContext: false,
-      });
-    }
     onOpenContextLibrary?.();
     if (!onOpenContextLibrary) flashStatus('关联上下文稍后配置');
   };
@@ -706,45 +717,25 @@ export function WorkbenchAIPanel({
   };
 
   const renderConfigDropdown = (
+    label: string,
     value: string,
     options: Array<{ id: string; name: string }>,
     emptyLabel: string,
     onChange: (value: string) => void,
+    onActionClick?: () => void,
   ) => (
     <CapsuleSelect
       value={value}
       onChange={onChange}
+      floatingLabel={label}
       className="min-w-0"
       buttonClassName="h-10 rounded-xl px-3 text-sm"
       options={options.length === 0
         ? [{ value: '', label: emptyLabel, disabled: true }]
         : options.map((option) => ({ value: option.id, label: option.name }))}
+      actionLabel={onActionClick ? '管理' : undefined}
+      onActionClick={onActionClick}
     />
-  );
-
-  const renderManageSegment = () => (
-    onOpenModelManage || onOpenAgentManage ? (
-      <div className="xy-management-segment shrink-0">
-        {onOpenModelManage && (
-          <button
-            type="button"
-            onClick={onOpenModelManage}
-            className="xy-management-segment-button"
-          >
-            模型管理
-          </button>
-        )}
-        {onOpenAgentManage && (
-          <button
-            type="button"
-            onClick={onOpenAgentManage}
-            className="xy-management-segment-button"
-          >
-            提示词管理
-          </button>
-        )}
-      </div>
-    ) : null
   );
 
   const renderConfigPanel = (
@@ -757,15 +748,12 @@ export function WorkbenchAIPanel({
   ) => (
     <>
       <div className="shrink-0 overflow-visible rounded-lg border border-gray-200 bg-gray-50 p-2">
-        <div className="grid grid-cols-[52px_minmax(0,1fr)_minmax(48px,auto)] items-center gap-2">
-          <span className="whitespace-nowrap text-sm text-gray-500">模型</span>
-          {renderConfigDropdown(model?.id ?? modelId, enabledModels, '无可用模型', onModelChange)}
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(48px,auto)] items-center gap-2">
+          {renderConfigDropdown("模型", model?.id ?? modelId, enabledModels, '无可用模型', onModelChange, onOpenModelManage)}
           <span className="flex min-w-0 items-center text-xs font-bold">
             {renderModelStatus(model)}
           </span>
-
-          <span className="whitespace-nowrap text-sm text-gray-500">提示词</span>
-          {renderConfigDropdown(prompt?.id ?? chatPrompts[0]?.id ?? promptId, chatPrompts, '无可用提示词', onPromptChange)}
+          {renderConfigDropdown("提示词", prompt?.id ?? chatPrompts[0]?.id ?? promptId, chatPrompts, '无可用提示词', onPromptChange, onOpenAgentManage)}
         </div>
       </div>
       <div className="mt-2 flex h-9 shrink-0 items-center gap-2 overflow-hidden rounded-full border border-gray-200 bg-gray-50 px-2.5">
@@ -818,7 +806,6 @@ export function WorkbenchAIPanel({
       <div className="flex min-h-10 shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-3 py-1.5">
         <div className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto">
           <span className="shrink-0 whitespace-nowrap text-sm font-bold text-gray-900">正文续写</span>
-          {renderManageSegment()}
           <button
             type="button"
             onClick={() => setIsRequestLogOpen(true)}
@@ -890,8 +877,8 @@ export function WorkbenchAIPanel({
           </span>
         </div>
         <div className="mt-2 flex shrink-0 items-start justify-between gap-2 text-xs text-gray-400">
-          <div className="flex min-w-0 flex-col gap-1">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="flex min-w-0 flex-nowrap items-center gap-2">
               <div className="flex h-9 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                 <div className="flex w-14 items-center justify-center border-r border-gray-200 bg-slate-50 text-sm font-black text-slate-500">
                   关联
@@ -899,7 +886,7 @@ export function WorkbenchAIPanel({
                 <button
                   type="button"
                   onClick={toggleChapterContext}
-                  className={`w-28 px-3 text-sm font-bold transition-colors ${
+                  className={`w-24 px-2 text-sm font-bold transition-colors ${
                     hasLinkedChapter
                       ? 'bg-brand text-white'
                       : 'bg-white text-gray-600 hover:bg-brand-light hover:text-brand'
@@ -910,7 +897,7 @@ export function WorkbenchAIPanel({
                 <button
                   type="button"
                   onClick={openLinkedContextLibrary}
-                  className={`w-32 border-l border-gray-200 px-3 text-sm font-bold transition-colors ${
+                  className={`w-28 border-l border-gray-200 px-2 text-sm font-bold transition-colors ${
                     hasLinkedContext
                       ? 'bg-brand text-white'
                       : 'bg-white text-gray-600 hover:bg-brand-light hover:text-brand'
@@ -919,9 +906,9 @@ export function WorkbenchAIPanel({
                   {hasLinkedContext ? '已关联上下文' : '上下文'}
                 </button>
               </div>
-              {activeLinkWordCount > 0 && (
+              {shouldShowActiveLinkStats && (
                 <span className="shrink-0 text-sm font-bold text-brand">
-                  关联{activeLinkLabel}：{activeLinkWordCount}字
+                  已关联：{activeLinkWordCount}字
                 </span>
               )}
             </div>
@@ -1014,6 +1001,7 @@ export function WorkbenchAIPanel({
           title="输出日志"
           isOpen={isRequestLogOpen}
           onClose={() => setIsRequestLogOpen(false)}
+          storageId="workbench_ai_request_log"
           widthClass="w-[min(1120px,94vw)]"
           heightClass="h-[min(820px,88vh)]"
           closeOnBackdrop={false}

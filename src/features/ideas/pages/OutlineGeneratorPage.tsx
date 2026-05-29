@@ -178,19 +178,23 @@ export function OutlineGeneratorPage() {
         <aside className="flex w-[380px] shrink-0 flex-col border-r border-gray-200 bg-white p-5">
           <div className="space-y-4">
             <label className="space-y-1.5">
-              <span className="text-sm font-medium text-gray-700">模型</span>
               <CapsuleSelect
+                floatingLabel="模型"
                 value={modelId}
                 onChange={setModelId}
                 options={models.length === 0 ? [{ value: '', label: '无可用模型', disabled: true }] : models.map((item) => ({ value: item.id, label: item.name }))}
+                actionLabel="管理"
+                onActionClick={() => navigate('/model-manage')}
               />
             </label>
             <label className="space-y-1.5">
-              <span className="text-sm font-medium text-gray-700">提示词</span>
               <CapsuleSelect
+                floatingLabel="提示词"
                 value={promptId}
                 onChange={setPromptId}
                 options={prompts.length === 0 ? [{ value: '', label: '无提示词', disabled: true }] : prompts.map((item) => ({ value: item.id, label: item.name }))}
+                actionLabel="管理"
+                onActionClick={() => navigate('/prompts')}
               />
             </label>
             <label className="space-y-1.5">

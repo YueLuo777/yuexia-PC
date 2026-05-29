@@ -143,7 +143,7 @@ export function ChapterSidebar({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 py-2">
+      <div className="editor-scrollbar flex-1 overflow-y-auto px-2 py-2">
         {volumes.map((volume) => {
           const chapters = sortedUnpublishedChapters(volume);
 

@@ -34,7 +34,7 @@ export function WorkbenchHeader({
           </div>
           <button
             onClick={onOpenWorkInfo}
-            className="xy-capsule-button shrink-0 bg-[#08B3D9] text-white hover:bg-[#07a0c2] hover:text-white"
+            className="xy-capsule-button xy-work-info-primary shrink-0"
           >
             作品信息
           </button>

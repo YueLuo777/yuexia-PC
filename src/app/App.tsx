@@ -6,11 +6,8 @@ import { WorkspaceTabsProvider } from '@/shared/tabs/WorkspaceTabsContext';
 
 const ExtractTestPage = lazy(() => import('@/features/extract/pages/ExtractTestPage').then((module) => ({ default: module.ExtractTestPage })));
 const TestCollectionPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })));
-const DropdownAScenariosTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.DropdownAScenariosTestPage })));
 const UiLandingScenariosTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.UiLandingScenariosTestPage })));
-const ContextLinkerTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.ContextLinkerTestPage })));
-const AiInputBorderColorsTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.AiInputBorderColorsTestPage })));
-const ModelSelectManageInlineTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.ModelSelectManageInlineTestPage })));
+const SelectFloatingLabelTestPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.SelectFloatingLabelTestPage })));
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
 const BrainstormAiChainTestPage = lazy(() => import('@/features/tests/pages/BrainstormAiChainTestPage').then((module) => ({ default: module.BrainstormAiChainTestPage })));
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
@@ -104,11 +101,8 @@ export default function App() {
                 <Route path="/idea-library" element={<IdeaLibraryPage />} />
                 <Route path="/token-usage" element={<TokenUsagePage />} />
                 <Route path="/test-collection" element={<TestCollectionPage />} />
-                <Route path="/dropdown-a-scenarios-test" element={<DropdownAScenariosTestPage />} />
                 <Route path="/ui-landing-scenarios-test" element={<UiLandingScenariosTestPage />} />
-                <Route path="/context-linker-test" element={<ContextLinkerTestPage />} />
-                <Route path="/ai-input-border-colors-test" element={<AiInputBorderColorsTestPage />} />
-                <Route path="/model-select-manage-inline-test" element={<ModelSelectManageInlineTestPage />} />
+                <Route path="/select-floating-label-test" element={<SelectFloatingLabelTestPage />} />
                 <Route path="/brainstorm-ai-chain-test" element={<BrainstormAiChainTestPage />} />
                 <Route path="/software-ui-catalog" element={<SoftwareUiCatalogPage />} />
                 <Route path="/hidden-pages-test" element={<HiddenPagesTestPage />} />

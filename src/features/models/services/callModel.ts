@@ -30,8 +30,22 @@ function normalizeAnthropicBaseUrl(baseUrl: string) {
 
 const PINAI_ORIGIN = 'https://us.pinai-cn.com';
 
+function getProviderErrorMessage(text: string) {
+  try {
+    const parsed = JSON.parse(text);
+    const message = parsed?.error?.message ?? parsed?.message;
+    return typeof message === 'string' ? message : '';
+  } catch {
+    return '';
+  }
+}
+
 function formatModelError(status: number, text: string, model: ModelItem) {
   const normalizedText = text.slice(0, 500);
+  const providerMessage = getProviderErrorMessage(normalizedText);
+  if (status === 402 || /insufficient[\s_-]*balance|余额不足|账户余额/i.test(providerMessage || normalizedText)) {
+    return `当前模型「${model.name}」的 API 账户余额不足。请到模型管理切换其他可用模型，或给该 API Key / 中转平台充值后再试。`;
+  }
   if (status === 401 || /INVALID_API_KEY|invalid api key/i.test(normalizedText)) {
     return `当前模型「${model.name}」的 API Key 无效。请到“模型管理”重新填写 API Key，然后先点“API 测试”。服务端返回：${normalizedText}`;
   }

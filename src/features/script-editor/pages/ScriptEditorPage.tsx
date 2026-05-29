@@ -30,6 +30,7 @@ import {
   normalizeNavConfig,
   type NavGroupConfig,
 } from '@/shared/navigation/navConfig';
+import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
 
 type EditorMode = 'dual' | 'script' | 'browser';
 type AIResultAction = 'replace' | 'append' | 'setting' | 'outline' | 'plot';
@@ -56,6 +57,28 @@ const MODE_LABELS: Record<EditorMode, string> = {
   script: '纯剧本编辑',
   browser: '浏览器编辑',
 };
+
+function clearLinkedNovelStorage() {
+  try {
+    localStorage.removeItem(LINKED_NOVEL_KEY);
+    LEGACY_LINKED_KEYS.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+function readLinkedNovelStorage() {
+  try {
+    const keys = [LINKED_NOVEL_KEY, ...LEGACY_LINKED_KEYS];
+    for (const key of keys) {
+      const value = Number(localStorage.getItem(key));
+      if (Number.isFinite(value) && value > 0) return value;
+    }
+  } catch {
+    // Ignore storage failures.
+  }
+  return null;
+}
 
 function countText(text: string) {
   return text.replace(/\s/g, '').length;
@@ -101,6 +124,7 @@ function AreaHeader({ label, extra }: { label: string; extra?: React.ReactNode }
 function ResizeHandle({ onMouseDown }: { onMouseDown: (event: ReactMouseEvent) => void }) {
   return (
     <div
+      data-no-modal-drag="true"
       onMouseDown={onMouseDown}
       className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent"
     >
@@ -949,12 +973,9 @@ export function ScriptEditorPage() {
     (localStorage.getItem(EDITOR_MODE_KEY) as EditorMode) || 'dual'
   ));
   const [aiCollapsed, setAiCollapsed] = useState<boolean>(() => readStoredJson(AI_COLLAPSED_KEYS[editorMode], false));
-  const [linkedNovelId, setLinkedNovelId] = useState<number | null>(() => {
-    const raw = localStorage.getItem(LINKED_NOVEL_KEY)
-      ?? LEGACY_LINKED_KEYS.map((key) => localStorage.getItem(key)).find(Boolean)
-      ?? null;
-    return raw ? Number(raw) : null;
-  });
+  const [linkedNovelId, setLinkedNovelId] = useState<number | null>(() => (
+    isRememberAssociationsEnabled() ? readLinkedNovelStorage() : null
+  ));
   const [selectedNovelChapterId, setSelectedNovelChapterId] = useState<number | null>(null);
   const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
@@ -981,6 +1002,28 @@ export function ScriptEditorPage() {
     [materials, selectedMaterialId],
   );
   const activeTab = tabs.find((tab) => tab.id === activeTabId);
+
+  useEffect(() => {
+    if (isRememberAssociationsEnabled()) {
+      setLinkedNovelId(readLinkedNovelStorage());
+      setSelectedNovelChapterId(null);
+      return;
+    }
+    setLinkedNovelId(null);
+    setSelectedNovelChapterId(null);
+    clearLinkedNovelStorage();
+  }, [currentScript?.id]);
+
+  useEffect(() => {
+    const clearLinkedNovelIfNeeded = () => {
+      if (!isRememberAssociationsEnabled()) clearLinkedNovelStorage();
+    };
+    window.addEventListener('pagehide', clearLinkedNovelIfNeeded);
+    return () => {
+      window.removeEventListener('pagehide', clearLinkedNovelIfNeeded);
+      clearLinkedNovelIfNeeded();
+    };
+  }, []);
 
   useEffect(() => {
     const activeTab = tabs.find((tab) => tab.id === activeTabId);
@@ -1083,6 +1126,8 @@ export function ScriptEditorPage() {
   }, [editorMode]);
 
   const startResize = useCallback((leftKey: string, rightKey: string, event: ReactMouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
     dragRef.current = {
       leftKey,
       rightKey,

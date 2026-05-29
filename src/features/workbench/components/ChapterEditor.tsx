@@ -4,13 +4,18 @@ import {
   Settings,
   Square,
 } from 'lucide-react';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 
 import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
 import { readModelSnapshot } from '@/features/models/hooks/useModels';
 import { callModelStream } from '@/features/models/services/callModel';
-import { readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
+import { normalizePromptCategoryName, readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
 import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
+import {
+  ASSOCIATED_CHAPTERS_KEY,
+  CHAPTER_ASSOCIATE_UPDATED_EVENT,
+} from '@/features/workbench/model/workbenchAssociationCleanup';
 import {
   readWorkbenchLibraryEntries,
   writeWorkbenchLibraryEntries,
@@ -41,6 +46,8 @@ import {
   type FormatOptions,
   type FontSettings,
 } from '@/features/workbench/components/EditorToolModals';
+import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
+import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
 import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
@@ -57,6 +64,17 @@ function resizeFloatingAiTextarea(textarea: HTMLTextAreaElement | null) {
   );
   textarea.style.height = `${nextHeight}px`;
   textarea.style.overflowY = textarea.scrollHeight > FLOATING_AI_TEXTAREA_MAX_HEIGHT ? 'auto' : 'hidden';
+}
+
+function readAssociatedChapterCount(chapters: Pick<Chapter, 'id'>[]) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(ASSOCIATED_CHAPTERS_KEY) ?? '[]') as unknown;
+    if (!Array.isArray(parsed)) return 0;
+    const validIds = new Set(chapters.map((chapter) => chapter.id));
+    return parsed.filter((id) => Number.isFinite(id) && validIds.has(Number(id))).length;
+  } catch {
+    return 0;
+  }
 }
 
 interface ChapterEditorProps {
@@ -301,15 +319,11 @@ export function ChapterEditor({
   const [fontSettings, setFontSettings] = useState<FontSettings>(getStoredFontSettings);
   const [formatSettings, setFormatSettings] = useState<FormatOptions>(getStoredFormatSettings);
   const [copyToast, setCopyToast] = useState('');
-  const [associatedCount, setAssociatedCount] = useState(() => {
-    try {
-      return (JSON.parse(localStorage.getItem('xinyuexia_associated_chapters') ?? '[]') as number[]).length;
-    } catch {
-      return 0;
-    }
-  });
+  const [associatedCount, setAssociatedCount] = useState(0);
+  const reviewModalDraggable = useDraggableModal('chapter_review_panel');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const reviewAiAbortRef = useRef<AbortController | null>(null);
+  const associatedSelectionRef = useRef(false);
   const prevContentRef = useRef('');
   const pendingCursorRef = useRef<{ text: string; cursorPos: number; scrollTop: number } | null>(null);
 
@@ -321,12 +335,10 @@ export function ChapterEditor({
   const reviewModels = useMemo(() => readModelSnapshot().filter((model) => model.enabled), []);
   const reviewPrompts = useMemo(() => readPromptSnapshot().prompts, []);
   const reviewAuditPrompts = useMemo(() => {
-    const filtered = reviewPrompts.filter((prompt) => /审核|审稿|校对|错别字/.test(`${prompt.name} ${prompt.category} ${prompt.description}`));
-    return filtered.length > 0 ? filtered : reviewPrompts;
+    return reviewPrompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === '审核');
   }, [reviewPrompts]);
   const reviewCommentPrompts = useMemo(() => {
-    const filtered = reviewPrompts.filter((prompt) => /点评|评价|吸引|节奏|爽点/.test(`${prompt.name} ${prompt.category} ${prompt.description}`));
-    return filtered.length > 0 ? filtered : reviewPrompts;
+    return reviewPrompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === '点评');
   }, [reviewPrompts]);
   const sortedReviewChapters = useMemo(() => [...allChapters].sort((a, b) => a.serialNumber - b.serialNumber), [allChapters]);
   const activeReviewChapter = sortedReviewChapters.find((item) => item.id === reviewChapterId) ?? chapter ?? sortedReviewChapters[0] ?? null;
@@ -687,6 +699,21 @@ export function ChapterEditor({
       window.removeEventListener('open_editor_history', openHistory);
     };
   }, []);
+
+  useEffect(() => {
+    const syncAssociatedCount = () => {
+      const nextCount = readAssociatedChapterCount(allChapters);
+      associatedSelectionRef.current = nextCount > 0;
+      setAssociatedCount(nextCount);
+    };
+    if (isRememberAssociationsEnabled() || associatedSelectionRef.current) {
+      syncAssociatedCount();
+    } else {
+      setAssociatedCount(0);
+    }
+    window.addEventListener(CHAPTER_ASSOCIATE_UPDATED_EVENT, syncAssociatedCount);
+    return () => window.removeEventListener(CHAPTER_ASSOCIATE_UPDATED_EVENT, syncAssociatedCount);
+  }, [allChapters]);
 
   useEffect(() => {
     prevContentRef.current = content;
@@ -1170,8 +1197,9 @@ export function ChapterEditor({
         onClose={() => setIsAssociateOpen(false)}
         chapters={allChapters.map((item) => ({ id: item.id, serialNumber: item.serialNumber, wordCount: item.wordCount }))}
         onAssociate={(ids) => {
+          associatedSelectionRef.current = ids.length > 0;
           setAssociatedCount(ids.length);
-          window.dispatchEvent(new CustomEvent('chapter_associate_updated'));
+          window.dispatchEvent(new CustomEvent(CHAPTER_ASSOCIATE_UPDATED_EVENT));
         }}
       />
       {isStatusUpdateOpen && (
@@ -1310,26 +1338,41 @@ export function ChapterEditor({
           </section>
         </div>
       )}
-      {isReviewOpen && (
-        <div className="fixed inset-0 z-[280] flex items-center justify-center bg-black/35 p-5" onClick={() => setIsReviewOpen(false)}>
+      {isReviewOpen && createPortal(
+        <div
+          className="fixed inset-0 z-[280] flex items-center justify-center bg-black/35 p-5"
+          style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
+          onClick={() => setIsReviewOpen(false)}
+        >
           <section
-            className="flex h-[86vh] w-[min(1452px,96vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            data-draggable-managed="true"
+            data-global-modal-static="true"
+            style={{
+              ...reviewModalDraggable.style,
+              WebkitAppRegion: 'no-drag',
+            } as CSSProperties}
+            className="relative flex h-[min(720px,82vh)] w-[min(1180px,92vw)] max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-5">
+            <header
+              className="flex h-14 shrink-0 cursor-move items-center justify-between border-b border-slate-100 px-5"
+              {...reviewModalDraggable.dragHandleProps}
+              style={{ touchAction: 'none', WebkitAppRegion: 'no-drag' } as CSSProperties}
+            >
               <div>
                 <h2 className="text-lg font-black text-slate-900">{reviewMode === 'audit' ? '审核' : '点评'}</h2>
                 <p className="mt-0.5 text-xs font-bold text-slate-400">左侧选择章节，中间预览正文，右侧配置 AI {reviewMode === 'audit' ? '审核' : '点评'}参数。</p>
               </div>
               <button
                 type="button"
+                data-no-modal-drag="true"
                 onClick={() => setIsReviewOpen(false)}
                 className="rounded-lg px-3 py-1.5 text-sm font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700"
               >
                 关闭
               </button>
             </header>
-            <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)_340px] bg-slate-50">
+            <div className="grid min-h-0 flex-1 grid-cols-[220px_minmax(0,1fr)_300px] bg-slate-50">
               <aside className="min-h-0 border-r border-slate-100 bg-white p-4">
                 <div className="mb-3 text-sm font-black text-slate-900">章节目录</div>
                 <div className="editor-scrollbar h-full space-y-2 overflow-y-auto pr-1">
@@ -1498,22 +1541,6 @@ export function ChapterEditor({
                 <div className="flex shrink-0 items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
                     <h3 className="shrink-0 text-base font-black text-slate-900">AI 配置</h3>
-                    <div className="xy-management-segment shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setReviewManagementModal('models')}
-                        className="xy-management-segment-button"
-                      >
-                        模型管理
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setReviewManagementModal('prompts')}
-                        className="xy-management-segment-button"
-                      >
-                        提示词管理
-                      </button>
-                    </div>
                   </div>
                   <button
                     type="button"
@@ -1524,22 +1551,26 @@ export function ChapterEditor({
                   </button>
                 </div>
                 <div className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-bold text-slate-500">模型</span>
+                  <label className="grid grid-cols-1 items-center gap-2 text-sm text-slate-500">
                     <CapsuleSelect
+                      floatingLabel="模型"
                       value={reviewModelId}
                       onChange={setReviewModelId}
                       options={reviewModels.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : reviewModels.map((model) => ({ value: model.id, label: model.name }))}
                       buttonClassName="h-11 rounded-xl px-3 text-sm"
+                      actionLabel="管理"
+                      onActionClick={() => setReviewManagementModal('models')}
                     />
                   </label>
-                  <label className="grid grid-cols-[78px_1fr] items-center gap-2 text-sm text-slate-500">
-                    <span className="font-bold">{activeReviewPromptLabel}</span>
+                  <label className="grid grid-cols-1 items-center gap-2 text-sm text-slate-500">
                     <CapsuleSelect
+                      floatingLabel={activeReviewPromptLabel}
                       value={activeReviewPromptId}
                       onChange={setActiveReviewPromptId}
                       options={activeReviewPromptOptions.length === 0 ? [{ value: '', label: `暂无${activeReviewPromptLabel}`, disabled: true }] : activeReviewPromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
                       buttonClassName="h-11 rounded-xl px-3 text-sm"
+                      actionLabel="管理"
+                      onActionClick={() => setReviewManagementModal('prompts')}
                     />
                   </label>
                   <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-xs leading-5 text-slate-500">
@@ -1659,8 +1690,16 @@ export function ChapterEditor({
                 )}
               </aside>
             </div>
+            <div data-no-modal-drag="true" {...reviewModalDraggable.getResizeHandleProps('top')} className="absolute left-4 right-4 top-0 z-20 h-2 cursor-ns-resize" />
+            <div data-no-modal-drag="true" {...reviewModalDraggable.getResizeHandleProps('bottom')} className="absolute bottom-0 left-4 right-4 z-20 h-2 cursor-ns-resize" />
+            <div data-no-modal-drag="true" {...reviewModalDraggable.getResizeHandleProps('left')} className="absolute bottom-4 left-0 top-4 z-20 w-2 cursor-ew-resize" />
+            <div data-no-modal-drag="true" {...reviewModalDraggable.getResizeHandleProps('right')} className="absolute bottom-4 right-0 top-4 z-20 w-2 cursor-ew-resize" />
+            <div data-no-modal-drag="true" {...reviewModalDraggable.resizeHandleProps} className="absolute bottom-0 right-0 z-20 h-5 w-5 cursor-nwse-resize">
+              <div className="absolute bottom-1 right-1 h-3 w-3 rounded-br-lg border-b-2 border-r-2 border-gray-300" />
+            </div>
           </section>
-        </div>
+        </div>,
+        document.body,
       )}
       {copyToast && (
         <button

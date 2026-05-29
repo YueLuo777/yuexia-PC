@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
+import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 
 interface WorkbenchModalProps {
   title: string;
@@ -15,6 +16,7 @@ interface WorkbenchModalProps {
   heightClass?: string;
   titleClassName?: string;
   closeOnBackdrop?: boolean;
+  storageId?: string;
 }
 
 export function WorkbenchModal({
@@ -26,8 +28,9 @@ export function WorkbenchModal({
   heightClass = 'h-[78vh] max-h-[86vh]',
   titleClassName = 'text-base',
   closeOnBackdrop = true,
+  storageId,
 }: WorkbenchModalProps) {
-  const draggable = useDraggableModal(`workbench_${title}`);
+  const draggable = useDraggableModal(storageId ?? `workbench_${title}`);
   useTopModalEscape(isOpen, onClose);
 
   useEffect(() => {
@@ -71,38 +74,7 @@ export function WorkbenchModal({
           </button>
         </div>
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
-        <div
-          data-no-modal-drag="true"
-          {...draggable.getResizeHandleProps('top')}
-          className="absolute left-4 right-4 top-0 z-20 h-2 cursor-ns-resize"
-          title="拖动调整弹窗高度"
-        />
-        <div
-          data-no-modal-drag="true"
-          {...draggable.getResizeHandleProps('bottom')}
-          className="absolute bottom-0 left-4 right-4 z-20 h-2 cursor-ns-resize"
-          title="拖动调整弹窗高度"
-        />
-        <div
-          data-no-modal-drag="true"
-          {...draggable.getResizeHandleProps('left')}
-          className="absolute bottom-4 left-0 top-4 z-20 w-2 cursor-ew-resize"
-          title="拖动调整弹窗宽度"
-        />
-        <div
-          data-no-modal-drag="true"
-          {...draggable.getResizeHandleProps('right')}
-          className="absolute bottom-4 right-0 top-4 z-20 w-2 cursor-ew-resize"
-          title="拖动调整弹窗宽度"
-        />
-        <div
-          data-no-modal-drag="true"
-          {...draggable.resizeHandleProps}
-          className="absolute bottom-0 right-0 z-20 h-5 w-5 cursor-nwse-resize"
-          title="拖动调整弹窗大小"
-        >
-          <div className="absolute bottom-1 right-1 h-3 w-3 rounded-br-lg border-b-2 border-r-2 border-gray-300" />
-        </div>
+        <ModalResizeHandles draggable={draggable} />
       </div>
     </div>,
     document.body,
