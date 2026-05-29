@@ -13,6 +13,7 @@ interface ChapterSidebarProps {
   onToggleVolume: (volumeId: number) => void;
   onToggleSort: () => void;
   onSelectChapter: (volumeId: number, chapterId: number) => void;
+  onEditChapter?: (volumeId: number, chapterId: number) => void;
   onAddChapter: (volumeId: number) => void;
   onAddVolume: () => void;
   onDeleteVolume: (volumeId: number) => void;
@@ -70,6 +71,7 @@ export function ChapterSidebar({
   onToggleVolume,
   onToggleSort,
   onSelectChapter,
+  onEditChapter,
   onAddChapter,
   onAddVolume,
   onDeleteVolume,
@@ -118,6 +120,11 @@ export function ChapterSidebar({
 
   const handlePublish = (volumeId: number, chapterId: number) => {
     onPublishChapter(volumeId, chapterId);
+    setChapterMenu(emptyChapterMenu);
+  };
+
+  const handleEditChapter = (volumeId: number, chapterId: number) => {
+    (onEditChapter ?? onSelectChapter)(volumeId, chapterId);
     setChapterMenu(emptyChapterMenu);
   };
 
@@ -253,6 +260,15 @@ export function ChapterSidebar({
           className="fixed z-[100] min-w-[120px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
           style={{ left: chapterMenu.x, top: chapterMenu.y }}
         >
+          <button
+            onClick={() => {
+              if (chapterMenu.volumeId && chapterMenu.chapterId) handleEditChapter(chapterMenu.volumeId, chapterMenu.chapterId);
+            }}
+            className="w-full px-3 py-2 text-left text-base text-gray-700 transition-colors hover:bg-gray-50"
+          >
+            修改章节
+          </button>
+          <div className="mx-2 h-px bg-gray-100" />
           <button
             onClick={() => {
               if (chapterMenu.volumeId && chapterMenu.chapterId) handlePublish(chapterMenu.volumeId, chapterMenu.chapterId);

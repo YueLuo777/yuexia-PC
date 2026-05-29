@@ -23,7 +23,9 @@ function getContextMenuPoint(event: ReactMouseEvent<HTMLElement>) {
 
 interface PublishedSidebarProps {
   volumes: Volume[];
+  width?: number;
   onSelectChapter: (volumeId: number, chapterId: number) => void;
+  onEditChapter?: (volumeId: number, chapterId: number) => void;
   onUnpublishChapter: (chapterId: number) => void;
   onDeleteChapter: (volumeId: number, chapterId: number) => void;
   getChapterWordCount: (chapterId: number) => number;
@@ -31,7 +33,9 @@ interface PublishedSidebarProps {
 
 export function PublishedSidebar({
   volumes,
+  width = 190,
   onSelectChapter,
+  onEditChapter,
   onUnpublishChapter,
   onDeleteChapter,
   getChapterWordCount,
@@ -79,8 +83,13 @@ export function PublishedSidebar({
 
   const totalChapters = displayVolumes.reduce((sum, volume) => sum + volume.chapters.length, 0);
 
+  const handleEditChapter = (volumeId: number, chapterId: number) => {
+    (onEditChapter ?? onSelectChapter)(volumeId, chapterId);
+    setContextMenu({ visible: false, x: 0, y: 0, volumeId: null, chapterId: null });
+  };
+
   return (
-    <aside className="flex w-[190px] shrink-0 flex-col border-r border-gray-300 bg-white">
+    <aside className="flex shrink-0 flex-col border-r border-gray-300 bg-white" style={{ width }}>
       <div className="flex h-[42px] items-center justify-between border-b border-gray-100 px-3 py-2.5">
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-bold text-gray-900">已发布</h2>
@@ -171,6 +180,15 @@ export function PublishedSidebar({
           className="fixed z-[100] min-w-[120px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
+          <button
+            onClick={() => {
+              if (contextMenu.volumeId && contextMenu.chapterId) handleEditChapter(contextMenu.volumeId, contextMenu.chapterId);
+            }}
+            className="w-full px-3 py-2 text-left text-base text-gray-700 transition-colors hover:bg-gray-50"
+          >
+            修改章节
+          </button>
+          <div className="mx-2 h-px bg-gray-100" />
           <button
             onClick={() => {
               if (contextMenu.chapterId) onUnpublishChapter(contextMenu.chapterId);

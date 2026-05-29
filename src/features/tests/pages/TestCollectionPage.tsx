@@ -4,41 +4,26 @@ import {
   ChevronDown,
   EyeOff,
   Globe,
+  NotebookText,
   Moon,
   Palette,
   Sparkles,
   Search,
   X,
 } from 'lucide-react';
-import { Suspense, lazy, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+import { TEST_COLLECTION_SHOW_INDEX_EVENT } from '@/features/tests/model/testCollectionEvents';
 
 const BrainstormAiChainTestPage = lazy(() => import('@/features/tests/pages/BrainstormAiChainTestPage').then((module) => ({ default: module.BrainstormAiChainTestPage })));
 const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })));
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
+const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
-  {
-    title: 'AI 链路测试',
-    items: [
-      {
-        title: 'AI 生成链路测试中心',
-        description: '集中测试脑洞、大纲、细纲、概要、提炼、续写、审核、更新等 AI 生成链路。',
-        path: '/brainstorm-ai-chain-test',
-        icon: Sparkles,
-        badge: 'AI',
-      },
-      {
-        title: '隐藏页面',
-        description: '集中检查没有展示在正式导航里的页面、旧入口和内嵌功能。',
-        path: '/hidden-pages-test',
-        icon: EyeOff,
-        badge: 'Hidden',
-      },
-    ],
-  },
   {
     title: 'UI 与主题',
     items: [
@@ -48,7 +33,7 @@ const testGroups = [
         path: '/software-ui-catalog',
         icon: Palette,
         badge: 'UI',
-      },
+      },
       {
         title: 'UI 落地场景预览',
         description: '按编号预览按钮、输入框、下拉、标签页、胶囊标签、弹窗、卡片等适合套 UI 库代码的场景。',
@@ -62,14 +47,47 @@ const testGroups = [
         path: '/theme-colors',
         icon: Moon,
         badge: 'Theme',
-      },
+      },
       {
         title: '选择框边框标签测试',
         description: '测试把“模型”“提示词”嵌入到选择框上边框里，像设定名那种边框标签。',
         path: '/select-floating-label-test',
         icon: Palette,
         badge: 'Label',
-      },
+      },
+    ],
+  },
+  {
+    title: 'AI 链路测试',
+    items: [
+      {
+        title: 'AI 生成链路测试中心',
+        description: '集中测试脑洞、大纲、细纲、概要、提炼、续写、审核、更新等 AI 生成链路。',
+        path: '/brainstorm-ai-chain-test',
+        icon: Sparkles,
+        badge: 'AI',
+      },
+      {
+        title: '输出日志折叠分组测试',
+        description: '测试输出日志右侧区域按提示词、关联内容、用户要求分组折叠，只隐藏显示不影响发送给 AI。',
+        path: '/ai-log-folding-test',
+        icon: NotebookText,
+        badge: 'Log UI',
+      },
+      {
+        title: '隐藏页面',
+        description: '集中检查没有展示在正式导航里的页面、旧入口和内嵌功能。',
+        path: '/hidden-pages-test',
+        icon: EyeOff,
+        badge: 'Hidden',
+      },
+      {
+        title: '错误日志',
+        description: '记录软件里出现过的问题、原因、修复办法和后续防复发规则。',
+        path: '/error-log',
+        icon: NotebookText,
+        badge: 'Log',
+      },
     ],
   },
   {
@@ -85,6 +103,16 @@ const testGroups = [
     ],
   },
 ];
+
+const testNumberByPath = new Map(
+  testGroups
+    .flatMap((group) => group.items)
+    .map((item, index) => [item.path, index + 1] as const),
+);
+
+function formatTestNumber(path: string) {
+  return String(testNumberByPath.get(path) ?? 0).padStart(2, '0');
+}
 
 type TestCollectionPageProps = {
   embedded?: boolean;
@@ -399,16 +427,20 @@ function FloatingLabelSelectMock({
   disableVariant = 'text',
   compact = false,
   labelPosition = 'default',
+  labelTextClassName = 'text-slate-800',
+  valueTextClassName = 'text-slate-900',
 }: {
   label: string;
   value: string;
   options: string[];
   disabled?: boolean;
   showDisable?: boolean;
-  disablePlacement?: 'side' | 'label' | 'left' | 'both';
+  disablePlacement?: 'side' | 'label' | 'left' | 'both' | 'inside';
   disableVariant?: 'slash' | 'labelPill' | 'leftTab' | 'text';
   compact?: boolean;
   labelPosition?: 'default' | 'redFrame';
+  labelTextClassName?: string;
+  valueTextClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(value);
@@ -417,6 +449,7 @@ function FloatingLabelSelectMock({
   const showSideDisable = showDisable && disablePlacement === 'side';
   const showLabelDisable = showDisable && (disablePlacement === 'label' || disablePlacement === 'both');
   const showLeftDisable = showDisable && (disablePlacement === 'left' || disablePlacement === 'both');
+  const showInsideDisable = showDisable && disablePlacement === 'inside';
   const disableButtonTitle = isDisabled ? '启用提示词' : '禁用提示词';
   const disableIconButton = (className = '') => {
     if (disableVariant === 'labelPill') {
@@ -481,39 +514,44 @@ function FloatingLabelSelectMock({
 
   return (
     <div className={`grid ${showSideDisable ? 'grid-cols-[minmax(0,1fr)_52px]' : 'grid-cols-1'} items-center gap-2`}>
-      <div className={`relative min-w-0 ${useRedFrameLabel ? 'pt-2' : ''}`}>
+      <div className={`relative min-w-0 ${useRedFrameLabel ? 'pt-3' : ''}`}>
         {showLeftDisable && (
           <div className={`absolute top-[calc(50%+4px)] z-10 -translate-y-1/2 bg-white py-1 ${disableVariant === 'leftTab' ? '-left-1' : '-left-3'}`}>
             {disableIconButton(disableVariant === 'leftTab' ? '' : 'h-7 w-7')}
           </div>
         )}
         <div
-          className={`relative min-w-0 overflow-hidden rounded-[24px] border-2 bg-white p-0 shadow-[0_8px_18px_rgba(8,170,206,0.08)] ${
+          className={`relative min-w-0 overflow-visible rounded-[24px] border-2 bg-white p-0 shadow-[0_8px_18px_rgba(8,170,206,0.08)] ${
             isDisabled ? 'border-slate-200 text-slate-400' : 'border-[#08AACE] text-slate-900'
           }`}
         >
+          {showInsideDisable && (
+            <div className="absolute left-3.5 top-1/2 z-20 -translate-y-1/2 bg-white">
+              {disableIconButton('h-[22px] w-[22px] border-[2.4px] [&>span]:w-[13px] [&>span]:h-[1.6px]')}
+            </div>
+          )}
           {label && (
-            <div className={`${useRedFrameLabel ? 'absolute left-7 top-0 z-10 -translate-y-1/2 bg-white' : 'absolute left-10 top-0 z-10 -translate-y-1/2 bg-white'} max-w-[120px] px-1 text-sm font-black leading-none text-slate-800`}>
+            <div className={`${useRedFrameLabel ? 'absolute left-7 top-0 z-10 -translate-y-1/2 bg-white' : 'absolute left-10 top-0 z-10 -translate-y-1/2 bg-white'} max-w-[120px] px-1 text-sm font-black leading-none ${labelTextClassName}`}>
               <span className="inline-flex items-center gap-2">
                 {label}
                 {showLabelDisable && disableIconButton('-my-2')}
               </span>
             </div>
           )}
-          <div className={`flex overflow-hidden ${compact ? 'h-10' : 'h-12'}`}>
+          <div className={`flex overflow-hidden rounded-[22px] ${compact ? 'h-10' : 'h-12'}`}>
             <button
               type="button"
               disabled={isDisabled}
               onClick={() => setOpen((current) => !current)}
-              className={`${useRedFrameLabel ? 'px-7' : 'px-10'} min-w-0 flex-1 text-left text-base font-black disabled:cursor-not-allowed`}
+              className={`${showInsideDisable ? '!pl-12 !pr-7' : useRedFrameLabel ? 'px-7' : 'px-10'} min-w-0 flex-1 text-left text-base font-black disabled:cursor-not-allowed`}
             >
-              <span className="block truncate">{visibleValue}</span>
+              <span className={`block truncate ${valueTextClassName}`}>{visibleValue}</span>
             </button>
             <button
               type="button"
               disabled={isDisabled}
               onClick={() => setOpen((current) => !current)}
-              className="grid w-11 shrink-0 place-items-center bg-transparent text-slate-700 transition-colors hover:bg-transparent hover:text-[#08AACE] disabled:cursor-not-allowed disabled:text-slate-300"
+              className="grid w-6 shrink-0 place-items-center bg-transparent text-slate-700 transition-colors hover:bg-transparent hover:text-[#08AACE] disabled:cursor-not-allowed disabled:text-slate-300"
             >
               <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
@@ -574,6 +612,44 @@ function FloatingLabelSelectMock({
 export function SelectFloatingLabelTestPage() {
   const models = ['DS-v4-flash', 'DeepSeek V3', 'GPT-5.5', 'Claude Sonnet'];
   const prompts = ['设定-测试', '脑洞-测试版', '正文续写默认', '细纲默认'];
+  const colorVariants = [
+    {
+      name: '灰色稳重',
+      labelClass: 'text-slate-500',
+      valueClass: 'text-slate-700',
+      desc: '标签弱化，选中内容仍清楚。',
+    },
+    {
+      name: '浅灰蓝',
+      labelClass: 'text-slate-400',
+      valueClass: 'text-slate-600',
+      desc: '更轻，适合减少视觉重量。',
+    },
+    {
+      name: '青蓝一体',
+      labelClass: 'text-[#078FB0]',
+      valueClass: 'text-slate-800',
+      desc: '标签呼应边框，内容保持深色。',
+    },
+    {
+      name: '墨蓝内容',
+      labelClass: 'text-slate-500',
+      valueClass: 'text-[#1E3A5F]',
+      desc: '内容更沉稳，和正文区区分明显。',
+    },
+    {
+      name: '暖灰',
+      labelClass: 'text-stone-500',
+      valueClass: 'text-stone-700',
+      desc: '灰色偏暖，视觉更柔和。',
+    },
+    {
+      name: '全浅灰',
+      labelClass: 'text-zinc-500',
+      valueClass: 'text-zinc-600',
+      desc: '整体更安静，但识别度最低。',
+    },
+  ];
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-slate-50 p-7">
@@ -697,7 +773,251 @@ export function SelectFloatingLabelTestPage() {
               </div>
             </div>
           </section>
+
+          <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm lg:col-span-2">
+            <div className="mb-5 flex items-end justify-between gap-4">
+              <div>
+                <h2 className="text-base font-black text-slate-900">方案 F：模型/提示词字体颜色测试</h2>
+                <p className="mt-1 text-xs font-bold text-slate-400">只测试标签和选中内容的字体颜色，边框、管理按钮和布局保持不变。</p>
+              </div>
+              <div className="text-xs font-black text-slate-400">推荐先看：灰色稳重 / 青蓝一体</div>
+            </div>
+            <div className="grid gap-4 xl:grid-cols-3">
+              {colorVariants.map((variant) => (
+                <div key={variant.name} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-black text-slate-900">{variant.name}</div>
+                      <div className="mt-1 text-xs font-bold text-slate-400">{variant.desc}</div>
+                    </div>
+                    <div className="rounded-full bg-white px-2 py-1 text-[11px] font-black text-slate-400 shadow-sm">
+                      Test
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <FloatingLabelSelectMock
+                      label="模型"
+                      value="GPT5.5"
+                      options={models}
+                      labelPosition="redFrame"
+                      labelTextClassName={variant.labelClass}
+                      valueTextClassName={variant.valueClass}
+                    />
+                    <FloatingLabelSelectMock
+                      label="提示词"
+                      value="生成细纲"
+                      options={prompts}
+                      labelPosition="redFrame"
+                      labelTextClassName={variant.labelClass}
+                      valueTextClassName={variant.valueClass}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm lg:col-span-2">
+            <div className="mb-5 flex items-end justify-between gap-4">
+              <div>
+                <h2 className="text-base font-black text-slate-900">方案 G：禁用图标嵌入选中内容左侧</h2>
+                <p className="mt-1 text-xs font-bold text-slate-400">点击左侧红色禁用图标可以切换启用/禁用，右侧不再额外占一个禁用按钮。</p>
+              </div>
+              <div className="text-xs font-black text-slate-400">提示词专用测试</div>
+            </div>
+            <div className="grid gap-5 xl:grid-cols-2">
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <div className="mb-4 text-sm font-black text-slate-900">默认可用</div>
+                <FloatingLabelSelectMock
+                  label="提示词"
+                  value="设定-测试"
+                  options={prompts}
+                  showDisable
+                  disablePlacement="inside"
+                  disableVariant="slash"
+                  labelPosition="redFrame"
+                />
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <div className="mb-4 text-sm font-black text-slate-900">默认禁用</div>
+                <FloatingLabelSelectMock
+                  label="提示词"
+                  value="设定-测试"
+                  options={prompts}
+                  disabled
+                  showDisable
+                  disablePlacement="inside"
+                  disableVariant="slash"
+                  labelPosition="redFrame"
+                />
+              </div>
+            </div>
+          </section>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function LogFoldSection({
+  id,
+  title,
+  meta,
+  content,
+  collapsed,
+  onToggle,
+  tone = 'slate',
+}: {
+  id: string;
+  title: string;
+  meta: string;
+  content: string;
+  collapsed: boolean;
+  onToggle: (id: string) => void;
+  tone?: 'slate' | 'cyan' | 'amber';
+}) {
+  const toneClass = tone === 'cyan'
+    ? 'border-cyan-100 bg-cyan-50/70 text-cyan-700'
+    : tone === 'amber'
+      ? 'border-amber-100 bg-amber-50/80 text-amber-700'
+      : 'border-slate-100 bg-slate-50 text-slate-700';
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <button
+        type="button"
+        onClick={() => onToggle(id)}
+        className="flex w-full items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 text-left transition-colors hover:bg-slate-50"
+      >
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-black text-slate-950">{title}</span>
+            <span className={`rounded-full border px-2 py-0.5 text-[11px] font-black ${toneClass}`}>{meta}</span>
+          </div>
+          <p className="mt-1 text-xs font-bold text-slate-400">折叠只影响当前查看，仍会完整发送给 AI。</p>
+        </div>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${collapsed ? '-rotate-90' : ''}`} />
+      </button>
+      {!collapsed && (
+        <div className="ai-request-log-text whitespace-pre-wrap break-words px-4 py-4 text-sm leading-7 text-slate-700">
+          {content}
+        </div>
+      )}
+    </section>
+  );
+}
+
+export function AiLogFoldingTestPage() {
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
+    prompt: false,
+    context: false,
+    user: false,
+  });
+  const toggleSection = (id: string) => {
+    setCollapsedSections((current) => ({ ...current, [id]: !current[id] }));
+  };
+
+  const promptText = [
+    '你是番茄小说男频细纲编辑。',
+    '',
+    '用户会提供【小说大纲】和【前文章节细纲】。',
+    '你的任务是根据这些内容，继续生成当前章节的“单章剧情细纲”。',
+    '',
+    '要求：',
+    '1. 只生成当前这一章，不要生成后续章节。',
+    '2. 细纲控制在300-500字。',
+    '3. 必须承接前文章节细纲，尤其是上一章的结尾钩子。',
+    '4. 不要写正文，不要写对白，只输出细纲结果。',
+  ].join('\n');
+  const contextText = [
+    '【关联脑洞】',
+    '主角修水管时发现小区地下水路连着旧城灵脉，水压异常其实是灵气潮汐。',
+    '',
+    '【读取设定 / 剧情大纲】',
+    '第一卷围绕主角从普通维修工误入高武世界展开，核心冲突是旧城灵脉被商业势力暗中抽取。',
+    '',
+    '【前文细纲】',
+    '第1章：主角接到深夜维修单，发现水表倒转。',
+    '第2章：主角被神秘住户提醒不要碰地下阀门，但仍因责任心进入地下管廊。',
+  ].join('\n');
+  const userText = '根据当前设定，生成第3章细纲。要求主角发现第一个可利用的能力，但不要让他立刻变强。';
+  const fullPayload = [
+    '【System Prompt】',
+    promptText,
+    '',
+    '【Context】',
+    contextText,
+    '',
+    '【User Request】',
+    userText,
+  ].join('\n');
+
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-slate-50">
+      <header className="shrink-0 border-b border-slate-100 bg-white px-6 py-4">
+        <h1 className="text-xl font-black text-slate-950">输出日志折叠分组测试</h1>
+        <p className="mt-1 text-xs font-bold text-slate-400">以大纲设定输出日志为原型：右侧内容分组折叠，但底层发送内容保持完整。</p>
+      </header>
+      <div className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)] overflow-hidden bg-white">
+        <aside className="border-r border-slate-100 bg-slate-50 p-5 text-sm">
+          <div className="space-y-3">
+            {[
+              ['链路', '生成细纲'],
+              ['模型', 'GPT5.5'],
+              ['提示词', collapsedSections.prompt ? '已折叠 · 仍发送' : '展开显示'],
+              ['关联内容', collapsedSections.context ? '已折叠 · 仍发送' : '脑洞 + 读取设定'],
+              ['用户要求', collapsedSections.user ? '已折叠 · 仍发送' : '展开显示'],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-xl bg-white p-3">
+                <div className="text-xs font-bold text-slate-400">{label}</div>
+                <div className="mt-1 break-words font-black text-slate-800">{value}</div>
+              </div>
+            ))}
+          </div>
+        </aside>
+        <main className="min-h-0 overflow-y-auto p-6">
+          <div className="mb-4 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+            这里测试的是“查看层折叠”：折叠某一组后只是不显示，下面完整发送预览仍然保留全部内容。
+          </div>
+          <div className="space-y-3">
+            <LogFoldSection
+              id="prompt"
+              title="提示词"
+              meta={`${promptText.length} 字符`}
+              content={promptText}
+              collapsed={Boolean(collapsedSections.prompt)}
+              onToggle={toggleSection}
+              tone="slate"
+            />
+            <LogFoldSection
+              id="context"
+              title="关联内容"
+              meta="脑洞 / 读取设定 / 前文细纲"
+              content={contextText}
+              collapsed={Boolean(collapsedSections.context)}
+              onToggle={toggleSection}
+              tone="cyan"
+            />
+            <LogFoldSection
+              id="user"
+              title="用户要求"
+              meta={`${userText.length} 字符`}
+              content={userText}
+              collapsed={Boolean(collapsedSections.user)}
+              onToggle={toggleSection}
+              tone="amber"
+            />
+            <section className="rounded-2xl border border-slate-200 bg-white">
+              <div className="border-b border-slate-100 px-4 py-3">
+                <h2 className="text-sm font-black text-slate-950">完整发送预览</h2>
+                <p className="mt-1 text-xs font-bold text-slate-400">用于确认折叠没有改变实际发送给 AI 的内容。</p>
+              </div>
+              <div className="ai-request-log-text whitespace-pre-wrap break-words px-4 py-4 text-sm leading-7 text-slate-700">
+                {fullPayload}
+              </div>
+            </section>
+          </div>
+        </main>
       </div>
     </div>
   );
@@ -708,9 +1028,16 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
   const [search, setSearch] = useState('');
   const [activePath, setActivePath] = useState<string | null>(null);
 
+  useEffect(() => {
+    const showIndex = () => setActivePath(null);
+    window.addEventListener(TEST_COLLECTION_SHOW_INDEX_EVENT, showIndex);
+    return () => window.removeEventListener(TEST_COLLECTION_SHOW_INDEX_EVENT, showIndex);
+  }, []);
+
   const activeItem = useMemo(() => (
     testGroups.flatMap((group) => group.items).find((item) => item.path === activePath) ?? null
   ), [activePath]);
+  const activeNumber = activePath ? formatTestNumber(activePath) : null;
 
   const handleBack = () => {
     if (embedded && activePath) {
@@ -739,6 +1066,7 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
       .map((group) => ({
         ...group,
         items: group.items.filter((item) => (
+          formatTestNumber(item.path).includes(keyword) ||
           item.title.toLowerCase().includes(keyword) ||
           item.description.toLowerCase().includes(keyword) ||
           item.badge.toLowerCase().includes(keyword)
@@ -753,8 +1081,12 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
     switch (activePath) {
       case '/brainstorm-ai-chain-test':
         return <BrainstormAiChainTestPage />;
+      case '/ai-log-folding-test':
+        return <AiLogFoldingTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
+      case '/error-log':
+        return <ErrorLogPage />;
       case '/software-ui-catalog':
         return <SoftwareUiCatalogPage embedded onClose={() => setActivePath(null)} />;
       case '/ui-landing-scenarios-test':
@@ -782,7 +1114,7 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
             返回测试
           </button>
           <div className="min-w-0 flex-1 px-4 text-center text-sm font-black text-slate-700">
-            {activeItem?.title ?? '测试内容'}
+            {activeItem ? `${activeNumber}号测试：${activeItem.title}` : '测试内容'}
           </div>
           <button
             onClick={() => setActivePath(null)}
@@ -848,8 +1180,13 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
                       className="group flex min-h-[128px] flex-col rounded-2xl border border-slate-100 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
                     >
                       <div className="mb-4 flex items-center justify-between gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-light text-brand">
-                          <Icon className="h-5 w-5" />
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-light text-brand">
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[11px] font-black text-white">
+                            {formatTestNumber(item.path)}
+                          </span>
                         </div>
                         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-400 transition-colors group-hover:bg-brand-light group-hover:text-brand">
                           {item.badge}

@@ -1850,6 +1850,69 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   padding-bottom: 0;
 }
 
+.xy-floating-field.xy-floating-outline-setting-name input {
+  height: 56px;
+  border-radius: 20px;
+  padding-left: 1.35rem;
+  padding-right: 1.35rem;
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.xy-floating-field.xy-floating-custom-field-size {
+  width: var(--xy-field-width);
+  max-width: 100%;
+}
+
+.xy-floating-field.xy-floating-custom-field-size input {
+  height: var(--xy-field-height);
+  font-size: var(--xy-field-font-size);
+}
+
+.xy-capsule-custom-field-size {
+  width: var(--xy-field-width);
+  max-width: 100%;
+}
+
+.xy-capsule-custom-field-size.xy-capsule-fill {
+  width: 100%;
+}
+
+.xy-capsule-custom-field-size.xy-capsule-align-with-field {
+  padding-top: 0;
+}
+
+.xy-capsule-custom-field-size fieldset {
+  position: relative;
+  height: var(--xy-field-height);
+  overflow: visible;
+  border-radius: 20px;
+}
+
+.xy-capsule-custom-field-size [data-capsule-control],
+.xy-capsule-custom-field-size > button {
+  height: var(--xy-field-height) !important;
+  border-radius: calc(var(--xy-field-height) / 2 + 2px) !important;
+}
+
+.xy-capsule-custom-field-size [data-capsule-control] button,
+.xy-capsule-custom-field-size > button {
+  font-size: var(--xy-field-font-size) !important;
+}
+
+.xy-capsule-custom-field-size [data-capsule-control] > span,
+.xy-capsule-custom-field-size legend {
+  position: absolute;
+  top: 0;
+  left: 22px;
+  z-index: 2;
+  margin-left: 0;
+  transform: translateY(-50%);
+  background-color: #ffffff;
+  padding: 0 0.35rem;
+  font-size: max(11px, calc(var(--xy-field-font-size) * 0.86));
+}
+
 .xy-floating-field.xy-floating-outline-fixed textarea {
   padding-top: 1.35rem;
 }
@@ -1932,6 +1995,34 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   padding: 1.35rem 1.25rem 3rem;
 }
 
+.xy-floating-field.xy-floating-chat-shell {
+  display: flex;
+  line-height: normal;
+}
+
+.xy-floating-field.xy-floating-chat-shell .xy-floating-rich-preview {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 1.35rem 1rem 2.3rem;
+}
+
+.xy-floating-edge-tool.xy-floating-chat-session-tool {
+  right: auto;
+  left: 1.1rem;
+  max-width: calc(100% - 8.5rem);
+}
+
+.xy-floating-edge-tool.xy-floating-chat-action-tool {
+  right: 0.9rem;
+  max-width: 7.2rem;
+}
+
+.xy-floating-edge-tool.xy-floating-chat-session-tool > div,
+.xy-floating-edge-tool.xy-floating-chat-action-tool > div {
+  max-width: 100%;
+}
+
 .xy-floating-field.xy-floating-outline-preview:focus-within textarea,
 .xy-floating-field.xy-floating-outline-preview.xy-outline-selected textarea {
   border-color: #08AACE;
@@ -1943,16 +2034,18 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 
 .xy-floating-field .xy-floating-count {
   position: absolute;
-  right: 1.25rem;
+  right: 1.55rem;
   bottom: 0;
   z-index: 2;
   transform: translateY(50%);
   background: #ffffff;
-  padding: 0 0.45rem;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0 0.22rem;
   color: #94a3b8;
   font-size: 0.75rem;
   font-weight: 700;
-  line-height: 1.25rem;
+  line-height: 1rem;
   pointer-events: none;
 }
 
@@ -2000,6 +2093,23 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 .xy-floating-field.xy-floating-compact.xy-has-value label {
   top: 0;
   transform: translateY(-50%) scale(0.8);
+}
+
+.xy-floating-field.xy-extract-compact-field input {
+  height: 44px;
+  min-height: 44px;
+  border-radius: 14px;
+  padding: 0 0.85rem;
+  font-size: 0.875rem;
+}
+
+.xy-floating-field.xy-extract-compact-field label,
+.xy-floating-field.xy-extract-compact-field:has(input) label,
+.xy-floating-field.xy-extract-compact-field:focus-within label,
+.xy-floating-field.xy-extract-compact-field.xy-has-value label {
+  left: 14px;
+  font-size: 0.8125rem;
+  line-height: 16px;
 }
 
 .xy-floating-field.xy-floating-ai textarea {

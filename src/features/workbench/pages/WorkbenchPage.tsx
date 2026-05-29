@@ -74,6 +74,9 @@ const AI_PANEL_DEFAULT_WIDTH = 430;
 const CHAPTER_SIDEBAR_MIN_WIDTH = 200;
 const CHAPTER_SIDEBAR_MAX_WIDTH = 420;
 const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 300;
+const PUBLISHED_SIDEBAR_MIN_WIDTH = 170;
+const PUBLISHED_SIDEBAR_MAX_WIDTH = 360;
+const PUBLISHED_SIDEBAR_DEFAULT_WIDTH = 190;
 const PUBLISH_CONFIRM_KEY = 'xinyuexia_workbench_publish_confirm';
 const GLOBAL_NOTES_KEY = 'xinyuexia_workbench_notes';
 const WORK_NOTES_KEY_PREFIX = 'xinyuexia_workbench_notes_';
@@ -114,6 +117,11 @@ function normalizeAiPanelWidth(value: number) {
 function normalizeChapterSidebarWidth(value: number) {
   if (!Number.isFinite(value)) return CHAPTER_SIDEBAR_DEFAULT_WIDTH;
   return Math.max(CHAPTER_SIDEBAR_MIN_WIDTH, Math.min(CHAPTER_SIDEBAR_MAX_WIDTH, value));
+}
+
+function normalizePublishedSidebarWidth(value: number) {
+  if (!Number.isFinite(value)) return PUBLISHED_SIDEBAR_DEFAULT_WIDTH;
+  return Math.max(PUBLISHED_SIDEBAR_MIN_WIDTH, Math.min(PUBLISHED_SIDEBAR_MAX_WIDTH, value));
 }
 
 function replaceAt(text: string, index: number, search: string, replacement: string) {
@@ -1095,8 +1103,13 @@ export function WorkbenchPage() {
     const saved = Number.parseInt(localStorage.getItem('xinyuexia_chapter_sidebar_width') ?? String(CHAPTER_SIDEBAR_DEFAULT_WIDTH), 10);
     return normalizeChapterSidebarWidth(saved);
   });
+  const [publishedSidebarWidth, setPublishedSidebarWidth] = useState(() => {
+    const saved = Number.parseInt(localStorage.getItem('xinyuexia_published_sidebar_width') ?? String(PUBLISHED_SIDEBAR_DEFAULT_WIDTH), 10);
+    return normalizePublishedSidebarWidth(saved);
+  });
   const [isDraggingPanel, setIsDraggingPanel] = useState(false);
   const [isDraggingChapterSidebar, setIsDraggingChapterSidebar] = useState(false);
+  const [isDraggingPublishedSidebar, setIsDraggingPublishedSidebar] = useState(false);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(290);
   const { tabs, activeTabId } = useWorkspaceTabs();
@@ -1184,6 +1197,10 @@ export function WorkbenchPage() {
   }, [chapterSidebarWidth]);
 
   useEffect(() => {
+    localStorage.setItem('xinyuexia_published_sidebar_width', String(publishedSidebarWidth));
+  }, [publishedSidebarWidth]);
+
+  useEffect(() => {
     const activeTab = tabs.find((tab) => tab.id === activeTabId);
     if (!activeTab?.workId) return;
     if (currentNovelId === activeTab.workId) return;
@@ -1233,12 +1250,58 @@ export function WorkbenchPage() {
     const handleShortcut = (event: Event) => {
       const action = event as CustomEvent<{ id?: string }>;
       if (action.detail?.id !== 'close_floating') return;
-      setIsRecycleOpen(false);
-      setActiveModal(null);
+      if (isQuickNavOpen) {
+        setIsQuickNavOpen(false);
+        return;
+      }
+      if (isRecycleOpen) {
+        setIsRecycleOpen(false);
+        return;
+      }
+      if (isExportOpen) {
+        setIsExportOpen(false);
+        return;
+      }
+      if (isFindOpen) {
+        setIsFindOpen(false);
+        return;
+      }
+      if (isEditorSettingsOpen) {
+        setIsEditorSettingsOpen(false);
+        return;
+      }
+      if (activeModal) {
+        setActiveModal(null);
+        return;
+      }
+      if (managementModal) {
+        setManagementModal(null);
+        return;
+      }
+      if (isContextLibraryOpen) {
+        setIsContextLibraryOpen(false);
+        return;
+      }
+      if (pendingPublish) {
+        setPendingPublish(null);
+        return;
+      }
+      navigate('/dashboard');
     };
     window.addEventListener(SHORTCUT_ACTION_EVENT, handleShortcut);
     return () => window.removeEventListener(SHORTCUT_ACTION_EVENT, handleShortcut);
-  }, []);
+  }, [
+    activeModal,
+    isContextLibraryOpen,
+    isEditorSettingsOpen,
+    isExportOpen,
+    isFindOpen,
+    isQuickNavOpen,
+    isRecycleOpen,
+    managementModal,
+    navigate,
+    pendingPublish,
+  ]);
 
   const handlePanelDragStart = (event: ReactMouseEvent) => {
     event.preventDefault();
@@ -1256,6 +1319,16 @@ export function WorkbenchPage() {
     dragStartX.current = event.clientX;
     dragStartWidth.current = chapterSidebarWidth;
     setIsDraggingChapterSidebar(true);
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+  };
+
+  const handlePublishedSidebarDragStart = (event: ReactMouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    dragStartX.current = event.clientX;
+    dragStartWidth.current = publishedSidebarWidth;
+    setIsDraggingPublishedSidebar(true);
     document.body.style.cursor = 'ew-resize';
     document.body.style.userSelect = 'none';
   };
@@ -1303,6 +1376,28 @@ export function WorkbenchPage() {
       document.removeEventListener('mouseup', handleUp);
     };
   }, [isDraggingChapterSidebar]);
+
+  useEffect(() => {
+    if (!isDraggingPublishedSidebar) return;
+
+    const handleMove = (event: MouseEvent) => {
+      const deltaX = event.clientX - dragStartX.current;
+      setPublishedSidebarWidth(normalizePublishedSidebarWidth(dragStartWidth.current + deltaX));
+    };
+
+    const handleUp = () => {
+      setIsDraggingPublishedSidebar(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleUp);
+    };
+  }, [isDraggingPublishedSidebar]);
 
   if (!currentNovel) {
     return (
@@ -1675,6 +1770,7 @@ export function WorkbenchPage() {
           onToggleVolume={toggleVolume}
           onToggleSort={toggleSort}
           onSelectChapter={selectChapter}
+          onEditChapter={selectChapter}
           onAddChapter={addChapter}
           onAddVolume={addVolume}
           onDeleteVolume={deleteVolume}
@@ -1686,19 +1782,32 @@ export function WorkbenchPage() {
         />
 
         {showPublished && (
-          <PublishedSidebar
-            volumes={volumes}
-            onSelectChapter={selectChapter}
-            onUnpublishChapter={(chapterId) => setChapterPublished(chapterId, false)}
-            onDeleteChapter={deleteChapter}
-            getChapterWordCount={getChapterWordCount}
-          />
+          <>
+            <div
+              data-no-modal-drag="true"
+              className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent"
+              onMouseDown={handleChapterSidebarDragStart}
+              title="拖拽调整未发布栏宽度"
+            >
+              <div className="h-full w-px rounded-full bg-[#EF4444] opacity-0 transition-opacity group-hover:opacity-80" />
+            </div>
+
+            <PublishedSidebar
+              volumes={volumes}
+              width={publishedSidebarWidth}
+              onSelectChapter={selectChapter}
+              onEditChapter={selectChapter}
+              onUnpublishChapter={(chapterId) => setChapterPublished(chapterId, false)}
+              onDeleteChapter={deleteChapter}
+              getChapterWordCount={getChapterWordCount}
+            />
+          </>
         )}
 
         <div
           data-no-modal-drag="true"
           className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent"
-          onMouseDown={handleChapterSidebarDragStart}
+          onMouseDown={showPublished ? handlePublishedSidebarDragStart : handleChapterSidebarDragStart}
           title="拖拽调整章节栏宽度"
         >
           <div className="h-full w-px rounded-full bg-[#08B3D9] opacity-0 transition-opacity group-hover:opacity-70" />

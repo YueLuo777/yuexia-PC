@@ -13,9 +13,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "tsc --noEmit",
+    "check:electron": "node --check electron/main.cjs && node --check electron/preload.cjs",
     "test": "vitest",
     "test:run": "vitest run",
-    "verify": "npm run check && npm run test:run && npm run build",
+    "verify": "npm run check && npm run check:electron && npm run test:run && npm run build",
     "prepare:postgres": "node scripts/prepare-embedded-postgres.cjs",
     "pack:win": "npm run build && electron-builder --win portable"
   },

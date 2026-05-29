@@ -108,7 +108,7 @@ function isMobileOptimizedUrl(value: string) {
 }
 
 export function BrowserWorkspace({ width }: { width: number }) {
-  const webviewRef = useRef<any>(null);
+  const webviewRef = useRef<ElectronWebviewElement | null>(null);
   const [browserTabs, setBrowserTabs] = useState<BrowserTab[]>(() => readBrowserTabs());
   const [activeTabId, setActiveTabId] = useState(() => readActiveBrowserTabId(browserTabs[0]?.id));
   const activeTab = useMemo(
@@ -419,7 +419,6 @@ export function BrowserWorkspace({ width }: { width: number }) {
           ref: webviewRef,
           src: currentUrl,
           partition: BROWSER_PARTITION,
-          allowpopups: 'true',
           style: {
             display: 'flex',
             width: '100%',

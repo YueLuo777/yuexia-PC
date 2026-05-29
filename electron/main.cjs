@@ -317,7 +317,6 @@ CREATE INDEX IF NOT EXISTS idx_call_records_created_at ON call_records(created_a
 `;
 
 let mainWindow = null;
-let titlebarDragSession = null;
 
 app.setName(APP_NAME);
 if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
@@ -1988,7 +1987,7 @@ function getWindowOptions(savedState) {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
       preload: PRELOAD_ENTRY,
       webviewTag: true,
     },
@@ -2019,176 +2018,6 @@ function notifyWindowMaximizedState(targetWindow) {
   } catch (error) {
     console.warn('Failed to notify maximized state:', error);
   }
-}
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
-
-function getCombinedWorkArea() {
-  const displays = screen.getAllDisplays();
-  if (!displays.length) return screen.getPrimaryDisplay().workArea;
-  return displays.reduce((area, display) => {
-    const workArea = display.workArea;
-    const left = Math.min(area.x, workArea.x);
-    const top = Math.min(area.y, workArea.y);
-    const right = Math.max(area.x + area.width, workArea.x + workArea.width);
-    const bottom = Math.max(area.y + area.height, workArea.y + workArea.height);
-    return {
-      x: left,
-      y: top,
-      width: right - left,
-      height: bottom - top,
-    };
-  }, displays[0].workArea);
-}
-
-function getWorkAreaNearPoint(x, y) {
-  try {
-    return screen.getDisplayNearestPoint({ x: Math.round(x), y: Math.round(y) }).workArea;
-  } catch {
-    return screen.getPrimaryDisplay().workArea;
-  }
-}
-
-function clampWindowDragX(x, width) {
-  const workArea = getCombinedWorkArea();
-  const visibleWidth = Math.min(120, Math.max(40, Math.round(width * 0.15)));
-  return clamp(x, workArea.x - width + visibleWidth, workArea.x + workArea.width - visibleWidth);
-}
-
-function clampWindowDragY(y, height) {
-  const workArea = getCombinedWorkArea();
-  const visibleTitlebarHeight = 48;
-  const maxY = workArea.y + workArea.height - visibleTitlebarHeight;
-  if (height >= workArea.height) return clamp(y, workArea.y, maxY);
-  return clamp(y, workArea.y, maxY);
-}
-
-function normalizeTitlebarDragInput(input) {
-  if (!input || typeof input !== 'object') return null;
-  const screenX = Number(input.screenX);
-  const screenY = Number(input.screenY);
-  if (!Number.isFinite(screenX) || !Number.isFinite(screenY)) return null;
-  return {
-    screenX: Math.round(screenX),
-    screenY: Math.round(screenY),
-    clientX: Number(input.clientX),
-    clientY: Number(input.clientY),
-    windowWidth: Number(input.windowWidth),
-    dragOffsetX: Number(input.dragOffsetX),
-    dragOffsetY: Number(input.dragOffsetY),
-    dragSessionId: typeof input.dragSessionId === 'string' ? input.dragSessionId : '',
-  };
-}
-
-function waitForWindowUnmaximize(targetWindow) {
-  if (!targetWindow || targetWindow.isDestroyed() || !targetWindow.isMaximized()) return Promise.resolve();
-  return new Promise((resolve) => {
-    let settled = false;
-    const finish = () => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      targetWindow.off('unmaximize', finish);
-      resolve();
-    };
-    const timer = setTimeout(finish, 80);
-    targetWindow.once('unmaximize', finish);
-    targetWindow.unmaximize();
-  });
-}
-
-async function beginTitlebarDrag(input) {
-  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isFullScreen()) return null;
-  const drag = normalizeTitlebarDragInput(input);
-  if (!drag) return null;
-
-  const wasMaximized = mainWindow.isMaximized();
-  const bounds = mainWindow.getBounds();
-  const dragSessionId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-  if (!wasMaximized) {
-    titlebarDragSession = {
-      id: dragSessionId,
-      width: bounds.width,
-      height: bounds.height,
-      startedAt: Date.now(),
-    };
-    return {
-      dragSessionId,
-      isMaximized: false,
-      dragOffsetX: drag.screenX - bounds.x,
-      dragOffsetY: drag.screenY - bounds.y,
-    };
-  }
-
-  const workArea = getWorkAreaNearPoint(drag.screenX, drag.screenY);
-  const normalBounds = mainWindow.getNormalBounds();
-  const restoreWidth = Math.max(
-    MIN_WINDOW_WIDTH,
-    Math.min(normalBounds.width || DEFAULT_WINDOW_BOUNDS.width, Math.round(workArea.width * 0.85)),
-  );
-  const restoreHeight = Math.max(
-    MIN_WINDOW_HEIGHT,
-    Math.min(normalBounds.height || DEFAULT_WINDOW_BOUNDS.height, Math.round(workArea.height * 0.85)),
-  );
-  const widthRatio =
-    Number.isFinite(drag.clientX) && Number.isFinite(drag.windowWidth) && drag.windowWidth > 0
-      ? clamp(drag.clientX / drag.windowWidth, 0.08, 0.92)
-      : 0.5;
-  const titlebarOffsetY = Number.isFinite(drag.clientY) ? clamp(drag.clientY, 0, 56) : 16;
-  const dragOffsetX = Math.round(restoreWidth * widthRatio);
-  const dragOffsetY = Math.round(titlebarOffsetY);
-  const x = clampWindowDragX(drag.screenX - dragOffsetX, restoreWidth);
-  const y = clampWindowDragY(drag.screenY - dragOffsetY, restoreHeight);
-
-  await waitForWindowUnmaximize(mainWindow);
-  if (!mainWindow || mainWindow.isDestroyed()) return null;
-  if (mainWindow.isMaximized()) {
-    await waitForWindowUnmaximize(mainWindow);
-    if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isMaximized()) return null;
-  }
-  mainWindow.setBounds({ x, y, width: restoreWidth, height: restoreHeight }, false);
-  titlebarDragSession = {
-    id: dragSessionId,
-    width: restoreWidth,
-    height: restoreHeight,
-    startedAt: Date.now(),
-  };
-  return {
-    dragSessionId,
-    isMaximized: false,
-    dragOffsetX: drag.screenX - x,
-    dragOffsetY: drag.screenY - y,
-  };
-}
-
-function moveTitlebarDrag(input) {
-  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isFullScreen()) return false;
-  const drag = normalizeTitlebarDragInput(input);
-  if (!drag || !Number.isFinite(drag.dragOffsetX) || !Number.isFinite(drag.dragOffsetY)) return false;
-
-  const bounds = mainWindow.getBounds();
-  const activeSession = titlebarDragSession
-    && (!drag.dragSessionId || titlebarDragSession.id === drag.dragSessionId)
-    && Date.now() - titlebarDragSession.startedAt < 30000
-      ? titlebarDragSession
-      : null;
-  const width = activeSession?.width ?? bounds.width;
-  const height = activeSession?.height ?? bounds.height;
-  const x = clampWindowDragX(Math.round(drag.screenX - drag.dragOffsetX), width);
-  const y = clampWindowDragY(Math.round(drag.screenY - drag.dragOffsetY), height);
-  mainWindow.setBounds({ x, y, width, height }, false);
-  return true;
-}
-
-function endTitlebarDrag(input) {
-  const drag = normalizeTitlebarDragInput(input);
-  if (!drag?.dragSessionId || titlebarDragSession?.id === drag.dragSessionId) {
-    titlebarDragSession = null;
-  }
-  return true;
 }
 
 function focusMainWindow() {
@@ -2289,7 +2118,14 @@ function createWindow() {
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    try {
+      const parsed = new URL(url);
+      if (['http:', 'https:', 'mailto:'].includes(parsed.protocol)) {
+        void shell.openExternal(parsed.toString());
+      }
+    } catch {
+      // Deny malformed external URLs.
+    }
     return { action: 'deny' };
   });
 
@@ -2329,9 +2165,6 @@ ipcMain.handle('window:is-maximized', () => mainWindow?.isMaximized() ?? false);
 ipcMain.handle('window:reload', () => {
   mainWindow?.webContents.reloadIgnoringCache();
 });
-ipcMain.handle('window:begin-titlebar-drag', (_event, input) => beginTitlebarDrag(input));
-ipcMain.handle('window:move-titlebar-drag', (_event, input) => moveTitlebarDrag(input));
-ipcMain.handle('window:end-titlebar-drag', (_event, input) => endTitlebarDrag(input));
 
 ipcMain.handle('app-icon:read', async () => readCurrentAppIcon());
 

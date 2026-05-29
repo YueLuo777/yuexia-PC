@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
@@ -50,17 +50,19 @@ export function WorkbenchModal({
   return createPortal(
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40"
+      style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
       onClick={closeOnBackdrop ? onClose : undefined}
     >
       <div
         className={`relative flex ${heightClass} ${widthClass} max-w-[96vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl`}
         data-draggable-managed="true"
-        style={draggable.style}
+        style={{ ...draggable.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
         onClick={(event) => event.stopPropagation()}
       >
         <div
           className="group flex shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-3"
           {...draggable.dragHandleProps}
+          style={{ ...draggable.dragHandleProps.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
         >
           <h2 className={`shrink-0 cursor-move font-bold text-gray-900 ${titleClassName}`}>{title}</h2>
           <div id="workbench-modal-header-extra" className="min-w-0 flex-1" />

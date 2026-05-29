@@ -12,6 +12,7 @@ const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeCo
 const BrainstormAiChainTestPage = lazy(() => import('@/features/tests/pages/BrainstormAiChainTestPage').then((module) => ({ default: module.BrainstormAiChainTestPage })));
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
 const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })));
+const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 const IdeaGeneratorPage = lazy(() => import('@/features/ideas/pages/IdeaGeneratorPage').then((module) => ({ default: module.IdeaGeneratorPage })));
 const IdeaLibraryPage = lazy(() => import('@/features/ideas/pages/IdeaLibraryPage').then((module) => ({ default: module.IdeaLibraryPage })));
@@ -106,6 +107,7 @@ export default function App() {
                 <Route path="/brainstorm-ai-chain-test" element={<BrainstormAiChainTestPage />} />
                 <Route path="/software-ui-catalog" element={<SoftwareUiCatalogPage />} />
                 <Route path="/hidden-pages-test" element={<HiddenPagesTestPage />} />
+                <Route path="/error-log" element={<ErrorLogPage />} />
                 <Route path="/theme-colors" element={<DarkThemeColorPage />} />
                 <Route path="/test-browser" element={<TestBrowserPage />} />
               </Route>

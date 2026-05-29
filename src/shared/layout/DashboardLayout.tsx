@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Camera, ChevronDown, ChevronRight, UserRound } from 'lucide-react';
 
 import { DarkThemeColorPage } from '@/features/tests/pages/DarkThemeColorPage';
+import { TEST_COLLECTION_SHOW_INDEX_EVENT } from '@/features/tests/model/testCollectionEvents';
 import { NavSettingsModal } from '@/shared/navigation/NavSettingsModal';
 import {
   getIconByName,
@@ -223,6 +224,11 @@ export function DashboardLayout() {
                     <Link
                       key={item.to}
                       to={item.to}
+                      onClick={() => {
+                        if (item.to === '/test-collection' && location.pathname === '/test-collection') {
+                          window.dispatchEvent(new Event(TEST_COLLECTION_SHOW_INDEX_EVENT));
+                        }
+                      }}
                       className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
                         isActive
                           ? 'border-l-[3px] border-orange-500 bg-orange-50 font-medium text-orange-500'

@@ -17,6 +17,7 @@ import { APP_EVENTS } from '@/shared/events/appEvents';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
 import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
 import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
 import { WorkbenchModal } from './WorkbenchModal';
 
@@ -35,6 +36,7 @@ const WORKBENCH_AI_EXCLUDED_PROMPT_CATEGORIES = new Set(['脑洞', '设定', '�
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 162;
+const MAX_AI_SESSIONS = 8;
 function resizeFloatingAiTextarea(textarea: HTMLTextAreaElement | null) {
   if (!textarea) return;
   textarea.style.height = 'auto';
@@ -369,6 +371,7 @@ export function WorkbenchAIPanel({
   const [outputFontSize, setOutputFontSize] = useState(20);
   const [loadingDotCount, setLoadingDotCount] = useState(1);
   const [isRequestLogOpen, setIsRequestLogOpen] = useState(false);
+  const [isSessionLimitConfirmOpen, setIsSessionLimitConfirmOpen] = useState(false);
   const [lastRequestLog, setLastRequestLog] = useState<WorkbenchAiRequestLog | null>(null);
   const nextSessionIdRef = useRef(initialAiState.nextSessionId);
   const nextMessageIdRef = useRef(initialAiState.nextMessageId);
@@ -634,8 +637,8 @@ export function WorkbenchAIPanel({
   };
 
   const addSession = () => {
-    if (sessions.length >= 10) {
-      flashStatus('最多10个会话');
+    if (sessions.length >= MAX_AI_SESSIONS) {
+      setIsSessionLimitConfirmOpen(true);
       return;
     }
     const nextId = nextSessionIdRef.current;
@@ -654,6 +657,7 @@ export function WorkbenchAIPanel({
   const deleteSession = (sessionId: number) => {
     if (sessions.length <= 1) {
       abortControllerRef.current?.abort();
+      onClearLinkedContext?.();
       const nextId = nextSessionIdRef.current;
       nextSessionIdRef.current += 1;
       setSessions([{
@@ -665,6 +669,7 @@ export function WorkbenchAIPanel({
         hasSentChapterContext: false,
       }]);
       setActiveSessionId(nextId);
+      setLastRequestLog(null);
       setIsLoading(false);
       flashStatus('已删除当前会话并新建空会话');
       return;
@@ -680,13 +685,15 @@ export function WorkbenchAIPanel({
 
   const resetSessions = () => {
     abortControllerRef.current?.abort();
-    const fresh = createDefaultSession(1);
-    nextSessionIdRef.current = 2;
+    onClearLinkedContext?.();
+    const fresh = createDefaultSession(nextSessionIdRef.current);
+    nextSessionIdRef.current += 1;
     nextMessageIdRef.current = 1;
     setSessions([fresh]);
-    setActiveSessionId(1);
+    setActiveSessionId(fresh.id);
+    setLastRequestLog(null);
     setIsLoading(false);
-    flashStatus('已清空会话');
+    flashStatus('已新开空会话');
   };
 
   const stopMessage = () => {
@@ -738,41 +745,27 @@ export function WorkbenchAIPanel({
     />
   );
 
-  const renderConfigPanel = (
-    model: ModelItem | null,
-    modelId: string,
-    onModelChange: (value: string) => void,
-    prompt: PromptItem | null,
-    promptId: string,
-    onPromptChange: (value: string) => void,
-  ) => (
-    <>
-      <div className="shrink-0 overflow-visible rounded-lg border border-gray-200 bg-gray-50 p-2">
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(48px,auto)] items-center gap-2">
-          {renderConfigDropdown("模型", model?.id ?? modelId, enabledModels, '无可用模型', onModelChange, onOpenModelManage)}
-          <span className="flex min-w-0 items-center text-xs font-bold">
-            {renderModelStatus(model)}
-          </span>
-          {renderConfigDropdown("提示词", prompt?.id ?? chatPrompts[0]?.id ?? promptId, chatPrompts, '无可用提示词', onPromptChange, onOpenAgentManage)}
-        </div>
-      </div>
-      <div className="mt-2 flex h-9 shrink-0 items-center gap-2 overflow-hidden rounded-full border border-gray-200 bg-gray-50 px-2.5">
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
+  const renderSessionControls = () => (
+    <div className="xy-floating-edge-tool xy-floating-chat-session-tool">
+      <div className="flex h-7 max-w-full items-center gap-1 overflow-hidden bg-white">
+        <div className="scrollbar-hidden flex min-w-0 items-center gap-1 overflow-x-auto">
           <button
+            type="button"
             onClick={addSession}
-            disabled={sessions.length >= 10}
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:border-brand hover:text-brand disabled:text-gray-300"
+            disabled={false}
+            className="grid h-6 w-6 shrink-0 place-items-center rounded-md border border-gray-200 bg-white text-gray-700 hover:border-brand hover:text-brand disabled:text-gray-300"
             title="新建会话"
           >
-            <span className="-mt-px block text-[20px] font-bold leading-none">+</span>
+            <span className="-mt-px block text-[17px] font-bold leading-none">+</span>
           </button>
           {sessions.map((session, index) => (
             <div key={session.id} className="relative shrink-0">
               <button
+                type="button"
                 onClick={() => {
                   setActiveSessionId(session.id);
                 }}
-                className={`flex h-7 min-w-7 items-center justify-center rounded-lg border px-2 text-sm font-bold leading-none transition-colors ${
+                className={`flex h-6 min-w-6 items-center justify-center rounded-md border px-1.5 text-xs font-bold leading-none transition-colors ${
                   session.id === activeSessionId
                     ? 'border-brand/30 bg-brand/10 text-brand'
                     : 'border-gray-200 bg-white text-gray-500 hover:border-brand hover:text-brand'
@@ -783,19 +776,51 @@ export function WorkbenchAIPanel({
             </div>
           ))}
         </div>
-        <div className="flex h-7 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white">
+      </div>
+    </div>
+  );
+
+  const renderSessionActions = () => (
+    <div className="xy-floating-edge-tool xy-floating-chat-action-tool">
+      <div className="flex h-7 max-w-full items-center gap-1 overflow-hidden bg-white">
+        <div className="flex h-6 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-white">
           <button
+            type="button"
             onClick={() => deleteSession(activeSessionId)}
-            className="px-3 text-xs font-bold text-red-500 hover:bg-red-50 disabled:text-gray-300 disabled:hover:bg-white"
+            className="px-2 text-[11px] font-bold text-red-500 hover:bg-red-50 disabled:text-gray-300 disabled:hover:bg-white"
           >
             删除
           </button>
           <button
+            type="button"
             onClick={resetSessions}
-            className="border-l border-gray-200 px-3 text-xs font-bold text-gray-600 hover:bg-slate-50 hover:text-slate-900"
+            className="border-l border-gray-200 px-2 text-[11px] font-bold text-gray-600 hover:bg-slate-50 hover:text-slate-900"
           >
             清空
           </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderConfigPanel = (
+    model: ModelItem | null,
+    modelId: string,
+    onModelChange: (value: string) => void,
+    prompt: PromptItem | null,
+    promptId: string,
+    onPromptChange: (value: string) => void,
+  ) => (
+    <>
+      <div className="w-full shrink-0 overflow-visible rounded-lg border border-gray-200 bg-gray-50 p-2">
+        <div className="w-[60%] max-w-full">
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(48px,auto)] items-center gap-2">
+            {renderConfigDropdown("模型", model?.id ?? modelId, enabledModels, '无可用模型', onModelChange, onOpenModelManage)}
+            <span className="flex min-w-0 items-center text-xs font-bold">
+              {renderModelStatus(model)}
+            </span>
+            {renderConfigDropdown("提示词", prompt?.id ?? chatPrompts[0]?.id ?? promptId, chatPrompts, '无可用提示词', onPromptChange, onOpenAgentManage)}
+          </div>
         </div>
       </div>
     </>
@@ -844,8 +869,8 @@ export function WorkbenchAIPanel({
           selectedPromptId,
           setSelectedPromptId,
         )}
-        <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-          <div className="editor-scrollbar h-full overflow-y-auto p-3 pb-8">
+        <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-with-bottom-count xy-floating-chat-shell mt-5 min-h-0 flex-1">
+          <div className="xy-floating-rich-preview xy-floating-chat-history editor-scrollbar h-full overflow-y-auto">
             {activeSession?.messages.length ? (
               <div className="flex flex-col gap-3">
                 {activeSession.messages.map((message) => (
@@ -872,9 +897,9 @@ export function WorkbenchAIPanel({
               </div>
             )}
           </div>
-          <span className="pointer-events-none absolute bottom-2 right-3 rounded-full bg-white/90 px-2 py-0.5 text-xs font-bold text-brand shadow-sm">
-            {outputWordCount}字
-          </span>
+          {renderSessionControls()}
+          {renderSessionActions()}
+          <span className="xy-floating-count">{outputWordCount}字</span>
         </div>
         <div className="mt-2 flex shrink-0 items-start justify-between gap-2 text-xs text-gray-400">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -1106,6 +1131,19 @@ export function WorkbenchAIPanel({
             </div>
         </WorkbenchModal>
       )}
+      <ConfirmDialog
+        isOpen={isSessionLimitConfirmOpen}
+        title="会话已达上限"
+        description={`最多保留 ${MAX_AI_SESSIONS} 个会话。是否清空当前会话并新开一个空白会话？`}
+        cancelText="取消"
+        confirmText="清空"
+        confirmVariant="warning"
+        onClose={() => setIsSessionLimitConfirmOpen(false)}
+        onConfirm={() => {
+          setIsSessionLimitConfirmOpen(false);
+          resetSessions();
+        }}
+      />
     </aside>
   );
 }

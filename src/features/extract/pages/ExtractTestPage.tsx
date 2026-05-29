@@ -1125,7 +1125,7 @@ export function ExtractTestPage() {
               {selectedModule ? (
                 <div className="flex min-h-0 flex-1 flex-col gap-2">
                   <div className="flex items-center gap-2">
-                    <div className={`xy-floating-field xy-floating-compact min-w-0 flex-1 ${moduleDraft.label.trim() ? 'xy-has-value' : ''}`}>
+                    <div className={`xy-floating-field xy-floating-compact xy-extract-compact-field min-w-0 flex-1 ${moduleDraft.label.trim() ? 'xy-has-value' : ''}`}>
                       <input
                         value={moduleDraft.label}
                         onChange={(event) => setModuleDraft((prev) => ({ ...prev, label: event.target.value }))}

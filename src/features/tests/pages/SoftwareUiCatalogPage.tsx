@@ -2,6 +2,8 @@ import {
   ArrowLeft,
   BookOpen,
   Check,
+  ChevronDown,
+  ChevronRight,
   Code2,
   Database,
   GripVertical,
@@ -72,6 +74,8 @@ type CatalogMark = 'rare';
 
 const CATALOG_MARKS_STORAGE_KEY = 'xinyuexia_software_ui_catalog_marks_v1';
 const CATALOG_COLLECTION_STORAGE_KEY = 'xinyuexia_software_ui_catalog_collection_v1';
+const CATALOG_NAV_COLLAPSED_STORAGE_KEY = 'xinyuexia_software_ui_catalog_nav_collapsed_v1';
+const CATALOG_CONTENT_COLLAPSED_STORAGE_KEY = 'xinyuexia_software_ui_catalog_content_collapsed_v1';
 const DEFAULT_CATALOG_COLLECTION_IDS = ['UI-140', 'UI-141', 'UI-142', 'UI-143'];
 const LANDING_PREVIEW_SELECTED_IDS = ['UI-119', 'UI-112', 'UI-102', 'UI-109', 'UI-115', 'UI-125', 'UI-132'];
 
@@ -4974,6 +4978,231 @@ const techItems: TechItem[] = [
   },
 ];
 
+function TechPreview({ item }: { item: TechItem }) {
+  const previewShell = 'min-h-[86px] rounded-2xl border border-slate-100 bg-white p-3';
+
+  if (item.id === 'T-01') {
+    return (
+      <div className={`${previewShell} grid grid-cols-[1fr_12px_1fr] items-stretch gap-2 bg-slate-50`}>
+        <div className="rounded-xl bg-white p-2 text-xs font-black text-slate-500">左侧栏</div>
+        <div className="flex items-center justify-center rounded-full bg-[#E6F7FB] text-[#08AACE]">
+          <GripVertical className="h-4 w-4" />
+        </div>
+        <div className="rounded-xl bg-white p-2 text-xs font-black text-slate-500">正文区</div>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-02') {
+    return (
+      <div className={`${previewShell} relative bg-slate-50`}>
+        <div className="absolute left-4 top-4 h-12 w-24 rounded-xl border-2 border-[#08AACE] bg-white shadow-sm" />
+        <div className="absolute bottom-4 right-4 h-3 w-3 rounded-br-lg border-b-2 border-r-2 border-[#08AACE]" />
+      </div>
+    );
+  }
+
+  if (item.id === 'T-03') {
+    return (
+      <div className={`${previewShell} relative bg-slate-50`}>
+        {[0, 1, 2].map((index) => (
+          <div
+            key={index}
+            className="absolute h-11 w-28 rounded-xl border border-slate-200 bg-white shadow-sm"
+            style={{ left: 18 + index * 18, top: 18 + index * 10, zIndex: index }}
+          />
+        ))}
+        <span className="absolute bottom-3 right-3 rounded-full bg-slate-900 px-2 py-1 text-[10px] font-black text-white">Esc</span>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-04') {
+    return (
+      <div className={`${previewShell} flex items-center justify-center bg-slate-900/10`}>
+        <div className="h-12 w-28 rounded-xl bg-white p-2 text-center text-xs font-black text-slate-700 shadow-sm">弹窗</div>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-05') {
+    return (
+      <div className={`${previewShell} overflow-hidden bg-slate-50 p-0`}>
+        <div className="grid grid-cols-2 bg-[#E6F7FB] px-3 py-2 text-[11px] font-black text-[#078fb0]">
+          <span>原文</span><span>替换为</span>
+        </div>
+        {[1, 2, 3].map((row) => <div key={row} className="mx-3 border-b border-slate-100 py-1.5 text-xs text-slate-400">滚动内容 {row}</div>)}
+      </div>
+    );
+  }
+
+  if (item.id === 'T-06') {
+    return (
+      <div className={`${previewShell} bg-slate-50`}>
+        <div className="h-9 rounded-xl border border-[#08AACE] bg-white px-3 py-2 text-xs font-bold text-slate-500">输入一行</div>
+        <div className="mt-2 h-12 rounded-xl border border-[#08AACE] bg-white px-3 py-2 text-xs font-bold text-slate-500">内容变多后自动变高</div>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-07') {
+    return (
+      <div className={`${previewShell} bg-slate-50`}>
+        <div className="h-16 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold leading-5 text-slate-500">
+          只读内容，可以选中复制
+        </div>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-08') {
+    return (
+      <div className={`${previewShell} flex items-center justify-center gap-3 bg-slate-50`}>
+        <Settings className="h-5 w-5 text-[#08AACE]" />
+        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-600">已记住</span>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-09') {
+    return (
+      <div className={`${previewShell} flex items-center justify-center bg-slate-50`}>
+        <div className="inline-flex rounded-xl bg-slate-100 p-1">
+          {['设定', '角色', '脑洞'].map((tab) => (
+            <span key={tab} className={`rounded-lg px-3 py-1.5 text-xs font-black ${tab === '角色' ? 'bg-white text-[#08AACE] shadow-sm' : 'text-slate-400'}`}>{tab}</span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-10') {
+    return (
+      <div className={`${previewShell} flex items-center gap-2 bg-slate-50`}>
+        <div className="rounded-xl bg-white px-3 py-2 text-xs font-black text-slate-600 shadow-sm">角色A</div>
+        <span className="text-[#08AACE]">→</span>
+        <div className="rounded-xl border border-dashed border-[#08AACE] px-3 py-2 text-xs font-black text-[#08AACE]">新分类</div>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-11') {
+    return (
+      <div className={`${previewShell} relative bg-slate-50`}>
+        <div className="rounded-xl bg-white px-3 py-2 text-xs font-black text-slate-600 shadow-sm">右键章节</div>
+        <div className="absolute bottom-3 right-3 w-24 overflow-hidden rounded-xl border border-slate-100 bg-white text-xs font-black text-slate-600 shadow-lg">
+          <div className="px-3 py-1.5">修改</div>
+          <div className="px-3 py-1.5 text-red-500">删除</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-12') {
+    return (
+      <div className={`${previewShell} flex items-center justify-center bg-slate-50`}>
+        <div className="relative h-12 w-36">
+          <div className="absolute left-2 top-6 h-1 w-28 rounded-full bg-[#08AACE]" />
+          <div className="absolute left-1 top-4 h-5 w-5 rounded-full bg-[#08AACE]" />
+          <span className="absolute right-0 top-2 text-xl font-black text-[#08AACE]">←</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-13') {
+    return (
+      <div className={`${previewShell} grid grid-cols-3 items-center gap-2 bg-slate-50 text-center text-[11px] font-black text-slate-600`}>
+        <div className="rounded-xl bg-white py-2 shadow-sm">输入</div>
+        <div className="rounded-xl bg-[#E6F7FB] py-2 text-[#08AACE]">AI</div>
+        <div className="rounded-xl bg-white py-2 shadow-sm">结果</div>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-14') {
+    return (
+      <div className={`${previewShell} grid grid-cols-[1fr_auto_1fr] items-center gap-2 bg-slate-50 text-[11px] font-black`}>
+        <div className="rounded-xl bg-white p-2 text-slate-500 shadow-sm">设定库</div>
+        <Search className="h-4 w-4 text-[#08AACE]" />
+        <div className="rounded-xl bg-[#E6F7FB] p-2 text-[#078fb0]">相关上下文</div>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-15') {
+    return (
+      <div className={`${previewShell} flex items-center justify-center gap-3 bg-slate-50`}>
+        <Database className="h-7 w-7 text-[#08AACE]" />
+        <div className="text-xs font-black text-slate-600">本地 PostgreSQL</div>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-16') {
+    return (
+      <div className={`${previewShell} flex items-center justify-center gap-2 bg-slate-50 text-xs font-black text-slate-600`}>
+        <div className="rounded-xl bg-white px-3 py-2 shadow-sm">App</div>
+        <span>+</span>
+        <div className="rounded-xl bg-white px-3 py-2 shadow-sm">资源</div>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-17') {
+    return (
+      <div className={`${previewShell} flex justify-end bg-slate-50 pr-4`}>
+        <div className="h-full w-2 rounded-full bg-transparent">
+          <div className="mt-4 h-9 w-2 rounded-full bg-[#08AACE]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-18') {
+    return (
+      <div className={`${previewShell} grid grid-cols-[70px_1fr] gap-2 bg-slate-50 text-xs font-black`}>
+        <div className="rounded-xl bg-[#08AACE] p-2 text-white">第3章</div>
+        <div className="rounded-xl bg-white p-2 text-slate-500 shadow-sm">对应概要 / 细纲</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${previewShell} flex items-center justify-center bg-slate-50`}>
+      <div className="inline-flex overflow-hidden rounded-xl border border-[#08AACE] bg-white text-xs font-black">
+        <button className="px-3 py-2 text-[#08AACE]">复制</button>
+        <button className="border-l border-[#08AACE] bg-[#08AACE] px-3 py-2 text-white">优化</button>
+      </div>
+    </div>
+  );
+}
+
+function TechDictionaryCard({ item, action, tone = 'soft' }: { item: TechItem; action: ReactNode; tone?: 'soft' | 'white' }) {
+  const articleBg = tone === 'white' ? 'bg-white' : 'bg-slate-50';
+  const codeBg = tone === 'white' ? 'bg-slate-50' : 'bg-white';
+
+  return (
+    <article id={`catalog-${item.id}`} className={`scroll-mt-7 rounded-xl border border-slate-100 ${articleBg} p-4`}>
+      <div className="grid gap-4 xl:grid-cols-[96px_minmax(0,1fr)_320px_auto] xl:items-start">
+        <NumberPill id={item.id} />
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-2 text-sm font-bold text-slate-900">
+            {item.id === 'T-01' ? <GripVertical className="h-4 w-4 shrink-0 text-slate-400" /> : <BookOpen className="h-4 w-4 shrink-0 text-slate-400" />}
+            <span className="truncate">{item.name}</span>
+          </div>
+          <div className="mt-2 text-sm leading-6 text-slate-500">{item.plain}</div>
+        </div>
+        <div className="min-w-0">
+          <TechPreview item={item} />
+        </div>
+        <div className="flex justify-end xl:pt-0.5">{action}</div>
+      </div>
+      <code className={`mt-3 block rounded-lg ${codeBg} px-3 py-2 text-xs font-bold leading-5 text-slate-500`}>{item.tech}</code>
+    </article>
+  );
+}
+
 function SectionTitle({ icon, title, desc }: { icon: ReactNode; title: string; desc: string }) {
   return (
     <div className="mb-3 flex items-center justify-between gap-4">
@@ -5055,6 +5284,23 @@ function readCatalogCollection() {
 
 function writeCatalogCollection(value: Record<string, boolean>) {
   localStorage.setItem(CATALOG_COLLECTION_STORAGE_KEY, JSON.stringify(value));
+}
+
+function readCollapsedRecord(storageKey: string, fallback: Record<string, boolean> = {}) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(storageKey) ?? '{}') as unknown;
+    if (!parsed || typeof parsed !== 'object') return fallback;
+    return Object.entries(parsed as Record<string, unknown>).reduce<Record<string, boolean>>((acc, [key, value]) => {
+      if (typeof value === 'boolean') acc[key] = value;
+      return acc;
+    }, { ...fallback });
+  } catch {
+    return fallback;
+  }
+}
+
+function writeCollapsedRecord(storageKey: string, value: Record<string, boolean>) {
+  localStorage.setItem(storageKey, JSON.stringify(value));
 }
 
 function getBaseSpecs(item: UiSample): UiSpecs {
@@ -5189,6 +5435,10 @@ type SoftwareUiCatalogPageProps = {
 export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiCatalogPageProps = {}) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<CatalogTab>('ui');
+  const [collapsedCatalogNavGroups, setCollapsedCatalogNavGroups] = useState<Record<string, boolean>>(() => readCollapsedRecord(CATALOG_NAV_COLLAPSED_STORAGE_KEY));
+  const [collapsedCatalogContentGroups, setCollapsedCatalogContentGroups] = useState<Record<string, boolean>>(() => (
+    readCollapsedRecord(CATALOG_CONTENT_COLLAPSED_STORAGE_KEY, { manual: true })
+  ));
   const [catalogSearch, setCatalogSearch] = useState('');
   const [uiSpecDefaults, setUiSpecDefaults] = useState<Record<string, Partial<UiSpecs>>>(() => readUiSpecDefaults());
   const [uiSpecOverrides, setUiSpecOverrides] = useState<Record<string, Partial<UiSpecs>>>({});
@@ -5223,10 +5473,10 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
   const collectedManualUiSamples = manualUiSamples.filter((item) => catalogCollection[item.id] && matchesCatalogSearch([item.id, item.name, item.group, item.usage]));
   const collectedTechItems = techItems.filter((item) => catalogCollection[item.id] && matchesCatalogSearch([item.id, item.name, item.plain, item.tech]));
   const collectedCatalogItems = [
-    ...collectedFontSamples.map((item) => ({ id: item.id, label: item.name, group: '字体', tab: 'collection' as CatalogTab })),
-    ...collectedColorSamples.map((item) => ({ id: item.id, label: item.name, group: '颜色', tab: 'collection' as CatalogTab })),
-    ...collectedStandardUiSamples.map((item) => ({ id: item.id, label: item.name, group: `软件 UI / ${item.group}`, tab: 'collection' as CatalogTab })),
-    ...collectedManualUiSamples.map((item) => ({ id: item.id, label: item.name, group: `手动上传 / ${getManualUiType(item)}`, tab: 'collection' as CatalogTab })),
+    ...collectedFontSamples.map((item) => ({ id: item.id, label: item.name, group: '字体设置', tab: 'collection' as CatalogTab })),
+    ...collectedColorSamples.map((item) => ({ id: item.id, label: item.name, group: '颜色记录', tab: 'collection' as CatalogTab })),
+    ...collectedStandardUiSamples.map((item) => ({ id: item.id, label: item.name, group: item.group, tab: 'collection' as CatalogTab })),
+    ...collectedManualUiSamples.map((item) => ({ id: item.id, label: item.name, group: getManualUiType(item), tab: 'collection' as CatalogTab })),
     ...collectedTechItems.map((item) => ({ id: item.id, label: item.name, group: '技术词典', tab: 'collection' as CatalogTab })),
   ];
   const collectedTotalCount = collectedCatalogItems.length;
@@ -5234,10 +5484,10 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
   const catalogNavItems = useMemo(() => {
     if (normalizedSearch) {
       return [
-        ...filteredFontSamples.map((item) => ({ id: item.id, label: item.name, group: '软件 UI / 字体', tab: 'ui' as CatalogTab })),
-        ...filteredColorSamples.map((item) => ({ id: item.id, label: item.name, group: '软件 UI / 颜色', tab: 'ui' as CatalogTab })),
-        ...filteredStandardUiSamples.map((item) => ({ id: item.id, label: item.name, group: `软件 UI / ${item.group}`, tab: 'ui' as CatalogTab })),
-        ...filteredManualUiSamples.map((item) => ({ id: item.id, label: item.name, group: `手动上传 / ${getManualUiType(item)}`, tab: 'manual' as CatalogTab })),
+        ...filteredFontSamples.map((item) => ({ id: item.id, label: item.name, group: '字体设置', tab: 'ui' as CatalogTab })),
+        ...filteredColorSamples.map((item) => ({ id: item.id, label: item.name, group: '颜色记录', tab: 'ui' as CatalogTab })),
+        ...filteredStandardUiSamples.map((item) => ({ id: item.id, label: item.name, group: item.group, tab: 'ui' as CatalogTab })),
+        ...filteredManualUiSamples.map((item) => ({ id: item.id, label: item.name, group: getManualUiType(item), tab: 'ui' as CatalogTab })),
         ...filteredTechItems.map((item) => ({ id: item.id, label: item.name, group: '技术词典', tab: 'tech' as CatalogTab })),
       ];
     }
@@ -5247,20 +5497,66 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
     if (activeTab === 'collection') {
       return collectedCatalogItems;
     }
-    if (activeTab === 'manual') {
-      return filteredManualUiSamples.map((item) => ({ id: item.id, label: item.name, group: getManualUiType(item), tab: 'manual' as CatalogTab }));
-    }
     return [
-      ...filteredFontSamples.map((item) => ({ id: item.id, label: item.name, group: '字体', tab: 'ui' as CatalogTab })),
-      ...filteredColorSamples.map((item) => ({ id: item.id, label: item.name, group: '颜色', tab: 'ui' as CatalogTab })),
+      ...filteredFontSamples.map((item) => ({ id: item.id, label: item.name, group: '字体设置', tab: 'ui' as CatalogTab })),
+      ...filteredColorSamples.map((item) => ({ id: item.id, label: item.name, group: '颜色记录', tab: 'ui' as CatalogTab })),
       ...filteredStandardUiSamples.map((item) => ({ id: item.id, label: item.name, group: item.group, tab: 'ui' as CatalogTab })),
+      ...filteredManualUiSamples.map((item) => ({ id: item.id, label: item.name, group: getManualUiType(item), tab: 'ui' as CatalogTab })),
     ];
   }, [activeTab, collectedCatalogItems, filteredColorSamples, filteredFontSamples, filteredManualUiSamples, filteredStandardUiSamples, filteredTechItems, normalizedSearch]);
 
+  const catalogNavGroups = useMemo(() => {
+    const groupMap = new Map<string, typeof catalogNavItems>();
+    catalogNavItems.forEach((item) => {
+      const groupLabel = item.group === '按钮' ? '按钮样式' : item.group;
+      groupMap.set(groupLabel, [...(groupMap.get(groupLabel) ?? []), item]);
+    });
+    return Array.from(groupMap.entries()).map(([title, items]) => ({ title, items }));
+  }, [catalogNavItems]);
+
+  const toggleCatalogNavGroup = (title: string) => {
+    setCollapsedCatalogNavGroups((prev) => {
+      const next = { ...prev, [title]: !prev[title] };
+      writeCollapsedRecord(CATALOG_NAV_COLLAPSED_STORAGE_KEY, next);
+      return next;
+    });
+  };
+
+  const toggleCatalogContentGroup = (key: string) => {
+    setCollapsedCatalogContentGroups((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      writeCollapsedRecord(CATALOG_CONTENT_COLLAPSED_STORAGE_KEY, next);
+      return next;
+    });
+  };
+
   const scrollToCatalogItem = (id: string, tab: CatalogTab) => {
+    let shouldDeferScroll = false;
+    if (manualUiSamples.some((item) => item.id === id)) {
+      setCollapsedCatalogContentGroups((prev) => {
+        if (prev.manual === false) return prev;
+        shouldDeferScroll = true;
+        const next = { ...prev, manual: false };
+        writeCollapsedRecord(CATALOG_CONTENT_COLLAPSED_STORAGE_KEY, next);
+        return next;
+      });
+    }
+    const standardItem = standardUiSamples.find((item) => item.id === id);
+    if (standardItem && collapsedCatalogContentGroups[standardItem.group]) {
+      shouldDeferScroll = true;
+      setCollapsedCatalogContentGroups((prev) => {
+        const next = { ...prev, [standardItem.group]: false };
+        writeCollapsedRecord(CATALOG_CONTENT_COLLAPSED_STORAGE_KEY, next);
+        return next;
+      });
+    }
     const scroll = () => document.getElementById(`catalog-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (activeTab !== tab) {
       setActiveTab(tab);
+      window.setTimeout(scroll, 0);
+      return;
+    }
+    if (shouldDeferScroll) {
       window.setTimeout(scroll, 0);
       return;
     }
@@ -5402,18 +5698,12 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
       <main className="min-h-0 flex-1 overflow-hidden p-7">
         <div className="grid h-full min-h-0 grid-cols-[260px_minmax(0,1fr)] gap-5">
           <aside className="flex min-h-0 flex-col rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
-            <div className="mb-3 grid grid-cols-4 rounded-[18px] bg-slate-100 p-1.5">
+            <div className="mb-3 grid grid-cols-3 rounded-[18px] bg-slate-100 p-1.5">
               <button
                 onClick={() => setActiveTab('ui')}
                 className={`h-10 rounded-[15px] text-sm font-bold ${activeTab === 'ui' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-500 hover:bg-white/70'}`}
               >
-                软件 UI
-              </button>
-              <button
-                onClick={() => setActiveTab('manual')}
-                className={`h-10 rounded-[15px] text-sm font-bold ${activeTab === 'manual' ? 'bg-white text-sky-500 shadow-sm' : 'text-slate-500 hover:bg-white/70'}`}
-              >
-                手动上传
+                UI
               </button>
               <button
                 onClick={() => setActiveTab('tech')}
@@ -5436,17 +5726,39 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
               {catalogNavItems.length === 0 ? (
                 <div className="rounded-xl bg-slate-50 px-3 py-4 text-xs font-bold leading-5 text-slate-400">没有匹配的编号。</div>
               ) : (
-                catalogNavItems.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => scrollToCatalogItem(item.id, item.tab)}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left transition-colors hover:bg-sky-50 hover:text-[#08AACE]"
-                  >
-                    <span className="w-12 shrink-0 text-xs font-black text-[#08AACE]">{item.id}</span>
-                    <span className="min-w-0 flex-1 truncate text-xs font-bold text-slate-600">{item.label}</span>
-                  </button>
-                ))
+                catalogNavGroups.map((group) => {
+                  const isCollapsed = collapsedCatalogNavGroups[group.title] ?? false;
+                  return (
+                    <div key={group.title} className="rounded-xl border border-slate-100 bg-slate-50/70 p-1">
+                      <button
+                        type="button"
+                        onClick={() => toggleCatalogNavGroup(group.title)}
+                        className="flex h-8 w-full items-center justify-between rounded-lg px-2 text-left text-xs font-black text-slate-700 transition-colors hover:bg-white hover:text-[#08AACE]"
+                      >
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0" />}
+                          <span className="truncate">{group.title}</span>
+                        </span>
+                        <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-black text-slate-400">{group.items.length}</span>
+                      </button>
+                      {!isCollapsed && (
+                        <div className="mt-1 space-y-0.5">
+                          {group.items.map((item) => (
+                            <button
+                              key={`${group.title}-${item.id}`}
+                              type="button"
+                              onClick={() => scrollToCatalogItem(item.id, item.tab)}
+                              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-sky-50 hover:text-[#08AACE]"
+                            >
+                              <span className="w-12 shrink-0 text-xs font-black text-[#08AACE]">{item.id}</span>
+                              <span className="min-w-0 flex-1 truncate text-xs font-bold text-slate-600">{item.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           </aside>
@@ -5496,13 +5808,26 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
               </div>
             </section>
 
-            {groups.map((group) => (
+            {groups.map((group) => {
+              const isContentCollapsed = collapsedCatalogContentGroups[group] ?? false;
+              return (
               <section key={group} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                <SectionTitle
-                  icon={group === 'AI' ? <MessageSquare className="h-5 w-5 text-brand" /> : <Sparkles className="h-5 w-5 text-brand" />}
-                  title={`${group}样式`}
-                  desc={`全软件${group}相关的常用 UI 编号。`}
-                />
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <SectionTitle
+                    icon={group === 'AI' ? <MessageSquare className="h-5 w-5 text-brand" /> : <Sparkles className="h-5 w-5 text-brand" />}
+                    title={`${group}样式`}
+                    desc={`全软件${group}相关的常用 UI 编号。`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => toggleCatalogContentGroup(group)}
+                    className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-500 hover:border-brand/40 hover:text-brand"
+                  >
+                    {isContentCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    {filteredStandardUiSamples.filter((item) => item.group === group).length}
+                  </button>
+                </div>
+                {!isContentCollapsed && (
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
                   {filteredStandardUiSamples.filter((item) => item.group === group).map((item) => {
                     const specs = { ...getBaseSpecs(item), ...(uiSpecDefaults[item.id] ?? {}), ...(uiSpecOverrides[item.id] ?? {}) };
@@ -5543,8 +5868,94 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
                     );
                   })}
                 </div>
+                )}
               </section>
-            ))}
+              );
+            })}
+
+            {(() => {
+              const isManualCollapsed = collapsedCatalogContentGroups.manual ?? true;
+              return (
+            <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <SectionTitle icon={<Sparkles className="h-5 w-5 text-brand" />} title="手动上传" desc="收纳你手动发来的 UI 网站代码、样式片段和可复用组件，已合并到 UI 分类里。" />
+                <button
+                  type="button"
+                  onClick={() => toggleCatalogContentGroup('manual')}
+                  className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-500 hover:border-brand/40 hover:text-brand"
+                >
+                  {isManualCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                  {filteredManualUiSamples.length}
+                </button>
+              </div>
+              {!isManualCollapsed && (
+              <div className="space-y-5">
+                {filteredLandingPreviewSamples.length > 0 && (
+                  <section className="rounded-2xl border border-sky-100 bg-sky-50/60 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-black text-slate-900">UI 落地预览已勾选</h3>
+                        <p className="mt-1 text-xs font-bold text-slate-400">从落地预览勾选同步过来的 UI，后续优先核对是否已实际落地。</p>
+                      </div>
+                      <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-sky-500 shadow-sm">
+                        {filteredLandingPreviewSamples.length} 个
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3">
+                      {filteredLandingPreviewSamples.map((item) => (
+                        <article id={`catalog-${item.id}`} key={`landing-${item.id}`} className="scroll-mt-7 rounded-2xl border border-sky-100 bg-white p-4 shadow-sm">
+                          <div className="mb-3 flex items-start justify-between gap-3">
+                            <div>
+                              <NumberPill id={item.id} />
+                              <h4 className="mt-1 text-sm font-bold text-slate-900">{item.name}</h4>
+                              <p className="mt-1 text-[11px] font-black text-sky-500">落地预览勾选项 / {getManualUiType(item)}</p>
+                            </div>
+                            {renderMarkControls(item.id)}
+                          </div>
+                          <div className="flex min-h-[150px] items-center justify-center rounded-xl border border-dashed border-sky-200 bg-sky-50/50 p-3">
+                            {item.preview}
+                          </div>
+                          <p className="mt-3 text-xs leading-5 text-slate-500">{item.usage}</p>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                )}
+                {manualUiGroups.map((group) => (
+                  <section key={group.type} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-black text-slate-900">{group.type}</h3>
+                      <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-slate-400 shadow-sm">
+                        {group.items.length} 个
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3">
+                      {group.items.map((item) => (
+                        <article id={`catalog-${item.id}`} key={item.id} className="scroll-mt-7 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                          <div className="mb-3 flex items-start justify-between gap-3">
+                            <div>
+                              <NumberPill id={item.id} />
+                              <h4 className="mt-1 text-sm font-bold text-slate-900">{item.name}</h4>
+                            </div>
+                            <div className="flex flex-col items-end gap-1.5">
+                              <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold text-sky-500">{group.type}</span>
+                              {renderMarkControls(item.id)}
+                            </div>
+                          </div>
+                          <div className="flex min-h-[150px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
+                            {item.preview}
+                          </div>
+                          <p className="mt-3 text-xs leading-5 text-slate-500">{item.usage}</p>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+              )}
+            </section>
+              );
+            })()}
           </div>
         ) : activeTab === 'manual' ? (
           <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
@@ -5694,16 +6105,7 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
                     <div className="mb-3 text-sm font-black text-slate-900">技术词典</div>
                     <div className="space-y-3">
                       {collectedTechItems.map((item) => (
-                        <article id={`catalog-${item.id}`} key={item.id} className="scroll-mt-7 grid grid-cols-[96px_190px_minmax(0,1fr)_300px_auto] items-center gap-4 rounded-xl border border-slate-100 bg-white p-4">
-                          <NumberPill id={item.id} />
-                          <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                            {item.id === 'T-01' ? <GripVertical className="h-4 w-4 text-slate-400" /> : <BookOpen className="h-4 w-4 text-slate-400" />}
-                            {item.name}
-                          </div>
-                          <div className="text-sm leading-6 text-slate-500">{item.plain}</div>
-                          <code className="rounded-lg bg-slate-50 px-3 py-2 text-xs font-bold leading-5 text-slate-500">{item.tech}</code>
-                          {renderCollectionButton(item.id)}
-                        </article>
+                        <TechDictionaryCard key={item.id} item={item} action={renderCollectionButton(item.id)} tone="white" />
                       ))}
                     </div>
                   </section>
@@ -5716,16 +6118,7 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
             <SectionTitle icon={<Code2 className="h-5 w-5 text-brand" />} title="技术词典" desc="把你常用的大白话说法，翻译成我后续能直接定位的技术名称。" />
             <div className="space-y-3">
               {filteredTechItems.map((item) => (
-                <article id={`catalog-${item.id}`} key={item.id} className="scroll-mt-7 grid grid-cols-[96px_190px_minmax(0,1fr)_300px_auto] items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <NumberPill id={item.id} />
-                  <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                    {item.id === 'T-01' ? <GripVertical className="h-4 w-4 text-slate-400" /> : <BookOpen className="h-4 w-4 text-slate-400" />}
-                    {item.name}
-                  </div>
-                  <div className="text-sm leading-6 text-slate-500">{item.plain}</div>
-                  <code className="rounded-lg bg-white px-3 py-2 text-xs font-bold leading-5 text-slate-500">{item.tech}</code>
-                  {renderCollectionButton(item.id)}
-                </article>
+                <TechDictionaryCard key={item.id} item={item} action={renderCollectionButton(item.id)} />
               ))}
             </div>
             <div className="mt-5 flex items-center gap-2 rounded-xl border border-green-100 bg-green-50 p-4 text-sm font-bold text-green-700">

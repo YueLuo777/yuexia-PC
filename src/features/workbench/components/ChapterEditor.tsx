@@ -1,5 +1,4 @@
 import {
-  ChevronDown,
   Send,
   Settings,
   Square,
@@ -54,6 +53,10 @@ import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 150;
+const SPLIT_BUTTON_OUTLINE_GROUP_CLASS = 'flex h-8 items-stretch overflow-hidden rounded-md border border-brand bg-white shadow-none';
+const SPLIT_BUTTON_OUTLINE_ACTION_CLASS = 'inline-flex items-center justify-center px-3 text-sm font-medium text-brand transition-colors hover:bg-brand-light';
+const SPLIT_BUTTON_FILLED_GROUP_CLASS = 'flex h-8 items-stretch overflow-hidden rounded-md border border-brand bg-brand shadow-none';
+const SPLIT_BUTTON_FILLED_ACTION_CLASS = 'inline-flex items-center justify-center px-3 text-sm font-medium text-white transition-colors hover:bg-brand-dark';
 
 function resizeFloatingAiTextarea(textarea: HTMLTextAreaElement | null) {
   if (!textarea) return;
@@ -964,11 +967,9 @@ export function ChapterEditor({
   return (
     <section className="flex min-w-0 flex-1 flex-col bg-gray-50">
       <div className="flex items-center gap-2 border-b border-gray-200 bg-white px-4 py-2.5">
-        <div className="flex items-center gap-0.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-sm">
+        <div className="flex items-center rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-sm">
           <span className="font-medium text-gray-700">{safeVolumeName}</span>
-          <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
         </div>
-        <span className="text-gray-300">·</span>
         <div className="flex items-center gap-0.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-sm">
           <span className="font-medium text-gray-700">第</span>
           <input
@@ -979,7 +980,8 @@ export function ChapterEditor({
               const next = Number.parseInt(event.target.value, 10);
               if (Number.isFinite(next) && next > 0) onUpdateSerialNumber(chapter.id, next);
             }}
-            className="w-8 bg-transparent p-0 text-center font-medium text-gray-700 outline-none"
+            className="bg-transparent p-0 text-center font-medium text-gray-700 outline-none"
+            style={{ width: `${Math.max(1, String(serialValue).length)}ch` }}
           />
           <span className="font-medium text-gray-700">章</span>
         </div>
@@ -993,45 +995,45 @@ export function ChapterEditor({
           className="w-[320px] rounded-md border border-gray-200 bg-white px-3 py-1 text-sm outline-none focus:border-brand"
         />
         <span className="text-xs text-gray-400">{titleCount}/20</span>
-        <button
-          onClick={() => void copyText(chapter.title, '已复制标题')}
-          className="rounded-md border border-brand px-3 py-1.5 text-sm text-brand transition-colors hover:bg-brand-light"
-        >
-          复制标题
-        </button>
-        <button
-          onClick={() => setIsTitleOptimizeOpen(true)}
-          className="rounded-md bg-brand px-3.5 py-1.5 text-sm text-white transition-colors hover:bg-brand-dark"
-        >
-          标题优化
-        </button>
-        <div className="flex items-center overflow-hidden rounded-md border border-brand">
+        <div className={SPLIT_BUTTON_OUTLINE_GROUP_CLASS}>
+          <button
+            type="button"
+            onClick={() => void copyText(chapter.title, '已复制标题')}
+            className={SPLIT_BUTTON_OUTLINE_ACTION_CLASS}
+          >
+            复制
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsTitleOptimizeOpen(true)}
+            className="inline-flex items-center justify-center border-l border-brand bg-brand px-3.5 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
+          >
+            优化
+          </button>
+        </div>
+        <div className={SPLIT_BUTTON_FILLED_GROUP_CLASS}>
           <button
             type="button"
             onClick={() => openReviewPanel('audit')}
-            className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light"
+            className={SPLIT_BUTTON_FILLED_ACTION_CLASS}
           >
             审核
           </button>
-          <div className="h-4 w-px bg-brand/30" />
           <button
             type="button"
             onClick={() => openReviewPanel('comment')}
-            className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light"
+            className={`${SPLIT_BUTTON_FILLED_ACTION_CLASS} border-l border-white/35`}
           >
             点评
           </button>
-        </div>
-        {['更新状态'].map((label) => (
           <button
-            key={label}
             type="button"
             onClick={openStatusUpdate}
-            className="rounded-md bg-brand px-3.5 py-1.5 text-sm text-white transition-colors hover:bg-brand-dark"
+            className={`${SPLIT_BUTTON_FILLED_ACTION_CLASS} border-l border-white/35`}
           >
-            {label}
+            状态
           </button>
-        ))}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 border-b border-gray-200 bg-white px-4 py-2">
@@ -1061,19 +1063,19 @@ export function ChapterEditor({
           <div className="h-4 w-px bg-brand/30" />
           <HighFreqToggle />
         </div>
-        <div className="flex items-center overflow-hidden rounded-md border border-brand">
+        <div className={SPLIT_BUTTON_OUTLINE_GROUP_CLASS}>
+          <button onClick={handleSymbolReplaceNow} className={SPLIT_BUTTON_OUTLINE_ACTION_CLASS}>
+            一键替换
+          </button>
+          <div className="inline-flex items-center border-l border-brand/30">
+            <SymbolReplaceToggle onEnable={handleSymbolAutoEnabled} />
+          </div>
           <button
             onClick={() => setIsSymbolReplaceOpen(true)}
-            className="flex h-[31px] w-9 items-center justify-center text-brand hover:bg-brand-light"
+            className="inline-flex w-9 items-center justify-center border-l border-brand/30 text-brand transition-colors hover:bg-brand-light"
             title="一键替换设置"
           >
             <Settings className="h-4 w-4 text-brand" />
-          </button>
-          <div className="h-4 w-px bg-brand/30" />
-          <SymbolReplaceToggle onEnable={handleSymbolAutoEnabled} />
-          <div className="h-4 w-px bg-brand/30" />
-          <button onClick={handleSymbolReplaceNow} className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
-            一键替换
           </button>
         </div>
         <div className="mx-1 h-5 w-px bg-gray-200" />

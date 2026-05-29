@@ -97,7 +97,7 @@ function readActiveBrowserTabId(fallbackId: string) {
 }
 
 export function TestBrowserPage() {
-  const webviewRef = useRef<any>(null);
+  const webviewRef = useRef<ElectronWebviewElement | null>(null);
   const [browserTabs, setBrowserTabs] = useState<BrowserTab[]>(() => readBrowserTabs());
   const [activeTabId, setActiveTabId] = useState(() => readActiveBrowserTabId(browserTabs[0]?.id ?? createTabId()));
   const activeTab = useMemo(
@@ -442,7 +442,6 @@ export function TestBrowserPage() {
               ref: webviewRef,
               src: currentUrl,
               partition: BROWSER_PARTITION,
-              allowpopups: 'true',
               style: {
                 display: 'flex',
                 width: '100%',

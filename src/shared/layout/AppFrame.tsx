@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { BookOpen, FlaskConical, Minus, Plus, Square, X } from 'lucide-react';
 
@@ -25,9 +25,6 @@ declare global {
       close: () => Promise<void>;
       isMaximized: () => Promise<boolean>;
       reload: () => Promise<void>;
-      beginTitlebarDrag: (input: TitlebarDragPayload) => Promise<TitlebarDragResult>;
-      moveTitlebarDrag: (input: TitlebarDragPayload) => Promise<boolean>;
-      endTitlebarDrag?: (input: TitlebarDragPayload) => Promise<boolean>;
       onMaximizedChange?: (callback: (isMaximized: boolean) => void) => () => void;
     };
   }
@@ -44,31 +41,9 @@ const APP_SCALE_OPTIONS = [1, 1.1, 1.25, 1.5, 1.75, 2].map((labelScale) => ({
 }));
 const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
 const HOME_LAST_ROUTE_KEY = 'xinyuexia_home_last_route_this_session_v1';
-const TITLEBAR_DRAG_THRESHOLD = 8;
-const TITLEBAR_DOUBLE_CLICK_MAX_DURATION_MS = 260;
-const TITLEBAR_DOUBLE_CLICK_GAP_MS = 320;
-const TITLEBAR_DOUBLE_CLICK_DISTANCE = 8;
 const RIGHT_MOUSE_GESTURE_THRESHOLD = 90;
 const RIGHT_MOUSE_GESTURE_VERTICAL_TOLERANCE = 80;
 const RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD = 18;
-
-type TitlebarDragPayload = {
-  screenX: number;
-  screenY: number;
-  clientX?: number;
-  clientY?: number;
-  windowWidth?: number;
-  dragOffsetX?: number;
-  dragOffsetY?: number;
-  dragSessionId?: string;
-};
-
-type TitlebarDragResult = {
-  dragSessionId?: string;
-  isMaximized: boolean;
-  dragOffsetX: number;
-  dragOffsetY: number;
-} | null;
 
 type MouseGesturePreview = {
   startX: number;
@@ -129,37 +104,6 @@ interface AppFrameProps {
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
 const TestCollectionPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })));
 
-type TitlebarDragState = {
-  pointerId: number;
-  startClientX: number;
-  startClientY: number;
-  lastScreenX: number;
-  lastScreenY: number;
-  restoreFromMaximized: boolean;
-  dragOffsetX: number;
-  dragOffsetY: number;
-  dragSessionId: string;
-  started: boolean;
-  pending: boolean;
-};
-
-type TitlebarPointerEventLike = {
-  pointerId: number;
-  clientX: number;
-  clientY: number;
-  screenX: number;
-  screenY: number;
-  preventDefault: () => void;
-  stopPropagation: () => void;
-};
-
-function isTitlebarInteractiveTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return true;
-  return Boolean(
-    target.closest('button,input,textarea,select,a,[contenteditable="true"],[data-titlebar-no-drag="true"]'),
-  );
-}
-
 export function AppFrame({ children }: AppFrameProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -174,12 +118,6 @@ export function AppFrame({ children }: AppFrameProps) {
   const [shortcutBindings, setShortcutBindings] = useState(loadShortcutBindings);
   const [mouseGestureSettings, setMouseGestureSettings] = useState(loadMouseGestureSettings);
   const [mouseGesturePreview, setMouseGesturePreview] = useState<MouseGesturePreview | null>(null);
-  const titlebarDragRef = useRef<TitlebarDragState | null>(null);
-  const titlebarDragCleanupRef = useRef<(() => void) | null>(null);
-  const suppressTitlebarClickRef = useRef(false);
-  const lastTitlebarDragAtRef = useRef(0);
-  const titlebarClickRef = useRef({ lastAt: 0, lastClientX: 0, lastClientY: 0 });
-  const titlebarPointerMetaRef = useRef({ startedAt: 0, startClientX: 0, startClientY: 0, moved: false });
 
   const effectiveScale = useMemo(() => Number(appScale.toFixed(3)), [appScale]);
 
@@ -870,168 +808,6 @@ export function AppFrame({ children }: AppFrameProps) {
     if (typeof next === 'boolean') setIsMaximized(next);
   };
 
-  const registerTitlebarClick = (event: TitlebarPointerEventLike, heldMs: number, moved: number) => {
-    if (heldMs > TITLEBAR_DOUBLE_CLICK_MAX_DURATION_MS || moved >= TITLEBAR_DRAG_THRESHOLD) {
-      titlebarClickRef.current = { lastAt: 0, lastClientX: 0, lastClientY: 0 };
-      return;
-    }
-    if (Date.now() - lastTitlebarDragAtRef.current < 420) return;
-
-    const previous = titlebarClickRef.current;
-    const now = Date.now();
-    const isSecondClick = now - previous.lastAt <= TITLEBAR_DOUBLE_CLICK_GAP_MS
-      && Math.hypot(event.clientX - previous.lastClientX, event.clientY - previous.lastClientY) <= TITLEBAR_DOUBLE_CLICK_DISTANCE;
-    if (isSecondClick) {
-      titlebarClickRef.current = { lastAt: 0, lastClientX: 0, lastClientY: 0 };
-      void toggleMaximizeWindow();
-      return;
-    }
-
-    titlebarClickRef.current = {
-      lastAt: now,
-      lastClientX: event.clientX,
-      lastClientY: event.clientY,
-    };
-  };
-
-  const cleanupTitlebarDragListeners = () => {
-    titlebarDragCleanupRef.current?.();
-    titlebarDragCleanupRef.current = null;
-  };
-
-  const continueTitlebarPointerDrag = (event: TitlebarPointerEventLike) => {
-    const dragState = titlebarDragRef.current;
-    if (!dragState || dragState.pointerId !== event.pointerId) return;
-
-    dragState.lastScreenX = event.screenX;
-    dragState.lastScreenY = event.screenY;
-
-    const moved = Math.hypot(event.clientX - dragState.startClientX, event.clientY - dragState.startClientY);
-    if (moved >= TITLEBAR_DRAG_THRESHOLD) {
-      titlebarPointerMetaRef.current.moved = true;
-    }
-    if (!dragState.restoreFromMaximized && !dragState.started && !dragState.pending && moved < TITLEBAR_DRAG_THRESHOLD) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (!dragState.started) {
-      if (dragState.pending) return;
-      dragState.pending = true;
-      void window.xinyuexiaWindow?.beginTitlebarDrag({
-        screenX: event.screenX,
-        screenY: event.screenY,
-        clientX: dragState.startClientX,
-        clientY: dragState.startClientY,
-        windowWidth: window.innerWidth,
-      }).then((result) => {
-        const current = titlebarDragRef.current;
-        if (!current || current.pointerId !== dragState.pointerId) return;
-        if (!result) {
-          cleanupTitlebarDragListeners();
-          titlebarDragRef.current = null;
-          return;
-        }
-        current.pending = false;
-        current.started = true;
-        current.dragOffsetX = result.dragOffsetX;
-        current.dragOffsetY = result.dragOffsetY;
-        current.dragSessionId = result.dragSessionId ?? '';
-        setIsMaximized(result.isMaximized);
-        void window.xinyuexiaWindow?.moveTitlebarDrag({
-          screenX: current.lastScreenX,
-          screenY: current.lastScreenY,
-          dragOffsetX: current.dragOffsetX,
-          dragOffsetY: current.dragOffsetY,
-          dragSessionId: current.dragSessionId,
-        });
-      }).catch(() => {
-        const current = titlebarDragRef.current;
-        if (current?.pointerId === dragState.pointerId) {
-          cleanupTitlebarDragListeners();
-          titlebarDragRef.current = null;
-        }
-      });
-      return;
-    }
-
-    void window.xinyuexiaWindow?.moveTitlebarDrag({
-      screenX: event.screenX,
-      screenY: event.screenY,
-      dragOffsetX: dragState.dragOffsetX,
-      dragOffsetY: dragState.dragOffsetY,
-      dragSessionId: dragState.dragSessionId,
-    });
-  };
-
-  const finishTitlebarPointerDrag = (event: TitlebarPointerEventLike) => {
-    const dragState = titlebarDragRef.current;
-    if (!dragState || dragState.pointerId !== event.pointerId) return;
-    cleanupTitlebarDragListeners();
-    const heldMs = Date.now() - titlebarPointerMetaRef.current.startedAt;
-    const moved = Math.hypot(event.clientX - dragState.startClientX, event.clientY - dragState.startClientY);
-    if (dragState.started || dragState.pending) {
-      lastTitlebarDragAtRef.current = Date.now();
-      titlebarClickRef.current = { lastAt: 0, lastClientX: 0, lastClientY: 0 };
-      suppressTitlebarClickRef.current = true;
-      window.setTimeout(() => {
-        suppressTitlebarClickRef.current = false;
-      }, 450);
-    } else {
-      registerTitlebarClick(event, heldMs, moved);
-    }
-    void window.xinyuexiaWindow?.endTitlebarDrag?.({ dragSessionId: dragState.dragSessionId, screenX: event.screenX, screenY: event.screenY });
-    titlebarDragRef.current = null;
-  };
-
-  const handleTitlebarPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
-    if (event.button !== 0 || isTitlebarInteractiveTarget(event.target)) return;
-    cleanupTitlebarDragListeners();
-    titlebarPointerMetaRef.current = {
-      startedAt: Date.now(),
-      startClientX: event.clientX,
-      startClientY: event.clientY,
-      moved: false,
-    };
-    titlebarDragRef.current = {
-      pointerId: event.pointerId,
-      startClientX: event.clientX,
-      startClientY: event.clientY,
-      lastScreenX: event.screenX,
-      lastScreenY: event.screenY,
-      restoreFromMaximized: isMaximized,
-      dragOffsetX: 0,
-      dragOffsetY: 0,
-      dragSessionId: '',
-      started: false,
-      pending: false,
-    };
-    try {
-      const captureTarget = event.target instanceof HTMLElement ? event.target : event.currentTarget;
-      captureTarget.setPointerCapture(event.pointerId);
-    } catch {
-      // Pointer capture is best-effort; window-level drag still starts on the next move event.
-    }
-    const handleWindowPointerMove = (nativeEvent: PointerEvent) => continueTitlebarPointerDrag(nativeEvent);
-    const handleWindowPointerEnd = (nativeEvent: PointerEvent) => finishTitlebarPointerDrag(nativeEvent);
-    window.addEventListener('pointermove', handleWindowPointerMove, true);
-    window.addEventListener('pointerup', handleWindowPointerEnd, true);
-    window.addEventListener('pointercancel', handleWindowPointerEnd, true);
-    titlebarDragCleanupRef.current = () => {
-      window.removeEventListener('pointermove', handleWindowPointerMove, true);
-      window.removeEventListener('pointerup', handleWindowPointerEnd, true);
-      window.removeEventListener('pointercancel', handleWindowPointerEnd, true);
-    };
-  };
-
-  const handleTitlebarPointerMove = (event: ReactPointerEvent<HTMLElement>) => continueTitlebarPointerDrag(event);
-
-  const handleTitlebarClickCapture = (event: MouseEvent<HTMLElement>) => {
-    if (!suppressTitlebarClickRef.current) return;
-    event.preventDefault();
-    event.stopPropagation();
-  };
-
   const mouseGesturePath = mouseGesturePreview?.points.length
     ? mouseGesturePreview.points
       .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
@@ -1046,11 +822,6 @@ export function AppFrame({ children }: AppFrameProps) {
       <header
         className="app-titlebar flex h-12 shrink-0 items-center border-b border-slate-300 bg-[#dfe5ec] px-3"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-        onPointerDown={handleTitlebarPointerDown}
-        onPointerMove={handleTitlebarPointerMove}
-        onPointerUp={finishTitlebarPointerDrag}
-        onPointerCancel={finishTitlebarPointerDrag}
-        onClickCapture={handleTitlebarClickCapture}
       >
         <nav
           className="flex h-full min-w-0 flex-1 items-center overflow-x-auto"
