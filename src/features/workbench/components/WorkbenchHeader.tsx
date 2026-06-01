@@ -2,23 +2,26 @@ interface WorkbenchHeaderProps {
   workTitle: string;
   onOpenWorkInfo: () => void;
   onOpenNotes: () => void;
+  onOpenBrainstormLibrary: () => void;
   onOpenSettingLibrary: () => void;
+  onOpenPlotPointGenerator: () => void;
   onOpenDetailOutlineLibrary: () => void;
-  onOpenSummaryLibrary: () => void;
 }
 
 export function WorkbenchHeader({
   workTitle,
   onOpenWorkInfo,
   onOpenNotes,
+  onOpenBrainstormLibrary,
   onOpenSettingLibrary,
+  onOpenPlotPointGenerator,
   onOpenDetailOutlineLibrary,
-  onOpenSummaryLibrary,
 }: WorkbenchHeaderProps) {
   const navItems = [
-    { key: 'settingLibrary', label: '大纲设定', onClick: onOpenSettingLibrary },
-    { key: 'detailOutlineLibrary', label: '生成细纲', onClick: onOpenDetailOutlineLibrary },
-    { key: 'summaryLibrary', label: '章节概要', onClick: onOpenSummaryLibrary },
+    { key: 'brainstormLibrary', label: '生成脑洞', onClick: onOpenBrainstormLibrary },
+    { key: 'settingLibrary', label: '生成大纲', onClick: onOpenSettingLibrary },
+    { key: 'plotPointGenerator', label: '生成剧情链', onClick: onOpenPlotPointGenerator },
+    { key: 'detailOutlineLibrary', label: '生成章纲', onClick: onOpenDetailOutlineLibrary },
     { key: 'notes', label: '备忘录', onClick: onOpenNotes },
   ];
 

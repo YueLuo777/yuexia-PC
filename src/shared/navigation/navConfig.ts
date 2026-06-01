@@ -4,6 +4,7 @@ import {
   BookOpen,
   Cloud,
   Database,
+  EyeOff,
   Film,
   FlaskConical,
   Globe,
@@ -43,6 +44,7 @@ const iconMap: Record<string, LucideIcon> = {
   BookOpen,
   Cloud,
   Database,
+  EyeOff,
   Film,
   FlaskConical,
   Globe,
@@ -72,9 +74,16 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
     items: [
       { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
       { iconName: 'Film', label: '我的剧本', to: '/scripts' },
+      { iconName: 'Library', label: '库', to: '/library' },
+    ],
+  },
+  {
+    title: '隐藏专区',
+    iconName: 'EyeOff',
+    items: [
+      { iconName: 'EyeOff', label: '隐藏内容', to: '/hidden-content' },
       { iconName: 'Sparkles', label: '提炼剧情', to: '/extract' },
       { iconName: 'Database', label: '提取设定', to: '/moonfall-settings' },
-      { iconName: 'Library', label: '库', to: '/library' },
     ],
   },
   {
@@ -125,6 +134,8 @@ const REMOVED_ROUTES = new Set([
   '/text-overrides',
 ]);
 const REMOVED_GROUP_TITLES = new Set(['首页专区']);
+const HIDDEN_SECTION_TITLE = '隐藏专区';
+const HIDDEN_SECTION_ROUTES = new Set(['/hidden-content', '/extract', '/moonfall-settings']);
 const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
   '/db-settings': '数据库设置',
   '/library': '库',
@@ -133,6 +144,7 @@ const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
   '/software-ui-catalog': 'UI库',
   '/theme-colors': '主题颜色',
   '/test-collection': '测试',
+  '/hidden-content': '隐藏内容',
 };
 
 function cloneDefaultConfig() {
@@ -147,6 +159,7 @@ function dedupeNavItems(config: NavGroupConfig[]) {
       ...group,
       items: group.items.filter((item) => {
         if (REMOVED_ROUTES.has(item.to)) return false;
+        if (group.title !== HIDDEN_SECTION_TITLE && HIDDEN_SECTION_ROUTES.has(item.to)) return false;
         if (seenRoutes.has(item.to)) return false;
         seenRoutes.add(item.to);
         if (NORMALIZED_ROUTE_LABELS[item.to]) {

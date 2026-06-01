@@ -55,20 +55,20 @@ function PromptEditorModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/40">
+    <div className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/40 p-6">
       <div
-        className="modal-sharp w-[980px] max-w-[94vw] rounded-[28px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
+        className="modal-sharp flex h-full max-h-[calc(100dvh-48px)] w-[980px] max-w-[94vw] flex-col overflow-hidden rounded-[28px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-slate-100 px-8 py-6">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-8 py-6">
           <h2 className="text-[18px] font-bold text-slate-900">{title}</h2>
           <button onClick={onClose} className="rounded-lg p-1.5 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-500">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-[360px_minmax(0,1fr)] gap-6 px-8 py-7">
-          <div className="space-y-5">
+        <div className="grid min-h-0 flex-1 grid-cols-[360px_minmax(0,1fr)] gap-6 px-8 py-7">
+          <div className="min-h-0 space-y-5 overflow-y-auto pt-3 pr-1">
             <div className={`xy-floating-field ${draft.name.trim() ? 'xy-has-value' : ''}`}>
               <input
                 value={draft.name}
@@ -106,19 +106,19 @@ function PromptEditorModal({
             </div>
           </div>
 
-          <div className={`xy-floating-field xy-floating-compact xy-floating-fill ${draft.content.trim() ? 'xy-has-value' : ''}`}>
+          <div className={`xy-floating-field xy-floating-compact xy-floating-fill flex min-h-0 flex-col ${draft.content.trim() ? 'xy-has-value' : ''}`}>
             <textarea
               value={draft.content}
               onChange={(event) => setDraft((prev) => ({ ...prev, content: event.target.value }))}
               placeholder="提示词内容"
               rows={18}
-              className="h-[440px] font-mono"
+              className="xy-prompt-content-editor min-h-0 flex-1 font-sans text-[16px] font-medium leading-8 tracking-normal text-slate-950"
             />
             <label>提示词内容</label>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-4 border-t border-slate-100 bg-slate-50/60 px-8 py-5">
+        <div className="flex shrink-0 items-center justify-end gap-4 border-t border-slate-100 bg-slate-50/60 px-8 py-5">
           <button onClick={onClose} className="rounded-2xl border border-slate-200 px-6 py-3 text-base text-slate-600 hover:bg-white">
             取消
           </button>

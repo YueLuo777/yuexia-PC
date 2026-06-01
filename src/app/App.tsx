@@ -13,6 +13,11 @@ const BrainstormAiChainTestPage = lazy(() => import('@/features/tests/pages/Brai
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
 const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })));
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
+const PromptTaxonomyTestPage = lazy(() => import('@/features/tests/pages/PromptTaxonomyTestPage').then((module) => ({ default: module.PromptTaxonomyTestPage })));
+const CreationFlowPageTestPage = lazy(() => import('@/features/tests/pages/CreationFlowPageTestPage').then((module) => ({ default: module.CreationFlowPageTestPage })));
+const NovelDetailOverviewTestPage = lazy(() => import('@/features/tests/pages/NovelDetailOverviewTestPage').then((module) => ({ default: module.NovelDetailOverviewTestPage })));
+const PlotChainPreviewDesignTestPage = lazy(() => import('@/features/tests/pages/PlotChainPreviewDesignTestPage').then((module) => ({ default: module.PlotChainPreviewDesignTestPage })));
+const ManagementDrawerTestPage = lazy(() => import('@/features/tests/pages/ManagementDrawerTestPage').then((module) => ({ default: module.ManagementDrawerTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 const IdeaGeneratorPage = lazy(() => import('@/features/ideas/pages/IdeaGeneratorPage').then((module) => ({ default: module.IdeaGeneratorPage })));
 const IdeaLibraryPage = lazy(() => import('@/features/ideas/pages/IdeaLibraryPage').then((module) => ({ default: module.IdeaLibraryPage })));
@@ -104,8 +109,14 @@ export default function App() {
                 <Route path="/test-collection" element={<TestCollectionPage />} />
                 <Route path="/ui-landing-scenarios-test" element={<UiLandingScenariosTestPage />} />
                 <Route path="/select-floating-label-test" element={<SelectFloatingLabelTestPage />} />
+                <Route path="/management-drawer-test" element={<ManagementDrawerTestPage />} />
+                <Route path="/prompt-taxonomy-test" element={<PromptTaxonomyTestPage />} />
+                <Route path="/creation-flow-page-test" element={<CreationFlowPageTestPage />} />
+                <Route path="/novel-detail-overview-test" element={<NovelDetailOverviewTestPage />} />
                 <Route path="/brainstorm-ai-chain-test" element={<BrainstormAiChainTestPage />} />
+                <Route path="/plot-chain-preview-design-test" element={<PlotChainPreviewDesignTestPage />} />
                 <Route path="/software-ui-catalog" element={<SoftwareUiCatalogPage />} />
+                <Route path="/hidden-content" element={<HiddenPagesTestPage />} />
                 <Route path="/hidden-pages-test" element={<HiddenPagesTestPage />} />
                 <Route path="/error-log" element={<ErrorLogPage />} />
                 <Route path="/theme-colors" element={<DarkThemeColorPage />} />

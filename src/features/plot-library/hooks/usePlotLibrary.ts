@@ -38,16 +38,70 @@ function wordCount(text: string) {
   return text.replace(/\s+/g, '').length;
 }
 
+export function sanitizePlotLibraryContent(content: string) {
+  return content
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .filter((line) => {
+      const trimmed = line.trim();
+      return !(
+        /^第\s*\d+\s*个剧情点(?:（[^）]*）|\([^)]*\))?\s*$/.test(trimmed) ||
+        /^#\s*(?:评分|主题标签)\s*$/.test(trimmed) ||
+        /【?强制包裹】?/.test(trimmed) ||
+        /所有分数必须放在/.test(trimmed) ||
+        /仅填数字/.test(trimmed)
+      );
+    })
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+const SCORE_KEYS = ['新颖度', '冲突强度', '情绪强度', '期待感', '平均分', '张力', '情绪冲击', '综合评分', '综合价值'];
+
+function parseScoreLines(text: string) {
+  const scores: Record<string, string> = {};
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const match = trimmed.match(/^【?([^：:】#]+)】?\s*[：:]\s*(\d{1,3}(?:\.\d+)?)(?:\s*分)?\s*$/);
+    if (!match) continue;
+    const key = match[1].trim();
+    if (SCORE_KEYS.includes(key)) scores[key] = match[2].trim();
+  }
+  return scores;
+}
+
+export function parsePlotScoreMap(content: string): Record<string, string> | null {
+  const cleanContent = sanitizePlotLibraryContent(content);
+  const fsText = cleanContent.match(/<fs>([\s\S]*?)<\/fs>/i)?.[1]?.trim();
+  const scores = parseScoreLines(fsText || cleanContent);
+  return Object.keys(scores).length > 0 ? scores : null;
+}
+
+export function parsePlotRating(content: string) {
+  const scores = parsePlotScoreMap(content);
+  const average = scores?.['平均分'] ?? scores?.['综合评分'];
+  const directMatch = content.match(/(?:#\s*)?评分[：:\s]+(\d{1,3})|【评分】\s*(\d{1,3})/);
+  const value = Number(average ?? directMatch?.[1] ?? directMatch?.[2]);
+  return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : undefined;
+}
+
 function parseAnchors(content: string) {
-  const fsText = content.match(/<fs>([\s\S]*?)<\/fs>/i)?.[1]?.trim();
-  const bqText = content.match(/<bq>([\s\S]*?)<\/bq>/i)?.[1]?.trim();
+  const cleanContent = sanitizePlotLibraryContent(content);
+  const fsText = cleanContent.match(/<fs>([\s\S]*?)<\/fs>/i)?.[1]?.trim()
+    ?? (() => {
+      const scores = parsePlotScoreMap(cleanContent);
+      return scores
+        ? Object.entries(scores).map(([key, value]) => `${key}：${value}`).join('\n')
+        : undefined;
+    })();
+  const bqText = cleanContent.match(/<bq>([\s\S]*?)<\/bq>/i)?.[1]?.trim();
   return { fsText, bqText };
 }
 
 function parseRating(content: string) {
-  const match = content.match(/(?:#\s*)?评分[：:\s]*(\d{1,3})|【评分】\s*(\d{1,3})/);
-  const value = Number(match?.[1] ?? match?.[2]);
-  return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : undefined;
+  return parsePlotRating(content);
 }
 
 function parseTags(content: string, inputTags: string[] = []) {
@@ -67,20 +121,23 @@ function createId() {
 export function savePlotItems(items: NewPlotLibraryItem[]) {
   const now = new Date().toISOString();
   const current = readItems();
-  const nextItems: PlotLibraryItem[] = items.map((item) => ({
-    ...parseAnchors(item.content),
-    id: createId(),
-    title: item.title,
-    chapter: item.chapter,
-    novelTitle: item.novelTitle,
-    content: item.content,
-    tags: parseTags(item.content, item.tags),
-    rating: item.rating ?? parseRating(item.content),
-    wordCount: wordCount(item.content),
-    createdAt: now,
-    updatedAt: now,
-  }));
-  writeItems([...nextItems, ...current]);
+  const nextItems: PlotLibraryItem[] = items.map((item) => {
+    const content = sanitizePlotLibraryContent(item.content);
+    return {
+      ...parseAnchors(content),
+      id: createId(),
+      title: item.title,
+      chapter: item.chapter,
+      novelTitle: item.novelTitle,
+      content,
+      tags: parseTags(content, item.tags),
+      rating: item.rating ?? parseRating(content),
+      wordCount: wordCount(content),
+      createdAt: now,
+      updatedAt: now,
+    };
+  });
+  writeItems([...current, ...nextItems]);
   return nextItems;
 }
 
@@ -127,7 +184,7 @@ export function usePlotLibrary() {
     setItems((prev) => {
       const next = prev.map((item) => {
         if (item.id !== id) return item;
-        const content = updates.content ?? item.content;
+        const content = sanitizePlotLibraryContent(updates.content ?? item.content);
         return {
           ...item,
           ...updates,

@@ -208,11 +208,21 @@ export function CapsuleSelect({
           }`}
         >
           {floatingLabel && (
-            <span className={`pointer-events-none absolute top-0 z-20 max-w-[128px] -translate-y-1/2 px-1 text-[12px] font-black leading-none text-slate-800 ${hasDisableToggle ? 'left-[50px]' : 'left-8'} ${disabled ? 'bg-slate-100' : 'bg-white'}`}>
+            <span className={`pointer-events-none absolute left-5 top-0 z-20 max-w-[128px] -translate-y-1/2 px-1 text-[12px] font-black leading-none text-slate-800 ${disabled ? 'bg-slate-100' : 'bg-white'}`}>
               {floatingLabel}
             </span>
           )}
           <div className={`flex h-full min-w-0 overflow-hidden ${inlineActionShape.innerRadius} ${inlineActionShape.actionPadding}`}>
+            <button
+              ref={buttonRef}
+              id={id}
+              type="button"
+              disabled={disabled}
+              onClick={toggleOpen}
+              className={`flex min-w-0 flex-1 items-center text-left text-sm font-black leading-none transition-colors hover:bg-sky-50/40 disabled:cursor-not-allowed disabled:text-slate-400 ${buttonClassName} !h-full !rounded-none !py-0 ${floatingLabel ? '!pl-9 !pr-1' : '!px-4'}`}
+            >
+              <span className="block min-w-0 flex-1 truncate">{displayLabel}</span>
+            </button>
             {hasDisableToggle && (
               <button
                 type="button"
@@ -221,7 +231,7 @@ export function CapsuleSelect({
                   event.stopPropagation();
                   onDisableToggle?.();
                 }}
-                className="grid h-full w-12 shrink-0 place-items-center bg-transparent text-red-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                className="grid h-full w-9 shrink-0 place-items-center bg-transparent text-red-400 transition-colors hover:bg-red-50 hover:text-red-500"
                 title={disableToggleTitle}
                 aria-label={disableToggleTitle}
                 aria-pressed={disableToggleActive}
@@ -231,16 +241,6 @@ export function CapsuleSelect({
                 </span>
               </button>
             )}
-            <button
-              ref={buttonRef}
-              id={id}
-              type="button"
-              disabled={disabled}
-              onClick={toggleOpen}
-              className={`flex min-w-0 flex-1 items-center text-left text-sm font-black leading-none transition-colors hover:bg-sky-50/40 disabled:cursor-not-allowed disabled:text-slate-400 ${buttonClassName} !h-full !rounded-none !py-0 ${floatingLabel ? (hasDisableToggle ? '!pl-0 !pr-2' : '!pl-9 !pr-2') : '!px-4'}`}
-            >
-              <span className="block truncate">{displayLabel}</span>
-            </button>
             <button
               type="button"
               disabled={disabled}
@@ -280,38 +280,48 @@ export function CapsuleSelect({
             disabled ? 'border-slate-200 bg-slate-100 text-slate-400' : 'border-[#08AACE]'
           }`}
         >
-          <span className={`pointer-events-none absolute top-0 z-20 max-w-[128px] -translate-y-1/2 px-1 text-[12px] font-black leading-none text-slate-800 ${hasDisableToggle ? 'left-[50px]' : 'left-8'} ${disabled ? 'bg-slate-100' : 'bg-white'}`}>
+          <span className={`pointer-events-none absolute left-5 top-0 z-20 max-w-[128px] -translate-y-1/2 px-1 text-[12px] font-black leading-none text-slate-800 ${disabled ? 'bg-slate-100' : 'bg-white'}`}>
             {floatingLabel}
           </span>
-          {hasDisableToggle && (
+          <div className="flex h-full min-w-0 overflow-hidden rounded-[inherit]">
+            <button
+              ref={buttonRef}
+              id={id}
+              type="button"
+              disabled={disabled}
+              onClick={toggleOpen}
+              className={`flex h-full min-w-0 flex-1 items-center bg-transparent text-left text-sm font-black leading-none text-slate-900 transition-colors hover:bg-sky-50/40 disabled:cursor-not-allowed disabled:text-slate-400 ${buttonClassName} !h-full !rounded-none !py-0 !pl-9 !pr-1`}
+            >
+              <span className="block min-w-0 flex-1 truncate">{displayLabel}</span>
+            </button>
+            {hasDisableToggle && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onDisableToggle?.();
+                }}
+                className="grid h-full w-9 shrink-0 place-items-center bg-transparent text-red-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                title={disableToggleTitle}
+                aria-label={disableToggleTitle}
+                aria-pressed={disableToggleActive}
+              >
+                <span className="relative h-[22px] w-[22px] rounded-full border-[2.4px] border-current">
+                  <span className="absolute left-1/2 top-1/2 h-[1.6px] w-[13px] -translate-x-1/2 -translate-y-1/2 rotate-[-45deg] rounded-full bg-current" />
+                </span>
+              </button>
+            )}
             <button
               type="button"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                onDisableToggle?.();
-              }}
-              className="absolute inset-y-0 left-0 z-10 grid w-12 place-items-center bg-transparent text-red-400 transition-colors hover:bg-red-50 hover:text-red-500"
-              title={disableToggleTitle}
-              aria-label={disableToggleTitle}
-              aria-pressed={disableToggleActive}
+              disabled={disabled}
+              onClick={toggleOpen}
+              className="grid h-full w-9 shrink-0 place-items-center bg-transparent text-slate-700 transition-colors hover:bg-transparent hover:text-[#08AACE] disabled:cursor-not-allowed disabled:text-slate-300"
+              aria-label="展开选项"
             >
-              <span className="relative h-[22px] w-[22px] rounded-full border-[2.4px] border-current">
-                <span className="absolute left-1/2 top-1/2 h-[1.6px] w-[13px] -translate-x-1/2 -translate-y-1/2 rotate-[-45deg] rounded-full bg-current" />
-              </span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
-          )}
-          <button
-            ref={buttonRef}
-            id={id}
-            type="button"
-            disabled={disabled}
-            onClick={toggleOpen}
-            className={`flex h-full w-full min-w-0 items-center justify-between gap-3 bg-transparent text-left text-sm font-black leading-none text-slate-900 transition-colors hover:bg-sky-50/40 disabled:cursor-not-allowed disabled:text-slate-400 ${buttonClassName} !h-full !rounded-none !py-0 ${hasDisableToggle ? '!pl-12 !pr-4' : '!pl-9 !pr-4'}`}
-          >
-            <span className="min-w-0 truncate">{displayLabel}</span>
-            <ChevronDown className={`h-4 w-4 shrink-0 text-slate-800 transition-transform ${open ? 'rotate-180' : ''}`} />
-          </button>
+          </div>
         </div>
         {dropdown}
       </div>
@@ -328,7 +338,7 @@ export function CapsuleSelect({
         onClick={toggleOpen}
         className={`flex h-12 w-full items-center justify-between gap-3 rounded-2xl border border-[#08AACE] bg-white px-5 text-left text-base font-black text-slate-900 shadow-[0_8px_18px_rgba(8,170,206,0.08)] transition-colors hover:bg-sky-50/40 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 ${buttonClassName}`}
       >
-        <span className="min-w-0 truncate">{displayLabel}</span>
+        <span className="block min-w-0 flex-1 truncate">{displayLabel}</span>
         <ChevronDown className={`h-4 w-4 shrink-0 text-slate-800 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {dropdown}

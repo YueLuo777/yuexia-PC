@@ -1,14 +1,20 @@
 import {
   ArrowLeft,
+  BookOpenText,
   Check,
   ChevronDown,
+  Database,
   EyeOff,
   Globe,
+  ListChecks,
   NotebookText,
   Moon,
   Palette,
+  SendHorizontal,
   Sparkles,
   Search,
+  Square,
+  Tags,
   X,
 } from 'lucide-react';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
@@ -21,6 +27,11 @@ const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPage
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
+const PromptTaxonomyTestPage = lazy(() => import('@/features/tests/pages/PromptTaxonomyTestPage').then((module) => ({ default: module.PromptTaxonomyTestPage })));
+const CreationFlowPageTestPage = lazy(() => import('@/features/tests/pages/CreationFlowPageTestPage').then((module) => ({ default: module.CreationFlowPageTestPage })));
+const NovelDetailOverviewTestPage = lazy(() => import('@/features/tests/pages/NovelDetailOverviewTestPage').then((module) => ({ default: module.NovelDetailOverviewTestPage })));
+const PlotChainPreviewDesignTestPage = lazy(() => import('@/features/tests/pages/PlotChainPreviewDesignTestPage').then((module) => ({ default: module.PlotChainPreviewDesignTestPage })));
+const ManagementDrawerTestPage = lazy(() => import('@/features/tests/pages/ManagementDrawerTestPage').then((module) => ({ default: module.ManagementDrawerTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -55,6 +66,20 @@ const testGroups = [
         icon: Palette,
         badge: 'Label',
       },
+      {
+        title: '右侧滑出管理页测试',
+        description: '测试模型管理和提示词管理从工作区右侧滑出，覆盖脑洞列表、脑洞预览和脑洞输出框。',
+        path: '/management-drawer-test',
+        icon: Database,
+        badge: 'Drawer',
+      },
+      {
+        title: '提示词分类优化测试',
+        description: '测试提示词少分类、多标签、页面自动筛选，以及使用页下拉框只显示相关提示词。',
+        path: '/prompt-taxonomy-test',
+        icon: Tags,
+        badge: 'Prompt',
+      },
     ],
   },
   {
@@ -66,6 +91,34 @@ const testGroups = [
         path: '/brainstorm-ai-chain-test',
         icon: Sparkles,
         badge: 'AI',
+      },
+      {
+        title: '创作流程页面化测试',
+        description: '测试把脑洞、大纲、剧情链、章纲、正文续写做成独立页面，并在左上角高亮当前流程。',
+        path: '/creation-flow-page-test',
+        icon: BookOpenText,
+        badge: 'Flow',
+      },
+      {
+        title: '作品详情总览页测试',
+        description: '测试点击作品后先进入作品详情页，集中展示书名、简介、主线、大纲、剧情链、章纲和正文进度。',
+        path: '/novel-detail-overview-test',
+        icon: NotebookText,
+        badge: 'Novel',
+      },
+      {
+        title: '剧情链旧版架构备份',
+        description: '保留剧情链弹窗改版前的三栏架构，方便以后对照或恢复旧版左链、中预览、右生成布局。',
+        path: '/plot-point-workbench-test',
+        icon: ListChecks,
+        badge: 'Legacy',
+      },
+      {
+        title: '剧情链卡片方案测试',
+        description: '对比剧情点预览的摘要、承接、评分和密集列表方案，快速判断内容、潜力和能否接上已选剧情。',
+        path: '/plot-chain-preview-design-test',
+        icon: ListChecks,
+        badge: 'Design',
       },
       {
         title: '输出日志折叠分组测试',
@@ -1023,6 +1076,637 @@ export function AiLogFoldingTestPage() {
   );
 }
 
+type PlotPointSourceMode = 'library' | 'ai' | 'mixed';
+
+type PlotPointCandidate = {
+  id: string;
+  title: string;
+  source: '剧情库' | 'AI生成';
+  originalGenre: string;
+  original: string;
+  adapted: string;
+  variable: string;
+};
+
+const plotPointSourceModeMeta: Record<PlotPointSourceMode, { label: string; description: string }> = {
+  library: {
+    label: '剧情库',
+    description: '让 AI 从剧情库里挑选，优先使用已有剧情骨架。',
+  },
+  ai: {
+    label: 'AI生成',
+    description: '让 AI 自由发挥，直接生成新的开头或衔接剧情。',
+  },
+  mixed: {
+    label: '混合',
+    description: '既可以从剧情库里选，也可以自由发挥，还能改写剧情库里不完美的点。',
+  },
+};
+
+const openingPlotPointSeeds: PlotPointCandidate[] = [
+  { id: 'opening-divorce', title: '开局被女主退婚', source: '剧情库', originalGenre: '玄幻', original: '主角开局被女主当众退婚，家族长辈也默认他没有未来。', adapted: '主角在祖祠前被女主当众退婚，婚书被灵火焚毁，族人认定他灵根已废。', variable: '退婚 / 家族羞辱 / 废灵根 -> 祖祠退婚 / 灵火焚书 / 灵根已废' },
+  { id: 'opening-root-test', title: '测灵根被判废材', source: '剧情库', originalGenre: '玄幻', original: '主角在入门测试中被判资质极差，所有资源被转给弟弟。', adapted: '测灵台只亮一寸灰光，主角被逐出内院，原本属于他的筑基丹被转给堂弟。', variable: '入门测试 / 资源转移 -> 测灵台 / 筑基丹 / 堂弟' },
+  { id: 'opening-relic-wakes', title: '旧物苏醒', source: 'AI生成', originalGenre: '玄幻', original: '主角被逐出家门后，母亲留下的旧物突然回应他的血。', adapted: '主角跌入后山寒潭，母亲留下的残玉吸收血迹，显出一门失传的炼体法。', variable: '旧物 / 血脉回应 -> 残玉 / 寒潭 / 炼体法' },
+  { id: 'opening-missing-master', title: '师父失踪', source: '剧情库', originalGenre: '仙侠', original: '主角唯一的靠山师父失踪，他被迫独自面对宗门清算。', adapted: '师父闭关洞府只剩一盏将灭魂灯，执法堂当天就来收走主角的内门令牌。', variable: '靠山失踪 / 清算 -> 魂灯 / 执法堂 / 内门令牌' },
+  { id: 'opening-beast-tide', title: '兽潮提前爆发', source: 'AI生成', originalGenre: '玄幻', original: '边城兽潮提前爆发，主角发现兽潮背后有人故意驱赶妖兽。', adapted: '黑雾妖潮提前三日撞城，主角在城墙下看到驱兽符燃尽后的灰烬。', variable: '兽潮 / 阴谋 -> 黑雾妖潮 / 驱兽符 / 城墙' },
+  { id: 'opening-wrong-scripture', title: '拿到错误功法', source: '剧情库', originalGenre: '玄幻', original: '主角被分到一卷无人能练的残缺功法，却发现残缺处能和自身缺陷对应。', adapted: '藏经阁杂役丢给主角一卷残篇，他发现断掉的经脉反而能走残篇里的逆脉路线。', variable: '错误功法 / 缺陷对应 -> 残篇 / 断经脉 / 逆脉路线' },
+  { id: 'opening-prison-mine', title: '被发配灵矿', source: '剧情库', originalGenre: '玄幻', original: '主角被污蔑偷盗，被罚去灵矿服役，却在矿脉深处听见古老呼吸。', adapted: '主角背上偷丹罪名，被押去黑石灵矿，夜里听见矿心传来像巨兽沉睡的呼吸。', variable: '偷盗 / 服役 / 古老呼吸 -> 偷丹 / 黑石灵矿 / 矿心巨兽' },
+  { id: 'opening-wedding-ambush', title: '婚宴变杀局', source: 'AI生成', originalGenre: '武侠', original: '婚宴上所有宾客突然翻脸，主角意识到这场婚事从头到尾都是局。', adapted: '订亲宴上灵酒被下噬脉散，宾客同时亮出法器，主角才知婚约只是引他入局。', variable: '婚宴 / 毒酒 / 杀局 -> 订亲宴 / 噬脉散 / 法器围杀' },
+  { id: 'opening-forbidden-name', title: '喊出禁忌真名', source: '剧情库', originalGenre: '悬疑', original: '主角无意喊出一个被抹去的名字，所有人突然对他露出杀意。', adapted: '主角在祖谱缺页处念出一位先祖真名，祠堂牌位同时裂开，族老当场封门。', variable: '禁忌名字 / 群体杀意 -> 祖谱缺页 / 牌位裂开 / 族老封门' },
+  { id: 'opening-ordinary-job', title: '普通差事撞见秘辛', source: 'AI生成', originalGenre: '都市', original: '主角只是去送一封信，却撞见城主府正在秘密替换某位大人物。', adapted: '主角只是替药铺送药，却在城主府偏院看见一具和城主一模一样的傀儡身。', variable: '送信 / 替换人物 -> 送药 / 城主府 / 傀儡身' },
+];
+
+const followupPlotPointSeeds: PlotPointCandidate[] = [
+  { id: 'follow-witness', title: '退婚现场出现见证者', source: 'AI生成', originalGenre: '玄幻', original: '退婚后，一位沉默旁观者突然指出婚书被人提前动过手脚。', adapted: '退婚后，守祠老仆捡起婚书灰烬，发现灵火里藏着夺运阵的残痕。', variable: '旁观者 / 手脚 -> 守祠老仆 / 婚书灰烬 / 夺运阵' },
+  { id: 'follow-first-proof', title: '第一次证明自己', source: '剧情库', originalGenre: '玄幻', original: '主角不急着反击，而是用一个小事件证明自己并非彻底废掉。', adapted: '主角当晚修复祖祠熄灭多年的护族阵灯，证明自己的废灵根能感应古阵。', variable: '小事件证明 -> 护族阵灯 / 古阵感应' },
+  { id: 'follow-hidden-curse', title: '发现退婚血咒', source: 'AI生成', originalGenre: '玄幻', original: '退婚不是结束，婚书燃尽后反而激活了压制主角的血咒。', adapted: '婚书灰烬钻入主角掌心，形成退婚血咒，每到子时就吞噬一缕灵气。', variable: '退婚后遗症 -> 掌心血咒 / 子时吞灵' },
+  { id: 'follow-family-split', title: '家族内部站队', source: '剧情库', originalGenre: '家族流', original: '退婚事件逼迫家族内部表态，有人落井下石，也有人暗中递来资源。', adapted: '族会要剥夺主角月俸，小姑却偷偷塞给他一枚破损聚灵佩。', variable: '家族站队 -> 族会 / 月俸 / 聚灵佩' },
+  { id: 'follow-heroine-note', title: '女主留下暗线', source: 'AI生成', originalGenre: '感情线', original: '女主退婚后留下似羞辱又似提醒的一句话，成为下一步线索。', adapted: '女主离开前说“别去后山”，主角偏偏在后山发现她被迫退婚的证据。', variable: '提醒话语 -> 后山禁地 / 被迫退婚证据' },
+  { id: 'follow-rival-provokes', title: '情敌当众挑衅', source: '剧情库', originalGenre: '爽文', original: '新的追求者借退婚羞辱主角，反而给了主角公开反击的舞台。', adapted: '女主新靠山在演武场逼主角下跪，主角用废灵根引动破阵石，当众让对方灵剑失控。', variable: '情敌羞辱 -> 演武场 / 破阵石 / 灵剑失控' },
+  { id: 'follow-old-debt', title: '退婚牵出旧债', source: 'AI生成', originalGenre: '玄幻', original: '主角发现退婚背后关联父辈旧债，事情不只是感情羞辱。', adapted: '主角在婚约玉册背面看见父亲血印，得知女主家当年欠下救命因果。', variable: '父辈旧债 -> 婚约玉册 / 血印 / 救命因果' },
+  { id: 'follow-secret-master', title: '秘密师父观察', source: '剧情库', originalGenre: '师徒', original: '主角被羞辱时，有强者暗中观察，想确认他会不会彻底崩掉。', adapted: '祖祠梁上有一缕残魂看完退婚全程，决定用三夜时间考验主角心性。', variable: '强者观察 -> 残魂 / 三夜考验' },
+  { id: 'follow-small-win', title: '先赢一场小胜', source: 'AI生成', originalGenre: '节奏点', original: '退婚后不立刻大爆发，而是安排一次小胜，让读者看到希望。', adapted: '主角不争婚约，只在族中药圃救活一株将死灵草，换来第一次修炼资源。', variable: '小胜 / 希望 -> 药圃 / 灵草 / 修炼资源' },
+  { id: 'follow-forced-departure', title: '被迫离开家族', source: '剧情库', originalGenre: '流浪成长', original: '主角退婚后被赶出舒适区，进入更大的地图。', adapted: '族会宣布主角守矿三年，主角带着退婚血咒和残玉踏上黑石灵矿。', variable: '离家 / 新地图 -> 守矿 / 黑石灵矿 / 残玉' },
+];
+
+function expandPlotPointCandidates(seeds: PlotPointCandidate[]) {
+  return seeds.flatMap((item) => [
+    item,
+    {
+      ...item,
+      id: `${item.id}-alt`,
+      title: `${item.title}·延展`,
+      original: `${item.original} 这个版本会把节奏稍微拉长一点。`,
+      adapted: `${item.adapted} 这个版本再补一个小转折，让剧情更完整。`,
+      variable: `${item.variable} / 延展`,
+    },
+  ]);
+}
+
+const openingPlotPointCandidates = expandPlotPointCandidates(openingPlotPointSeeds);
+const followupPlotPointCandidates = expandPlotPointCandidates(followupPlotPointSeeds);
+
+function getPlotPointText(item: PlotPointCandidate, length: 'short' | 'medium' | 'long') {
+  if (length === 'short') return item.adapted;
+  if (length === 'medium') return `${item.adapted} 这个点会占用一个完整场景，重点写主角被逼到台前后的反应和第一次选择。`;
+  return `${item.adapted} 这个点可以扩展成一段较长剧情：先写羞辱或异常发生，再写主角发现细节，接着出现外部压力，最后用一个反转或钩子把读者引到下一场。`;
+}
+
+function getPlotPointReview(item: PlotPointCandidate, isFollowup: boolean) {
+  if (item.id === 'opening-divorce') return 'AI评价：强情绪和强冲突都足，适合做开头；建议别马上翻盘，把羞辱、误会和女主隐藏压力留到后面慢慢揭开。';
+  if (isFollowup) return 'AI评价：适合作为衔接点，能承接上一剧情的后果；建议补一个明确的小目标，让读者知道下一章要看主角解决什么。';
+  return `AI评价：这个开头能快速建立${item.originalGenre}感和主角处境；建议再加一个钩子，把主角短期目标和隐藏危机绑在一起。`;
+}
+
+type PlotPointChainSlot = 1 | 2 | 3;
+
+const plotPointChainSlots: PlotPointChainSlot[] = [1, 2, 3];
+
+const plotPointSettingLinkOptions = [
+  { id: 'plot-outline', label: '剧情大纲', group: '核心设定', preview: '主线目标、阶段矛盾、关键转折。' },
+  { id: 'worldview', label: '世界观', group: '核心设定', preview: '修炼体系、势力格局、地图规则。' },
+  { id: 'protagonist-cheat', label: '主角金手指', group: '角色设定', preview: '能力来源、限制、成长节奏。' },
+  { id: 'character-relations', label: '角色关系', group: '角色设定', preview: '女主、家族、敌人与盟友关系。' },
+  { id: 'genre', label: '题材', group: '基础信息', preview: '玄幻、仙侠、都市高武等题材约束。' },
+  { id: 'theme', label: '故事主题', group: '基础信息', preview: '系统流、凡人流、复仇成长等方向。' },
+];
+
+function PlotPointWorkbenchTestPage() {
+  const [sourceMode, setSourceMode] = useState<PlotPointSourceMode>('library');
+  const [generateCount, setGenerateCount] = useState<10 | 20 | 30>(10);
+  const [pointLength, setPointLength] = useState<'short' | 'medium' | 'long'>('short');
+  const [activeChainSlot, setActiveChainSlot] = useState<PlotPointChainSlot>(1);
+  const [chainSelections, setChainSelections] = useState<Record<PlotPointChainSlot, string[]>>({
+    1: [],
+    2: [],
+    3: [],
+  });
+  const [chainRefreshStates, setChainRefreshStates] = useState<Record<PlotPointChainSlot, boolean>>({
+    1: false,
+    2: false,
+    3: false,
+  });
+  const [expandedPreviewIds, setExpandedPreviewIds] = useState<string[]>([]);
+  const openingRequirement = '开局要有压迫感，主角暂时不能立刻翻身。';
+  const [openingElements, setOpeningElements] = useState<string[]>(['强情绪', '强冲突']);
+  const [isSettingLinkModalOpen, setIsSettingLinkModalOpen] = useState(false);
+  const [isOutputLogOpen, setIsOutputLogOpen] = useState(false);
+  const [linkedSettingIds, setLinkedSettingIds] = useState<string[]>([
+    'plot-outline',
+    'worldview',
+    'protagonist-cheat',
+    'character-relations',
+  ]);
+
+  const selectedIds = chainSelections[activeChainSlot];
+  const followupRefreshed = chainRefreshStates[activeChainSlot];
+  const hasChain = selectedIds.length > 0;
+  const isFollowupStage = hasChain && followupRefreshed;
+  const candidatePool = isFollowupStage ? followupPlotPointCandidates : openingPlotPointCandidates;
+  const visibleCandidates = candidatePool.slice(0, generateCount);
+  const selectedItems = selectedIds
+    .map((id) => [...openingPlotPointCandidates, ...followupPlotPointCandidates].find((item) => item.id === id))
+    .filter((item): item is PlotPointCandidate => Boolean(item));
+  const firstChainTitle = selectedItems[0]?.title ?? '还没有第1号剧情';
+  const firstChainContent = selectedItems[0] ? getPlotPointText(selectedItems[0], pointLength) : '';
+  const linkedSettingLabels = plotPointSettingLinkOptions
+    .filter((item) => linkedSettingIds.includes(item.id))
+    .map((item) => item.label);
+  const linkedSettingSummary = linkedSettingLabels.length > 0 ? linkedSettingLabels.join('、') : '未关联设定';
+
+  const togglePlotPoint = (id: string) => {
+    setChainSelections((current) => {
+      const currentChain = current[activeChainSlot];
+      return {
+        ...current,
+        [activeChainSlot]: currentChain.includes(id)
+          ? currentChain.filter((itemId) => itemId !== id)
+          : [...currentChain, id],
+      };
+    });
+    setChainRefreshStates((current) => ({ ...current, [activeChainSlot]: false }));
+  };
+
+  const toggleOpeningElement = (element: string) => {
+    setOpeningElements((current) => (
+      current.includes(element)
+        ? current.filter((item) => item !== element)
+        : [...current, element]
+    ));
+  };
+
+  const toggleLinkedSetting = (settingId: string) => {
+    setLinkedSettingIds((current) => (
+      current.includes(settingId)
+        ? current.filter((item) => item !== settingId)
+        : [...current, settingId]
+    ));
+  };
+
+  const togglePreviewExpanded = (candidateId: string) => {
+    setExpandedPreviewIds((current) => (
+      current.includes(candidateId)
+        ? current.filter((item) => item !== candidateId)
+        : [...current, candidateId]
+    ));
+  };
+
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-[#f6f8fb]">
+      <header className="shrink-0 border-b border-slate-100 bg-white px-6 py-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <div className="text-xs font-black text-[#08AACE]">06号测试</div>
+            <h1 className="mt-1 text-xl font-black text-slate-950">剧情链旧版架构备份</h1>
+            <p className="mt-1 text-xs font-bold text-slate-400">保留正式剧情链弹窗改版前的三栏结构，方便以后对照或恢复旧版布局。</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <div className="relative flex h-[58px] w-[350px] items-center rounded-[28px] border-2 border-[#08AACE] bg-white pl-9 pr-2">
+              <span className="absolute -top-3 left-7 bg-white px-1 text-sm font-black text-slate-950">模型</span>
+              <span className="min-w-0 flex-1 truncate text-lg font-black text-slate-950">DS-v4-flash</span>
+              <ChevronDown className="h-5 w-5 shrink-0 text-slate-900" />
+              <span className="mx-3 h-8 w-px bg-slate-200" />
+              <button type="button" className="h-9 shrink-0 rounded-xl px-2 text-sm font-black text-[#08AACE] hover:bg-[#EAF9FD]">
+                管理
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsOutputLogOpen(true)}
+              className="h-[58px] rounded-[24px] border border-slate-200 bg-white px-5 text-base font-black text-slate-700 shadow-sm hover:border-[#08AACE] hover:text-[#08AACE]"
+            >
+              输出日志
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="grid min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)_370px] gap-4 overflow-hidden p-5">
+        <aside className="flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white">
+          <div className="shrink-0 border-b border-slate-100 px-4 py-3">
+            <div className="mb-2 flex items-center gap-1.5">
+              {plotPointChainSlots.map((slot) => {
+                const active = activeChainSlot === slot;
+                const hasContent = chainSelections[slot].length > 0;
+                return (
+                  <button
+                    key={slot}
+                    type="button"
+                    onClick={() => setActiveChainSlot(slot)}
+                    title={`剧情链 ${slot}`}
+                    className={`relative grid h-7 w-7 place-items-center rounded-lg text-xs font-black transition-colors ${
+                      active
+                        ? 'bg-[#08AACE] text-white'
+                        : hasContent
+                        ? 'border border-[#bdeef7] bg-[#EAF9FD] text-[#08AACE] hover:border-[#08AACE]'
+                        : 'border border-slate-200 bg-white text-slate-500 hover:border-[#08AACE] hover:text-[#08AACE]'
+                    }`}
+                  >
+                    {slot}
+                    {hasContent && !active && <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[#08AACE]" />}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-black text-slate-950">剧情链</h2>
+                <p className="text-xs font-bold text-slate-400">选中的剧情点会按顺序拼接</p>
+              </div>
+              <span className="rounded-full bg-[#EAF9FD] px-2 py-1 text-xs font-black text-[#08AACE]">{selectedItems.length} 点</span>
+            </div>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            {selectedItems.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-bold leading-7 text-slate-500">
+                小说正文还是空的。先在 AI 对话框输入区上方点击“关联”，选择大纲设定，再选择用户要求元素。
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {selectedItems.map((item, index) => (
+                  <div key={item.id} className="rounded-2xl border border-[#bdeef7] bg-[#EAF9FD] p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="grid h-7 w-7 place-items-center rounded-full bg-[#08AACE] text-xs font-black text-white">{index + 1}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm font-black text-slate-950">{item.title}</span>
+                      <button type="button" onClick={() => togglePlotPoint(item.id)} className="text-xs font-black text-red-500">移除</button>
+                    </div>
+                    <p className="mt-2 text-xs font-bold leading-5 text-slate-600">{getPlotPointText(item, pointLength)}</p>
+                    <div className="mt-2 rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-[#078fb0]">
+                      {getPlotPointReview(item, isFollowupStage)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <section className="mt-4 rounded-2xl border border-[#bdeef7] bg-white p-4">
+              <div className="text-sm font-black text-slate-950">AI 组链思路</div>
+              <p className="mt-2 text-xs font-bold leading-5 text-slate-600">
+                {isFollowupStage
+                  ? `下一批剧情点应围绕「${firstChainTitle}」继续：先承接后果，再给主角一个小目标，最后埋下更大敌人的线索。`
+                  : hasChain
+                  ? `已选第1号「${firstChainTitle}」。现在需要手动点“刷新剧情点”，让 AI 读取第1号内容后再生成衔接剧情。`
+                  : '第一批剧情点只负责开局：要快速建立主角处境、冲突、金手指或短期目标，不要急着进入中后期地图。'}
+              </p>
+            </section>
+          </div>
+        </aside>
+
+        <section className="flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white">
+          <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-4">
+            <div>
+              <h2 className="text-sm font-black text-slate-950">剧情点预览</h2>
+              <p className="text-xs font-bold text-slate-400">
+                {isFollowupStage ? `正在生成衔接「${firstChainTitle}」的剧情点` : hasChain ? '仍显示当前剧情点，等待手动刷新' : '正在生成剧情点'} · {generateCount} 个
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (hasChain) setChainRefreshStates((current) => ({ ...current, [activeChainSlot]: true }));
+              }}
+              disabled={!hasChain}
+              className="flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:border-[#08AACE] hover:text-[#08AACE] disabled:cursor-not-allowed disabled:text-slate-300"
+            >
+              <Database className="h-4 w-4" />
+              刷新剧情点
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            <div className="space-y-3">
+              {visibleCandidates.map((item, index) => {
+                const selected = selectedIds.includes(item.id);
+                const expanded = expandedPreviewIds.includes(item.id);
+                return (
+                  <div key={item.id} className={`rounded-xl border px-3 py-2.5 ${selected ? 'border-[#08AACE] bg-[#EAF9FD]' : 'border-slate-200 bg-white'}`}>
+                    <div className="flex items-start gap-3">
+                      <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-900 text-[11px] font-black text-white">{index + 1}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="min-w-0 truncate text-sm font-black text-slate-950">{item.title}</span>
+                          <span className="rounded-full bg-white px-2 py-1 text-[11px] font-black text-[#08AACE]">{item.source}</span>
+                        </div>
+                        <p className={`mt-1 text-xs font-bold leading-5 ${selected ? 'text-slate-800' : 'text-slate-600'}`}>{getPlotPointText(item, pointLength)}</p>
+                        {expanded && (
+                          <div className="mt-2 space-y-2 border-t border-slate-100 pt-2">
+                            <p className="text-xs font-bold leading-5 text-slate-400">原剧情点：{item.original}</p>
+                            <div className="rounded-xl bg-[#FFF7ED] px-3 py-2 text-xs font-bold leading-5 text-amber-700">变量替换：{item.variable}</div>
+                            <div className="rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-[#078fb0]">
+                              {getPlotPointReview(item, isFollowupStage)}
+                            </div>
+                            <div className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">原型：{item.originalGenre}</div>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => togglePreviewExpanded(item.id)}
+                        className="h-8 w-12 shrink-0 rounded-lg border border-slate-200 bg-white text-xs font-black text-slate-500 hover:border-[#08AACE] hover:text-[#08AACE]"
+                      >
+                        {expanded ? '收起' : '展开'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => togglePlotPoint(item.id)}
+                        className={`h-8 w-14 shrink-0 rounded-lg text-xs font-black ${selected ? 'bg-slate-900 text-white' : 'border border-[#08AACE] bg-white text-[#08AACE] hover:bg-[#EAF9FD]'}`}
+                      >
+                        {selected ? '已选' : '选择'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <aside className="flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white">
+          <div className="flex h-14 shrink-0 items-center border-b border-slate-100 px-4">
+            <div>
+              <h2 className="text-sm font-black text-slate-950">AI 配置与生成</h2>
+              <p className="text-xs font-bold text-slate-400">来源、数量、长度、用户要求常驻显示</p>
+            </div>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            <section className="rounded-xl border border-slate-200 bg-white p-3">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="w-[96px] shrink-0 text-sm font-black text-slate-950">剧情点来源：</span>
+                  <div className="flex h-9 min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    {(['library', 'ai', 'mixed'] as PlotPointSourceMode[]).map((mode, index, list) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setSourceMode(mode)}
+                        className={`h-9 min-w-0 flex-1 border-r text-xs font-black last:border-r-0 ${
+                          sourceMode === mode
+                            ? 'border-[#08AACE] bg-[#EAF9FD] text-[#08AACE]'
+                            : index === list.length - 1
+                            ? 'border-transparent bg-white text-slate-700 hover:bg-slate-50'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {plotPointSourceModeMeta[mode].label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="w-[96px] shrink-0 text-sm font-black text-slate-950">生成配置：</span>
+                  <div className="flex h-9 min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    {([10, 20, 30] as const).map((count, index, list) => (
+                      <button
+                        key={count}
+                        type="button"
+                        onClick={() => setGenerateCount(count)}
+                        className={`h-9 min-w-0 flex-1 border-r text-xs font-black last:border-r-0 ${
+                          generateCount === count
+                            ? 'border-[#08AACE] bg-[#EAF9FD] text-[#08AACE]'
+                            : index === list.length - 1
+                            ? 'border-transparent bg-white text-slate-700 hover:bg-slate-50'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {count}个
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-[96px] shrink-0 text-sm font-black text-slate-950">剧情点长度：</span>
+                  <div className="flex h-9 min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    {([
+                      ['short', '短'],
+                      ['medium', '中'],
+                      ['long', '长'],
+                    ] as const).map(([key, label], index, list) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setPointLength(key)}
+                        className={`h-9 min-w-0 flex-1 border-r text-xs font-black last:border-r-0 ${
+                          pointLength === key
+                            ? 'border-[#08AACE] bg-[#EAF9FD] text-[#08AACE]'
+                            : index === list.length - 1
+                            ? 'border-transparent bg-white text-slate-700 hover:bg-slate-50'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-[96px] shrink-0 text-sm font-black text-slate-950">用户要求：</span>
+                  <div className="flex h-9 min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    {(['强情绪', '强冲突', '强悬念'] as const).map((element, index, list) => (
+                      <button
+                        key={element}
+                        type="button"
+                        onClick={() => toggleOpeningElement(element)}
+                        className={`h-9 min-w-0 flex-1 border-r text-xs font-black last:border-r-0 ${
+                          openingElements.includes(element)
+                            ? 'border-[#08AACE] bg-[#EAF9FD] text-[#08AACE]'
+                            : index === list.length - 1
+                            ? 'border-transparent bg-white text-slate-700 hover:bg-slate-50'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {element}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="w-[96px] shrink-0" />
+                  <div className="flex h-9 min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    {(['强期待', '强爽点', '强压迫'] as const).map((element, index, list) => (
+                      <button
+                        key={element}
+                        type="button"
+                        onClick={() => toggleOpeningElement(element)}
+                        className={`h-9 min-w-0 flex-1 border-r text-xs font-black last:border-r-0 ${
+                          openingElements.includes(element)
+                            ? 'border-[#08AACE] bg-[#EAF9FD] text-[#08AACE]'
+                            : index === list.length - 1
+                            ? 'border-transparent bg-white text-slate-700 hover:bg-slate-50'
+                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {element}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="relative mt-4 rounded-xl border border-slate-200 bg-white px-3 pb-3 pt-5">
+              <div className="absolute -top-2 left-4 bg-white px-1 text-sm font-black text-slate-950">AI对话框</div>
+              <button type="button" className="absolute -top-2 right-4 bg-white px-1 text-xs font-black text-red-500">清空</button>
+              <div className="min-h-[170px] whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-xs font-bold leading-6 text-slate-600">
+                <div className="mb-2 inline-flex rounded-full bg-[#EAF9FD] px-2 py-1 text-[11px] font-black text-[#078fb0]">已思考（用时 16 秒）</div>
+                <div>
+                  {isFollowupStage
+                    ? `刷新时 AI 已读取第1号剧情：${firstChainContent}\n\nAI评价：第1号已经有情绪和冲突，下一轮不要重复退婚羞辱，要写“后果”和“选择”。推荐生成：退婚后的反应、第一场小胜、女主隐藏压力、幕后黑手线索。`
+                    : hasChain
+                    ? `已选第1号「${firstChainTitle}」，但还没有刷新衔接剧情点。AI评价：这个点适合开头，但单独存在还不够，需要下一批剧情把羞辱变成目标、线索或代价。点击“刷新剧情点”后，AI 会读取第1号内容再生成下一批。`
+                    : `当前小说没有正文，只有设定。用户要求：${openingRequirement}\n已选元素：${openingElements.join('、') || '未选择'}。\n\nAI评价：生成开头时优先挑能同时满足“情绪冲击、明确矛盾、下一章期待”的剧情点，避免只有设定展示，没有主角压力。`}
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-2 rounded-xl border border-[#bdeef7] bg-[#EAF9FD] px-2 py-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSettingLinkModalOpen(true)}
+                  className="h-8 shrink-0 rounded-lg bg-white px-3 text-xs font-black text-[#08AACE] shadow-sm"
+                >
+                  关联
+                </button>
+                <div className="min-w-0 flex-1 truncate text-xs font-bold text-[#078fb0]">
+                  {linkedSettingIds.length > 0 ? `已关联：${linkedSettingSummary}` : '未关联大纲设定'}
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2 py-2 focus-within:border-[#08AACE]">
+                <input
+                  className="min-w-0 flex-1 bg-transparent px-1 text-xs font-bold text-slate-700 outline-none placeholder:text-slate-300"
+                  placeholder="请输入要求"
+                />
+                <button type="button" className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[#08AACE] text-[#08AACE]" title="发送">
+                  <SendHorizontal className="h-4 w-4" />
+                </button>
+                <button type="button" className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-red-200 bg-red-500 text-white" title="停止">
+                  <Square className="h-3.5 w-3.5 fill-current" />
+                </button>
+              </div>
+            </section>
+          </div>
+        </aside>
+      </main>
+      {isOutputLogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 px-6">
+          <div className="flex max-h-[78vh] w-[560px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-4">
+              <div>
+                <div className="text-sm font-black text-slate-950">输出日志</div>
+                <div className="text-xs font-bold text-slate-400">查看本次剧情点请求会发送给 AI 的内容</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOutputLogOpen(false)}
+                className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                title="关闭"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              <div className="space-y-3">
+                <section className="rounded-xl border border-slate-200 bg-white p-3">
+                  <div className="text-sm font-black text-slate-950">AI配置</div>
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs font-bold text-slate-600">
+                    <div className="rounded-lg bg-slate-50 px-3 py-2">模型：DS-v4-flash</div>
+                    <div className="rounded-lg bg-slate-50 px-3 py-2">来源：{plotPointSourceModeMeta[sourceMode].label}</div>
+                    <div className="rounded-lg bg-slate-50 px-3 py-2">数量：{generateCount}个</div>
+                    <div className="rounded-lg bg-slate-50 px-3 py-2">长度：{pointLength === 'short' ? '短' : pointLength === 'medium' ? '中' : '长'}</div>
+                  </div>
+                </section>
+                <section className="rounded-xl border border-slate-200 bg-white p-3">
+                  <div className="text-sm font-black text-slate-950">关联设定</div>
+                  <div className="mt-2 rounded-lg bg-[#EAF9FD] px-3 py-2 text-xs font-bold leading-5 text-[#078fb0]">
+                    {linkedSettingIds.length > 0 ? linkedSettingSummary : '未关联大纲设定'}
+                  </div>
+                </section>
+                <section className="rounded-xl border border-slate-200 bg-white p-3">
+                  <div className="text-sm font-black text-slate-950">用户要求</div>
+                  <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs font-bold leading-5 text-slate-600">
+                    {openingElements.length > 0 ? openingElements.join('、') : '未选择'}
+                  </div>
+                </section>
+                <section className="rounded-xl border border-slate-200 bg-white p-3">
+                  <div className="text-sm font-black text-slate-950">剧情链上下文</div>
+                  <div className="mt-2 whitespace-pre-wrap rounded-lg bg-slate-50 px-3 py-2 text-xs font-bold leading-5 text-slate-600">
+                    {selectedItems.length > 0
+                      ? selectedItems.map((item, index) => `${index + 1}. ${item.title}：${getPlotPointText(item, pointLength)}`).join('\n')
+                      : '当前剧情链为空，将按关联设定生成候选剧情点。'}
+                  </div>
+                </section>
+              </div>
+            </div>
+            <div className="flex h-14 shrink-0 items-center justify-end border-t border-slate-100 px-4">
+              <button
+                type="button"
+                onClick={() => setIsOutputLogOpen(false)}
+                className="h-9 rounded-lg bg-[#08AACE] px-4 text-xs font-black text-white"
+              >
+                关闭
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isSettingLinkModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 px-6">
+          <div className="flex max-h-[78vh] w-[520px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-4">
+              <div>
+                <div className="text-sm font-black text-slate-950">关联大纲设定</div>
+                <div className="text-xs font-bold text-slate-400">选择要发送给 AI 的设定内容</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSettingLinkModalOpen(false)}
+                className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                title="关闭"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              <div className="space-y-2">
+                {plotPointSettingLinkOptions.map((item) => {
+                  const selected = linkedSettingIds.includes(item.id);
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => toggleLinkedSetting(item.id)}
+                      className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left ${selected ? 'border-[#08AACE] bg-[#EAF9FD]' : 'border-slate-200 bg-white hover:border-[#08AACE]'}`}
+                    >
+                      <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border ${selected ? 'border-[#08AACE] bg-[#08AACE] text-white' : 'border-slate-300 text-transparent'}`}>
+                        <Check className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-2">
+                          <span className="text-sm font-black text-slate-950">{item.label}</span>
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">{item.group}</span>
+                        </span>
+                        <span className="mt-1 block text-xs font-bold text-slate-400">{item.preview}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex h-14 shrink-0 items-center justify-between border-t border-slate-100 px-4">
+              <div className="min-w-0 truncate text-xs font-bold text-slate-500">
+                {linkedSettingIds.length > 0 ? `已关联 ${linkedSettingIds.length} 项：${linkedSettingSummary}` : '当前没有关联设定'}
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSettingLinkModalOpen(false)}
+                className="h-9 shrink-0 rounded-lg bg-[#08AACE] px-4 text-xs font-black text-white"
+              >
+                确认关联
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TestCollectionPage({ embedded = false, onClose }: TestCollectionPageProps = {}) {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
@@ -1081,6 +1765,14 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
     switch (activePath) {
       case '/brainstorm-ai-chain-test':
         return <BrainstormAiChainTestPage />;
+      case '/creation-flow-page-test':
+        return <CreationFlowPageTestPage />;
+      case '/novel-detail-overview-test':
+        return <NovelDetailOverviewTestPage />;
+      case '/plot-point-workbench-test':
+        return <PlotPointWorkbenchTestPage />;
+      case '/plot-chain-preview-design-test':
+        return <PlotChainPreviewDesignTestPage />;
       case '/ai-log-folding-test':
         return <AiLogFoldingTestPage />;
       case '/hidden-pages-test':
@@ -1093,6 +1785,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <UiLandingScenariosTestPage />;
       case '/select-floating-label-test':
         return <SelectFloatingLabelTestPage />;
+      case '/management-drawer-test':
+        return <ManagementDrawerTestPage />;
+      case '/prompt-taxonomy-test':
+        return <PromptTaxonomyTestPage />;
       case '/theme-colors':
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
       case '/test-browser':

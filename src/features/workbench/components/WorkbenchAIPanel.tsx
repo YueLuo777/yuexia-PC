@@ -16,6 +16,7 @@ import { clearWorkbenchAiSessionLinksByStorageKey } from '@/features/workbench/m
 import { APP_EVENTS } from '@/shared/events/appEvents';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
 import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
+import { AiRequestLogGroups } from '@/shared/ui/AiRequestLogGroups';
 import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
@@ -1067,66 +1068,13 @@ export function WorkbenchAIPanel({
                 </div>
               </aside>
               <div className="editor-scrollbar min-h-0 overflow-y-auto p-5">
-                <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs leading-5 text-amber-700">
-                  这里展示的是实际发给 AI 的逻辑。发送顺序固定为：System Prompt（提示词）→ Context（{`${chapterContextLabel}内容`}或关联上下文，顺序为设定、角色、梗概、正文）→ Request（AI 输入框里的用户要求）。
-                </div>
-                {visibleRequestLog.linkedItems.length > 0 && (
-                  <section className="mb-4">
-                    <h3 className="mb-2 text-sm font-bold text-slate-900">关联预览</h3>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {visibleRequestLog.linkedItems.map((item) => (
-                        <article key={item.id} className="rounded-xl border border-slate-200 bg-white p-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="min-w-0 truncate text-sm font-bold text-slate-900">{item.title}</div>
-                            <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-500">
-                              {getLinkedContextSourceLabel(item.source)}
-                            </span>
-                          </div>
-                          <div className="mt-1 truncate text-[11px] font-bold text-slate-400">{item.group || '未分类'} · {getTextWordCount(item.content)}字</div>
-                          <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-xs leading-5 text-slate-500">{item.content || '暂无内容'}</p>
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-                )}
-                {visibleRequestLog.systemPrompt && (
-                  <section className="mb-4">
-                    <h3 className="mb-2 text-sm font-bold text-slate-900">System Prompt</h3>
-                    <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4">
-                      {visibleRequestLog.systemPrompt}
-                    </div>
-                  </section>
-                )}
-                <section className="mb-4">
-                  <h3 className="mb-2 text-sm font-bold text-slate-900">Context</h3>
-                  <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4">
-                    {visibleRequestLog.contextText || `未关联${chapterContextLabel}内容或关联上下文`}
-                  </div>
-                </section>
-                <section>
-                  <h3 className="mb-2 text-sm font-bold text-slate-900">User Content</h3>
-                  <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4">
-                    {visibleRequestLog.userContent || '空内容'}
-                  </div>
-                </section>
-                {lastRequestLog && (
-                  <section className="mt-5">
-                    <h3 className="mb-2 text-sm font-bold text-slate-900">最近一次实际发送</h3>
-                    <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4">
-                      {[
-                        `时间：${lastRequestLog.createdAt}`,
-                        `模型：${lastRequestLog.modelName}`,
-                        `提示词：${lastRequestLog.promptName}`,
-                        `上下文：${lastRequestLog.contextTitle || '未关联'} · ${lastRequestLog.contextWordCount}字`,
-                        '',
-                        ...(lastRequestLog.systemPrompt ? ['【System Prompt】', lastRequestLog.systemPrompt, ''] : []),
-                        ...(lastRequestLog.contextText ? ['【Context】', lastRequestLog.contextText, ''] : []),
-                        '【User Content】',
-                        lastRequestLog.userContent || '空内容',
-                      ].join('\n')}
-                    </div>
-                  </section>
-                )}
+                <AiRequestLogGroups
+                  groups={[
+                    { id: 'prompt', title: '提示词', meta: `${getTextWordCount(visibleRequestLog.systemPrompt)} 字`, content: visibleRequestLog.systemPrompt, emptyText: '空内容' },
+                    { id: 'context', title: '关联内容', meta: `${visibleRequestLog.contextWordCount} 字`, content: visibleRequestLog.contextText, emptyText: `未关联${chapterContextLabel}内容或关联上下文`, tone: 'cyan' },
+                    { id: 'user', title: '用户要求', meta: `${getTextWordCount(visibleRequestLog.userContent)} 字`, content: visibleRequestLog.userContent, emptyText: '空内容', tone: 'amber' },
+                  ]}
+                />
               </div>
             </div>
         </WorkbenchModal>

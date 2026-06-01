@@ -47,16 +47,85 @@ import {
 } from '@/features/workbench/components/EditorToolModals';
 import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
+import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
+import { AiRequestLogGroups } from '@/shared/ui/AiRequestLogGroups';
 import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 150;
 const SPLIT_BUTTON_OUTLINE_GROUP_CLASS = 'flex h-8 items-stretch overflow-hidden rounded-md border border-brand bg-white shadow-none';
-const SPLIT_BUTTON_OUTLINE_ACTION_CLASS = 'inline-flex items-center justify-center px-3 text-sm font-medium text-brand transition-colors hover:bg-brand-light';
-const SPLIT_BUTTON_FILLED_GROUP_CLASS = 'flex h-8 items-stretch overflow-hidden rounded-md border border-brand bg-brand shadow-none';
-const SPLIT_BUTTON_FILLED_ACTION_CLASS = 'inline-flex items-center justify-center px-3 text-sm font-medium text-white transition-colors hover:bg-brand-dark';
+const SPLIT_BUTTON_OUTLINE_ACTION_CLASS = 'inline-flex flex-1 items-center justify-center whitespace-nowrap px-1.5 text-sm font-medium text-brand transition-colors hover:bg-brand-light';
+type EditorFieldSizeKey = 'reviewActionGroup' | 'reviewModelSelect' | 'reviewAuditPromptSelect' | 'reviewCommentPromptSelect';
+type EditorFieldSizeSpec = { width: number; height: number; fontSize: number };
+type EditorFieldSizeProp = keyof EditorFieldSizeSpec;
+
+const EDITOR_FIELD_SIZE_STORAGE_KEY = 'xinyuexia_workbench_field_size_specs_v1';
+const EDITOR_FIELD_SIZE_DEFAULTS: Record<EditorFieldSizeKey, EditorFieldSizeSpec> = {
+  reviewActionGroup: { width: 168, height: 32, fontSize: 14 },
+  reviewModelSelect: { width: 250, height: 44, fontSize: 13 },
+  reviewAuditPromptSelect: { width: 250, height: 44, fontSize: 13 },
+  reviewCommentPromptSelect: { width: 250, height: 44, fontSize: 13 },
+};
+const EDITOR_FIELD_SIZE_LABELS: Record<EditorFieldSizeKey, string> = {
+  reviewActionGroup: '审核点评状态按钮',
+  reviewModelSelect: '审核点评模型框',
+  reviewAuditPromptSelect: '审核提示词框',
+  reviewCommentPromptSelect: '点评提示词框',
+};
+const EDITOR_FIELD_SIZE_LIMITS: Record<EditorFieldSizeProp, { min: number; max: number }> = {
+  width: { min: 120, max: 520 },
+  height: { min: 28, max: 120 },
+  fontSize: { min: 11, max: 24 },
+};
+
+function clampEditorFieldSizeValue(prop: EditorFieldSizeProp, value: number) {
+  const limit = EDITOR_FIELD_SIZE_LIMITS[prop];
+  if (!Number.isFinite(value)) return EDITOR_FIELD_SIZE_DEFAULTS.reviewModelSelect[prop];
+  return Math.min(limit.max, Math.max(limit.min, Math.round(value)));
+}
+
+function normalizeEditorFieldSizeSpec(key: EditorFieldSizeKey, value?: Partial<EditorFieldSizeSpec>): EditorFieldSizeSpec {
+  const base = EDITOR_FIELD_SIZE_DEFAULTS[key];
+  return {
+    width: clampEditorFieldSizeValue('width', value?.width ?? base.width),
+    height: clampEditorFieldSizeValue('height', value?.height ?? base.height),
+    fontSize: clampEditorFieldSizeValue('fontSize', value?.fontSize ?? base.fontSize),
+  };
+}
+
+function readEditorFieldSizeSpecs(): Record<EditorFieldSizeKey, EditorFieldSizeSpec> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(EDITOR_FIELD_SIZE_STORAGE_KEY) || '{}') as Partial<Record<EditorFieldSizeKey, Partial<EditorFieldSizeSpec>>>;
+    return (Object.keys(EDITOR_FIELD_SIZE_DEFAULTS) as EditorFieldSizeKey[]).reduce((acc, key) => {
+      acc[key] = normalizeEditorFieldSizeSpec(key, parsed[key]);
+      return acc;
+    }, {} as Record<EditorFieldSizeKey, EditorFieldSizeSpec>);
+  } catch {
+    return { ...EDITOR_FIELD_SIZE_DEFAULTS };
+  }
+}
+
+function writeEditorFieldSizeSpecs(specs: Record<EditorFieldSizeKey, EditorFieldSizeSpec>) {
+  let parsed: Record<string, unknown> = {};
+  try {
+    parsed = JSON.parse(localStorage.getItem(EDITOR_FIELD_SIZE_STORAGE_KEY) || '{}') as Record<string, unknown>;
+  } catch {
+    parsed = {};
+  }
+  localStorage.setItem(EDITOR_FIELD_SIZE_STORAGE_KEY, JSON.stringify({ ...parsed, ...specs }));
+}
+
+function getEditorFieldSizeStyle(spec: EditorFieldSizeSpec): CSSProperties {
+  return {
+    width: spec.width,
+    maxWidth: '100%',
+    '--xy-field-width': `${spec.width}px`,
+    '--xy-field-height': `${spec.height}px`,
+    '--xy-field-font-size': `${spec.fontSize}px`,
+  } as CSSProperties;
+}
 
 function resizeFloatingAiTextarea(textarea: HTMLTextAreaElement | null) {
   if (!textarea) return;
@@ -67,6 +136,54 @@ function resizeFloatingAiTextarea(textarea: HTMLTextAreaElement | null) {
   );
   textarea.style.height = `${nextHeight}px`;
   textarea.style.overflowY = textarea.scrollHeight > FLOATING_AI_TEXTAREA_MAX_HEIGHT ? 'auto' : 'hidden';
+}
+
+function EditorFieldSizeNumberInput({
+  label,
+  prop,
+  value,
+  onChange,
+}: {
+  label: string;
+  prop: EditorFieldSizeProp;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const [draftValue, setDraftValue] = useState(String(value));
+
+  useEffect(() => {
+    setDraftValue(String(value));
+  }, [value]);
+
+  const commitValue = (nextValue: string) => {
+    if (!nextValue.trim()) {
+      setDraftValue(String(value));
+      return;
+    }
+    const normalizedValue = clampEditorFieldSizeValue(prop, Number(nextValue));
+    setDraftValue(String(normalizedValue));
+    onChange(normalizedValue);
+  };
+
+  return (
+    <label className="block text-xs font-black text-slate-500">
+      <span>{label}</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        value={draftValue}
+        onChange={(event) => setDraftValue(event.target.value.replace(/[^\d]/g, ''))}
+        onBlur={() => commitValue(draftValue)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            commitValue(draftValue);
+            event.currentTarget.blur();
+          }
+        }}
+        className="mt-1 h-9 w-full rounded-xl border border-slate-200 bg-white px-2 text-sm font-bold text-slate-800 outline-none focus:border-[#08AACE]"
+      />
+    </label>
+  );
 }
 
 function readAssociatedChapterCount(chapters: Pick<Chapter, 'id'>[]) {
@@ -95,6 +212,7 @@ interface ChapterEditorProps {
   onUpdateSerialNumber: (chapterId: number, serialNumber: number) => void;
   onDeleteChapter: (chapterId: number) => void;
   onOpenFind: () => void;
+  onOpenSummaryLibrary: () => void;
 }
 
 function getParagraphIndentInfo(text: string, cursorPos: number) {
@@ -151,6 +269,24 @@ function upsertEntryStatus(content: string, chapter: Chapter, status: string) {
 
 function countCompactWords(text: string) {
   return text.replace(/\s/g, '').length;
+}
+
+function getReviewLogSection(log: string, title: string) {
+  const marker = `【${title}】`;
+  const start = log.indexOf(marker);
+  if (start >= 0) {
+    const bodyStart = start + marker.length;
+    const next = log.slice(bodyStart).search(/\n【[^】]+】/);
+    return (next < 0 ? log.slice(bodyStart) : log.slice(bodyStart, bodyStart + next)).trim();
+  }
+
+  const legacyMatches = [...log.matchAll(/\n([^\n]*(?:【|銆)[^\n]*)\n/g)];
+  const fallbackIndex = title === '系统提示词' ? 0 : title === '用户要求' ? 1 : title === '发送上下文' ? 2 : -1;
+  const fallback = fallbackIndex >= 0 ? legacyMatches[fallbackIndex] : null;
+  if (!fallback) return '';
+  const bodyStart = (fallback.index ?? 0) + fallback[0].length;
+  const next = log.slice(bodyStart).search(/\n[^\n]*(?:【|銆)[^\n]*\n/);
+  return (next < 0 ? log.slice(bodyStart) : log.slice(bodyStart, bodyStart + next)).trim();
 }
 
 function formatAiThinkingResponse(content: string, reasoning: string, seconds: number, done: boolean) {
@@ -286,6 +422,7 @@ export function ChapterEditor({
   onUpdateSerialNumber,
   onDeleteChapter,
   onOpenFind,
+  onOpenSummaryLibrary,
 }: ChapterEditorProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isFontSettingsOpen, setIsFontSettingsOpen] = useState(false);
@@ -297,6 +434,8 @@ export function ChapterEditor({
   const [isAssociateOpen, setIsAssociateOpen] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [isStatusUpdateOpen, setIsStatusUpdateOpen] = useState(false);
+  const [isEditorFieldSizeOpen, setIsEditorFieldSizeOpen] = useState(false);
+  const [editorFieldSizeSpecs, setEditorFieldSizeSpecs] = useState<Record<EditorFieldSizeKey, EditorFieldSizeSpec>>(() => readEditorFieldSizeSpecs());
   const [reviewChapterId, setReviewChapterId] = useState<number | null>(() => chapter?.id ?? null);
   const [statusChapterId, setStatusChapterId] = useState<number | null>(() => chapter?.id ?? null);
   const [statusEntries, setStatusEntries] = useState<WorkbenchLibraryEntry[]>([]);
@@ -330,10 +469,42 @@ export function ChapterEditor({
   const prevContentRef = useRef('');
   const pendingCursorRef = useRef<{ text: string; cursorPos: number; scrollTop: number } | null>(null);
 
+  useTopModalEscape(isReviewLogOpen, () => setIsReviewLogOpen(false));
+  useTopModalEscape(Boolean(reviewManagementModal), () => setReviewManagementModal(null));
+  useTopModalEscape(isEditorFieldSizeOpen, () => setIsEditorFieldSizeOpen(false));
+  useTopModalEscape(isReviewOpen && !isReviewLogOpen && !reviewManagementModal, () => setIsReviewOpen(false));
+  useTopModalEscape(isStatusUpdateOpen, () => setIsStatusUpdateOpen(false));
+  useTopModalEscape(isFindOpen, () => setIsFindOpen(false));
+
   const titleCount = chapter?.title.length ?? 0;
   const serialValue = chapter?.serialNumber ?? 1;
   const safeVolumeName = volumeName ?? '第一卷';
   const wordCount = useMemo(() => content.replace(/\s/g, '').length, [content]);
+  const getEditorFieldStyle = (key: EditorFieldSizeKey) => getEditorFieldSizeStyle(editorFieldSizeSpecs[key] ?? EDITOR_FIELD_SIZE_DEFAULTS[key]);
+  const updateEditorFieldSizeSpec = (key: EditorFieldSizeKey, prop: EditorFieldSizeProp, value: number) => {
+    setEditorFieldSizeSpecs((prev) => {
+      const next = {
+        ...prev,
+        [key]: {
+          ...prev[key],
+          [prop]: clampEditorFieldSizeValue(prop, value),
+        },
+      };
+      writeEditorFieldSizeSpecs(next);
+      return next;
+    });
+  };
+  const resetEditorFieldSizeSpecs = () => {
+    const next = {
+      ...editorFieldSizeSpecs,
+      reviewActionGroup: { ...EDITOR_FIELD_SIZE_DEFAULTS.reviewActionGroup },
+      reviewModelSelect: { ...EDITOR_FIELD_SIZE_DEFAULTS.reviewModelSelect },
+      reviewAuditPromptSelect: { ...EDITOR_FIELD_SIZE_DEFAULTS.reviewAuditPromptSelect },
+      reviewCommentPromptSelect: { ...EDITOR_FIELD_SIZE_DEFAULTS.reviewCommentPromptSelect },
+    };
+    writeEditorFieldSizeSpecs(next);
+    setEditorFieldSizeSpecs(next);
+  };
   const visualIndentEnabled = formatSettings.indent && !formatSettings.paragraphIndent;
   const reviewModels = useMemo(() => readModelSnapshot().filter((model) => model.enabled), []);
   const reviewPrompts = useMemo(() => readPromptSnapshot().prompts, []);
@@ -490,7 +661,7 @@ export function ChapterEditor({
   const buildReviewPayload = () => {
     const modeTitle = reviewMode === 'audit' ? '审核' : '点评';
     const modeInstruction = reviewMode === 'audit'
-      ? '请对文章内容进行审核：检查错别字、语病、逻辑问题，以及是否按照细纲来写。输出需要列出问题位置、问题说明和修改建议。'
+      ? '请对文章内容进行审核：检查错别字、语病、逻辑问题，以及是否按照章纲来写。输出需要列出问题位置、问题说明和修改建议。'
       : '请对文章内容进行点评：判断内容是否吸引人，重点点评开篇钩子、节奏、冲突、情绪张力和读者继续阅读欲望，并给出可执行的优化建议。';
     const promptText = activeReviewPrompt?.content?.trim() || modeInstruction;
     const compareInstruction = [
@@ -510,8 +681,8 @@ export function ChapterEditor({
       `【审核点评模式】${modeTitle}`,
       `【所选章节】${chapterTitle}`,
       detailOutlineText
-        ? `【关联细纲：${activeReviewDetailOutline?.title || '未命名细纲'}】\n${detailOutlineText}`
-        : '【关联细纲】未读取到当前章节细纲。',
+        ? `【关联章纲：${activeReviewDetailOutline?.title || '未命名章纲'}】\n${detailOutlineText}`
+        : '【关联章纲】未读取到当前章节章纲。',
       activeReviewContent.trim()
         ? `【章节正文】\n${activeReviewContent}`
         : '【章节正文】当前章节正文为空。',
@@ -522,7 +693,7 @@ export function ChapterEditor({
       `提示词：${activeReviewPrompt?.name ?? '未选择提示词，使用内置默认提示词'}`,
       `章节：${chapterTitle}`,
       `正文：${activeReviewWordCount} 字`,
-      `关联细纲：${detailOutlineText ? `${activeReviewDetailOutline?.title ?? '未命名细纲'}（${countCompactWords(detailOutlineText)} 字）` : '未关联 / 未读取到'}`,
+      `关联章纲：${detailOutlineText ? `${activeReviewDetailOutline?.title ?? '未命名章纲'}（${countCompactWords(detailOutlineText)} 字）` : '未关联 / 未读取到'}`,
       '',
       '【系统提示词】',
       promptText,
@@ -964,8 +1135,87 @@ export function ChapterEditor({
     showToast('已开启自动替换');
   };
 
+  const editorFieldSizeModal = isEditorFieldSizeOpen ? createPortal(
+    <div
+      className="fixed inset-0 z-[340] flex items-center justify-center bg-black/35 p-4"
+      onClick={() => setIsEditorFieldSizeOpen(false)}
+    >
+      <section
+        className="flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+          <div>
+            <h3 className="text-base font-black text-slate-900">作品编辑器字段尺寸</h3>
+            <p className="mt-1 text-xs font-bold text-slate-400">调整审核、点评和状态相关按钮及选择框尺寸。</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsEditorFieldSizeOpen(false)}
+            className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-700"
+            aria-label="关闭字段尺寸"
+          >
+            ×
+          </button>
+        </header>
+        <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto p-5">
+          <div className="grid gap-3">
+            {(Object.keys(EDITOR_FIELD_SIZE_DEFAULTS) as EditorFieldSizeKey[]).map((key) => {
+              const spec = editorFieldSizeSpecs[key] ?? EDITOR_FIELD_SIZE_DEFAULTS[key];
+              return (
+                <article key={key} className="grid gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 lg:grid-cols-[150px_repeat(3,minmax(0,1fr))_220px] lg:items-center">
+                  <div className="text-sm font-black text-slate-900">{EDITOR_FIELD_SIZE_LABELS[key]}</div>
+                  <EditorFieldSizeNumberInput
+                    label="宽度"
+                    prop="width"
+                    value={spec.width}
+                    onChange={(value) => updateEditorFieldSizeSpec(key, 'width', value)}
+                  />
+                  <EditorFieldSizeNumberInput
+                    label="高度"
+                    prop="height"
+                    value={spec.height}
+                    onChange={(value) => updateEditorFieldSizeSpec(key, 'height', value)}
+                  />
+                  <EditorFieldSizeNumberInput
+                    label="字号"
+                    prop="fontSize"
+                    value={spec.fontSize}
+                    onChange={(value) => updateEditorFieldSizeSpec(key, 'fontSize', value)}
+                  />
+                  <div className="xy-floating-field xy-floating-outline-fixed xy-floating-custom-field-size xy-has-value" style={getEditorFieldSizeStyle(spec)}>
+                    <input readOnly value={EDITOR_FIELD_SIZE_LABELS[key]} />
+                    <label>{EDITOR_FIELD_SIZE_LABELS[key]}</label>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+        <footer className="flex shrink-0 justify-between gap-3 border-t border-slate-100 px-5 py-4">
+          <button
+            type="button"
+            onClick={resetEditorFieldSizeSpecs}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 hover:bg-slate-50"
+          >
+            恢复默认
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsEditorFieldSizeOpen(false)}
+            className="rounded-xl bg-[#08AACE] px-5 py-2 text-sm font-black text-white hover:bg-[#0798b8]"
+          >
+            完成
+          </button>
+        </footer>
+      </section>
+    </div>,
+    document.body,
+  ) : null;
+
   return (
     <section className="flex min-w-0 flex-1 flex-col bg-gray-50">
+      {editorFieldSizeModal}
       <div className="flex items-center gap-2 border-b border-gray-200 bg-white px-4 py-2.5">
         <div className="flex items-center rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-sm">
           <span className="font-medium text-gray-700">{safeVolumeName}</span>
@@ -1011,27 +1261,41 @@ export function ChapterEditor({
             优化
           </button>
         </div>
-        <div className={SPLIT_BUTTON_FILLED_GROUP_CLASS}>
+        <div
+          className={SPLIT_BUTTON_OUTLINE_GROUP_CLASS}
+          style={{
+            width: editorFieldSizeSpecs.reviewActionGroup.width,
+            height: editorFieldSizeSpecs.reviewActionGroup.height,
+            fontSize: editorFieldSizeSpecs.reviewActionGroup.fontSize,
+          }}
+        >
           <button
             type="button"
             onClick={() => openReviewPanel('audit')}
-            className={SPLIT_BUTTON_FILLED_ACTION_CLASS}
+            className={SPLIT_BUTTON_OUTLINE_ACTION_CLASS}
           >
             审核
           </button>
           <button
             type="button"
             onClick={() => openReviewPanel('comment')}
-            className={`${SPLIT_BUTTON_FILLED_ACTION_CLASS} border-l border-white/35`}
+            className={`${SPLIT_BUTTON_OUTLINE_ACTION_CLASS} border-l border-brand`}
           >
             点评
           </button>
           <button
             type="button"
             onClick={openStatusUpdate}
-            className={`${SPLIT_BUTTON_FILLED_ACTION_CLASS} border-l border-white/35`}
+            className={`${SPLIT_BUTTON_OUTLINE_ACTION_CLASS} border-l border-brand`}
           >
             状态
+          </button>
+          <button
+            type="button"
+            onClick={onOpenSummaryLibrary}
+            className={`${SPLIT_BUTTON_OUTLINE_ACTION_CLASS} border-l border-brand`}
+          >
+            概要
           </button>
         </div>
       </div>
@@ -1544,41 +1808,54 @@ export function ChapterEditor({
                   <div className="flex min-w-0 items-center gap-2">
                     <h3 className="shrink-0 text-base font-black text-slate-900">AI 配置</h3>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsReviewLogOpen(true)}
-                    className="h-8 rounded-lg border border-[#08AACE]/30 bg-white px-3 text-xs font-black text-[#078fb0] transition-colors hover:bg-[#EAF9FD]"
-                  >
-                    输出日志
-                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsReviewLogOpen(true)}
+                      className="h-8 rounded-lg border border-[#08AACE]/30 bg-white px-3 text-xs font-black text-[#078fb0] transition-colors hover:bg-[#EAF9FD]"
+                    >
+                      输出日志
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditorFieldSizeOpen(true)}
+                      className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition-colors hover:border-[#08AACE] hover:text-[#078fb0]"
+                    >
+                      字段尺寸
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
                   <label className="grid grid-cols-1 items-center gap-2 text-sm text-slate-500">
-                    <CapsuleSelect
-                      floatingLabel="模型"
-                      value={reviewModelId}
-                      onChange={setReviewModelId}
-                      options={reviewModels.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : reviewModels.map((model) => ({ value: model.id, label: model.name }))}
-                      buttonClassName="h-11 rounded-xl px-3 text-sm"
-                      actionLabel="管理"
-                      onActionClick={() => setReviewManagementModal('models')}
-                    />
+                    <div className="max-w-full" style={getEditorFieldStyle('reviewModelSelect')}>
+                      <CapsuleSelect
+                        floatingLabel="模型"
+                        value={reviewModelId}
+                        onChange={setReviewModelId}
+                        options={reviewModels.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : reviewModels.map((model) => ({ value: model.id, label: model.name }))}
+                        buttonClassName="h-11 rounded-xl px-3 text-sm"
+                        actionLabel="管理"
+                        onActionClick={() => setReviewManagementModal('models')}
+                      />
+                    </div>
                   </label>
                   <label className="grid grid-cols-1 items-center gap-2 text-sm text-slate-500">
-                    <CapsuleSelect
-                      floatingLabel={activeReviewPromptLabel}
-                      value={activeReviewPromptId}
-                      onChange={setActiveReviewPromptId}
-                      options={activeReviewPromptOptions.length === 0 ? [{ value: '', label: `暂无${activeReviewPromptLabel}`, disabled: true }] : activeReviewPromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
-                      buttonClassName="h-11 rounded-xl px-3 text-sm"
-                      actionLabel="管理"
-                      onActionClick={() => setReviewManagementModal('prompts')}
-                    />
+                    <div className="max-w-full" style={getEditorFieldStyle(reviewMode === 'audit' ? 'reviewAuditPromptSelect' : 'reviewCommentPromptSelect')}>
+                      <CapsuleSelect
+                        floatingLabel={activeReviewPromptLabel}
+                        value={activeReviewPromptId}
+                        onChange={setActiveReviewPromptId}
+                        options={activeReviewPromptOptions.length === 0 ? [{ value: '', label: `暂无${activeReviewPromptLabel}`, disabled: true }] : activeReviewPromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                        buttonClassName="h-11 rounded-xl px-3 text-sm"
+                        actionLabel="管理"
+                        onActionClick={() => setReviewManagementModal('prompts')}
+                      />
+                    </div>
                   </label>
                   <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-xs leading-5 text-slate-500">
                     <div><span className="font-black text-slate-800">当前章节：</span>{activeReviewChapter ? `第${activeReviewChapter.serialNumber}章` : '无'}</div>
                     <div><span className="font-black text-slate-800">正文字数：</span>{activeReviewWordCount} 字</div>
-                    <div><span className="font-black text-slate-800">关联细纲：</span>{activeReviewDetailOutline ? `${activeReviewDetailOutline.title}（${countCompactWords(activeReviewDetailOutline.content)} 字）` : '未读取到'}</div>
+                    <div><span className="font-black text-slate-800">关联章纲：</span>{activeReviewDetailOutline ? `${activeReviewDetailOutline.title}（${countCompactWords(activeReviewDetailOutline.content)} 字）` : '未读取到'}</div>
                   </div>
                   <section className="flex min-h-[240px] flex-col rounded-2xl border border-[#08AACE] bg-white">
                     <div className="flex h-10 shrink-0 items-center justify-between border-b border-slate-100 px-3">
@@ -1656,9 +1933,21 @@ export function ChapterEditor({
                         关闭
                       </button>
                     </div>
-                    <pre className="editor-scrollbar min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words p-4 text-xs leading-5 text-slate-600">
-                      {reviewRequestLog || '还没有发送审核点评请求。发送后这里会显示关联内容、使用模型和使用提示词。'}
-                    </pre>
+                    <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto p-4">
+                      {reviewRequestLog ? (
+                        <AiRequestLogGroups
+                          groups={[
+                            { id: 'prompt', title: '提示词', meta: `${countCompactWords(getReviewLogSection(reviewRequestLog, '系统提示词'))} 字`, content: getReviewLogSection(reviewRequestLog, '系统提示词'), emptyText: '空内容' },
+                            { id: 'context', title: '关联内容', meta: `${countCompactWords(getReviewLogSection(reviewRequestLog, '发送上下文'))} 字`, content: getReviewLogSection(reviewRequestLog, '发送上下文'), emptyText: '未关联内容', tone: 'cyan' },
+                            { id: 'user', title: '用户要求', meta: `${countCompactWords(getReviewLogSection(reviewRequestLog, '用户要求'))} 字`, content: getReviewLogSection(reviewRequestLog, '用户要求'), emptyText: '空内容', tone: 'amber' },
+                          ]}
+                        />
+                      ) : (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-500">
+                          还没有发送审核点评请求。
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
                 {reviewManagementModal && (

@@ -60,7 +60,7 @@ export function ConfirmDialog({
         onClick={(event) => event.stopPropagation()}
       >
         <div
-          className="flex cursor-move items-start justify-between px-7 py-6"
+          className="flex cursor-default items-start justify-between px-7 py-6"
           {...draggable.dragHandleProps}
           style={{ ...draggable.dragHandleProps.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
         >

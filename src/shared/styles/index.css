@@ -102,6 +102,14 @@
     filter: none !important;
     transform: none !important;
   }
+
+  .xy-prompt-content-editor {
+    -webkit-font-smoothing: auto !important;
+    text-rendering: auto !important;
+    text-shadow: none !important;
+    filter: none !important;
+    transform: none !important;
+  }
 }
 
 *:focus,
@@ -1904,7 +1912,7 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 .xy-capsule-custom-field-size legend {
   position: absolute;
   top: 0;
-  left: 22px;
+  left: 18px;
   z-index: 2;
   margin-left: 0;
   transform: translateY(-50%);

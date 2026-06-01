@@ -36,7 +36,7 @@ import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 import type { Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
 
-type ModalKey = 'workInfo' | 'notes' | 'settingLibrary' | 'detailOutlineLibrary' | 'summaryLibrary';
+type ModalKey = 'workInfo' | 'notes' | 'settingLibrary' | 'plotPointGenerator' | 'detailOutlineLibrary' | 'summaryLibrary';
 type ManagementModalKey = 'models' | 'agents';
 type FindScope = 'chapter' | 'book';
 type ChapterExportFormat = 'txt' | 'doc';
@@ -1079,6 +1079,8 @@ export function WorkbenchPage() {
   const [isEditorSettingsOpen, setIsEditorSettingsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalKey | null>(null);
   const [managementModal, setManagementModal] = useState<ManagementModalKey | null>(null);
+  const [plotPointOpenSignal, setPlotPointOpenSignal] = useState(0);
+  const [settingLibraryInitialTab, setSettingLibraryInitialTab] = useState<'脑洞' | '大纲'>('大纲');
   const [isContextLibraryOpen, setIsContextLibraryOpen] = useState(false);
   const [contextLibraryTab, setContextLibraryTab] = useState<ContextLibraryTab>('chapterSummary');
   const [contextSearchText, setContextSearchText] = useState('');
@@ -1739,15 +1741,25 @@ export function WorkbenchPage() {
     input.click();
   };
 
+  const openSettingLibraryTab = (tab: '脑洞' | '大纲') => {
+    setSettingLibraryInitialTab(tab);
+    localStorage.setItem(`${settingsStorageKey}_active_tab`, tab);
+    setActiveModal('settingLibrary');
+  };
+
   return (
     <div className="relative flex h-full flex-col bg-gray-50">
       <WorkbenchHeader
         workTitle={currentNovel.title}
         onOpenWorkInfo={() => setActiveModal('workInfo')}
         onOpenNotes={() => setActiveModal('notes')}
-        onOpenSettingLibrary={() => setActiveModal('settingLibrary')}
+        onOpenBrainstormLibrary={() => openSettingLibraryTab('脑洞')}
+        onOpenSettingLibrary={() => openSettingLibraryTab('大纲')}
+        onOpenPlotPointGenerator={() => {
+          setActiveModal('plotPointGenerator');
+          setPlotPointOpenSignal((value) => value + 1);
+        }}
         onOpenDetailOutlineLibrary={() => setActiveModal('detailOutlineLibrary')}
-        onOpenSummaryLibrary={() => setActiveModal('summaryLibrary')}
       />
 
       <WorkbenchQuickNav
@@ -1833,6 +1845,7 @@ export function WorkbenchPage() {
             deleteChapter(selectedChapter.volumeId, chapterId);
           }}
           onOpenFind={() => setIsFindOpen(true)}
+          onOpenSummaryLibrary={() => setActiveModal('summaryLibrary')}
         />
 
         <div
@@ -2073,12 +2086,35 @@ export function WorkbenchPage() {
         </div>
       </WorkbenchModal>
 
-      <WorkbenchModal title="大纲设定" isOpen={activeModal === 'settingLibrary'} onClose={() => setActiveModal(null)} storageId="workbench_setting_library" widthClass="w-[1452px]" heightClass="h-[86vh] max-h-[95vh]" titleClassName="text-3xl" closeOnBackdrop={false}>
-        <WorkbenchLibraryPanel storageKey={settingsStorageKey} outlineStorageKey={outlineStorageKey} tabs={['大纲', '角色', '脑洞']} emptyText="暂无内容" volumes={volumes} scale={1.1} defaultActiveTab="脑洞" />
+      <WorkbenchModal title={settingLibraryInitialTab === '脑洞' ? '生成脑洞' : '生成大纲'} isOpen={activeModal === 'settingLibrary'} onClose={() => setActiveModal(null)} storageId="workbench_setting_library" widthClass="w-[1452px]" heightClass="h-[86vh] max-h-[95vh]" titleClassName="text-3xl" closeOnBackdrop={false}>
+        <WorkbenchLibraryPanel storageKey={settingsStorageKey} outlineStorageKey={outlineStorageKey} tabs={['大纲', '角色', '脑洞']} emptyText="暂无内容" volumes={volumes} scale={1.1} defaultActiveTab={settingLibraryInitialTab} />
       </WorkbenchModal>
 
-      <WorkbenchModal title="细纲" isOpen={activeModal === 'detailOutlineLibrary'} onClose={() => setActiveModal(null)} storageId="workbench_detail_outline_library" widthClass="w-[1452px]" heightClass="h-[86vh] max-h-[95vh]" titleClassName="text-3xl" closeOnBackdrop={false}>
-        <WorkbenchLibraryPanel storageKey={settingsStorageKey} outlineStorageKey={outlineStorageKey} tabs={['细纲']} emptyText="暂无细纲内容" volumes={volumes} scale={1.1} />
+      <WorkbenchModal title="章纲" isOpen={activeModal === 'detailOutlineLibrary'} onClose={() => setActiveModal(null)} storageId="workbench_detail_outline_library" widthClass="w-[1452px]" heightClass="h-[86vh] max-h-[95vh]" titleClassName="text-3xl" closeOnBackdrop={false}>
+        <WorkbenchLibraryPanel
+          storageKey={settingsStorageKey}
+          outlineStorageKey={outlineStorageKey}
+          tabs={['细纲']}
+          emptyText="暂无章纲内容"
+          volumes={volumes}
+          getChapterContent={(chapterId) => readChapterContent(currentNovel.id, chapterId)}
+          scale={1.1}
+        />
+      </WorkbenchModal>
+
+      <WorkbenchModal title="剧情链" isOpen={activeModal === 'plotPointGenerator'} onClose={() => setActiveModal(null)} storageId="workbench_plot_point_generator" widthClass="w-[1180px]" heightClass="h-[82vh] max-h-[92vh]" titleClassName="text-3xl" closeOnBackdrop={false}>
+        <WorkbenchLibraryPanel
+          storageKey={settingsStorageKey}
+          outlineStorageKey={outlineStorageKey}
+          tabs={['细纲']}
+          emptyText="暂无章纲内容"
+          volumes={volumes}
+          getChapterContent={(chapterId) => readChapterContent(currentNovel.id, chapterId)}
+          scale={1}
+          openPlotPointSignal={plotPointOpenSignal}
+          plotPointStandalone
+          onOpenDetailOutlineFromPlotChain={() => setActiveModal('detailOutlineLibrary')}
+        />
       </WorkbenchModal>
 
       <WorkbenchModal title="章节概要" isOpen={activeModal === 'summaryLibrary'} onClose={() => setActiveModal(null)} storageId="workbench_summary_library" widthClass="w-[1452px]" heightClass="h-[86vh] max-h-[95vh]" titleClassName="text-3xl" closeOnBackdrop={false}>

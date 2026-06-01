@@ -1,4 +1,4 @@
-import { BookMarked, ChevronDown, ChevronLeft, ChevronRight, Download, FileText, Play, Settings, Sparkles, X } from 'lucide-react';
+import { BookMarked, ChevronDown, ChevronLeft, ChevronRight, Download, FileText, Pause, Play, Settings, Sparkles, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,7 +11,7 @@ import { readModelSnapshot } from '@/features/models/hooks/useModels';
 import type { ModelItem } from '@/features/models/model/modelTypes';
 import { callModel } from '@/features/models/services/callModel';
 import { PlotLibraryPage } from '@/features/plot-library/pages/PlotLibraryPage';
-import { savePlotItems } from '@/features/plot-library/hooks/usePlotLibrary';
+import { sanitizePlotLibraryContent, savePlotItems } from '@/features/plot-library/hooks/usePlotLibrary';
 import { APP_EVENTS } from '@/shared/events/appEvents';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
 import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
@@ -198,6 +198,7 @@ function buildExtractRequest(file: ExtractJob, modules: ExtractModule[]) {
     `文件名：${file.name}`,
     '',
     '【输出模块】',
+    '以下是输出要求，不要原样复述“强制规则、强制包裹、仅填数字”等提示词说明，只输出提炼后的实际内容。',
     ...outputModules.map((module) => `【${module.label}】\n${module.instruction.trim()}`),
     '',
     '【正文】',
@@ -995,7 +996,7 @@ export function ExtractTestPage() {
       title: `提炼剧情点 ${results.findIndex((item) => item.id === result.id) + 1}`,
       chapter: result.chapterTitle,
       novelTitle: selectedNovel?.title ?? '未关联小说',
-      content: result.content,
+      content: sanitizePlotLibraryContent(result.content),
       tags: [
         '提炼剧情',
         extractMode === 'chapter' ? '逐章提炼' : extractMode === 'multi' ? '合并提炼' : '智能提炼',
@@ -1496,8 +1497,8 @@ export function ExtractTestPage() {
                 {extractProgress || saveMessage}
               </div>
             )}
-            <div className="flex flex-col gap-2">
-              <div className="xy-capsule-group w-1/3 min-w-[360px] max-w-full">
+            <div className="flex items-center justify-between gap-3">
+              <div className="xy-capsule-group min-w-[360px] max-w-full">
                   <button
                     onClick={handleImportCurrentResults}
                     disabled={pendingImportResults.length === 0}
@@ -1539,7 +1540,7 @@ export function ExtractTestPage() {
                     )}
                   </div>
               </div>
-              <div className="xy-capsule-group w-1/3 min-w-[360px] max-w-full">
+              <div className="xy-capsule-group ml-auto w-auto min-w-0">
                 <button
                   onClick={() => {
                     if (isExtracting) {
@@ -1549,7 +1550,7 @@ export function ExtractTestPage() {
                     setShowExtractConfirm(true);
                   }}
                   disabled={!isExtracting && !canExtract}
-                  className={`xy-capsule-button min-w-0 flex-1 whitespace-nowrap px-5 ${isExtracting ? 'xy-danger' : 'xy-active'}`}
+                  className={`xy-capsule-button min-w-[128px] whitespace-nowrap px-5 ${isExtracting ? 'xy-danger' : 'xy-active'}`}
                 >
                   <Play className="h-4 w-4" />
                   {isExtracting ? '中止提炼' : '开始提炼'}
@@ -1557,9 +1558,11 @@ export function ExtractTestPage() {
                 <button
                   onClick={isExtractPaused ? resumeExtractRun : pauseExtractRun}
                   disabled={!isExtracting}
-                  className={`xy-capsule-button min-w-0 flex-1 whitespace-nowrap px-5 ${isExtractPaused ? 'xy-active' : ''}`}
+                  className={`xy-capsule-button w-11 px-0 ${isExtractPaused ? 'xy-active' : ''}`}
+                  title={isExtractPaused ? '继续提炼' : '暂停'}
+                  aria-label={isExtractPaused ? '继续提炼' : '暂停'}
                 >
-                  {isExtractPaused ? '继续提炼' : '暂停'}
+                  {isExtractPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                 </button>
               </div>
             </div>
