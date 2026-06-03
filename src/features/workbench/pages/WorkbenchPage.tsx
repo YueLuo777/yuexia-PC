@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
@@ -38,6 +38,7 @@ import type { Volume, WorkbenchNovel } from '@/features/workbench/model/workbenc
 
 type ModalKey = 'workInfo' | 'notes' | 'settingLibrary' | 'plotPointGenerator' | 'detailOutlineLibrary' | 'summaryLibrary';
 type ManagementModalKey = 'models' | 'agents';
+type CreationFlowPageKey = 'brainstorm' | 'outline' | 'plotChain' | 'chapterOutline' | 'writing';
 type FindScope = 'chapter' | 'book';
 type ChapterExportFormat = 'txt' | 'doc';
 type PendingPublish = { type: 'single'; volumeId: number; chapterId: number; title: string };
@@ -77,6 +78,29 @@ const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 300;
 const PUBLISHED_SIDEBAR_MIN_WIDTH = 170;
 const PUBLISHED_SIDEBAR_MAX_WIDTH = 360;
 const PUBLISHED_SIDEBAR_DEFAULT_WIDTH = 190;
+const WORKBENCH_FLOW_PAGE_STORAGE_PREFIX = 'xinyuexia_workbench_active_flow_page_';
+const creationFlowSteps: Array<{ id: CreationFlowPageKey; number: number; title: string; description: string }> = [
+  { id: 'brainstorm', number: 1, title: '脑洞', description: '生成开书方向' },
+  { id: 'outline', number: 2, title: '大纲', description: '整理设定主线' },
+  { id: 'plotChain', number: 3, title: '剧情链', description: '选择剧情走向' },
+  { id: 'chapterOutline', number: 4, title: '章纲', description: '展开章节结构' },
+  { id: 'writing', number: 5, title: '正文', description: '回到正文编辑器' },
+];
+
+function isCreationFlowPageKey(value: unknown): value is CreationFlowPageKey {
+  return typeof value === 'string' && creationFlowSteps.some((step) => step.id === value);
+}
+
+function getStoredCreationFlowPage(novelId: number): CreationFlowPageKey {
+  const stored = localStorage.getItem(`${WORKBENCH_FLOW_PAGE_STORAGE_PREFIX}${novelId}`);
+  return isCreationFlowPageKey(stored) ? stored : 'writing';
+}
+
+function getCreationFlowStepClass(active: boolean, completed: boolean) {
+  if (active) return 'border-[#08AACE] bg-[#EAF9FD] text-[#08AACE]';
+  if (completed) return 'border-slate-200 bg-white text-slate-900';
+  return 'border-slate-200 bg-white text-slate-400';
+}
 const PUBLISH_CONFIRM_KEY = 'xinyuexia_workbench_publish_confirm';
 const GLOBAL_NOTES_KEY = 'xinyuexia_workbench_notes';
 const WORK_NOTES_KEY_PREFIX = 'xinyuexia_workbench_notes_';
@@ -825,11 +849,14 @@ function WorkbenchQuickNav({
       <button
         type="button"
         onClick={onOpen}
-        className="absolute left-0 top-1/2 z-40 flex h-20 w-6 -translate-y-1/2 items-center justify-center rounded-r-xl border border-l-0 border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:bg-brand-light hover:text-brand"
+        className="group absolute left-0 top-1/2 z-40 flex h-20 w-6 -translate-y-1/2 items-center justify-center overflow-hidden rounded-r-xl border border-l-0 border-slate-200 bg-white text-slate-500 shadow-sm transition-[width,background-color,color] duration-200 hover:w-20 hover:bg-brand-light hover:text-brand"
         title="打开导航栏"
         aria-label="打开导航栏"
       >
-        <ChevronRight className="h-5 w-5" />
+        <span className="flex min-w-20 items-center justify-center gap-1.5">
+          <ChevronRight className="h-5 w-5 shrink-0" />
+          <span className="whitespace-nowrap text-sm font-black opacity-0 transition-opacity duration-150 group-hover:opacity-100">导航</span>
+        </span>
       </button>
 
       {isOpen && (
@@ -1078,6 +1105,7 @@ export function WorkbenchPage() {
   const [isFindOpen, setIsFindOpen] = useState(false);
   const [isEditorSettingsOpen, setIsEditorSettingsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalKey | null>(null);
+  const [activeCreationFlow, setActiveCreationFlow] = useState<CreationFlowPageKey>('writing');
   const [managementModal, setManagementModal] = useState<ManagementModalKey | null>(null);
   const [plotPointOpenSignal, setPlotPointOpenSignal] = useState(0);
   const [settingLibraryInitialTab, setSettingLibraryInitialTab] = useState<'脑洞' | '大纲'>('大纲');
@@ -1146,6 +1174,7 @@ export function WorkbenchPage() {
 
   useEffect(() => {
     if (!currentNovel) return;
+    setActiveCreationFlow(getStoredCreationFlowPage(currentNovel.id));
     if (currentNovel.type === 'script') {
       setShowPublished(false);
       return;
@@ -1741,10 +1770,119 @@ export function WorkbenchPage() {
     input.click();
   };
 
-  const openSettingLibraryTab = (tab: '脑洞' | '大纲') => {
-    setSettingLibraryInitialTab(tab);
-    localStorage.setItem(`${settingsStorageKey}_active_tab`, tab);
-    setActiveModal('settingLibrary');
+  const switchCreationFlow = (flow: CreationFlowPageKey) => {
+    setActiveCreationFlow(flow);
+    localStorage.setItem(`${WORKBENCH_FLOW_PAGE_STORAGE_PREFIX}${currentNovel.id}`, flow);
+    if (flow === 'plotChain') setPlotPointOpenSignal((value) => value + 1);
+  };
+
+  const renderCreationFlowBar = () => {
+    const activeIndex = creationFlowSteps.findIndex((step) => step.id === activeCreationFlow);
+    return (
+      <div className="shrink-0 border-b border-slate-200 bg-slate-50 px-5 py-3">
+        <div className="rounded-[22px] border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <div className="mb-2 text-xs font-black text-slate-500">创作流程</div>
+          <div className="grid grid-cols-5 gap-2">
+            {creationFlowSteps.map((step, index) => {
+              const active = step.id === activeCreationFlow;
+              const completed = index < activeIndex;
+              return (
+                <button
+                  key={step.id}
+                  type="button"
+                  onClick={() => switchCreationFlow(step.id)}
+                  className={`flex h-16 min-w-0 items-center gap-3 rounded-2xl border px-3 text-left transition-colors ${getCreationFlowStepClass(active, completed)}`}
+                >
+                  <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-base font-black ${active ? 'bg-[#08AACE] text-white' : completed ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                    {completed ? <Check className="h-5 w-5" /> : step.number}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-lg font-black">{step.title}</span>
+                    <span className="mt-0.5 block truncate text-xs font-bold opacity-70">{step.description}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCreationFlowContent = () => {
+    if (activeCreationFlow === 'brainstorm' || activeCreationFlow === 'outline') {
+      return (
+        <WorkbenchLibraryPanel
+          storageKey={settingsStorageKey}
+          outlineStorageKey={outlineStorageKey}
+          tabs={['大纲', '角色', '脑洞']}
+          emptyText="暂无内容"
+          volumes={volumes}
+          scale={1.1}
+          defaultActiveTab={activeCreationFlow === 'brainstorm' ? '脑洞' : '大纲'}
+        />
+      );
+    }
+
+    if (activeCreationFlow === 'plotChain') {
+      return (
+        <WorkbenchLibraryPanel
+          storageKey={settingsStorageKey}
+          outlineStorageKey={outlineStorageKey}
+          tabs={['细纲']}
+          emptyText="暂无章纲内容"
+          volumes={volumes}
+          getChapterContent={(chapterId) => (
+            selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
+          )}
+          scale={1}
+          openPlotPointSignal={plotPointOpenSignal}
+          plotPointStandalone
+          onOpenDetailOutlineFromPlotChain={() => switchCreationFlow('chapterOutline')}
+        />
+      );
+    }
+
+    if (activeCreationFlow === 'chapterOutline') {
+      return (
+        <WorkbenchLibraryPanel
+          storageKey={settingsStorageKey}
+          outlineStorageKey={outlineStorageKey}
+          tabs={['细纲']}
+          emptyText="暂无章纲内容"
+          volumes={volumes}
+          getChapterContent={(chapterId) => (
+            selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
+          )}
+          scale={1.1}
+        />
+      );
+    }
+
+    return (
+      <ChapterEditor
+        chapter={selectedChapter?.chapter ?? null}
+        volumeName={selectedVolumeName}
+        content={editorContent}
+        lastSavedAt={lastSavedAt}
+        allChapters={volumes.flatMap((volume) => volume.chapters)}
+        settingsStorageKey={settingsStorageKey}
+        outlineStorageKey={outlineStorageKey}
+        getChapterContent={(chapterId) => (
+          selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
+        )}
+        onUpdateChapterContent={(chapterId, nextContent) => updateNovelChapterContent(currentNovel.id, chapterId, nextContent)}
+        onRenameChapter={renameChapter}
+        onChangeContent={saveContent}
+        onUpdateSerialNumber={updateChapterSerialNumber}
+        onDeleteChapter={(chapterId) => {
+          if (!selectedChapter) return;
+          deleteChapter(selectedChapter.volumeId, chapterId);
+        }}
+        onOpenFind={() => setIsFindOpen(true)}
+        onOpenSummaryLibrary={() => setActiveModal('summaryLibrary')}
+      />
+    );
   };
 
   return (
@@ -1752,14 +1890,6 @@ export function WorkbenchPage() {
       <WorkbenchHeader
         workTitle={currentNovel.title}
         onOpenWorkInfo={() => setActiveModal('workInfo')}
-        onOpenNotes={() => setActiveModal('notes')}
-        onOpenBrainstormLibrary={() => openSettingLibraryTab('脑洞')}
-        onOpenSettingLibrary={() => openSettingLibraryTab('大纲')}
-        onOpenPlotPointGenerator={() => {
-          setActiveModal('plotPointGenerator');
-          setPlotPointOpenSignal((value) => value + 1);
-        }}
-        onOpenDetailOutlineLibrary={() => setActiveModal('detailOutlineLibrary')}
       />
 
       <WorkbenchQuickNav
@@ -1771,113 +1901,108 @@ export function WorkbenchPage() {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        <ChapterSidebar
-          volumes={volumes}
-          width={chapterSidebarWidth}
-          sortAsc={sortAsc}
-          recycledCount={recycledChapters.length}
-          workType={currentNovel.type}
-          showPublished={showPublished}
-          onTogglePublished={() => setShowPublished((prev) => !prev)}
-          onToggleVolume={toggleVolume}
-          onToggleSort={toggleSort}
-          onSelectChapter={selectChapter}
-          onEditChapter={selectChapter}
-          onAddChapter={addChapter}
-          onAddVolume={addVolume}
-          onDeleteVolume={deleteVolume}
-          onDeleteChapter={deleteChapter}
-          onPublishChapter={handlePublishChapter}
-          onOpenRecycle={() => setIsRecycleOpen(true)}
-          onExportChapters={handleExportChapters}
-          getChapterWordCount={getChapterWordCount}
-        />
-
-        {showPublished && (
+        {activeCreationFlow === 'writing' ? (
           <>
+            <ChapterSidebar
+              volumes={volumes}
+              width={chapterSidebarWidth}
+              sortAsc={sortAsc}
+              recycledCount={recycledChapters.length}
+              workType={currentNovel.type}
+              showPublished={showPublished}
+              onTogglePublished={() => setShowPublished((prev) => !prev)}
+              onToggleVolume={toggleVolume}
+              onToggleSort={toggleSort}
+              onSelectChapter={selectChapter}
+              onEditChapter={selectChapter}
+              onAddChapter={addChapter}
+              onAddVolume={addVolume}
+              onDeleteVolume={deleteVolume}
+              onDeleteChapter={deleteChapter}
+              onPublishChapter={handlePublishChapter}
+              onOpenRecycle={() => setIsRecycleOpen(true)}
+              onExportChapters={handleExportChapters}
+              getChapterWordCount={getChapterWordCount}
+            />
+
+            {showPublished && (
+              <>
+                <div
+                  data-no-modal-drag="true"
+                  className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent"
+                  onMouseDown={handleChapterSidebarDragStart}
+                  title="拖拽调整未发布栏宽度"
+                >
+                  <div className="h-full w-px rounded-full bg-[#EF4444] opacity-0 transition-opacity group-hover:opacity-80" />
+                </div>
+
+                <PublishedSidebar
+                  volumes={volumes}
+                  width={publishedSidebarWidth}
+                  onSelectChapter={selectChapter}
+                  onEditChapter={selectChapter}
+                  onUnpublishChapter={(chapterId) => setChapterPublished(chapterId, false)}
+                  onDeleteChapter={deleteChapter}
+                  getChapterWordCount={getChapterWordCount}
+                />
+              </>
+            )}
+
             <div
               data-no-modal-drag="true"
               className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent"
-              onMouseDown={handleChapterSidebarDragStart}
-              title="拖拽调整未发布栏宽度"
+              onMouseDown={showPublished ? handlePublishedSidebarDragStart : handleChapterSidebarDragStart}
+              title="拖拽调整章节栏宽度"
             >
-              <div className="h-full w-px rounded-full bg-[#EF4444] opacity-0 transition-opacity group-hover:opacity-80" />
+              <div className="h-full w-px rounded-full bg-[#08B3D9] opacity-0 transition-opacity group-hover:opacity-70" />
             </div>
 
-            <PublishedSidebar
-              volumes={volumes}
-              width={publishedSidebarWidth}
-              onSelectChapter={selectChapter}
-              onEditChapter={selectChapter}
-              onUnpublishChapter={(chapterId) => setChapterPublished(chapterId, false)}
-              onDeleteChapter={deleteChapter}
-              getChapterWordCount={getChapterWordCount}
-            />
+            <section className="flex min-w-0 flex-1 flex-col overflow-hidden bg-gray-50">
+              {renderCreationFlowBar()}
+              <div className="min-h-0 flex-1 overflow-hidden bg-white">
+                {renderCreationFlowContent()}
+              </div>
+            </section>
+
+            <div
+              data-no-modal-drag="true"
+              className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent"
+              onMouseDown={handlePanelDragStart}
+              title="拖拽调整宽度"
+            >
+              <div className="h-8 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
+            </div>
+
+            <aside
+              className="shrink-0 border-l border-gray-200 bg-white"
+              style={{
+                width: aiPanelWidth,
+                maxWidth: `calc(33.333vw / var(${APP_EFFECTIVE_SCALE_CSS_VAR}, 1))`,
+              }}
+            >
+              <WorkbenchAIPanel
+                activeTool="ai"
+                workId={currentNovel.id}
+                selectedChapterContent={editorContent}
+                linkedContextItems={linkedContextItems}
+                onReplaceContent={replaceEditorContent}
+                onUndoReplace={undoReplaceEditorContent}
+                canUndoReplace={canUndoReplace}
+                onOpenModelManage={() => setManagementModal('models')}
+                onOpenAgentManage={() => setManagementModal('agents')}
+                onOpenContextLibrary={openContextLibrary}
+                onClearLinkedContext={() => updateLinkedContextItems([])}
+              />
+            </aside>
           </>
+        ) : (
+          <section className="flex min-w-0 flex-1 flex-col overflow-hidden bg-gray-50">
+            {renderCreationFlowBar()}
+            <div className="min-h-0 flex-1 overflow-hidden bg-white">
+              {renderCreationFlowContent()}
+            </div>
+          </section>
         )}
-
-        <div
-          data-no-modal-drag="true"
-          className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent"
-          onMouseDown={showPublished ? handlePublishedSidebarDragStart : handleChapterSidebarDragStart}
-          title="拖拽调整章节栏宽度"
-        >
-          <div className="h-full w-px rounded-full bg-[#08B3D9] opacity-0 transition-opacity group-hover:opacity-70" />
-        </div>
-
-        <ChapterEditor
-          chapter={selectedChapter?.chapter ?? null}
-          volumeName={selectedVolumeName}
-          content={editorContent}
-          lastSavedAt={lastSavedAt}
-          allChapters={volumes.flatMap((volume) => volume.chapters)}
-          settingsStorageKey={settingsStorageKey}
-          outlineStorageKey={outlineStorageKey}
-          getChapterContent={(chapterId) => (
-            selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
-          )}
-          onUpdateChapterContent={(chapterId, nextContent) => updateNovelChapterContent(currentNovel.id, chapterId, nextContent)}
-          onRenameChapter={renameChapter}
-          onChangeContent={saveContent}
-          onUpdateSerialNumber={updateChapterSerialNumber}
-          onDeleteChapter={(chapterId) => {
-            if (!selectedChapter) return;
-            deleteChapter(selectedChapter.volumeId, chapterId);
-          }}
-          onOpenFind={() => setIsFindOpen(true)}
-          onOpenSummaryLibrary={() => setActiveModal('summaryLibrary')}
-        />
-
-        <div
-          data-no-modal-drag="true"
-          className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent"
-          onMouseDown={handlePanelDragStart}
-          title="拖拽调整宽度"
-        >
-          <div className="h-8 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
-        </div>
-
-        <aside
-          className="shrink-0 border-l border-gray-200 bg-white"
-          style={{
-            width: aiPanelWidth,
-            maxWidth: `calc(33.333vw / var(${APP_EFFECTIVE_SCALE_CSS_VAR}, 1))`,
-          }}
-        >
-          <WorkbenchAIPanel
-            activeTool="ai"
-            workId={currentNovel.id}
-            selectedChapterContent={editorContent}
-            linkedContextItems={linkedContextItems}
-            onReplaceContent={replaceEditorContent}
-            onUndoReplace={undoReplaceEditorContent}
-            canUndoReplace={canUndoReplace}
-            onOpenModelManage={() => setManagementModal('models')}
-            onOpenAgentManage={() => setManagementModal('agents')}
-            onOpenContextLibrary={openContextLibrary}
-            onClearLinkedContext={() => updateLinkedContextItems([])}
-          />
-        </aside>
       </div>
 
       <WorkbenchModal
