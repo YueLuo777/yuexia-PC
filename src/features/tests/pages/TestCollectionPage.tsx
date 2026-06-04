@@ -162,6 +162,16 @@ const testNumberByPath = new Map(
     .flatMap((group) => group.items)
     .map((item, index) => [item.path, index + 1] as const),
 );
+const TEST_COLLECTION_COMPLETED_KEY = 'xinyuexia_test_collection_completed_v1';
+
+function readCompletedTestPaths() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(TEST_COLLECTION_COMPLETED_KEY) ?? '[]') as unknown;
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
 
 function formatTestNumber(path: string) {
   return String(testNumberByPath.get(path) ?? 0).padStart(2, '0');
@@ -1711,6 +1721,7 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [activePath, setActivePath] = useState<string | null>(null);
+  const [completedTestPaths, setCompletedTestPaths] = useState<Set<string>>(() => new Set(readCompletedTestPaths()));
 
   useEffect(() => {
     const showIndex = () => setActivePath(null);
@@ -1743,6 +1754,16 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
     setActivePath(path);
   };
 
+  const toggleCompletedTest = (path: string) => {
+    setCompletedTestPaths((current) => {
+      const next = new Set(current);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      localStorage.setItem(TEST_COLLECTION_COMPLETED_KEY, JSON.stringify(Array.from(next)));
+      return next;
+    });
+  };
+
   const visibleGroups = useMemo(() => {
     const keyword = search.trim().toLowerCase();
     if (!keyword) return testGroups;
@@ -1760,6 +1781,7 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
   }, [search]);
 
   const totalCount = testGroups.reduce((sum, group) => sum + group.items.length, 0);
+  const completedCount = completedTestPaths.size;
 
   const renderActiveTest = () => {
     switch (activePath) {
@@ -1809,8 +1831,24 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
             <ArrowLeft className="h-4 w-4" />
             返回测试
           </button>
-          <div className="min-w-0 flex-1 px-4 text-center text-sm font-black text-slate-700">
-            {activeItem ? `${activeNumber}号测试：${activeItem.title}` : '测试内容'}
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-3 px-4 text-sm font-black text-slate-700">
+            <span className="min-w-0 truncate">{activeItem ? `${activeNumber}号测试：${activeItem.title}` : '测试内容'}</span>
+            {activePath && (
+              <button
+                type="button"
+                onClick={() => toggleCompletedTest(activePath)}
+                className={`flex h-7 shrink-0 items-center gap-1.5 rounded-lg border px-2 text-xs font-black transition-colors ${
+                  completedTestPaths.has(activePath)
+                    ? 'border-[#08AACE] bg-[#EAF9FD] text-[#078fb0]'
+                    : 'border-slate-200 bg-white text-slate-500 hover:border-[#08AACE] hover:text-[#078fb0]'
+                }`}
+              >
+                <span className={`grid h-4 w-4 place-items-center rounded border ${completedTestPaths.has(activePath) ? 'border-[#08AACE] bg-[#08AACE] text-white' : 'border-slate-300 text-transparent'}`}>
+                  <Check className="h-3 w-3" />
+                </span>
+                完成测试
+              </button>
+            )}
           </div>
           <button
             onClick={() => setActivePath(null)}
@@ -1835,7 +1873,7 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         <div className="flex w-full items-center justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-slate-900">测试</h1>
-            <p className="mt-0.5 text-xs text-slate-400">已收纳 {totalCount} 个测试内容</p>
+            <p className="mt-0.5 text-xs text-slate-400">已收纳 {totalCount} 个测试内容 · 已勾选 {completedCount} 个</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -1869,6 +1907,7 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
               <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
                 {group.items.map((item) => {
                   const Icon = item.icon;
+                  const completed = completedTestPaths.has(item.path);
                   return (
                     <button
                       key={item.path}
@@ -1884,9 +1923,34 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
                             {formatTestNumber(item.path)}
                           </span>
                         </div>
-                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-400 transition-colors group-hover:bg-brand-light group-hover:text-brand">
-                          {item.badge}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span
+                            role="checkbox"
+                            aria-checked={completed}
+                            tabIndex={0}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              toggleCompletedTest(item.path);
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key !== 'Enter' && event.key !== ' ') return;
+                              event.preventDefault();
+                              event.stopPropagation();
+                              toggleCompletedTest(item.path);
+                            }}
+                            className={`grid h-7 w-7 place-items-center rounded-lg border transition-colors ${
+                              completed
+                                ? 'border-[#08AACE] bg-[#08AACE] text-white'
+                                : 'border-slate-200 bg-white text-slate-300 hover:border-[#08AACE] hover:text-[#078fb0]'
+                            }`}
+                            title={completed ? '取消完成勾选' : '勾选为完成测试'}
+                          >
+                            <Check className="h-4 w-4" />
+                          </span>
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-400 transition-colors group-hover:bg-brand-light group-hover:text-brand">
+                            {item.badge}
+                          </span>
+                        </div>
                       </div>
                       <div className="text-base font-bold text-slate-900">{item.title}</div>
                       <p className="mt-2 line-clamp-2 text-sm leading-5 text-slate-400">{item.description}</p>

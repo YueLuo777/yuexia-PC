@@ -698,14 +698,14 @@ function getActiveTabStorageKey(storageKey: string) {
 }
 
 function readActiveTab(storageKey: string, tabs: string[], defaultActiveTab?: string) {
+  const normalizedDefault = normalizeTabName(defaultActiveTab ?? '');
+  if (tabs.includes(normalizedDefault)) return normalizedDefault;
   try {
     const stored = normalizeTabName(localStorage.getItem(getActiveTabStorageKey(storageKey)) ?? '');
     if (tabs.includes(stored)) return stored;
   } catch {
     // Ignore localStorage failures and fall back to the supplied default.
   }
-  const normalizedDefault = normalizeTabName(defaultActiveTab ?? '');
-  if (tabs.includes(normalizedDefault)) return normalizedDefault;
   return tabs[0] ?? '';
 }
 
@@ -3160,37 +3160,19 @@ export function WorkbenchLibraryPanel({
     return [...merged, UNCATEGORIZED_TYPE];
   }, [customSettingTypes, hiddenSettingTypes, settingEntries]);
 
-  const topTabs = isSettingLibraryPanel ? (
-    <div data-no-modal-drag="true" className="flex w-fit shrink-0 cursor-default items-center gap-2">
-      <div className="inline-flex rounded-[18px] bg-slate-100 p-1.5">
-        {normalizedTabs.map((tab) => {
-          const active = activeTab === tab;
-          const tabLabel = getWorkbenchTabDisplayLabel(tab);
-          return (
-            <button
-              key={tab}
-              onClick={() => setRememberedActiveTab(tab)}
-              className={`h-10 min-w-[78px] rounded-[15px] px-5 text-[18.5px] font-bold transition-all ${
-                active
-                  ? 'bg-white text-sky-500 shadow-sm'
-                  : 'text-slate-500 hover:bg-white/70 hover:text-slate-700'
-              }`}
-            >
-              {tabLabel}
-            </button>
-          );
-        })}
-      </div>
-      <button
-        type="button"
-        onClick={() => setIsFieldSizeSettingsOpen(true)}
-        className="inline-flex h-10 items-center gap-1.5 rounded-[15px] border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 shadow-sm hover:border-[#08AACE] hover:text-[#08AACE]"
-      >
-        <Settings className="h-4 w-4" />
-        字段尺寸
-      </button>
-    </div>
-  ) : (
+  const renderFieldSizeButton = () => (
+    <button
+      type="button"
+      onClick={() => setIsFieldSizeSettingsOpen(true)}
+      className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 shadow-sm hover:border-[#08AACE] hover:text-[#08AACE]"
+      aria-label={`${fieldSizeTabLabel}字段尺寸`}
+    >
+      <Settings className="h-4 w-4" />
+      字段尺寸
+    </button>
+  );
+
+  const topTabs = isSettingLibraryPanel ? null : (
     <div data-no-modal-drag="true" className="flex shrink-0 cursor-default items-center gap-2">
       {normalizedTabs.map((tab) => (
         <button
@@ -3203,21 +3185,11 @@ export function WorkbenchLibraryPanel({
           {getWorkbenchTabDisplayLabel(tab)}
         </button>
       ))}
-      {(activeTab === OUTLINE_LIBRARY_TAB || activeTab === DETAIL_OUTLINE_TAB) && (
-        <button
-          type="button"
-          onClick={() => setIsFieldSizeSettingsOpen(true)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 shadow-sm hover:border-[#08AACE] hover:text-[#08AACE]"
-        >
-          <Settings className="h-4 w-4" />
-          字段尺寸
-        </button>
-      )}
     </div>
   );
 
   const renderTopTabs = () => (
-    normalizedTabs.length <= 1
+    normalizedTabs.length <= 1 || !topTabs
       ? null
       : (
     tabPortalTarget
@@ -3936,7 +3908,7 @@ export function WorkbenchLibraryPanel({
     ) : null;
 
     return (
-      <div className="flex min-h-0 flex-1 flex-col bg-white" style={scaleStyle}>
+      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white" style={scaleStyle}>
         {renderTopTabs()}
         {categoryContextMenu}
         {entryContextMenu}
@@ -3945,7 +3917,7 @@ export function WorkbenchLibraryPanel({
         {fieldSizeSettingsModal}
         {managementModal && <LibraryManagementModal modal={managementModal} onClose={() => setManagementModal(null)} />}
         <div
-          className="grid min-h-0 flex-1 overflow-hidden bg-white"
+          className="grid h-full min-h-0 flex-1 overflow-hidden bg-white"
           style={{
             gridTemplateColumns: settingLibraryMode === 'advanced'
               ? `${settingLibraryLeftWidth}px 8px minmax(0,1fr) 8px ${settingLibraryRightWidth}px`
@@ -4239,8 +4211,9 @@ export function WorkbenchLibraryPanel({
           <>
           {rightResizeHandle}
           <aside className="flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 p-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-3">
               <h3 className="shrink-0 text-base font-bold text-gray-900">角色生成</h3>
+              {renderFieldSizeButton()}
             </div>
             <div className="mt-4 space-y-3">
               <div
@@ -4431,7 +4404,7 @@ export function WorkbenchLibraryPanel({
       </LibraryAiLogShell>
     ) : null;
     return (
-      <div className="flex min-h-0 flex-1 flex-col bg-white" style={scaleStyle}>
+      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white" style={scaleStyle}>
         {renderTopTabs()}
         {categoryContextMenu}
         {entryContextMenu}
@@ -4448,7 +4421,7 @@ export function WorkbenchLibraryPanel({
         {brainstormGenerateConfirmModal}
         {settingCreateModal}
         <div
-          className="grid min-h-0 flex-1 overflow-hidden bg-white"
+          className="grid h-full min-h-0 flex-1 overflow-hidden bg-white"
           style={{
             gridTemplateColumns: activeIsBrainstorm
               ? `${brainstormLayoutLeftWidth}px 8px ${brainstormLayoutPreviewWidth}px 8px minmax(${BRAINSTORM_LAYOUT_OUTPUT_MIN_WIDTH}px,1fr) 8px ${brainstormLayoutRightWidth}px`
@@ -4584,7 +4557,7 @@ export function WorkbenchLibraryPanel({
           {activeIsBrainstorm ? (
             <div className="flex min-h-0 flex-1 flex-col p-5">
               <div className="relative min-h-0 flex-1">
-                <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${currentBrainstormBody.trim() ? 'xy-has-value' : ''}`}>
+                <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-brainstorm-preview-field xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${currentBrainstormBody.trim() ? 'xy-has-value' : ''}`}>
                   <textarea
                     value={currentBrainstormBody}
                     onChange={(event) => {
@@ -4829,15 +4802,18 @@ export function WorkbenchLibraryPanel({
                   <h3 className="shrink-0 text-base font-bold text-gray-900">{panelTitle}</h3>
                 </div>
               ) : <div />}
-              {showHeaderLibraryAiLogButton && (
-                <button
-                  type="button"
-                  onClick={() => setIsLibraryAiLogOpen(true)}
-                  className="shrink-0 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm hover:border-brand hover:text-brand"
-                >
-                  输出日志
-                </button>
-              )}
+              <div className="flex shrink-0 items-center gap-2">
+                {showHeaderLibraryAiLogButton && (
+                  <button
+                    type="button"
+                    onClick={() => setIsLibraryAiLogOpen(true)}
+                    className="h-9 shrink-0 rounded-xl border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 shadow-sm hover:border-brand hover:text-brand"
+                  >
+                    输出日志
+                  </button>
+                )}
+                {renderFieldSizeButton()}
+              </div>
             </div>
             )}
             <div className={`${showPanelHeader ? 'mt-4' : ''} space-y-3`}>
@@ -6541,6 +6517,10 @@ export function WorkbenchLibraryPanel({
               <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4">
                 <section className="shrink-0 rounded-xl border border-slate-200 bg-white p-3">
                   <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-sm font-black text-slate-950">生成配置</div>
+                      {renderFieldSizeButton()}
+                    </div>
                     <div className="grid grid-cols-[minmax(0,1fr)_88px] items-start gap-2">
                       <CapsuleSelect
                         floatingLabel="模型"
@@ -6745,18 +6725,21 @@ export function WorkbenchLibraryPanel({
           className="relative grid min-h-0 flex-1 overflow-hidden bg-white"
           style={{ gridTemplateColumns: `${outlineSidebarWidth}px 8px minmax(0,1fr) 8px ${settingLibraryRightWidth}px` }}
         >
-        <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
+            <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
           <section className="flex min-h-0 flex-1 flex-col rounded-xl border border-gray-200 bg-white p-4">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-base font-bold text-gray-900">{isDetailOutlineTab ? '章纲目录' : '章节概要'}</h3>
-              <button
-                onClick={() => setIsOutlineSettingsOpen(true)}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
-                title={isDetailOutlineTab ? '章纲设置' : '概要设置'}
-                aria-label={isDetailOutlineTab ? '章纲设置' : '概要设置'}
-              >
-                <Settings className="h-4 w-4" />
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                {renderFieldSizeButton()}
+                <button
+                  onClick={() => setIsOutlineSettingsOpen(true)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
+                  title={isDetailOutlineTab ? '章纲设置' : '概要设置'}
+                  aria-label={isDetailOutlineTab ? '章纲设置' : '概要设置'}
+                >
+                  <Settings className="h-4 w-4" />
+                </button>
+              </div>
             </div>
             <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
               {volumes.length === 0 ? (

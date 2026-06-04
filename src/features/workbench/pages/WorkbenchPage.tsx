@@ -1,6 +1,6 @@
-import { Check, ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { ChapterEditor } from '@/features/workbench/components/ChapterEditor';
 import { ChapterRecycleModal } from '@/features/workbench/components/ChapterRecycleModal';
@@ -14,6 +14,11 @@ import { WorkbenchLibraryPanel } from '@/features/workbench/components/Workbench
 import { WorkbenchModal } from '@/features/workbench/components/WorkbenchModal';
 import { readChapterContent, useWorkbenchData } from '@/features/workbench/hooks/useWorkbenchData';
 import {
+  WORKBENCH_HEADER_FLOW_ITEMS,
+  isWorkbenchCreationFlowPageKey,
+  type WorkbenchCreationFlowPageKey,
+} from '@/features/workbench/model/workbenchCreationFlow';
+import {
   clearAssociatedChapters,
   clearWorkbenchAiSessionLinks,
   clearWorkbenchLinkedContextItems,
@@ -26,11 +31,6 @@ import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemo
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
-import {
-  loadNavConfig,
-  normalizeNavConfig,
-  type NavGroupConfig,
-} from '@/shared/navigation/navConfig';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
@@ -38,7 +38,6 @@ import type { Volume, WorkbenchNovel } from '@/features/workbench/model/workbenc
 
 type ModalKey = 'workInfo' | 'notes' | 'settingLibrary' | 'plotPointGenerator' | 'detailOutlineLibrary' | 'summaryLibrary';
 type ManagementModalKey = 'models' | 'agents';
-type CreationFlowPageKey = 'brainstorm' | 'outline' | 'plotChain' | 'chapterOutline' | 'writing';
 type FindScope = 'chapter' | 'book';
 type ChapterExportFormat = 'txt' | 'doc';
 type PendingPublish = { type: 'single'; volumeId: number; chapterId: number; title: string };
@@ -79,27 +78,9 @@ const PUBLISHED_SIDEBAR_MIN_WIDTH = 170;
 const PUBLISHED_SIDEBAR_MAX_WIDTH = 360;
 const PUBLISHED_SIDEBAR_DEFAULT_WIDTH = 190;
 const WORKBENCH_FLOW_PAGE_STORAGE_PREFIX = 'xinyuexia_workbench_active_flow_page_';
-const creationFlowSteps: Array<{ id: CreationFlowPageKey; number: number; title: string; description: string }> = [
-  { id: 'brainstorm', number: 1, title: '脑洞', description: '生成开书方向' },
-  { id: 'outline', number: 2, title: '大纲', description: '整理设定主线' },
-  { id: 'plotChain', number: 3, title: '剧情链', description: '选择剧情走向' },
-  { id: 'chapterOutline', number: 4, title: '章纲', description: '展开章节结构' },
-  { id: 'writing', number: 5, title: '正文', description: '回到正文编辑器' },
-];
-
-function isCreationFlowPageKey(value: unknown): value is CreationFlowPageKey {
-  return typeof value === 'string' && creationFlowSteps.some((step) => step.id === value);
-}
-
-function getStoredCreationFlowPage(novelId: number): CreationFlowPageKey {
+function getStoredCreationFlowPage(novelId: number): WorkbenchCreationFlowPageKey {
   const stored = localStorage.getItem(`${WORKBENCH_FLOW_PAGE_STORAGE_PREFIX}${novelId}`);
-  return isCreationFlowPageKey(stored) ? stored : 'writing';
-}
-
-function getCreationFlowStepClass(active: boolean, completed: boolean) {
-  if (active) return 'border-[#08AACE] bg-[#EAF9FD] text-[#08AACE]';
-  if (completed) return 'border-slate-200 bg-white text-slate-900';
-  return 'border-slate-200 bg-white text-slate-400';
+  return isWorkbenchCreationFlowPageKey(stored) ? stored : 'writing';
 }
 const PUBLISH_CONFIRM_KEY = 'xinyuexia_workbench_publish_confirm';
 const GLOBAL_NOTES_KEY = 'xinyuexia_workbench_notes';
@@ -823,96 +804,6 @@ function EditorSettingsModal({
   );
 }
 
-function WorkbenchQuickNav({
-  isOpen,
-  navConfig,
-  currentPath,
-  onOpen,
-  onClose,
-}: {
-  isOpen: boolean;
-  navConfig: NavGroupConfig[];
-  currentPath: string;
-  onOpen: () => void;
-  onClose: () => void;
-}) {
-  const visibleGroups = navConfig
-    .filter((group) => !group.hidden)
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) => !item.hidden),
-    }))
-    .filter((group) => group.items.length > 0);
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={onOpen}
-        className="group absolute left-0 top-1/2 z-40 flex h-20 w-6 -translate-y-1/2 items-center justify-center overflow-hidden rounded-r-xl border border-l-0 border-slate-200 bg-white text-slate-500 shadow-sm transition-[width,background-color,color] duration-200 hover:w-20 hover:bg-brand-light hover:text-brand"
-        title="打开导航栏"
-        aria-label="打开导航栏"
-      >
-        <span className="flex min-w-20 items-center justify-center gap-1.5">
-          <ChevronRight className="h-5 w-5 shrink-0" />
-          <span className="whitespace-nowrap text-sm font-black opacity-0 transition-opacity duration-150 group-hover:opacity-100">导航</span>
-        </span>
-      </button>
-
-      {isOpen && (
-        <div className="absolute inset-0 z-50 flex bg-black/10" onMouseDown={onClose}>
-          <aside
-            className="flex h-full w-[220px] shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white shadow-[12px_0_36px_rgba(15,23,42,0.16)]"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-4">
-              <div className="text-base font-bold text-slate-900">快速导航</div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
-                title="收起导航栏"
-                aria-label="收起导航栏"
-              >
-                <ChevronRight className="h-4 w-4 rotate-180" />
-              </button>
-            </header>
-
-            <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-              {visibleGroups.map((group) => (
-                <section key={group.title} className="mb-4">
-                  <div className="mb-2 rounded-lg bg-brand-light px-3 py-2 text-sm font-bold text-brand-dark">
-                    {group.title}
-                  </div>
-                  <div className="space-y-1">
-                    {group.items.map((item) => {
-                      const isActive = currentPath === item.to;
-                      return (
-                        <Link
-                          key={item.to}
-                          to={item.to}
-                          onClick={onClose}
-                          className={`block rounded-lg px-3 py-2.5 text-[15px] font-medium transition-colors ${
-                            isActive
-                              ? 'bg-orange-50 text-orange-500'
-                              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                          }`}
-                        >
-                          {item.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </section>
-              ))}
-            </nav>
-          </aside>
-        </div>
-      )}
-    </>
-  );
-}
-
 function ChapterExportPanel({
   volumes,
   workType,
@@ -1099,13 +990,12 @@ function ChapterExportPanel({
 
 export function WorkbenchPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [isRecycleOpen, setIsRecycleOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isFindOpen, setIsFindOpen] = useState(false);
   const [isEditorSettingsOpen, setIsEditorSettingsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalKey | null>(null);
-  const [activeCreationFlow, setActiveCreationFlow] = useState<CreationFlowPageKey>('writing');
+  const [activeCreationFlow, setActiveCreationFlow] = useState<WorkbenchCreationFlowPageKey>('writing');
   const [managementModal, setManagementModal] = useState<ManagementModalKey | null>(null);
   const [plotPointOpenSignal, setPlotPointOpenSignal] = useState(0);
   const [settingLibraryInitialTab, setSettingLibraryInitialTab] = useState<'脑洞' | '大纲'>('大纲');
@@ -1122,8 +1012,6 @@ export function WorkbenchPage() {
   const [selectedMemo, setSelectedMemo] = useState<{ scope: MemoScope; id: string } | null>(null);
   const [collapsedMemoSections, setCollapsedMemoSections] = useState<Record<MemoScope, boolean>>({ global: false, work: false });
   const [showPublished, setShowPublished] = useState(false);
-  const [isQuickNavOpen, setIsQuickNavOpen] = useState(false);
-  const [quickNavConfig] = useState<NavGroupConfig[]>(() => normalizeNavConfig(loadNavConfig()));
   const [replaceUndoSnapshot, setReplaceUndoSnapshot] = useState<{ chapterId: number; content: string } | null>(null);
   const [aiPanelWidth, setAiPanelWidth] = useState(() => {
     const saved = Number.parseInt(localStorage.getItem('xinyuexia_ai_panel_width') ?? String(AI_PANEL_DEFAULT_WIDTH), 10);
@@ -1281,10 +1169,6 @@ export function WorkbenchPage() {
     const handleShortcut = (event: Event) => {
       const action = event as CustomEvent<{ id?: string }>;
       if (action.detail?.id !== 'close_floating') return;
-      if (isQuickNavOpen) {
-        setIsQuickNavOpen(false);
-        return;
-      }
       if (isRecycleOpen) {
         setIsRecycleOpen(false);
         return;
@@ -1327,7 +1211,6 @@ export function WorkbenchPage() {
     isEditorSettingsOpen,
     isExportOpen,
     isFindOpen,
-    isQuickNavOpen,
     isRecycleOpen,
     managementModal,
     navigate,
@@ -1532,7 +1415,6 @@ export function WorkbenchPage() {
     .map((id) => contextItemById.get(id))
     .filter((item): item is WorkbenchLinkedContextItem => Boolean(item));
   const draftContextWordCount = selectedDraftContextItems.reduce((sum, item) => sum + getContextWordCount(item.content), 0);
-
   const updateLinkedContextItems = (items: WorkbenchLinkedContextItem[]) => {
     setLinkedContextItems(items);
     if (!currentNovelId) return;
@@ -1770,55 +1652,23 @@ export function WorkbenchPage() {
     input.click();
   };
 
-  const switchCreationFlow = (flow: CreationFlowPageKey) => {
+  const switchCreationFlow = (flow: WorkbenchCreationFlowPageKey) => {
     setActiveCreationFlow(flow);
     localStorage.setItem(`${WORKBENCH_FLOW_PAGE_STORAGE_PREFIX}${currentNovel.id}`, flow);
     if (flow === 'plotChain') setPlotPointOpenSignal((value) => value + 1);
-  };
-
-  const renderCreationFlowBar = () => {
-    const activeIndex = creationFlowSteps.findIndex((step) => step.id === activeCreationFlow);
-    return (
-      <div className="shrink-0 border-b border-slate-200 bg-slate-50 px-5 py-3">
-        <div className="rounded-[22px] border border-slate-200 bg-white px-4 py-3 shadow-sm">
-          <div className="mb-2 text-xs font-black text-slate-500">创作流程</div>
-          <div className="grid grid-cols-5 gap-2">
-            {creationFlowSteps.map((step, index) => {
-              const active = step.id === activeCreationFlow;
-              const completed = index < activeIndex;
-              return (
-                <button
-                  key={step.id}
-                  type="button"
-                  onClick={() => switchCreationFlow(step.id)}
-                  className={`flex h-16 min-w-0 items-center gap-3 rounded-2xl border px-3 text-left transition-colors ${getCreationFlowStepClass(active, completed)}`}
-                >
-                  <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-base font-black ${active ? 'bg-[#08AACE] text-white' : completed ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                    {completed ? <Check className="h-5 w-5" /> : step.number}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-lg font-black">{step.title}</span>
-                    <span className="mt-0.5 block truncate text-xs font-bold opacity-70">{step.description}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
   };
 
   const renderCreationFlowContent = () => {
     if (activeCreationFlow === 'brainstorm' || activeCreationFlow === 'outline') {
       return (
         <WorkbenchLibraryPanel
+          key={activeCreationFlow}
           storageKey={settingsStorageKey}
           outlineStorageKey={outlineStorageKey}
           tabs={['大纲', '角色', '脑洞']}
           emptyText="暂无内容"
           volumes={volumes}
-          scale={1.1}
+          scale={1}
           defaultActiveTab={activeCreationFlow === 'brainstorm' ? '脑洞' : '大纲'}
         />
       );
@@ -1827,6 +1677,7 @@ export function WorkbenchPage() {
     if (activeCreationFlow === 'plotChain') {
       return (
         <WorkbenchLibraryPanel
+          key="plotChain"
           storageKey={settingsStorageKey}
           outlineStorageKey={outlineStorageKey}
           tabs={['细纲']}
@@ -1846,6 +1697,7 @@ export function WorkbenchPage() {
     if (activeCreationFlow === 'chapterOutline') {
       return (
         <WorkbenchLibraryPanel
+          key="chapterOutline"
           storageKey={settingsStorageKey}
           outlineStorageKey={outlineStorageKey}
           tabs={['细纲']}
@@ -1854,7 +1706,52 @@ export function WorkbenchPage() {
           getChapterContent={(chapterId) => (
             selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
           )}
-          scale={1.1}
+          scale={1}
+        />
+      );
+    }
+
+    if (activeCreationFlow === 'summary') {
+      return (
+        <WorkbenchLibraryPanel
+          key="summary"
+          storageKey={outlineStorageKey}
+          outlineStorageKey={outlineStorageKey}
+          tabs={['概要']}
+          emptyText="暂无概要内容"
+          volumes={volumes}
+          getChapterContent={(chapterId) => (
+            selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
+          )}
+          scale={1}
+        />
+      );
+    }
+
+    if (activeCreationFlow === 'audit' || activeCreationFlow === 'comment' || activeCreationFlow === 'status') {
+      return (
+        <ChapterEditor
+          embeddedMode={activeCreationFlow}
+          chapter={selectedChapter?.chapter ?? null}
+          volumeName={selectedVolumeName}
+          content={editorContent}
+          lastSavedAt={lastSavedAt}
+          allChapters={volumes.flatMap((volume) => volume.chapters)}
+          settingsStorageKey={settingsStorageKey}
+          outlineStorageKey={outlineStorageKey}
+          getChapterContent={(chapterId) => (
+            selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
+          )}
+          onUpdateChapterContent={(chapterId, nextContent) => updateNovelChapterContent(currentNovel.id, chapterId, nextContent)}
+          onRenameChapter={renameChapter}
+          onChangeContent={saveContent}
+          onUpdateSerialNumber={updateChapterSerialNumber}
+          onDeleteChapter={(chapterId) => {
+            if (!selectedChapter) return;
+            deleteChapter(selectedChapter.volumeId, chapterId);
+          }}
+          onOpenFind={() => setIsFindOpen(true)}
+          onOpenSummaryLibrary={() => switchCreationFlow('summary')}
         />
       );
     }
@@ -1889,15 +1786,10 @@ export function WorkbenchPage() {
     <div className="relative flex h-full flex-col bg-gray-50">
       <WorkbenchHeader
         workTitle={currentNovel.title}
+        flowItems={WORKBENCH_HEADER_FLOW_ITEMS}
+        activeFlow={activeCreationFlow}
+        onSelectFlow={switchCreationFlow}
         onOpenWorkInfo={() => setActiveModal('workInfo')}
-      />
-
-      <WorkbenchQuickNav
-        isOpen={isQuickNavOpen}
-        navConfig={quickNavConfig}
-        currentPath={location.pathname}
-        onOpen={() => setIsQuickNavOpen(true)}
-        onClose={() => setIsQuickNavOpen(false)}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -1957,9 +1849,8 @@ export function WorkbenchPage() {
               <div className="h-full w-px rounded-full bg-[#08B3D9] opacity-0 transition-opacity group-hover:opacity-70" />
             </div>
 
-            <section className="flex min-w-0 flex-1 flex-col overflow-hidden bg-gray-50">
-              {renderCreationFlowBar()}
-              <div className="min-h-0 flex-1 overflow-hidden bg-white">
+            <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gray-50">
+              <div className="flex min-h-0 flex-1 overflow-hidden bg-white">
                 {renderCreationFlowContent()}
               </div>
             </section>
@@ -1996,9 +1887,8 @@ export function WorkbenchPage() {
             </aside>
           </>
         ) : (
-          <section className="flex min-w-0 flex-1 flex-col overflow-hidden bg-gray-50">
-            {renderCreationFlowBar()}
-            <div className="min-h-0 flex-1 overflow-hidden bg-white">
+          <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gray-50">
+            <div className="flex min-h-0 flex-1 overflow-hidden bg-white">
               {renderCreationFlowContent()}
             </div>
           </section>
@@ -2348,3 +2238,4 @@ export function WorkbenchPage() {
     </div>
   );
 }
+

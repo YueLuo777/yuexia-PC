@@ -197,7 +197,10 @@ function readAssociatedChapterCount(chapters: Pick<Chapter, 'id'>[]) {
   }
 }
 
+type ChapterEditorEmbeddedMode = 'audit' | 'comment' | 'status';
+
 interface ChapterEditorProps {
+  embeddedMode?: ChapterEditorEmbeddedMode;
   chapter: Chapter | null;
   volumeName: string | null;
   content: string;
@@ -408,6 +411,7 @@ function renderInlineTextDiff(before: string, after: string, mode: 'before' | 'a
 }
 
 export function ChapterEditor({
+  embeddedMode,
   chapter,
   volumeName,
   content,
@@ -432,8 +436,8 @@ export function ChapterEditor({
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isTitleOptimizeOpen, setIsTitleOptimizeOpen] = useState(false);
   const [isAssociateOpen, setIsAssociateOpen] = useState(false);
-  const [isReviewOpen, setIsReviewOpen] = useState(false);
-  const [isStatusUpdateOpen, setIsStatusUpdateOpen] = useState(false);
+  const [isReviewOpen, setIsReviewOpen] = useState(() => embeddedMode === 'audit' || embeddedMode === 'comment');
+  const [isStatusUpdateOpen, setIsStatusUpdateOpen] = useState(() => embeddedMode === 'status');
   const [isEditorFieldSizeOpen, setIsEditorFieldSizeOpen] = useState(false);
   const [editorFieldSizeSpecs, setEditorFieldSizeSpecs] = useState<Record<EditorFieldSizeKey, EditorFieldSizeSpec>>(() => readEditorFieldSizeSpecs());
   const [reviewChapterId, setReviewChapterId] = useState<number | null>(() => chapter?.id ?? null);
@@ -442,7 +446,7 @@ export function ChapterEditor({
   const [statusTargetIds, setStatusTargetIds] = useState<Set<string>>(() => new Set());
   const [statusDraft, setStatusDraft] = useState('');
   const [reviewModelId, setReviewModelId] = useState('');
-  const [reviewMode, setReviewMode] = useState<'audit' | 'comment'>('audit');
+  const [reviewMode, setReviewMode] = useState<'audit' | 'comment'>(() => embeddedMode === 'comment' ? 'comment' : 'audit');
   const [reviewAuditPromptId, setReviewAuditPromptId] = useState('');
   const [reviewCommentPromptId, setReviewCommentPromptId] = useState('');
   const [reviewAiInput, setReviewAiInput] = useState('');
@@ -454,6 +458,7 @@ export function ChapterEditor({
   const [isReviewLogOpen, setIsReviewLogOpen] = useState(false);
   const [reviewManagementModal, setReviewManagementModal] = useState<'models' | 'prompts' | null>(null);
   const [reviewRequestLog, setReviewRequestLog] = useState('');
+  const [embeddedPortalElement, setEmbeddedPortalElement] = useState<HTMLDivElement | null>(null);
   const [isFindOpen, setIsFindOpen] = useState(false);
   const [findText, setFindText] = useState('');
   const [replaceText, setReplaceText] = useState('');
@@ -472,8 +477,8 @@ export function ChapterEditor({
   useTopModalEscape(isReviewLogOpen, () => setIsReviewLogOpen(false));
   useTopModalEscape(Boolean(reviewManagementModal), () => setReviewManagementModal(null));
   useTopModalEscape(isEditorFieldSizeOpen, () => setIsEditorFieldSizeOpen(false));
-  useTopModalEscape(isReviewOpen && !isReviewLogOpen && !reviewManagementModal, () => setIsReviewOpen(false));
-  useTopModalEscape(isStatusUpdateOpen, () => setIsStatusUpdateOpen(false));
+  useTopModalEscape(!embeddedMode && isReviewOpen && !isReviewLogOpen && !reviewManagementModal, () => setIsReviewOpen(false));
+  useTopModalEscape(!embeddedMode && isStatusUpdateOpen, () => setIsStatusUpdateOpen(false));
   useTopModalEscape(isFindOpen, () => setIsFindOpen(false));
 
   const titleCount = chapter?.title.length ?? 0;
@@ -613,6 +618,16 @@ export function ChapterEditor({
     setStatusChapterId(nextChapter?.id ?? null);
     setIsStatusUpdateOpen(true);
   };
+
+  useEffect(() => {
+    if (embeddedMode === 'audit' || embeddedMode === 'comment') {
+      openReviewPanel(embeddedMode);
+      return;
+    }
+    if (embeddedMode === 'status') {
+      openStatusUpdate();
+    }
+  }, [embeddedMode, chapter?.id]);
 
   const toggleStatusTarget = (entry: WorkbenchLibraryEntry) => {
     setStatusTargetIds((current) => {
@@ -1213,9 +1228,19 @@ export function ChapterEditor({
     document.body,
   ) : null;
 
+  const showStatusUpdatePanel = embeddedMode ? embeddedMode === 'status' : isStatusUpdateOpen;
+  const showReviewPanel = embeddedMode ? embeddedMode === 'audit' || embeddedMode === 'comment' : isReviewOpen;
+  const reviewPortalTarget = embeddedMode === 'audit' || embeddedMode === 'comment' ? embeddedPortalElement : document.body;
+  const canRenderReviewPanel = showReviewPanel && Boolean(reviewPortalTarget);
+
   return (
-    <section className="flex min-w-0 flex-1 flex-col bg-gray-50">
+    <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gray-50">
       {editorFieldSizeModal}
+      {(embeddedMode === 'audit' || embeddedMode === 'comment') && (
+        <div ref={setEmbeddedPortalElement} className="min-h-0 flex-1 overflow-hidden bg-white" />
+      )}
+      {!embeddedMode && (
+        <>
       <div className="flex items-center gap-2 border-b border-gray-200 bg-white px-4 py-2.5">
         <div className="flex items-center rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-sm">
           <span className="font-medium text-gray-700">{safeVolumeName}</span>
@@ -1245,7 +1270,7 @@ export function ChapterEditor({
           className="w-[320px] rounded-md border border-gray-200 bg-white px-3 py-1 text-sm outline-none focus:border-brand"
         />
         <span className="text-xs text-gray-400">{titleCount}/20</span>
-        <div className={SPLIT_BUTTON_OUTLINE_GROUP_CLASS}>
+        <div className={`${SPLIT_BUTTON_OUTLINE_GROUP_CLASS} w-[148px]`}>
           <button
             type="button"
             onClick={() => void copyText(chapter.title, '已复制标题')}
@@ -1256,46 +1281,9 @@ export function ChapterEditor({
           <button
             type="button"
             onClick={() => setIsTitleOptimizeOpen(true)}
-            className="inline-flex items-center justify-center border-l border-brand bg-brand px-3.5 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
+            className="inline-flex flex-1 items-center justify-center whitespace-nowrap border-l border-brand bg-brand px-1.5 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
           >
             优化
-          </button>
-        </div>
-        <div
-          className={SPLIT_BUTTON_OUTLINE_GROUP_CLASS}
-          style={{
-            width: editorFieldSizeSpecs.reviewActionGroup.width,
-            height: editorFieldSizeSpecs.reviewActionGroup.height,
-            fontSize: editorFieldSizeSpecs.reviewActionGroup.fontSize,
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => openReviewPanel('audit')}
-            className={SPLIT_BUTTON_OUTLINE_ACTION_CLASS}
-          >
-            审核
-          </button>
-          <button
-            type="button"
-            onClick={() => openReviewPanel('comment')}
-            className={`${SPLIT_BUTTON_OUTLINE_ACTION_CLASS} border-l border-brand`}
-          >
-            点评
-          </button>
-          <button
-            type="button"
-            onClick={openStatusUpdate}
-            className={`${SPLIT_BUTTON_OUTLINE_ACTION_CLASS} border-l border-brand`}
-          >
-            状态
-          </button>
-          <button
-            type="button"
-            onClick={onOpenSummaryLibrary}
-            className={`${SPLIT_BUTTON_OUTLINE_ACTION_CLASS} border-l border-brand`}
-          >
-            概要
           </button>
         </div>
       </div>
@@ -1369,7 +1357,7 @@ export function ChapterEditor({
         </div>
       </div>
 
-      <div className="relative flex-1 bg-white">
+      <div className="relative min-h-0 flex-1 overflow-hidden bg-white">
         {isFindOpen && (
           <div className="absolute right-5 top-4 z-30 flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
             <input
@@ -1403,7 +1391,7 @@ export function ChapterEditor({
           onPaste={handlePaste}
           onSelect={keepCursorOutOfParagraphIndent}
           onScroll={(event) => setEditorScrollTop(event.currentTarget.scrollTop)}
-          className="editor-scrollbar relative z-10 h-full w-full resize-none border-0 bg-transparent px-6 pb-6 pt-2 outline-none"
+          className="editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent px-6 pb-6 pt-2 outline-none"
           placeholder="从这里开始写..."
           style={{
             fontFamily: fontSettings.fontFamily,
@@ -1420,6 +1408,9 @@ export function ChapterEditor({
         {associatedCount > 0 && <span>已关联 <span className="font-medium text-brand">{associatedCount}</span> 章</span>}
         <span className="ml-auto">字数 <span className="font-medium text-brand">{wordCount || chapter.wordCount}</span> · {lastSavedAt ? `已保存 ${lastSavedAt}` : '自动保存'}</span>
       </div>
+
+        </>
+      )}
 
       <ConfirmDialog
         isOpen={showDeleteConfirm}
@@ -1468,10 +1459,17 @@ export function ChapterEditor({
           window.dispatchEvent(new CustomEvent(CHAPTER_ASSOCIATE_UPDATED_EVENT));
         }}
       />
-      {isStatusUpdateOpen && (
-        <div className="fixed inset-0 z-[280] flex items-center justify-center bg-black/35 p-5" onClick={() => setIsStatusUpdateOpen(false)}>
+      {showStatusUpdatePanel && (
+        <div
+          className={embeddedMode === 'status' ? 'flex h-full min-h-0 bg-white' : 'fixed inset-0 z-[280] flex items-center justify-center bg-black/35 p-5'}
+          onClick={() => {
+            if (!embeddedMode) setIsStatusUpdateOpen(false);
+          }}
+        >
           <section
-            className="flex h-[78vh] max-h-[820px] w-[min(1280px,94vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            className={embeddedMode === 'status'
+              ? 'flex h-full min-h-0 w-full flex-col overflow-hidden bg-white'
+              : 'flex h-[78vh] max-h-[820px] w-[min(1280px,94vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'}
             onClick={(event) => event.stopPropagation()}
           >
             <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-5">
@@ -1488,7 +1486,7 @@ export function ChapterEditor({
               </button>
             </header>
             <div className="grid min-h-0 flex-1 grid-cols-[230px_minmax(0,1fr)_360px] bg-slate-50">
-              <aside className="min-h-0 border-r border-slate-100 bg-white p-4">
+              <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="text-sm font-black text-slate-900">章节位置</span>
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">{sortedStatusChapters.length}</span>
@@ -1497,8 +1495,8 @@ export function ChapterEditor({
                   <span className="inline-flex items-center gap-1"><i className="h-3 w-3 rounded bg-[#08B3D9]" />已更新</span>
                   <span className="inline-flex items-center gap-1"><i className="h-3 w-3 rounded border border-slate-200 bg-slate-50" />未更新</span>
                 </div>
-                <div className="editor-scrollbar h-full overflow-y-auto pr-1">
-                  <div className="grid grid-cols-5 gap-2">
+                <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
+                  <div className="grid grid-cols-5 gap-2 pb-3">
                     {sortedStatusChapters.map((item) => {
                       const selected = activeStatusChapter?.id === item.id;
                       const updated = statusUpdatedChapterIds.has(item.id);
@@ -1512,7 +1510,7 @@ export function ChapterEditor({
                             updated
                               ? 'border-[#08B3D9] bg-[#08B3D9] text-white hover:border-[#067B96] hover:bg-[#067B96]'
                               : 'border-slate-200 text-slate-500 hover:border-[#08B3D9] hover:text-[#078fb0]'
-                          } ${selected ? 'ring-2 ring-[#08B3D9] ring-offset-2' : ''}`}
+                          } ${selected ? 'shadow-[inset_0_0_0_2px_#08B3D9]' : ''}`}
                           style={updated ? undefined : {
                             backgroundImage: 'repeating-linear-gradient(135deg, #f8fafc 0, #f8fafc 5px, #e2e8f0 5px, #e2e8f0 6px)',
                           }}
@@ -1604,26 +1602,35 @@ export function ChapterEditor({
           </section>
         </div>
       )}
-      {isReviewOpen && createPortal(
+      {canRenderReviewPanel && createPortal(
         <div
-          className="fixed inset-0 z-[280] flex items-center justify-center bg-black/35 p-5"
+          className={embeddedMode === 'audit' || embeddedMode === 'comment'
+            ? 'flex h-full min-h-0 bg-white'
+            : 'fixed inset-0 z-[280] flex items-center justify-center bg-black/35 p-5'}
           style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
-          onClick={() => setIsReviewOpen(false)}
+          onClick={() => {
+            if (!embeddedMode) setIsReviewOpen(false);
+          }}
         >
           <section
             data-draggable-managed="true"
             data-global-modal-static="true"
             style={{
-              ...reviewModalDraggable.style,
+              ...(embeddedMode ? {} : reviewModalDraggable.style),
               WebkitAppRegion: 'no-drag',
             } as CSSProperties}
-            className="relative flex h-[min(720px,82vh)] w-[min(1180px,92vw)] max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            className={embeddedMode === 'audit' || embeddedMode === 'comment'
+              ? 'relative flex h-full min-h-0 w-full flex-col overflow-hidden bg-white'
+              : 'relative flex h-[min(720px,82vh)] w-[min(1180px,92vw)] max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'}
             onClick={(event) => event.stopPropagation()}
           >
             <header
-              className="flex h-14 shrink-0 cursor-move items-center justify-between border-b border-slate-100 px-5"
-              {...reviewModalDraggable.dragHandleProps}
-              style={{ touchAction: 'none', WebkitAppRegion: 'no-drag' } as CSSProperties}
+              className={`flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-5 ${embeddedMode ? '' : 'cursor-move'}`}
+              {...(embeddedMode ? {} : reviewModalDraggable.dragHandleProps)}
+              style={{
+                touchAction: embeddedMode ? undefined : 'none',
+                WebkitAppRegion: 'no-drag',
+              } as CSSProperties}
             >
               <div>
                 <h2 className="text-lg font-black text-slate-900">{reviewMode === 'audit' ? '审核' : '点评'}</h2>
@@ -1633,7 +1640,7 @@ export function ChapterEditor({
                 type="button"
                 data-no-modal-drag="true"
                 onClick={() => setIsReviewOpen(false)}
-                className="rounded-lg px-3 py-1.5 text-sm font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                className={`${embeddedMode ? 'hidden' : ''} rounded-lg px-3 py-1.5 text-sm font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700`}
               >
                 关闭
               </button>
@@ -1981,16 +1988,16 @@ export function ChapterEditor({
                 )}
               </aside>
             </div>
-            <div data-no-modal-drag="true" {...reviewModalDraggable.getResizeHandleProps('top')} className="absolute left-4 right-4 top-0 z-20 h-2 cursor-ns-resize" />
-            <div data-no-modal-drag="true" {...reviewModalDraggable.getResizeHandleProps('bottom')} className="absolute bottom-0 left-4 right-4 z-20 h-2 cursor-ns-resize" />
-            <div data-no-modal-drag="true" {...reviewModalDraggable.getResizeHandleProps('left')} className="absolute bottom-4 left-0 top-4 z-20 w-2 cursor-ew-resize" />
-            <div data-no-modal-drag="true" {...reviewModalDraggable.getResizeHandleProps('right')} className="absolute bottom-4 right-0 top-4 z-20 w-2 cursor-ew-resize" />
-            <div data-no-modal-drag="true" {...reviewModalDraggable.resizeHandleProps} className="absolute bottom-0 right-0 z-20 h-5 w-5 cursor-nwse-resize">
+            <div data-no-modal-drag="true" {...reviewModalDraggable.getResizeHandleProps('top')} className={`${embeddedMode ? 'hidden' : ''} absolute left-4 right-4 top-0 z-20 h-2 cursor-ns-resize`} />
+            <div data-no-modal-drag="true" {...reviewModalDraggable.getResizeHandleProps('bottom')} className={`${embeddedMode ? 'hidden' : ''} absolute bottom-0 left-4 right-4 z-20 h-2 cursor-ns-resize`} />
+            <div data-no-modal-drag="true" {...reviewModalDraggable.getResizeHandleProps('left')} className={`${embeddedMode ? 'hidden' : ''} absolute bottom-4 left-0 top-4 z-20 w-2 cursor-ew-resize`} />
+            <div data-no-modal-drag="true" {...reviewModalDraggable.getResizeHandleProps('right')} className={`${embeddedMode ? 'hidden' : ''} absolute bottom-4 right-0 top-4 z-20 w-2 cursor-ew-resize`} />
+            <div data-no-modal-drag="true" {...reviewModalDraggable.resizeHandleProps} className={`${embeddedMode ? 'hidden' : ''} absolute bottom-0 right-0 z-20 h-5 w-5 cursor-nwse-resize`}>
               <div className="absolute bottom-1 right-1 h-3 w-3 rounded-br-lg border-b-2 border-r-2 border-gray-300" />
             </div>
           </section>
         </div>,
-        document.body,
+        reviewPortalTarget!,
       )}
       {copyToast && (
         <button

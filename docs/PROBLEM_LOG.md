@@ -689,3 +689,19 @@
 - 处理：给按钮接入 `isOutputLogOpen` 状态，点击后打开输出日志弹窗；弹窗按“AI配置 / 关联设定 / 用户要求 / 剧情链上下文”分组展示当前测试请求内容。
 - 预防：测试页里的按钮如果用于验证真实交互，不能只做静态样式；新增按钮时至少要有弹窗、状态切换或可见反馈，避免误判方案已完成。
 - 验证：`npm.cmd run check`、`npm.cmd run build`。
+
+## 作品编辑器快速导航按钮误改成全局侧栏收起
+
+- 现象：用户只希望作品编辑器左侧快速导航小按钮平时隐藏、鼠标移过去显示，但首页全局左侧导航也被收起，导致首页内容被遮挡和挤偏。
+- 原因：把需求里的“左边这个框”误判为 `DashboardLayout` 的全局侧栏，而实际目标是 `WorkbenchPage` 里的 `WorkbenchQuickNav` 悬浮按钮。
+- 处理：恢复 `DashboardLayout` 的固定左侧导航布局；随后按用户最终要求删除 `WorkbenchQuickNav` 功能本身，包括悬浮按钮、快速导航弹层、状态和 `close_floating` 关闭分支。
+- 预防：修改“左侧按钮/框”前先确认它属于全局导航、作品编辑器快速导航，还是业务面板侧栏；如果用户决定不要该功能，应删除入口和状态链路，而不是继续隐藏。
+- 验证：`npm.cmd run check`、`npm.cmd run build`。
+
+## 顶部脑洞流程点击后仍停在大纲页
+
+- 现象：点击顶部“脑洞”流程按钮后，页面看起来没有切到脑洞流程；同时“作品信息”和创作流程被连成同一组按钮，视觉层级不清。
+- 原因：脑洞和大纲共用同一个 `WorkbenchLibraryPanel` 实例，组件内部 `activeTab` 会优先读取旧的本地存储；顶部 `WorkbenchHeader` 也把作品信息和流程按钮渲染在同一个 `xy-capsule-group`。
+- 处理：内嵌流程页按 `activeCreationFlow` 设置 React `key`，并让传入的 `defaultActiveTab` 优先于旧存储；`WorkbenchHeader` 拆成“作品信息”按钮组和独立创作流程按钮组。
+- 预防：同一组件承载不同流程页时，流程切换必须重置或显式同步内部页签；作品级信息入口和创作流程入口不要共用一个组合按钮。
+- 验证：`npm.cmd run test:run -- src/features/workbench/components/WorkbenchHeader.test.tsx src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。

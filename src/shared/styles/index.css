@@ -1996,6 +1996,10 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   background-color: #ffffff;
 }
 
+.xy-floating-field.xy-brainstorm-preview-field textarea {
+  padding-top: 2.35rem;
+}
+
 .xy-floating-field.xy-floating-outline-preview .xy-floating-rich-preview {
   border: 2px solid #d9e2ea;
   border-radius: 20px;
