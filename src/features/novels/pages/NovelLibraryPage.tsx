@@ -572,8 +572,8 @@ export function NovelLibraryPage() {
   const handleOpen = (id: number) => {
     const novel = novels.find((item) => item.id === id);
     if (!novel) return;
-    const path = novel.type === 'script' ? '/script-editor-v2' : '/workbench';
     selectNovel(id);
+    const path = novel.type === 'script' ? '/script-editor-v2' : '/workbench';
     openWorkTab({
       workId: novel.id,
       workType: novel.type,

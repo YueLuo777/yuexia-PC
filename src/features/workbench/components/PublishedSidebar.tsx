@@ -31,6 +31,14 @@ interface PublishedSidebarProps {
   getChapterWordCount: (chapterId: number) => number;
 }
 
+function renderPanelWidthBadge(width: number) {
+  return (
+    <span className="shrink-0 text-[11px] font-black leading-none text-emerald-600">
+      {Math.round(width)}PX
+    </span>
+  );
+}
+
 export function PublishedSidebar({
   volumes,
   width = 190,
@@ -97,6 +105,7 @@ export function PublishedSidebar({
             {totalChapters}
           </span>
         </div>
+        {renderPanelWidthBadge(width)}
         <button
           onClick={() => setSortAsc((prev) => !prev)}
           className="rounded-md px-2 py-1 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"

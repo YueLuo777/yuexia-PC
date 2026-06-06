@@ -61,6 +61,14 @@ function getContextMenuPoint(event: ReactMouseEvent<HTMLElement>) {
   };
 }
 
+function renderPanelWidthBadge(width: number) {
+  return (
+    <span className="shrink-0 text-[11px] font-black leading-none text-emerald-600">
+      {Math.round(width)}PX
+    </span>
+  );
+}
+
 export function ChapterSidebar({
   volumes,
   sortAsc,
@@ -137,7 +145,8 @@ export function ChapterSidebar({
             {unpublishedCount}
           </span>
         </div>
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-1.5">
+          {renderPanelWidthBadge(width)}
           {workType !== 'script' && (
           <button
             onClick={onTogglePublished}

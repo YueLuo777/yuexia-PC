@@ -72,6 +72,14 @@ function createDefaultNovels(): Novel[] {
   ];
 }
 
+function readInitialNovels() {
+  const stored = readJson<Novel[] | null>(NOVELS_KEY, null);
+  if (stored) return stored;
+  const defaults = createDefaultNovels();
+  writeJson(NOVELS_KEY, defaults);
+  return defaults;
+}
+
 function nextNovelId(items: Array<{ id: number }>) {
   return Math.max(0, ...items.map((item) => item.id)) + 1;
 }
@@ -177,7 +185,7 @@ function createImportedVolumes(
 }
 
 export function useNovelLibrary() {
-  const [novels, setNovels] = useState<Novel[]>(() => readJson(NOVELS_KEY, createDefaultNovels()));
+  const [novels, setNovels] = useState<Novel[]>(readInitialNovels);
   const [recycledNovels, setRecycledNovels] = useState<RecycledNovel[]>(() => readJson(RECYCLE_KEY, []));
   const [categories, setCategories] = useState<string[]>(() => readJson(CATEGORIES_KEY, DEFAULT_CATEGORIES));
   const [currentNovelId, setCurrentNovelId] = useState<number | null>(readInitialCurrentNovelId);

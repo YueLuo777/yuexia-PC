@@ -1,5 +1,6 @@
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 import type { CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
@@ -47,7 +48,7 @@ export function ConfirmDialog({
 
   const Icon = confirmVariant === 'danger' ? Trash2 : AlertTriangle;
 
-  return (
+  return createPortal(
     <div
       className="modal-sharp fixed inset-0 z-[300] flex items-center justify-center bg-black/40"
       style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
@@ -94,6 +95,7 @@ export function ConfirmDialog({
         </div>
         <ModalResizeHandles draggable={draggable} />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

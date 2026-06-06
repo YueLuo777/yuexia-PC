@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Globe, Home, Maximize2, Minimize2, Plus, RefreshCw, Star, Trash2, X } from 'lucide-react';
 
+import { getBrowserHostLabel, isMobileOptimizedBrowserUrl, normalizeBrowserUrl } from '@/shared/browser/browserUrl';
+
 const BROWSER_URL_KEY = 'xinyuexia_test_browser_url';
 const BROWSER_BOOKMARKS_KEY = 'xinyuexia_test_browser_bookmarks';
 const BROWSER_TABS_KEY = 'xinyuexia_test_browser_tabs';
@@ -23,13 +25,6 @@ interface BrowserTab {
   title: string;
 }
 
-function normalizeUrl(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return '';
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return `https://${trimmed}`;
-}
-
 function readStoredJson<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -39,33 +34,16 @@ function readStoredJson<T>(key: string, fallback: T): T {
   }
 }
 
-function isMobileOptimizedUrl(value: string) {
-  try {
-    const url = new URL(normalizeUrl(value));
-    return url.searchParams.get('force_mobile') === '1' || url.hostname.startsWith('m.');
-  } catch {
-    return /(^|[?&])force_mobile=1(&|$)/.test(value) || /:\/\/m\./i.test(value);
-  }
-}
-
-function getHostLabel(value: string) {
-  try {
-    return new URL(normalizeUrl(value)).hostname.replace(/^www\./, '');
-  } catch {
-    return value;
-  }
-}
-
 function createTabId() {
   return `browser-tab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function createBrowserTab(url = DEFAULT_BROWSER_URL, title?: string): BrowserTab {
-  const nextUrl = normalizeUrl(url) || DEFAULT_BROWSER_URL;
+  const nextUrl = normalizeBrowserUrl(url) || DEFAULT_BROWSER_URL;
   return {
     id: createTabId(),
     url: nextUrl,
-    title: title || getHostLabel(nextUrl),
+    title: title || getBrowserHostLabel(nextUrl),
   };
 }
 
@@ -75,12 +53,12 @@ function normalizeBrowserTabs(value: unknown): BrowserTab[] {
     .map((item) => {
       if (!item || typeof item !== 'object') return null;
       const raw = item as Partial<BrowserTab>;
-      const url = normalizeUrl(String(raw.url ?? ''));
+      const url = normalizeBrowserUrl(String(raw.url ?? ''));
       if (!url) return null;
       return {
         id: raw.id || createTabId(),
         url,
-        title: raw.title || getHostLabel(url),
+        title: raw.title || getBrowserHostLabel(url),
       };
     })
     .filter((item): item is BrowserTab => Boolean(item));
@@ -113,7 +91,7 @@ export function TestBrowserPage() {
   const [canGoForward, setCanGoForward] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const usesMobileViewport = useMemo(() => isMobileOptimizedUrl(currentUrl), [currentUrl]);
+  const usesMobileViewport = useMemo(() => isMobileOptimizedBrowserUrl(currentUrl), [currentUrl]);
 
   useEffect(() => {
     localStorage.setItem(BROWSER_URL_KEY, currentUrl);
@@ -135,7 +113,7 @@ export function TestBrowserPage() {
   useEffect(() => {
     setCurrentUrl(activeTab.url);
     setInputUrl(activeTab.url);
-    setPageTitle(activeTab.title || getHostLabel(activeTab.url));
+    setPageTitle(activeTab.title || getBrowserHostLabel(activeTab.url));
     setCanGoBack(false);
     setCanGoForward(false);
   }, [activeTabId]);
@@ -151,7 +129,7 @@ export function TestBrowserPage() {
     const syncState = () => {
       try {
         const latestUrl = view.getURL() || currentUrl;
-        const latestTitle = view.getTitle?.() || getHostLabel(latestUrl);
+        const latestTitle = view.getTitle?.() || getBrowserHostLabel(latestUrl);
         setCurrentUrl(latestUrl);
         setInputUrl(latestUrl);
         setPageTitle(latestTitle);
@@ -191,11 +169,11 @@ export function TestBrowserPage() {
   };
 
   const openUrl = (rawUrl: string) => {
-    const next = normalizeUrl(rawUrl);
+    const next = normalizeBrowserUrl(rawUrl);
     if (!next) return;
     setInputUrl(next);
     setCurrentUrl(next);
-    const title = getHostLabel(next);
+    const title = getBrowserHostLabel(next);
     setPageTitle(title);
     updateActiveTab({ url: next, title });
   };
@@ -220,9 +198,9 @@ export function TestBrowserPage() {
   };
 
   const addBookmark = () => {
-    const next = normalizeUrl(inputUrl || currentUrl);
+    const next = normalizeBrowserUrl(inputUrl || currentUrl);
     if (!next) return;
-    const title = bookmarkTitle.trim() || (pageTitle && pageTitle !== '内置浏览器' ? pageTitle : getHostLabel(next));
+    const title = bookmarkTitle.trim() || (pageTitle && pageTitle !== '内置浏览器' ? pageTitle : getBrowserHostLabel(next));
     setBookmarks((prev) => {
       const rest = prev.filter((item) => item.url !== next);
       return [{ id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, url: next, title, createdAt: Date.now() }, ...rest].slice(0, 30);
@@ -270,7 +248,7 @@ export function TestBrowserPage() {
               }`}
               title={tab.url}
             >
-              <span className="min-w-0 flex-1 truncate">{tab.title || getHostLabel(tab.url)}</span>
+              <span className="min-w-0 flex-1 truncate">{tab.title || getBrowserHostLabel(tab.url)}</span>
               {browserTabs.length > 1 && (
                 <span
                   role="button"
@@ -338,7 +316,7 @@ export function TestBrowserPage() {
                     className="block w-full text-left"
                     title={bookmark.url}
                   >
-                    <div className="truncate text-sm font-semibold text-slate-700">{bookmark.title || getHostLabel(bookmark.url)}</div>
+                    <div className="truncate text-sm font-semibold text-slate-700">{bookmark.title || getBrowserHostLabel(bookmark.url)}</div>
                     <div className="mt-1 truncate text-xs text-slate-400">{bookmark.url}</div>
                   </button>
                   <div className="mt-2 flex justify-end gap-1">

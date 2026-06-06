@@ -1,25 +1,29 @@
+import { Settings } from 'lucide-react';
+
 import type { WorkbenchCreationFlowPageKey, WorkbenchHeaderFlowItem } from '@/features/workbench/model/workbenchCreationFlow';
 
 interface WorkbenchHeaderProps {
   workTitle: string;
   flowItems: WorkbenchHeaderFlowItem[];
   activeFlow: WorkbenchCreationFlowPageKey;
+  fieldSizeVisible?: boolean;
   onOpenWorkInfo: () => void;
+  onOpenFieldSize?: () => void;
   onSelectFlow: (flow: WorkbenchCreationFlowPageKey) => void;
 }
-
-const REVIEW_FLOW_IDS = new Set<WorkbenchCreationFlowPageKey>(['audit', 'comment', 'status', 'summary']);
 
 export function WorkbenchHeader({
   workTitle,
   flowItems,
   activeFlow,
+  fieldSizeVisible = false,
   onOpenWorkInfo,
+  onOpenFieldSize,
   onSelectFlow,
 }: WorkbenchHeaderProps) {
   const workInfoItem = flowItems.find((item) => item.id === 'workInfo');
-  const creationFlowItems = flowItems.filter((item) => item.id !== 'workInfo' && item.flow && !REVIEW_FLOW_IDS.has(item.flow));
-  const reviewFlowItems = flowItems.filter((item) => item.flow && REVIEW_FLOW_IDS.has(item.flow));
+  const creationFlowItems = flowItems.filter((item) => item.id !== 'workInfo' && item.flow && item.group === 'creation');
+  const reviewFlowItems = flowItems.filter((item) => item.flow && item.group === 'review');
 
   const renderFlowButton = (item: WorkbenchHeaderFlowItem) => {
     const active = item.flow === activeFlow;
@@ -38,8 +42,8 @@ export function WorkbenchHeader({
   };
 
   return (
-    <header className="relative flex h-12 shrink-0 items-center border-b border-gray-200 bg-white px-4">
-      <div className="absolute inset-y-0 left-0 right-0 flex items-center overflow-x-auto px-4">
+    <header className="relative flex h-14 shrink-0 items-start border-b border-[#08AACE] bg-white px-4">
+      <div className={`absolute left-0 right-0 top-0 flex h-12 items-center overflow-x-auto px-4 ${fieldSizeVisible ? 'pr-44' : ''}`}>
         <div className="xy-capsule-group min-w-0 shrink-0">
           <div
             className="flex min-h-9 min-w-0 max-w-[260px] items-center px-3.5 text-[0.8125rem] font-extrabold text-slate-700"
@@ -65,6 +69,17 @@ export function WorkbenchHeader({
           {reviewFlowItems.map(renderFlowButton)}
         </div>
       </div>
+      {fieldSizeVisible ? (
+        <button
+          type="button"
+          onClick={onOpenFieldSize}
+          className="absolute right-5 top-6 inline-flex h-9 -translate-y-1/2 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm transition-colors hover:border-[#08AACE] hover:text-[#08AACE]"
+          aria-label="字段尺寸"
+        >
+          <Settings className="h-4 w-4" />
+          字段尺寸
+        </button>
+      ) : null}
     </header>
   );
 }

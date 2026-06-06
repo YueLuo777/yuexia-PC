@@ -36,7 +36,7 @@ import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 import type { Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
 
-type ModalKey = 'workInfo' | 'notes' | 'settingLibrary' | 'plotPointGenerator' | 'detailOutlineLibrary' | 'summaryLibrary';
+type ModalKey = 'workInfo' | 'notes' | 'settingLibrary' | 'plotPointGenerator' | 'detailOutlineLibrary';
 type ManagementModalKey = 'models' | 'agents';
 type FindScope = 'chapter' | 'book';
 type ChapterExportFormat = 'txt' | 'doc';
@@ -44,6 +44,17 @@ type PendingPublish = { type: 'single'; volumeId: number; chapterId: number; tit
 type MemoScope = 'global' | 'work';
 type MemoItem = { id: string; title: string; content: string; updatedAt: string };
 type ContextLibraryTab = 'chapterSummary' | 'other';
+
+const FIELD_SIZE_FLOW_IDS = new Set<WorkbenchCreationFlowPageKey>([
+  'brainstorm',
+  'outline',
+  'plotChain',
+  'chapterOutline',
+  'audit',
+  'comment',
+  'status',
+  'summary',
+]);
 
 interface ContextColumn {
   source: WorkbenchLinkedContextSource;
@@ -77,6 +88,14 @@ const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 300;
 const PUBLISHED_SIDEBAR_MIN_WIDTH = 170;
 const PUBLISHED_SIDEBAR_MAX_WIDTH = 360;
 const PUBLISHED_SIDEBAR_DEFAULT_WIDTH = 190;
+
+function renderPanelWidthBadge(width: number) {
+  return (
+    <span className="shrink-0 text-[11px] font-black leading-none text-emerald-600">
+      {Math.round(width)}PX
+    </span>
+  );
+}
 const WORKBENCH_FLOW_PAGE_STORAGE_PREFIX = 'xinyuexia_workbench_active_flow_page_';
 function getStoredCreationFlowPage(novelId: number): WorkbenchCreationFlowPageKey {
   const stored = localStorage.getItem(`${WORKBENCH_FLOW_PAGE_STORAGE_PREFIX}${novelId}`);
@@ -998,6 +1017,7 @@ export function WorkbenchPage() {
   const [activeCreationFlow, setActiveCreationFlow] = useState<WorkbenchCreationFlowPageKey>('writing');
   const [managementModal, setManagementModal] = useState<ManagementModalKey | null>(null);
   const [plotPointOpenSignal, setPlotPointOpenSignal] = useState(0);
+  const [fieldSizeOpenSignal, setFieldSizeOpenSignal] = useState(0);
   const [settingLibraryInitialTab, setSettingLibraryInitialTab] = useState<'脑洞' | '大纲'>('大纲');
   const [isContextLibraryOpen, setIsContextLibraryOpen] = useState(false);
   const [contextLibraryTab, setContextLibraryTab] = useState<ContextLibraryTab>('chapterSummary');
@@ -1658,6 +1678,8 @@ export function WorkbenchPage() {
     if (flow === 'plotChain') setPlotPointOpenSignal((value) => value + 1);
   };
 
+  const showFieldSizeButton = FIELD_SIZE_FLOW_IDS.has(activeCreationFlow);
+
   const renderCreationFlowContent = () => {
     if (activeCreationFlow === 'brainstorm' || activeCreationFlow === 'outline') {
       return (
@@ -1670,6 +1692,8 @@ export function WorkbenchPage() {
           volumes={volumes}
           scale={1}
           defaultActiveTab={activeCreationFlow === 'brainstorm' ? '脑洞' : '大纲'}
+          fieldSizeOpenSignal={fieldSizeOpenSignal}
+          showInlineFieldSizeButton={false}
         />
       );
     }
@@ -1687,6 +1711,8 @@ export function WorkbenchPage() {
             selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
           )}
           scale={1}
+          fieldSizeOpenSignal={fieldSizeOpenSignal}
+          showInlineFieldSizeButton={false}
           openPlotPointSignal={plotPointOpenSignal}
           plotPointStandalone
           onOpenDetailOutlineFromPlotChain={() => switchCreationFlow('chapterOutline')}
@@ -1698,6 +1724,8 @@ export function WorkbenchPage() {
       return (
         <WorkbenchLibraryPanel
           key="chapterOutline"
+          fieldSizeOpenSignal={fieldSizeOpenSignal}
+          showInlineFieldSizeButton={false}
           storageKey={settingsStorageKey}
           outlineStorageKey={outlineStorageKey}
           tabs={['细纲']}
@@ -1715,6 +1743,8 @@ export function WorkbenchPage() {
       return (
         <WorkbenchLibraryPanel
           key="summary"
+          fieldSizeOpenSignal={fieldSizeOpenSignal}
+          showInlineFieldSizeButton={false}
           storageKey={outlineStorageKey}
           outlineStorageKey={outlineStorageKey}
           tabs={['概要']}
@@ -1732,6 +1762,8 @@ export function WorkbenchPage() {
       return (
         <ChapterEditor
           embeddedMode={activeCreationFlow}
+          fieldSizeOpenSignal={fieldSizeOpenSignal}
+          showInlineFieldSizeButton={false}
           chapter={selectedChapter?.chapter ?? null}
           volumeName={selectedVolumeName}
           content={editorContent}
@@ -1777,7 +1809,7 @@ export function WorkbenchPage() {
           deleteChapter(selectedChapter.volumeId, chapterId);
         }}
         onOpenFind={() => setIsFindOpen(true)}
-        onOpenSummaryLibrary={() => setActiveModal('summaryLibrary')}
+        onOpenSummaryLibrary={() => switchCreationFlow('summary')}
       />
     );
   };
@@ -1788,6 +1820,8 @@ export function WorkbenchPage() {
         workTitle={currentNovel.title}
         flowItems={WORKBENCH_HEADER_FLOW_ITEMS}
         activeFlow={activeCreationFlow}
+        fieldSizeVisible={showFieldSizeButton}
+        onOpenFieldSize={() => setFieldSizeOpenSignal((value) => value + 1)}
         onSelectFlow={switchCreationFlow}
         onOpenWorkInfo={() => setActiveModal('workInfo')}
       />
@@ -1865,12 +1899,15 @@ export function WorkbenchPage() {
             </div>
 
             <aside
-              className="shrink-0 border-l border-gray-200 bg-white"
+              className="relative shrink-0 border-l border-gray-200 bg-white"
               style={{
                 width: aiPanelWidth,
                 maxWidth: `calc(33.333vw / var(${APP_EFFECTIVE_SCALE_CSS_VAR}, 1))`,
               }}
             >
+              <div className="pointer-events-none absolute right-3 top-2 z-10">
+                {renderPanelWidthBadge(aiPanelWidth)}
+              </div>
               <WorkbenchAIPanel
                 activeTool="ai"
                 workId={currentNovel.id}
@@ -2129,18 +2166,6 @@ export function WorkbenchPage() {
           openPlotPointSignal={plotPointOpenSignal}
           plotPointStandalone
           onOpenDetailOutlineFromPlotChain={() => setActiveModal('detailOutlineLibrary')}
-        />
-      </WorkbenchModal>
-
-      <WorkbenchModal title="章节概要" isOpen={activeModal === 'summaryLibrary'} onClose={() => setActiveModal(null)} storageId="workbench_summary_library" widthClass="w-[1452px]" heightClass="h-[86vh] max-h-[95vh]" titleClassName="text-3xl" closeOnBackdrop={false}>
-        <WorkbenchLibraryPanel
-          storageKey={settingsStorageKey}
-          outlineStorageKey={outlineStorageKey}
-          tabs={['概要']}
-          emptyText="暂无概要内容"
-          volumes={volumes}
-          getChapterContent={(chapterId) => readChapterContent(currentNovel.id, chapterId)}
-          scale={1.1}
         />
       </WorkbenchModal>
 

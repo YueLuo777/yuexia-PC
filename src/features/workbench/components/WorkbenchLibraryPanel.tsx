@@ -66,6 +66,8 @@ interface WorkbenchLibraryPanelProps {
   outlineStorageKey?: string;
   scale?: number;
   defaultActiveTab?: string;
+  fieldSizeOpenSignal?: number;
+  showInlineFieldSizeButton?: boolean;
   openPlotPointSignal?: number;
   plotPointStandalone?: boolean;
   onOpenDetailOutlineFromPlotChain?: () => void;
@@ -127,6 +129,13 @@ const BRAINSTORM_LAYOUT_PREVIEW_MAX_WIDTH = 420;
 const BRAINSTORM_LAYOUT_RIGHT_MIN_WIDTH = 340;
 const BRAINSTORM_LAYOUT_RIGHT_MAX_WIDTH = 760;
 const BRAINSTORM_LAYOUT_OUTPUT_MIN_WIDTH = 320;
+const PLOT_POINT_LAYOUT_LEFT_WIDTH = 300;
+const PLOT_POINT_LAYOUT_LEFT_MIN_WIDTH = 220;
+const PLOT_POINT_LAYOUT_LEFT_MAX_WIDTH = 520;
+const PLOT_POINT_LAYOUT_RIGHT_WIDTH = 360;
+const PLOT_POINT_LAYOUT_RIGHT_MIN_WIDTH = 300;
+const PLOT_POINT_LAYOUT_RIGHT_MAX_WIDTH = 620;
+const PLOT_POINT_LAYOUT_CENTER_MIN_WIDTH = 360;
 const ROLE_HISTORY_LIMIT = 20;
 const DETAIL_OUTLINE_PREVIEW_MIN_HEIGHT = 130;
 const DETAIL_OUTLINE_PREVIEW_MAX_HEIGHT = 260;
@@ -148,6 +157,11 @@ type LibraryEntryMenu = {
   tab: string;
   roleType?: string;
   pinnedAt?: number;
+  x: number;
+  y: number;
+} | null;
+
+type ClearSettingsUnlockMenu = {
   x: number;
   y: number;
 } | null;
@@ -549,6 +563,7 @@ function writeWorkbenchFieldSizeSpecs(specs: Record<WorkbenchFieldSizeKey, Workb
 function getWorkbenchFieldSizeStyle(spec: WorkbenchFieldSizeSpec): CSSProperties {
   return {
     width: spec.width,
+    minWidth: WORKBENCH_FIELD_SIZE_LIMITS.width.min,
     maxWidth: '100%',
     '--xy-field-width': `${spec.width}px`,
     '--xy-field-height': `${spec.height}px`,
@@ -644,6 +659,7 @@ type LibraryTabConfig = {
   brainstormBackground?: string;
   brainstormIdea?: string;
   brainstormCheat?: string;
+  brainstormCount?: string;
   brainstormRequirement?: string;
   brainstormPreviewFontSize?: number;
   brainstormOutputFontSize?: number;
@@ -661,6 +677,7 @@ type BrainstormQuestionKey =
   | 'brainstormBackground'
   | 'brainstormIdea'
   | 'brainstormCheat'
+  | 'brainstormCount'
   | 'brainstormRequirement';
 
 type BrainstormQuestionDraft = Record<BrainstormQuestionKey, string>;
@@ -674,6 +691,7 @@ const BRAINSTORM_QUESTION_FIELDS: Array<{
   { key: 'brainstormBackground', label: '故事主题', placeholder: '如系统流、凡人流' },
   { key: 'brainstormIdea', label: '主角金手指', placeholder: '如吞噬系统、神豪系统' },
   { key: 'brainstormCheat', label: '你的构思', placeholder: '任何灵感都可以' },
+  { key: 'brainstormCount', label: '一次生成几个脑洞', placeholder: '' },
   { key: 'brainstormRequirement', label: '补充内容', placeholder: '主角名字、性格、女主设定等' },
 ];
 
@@ -790,6 +808,34 @@ function readBrainstormPreviewWidth(storageKey: string, tab: string) {
 
 function persistSettingLibraryWidth(storageKey: string, tab: string, side: 'left' | 'right' | 'brainstormPreview', value: number) {
   localStorage.setItem(getSettingLibraryWidthStorageKey(storageKey, tab, side), String(value));
+}
+
+function getPlotPointLayoutWidthStorageKey(storageKey: string, side: 'left' | 'right') {
+  return `${storageKey}_plot_point_layout_${side}_width_v1`;
+}
+
+function readPlotPointLayoutLeftWidth(storageKey: string) {
+  try {
+    const value = Number(localStorage.getItem(getPlotPointLayoutWidthStorageKey(storageKey, 'left')) ?? PLOT_POINT_LAYOUT_LEFT_WIDTH);
+    if (!Number.isFinite(value)) return PLOT_POINT_LAYOUT_LEFT_WIDTH;
+    return Math.min(PLOT_POINT_LAYOUT_LEFT_MAX_WIDTH, Math.max(PLOT_POINT_LAYOUT_LEFT_MIN_WIDTH, value));
+  } catch {
+    return PLOT_POINT_LAYOUT_LEFT_WIDTH;
+  }
+}
+
+function readPlotPointLayoutRightWidth(storageKey: string) {
+  try {
+    const value = Number(localStorage.getItem(getPlotPointLayoutWidthStorageKey(storageKey, 'right')) ?? PLOT_POINT_LAYOUT_RIGHT_WIDTH);
+    if (!Number.isFinite(value)) return PLOT_POINT_LAYOUT_RIGHT_WIDTH;
+    return Math.min(PLOT_POINT_LAYOUT_RIGHT_MAX_WIDTH, Math.max(PLOT_POINT_LAYOUT_RIGHT_MIN_WIDTH, value));
+  } catch {
+    return PLOT_POINT_LAYOUT_RIGHT_WIDTH;
+  }
+}
+
+function persistPlotPointLayoutWidth(storageKey: string, side: 'left' | 'right', value: number) {
+  localStorage.setItem(getPlotPointLayoutWidthStorageKey(storageKey, side), String(value));
 }
 
 function stripTransientLinkConfig(configs: LibraryTabConfigs): LibraryTabConfigs {
@@ -1155,6 +1201,7 @@ function buildLibraryLogGroups(log: LibraryAiRequestLog, options?: {
   includeReaderContext?: boolean;
   contextFallback?: string;
   userTitle?: string;
+  omitEmptyUser?: boolean;
   expandReaderContextContent?: boolean;
   expandAllContent?: boolean;
 }): AiRequestLogGroup[] {
@@ -1195,8 +1242,8 @@ function buildLibraryLogGroups(log: LibraryAiRequestLog, options?: {
       contentClassName: options?.expandAllContent ? expandedContentClassName : undefined,
     });
   }
-  groups.push(
-    {
+  if (!(options?.omitEmptyUser && !log.userContent.trim())) {
+    groups.push({
       id: 'user',
       title: options?.userTitle || '用户要求',
       meta: getRequestLogMeta(log.userContent),
@@ -1204,8 +1251,8 @@ function buildLibraryLogGroups(log: LibraryAiRequestLog, options?: {
       emptyText: '空内容',
       tone: 'amber',
       contentClassName: options?.expandAllContent ? expandedContentClassName : undefined,
-    },
-  );
+    });
+  }
   return groups;
 }
 
@@ -1440,6 +1487,8 @@ export function WorkbenchLibraryPanel({
   outlineStorageKey,
   scale = 1,
   defaultActiveTab,
+  fieldSizeOpenSignal = 0,
+  showInlineFieldSizeButton = true,
   openPlotPointSignal = 0,
   plotPointStandalone = false,
   onOpenDetailOutlineFromPlotChain,
@@ -1482,6 +1531,7 @@ export function WorkbenchLibraryPanel({
   const [outlineColumns, setOutlineColumns] = useState(loadOutlineColumns);
   const [isOutlineSettingsOpen, setIsOutlineSettingsOpen] = useState(false);
   const [isFieldSizeSettingsOpen, setIsFieldSizeSettingsOpen] = useState(false);
+  const lastFieldSizeOpenSignalRef = useRef(fieldSizeOpenSignal);
   const [fieldSizeSpecs, setFieldSizeSpecs] = useState<Record<WorkbenchFieldSizeKey, WorkbenchFieldSizeSpec>>(() => readWorkbenchFieldSizeSpecs());
   const fieldSizeSettingsDraggable = useDraggableModal('workbench_field_size_settings');
   const visibleFieldSizeKeys = WORKBENCH_FIELD_SIZE_KEYS_BY_TAB[activeTab] ?? WORKBENCH_FIELD_SIZE_SETTING_KEYS;
@@ -1489,6 +1539,8 @@ export function WorkbenchLibraryPanel({
   const [settingLibraryLeftWidth, setSettingLibraryLeftWidth] = useState(() => readSettingLibraryLeftWidth(storageKey, activeTab));
   const [settingLibraryRightWidth, setSettingLibraryRightWidth] = useState(() => readSettingLibraryRightWidth(storageKey, activeTab));
   const [brainstormPreviewWidth, setBrainstormPreviewWidth] = useState(() => readBrainstormPreviewWidth(storageKey, activeTab));
+  const [plotPointLayoutLeftWidth, setPlotPointLayoutLeftWidth] = useState(() => readPlotPointLayoutLeftWidth(storageKey));
+  const [plotPointLayoutRightWidth, setPlotPointLayoutRightWidth] = useState(() => readPlotPointLayoutRightWidth(storageKey));
   const [expandedRoleTypes, setExpandedRoleTypes] = useState<Set<string>>(() => (
     readExpandedStringSet(storageKey, ROLE_TAB, 'role_types')
   ));
@@ -1499,6 +1551,8 @@ export function WorkbenchLibraryPanel({
   const [entryMenu, setEntryMenu] = useState<LibraryEntryMenu>(null);
   const [pendingEntryDelete, setPendingEntryDelete] = useState<PendingEntryDelete>(null);
   const [isClearSettingsConfirmOpen, setIsClearSettingsConfirmOpen] = useState(false);
+  const [isClearSettingsUnlocked, setIsClearSettingsUnlocked] = useState(false);
+  const [clearSettingsUnlockMenu, setClearSettingsUnlockMenu] = useState<ClearSettingsUnlockMenu>(null);
   const [managementModal, setManagementModal] = useState<LibraryManagementModalState>(null);
   const [draggingLibraryEntry, setDraggingLibraryEntry] = useState<LibraryEntryDragState>(null);
   const [libraryDropTarget, setLibraryDropTarget] = useState<{ tab: string; type: string } | null>(null);
@@ -1513,6 +1567,8 @@ export function WorkbenchLibraryPanel({
   const [brainstormPromptDraft, setBrainstormPromptDraft] = useState({ name: '', description: '', content: '' });
   const [brainstormGenerateDraft, setBrainstormGenerateDraft] = useState<BrainstormQuestionDraft | null>(null);
   const [isBrainstormConfirmScrolling, setIsBrainstormConfirmScrolling] = useState(false);
+  const [editingBrainstormOutputTitleId, setEditingBrainstormOutputTitleId] = useState<string | null>(null);
+  const [brainstormOutputTitleDraft, setBrainstormOutputTitleDraft] = useState('');
   const [activeDetailOutlineScrollId, setActiveDetailOutlineScrollId] = useState<number | null>(null);
   const [isDetailOutlineReaderOpen, setIsDetailOutlineReaderOpen] = useState(false);
   const [detailOutlineReaderTab, setDetailOutlineReaderTab] = useState<DetailOutlineReaderTab>('settings');
@@ -1656,6 +1712,7 @@ export function WorkbenchLibraryPanel({
     brainstormBackground: activeTabConfig.brainstormBackground ?? '',
     brainstormIdea: activeTabConfig.brainstormIdea ?? '',
     brainstormCheat: activeTabConfig.brainstormCheat ?? '',
+    brainstormCount: activeTabConfig.brainstormCount ?? '',
     brainstormRequirement: activeTabConfig.brainstormRequirement ?? '',
   };
 
@@ -1669,6 +1726,12 @@ export function WorkbenchLibraryPanel({
   useTopModalEscape(isPlotPointModalOpen, () => setIsPlotPointModalOpen(false));
   useTopModalEscape(isBrainstormRecycleOpen && !isClearBrainstormRecycleConfirmOpen, () => setIsBrainstormRecycleOpen(false));
   useTopModalEscape(isBrainstormReaderOpen, closeBrainstormReader);
+
+  useEffect(() => {
+    if (fieldSizeOpenSignal <= 0 || fieldSizeOpenSignal === lastFieldSizeOpenSignalRef.current) return;
+    lastFieldSizeOpenSignalRef.current = fieldSizeOpenSignal;
+    setIsFieldSizeSettingsOpen(true);
+  }, [fieldSizeOpenSignal]);
 
   useEffect(() => {
     if (openPlotPointSignal <= 0 || activeTab !== DETAIL_OUTLINE_TAB || plotPointStandalone) return;
@@ -1825,6 +1888,18 @@ export function WorkbenchLibraryPanel({
     return kind === 'model' ? 'settingModelSelect' : 'settingPromptSelect';
   };
   const getConfigFieldSizeStyle = (tab: string, kind: 'model' | 'prompt'): CSSProperties => getFieldSizeStyle(getConfigFieldSizeKey(tab, kind));
+  const getAlignedFieldSizeStyle = (modelKey: WorkbenchFieldSizeKey, promptKey: WorkbenchFieldSizeKey): CSSProperties => {
+    const promptSpec = fieldSizeSpecs[promptKey] ?? WORKBENCH_FIELD_SIZE_DEFAULTS[promptKey];
+    const modelSpec = fieldSizeSpecs[modelKey] ?? WORKBENCH_FIELD_SIZE_DEFAULTS[modelKey];
+    return {
+      ...getWorkbenchFieldSizeStyle(promptSpec),
+      width: modelSpec.width,
+      '--xy-field-width': `${modelSpec.width}px`,
+    } as CSSProperties;
+  };
+  const getAlignedPromptConfigFieldSizeStyle = (tab: string): CSSProperties => (
+    getAlignedFieldSizeStyle(getConfigFieldSizeKey(tab, 'model'), getConfigFieldSizeKey(tab, 'prompt'))
+  );
 
   const hasBrainstormQuestionContent = (draft: BrainstormQuestionDraft) => (
     BRAINSTORM_QUESTION_FIELDS.some((field) => draft[field.key].trim())
@@ -1832,11 +1907,16 @@ export function WorkbenchLibraryPanel({
 
   const buildBrainstormPromptFromQuestions = (draft: BrainstormQuestionDraft) => {
     const lines = BRAINSTORM_QUESTION_FIELDS
-      .map((field) => `${field.label.replace(/^\d+\./, '')}：${draft[field.key].trim() || '未填写'}`)
+      .map((field) => {
+        const value = draft[field.key].trim();
+        if (!value) return null;
+        return `${field.label.replace(/^\d+\./, '')}：${value}`;
+      })
+      .filter((line): line is string => Boolean(line))
       .join('\n');
+    if (!lines) return '';
     return [
-      '请根据以下信息，生成一个可以保存进脑洞库的小说脑洞设定。',
-      '要求：内容要具体、可继续扩展，避免只复述问题；如果信息不足，请合理补全但不要偏离用户要求。',
+      '【以下是用户输出的内容】',
       '',
       lines,
     ].join('\n');
@@ -2018,6 +2098,86 @@ export function WorkbenchLibraryPanel({
     window.addEventListener('pointerup', stopResize);
   };
 
+  const startPlotPointLeftWidthResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.nativeEvent.stopImmediatePropagation();
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Window-level listeners keep the resize alive.
+    }
+    const eventScale = getResizeEventScale(event.currentTarget);
+    const startX = event.clientX;
+    const startWidth = Math.min(
+      PLOT_POINT_LAYOUT_LEFT_MAX_WIDTH,
+      Math.max(PLOT_POINT_LAYOUT_LEFT_MIN_WIDTH, plotPointLayoutLeftWidth),
+    );
+
+    const handleMove = (moveEvent: PointerEvent) => {
+      moveEvent.preventDefault();
+      moveEvent.stopPropagation();
+      const deltaX = (moveEvent.clientX - startX) / eventScale;
+      const nextWidth = Math.min(
+        PLOT_POINT_LAYOUT_LEFT_MAX_WIDTH,
+        Math.max(PLOT_POINT_LAYOUT_LEFT_MIN_WIDTH, startWidth + deltaX),
+      );
+      setPlotPointLayoutLeftWidth(nextWidth);
+      persistPlotPointLayoutWidth(storageKey, 'left', nextWidth);
+    };
+    const stopResize = () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', stopResize);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', stopResize);
+  };
+
+  const startPlotPointRightWidthResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.nativeEvent.stopImmediatePropagation();
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Window-level listeners keep the resize alive.
+    }
+    const eventScale = getResizeEventScale(event.currentTarget);
+    const startX = event.clientX;
+    const startWidth = Math.min(
+      PLOT_POINT_LAYOUT_RIGHT_MAX_WIDTH,
+      Math.max(PLOT_POINT_LAYOUT_RIGHT_MIN_WIDTH, plotPointLayoutRightWidth),
+    );
+
+    const handleMove = (moveEvent: PointerEvent) => {
+      moveEvent.preventDefault();
+      moveEvent.stopPropagation();
+      const deltaX = (startX - moveEvent.clientX) / eventScale;
+      const nextWidth = Math.min(
+        PLOT_POINT_LAYOUT_RIGHT_MAX_WIDTH,
+        Math.max(PLOT_POINT_LAYOUT_RIGHT_MIN_WIDTH, startWidth + deltaX),
+      );
+      setPlotPointLayoutRightWidth(nextWidth);
+      persistPlotPointLayoutWidth(storageKey, 'right', nextWidth);
+    };
+    const stopResize = () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', stopResize);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', stopResize);
+  };
+
   const leftResizeHandle = (
     <div
       data-no-modal-drag="true"
@@ -2048,6 +2208,28 @@ export function WorkbenchLibraryPanel({
       title="拖拽调整脑洞预览宽度"
     >
       <div className="my-3 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
+    </div>
+  );
+
+  const plotPointLeftResizeHandle = (
+    <div
+      data-no-modal-drag="true"
+      onPointerDown={startPlotPointLeftWidthResize}
+      className="group relative z-30 flex w-2 shrink-0 cursor-col-resize touch-none items-stretch justify-center bg-white transition-colors hover:bg-[#EAF9FD]"
+      title="拖拽调整剧情链左侧宽度"
+    >
+      <div className="w-px bg-transparent transition-colors group-hover:bg-[#08AACE]" />
+    </div>
+  );
+
+  const plotPointRightResizeHandle = (
+    <div
+      data-no-modal-drag="true"
+      onPointerDown={startPlotPointRightWidthResize}
+      className="group relative z-30 flex w-2 shrink-0 cursor-col-resize touch-none items-stretch justify-center bg-white transition-colors hover:bg-[#EAF9FD]"
+      title="拖拽调整剧情链右侧宽度"
+    >
+      <div className="w-px bg-transparent transition-colors group-hover:bg-[#08AACE]" />
     </div>
   );
 
@@ -2110,12 +2292,13 @@ export function WorkbenchLibraryPanel({
   }, [defaultActiveTab, normalizedTabs, storageKey]);
 
   useEffect(() => {
-    if (!categoryMenu && !entryMenu) return;
+    if (!categoryMenu && !entryMenu && !clearSettingsUnlockMenu) return;
     const closeMenu = (event: globalThis.MouseEvent | PointerEvent) => {
       const target = event.target;
       if (target instanceof Element && target.closest('[data-library-context-menu="true"]')) return;
       setCategoryMenu(null);
       setEntryMenu(null);
+      setClearSettingsUnlockMenu(null);
     };
     window.addEventListener('pointerdown', closeMenu, true);
     window.addEventListener('contextmenu', closeMenu, true);
@@ -2123,7 +2306,7 @@ export function WorkbenchLibraryPanel({
       window.removeEventListener('pointerdown', closeMenu, true);
       window.removeEventListener('contextmenu', closeMenu, true);
     };
-  }, [categoryMenu, entryMenu]);
+  }, [categoryMenu, entryMenu, clearSettingsUnlockMenu]);
 
   useEffect(() => {
     if (!outlineStorageKey) {
@@ -2399,6 +2582,7 @@ export function WorkbenchLibraryPanel({
     persist(entries.filter((entry) => entry.tab !== SETTING_TAB));
     if (activeTab === SETTING_TAB) setSelectedId(null);
     setIsClearSettingsConfirmOpen(false);
+    setIsClearSettingsUnlocked(false);
   };
 
   const getNextBrainstormTitle = () => {
@@ -2618,7 +2802,7 @@ export function WorkbenchLibraryPanel({
         promptName: isPromptDisabledForRequest ? '已禁用提示词' : selectedPrompt?.name ?? '默认提示词',
         hasLinkedBrainstorm,
         linkedBrainstormTitle: linkedBrainstorm.title || '未关联脑洞',
-        visibleUserText: text || '（无额外要求）',
+        visibleUserText: activeTab === BRAINSTORM_TAB ? text : text || '（无额外要求）',
         systemPrompt: activeTab === SETTING_TAB ? baseModelPrompt : modelPrompt,
         userContent: activeTab === SETTING_TAB ? (text || '无额外要求') : requestText,
         contextTitle: hasLinkedBrainstorm ? linkedBrainstorm.title : '未关联',
@@ -2805,6 +2989,25 @@ export function WorkbenchLibraryPanel({
         ? { ...entry, ...updates, updatedAt: new Date().toLocaleString('zh-CN') }
         : entry
     )));
+  };
+
+  const startEditingBrainstormOutputTitle = (entry: WorkbenchLibraryEntry | null) => {
+    if (!entry) return;
+    setEditingBrainstormOutputTitleId(entry.id);
+    setBrainstormOutputTitleDraft(entry.title);
+  };
+
+  const cancelEditingBrainstormOutputTitle = () => {
+    setEditingBrainstormOutputTitleId(null);
+    setBrainstormOutputTitleDraft('');
+  };
+
+  const commitBrainstormOutputTitle = () => {
+    const id = editingBrainstormOutputTitleId;
+    if (!id) return;
+    const title = brainstormOutputTitleDraft.trim();
+    if (title) updateEntry(id, { title });
+    cancelEditingBrainstormOutputTitle();
   };
 
   const updateRole = (updates: Partial<RoleContent>) => {
@@ -3160,16 +3363,25 @@ export function WorkbenchLibraryPanel({
     return [...merged, UNCATEGORIZED_TYPE];
   }, [customSettingTypes, hiddenSettingTypes, settingEntries]);
 
-  const renderFieldSizeButton = () => (
-    <button
-      type="button"
-      onClick={() => setIsFieldSizeSettingsOpen(true)}
-      className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 shadow-sm hover:border-[#08AACE] hover:text-[#08AACE]"
-      aria-label={`${fieldSizeTabLabel}字段尺寸`}
-    >
-      <Settings className="h-4 w-4" />
-      字段尺寸
-    </button>
+  const renderFieldSizeButton = () => {
+    if (!showInlineFieldSizeButton) return null;
+    return (
+      <button
+        type="button"
+        onClick={() => setIsFieldSizeSettingsOpen(true)}
+        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 shadow-sm hover:border-[#08AACE] hover:text-[#08AACE]"
+        aria-label={`${fieldSizeTabLabel}字段尺寸`}
+      >
+        <Settings className="h-4 w-4" />
+        字段尺寸
+      </button>
+    );
+  };
+
+  const renderPanelWidthBadge = (width: number) => (
+    <span className="shrink-0 text-[11px] font-black leading-none text-emerald-600">
+      {Math.round(width)}PX
+    </span>
   );
 
   const topTabs = isSettingLibraryPanel ? null : (
@@ -3354,6 +3566,27 @@ export function WorkbenchLibraryPanel({
       onConfirm={clearAllSettings}
     />
   );
+  const clearSettingsUnlockContextMenu = clearSettingsUnlockMenu ? createPortal(
+    <div
+      data-library-context-menu="true"
+      onClick={(event) => event.stopPropagation()}
+      onContextMenu={(event) => event.preventDefault()}
+      className="fixed z-[10000] min-w-[96px] rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
+      style={{ left: clearSettingsUnlockMenu.x, top: clearSettingsUnlockMenu.y }}
+    >
+      <button
+        type="button"
+        onClick={() => {
+          setIsClearSettingsUnlocked(true);
+          setClearSettingsUnlockMenu(null);
+        }}
+        className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-gray-700 hover:bg-gray-50"
+      >
+        解锁
+      </button>
+    </div>,
+    document.body,
+  ) : null;
   const brainstormEntries = entries.filter((entry) => entry.tab === BRAINSTORM_TAB);
   const selectedBrainstormReaderEntry = brainstormEntries.find((entry) => entry.id === selectedBrainstormReaderId) ?? null;
   const selectedBrainstormReaderContent = selectedBrainstormReaderEntry
@@ -3759,11 +3992,11 @@ export function WorkbenchLibraryPanel({
           }`}
         >
           <div className="space-y-3">
-            {BRAINSTORM_QUESTION_FIELDS.map((field) => (
+            {BRAINSTORM_QUESTION_FIELDS.filter((field) => brainstormGenerateDraft[field.key].trim()).map((field) => (
               <section key={field.key} className="rounded-xl border border-gray-200 bg-white p-4">
                 <div className="text-sm font-bold text-gray-900">{field.label}</div>
                 <div className="mt-2 whitespace-pre-wrap break-words text-sm leading-7 text-gray-600">
-                  {brainstormGenerateDraft[field.key].trim() || '未填写'}
+                  {brainstormGenerateDraft[field.key].trim()}
                 </div>
               </section>
             ))}
@@ -3925,6 +4158,7 @@ export function WorkbenchLibraryPanel({
           }}
         >
           <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-4 pb-3 pt-2">
+            <div className="mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(settingLibraryLeftWidth)}</div>
             <div className="flex shrink-0 gap-2">
               <div
                 className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact xy-floating-outline-role-compact xy-floating-custom-field-size min-w-0 ${roleSearch.trim() ? 'xy-has-value' : ''}`}
@@ -4213,7 +4447,10 @@ export function WorkbenchLibraryPanel({
           <aside className="flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 p-4">
             <div className="flex items-center justify-between gap-3">
               <h3 className="shrink-0 text-base font-bold text-gray-900">角色生成</h3>
-              {renderFieldSizeButton()}
+              <div className="flex shrink-0 items-center gap-2">
+                {renderPanelWidthBadge(settingLibraryRightWidth)}
+                {renderFieldSizeButton()}
+              </div>
             </div>
             <div className="mt-4 space-y-3">
               <div
@@ -4350,12 +4587,13 @@ export function WorkbenchLibraryPanel({
     const showPromptDisableButton = activeTab !== SETTING_TAB;
     const rightSelectColumns = MODEL_SELECT_COLUMNS;
     const rightSelectFieldTab = activeIsBrainstorm ? BRAINSTORM_TAB : (activeTab === ROLE_TAB ? ROLE_TAB : SETTING_TAB);
-    const showInlineLibraryAiLogButton = activeTab === SETTING_TAB;
-    const showHeaderLibraryAiLogButton = activeIsBrainstorm;
-    const showPanelHeader = activeTab !== SETTING_TAB || showHeaderLibraryAiLogButton;
-    const brainstormOutputValue = activeIsBrainstorm && isLibraryAiLoading && !aiResult
+    const showInlineLibraryAiLogButton = activeTab === SETTING_TAB || activeIsBrainstorm;
+    const showHeaderLibraryAiLogButton = false;
+    const showPanelHeader = !activeIsBrainstorm && (activeTab !== SETTING_TAB || showHeaderLibraryAiLogButton);
+    const rawBrainstormOutputValue = activeIsBrainstorm && isLibraryAiLoading && !aiResult
       ? `正在生成${'.'.repeat(loadingDotCount)}`
       : aiResult || latestUsefulAiOutput;
+    const brainstormOutputValue = activeIsBrainstorm ? stripAiThinkingBlock(rawBrainstormOutputValue) : rawBrainstormOutputValue;
     const brainstormOutputWordCount = activeIsBrainstorm ? countTextWords(brainstormOutputValue) : 0;
     const previewAiRequestText = activeIsBrainstorm
       ? buildBrainstormPromptFromQuestions(brainstormQuestionDraft)
@@ -4385,20 +4623,19 @@ export function WorkbenchLibraryPanel({
                   <div className="text-xs text-slate-400">提示词</div>
                   <div className="mt-1 font-bold text-slate-800">{visibleAiRequestLog.promptName}</div>
                 </div>
-                <div className="rounded-xl bg-white p-3">
-                  <div className="text-xs text-slate-400">脑洞关联</div>
-                  <div className={`mt-1 font-bold ${visibleAiRequestLog.hasLinkedBrainstorm ? 'text-brand' : 'text-slate-500'}`}>
-                    {visibleAiRequestLog.hasLinkedBrainstorm ? visibleAiRequestLog.linkedBrainstormTitle : '未关联'}
+                {visibleAiRequestLog.visibleUserText.trim() && (
+                  <div className="rounded-xl bg-white p-3">
+                    <div className="text-xs text-slate-400">用户可见输入</div>
+                    <div className="mt-1 break-words font-bold text-slate-800">{visibleAiRequestLog.visibleUserText}</div>
                   </div>
-                </div>
-                <div className="rounded-xl bg-white p-3">
-                  <div className="text-xs text-slate-400">用户可见输入</div>
-                  <div className="mt-1 break-words font-bold text-slate-800">{visibleAiRequestLog.visibleUserText}</div>
-                </div>
+                )}
               </div>
             </aside>
             <div className="min-h-0 overflow-y-auto p-5">
-              <AiRequestLogGroups groups={buildLibraryLogGroups(visibleAiRequestLog)} />
+              <AiRequestLogGroups groups={buildLibraryLogGroups(visibleAiRequestLog, {
+                includeContext: !activeIsBrainstorm,
+                omitEmptyUser: activeIsBrainstorm,
+              })} />
             </div>
           </div>
       </LibraryAiLogShell>
@@ -4413,6 +4650,7 @@ export function WorkbenchLibraryPanel({
         {managementModal && <LibraryManagementModal modal={managementModal} onClose={() => setManagementModal(null)} />}
         {libraryAiLogModal}
         {clearSettingsConfirmDialog}
+        {clearSettingsUnlockContextMenu}
         {brainstormReaderModal}
         {brainstormRecycleModal}
         {clearBrainstormRecycleConfirmDialog}
@@ -4431,26 +4669,59 @@ export function WorkbenchLibraryPanel({
           }}
         >
           <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
+          <div className="mb-2 flex shrink-0 justify-end">
+            {renderPanelWidthBadge(activeIsBrainstorm ? brainstormLayoutLeftWidth : settingLibraryLeftWidth)}
+          </div>
           {!activeIsBrainstorm && (
-            <div className="flex h-10 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className={`grid h-10 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm ${
+              activeTab === SETTING_TAB ? 'grid-cols-4' : 'grid-cols-3'
+            }`}>
+              <div className="flex min-w-0 items-center justify-center whitespace-nowrap bg-brand px-3 text-sm font-bold text-white">
+                新建
+              </div>
               <button
                 type="button"
                 onClick={() => openSettingCreateDialog('category')}
-                className="min-w-0 flex-1 bg-brand px-3 text-sm font-bold text-white transition-colors hover:bg-brand-dark"
+                className="min-w-0 border-l border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-100 whitespace-nowrap"
               >
-                新建分类
+                分类
               </button>
               <button
                 type="button"
                 onClick={() => openSettingCreateDialog('setting')}
-                className="min-w-0 flex-1 border-l border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-100"
+                className="min-w-0 border-l border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-100 whitespace-nowrap"
               >
-                新建设定
+                设定
               </button>
+              {activeTab === SETTING_TAB && (
+                <button
+                  type="button"
+                  aria-label="清空设定"
+                  aria-disabled={!isClearSettingsUnlocked || settingEntries.length === 0}
+                  title={isClearSettingsUnlocked ? '已解锁，左键清空' : '已锁定，右键可以解锁'}
+                  onClick={() => {
+                    if (!isClearSettingsUnlocked || settingEntries.length === 0) return;
+                    setIsClearSettingsConfirmOpen(true);
+                  }}
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    if (settingEntries.length === 0) return;
+                    if (isClearSettingsUnlocked) return;
+                    setClearSettingsUnlockMenu({ x: event.clientX, y: event.clientY });
+                  }}
+                  className={`min-w-0 border-l border-gray-200 px-3 text-sm font-bold text-white transition-colors whitespace-nowrap ${
+                    isClearSettingsUnlocked
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'cursor-default bg-red-500/80 text-white/75'
+                  }`}
+                >
+                  清空
+                </button>
+              )}
             </div>
           )}
 
-          <div className={`${activeIsBrainstorm ? 'mt-0' : 'mt-2.5'} min-h-0 flex-1 overflow-y-auto space-y-2`}>
+          <div className={`${activeIsBrainstorm ? 'mt-0' : 'mt-2'} min-h-0 flex-1 overflow-y-auto space-y-1`}>
             {(activeIsSettingLike ? groupedSettingEntries : [{ type: UNCATEGORIZED_TYPE, entries: currentEntries }]).map((group) => {
               const expanded = expandedSettingTypes.has(group.type);
               const isDropTarget = libraryDropTarget?.tab === activeTab && libraryDropTarget.type === group.type;
@@ -4474,14 +4745,14 @@ export function WorkbenchLibraryPanel({
                         return next;
                       });
                     }}
-                    className="flex w-full items-center gap-2 rounded-xl border border-[#08AACE] bg-[#08AACE] px-3 py-2.5 text-left font-bold text-white transition-colors hover:brightness-95"
+                    className="flex w-full items-center gap-2 rounded-lg border border-[#08AACE] bg-[#08AACE] px-3 py-1.5 text-left text-sm font-bold leading-5 text-white transition-colors hover:brightness-95"
                   >
                     <span className="min-w-0 flex-1 truncate">{group.type}</span>
                     <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs text-white">{group.entries.length}</span>
                     {expanded ? <ChevronDown className="h-3.5 w-3.5 text-white" /> : <ChevronRight className="h-3.5 w-3.5 text-white" />}
                   </button>
                   {expanded && (
-                    <div className="editor-scrollbar mt-1 max-h-[760px] space-y-1 overflow-y-auto pr-1">
+                    <div className="editor-scrollbar mt-0.5 max-h-[760px] space-y-0.5 overflow-y-auto pr-1">
                       {group.entries.length === 0 ? (
                         <p className="px-3 py-4 text-xs text-gray-400">{activeTab === SETTING_TAB ? '暂无设定' : `该分类下暂无${activeTab}`}</p>
                       ) : group.entries.map((entry) => {
@@ -4494,8 +4765,16 @@ export function WorkbenchLibraryPanel({
                             onDragStart={(event) => handleLibraryEntryDragStart(event, entry, parsed?.type ?? group.type)}
                             onDragEnd={handleLibraryEntryDragEnd}
                             onContextMenu={(event) => openEntryMenu(event, entry)}
-                            onClick={() => setSelectedId(entry.id)}
-                            className={`group w-full rounded-xl border px-4 py-2 text-left text-sm transition-colors ${
+                            onClick={() => {
+                              setSelectedId(entry.id);
+                              if (activeIsBrainstorm) {
+                                updateTabConfig(BRAINSTORM_TAB, {
+                                  aiResult: getBrainstormEntryBody(entry),
+                                  aiOutput: '',
+                                });
+                              }
+                            }}
+                            className={`group w-full rounded-lg border px-3 py-1.5 text-left text-sm leading-5 transition-colors ${
                               currentSelectedEntry?.id === entry.id
                                 ? 'border-brand bg-[#FFF7ED] text-gray-900'
                                 : 'border-transparent bg-white text-gray-600 hover:border-gray-200'
@@ -4519,18 +4798,6 @@ export function WorkbenchLibraryPanel({
             })}
 
           </div>
-          {activeTab === SETTING_TAB && (
-            <div className="shrink-0 border-t border-gray-100 bg-gray-50 pt-3">
-              <button
-                type="button"
-                onClick={() => setIsClearSettingsConfirmOpen(true)}
-                disabled={settingEntries.length === 0}
-                className="flex h-11 w-full items-center justify-center rounded-2xl border border-red-100 bg-red-50 text-sm font-bold text-red-500 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-300"
-              >
-                清空设定
-              </button>
-            </div>
-          )}
           {activeIsBrainstorm && (
             <div className="shrink-0 border-t border-gray-100 bg-gray-50 pt-3">
               <button
@@ -4684,11 +4951,6 @@ export function WorkbenchLibraryPanel({
 
           {activeIsBrainstorm && (
             <section className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-white">
-              <div className="flex h-[56px] shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-5">
-                <div className="flex min-w-0 items-center gap-3">
-                  <h3 className="text-base font-bold text-gray-900">脑洞输出框</h3>
-                </div>
-              </div>
               <div className="flex min-h-0 flex-1 flex-col gap-6 p-4">
                 <div className="relative min-h-0 flex-1">
                   <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${brainstormOutputValue.trim() ? 'xy-has-value' : ''}`}>
@@ -4699,9 +4961,41 @@ export function WorkbenchLibraryPanel({
                       className="editor-scrollbar text-sm leading-6 text-gray-700"
                       style={{ fontSize: brainstormOutputFontSize }}
                     />
-                    <label>脑洞输出框</label>
+                    <label aria-hidden="true" className="opacity-0">脑洞输出框</label>
                     <span className="xy-floating-count">{brainstormOutputWordCount} 字</span>
                   </div>
+                  {currentSelectedEntry && (
+                    <div className="absolute left-[32px] top-0 z-20 max-w-[calc(100%-160px)] -translate-y-1/2 bg-white px-1">
+                      {editingBrainstormOutputTitleId === currentSelectedEntry.id ? (
+                        <input
+                          autoFocus
+                          value={brainstormOutputTitleDraft}
+                          onChange={(event) => setBrainstormOutputTitleDraft(event.target.value)}
+                          onBlur={commitBrainstormOutputTitle}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              event.preventDefault();
+                              commitBrainstormOutputTitle();
+                            }
+                            if (event.key === 'Escape') {
+                              event.preventDefault();
+                              cancelEditingBrainstormOutputTitle();
+                            }
+                          }}
+                          className="h-7 max-w-[220px] min-w-[88px] rounded-md border border-[#08AACE] bg-white px-2 text-base font-black leading-none text-slate-950 outline-none"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => startEditingBrainstormOutputTitle(currentSelectedEntry)}
+                          className="block max-w-[220px] truncate bg-white px-1 text-left text-base font-black leading-none text-slate-950 hover:text-[#08AACE]"
+                          title="点击修改脑洞名称"
+                        >
+                          {currentSelectedEntry.title || '未命名脑洞'}
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <div className="xy-floating-edge-tool">
                     <FontSizeStepper
                       value={brainstormOutputFontSize}
@@ -4795,6 +5089,9 @@ export function WorkbenchLibraryPanel({
           {rightResizeHandle}
           <aside className="min-w-0 flex min-h-0 flex-col bg-gray-50">
           <div className="border-b border-gray-100 p-4">
+            <div className="mb-2 flex justify-end">
+              {renderPanelWidthBadge(activeIsBrainstorm ? brainstormLayoutRightWidth : settingLibraryRightWidth)}
+            </div>
             {showPanelHeader && (
             <div className="flex items-center justify-between gap-3">
               {activeTab !== SETTING_TAB ? (
@@ -4818,7 +5115,7 @@ export function WorkbenchLibraryPanel({
             )}
             <div className={`${showPanelHeader ? 'mt-4' : ''} space-y-3`}>
               <div className="flex max-w-full items-start gap-2">
-              <div className="max-w-full" style={getConfigFieldSizeStyle(rightSelectFieldTab, 'model')}>
+              <div className="min-w-0 max-w-full" style={getConfigFieldSizeStyle(rightSelectFieldTab, 'model')}>
                 <div className={`grid ${showPromptDisableButton ? PROMPT_SELECT_COLUMNS : rightSelectColumns} items-start gap-2 text-sm text-gray-500`}>
                   <CapsuleSelect
                     floatingLabel="模型"
@@ -4842,30 +5139,42 @@ export function WorkbenchLibraryPanel({
                 </button>
               )}
               </div>
-              <div className="max-w-full" style={getConfigFieldSizeStyle(rightSelectFieldTab, 'prompt')}>
-                <div className={`grid ${showPromptDisableButton ? PROMPT_SELECT_COLUMNS : rightSelectColumns} items-start gap-2 text-sm text-gray-500`}>
-                  <CapsuleSelect
-                    floatingLabel="提示词"
-                    value={activePromptId ?? ''}
-                    onChange={(value) => updateActiveTabConfig({ promptId: value })}
-                    disabled={showPromptDisableButton && Boolean(activeTabConfig.promptDisabled)}
-                    disabledLabel={showPromptDisableButton ? '提示词已禁用' : undefined}
-                    className="xy-capsule-custom-field-size xy-capsule-fill min-w-0"
-                    buttonClassName="h-11 rounded-xl px-3 text-sm"
-                    options={activeTabPrompts.length === 0 ? [{ value: '', label: `暂无${promptCategory}提示词`, disabled: true }] : activeTabPrompts.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
-                    actionLabel="管理"
-                    onActionClick={() => setManagementModal({
-                      type: 'prompts',
-                      category: activeIsBrainstorm
-                        ? BRAINSTORM_TAB
-                        : activeTab === SETTING_TAB
-                          ? PROMPT_SETTING_CATEGORY
-                        : activeTab,
-                    })}
-                    disableToggleActive={showPromptDisableButton && Boolean(activeTabConfig.promptDisabled)}
-                    onDisableToggle={showPromptDisableButton ? () => updateActiveTabConfig({ promptDisabled: !activeTabConfig.promptDisabled }) : undefined}
-                  />
+              <div className="flex max-w-full items-start gap-2">
+                <div className="min-w-0 max-w-full" style={getAlignedPromptConfigFieldSizeStyle(rightSelectFieldTab)}>
+                  <div className={`grid ${showPromptDisableButton ? PROMPT_SELECT_COLUMNS : rightSelectColumns} items-start gap-2 text-sm text-gray-500`}>
+                    <CapsuleSelect
+                      floatingLabel="提示词"
+                      value={activePromptId ?? ''}
+                      onChange={(value) => updateActiveTabConfig({ promptId: value })}
+                      disabled={showPromptDisableButton && Boolean(activeTabConfig.promptDisabled)}
+                      disabledLabel={showPromptDisableButton ? '提示词已禁用' : undefined}
+                      className="xy-capsule-custom-field-size xy-capsule-fill min-w-0"
+                      buttonClassName="h-11 rounded-xl px-3 text-sm"
+                      options={activeTabPrompts.length === 0 ? [{ value: '', label: `暂无${promptCategory}提示词`, disabled: true }] : activeTabPrompts.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                      actionLabel="管理"
+                      onActionClick={() => setManagementModal({
+                        type: 'prompts',
+                        category: activeIsBrainstorm
+                          ? BRAINSTORM_TAB
+                          : activeTab === SETTING_TAB
+                            ? PROMPT_SETTING_CATEGORY
+                          : activeTab,
+                      })}
+                      disableToggleActive={showPromptDisableButton && Boolean(activeTabConfig.promptDisabled)}
+                      onDisableToggle={showPromptDisableButton ? () => updateActiveTabConfig({ promptDisabled: !activeTabConfig.promptDisabled }) : undefined}
+                    />
+                  </div>
                 </div>
+                {showInlineLibraryAiLogButton && (
+                  <button
+                    type="button"
+                    aria-hidden="true"
+                    tabIndex={-1}
+                    className="invisible mt-2 h-12 shrink-0 rounded-xl border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 shadow-sm"
+                  >
+                    输出日志
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -4876,20 +5185,79 @@ export function WorkbenchLibraryPanel({
                   {BRAINSTORM_QUESTION_FIELDS.map((field, index) => {
                     const isLastField = index === BRAINSTORM_QUESTION_FIELDS.length - 1;
                     const questionRows = getBrainstormQuestionRows(brainstormQuestionDraft[field.key]);
+                    const isCountField = field.key === 'brainstormCount';
+                    const renderBrainstormCountButton = (value: string) => {
+                      const active = brainstormQuestionDraft.brainstormCount === value;
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => setBrainstormQuestionField('brainstormCount', value)}
+                          className={`inline-flex h-9 min-w-[50px] items-center justify-center whitespace-nowrap rounded-xl border px-3 text-sm font-black leading-none transition-colors ${
+                            active
+                              ? 'border-[#08AACE] bg-[#08AACE] text-white'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-[#08AACE] hover:bg-[#EAF9FD] hover:text-[#08AACE]'
+                          }`}
+                        >
+                          {value}
+                        </button>
+                      );
+                    };
+                    if (field.key === 'brainstormBackground') return null;
+                    if (field.key === 'brainstormGenre') {
+                      const pairedFields = BRAINSTORM_QUESTION_FIELDS.filter((item) => (
+                        item.key === 'brainstormGenre' || item.key === 'brainstormBackground'
+                      ));
+                      return (
+                        <div key="brainstorm-genre-background-row" className="grid grid-cols-2 gap-3 text-sm font-bold text-gray-700">
+                          {pairedFields.map((pairedField) => {
+                            const pairedRows = getBrainstormQuestionRows(brainstormQuestionDraft[pairedField.key]);
+                            return (
+                              <div
+                                key={pairedField.key}
+                                className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${brainstormQuestionDraft[pairedField.key].trim() ? 'xy-has-value' : ''}`}
+                              >
+                                <textarea
+                                  value={brainstormQuestionDraft[pairedField.key]}
+                                  onChange={(event) => setBrainstormQuestionField(pairedField.key, event.target.value)}
+                                  placeholder={pairedField.placeholder}
+                                  rows={1}
+                                  className="font-bold leading-5"
+                                  style={{
+                                    height: `${Math.max(52, pairedRows * 20 + 32)}px`,
+                                    overflowY: pairedRows >= 4 ? 'auto' : 'hidden',
+                                  }}
+                                />
+                                <label>{pairedField.label}</label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    }
                     return (
                     <div key={field.key} className={`${isLastField ? 'flex min-h-[132px] flex-1 flex-col' : 'block'} text-sm font-bold text-gray-700`}>
                       <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${isLastField ? 'flex flex-1 flex-col' : ''} ${brainstormQuestionDraft[field.key].trim() ? 'xy-has-value' : ''}`}>
-                      <textarea
-                        value={brainstormQuestionDraft[field.key]}
-                        onChange={(event) => setBrainstormQuestionField(field.key, event.target.value)}
-                        placeholder={field.placeholder}
-                        rows={1}
-                        className={`${isLastField ? 'min-h-0 flex-1' : ''} font-bold leading-5`}
-                        style={{
-                          height: isLastField ? undefined : `${Math.max(52, questionRows * 20 + 32)}px`,
-                          overflowY: isLastField || questionRows >= 4 ? 'auto' : 'hidden',
-                        }}
-                      />
+                      {isCountField ? (
+                        <div className="flex h-[60px] items-center gap-2 px-4 pt-3">
+                          {renderBrainstormCountButton('1个')}
+                          {renderBrainstormCountButton('2个')}
+                          {renderBrainstormCountButton('3个')}
+                          {renderBrainstormCountButton('5个')}
+                          {renderBrainstormCountButton('10个')}
+                        </div>
+                      ) : (
+                        <textarea
+                          value={brainstormQuestionDraft[field.key]}
+                          onChange={(event) => setBrainstormQuestionField(field.key, event.target.value)}
+                          placeholder={field.placeholder}
+                          rows={1}
+                          className={`${isLastField ? 'min-h-0 flex-1' : ''} font-bold leading-5`}
+                          style={{
+                            height: isLastField ? undefined : `${Math.max(52, questionRows * 20 + 32)}px`,
+                            overflowY: isLastField || questionRows >= 4 ? 'auto' : 'hidden',
+                          }}
+                        />
+                      )}
                       <label>{field.label}</label>
                       </div>
                     </div>
@@ -4987,7 +5355,7 @@ export function WorkbenchLibraryPanel({
                         setSelectedBrainstormReaderId(activeTabConfig.loadedBrainstormId ?? null);
                         setIsBrainstormReaderOpen(true);
                       }}
-                      className="h-10 w-1/3 rounded-xl border border-[#08AACE] bg-white px-3 text-sm font-black text-[#08AACE] hover:bg-[#EAF9FD]"
+                      className="h-12 min-w-[118px] whitespace-nowrap rounded-xl border border-[#08AACE] bg-white px-4 text-sm font-black text-[#08AACE] hover:bg-[#EAF9FD]"
                     >
                       关联脑洞
                     </button>
@@ -6281,14 +6649,20 @@ export function WorkbenchLibraryPanel({
       : '未选择';
     if (plotPointStandalone) {
       return (
-        <div className="flex min-h-0 flex-1 flex-col bg-[#f6f8fb]" style={scaleStyle}>
+        <div className="flex min-h-0 flex-1 flex-col bg-white" style={scaleStyle}>
           {fieldSizeSettingsModal}
           {managementModal && <LibraryManagementModal modal={managementModal} onClose={() => setManagementModal(null)} />}
           {outlineAiLogModal}
           {detailOutlineReaderModal}
-          <main className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)_360px] gap-4 overflow-hidden p-4">
-            <aside className="flex min-h-0 flex-col rounded-xl border border-slate-200 bg-white">
+          <main
+            className="grid min-h-0 flex-1 overflow-hidden bg-white"
+            style={{
+              gridTemplateColumns: `${plotPointLayoutLeftWidth}px 8px minmax(${PLOT_POINT_LAYOUT_CENTER_MIN_WIDTH}px,1fr) 8px ${plotPointLayoutRightWidth}px`,
+            }}
+          >
+            <aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-white">
               <div className="shrink-0 border-b border-slate-100 px-4 py-3">
+                <div className="mb-2 flex justify-end">{renderPanelWidthBadge(plotPointLayoutLeftWidth)}</div>
                 <div className="mb-2 flex items-center gap-1.5">
                   {PLOT_POINT_CHAIN_SLOTS.map((slot) => {
                     const active = plotPointActiveChainSlot === slot;
@@ -6378,7 +6752,9 @@ export function WorkbenchLibraryPanel({
               </div>
             </aside>
 
-            <section className="flex min-h-0 flex-col rounded-xl border border-slate-200 bg-white">
+            {plotPointLeftResizeHandle}
+
+            <section className="min-w-0 flex min-h-0 flex-col bg-white">
               <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-4">
                 <div>
                   <h2 className="text-sm font-black text-slate-950">剧情点预览</h2>
@@ -6513,9 +6889,12 @@ export function WorkbenchLibraryPanel({
               </div>
             </section>
 
-            <aside className="flex min-h-0 flex-col rounded-xl border border-slate-200 bg-white">
+            {plotPointRightResizeHandle}
+
+            <aside className="min-w-0 flex min-h-0 flex-col border-l border-slate-100 bg-white">
               <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4">
-                <section className="shrink-0 rounded-xl border border-slate-200 bg-white p-3">
+                <div className="-mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(plotPointLayoutRightWidth)}</div>
+                <section className="shrink-0">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <div className="text-sm font-black text-slate-950">生成配置</div>
@@ -6527,6 +6906,8 @@ export function WorkbenchLibraryPanel({
                         value={activeTabConfig.modelId ?? ''}
                         onChange={(value) => updateActiveTabConfig({ modelId: value })}
                         options={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
+                        className="xy-capsule-custom-field-size xy-capsule-fill min-w-0"
+                        style={getFieldSizeStyle(outlineModelFieldSizeKey)}
                         buttonClassName="h-11 rounded-xl px-3 text-sm"
                         actionLabel="管理"
                         onActionClick={() => setManagementModal({ type: 'models' })}
@@ -6539,15 +6920,22 @@ export function WorkbenchLibraryPanel({
                         输出日志
                       </button>
                     </div>
-                    <CapsuleSelect
-                      floatingLabel="提示词"
-                      value={activeOutlinePromptId ?? ''}
-                      onChange={updateOutlinePromptId}
-                      options={outlinePromptOptions.length === 0 ? [{ value: '', label: `暂无${outlinePromptCategory}提示词`, disabled: true }] : outlinePromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
-                      buttonClassName="h-11 rounded-xl px-3 text-sm"
-                      actionLabel="管理"
-                      onActionClick={() => setManagementModal({ type: 'prompts', category: outlinePromptCategory })}
-                    />
+                    <div className="grid grid-cols-[minmax(0,1fr)_88px] items-start gap-2">
+                      <CapsuleSelect
+                        floatingLabel="提示词"
+                        value={activeOutlinePromptId ?? ''}
+                        onChange={updateOutlinePromptId}
+                        options={outlinePromptOptions.length === 0 ? [{ value: '', label: `暂无${outlinePromptCategory}提示词`, disabled: true }] : outlinePromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                        className="xy-capsule-custom-field-size xy-capsule-fill min-w-0"
+                        style={getAlignedFieldSizeStyle(outlineModelFieldSizeKey, outlinePromptFieldSizeKey)}
+                        buttonClassName="h-11 rounded-xl px-3 text-sm"
+                        actionLabel="管理"
+                        onActionClick={() => setManagementModal({ type: 'prompts', category: outlinePromptCategory })}
+                      />
+                      <div aria-hidden="true" className="invisible mt-2 h-11 shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black">
+                        输出日志
+                      </div>
+                    </div>
                     <div className="pt-1 text-sm font-black text-slate-950">生成规则</div>
                     <div className="flex items-center gap-3">
                       <span className="w-[96px] shrink-0 text-sm font-black text-slate-950">长度：</span>
@@ -6726,6 +7114,7 @@ export function WorkbenchLibraryPanel({
           style={{ gridTemplateColumns: `${outlineSidebarWidth}px 8px minmax(0,1fr) 8px ${settingLibraryRightWidth}px` }}
         >
             <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
+          <div className="mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(outlineSidebarWidth)}</div>
           <section className="flex min-h-0 flex-1 flex-col rounded-xl border border-gray-200 bg-white p-4">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-base font-bold text-gray-900">{isDetailOutlineTab ? '章纲目录' : '章节概要'}</h3>
@@ -6896,7 +7285,8 @@ export function WorkbenchLibraryPanel({
         </main>
 
         {rightResizeHandle}
-        <aside className="min-w-0 flex min-h-0 flex-col bg-gray-50 p-4">
+        <aside className="min-w-0 flex min-h-0 flex-col border-l border-gray-100 bg-white p-4">
+          <div className="mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(settingLibraryRightWidth)}</div>
           <div className="space-y-3">
             <div className="grid grid-cols-[minmax(0,1fr)_96px] items-start gap-2 text-sm text-gray-500">
               <div className="max-w-full" style={getFieldSizeStyle(outlineModelFieldSizeKey)}>
@@ -6919,7 +7309,7 @@ export function WorkbenchLibraryPanel({
               </button>
             </div>
             <div className="grid grid-cols-[minmax(0,1fr)_96px] items-start gap-2 text-sm text-gray-500">
-              <div className="max-w-full" style={getFieldSizeStyle(outlinePromptFieldSizeKey)}>
+              <div className="max-w-full" style={getAlignedFieldSizeStyle(outlineModelFieldSizeKey, outlinePromptFieldSizeKey)}>
                 <CapsuleSelect
                   floatingLabel="提示词"
                   value={activeOutlinePromptId ?? ''}
@@ -7170,3 +7560,4 @@ export function WorkbenchLibraryPanel({
     </div>
   );
 }
+

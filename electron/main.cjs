@@ -11,6 +11,7 @@ try {
   PgClient = null;
 }
 const {
+  normalizeDatabaseDataDir,
   normalizeCollectionName,
   normalizeItemsArray,
   normalizeModelRequestInput,
@@ -516,7 +517,9 @@ function quotePgIdentifier(value) {
 }
 
 function makeDatabaseSettings(input = {}) {
-  const dataDir = String(input.dataDir || DEFAULT_DATABASE_DIR);
+  const dirResult = normalizeDatabaseDataDir(input.dataDir, DEFAULT_DATABASE_DIR);
+  if (!dirResult.ok) throw new Error(dirResult.message);
+  const dataDir = dirResult.dataDir;
   const port = Number(input.port);
   return {
     engine: 'postgresql-pgvector',
@@ -606,15 +609,16 @@ function writeDatabaseFiles(settingsInput = {}) {
 }
 
 function readDatabaseSettingsFromDisk(dataDir = DEFAULT_DATABASE_DIR) {
-  const settingsFile = getDatabaseSettingsFile(dataDir);
+  const safeDataDir = resolveDatabaseDataDir(dataDir);
+  const settingsFile = getDatabaseSettingsFile(safeDataDir);
   if (!fs.existsSync(settingsFile)) {
-    return makeDatabaseSettings({ dataDir });
+    return makeDatabaseSettings({ dataDir: safeDataDir });
   }
   try {
     const parsed = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
-    return makeDatabaseSettings(parsed);
+    return makeDatabaseSettings({ ...parsed, dataDir: parsed?.dataDir ?? safeDataDir });
   } catch {
-    return makeDatabaseSettings({ dataDir });
+    return makeDatabaseSettings({ dataDir: safeDataDir });
   }
 }
 
@@ -658,6 +662,31 @@ function writeDatabaseCollection(collection, items, dataDir = DEFAULT_DATABASE_D
       message: error instanceof Error ? error.message : 'Failed to write database collection.',
     };
   }
+}
+
+function resolveDatabaseDataDir(input) {
+  const result = normalizeDatabaseDataDir(input, DEFAULT_DATABASE_DIR);
+  if (!result.ok) throw new Error(result.message);
+  return result.dataDir;
+}
+
+function makeDatabaseFailureResponse(message) {
+  const settings = makeDatabaseSettings();
+  return {
+    ok: false,
+    settings,
+    status: getDatabaseDirectoryStatus(settings.dataDir),
+    message,
+  };
+}
+
+function makeDatabaseCollectionFailureResponse(message) {
+  return {
+    ok: false,
+    exists: false,
+    data: [],
+    message,
+  };
 }
 
 function getPostgresConnectionConfig(settings) {
@@ -2454,7 +2483,8 @@ ipcMain.handle('database:select-directory', async () => {
     properties: ['openDirectory', 'createDirectory'],
   });
   if (result.canceled || result.filePaths.length === 0) return null;
-  return result.filePaths[0];
+  const dirResult = normalizeDatabaseDataDir(result.filePaths[0], DEFAULT_DATABASE_DIR);
+  return dirResult.ok ? dirResult.dataDir : null;
 });
 
 ipcMain.handle('database:read-settings', async () => {
@@ -2476,64 +2506,100 @@ ipcMain.handle('database:save-settings', async (_event, input) => {
       message: 'Database settings saved.',
     };
   } catch (error) {
-    const settings = makeDatabaseSettings(input);
-    return {
-      ok: false,
-      settings,
-      status: getDatabaseDirectoryStatus(settings.dataDir),
-      message: error instanceof Error ? error.message : 'Failed to save database settings.',
-    };
+    return makeDatabaseFailureResponse(error instanceof Error ? error.message : 'Failed to save database settings.');
   }
 });
 
 ipcMain.handle('database:get-status', async (_event, dataDir) => {
-  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
-  return getDatabaseDirectoryStatus(dir);
+  try {
+    return getDatabaseDirectoryStatus(resolveDatabaseDataDir(dataDir));
+  } catch (error) {
+    return {
+      ...getDatabaseDirectoryStatus(DEFAULT_DATABASE_DIR),
+      ok: false,
+      message: error instanceof Error ? error.message : 'Invalid database directory.',
+    };
+  }
 });
 
 ipcMain.handle('database:get-embedded-postgres-status', async (_event, dataDir) => {
-  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
-  return getEmbeddedPostgresStatus(dir);
+  try {
+    return getEmbeddedPostgresStatus(resolveDatabaseDataDir(dataDir));
+  } catch (error) {
+    return {
+      ok: false,
+      running: false,
+      initialized: false,
+      pid: null,
+      port: null,
+      dataDir: DEFAULT_DATABASE_DIR,
+      message: error instanceof Error ? error.message : 'Invalid database directory.',
+    };
+  }
 });
 
 ipcMain.handle('database:initialize-embedded-postgres', async (_event, dataDir) => {
-  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
-  return initializeEmbeddedPostgres(dir);
+  try {
+    return initializeEmbeddedPostgres(resolveDatabaseDataDir(dataDir));
+  } catch (error) {
+    return makeDatabaseFailureResponse(error instanceof Error ? error.message : 'Invalid database directory.');
+  }
 });
 
 ipcMain.handle('database:start-embedded-postgres', async (_event, dataDir) => {
-  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
-  return startEmbeddedPostgres(dir);
+  try {
+    return startEmbeddedPostgres(resolveDatabaseDataDir(dataDir));
+  } catch (error) {
+    return makeDatabaseFailureResponse(error instanceof Error ? error.message : 'Invalid database directory.');
+  }
 });
 
 ipcMain.handle('database:stop-embedded-postgres', async (_event, dataDir) => {
-  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
-  return stopEmbeddedPostgres(dir);
+  try {
+    return stopEmbeddedPostgres(resolveDatabaseDataDir(dataDir));
+  } catch (error) {
+    return makeDatabaseFailureResponse(error instanceof Error ? error.message : 'Invalid database directory.');
+  }
 });
 
 ipcMain.handle('database:read-collection', async (_event, collection, dataDir) => {
-  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
-  return readDatabaseCollection(collection, dir);
+  try {
+    return readDatabaseCollection(collection, resolveDatabaseDataDir(dataDir));
+  } catch (error) {
+    return makeDatabaseCollectionFailureResponse(error instanceof Error ? error.message : 'Invalid database directory.');
+  }
 });
 
 ipcMain.handle('database:write-collection', async (_event, collection, items, dataDir) => {
-  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
-  return writeDatabaseCollection(collection, items, dir);
+  try {
+    return writeDatabaseCollection(collection, items, resolveDatabaseDataDir(dataDir));
+  } catch (error) {
+    return makeDatabaseCollectionFailureResponse(error instanceof Error ? error.message : 'Invalid database directory.');
+  }
 });
 
 ipcMain.handle('database:read-moonfall-postgres', async (_event, dataDir) => {
-  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
-  return readMoonfallStateFromPostgres(dir);
+  try {
+    return readMoonfallStateFromPostgres(resolveDatabaseDataDir(dataDir));
+  } catch (error) {
+    return { ok: false, state: null, message: error instanceof Error ? error.message : 'Invalid database directory.' };
+  }
 });
 
 ipcMain.handle('database:write-moonfall-postgres', async (_event, state, dataDir) => {
-  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
-  return writeMoonfallStateToPostgres(state, dir);
+  try {
+    return writeMoonfallStateToPostgres(state, resolveDatabaseDataDir(dataDir));
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : 'Invalid database directory.' };
+  }
 });
 
 ipcMain.handle('database:retrieve-moonfall-rag', async (_event, input, dataDir) => {
-  const dir = typeof dataDir === 'string' && dataDir.trim() ? dataDir : DEFAULT_DATABASE_DIR;
-  return retrieveMoonfallRagFromPostgres(input, dir);
+  try {
+    return retrieveMoonfallRagFromPostgres(input, resolveDatabaseDataDir(dataDir));
+  } catch (error) {
+    return { ok: false, matches: [], message: error instanceof Error ? error.message : 'Invalid database directory.' };
+  }
 });
 
 app.on('before-quit', () => {

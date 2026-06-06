@@ -57,6 +57,10 @@ const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 150;
 const SPLIT_BUTTON_OUTLINE_GROUP_CLASS = 'flex h-8 items-stretch overflow-hidden rounded-md border border-brand bg-white shadow-none';
 const SPLIT_BUTTON_OUTLINE_ACTION_CLASS = 'inline-flex flex-1 items-center justify-center whitespace-nowrap px-1.5 text-sm font-medium text-brand transition-colors hover:bg-brand-light';
+const REVIEW_PAGE_LEFT_WIDTH = 220;
+const REVIEW_PAGE_RIGHT_WIDTH = 300;
+const STATUS_PAGE_LEFT_WIDTH = 230;
+const STATUS_PAGE_RIGHT_WIDTH = 360;
 type EditorFieldSizeKey = 'reviewActionGroup' | 'reviewModelSelect' | 'reviewAuditPromptSelect' | 'reviewCommentPromptSelect';
 type EditorFieldSizeSpec = { width: number; height: number; fontSize: number };
 type EditorFieldSizeProp = keyof EditorFieldSizeSpec;
@@ -120,6 +124,7 @@ function writeEditorFieldSizeSpecs(specs: Record<EditorFieldSizeKey, EditorField
 function getEditorFieldSizeStyle(spec: EditorFieldSizeSpec): CSSProperties {
   return {
     width: spec.width,
+    minWidth: EDITOR_FIELD_SIZE_LIMITS.width.min,
     maxWidth: '100%',
     '--xy-field-width': `${spec.width}px`,
     '--xy-field-height': `${spec.height}px`,
@@ -198,9 +203,31 @@ function readAssociatedChapterCount(chapters: Pick<Chapter, 'id'>[]) {
 }
 
 type ChapterEditorEmbeddedMode = 'audit' | 'comment' | 'status';
+type ReviewMode = 'audit' | 'comment';
+type ReviewModeState = {
+  input: string;
+  output: string;
+  revisedDraft: string;
+  compareView: 'preview' | 'paragraph' | 'full';
+  appliedParagraphs: Set<number>;
+  requestLog: string;
+};
+
+function createReviewModeState(): ReviewModeState {
+  return {
+    input: '',
+    output: '',
+    revisedDraft: '',
+    compareView: 'preview',
+    appliedParagraphs: new Set(),
+    requestLog: '',
+  };
+}
 
 interface ChapterEditorProps {
   embeddedMode?: ChapterEditorEmbeddedMode;
+  fieldSizeOpenSignal?: number;
+  showInlineFieldSizeButton?: boolean;
   chapter: Chapter | null;
   volumeName: string | null;
   content: string;
@@ -412,6 +439,8 @@ function renderInlineTextDiff(before: string, after: string, mode: 'before' | 'a
 
 export function ChapterEditor({
   embeddedMode,
+  fieldSizeOpenSignal = 0,
+  showInlineFieldSizeButton = true,
   chapter,
   volumeName,
   content,
@@ -439,6 +468,7 @@ export function ChapterEditor({
   const [isReviewOpen, setIsReviewOpen] = useState(() => embeddedMode === 'audit' || embeddedMode === 'comment');
   const [isStatusUpdateOpen, setIsStatusUpdateOpen] = useState(() => embeddedMode === 'status');
   const [isEditorFieldSizeOpen, setIsEditorFieldSizeOpen] = useState(false);
+  const lastFieldSizeOpenSignalRef = useRef(fieldSizeOpenSignal);
   const [editorFieldSizeSpecs, setEditorFieldSizeSpecs] = useState<Record<EditorFieldSizeKey, EditorFieldSizeSpec>>(() => readEditorFieldSizeSpecs());
   const [reviewChapterId, setReviewChapterId] = useState<number | null>(() => chapter?.id ?? null);
   const [statusChapterId, setStatusChapterId] = useState<number | null>(() => chapter?.id ?? null);
@@ -446,18 +476,16 @@ export function ChapterEditor({
   const [statusTargetIds, setStatusTargetIds] = useState<Set<string>>(() => new Set());
   const [statusDraft, setStatusDraft] = useState('');
   const [reviewModelId, setReviewModelId] = useState('');
-  const [reviewMode, setReviewMode] = useState<'audit' | 'comment'>(() => embeddedMode === 'comment' ? 'comment' : 'audit');
+  const [reviewMode, setReviewMode] = useState<ReviewMode>(() => embeddedMode === 'comment' ? 'comment' : 'audit');
   const [reviewAuditPromptId, setReviewAuditPromptId] = useState('');
   const [reviewCommentPromptId, setReviewCommentPromptId] = useState('');
-  const [reviewAiInput, setReviewAiInput] = useState('');
-  const [reviewAiOutput, setReviewAiOutput] = useState('');
-  const [reviewRevisedDraft, setReviewRevisedDraft] = useState('');
-  const [reviewCompareView, setReviewCompareView] = useState<'preview' | 'paragraph' | 'full'>('preview');
-  const [reviewAppliedParagraphs, setReviewAppliedParagraphs] = useState<Set<number>>(() => new Set());
+  const [reviewModeStates, setReviewModeStates] = useState<Record<ReviewMode, ReviewModeState>>(() => ({
+    audit: createReviewModeState(),
+    comment: createReviewModeState(),
+  }));
   const [isReviewAiLoading, setIsReviewAiLoading] = useState(false);
   const [isReviewLogOpen, setIsReviewLogOpen] = useState(false);
   const [reviewManagementModal, setReviewManagementModal] = useState<'models' | 'prompts' | null>(null);
-  const [reviewRequestLog, setReviewRequestLog] = useState('');
   const [embeddedPortalElement, setEmbeddedPortalElement] = useState<HTMLDivElement | null>(null);
   const [isFindOpen, setIsFindOpen] = useState(false);
   const [findText, setFindText] = useState('');
@@ -473,7 +501,52 @@ export function ChapterEditor({
   const associatedSelectionRef = useRef(false);
   const prevContentRef = useRef('');
   const pendingCursorRef = useRef<{ text: string; cursorPos: number; scrollTop: number } | null>(null);
-
+  const activeReviewState = reviewModeStates[reviewMode];
+  const updateReviewModeState = (mode: ReviewMode, updater: (state: ReviewModeState) => ReviewModeState) => {
+    setReviewModeStates((prev) => ({
+      ...prev,
+      [mode]: updater(prev[mode]),
+    }));
+  };
+  const updateActiveReviewState = (updater: (state: ReviewModeState) => ReviewModeState) => {
+    updateReviewModeState(reviewMode, updater);
+  };
+  const reviewAiInput = activeReviewState.input;
+  const reviewAiOutput = activeReviewState.output;
+  const reviewRevisedDraft = activeReviewState.revisedDraft;
+  const reviewCompareView = activeReviewState.compareView;
+  const reviewAppliedParagraphs = activeReviewState.appliedParagraphs;
+  const reviewRequestLog = activeReviewState.requestLog;
+  const setReviewAiInput = (value: string | ((current: string) => string)) => {
+    updateActiveReviewState((state) => ({
+      ...state,
+      input: typeof value === 'function' ? value(state.input) : value,
+    }));
+  };
+  const setReviewAiOutput = (value: string | ((current: string) => string)) => {
+    updateActiveReviewState((state) => ({
+      ...state,
+      output: typeof value === 'function' ? value(state.output) : value,
+    }));
+  };
+  const setReviewRevisedDraft = (value: string | ((current: string) => string)) => {
+    updateActiveReviewState((state) => ({
+      ...state,
+      revisedDraft: typeof value === 'function' ? value(state.revisedDraft) : value,
+    }));
+  };
+  const setReviewCompareView = (value: ReviewModeState['compareView'] | ((current: ReviewModeState['compareView']) => ReviewModeState['compareView'])) => {
+    updateActiveReviewState((state) => ({
+      ...state,
+      compareView: typeof value === 'function' ? value(state.compareView) : value,
+    }));
+  };
+  const setReviewAppliedParagraphs = (value: Set<number> | ((current: Set<number>) => Set<number>)) => {
+    updateActiveReviewState((state) => ({
+      ...state,
+      appliedParagraphs: typeof value === 'function' ? value(state.appliedParagraphs) : value,
+    }));
+  };
   useTopModalEscape(isReviewLogOpen, () => setIsReviewLogOpen(false));
   useTopModalEscape(Boolean(reviewManagementModal), () => setReviewManagementModal(null));
   useTopModalEscape(isEditorFieldSizeOpen, () => setIsEditorFieldSizeOpen(false));
@@ -481,11 +554,26 @@ export function ChapterEditor({
   useTopModalEscape(!embeddedMode && isStatusUpdateOpen, () => setIsStatusUpdateOpen(false));
   useTopModalEscape(isFindOpen, () => setIsFindOpen(false));
 
+  useEffect(() => {
+    if (fieldSizeOpenSignal <= 0 || fieldSizeOpenSignal === lastFieldSizeOpenSignalRef.current) return;
+    lastFieldSizeOpenSignalRef.current = fieldSizeOpenSignal;
+    setIsEditorFieldSizeOpen(true);
+  }, [fieldSizeOpenSignal]);
+
   const titleCount = chapter?.title.length ?? 0;
   const serialValue = chapter?.serialNumber ?? 1;
   const safeVolumeName = volumeName ?? '第一卷';
   const wordCount = useMemo(() => content.replace(/\s/g, '').length, [content]);
   const getEditorFieldStyle = (key: EditorFieldSizeKey) => getEditorFieldSizeStyle(editorFieldSizeSpecs[key] ?? EDITOR_FIELD_SIZE_DEFAULTS[key]);
+  const getAlignedEditorPromptFieldStyle = (promptKey: EditorFieldSizeKey): CSSProperties => {
+    const promptSpec = editorFieldSizeSpecs[promptKey] ?? EDITOR_FIELD_SIZE_DEFAULTS[promptKey];
+    const modelSpec = editorFieldSizeSpecs.reviewModelSelect ?? EDITOR_FIELD_SIZE_DEFAULTS.reviewModelSelect;
+    return {
+      ...getEditorFieldSizeStyle(promptSpec),
+      width: modelSpec.width,
+      '--xy-field-width': `${modelSpec.width}px`,
+    } as CSSProperties;
+  };
   const updateEditorFieldSizeSpec = (key: EditorFieldSizeKey, prop: EditorFieldSizeProp, value: number) => {
     setEditorFieldSizeSpecs((prev) => {
       const next = {
@@ -570,13 +658,33 @@ export function ChapterEditor({
       .filter((item) => statusUpdateSourceEntries.some((entry) => getExistingStatusForChapter(entry.content, item.serialNumber)))
       .map((item) => item.id),
   ), [sortedStatusChapters, statusUpdateSourceEntries]);
+  const renderPanelWidthBadge = (width: number) => (
+    <span className="shrink-0 text-[11px] font-black leading-none text-emerald-600">
+      {Math.round(width)}PX
+    </span>
+  );
 
   useEffect(() => {
     if (chapter) {
       setReviewChapterId(chapter.id);
-      setReviewRevisedDraft('');
-      setReviewAppliedParagraphs(new Set());
-      setReviewCompareView('preview');
+      setReviewModeStates((prev) => ({
+        audit: {
+          ...prev.audit,
+          output: '',
+          revisedDraft: '',
+          appliedParagraphs: new Set(),
+          compareView: 'preview',
+          requestLog: '',
+        },
+        comment: {
+          ...prev.comment,
+          output: '',
+          revisedDraft: '',
+          appliedParagraphs: new Set(),
+          compareView: 'preview',
+          requestLog: '',
+        },
+      }));
     }
   }, [chapter?.id]);
 
@@ -605,6 +713,19 @@ export function ChapterEditor({
     setIsReviewLogOpen(false);
     setReviewManagementModal(null);
     setIsReviewOpen(true);
+  };
+
+  const selectReviewChapter = (nextChapterId: number) => {
+    setReviewChapterId(nextChapterId);
+    setIsReviewLogOpen(false);
+    updateActiveReviewState((state) => ({
+      ...state,
+      output: '',
+      revisedDraft: '',
+      appliedParagraphs: new Set(),
+      compareView: 'preview',
+      requestLog: '',
+    }));
   };
 
   const openStatusUpdate = () => {
@@ -667,7 +788,7 @@ export function ChapterEditor({
     ));
     setStatusEntries(nextEntries);
     writeWorkbenchLibraryEntries(settingsStorageKey, nextEntries);
-    setIsStatusUpdateOpen(false);
+    if (!embeddedMode) setIsStatusUpdateOpen(false);
     showToast(`已更新 ${statusTargetIds.size} 个状态到第${activeStatusChapter.serialNumber}章`);
   };
 
@@ -724,20 +845,33 @@ export function ChapterEditor({
 
   const sendReviewAiMessage = async () => {
     if (isReviewAiLoading) return;
+    const requestMode = reviewMode;
+    const updateRequestReviewState = (updater: (state: ReviewModeState) => ReviewModeState) => {
+      updateReviewModeState(requestMode, updater);
+    };
+    const setRequestReviewOutput = (value: string | ((current: string) => string)) => {
+      updateRequestReviewState((state) => ({
+        ...state,
+        output: typeof value === 'function' ? value(state.output) : value,
+      }));
+    };
     if (!activeReviewChapter) {
-      setReviewAiOutput('【错误】请先选择需要审核点评的章节。');
+      setRequestReviewOutput('【错误】请先选择需要审核点评的章节。');
       return;
     }
     if (!activeReviewModel) {
-      setReviewAiOutput('【错误】尚未配置可用模型，请先到模型管理中新增并启用模型。');
+      setRequestReviewOutput('【错误】尚未配置可用模型，请先到模型管理中新增并启用模型。');
       return;
     }
     const { promptText, userText, chapterContext, requestLog } = buildReviewPayload();
     const controller = new AbortController();
     reviewAiAbortRef.current = controller;
     setIsReviewAiLoading(true);
-    setReviewRequestLog(requestLog);
-    setReviewAiOutput('正在思考...');
+    updateRequestReviewState((state) => ({
+      ...state,
+      requestLog,
+      output: '正在思考...',
+    }));
     try {
       let answer = '';
       let reasoningContent = '';
@@ -752,28 +886,31 @@ export function ChapterEditor({
         signal: controller.signal,
         onReasoning: (chunk) => {
           reasoningContent += chunk;
-          setReviewAiOutput(formatAiThinkingResponse(answer, reasoningContent, getThinkingSeconds(), false));
+          setRequestReviewOutput(formatAiThinkingResponse(answer, reasoningContent, getThinkingSeconds(), false));
         },
         onChunk: (chunk) => {
           answer += chunk;
-          setReviewAiOutput(formatAiThinkingResponse(answer, reasoningContent, getThinkingSeconds(), false));
+          setRequestReviewOutput(formatAiThinkingResponse(answer, reasoningContent, getThinkingSeconds(), false));
         },
       });
-      setReviewAiOutput(reasoningContent.trim()
+      setRequestReviewOutput(reasoningContent.trim()
         ? formatAiThinkingResponse(answer, reasoningContent, getThinkingSeconds(), true)
         : answer);
       const revised = extractReviewRevisedText(answer);
       if (revised) {
-        setReviewRevisedDraft(revised);
-        setReviewAppliedParagraphs(new Set());
-        setReviewCompareView('paragraph');
+        updateRequestReviewState((state) => ({
+          ...state,
+          revisedDraft: revised,
+          appliedParagraphs: new Set(),
+          compareView: 'paragraph',
+        }));
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
-        setReviewAiOutput((value) => value.trim() || '【已停止】本次审核点评已停止。');
+        setRequestReviewOutput((value) => value.trim() || '【已停止】本次审核点评已停止。');
       } else {
         const message = error instanceof Error ? error.message : '模型请求失败。';
-        setReviewAiOutput(`【错误】${message}`);
+        setRequestReviewOutput(`【错误】${message}`);
       }
     } finally {
       if (reviewAiAbortRef.current === controller) reviewAiAbortRef.current = null;
@@ -1404,7 +1541,7 @@ export function ChapterEditor({
         />
       </div>
 
-      <div className="flex min-h-[39px] items-center justify-between border-t border-gray-100 bg-white px-5 py-3 text-sm text-gray-400">
+      <div className="flex min-h-[39px] items-center justify-between border-t border-[#08AACE] bg-white px-5 py-3 text-sm text-gray-400">
         {associatedCount > 0 && <span>已关联 <span className="font-medium text-brand">{associatedCount}</span> 章</span>}
         <span className="ml-auto">字数 <span className="font-medium text-brand">{wordCount || chapter.wordCount}</span> · {lastSavedAt ? `已保存 ${lastSavedAt}` : '自动保存'}</span>
       </div>
@@ -1472,21 +1609,24 @@ export function ChapterEditor({
               : 'flex h-[78vh] max-h-[820px] w-[min(1280px,94vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'}
             onClick={(event) => event.stopPropagation()}
           >
-            <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-5">
+            <header className={`${embeddedMode ? 'hidden' : 'flex'} h-14 shrink-0 items-center justify-between border-b border-slate-100 px-5`}>
               <div>
                 <h2 className="text-lg font-black text-slate-900">更新状态</h2>
                 <p className="mt-0.5 text-xs font-bold text-slate-400">阅读前文后，把角色、宝物、势力的最新状态写入设定卡片，并记录更新到第几章。</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsStatusUpdateOpen(false)}
-                className="rounded-lg px-3 py-1.5 text-sm font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-              >
-                关闭
-              </button>
+              {!embeddedMode && (
+                <button
+                  type="button"
+                  onClick={() => setIsStatusUpdateOpen(false)}
+                  className="rounded-lg px-3 py-1.5 text-sm font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                >
+                  关闭
+                </button>
+              )}
             </header>
             <div className="grid min-h-0 flex-1 grid-cols-[230px_minmax(0,1fr)_360px] bg-slate-50">
               <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white p-4">
+                <div className="mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(STATUS_PAGE_LEFT_WIDTH)}</div>
                 <div className="mb-3 flex items-center justify-between">
                   <span className="text-sm font-black text-slate-900">章节位置</span>
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">{sortedStatusChapters.length}</span>
@@ -1541,6 +1681,7 @@ export function ChapterEditor({
                 </div>
               </main>
               <aside className="flex min-h-0 flex-col border-l border-slate-100 bg-white p-4">
+                <div className="mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(STATUS_PAGE_RIGHT_WIDTH)}</div>
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-base font-black text-slate-900">状态目标</h3>
                   <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-black text-[#08AACE]">已选 {selectedStatusTargets.length}</span>
@@ -1625,7 +1766,7 @@ export function ChapterEditor({
             onClick={(event) => event.stopPropagation()}
           >
             <header
-              className={`flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-5 ${embeddedMode ? '' : 'cursor-move'}`}
+              className={`${embeddedMode ? 'hidden' : 'flex'} h-14 shrink-0 items-center justify-between border-b border-slate-100 px-5 ${embeddedMode ? '' : 'cursor-move'}`}
               {...(embeddedMode ? {} : reviewModalDraggable.dragHandleProps)}
               style={{
                 touchAction: embeddedMode ? undefined : 'none',
@@ -1647,6 +1788,7 @@ export function ChapterEditor({
             </header>
             <div className="grid min-h-0 flex-1 grid-cols-[220px_minmax(0,1fr)_300px] bg-slate-50">
               <aside className="min-h-0 border-r border-slate-100 bg-white p-4">
+                <div className="mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(REVIEW_PAGE_LEFT_WIDTH)}</div>
                 <div className="mb-3 text-sm font-black text-slate-900">章节目录</div>
                 <div className="editor-scrollbar h-full space-y-2 overflow-y-auto pr-1">
                   {sortedReviewChapters.map((item) => {
@@ -1655,7 +1797,7 @@ export function ChapterEditor({
                       <button
                         key={item.id}
                         type="button"
-                        onClick={() => setReviewChapterId(item.id)}
+                        onClick={() => selectReviewChapter(item.id)}
                         className={`w-full rounded-xl border px-3 py-2.5 text-left transition-colors ${
                           selected
                             ? 'border-[#08AACE] bg-[#EAFBFF] text-slate-950'
@@ -1811,6 +1953,7 @@ export function ChapterEditor({
                 </div>
               </main>
               <aside className="relative flex min-h-0 flex-col border-l border-slate-100 bg-white p-4">
+                <div className="mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(REVIEW_PAGE_RIGHT_WIDTH)}</div>
                 <div className="flex shrink-0 items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
                     <h3 className="shrink-0 text-base font-black text-slate-900">AI 配置</h3>
@@ -1823,13 +1966,15 @@ export function ChapterEditor({
                     >
                       输出日志
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsEditorFieldSizeOpen(true)}
-                      className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition-colors hover:border-[#08AACE] hover:text-[#078fb0]"
-                    >
-                      字段尺寸
-                    </button>
+                    {showInlineFieldSizeButton ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditorFieldSizeOpen(true)}
+                        className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition-colors hover:border-[#08AACE] hover:text-[#078fb0]"
+                      >
+                        字段尺寸
+                      </button>
+                    ) : null}
                   </div>
                 </div>
                 <div className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
@@ -1847,7 +1992,7 @@ export function ChapterEditor({
                     </div>
                   </label>
                   <label className="grid grid-cols-1 items-center gap-2 text-sm text-slate-500">
-                    <div className="max-w-full" style={getEditorFieldStyle(reviewMode === 'audit' ? 'reviewAuditPromptSelect' : 'reviewCommentPromptSelect')}>
+                    <div className="max-w-full" style={getAlignedEditorPromptFieldStyle(reviewMode === 'audit' ? 'reviewAuditPromptSelect' : 'reviewCommentPromptSelect')}>
                       <CapsuleSelect
                         floatingLabel={activeReviewPromptLabel}
                         value={activeReviewPromptId}

@@ -219,7 +219,7 @@ export function CapsuleSelect({
               type="button"
               disabled={disabled}
               onClick={toggleOpen}
-              className={`flex min-w-0 flex-1 items-center text-left text-sm font-black leading-none transition-colors hover:bg-sky-50/40 disabled:cursor-not-allowed disabled:text-slate-400 ${buttonClassName} !h-full !rounded-none !py-0 ${floatingLabel ? '!pl-9 !pr-1' : '!px-4'}`}
+              className={`flex min-w-0 flex-1 items-center text-left text-sm font-black leading-none transition-colors hover:bg-sky-50/40 disabled:cursor-not-allowed disabled:text-slate-400 ${buttonClassName} !h-full !rounded-none !py-0 ${floatingLabel ? '!pl-6 !pr-1' : '!px-4'}`}
             >
               <span className="block min-w-0 flex-1 truncate">{displayLabel}</span>
             </button>
@@ -290,7 +290,7 @@ export function CapsuleSelect({
               type="button"
               disabled={disabled}
               onClick={toggleOpen}
-              className={`flex h-full min-w-0 flex-1 items-center bg-transparent text-left text-sm font-black leading-none text-slate-900 transition-colors hover:bg-sky-50/40 disabled:cursor-not-allowed disabled:text-slate-400 ${buttonClassName} !h-full !rounded-none !py-0 !pl-9 !pr-1`}
+              className={`flex h-full min-w-0 flex-1 items-center bg-transparent text-left text-sm font-black leading-none text-slate-900 transition-colors hover:bg-sky-50/40 disabled:cursor-not-allowed disabled:text-slate-400 ${buttonClassName} !h-full !rounded-none !py-0 !pl-6 !pr-1`}
             >
               <span className="block min-w-0 flex-1 truncate">{displayLabel}</span>
             </button>
