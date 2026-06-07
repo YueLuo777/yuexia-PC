@@ -4740,7 +4740,7 @@ const uiSamples: UiSample[] = [
     id: 'UI-141',
     group: '输入框',
     name: '边框内嵌工具文本框',
-    usage: '设定预览、角色背景、角色状态、脑洞预览、脑洞输出框。左上角固定标签，右上角放字号，右下角放字数统计。',
+    usage: '设定预览、角色背景、角色状态、脑洞预览、脑洞输出框。左上角固定标签，左下角放字号，右下角放字数统计。',
     preview: (
       <div className="flex w-full justify-center py-6">
         <style>{`
@@ -4783,12 +4783,11 @@ const uiSamples: UiSample[] = [
           }
           .ui-141-tool {
             position: absolute;
-            right: 18px;
-            top: 0;
+            left: 38px;
+            bottom: 0;
             z-index: 2;
-            transform: translateY(-50%);
+            transform: translateY(50%);
             background: #ffffff;
-            padding: 0 8px;
           }
           .ui-141-count {
             position: absolute;
@@ -4806,7 +4805,7 @@ const uiSamples: UiSample[] = [
         `}</style>
         <div className="ui-141-field-wrap">
           <div className="ui-141-field">
-            <textarea readOnly value="这里是带边框工具槽的长文本区域。字号放在右上角，字数统计放在右下角，主内容区域保持干净。" />
+            <textarea readOnly value="这里是带边框工具槽的长文本区域。字号放在左下角，字数统计放在右下角，主内容区域保持干净。" />
             <label>设定预览</label>
             <span className="ui-141-count">46 字</span>
           </div>
@@ -4826,7 +4825,7 @@ const uiSamples: UiSample[] = [
       <div className="flex justify-center py-6">
         <div className="w-[320px]">
           <div className="relative pt-2">
-            <span className="absolute left-6 top-0 z-10 bg-white px-2 text-sm font-black leading-none text-slate-700">模型</span>
+            <span className="xy-border-embedded-transparent-backplate absolute left-6 top-0 z-10 text-sm font-black leading-none text-slate-700">模型</span>
             <div className="flex h-14 overflow-hidden rounded-[24px] border-2 border-[#08AACE] bg-white shadow-[0_8px_18px_rgba(8,170,206,0.08)]">
               <button type="button" className="min-w-0 flex-1 px-5 pt-1 text-left text-lg font-black text-slate-950">
                 <span className="block truncate">DS-v4-flash</span>
@@ -4975,6 +4974,12 @@ const techItems: TechItem[] = [
     name: '分裂按钮',
     plain: '一个按钮分成两个可点击区域：左边执行主操作，右边放锁定、下拉或更多设置，适合防止误触重要功能。',
     tech: 'Split button / compound button / adjacent action',
+  },
+  {
+    id: 'T-20',
+    name: '边框嵌入式透明背板',
+    plain: '文字、字数、清空、章节信息这些内容压在边框线上时，不要加白底块，用透明背板和文字描边把边框线自然遮住。',
+    tech: 'xy-border-embedded-transparent-backplate / transparent border-embedded label / text stroke mask',
   },
 ];
 
@@ -5164,6 +5169,21 @@ function TechPreview({ item }: { item: TechItem }) {
       <div className={`${previewShell} grid grid-cols-[70px_1fr] gap-2 bg-slate-50 text-xs font-black`}>
         <div className="rounded-xl bg-[#08AACE] p-2 text-white">第3章</div>
         <div className="rounded-xl bg-white p-2 text-slate-500 shadow-sm">对应概要 / 细纲</div>
+      </div>
+    );
+  }
+
+  if (item.id === 'T-20') {
+    return (
+      <div className={`${previewShell} flex items-center justify-center bg-slate-50 px-5`}>
+        <div className="relative h-20 w-full rounded-[22px] border-2 border-slate-900 bg-white">
+          <span className="xy-border-embedded-transparent-backplate absolute left-6 top-0 -translate-y-1/2 text-xs font-black leading-5 text-slate-950">
+            第1章 我只是想修个水管 正文：<span className="text-[#08AACE]">3056</span><span className="text-slate-400"> 字</span>
+          </span>
+          <span className="xy-border-embedded-transparent-backplate absolute bottom-0 right-5 translate-y-1/2 text-[11px] font-black text-[#08AACE]">
+            89 字
+          </span>
+        </div>
       </div>
     );
   }

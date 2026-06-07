@@ -694,7 +694,6 @@ export function WorkbenchAIPanel({
     setActiveSessionId(fresh.id);
     setLastRequestLog(null);
     setIsLoading(false);
-    flashStatus('已新开空会话');
   };
 
   const stopMessage = () => {
@@ -726,8 +725,8 @@ export function WorkbenchAIPanel({
 
   const renderSessionControls = () => (
     <div className="xy-floating-edge-tool xy-floating-chat-session-tool">
-      <div className="flex h-7 max-w-full items-center gap-1 overflow-hidden bg-white">
-        <div className="scrollbar-hidden flex min-w-0 items-center gap-1 overflow-x-auto">
+      <div className="flex h-7 max-w-full items-center overflow-visible">
+        <div className="xy-floating-session-buttons scrollbar-hidden flex min-w-0 items-center overflow-x-auto">
           <button
             type="button"
             onClick={addSession}
@@ -746,7 +745,7 @@ export function WorkbenchAIPanel({
                 }}
                 className={`flex h-6 min-w-6 items-center justify-center rounded-md border px-1.5 text-xs font-bold leading-none transition-colors ${
                   session.id === activeSessionId
-                    ? 'border-brand/30 bg-brand/10 text-brand'
+                    ? 'border-brand/30 bg-[#EAF9FD] text-brand'
                     : 'border-gray-200 bg-white text-gray-500 hover:border-brand hover:text-brand'
                 }`}
               >

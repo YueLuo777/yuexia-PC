@@ -21,4 +21,27 @@ describe('WorkbenchAIPanel session deletion', () => {
     expect(deleteSessionBody).not.toContain('flashStatus(');
     expect(deleteSessionBody).not.toContain('已删除当前会话');
   });
+
+  it('does not show a top status after resetting chat sessions', () => {
+    const resetSessionsBody = readFunctionBody('resetSessions');
+
+    expect(resetSessionsBody).not.toContain('flashStatus(');
+    expect(resetSessionsBody).not.toContain('已新开空会话');
+  });
+
+  it('uses an opaque active session background so the border line does not show through', () => {
+    const sessionControlsBody = readFunctionBody('renderSessionControls');
+
+    expect(sessionControlsBody).toContain('bg-[#EAF9FD]');
+    expect(sessionControlsBody).not.toContain('bg-brand/10');
+  });
+
+  it('keeps session buttons separated without restoring the white backplate', () => {
+    const sessionControlsBody = readFunctionBody('renderSessionControls');
+
+    expect(sessionControlsBody).toContain('xy-floating-session-buttons scrollbar-hidden flex min-w-0 items-center overflow-x-auto');
+    expect(sessionControlsBody).not.toContain('items-center gap-1 overflow-x-auto');
+    expect(sessionControlsBody).toContain('flex h-7 max-w-full items-center overflow-visible');
+    expect(sessionControlsBody).not.toContain('overflow-hidden bg-white');
+  });
 });

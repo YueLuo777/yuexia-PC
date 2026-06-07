@@ -241,7 +241,7 @@ function OutputBox({ page }: { page: ReplicaPage }) {
   return (
     <section className="relative h-full min-h-0 rounded-xl border border-slate-300 bg-white">
       {page.outputTitle ? (
-        <span className="absolute -top-2.5 left-3 bg-white px-1.5 text-xs font-black leading-4 text-slate-700">
+        <span className="xy-border-embedded-transparent-backplate absolute -top-2.5 left-3 text-xs font-black leading-4 text-slate-700">
           {page.outputTitle}
         </span>
       ) : null}

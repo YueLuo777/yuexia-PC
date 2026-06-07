@@ -1,5 +1,373 @@
 # xinyuexia 问题记录
 
+## 脑洞预览和输出贴边标题尺寸、字数距离不统一
+
+- 现象：脑洞页左侧当前脑洞标题胶囊过大，右侧“新脑洞1”贴边标题行在窄高度下显示不全，标题后的字数统计离标题过远。
+- 原因：脑洞预览和脑洞输出使用独立的可编辑贴边标题工具，仍保留较大的 `text-base`、较宽的输入框最小宽度和 `0.55rem` 标题/字数间距，没有完全贴近“设定预览 + 字数统计”的紧凑结构。
+- 处理：压缩脑洞预览标题输入框到 `text-sm / max-w-[120px] / min-w-[58px]`，压缩脑洞输出标题输入框到 `text-sm / max-w-[180px] / min-w-[72px]`；将贴边标题工具高度从 `1.35rem` 收到 `1.15rem`，标题与字数间距从 `0.55rem` 收到 `0.32rem`，并给脑洞标题字数补极小左距。
+- 预防：以后脑洞类可编辑贴边标题优先跟随设定预览的“标题 + 贴身字数”结构，避免单独扩大字号、最小宽度或标题/字数间距。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+
+## 脑洞流式输出需要嵌入输出框底边
+
+- 现象：脑洞输出区的 `流式输出` 还是底部操作区里的文字复选框，占用按钮行空间，和用户希望的边框内嵌小开关不一致。
+- 原因：流式输出开关早期跟 `替换脑洞 / 保存为新脑洞` 放在同一操作行，使用 `xy-animated-checkbox` 复选框样式；但它本质是输出框参数，应该贴近脑洞输出框本身。
+- 处理：移除底部文字复选框，新增 `xy-floating-border-stream-tool`，把开关嵌到脑洞输出框底部边框、字号控件右侧；开关改为图 2 的青色滑块样式，外层透明，轨道本体用白色遮线层避免边框线穿过。
+- 预防：输出框参数类开关优先放在输出框边框工具位，外层不要加白底块；需要遮线时由控件本体或透明背板技术完成。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 脑洞生成数量不需要单独外框
+
+- 现象：脑洞右侧表单里 `一次生成几个脑洞` 仍作为一个大边框输入框展示，占用一整行空间，和用户希望的右下角操作区不一致。
+- 原因：生成数量早期被当作普通问题字段放进 `BRAINSTORM_QUESTION_FIELDS` 渲染列表，复用了浮动输入框外壳；但它本质是生成动作的参数，更适合贴近生成按钮。
+- 处理：保留 `brainstormCount` 数据和确认/生成逻辑不变，仅跳过它在问题字段列表里的外框渲染；在右下角 `生成` 按钮左侧新增 1/2/3/5/10 分段组合按钮，并保留再次点击已选项可取消。
+- 预防：生成参数类选项优先放在生成按钮附近，只有需要长文本输入的内容才放进问题字段框；不要给少量数字选项额外套大输入框。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 大纲右侧清空按钮被输出框滚动条遮住
+
+- 现象：大纲右侧输出框的 `清空` 贴边按钮虽然用了边框透明背板，但仍贴在最右侧，和输出框滚动条重叠，截图里文字被滚动条遮住。
+- 原因：大纲/章纲右侧输出区的清空按钮仍使用 `right-4`，该位置距离输出框右边太近；当输出框内部出现纵向滚动条时，按钮和滚动条落在同一视觉区域。
+- 处理：仅将大纲/章纲右侧输出框的清空按钮从 `right-4` 左移到 `right-10`，并增加 `z-30` 层级；继续保留 `xy-border-embedded-transparent-backplate`，不恢复白底。
+- 预防：贴在带滚动条输出框右上角的清空/删除类按钮，需要避开滚动条宽度，不要直接贴最右边；源码测试锁定为 `right-10 z-30`。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 边框透明背板候选位置需要先集中放到测试页
+
+- 现象：边框透明背板技术已经用于部分正式页面，但还有左上标题、右上元信息、右上清空、右下字数、左下字号、模型/提示词标签、会话按钮、审核/点评输出工具等候选位置需要统一看效果。
+- 原因：这些位置分散在大纲、章纲、脑洞、正文、角色、审核和点评等页面，直接批量改正式页面风险较高，也不方便逐项比较是否有白底、穿线或尺寸不统一。
+- 处理：新增 `边框透明背板应用预览` 测试页，集中展示所有建议使用该技术的位置；先只放在测试集合里预览，不批量替换正式页面。
+- 预防：后续要把边框透明背板技术推广到正式页面时，先按该测试页逐项验收，再迁移到对应页面，避免同类贴边内容又出现白底块或边框线穿字。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 脑洞回收站测试方案需要落到正式按钮并删除测试页
+
+- 现象：脑洞回收站按钮方案已经在测试页里确认使用 D 方案，但正式脑洞页面仍是旧的蓝色入口；测试集合里也继续保留 `脑洞回收站按钮方案` 页面。
+- 原因：测试页只用于挑选 A/B/C/D 样式，方案确认后还没有把 D 的浅红按钮结构迁移到正式入口，也没有清理临时测试页和测试集合路由。
+- 处理：正式脑洞回收站入口改为 D 方案的浅红整行按钮，图标换用 B 方案的 `Trash2` 垃圾桶并改成红色；数量保留为右侧红色数字胶囊；删除 `BrainstormRecycleButtonTestPage` 并移除测试集合入口与路由。
+- 预防：临时 UI 方案页在用户确认某一方案后，需要同步迁移到正式页面并删除方案页入口，避免测试方案长期留在软件测试集合里。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲字数统计需要跟随左上标题
+
+- 现象：章纲卡片左上角显示 `第X章章纲（第X卷）`，右上角显示章节正文元信息，但章纲自身的字数统计仍在右下角，用户不容易判断这个字数是章纲内容还是章节正文内容。
+- 原因：章纲卡片沿用了通用预览框的右下角 `xy-floating-count` 字数统计位置，而章纲页又额外在右上角展示了章节正文总字数，两个字数分散在不同贴边位置，语义不够明确。
+- 处理：仅在章纲页把章纲内容字数移动到左上标题后，显示为 `章纲：X字`；右下角通用字数统计只保留给非章纲的章节概要卡片，避免同一章纲卡片重复显示字数。
+- 预防：章纲卡片需要同时展示“章纲内容字数”和“章节正文字数”时，章纲字数跟随左上章纲标题，正文字数留在右上章节元信息，避免把不同语义的统计混放到同一个边角。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲贴边章节元信息不需要“正文：”前缀
+
+- 现象：章纲卡片右上角贴边元信息显示为 `第X章 章节名 正文：3056字`，其中 `正文：` 多余，视觉上比用户需要的 `第X章 章节名 3056字` 更啰嗦。
+- 原因：最初添加右上角章节信息时，为了区分章纲字数和正文字数，直接把 `正文：` 写进了贴边元信息；但该位置本身已经表达章节正文信息，前缀反而增加噪音。
+- 处理：删除章纲卡片右上角贴边元信息里的 `正文：`，保留章节序号、章节名和字数；右侧详情说明区的 `正文：` 不属于贴边标题，暂不改动。
+- 预防：边框贴边元信息要尽量短，能靠位置和上下文说明含义时，不再添加额外字段名前缀。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 脑洞输出框会话按钮多余且清空按钮格式不统一
+
+- 现象：脑洞输出框左上角仍显示 `+ / 1` 会话按钮，但脑洞中间输出区只需要展示当前脑洞正文，不需要像正文 AI 面板一样切换会话；右上角 `清空` 按钮还是单个红色圆角按钮，和正文右侧 `删除 / 清空` 的小分段按钮格式不一致。
+- 原因：脑洞输出框之前复用了会话型 AI 输出框的左上会话工具；清空按钮单独写了一套红色按钮样式，没有复用正文边框动作按钮的高度、圆角、边框和字号。
+- 处理：移除脑洞输出框左上会话按钮渲染和专用会话工具 CSS；脑洞标题移回左上边框正常位置；右上角 `清空` 改成正文同款 `h-7` 外层 + `h-6 rounded-md border` 小按钮格式。
+- 预防：脑洞输出框属于单内容输出/保存区，不再放 `+ / 1` 这类会话切换控件；边框右上角轻操作优先复用正文动作按钮格式，避免同类位置按钮尺寸不一致。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 脑洞生成表单底部留白过大
+
+- 现象：脑洞页面右侧生成表单里，`补充内容` 下方到 `生成` 按钮之间出现大块空白，看起来像固定空区，空间利用不合理。
+- 原因：问题面板和按钮区是上下分离布局，字段列表没有填满可用高度；`补充内容` 只保留固定最小高度，剩余高度落在字段和按钮之间，无法随未来新增按钮自动收回。
+- 处理：把脑洞问题面板改成纵向 flex 布局，让最后一个字段 `补充内容` 作为弹性字段占用剩余高度；字段最小高度仍为 `180px`，用户输入多行时继续向下增长，下方新增按钮或操作行时则自动压缩这个弹性高度。
+- 预防：表单中需要吸收空白的区域应放在主文本输入框本体上，不要放成固定留白；后续新增按钮时优先让弹性文本框回缩，而不是重新挤压整个表单。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲边框字号控件被正文显示字号放大
+
+- 现象：章纲卡片左下角的字号设置控件比正文页面右侧区域的同款控件明显更大，输入框里的 `14` 和加减按钮都显得膨胀。
+- 原因：通用 `.xy-floating-border-font-tool` 只复用了正文 `.xy-floating-chat-font-tool` 的定位，没有同步锁定步进器、按钮、图标和数字输入框的紧凑尺寸；当章纲卡片正文使用可调字号渲染时，边框工具容易跟着上下文视觉放大。
+- 处理：把 `.xy-floating-border-font-tool` 和 `.xy-floating-chat-font-tool` 合并到同一套紧凑尺寸规则里，显式固定控件本体 `5.52rem x 1.76rem`、按钮 `1.76rem`、输入框 `2rem`、图标 `0.48rem`，并把工具自身字号锁为 `14px`。
+- 预防：以后新增左下角边框字号设置时，必须复用共享的 `.xy-floating-border-font-tool` 尺寸规则；不要只复用定位类，也不要让控件继承所在卡片的正文显示字号。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲贴边标题仍有明显分割线
+
+- 现象：章纲卡片左上标题和右上章节信息虽然已经用了透明背板和伪元素细遮罩，但边框上沿仍从文字中间完整穿过，分割感明显。
+- 原因：上一版 `::before` 细遮罩依赖伪元素层级，实际渲染时可能落到边框层下面；文字描边只能遮住字形附近，无法稳定切断整段标题宽度内的边框线。
+- 处理：在 `xy-border-embedded-transparent-backplate`、预览框 `label` 和 `.xy-floating-count` 自身增加中线 `background-image: linear-gradient(...)`，只覆盖文字中线区域，宽度跟随文字自身，不恢复整块白底。
+- 预防：边框嵌入文字需要以元素自身背景图切断边框线，伪元素遮罩只能作为辅助；不要只靠 `text-stroke` 或层级不稳定的伪元素。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲贴边标题中间仍被边框线穿过
+
+- 现象：章纲卡片左上角 `第X章章纲（第X卷）`、右上章节信息等贴边文字虽然没有白底块，但边框线仍会从文字中间或字间空隙穿过去。
+- 原因：此前的边框嵌入式透明背板主要靠 `-webkit-text-stroke` 给文字本身描白边，只能遮住字形附近的线；中文标题字符之间和整段文字中线位置仍会露出边框线。
+- 处理：为 `xy-border-embedded-transparent-backplate`、预览框 `label` 和 `.xy-floating-count` 增加一条很薄的 `::before` 线遮罩，只覆盖边框线经过的位置；保留透明背景和零左右 padding，不恢复整块白色背板。
+- 预防：边框贴边文字不能只靠文字描边遮线；需要同时使用“文字描边 + 中线细遮罩”，字号按钮这类控件则继续用控件本体覆盖边框线。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 脑洞输出字号工具和底部操作区层级不统一
+
+- 现象：脑洞输出框左下角字号设置没有完全使用大纲/正文同一套边框字号工具；输出框下方的输入与保存操作区还保留 `rounded-xl border bg-white p-3` 卡片外壳，看起来像主输出框下面又套了一块卡片。
+- 原因：脑洞输出字号控件仍使用独立的 `xy-floating-brainstorm-output-font-tool`，和通用 `xy-floating-border-font-tool` 分叉；底部操作区沿用早期卡片容器，未跟随作品编辑器右侧区域无卡片化规则同步。
+- 处理：脑洞输出字号控件改用通用 `xy-floating-border-font-tool`，删除脑洞专用字号工具样式；底部操作区改为 `shrink-0 space-y-3` 直铺，只保留输入框、按钮组和流式输出控件自身边界。
+- 预防：边框左下角字号设置统一使用 `xy-floating-border-font-tool`；右侧主输出框下方的动作区只承担布局，不再额外加卡片外壳。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链右侧思考内容与左侧剧情点不一致
+
+- 现象：剧情链生成后，左侧“剧情点预览”显示的是最终解析出的候选剧情点，但右侧输出框展开 `已思考` 后会看到模型 reasoning 里的中途草稿，内容可能和左侧最终剧情点不一致。
+- 原因：左侧候选卡片来自 `plotPointGeneratedCandidateText` 的最终答案解析；右侧输出框直接渲染 `outlinePreviewDraft` 的 `[[THINKING]]` 思考块。带 reasoning 的模型会在思考过程里尝试不同方案，这部分不等于最终输出。
+- 处理：给 `renderAiChatContent` 增加 `hideReasoningBody` 选项；剧情链右侧输出框只显示“已思考/正在思考”的状态和最终答案，不再展示 reasoning 正文，避免把思考草稿误认为最终剧情点。
+- 预防：剧情链、候选列表这类“左侧为最终解析结果”的页面，右侧只展示最终输出和思考状态；不要把模型内部思考正文与最终候选并列给用户核对。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲卡片左下角缺少字号设置
+
+- 现象：章纲页面每个章纲框只有内容、右上章节信息和右下字数统计，左下角没有像大纲/设定预览那样的字号设置，无法直接调节章纲卡片正文显示字号。
+- 原因：此前只把 `xy-floating-border-font-tool` 接入角色、脑洞预览、设定预览等边框预览框，章纲列表卡片虽然也使用 `xy-floating-outline-preview`，但没有单独的字号状态和步进器。
+- 处理：新增 `detailOutlineFontSize` 标签页配置，章纲卡片 textarea 使用该字号渲染；仅在章纲页 `isDetailOutlineTab` 下给每个章纲卡片左下角添加 `FontSizeStepper`，复用 `xy-floating-border-font-tool` 的左下角边框工具格式，不影响概要页。
+- 预防：凡是章纲、大纲、设定这类可编辑预览框需要字号调节时，统一使用左下角 `xy-floating-border-font-tool`，避免同类边框框体能力不一致。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 脑洞生成表单空间利用不合理
+
+- 现象：脑洞页面右侧生成表单里，题材和模型框左侧没有对齐，故事主题和提示词框右侧没有对齐；模型/题材之间、补充内容/生成按钮之间留白偏大；构思写到两行后需要内部滚动或不能完整看到。
+- 原因：顶部模型/提示词选择器和下方问题面板使用了不同的内边距与对齐方式；问题面板额外 `p-3` 导致字段整体内缩；补充内容字段用 `flex-1` 撑满剩余高度，而文本行数又被限制到最多 4 行。
+- 处理：脑洞右栏模型/提示词选择器强制占满同一列宽；问题面板改为 `px-0 py-2`，题材/故事主题行改为更紧凑的 `gap-2.5`；构思、补充内容等文本框按内容行数弹性增高，不再内部滚动；补充内容取消撑满剩余高度，生成按钮间距收紧到 `mt-2`。
+- 预防：右侧生成表单应以顶部配置框作为左右边界基准，内部字段不再额外套横向 padding；用户输入型文本框优先外部增高，只有整个表单区域滚动。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 技术词典需要记录边框嵌入式透明背板
+
+- 现象：边框内嵌内容已经在正式页面使用 `xy-border-embedded-transparent-backplate`，但 UI 库“技术词典”里没有独立条目，后续无法直接说“用 T 编号那个技术”。
+- 原因：此前只把该技术记录在错误日志和 CSS 类名里，没有补充到 `SoftwareUiCatalogPage` 的 `techItems`。
+- 处理：新增技术词典 `T-20 边框嵌入式透明背板`，说明用途是边框线上文字/字数/清空/章节信息不使用白底块，改用透明背板和文字描边遮线，并增加对应小预览。
+- 预防：以后新增可复用 UI 技术时，除了日志和 CSS 类名，也同步写进技术词典，方便直接按编号复用。
+- 验证：执行 `npm.cmd run check`、`npm.cmd run build`。
+
+## 边框内嵌内容需要全部使用透明背板技术
+
+- 现象：章纲卡片右上角 `第X章 章节名 正文：XXX字` 这类内容贴在边框线上，如果没有显式使用透明背板技术，后续容易被改回白底块或被边框线穿过。
+- 原因：此前部分边框内容是靠 `.xy-floating-outline-preview` 的后代选择器间接获得透明背板效果，源码里看不出这个位置已经受规则保护；右下角字数统计仍有一套通用白底背景规则。
+- 处理：把章纲右上章节信息、各右侧输出 `清空`、脑洞输出标题、审核/点评输出工具显式接入 `xy-border-embedded-transparent-backplate`；将通用 `.xy-floating-count` 改为透明背景与文字级遮线，让正文、大纲、章纲、角色、脑洞、状态等右下角字数统一使用同一技术。
+- 预防：以后任何压在边框线上的内容都默认使用 `xy-border-embedded-transparent-backplate` 或同等规则；不要再为边框内嵌文字增加 `bg-white px-*` 白底背板。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx src/shared/styles/floatingChatShell.test.ts`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 嵌入边框字号控件位置不统一
+
+- 现象：正文右侧 AI 输出框的字号控件在边框左下角，但大纲/设定预览等页面的字号控件出现在右上角，导致同一种“嵌入边框工具”格式在不同页面不一致。
+- 原因：正文使用专用的 `.xy-floating-chat-font-tool` 左下定位；角色背景、角色状态、脑洞预览、设定预览等位置仍复用通用 `.xy-floating-edge-tool`，该类默认是右上角工具位。
+- 处理：新增通用左下字号工具类 `.xy-floating-border-font-tool`，并把角色背景、角色状态、脑洞预览、设定预览、空设定预览统一接入；脑洞输出字号继续保留独立类名，但定位规则改为同样的左下角；软件格式目录 UI-141 同步改成左下角示例。
+- 预防：嵌入边框的“字号设置”统一使用左下角工具位，危险/清空类操作放右上角；不要再用 `.xy-floating-edge-tool` 承载字号步进器。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx src/shared/styles/floatingChatShell.test.ts`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 边框贴边文字仍像有白色底片
+
+- 现象：章纲卡片左上角 `第X章章纲（第X卷）`、右下角字数、右上角章节信息，以及右侧输出框贴边 `清空` 等位置虽然已去掉 `bg-white`，但截图里仍能看到类似白色底片的块感；部分贴边文字还容易被边框线穿过。
+- 原因：上一版透明背板用四向白色 `text-shadow` 遮住边框线，视觉上会形成一圈接近矩形的白影；嵌套的字数组件如果只处理外层，也可能让边框线继续压到内部文字。
+- 处理：将大纲/章纲/右侧输出框的贴边标签、字数、章节元信息、清空文字统一改为“透明背景 + 文字描边遮线”的边框嵌入式透明背板；抽出可复用类 `xy-border-embedded-transparent-backplate`，去掉四向白影，并给字数、章节元信息、清空工具的子元素同步描边；脑洞输出右上工具外层也去掉通用白色背板。
+- 预防：贴边文字需要遮线时优先用 `xy-border-embedded-transparent-backplate` 或同等的 `-webkit-text-stroke` + `paint-order: stroke fill` 做文字级遮线，不再用 `bg-white px-*` 或四向 `text-shadow` 做块状遮罩；按钮本体样式和外层背板要分开检查。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx src/shared/styles/floatingChatShell.test.ts`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲卡片右上角缺少正文章节信息
+
+- 现象：章纲页面每个章纲卡片只有左上角的 `第X章章纲（第X卷）`，无法在卡片内直接看到对应正文的章节名和正文字数。
+- 原因：章纲预览卡片只渲染章纲标题与章纲内容字数，未把已有的 `chapter.title` 和 `chapter.wordCount` 显示到卡片贴边区域。
+- 处理：在章纲页每个章纲卡片右上角新增 `第X章 章节名 正文：XXX字` 信息，标题为空时显示 `未命名章节`；该信息只在章纲页显示，不影响概要页；复用透明贴边文字阴影技术，避免恢复白色底片。
+- 预防：章纲卡片需要同时区分“章纲内容字数”和“正文内容字数”，右上角放正文元信息，右下角继续保留章纲自身字数统计。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`。
+
+## 剧情链右侧生成规则标题需要删除
+
+- 现象：剧情链右侧 AI 区域在模型/提示词下方显示 `生成规则` 标题，占用一行空间，和当前右侧区域希望更紧凑直铺的格式不一致。
+- 原因：剧情链右栏早期把长度、剧情点类型、剧情点数量归到一个显式标题下；右侧布局统一后，这个标题成为冗余提示。
+- 处理：删除剧情链右侧可见的 `生成规则` 标题，只保留下方长度、剧情点类型、剧情点数量按钮组；不改实际发送给 AI 的规则内容和按钮样式尺寸。
+- 预防：右侧参数区如果标签项已经能说明用途，不再额外添加分组标题；需要保留给 AI 的提示规则时，和可见 UI 标题分开处理。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`。
+
+## 清空正文 AI 会话后不应显示“已新开空会话”
+
+- 现象：正文右侧 AI 面板点击清空/重置会话后，顶部状态栏会显示 `已新开空会话`，占用右侧区域上方空间。
+- 原因：`WorkbenchAIPanel` 的 `resetSessions` 在完成重建空会话后调用了 `flashStatus('已新开空会话')`，但这个操作本身已经通过会话列表变化可见，不需要额外提示。
+- 处理：移除 `resetSessions` 里的顶部状态提示，只保留停止输出、清空关联、创建新空会话和重置日志状态的逻辑。
+- 预防：会话删除、清空、重置这类用户主动触发且结果直接可见的操作，不再追加顶部状态提示；需要提示时优先确认是否会遮挡右侧工作区。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchAIPanel.deleteSession.test.ts`。
+
+## 作品编辑器右侧区域需要统一为 07 测试无卡片式
+
+- 现象：角色生成、大纲/题材生成、剧情点生成、章纲/概要、状态更新、审核/点评等右侧区域仍混用外层白色卡片、软卡参数块或 `AI 配置 / AI 输出框` 标题，和 07 号测试及正文页右侧“顶部配置 + 主输出框 + 下方输入动作”的直铺格式不一致。
+- 原因：此前只拆掉了部分 AI 对话框外壳，并保留了 `xy-soft-shell-panel` 作为过渡弱化方案；不同分支仍各自包了一层 `rounded-xl border ... bg-white`，导致右侧区域层级不统一。
+- 处理：将正式作品编辑器右侧区域统一改为 `bg-gray-50 px-4 pb-4 pt-2` 的直铺壳；角色、题材/设定、剧情点、状态、审核/点评的主输出区改由现有 `xy-floating-field xy-floating-outline-preview` 直接承载；章纲/概要当前信息和审核/点评参数摘要去掉软卡壳，仅保留文字信息；保留按钮、输入框、列表项和弹窗本身的尺寸与样式。
+- 预防：以后对齐正文右栏或 07 测试格式时，先拆“右侧承载外壳”，不要再给右侧整块或参数摘要套白卡/软卡；主输出框、输入框、按钮组和列表项仍按控件自身边界保留。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`。
+
+## 会话按钮不应连成分段按钮
+
+- 现象：正文 AI、脑洞输出和右侧测试页的 `+ / 1 / 2 / 3 / 4` 会话按钮被合并成一条分段按钮，虽然中间不再露线，但视觉上不如最早的独立圆角按钮。
+- 原因：上次为了解决 `+` 和 `1` 之间露出输出框边线的问题，把按钮间距设为 0，并用 `margin-left: -1px` 合并相邻边框，副作用是按钮变成连体样式。
+- 处理：`xy-floating-session-buttons` 恢复独立按钮间距和完整圆角，取消负边距与圆角压平；每个按钮本体增加一圈极窄的 `box-shadow` 遮线层，遮住输出框上边线，避免恢复整块白色背板；正式正文 AI、脑洞输出和右侧测试复刻页同步改为 `overflow-visible`，防止遮线层被裁切。
+- 预防：边框上的会话按钮需要“独立按钮 + 遮线层”，不要再用连体分段按钮解决露线；遮线应挂在按钮本体，不要恢复工具外层白底背板。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchAIPanel.deleteSession.test.ts src/features/workbench/components/WorkbenchLibraryPanel.test.tsx src/shared/styles/floatingChatShell.test.ts`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 作品编辑器外层卡片审查建议需要正式落地
+
+- 现象：测试页已经给出大纲、脑洞、章纲/概要、正文、角色/设定、审核/点评/状态的外层卡片去留建议，但正式作品编辑器里仍有个别重复外壳或残留的 `AI对话框` 标题。
+- 原因：此前先做了审查测试页和脑洞去外壳，尚未把“弱化参数/信息外壳、保留主输出卡片”的规则同步到正式页面的其他分支；角色生成右栏还残留旧对话框标题。
+- 处理：新增 `xy-soft-shell-panel` 弱化外壳技术；保留正文 AI、章纲/概要预览、审核/点评结果等主卡片，弱化章纲/概要右侧当前信息块与审核/点评参数摘要；移除角色生成输出区残留的 `AI对话框` 可见标题和隐藏 label。
+- 预防：后续批量调整作品编辑器外壳时，先按“主工作卡片 / 列表项 / 弹窗 / 字段组外壳 / 参数摘要”分类，只对字段组和参数摘要使用 `xy-shellless-panel` 或 `xy-soft-shell-panel`，不要改动主输出区域边界。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 会话新增按钮和序号按钮之间仍露出边框线
+
+- 现象：去掉 `+ / 1` 会话工具外层白色背板后，`+` 和 `1` 两个按钮本体中间仍能看到一小段输出框上边线，像按钮之间夹了一条线。
+- 原因：会话按钮组内部仍使用 `gap-1` 留出横向空隙；外层背板透明后，空隙位置会直接露出下面的浮动输出框边框。正文页的序号按钮还额外包了一层 `div`，只改按钮本体圆角时也可能漏掉包裹层。
+- 处理：新增 `xy-floating-session-buttons` 会话按钮组规则，取消按钮间 gap，让相邻按钮用 `margin-left: -1px` 合并边框，并同时处理直接按钮和包裹一层按钮的相邻圆角；正文 AI、脑洞 AI 和右侧测试复刻页统一接入该类。
+- 预防：边框上的连续小按钮去掉背板后，不能再依赖透明间距分隔；需要用组合按钮方式合并相邻边框，避免底层边框线从按钮缝隙露出。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchAIPanel.deleteSession.test.ts src/features/workbench/components/WorkbenchLibraryPanel.test.tsx src/shared/styles/floatingChatShell.test.ts`、`npm.cmd run check`。
+
+## 作品编辑器缺少外层卡片去留审查测试
+
+- 现象：脑洞页去掉外层卡片后，需要继续判断大纲、章纲、正文、角色、审核、点评、状态等作品编辑器页面是否也存在“字段已经是强边框，但外面又套一层卡片”的重复层级。
+- 原因：不同页面里的卡片用途不同；有些是字段组外壳，可以用 `xy-shellless-panel` 去掉，有些是 AI 主输出、章节预览、列表项或结果卡片，仍需要保留边界。
+- 处理：新增“作品编辑器外层卡片审查”测试页，集中展示大纲、脑洞、章纲/概要、正文、角色/设定、审核/点评/状态的建议状态：建议去外壳、建议弱化、建议保留；测试页用 `xy-shellless-panel` 预览只去承载外壳、不动字段本体的效果。
+- 预防：批量改作品编辑器页面前先在测试集合做审查预览，按“字段组外壳”和“主工作卡片”分类，不要把 AI 输出、章节预览、列表项这类主要视觉单位误删边界。
+- 验证：执行 `npm.cmd run check`、`npm.cmd run build`。
+
+## 脑洞生成配置外层卡片框需要去掉
+
+- 现象：脑洞页面右侧生成配置里，题材、故事主题、主角金手指、构思、数量和补充内容这些输入框外面还有一层整体卡片框，视觉上形成“框里套框”。
+- 原因：脑洞问题面板的承载容器同时负责滚动和外观，类名里带有 `rounded-xl border border-gray-200 bg-white p-3`；用户只想保留各个输入框本身，不需要外层卡片壳。
+- 处理：新增可复用的 `xy-shellless-panel` 技术类，只移除承载容器的边框、圆角、背景和阴影；脑洞问题面板保留 `xy-brainstorm-question-panel`、滚动、横向隐藏和 `p-3` 内边距，确保内部输入框不被改动。
+- 预防：去掉一组表单外层卡片时，不要删除内部字段的浮动边框；优先把“承载能力”和“卡片外观”拆开，保留滚动、内边距、宽度限制，单独去掉外壳样式。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+
+## 章纲/预览卡片贴边标题仍有白色底片
+
+- 现象：章纲卡片左上角的 `第N章章纲（第N卷）` 标题，以及部分贴边的 `清空`、脑洞输出标题、字数统计，会露出一段横向白色底片，视觉上像边框被白条垫住。
+- 原因：这些位置复用了浮动边框标签写法，默认 `label`、`.xy-floating-count` 或写死的 `bg-white px-1` 会给整段文字外面加矩形背景；它们不是按钮本体，而是贴在边框上的背板层。
+- 处理：只对 `.xy-floating-outline-preview` 预览类卡片取消标签和字数统计的白色背景与左右底片，并用轻量文字阴影挡住边框线；同时把贴边 `清空` 和脑洞输出标题改为透明背板类，保留文字位置和原有操作。
+- 预防：边框贴边元素要区分“文字/按钮本体”和“外层背板”；截图要求无白底时，不要全局改普通输入框浮动标签，优先给预览卡片、贴边标题、贴边工具加专用透明背板规则。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+
+## AI 会话序号按钮被边框线穿过
+
+- 现象：去掉会话工具外层白色背板后，左上角 `1` 号会话按钮中间被输出框上边线穿过去，看起来像数字和边框重叠。
+- 原因：选中的会话序号按钮使用 `bg-brand/10` 或 `bg-[#08AACE]/10` 这类半透明背景；外层背板透明后，后面的边框线会透过按钮本体显示出来。
+- 处理：把正式正文 AI、脑洞输出和 06 测试复刻页的选中会话按钮底色改为不透明浅蓝 `#EAF9FD`，只改按钮本体背景，不恢复外层白色背板。
+- 预防：边框嵌入按钮如果覆盖在边线上，选中态背景必须使用不透明色；透明度只适合不压线的普通区域。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchAIPanel.deleteSession.test.ts src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+
+## 大纲生成输出区仍显示 AI 对话框标题
+
+- 现象：大纲页面右侧输出区左上角仍显示 `AI对话框` 标题，用户已经要求去掉 AI 对话框格式后，这个标题还残留在边框上。
+- 原因：上次只改了概要/章纲正式右栏，漏掉了 `SETTING_TAB = '大纲'` 的高级右栏输出区；该分支仍有可见的 `AI对话框` 边框标签和隐藏 label 文案。
+- 处理：删除大纲生成输出区的可见 `AI对话框` 标签，并移除同一输出框里的隐藏 `AI对话框` label 文案；同时删除大纲流程下剧情链生成输出区的同名标题；保留清空按钮、输出内容框、关联脑洞、输入框和操作按钮的原样式。
+- 预防：处理“大纲页面”时要同时检查大纲设定生成区、概要/章纲右栏和剧情链独立分支，不能只按一个 `AI对话框` 搜索结果判断完成。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+
+## 正文 AI 会话工具仍有白色背板
+
+- 现象：正文右侧 AI 输出卡片左上角 `+ / 1` 和右上角 `删除 / 清空` 外面仍露出横向白色底板，边框上方看起来被一整条白底垫住。
+- 原因：正文会话工具使用 `.xy-floating-chat-session-tool` 和 `.xy-floating-chat-action-tool`，这两个类仍继承通用 `.xy-floating-edge-tool` 的白色背景与左右内边距；组件第一层容器也带 `bg-white`。
+- 处理：只把正文会话工具与动作工具的背板层改为透明，并清除外层左右内边距；保留 `+ / 1 / 删除 / 清空` 按钮本身的背景、边框、宽高和文本样式。
+- 预防：边框嵌入工具需要区分“工具背板”和“按钮本体”；截图要求无白底时，优先检查 `.xy-floating-edge-tool` 及第一层容器，而不是删除按钮自身背景。
+- 验证：执行 `npm.cmd run test:run -- src/shared/styles/floatingChatShell.test.ts`、`npm.cmd run check`。
+
+## 大纲右侧 AI 输出区仍按对话框外壳布局
+
+- 现象：大纲/章纲页面右侧把当前信息卡片和 `AI对话框` 外壳分成上下两块，和 06 测试里正文右侧“顶部配置 + 主输出卡片 + 下方关联/输入/动作”的格式不一致。
+- 原因：大纲右栏早期把 AI 输出框包在单独的圆角对话框 section 里，输出浮动边框只是其中的内部控件，导致整体层级比正文右栏多一层。
+- 处理：只调整布局结构，保留模型提示词、输入框、关联控件和保存/复制/清空按钮原有样式尺寸；拆掉正式大纲右栏的外层 `AI对话框` 壳，让现有输出浮动边框直接成为右栏主卡片，并把当前章节信息、关联、输入和动作按钮排在输出卡片下方。
+- 预防：以后对齐正文右栏格式时，优先判断是外层结构差异还是控件样式差异；只要求“格式”时不要改按钮宽高、颜色或控件 class。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+
+## 脑洞会话按钮外层出现白色背板
+
+- 现象：脑洞输出框左上角的 `+ / 1` 会话按钮外面出现一条额外白色背景，和测试图里只有按钮本体的效果不一致。
+- 原因：会话按钮复用了通用 `xy-floating-edge-tool`，该工具默认给整个浮动工具加白色背景和左右内边距；组件内部容器也带了白底。
+- 处理：只针对 `xy-floating-brainstorm-session-tool` 覆盖外层和内部容器为透明背景，并清掉外层左右内边距，保留按钮自身背景。
+- 预防：从测试页迁移浮动工具时，要区分“按钮本体样式”和“工具背板样式”，不要把通用背板一起带到不需要的位置。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+
+## 脑洞右侧生成配置显示不全
+
+- 现象：脑洞页面右侧生成配置在可用高度不足时，底部字段可能被裁掉，看起来显示不全。
+- 原因：脑洞配置面板曾使用固定隐藏溢出的布局，内容超过可视高度时没有纵向滚动承接。
+- 处理：把脑洞配置面板改为纵向可滚动、横向隐藏，并让非末尾字段保持不被压缩，避免底部字段被裁切。
+- 预防：表单类固定面板应保留纵向滚动兜底，横向溢出单独隐藏或收缩处理。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+
+## 脑洞题材和故事主题标签显示不全
+
+- 现象：脑洞页“题材”和“故事主题”两个并排短框的浮动标签靠近上边缘，文字上半截被裁掉。
+- 原因：短框复用了通用 `xy-floating-outline-compact-textarea` 标签定位，`top: 0` 加 `translateY(-50%)` 会把标签顶出当前脑洞表单可视区域。
+- 处理：恢复短框和“主角金手指”一致的边框外浮标签样式与 `52px` 单行高度；只给脑洞表单顶部增加留白，避免标签被卡片上沿裁掉。
+- 预防：脑洞这类窄字段如果使用浮动标签，应优先调整卡片高度与容器留白，不要把标签改成框内标题。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+
+## 脑洞数量按钮选中后不能再次点击取消
+
+- 现象：脑洞页“一次生成几个脑洞”数量按钮点选后保持高亮，再次点击同一个数字无法取消选择。
+- 原因：数量按钮点击时始终把当前数字写入配置，没有判断当前按钮是否已选中。
+- 处理：点击已选中的数量按钮时写入空值，点击未选中的数量按钮时仍写入对应数字。
+- 预防：胶囊选择项如果不是必填，应支持二次点击取消，并用测试覆盖选中态切换。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+
+## 脑洞题材和故事主题占位文字过长
+
+- 现象：脑洞页“题材”和“故事主题”两个短输入框里的占位示例过长，在窄框里容易换行或显示拥挤。
+- 原因：占位文字沿用了较完整的示例列表，和当前短字段的可视宽度不匹配。
+- 处理：题材占位改为 `如都市、玄幻`；故事主题占位改为 `如系统流`。
+- 预防：短字段占位只保留一到两个最关键示例，避免示例文本比输入框本身更抢眼。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+
+## 脑洞数量按钮去掉单位后仍然换行
+
+- 现象：脑洞页“一次生成几个脑洞”按钮去掉“个”后，`10` 仍被挤到第二行，外框也保留了两行高度。
+- 原因：数量按钮仍使用 `min-w-[50px]`、`h-9`、`gap-2` 和可换行布局；外框内边距与最小高度也按两行按钮保留。
+- 处理：按钮缩为 `h-8 min-w-[40px] px-2`，选项容器改为 `flex-nowrap gap-1.5 px-3`，外框高度收紧为单行显示需要的 `64px`。
+- 预防：数量选择这类固定少量选项应同时控制按钮宽度、容器 nowrap 和外框高度，不能只删单位文字。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+
+## 大纲设定左侧滚动条过宽
+
+- 现象：大纲页面左侧设定分类列表的滚动条偏粗，视觉上比列表内容更抢眼。
+- 原因：左侧分类列表只使用普通 `overflow-y-auto`，没有接入当前工作台列表专用的细滚动条样式。
+- 处理：给左侧分类列表增加 `xy-setting-sidebar-scrollbar` 专用 class，并把 WebKit 滚动条宽度设为 `5px`，约为常用 `8px` 滚动条的 60%。
+- 预防：只调整特定侧栏滚动条时使用专用 class，避免把全局滚动条或正文编辑区滚动条一起改细。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+
+## 脑洞数量按钮带“个”导致一行放不下
+
+- 现象：脑洞页“一次生成几个脑洞”数量选项显示为 `1个 / 2个 / 3个 / 5个 / 10个`，按钮文字偏宽，容易换成两行。
+- 原因：数量选项自身已经位于“几个脑洞”的字段标题下，按钮里再次显示单位“个”造成冗余占宽；旧配置也会把 `3个` 这类值直接保存。
+- 处理：数量按钮改为只显示 `1 / 2 / 3 / 5 / 10`；读取和写入数量字段时归一旧的 `N个` 值为纯数字，保证旧数据仍能正确高亮。
+- 预防：同一字段标题已经说明单位时，胶囊选项只显示核心值；回归测试同时断言不会再渲染 `3个` 按钮。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+
+## 脑洞数量选择需要改成不可输入的浮动外框
+
+- 现象：脑洞页“一次生成几个脑洞”只是普通按钮行，视觉上不像“你的构思”这类浮动边框输入框。
+- 原因：数量选择虽然在表单字段循环里渲染，但缺少独立外框样式，内部也没有明确的“只点击数字、不输入文本”结构约束。
+- 处理：新增 `xy-brainstorm-count-field` 外框，沿用浮动标签边框风格；内部保留 `1 / 2 / 3 / 5 / 10` 数字按钮，不渲染文本框。
+- 预防：选择类字段如果需要和输入框视觉一致，应使用不可输入的 field 容器包住可点击选项，并用测试确认容器内没有 textbox。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`。
+
+## 脑洞页面右侧表单出现左右滚动条
+
+- 现象：脑洞页面右侧生成配置表单底部出现横向滚动条，页面在窄宽度下可以左右滚动。
+- 原因：脑洞表单容器使用了 `overflow-y-auto` 的滚动容器，内部计数按钮行固定单行排列，窄宽度下内容撑出容器宽度并触发横向滚动。
+- 处理：把脑洞表单容器改为固定 `overflow-hidden` 布局，增加 `xy-brainstorm-question-panel` 限制内部最大宽度；计数按钮行改为可换行的 `xy-brainstorm-count-options`。
+- 预防：固定页面里的右侧配置表单不能使用会暴露横向滚动的容器；胶囊按钮组在窄宽度下应允许换行或收缩。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`。
+
+## 脑洞输出框清空与字号控件位置需要互换
+
+- 现象：脑洞库右侧输出框的“清空”按钮位于下方操作区，字号设置占用输出框右上角，和正文页面对话框的工具布局不一致。
+- 原因：`WorkbenchLibraryPanel` 的脑洞输出区把 `FontSizeStepper` 放在通用右上角浮动工具里，而清空按钮渲染在输入框下方操作栏。
+- 处理：把“清空”移动到脑洞输出框右上角边框工具；把“脑洞输出字号”移动到输出框左下角边框位置，并新增回归测试锁定位置类。
+- 预防：脑洞输出框、正文对话框这类大文本浮动框应保持工具分区一致：危险/清空操作在右上，字号等辅助调节在左下或不遮挡正文的位置。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`。
+
 ## 工作台创作流程按钮顺序需要脑洞前置
 
 - 现象：工作台顶部创作流程按钮显示为“大纲 / 剧情链 / 章纲 / 正文 / 脑洞”，脑洞入口排在正文后面，不符合当前希望先脑洞再进入大纲的创作路径。

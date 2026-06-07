@@ -31,4 +31,32 @@ describe('floating chat shell styles', () => {
     expect(previewRule).toContain('padding: 1.35rem 1rem 2.3rem');
     expect(previewRule).not.toContain('padding: 2.75rem 1rem 2.3rem');
   });
+
+  it('removes the white backplate behind the chat session and action tools', () => {
+    const sessionToolRule = readRule('.xy-floating-edge-tool.xy-floating-chat-session-tool');
+    const actionToolRule = readRule('.xy-floating-edge-tool.xy-floating-chat-action-tool');
+    const toolChildRule = readRule('.xy-floating-edge-tool.xy-floating-chat-session-tool > div,\n.xy-floating-edge-tool.xy-floating-chat-action-tool > div');
+    const sessionScrollRule = readRule('.xy-floating-edge-tool.xy-floating-chat-session-tool .scrollbar-hidden');
+
+    expect(sessionToolRule).toContain('background: transparent !important');
+    expect(sessionToolRule).toContain('padding-right: 0 !important');
+    expect(sessionToolRule).toContain('padding-left: 0 !important');
+    expect(actionToolRule).toContain('background: transparent !important');
+    expect(actionToolRule).toContain('padding-right: 0 !important');
+    expect(actionToolRule).toContain('padding-left: 0 !important');
+    expect(toolChildRule).toContain('background: transparent !important');
+    expect(sessionScrollRule).toContain('background: transparent !important');
+  });
+
+  it('keeps session buttons separated while masking the output border behind them', () => {
+    const buttonGroupRule = readRule('.xy-floating-session-buttons');
+    const maskRule = readRule('.xy-floating-session-buttons > button,\n.xy-floating-session-buttons > * > button');
+
+    expect(buttonGroupRule).toContain('gap: 0.375rem');
+    expect(buttonGroupRule).toContain('isolation: isolate');
+    expect(maskRule).toContain('box-shadow: 0 0 0 3px var(--xy-floating-session-line-mask, #f9fafb)');
+    expect(css).not.toContain('margin-left: -1px');
+    expect(css).not.toContain('border-top-left-radius: 0');
+    expect(css).not.toContain('border-top-right-radius: 0');
+  });
 });

@@ -377,7 +377,7 @@ function plotLibraryItemToCandidate(item: PlotLibraryItem): WorkbenchPlotPointCa
   };
 }
 
-function parseGeneratedPlotPointCandidates(text: string): WorkbenchPlotPointCandidate[] {
+export function parseGeneratedPlotPointCandidates(text: string): WorkbenchPlotPointCandidate[] {
   const clean = stripAiThinkingBlock(text).trim();
   if (!clean) return [];
   return clean
@@ -401,17 +401,19 @@ function parseGeneratedPlotPointCandidates(text: string): WorkbenchPlotPointCand
       const mainLine = contentLines[0] ?? lines[0] ?? '';
       const variableLine = lines.find((line) => /^(变量替换|变量替换说明|替换说明)[：:]/.test(line));
       const reviewLine = lines.find((line) => /^(AI评价|评价)[：:]/.test(line));
-      const [rawTitle, ...rest] = mainLine.replace(/^剧情点[：:]\s*/, '').split(/[：:]/);
-      const titleFromLine = rawTitle.trim();
-      const firstContent = rest.length > 0 && !/^(标题|剧情点)$/.test(titleFromLine)
-        ? rest.join('：').trim().replace(new RegExp(`^${titleFromLine.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[，,、。；;：:\\s]*`), '').trim()
-        : rest.length > 0
-        ? rest.join('：').trim()
-        : mainLine;
+      const normalizedMainLine = mainLine.replace(/^剧情点[：:]\s*/, '').trim();
+      const labelOnlyMatch = normalizedMainLine.match(/^(标题|剧情点)[：:]\s*(.+)$/);
+      const shortTitleMatch = labelOnlyMatch ? null : normalizedMainLine.match(/^([^：:]{1,22})[：:]\s*(.+)$/);
+      const titleFromLine = shortTitleMatch?.[1]?.trim() ?? '';
+      const firstContent = labelOnlyMatch
+        ? labelOnlyMatch[2].trim()
+        : shortTitleMatch
+          ? shortTitleMatch[2].trim().replace(new RegExp(`^${titleFromLine.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[，,、。；;：:\\s]*`), '').trim()
+          : normalizedMainLine;
       const adapted = [firstContent, ...contentLines.slice(1)].filter(Boolean).join('\n').trim();
       const derivedTitle = firstContent.split(/[，。！？；,.!?;]/)[0]?.trim() || `AI剧情点 ${index + 1}`;
-      const title = rawTitle.length <= 22 && rest.length > 0 && !/^(标题|剧情点)$/.test(rawTitle.trim())
-        ? rawTitle
+      const title = shortTitleMatch
+        ? titleFromLine
         : derivedTitle.slice(0, 22);
       return {
         id: `ai:${index}:${adapted.slice(0, 18)}`,
@@ -687,6 +689,7 @@ type LibraryTabConfig = {
   smartImportLocked?: boolean;
   settingPreviewFontSize?: number;
   roleTextFontSize?: number;
+  detailOutlineFontSize?: number;
 };
 
 type BrainstormQuestionKey =
@@ -699,18 +702,122 @@ type BrainstormQuestionKey =
 
 type BrainstormQuestionDraft = Record<BrainstormQuestionKey, string>;
 
+type BrainstormAiSession = {
+  id: string;
+  input: string;
+  output: string;
+  result: string;
+  previewTitles?: string[];
+  previewDrafts?: string[];
+};
+
+function createBrainstormAiSession(id = '1', config?: Pick<LibraryTabConfig, 'aiInput' | 'aiOutput' | 'aiResult'>): BrainstormAiSession {
+  return {
+    id,
+    input: config?.aiInput ?? '',
+    output: config?.aiOutput ?? '',
+    result: config?.aiResult ?? '',
+  };
+}
+
+function normalizeBrainstormAiSessions(value: unknown, fallbackConfig: Pick<LibraryTabConfig, 'aiInput' | 'aiOutput' | 'aiResult'>): BrainstormAiSession[] {
+  if (!Array.isArray(value)) return [createBrainstormAiSession('1', fallbackConfig)];
+  const sessions = value
+    .map((item, index): BrainstormAiSession | null => {
+      if (!item || typeof item !== 'object') return null;
+      const session = item as Partial<BrainstormAiSession>;
+      const id = typeof session.id === 'string' && session.id.trim()
+        ? session.id.trim()
+        : String(index + 1);
+      return {
+        id,
+        input: typeof session.input === 'string' ? session.input : '',
+        output: typeof session.output === 'string' ? session.output : '',
+        result: typeof session.result === 'string' ? session.result : '',
+        previewTitles: Array.isArray(session.previewTitles) ? session.previewTitles.filter((item): item is string => typeof item === 'string') : undefined,
+        previewDrafts: Array.isArray(session.previewDrafts) ? session.previewDrafts.filter((item): item is string => typeof item === 'string') : undefined,
+      };
+    })
+    .filter((session): session is BrainstormAiSession => Boolean(session));
+  return sessions.length > 0 ? sessions : [createBrainstormAiSession('1', fallbackConfig)];
+}
+
+function getActiveBrainstormAiSessionId(value: unknown, sessions: BrainstormAiSession[]) {
+  const activeId = typeof value === 'string' ? value : '';
+  return sessions.some((session) => session.id === activeId) ? activeId : sessions[0]?.id ?? '1';
+}
+
+function getBrainstormOutputCount(value: string) {
+  const count = Number(normalizeBrainstormCountValue(value));
+  return Number.isFinite(count) && count > 0 ? count : 1;
+}
+
+function getTemporaryBrainstormTitle(index: number) {
+  return `新脑洞${index + 1}`;
+}
+
+function getFloatingTitleInputStyle(value: string, minCh: number, maxCh: number): CSSProperties {
+  const normalizedLength = Math.max(minCh, Math.min(maxCh, Array.from(value.trim() || ' ').length + 1));
+  return {
+    '--xy-floating-title-input-width': `${normalizedLength}ch`,
+  } as CSSProperties;
+}
+
+function splitBrainstormGeneratedText(text: string, count: number) {
+  const clean = stripAiThinkingBlock(text).trim();
+  if (!clean) return Array.from({ length: count }, () => '');
+  const numberedParts = clean
+    .split(/\n(?=\s*(?:[-*]\s*)?(?:脑洞\s*)?\d+[.、）)]\s*)/)
+    .map((part) => part.trim().replace(/^(?:[-*]\s*)?(?:脑洞\s*)?\d+[.、）)]\s*/, '').trim())
+    .filter(Boolean);
+  const parts = numberedParts.length >= 2
+    ? numberedParts
+    : clean.split(/\n{2,}/).map((part) => part.trim()).filter(Boolean);
+  if (parts.length >= count) return parts.slice(0, count);
+  return Array.from({ length: count }, (_, index) => parts[index] ?? (index === 0 ? clean : ''));
+}
+
+function clearStoredBrainstormAiSessionPreviews(storageKey: string) {
+  const currentConfigs = readTabConfigs(storageKey);
+  const currentConfig = currentConfigs[BRAINSTORM_TAB] ?? {};
+  const currentSessions = normalizeBrainstormAiSessions(currentConfig.aiSessions, currentConfig);
+  const activeId = getActiveBrainstormAiSessionId(currentConfig.activeAiSessionId, currentSessions);
+  const nextSessions = currentSessions.map((session) => (
+    session.id === activeId
+      ? { ...session, input: '', output: '', result: '', previewTitles: [], previewDrafts: [] }
+      : session
+  ));
+  localStorage.setItem(getTabConfigsStorageKey(storageKey), JSON.stringify({
+    ...currentConfigs,
+    [BRAINSTORM_TAB]: {
+      ...currentConfig,
+      aiSessions: nextSessions,
+      activeAiSessionId: activeId,
+      aiInput: '',
+      aiOutput: '',
+      aiResult: '',
+    },
+  }));
+}
+
 const BRAINSTORM_QUESTION_FIELDS: Array<{
   key: BrainstormQuestionKey;
   label: string;
   placeholder: string;
 }> = [
-  { key: 'brainstormGenre', label: '题材', placeholder: '如都市高武、玄幻、仙侠、科幻' },
-  { key: 'brainstormBackground', label: '故事主题', placeholder: '如系统流、凡人流' },
+  { key: 'brainstormGenre', label: '题材', placeholder: '如都市、玄幻' },
+  { key: 'brainstormBackground', label: '故事主题', placeholder: '如系统流' },
   { key: 'brainstormIdea', label: '主角金手指', placeholder: '如吞噬系统、神豪系统' },
   { key: 'brainstormCheat', label: '你的构思', placeholder: '任何灵感都可以' },
   { key: 'brainstormCount', label: '一次生成几个脑洞', placeholder: '' },
   { key: 'brainstormRequirement', label: '补充内容', placeholder: '主角名字、性格、女主设定等' },
 ];
+
+function normalizeBrainstormCountValue(value: string) {
+  const trimmed = value.trim();
+  const legacyMatch = trimmed.match(/^(\d+)\s*个$/);
+  return legacyMatch?.[1] ?? trimmed;
+}
 
 const BRAINSTORM_PREVIEW_MIN_FONT_SIZE = 12;
 const BRAINSTORM_PREVIEW_MAX_FONT_SIZE = 28;
@@ -720,6 +827,8 @@ const SETTING_PREVIEW_MIN_FONT_SIZE = 12;
 const SETTING_PREVIEW_MAX_FONT_SIZE = 28;
 const ROLE_TEXT_MIN_FONT_SIZE = 12;
 const ROLE_TEXT_MAX_FONT_SIZE = 28;
+const DETAIL_OUTLINE_MIN_FONT_SIZE = 12;
+const DETAIL_OUTLINE_MAX_FONT_SIZE = 28;
 const LIBRARY_AI_TIMEOUT_MS = 180000;
 
 type LibraryTabConfigs = Record<string, LibraryTabConfig>;
@@ -1277,7 +1386,7 @@ function getBrainstormQuestionRows(value: string) {
   const rows = value
     .split('\n')
     .reduce((total, line) => total + Math.max(1, Math.ceil(Array.from(line).length / 26)), 0);
-  return Math.min(4, Math.max(1, rows));
+  return Math.max(1, rows);
 }
 
 function parseAiChatTurns(content: string) {
@@ -1324,26 +1433,34 @@ function isPendingAiThinkingDraft(content: string) {
   return trimmed === '正在思考...' || /^\[\[THINKING seconds=\d+ status=thinking\]\]/.test(trimmed);
 }
 
-function renderAiChatContent(content: string) {
+function renderAiChatContent(content: string, options: { hideReasoningBody?: boolean } = {}) {
   const thinkingMatch = content.match(/^\[\[THINKING seconds=(\d+) status=(thinking|done)\]\]\n([\s\S]*?)\n\[\[\/THINKING\]\]\n?\n?([\s\S]*)$/);
   if (thinkingMatch) {
     const seconds = thinkingMatch[1] ?? '0';
     const done = thinkingMatch[2] === 'done';
     const reasoning = thinkingMatch[3]?.trim() ?? '';
     const answer = thinkingMatch[4]?.trimStart() ?? '';
+    const thinkingLabel = done ? `已思考（用时 ${seconds} 秒）` : `正在思考（${seconds} 秒）`;
     return (
       <div className="space-y-3">
-        <details open={!done} className="group rounded-xl border border-gray-100 bg-white/80 px-3 py-2 text-gray-600">
-          <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-gray-600">
+        {options.hideReasoningBody ? (
+          <div className="flex items-center gap-2 rounded-xl border border-gray-100 bg-white/80 px-3 py-2 text-sm font-medium text-gray-600">
             {done ? <ChevronDown className="h-4 w-4 text-brand" /> : <ChevronRight className="h-4 w-4 text-brand" />}
-            <span>{done ? `已思考（用时 ${seconds} 秒）` : `正在思考（${seconds} 秒）`}</span>
-          </summary>
-          {reasoning && (
-            <div className="mt-2 border-l-2 border-gray-200 pl-3 text-sm leading-7 text-gray-500">
-              {reasoning}
-            </div>
-          )}
-        </details>
+            <span>{thinkingLabel}</span>
+          </div>
+        ) : (
+          <details open={!done} className="group rounded-xl border border-gray-100 bg-white/80 px-3 py-2 text-gray-600">
+            <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-gray-600">
+              {done ? <ChevronDown className="h-4 w-4 text-brand" /> : <ChevronRight className="h-4 w-4 text-brand" />}
+              <span>{thinkingLabel}</span>
+            </summary>
+            {reasoning && (
+              <div className="mt-2 border-l-2 border-gray-200 pl-3 text-sm leading-7 text-gray-500">
+                {reasoning}
+              </div>
+            )}
+          </details>
+        )}
         {answer && <div>{answer}</div>}
       </div>
     );
@@ -1588,8 +1705,6 @@ export function WorkbenchLibraryPanel({
   const [brainstormPromptDraft, setBrainstormPromptDraft] = useState({ name: '', description: '', content: '' });
   const [brainstormGenerateDraft, setBrainstormGenerateDraft] = useState<BrainstormQuestionDraft | null>(null);
   const [isBrainstormConfirmScrolling, setIsBrainstormConfirmScrolling] = useState(false);
-  const [editingBrainstormOutputTitleId, setEditingBrainstormOutputTitleId] = useState<string | null>(null);
-  const [brainstormOutputTitleDraft, setBrainstormOutputTitleDraft] = useState('');
   const [activeDetailOutlineScrollId, setActiveDetailOutlineScrollId] = useState<number | null>(null);
   const [isDetailOutlineReaderOpen, setIsDetailOutlineReaderOpen] = useState(false);
   const [detailOutlineReaderTab, setDetailOutlineReaderTab] = useState<DetailOutlineReaderTab>('settings');
@@ -1671,15 +1786,19 @@ export function WorkbenchLibraryPanel({
   const roleNameDraft = activeTabConfig.roleNameDraft ?? activeTabConfig.titleDraft ?? '';
   const settingTypeDraft = activeTabConfig.typeDraft ?? '';
   const settingTitleDraft = activeTabConfig.titleDraft ?? '';
-  const aiInput = activeTabConfig.aiInput ?? '';
+  const brainstormAiSessions = normalizeBrainstormAiSessions(activeTabConfig.aiSessions, activeTabConfig);
+  const activeBrainstormAiSessionId = getActiveBrainstormAiSessionId(activeTabConfig.activeAiSessionId, brainstormAiSessions);
+  const activeBrainstormAiSession = brainstormAiSessions.find((session) => session.id === activeBrainstormAiSessionId) ?? brainstormAiSessions[0];
+  const aiInput = activeTab === BRAINSTORM_TAB ? activeBrainstormAiSession?.input ?? '' : activeTabConfig.aiInput ?? '';
   const canSendLibraryAiMessage = activeTab === SETTING_TAB || aiInput.trim().length > 0;
-  const aiOutput = activeTabConfig.aiOutput ?? '';
-  const aiResult = activeTabConfig.aiResult ?? '';
+  const aiOutput = activeTab === BRAINSTORM_TAB ? activeBrainstormAiSession?.output ?? '' : activeTabConfig.aiOutput ?? '';
+  const aiResult = activeTab === BRAINSTORM_TAB ? activeBrainstormAiSession?.result ?? '' : activeTabConfig.aiResult ?? '';
   const hasLibraryAiContent = hasLibraryAiDialogContent(aiInput, aiOutput, aiResult);
   const animatedAiOutput = isLibraryAiLoading
     ? aiOutput.replace(/正在生成\.\.\./g, `正在生成${'.'.repeat(loadingDotCount)}`)
     : aiOutput;
   const aiChatTurns = parseAiChatTurns(animatedAiOutput);
+  const previousActiveTabRef = useRef(activeTab);
   useEffect(() => {
     outlinePreviewDraftRef.current = outlinePreviewDraft;
   }, [outlinePreviewDraft]);
@@ -1731,12 +1850,16 @@ export function WorkbenchLibraryPanel({
     ROLE_TEXT_MAX_FONT_SIZE,
     Math.max(ROLE_TEXT_MIN_FONT_SIZE, activeTabConfig.roleTextFontSize ?? 14),
   );
+  const detailOutlineFontSize = Math.min(
+    DETAIL_OUTLINE_MAX_FONT_SIZE,
+    Math.max(DETAIL_OUTLINE_MIN_FONT_SIZE, activeTabConfig.detailOutlineFontSize ?? 14),
+  );
   const brainstormQuestionDraft: BrainstormQuestionDraft = {
     brainstormGenre: activeTabConfig.brainstormGenre ?? '',
     brainstormBackground: activeTabConfig.brainstormBackground ?? '',
     brainstormIdea: activeTabConfig.brainstormIdea ?? '',
     brainstormCheat: activeTabConfig.brainstormCheat ?? '',
-    brainstormCount: activeTabConfig.brainstormCount ?? '',
+    brainstormCount: normalizeBrainstormCountValue(activeTabConfig.brainstormCount ?? ''),
     brainstormRequirement: activeTabConfig.brainstormRequirement ?? '',
   };
 
@@ -1780,6 +1903,7 @@ export function WorkbenchLibraryPanel({
   useEffect(() => {
     return () => {
       if (!isRememberAssociationsEnabled()) clearWorkbenchLinkedBrainstorm(storageKey);
+      clearStoredBrainstormAiSessionPreviews(storageKey);
     };
   }, [storageKey]);
 
@@ -1797,6 +1921,47 @@ export function WorkbenchLibraryPanel({
     });
   };
   const updateActiveTabConfig = (updates: LibraryTabConfig) => updateTabConfig(activeTab, updates);
+  const updateBrainstormAiSession = (sessionId: string, patch: Partial<Omit<BrainstormAiSession, 'id'>>) => {
+    setTabConfigs((prev) => {
+      const currentConfig = prev[BRAINSTORM_TAB] ?? {};
+      const currentSessions = normalizeBrainstormAiSessions(currentConfig.aiSessions, currentConfig);
+      const currentActiveId = getActiveBrainstormAiSessionId(currentConfig.activeAiSessionId, currentSessions);
+      const targetId = currentSessions.some((session) => session.id === sessionId) ? sessionId : currentActiveId;
+      const nextSessions = currentSessions.map((session) => (
+        session.id === targetId ? { ...session, ...patch } : session
+      ));
+      const activeSession = nextSessions.find((session) => session.id === currentActiveId) ?? nextSessions[0];
+      const nextConfig: LibraryTabConfig = {
+        ...currentConfig,
+        aiSessions: nextSessions,
+        activeAiSessionId: currentActiveId,
+        aiInput: activeSession?.input ?? '',
+        aiOutput: activeSession?.output ?? '',
+        aiResult: activeSession?.result ?? '',
+      };
+      const next = {
+        ...prev,
+        [BRAINSTORM_TAB]: nextConfig,
+      };
+      localStorage.setItem(getTabConfigsStorageKey(storageKey), JSON.stringify(next));
+      return next;
+    });
+  };
+  const updateActiveBrainstormAiSession = (patch: Partial<Omit<BrainstormAiSession, 'id'>>) => {
+    updateBrainstormAiSession(activeBrainstormAiSessionId, patch);
+  };
+  useEffect(() => {
+    const previousTab = previousActiveTabRef.current;
+    previousActiveTabRef.current = activeTab;
+    if (previousTab !== BRAINSTORM_TAB || activeTab === BRAINSTORM_TAB) return;
+    updateBrainstormAiSession(activeBrainstormAiSessionId, {
+      input: '',
+      output: '',
+      result: '',
+      previewTitles: [],
+      previewDrafts: [],
+    });
+  }, [activeTab, activeBrainstormAiSessionId]);
   const setOutlinePreviewDraft = (value: SetStateAction<string>) => {
     const nextValue = typeof value === 'function' ? value(outlinePreviewDraft) : value;
     setOutlinePreviewDraftState(nextValue);
@@ -1837,9 +2002,27 @@ export function WorkbenchLibraryPanel({
   const setRoleNameDraft = (value: string) => updateTabConfig(ROLE_TAB, { roleNameDraft: value, titleDraft: value });
   const setSettingTypeDraft = (value: string) => updateActiveTabConfig({ typeDraft: value });
   const setSettingTitleDraft = (value: string) => updateActiveTabConfig({ titleDraft: value });
-  const setAiInput = (value: string) => updateActiveTabConfig({ aiInput: value });
-  const setAiOutput = (value: string) => updateActiveTabConfig({ aiOutput: value });
-  const setAiResult = (value: string) => updateActiveTabConfig({ aiResult: value });
+  const setAiInput = (value: string) => {
+    if (activeTab === BRAINSTORM_TAB) {
+      updateActiveBrainstormAiSession({ input: value });
+      return;
+    }
+    updateActiveTabConfig({ aiInput: value });
+  };
+  const setAiOutput = (value: string) => {
+    if (activeTab === BRAINSTORM_TAB) {
+      updateActiveBrainstormAiSession({ output: value });
+      return;
+    }
+    updateActiveTabConfig({ aiOutput: value });
+  };
+  const setAiResult = (value: string) => {
+    if (activeTab === BRAINSTORM_TAB) {
+      updateActiveBrainstormAiSession({ result: value });
+      return;
+    }
+    updateActiveTabConfig({ aiResult: value });
+  };
   const setBrainstormPreviewFontSize = (value: number) => {
     updateActiveTabConfig({
       brainstormPreviewFontSize: Math.min(
@@ -1872,8 +2055,18 @@ export function WorkbenchLibraryPanel({
       ),
     });
   };
+  const setDetailOutlineFontSize = (value: number) => {
+    updateActiveTabConfig({
+      detailOutlineFontSize: Math.min(
+        DETAIL_OUTLINE_MAX_FONT_SIZE,
+        Math.max(DETAIL_OUTLINE_MIN_FONT_SIZE, value),
+      ),
+    });
+  };
   const setBrainstormQuestionField = (key: BrainstormQuestionKey, value: string) => {
-    updateActiveTabConfig({ [key]: value } as LibraryTabConfig);
+    updateActiveTabConfig({
+      [key]: key === 'brainstormCount' ? normalizeBrainstormCountValue(value) : value,
+    } as LibraryTabConfig);
   };
   const updateFieldSizeSpec = (key: WorkbenchFieldSizeKey, prop: WorkbenchFieldSizeProp, value: number) => {
     setFieldSizeSpecs((prev) => {
@@ -2628,21 +2821,33 @@ export function WorkbenchLibraryPanel({
     return `脑洞${maxNumber + 1}`;
   };
 
-  const saveBrainstormOutputAsNew = () => {
+  const getCurrentBrainstormOutputPreviews = () => {
+    const count = getBrainstormOutputCount(brainstormQuestionDraft.brainstormCount);
     const body = getLatestUsefulAiText(aiResult || aiOutput);
-    if (!body) return;
-    const entry = {
-      ...createWorkbenchLibraryEntry(BRAINSTORM_TAB, getNextBrainstormTitle()),
-      content: stringifySettingContent({ type: BRAINSTORM_TYPE, body }),
-    };
-    persist([entry, ...entries]);
+    const splitParts = splitBrainstormGeneratedText(body, count);
+    const drafts = activeBrainstormAiSession?.previewDrafts;
+    const titles = activeBrainstormAiSession?.previewTitles;
+    return Array.from({ length: count }, (_, index) => ({
+      title: titles?.[index]?.trim() || getTemporaryBrainstormTitle(index),
+      body: drafts?.[index] ?? splitParts[index] ?? '',
+    })).filter((item) => item.body.trim());
+  };
+
+  const saveBrainstormOutputAsNew = () => {
+    const previews = getCurrentBrainstormOutputPreviews();
+    if (previews.length === 0) return;
+    const nextEntries = previews.map((preview) => ({
+      ...createWorkbenchLibraryEntry(BRAINSTORM_TAB, preview.title || getNextBrainstormTitle()),
+      content: stringifySettingContent({ type: BRAINSTORM_TYPE, body: preview.body }),
+    }));
+    persist([...nextEntries, ...entries]);
     setRememberedActiveTab(BRAINSTORM_TAB);
-    setSelectedIdForTab(BRAINSTORM_TAB, entry.id);
+    setSelectedIdForTab(BRAINSTORM_TAB, nextEntries[0].id);
     setExpandedSettingTypes((prev) => new Set(prev).add(BRAINSTORM_TYPE));
   };
 
   const saveBrainstormOutput = (targetId?: string | null) => {
-    const body = getLatestUsefulAiText(aiResult || aiOutput);
+    const body = getCurrentBrainstormOutputPreviews()[0]?.body.trim() ?? '';
     if (!body || !targetId) return;
     updateEntry(targetId, {
       content: stringifySettingContent({ type: BRAINSTORM_TYPE, body }),
@@ -2864,7 +3069,10 @@ export function WorkbenchLibraryPanel({
     libraryAiAbortRef.current = controller;
     setIsLibraryAiLoading(true);
     if (overrideText === undefined) setAiInput('');
-    if (activeTab === BRAINSTORM_TAB) setAiResult('');
+    if (activeTab === BRAINSTORM_TAB) {
+      setAiResult('');
+      updateActiveBrainstormAiSession({ previewTitles: [], previewDrafts: [] });
+    }
     const visibleUserText = text;
     const pendingOutput = `${aiOutput.trim() ? `${aiOutput.trim()}\n\n` : ''}[[USER]]\n${visibleUserText}\n\n[[AI]]\n正在生成...`;
     const replacePendingOutput = (content: string) => (
@@ -2954,6 +3162,15 @@ export function WorkbenchLibraryPanel({
   };
 
   const clearLibraryAiDialog = () => {
+    if (activeTab === BRAINSTORM_TAB) {
+      libraryAiRequestSeqRef.current += 1;
+      libraryAiAbortRef.current?.abort();
+      libraryAiAbortRef.current = null;
+      setIsLibraryAiLoading(false);
+      updateActiveBrainstormAiSession({ input: '', output: '', result: '' });
+      updateActiveBrainstormAiSession({ previewTitles: [], previewDrafts: [] });
+      return;
+    }
     libraryAiRequestSeqRef.current += 1;
     libraryAiAbortRef.current?.abort();
     libraryAiAbortRef.current = null;
@@ -3025,25 +3242,6 @@ export function WorkbenchLibraryPanel({
         ? { ...entry, ...updates, updatedAt: new Date().toLocaleString('zh-CN') }
         : entry
     )));
-  };
-
-  const startEditingBrainstormOutputTitle = (entry: WorkbenchLibraryEntry | null) => {
-    if (!entry) return;
-    setEditingBrainstormOutputTitleId(entry.id);
-    setBrainstormOutputTitleDraft(entry.title);
-  };
-
-  const cancelEditingBrainstormOutputTitle = () => {
-    setEditingBrainstormOutputTitleId(null);
-    setBrainstormOutputTitleDraft('');
-  };
-
-  const commitBrainstormOutputTitle = () => {
-    const id = editingBrainstormOutputTitleId;
-    if (!id) return;
-    const title = brainstormOutputTitleDraft.trim();
-    if (title) updateEntry(id, { title });
-    cancelEditingBrainstormOutputTitle();
   };
 
   const updateRole = (updates: Partial<RoleContent>) => {
@@ -4483,7 +4681,7 @@ export function WorkbenchLibraryPanel({
                         <label>角色背景</label>
                         <span className="xy-floating-count"><WordCountText value={selectedRole.background.length} /></span>
                       </div>
-                      <div className="xy-floating-edge-tool">
+                      <div className="xy-floating-border-font-tool">
                         <FontSizeStepper
                           value={roleTextFontSize}
                           min={ROLE_TEXT_MIN_FONT_SIZE}
@@ -4506,7 +4704,7 @@ export function WorkbenchLibraryPanel({
                         <label>角色状态</label>
                         <span className="xy-floating-count"><WordCountText value={selectedRole.status.length} /></span>
                       </div>
-                      <div className="xy-floating-edge-tool">
+                      <div className="xy-floating-border-font-tool">
                         <FontSizeStepper
                           value={roleTextFontSize}
                           min={ROLE_TEXT_MIN_FONT_SIZE}
@@ -4545,15 +4743,15 @@ export function WorkbenchLibraryPanel({
           {settingLibraryMode === 'advanced' && (
           <>
           {rightResizeHandle}
-          <aside className="flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 p-4">
-            <div className="flex items-center justify-between gap-3">
+          <aside className="flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 px-4 pb-4 pt-2">
+            <div className="flex shrink-0 items-center justify-between gap-3">
               <h3 className="shrink-0 text-base font-bold text-gray-900">角色生成</h3>
               <div className="flex shrink-0 items-center gap-2">
                 {renderFieldSizeButton()}
                 {renderLibraryAiLogButton('library')}
               </div>
             </div>
-            <div className="mt-4 space-y-3">
+            <div className="mt-3 shrink-0 space-y-3">
               <CombinedAiConfigSelect
                 style={getEmbeddedConfigSelectStyle(getConfigFieldSizeStyle(ROLE_TAB, 'model'))}
                 modelValue={activeTabConfig.modelId ?? ''}
@@ -4576,27 +4774,26 @@ export function WorkbenchLibraryPanel({
                 }}
               />
             </div>
-            <section className="relative mt-5 flex min-h-0 flex-1 flex-col rounded-xl border border-gray-200 bg-white px-3 pb-3 pt-5">
-              <div className="absolute -top-2 left-4 bg-white px-1 text-sm font-black text-gray-900">AI对话框</div>
+            <div className="relative mt-5 min-h-0 flex-1">
               <button
                 type="button"
                 onClick={clearLibraryAiDialog}
                 disabled={!hasLibraryAiContent && !isLibraryAiLoading}
-                className="absolute -top-2 right-4 bg-white px-1 text-xs font-black text-red-500 hover:text-red-600 disabled:text-red-300"
+                className="xy-floating-outline-clear-button xy-border-embedded-transparent-backplate absolute -top-2 right-4 px-1 text-xs font-black text-red-500 hover:text-red-600 disabled:text-red-300"
               >
                 清空
               </button>
-              <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${aiOutput.trim() ? 'xy-has-value' : ''}`}>
+              <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count h-full ${aiOutput.trim() ? 'xy-has-value' : ''}`}>
                 <textarea
                   value={aiOutput}
                   onChange={(event) => setAiOutput(event.target.value)}
                   placeholder="AI输出框"
                   className="editor-scrollbar"
                 />
-                <label aria-hidden="true" className="opacity-0">AI对话框</label>
                 <span className="xy-floating-count"><WordCountText value={countTextWords(aiOutput)} /></span>
               </div>
-              <div className="mt-3">
+            </div>
+            <div className="mt-2 shrink-0">
                 <AiInlineInput
                   ref={libraryAiInputRef}
                   value={aiInput}
@@ -4611,8 +4808,7 @@ export function WorkbenchLibraryPanel({
                   stopDisabled={!isLibraryAiLoading}
                   placeholder="输入对话指令..."
                 />
-              </div>
-            </section>
+            </div>
           </aside>
           </>
           )}
@@ -4665,6 +4861,24 @@ export function WorkbenchLibraryPanel({
       : aiResult || latestUsefulAiOutput;
     const brainstormOutputValue = activeIsBrainstorm ? stripAiThinkingBlock(rawBrainstormOutputValue) : rawBrainstormOutputValue;
     const brainstormOutputWordCount = activeIsBrainstorm ? countTextWords(brainstormOutputValue) : 0;
+    const brainstormOutputPreviewCount = activeIsBrainstorm ? getBrainstormOutputCount(brainstormQuestionDraft.brainstormCount) : 1;
+    const brainstormOutputSplitParts = activeIsBrainstorm ? splitBrainstormGeneratedText(brainstormOutputValue, brainstormOutputPreviewCount) : [];
+    const brainstormOutputPreviews = Array.from({ length: brainstormOutputPreviewCount }, (_, index) => (
+      activeBrainstormAiSession?.previewDrafts?.[index] ?? brainstormOutputSplitParts[index] ?? ''
+    ));
+    const brainstormOutputTitles = Array.from({ length: brainstormOutputPreviewCount }, (_, index) => (
+      activeBrainstormAiSession?.previewTitles?.[index]?.trim() || getTemporaryBrainstormTitle(index)
+    ));
+    const setBrainstormOutputPreviewDraft = (index: number, value: string) => {
+      const nextDrafts = [...brainstormOutputPreviews];
+      nextDrafts[index] = value;
+      updateActiveBrainstormAiSession({ previewDrafts: nextDrafts });
+    };
+    const setBrainstormOutputPreviewTitle = (index: number, value: string) => {
+      const nextTitles = [...brainstormOutputTitles];
+      nextTitles[index] = value;
+      updateActiveBrainstormAiSession({ previewTitles: nextTitles });
+    };
     const previewAiRequestText = activeIsBrainstorm
       ? buildBrainstormPromptFromQuestions(brainstormQuestionDraft)
       : aiInput.trim();
@@ -4797,7 +5011,7 @@ export function WorkbenchLibraryPanel({
             </div>
           )}
 
-          <div className={`${activeIsBrainstorm ? 'mt-0' : 'mt-2'} min-h-0 flex-1 overflow-y-auto space-y-1`}>
+          <div className={`${activeIsBrainstorm ? 'mt-0' : 'mt-2'} xy-setting-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto space-y-1`}>
             {(activeIsSettingLike ? groupedSettingEntries : [{ type: UNCATEGORIZED_TYPE, entries: currentEntries }]).map((group) => {
               const expanded = expandedSettingTypes.has(group.type);
               const isDropTarget = libraryDropTarget?.tab === activeTab && libraryDropTarget.type === group.type;
@@ -4843,12 +5057,6 @@ export function WorkbenchLibraryPanel({
                             onContextMenu={(event) => openEntryMenu(event, entry)}
                             onClick={() => {
                               setSelectedId(entry.id);
-                              if (activeIsBrainstorm) {
-                                updateTabConfig(BRAINSTORM_TAB, {
-                                  aiResult: getBrainstormEntryBody(entry),
-                                  aiOutput: '',
-                                });
-                              }
                             }}
                             className={`group w-full rounded-lg border px-3 py-1.5 text-left text-sm leading-5 transition-colors ${
                               currentSelectedEntry?.id === entry.id
@@ -4879,16 +5087,16 @@ export function WorkbenchLibraryPanel({
               <button
                 type="button"
                 onClick={() => setIsBrainstormRecycleOpen(true)}
-                className="flex w-full items-center justify-between gap-3 rounded-2xl border border-[#7BDDF0] bg-[#EAFBFF] px-4 py-3 text-left shadow-sm transition-colors hover:border-brand/50 hover:bg-brand-light"
+                className="flex h-11 w-full items-center justify-between gap-2 rounded-xl border border-red-100 bg-red-50 px-3 text-left shadow-sm transition-colors hover:border-red-200 hover:bg-red-100"
               >
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-bold text-gray-800">脑洞回收站</div>
-                  <div className="mt-0.5 text-[11px] font-medium text-gray-400">
-                    {brainstormRecycleEntries.length} 个已删除脑洞
-                  </div>
-                </div>
-                <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-bold text-[#08AACE]">
-                  打开
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-white text-red-500">
+                    <Trash2 className="h-4 w-4" />
+                  </span>
+                  <span className="truncate text-sm font-black text-slate-800">脑洞回收站</span>
+                </span>
+                <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-black text-red-400">
+                  {brainstormRecycleEntries.length}
                 </span>
               </button>
             </div>
@@ -4913,10 +5121,21 @@ export function WorkbenchLibraryPanel({
                     className="editor-scrollbar text-sm leading-7 text-gray-700"
                     style={{ fontSize: brainstormPreviewFontSize }}
                   />
-                  <label>脑洞预览</label>
-                  <span className="xy-floating-count"><WordCountText value={currentBrainstormPreviewWordCount} /></span>
+                  <label aria-hidden="true" className="opacity-0">脑洞预览</label>
+                  {currentSelectedEntry && (
+                    <div className="xy-floating-inline-title-tool xy-brainstorm-floating-title-tool xy-floating-title-count xy-border-embedded-transparent-backplate absolute top-0 z-20 -translate-y-1/2">
+                      <input
+                        value={currentSelectedEntry.title}
+                        onChange={(event) => updateEntry(currentSelectedEntry.id, { title: event.target.value })}
+                        className="xy-floating-title-input max-w-[120px] min-w-[58px] text-sm font-black leading-none text-slate-950 outline-none"
+                        style={getFloatingTitleInputStyle(currentSelectedEntry.title, 3, 9)}
+                        aria-label="脑洞名称"
+                      />
+                      <span><WordCountText value={currentBrainstormPreviewWordCount} /></span>
+                    </div>
+                  )}
                 </div>
-                <div className="xy-floating-edge-tool">
+                <div className="xy-floating-border-font-tool">
                   <FontSizeStepper
                     value={brainstormPreviewFontSize}
                     min={BRAINSTORM_PREVIEW_MIN_FONT_SIZE}
@@ -4957,10 +5176,9 @@ export function WorkbenchLibraryPanel({
                     className="editor-scrollbar text-sm leading-7 text-gray-700"
                     style={{ fontSize: settingPreviewFontSize }}
                   />
-                  <label>设定预览</label>
-                  <span className="xy-floating-count"><WordCountText value={countTextWords(currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content)} /></span>
+                  <label className="xy-floating-title-count">设定预览 <span><WordCountText value={countTextWords(currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content)} /></span></label>
                 </div>
-                <div className="xy-floating-edge-tool">
+                <div className="xy-floating-border-font-tool">
                   <FontSizeStepper
                     value={settingPreviewFontSize}
                     min={SETTING_PREVIEW_MIN_FONT_SIZE}
@@ -5006,10 +5224,9 @@ export function WorkbenchLibraryPanel({
                     className="editor-scrollbar text-sm leading-7 text-gray-700"
                     style={{ fontSize: settingPreviewFontSize }}
                   />
-                  <label>设定预览</label>
-                  <span className="xy-floating-count"><WordCountText value={0} /></span>
+                  <label className="xy-floating-title-count">设定预览 <span><WordCountText value={0} /></span></label>
                 </div>
-                <div className="xy-floating-edge-tool">
+                <div className="xy-floating-border-font-tool">
                   <FontSizeStepper
                     value={settingPreviewFontSize}
                     min={SETTING_PREVIEW_MIN_FONT_SIZE}
@@ -5027,62 +5244,77 @@ export function WorkbenchLibraryPanel({
 
           {activeIsBrainstorm && (
             <section className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-white">
-              <div className="flex min-h-0 flex-1 flex-col gap-6 p-4">
-                <div className="relative min-h-0 flex-1">
-                  <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${brainstormOutputValue.trim() ? 'xy-has-value' : ''}`}>
-                    <textarea
-                      value={brainstormOutputValue}
-                      onChange={(event) => setAiResult(event.target.value)}
-                      placeholder="这里显示本次 AI 生成的脑洞设定正文，保存脑洞时只保存这里的内容。"
-                      className="editor-scrollbar text-sm leading-6 text-gray-700"
-                      style={{ fontSize: brainstormOutputFontSize }}
-                    />
-                    <label aria-hidden="true" className="opacity-0">脑洞输出框</label>
-                    <span className="xy-floating-count"><WordCountText value={brainstormOutputWordCount} /></span>
-                  </div>
-                  {currentSelectedEntry && (
-                    <div className="absolute left-[32px] top-0 z-20 max-w-[calc(100%-160px)] -translate-y-1/2 bg-white px-1">
-                      {editingBrainstormOutputTitleId === currentSelectedEntry.id ? (
-                        <input
-                          autoFocus
-                          value={brainstormOutputTitleDraft}
-                          onChange={(event) => setBrainstormOutputTitleDraft(event.target.value)}
-                          onBlur={commitBrainstormOutputTitle}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter') {
-                              event.preventDefault();
-                              commitBrainstormOutputTitle();
-                            }
-                            if (event.key === 'Escape') {
-                              event.preventDefault();
-                              cancelEditingBrainstormOutputTitle();
-                            }
-                          }}
-                          className="h-7 max-w-[220px] min-w-[88px] rounded-md border border-[#08AACE] bg-white px-2 text-base font-black leading-none text-slate-950 outline-none"
-                        />
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => startEditingBrainstormOutputTitle(currentSelectedEntry)}
-                          className="block max-w-[220px] truncate bg-white px-1 text-left text-base font-black leading-none text-slate-950 hover:text-[#08AACE]"
-                          title="点击修改脑洞名称"
-                        >
-                          {currentSelectedEntry.title || '未命名脑洞'}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  <div className="xy-floating-edge-tool">
-                    <FontSizeStepper
-                      value={brainstormOutputFontSize}
-                      min={BRAINSTORM_OUTPUT_MIN_FONT_SIZE}
-                      max={BRAINSTORM_OUTPUT_MAX_FONT_SIZE}
-                      onChange={setBrainstormOutputFontSize}
-                      ariaLabel="脑洞输出字号"
-                    />
-                  </div>
+              <div className="flex min-h-0 flex-1 flex-col gap-5 p-4">
+                <div className="editor-scrollbar xy-brainstorm-output-preview-list flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
+                  {brainstormOutputPreviews.map((previewValue, index) => {
+                    const titleValue = brainstormOutputTitles[index] ?? getTemporaryBrainstormTitle(index);
+                    const previewWordCount = countTextWords(previewValue);
+                    return (
+                      <div key={index} className="relative min-h-[120px] flex-1">
+                        <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${previewValue.trim() ? 'xy-has-value' : ''}`}>
+                          <textarea
+                            value={previewValue}
+                            onChange={(event) => setBrainstormOutputPreviewDraft(index, event.target.value)}
+                            placeholder={`这里显示本次 AI 生成的${titleValue}，保存脑洞时只保存这里的内容。`}
+                            className="editor-scrollbar text-sm leading-6 text-gray-700"
+                            style={{ fontSize: brainstormOutputFontSize }}
+                          />
+                          <label aria-hidden="true" className="opacity-0">脑洞输出框</label>
+                        </div>
+                        <div className="xy-floating-inline-title-tool xy-brainstorm-output-title-tool xy-floating-title-count xy-border-embedded-transparent-backplate absolute top-0 z-20 -translate-y-1/2">
+                          <input
+                            value={titleValue}
+                            onChange={(event) => setBrainstormOutputPreviewTitle(index, event.target.value)}
+                            className="xy-floating-title-input max-w-[180px] min-w-[72px] text-sm font-black leading-none text-slate-950 outline-none"
+                            style={getFloatingTitleInputStyle(titleValue, 4, 12)}
+                            aria-label={`脑洞输出名称 ${index + 1}`}
+                          />
+                          <span><WordCountText value={previewWordCount} /></span>
+                        </div>
+                        {index === 0 && (
+                          <>
+                            <div className="xy-floating-brainstorm-output-action-tool absolute top-0 z-30 -translate-y-1/2">
+                              <div className="flex h-7 max-w-full items-center overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                                <button
+                                  type="button"
+                                  onClick={clearLibraryAiDialog}
+                                  className="h-full px-3 text-sm font-black text-red-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                                >
+                                  清空
+                                </button>
+                              </div>
+                            </div>
+                            <div className="xy-floating-border-font-tool">
+                              <FontSizeStepper
+                                value={brainstormOutputFontSize}
+                                min={BRAINSTORM_OUTPUT_MIN_FONT_SIZE}
+                                max={BRAINSTORM_OUTPUT_MAX_FONT_SIZE}
+                                onChange={setBrainstormOutputFontSize}
+                                ariaLabel="脑洞输出字号"
+                              />
+                            </div>
+                            <label
+                              className="xy-floating-border-stream-tool"
+                              title={brainstormStreamEnabled ? '关闭流式输出' : '开启流式输出'}
+                              aria-label={brainstormStreamEnabled ? '关闭流式输出' : '开启流式输出'}
+                            >
+                              <span className="xy-stream-toggle-text">流式输出</span>
+                              <input
+                                type="checkbox"
+                                checked={brainstormStreamEnabled}
+                                onChange={(event) => updateActiveTabConfig({ brainstormStreamEnabled: event.target.checked })}
+                              />
+                              <span className="xy-stream-toggle-track">
+                                <span className="xy-stream-toggle-thumb" />
+                              </span>
+                            </label>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="shrink-0 rounded-xl border border-gray-200 bg-white p-3">
+                <div className="shrink-0 space-y-3">
                   <AiInlineInput
                     ref={libraryAiInputRef}
                     value={aiInput}
@@ -5097,7 +5329,7 @@ export function WorkbenchLibraryPanel({
                     stopDisabled={!isLibraryAiLoading}
                     placeholder="输入对话指令..."
                   />
-                  <div className="mt-3 flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2">
                       <div className="xy-capsule-group">
                       <button
@@ -5115,25 +5347,6 @@ export function WorkbenchLibraryPanel({
                         保存为新脑洞
                       </button>
                       </div>
-                      <button
-                        onClick={clearLibraryAiDialog}
-                        className="rounded-xl border border-red-200 bg-white px-5 py-2.5 text-sm font-bold text-red-500 shadow-sm hover:border-red-300 hover:bg-red-50"
-                      >
-                        清空
-                      </button>
-                      <label className="xy-animated-checkbox shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
-                        <input
-                          type="checkbox"
-                          checked={brainstormStreamEnabled}
-                          onChange={(event) => updateActiveTabConfig({ brainstormStreamEnabled: event.target.checked })}
-                        />
-                        <span className="xy-animated-checkbox-box">
-                          <svg viewBox="0 0 12 10" height="10px" width="12px" aria-hidden="true">
-                            <polyline points="1.5 6 4.5 9 10.5 1" />
-                          </svg>
-                        </span>
-                        <span>流式输出</span>
-                      </label>
                     </div>
                   </div>
                 </div>
@@ -5144,8 +5357,8 @@ export function WorkbenchLibraryPanel({
           {settingLibraryMode === 'advanced' && (
           <>
           {rightResizeHandle}
-          <aside className="min-w-0 flex min-h-0 flex-col bg-gray-50">
-          <div className={`border-b border-gray-100 ${showPanelHeader ? 'p-4' : 'px-4 pb-3 pt-2'}`}>
+          <aside className="min-w-0 flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 px-4 pb-4 pt-2">
+          <div className="shrink-0">
             {showPanelHeader && (
             <div className="flex items-center justify-between gap-3">
               {activeTab !== SETTING_TAB ? (
@@ -5160,10 +5373,16 @@ export function WorkbenchLibraryPanel({
               </div>
             </div>
             )}
-            <div className={`${showPanelHeader ? 'mt-4' : ''} space-y-3`}>
-              <div className="flex max-w-full items-start justify-end gap-2">
+            <div className={`${showPanelHeader ? 'mt-3' : ''} space-y-3`}>
+              <div className="flex max-w-full items-start gap-2">
                 <CombinedAiConfigSelect
-                  style={getEmbeddedConfigSelectStyle(getConfigFieldSizeStyle(rightSelectFieldTab, 'model'))}
+                  style={activeIsBrainstorm ? ({
+                    ...getEmbeddedConfigSelectStyle(getConfigFieldSizeStyle(rightSelectFieldTab, 'model')),
+                    width: '100%',
+                    maxWidth: '100%',
+                    '--xy-field-width': '100%',
+                  } as CSSProperties) : getEmbeddedConfigSelectStyle(getConfigFieldSizeStyle(rightSelectFieldTab, 'model'))}
+                  className={activeIsBrainstorm ? 'w-full' : undefined}
                   modelValue={activeTabConfig.modelId ?? ''}
                   promptValue={activePromptId ?? ''}
                   modelOptions={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
@@ -5194,36 +5413,21 @@ export function WorkbenchLibraryPanel({
             </div>
           </div>
           {activeIsBrainstorm ? (
-            <div className="flex min-h-0 flex-1 flex-col p-4">
-              <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto rounded-xl border border-gray-200 bg-white p-3">
-                <div className="flex min-h-full flex-col gap-3">
+            <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="xy-brainstorm-question-panel xy-shellless-panel editor-scrollbar min-h-0 flex flex-1 flex-col overflow-y-auto overflow-x-hidden px-0 py-2">
+                <div className="flex min-h-full flex-col gap-4 pt-2">
                   {BRAINSTORM_QUESTION_FIELDS.map((field, index) => {
                     const isLastField = index === BRAINSTORM_QUESTION_FIELDS.length - 1;
                     const questionRows = getBrainstormQuestionRows(brainstormQuestionDraft[field.key]);
                     const isCountField = field.key === 'brainstormCount';
-                    const renderBrainstormCountButton = (value: string) => {
-                      const active = brainstormQuestionDraft.brainstormCount === value;
-                      return (
-                        <button
-                          type="button"
-                          onClick={() => setBrainstormQuestionField('brainstormCount', value)}
-                          className={`inline-flex h-9 min-w-[50px] items-center justify-center whitespace-nowrap rounded-xl border px-3 text-sm font-black leading-none transition-colors ${
-                            active
-                              ? 'border-[#08AACE] bg-[#08AACE] text-white'
-                              : 'border-slate-200 bg-white text-slate-700 hover:border-[#08AACE] hover:bg-[#EAF9FD] hover:text-[#08AACE]'
-                          }`}
-                        >
-                          {value}
-                        </button>
-                      );
-                    };
+                    if (isCountField) return null;
                     if (field.key === 'brainstormBackground') return null;
                     if (field.key === 'brainstormGenre') {
                       const pairedFields = BRAINSTORM_QUESTION_FIELDS.filter((item) => (
                         item.key === 'brainstormGenre' || item.key === 'brainstormBackground'
                       ));
                       return (
-                        <div key="brainstorm-genre-background-row" className="grid grid-cols-2 gap-3 text-sm font-bold text-gray-700">
+                        <div key="brainstorm-genre-background-row" className="grid shrink-0 grid-cols-2 gap-4 text-sm font-bold text-gray-700">
                           {pairedFields.map((pairedField) => {
                             const pairedRows = getBrainstormQuestionRows(brainstormQuestionDraft[pairedField.key]);
                             return (
@@ -5239,7 +5443,7 @@ export function WorkbenchLibraryPanel({
                                   className="font-bold leading-5"
                                   style={{
                                     height: `${Math.max(52, pairedRows * 20 + 32)}px`,
-                                    overflowY: pairedRows >= 4 ? 'auto' : 'hidden',
+                                    overflowY: 'hidden',
                                   }}
                                 />
                                 <label>{pairedField.label}</label>
@@ -5250,29 +5454,23 @@ export function WorkbenchLibraryPanel({
                       );
                     }
                     return (
-                    <div key={field.key} className={`${isLastField ? 'flex min-h-[132px] flex-1 flex-col' : 'block'} text-sm font-bold text-gray-700`}>
-                      <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${isLastField ? 'flex flex-1 flex-col' : ''} ${brainstormQuestionDraft[field.key].trim() ? 'xy-has-value' : ''}`}>
-                      {isCountField ? (
-                        <div className="flex h-[60px] items-center gap-2 px-4 pt-3">
-                          {renderBrainstormCountButton('1个')}
-                          {renderBrainstormCountButton('2个')}
-                          {renderBrainstormCountButton('3个')}
-                          {renderBrainstormCountButton('5个')}
-                          {renderBrainstormCountButton('10个')}
-                        </div>
-                      ) : (
+                    <div key={field.key} className="block shrink-0 text-sm font-bold text-gray-700">
+                      <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${brainstormQuestionDraft[field.key].trim() ? 'xy-has-value' : ''}`}>
                         <textarea
                           value={brainstormQuestionDraft[field.key]}
                           onChange={(event) => setBrainstormQuestionField(field.key, event.target.value)}
                           placeholder={field.placeholder}
                           rows={1}
-                          className={`${isLastField ? 'min-h-0 flex-1' : ''} font-bold leading-5`}
-                          style={{
-                            height: isLastField ? undefined : `${Math.max(52, questionRows * 20 + 32)}px`,
-                            overflowY: isLastField || questionRows >= 4 ? 'auto' : 'hidden',
+                          className={`font-bold leading-5 ${isLastField ? 'min-h-0 flex-1' : ''}`}
+                          style={isLastField ? {
+                            minHeight: `${Math.max(180, questionRows * 20 + 52)}px`,
+                            height: '100%',
+                            overflowY: 'hidden',
+                          } : {
+                            height: `${Math.max(52, questionRows * 20 + 32)}px`,
+                            overflowY: 'hidden',
                           }}
                         />
-                      )}
                       <label>{field.label}</label>
                       </div>
                     </div>
@@ -5280,7 +5478,29 @@ export function WorkbenchLibraryPanel({
                   })}
                 </div>
               </div>
-              <div className="mt-4 flex justify-end">
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="shrink-0 text-sm font-black text-slate-950">生成个数：</span>
+                  <div className="flex h-10 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    {['1', '2', '3', '5', '10'].map((value) => {
+                      const active = brainstormQuestionDraft.brainstormCount === value;
+                      return (
+                        <button
+                          {...{ key: value }}
+                          type="button"
+                          onClick={() => setBrainstormQuestionField('brainstormCount', active ? '' : value)}
+                          className={`min-w-[42px] border-r border-slate-200 px-3 text-sm font-black leading-none transition-colors last:border-r-0 ${
+                            active
+                              ? 'bg-[#08AACE] text-white'
+                              : 'bg-white text-slate-700 hover:bg-[#EAF9FD] hover:text-[#08AACE]'
+                          }`}
+                        >
+                          {value}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
                 <button
                   onClick={openBrainstormGenerateConfirm}
                   disabled={isLibraryAiLoading}
@@ -5291,18 +5511,17 @@ export function WorkbenchLibraryPanel({
               </div>
             </div>
           ) : (
-            <div className="min-h-0 flex-1 p-4 pb-0">
-              <section className="relative flex h-full min-h-0 flex-col rounded-xl border border-gray-200 bg-white px-3 pb-3 pt-5">
-              <div className="absolute -top-2 left-4 bg-white px-1 text-sm font-black text-gray-900">AI对话框</div>
+            <>
+              <div className="relative mt-5 min-h-0 flex-1">
               <button
                 type="button"
                 onClick={clearLibraryAiDialog}
                 disabled={!hasLibraryAiContent && !isLibraryAiLoading}
-                className="absolute -top-2 right-4 bg-white px-1 text-xs font-black text-red-500 hover:text-red-600 disabled:text-red-300"
+                className="xy-floating-outline-clear-button xy-border-embedded-transparent-backplate absolute -top-2 right-4 px-1 text-xs font-black text-red-500 hover:text-red-600 disabled:text-red-300"
               >
                 清空
               </button>
-              <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill min-h-0 flex-1 xy-has-value`}>
+              <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill h-full xy-has-value">
                 <div
                   ref={libraryAiOutputRef}
                   onScroll={handleLibraryAiOutputScroll}
@@ -5328,9 +5547,8 @@ export function WorkbenchLibraryPanel({
                     </div>
                   )}
                 </div>
-                <label aria-hidden="true" className="opacity-0">AI对话框</label>
               </div>
-              {!activeIsBrainstorm && (
+              </div>
               <>
               {activeTab === SETTING_TAB && (
                 <LinkedSourceControl
@@ -5409,9 +5627,7 @@ export function WorkbenchLibraryPanel({
               />
               </div>
               </>
-              )}
-              </section>
-            </div>
+            </>
           )}
           </aside>
           </>
@@ -5879,8 +6095,20 @@ export function WorkbenchLibraryPanel({
       : safeOutlineSelectionType === 'volume' && selectedOutlineVolume
         ? `${selectedOutlineVolume.name}概要`
         : selectedOutlineChapter
-          ? getOutlineChapterFrameTitle(selectedOutlineChapter.volume, selectedOutlineChapter.chapter)
+          ? isDetailOutlineTab
+            ? getOutlineChapterFrameTitle(selectedOutlineChapter.volume, selectedOutlineChapter.chapter)
+            : `第${selectedOutlineChapter.chapter.serialNumber}章概要`
           : outlinePreviewTitle;
+    const outlineDraftCountLeft = plotPointStandalone
+      ? '7.6rem'
+      : isDetailOutlineTab
+        ? '6.2rem'
+        : safeOutlineSelectionType === 'volume'
+          ? '8.2rem'
+          : selectedOutlineChapter
+            ? '11.4rem'
+            : '6.2rem';
+    const shouldShowOutlineDraftWordCount = plotPointStandalone || isDetailOutlineTab;
     const getSelectedOutlineContext = () => {
       if (safeOutlineSelectionType === 'volume' && selectedOutlineVolume) {
         return selectedOutlineVolume.chapters
@@ -6874,7 +7102,6 @@ export function WorkbenchLibraryPanel({
                         onPromptManage={() => setManagementModal({ type: 'prompts', category: outlinePromptCategory })}
                       />
                     </div>
-                    <div className="pt-1 text-sm font-black text-slate-950">生成规则</div>
                     <div className="flex items-center gap-3">
                       <span className="w-[96px] shrink-0 text-sm font-black text-slate-950">长度：</span>
                       <div className="flex h-9 min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white">
@@ -6950,11 +7177,14 @@ export function WorkbenchLibraryPanel({
                   </div>
                 </section>
 
-                <section className="relative flex min-h-0 flex-1 flex-col rounded-xl border border-slate-200 bg-white px-3 pb-3 pt-5">
-                  <div className="absolute -top-2 left-4 bg-white px-1 text-sm font-black text-slate-950">AI对话框</div>
-                  <button type="button" onClick={clearOutlinePreviewDraft} className="absolute -top-2 right-4 bg-white px-1 text-xs font-black text-red-500">清空</button>
-                  <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-xs font-bold leading-6 text-slate-600">
-                    {outlinePreviewDraft.trim() ? renderAiChatContent(outlinePreviewDraft) : null}
+                <div className="relative flex min-h-0 flex-1 flex-col">
+                  <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 xy-has-value">
+                    <div className="xy-floating-rich-preview editor-scrollbar h-full w-full overflow-y-auto whitespace-pre-wrap text-xs font-bold leading-6 text-slate-600">
+                      {outlinePreviewDraft.trim() ? renderAiChatContent(outlinePreviewDraft, { hideReasoningBody: plotPointStandalone }) : null}
+                    </div>
+                    <label>{plotPointStandalone ? '剧情点预览' : '章纲预览'}</label>
+                    <span className="xy-floating-count xy-floating-count-top-left" style={{ '--xy-floating-count-left': plotPointStandalone ? '7.6rem' : '6.2rem' } as CSSProperties}><WordCountText value={countTextWords(outlinePreviewDraftContent)} /></span>
+                    <button type="button" onClick={clearOutlinePreviewDraft} className="xy-floating-outline-clear-button xy-border-embedded-transparent-backplate xy-floating-outline-inner-clear-tool absolute z-40 px-1 text-xs font-black text-red-500">清空</button>
                   </div>
                   <LinkedSourceControl
                     linked={selectedDetailOutlineReaderItems.length > 0}
@@ -6991,7 +7221,7 @@ export function WorkbenchLibraryPanel({
                       textareaClassName="editor-scrollbar"
                     />
                   </div>
-                </section>
+                </div>
               </div>
             </aside>
           </main>
@@ -7099,11 +7329,8 @@ export function WorkbenchLibraryPanel({
                                 className={`relative h-9 rounded-lg border text-sm font-bold transition-colors ${
                                   hasSummary
                                     ? 'border-[#08B3D9] bg-[#08B3D9] text-white hover:border-[#067B96] hover:bg-[#067B96]'
-                                    : 'border-slate-200 text-slate-500 hover:border-[#08B3D9]'
+                                    : 'border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
                                 } ${selected ? 'ring-2 ring-[#08B3D9] ring-offset-2' : ''}`}
-                                style={hasSummary ? undefined : {
-                                  backgroundImage: 'repeating-linear-gradient(135deg, #f8fafc 0, #f8fafc 5px, #e2e8f0 5px, #e2e8f0 6px)',
-                                }}
                               >
                                 {chapter.serialNumber}
                               </button>
@@ -7170,10 +7397,27 @@ export function WorkbenchLibraryPanel({
                           height: detailOutlineHeight,
                           maxHeight: DETAIL_OUTLINE_PREVIEW_MAX_HEIGHT,
                           overflowY: 'auto',
+                          fontSize: detailOutlineFontSize,
                         } : undefined}
                       />
-                      <label>{outlineCardTitle}</label>
-                      <span className="xy-floating-count"><WordCountText value={countTextWords(outlineCardContent)} /></span>
+                      <label className={isDetailOutlineTab ? 'xy-floating-title-count' : undefined}>
+                        {outlineCardTitle}
+                        {isDetailOutlineTab && <span><WordCountText value={countTextWords(outlineCardContent)} /></span>}
+                      </label>
+                      <span className="xy-floating-outline-chapter-meta xy-border-embedded-transparent-backplate absolute right-9 top-0 z-20 max-w-[58%] -translate-y-1/2 truncate text-sm font-black leading-5 text-slate-950">
+                        第{chapter.serialNumber}章 {chapter.title.trim() || '未命名章节'} <WordCountText value={chapter.wordCount} compact />
+                      </span>
+                      {isDetailOutlineTab && (
+                        <div className="xy-floating-border-font-tool">
+                          <FontSizeStepper
+                            value={detailOutlineFontSize}
+                            min={DETAIL_OUTLINE_MIN_FONT_SIZE}
+                            max={DETAIL_OUTLINE_MAX_FONT_SIZE}
+                            ariaLabel="章纲字号"
+                            onChange={setDetailOutlineFontSize}
+                          />
+                        </div>
+                      )}
                     </section>
                   );
                 })}
@@ -7184,7 +7428,7 @@ export function WorkbenchLibraryPanel({
 
         {rightResizeHandle}
         <aside className="min-w-0 flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 px-4 pb-4 pt-2">
-          <div className="space-y-3">
+          <div className="shrink-0 space-y-3">
             <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-2 text-sm text-gray-500">
               <CombinedAiConfigSelect
                 style={getEmbeddedConfigSelectStyle(getFieldSizeStyle(outlineModelFieldSizeKey))}
@@ -7199,8 +7443,36 @@ export function WorkbenchLibraryPanel({
               />
             </div>
           </div>
-          <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4">
-            <div className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-3 text-sm leading-6 text-gray-600">
+          <div className="relative mt-5 min-h-[170px] flex-1">
+            {outlinePreviewDraft.startsWith('[[THINKING') ? (
+              <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-with-bottom-count h-full xy-has-value">
+                <div className="xy-floating-rich-preview editor-scrollbar h-full overflow-y-auto text-sm leading-6 text-gray-600">
+                  {renderAiChatContent(outlinePreviewDraft, { hideReasoningBody: plotPointStandalone })}
+                </div>
+                <label>{outlineDraftFrameTitle}</label>
+                {shouldShowOutlineDraftWordCount && (
+                  <span className="xy-floating-count xy-floating-count-top-left" style={{ '--xy-floating-count-left': outlineDraftCountLeft } as CSSProperties}><WordCountText value={countTextWords(outlinePreviewDraftContent)} /></span>
+                )}
+                <button type="button" onClick={clearOutlinePreviewDraft} className="xy-floating-outline-clear-button xy-border-embedded-transparent-backplate xy-floating-outline-inner-clear-tool absolute z-40 px-1 text-xs font-black text-red-500">{'清空'}</button>
+              </div>
+            ) : (
+              <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count h-full ${outlinePreviewDraft.trim() ? 'xy-has-value' : ''}`}>
+                <textarea
+                  value={outlinePreviewDraft}
+                  onChange={(event) => setOutlinePreviewDraft(event.target.value)}
+                  placeholder={plotPointStandalone ? '生成后的剧情点会显示在这里，也可以手动编辑后复制。' : isDetailOutlineTab ? '生成后的章纲会显示在这里，也可以手动编辑后保存。' : '生成后的概要会显示在这里，也可以手动编辑后保存。'}
+                  className="editor-scrollbar text-sm leading-6 text-gray-600 outline-none"
+                />
+                <label>{outlineDraftFrameTitle}</label>
+                {shouldShowOutlineDraftWordCount && (
+                  <span className="xy-floating-count xy-floating-count-top-left" style={{ '--xy-floating-count-left': outlineDraftCountLeft } as CSSProperties}><WordCountText value={countTextWords(outlinePreviewDraftContent)} /></span>
+                )}
+                <button type="button" onClick={clearOutlinePreviewDraft} className="xy-floating-outline-clear-button xy-border-embedded-transparent-backplate xy-floating-outline-inner-clear-tool absolute z-40 px-1 text-xs font-black text-red-500">{'清空'}</button>
+              </div>
+            )}
+          </div>
+          {isDetailOutlineTab && (
+          <div className="mt-3 shrink-0 text-sm font-bold leading-6 text-gray-600">
               {safeOutlineSelectionType === 'volume' && selectedOutlineVolume ? (
                 <>
                   <div><span className="font-bold text-gray-800">当前卷：</span>{selectedOutlineVolume.name}</div>
@@ -7215,33 +7487,8 @@ export function WorkbenchLibraryPanel({
               ) : (
                 <span className="text-gray-400">请选择左侧章节。</span>
               )}
-            </div>
           </div>
-          <section className="relative mt-6 flex min-h-[310px] flex-1 flex-col rounded-xl border border-slate-200 bg-white px-3 pb-3 pt-5">
-            <div className="absolute -top-2 left-4 bg-white px-1 text-sm font-black text-slate-950">{'AI对话框'}</div>
-            <button type="button" onClick={clearOutlinePreviewDraft} className="absolute -top-2 right-4 bg-white px-1 text-xs font-black text-red-500">{'清空'}</button>
-            <div className="relative min-h-[170px] flex-1">
-              {outlinePreviewDraft.startsWith('[[THINKING') ? (
-                <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-with-bottom-count h-full xy-has-value">
-                  <div className="xy-floating-rich-preview editor-scrollbar h-full overflow-y-auto text-sm leading-6 text-gray-600">
-                    {renderAiChatContent(outlinePreviewDraft)}
-                  </div>
-                  <label>{outlineDraftFrameTitle}</label>
-                  <span className="xy-floating-count"><WordCountText value={countTextWords(outlinePreviewDraftContent)} /></span>
-                </div>
-              ) : (
-                <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count h-full ${outlinePreviewDraft.trim() ? 'xy-has-value' : ''}`}>
-                  <textarea
-                    value={outlinePreviewDraft}
-                    onChange={(event) => setOutlinePreviewDraft(event.target.value)}
-                    placeholder={plotPointStandalone ? '生成后的剧情点会显示在这里，也可以手动编辑后复制。' : isDetailOutlineTab ? '生成后的章纲会显示在这里，也可以手动编辑后保存。' : '生成后的概要会显示在这里，也可以手动编辑后保存。'}
-                    className="editor-scrollbar text-sm leading-6 text-gray-600 outline-none"
-                  />
-                  <label>{outlineDraftFrameTitle}</label>
-                  <span className="xy-floating-count"><WordCountText value={countTextWords(outlinePreviewDraftContent)} /></span>
-                </div>
-              )}
-            </div>
+          )}
             {isDetailOutlineTab && (
               <LinkedSourceControl
                 linked={selectedDetailOutlineReaderItems.length > 0}
@@ -7306,7 +7553,6 @@ export function WorkbenchLibraryPanel({
                 {isDetailOutlineTab ? '清空章纲' : '清空概要'}
               </button>
             </div>
-          </section>
           </aside>
         {isOutlineSettingsOpen && (
           <div className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/30" onClick={() => setIsOutlineSettingsOpen(false)}>

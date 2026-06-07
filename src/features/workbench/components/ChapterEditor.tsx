@@ -1759,11 +1759,8 @@ export function ChapterEditor({
                           className={`relative h-9 rounded-lg border text-sm font-black transition-colors ${
                             updated
                               ? 'border-[#08B3D9] bg-[#08B3D9] text-white hover:border-[#067B96] hover:bg-[#067B96]'
-                              : 'border-slate-200 text-slate-500 hover:border-[#08B3D9] hover:text-[#078fb0]'
+                              : 'border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
                           } ${selected ? 'shadow-[inset_0_0_0_2px_#08B3D9]' : ''}`}
-                          style={updated ? undefined : {
-                            backgroundImage: 'repeating-linear-gradient(135deg, #f8fafc 0, #f8fafc 5px, #e2e8f0 5px, #e2e8f0 6px)',
-                          }}
                         >
                           {item.serialNumber}
                         </button>
@@ -1793,7 +1790,7 @@ export function ChapterEditor({
               </main>
               {statusRightResizeHandle}
               <aside className="flex min-h-0 flex-col border-l border-slate-100 bg-gray-50 px-4 pb-4 pt-2">
-                <div className="mb-4">
+                <div className="shrink-0">
                   <CombinedAiConfigSelect
                     style={getEmbeddedEditorFieldStyle('reviewModelSelect')}
                     modelValue={reviewModelId}
@@ -1806,7 +1803,7 @@ export function ChapterEditor({
                     onPromptManage={() => setReviewManagementModal('prompts')}
                   />
                 </div>
-                <div className="flex items-center justify-between gap-3">
+                <div className="mt-5 flex items-center justify-between gap-3">
                   <h3 className="text-base font-black text-slate-900">状态目标</h3>
                   <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-black text-[#08AACE]">已选 {selectedStatusTargets.length}</span>
                 </div>
@@ -1842,16 +1839,17 @@ export function ChapterEditor({
                     })
                   )}
                 </div>
-                <label className="mt-4 flex min-h-0 flex-1 flex-col">
-                  <span className="mb-2 text-sm font-black text-slate-900">新的状态</span>
+                <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count mt-4 min-h-0 flex-1 ${statusDraft.trim() ? 'xy-has-value' : ''}`}>
                   <textarea
                     value={statusDraft}
                     onChange={(event) => setStatusDraft(event.target.value)}
                     placeholder="例如：主角已从高中生变为大学生，当前就读玄都大学，心态更成熟，但仍隐藏真实实力。"
-                    className="editor-scrollbar min-h-[180px] flex-1 resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-700 outline-none focus:border-[#08AACE]"
+                    className="editor-scrollbar text-sm leading-6 text-slate-700 outline-none"
                   />
-                </label>
-                <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs font-bold leading-5 text-slate-500">
+                  <label>新的状态</label>
+                  <span className="xy-floating-count"><WordCountText value={countCompactWords(statusDraft)} /></span>
+                </div>
+                <div className="mt-3 text-xs font-bold leading-5 text-slate-500">
                   保存规则：同一卡片同一章节只保留一条“更新到第 X 章”的状态记录；重复保存会覆盖旧状态，不会追加重复内容。
                 </div>
                 <button
@@ -2111,11 +2109,7 @@ export function ChapterEditor({
               {reviewRightResizeHandle}
               <aside className="relative flex min-h-0 flex-col border-l border-slate-100 bg-gray-50 px-4 pb-4 pt-2">
                 {showInlineFieldSizeButton ? (
-                <div className="flex shrink-0 items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <h3 className="shrink-0 text-base font-black text-slate-900">AI 配置</h3>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 items-center justify-end gap-2">
                     {showInlineFieldSizeButton ? (
                       <button
                         type="button"
@@ -2134,10 +2128,9 @@ export function ChapterEditor({
                         日志
                       </button>
                     ) : null}
-                  </div>
                 </div>
                 ) : null}
-                <div className={`${showInlineFieldSizeButton ? 'mt-4' : ''} min-h-0 flex-1 space-y-3 overflow-y-auto pr-1`}>
+                <div className={`${showInlineFieldSizeButton ? 'mt-3' : ''} flex min-h-0 flex-1 flex-col`}>
                   <CombinedAiConfigSelect
                     style={getEmbeddedEditorFieldStyle('reviewModelSelect')}
                     modelValue={reviewModelId}
@@ -2149,15 +2142,13 @@ export function ChapterEditor({
                     onModelManage={() => setReviewManagementModal('models')}
                     onPromptManage={() => setReviewManagementModal('prompts')}
                   />
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-xs leading-5 text-slate-500">
+                  <div className="mt-3 text-xs font-bold leading-5 text-slate-500">
                     <div><span className="font-black text-slate-800">当前章节：</span>{activeReviewChapter ? `第${activeReviewChapter.serialNumber}章` : '无'}</div>
                     <div><span className="font-black text-slate-800">正文字数：</span><WordCountText value={activeReviewWordCount} /></div>
                     <div><span className="font-black text-slate-800">关联章纲：</span>{activeReviewDetailOutline ? (<> {activeReviewDetailOutline.title}（<WordCountText value={countCompactWords(activeReviewDetailOutline.content)} />）</>) : '未读取到'}</div>
                   </div>
-                  <section className="flex min-h-[240px] flex-col rounded-2xl border border-[#08AACE] bg-white">
-                    <div className="flex h-10 shrink-0 items-center justify-between border-b border-slate-100 px-3">
-                      <span className="text-sm font-black text-slate-900">AI 输出框</span>
-                      <div className="flex items-center gap-2">
+                  <div className="relative mt-5 min-h-0 flex-1">
+                    <div className="xy-floating-outline-clear-button xy-border-embedded-transparent-backplate absolute -top-2 right-4 z-10 flex items-center gap-2 px-1">
                         <button
                           type="button"
                           onClick={() => syncReviewDraftFromOutput()}
@@ -2173,32 +2164,35 @@ export function ChapterEditor({
                         >
                           清空
                         </button>
+                    </div>
+                    <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill h-full xy-has-value">
+                      <div className="xy-floating-rich-preview editor-scrollbar h-full w-full overflow-y-auto text-sm leading-6 text-slate-700">
+                        {reviewAiOutput.trim() ? renderAiThinkingContent(reviewAiOutput) : (
+                          <span className="text-slate-400">审核或点评结果会显示在这里。</span>
+                        )}
                       </div>
                     </div>
-                    <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto p-3 text-sm leading-6 text-slate-700">
-                      {reviewAiOutput.trim() ? renderAiThinkingContent(reviewAiOutput) : (
-                        <span className="text-slate-400">审核或点评结果会显示在这里。</span>
-                      )}
-                    </div>
-                  </section>
-                  <AiInlineInput
-                    value={reviewAiInput}
-                    onChange={(event) => {
-                      setReviewAiInput(event.target.value);
-                      resizeFloatingAiTextarea(event.currentTarget);
-                    }}
-                    onKeyDown={(event) => {
-                      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-                        event.preventDefault();
-                        void sendReviewAiMessage();
-                      }
-                    }}
-                    onSend={() => void sendReviewAiMessage()}
-                    onStop={stopReviewAiMessage}
-                    sendDisabled={isReviewAiLoading || !activeReviewChapter || !activeReviewModel}
-                    stopDisabled={!isReviewAiLoading}
-                    textareaClassName="editor-scrollbar"
-                  />
+                  </div>
+                  <div className="mt-2 shrink-0">
+                    <AiInlineInput
+                      value={reviewAiInput}
+                      onChange={(event) => {
+                        setReviewAiInput(event.target.value);
+                        resizeFloatingAiTextarea(event.currentTarget);
+                      }}
+                      onKeyDown={(event) => {
+                        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                          event.preventDefault();
+                          void sendReviewAiMessage();
+                        }
+                      }}
+                      onSend={() => void sendReviewAiMessage()}
+                      onStop={stopReviewAiMessage}
+                      sendDisabled={isReviewAiLoading || !activeReviewChapter || !activeReviewModel}
+                      stopDisabled={!isReviewAiLoading}
+                      textareaClassName="editor-scrollbar"
+                    />
+                  </div>
                 </div>
                 {isReviewLogOpen && (
                   <div className="absolute inset-4 z-10 flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">

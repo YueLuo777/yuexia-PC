@@ -167,7 +167,7 @@ function SectionHeader({ icon: Icon, title, action }: { icon: LucideIcon; title:
 function CurrentCapsuleSelectMock({ label, value }: { label: string; value: string }) {
   return (
     <div className="relative h-11 min-w-0 rounded-xl border-2 border-[#08AACE] bg-white">
-      <span className="absolute left-4 top-0 z-10 -translate-y-1/2 bg-white px-1.5 text-[11px] font-black leading-none text-[#08AACE]">
+      <span className="xy-border-embedded-transparent-backplate absolute left-4 top-0 z-10 -translate-y-1/2 text-[11px] font-black leading-none text-[#08AACE]">
         {label}
       </span>
       <button
@@ -187,8 +187,8 @@ function CurrentCapsuleSelectMock({ label, value }: { label: string; value: stri
 function FloatingSessionToolMock() {
   return (
     <div className="xy-floating-edge-tool xy-floating-chat-session-tool">
-      <div className="flex h-7 max-w-full items-center gap-1 overflow-hidden bg-white">
-        <div className="scrollbar-hidden flex min-w-0 items-center gap-1 overflow-x-auto">
+      <div className="flex h-7 max-w-full items-center overflow-visible">
+        <div className="xy-floating-session-buttons scrollbar-hidden flex min-w-0 items-center overflow-x-auto">
           <button
             type="button"
             className="grid h-6 w-6 shrink-0 place-items-center rounded-md border border-gray-200 bg-white text-gray-700 hover:border-[#08AACE] hover:text-[#08AACE]"
@@ -198,7 +198,7 @@ function FloatingSessionToolMock() {
           </button>
           <button
             type="button"
-            className="flex h-6 min-w-6 items-center justify-center rounded-md border border-[#08AACE]/30 bg-[#08AACE]/10 px-1.5 text-xs font-bold leading-none text-[#08AACE]"
+            className="flex h-6 min-w-6 items-center justify-center rounded-md border border-[#08AACE]/30 bg-[#EAF9FD] px-1.5 text-xs font-bold leading-none text-[#08AACE]"
             title="会话 1"
           >
             1
@@ -224,7 +224,7 @@ function CurrentRightPanel({ mode }: { mode: PanelMode }) {
         </section>
 
         <section className="relative min-h-[170px] rounded-xl border-2 border-[#08AACE] bg-white p-3 pt-5">
-          <span className="absolute left-4 top-0 -translate-y-1/2 bg-white px-1.5 text-[11px] font-black leading-none text-[#08AACE]">
+          <span className="xy-border-embedded-transparent-backplate absolute left-4 top-0 -translate-y-1/2 text-[11px] font-black leading-none text-[#08AACE]">
             {'AI\u5bf9\u8bdd\u6846'}
           </span>
           <FloatingSessionToolMock />
@@ -411,7 +411,7 @@ function CombinedConfigSelectMock({ modelValue, promptValue }: { modelValue: str
             <span className="min-w-0 truncate pl-4 pr-1 text-sm font-black text-slate-800">{modelValue}</span>
             <ChevronDown className="h-4 w-4 text-[#08AACE]" />
           </button>
-          <span className="absolute left-3 top-0 z-10 -translate-y-1/2 bg-white px-1.5 text-[11px] font-black leading-none text-[#08AACE]">
+          <span className="xy-border-embedded-transparent-backplate absolute left-3 top-0 z-10 -translate-y-1/2 text-[11px] font-black leading-none text-[#08AACE]">
             {t.model}
           </span>
           <button
@@ -433,7 +433,7 @@ function CombinedConfigSelectMock({ modelValue, promptValue }: { modelValue: str
             <span className="min-w-0 truncate pl-4 pr-1 text-sm font-black text-slate-800">{promptValue}</span>
             <ChevronDown className="h-4 w-4 text-[#08AACE]" />
           </button>
-          <span className="absolute left-3 top-0 z-10 -translate-y-1/2 bg-white px-1.5 text-[11px] font-black leading-none text-[#08AACE]">
+          <span className="xy-border-embedded-transparent-backplate absolute left-3 top-0 z-10 -translate-y-1/2 text-[11px] font-black leading-none text-[#08AACE]">
             {t.prompt}
           </span>
           <button
@@ -554,7 +554,7 @@ function CompactAiBody({ mode, bottomPadding = false }: { mode: PanelMode; botto
   return (
     <div className={`editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto p-4 ${bottomPadding ? 'pb-16' : ''}`}>
       <section className="relative min-h-[172px] rounded-xl border-2 border-[#08AACE] bg-white p-3 pt-5">
-        <span className="absolute left-4 top-0 -translate-y-1/2 bg-white px-1.5 text-[11px] font-black leading-none text-[#08AACE]">
+        <span className="xy-border-embedded-transparent-backplate absolute left-4 top-0 -translate-y-1/2 text-[11px] font-black leading-none text-[#08AACE]">
           {'AI\u5bf9\u8bdd\u6846'}
         </span>
         <FloatingSessionToolMock />

@@ -11,6 +11,7 @@ import {
   Sparkles,
   Search,
   Tags,
+  Type,
   X,
 } from 'lucide-react';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
@@ -24,7 +25,9 @@ const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/Software
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
 const PromptTaxonomyTestPage = lazy(() => import('@/features/tests/pages/PromptTaxonomyTestPage').then((module) => ({ default: module.PromptTaxonomyTestPage })));
+const BorderBackplateApplicationTestPage = lazy(() => import('@/features/tests/pages/BorderBackplateApplicationTestPage').then((module) => ({ default: module.BorderBackplateApplicationTestPage })));
 const WorkbenchRightPanelUnifiedTestPage = lazy(() => import('@/features/tests/pages/WorkbenchRightPanelUnifiedTestPage').then((module) => ({ default: module.WorkbenchRightPanelUnifiedTestPage })));
+const WorkbenchShelllessAuditTestPage = lazy(() => import('@/features/tests/pages/WorkbenchShelllessAuditTestPage').then((module) => ({ default: module.WorkbenchShelllessAuditTestPage })));
 const WorkbenchAiPanelReplicaTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiPanelReplicaTestPage').then((module) => ({ default: module.WorkbenchAiPanelReplicaTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
@@ -38,20 +41,27 @@ const testGroups = [
         path: '/software-ui-catalog',
         icon: Palette,
         badge: 'UI',
-      },
+      },
       {
         title: '主题颜色',
         description: '查看主题颜色、深色主题配色和页面色板测试。',
         path: '/theme-colors',
         icon: Moon,
         badge: 'Theme',
-      },
+      },
       {
         title: '提示词分类优化测试',
         description: '测试提示词少分类、多标签、页面自动筛选，以及使用页下拉框只显示相关提示词。',
         path: '/prompt-taxonomy-test',
         icon: Tags,
         badge: 'Prompt',
+      },
+      {
+        title: '边框透明背板应用预览',
+        description: '集中预览作品编辑器里适合使用边框透明背板技术的贴边标题、字数、清空、章节信息和配置标签。',
+        path: '/border-backplate-application-test',
+        icon: Type,
+        badge: 'Backplate',
       },
     ],
   },
@@ -64,7 +74,7 @@ const testGroups = [
         path: '/brainstorm-ai-chain-test',
         icon: Sparkles,
         badge: 'AI',
-      },
+      },
       {
         title: '右侧 AI 配置栏统一方案',
         description: '测试作品编辑器右侧 AI 区域的统一布局，并检查浮动按钮背后的白色垫片是否已去掉。',
@@ -73,8 +83,15 @@ const testGroups = [
         badge: 'Panel / 垫片',
       },
       {
-        title: '作品编辑器 AI 面板复刻',
-        description: '一比一复刻大纲、剧情链、章纲、正文、脑洞、审核、点评、状态、概要的右侧 AI 面板，用于对比布局效果。',
+        title: '???????????',
+        description: '????????????????????????????????????????? shellless ???',
+        path: '/workbench-shellless-audit-test',
+        icon: SlidersHorizontal,
+        badge: 'Shellless',
+      },
+      {
+        title: '????? AI ????',
+        description: '??????????????????????????????????? AI ????????????',
         path: '/workbench-ai-panel-replica-test',
         icon: SlidersHorizontal,
         badge: 'Replica',
@@ -379,6 +396,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <BrainstormAiChainTestPage />;
       case '/workbench-right-panel-unified-test':
         return <WorkbenchRightPanelUnifiedTestPage />;
+      case '/workbench-shellless-audit-test':
+        return <WorkbenchShelllessAuditTestPage />;
       case '/workbench-ai-panel-replica-test':
         return <WorkbenchAiPanelReplicaTestPage />;
       case '/ai-log-folding-test':
@@ -391,6 +410,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <SoftwareUiCatalogPage embedded onClose={() => setActivePath(null)} />;
       case '/prompt-taxonomy-test':
         return <PromptTaxonomyTestPage />;
+      case '/border-backplate-application-test':
+        return <BorderBackplateApplicationTestPage />;
       case '/theme-colors':
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
       case '/test-browser':

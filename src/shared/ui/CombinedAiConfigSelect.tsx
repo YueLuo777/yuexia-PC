@@ -154,7 +154,7 @@ export function CombinedAiConfigSelect({
             <span className="min-w-0 truncate pl-4 pr-1 text-sm font-black text-slate-800">{modelDisplay}</span>
             <ChevronDown className={`h-4 w-4 text-[#08AACE] transition-transform ${openSegment === 'model' ? 'rotate-180' : ''}`} />
           </button>
-          <span className="absolute left-3 top-0 z-10 -translate-y-1/2 bg-white px-1.5 text-[11px] font-black leading-none text-[#08AACE]">
+          <span className="xy-combined-ai-config-label xy-border-embedded-transparent-backplate absolute left-3 top-0 z-10 -translate-y-1/2 font-black leading-none text-[#08AACE]">
             {modelLabel}
           </span>
           <button
@@ -166,7 +166,7 @@ export function CombinedAiConfigSelect({
               event.stopPropagation();
               onModelManage();
             }}
-            className="absolute right-7 top-0 z-10 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full bg-white text-[#08AACE] hover:bg-[#EAF9FD] hover:text-[#057F9B]"
+            className="xy-combined-ai-config-manage xy-border-embedded-transparent-backplate absolute right-7 top-0 z-10 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full text-[#08AACE] hover:text-[#057F9B]"
           >
             <Settings className="h-3.5 w-3.5" />
           </button>
@@ -192,7 +192,7 @@ export function CombinedAiConfigSelect({
             <span className={`min-w-0 truncate pl-4 pr-1 text-sm font-black ${promptDisabled ? 'text-slate-400' : 'text-slate-800'}`}>{promptDisplay}</span>
             <ChevronDown className={`h-4 w-4 text-[#08AACE] transition-transform ${openSegment === 'prompt' ? 'rotate-180' : ''}`} />
           </button>
-          <span className="absolute left-3 top-0 z-10 -translate-y-1/2 bg-white px-1.5 text-[11px] font-black leading-none text-[#08AACE]">
+          <span className="xy-combined-ai-config-label xy-border-embedded-transparent-backplate absolute left-3 top-0 z-10 -translate-y-1/2 font-black leading-none text-[#08AACE]">
             {promptLabel}
           </span>
           <button
@@ -204,7 +204,7 @@ export function CombinedAiConfigSelect({
               event.stopPropagation();
               onPromptManage();
             }}
-            className="absolute right-7 top-0 z-10 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full bg-white text-[#08AACE] hover:bg-[#EAF9FD] hover:text-[#057F9B]"
+            className="xy-combined-ai-config-manage xy-border-embedded-transparent-backplate absolute right-7 top-0 z-10 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full text-[#08AACE] hover:text-[#057F9B]"
           >
             <Settings className="h-3.5 w-3.5" />
           </button>
