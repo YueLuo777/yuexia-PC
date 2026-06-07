@@ -24,6 +24,7 @@ import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
+import { WordCountText } from '@/shared/ui/WordCountText';
 
 export interface FormatOptions {
   indent: boolean;
@@ -550,7 +551,7 @@ export function AIGenerateModal({ isOpen, onClose, mode, currentChapterSerial, c
           <div className="flex w-[340px] flex-col border-l border-gray-100">
             <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
               <span className="text-xs text-gray-500">工具生成内容</span>
-              <span className="text-xs text-gray-400">当前 {cards.reduce((sum, card) => sum + card.content.replace(/\s/g, '').length, 0)} 字</span>
+              <span className="text-xs text-gray-400">当前 <WordCountText value={cards.reduce((sum, card) => sum + card.content.replace(/\s/g, '').length, 0)} /></span>
             </div>
             <div className="flex-1 space-y-3 overflow-y-auto p-4">
               {cards.length === 0 ? (
@@ -568,7 +569,7 @@ export function AIGenerateModal({ isOpen, onClose, mode, currentChapterSerial, c
                     <p className="mb-3 whitespace-pre-wrap text-sm leading-6 text-gray-700">{card.content}</p>
                   )}
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-400">字数: {card.content.replace(/\s/g, '').length} 字</span>
+                    <span className="text-xs text-gray-400">字数: <WordCountText value={card.content.replace(/\s/g, '').length} /></span>
                     <button
                       onClick={() => void navigator.clipboard.writeText(card.content)}
                       disabled={!card.content}
@@ -1073,7 +1074,7 @@ export function HistoryModal({ isOpen, onClose, chapterId, onRestore }: {
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex items-center gap-2">
                 <span className="text-sm text-gray-700">{snapshot.timestamp}</span>
-                <span className="text-xs text-gray-400">{snapshot.wordCount}字</span>
+                <span className="text-xs text-gray-400"><WordCountText value={snapshot.wordCount} compact /></span>
               </div>
               <p className="truncate text-xs text-gray-400">{snapshot.content.slice(0, 60)}</p>
             </div>
@@ -1152,7 +1153,7 @@ export function TitleOptimizeModal({ isOpen, onClose, currentChapterSerial, curr
             {titles.map((title, index) => (
               <button key={`${title}-${index}`} onClick={() => { onApply(title.replace(/^第\d+章\s*/, '')); onClose(); }} className="flex w-full items-center justify-between rounded-lg border border-gray-100 p-3 text-left hover:border-brand hover:bg-brand-light">
                 <span className="text-sm text-gray-700">{index + 1}. {title}</span>
-                <span className="text-xs text-gray-400">{title.length}字</span>
+                <span className="text-xs text-gray-400"><WordCountText value={title.length} compact /></span>
               </button>
             ))}
           </div>

@@ -1,9 +1,5 @@
-import {
-  Send,
-  Settings,
-  Square,
-} from 'lucide-react';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { Settings } from 'lucide-react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 
 import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
@@ -50,8 +46,10 @@ import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
 import { AiRequestLogGroups } from '@/shared/ui/AiRequestLogGroups';
-import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
+import { AiInlineInput } from '@/shared/ui/AiInlineInput';
+import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+import { WordCountText } from '@/shared/ui/WordCountText';
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 150;
@@ -61,6 +59,16 @@ const REVIEW_PAGE_LEFT_WIDTH = 220;
 const REVIEW_PAGE_RIGHT_WIDTH = 300;
 const STATUS_PAGE_LEFT_WIDTH = 230;
 const STATUS_PAGE_RIGHT_WIDTH = 360;
+const REVIEW_PAGE_LEFT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_left_width';
+const REVIEW_PAGE_RIGHT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_right_width';
+const STATUS_PAGE_LEFT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_status_left_width';
+const STATUS_PAGE_RIGHT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_status_right_width';
+const REVIEW_PAGE_LEFT_WIDTH_LIMIT = { min: 180, max: 360 };
+const REVIEW_PAGE_RIGHT_WIDTH_LIMIT = { min: 260, max: 520 };
+const STATUS_PAGE_LEFT_WIDTH_LIMIT = { min: 190, max: 360 };
+const STATUS_PAGE_RIGHT_WIDTH_LIMIT = { min: 300, max: 560 };
+const CHAPTER_EDITOR_RESIZE_HANDLE_CLASS = 'group z-10 flex w-2 cursor-ew-resize items-center justify-center bg-transparent';
+const STATUS_PROMPT_CATEGORY = '状态';
 type EditorFieldSizeKey = 'reviewActionGroup' | 'reviewModelSelect' | 'reviewAuditPromptSelect' | 'reviewCommentPromptSelect';
 type EditorFieldSizeSpec = { width: number; height: number; fontSize: number };
 type EditorFieldSizeProp = keyof EditorFieldSizeSpec;
@@ -119,6 +127,20 @@ function writeEditorFieldSizeSpecs(specs: Record<EditorFieldSizeKey, EditorField
     parsed = {};
   }
   localStorage.setItem(EDITOR_FIELD_SIZE_STORAGE_KEY, JSON.stringify({ ...parsed, ...specs }));
+}
+
+function clampPanelWidth(value: number, limit: { min: number; max: number }) {
+  if (!Number.isFinite(value)) return limit.min;
+  return Math.min(limit.max, Math.max(limit.min, Math.round(value)));
+}
+
+function readStoredPanelWidth(storageKey: string, fallback: number, limit: { min: number; max: number }) {
+  try {
+    const stored = Number(localStorage.getItem(storageKey));
+    return clampPanelWidth(Number.isFinite(stored) && stored > 0 ? stored : fallback, limit);
+  } catch {
+    return clampPanelWidth(fallback, limit);
+  }
 }
 
 function getEditorFieldSizeStyle(spec: EditorFieldSizeSpec): CSSProperties {
@@ -228,6 +250,7 @@ interface ChapterEditorProps {
   embeddedMode?: ChapterEditorEmbeddedMode;
   fieldSizeOpenSignal?: number;
   showInlineFieldSizeButton?: boolean;
+  openLogSignal?: number;
   chapter: Chapter | null;
   volumeName: string | null;
   content: string;
@@ -441,6 +464,7 @@ export function ChapterEditor({
   embeddedMode,
   fieldSizeOpenSignal = 0,
   showInlineFieldSizeButton = true,
+  openLogSignal = 0,
   chapter,
   volumeName,
   content,
@@ -469,7 +493,12 @@ export function ChapterEditor({
   const [isStatusUpdateOpen, setIsStatusUpdateOpen] = useState(() => embeddedMode === 'status');
   const [isEditorFieldSizeOpen, setIsEditorFieldSizeOpen] = useState(false);
   const lastFieldSizeOpenSignalRef = useRef(fieldSizeOpenSignal);
+  const lastOpenLogSignalRef = useRef(openLogSignal);
   const [editorFieldSizeSpecs, setEditorFieldSizeSpecs] = useState<Record<EditorFieldSizeKey, EditorFieldSizeSpec>>(() => readEditorFieldSizeSpecs());
+  const [reviewPageLeftWidth, setReviewPageLeftWidth] = useState(() => readStoredPanelWidth(REVIEW_PAGE_LEFT_WIDTH_STORAGE_KEY, REVIEW_PAGE_LEFT_WIDTH, REVIEW_PAGE_LEFT_WIDTH_LIMIT));
+  const [reviewPageRightWidth, setReviewPageRightWidth] = useState(() => readStoredPanelWidth(REVIEW_PAGE_RIGHT_WIDTH_STORAGE_KEY, REVIEW_PAGE_RIGHT_WIDTH, REVIEW_PAGE_RIGHT_WIDTH_LIMIT));
+  const [statusPageLeftWidth, setStatusPageLeftWidth] = useState(() => readStoredPanelWidth(STATUS_PAGE_LEFT_WIDTH_STORAGE_KEY, STATUS_PAGE_LEFT_WIDTH, STATUS_PAGE_LEFT_WIDTH_LIMIT));
+  const [statusPageRightWidth, setStatusPageRightWidth] = useState(() => readStoredPanelWidth(STATUS_PAGE_RIGHT_WIDTH_STORAGE_KEY, STATUS_PAGE_RIGHT_WIDTH, STATUS_PAGE_RIGHT_WIDTH_LIMIT));
   const [reviewChapterId, setReviewChapterId] = useState<number | null>(() => chapter?.id ?? null);
   const [statusChapterId, setStatusChapterId] = useState<number | null>(() => chapter?.id ?? null);
   const [statusEntries, setStatusEntries] = useState<WorkbenchLibraryEntry[]>([]);
@@ -479,6 +508,7 @@ export function ChapterEditor({
   const [reviewMode, setReviewMode] = useState<ReviewMode>(() => embeddedMode === 'comment' ? 'comment' : 'audit');
   const [reviewAuditPromptId, setReviewAuditPromptId] = useState('');
   const [reviewCommentPromptId, setReviewCommentPromptId] = useState('');
+  const [statusPromptId, setStatusPromptId] = useState('');
   const [reviewModeStates, setReviewModeStates] = useState<Record<ReviewMode, ReviewModeState>>(() => ({
     audit: createReviewModeState(),
     comment: createReviewModeState(),
@@ -560,20 +590,27 @@ export function ChapterEditor({
     setIsEditorFieldSizeOpen(true);
   }, [fieldSizeOpenSignal]);
 
+  useEffect(() => {
+    if (openLogSignal <= 0 || openLogSignal === lastOpenLogSignalRef.current) return;
+    lastOpenLogSignalRef.current = openLogSignal;
+    setIsReviewLogOpen(true);
+  }, [openLogSignal]);
+
   const titleCount = chapter?.title.length ?? 0;
   const serialValue = chapter?.serialNumber ?? 1;
   const safeVolumeName = volumeName ?? '第一卷';
   const wordCount = useMemo(() => content.replace(/\s/g, '').length, [content]);
   const getEditorFieldStyle = (key: EditorFieldSizeKey) => getEditorFieldSizeStyle(editorFieldSizeSpecs[key] ?? EDITOR_FIELD_SIZE_DEFAULTS[key]);
-  const getAlignedEditorPromptFieldStyle = (promptKey: EditorFieldSizeKey): CSSProperties => {
-    const promptSpec = editorFieldSizeSpecs[promptKey] ?? EDITOR_FIELD_SIZE_DEFAULTS[promptKey];
-    const modelSpec = editorFieldSizeSpecs.reviewModelSelect ?? EDITOR_FIELD_SIZE_DEFAULTS.reviewModelSelect;
-    return {
-      ...getEditorFieldSizeStyle(promptSpec),
-      width: modelSpec.width,
-      '--xy-field-width': `${modelSpec.width}px`,
-    } as CSSProperties;
-  };
+  const getEmbeddedEditorFieldStyle = (key: EditorFieldSizeKey): CSSProperties => (
+    showInlineFieldSizeButton
+      ? getEditorFieldStyle(key)
+      : {
+        ...getEditorFieldStyle(key),
+        width: '100%',
+        maxWidth: '100%',
+        '--xy-field-width': '100%',
+      } as CSSProperties
+  );
   const updateEditorFieldSizeSpec = (key: EditorFieldSizeKey, prop: EditorFieldSizeProp, value: number) => {
     setEditorFieldSizeSpecs((prev) => {
       const next = {
@@ -598,6 +635,77 @@ export function ChapterEditor({
     writeEditorFieldSizeSpecs(next);
     setEditorFieldSizeSpecs(next);
   };
+  const startPanelWidthResize = (
+    event: ReactPointerEvent<HTMLDivElement>,
+    options: {
+      initialWidth: number;
+      storageKey: string;
+      limit: { min: number; max: number };
+      direction: 1 | -1;
+      onChange: (value: number) => void;
+    },
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.nativeEvent.stopImmediatePropagation();
+    const startX = event.clientX;
+    const { initialWidth, storageKey, limit, direction, onChange } = options;
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      moveEvent.preventDefault();
+      const nextWidth = clampPanelWidth(initialWidth + (moveEvent.clientX - startX) * direction, limit);
+      onChange(nextWidth);
+    };
+    const handlePointerUp = (upEvent: PointerEvent) => {
+      upEvent.preventDefault();
+      const finalWidth = clampPanelWidth(initialWidth + (upEvent.clientX - startX) * direction, limit);
+      onChange(finalWidth);
+      localStorage.setItem(storageKey, String(finalWidth));
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+  };
+  const renderPanelResizeHandle = (
+    onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void,
+  ) => (
+    <div
+      data-no-modal-drag="true"
+      onPointerDown={onPointerDown}
+      className={CHAPTER_EDITOR_RESIZE_HANDLE_CLASS}
+      title="拖拽调整宽度"
+    >
+      <div className="h-8 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
+    </div>
+  );
+  const statusLeftResizeHandle = renderPanelResizeHandle((event) => startPanelWidthResize(event, {
+    initialWidth: statusPageLeftWidth,
+    storageKey: STATUS_PAGE_LEFT_WIDTH_STORAGE_KEY,
+    limit: STATUS_PAGE_LEFT_WIDTH_LIMIT,
+    direction: 1,
+    onChange: setStatusPageLeftWidth,
+  }));
+  const statusRightResizeHandle = renderPanelResizeHandle((event) => startPanelWidthResize(event, {
+    initialWidth: statusPageRightWidth,
+    storageKey: STATUS_PAGE_RIGHT_WIDTH_STORAGE_KEY,
+    limit: STATUS_PAGE_RIGHT_WIDTH_LIMIT,
+    direction: -1,
+    onChange: setStatusPageRightWidth,
+  }));
+  const reviewLeftResizeHandle = renderPanelResizeHandle((event) => startPanelWidthResize(event, {
+    initialWidth: reviewPageLeftWidth,
+    storageKey: REVIEW_PAGE_LEFT_WIDTH_STORAGE_KEY,
+    limit: REVIEW_PAGE_LEFT_WIDTH_LIMIT,
+    direction: 1,
+    onChange: setReviewPageLeftWidth,
+  }));
+  const reviewRightResizeHandle = renderPanelResizeHandle((event) => startPanelWidthResize(event, {
+    initialWidth: reviewPageRightWidth,
+    storageKey: REVIEW_PAGE_RIGHT_WIDTH_STORAGE_KEY,
+    limit: REVIEW_PAGE_RIGHT_WIDTH_LIMIT,
+    direction: -1,
+    onChange: setReviewPageRightWidth,
+  }));
   const visualIndentEnabled = formatSettings.indent && !formatSettings.paragraphIndent;
   const reviewModels = useMemo(() => readModelSnapshot().filter((model) => model.enabled), []);
   const reviewPrompts = useMemo(() => readPromptSnapshot().prompts, []);
@@ -606,6 +714,9 @@ export function ChapterEditor({
   }, [reviewPrompts]);
   const reviewCommentPrompts = useMemo(() => {
     return reviewPrompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === '点评');
+  }, [reviewPrompts]);
+  const statusPrompts = useMemo(() => {
+    return reviewPrompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === STATUS_PROMPT_CATEGORY);
   }, [reviewPrompts]);
   const sortedReviewChapters = useMemo(() => [...allChapters].sort((a, b) => a.serialNumber - b.serialNumber), [allChapters]);
   const activeReviewChapter = sortedReviewChapters.find((item) => item.id === reviewChapterId) ?? chapter ?? sortedReviewChapters[0] ?? null;
@@ -631,8 +742,8 @@ export function ChapterEditor({
   const activeReviewPromptOptions = reviewMode === 'audit' ? reviewAuditPrompts : reviewCommentPrompts;
   const activeReviewPromptId = reviewMode === 'audit' ? reviewAuditPromptId : reviewCommentPromptId;
   const setActiveReviewPromptId = reviewMode === 'audit' ? setReviewAuditPromptId : setReviewCommentPromptId;
-  const activeReviewPromptLabel = reviewMode === 'audit' ? '审核提示词' : '点评提示词';
   const activeReviewPromptCategory = reviewMode === 'audit' ? '审核' : '点评';
+  const activeStatusPromptId = statusPrompts.some((prompt) => prompt.id === statusPromptId) ? statusPromptId : statusPrompts[0]?.id ?? '';
   const reviewParagraphDiffs = useMemo(
     () => buildReviewParagraphDiffs(activeReviewContent, reviewRevisedDraft),
     [activeReviewContent, reviewRevisedDraft],
@@ -658,12 +769,6 @@ export function ChapterEditor({
       .filter((item) => statusUpdateSourceEntries.some((entry) => getExistingStatusForChapter(entry.content, item.serialNumber)))
       .map((item) => item.id),
   ), [sortedStatusChapters, statusUpdateSourceEntries]);
-  const renderPanelWidthBadge = (width: number) => (
-    <span className="shrink-0 text-[11px] font-black leading-none text-emerald-600">
-      {Math.round(width)}PX
-    </span>
-  );
-
   useEffect(() => {
     if (chapter) {
       setReviewChapterId(chapter.id);
@@ -703,6 +808,10 @@ export function ChapterEditor({
   useEffect(() => {
     if (!reviewCommentPromptId && reviewCommentPrompts[0]) setReviewCommentPromptId(reviewCommentPrompts[0].id);
   }, [reviewCommentPromptId, reviewCommentPrompts]);
+
+  useEffect(() => {
+    if (!statusPromptId && statusPrompts[0]) setStatusPromptId(statusPrompts[0].id);
+  }, [statusPromptId, statusPrompts]);
 
   useEffect(() => () => {
     reviewAiAbortRef.current?.abort();
@@ -816,20 +925,19 @@ export function ChapterEditor({
     const chapterContext = [
       `【审核点评模式】${modeTitle}`,
       `【所选章节】${chapterTitle}`,
-      detailOutlineText
-        ? `【关联章纲：${activeReviewDetailOutline?.title || '未命名章纲'}】\n${detailOutlineText}`
-        : '【关联章纲】未读取到当前章节章纲。',
-      activeReviewContent.trim()
-        ? `【章节正文】\n${activeReviewContent}`
-        : '【章节正文】当前章节正文为空。',
-    ].join('\n\n');
-    const requestLog = [
+      detailOutlineText ? `【关联章纲：${activeReviewDetailOutline?.title || '未命名章纲'}】\n${detailOutlineText}` : '',
+      activeReviewContent.trim() ? `【章节正文】\n${activeReviewContent}` : '',
+    ].filter(Boolean).join('\n\n');
+    const requestLogMeta = [
       `模式：${modeTitle}`,
       `模型：${activeReviewModel?.name ?? '未选择模型'}`,
       `提示词：${activeReviewPrompt?.name ?? '未选择提示词，使用内置默认提示词'}`,
       `章节：${chapterTitle}`,
       `正文：${activeReviewWordCount} 字`,
-      `关联章纲：${detailOutlineText ? `${activeReviewDetailOutline?.title ?? '未命名章纲'}（${countCompactWords(detailOutlineText)} 字）` : '未关联 / 未读取到'}`,
+      detailOutlineText ? `关联章纲：${activeReviewDetailOutline?.title ?? '未命名章纲'}（${countCompactWords(detailOutlineText)} 字）` : '',
+    ].filter(Boolean);
+    const requestLog = [
+      ...requestLogMeta,
       '',
       '【系统提示词】',
       promptText,
@@ -1407,7 +1515,7 @@ export function ChapterEditor({
           className="w-[320px] rounded-md border border-gray-200 bg-white px-3 py-1 text-sm outline-none focus:border-brand"
         />
         <span className="text-xs text-gray-400">{titleCount}/20</span>
-        <div className={`${SPLIT_BUTTON_OUTLINE_GROUP_CLASS} w-[148px]`}>
+        <div className={`${SPLIT_BUTTON_OUTLINE_GROUP_CLASS} w-[104px]`}>
           <button
             type="button"
             onClick={() => void copyText(chapter.title, '已复制标题')}
@@ -1624,9 +1732,11 @@ export function ChapterEditor({
                 </button>
               )}
             </header>
-            <div className="grid min-h-0 flex-1 grid-cols-[230px_minmax(0,1fr)_360px] bg-slate-50">
+            <div
+              className="grid min-h-0 flex-1 bg-slate-50"
+              style={{ gridTemplateColumns: `${statusPageLeftWidth}px 8px minmax(0,1fr) 8px ${statusPageRightWidth}px` }}
+            >
               <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white p-4">
-                <div className="mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(STATUS_PAGE_LEFT_WIDTH)}</div>
                 <div className="mb-3 flex items-center justify-between">
                   <span className="text-sm font-black text-slate-900">章节位置</span>
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">{sortedStatusChapters.length}</span>
@@ -1662,6 +1772,7 @@ export function ChapterEditor({
                   </div>
                 </div>
               </aside>
+              {statusLeftResizeHandle}
               <main className="min-h-0 p-4">
                 <div className="flex h-full min-h-0 flex-col rounded-2xl border border-slate-200 bg-white">
                   <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-4">
@@ -1669,7 +1780,7 @@ export function ChapterEditor({
                       <h3 className="truncate text-base font-black text-slate-900">
                         {activeStatusChapter ? `截至第${activeStatusChapter.serialNumber}章：${activeStatusChapter.title || '未命名章节'}` : '暂无章节'}
                       </h3>
-                      <p className="mt-0.5 text-xs font-bold text-slate-400">前文预览 · {statusPreviewChapters.length}章 · {statusPreviewWordCount}字</p>
+                      <p className="mt-0.5 text-xs font-bold text-slate-400">前文预览 · {statusPreviewChapters.length}章 · <WordCountText value={statusPreviewWordCount} compact /></p>
                     </div>
                   </div>
                   <textarea
@@ -1680,8 +1791,21 @@ export function ChapterEditor({
                   />
                 </div>
               </main>
-              <aside className="flex min-h-0 flex-col border-l border-slate-100 bg-white p-4">
-                <div className="mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(STATUS_PAGE_RIGHT_WIDTH)}</div>
+              {statusRightResizeHandle}
+              <aside className="flex min-h-0 flex-col border-l border-slate-100 bg-gray-50 px-4 pb-4 pt-2">
+                <div className="mb-4">
+                  <CombinedAiConfigSelect
+                    style={getEmbeddedEditorFieldStyle('reviewModelSelect')}
+                    modelValue={reviewModelId}
+                    promptValue={activeStatusPromptId}
+                    modelOptions={reviewModels.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : reviewModels.map((model) => ({ value: model.id, label: model.name }))}
+                    promptOptions={statusPrompts.length === 0 ? [{ value: '', label: `暂无${STATUS_PROMPT_CATEGORY}提示词`, disabled: true }] : statusPrompts.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                    onModelChange={setReviewModelId}
+                    onPromptChange={setStatusPromptId}
+                    onModelManage={() => setReviewManagementModal('models')}
+                    onPromptManage={() => setReviewManagementModal('prompts')}
+                  />
+                </div>
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-base font-black text-slate-900">状态目标</h3>
                   <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-black text-[#08AACE]">已选 {selectedStatusTargets.length}</span>
@@ -1743,6 +1867,35 @@ export function ChapterEditor({
           </section>
         </div>
       )}
+      {showStatusUpdatePanel && reviewManagementModal && (
+        <div
+          className="fixed inset-0 z-[320] flex items-center justify-center bg-black/35 px-6 py-6"
+          onClick={() => setReviewManagementModal(null)}
+        >
+          <section
+            className="flex h-[min(820px,88vh)] w-[min(1500px,94vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="flex h-11 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
+              <h2 className="text-sm font-bold text-slate-900">
+                {reviewManagementModal === 'models' ? '模型管理' : `${STATUS_PROMPT_CATEGORY}提示词管理`}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setReviewManagementModal(null)}
+                className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              >
+                关闭
+              </button>
+            </header>
+            <div className="min-h-0 flex-1 overflow-hidden">
+              {reviewManagementModal === 'models'
+                ? <ModelManagePage />
+                : <PromptsPage initialCategory={STATUS_PROMPT_CATEGORY} />}
+            </div>
+          </section>
+        </div>
+      )}
       {canRenderReviewPanel && createPortal(
         <div
           className={embeddedMode === 'audit' || embeddedMode === 'comment'
@@ -1786,9 +1939,11 @@ export function ChapterEditor({
                 关闭
               </button>
             </header>
-            <div className="grid min-h-0 flex-1 grid-cols-[220px_minmax(0,1fr)_300px] bg-slate-50">
+            <div
+              className="grid min-h-0 flex-1 bg-slate-50"
+              style={{ gridTemplateColumns: `${reviewPageLeftWidth}px 8px minmax(0,1fr) 8px ${reviewPageRightWidth}px` }}
+            >
               <aside className="min-h-0 border-r border-slate-100 bg-white p-4">
-                <div className="mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(REVIEW_PAGE_LEFT_WIDTH)}</div>
                 <div className="mb-3 text-sm font-black text-slate-900">章节目录</div>
                 <div className="editor-scrollbar h-full space-y-2 overflow-y-auto pr-1">
                   {sortedReviewChapters.map((item) => {
@@ -1806,7 +1961,7 @@ export function ChapterEditor({
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="shrink-0 text-sm font-black">第{item.serialNumber}章</span>
-                          <span className="text-[11px] font-bold text-[#08AACE]">{item.wordCount}字</span>
+                          <span className="text-[11px] font-bold text-[#08AACE]"><WordCountText value={item.wordCount} compact /></span>
                         </div>
                         <div className="mt-1 truncate text-xs font-bold text-slate-400">{item.title || '未命名章节'}</div>
                       </button>
@@ -1814,6 +1969,7 @@ export function ChapterEditor({
                   })}
                 </div>
               </aside>
+              {reviewLeftResizeHandle}
               <main className="min-h-0 p-5">
                 <div className="flex h-full min-h-0 flex-col rounded-2xl border border-slate-200 bg-white">
                   <div className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4">
@@ -1823,7 +1979,7 @@ export function ChapterEditor({
                       </h3>
                       <p className="mt-0.5 text-xs font-bold text-slate-400">
                         {reviewCompareView === 'preview' ? '正文预览' : reviewCompareView === 'paragraph' ? '段落对比' : '全文对比'}
-                        {' · '}{activeReviewWordCount}字
+                        {' · '}<WordCountText value={activeReviewWordCount} compact />
                         {reviewRevisedDraft.trim() ? ` · ${reviewChangedParagraphs.length} 处修改` : ''}
                       </p>
                     </div>
@@ -1952,20 +2108,14 @@ export function ChapterEditor({
                   )}
                 </div>
               </main>
-              <aside className="relative flex min-h-0 flex-col border-l border-slate-100 bg-white p-4">
-                <div className="mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(REVIEW_PAGE_RIGHT_WIDTH)}</div>
+              {reviewRightResizeHandle}
+              <aside className="relative flex min-h-0 flex-col border-l border-slate-100 bg-gray-50 px-4 pb-4 pt-2">
+                {showInlineFieldSizeButton ? (
                 <div className="flex shrink-0 items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
                     <h3 className="shrink-0 text-base font-black text-slate-900">AI 配置</h3>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsReviewLogOpen(true)}
-                      className="h-8 rounded-lg border border-[#08AACE]/30 bg-white px-3 text-xs font-black text-[#078fb0] transition-colors hover:bg-[#EAF9FD]"
-                    >
-                      输出日志
-                    </button>
                     {showInlineFieldSizeButton ? (
                       <button
                         type="button"
@@ -1975,39 +2125,34 @@ export function ChapterEditor({
                         字段尺寸
                       </button>
                     ) : null}
+                    {showInlineFieldSizeButton ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsReviewLogOpen(true)}
+                        className="h-8 rounded-lg border border-[#08AACE]/30 bg-white px-3 text-xs font-black text-[#078fb0] transition-colors hover:bg-[#EAF9FD]"
+                      >
+                        日志
+                      </button>
+                    ) : null}
                   </div>
                 </div>
-                <div className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
-                  <label className="grid grid-cols-1 items-center gap-2 text-sm text-slate-500">
-                    <div className="max-w-full" style={getEditorFieldStyle('reviewModelSelect')}>
-                      <CapsuleSelect
-                        floatingLabel="模型"
-                        value={reviewModelId}
-                        onChange={setReviewModelId}
-                        options={reviewModels.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : reviewModels.map((model) => ({ value: model.id, label: model.name }))}
-                        buttonClassName="h-11 rounded-xl px-3 text-sm"
-                        actionLabel="管理"
-                        onActionClick={() => setReviewManagementModal('models')}
-                      />
-                    </div>
-                  </label>
-                  <label className="grid grid-cols-1 items-center gap-2 text-sm text-slate-500">
-                    <div className="max-w-full" style={getAlignedEditorPromptFieldStyle(reviewMode === 'audit' ? 'reviewAuditPromptSelect' : 'reviewCommentPromptSelect')}>
-                      <CapsuleSelect
-                        floatingLabel={activeReviewPromptLabel}
-                        value={activeReviewPromptId}
-                        onChange={setActiveReviewPromptId}
-                        options={activeReviewPromptOptions.length === 0 ? [{ value: '', label: `暂无${activeReviewPromptLabel}`, disabled: true }] : activeReviewPromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
-                        buttonClassName="h-11 rounded-xl px-3 text-sm"
-                        actionLabel="管理"
-                        onActionClick={() => setReviewManagementModal('prompts')}
-                      />
-                    </div>
-                  </label>
+                ) : null}
+                <div className={`${showInlineFieldSizeButton ? 'mt-4' : ''} min-h-0 flex-1 space-y-3 overflow-y-auto pr-1`}>
+                  <CombinedAiConfigSelect
+                    style={getEmbeddedEditorFieldStyle('reviewModelSelect')}
+                    modelValue={reviewModelId}
+                    promptValue={activeReviewPromptId}
+                    modelOptions={reviewModels.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : reviewModels.map((model) => ({ value: model.id, label: model.name }))}
+                    promptOptions={activeReviewPromptOptions.length === 0 ? [{ value: '', label: `暂无${activeReviewPromptCategory}提示词`, disabled: true }] : activeReviewPromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                    onModelChange={setReviewModelId}
+                    onPromptChange={setActiveReviewPromptId}
+                    onModelManage={() => setReviewManagementModal('models')}
+                    onPromptManage={() => setReviewManagementModal('prompts')}
+                  />
                   <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-xs leading-5 text-slate-500">
                     <div><span className="font-black text-slate-800">当前章节：</span>{activeReviewChapter ? `第${activeReviewChapter.serialNumber}章` : '无'}</div>
-                    <div><span className="font-black text-slate-800">正文字数：</span>{activeReviewWordCount} 字</div>
-                    <div><span className="font-black text-slate-800">关联章纲：</span>{activeReviewDetailOutline ? `${activeReviewDetailOutline.title}（${countCompactWords(activeReviewDetailOutline.content)} 字）` : '未读取到'}</div>
+                    <div><span className="font-black text-slate-800">正文字数：</span><WordCountText value={activeReviewWordCount} /></div>
+                    <div><span className="font-black text-slate-800">关联章纲：</span>{activeReviewDetailOutline ? (<> {activeReviewDetailOutline.title}（<WordCountText value={countCompactWords(activeReviewDetailOutline.content)} />）</>) : '未读取到'}</div>
                   </div>
                   <section className="flex min-h-[240px] flex-col rounded-2xl border border-[#08AACE] bg-white">
                     <div className="flex h-10 shrink-0 items-center justify-between border-b border-slate-100 px-3">
@@ -2036,42 +2181,24 @@ export function ChapterEditor({
                       )}
                     </div>
                   </section>
-                  <div className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${reviewAiInput.trim() ? 'xy-has-value' : ''}`}>
-                    <textarea
-                      rows={1}
-                      value={reviewAiInput}
-                      onChange={(event) => {
-                        setReviewAiInput(event.target.value);
-                        resizeFloatingAiTextarea(event.currentTarget);
-                      }}
-                      onKeyDown={(event) => {
-                        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-                          event.preventDefault();
-                          void sendReviewAiMessage();
-                        }
-                      }}
-                      className="editor-scrollbar"
-                    />
-                    <label>请输入要求</label>
-                    <div className="xy-ai-inline-actions">
-                      <button
-                        type="button"
-                        onClick={() => void sendReviewAiMessage()}
-                        disabled={isReviewAiLoading || !activeReviewChapter || !activeReviewModel}
-                        className="xy-ai-inline-send"
-                      >
-                        <span className="xy-ai-inline-send-icon"><Send className="h-6 w-6 stroke-[1.9]" /></span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={stopReviewAiMessage}
-                        disabled={!isReviewAiLoading}
-                        className="xy-ai-inline-stop"
-                      >
-                        <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
-                      </button>
-                    </div>
-                  </div>
+                  <AiInlineInput
+                    value={reviewAiInput}
+                    onChange={(event) => {
+                      setReviewAiInput(event.target.value);
+                      resizeFloatingAiTextarea(event.currentTarget);
+                    }}
+                    onKeyDown={(event) => {
+                      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                        event.preventDefault();
+                        void sendReviewAiMessage();
+                      }
+                    }}
+                    onSend={() => void sendReviewAiMessage()}
+                    onStop={stopReviewAiMessage}
+                    sendDisabled={isReviewAiLoading || !activeReviewChapter || !activeReviewModel}
+                    stopDisabled={!isReviewAiLoading}
+                    textareaClassName="editor-scrollbar"
+                  />
                 </div>
                 {isReviewLogOpen && (
                   <div className="absolute inset-4 z-10 flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
@@ -2089,9 +2216,9 @@ export function ChapterEditor({
                       {reviewRequestLog ? (
                         <AiRequestLogGroups
                           groups={[
-                            { id: 'prompt', title: '提示词', meta: `${countCompactWords(getReviewLogSection(reviewRequestLog, '系统提示词'))} 字`, content: getReviewLogSection(reviewRequestLog, '系统提示词'), emptyText: '空内容' },
-                            { id: 'context', title: '关联内容', meta: `${countCompactWords(getReviewLogSection(reviewRequestLog, '发送上下文'))} 字`, content: getReviewLogSection(reviewRequestLog, '发送上下文'), emptyText: '未关联内容', tone: 'cyan' },
-                            { id: 'user', title: '用户要求', meta: `${countCompactWords(getReviewLogSection(reviewRequestLog, '用户要求'))} 字`, content: getReviewLogSection(reviewRequestLog, '用户要求'), emptyText: '空内容', tone: 'amber' },
+                            { id: 'prompt', title: '提示词', meta: `${countCompactWords(getReviewLogSection(reviewRequestLog, '系统提示词'))} 字`, content: getReviewLogSection(reviewRequestLog, '系统提示词') },
+                            { id: 'context', title: '关联内容', meta: `${countCompactWords(getReviewLogSection(reviewRequestLog, '发送上下文'))} 字`, content: getReviewLogSection(reviewRequestLog, '发送上下文'), tone: 'cyan' },
+                            { id: 'user', title: '用户要求', meta: `${countCompactWords(getReviewLogSection(reviewRequestLog, '用户要求'))} 字`, content: getReviewLogSection(reviewRequestLog, '用户要求'), tone: 'amber' },
                           ]}
                         />
                       ) : (

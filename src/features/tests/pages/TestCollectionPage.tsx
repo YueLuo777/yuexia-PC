@@ -25,6 +25,7 @@ const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeCo
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
 const PromptTaxonomyTestPage = lazy(() => import('@/features/tests/pages/PromptTaxonomyTestPage').then((module) => ({ default: module.PromptTaxonomyTestPage })));
 const WorkbenchRightPanelUnifiedTestPage = lazy(() => import('@/features/tests/pages/WorkbenchRightPanelUnifiedTestPage').then((module) => ({ default: module.WorkbenchRightPanelUnifiedTestPage })));
+const WorkbenchAiPanelReplicaTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiPanelReplicaTestPage').then((module) => ({ default: module.WorkbenchAiPanelReplicaTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -65,11 +66,18 @@ const testGroups = [
         badge: 'AI',
       },
       {
-        title: '\u53f3\u4fa7 AI \u914d\u7f6e\u680f\u7edf\u4e00\u65b9\u6848',
-        description: '\u6d4b\u8bd5\u4f5c\u54c1\u7f16\u8f91\u5668\u5927\u7eb2\u3001\u5267\u60c5\u94fe\u3001\u7ae0\u7eb2\u3001\u5ba1\u6838\u3001\u72b6\u6001\u7b49\u9875\u9762\u53f3\u4fa7 AI \u533a\u57df\u7684\u7edf\u4e00\u5e03\u5c40\u3002',
+        title: '右侧 AI 配置栏统一方案',
+        description: '测试作品编辑器右侧 AI 区域的统一布局，并检查浮动按钮背后的白色垫片是否已去掉。',
         path: '/workbench-right-panel-unified-test',
         icon: SlidersHorizontal,
-        badge: 'Panel',
+        badge: 'Panel / 垫片',
+      },
+      {
+        title: '作品编辑器 AI 面板复刻',
+        description: '一比一复刻大纲、剧情链、章纲、正文、脑洞、审核、点评、状态、概要的右侧 AI 面板，用于对比布局效果。',
+        path: '/workbench-ai-panel-replica-test',
+        icon: SlidersHorizontal,
+        badge: 'Replica',
       },
       {
         title: '输出日志折叠分组测试',
@@ -371,6 +379,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <BrainstormAiChainTestPage />;
       case '/workbench-right-panel-unified-test':
         return <WorkbenchRightPanelUnifiedTestPage />;
+      case '/workbench-ai-panel-replica-test':
+        return <WorkbenchAiPanelReplicaTestPage />;
       case '/ai-log-folding-test':
         return <AiLogFoldingTestPage />;
       case '/hidden-pages-test':

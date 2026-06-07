@@ -13,6 +13,7 @@ interface ConfirmDialogProps {
   confirmText?: string;
   cancelText?: string;
   confirmVariant?: 'danger' | 'warning' | 'primary';
+  showCancel?: boolean;
   onClose: () => void;
   onConfirm: () => void;
 }
@@ -24,6 +25,7 @@ export function ConfirmDialog({
   confirmText = '确认',
   cancelText = '取消',
   confirmVariant = 'danger',
+  showCancel = true,
   onClose,
   onConfirm,
 }: ConfirmDialogProps) {
@@ -83,12 +85,14 @@ export function ConfirmDialog({
           </button>
         </div>
         <div className="flex items-center justify-end gap-3 px-7 pb-7">
-          <button
-            onClick={onClose}
-            className="rounded-2xl border border-slate-200 bg-white px-6 py-3 text-base text-slate-600 transition-colors hover:bg-slate-50"
-          >
-            {cancelText}
-          </button>
+          {showCancel ? (
+            <button
+              onClick={onClose}
+              className="rounded-2xl border border-slate-200 bg-white px-6 py-3 text-base text-slate-600 transition-colors hover:bg-slate-50"
+            >
+              {cancelText}
+            </button>
+          ) : null}
           <button onClick={onConfirm} className={`rounded-2xl px-6 py-3 text-base transition-colors ${confirmClass}`}>
             {confirmText}
           </button>

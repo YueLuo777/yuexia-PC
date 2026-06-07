@@ -111,6 +111,16 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(clearSettingsButton).toHaveAttribute('aria-disabled', 'false');
     expect(clearSettingsButton).toHaveAttribute('title', '已解锁，左键清空');
 
+    fireEvent.contextMenu(clearSettingsButton);
+    fireEvent.click(screen.getByRole('button', { name: '锁定' }));
+
+    expect(clearSettingsButton).toHaveAttribute('aria-disabled', 'true');
+
+    fireEvent.contextMenu(clearSettingsButton);
+    fireEvent.click(screen.getByRole('button', { name: '解锁' }));
+
+    expect(clearSettingsButton).toHaveAttribute('aria-disabled', 'false');
+
     fireEvent.click(clearSettingsButton);
 
     expect(screen.getByRole('heading', { name: '清空设定' })).toBeInTheDocument();

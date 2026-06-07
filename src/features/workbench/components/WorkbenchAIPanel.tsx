@@ -1,4 +1,4 @@
-import { Send, Square, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { readModelSnapshot } from '@/features/models/hooks/useModels';
@@ -17,9 +17,11 @@ import { APP_EVENTS } from '@/shared/events/appEvents';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
 import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
 import { AiRequestLogGroups } from '@/shared/ui/AiRequestLogGroups';
-import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
+import { AiInlineInput } from '@/shared/ui/AiInlineInput';
+import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
+import { WordCountText } from '@/shared/ui/WordCountText';
 import { WorkbenchModal } from './WorkbenchModal';
 
 export type WorkbenchAITool = 'ai';
@@ -91,6 +93,7 @@ interface WorkbenchAIPanelProps {
   onOpenAgentManage?: () => void;
   onOpenContextLibrary?: () => void;
   onClearLinkedContext?: () => void;
+  openLogSignal?: number;
 }
 
 function readConfig() {
@@ -150,15 +153,6 @@ function renderAiChatContent(content: string) {
     );
   }
   return content;
-}
-
-function buildEmptyContextGuard(chapterContextLabel: string) {
-  return [
-    '【空上下文保护】',
-    `当前${chapterContextLabel}正文为空，且用户没有选择任何关联上下文。`,
-    '请不要虚构前文、不要自动生成完整章节，也不要假装已经读取到正文。',
-    '只根据用户输入本身作答；如果用户是在要求续写，请先提示需要提供正文或选择关联上下文。',
-  ].join('\n');
 }
 
 function buildLinkedContextPayload(items: WorkbenchLinkedContextItem[]) {
@@ -358,6 +352,7 @@ export function WorkbenchAIPanel({
   onOpenAgentManage,
   onOpenContextLibrary,
   onClearLinkedContext,
+  openLogSignal = 0,
 }: WorkbenchAIPanelProps) {
   const storageKey = `xinyuexia_workbench_ai_sessions_${workId}`;
   const initialAiState = useMemo(() => readStoredAiState(storageKey), [storageKey]);
@@ -377,6 +372,7 @@ export function WorkbenchAIPanel({
   const nextSessionIdRef = useRef(initialAiState.nextSessionId);
   const nextMessageIdRef = useRef(initialAiState.nextMessageId);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const lastOpenLogSignalRef = useRef(openLogSignal);
   const skipNextSaveRef = useRef(true);
   const inputTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -406,7 +402,7 @@ export function WorkbenchAIPanel({
     promptName: selectedPrompt?.name ?? '默认提示词',
     systemPrompt: selectedPrompt?.content ?? getDefaultInstruction(activeTool),
     userContent: input.trim(),
-    contextTitle: previewLinkedContextPayload ? '关联上下文' : `${chapterContextLabel}内容`,
+    contextTitle: previewLinkedContextPayload ? '关联上下文' : (previewContextText ? `${chapterContextLabel}内容` : ''),
     contextText: previewContextText,
     linkedItems: previewLinkedContextPayload ? linkedContextItems : [],
     linkChapter: Boolean(activeSession?.linkChapter),
@@ -419,6 +415,12 @@ export function WorkbenchAIPanel({
       if (!isRememberAssociationsEnabled()) clearWorkbenchAiSessionLinksByStorageKey(storageKey);
     };
   }, [storageKey]);
+
+  useEffect(() => {
+    if (openLogSignal === lastOpenLogSignalRef.current) return;
+    lastOpenLogSignalRef.current = openLogSignal;
+    setIsRequestLogOpen(true);
+  }, [openLogSignal]);
 
   const updateSession = (sessionId: number, patch: Partial<Omit<AiSession, 'id'>>) => {
     setSessions((prev) => prev.map((session) => (
@@ -541,9 +543,8 @@ export function WorkbenchAIPanel({
     const linkedContextPayload = buildLinkedContextPayload(linkedContextItems);
     const shouldAttachChapter = !linkedContextPayload && activeSession.linkChapter && selectedChapterContent.trim();
     const contextPayload = linkedContextPayload || (shouldAttachChapter ? `【${chapterContextLabel}内容】\n${selectedChapterContent.trim()}` : '');
-    const emptyContextGuard = contextPayload ? '' : buildEmptyContextGuard(chapterContextLabel);
-    const effectiveContextPayload = contextPayload || emptyContextGuard;
-    const contextTitle = linkedContextPayload ? '关联上下文' : (contextPayload ? `${chapterContextLabel}内容` : '空上下文保护');
+    const effectiveContextPayload = contextPayload;
+    const contextTitle = linkedContextPayload ? '关联上下文' : (contextPayload ? `${chapterContextLabel}内容` : '');
     const promptText = configPrompt?.content ?? getDefaultInstruction(activeTool);
     const requestLog = buildAiRequestLog({
       createdAt: new Date().toLocaleString('zh-CN'),
@@ -724,28 +725,6 @@ export function WorkbenchAIPanel({
     return null;
   };
 
-  const renderConfigDropdown = (
-    label: string,
-    value: string,
-    options: Array<{ id: string; name: string }>,
-    emptyLabel: string,
-    onChange: (value: string) => void,
-    onActionClick?: () => void,
-  ) => (
-    <CapsuleSelect
-      value={value}
-      onChange={onChange}
-      floatingLabel={label}
-      className="min-w-0"
-      buttonClassName="h-10 rounded-xl px-3 text-sm"
-      options={options.length === 0
-        ? [{ value: '', label: emptyLabel, disabled: true }]
-        : options.map((option) => ({ value: option.id, label: option.name }))}
-      actionLabel={onActionClick ? '管理' : undefined}
-      onActionClick={onActionClick}
-    />
-  );
-
   const renderSessionControls = () => (
     <div className="xy-floating-edge-tool xy-floating-chat-session-tool">
       <div className="flex h-7 max-w-full items-center gap-1 overflow-hidden bg-white">
@@ -813,55 +792,55 @@ export function WorkbenchAIPanel({
     onPromptChange: (value: string) => void,
   ) => (
     <>
-      <div className="w-full shrink-0 overflow-visible rounded-lg border border-gray-200 bg-gray-50 p-2">
-        <div className="w-[60%] max-w-full">
-          <div className="grid grid-cols-[minmax(0,1fr)_minmax(48px,auto)] items-center gap-2">
-            {renderConfigDropdown("模型", model?.id ?? modelId, enabledModels, '无可用模型', onModelChange, onOpenModelManage)}
-            <span className="flex min-w-0 items-center text-xs font-bold">
+      <div className="w-full shrink-0 overflow-visible">
+        <div className="max-w-full">
+          <CombinedAiConfigSelect
+            className="w-full"
+            modelValue={model?.id ?? modelId}
+            promptValue={prompt?.id ?? chatPrompts[0]?.id ?? promptId}
+            modelOptions={enabledModels.length === 0
+              ? [{ value: '', label: '无可用模型', disabled: true }]
+              : enabledModels.map((option) => ({ value: option.id, label: option.name }))}
+            promptOptions={chatPrompts.length === 0
+              ? [{ value: '', label: '无可用提示词', disabled: true }]
+              : chatPrompts.map((option) => ({ value: option.id, label: option.name }))}
+            onModelChange={onModelChange}
+            onPromptChange={onPromptChange}
+            onModelManage={() => onOpenModelManage?.()}
+            onPromptManage={() => onOpenAgentManage?.()}
+          />
+          {renderModelStatus(model) ? (
+            <div className="mt-1 flex h-4 justify-end text-xs font-bold">
               {renderModelStatus(model)}
-            </span>
-            {renderConfigDropdown("提示词", prompt?.id ?? chatPrompts[0]?.id ?? promptId, chatPrompts, '无可用提示词', onPromptChange, onOpenAgentManage)}
-          </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </>
   );
 
   return (
-    <aside className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-white">
-      <div className="flex min-h-10 shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-3 py-1.5">
-        <div className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto">
-          <span className="shrink-0 whitespace-nowrap text-sm font-bold text-gray-900">正文续写</span>
-          <button
-            type="button"
-            onClick={() => setIsRequestLogOpen(true)}
-            className="h-7 shrink-0 rounded-lg border border-gray-200 bg-white px-3 text-xs font-bold text-gray-600 transition-colors hover:border-brand hover:text-brand"
-          >
-            输出日志
-          </button>
-          {statusText && <span className="min-w-0 truncate text-[11px] text-brand">{statusText}</span>}
+    <aside className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-gray-50">
+      {(statusText || onClose) ? (
+        <div className="flex min-h-10 shrink-0 items-center justify-end gap-3 border-b border-gray-100 px-3 py-1.5">
+          <div className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto">
+            {statusText && <span className="min-w-0 truncate text-[11px] text-brand">{statusText}</span>}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="rounded-md px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                title="收起"
+              >
+                收起
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <FontSizeStepper
-            value={outputFontSize}
-            min={14}
-            max={32}
-            onChange={setOutputFontSize}
-            ariaLabel="AI 输出字号"
-          />
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="rounded-md px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-              title="收起"
-            >
-              收起
-            </button>
-          )}
-        </div>
-      </div>
+      ) : null}
 
-      <section className="flex min-h-0 flex-1 flex-col overflow-hidden p-2.5">
+      <section className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-2">
         {renderConfigPanel(
           selectedModel,
           selectedModelId,
@@ -900,13 +879,21 @@ export function WorkbenchAIPanel({
           </div>
           {renderSessionControls()}
           {renderSessionActions()}
-          <span className="xy-floating-count">{outputWordCount}字</span>
+          <FontSizeStepper
+            value={outputFontSize}
+            min={14}
+            max={32}
+            onChange={setOutputFontSize}
+            ariaLabel="AI 输出字号"
+            className="xy-floating-chat-font-tool"
+          />
+          <span className="xy-floating-count"><WordCountText value={outputWordCount} compact /></span>
         </div>
         <div className="mt-2 flex shrink-0 items-start justify-between gap-2 text-xs text-gray-400">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <div className="flex min-w-0 flex-nowrap items-center gap-2">
-              <div className="flex h-9 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                <div className="flex w-14 items-center justify-center border-r border-gray-200 bg-slate-50 text-sm font-black text-slate-500">
+              <div className="flex h-9 shrink-0 overflow-hidden rounded-xl border border-[#08B3D9] bg-white shadow-sm">
+                <div className="flex w-14 items-center justify-center border-r border-[#08B3D9]/30 bg-[#E9FAFE] text-sm font-black text-[#078BA9]">
                   关联
                 </div>
                 <button
@@ -914,8 +901,8 @@ export function WorkbenchAIPanel({
                   onClick={toggleChapterContext}
                   className={`w-24 px-2 text-sm font-bold transition-colors ${
                     hasLinkedChapter
-                      ? 'bg-brand text-white'
-                      : 'bg-white text-gray-600 hover:bg-brand-light hover:text-brand'
+                      ? 'bg-[#08B3D9] text-white'
+                      : 'bg-white text-gray-600 hover:bg-[#E9FAFE] hover:text-[#08B3D9]'
                   }`}
                 >
                   {hasLinkedChapter ? `已关联${chapterContextLabel}` : chapterContextLabel}
@@ -923,62 +910,43 @@ export function WorkbenchAIPanel({
                 <button
                   type="button"
                   onClick={openLinkedContextLibrary}
-                  className={`w-28 border-l border-gray-200 px-2 text-sm font-bold transition-colors ${
+                  className={`w-28 border-l border-[#08B3D9]/30 px-2 text-sm font-bold transition-colors ${
                     hasLinkedContext
-                      ? 'bg-brand text-white'
-                      : 'bg-white text-gray-600 hover:bg-brand-light hover:text-brand'
+                      ? 'bg-[#08B3D9] text-white'
+                      : 'bg-white text-gray-600 hover:bg-[#E9FAFE] hover:text-[#08B3D9]'
                   }`}
                 >
                   {hasLinkedContext ? '已关联上下文' : '上下文'}
                 </button>
               </div>
               {shouldShowActiveLinkStats && (
-                <span className="shrink-0 text-sm font-bold text-brand">
-                  已关联：{activeLinkWordCount}字
+                <span className="shrink-0 text-sm font-bold text-slate-400">
+                  已关联：<WordCountText value={activeLinkWordCount} compact />
                 </span>
               )}
             </div>
           </div>
         </div>
         <div className="mt-2 shrink-0">
-          <div className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${input.trim() ? 'xy-has-value' : ''}`}>
-            <textarea
-              ref={inputTextareaRef}
-              rows={1}
-              value={input}
-              onChange={(event) => {
-                updateActiveSession({ input: event.target.value });
-                resizeFloatingAiTextarea(event.currentTarget);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  void sendMessage();
-                }
-              }}
-              placeholder="请输入你的要求..."
-              className="scrollbar-hidden"
-            />
-            <label>请输入要求</label>
-            <div className="xy-ai-inline-actions">
-              <button
-                type="button"
-                onClick={() => void sendMessage()}
-                disabled={isLoading || !input.trim()}
-                className="xy-ai-inline-send"
-              >
-                <span className="xy-ai-inline-send-icon"><Send className="h-6 w-6 stroke-[1.9]" /></span>
-              </button>
-              <button
-                type="button"
-                onClick={stopMessage}
-                disabled={!isLoading}
-                className="xy-ai-inline-stop"
-              >
-                <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
-              </button>
-            </div>
-          </div>
+          <AiInlineInput
+            ref={inputTextareaRef}
+            value={input}
+            onChange={(event) => {
+              updateActiveSession({ input: event.target.value });
+              resizeFloatingAiTextarea(event.currentTarget);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                void sendMessage();
+              }
+            }}
+            onSend={() => void sendMessage()}
+            onStop={stopMessage}
+            sendDisabled={isLoading || !input.trim()}
+            stopDisabled={!isLoading}
+            placeholder="请输入你的要求..."
+          />
           <div className="mt-2 grid grid-cols-2 gap-2">
             <div className="flex min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white">
               <button
@@ -1010,13 +978,13 @@ export function WorkbenchAIPanel({
                 disabled={!output.trim()}
                 className="min-w-0 flex-1 bg-brand px-2 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
               >
-                复制
+                复制内容
               </button>
               <button
                 onClick={() => updateActiveSession({ output: '', messages: [] })}
                 className="min-w-0 flex-1 border-l border-red-200 bg-red-600 px-2 py-2 text-sm font-bold text-white hover:bg-red-700"
               >
-                清空
+                清空内容
               </button>
             </div>
           </div>
@@ -1047,32 +1015,36 @@ export function WorkbenchAIPanel({
                     <div className="text-xs text-slate-400">提示词</div>
                     <div className="mt-1 font-bold text-slate-800">{visibleRequestLog.promptName}</div>
                   </div>
-                  <div className="rounded-xl bg-white p-3">
-                    <div className="text-xs text-slate-400">上下文来源</div>
-                    <div className={`mt-1 font-bold ${visibleRequestLog.contextText ? 'text-brand' : 'text-slate-500'}`}>
-                      {visibleRequestLog.linkedItems.length > 0
-                        ? `关联上下文 · ${visibleRequestLog.linkedItems.length}项`
-                        : visibleRequestLog.linkChapter
-                          ? `${chapterContextLabel}内容`
-                          : '未关联'}
+                  {visibleRequestLog.contextText.trim() && (
+                    <>
+                      <div className="rounded-xl bg-white p-3">
+                        <div className="text-xs text-slate-400">上下文来源</div>
+                        <div className="mt-1 font-bold text-brand">
+                          {visibleRequestLog.linkedItems.length > 0
+                            ? `关联上下文 · ${visibleRequestLog.linkedItems.length}项`
+                            : `${chapterContextLabel}内容`}
+                        </div>
+                      </div>
+                      <div className="rounded-xl bg-white p-3">
+                        <div className="text-xs text-slate-400">上下文字数</div>
+                        <div className="mt-1 font-bold"><WordCountText value={visibleRequestLog.contextWordCount} /></div>
+                      </div>
+                    </>
+                  )}
+                  {visibleRequestLog.userContent.trim() && (
+                    <div className="rounded-xl bg-white p-3">
+                      <div className="text-xs text-slate-400">用户可见输入</div>
+                      <div className="mt-1 break-words font-bold text-slate-800">{visibleRequestLog.userContent}</div>
                     </div>
-                  </div>
-                  <div className="rounded-xl bg-white p-3">
-                    <div className="text-xs text-slate-400">上下文字数</div>
-                    <div className="mt-1 font-bold text-slate-800">{visibleRequestLog.contextWordCount} 字</div>
-                  </div>
-                  <div className="rounded-xl bg-white p-3">
-                    <div className="text-xs text-slate-400">用户可见输入</div>
-                    <div className="mt-1 break-words font-bold text-slate-800">{visibleRequestLog.userContent || '空内容'}</div>
-                  </div>
+                  )}
                 </div>
               </aside>
               <div className="editor-scrollbar min-h-0 overflow-y-auto p-5">
                 <AiRequestLogGroups
                   groups={[
-                    { id: 'prompt', title: '提示词', meta: `${getTextWordCount(visibleRequestLog.systemPrompt)} 字`, content: visibleRequestLog.systemPrompt, emptyText: '空内容' },
-                    { id: 'context', title: '关联内容', meta: `${visibleRequestLog.contextWordCount} 字`, content: visibleRequestLog.contextText, emptyText: `未关联${chapterContextLabel}内容或关联上下文`, tone: 'cyan' },
-                    { id: 'user', title: '用户要求', meta: `${getTextWordCount(visibleRequestLog.userContent)} 字`, content: visibleRequestLog.userContent, emptyText: '空内容', tone: 'amber' },
+                    { id: 'prompt', title: '提示词', meta: `${getTextWordCount(visibleRequestLog.systemPrompt)} 字`, content: visibleRequestLog.systemPrompt },
+                    { id: 'context', title: '关联内容', meta: `${visibleRequestLog.contextWordCount} 字`, content: visibleRequestLog.contextText, tone: 'cyan' },
+                    { id: 'user', title: '用户要求', meta: `${getTextWordCount(visibleRequestLog.userContent)} 字`, content: visibleRequestLog.userContent, tone: 'amber' },
                   ]}
                 />
               </div>

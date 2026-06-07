@@ -1135,7 +1135,7 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 .xy-font-size-stepper {
   display: inline-flex;
   align-items: center;
-  max-width: 5.12rem;
+  width: 5.52rem;
   height: 1.76rem;
 }
 
@@ -2021,18 +2021,50 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 
 .xy-floating-edge-tool.xy-floating-chat-session-tool {
   right: auto;
-  left: 1.1rem;
-  max-width: calc(100% - 8.5rem);
+  top: 0;
+  left: var(--xy-chat-session-tool-left, 6.25rem);
+  max-width: calc(100% - var(--xy-chat-session-tool-left, 6.25rem) - 7.4rem);
+  transform: translateY(-50%);
+  background: transparent;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .xy-floating-edge-tool.xy-floating-chat-action-tool {
   right: 0.9rem;
   max-width: 7.2rem;
+  background: transparent;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.xy-floating-chat-font-tool {
+  position: absolute;
+  left: 2.4rem;
+  bottom: 0;
+  z-index: 3;
+  transform: translateY(50%);
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.xy-floating-field .xy-floating-chat-font-tool .xy-font-size-stepper-input {
+  width: 2rem;
+  height: 1.76rem;
+  border: 1px solid #d1d5db;
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  background: #f9fafb;
+  padding: 0.4rem 0;
+  font-size: 0.875rem;
+  box-shadow: none;
 }
 
 .xy-floating-edge-tool.xy-floating-chat-session-tool > div,
 .xy-floating-edge-tool.xy-floating-chat-action-tool > div {
   max-width: 100%;
+  background: transparent;
 }
 
 .xy-floating-field.xy-floating-outline-preview:focus-within textarea,
@@ -2074,6 +2106,16 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   background: #ffffff;
   padding: 0 0.5rem;
   line-height: normal;
+}
+
+.xy-test-no-floating-tool-backplate .xy-floating-edge-tool {
+  background: transparent;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.xy-test-no-floating-tool-backplate .xy-floating-edge-tool > div {
+  background: transparent;
 }
 
 .xy-floating-field.xy-floating-with-bottom-count textarea {

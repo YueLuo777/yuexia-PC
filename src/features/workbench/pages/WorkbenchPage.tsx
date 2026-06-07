@@ -34,6 +34,7 @@ import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
+import { WordCountText } from '@/shared/ui/WordCountText';
 import type { Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
 
 type ModalKey = 'workInfo' | 'notes' | 'settingLibrary' | 'plotPointGenerator' | 'detailOutlineLibrary';
@@ -88,14 +89,14 @@ const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 300;
 const PUBLISHED_SIDEBAR_MIN_WIDTH = 170;
 const PUBLISHED_SIDEBAR_MAX_WIDTH = 360;
 const PUBLISHED_SIDEBAR_DEFAULT_WIDTH = 190;
+const FIND_REPLACE_DEFAULT_GEOMETRY = {
+  x: 0,
+  y: 0,
+  left: 16,
+  top: 84,
+  width: 592,
+};
 
-function renderPanelWidthBadge(width: number) {
-  return (
-    <span className="shrink-0 text-[11px] font-black leading-none text-emerald-600">
-      {Math.round(width)}PX
-    </span>
-  );
-}
 const WORKBENCH_FLOW_PAGE_STORAGE_PREFIX = 'xinyuexia_workbench_active_flow_page_';
 function getStoredCreationFlowPage(novelId: number): WorkbenchCreationFlowPageKey {
   const stored = localStorage.getItem(`${WORKBENCH_FLOW_PAGE_STORAGE_PREFIX}${novelId}`);
@@ -379,8 +380,7 @@ function ContextChapterSummaryList({
                       )}
                     </span>
                     <span className="shrink-0 text-xs font-bold text-slate-900">
-                      {group.rows.length} 章 · 正文 {totalChapterWords} 字 · 概要 {totalSummaryWords} 字
-                    </span>
+                      {group.rows.length} 章 · 正文 <WordCountText value={totalChapterWords} /> · 概要 <WordCountText value={totalSummaryWords} /></span>
                   </button>
                   {!collapsed && (
                     <div className="divide-y divide-slate-50">
@@ -435,7 +435,8 @@ function ContextChapterSummaryList({
                                   className="h-4 w-4 text-[#08AACE] focus:ring-[#08AACE]/20"
                                 />
                                 <span>正文</span>
-                                <span className="w-full text-right text-xs font-black tabular-nums text-slate-500">
+                                <span className="w-full text-right text-xs font-black tabular-nums text-brand"
+                                >
                                   {chapterWordCount}
                                 </span>
                                 <span className="text-xs font-black text-slate-500">字</span>
@@ -452,7 +453,7 @@ function ContextChapterSummaryList({
                                 />
                                 <span>概要</span>
                                 <span
-                                  className={['w-full text-right text-xs font-black tabular-nums', row.summaryItem ? 'text-slate-500' : 'text-slate-300'].join(' ')}
+                                  className={['w-full text-right text-xs font-black tabular-nums', row.summaryItem ? 'text-brand' : 'text-slate-300'].join(' ')}
                                 >
                                   {summaryWordCount}
                                 </span>
@@ -536,7 +537,7 @@ function ContextSelectionColumn({
                             <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-[11px] font-semibold leading-4 text-slate-500">
                               {item.content || '暂无内容'}
                             </p>
-                            <div className="mt-2 text-[11px] font-black text-slate-400">{getContextWordCount(item.content)}字</div>
+                            <div className="mt-2 text-[11px] font-black text-slate-400"><WordCountText value={getContextWordCount(item.content)} compact /></div>
                           </div>
                         </div>
                       </label>
@@ -589,7 +590,7 @@ function WorkbenchFindReplaceModal({
   onSelectChapter: (volumeId: number, chapterId: number) => void;
   onUpdateChapterContents: (updates: Record<number, string>) => void;
 }) {
-  const draggable = useDraggableModal('workbench_find_replace');
+  const draggable = useDraggableModal('workbench_find_replace', FIND_REPLACE_DEFAULT_GEOMETRY);
   useTopModalEscape(true, onClose);
   const [scope, setScope] = useState<FindScope>('chapter');
   const [searchText, setSearchText] = useState('');
@@ -664,62 +665,62 @@ function WorkbenchFindReplaceModal({
     <div className="fixed inset-0 z-[230] flex items-center justify-center bg-black/30 px-6 py-6">
       <section
         data-draggable-managed="true"
-        className="relative w-[700px] max-w-[94vw] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]"
+        className="relative w-[592px] max-w-[94vw] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]"
         style={draggable.style}
       >
         <header
           {...draggable.dragHandleProps}
-          className="flex h-14 cursor-move items-center justify-between border-b border-gray-100 px-5"
+          className="flex h-11 cursor-move items-center justify-between border-b border-gray-100 px-4"
         >
-          <h2 className="text-lg font-bold text-gray-900">查找替换</h2>
-          <button data-no-modal-drag="true" onClick={onClose} className="rounded-lg px-3 py-1.5 text-base text-gray-500 hover:bg-gray-100 hover:text-gray-700">
+          <h2 className="text-base font-bold text-gray-900">查找替换</h2>
+          <button data-no-modal-drag="true" onClick={onClose} className="rounded-lg px-2.5 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700">
             关闭
           </button>
         </header>
 
-        <div className="space-y-4 p-5">
-          <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-4">
-            <label className="text-base font-medium text-gray-700">查找</label>
+        <div className="space-y-3 p-4">
+          <div className="grid grid-cols-[48px_minmax(0,1fr)] items-center gap-3">
+            <label className="text-sm font-medium text-gray-700">查找</label>
             <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-1 focus-within:border-brand">
               <input
                 value={searchText}
                 onChange={(event) => setSearchText(event.target.value)}
                 autoFocus
-                className="min-w-0 flex-1 bg-transparent px-3 py-2 text-base text-gray-800 outline-none"
+                className="min-w-0 flex-1 bg-transparent px-2.5 py-1.5 text-sm text-gray-800 outline-none"
               />
               <button
                 onClick={() => setScope((prev) => (prev === 'book' ? 'chapter' : 'book'))}
-                className="rounded-md bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-dark"
+                className="rounded-md bg-brand px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-dark"
               >
                 {scope === 'book' ? '搜索本章' : '搜索本书'}
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-4">
-            <label className="text-base font-medium text-gray-700">替换</label>
+          <div className="grid grid-cols-[48px_minmax(0,1fr)] items-center gap-3">
+            <label className="text-sm font-medium text-gray-700">替换</label>
             <input
               value={replaceText}
               onChange={(event) => setReplaceText(event.target.value)}
               placeholder="输入替换词"
-              className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-base text-gray-800 outline-none focus:border-brand"
+              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 outline-none focus:border-brand"
             />
           </div>
 
-          <div className="flex items-center gap-4">
-            <button onClick={() => goMatch(-1)} disabled={total === 0} className="rounded-lg px-3 py-2 text-base text-gray-500 hover:bg-gray-100 hover:text-brand disabled:opacity-40">
+          <div className="flex items-center gap-2">
+            <button onClick={() => goMatch(-1)} disabled={total === 0} className="rounded-lg px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-brand disabled:opacity-40">
               上一个
             </button>
-            <div className="w-20 text-center text-2xl font-bold text-brand">{total === 0 ? '0/0' : `${safeActiveIndex + 1}/${total}`}</div>
-            <button onClick={() => goMatch(1)} disabled={total === 0} className="rounded-lg px-3 py-2 text-base text-gray-500 hover:bg-gray-100 hover:text-brand disabled:opacity-40">
+            <div className="w-14 text-center text-lg font-bold text-brand">{total === 0 ? '0/0' : `${safeActiveIndex + 1}/${total}`}</div>
+            <button onClick={() => goMatch(1)} disabled={total === 0} className="rounded-lg px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-brand disabled:opacity-40">
               下一个
             </button>
-            <button onClick={replaceCurrent} disabled={total === 0} className="ml-auto rounded-lg bg-brand px-8 py-3 text-base font-bold text-white hover:bg-brand-dark disabled:bg-gray-300">替换</button>
-            <button onClick={() => replaceInScope('chapter')} disabled={!searchText} className="rounded-lg bg-gray-700 px-7 py-3 text-base font-bold text-white hover:bg-gray-800 disabled:bg-gray-300">本章替换</button>
-            <button onClick={() => replaceInScope('book')} disabled={!searchText} className="rounded-lg bg-gray-700 px-7 py-3 text-base font-bold text-white hover:bg-gray-800 disabled:bg-gray-300">全书替换</button>
+            <button onClick={replaceCurrent} disabled={total === 0} className="ml-auto rounded-lg bg-brand px-5 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300">替换</button>
+            <button onClick={() => replaceInScope('chapter')} disabled={!searchText} className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-bold text-white hover:bg-gray-800 disabled:bg-gray-300">本章替换</button>
+            <button onClick={() => replaceInScope('book')} disabled={!searchText} className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-bold text-white hover:bg-gray-800 disabled:bg-gray-300">全书替换</button>
           </div>
 
-          <div className="h-5 text-sm text-gray-400">
+          <div className="h-4 text-xs text-gray-400">
             {status || (scope === 'book' && total > 0 ? matches[safeActiveIndex]?.label : '')}
           </div>
         </div>
@@ -906,7 +907,7 @@ function ChapterExportPanel({
           <div>
             <div className="text-sm font-bold text-gray-900">选择要导出的章节</div>
             <div className="mt-1 text-xs text-gray-400">
-              已选择 {selectedIds.length} 个{chapterUnit}，约 {selectedWordCount} 字
+              已选择 {selectedIds.length} 个{chapterUnit}，约 <WordCountText value={selectedWordCount} />
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -981,7 +982,7 @@ function ChapterExportPanel({
                         <span className="min-w-0 flex-1 truncate text-sm text-gray-700">
                           {getChapterExportTitle(chapter, workType)}
                         </span>
-                        <span className="shrink-0 text-xs text-gray-400">{getChapterWordCount(chapter.id)} 字</span>
+                        <span className="shrink-0 text-xs text-gray-400"><WordCountText value={getChapterWordCount(chapter.id)} /></span>
                       </label>
                     ))}
                   </div>
@@ -1018,6 +1019,7 @@ export function WorkbenchPage() {
   const [managementModal, setManagementModal] = useState<ManagementModalKey | null>(null);
   const [plotPointOpenSignal, setPlotPointOpenSignal] = useState(0);
   const [fieldSizeOpenSignal, setFieldSizeOpenSignal] = useState(0);
+  const [aiLogOpenSignal, setAiLogOpenSignal] = useState(0);
   const [settingLibraryInitialTab, setSettingLibraryInitialTab] = useState<'脑洞' | '大纲'>('大纲');
   const [isContextLibraryOpen, setIsContextLibraryOpen] = useState(false);
   const [contextLibraryTab, setContextLibraryTab] = useState<ContextLibraryTab>('chapterSummary');
@@ -1679,6 +1681,7 @@ export function WorkbenchPage() {
   };
 
   const showFieldSizeButton = FIELD_SIZE_FLOW_IDS.has(activeCreationFlow);
+  const showHeaderLogButton = true;
 
   const renderCreationFlowContent = () => {
     if (activeCreationFlow === 'brainstorm' || activeCreationFlow === 'outline') {
@@ -1693,6 +1696,7 @@ export function WorkbenchPage() {
           scale={1}
           defaultActiveTab={activeCreationFlow === 'brainstorm' ? '脑洞' : '大纲'}
           fieldSizeOpenSignal={fieldSizeOpenSignal}
+          openLogSignal={aiLogOpenSignal}
           showInlineFieldSizeButton={false}
         />
       );
@@ -1712,6 +1716,7 @@ export function WorkbenchPage() {
           )}
           scale={1}
           fieldSizeOpenSignal={fieldSizeOpenSignal}
+          openLogSignal={aiLogOpenSignal}
           showInlineFieldSizeButton={false}
           openPlotPointSignal={plotPointOpenSignal}
           plotPointStandalone
@@ -1725,6 +1730,7 @@ export function WorkbenchPage() {
         <WorkbenchLibraryPanel
           key="chapterOutline"
           fieldSizeOpenSignal={fieldSizeOpenSignal}
+          openLogSignal={aiLogOpenSignal}
           showInlineFieldSizeButton={false}
           storageKey={settingsStorageKey}
           outlineStorageKey={outlineStorageKey}
@@ -1744,6 +1750,7 @@ export function WorkbenchPage() {
         <WorkbenchLibraryPanel
           key="summary"
           fieldSizeOpenSignal={fieldSizeOpenSignal}
+          openLogSignal={aiLogOpenSignal}
           showInlineFieldSizeButton={false}
           storageKey={outlineStorageKey}
           outlineStorageKey={outlineStorageKey}
@@ -1763,6 +1770,7 @@ export function WorkbenchPage() {
         <ChapterEditor
           embeddedMode={activeCreationFlow}
           fieldSizeOpenSignal={fieldSizeOpenSignal}
+          openLogSignal={aiLogOpenSignal}
           showInlineFieldSizeButton={false}
           chapter={selectedChapter?.chapter ?? null}
           volumeName={selectedVolumeName}
@@ -1821,7 +1829,9 @@ export function WorkbenchPage() {
         flowItems={WORKBENCH_HEADER_FLOW_ITEMS}
         activeFlow={activeCreationFlow}
         fieldSizeVisible={showFieldSizeButton}
+        logVisible={showHeaderLogButton}
         onOpenFieldSize={() => setFieldSizeOpenSignal((value) => value + 1)}
+        onOpenLog={() => setAiLogOpenSignal((value) => value + 1)}
         onSelectFlow={switchCreationFlow}
         onOpenWorkInfo={() => setActiveModal('workInfo')}
       />
@@ -1905,9 +1915,6 @@ export function WorkbenchPage() {
                 maxWidth: `calc(33.333vw / var(${APP_EFFECTIVE_SCALE_CSS_VAR}, 1))`,
               }}
             >
-              <div className="pointer-events-none absolute right-3 top-2 z-10">
-                {renderPanelWidthBadge(aiPanelWidth)}
-              </div>
               <WorkbenchAIPanel
                 activeTool="ai"
                 workId={currentNovel.id}
@@ -1920,6 +1927,7 @@ export function WorkbenchPage() {
                 onOpenAgentManage={() => setManagementModal('agents')}
                 onOpenContextLibrary={openContextLibrary}
                 onClearLinkedContext={() => updateLinkedContextItems([])}
+                openLogSignal={aiLogOpenSignal}
               />
             </aside>
           </>
@@ -2005,7 +2013,7 @@ export function WorkbenchPage() {
               <div className="min-w-0 flex-1 text-right">
                 <div className="truncate text-sm font-black text-slate-900">{currentNovel.title}</div>
                 <div className="mt-0.5 text-xs font-bold text-slate-400">
-                  已选择 {selectedDraftContextItems.length} 项 · 共 {draftContextWordCount} 字
+                  已选择 {selectedDraftContextItems.length} 项 · 共 <WordCountText value={draftContextWordCount} />
                 </div>
               </div>
             </div>
@@ -2042,7 +2050,7 @@ export function WorkbenchPage() {
                 </span>
                 <span className="inline-flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  共 {draftContextWordCount} 字
+                  共 <WordCountText value={draftContextWordCount} />
                 </span>
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -2125,7 +2133,7 @@ export function WorkbenchPage() {
                 <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">分类</p><p className="mt-1.5 text-base font-bold text-gray-900">{currentNovel.category ?? '未分类'}</p></div>
                 <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">卷数</p><p className="mt-1.5 text-base font-bold text-gray-900">{volumes.length}</p></div>
                 <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">章节数</p><p className="mt-1.5 text-base font-bold text-gray-900">{chapterCount}</p></div>
-                <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">总字数</p><p className="mt-1.5 text-base font-bold text-gray-900">{currentNovel.wordCount ?? 0}</p></div>
+                <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">总字数</p><p className="mt-1.5 text-base font-bold text-brand">{currentNovel.wordCount ?? 0}</p></div>
               </div>
             </section>
             <section className="rounded-xl border border-gray-200 p-5">

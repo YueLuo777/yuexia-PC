@@ -12,6 +12,7 @@ const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/Software
 const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })));
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
 const PromptTaxonomyTestPage = lazy(() => import('@/features/tests/pages/PromptTaxonomyTestPage').then((module) => ({ default: module.PromptTaxonomyTestPage })));
+const WorkbenchAiPanelReplicaTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiPanelReplicaTestPage').then((module) => ({ default: module.WorkbenchAiPanelReplicaTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 const IdeaGeneratorPage = lazy(() => import('@/features/ideas/pages/IdeaGeneratorPage').then((module) => ({ default: module.IdeaGeneratorPage })));
 const IdeaLibraryPage = lazy(() => import('@/features/ideas/pages/IdeaLibraryPage').then((module) => ({ default: module.IdeaLibraryPage })));
@@ -108,6 +109,7 @@ export default function App() {
                 <Route path="/hidden-pages-test" element={<HiddenPagesTestPage />} />
                 <Route path="/error-log" element={<ErrorLogPage />} />
                 <Route path="/theme-colors" element={<DarkThemeColorPage />} />
+                <Route path="/workbench-ai-panel-replica-test" element={<WorkbenchAiPanelReplicaTestPage />} />
                 <Route path="/test-browser" element={<TestBrowserPage />} />
               </Route>
               <Route path="/workbench" element={<WorkbenchPage />} />

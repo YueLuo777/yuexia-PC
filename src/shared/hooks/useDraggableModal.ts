@@ -26,10 +26,10 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-function readGeometry(storageKey: string): ModalGeometry {
+function readGeometry(storageKey: string, fallback: ModalGeometry = { x: 0, y: 0 }): ModalGeometry {
   try {
     const raw = localStorage.getItem(storageKey);
-    if (!raw) return { x: 0, y: 0 };
+    if (!raw) return fallback;
     const parsed = JSON.parse(raw) as Partial<ModalGeometry>;
     return {
       x: Number.isFinite(parsed.x) ? Number(parsed.x) : 0,
@@ -40,7 +40,7 @@ function readGeometry(storageKey: string): ModalGeometry {
       height: Number.isFinite(parsed.height) ? Number(parsed.height) : undefined,
     };
   } catch {
-    return { x: 0, y: 0 };
+    return fallback;
   }
 }
 
@@ -110,9 +110,9 @@ function getSafeFixedGeometryFromRect(rect: DOMRect): ModalGeometry {
   };
 }
 
-export function useDraggableModal(id: string) {
+export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
   const storageKey = `xinyuexia_modal_position_${id}`;
-  const [geometry, setGeometry] = useState<ModalGeometry>(() => normalizeGeometryToViewport(readGeometry(storageKey)));
+  const [geometry, setGeometry] = useState<ModalGeometry>(() => normalizeGeometryToViewport(readGeometry(storageKey, defaultGeometry)));
   const geometryRef = useRef(geometry);
   const dragRef = useRef<{
     pointerId: number;
@@ -144,10 +144,10 @@ export function useDraggableModal(id: string) {
   };
 
   useEffect(() => {
-    const next = normalizeGeometryToViewport(readGeometry(storageKey));
+    const next = normalizeGeometryToViewport(readGeometry(storageKey, defaultGeometry));
     geometryRef.current = next;
     setGeometry(next);
-  }, [storageKey]);
+  }, [defaultGeometry, storageKey]);
 
   useEffect(() => {
     geometryRef.current = geometry;

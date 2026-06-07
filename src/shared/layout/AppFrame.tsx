@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { BookOpen, FlaskConical, Minus, Plus, Square, X } from 'lucide-react';
 
 import { useNovelLibrary } from '@/features/novels/hooks/useNovelLibrary';
+import { TEST_COLLECTION_SHOW_INDEX_EVENT } from '@/features/tests/model/testCollectionEvents';
 import {
   loadShortcutBindings,
   loadMouseGestureSettings,
@@ -211,7 +212,13 @@ export function AppFrame({ children }: AppFrameProps) {
     } | null = null;
     let suppressNextContextMenu = false;
 
-    const goHome = () => activateHomeTab();
+    const goHome = () => {
+      if (location.pathname === '/test-collection') {
+        window.dispatchEvent(new Event(TEST_COLLECTION_SHOW_INDEX_EVENT));
+        return;
+      }
+      activateHomeTab();
+    };
     const goForward = () => {
       navigate(1);
     };
@@ -306,7 +313,7 @@ export function AppFrame({ children }: AppFrameProps) {
       window.removeEventListener('mouseup', handleMouseUp, true);
       window.removeEventListener('contextmenu', handleContextMenu, true);
     };
-  }, [activateHomeTab, mouseGestureSettings.forwardRightSwipe, mouseGestureSettings.goHomeLeftSwipe, navigate]);
+  }, [activateHomeTab, location.pathname, mouseGestureSettings.forwardRightSwipe, mouseGestureSettings.goHomeLeftSwipe, navigate]);
 
   useEffect(() => {
     type DragState = {
@@ -813,7 +820,11 @@ export function AppFrame({ children }: AppFrameProps) {
       .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
       .join(' ')
     : '';
-  const mouseGestureDirectionLabel = mouseGesturePreview?.direction === 'right' ? '前进' : '返回首页';
+  const mouseGestureDirectionLabel = mouseGesturePreview?.direction === 'right'
+    ? '前进'
+    : location.pathname === '/test-collection'
+    ? '返回测试'
+    : '返回首页';
   const mouseGestureContinueLabel = mouseGesturePreview?.direction === 'right' ? '继续右滑' : '继续左滑';
   const mouseGestureArrow = mouseGesturePreview?.direction === 'right' ? '→' : '←';
 

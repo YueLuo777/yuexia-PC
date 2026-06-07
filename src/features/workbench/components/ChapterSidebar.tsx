@@ -1,7 +1,8 @@
-import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react';
 
 import type { Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 interface ChapterSidebarProps {
   volumes: Volume[];
@@ -42,6 +43,9 @@ interface VolumeContextMenu {
 
 const emptyChapterMenu: ChapterContextMenu = { visible: false, x: 0, y: 0, volumeId: null, chapterId: null };
 const emptyVolumeMenu: VolumeContextMenu = { visible: false, x: 0, y: 0, volumeId: null };
+const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 300;
+const CHAPTER_SIDEBAR_BOTTOM_ROW_CLASS = 'flex items-center gap-1.5 border-t border-gray-100 px-2 py-2';
+const CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS = 'flex h-8 min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-md px-1.5 text-sm leading-none text-white transition-colors';
 
 function getContextMenuPoint(event: ReactMouseEvent<HTMLElement>) {
   const target = event.currentTarget;
@@ -59,14 +63,6 @@ function getContextMenuPoint(event: ReactMouseEvent<HTMLElement>) {
     x: (event.clientX - rect.left) / scaleX,
     y: (event.clientY - rect.top) / scaleY,
   };
-}
-
-function renderPanelWidthBadge(width: number) {
-  return (
-    <span className="shrink-0 text-[11px] font-black leading-none text-emerald-600">
-      {Math.round(width)}PX
-    </span>
-  );
 }
 
 export function ChapterSidebar({
@@ -88,10 +84,11 @@ export function ChapterSidebar({
   onOpenRecycle,
   onExportChapters,
   getChapterWordCount,
-  width = 200,
+  width = CHAPTER_SIDEBAR_DEFAULT_WIDTH,
 }: ChapterSidebarProps) {
   const [chapterMenu, setChapterMenu] = useState<ChapterContextMenu>(emptyChapterMenu);
   const [volumeMenu, setVolumeMenu] = useState<VolumeContextMenu>(emptyVolumeMenu);
+  const [isNonEmptyVolumePromptOpen, setIsNonEmptyVolumePromptOpen] = useState(false);
   const chapterUnit = workType === 'script' ? '集' : '章';
   const volumeUnit = workType === 'script' ? '卷' : '卷';
   const unpublishedCount = volumes.reduce((sum, volume) => sum + volume.chapters.filter((chapter) => !chapter.isPublished).length, 0);
@@ -120,7 +117,7 @@ export function ChapterSidebar({
     const target = volumes.find((volume) => volume.id === volumeId);
     if (!target) return;
     if (target.chapters.length > 0) {
-      window.alert('该卷下还有章节，请先删除章节');
+      setIsNonEmptyVolumePromptOpen(true);
       return;
     }
     onDeleteVolume(volumeId);
@@ -146,7 +143,6 @@ export function ChapterSidebar({
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          {renderPanelWidthBadge(width)}
           {workType !== 'script' && (
           <button
             onClick={onTogglePublished}
@@ -237,26 +233,26 @@ export function ChapterSidebar({
         })}
       </div>
 
-      <div className="flex items-center gap-1.5 border-t border-gray-100 px-2 py-2">
-        <button onClick={onAddVolume} className="xy-ui125-plus-button" title={`新增${volumeUnit}`}>
-          <Plus />
+      <div className={CHAPTER_SIDEBAR_BOTTOM_ROW_CLASS}>
+        <button onClick={onAddVolume} className={`${CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS} bg-[#08B3D9] hover:bg-[#0798B8]`} title={`新增${volumeUnit}`}>
+          新增卷
         </button>
-        <button onClick={onToggleSort} className="flex-1 whitespace-nowrap rounded-md bg-brand px-1 py-1.5 text-sm text-white transition-colors hover:bg-brand-dark">
+        <button onClick={onToggleSort} className={`${CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS} bg-brand hover:bg-brand-dark`}>
           {sortAsc ? '倒序' : '正序'}
         </button>
       </div>
 
-      <div className="border-t border-gray-200 p-2">
+      <div className="border-t border-gray-100 px-2 py-2">
         <div className="flex items-center gap-1.5">
           <button
             onClick={onExportChapters}
-            className="flex-1 whitespace-nowrap rounded-md bg-[#0695B5] px-1.5 py-1.5 text-sm text-white transition-colors hover:bg-[#057f9a]"
+            className={`${CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS} bg-[#08B3D9] hover:bg-[#0798B8]`}
           >
             导出章节
           </button>
           <button
             onClick={onOpenRecycle}
-            className="relative flex-1 whitespace-nowrap rounded-md bg-red-500 px-1.5 py-1.5 text-sm text-white transition-colors hover:bg-red-600"
+            className={`relative ${CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS} bg-red-500 hover:bg-red-600`}
           >
             回收站
             {recycledCount > 0 && <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-red-500" />}
@@ -325,6 +321,17 @@ export function ChapterSidebar({
           </button>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={isNonEmptyVolumePromptOpen}
+        title="无法删除卷"
+        description="该卷下还有章节，请先删除章节后再删除卷。"
+        confirmText="确定"
+        confirmVariant="warning"
+        showCancel={false}
+        onClose={() => setIsNonEmptyVolumePromptOpen(false)}
+        onConfirm={() => setIsNonEmptyVolumePromptOpen(false)}
+      />
     </aside>
   );
 }

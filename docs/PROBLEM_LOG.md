@@ -1,5 +1,45 @@
 # xinyuexia 问题记录
 
+## 删除非空卷提示使用系统原生弹窗
+
+- 现象：右键卷名删除仍包含章节的卷时，提示“该卷下还有章节，请先删除章节”会以系统原生窗口弹出，标题栏和按钮风格都不像月下写作内的提示框。
+- 原因：`ChapterSidebar` 在非空卷阻断分支直接调用 `window.alert`，绕过了项目里的 `ConfirmDialog` 统一弹窗样式。
+- 处理：给 `ConfirmDialog` 增加可选单按钮模式；删除非空卷时打开应用内“无法删除卷”提示，使用 warning 图标和单个“确定”按钮。
+- 预防：业务阻断、确认、警告类提示都应优先复用共享弹窗，不要在 React 组件里新增 `window.alert`。
+- 验证：新增并执行 `npm.cmd run test:run -- src/features/workbench/components/ChapterSidebar.test.tsx`。
+
+## 正文续写会话按钮跑进 AI 对话内容框
+
+- 现象：正文续写的 AI 对话框左上会话按钮（+、1）显示在内容框内部，空态“暂无对话内容...”也被顶部预留空间挤得偏低。
+- 原因：正式样式里左侧会话工具覆写了通用边框工具定位，使用 `top: 0.65rem` 和 `transform: none`，导致它不再贴在上边框，而是落进滚动内容区；聊天内容区还保留了 `2.75rem` 顶部内边距。测试集合的右侧 AI 面板复刻页也硬编码了 `top-2` 和 `pt-12`，所以同样会复现。
+- 处理：让 `.xy-floating-chat-session-tool` 回到 `top: 0` 与 `translateY(-50%)` 的边框嵌入定位；把正式聊天记录区顶部内边距恢复到正常内容留白；同步把复刻页的正文会话按钮、删除/清空按钮移到上边框，并取消空态的大顶部 padding。
+- 预防：边框嵌入工具需要保持和 `.xy-floating-edge-tool` 一致的垂直定位，只允许左右位置、宽度这类轴向差异；测试复刻页不能用另一套会漂移的硬编码布局。
+- 验证：新增并执行 `npm.cmd run test:run -- src/shared/styles/floatingChatShell.test.ts`、`npm.cmd run test:run -- src/features/tests/pages/WorkbenchAiPanelReplicaTestPage.test.ts`。
+
+## 测试内容页左滑不能返回测试总页
+
+- 现象：在测试集合里打开某个测试内容后，右键向左滑动手势不再退回测试总页。
+- 原因：测试内容页使用 `TestCollectionPage` 内部 `activePath` 状态切换，浏览器路由仍停在 `/test-collection`；全局左滑只执行回首页逻辑，没有派发测试集合已有的“显示测试总页”事件。
+- 处理：全局左滑在当前路由为 `/test-collection` 时派发 `TEST_COLLECTION_SHOW_INDEX_EVENT`，由测试集合清空 `activePath`；其他页面继续保持左滑回首页。手势预览文案在测试页同步显示“返回测试”。
+- 预防：对内部状态模拟子页面的模块，导航手势不能只依赖浏览器 history，应复用模块自己的返回事件或显式回调。
+- 验证：执行 `npm.cmd run check`、`npm.cmd run test:run -- src/features/workbench/components/WorkbenchHeader.test.tsx src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`。
+
+## 剧情链右侧关联设定点击 X 后会自动恢复
+
+- 现象：剧情链右侧 AI 对话框下方已经显示“已关联”，点击 X 取消关联后，界面仍然显示已关联，像是取消无效。
+- 原因：章纲/剧情链关联读取存在默认继承逻辑；当关联 id 未显式配置时，会自动继承可读取设定或默认角色。清空后如果没有记录“用户已手动处理过关联”，默认继承又会把内容补回来。
+- 处理：给关联读取配置增加手动处理标记；确认读取或点击 X 清空后写入该标记，并把设定、角色、章纲 id 清成空数组，后续不再自动继承默认关联。
+- 预防：带默认继承的关联选择器必须区分“从未配置”和“用户主动清空”，不能只用空值判断，否则清空类按钮会被默认值回填。
+- 验证：执行 `npm.cmd run check`、`npm.cmd run test:run -- src/features/workbench/components/WorkbenchHeader.test.tsx src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`。
+
+## 作品编辑器 AI 配置需要统一为组合齿轮框
+
+- 现象：测试页已经确认模型和提示词应放在同一个组合框里，标签旁使用标准齿轮；正式作品编辑器多个页面仍是上下两个独立选择框，状态页缺少同位置 AI 配置，脑洞页还用独立禁用提示词图标。
+- 原因：组合框方案先落在测试页，没有抽成正式可复用控件；提示词禁用能力绑定在 CapsuleSelect 内部图标上，和新的组合框结构不一致。
+- 处理：新增组合 AI 配置控件并替换作品编辑器内大纲、角色、脑洞、概要、章纲、剧情链、审核、点评的模型/提示词选择；状态页右栏同位置补充组合 AI 配置；提示词禁用改为右键提示词段弹出“禁用/启用”菜单。
+- 预防：AI 配置视觉方案从测试页转正时要抽成共享控件，并同时迁移管理入口、禁用入口、输出日志相邻布局和状态页等后处理页面。
+- 验证：执行 `npm.cmd run check`、`npm.cmd run build`。
+
 ## 右侧 AI 配置组合框需要模型和提示词管理入口
 
 - 现象：组合后的模型/提示词下拉框顶部只有“模型”和“提示词”标签，用户希望在两个标签右侧各增加齿轮管理入口，并分别打开模型管理或提示词管理窗口。

@@ -88,6 +88,21 @@ const modes: PanelMode[] = [
     action: '\u751f\u6210\u7ae0\u7eb2',
   },
   {
+    id: 'summary',
+    title: t.summary,
+    width: 360,
+    prompt: '\u6982\u8981\u9ed8\u8ba4\u63d0\u793a\u8bcd',
+    contextLabel: '\u5f53\u524d\u7ae0\u8282',
+    contextMeta: '\u7b2c 2 \u7ae0 · \u7b2c 1 \u5377 · 3260 \u5b57',
+    rules: [
+      { label: '\u8303\u56f4', value: '\u672c\u7ae0' },
+      { label: '\u8f93\u51fa', value: '\u7b80\u6d01\u6982\u8981' },
+      { label: '\u957f\u5ea6', value: '300 \u5b57\u5185' },
+    ],
+    inputLabel: '\u6982\u8981\u8981\u6c42',
+    action: '\u751f\u6210\u6982\u8981',
+  },
+  {
     id: 'audit',
     title: t.audit,
     width: 300,
@@ -169,14 +184,35 @@ function CurrentCapsuleSelectMock({ label, value }: { label: string; value: stri
   );
 }
 
+function FloatingSessionToolMock() {
+  return (
+    <div className="xy-floating-edge-tool xy-floating-chat-session-tool">
+      <div className="flex h-7 max-w-full items-center gap-1 overflow-hidden bg-white">
+        <div className="scrollbar-hidden flex min-w-0 items-center gap-1 overflow-x-auto">
+          <button
+            type="button"
+            className="grid h-6 w-6 shrink-0 place-items-center rounded-md border border-gray-200 bg-white text-gray-700 hover:border-[#08AACE] hover:text-[#08AACE]"
+            title="新建会话"
+          >
+            <span className="-mt-px block text-[17px] font-bold leading-none">+</span>
+          </button>
+          <button
+            type="button"
+            className="flex h-6 min-w-6 items-center justify-center rounded-md border border-[#08AACE]/30 bg-[#08AACE]/10 px-1.5 text-xs font-bold leading-none text-[#08AACE]"
+            title="会话 1"
+          >
+            1
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CurrentRightPanel({ mode }: { mode: PanelMode }) {
   return (
     <aside className="flex h-full min-h-0 flex-col border border-slate-200 bg-gray-50" style={{ width: mode.width }}>
-      <div className="flex shrink-0 justify-end px-4 pt-3">
-        <span className="text-xs font-black text-emerald-600">{mode.width}PX</span>
-      </div>
-
-      <div className="editor-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-4 pt-2">
+      <div className="editor-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
         <section className="space-y-3">
           <div className="grid grid-cols-[minmax(0,1fr)_76px] items-center gap-2">
             <CurrentCapsuleSelectMock label={t.model} value="DS-v4-flash" />
@@ -191,8 +227,9 @@ function CurrentRightPanel({ mode }: { mode: PanelMode }) {
           <span className="absolute left-4 top-0 -translate-y-1/2 bg-white px-1.5 text-[11px] font-black leading-none text-[#08AACE]">
             {'AI\u5bf9\u8bdd\u6846'}
           </span>
+          <FloatingSessionToolMock />
           <button className="absolute right-3 top-2 text-xs font-black text-red-500">{t.clear}</button>
-          <div className="editor-scrollbar flex h-[132px] flex-col gap-3 overflow-y-auto pt-2 text-sm font-bold leading-6 text-slate-600">
+          <div className="editor-scrollbar flex h-[132px] flex-col gap-3 overflow-y-auto pt-9 text-sm font-bold leading-6 text-slate-600">
             <div className="rounded-xl bg-[#EAF9FD] px-3 py-2 text-[#057F9B]">
               {'\u5f53\u524d\u9875\u9762\u7684 AI \u8f93\u5165\u548c\u8f93\u51fa\u533a\u57df'}
             </div>
@@ -290,7 +327,6 @@ function PageOverrideRightPanel({ mode }: { mode: PanelMode }) {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="truncate text-base font-black text-slate-950">{t.after}</h2>
-              <span className="text-[11px] font-black text-emerald-600">{mode.width}PX</span>
             </div>
             <p className="mt-1 text-xs font-bold leading-5 text-slate-400">{'\u4f7f\u7528\u7edf\u4e00\u8bbe\u7f6e\uff0c\u672c\u9875\u53ef\u4e34\u65f6\u8986\u76d6'}</p>
           </div>
@@ -365,7 +401,7 @@ function CombinedConfigSelectMock({ modelValue, promptValue }: { modelValue: str
 
   return (
     <>
-      <div className="grid h-11 min-w-0 grid-cols-[42%_58%] overflow-visible rounded-xl border-2 border-[#08AACE] bg-white">
+      <div className="grid h-11 min-w-0 grid-cols-2 overflow-visible rounded-xl border-2 border-[#08AACE] bg-white">
         <div className="relative min-w-0 border-r border-[#08AACE]/25">
           <button
             type="button"
@@ -454,14 +490,76 @@ function CompactConfigControls({ mode }: { mode: PanelMode }) {
 }
 
 function CompactAiBody({ mode, bottomPadding = false }: { mode: PanelMode; bottomPadding?: boolean }) {
+  if (mode.id === 'detail' || mode.id === 'summary') {
+    const frameTitle = mode.id === 'detail' ? '\u7b2c2\u7ae0\u7ae0\u7eb2\uff08\u7b2c1\u5377\uff09' : '\u7b2c2\u7ae0\u6982\u8981\uff08\u7b2c1\u5377\uff09';
+    const placeholder = mode.id === 'detail'
+      ? '\u8fd9\u91cc\u662f\u7ae0\u7eb2\u5185\u5bb9\u3002\u5916\u5c42\u4e0d\u518d\u989d\u5916\u663e\u793a AI \u5bf9\u8bdd\u6846\uff0c\u6e05\u7a7a\u56de\u5230\u7ae0\u7eb2\u8fb9\u6846\u53f3\u4e0a\u89d2\u3002'
+      : '\u8fd9\u91cc\u662f\u6982\u8981\u5185\u5bb9\u3002\u5916\u5c42\u53ea\u627f\u62c5\u5e03\u5c40\uff0c\u4e0d\u518d\u591a\u5957\u4e00\u5c42 AI \u5bf9\u8bdd\u6846\u6807\u9898\u3002';
+
+    return (
+      <div className={`editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto p-4 ${bottomPadding ? 'pb-16' : ''}`}>
+        <section className="relative min-h-[220px]">
+          <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count h-[220px] xy-has-value">
+            <textarea
+              value={placeholder}
+              readOnly
+              className="editor-scrollbar text-sm font-bold leading-6 text-slate-700 outline-none"
+            />
+            <label>{frameTitle}</label>
+            <button className="xy-floating-edge-tool text-xs font-black text-red-500 hover:text-red-600">
+              {t.clear}
+            </button>
+            <span className="xy-floating-count"><span className="text-brand">326</span><span className="text-slate-400"> 字</span></span>
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-3">
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <button className="h-9 shrink-0 rounded-xl border border-[#08AACE] bg-white px-3 text-sm font-black text-[#08AACE] hover:bg-[#EAF9FD]">
+              {mode.id === 'detail' ? '\u5173\u8054\u8bbe\u5b9a' : '\u5173\u8054\u7ae0\u8282'}
+            </button>
+            <div className="min-w-0 truncate text-right text-xs font-bold text-slate-400">
+              {mode.contextMeta}
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <div className="xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions">
+              <textarea rows={1} className="editor-scrollbar" />
+              <label>{mode.inputLabel}</label>
+              <div className="xy-ai-inline-actions">
+                <button type="button" className="xy-ai-inline-send">
+                  <span className="xy-ai-inline-send-icon"><Send className="h-6 w-6 stroke-[1.9]" /></span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 flex overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <button className="min-w-0 flex-1 bg-[#08AACE] px-3 py-2 text-sm font-bold text-white">
+              {mode.id === 'detail' ? '\u4fdd\u5b58\u7ae0\u7eb2' : '\u4fdd\u5b58\u6982\u8981'}
+            </button>
+            <button className="min-w-0 flex-1 border-l border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-600">
+              {mode.id === 'detail' ? '\u590d\u5236\u7ae0\u7eb2' : '\u590d\u5236\u6982\u8981'}
+            </button>
+            <button className="min-w-0 flex-1 border-l border-red-200 bg-red-600 px-3 py-2 text-sm font-bold text-white">
+              {mode.id === 'detail' ? '\u6e05\u7a7a\u7ae0\u7eb2' : '\u6e05\u7a7a\u6982\u8981'}
+            </button>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className={`editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto p-4 ${bottomPadding ? 'pb-16' : ''}`}>
       <section className="relative min-h-[172px] rounded-xl border-2 border-[#08AACE] bg-white p-3 pt-5">
         <span className="absolute left-4 top-0 -translate-y-1/2 bg-white px-1.5 text-[11px] font-black leading-none text-[#08AACE]">
           {'AI\u5bf9\u8bdd\u6846'}
         </span>
+        <FloatingSessionToolMock />
         <button className="absolute right-3 top-2 text-xs font-black text-red-500">{t.clear}</button>
-        <div className="editor-scrollbar h-[132px] overflow-y-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-xs font-bold leading-6 text-slate-600">
+        <div className="editor-scrollbar h-[132px] overflow-y-auto whitespace-pre-wrap rounded-xl bg-slate-50 px-3 pb-3 pt-10 text-xs font-bold leading-6 text-slate-600">
           {'\u8fd9\u91cc\u4fdd\u7559\u73b0\u6709 AI \u5bf9\u8bdd\u6846 UI\uff0c\u53ea\u628a\u6a21\u578b\u548c\u63d0\u793a\u8bcd\u914d\u7f6e\u6536\u7eb3\u8d77\u6765\u3002'}
         </div>
       </section>
@@ -491,7 +589,6 @@ function CompactSchemeHeader({ scheme, mode }: { scheme: CompactScheme; mode: Pa
     return (
       <div className="border-b border-slate-100 bg-white p-3">
         <div className={`${isGearConfigOpen ? 'mb-3' : ''} flex items-center justify-between gap-2`}>
-          <span className="text-xs font-black text-emerald-600">{mode.width}PX</span>
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-[#EAF9FD] px-2.5 py-1 text-xs font-black text-[#078fb0]">DS-v4</span>
             <button
@@ -515,7 +612,6 @@ function CompactSchemeHeader({ scheme, mode }: { scheme: CompactScheme; mode: Pa
   if (scheme === 'capsule') {
     return (
       <div className="border-b border-slate-100 bg-white p-3">
-        <div className="mb-3 flex justify-end"><span className="text-xs font-black text-emerald-600">{mode.width}PX</span></div>
         <button className="flex h-10 w-full items-center justify-between gap-2 rounded-xl border-2 border-[#08AACE] bg-white px-3 text-left shadow-sm">
           <span className="min-w-0 truncate text-sm font-black text-slate-800">AI配置：DS-v4-flash / {mode.prompt}</span>
           <span className="shrink-0 text-sm font-black text-[#08AACE]">{'\u2304'}</span>
@@ -530,7 +626,6 @@ function CompactSchemeHeader({ scheme, mode }: { scheme: CompactScheme; mode: Pa
   if (scheme === 'edge') {
     return (
       <div className="relative border-b border-slate-100 bg-white p-3">
-        <div className="flex justify-end"><span className="text-xs font-black text-emerald-600">{mode.width}PX</span></div>
         <div className="absolute right-0 top-11 z-20 rounded-l-xl bg-[#08AACE] px-2 py-4 text-xs font-black text-white shadow-lg">AI</div>
         <div className="mt-3 rounded-xl border border-[#08AACE]/30 bg-white p-3 shadow-[0_16px_40px_rgba(8,170,206,0.16)]">
           <div className="mb-2 text-xs font-black text-[#078fb0]">悬停展开预览</div>
@@ -547,7 +642,6 @@ function CompactSchemeHeader({ scheme, mode }: { scheme: CompactScheme; mode: Pa
           <button className="min-w-0 flex-1 truncate rounded-xl border border-[#08AACE]/30 bg-[#EAF9FD] px-3 py-2 text-left text-xs font-black text-[#078fb0]">
             AI：DS-v4-flash · {mode.prompt}
           </button>
-          <span className="text-xs font-black text-emerald-600">{mode.width}PX</span>
         </div>
         <CompactConfigControls mode={mode} />
       </div>
@@ -556,7 +650,6 @@ function CompactSchemeHeader({ scheme, mode }: { scheme: CompactScheme; mode: Pa
 
   return (
     <div className="border-b border-slate-100 bg-white p-3">
-      <div className="flex justify-end"><span className="text-xs font-black text-emerald-600">{mode.width}PX</span></div>
     </div>
   );
 }
@@ -585,7 +678,7 @@ export function WorkbenchRightPanelUnifiedTestPage() {
   const activeSchemeMeta = compactSchemeMeta.find((item) => item.id === activeScheme) ?? compactSchemeMeta[0];
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-white text-slate-900">
+    <div className="xy-test-no-floating-tool-backplate flex h-full min-h-0 flex-col bg-white text-slate-900">
       <header className="shrink-0 border-b-2 border-[#08AACE] bg-white px-5 py-3">
         <div className="flex items-center gap-3">
           <div className="min-w-[180px] text-base font-black text-slate-950">{t.workTitle}</div>
@@ -599,7 +692,6 @@ export function WorkbenchRightPanelUnifiedTestPage() {
             <FlowButton active={false}>{t.writing}</FlowButton>
             <FlowButton active={false}>{t.brainstorm}</FlowButton>
             <FlowButton active={false}>{t.comment}</FlowButton>
-            <FlowButton active={false}>{t.summary}</FlowButton>
           </div>
         </div>
         <div className="mt-3 flex items-center gap-2 overflow-x-auto pl-[180px]">

@@ -1,6 +1,8 @@
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 
+import { WordCountText } from '@/shared/ui/WordCountText';
+
 export type AiRequestLogGroup = {
   id: string;
   title: string;
@@ -17,6 +19,12 @@ function getToneClass(tone: AiRequestLogGroup['tone']) {
   return 'border-slate-200 bg-slate-50 text-slate-600';
 }
 
+function renderMeta(meta: string) {
+  const wordCountMatch = meta.match(/^([\d,]+)\s*字$/);
+  if (!wordCountMatch) return meta;
+  return <WordCountText value={wordCountMatch[1]} />;
+}
+
 export function AiRequestLogGroups({
   groups,
   defaultCollapsed = true,
@@ -24,8 +32,9 @@ export function AiRequestLogGroups({
   groups: AiRequestLogGroup[];
   defaultCollapsed?: boolean;
 }) {
+  const visibleGroups = groups.filter((group) => group.content?.trim());
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
-    () => new Set(defaultCollapsed ? groups.map((group) => group.id) : []),
+    () => new Set(defaultCollapsed ? visibleGroups.map((group) => group.id) : []),
   );
 
   const toggleGroup = (id: string) => {
@@ -39,9 +48,9 @@ export function AiRequestLogGroups({
 
   return (
     <div className="space-y-3">
-      {groups.map((group) => {
+      {visibleGroups.map((group) => {
         const collapsed = collapsedIds.has(group.id);
-        const content = group.content?.trim() || group.emptyText || '空内容';
+        const content = group.content?.trim() ?? '';
         return (
           <section key={group.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
             <button
@@ -54,7 +63,7 @@ export function AiRequestLogGroups({
                 <span className="truncate text-sm font-black text-slate-950">{group.title}</span>
                 {group.meta && (
                   <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-black ${getToneClass(group.tone)}`}>
-                    {group.meta}
+                    {renderMeta(group.meta)}
                   </span>
                 )}
               </span>

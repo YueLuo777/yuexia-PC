@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Lock, Plus, Send, Settings, Square, Trash2, Unlock, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Lock, Plus, Settings, Square, Trash2, Unlock, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode, type SetStateAction } from 'react';
 import type { CSSProperties } from 'react';
 import type { DragEvent as ReactDragEvent, KeyboardEvent as ReactKeyboardEvent, MouseEvent, PointerEvent as ReactPointerEvent } from 'react';
@@ -38,10 +38,14 @@ import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
 import { AiRequestLogGroups, type AiRequestLogGroup } from '@/shared/ui/AiRequestLogGroups';
+import { AiInlineInput } from '@/shared/ui/AiInlineInput';
 import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
+import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
+import { LinkedSourceControl } from '@/shared/ui/LinkedSourceControl';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
+import { WordCountText } from '@/shared/ui/WordCountText';
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 162;
@@ -68,6 +72,7 @@ interface WorkbenchLibraryPanelProps {
   defaultActiveTab?: string;
   fieldSizeOpenSignal?: number;
   showInlineFieldSizeButton?: boolean;
+  openLogSignal?: number;
   openPlotPointSignal?: number;
   plotPointStandalone?: boolean;
   onOpenDetailOutlineFromPlotChain?: () => void;
@@ -141,9 +146,6 @@ const DETAIL_OUTLINE_PREVIEW_MIN_HEIGHT = 130;
 const DETAIL_OUTLINE_PREVIEW_MAX_HEIGHT = 260;
 const DETAIL_OUTLINE_PREVIEW_LINE_HEIGHT = 24;
 const DETAIL_OUTLINE_PREVIEW_VERTICAL_PADDING = 48;
-const MODEL_SELECT_COLUMNS = 'grid-cols-[minmax(0,1fr)]';
-const PROMPT_SELECT_COLUMNS = 'grid-cols-[minmax(0,1fr)]';
-
 type LibraryCategoryMenu = {
   kind: 'role' | 'setting';
   type: string;
@@ -162,6 +164,20 @@ type LibraryEntryMenu = {
 } | null;
 
 type ClearSettingsUnlockMenu = {
+  action: 'unlock' | 'lock';
+  x: number;
+  y: number;
+} | null;
+
+type ClearSettingsTooltip = {
+  text: string;
+  x: number;
+  y: number;
+} | null;
+
+type PromptDisableMenu = {
+  tab: string;
+  disabled: boolean;
   x: number;
   y: number;
 } | null;
@@ -635,6 +651,7 @@ type LibraryTabConfig = {
   aiSessions?: unknown[];
   activeAiSessionId?: string;
   outlineAiInput?: string;
+  detailOutlineReaderTouched?: boolean;
   detailOutlineReaderSettingIds?: string[];
   detailOutlineReaderRoleIds?: string[];
   detailOutlineReaderOutlineIds?: string[];
@@ -1489,6 +1506,7 @@ export function WorkbenchLibraryPanel({
   defaultActiveTab,
   fieldSizeOpenSignal = 0,
   showInlineFieldSizeButton = true,
+  openLogSignal = 0,
   openPlotPointSignal = 0,
   plotPointStandalone = false,
   onOpenDetailOutlineFromPlotChain,
@@ -1532,6 +1550,7 @@ export function WorkbenchLibraryPanel({
   const [isOutlineSettingsOpen, setIsOutlineSettingsOpen] = useState(false);
   const [isFieldSizeSettingsOpen, setIsFieldSizeSettingsOpen] = useState(false);
   const lastFieldSizeOpenSignalRef = useRef(fieldSizeOpenSignal);
+  const lastOpenLogSignalRef = useRef(openLogSignal);
   const [fieldSizeSpecs, setFieldSizeSpecs] = useState<Record<WorkbenchFieldSizeKey, WorkbenchFieldSizeSpec>>(() => readWorkbenchFieldSizeSpecs());
   const fieldSizeSettingsDraggable = useDraggableModal('workbench_field_size_settings');
   const visibleFieldSizeKeys = WORKBENCH_FIELD_SIZE_KEYS_BY_TAB[activeTab] ?? WORKBENCH_FIELD_SIZE_SETTING_KEYS;
@@ -1553,6 +1572,8 @@ export function WorkbenchLibraryPanel({
   const [isClearSettingsConfirmOpen, setIsClearSettingsConfirmOpen] = useState(false);
   const [isClearSettingsUnlocked, setIsClearSettingsUnlocked] = useState(false);
   const [clearSettingsUnlockMenu, setClearSettingsUnlockMenu] = useState<ClearSettingsUnlockMenu>(null);
+  const [clearSettingsTooltip, setClearSettingsTooltip] = useState<ClearSettingsTooltip>(null);
+  const [promptDisableMenu, setPromptDisableMenu] = useState<PromptDisableMenu>(null);
   const [managementModal, setManagementModal] = useState<LibraryManagementModalState>(null);
   const [draggingLibraryEntry, setDraggingLibraryEntry] = useState<LibraryEntryDragState>(null);
   const [libraryDropTarget, setLibraryDropTarget] = useState<{ tab: string; type: string } | null>(null);
@@ -1615,7 +1636,9 @@ export function WorkbenchLibraryPanel({
   const [settingCreateDialog, setSettingCreateDialog] = useState<'category' | 'setting' | null>(null);
   const [isLibraryAiLoading, setIsLibraryAiLoading] = useState(false);
   const [isLibraryAiLogOpen, setIsLibraryAiLogOpen] = useState(false);
+  const [libraryAiLogScope, setLibraryAiLogScope] = useState<'library' | 'outline'>('library');
   const [lastLibraryAiRequestLog, setLastLibraryAiRequestLog] = useState<LibraryAiRequestLog | null>(null);
+  const [lastOutlineAiRequestLog, setLastOutlineAiRequestLog] = useState<LibraryAiRequestLog | null>(null);
   const [loadingDotCount, setLoadingDotCount] = useState(1);
   const [tabPortalTarget, setTabPortalTarget] = useState<HTMLElement | null>(null);
   const outlinePreviewRefs = useRef<Record<number, HTMLElement | null>>({});
@@ -1625,6 +1648,7 @@ export function WorkbenchLibraryPanel({
   const libraryAiAbortRef = useRef<AbortController | null>(null);
   const libraryAiInputRef = useRef<HTMLTextAreaElement | null>(null);
   const libraryAiRequestSeqRef = useRef(0);
+  const clearSettingsTooltipTimerRef = useRef<number | null>(null);
   const outlinePreviewDraftRef = useRef(outlinePreviewDraft);
   const isLibraryAiLoadingRef = useRef(isLibraryAiLoading);
   const plotPointGenerationModeRef = useRef<'restart' | 'continue'>('restart');
@@ -1732,6 +1756,12 @@ export function WorkbenchLibraryPanel({
     lastFieldSizeOpenSignalRef.current = fieldSizeOpenSignal;
     setIsFieldSizeSettingsOpen(true);
   }, [fieldSizeOpenSignal]);
+
+  useEffect(() => {
+    if (openLogSignal <= 0 || openLogSignal === lastOpenLogSignalRef.current) return;
+    lastOpenLogSignalRef.current = openLogSignal;
+    openLibraryAiLog(activeTab === SETTING_TAB || activeTab === ROLE_TAB || activeTab === BRAINSTORM_TAB ? 'library' : 'outline');
+  }, [activeTab, openLogSignal]);
 
   useEffect(() => {
     if (openPlotPointSignal <= 0 || activeTab !== DETAIL_OUTLINE_TAB || plotPointStandalone) return;
@@ -1882,25 +1912,22 @@ export function WorkbenchLibraryPanel({
     setFieldSizeSpecs(defaults);
   };
   const getFieldSizeStyle = (key: WorkbenchFieldSizeKey) => getWorkbenchFieldSizeStyle(fieldSizeSpecs[key] ?? WORKBENCH_FIELD_SIZE_DEFAULTS[key]);
+  const getEmbeddedConfigSelectStyle = (style: CSSProperties): CSSProperties => (
+    showInlineFieldSizeButton
+      ? style
+      : {
+        ...style,
+        width: '100%',
+        maxWidth: '100%',
+        '--xy-field-width': '100%',
+      } as CSSProperties
+  );
   const getConfigFieldSizeKey = (tab: string, kind: 'model' | 'prompt'): WorkbenchFieldSizeKey => {
     if (tab === ROLE_TAB) return kind === 'model' ? 'roleModelSelect' : 'rolePromptSelect';
     if (tab === BRAINSTORM_TAB) return kind === 'model' ? 'brainstormModelSelect' : 'brainstormPromptSelect';
     return kind === 'model' ? 'settingModelSelect' : 'settingPromptSelect';
   };
   const getConfigFieldSizeStyle = (tab: string, kind: 'model' | 'prompt'): CSSProperties => getFieldSizeStyle(getConfigFieldSizeKey(tab, kind));
-  const getAlignedFieldSizeStyle = (modelKey: WorkbenchFieldSizeKey, promptKey: WorkbenchFieldSizeKey): CSSProperties => {
-    const promptSpec = fieldSizeSpecs[promptKey] ?? WORKBENCH_FIELD_SIZE_DEFAULTS[promptKey];
-    const modelSpec = fieldSizeSpecs[modelKey] ?? WORKBENCH_FIELD_SIZE_DEFAULTS[modelKey];
-    return {
-      ...getWorkbenchFieldSizeStyle(promptSpec),
-      width: modelSpec.width,
-      '--xy-field-width': `${modelSpec.width}px`,
-    } as CSSProperties;
-  };
-  const getAlignedPromptConfigFieldSizeStyle = (tab: string): CSSProperties => (
-    getAlignedFieldSizeStyle(getConfigFieldSizeKey(tab, 'model'), getConfigFieldSizeKey(tab, 'prompt'))
-  );
-
   const hasBrainstormQuestionContent = (draft: BrainstormQuestionDraft) => (
     BRAINSTORM_QUESTION_FIELDS.some((field) => draft[field.key].trim())
   );
@@ -2292,13 +2319,14 @@ export function WorkbenchLibraryPanel({
   }, [defaultActiveTab, normalizedTabs, storageKey]);
 
   useEffect(() => {
-    if (!categoryMenu && !entryMenu && !clearSettingsUnlockMenu) return;
+    if (!categoryMenu && !entryMenu && !clearSettingsUnlockMenu && !promptDisableMenu) return;
     const closeMenu = (event: globalThis.MouseEvent | PointerEvent) => {
       const target = event.target;
       if (target instanceof Element && target.closest('[data-library-context-menu="true"]')) return;
       setCategoryMenu(null);
       setEntryMenu(null);
       setClearSettingsUnlockMenu(null);
+      setPromptDisableMenu(null);
     };
     window.addEventListener('pointerdown', closeMenu, true);
     window.addEventListener('contextmenu', closeMenu, true);
@@ -2306,7 +2334,13 @@ export function WorkbenchLibraryPanel({
       window.removeEventListener('pointerdown', closeMenu, true);
       window.removeEventListener('contextmenu', closeMenu, true);
     };
-  }, [categoryMenu, entryMenu, clearSettingsUnlockMenu]);
+  }, [categoryMenu, entryMenu, clearSettingsUnlockMenu, promptDisableMenu]);
+
+  useEffect(() => () => {
+    if (clearSettingsTooltipTimerRef.current !== null) {
+      window.clearTimeout(clearSettingsTooltipTimerRef.current);
+    }
+  }, []);
 
   useEffect(() => {
     if (!outlineStorageKey) {
@@ -2763,10 +2797,12 @@ export function WorkbenchLibraryPanel({
     if (linkedBrainstormText) {
       parts.push(linkedBrainstormText);
     }
-    parts.push([
-      '【用户要求】',
-      userText.trim() || '（无额外要求）',
-    ].join('\n'));
+    if (userText.trim()) {
+      parts.push([
+        '【用户要求】',
+        userText.trim(),
+      ].join('\n'));
+    }
     return parts.join('\n\n');
   };
 
@@ -2801,11 +2837,11 @@ export function WorkbenchLibraryPanel({
         modelName: selectedModel?.name ?? '未配置模型',
         promptName: isPromptDisabledForRequest ? '已禁用提示词' : selectedPrompt?.name ?? '默认提示词',
         hasLinkedBrainstorm,
-        linkedBrainstormTitle: linkedBrainstorm.title || '未关联脑洞',
-        visibleUserText: activeTab === BRAINSTORM_TAB ? text : text || '（无额外要求）',
+        linkedBrainstormTitle: hasLinkedBrainstorm ? linkedBrainstorm.title : '',
+        visibleUserText: text,
         systemPrompt: activeTab === SETTING_TAB ? baseModelPrompt : modelPrompt,
-        userContent: activeTab === SETTING_TAB ? (text || '无额外要求') : requestText,
-        contextTitle: hasLinkedBrainstorm ? linkedBrainstorm.title : '未关联',
+        userContent: activeTab === SETTING_TAB ? text : requestText,
+        contextTitle: hasLinkedBrainstorm ? linkedBrainstorm.title : '',
         contextText: hasLinkedBrainstorm ? linkedBrainstorm.text : '',
         contextWordCount: countTextWords(hasLinkedBrainstorm ? linkedBrainstorm.text : ''),
       } satisfies LibraryAiRequestLog,
@@ -2829,7 +2865,7 @@ export function WorkbenchLibraryPanel({
     setIsLibraryAiLoading(true);
     if (overrideText === undefined) setAiInput('');
     if (activeTab === BRAINSTORM_TAB) setAiResult('');
-    const visibleUserText = text || '（无额外要求）';
+    const visibleUserText = text;
     const pendingOutput = `${aiOutput.trim() ? `${aiOutput.trim()}\n\n` : ''}[[USER]]\n${visibleUserText}\n\n[[AI]]\n正在生成...`;
     const replacePendingOutput = (content: string) => (
       pendingOutput.replace(/\[\[AI\]\]\n正在生成\.\.\.$/, `[[AI]]\n${content}`)
@@ -3377,12 +3413,47 @@ export function WorkbenchLibraryPanel({
       </button>
     );
   };
-
-  const renderPanelWidthBadge = (width: number) => (
-    <span className="shrink-0 text-[11px] font-black leading-none text-emerald-600">
-      {Math.round(width)}PX
-    </span>
-  );
+  const hideClearSettingsTooltip = () => {
+    if (clearSettingsTooltipTimerRef.current !== null) {
+      window.clearTimeout(clearSettingsTooltipTimerRef.current);
+      clearSettingsTooltipTimerRef.current = null;
+    }
+    setClearSettingsTooltip(null);
+  };
+  const scheduleClearSettingsTooltip = (event: MouseEvent<HTMLButtonElement>) => {
+    if (clearSettingsTooltipTimerRef.current !== null) {
+      window.clearTimeout(clearSettingsTooltipTimerRef.current);
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    const tooltipText = isClearSettingsUnlocked ? '已解锁，左键清空' : '已锁定，右键可以解锁';
+    clearSettingsTooltipTimerRef.current = window.setTimeout(() => {
+      setClearSettingsTooltip({
+        text: tooltipText,
+        x: rect.left + rect.width / 2,
+        y: rect.top - 8,
+      });
+      clearSettingsTooltipTimerRef.current = null;
+    }, 120);
+  };
+  const openLibraryAiLog = (scope: 'library' | 'outline') => {
+    setLibraryAiLogScope(scope);
+    setIsLibraryAiLogOpen(true);
+  };
+  const renderLibraryAiLogButton = (
+    scope: 'library' | 'outline',
+    className = 'h-9 shrink-0 rounded-xl border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 shadow-sm hover:border-brand hover:text-brand',
+  ) => {
+    if (!showInlineFieldSizeButton) return null;
+    return (
+      <button
+        type="button"
+        onClick={() => openLibraryAiLog(scope)}
+        className={className}
+      >
+        日志
+      </button>
+    );
+  };
 
   const topTabs = isSettingLibraryPanel ? null : (
     <div data-no-modal-drag="true" className="flex shrink-0 cursor-default items-center gap-2">
@@ -3577,12 +3648,43 @@ export function WorkbenchLibraryPanel({
       <button
         type="button"
         onClick={() => {
-          setIsClearSettingsUnlocked(true);
+          setIsClearSettingsUnlocked(clearSettingsUnlockMenu.action === 'unlock');
           setClearSettingsUnlockMenu(null);
         }}
         className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-gray-700 hover:bg-gray-50"
       >
-        解锁
+        {clearSettingsUnlockMenu.action === 'unlock' ? '解锁' : '锁定'}
+      </button>
+    </div>,
+    document.body,
+  ) : null;
+  const clearSettingsTooltipLayer = clearSettingsTooltip ? createPortal(
+    <div
+      role="tooltip"
+      className="pointer-events-none fixed z-[10001] -translate-x-1/2 -translate-y-full rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-bold text-white shadow-lg"
+      style={{ left: clearSettingsTooltip.x, top: clearSettingsTooltip.y }}
+    >
+      {clearSettingsTooltip.text}
+    </div>,
+    document.body,
+  ) : null;
+  const promptDisableContextMenu = promptDisableMenu ? createPortal(
+    <div
+      data-library-context-menu="true"
+      onClick={(event) => event.stopPropagation()}
+      onContextMenu={(event) => event.preventDefault()}
+      className="fixed z-[10000] min-w-[96px] rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
+      style={{ left: promptDisableMenu.x, top: promptDisableMenu.y }}
+    >
+      <button
+        type="button"
+        onClick={() => {
+          updateTabConfig(promptDisableMenu.tab, { promptDisabled: !promptDisableMenu.disabled });
+          setPromptDisableMenu(null);
+        }}
+        className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-gray-700 hover:bg-gray-50"
+      >
+        {promptDisableMenu.disabled ? '启用' : '禁用'}
       </button>
     </div>,
     document.body,
@@ -3643,7 +3745,7 @@ export function WorkbenchLibraryPanel({
                     <div className="truncate text-sm font-bold">{entry.title}</div>
                     <div className="mt-1 flex items-center justify-between gap-2 text-xs text-gray-400">
                       <span className="truncate">{parsed.type || BRAINSTORM_TYPE}</span>
-                      <span className="shrink-0">{countTextWords(contentText)} 字</span>
+                      <WordCountText value={countTextWords(contentText)} className="shrink-0" />
                     </div>
                   </button>
                 );
@@ -3759,7 +3861,7 @@ export function WorkbenchLibraryPanel({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <h4 className="truncate text-base font-bold text-gray-900">{entry.title}</h4>
-                        <div className="mt-1 text-xs font-bold text-[#08AACE]">{entryWordCount}字</div>
+                        <div className="mt-1 text-xs font-bold"><WordCountText value={entryWordCount} compact /></div>
                       </div>
                       <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-bold text-gray-400">
                         {parsed.type || BRAINSTORM_TYPE}
@@ -3850,7 +3952,7 @@ export function WorkbenchLibraryPanel({
                     </div>
                   </div>
                   <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-                    <span>说明 {(prompt.description || '').length} 字</span>
+                    <span>?? <WordCountText value={(prompt.description || '').length} /></span>
                     <span>{prompt.updatedAt}</span>
                   </div>
                   <div className="mt-3 grid grid-cols-3 gap-1">
@@ -4158,7 +4260,6 @@ export function WorkbenchLibraryPanel({
           }}
         >
           <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-4 pb-3 pt-2">
-            <div className="mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(settingLibraryLeftWidth)}</div>
             <div className="flex shrink-0 gap-2">
               <div
                 className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact xy-floating-outline-role-compact xy-floating-custom-field-size min-w-0 ${roleSearch.trim() ? 'xy-has-value' : ''}`}
@@ -4380,7 +4481,7 @@ export function WorkbenchLibraryPanel({
                           style={{ fontSize: roleTextFontSize }}
                         />
                         <label>角色背景</label>
-                        <span className="xy-floating-count">{selectedRole.background.length} 字</span>
+                        <span className="xy-floating-count"><WordCountText value={selectedRole.background.length} /></span>
                       </div>
                       <div className="xy-floating-edge-tool">
                         <FontSizeStepper
@@ -4403,7 +4504,7 @@ export function WorkbenchLibraryPanel({
                           style={{ fontSize: roleTextFontSize }}
                         />
                         <label>角色状态</label>
-                        <span className="xy-floating-count">{selectedRole.status.length} 字</span>
+                        <span className="xy-floating-count"><WordCountText value={selectedRole.status.length} /></span>
                       </div>
                       <div className="xy-floating-edge-tool">
                         <FontSizeStepper
@@ -4448,100 +4549,70 @@ export function WorkbenchLibraryPanel({
             <div className="flex items-center justify-between gap-3">
               <h3 className="shrink-0 text-base font-bold text-gray-900">角色生成</h3>
               <div className="flex shrink-0 items-center gap-2">
-                {renderPanelWidthBadge(settingLibraryRightWidth)}
                 {renderFieldSizeButton()}
+                {renderLibraryAiLogButton('library')}
               </div>
             </div>
             <div className="mt-4 space-y-3">
-              <div
-                className={`grid ${PROMPT_SELECT_COLUMNS} max-w-full items-start gap-2 text-sm text-gray-500`}
-                style={getConfigFieldSizeStyle(ROLE_TAB, 'model')}
-              >
-                <CapsuleSelect
-                  floatingLabel="模型"
-                  value={activeTabConfig.modelId ?? ''}
-                  onChange={(value) => updateActiveTabConfig({ modelId: value })}
-                  options={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
-                  className="xy-capsule-custom-field-size xy-capsule-fill min-w-0"
-                  buttonClassName="h-11 rounded-xl px-3 text-sm"
-                  actionLabel="管理"
-                  onActionClick={() => setManagementModal({ type: 'models' })}
-                />
-              </div>
-              <div
-                className={`grid ${PROMPT_SELECT_COLUMNS} max-w-full items-start gap-2 text-sm text-gray-500`}
-                style={getConfigFieldSizeStyle(ROLE_TAB, 'prompt')}
-              >
-                <CapsuleSelect
-                  floatingLabel="提示词"
-                  value={activeTabConfig.promptId ?? ''}
-                  onChange={(value) => updateActiveTabConfig({ promptId: value })}
-                  disabled={Boolean(activeTabConfig.promptDisabled)}
-                  disabledLabel="提示词已禁用"
-                  className="xy-capsule-custom-field-size xy-capsule-fill min-w-0"
-                  buttonClassName="h-11 rounded-xl px-3 text-sm"
-                  options={rolePromptOptions.length === 0 ? [{ value: '', label: '暂无设定提示词', disabled: true }] : rolePromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
-                  actionLabel="管理"
-                  onActionClick={() => setManagementModal({ type: 'prompts', category: PROMPT_SETTING_CATEGORY })}
-                  disableToggleActive={Boolean(activeTabConfig.promptDisabled)}
-                  onDisableToggle={() => updateActiveTabConfig({ promptDisabled: !activeTabConfig.promptDisabled })}
-                />
-              </div>
-            </div>
-            <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count mt-5 min-h-0 flex-1 ${aiOutput.trim() ? 'xy-has-value' : ''}`}>
-              <textarea
-                value={aiOutput}
-                onChange={(event) => setAiOutput(event.target.value)}
-                placeholder="AI输出框"
-                className="editor-scrollbar"
-              />
-              <label>AI对话框</label>
-              <span className="xy-floating-count">{countTextWords(aiOutput)} 字</span>
-            </div>
-            <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-4">
-              <div className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${aiInput.trim() ? 'xy-has-value' : ''}`}>
-              <textarea
-                ref={libraryAiInputRef}
-                rows={1}
-                value={aiInput}
-                onChange={(event) => {
-                  setAiInput(event.target.value);
-                  resizeFloatingAiTextarea(event.currentTarget);
+              <CombinedAiConfigSelect
+                style={getEmbeddedConfigSelectStyle(getConfigFieldSizeStyle(ROLE_TAB, 'model'))}
+                modelValue={activeTabConfig.modelId ?? ''}
+                promptValue={activeTabConfig.promptId ?? ''}
+                modelOptions={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
+                promptOptions={rolePromptOptions.length === 0 ? [{ value: '', label: '暂无设定提示词', disabled: true }] : rolePromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                onModelChange={(value) => updateActiveTabConfig({ modelId: value })}
+                onPromptChange={(value) => updateActiveTabConfig({ promptId: value })}
+                onModelManage={() => setManagementModal({ type: 'models' })}
+                onPromptManage={() => setManagementModal({ type: 'prompts', category: PROMPT_SETTING_CATEGORY })}
+                promptDisabled={Boolean(activeTabConfig.promptDisabled)}
+                onPromptContextMenu={(event) => {
+                  event.preventDefault();
+                  setPromptDisableMenu({
+                    tab: ROLE_TAB,
+                    disabled: Boolean(activeTabConfig.promptDisabled),
+                    x: event.clientX,
+                    y: event.clientY,
+                  });
                 }}
-                onKeyDown={handleLibraryAiInputKeyDown}
-                placeholder="输入对话指令..."
-                className="scrollbar-hidden"
               />
-              <label>请输入要求</label>
-              <div className="xy-ai-inline-actions">
-                <button
-                  type="button"
-                  onClick={() => void sendLibraryAiMessage()}
-                  disabled={isLibraryAiLoading || !canSendLibraryAiMessage}
-                  className="xy-ai-inline-send"
-                >
-                  <span className="xy-ai-inline-send-icon"><Send className="h-6 w-6 stroke-[1.9]" /></span>
-                </button>
-                <button
-                  type="button"
-                  onClick={stopLibraryAiMessage}
-                  disabled={!isLibraryAiLoading}
-                  className="xy-ai-inline-stop"
-                >
-                  <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
-                </button>
-              </div>
-              </div>
-              <div className="mt-3 grid grid-cols-1 gap-2">
-                <button
-                  onClick={clearLibraryAiDialog}
-                  disabled={!hasLibraryAiContent && !isLibraryAiLoading}
-                  className="rounded-xl border border-gray-200 px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
-                >
-                  清空
-                </button>
-              </div>
             </div>
+            <section className="relative mt-5 flex min-h-0 flex-1 flex-col rounded-xl border border-gray-200 bg-white px-3 pb-3 pt-5">
+              <div className="absolute -top-2 left-4 bg-white px-1 text-sm font-black text-gray-900">AI对话框</div>
+              <button
+                type="button"
+                onClick={clearLibraryAiDialog}
+                disabled={!hasLibraryAiContent && !isLibraryAiLoading}
+                className="absolute -top-2 right-4 bg-white px-1 text-xs font-black text-red-500 hover:text-red-600 disabled:text-red-300"
+              >
+                清空
+              </button>
+              <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${aiOutput.trim() ? 'xy-has-value' : ''}`}>
+                <textarea
+                  value={aiOutput}
+                  onChange={(event) => setAiOutput(event.target.value)}
+                  placeholder="AI输出框"
+                  className="editor-scrollbar"
+                />
+                <label aria-hidden="true" className="opacity-0">AI对话框</label>
+                <span className="xy-floating-count"><WordCountText value={countTextWords(aiOutput)} /></span>
+              </div>
+              <div className="mt-3">
+                <AiInlineInput
+                  ref={libraryAiInputRef}
+                  value={aiInput}
+                  onChange={(event) => {
+                    setAiInput(event.target.value);
+                    resizeFloatingAiTextarea(event.currentTarget);
+                  }}
+                  onKeyDown={handleLibraryAiInputKeyDown}
+                  onSend={() => void sendLibraryAiMessage()}
+                  onStop={stopLibraryAiMessage}
+                  sendDisabled={isLibraryAiLoading || !canSendLibraryAiMessage}
+                  stopDisabled={!isLibraryAiLoading}
+                  placeholder="输入对话指令..."
+                />
+              </div>
+            </section>
           </aside>
           </>
           )}
@@ -4585,11 +4656,10 @@ export function WorkbenchLibraryPanel({
       ? activeTabConfig.promptId
       : activeTabPrompts[0]?.id ?? '';
     const showPromptDisableButton = activeTab !== SETTING_TAB;
-    const rightSelectColumns = MODEL_SELECT_COLUMNS;
     const rightSelectFieldTab = activeIsBrainstorm ? BRAINSTORM_TAB : (activeTab === ROLE_TAB ? ROLE_TAB : SETTING_TAB);
-    const showInlineLibraryAiLogButton = activeTab === SETTING_TAB || activeIsBrainstorm;
+    const showInlineLibraryAiLogButton = showInlineFieldSizeButton && (activeTab === SETTING_TAB || activeIsBrainstorm);
     const showHeaderLibraryAiLogButton = false;
-    const showPanelHeader = !activeIsBrainstorm && (activeTab !== SETTING_TAB || showHeaderLibraryAiLogButton);
+    const showPanelHeader = showInlineFieldSizeButton && (showInlineLibraryAiLogButton || (!activeIsBrainstorm && (activeTab !== SETTING_TAB || showHeaderLibraryAiLogButton)));
     const rawBrainstormOutputValue = activeIsBrainstorm && isLibraryAiLoading && !aiResult
       ? `正在生成${'.'.repeat(loadingDotCount)}`
       : aiResult || latestUsefulAiOutput;
@@ -4602,7 +4672,7 @@ export function WorkbenchLibraryPanel({
       ? buildLibraryAiRequestPayload(previewAiRequestText, activeIsBrainstorm ? previewAiRequestText : undefined).log
       : null;
     const visibleAiRequestLog = previewAiRequestLog ?? lastLibraryAiRequestLog;
-    const libraryAiLogModal = isLibraryAiLogOpen && visibleAiRequestLog ? (
+    const libraryAiLogModal = isLibraryAiLogOpen && libraryAiLogScope === 'library' && visibleAiRequestLog ? (
       <LibraryAiLogShell
         id={`workbench_library_ai_log_${activeTab}`}
         subtitle="当前预览：点击发送后会按这里的内容发给 AI"
@@ -4651,6 +4721,8 @@ export function WorkbenchLibraryPanel({
         {libraryAiLogModal}
         {clearSettingsConfirmDialog}
         {clearSettingsUnlockContextMenu}
+        {clearSettingsTooltipLayer}
+        {promptDisableContextMenu}
         {brainstormReaderModal}
         {brainstormRecycleModal}
         {clearBrainstormRecycleConfirmDialog}
@@ -4669,9 +4741,6 @@ export function WorkbenchLibraryPanel({
           }}
         >
           <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
-          <div className="mb-2 flex shrink-0 justify-end">
-            {renderPanelWidthBadge(activeIsBrainstorm ? brainstormLayoutLeftWidth : settingLibraryLeftWidth)}
-          </div>
           {!activeIsBrainstorm && (
             <div className={`grid h-10 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm ${
               activeTab === SETTING_TAB ? 'grid-cols-4' : 'grid-cols-3'
@@ -4699,15 +4768,22 @@ export function WorkbenchLibraryPanel({
                   aria-label="清空设定"
                   aria-disabled={!isClearSettingsUnlocked || settingEntries.length === 0}
                   title={isClearSettingsUnlocked ? '已解锁，左键清空' : '已锁定，右键可以解锁'}
+                  onMouseEnter={scheduleClearSettingsTooltip}
+                  onMouseLeave={hideClearSettingsTooltip}
+                  onBlur={hideClearSettingsTooltip}
                   onClick={() => {
                     if (!isClearSettingsUnlocked || settingEntries.length === 0) return;
                     setIsClearSettingsConfirmOpen(true);
                   }}
                   onContextMenu={(event) => {
                     event.preventDefault();
+                    hideClearSettingsTooltip();
                     if (settingEntries.length === 0) return;
-                    if (isClearSettingsUnlocked) return;
-                    setClearSettingsUnlockMenu({ x: event.clientX, y: event.clientY });
+                    setClearSettingsUnlockMenu({
+                      action: isClearSettingsUnlocked ? 'lock' : 'unlock',
+                      x: event.clientX,
+                      y: event.clientY,
+                    });
                   }}
                   className={`min-w-0 border-l border-gray-200 px-3 text-sm font-bold text-white transition-colors whitespace-nowrap ${
                     isClearSettingsUnlocked
@@ -4784,7 +4860,7 @@ export function WorkbenchLibraryPanel({
                               <span className="truncate text-sm font-bold">{entry.title}</span>
                               <span className="flex shrink-0 items-center gap-2">
                                 <span className="rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-bold text-[#08AACE]">
-                                  {entryWordCount}字
+                                  <WordCountText value={entryWordCount} compact />
                                 </span>
                               </span>
                             </div>
@@ -4838,7 +4914,7 @@ export function WorkbenchLibraryPanel({
                     style={{ fontSize: brainstormPreviewFontSize }}
                   />
                   <label>脑洞预览</label>
-                  <span className="xy-floating-count">{currentBrainstormPreviewWordCount} 字</span>
+                  <span className="xy-floating-count"><WordCountText value={currentBrainstormPreviewWordCount} /></span>
                 </div>
                 <div className="xy-floating-edge-tool">
                   <FontSizeStepper
@@ -4882,7 +4958,7 @@ export function WorkbenchLibraryPanel({
                     style={{ fontSize: settingPreviewFontSize }}
                   />
                   <label>设定预览</label>
-                  <span className="xy-floating-count">{countTextWords(currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content)} 字</span>
+                  <span className="xy-floating-count"><WordCountText value={countTextWords(currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content)} /></span>
                 </div>
                 <div className="xy-floating-edge-tool">
                   <FontSizeStepper
@@ -4931,7 +5007,7 @@ export function WorkbenchLibraryPanel({
                     style={{ fontSize: settingPreviewFontSize }}
                   />
                   <label>设定预览</label>
-                  <span className="xy-floating-count">0 字</span>
+                  <span className="xy-floating-count"><WordCountText value={0} /></span>
                 </div>
                 <div className="xy-floating-edge-tool">
                   <FontSizeStepper
@@ -4962,7 +5038,7 @@ export function WorkbenchLibraryPanel({
                       style={{ fontSize: brainstormOutputFontSize }}
                     />
                     <label aria-hidden="true" className="opacity-0">脑洞输出框</label>
-                    <span className="xy-floating-count">{brainstormOutputWordCount} 字</span>
+                    <span className="xy-floating-count"><WordCountText value={brainstormOutputWordCount} /></span>
                   </div>
                   {currentSelectedEntry && (
                     <div className="absolute left-[32px] top-0 z-20 max-w-[calc(100%-160px)] -translate-y-1/2 bg-white px-1">
@@ -5007,39 +5083,20 @@ export function WorkbenchLibraryPanel({
                   </div>
                 </div>
                 <div className="shrink-0 rounded-xl border border-gray-200 bg-white p-3">
-                  <div className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${aiInput.trim() ? 'xy-has-value' : ''}`}>
-                  <textarea
+                  <AiInlineInput
                     ref={libraryAiInputRef}
-                    rows={1}
                     value={aiInput}
                     onChange={(event) => {
                       setAiInput(event.target.value);
                       resizeFloatingAiTextarea(event.currentTarget);
                     }}
                     onKeyDown={handleLibraryAiInputKeyDown}
+                    onSend={() => void sendLibraryAiMessage()}
+                    onStop={stopLibraryAiMessage}
+                    sendDisabled={isLibraryAiLoading || !canSendLibraryAiMessage}
+                    stopDisabled={!isLibraryAiLoading}
                     placeholder="输入对话指令..."
-                    className="scrollbar-hidden"
                   />
-                  <label>请输入要求</label>
-                  <div className="xy-ai-inline-actions">
-                    <button
-                      type="button"
-                      onClick={() => void sendLibraryAiMessage()}
-                      disabled={isLibraryAiLoading || !canSendLibraryAiMessage}
-                      className="xy-ai-inline-send"
-                    >
-                      <span className="xy-ai-inline-send-icon"><Send className="h-6 w-6 stroke-[1.9]" /></span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={stopLibraryAiMessage}
-                      disabled={!isLibraryAiLoading}
-                      className="xy-ai-inline-stop"
-                    >
-                      <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
-                    </button>
-                  </div>
-                  </div>
                   <div className="mt-3 flex items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2">
                       <div className="xy-capsule-group">
@@ -5088,10 +5145,7 @@ export function WorkbenchLibraryPanel({
           <>
           {rightResizeHandle}
           <aside className="min-w-0 flex min-h-0 flex-col bg-gray-50">
-          <div className="border-b border-gray-100 p-4">
-            <div className="mb-2 flex justify-end">
-              {renderPanelWidthBadge(activeIsBrainstorm ? brainstormLayoutRightWidth : settingLibraryRightWidth)}
-            </div>
+          <div className={`border-b border-gray-100 ${showPanelHeader ? 'p-4' : 'px-4 pb-3 pt-2'}`}>
             {showPanelHeader && (
             <div className="flex items-center justify-between gap-3">
               {activeTab !== SETTING_TAB ? (
@@ -5100,81 +5154,42 @@ export function WorkbenchLibraryPanel({
                 </div>
               ) : <div />}
               <div className="flex shrink-0 items-center gap-2">
-                {showHeaderLibraryAiLogButton && (
-                  <button
-                    type="button"
-                    onClick={() => setIsLibraryAiLogOpen(true)}
-                    className="h-9 shrink-0 rounded-xl border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 shadow-sm hover:border-brand hover:text-brand"
-                  >
-                    输出日志
-                  </button>
-                )}
                 {renderFieldSizeButton()}
+                {showHeaderLibraryAiLogButton && renderLibraryAiLogButton('library')}
+                {showInlineLibraryAiLogButton && renderLibraryAiLogButton('library')}
               </div>
             </div>
             )}
             <div className={`${showPanelHeader ? 'mt-4' : ''} space-y-3`}>
-              <div className="flex max-w-full items-start gap-2">
-              <div className="min-w-0 max-w-full" style={getConfigFieldSizeStyle(rightSelectFieldTab, 'model')}>
-                <div className={`grid ${showPromptDisableButton ? PROMPT_SELECT_COLUMNS : rightSelectColumns} items-start gap-2 text-sm text-gray-500`}>
-                  <CapsuleSelect
-                    floatingLabel="模型"
-                    value={activeTabConfig.modelId ?? ''}
-                    onChange={(value) => updateActiveTabConfig({ modelId: value })}
-                    options={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
-                    className="xy-capsule-custom-field-size xy-capsule-fill min-w-0"
-                    buttonClassName="h-11 rounded-xl px-3 text-sm"
-                    actionLabel="管理"
-                    onActionClick={() => setManagementModal({ type: 'models' })}
-                  />
-                </div>
-              </div>
-              {showInlineLibraryAiLogButton && (
-                <button
-                  type="button"
-                  onClick={() => setIsLibraryAiLogOpen(true)}
-                  className="mt-2 h-12 shrink-0 rounded-xl border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 shadow-sm hover:border-brand hover:text-brand"
-                >
-                  输出日志
-                </button>
-              )}
-              </div>
-              <div className="flex max-w-full items-start gap-2">
-                <div className="min-w-0 max-w-full" style={getAlignedPromptConfigFieldSizeStyle(rightSelectFieldTab)}>
-                  <div className={`grid ${showPromptDisableButton ? PROMPT_SELECT_COLUMNS : rightSelectColumns} items-start gap-2 text-sm text-gray-500`}>
-                    <CapsuleSelect
-                      floatingLabel="提示词"
-                      value={activePromptId ?? ''}
-                      onChange={(value) => updateActiveTabConfig({ promptId: value })}
-                      disabled={showPromptDisableButton && Boolean(activeTabConfig.promptDisabled)}
-                      disabledLabel={showPromptDisableButton ? '提示词已禁用' : undefined}
-                      className="xy-capsule-custom-field-size xy-capsule-fill min-w-0"
-                      buttonClassName="h-11 rounded-xl px-3 text-sm"
-                      options={activeTabPrompts.length === 0 ? [{ value: '', label: `暂无${promptCategory}提示词`, disabled: true }] : activeTabPrompts.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
-                      actionLabel="管理"
-                      onActionClick={() => setManagementModal({
-                        type: 'prompts',
-                        category: activeIsBrainstorm
-                          ? BRAINSTORM_TAB
-                          : activeTab === SETTING_TAB
-                            ? PROMPT_SETTING_CATEGORY
-                          : activeTab,
-                      })}
-                      disableToggleActive={showPromptDisableButton && Boolean(activeTabConfig.promptDisabled)}
-                      onDisableToggle={showPromptDisableButton ? () => updateActiveTabConfig({ promptDisabled: !activeTabConfig.promptDisabled }) : undefined}
-                    />
-                  </div>
-                </div>
-                {showInlineLibraryAiLogButton && (
-                  <button
-                    type="button"
-                    aria-hidden="true"
-                    tabIndex={-1}
-                    className="invisible mt-2 h-12 shrink-0 rounded-xl border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 shadow-sm"
-                  >
-                    输出日志
-                  </button>
-                )}
+              <div className="flex max-w-full items-start justify-end gap-2">
+                <CombinedAiConfigSelect
+                  style={getEmbeddedConfigSelectStyle(getConfigFieldSizeStyle(rightSelectFieldTab, 'model'))}
+                  modelValue={activeTabConfig.modelId ?? ''}
+                  promptValue={activePromptId ?? ''}
+                  modelOptions={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
+                  promptOptions={activeTabPrompts.length === 0 ? [{ value: '', label: `暂无${promptCategory}提示词`, disabled: true }] : activeTabPrompts.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                  onModelChange={(value) => updateActiveTabConfig({ modelId: value })}
+                  onPromptChange={(value) => updateActiveTabConfig({ promptId: value })}
+                  onModelManage={() => setManagementModal({ type: 'models' })}
+                  onPromptManage={() => setManagementModal({
+                    type: 'prompts',
+                    category: activeIsBrainstorm
+                      ? BRAINSTORM_TAB
+                      : activeTab === SETTING_TAB
+                        ? PROMPT_SETTING_CATEGORY
+                      : activeTab,
+                  })}
+                  promptDisabled={showPromptDisableButton && Boolean(activeTabConfig.promptDisabled)}
+                  onPromptContextMenu={showPromptDisableButton ? (event) => {
+                    event.preventDefault();
+                    setPromptDisableMenu({
+                      tab: activeTab,
+                      disabled: Boolean(activeTabConfig.promptDisabled),
+                      x: event.clientX,
+                      y: event.clientY,
+                    });
+                  } : undefined}
+                />
               </div>
             </div>
           </div>
@@ -5276,8 +5291,18 @@ export function WorkbenchLibraryPanel({
               </div>
             </div>
           ) : (
-            <div className="min-h-0 flex-1 p-4">
-              <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill h-full min-h-0 xy-has-value`}>
+            <div className="min-h-0 flex-1 p-4 pb-0">
+              <section className="relative flex h-full min-h-0 flex-col rounded-xl border border-gray-200 bg-white px-3 pb-3 pt-5">
+              <div className="absolute -top-2 left-4 bg-white px-1 text-sm font-black text-gray-900">AI对话框</div>
+              <button
+                type="button"
+                onClick={clearLibraryAiDialog}
+                disabled={!hasLibraryAiContent && !isLibraryAiLoading}
+                className="absolute -top-2 right-4 bg-white px-1 text-xs font-black text-red-500 hover:text-red-600 disabled:text-red-300"
+              >
+                清空
+              </button>
+              <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill min-h-0 flex-1 xy-has-value`}>
                 <div
                   ref={libraryAiOutputRef}
                   onScroll={handleLibraryAiOutputScroll}
@@ -5303,71 +5328,32 @@ export function WorkbenchLibraryPanel({
                     </div>
                   )}
                 </div>
-                <label>AI对话框</label>
-                <button
-                  type="button"
-                  onClick={clearLibraryAiDialog}
-                  disabled={!hasLibraryAiContent && !isLibraryAiLoading}
-                  className="xy-floating-edge-tool text-sm font-bold text-red-500 hover:text-red-600 disabled:text-red-300"
-                >
-                  清空
-                </button>
+                <label aria-hidden="true" className="opacity-0">AI对话框</label>
               </div>
-            </div>
-          )}
-          {!activeIsBrainstorm && (
-          <div className="border-t border-gray-100 p-4">
-            <div className="rounded-xl border border-gray-200 bg-white p-4">
+              {!activeIsBrainstorm && (
+              <>
               {activeTab === SETTING_TAB && (
-                <div className="mb-3 flex items-center gap-2">
-                  {hasLinkedBrainstorm ? (
-                    <div className="flex h-10 w-44 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedBrainstormReaderId(activeTabConfig.loadedBrainstormId ?? null);
-                          setIsBrainstormReaderOpen(true);
-                        }}
-                        className="min-w-0 flex-1 whitespace-nowrap px-3 text-sm font-bold text-gray-700 hover:bg-gray-100"
-                      >
-                        已关联脑洞
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          updateActiveTabConfig({
-                            loadedBrainstormId: null,
-                            loadedBrainstormTitle: '',
-                            loadedBrainstormText: '',
-                          });
-                          setSelectedBrainstormReaderId(null);
-                        }}
-                        className="flex h-full w-10 shrink-0 items-center justify-center border-l border-red-300 bg-red-500 text-white transition-colors hover:bg-red-600"
-                        title="取消关联"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedBrainstormReaderId(activeTabConfig.loadedBrainstormId ?? null);
-                        setIsBrainstormReaderOpen(true);
-                      }}
-                      className="h-12 min-w-[118px] whitespace-nowrap rounded-xl border border-[#08AACE] bg-white px-4 text-sm font-black text-[#08AACE] hover:bg-[#EAF9FD]"
-                    >
-                      关联脑洞
-                    </button>
-                  )}
-                  {hasLinkedBrainstorm && (
-                    <div className="text-xs font-black leading-5 text-[#08AACE]">
-                      已关联：{loadedBrainstormWordCount}字
-                    </div>
-                  )}
-                </div>
+                <LinkedSourceControl
+                  linked={hasLinkedBrainstorm}
+                  label="关联脑洞"
+                  linkedLabel="已关联脑洞"
+                  onOpen={() => {
+                    setSelectedBrainstormReaderId(activeTabConfig.loadedBrainstormId ?? null);
+                    setIsBrainstormReaderOpen(true);
+                  }}
+                  onClear={() => {
+                    updateActiveTabConfig({
+                      loadedBrainstormId: null,
+                      loadedBrainstormTitle: '',
+                      loadedBrainstormText: '',
+                    });
+                    setSelectedBrainstormReaderId(null);
+                  }}
+                  meta={<>已关联：<WordCountText value={loadedBrainstormWordCount} compact /></>}
+                  className="mt-3 flex items-center gap-2"
+                />
               )}
-              <div className="mb-3 flex items-center gap-2">
+              <div className="mt-3 flex items-center gap-2">
                 {activeTab === SETTING_TAB ? (
                   <div className="flex h-10 w-44 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white">
                     <button
@@ -5406,41 +5392,26 @@ export function WorkbenchLibraryPanel({
                   </button>
                 )}
               </div>
-              <div className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${aiInput.trim() ? 'xy-has-value' : ''}`}>
-              <textarea
+              <div className="mt-3">
+              <AiInlineInput
                 ref={libraryAiInputRef}
-                rows={1}
                 value={aiInput}
                 onChange={(event) => {
                   setAiInput(event.target.value);
                   resizeFloatingAiTextarea(event.currentTarget);
                 }}
                 onKeyDown={handleLibraryAiInputKeyDown}
+                onSend={() => void sendLibraryAiMessage()}
+                onStop={stopLibraryAiMessage}
+                sendDisabled={isLibraryAiLoading || !canSendLibraryAiMessage}
+                stopDisabled={!isLibraryAiLoading}
                 placeholder="输入对话指令..."
-                className="scrollbar-hidden"
               />
-              <label>请输入要求</label>
-              <div className="xy-ai-inline-actions">
-                <button
-                  type="button"
-                  onClick={() => void sendLibraryAiMessage()}
-                  disabled={isLibraryAiLoading || !canSendLibraryAiMessage}
-                  className="xy-ai-inline-send"
-                >
-                  <span className="xy-ai-inline-send-icon"><Send className="h-6 w-6 stroke-[1.9]" /></span>
-                </button>
-                <button
-                  type="button"
-                  onClick={stopLibraryAiMessage}
-                  disabled={!isLibraryAiLoading}
-                  className="xy-ai-inline-stop"
-                >
-                  <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
-                </button>
               </div>
-              </div>
+              </>
+              )}
+              </section>
             </div>
-          </div>
           )}
           </aside>
           </>
@@ -5608,7 +5579,6 @@ export function WorkbenchLibraryPanel({
     };
     const selectedOutlineModel = models.find((model) => model.id === activeTabConfig.modelId) ?? models[0] ?? null;
     const outlineModelFieldSizeKey: WorkbenchFieldSizeKey = isDetailOutlineTab ? 'detailOutlineModelSelect' : 'outlineSummaryModelSelect';
-    const outlinePromptFieldSizeKey: WorkbenchFieldSizeKey = isDetailOutlineTab ? 'detailOutlinePromptSelect' : 'outlineSummaryPromptSelect';
     const outlineAiInput = activeTabConfig.outlineAiInput ?? '';
     const setOutlineAiInput = (value: string) => updateActiveTabConfig({ outlineAiInput: value });
     const detailOutlineReaderSettingItems = entries
@@ -5636,15 +5606,17 @@ export function WorkbenchLibraryPanel({
         };
       })
       .filter((item) => item.content.trim());
-    const inheritedDetailOutlineSettingIds = isDetailOutlineTab && activeTabConfig.detailOutlineReaderSettingIds === undefined
+    const inheritedDetailOutlineSettingIds = isDetailOutlineTab && !activeTabConfig.detailOutlineReaderTouched && activeTabConfig.detailOutlineReaderSettingIds === undefined
       ? detailOutlineReaderSettingItems.map((item) => item.id)
       : activeTabConfig.detailOutlineReaderSettingIds ?? [];
     const selectedDetailOutlineSettingIds = new Set(inheritedDetailOutlineSettingIds);
-    const selectedDetailOutlineRoleIds = new Set(getInitialPlotChainRoleIds({
-      configuredRoleIds: activeTabConfig.detailOutlineReaderRoleIds,
-      plotPointStandalone,
-      roles: detailOutlineReaderRoleItems,
-    }));
+    const selectedDetailOutlineRoleIds = new Set(activeTabConfig.detailOutlineReaderTouched
+      ? activeTabConfig.detailOutlineReaderRoleIds ?? []
+      : getInitialPlotChainRoleIds({
+        configuredRoleIds: activeTabConfig.detailOutlineReaderRoleIds,
+        plotPointStandalone,
+        roles: detailOutlineReaderRoleItems,
+      }));
     const detailOutlineReaderOutlineLimitSerial = selectedOutlineChapter?.chapter.serialNumber ?? Number.POSITIVE_INFINITY;
     const detailOutlineReaderOutlineItems = outlineChapters
       .filter(({ chapter }) => chapter.serialNumber < detailOutlineReaderOutlineLimitSerial)
@@ -5706,6 +5678,7 @@ export function WorkbenchLibraryPanel({
       const nextOutlineIds = Array.from(draftDetailOutlineReaderOutlineIds)
         .filter((id) => validOutlineIds.includes(id));
       updateActiveTabConfig({
+        detailOutlineReaderTouched: true,
         detailOutlineReaderSettingIds: nextSettingIds,
         detailOutlineReaderRoleIds: nextRoleIds,
         detailOutlineReaderOutlineIds: nextOutlineIds,
@@ -5714,6 +5687,7 @@ export function WorkbenchLibraryPanel({
     };
     const clearDetailOutlineReaderSelection = () => {
       updateActiveTabConfig({
+        detailOutlineReaderTouched: true,
         detailOutlineReaderSettingIds: [],
         detailOutlineReaderRoleIds: [],
         detailOutlineReaderOutlineIds: [],
@@ -5938,7 +5912,7 @@ export function WorkbenchLibraryPanel({
       const readerContext = isDetailOutlineTab ? buildDetailOutlineReaderContext() : '';
       if (isDetailOutlineTab) return readerContext;
       return [
-        selectedContext ? `【所选章节正文】\n${selectedContext}` : '【所选章节正文】\n当前没有读取到正文内容。',
+        selectedContext ? `【所选章节正文】\n${selectedContext}` : '',
         readerContext,
       ].filter(Boolean).join('\n\n');
     };
@@ -5963,17 +5937,19 @@ export function WorkbenchLibraryPanel({
         promptName: activeOutlinePrompt?.name ?? '默认提示词',
         hasLinkedBrainstorm: false,
         linkedBrainstormTitle: '',
-        visibleUserText: userText || '空内容',
+        visibleUserText: userText,
         systemPrompt: promptText,
         userContent: userText,
-        contextTitle: plotPointStandalone
-          ? (selectedDetailOutlineReaderItems.length > 0 ? `已关联 ${selectedDetailOutlineReaderItems.length} 项` : '未关联设定')
-          : getOutlineFullContextTitle(),
+        contextTitle: contextText
+          ? (plotPointStandalone
+            ? (selectedDetailOutlineReaderItems.length > 0 ? `已关联 ${selectedDetailOutlineReaderItems.length} 项` : '')
+            : getOutlineFullContextTitle())
+          : '',
         contextText,
         contextWordCount: countTextWords(contextText),
         readerContextTitle: selectedDetailOutlineReaderItems.length > 0
           ? `已关联 ${selectedDetailOutlineReaderItems.length} 项`
-          : '未关联设定',
+          : '',
         readerContextText,
         readerContextWordCount: countTextWords(readerContextText),
       };
@@ -5982,15 +5958,15 @@ export function WorkbenchLibraryPanel({
     const previewOutlinePromptText = activeOutlinePrompt?.content ?? getOutlineDefaultPrompt();
     const shouldShowOutlineBodyContext = !isDetailOutlineTab;
     const visibleOutlineAiRequestLog = (
-      isLibraryAiLogOpen
+      isLibraryAiLogOpen && libraryAiLogScope === 'outline'
         ? buildOutlineAiRequestLog(
           plotPointStandalone ? buildPlotPointRequestText(outlineAiInput.trim()) : outlineAiInput.trim(),
           previewOutlineContextText,
           previewOutlinePromptText,
         )
         : null
-    ) ?? lastLibraryAiRequestLog;
-    const outlineAiLogModal = isLibraryAiLogOpen && visibleOutlineAiRequestLog ? (
+    ) ?? lastOutlineAiRequestLog;
+    const outlineAiLogModal = isLibraryAiLogOpen && libraryAiLogScope === 'outline' && visibleOutlineAiRequestLog ? (
       <LibraryAiLogShell
         id={`workbench_library_ai_log_${activeTab}`}
         subtitle="当前预览：点击发送后会按这里的内容发给 AI"
@@ -6011,28 +5987,29 @@ export function WorkbenchLibraryPanel({
                   <div className="text-xs text-slate-400">提示词</div>
                   <div className="mt-1 font-bold text-slate-800">{visibleOutlineAiRequestLog.promptName}</div>
                 </div>
-                {shouldShowOutlineBodyContext && (
+                {shouldShowOutlineBodyContext && visibleOutlineAiRequestLog.contextText?.trim() && (
                   <div className="rounded-xl bg-white p-3">
                     <div className="text-xs text-slate-400">关联正文</div>
                     <div className="mt-1 font-bold text-brand">{visibleOutlineAiRequestLog.contextTitle}</div>
-                    <div className="mt-1 text-xs font-bold text-slate-400">{visibleOutlineAiRequestLog.contextWordCount ?? 0} 字</div>
+                    <div className="mt-1 text-xs font-bold text-slate-400"><WordCountText value={visibleOutlineAiRequestLog.contextWordCount ?? 0} /></div>
                   </div>
                 )}
-                {isDetailOutlineTab && (
+                {isDetailOutlineTab && visibleOutlineAiRequestLog.readerContextText?.trim() && (
                   <div className="rounded-xl bg-white p-3">
                     <div className="text-xs text-slate-400">关联设定</div>
-                    <div className={`mt-1 font-bold ${visibleOutlineAiRequestLog.readerContextText ? 'text-brand' : 'text-slate-500'}`}>
-                      {visibleOutlineAiRequestLog.readerContextTitle ?? '未关联设定'}
+                    <div className="mt-1 font-bold text-brand">
+                      {visibleOutlineAiRequestLog.readerContextTitle}
                     </div>
                     <div className="mt-1 text-xs font-bold text-slate-400">
-                      {visibleOutlineAiRequestLog.readerContextWordCount ?? 0} 字
-                    </div>
+                      <WordCountText value={visibleOutlineAiRequestLog.readerContextWordCount ?? 0} /></div>
                   </div>
                 )}
-                <div className="rounded-xl bg-white p-3">
-                  <div className="text-xs text-slate-400">请输入内容</div>
-                  <div className="mt-1 break-words font-bold text-slate-800">{visibleOutlineAiRequestLog.visibleUserText}</div>
-                </div>
+                {visibleOutlineAiRequestLog.visibleUserText.trim() && (
+                  <div className="rounded-xl bg-white p-3">
+                    <div className="text-xs text-slate-400">请输入内容</div>
+                    <div className="mt-1 break-words font-bold text-slate-800">{visibleOutlineAiRequestLog.visibleUserText}</div>
+                  </div>
+                )}
               </div>
             </aside>
             <div className="min-h-0 overflow-y-auto p-5">
@@ -6040,7 +6017,6 @@ export function WorkbenchLibraryPanel({
                 groups={buildLibraryLogGroups(visibleOutlineAiRequestLog, {
                   includeContext: shouldShowOutlineBodyContext,
                   includeReaderContext: isDetailOutlineTab,
-                  contextFallback: '未读取到正文内容',
                   userTitle: '输入内容',
                   expandReaderContextContent: plotPointStandalone,
                   expandAllContent: plotPointStandalone,
@@ -6153,7 +6129,7 @@ export function WorkbenchLibraryPanel({
                 关联所有
               </button>
               <div className="text-right text-xs font-bold text-slate-400">
-                已选择 {draftDetailOutlineReaderItems.length} 项 · {draftDetailOutlineReaderWordCount} 字
+                已选择 {draftDetailOutlineReaderItems.length} 项 · <WordCountText value={draftDetailOutlineReaderWordCount} />
               </div>
             </div>
           </div>
@@ -6288,7 +6264,7 @@ export function WorkbenchLibraryPanel({
                         </span>
                         <span className="mt-1 block line-clamp-2 text-xs leading-5 text-slate-500">{item.content || '暂无内容'}</span>
                       </span>
-                      <span className="shrink-0 text-xs font-bold text-slate-400">{countTextWords(item.content)} 字</span>
+                      <span className="shrink-0 text-xs font-bold text-slate-400"><WordCountText value={countTextWords(item.content)} /></span>
                     </button>
                   );
                 })}
@@ -6297,7 +6273,7 @@ export function WorkbenchLibraryPanel({
           </div>
           <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 bg-white px-5 py-4">
             <div className="min-w-0 truncate text-sm font-bold text-gray-500">
-              将读取 {draftDetailOutlineReaderItems.length} 项，共 {draftDetailOutlineReaderWordCount} 字
+              将读取 {draftDetailOutlineReaderItems.length} 项，共 <WordCountText value={draftDetailOutlineReaderWordCount} />
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <button
@@ -6341,7 +6317,7 @@ export function WorkbenchLibraryPanel({
       }
       const contextText = getOutlineAiContext();
       const promptText = activeOutlinePrompt?.content ?? getOutlineDefaultPrompt();
-      setLastLibraryAiRequestLog(buildOutlineAiRequestLog(requestText, contextText, promptText, new Date().toLocaleString('zh-CN')));
+      setLastOutlineAiRequestLog(buildOutlineAiRequestLog(requestText, contextText, promptText, new Date().toLocaleString('zh-CN')));
       const controller = new AbortController();
       libraryAiAbortRef.current = controller;
       setIsLibraryAiLoading(true);
@@ -6436,7 +6412,7 @@ export function WorkbenchLibraryPanel({
                   <div className={`mt-1 font-black ${selectedDetailOutlineReaderItems.length > 0 ? 'text-[#08AACE]' : 'text-slate-500'}`}>
                     已关联 {selectedDetailOutlineReaderItems.length} 项
                   </div>
-                  <div className="mt-1 text-xs font-bold text-slate-400">{detailOutlineReaderWordCount} 字</div>
+                  <div className="mt-1 text-xs font-bold text-slate-400"><WordCountText value={detailOutlineReaderWordCount} /></div>
                 </div>
                 <button
                   type="button"
@@ -6467,49 +6443,32 @@ export function WorkbenchLibraryPanel({
                     />
                   )}
                   <label>剧情点预览</label>
-                  <span className="xy-floating-count">{countTextWords(plotPointOutputContent)} 字</span>
+                  <span className="xy-floating-count"><WordCountText value={countTextWords(plotPointOutputContent)} /></span>
                 </div>
               </div>
               <div className="mt-3">
-                <div className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${plotPointInput.trim() ? 'xy-has-value' : ''}`}>
-                  <textarea
-                    rows={1}
-                    value={plotPointInput}
-                    onChange={(event) => {
-                      setPlotPointInput(event.target.value);
-                      resizeFloatingAiTextarea(event.currentTarget);
-                    }}
-                    onKeyDown={(event) => {
-                      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-                        event.preventDefault();
-                        void sendPlotPointAiMessage();
-                      }
-                    }}
-                    className="editor-scrollbar"
-                  />
-                  <label>请输入剧情点要求</label>
-                  <div className="xy-ai-inline-actions">
-                    <button
-                      type="button"
-                      onClick={() => void sendPlotPointAiMessage()}
-                      disabled={isLibraryAiLoading}
-                      className="xy-ai-inline-send"
-                    >
-                      <span className="xy-ai-inline-send-icon"><Send className="h-6 w-6 stroke-[1.9]" /></span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        libraryAiAbortRef.current?.abort();
-                        setIsLibraryAiLoading(false);
-                      }}
-                      disabled={!isLibraryAiLoading}
-                      className="xy-ai-inline-stop"
-                    >
-                      <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
-                    </button>
-                  </div>
-                </div>
+                <AiInlineInput
+                  value={plotPointInput}
+                  onChange={(event) => {
+                    setPlotPointInput(event.target.value);
+                    resizeFloatingAiTextarea(event.currentTarget);
+                  }}
+                  onKeyDown={(event) => {
+                    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                      event.preventDefault();
+                      void sendPlotPointAiMessage();
+                    }
+                  }}
+                  onSend={() => void sendPlotPointAiMessage()}
+                  onStop={() => {
+                    libraryAiAbortRef.current?.abort();
+                    setIsLibraryAiLoading(false);
+                  }}
+                  sendDisabled={isLibraryAiLoading}
+                  stopDisabled={!isLibraryAiLoading}
+                  label="请输入剧情点要求"
+                  textareaClassName="editor-scrollbar"
+                />
               </div>
               <div className="mt-3 flex overflow-hidden rounded-xl border border-slate-200 bg-white">
                 <button
@@ -6565,7 +6524,7 @@ export function WorkbenchLibraryPanel({
       const promptText = plotPointStandalone
         ? `${activeOutlinePrompt?.content ?? getOutlineDefaultPrompt()}\n\n当前任务是生成剧情点，不是直接生成完整细纲或正文。`
         : activeOutlinePrompt?.content ?? getOutlineDefaultPrompt();
-      setLastLibraryAiRequestLog(buildOutlineAiRequestLog(requestText, contextText, promptText, new Date().toLocaleString('zh-CN')));
+      setLastOutlineAiRequestLog(buildOutlineAiRequestLog(requestText, contextText, promptText, new Date().toLocaleString('zh-CN')));
       const controller = new AbortController();
       libraryAiAbortRef.current = controller;
       setIsLibraryAiLoading(true);
@@ -6662,7 +6621,6 @@ export function WorkbenchLibraryPanel({
           >
             <aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-white">
               <div className="shrink-0 border-b border-slate-100 px-4 py-3">
-                <div className="mb-2 flex justify-end">{renderPanelWidthBadge(plotPointLayoutLeftWidth)}</div>
                 <div className="mb-2 flex items-center gap-1.5">
                   {PLOT_POINT_CHAIN_SLOTS.map((slot) => {
                     const active = plotPointActiveChainSlot === slot;
@@ -6891,50 +6849,30 @@ export function WorkbenchLibraryPanel({
 
             {plotPointRightResizeHandle}
 
-            <aside className="min-w-0 flex min-h-0 flex-col border-l border-slate-100 bg-white">
-              <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4">
-                <div className="-mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(plotPointLayoutRightWidth)}</div>
+            <aside className="min-w-0 flex min-h-0 flex-col border-l border-slate-100 bg-gray-50">
+              <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-4 pb-4 pt-2">
                 <section className="shrink-0">
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-sm font-black text-slate-950">生成配置</div>
-                      {renderFieldSizeButton()}
-                    </div>
-                    <div className="grid grid-cols-[minmax(0,1fr)_88px] items-start gap-2">
-                      <CapsuleSelect
-                        floatingLabel="模型"
-                        value={activeTabConfig.modelId ?? ''}
-                        onChange={(value) => updateActiveTabConfig({ modelId: value })}
-                        options={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
-                        className="xy-capsule-custom-field-size xy-capsule-fill min-w-0"
-                        style={getFieldSizeStyle(outlineModelFieldSizeKey)}
-                        buttonClassName="h-11 rounded-xl px-3 text-sm"
-                        actionLabel="管理"
-                        onActionClick={() => setManagementModal({ type: 'models' })}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setIsLibraryAiLogOpen(true)}
-                        className="mt-2 h-11 shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 shadow-sm transition-colors hover:border-[#08AACE] hover:bg-[#EAF9FD] hover:text-[#08AACE]"
-                      >
-                        输出日志
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-[minmax(0,1fr)_88px] items-start gap-2">
-                      <CapsuleSelect
-                        floatingLabel="提示词"
-                        value={activeOutlinePromptId ?? ''}
-                        onChange={updateOutlinePromptId}
-                        options={outlinePromptOptions.length === 0 ? [{ value: '', label: `暂无${outlinePromptCategory}提示词`, disabled: true }] : outlinePromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
-                        className="xy-capsule-custom-field-size xy-capsule-fill min-w-0"
-                        style={getAlignedFieldSizeStyle(outlineModelFieldSizeKey, outlinePromptFieldSizeKey)}
-                        buttonClassName="h-11 rounded-xl px-3 text-sm"
-                        actionLabel="管理"
-                        onActionClick={() => setManagementModal({ type: 'prompts', category: outlinePromptCategory })}
-                      />
-                      <div aria-hidden="true" className="invisible mt-2 h-11 shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black">
-                        输出日志
+                    {showInlineFieldSizeButton ? (
+                    <div className="flex items-center justify-end gap-2">
+                      <div className="flex shrink-0 items-center gap-2">
+                        {renderFieldSizeButton()}
+                        {renderLibraryAiLogButton('outline', 'h-9 shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 shadow-sm transition-colors hover:border-[#08AACE] hover:bg-[#EAF9FD] hover:text-[#08AACE]')}
                       </div>
+                    </div>
+                    ) : null}
+                    <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-2">
+                      <CombinedAiConfigSelect
+                        style={getEmbeddedConfigSelectStyle(getFieldSizeStyle(outlineModelFieldSizeKey))}
+                        modelValue={activeTabConfig.modelId ?? ''}
+                        promptValue={activeOutlinePromptId ?? ''}
+                        modelOptions={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
+                        promptOptions={outlinePromptOptions.length === 0 ? [{ value: '', label: `暂无${outlinePromptCategory}提示词`, disabled: true }] : outlinePromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                        onModelChange={(value) => updateActiveTabConfig({ modelId: value })}
+                        onPromptChange={updateOutlinePromptId}
+                        onModelManage={() => setManagementModal({ type: 'models' })}
+                        onPromptManage={() => setManagementModal({ type: 'prompts', category: outlinePromptCategory })}
+                      />
                     </div>
                     <div className="pt-1 text-sm font-black text-slate-950">生成规则</div>
                     <div className="flex items-center gap-3">
@@ -7018,79 +6956,40 @@ export function WorkbenchLibraryPanel({
                   <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-xs font-bold leading-6 text-slate-600">
                     {outlinePreviewDraft.trim() ? renderAiChatContent(outlinePreviewDraft) : null}
                   </div>
-                  {selectedDetailOutlineReaderItems.length > 0 ? (
-                    <div className="mt-3 flex items-center gap-3">
-                      <div className="flex h-10 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
-                        <button
-                          type="button"
-                          onClick={openDetailOutlineReader}
-                          className="h-10 min-w-[112px] px-4 text-sm font-black text-slate-700 hover:bg-slate-50"
-                          title={plotPointLinkedSettingSummary}
-                        >
-                          已关联
-                        </button>
-                        <button
-                          type="button"
-                          onClick={clearDetailOutlineReaderSelection}
-                          className="flex h-10 w-12 items-center justify-center bg-red-500 text-white hover:bg-red-600"
-                          title="取消关联"
-                          aria-label="取消关联"
-                        >
-                          <X className="h-5 w-5 stroke-[2.4]" />
-                        </button>
-                      </div>
-                      <div className="min-w-0 flex-1 truncate text-sm font-black text-[#08AACE]">
-                        已关联：{detailOutlineReaderWordCount}字
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-3 flex items-center">
-                      <button
-                        type="button"
-                        onClick={openDetailOutlineReader}
-                        className="h-10 min-w-[124px] rounded-xl border border-[#08AACE] bg-white px-5 text-sm font-black text-[#08AACE] hover:bg-[#EAF9FD]"
-                      >
-                        关联
-                      </button>
-                    </div>
-                  )}
+                  <LinkedSourceControl
+                    linked={selectedDetailOutlineReaderItems.length > 0}
+                    label="关联"
+                    linkedLabel="已关联"
+                    onOpen={openDetailOutlineReader}
+                    onClear={clearDetailOutlineReaderSelection}
+                    meta={<>已关联：<WordCountText value={detailOutlineReaderWordCount} compact /></>}
+                    title={plotPointLinkedSettingSummary}
+                    className="mt-3 flex items-center gap-3"
+                    groupClassName="flex h-9 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white"
+                    linkedButtonClassName="h-9 min-w-[78px] px-3 text-sm font-black text-slate-700 hover:bg-slate-50"
+                    clearButtonClassName="flex h-9 w-10 items-center justify-center bg-red-500 text-white hover:bg-red-600"
+                    buttonClassName="h-9 min-w-[84px] rounded-xl border border-[#08AACE] bg-white px-3 text-sm font-black text-[#08AACE] hover:bg-[#EAF9FD]"
+                    metaClassName="min-w-0 flex-1 truncate text-sm font-black text-[#08AACE]"
+                  />
                   <div className="mt-3">
-                    <div className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${outlineAiInput.trim() ? 'xy-has-value' : ''}`}>
-                      <textarea
-                        rows={1}
-                        value={outlineAiInput}
-                        onChange={(event) => {
-                          setOutlineAiInput(event.target.value);
-                          resizeFloatingAiTextarea(event.currentTarget);
-                        }}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
-                            event.preventDefault();
-                            void sendOutlineAiMessage();
-                          }
-                        }}
-                        className="editor-scrollbar"
-                      />
-                      <label>请输入要求</label>
-                      <div className="xy-ai-inline-actions">
-                        <button
-                          type="button"
-                          onClick={() => void sendOutlineAiMessage()}
-                          disabled={isLibraryAiLoading}
-                          className="xy-ai-inline-send"
-                        >
-                          <span className="xy-ai-inline-send-icon"><Send className="h-6 w-6 stroke-[1.9]" /></span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={stopOutlineAiMessage}
-                          disabled={!isLibraryAiLoading}
-                          className="xy-ai-inline-stop"
-                        >
-                          <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
-                        </button>
-                      </div>
-                    </div>
+                    <AiInlineInput
+                      value={outlineAiInput}
+                      onChange={(event) => {
+                        setOutlineAiInput(event.target.value);
+                        resizeFloatingAiTextarea(event.currentTarget);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+                          event.preventDefault();
+                          void sendOutlineAiMessage();
+                        }
+                      }}
+                      onSend={() => void sendOutlineAiMessage()}
+                      onStop={stopOutlineAiMessage}
+                      sendDisabled={isLibraryAiLoading}
+                      stopDisabled={!isLibraryAiLoading}
+                      textareaClassName="editor-scrollbar"
+                    />
                   </div>
                 </section>
               </div>
@@ -7113,13 +7012,13 @@ export function WorkbenchLibraryPanel({
           className="relative grid min-h-0 flex-1 overflow-hidden bg-white"
           style={{ gridTemplateColumns: `${outlineSidebarWidth}px 8px minmax(0,1fr) 8px ${settingLibraryRightWidth}px` }}
         >
-            <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
-          <div className="mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(outlineSidebarWidth)}</div>
-          <section className="flex min-h-0 flex-1 flex-col rounded-xl border border-gray-200 bg-white p-4">
+            <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-3 py-3">
+          <section className="flex min-h-0 flex-1 flex-col">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-base font-bold text-gray-900">{isDetailOutlineTab ? '章纲目录' : '章节概要'}</h3>
               <div className="flex shrink-0 items-center gap-2">
                 {renderFieldSizeButton()}
+                {renderLibraryAiLogButton('outline')}
                 <button
                   onClick={() => setIsOutlineSettingsOpen(true)}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
@@ -7130,7 +7029,7 @@ export function WorkbenchLibraryPanel({
                 </button>
               </div>
             </div>
-            <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
+            <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
               {volumes.length === 0 ? (
                 <p className="pt-10 text-center text-xs text-gray-400">暂无章节</p>
               ) : (
@@ -7222,7 +7121,7 @@ export function WorkbenchLibraryPanel({
         {leftResizeHandle}
 
         <main className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-white p-5">
-          <div className={`editor-scrollbar min-h-0 flex-1 overflow-y-auto ${isDetailOutlineTab ? '-mr-4 pr-4 pt-2.5' : 'pt-5'}`}>
+          <div className={`editor-scrollbar min-h-0 flex-1 overflow-y-auto ${isDetailOutlineTab ? '-mr-4 pr-4 pt-2.5' : '-mr-4 pr-4 pt-5'}`}>
             {outlineChapters.length === 0 ? (
               <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-gray-200 text-sm text-gray-400">暂无章节可预览</div>
             ) : safeOutlineSelectionType === 'volume' && selectedOutlineVolume ? (
@@ -7238,8 +7137,7 @@ export function WorkbenchLibraryPanel({
                   className="editor-scrollbar h-[460px] w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm leading-6 text-gray-700 outline-none focus:border-brand"
                 />
                 <div className="mt-2 text-right text-xs font-bold text-gray-400">
-                  {countTextWords(selectedVolumeEntry?.content ?? '')} 字
-                </div>
+                  <WordCountText value={countTextWords(selectedVolumeEntry?.content ?? '')} /></div>
               </section>
             ) : (
               <div className={`grid gap-3 ${isDetailOutlineTab ? 'grid-cols-1' : 'grid-cols-2'}`}>
@@ -7275,7 +7173,7 @@ export function WorkbenchLibraryPanel({
                         } : undefined}
                       />
                       <label>{outlineCardTitle}</label>
-                      <span className="xy-floating-count">{countTextWords(outlineCardContent)} 字</span>
+                      <span className="xy-floating-count"><WordCountText value={countTextWords(outlineCardContent)} /></span>
                     </section>
                   );
                 })}
@@ -7285,42 +7183,20 @@ export function WorkbenchLibraryPanel({
         </main>
 
         {rightResizeHandle}
-        <aside className="min-w-0 flex min-h-0 flex-col border-l border-gray-100 bg-white p-4">
-          <div className="mb-2 flex shrink-0 justify-end">{renderPanelWidthBadge(settingLibraryRightWidth)}</div>
+        <aside className="min-w-0 flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 px-4 pb-4 pt-2">
           <div className="space-y-3">
-            <div className="grid grid-cols-[minmax(0,1fr)_96px] items-start gap-2 text-sm text-gray-500">
-              <div className="max-w-full" style={getFieldSizeStyle(outlineModelFieldSizeKey)}>
-                <CapsuleSelect
-                  floatingLabel="模型"
-                  value={activeTabConfig.modelId ?? ''}
-                  onChange={(value) => updateActiveTabConfig({ modelId: value })}
-                  options={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
-                  buttonClassName="h-11 rounded-xl px-3 text-sm"
-                  actionLabel="管理"
-                  onActionClick={() => setManagementModal({ type: 'models' })}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsLibraryAiLogOpen(true)}
-                className="mt-2 h-12 shrink-0 rounded-xl border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 shadow-sm hover:border-brand hover:text-brand"
-              >
-                输出日志
-              </button>
-            </div>
-            <div className="grid grid-cols-[minmax(0,1fr)_96px] items-start gap-2 text-sm text-gray-500">
-              <div className="max-w-full" style={getAlignedFieldSizeStyle(outlineModelFieldSizeKey, outlinePromptFieldSizeKey)}>
-                <CapsuleSelect
-                  floatingLabel="提示词"
-                  value={activeOutlinePromptId ?? ''}
-                  onChange={updateOutlinePromptId}
-                  options={outlinePromptOptions.length === 0 ? [{ value: '', label: `暂无${outlinePromptCategory}提示词`, disabled: true }] : outlinePromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
-                  buttonClassName="h-11 rounded-xl px-3 text-sm"
-                  actionLabel="管理"
-                  onActionClick={() => setManagementModal({ type: 'prompts', category: outlinePromptCategory })}
-                />
-              </div>
-              <div aria-hidden="true" className="mt-2 h-12 w-24" />
+            <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-2 text-sm text-gray-500">
+              <CombinedAiConfigSelect
+                style={getEmbeddedConfigSelectStyle(getFieldSizeStyle(outlineModelFieldSizeKey))}
+                modelValue={activeTabConfig.modelId ?? ''}
+                promptValue={activeOutlinePromptId ?? ''}
+                modelOptions={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
+                promptOptions={outlinePromptOptions.length === 0 ? [{ value: '', label: `暂无${outlinePromptCategory}提示词`, disabled: true }] : outlinePromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                onModelChange={(value) => updateActiveTabConfig({ modelId: value })}
+                onPromptChange={updateOutlinePromptId}
+                onModelManage={() => setManagementModal({ type: 'models' })}
+                onPromptManage={() => setManagementModal({ type: 'prompts', category: outlinePromptCategory })}
+              />
             </div>
           </div>
           <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4">
@@ -7329,64 +7205,63 @@ export function WorkbenchLibraryPanel({
                 <>
                   <div><span className="font-bold text-gray-800">当前卷：</span>{selectedOutlineVolume.name}</div>
                   <div><span className="font-bold text-gray-800">章节数量：</span>{selectedOutlineVolume.chapters.length} 章</div>
-                  <div><span className="font-bold text-gray-800">章节字数：</span>{selectedVolumeWordCount} 字</div>
+                  <div><span className="font-bold text-gray-800">章节字数：</span><WordCountText value={selectedVolumeWordCount} /></div>
                 </>
               ) : selectedOutlineChapter ? (
                 <>
                   <div className="font-bold text-gray-800">第{selectedOutlineChapter.chapter.serialNumber}章 {selectedChapterTitle}</div>
-                  <div className="mt-1 text-gray-700">正文：{selectedOutlineChapter.chapter.wordCount}字</div>
+                  <div className="mt-1 text-gray-700">正文：<WordCountText value={selectedOutlineChapter.chapter.wordCount} compact /></div>
                 </>
               ) : (
                 <span className="text-gray-400">请选择左侧章节。</span>
               )}
             </div>
           </div>
-          {outlinePreviewDraft.startsWith('[[THINKING') ? (
-            <div className="relative mt-6 min-h-[180px] flex-1">
-              <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-with-bottom-count h-full xy-has-value">
-                <div className="xy-floating-rich-preview editor-scrollbar h-full overflow-y-auto text-sm leading-6 text-gray-600">
-                  {renderAiChatContent(outlinePreviewDraft)}
+          <section className="relative mt-6 flex min-h-[310px] flex-1 flex-col rounded-xl border border-slate-200 bg-white px-3 pb-3 pt-5">
+            <div className="absolute -top-2 left-4 bg-white px-1 text-sm font-black text-slate-950">{'AI对话框'}</div>
+            <button type="button" onClick={clearOutlinePreviewDraft} className="absolute -top-2 right-4 bg-white px-1 text-xs font-black text-red-500">{'清空'}</button>
+            <div className="relative min-h-[170px] flex-1">
+              {outlinePreviewDraft.startsWith('[[THINKING') ? (
+                <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-with-bottom-count h-full xy-has-value">
+                  <div className="xy-floating-rich-preview editor-scrollbar h-full overflow-y-auto text-sm leading-6 text-gray-600">
+                    {renderAiChatContent(outlinePreviewDraft)}
+                  </div>
+                  <label>{outlineDraftFrameTitle}</label>
+                  <span className="xy-floating-count"><WordCountText value={countTextWords(outlinePreviewDraftContent)} /></span>
                 </div>
-                <label>{outlineDraftFrameTitle}</label>
-                <span className="xy-floating-count">{countTextWords(outlinePreviewDraftContent)} 字</span>
-              </div>
+              ) : (
+                <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count h-full ${outlinePreviewDraft.trim() ? 'xy-has-value' : ''}`}>
+                  <textarea
+                    value={outlinePreviewDraft}
+                    onChange={(event) => setOutlinePreviewDraft(event.target.value)}
+                    placeholder={plotPointStandalone ? '生成后的剧情点会显示在这里，也可以手动编辑后复制。' : isDetailOutlineTab ? '生成后的章纲会显示在这里，也可以手动编辑后保存。' : '生成后的概要会显示在这里，也可以手动编辑后保存。'}
+                    className="editor-scrollbar text-sm leading-6 text-gray-600 outline-none"
+                  />
+                  <label>{outlineDraftFrameTitle}</label>
+                  <span className="xy-floating-count"><WordCountText value={countTextWords(outlinePreviewDraftContent)} /></span>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="relative mt-6 min-h-[180px] flex-1">
-              <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count ${outlinePreviewDraft.trim() ? 'xy-has-value' : ''}`}>
-                <textarea
-                  value={outlinePreviewDraft}
-                  onChange={(event) => setOutlinePreviewDraft(event.target.value)}
-                  placeholder={plotPointStandalone ? '生成后的剧情点会显示在这里，也可以手动编辑后复制。' : isDetailOutlineTab ? '生成后的章纲会显示在这里，也可以手动编辑后保存。' : '生成后的概要会显示在这里，也可以手动编辑后保存。'}
-                  className="editor-scrollbar text-sm leading-6 text-gray-600 outline-none"
-                />
-                <label>{outlineDraftFrameTitle}</label>
-                <span className="xy-floating-count">{countTextWords(outlinePreviewDraftContent)} 字</span>
-              </div>
-            </div>
-          )}
-          {isDetailOutlineTab && (
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={openDetailOutlineReader}
-                className={`h-9 shrink-0 rounded-xl px-4 text-sm font-black transition-colors ${
+            {isDetailOutlineTab && (
+              <LinkedSourceControl
+                linked={selectedDetailOutlineReaderItems.length > 0}
+                label="关联设定"
+                linkedLabel="关联设定"
+                onOpen={openDetailOutlineReader}
+                meta={<>已关联 {selectedDetailOutlineReaderItems.length} 项 · <WordCountText value={detailOutlineReaderWordCount} compact /></>}
+                className="mt-3 flex items-center justify-between gap-3"
+                buttonClassName={`h-9 shrink-0 rounded-xl px-3 text-sm font-black transition-colors ${
                   selectedDetailOutlineReaderItems.length > 0
                     ? 'bg-[#08AACE] text-white hover:bg-[#0798b8]'
                     : 'border border-[#08AACE] bg-white text-[#08AACE] hover:bg-[#EAF9FD]'
                 }`}
-              >
-                关联设定
-              </button>
-              <div className="min-w-0 truncate text-right text-xs font-bold text-slate-400">
-                已关联 {selectedDetailOutlineReaderItems.length} 项 · {detailOutlineReaderWordCount} 字
-              </div>
-            </div>
-          )}
-          <div className="mt-3">
-            <div className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${outlineAiInput.trim() ? 'xy-has-value' : ''}`}>
-              <textarea
-                rows={1}
+                linkedButtonClassName="h-9 shrink-0 rounded-xl bg-[#08AACE] px-3 text-sm font-black text-white transition-colors hover:bg-[#0798b8]"
+                groupClassName="shrink-0"
+                metaClassName="min-w-0 truncate text-right text-xs font-bold text-slate-400"
+              />
+            )}
+            <div className="mt-3">
+              <AiInlineInput
                 value={outlineAiInput}
                 onChange={(event) => {
                   setOutlineAiInput(event.target.value);
@@ -7398,54 +7273,40 @@ export function WorkbenchLibraryPanel({
                     void sendOutlineAiMessage();
                   }
                 }}
-                className="editor-scrollbar"
+                onSend={() => void sendOutlineAiMessage()}
+                onStop={stopOutlineAiMessage}
+                sendDisabled={isLibraryAiLoading || (!plotPointStandalone && !outlineAiInput.trim() && (!isDetailOutlineTab || selectedDetailOutlineReaderItems.length === 0))}
+                stopDisabled={!isLibraryAiLoading}
+                label={plotPointStandalone ? '请输入剧情点要求' : '请输入要求'}
+                textareaClassName="editor-scrollbar"
               />
-              <label>{plotPointStandalone ? '请输入剧情点要求' : '请输入要求'}</label>
-              <div className="xy-ai-inline-actions">
-                <button
-                  type="button"
-                  onClick={() => void sendOutlineAiMessage()}
-                  disabled={isLibraryAiLoading || (!plotPointStandalone && !outlineAiInput.trim() && (!isDetailOutlineTab || selectedDetailOutlineReaderItems.length === 0))}
-                  className="xy-ai-inline-send"
-                >
-                  <span className="xy-ai-inline-send-icon"><Send className="h-6 w-6 stroke-[1.9]" /></span>
-                </button>
-                <button
-                  type="button"
-                  onClick={stopOutlineAiMessage}
-                  disabled={!isLibraryAiLoading}
-                  className="xy-ai-inline-stop"
-                >
-                  <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
-                </button>
-              </div>
             </div>
-          </div>
-          <div className="mt-3 flex overflow-hidden rounded-xl border border-gray-200 bg-white">
-            <button
-              onClick={() => {
-                if (plotPointStandalone) setOutlineAiInput(stripAiThinkingBlock(outlinePreviewDraft));
-                else saveOutlinePreviewDraft();
-              }}
-              disabled={!stripAiThinkingBlock(outlinePreviewDraft).trim()}
-              className="min-w-0 flex-1 bg-brand px-3 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
-            >
-              {plotPointStandalone ? '放入章纲要求' : '保存'}
-            </button>
-            <button
-              onClick={() => void navigator.clipboard.writeText(stripAiThinkingBlock(outlinePreviewDraft))}
-              disabled={!stripAiThinkingBlock(outlinePreviewDraft).trim()}
-              className="min-w-0 flex-1 border-l border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
-            >
-              复制
-            </button>
-            <button
-              onClick={clearOutlinePreviewDraft}
-              className="min-w-0 flex-1 border-l border-red-200 bg-red-600 px-3 py-2 text-sm font-bold text-white hover:bg-red-700"
-            >
-              清空
-            </button>
-          </div>
+            <div className="mt-3 flex overflow-hidden rounded-xl border border-gray-200 bg-white">
+              <button
+                onClick={() => {
+                  if (plotPointStandalone) setOutlineAiInput(stripAiThinkingBlock(outlinePreviewDraft));
+                  else saveOutlinePreviewDraft();
+                }}
+                disabled={!stripAiThinkingBlock(outlinePreviewDraft).trim()}
+                className="min-w-0 flex-1 bg-brand px-3 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
+              >
+                {plotPointStandalone ? '放入章纲要求' : isDetailOutlineTab ? '保存章纲' : '保存概要'}
+              </button>
+              <button
+                onClick={() => void navigator.clipboard.writeText(stripAiThinkingBlock(outlinePreviewDraft))}
+                disabled={!stripAiThinkingBlock(outlinePreviewDraft).trim()}
+                className="min-w-0 flex-1 border-l border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
+              >
+                {isDetailOutlineTab ? '复制章纲' : '复制概要'}
+              </button>
+              <button
+                onClick={clearOutlinePreviewDraft}
+                className="min-w-0 flex-1 border-l border-red-200 bg-red-600 px-3 py-2 text-sm font-bold text-white hover:bg-red-700"
+              >
+                {isDetailOutlineTab ? '清空章纲' : '清空概要'}
+              </button>
+            </div>
+          </section>
           </aside>
         {isOutlineSettingsOpen && (
           <div className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/30" onClick={() => setIsOutlineSettingsOpen(false)}>
@@ -7560,4 +7421,3 @@ export function WorkbenchLibraryPanel({
     </div>
   );
 }
-
