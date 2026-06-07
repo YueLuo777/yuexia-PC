@@ -1,5 +1,29 @@
 # xinyuexia 问题记录
 
+## 工作台创作流程按钮顺序需要脑洞前置
+
+- 现象：工作台顶部创作流程按钮显示为“大纲 / 剧情链 / 章纲 / 正文 / 脑洞”，脑洞入口排在正文后面，不符合当前希望先脑洞再进入大纲的创作路径。
+- 原因：`WORKBENCH_MAIN_FLOW_STEPS` 的共享流程配置仍把 `brainstorm` 放在主流程末尾，顶部 Header 直接按该数组顺序渲染。
+- 处理：把 `brainstorm` 移到创作流程首位，并同步更新流程顺序回归测试和 Header 渲染顺序测试。
+- 预防：调整工作台顶部流程顺序时优先修改 `workbenchCreationFlow.ts` 的共享配置，并用 Header 测试锁定视觉顺序。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/model/workbenchCreationFlow.test.ts src/features/workbench/components/WorkbenchHeader.test.tsx`。
+
+## 删除当前 AI 会话后顶部状态提示暂时隐藏
+
+- 现象：正文续写 AI 对话框点击“删除”后，页面最上方会显示“已删除当前会话并新建空会话”，遮挡当前操作视线。
+- 原因：`WorkbenchAIPanel` 在删除最后一个会话并重建空会话时调用了 `flashStatus`，触发顶部状态条。
+- 处理：移除删除会话分支里的状态提示调用，保留删除、停止输出、清空上下文和新建空会话逻辑不变。
+- 预防：会话删除这类用户明确点击后的即时操作，若没有失败或阻断，默认不再追加顶部状态提示；需要恢复时先确认是否会遮挡工作区。
+- 验证：新增并执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchAIPanel.deleteSession.test.ts`。
+
+## 正文续写会话按钮没有恢复旧版左上位置
+
+- 现象：正文续写 AI 对话框的 `+ / 1` 会话按钮仍不像旧版仓库，按钮组偏向内容框中部，看起来没有恢复到原来的左上边框位置。
+- 原因：上次修复只把按钮从内容区挪回边框，但额外使用了 `left: var(--xy-chat-session-tool-left, 6.25rem)` 和新的宽度计算；旧仓库 `YueLuo777/yuexia-PC` 实际使用的是 `left: 1.1rem`、`max-width: calc(100% - 8.5rem)`，垂直位置继承通用 `.xy-floating-edge-tool`。
+- 处理：读取旧仓库 `src/shared/styles/index.css` 后，把 `.xy-floating-chat-session-tool`、`.xy-floating-chat-action-tool` 和子容器规则恢复到旧版横向定位；更新回归测试锁定旧版左上位置。
+- 预防：恢复旧 UI 时必须先对照旧仓库具体 CSS，不要只凭截图推断新的安全间距。
+- 验证：执行 `npm.cmd run test:run -- src/shared/styles/floatingChatShell.test.ts`。
+
 ## 删除非空卷提示使用系统原生弹窗
 
 - 现象：右键卷名删除仍包含章节的卷时，提示“该卷下还有章节，请先删除章节”会以系统原生窗口弹出，标题栏和按钮风格都不像月下写作内的提示框。

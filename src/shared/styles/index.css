@@ -2021,21 +2021,13 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 
 .xy-floating-edge-tool.xy-floating-chat-session-tool {
   right: auto;
-  top: 0;
-  left: var(--xy-chat-session-tool-left, 6.25rem);
-  max-width: calc(100% - var(--xy-chat-session-tool-left, 6.25rem) - 7.4rem);
-  transform: translateY(-50%);
-  background: transparent;
-  padding-left: 0;
-  padding-right: 0;
+  left: 1.1rem;
+  max-width: calc(100% - 8.5rem);
 }
 
 .xy-floating-edge-tool.xy-floating-chat-action-tool {
   right: 0.9rem;
   max-width: 7.2rem;
-  background: transparent;
-  padding-left: 0;
-  padding-right: 0;
 }
 
 .xy-floating-chat-font-tool {
@@ -2064,7 +2056,6 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 .xy-floating-edge-tool.xy-floating-chat-session-tool > div,
 .xy-floating-edge-tool.xy-floating-chat-action-tool > div {
   max-width: 100%;
-  background: transparent;
 }
 
 .xy-floating-field.xy-floating-outline-preview:focus-within textarea,

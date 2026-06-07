@@ -25,11 +25,11 @@ export interface WorkbenchHeaderFlowItem {
 }
 
 export const WORKBENCH_MAIN_FLOW_STEPS: WorkbenchCreationFlowStep[] = [
-  { id: 'outline', number: 1, title: '大纲', description: '整理设定主线', group: 'creation' },
-  { id: 'plotChain', number: 2, title: '剧情链', description: '选择剧情走向', group: 'creation' },
-  { id: 'chapterOutline', number: 3, title: '章纲', description: '展开章节结构', group: 'creation' },
-  { id: 'writing', number: 4, title: '正文', description: '回到正文编辑器', group: 'creation' },
-  { id: 'brainstorm', number: 5, title: '脑洞', description: '生成开书方向', group: 'creation' },
+  { id: 'brainstorm', number: 1, title: '脑洞', description: '生成开书方向', group: 'creation' },
+  { id: 'outline', number: 2, title: '大纲', description: '整理设定主线', group: 'creation' },
+  { id: 'plotChain', number: 3, title: '剧情链', description: '选择剧情走向', group: 'creation' },
+  { id: 'chapterOutline', number: 4, title: '章纲', description: '展开章节结构', group: 'creation' },
+  { id: 'writing', number: 5, title: '正文', description: '回到正文编辑器', group: 'creation' },
 ];
 
 export const WORKBENCH_REVIEW_FLOW_STEPS: WorkbenchCreationFlowStep[] = [

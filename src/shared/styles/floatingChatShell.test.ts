@@ -13,13 +13,16 @@ const readRule = (selector: string) => {
 };
 
 describe('floating chat shell styles', () => {
-  it('keeps the session toolbar embedded on the top border instead of inside the content area', () => {
+  it('uses the original left-edge session toolbar placement from yuexia-PC', () => {
     const sessionToolRule = readRule('.xy-floating-edge-tool.xy-floating-chat-session-tool');
 
-    expect(sessionToolRule).toContain('top: 0');
-    expect(sessionToolRule).toContain('transform: translateY(-50%)');
-    expect(sessionToolRule).not.toContain('top: 0.65rem');
+    expect(sessionToolRule).toContain('left: 1.1rem');
+    expect(sessionToolRule).toContain('max-width: calc(100% - 8.5rem)');
+    expect(sessionToolRule).not.toContain('left: var(--xy-chat-session-tool-left');
+    expect(sessionToolRule).not.toContain('max-width: calc(100% - var(--xy-chat-session-tool-left');
     expect(sessionToolRule).not.toContain('transform: none');
+    expect(sessionToolRule).not.toContain('transform: translateY(-50%)');
+    expect(sessionToolRule).not.toContain('top: 0.65rem');
   });
 
   it('does not reserve extra top padding for an in-content session toolbar', () => {

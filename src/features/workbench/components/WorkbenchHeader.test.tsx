@@ -28,7 +28,7 @@ describe('WorkbenchHeader', () => {
     expect(capsuleGroups[2]).toContainElement(screen.getByRole('button', { name: '概要' }));
 
     const creationButtons = Array.from(capsuleGroups[1].querySelectorAll('button')).map((button) => button.textContent);
-    expect(creationButtons).toEqual(['大纲', '剧情链', '章纲', '正文', '脑洞']);
+    expect(creationButtons).toEqual(['脑洞', '大纲', '剧情链', '章纲', '正文']);
 
     for (const label of ['作品信息', '大纲', '剧情链', '章纲', '正文', '脑洞', '审核', '点评', '状态', '概要']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument();

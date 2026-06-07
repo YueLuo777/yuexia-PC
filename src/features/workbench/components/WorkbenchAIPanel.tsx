@@ -673,7 +673,6 @@ export function WorkbenchAIPanel({
       setActiveSessionId(nextId);
       setLastRequestLog(null);
       setIsLoading(false);
-      flashStatus('已删除当前会话并新建空会话');
       return;
     }
     setSessions((prev) => {
