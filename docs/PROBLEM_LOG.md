@@ -1,12 +1,428 @@
 # xinyuexia 问题记录
 
-## 脑洞预览和输出贴边标题尺寸、字数距离不统一
+## 章纲字号控件不应重复出现在每个章纲框里
 
-- 现象：脑洞页左侧当前脑洞标题胶囊过大，右侧“新脑洞1”贴边标题行在窄高度下显示不全，标题后的字数统计离标题过远。
-- 原因：脑洞预览和脑洞输出使用独立的可编辑贴边标题工具，仍保留较大的 `text-base`、较宽的输入框最小宽度和 `0.55rem` 标题/字数间距，没有完全贴近“设定预览 + 字数统计”的紧凑结构。
-- 处理：压缩脑洞预览标题输入框到 `text-sm / max-w-[120px] / min-w-[58px]`，压缩脑洞输出标题输入框到 `text-sm / max-w-[180px] / min-w-[72px]`；将贴边标题工具高度从 `1.35rem` 收到 `1.15rem`，标题与字数间距从 `0.55rem` 收到 `0.32rem`，并给脑洞标题字数补极小左距。
-- 预防：以后脑洞类可编辑贴边标题优先跟随设定预览的“标题 + 贴身字数”结构，避免单独扩大字号、最小宽度或标题/字数间距。
-- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+- 现象：每个章纲框左下角都显示一组字号加减按钮，滚动长章纲列表时重复占用框体边线空间；用户希望把它移到“日志/字段尺寸”这一行，并放在字段尺寸按钮左侧。
+- 原因：章纲字号控件在章节卡片循环内部渲染，虽然修改的是同一个 `detailOutlineFontSize` 状态，但视觉上像每个框都有独立控件。
+- 处理：新增顶部工具栏级 `renderDetailOutlineFontSizeTool`，只在章纲页显示；章纲目录工具行顺序调整为“日志 / 章纲字号 / 字段尺寸 / 设置”；删除每个章纲卡片内部的字号控件，所有章纲 textarea 继续共用 `detailOutlineFontSize`。
+- 预防：控制所有章纲框的全局工具应放在章纲工具栏，不放进章节卡片循环；测试锁定字号控件不再出现在卡片源码里，并且位于字段尺寸按钮左侧。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲关联设定按钮右侧只应紧邻显示关联字数
+
+- 现象：章纲页“关联设定”按钮右侧显示“已关联 3 项 · 233 字”，并且因为使用 `justify-between`，字数被推到区域最右侧；未关联时也容易被误认为仍有字数提示。
+- 原因：右侧关联入口的 meta 同时承担数量和字数展示，并使用两端对齐布局，导致按钮和字数之间距离过远。
+- 处理：关联 meta 改为仅在关联字数大于 0 时显示 `WordCountText`；移除“已关联 N 项”文案；布局改为 `flex items-center gap-3`，让字数紧跟按钮右侧。
+- 预防：关联入口的按钮负责表达是否已关联，按钮旁 meta 只显示关联字数；不要用 `justify-between` 推开按钮和字数。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲卡片清空按钮需要嵌入右下边框
+
+- 现象：中间区域单章章纲框的“清空”显示在框内右下角，和边框贴合不够，用户希望嵌入到章纲框右下边框线上。
+- 原因：章纲卡片本身没有独立的贴边清空按钮，只依赖右侧或底部清空入口，无法对单章卡片形成一致的边框嵌入操作位。
+- 处理：给每个章纲卡片新增只清空本章章纲的 `xy-floating-outline-card-clear-tool` 按钮，并复用 `xy-border-embedded-transparent-backplate`；CSS 将按钮定位到右下边框，使用 `bottom: 0` 和 `translateY(50%)` 压在边框线上。
+- 预防：章纲卡片级操作要放在卡片自身边框工具位，和右侧 AI 输出框清空区分；测试锁定按钮 class、清空本章逻辑和右下边框定位。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链双标签测试需要更贴近长链推进工作流
+
+- 现象：剧情链双标签测试虽然拆成了生成和预览，但左侧未写/已写状态不够突出；没有总链预览；生成候选只是静态展示，不能清楚表达“从 1/2/3 继续生成 4 并接到链尾”；写过的剧情点迁移和链尾建议也不够集中。
+- 原因：测试页仍以静态候选和单卡片预览为主，缺少“链尾生成下一号剧情点”“总链一眼看完”“状态分类强提示”这三个长链核心入口。
+- 处理：左侧未写/已写分组改为更醒目的双状态目录；生成页固定显示链尾剧情点和下一号剧情点，点击候选会追加为新的链尾并切到预览；预览页顶部新增剧情链总览；标为已写会移动到已写分类；下一步建议只出现在最大序号链尾剧情点。
+- 预防：剧情链测试页后续改动必须同时覆盖五个工作流：状态目录、总链预览、链尾续写、已写迁移、链尾建议。测试需覆盖候选追加成新链尾和尾巴标为已写后建议仍只跟随最大序号。
+- 验证：执行 `npm.cmd run test:run -- src/features/tests/pages/PlotChainTabbedLayoutTestPage.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链预览不应给每个已串联剧情点重复提示衔接到下一个编号
+
+- 现象：剧情链预览页每个剧情点下方都显示“衔接到 N”，即使这些剧情点已经连成剧情链，也会继续提示衔接到 4、5，干扰用户判断当前未写尾部下一步方向。
+- 原因：预览卡片按数组里的 `next` 固定渲染桥接说明，没有区分“链内既有衔接”和“最后未写剧情点之后的生成建议”。
+- 处理：卡片内不再显示“衔接到 N”；只在当前未写剧情点中序号最大的那个剧情点下方显示“下一步推荐方向”。右侧 AI 建议也从最大编号改为最后未写剧情点，已写状态变化后会自动前移。
+- 预防：剧情链预览页只展示已成链内容，下一步方向属于尾部未写剧情点的生成建议；测试需要锁定不会再出现 `衔接到`，并覆盖尾部剧情点标为已写后的建议前移。
+- 验证：执行 `npm.cmd run test:run -- src/features/tests/pages/PlotChainTabbedLayoutTestPage.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲右侧 AI 输出框清空按钮和选中章节信息位置混乱
+
+- 现象：章纲页右侧 AI 输出框的“清空”按钮停在上边框标题线附近；输出框下方还显示当前卷/章节、正文或章节字数信息，和用户要求删除的图 2 内容一致。
+- 原因：右侧区域在输出框后额外渲染了一块 `isDetailOutlineTab` 选中章节信息；清空按钮复用了贴边标题线定位，未按右侧输出框内部操作按钮处理。
+- 处理：删除右侧输出框下方的选中卷/章节信息块；把 `xy-floating-outline-inner-clear-tool` 改为框内右下角定位，保留透明贴边按钮样式。
+- 预防：章纲页右侧只承担 AI 输出和关联/操作入口，不再重复展示当前章节字数；清空按钮位置由 CSS 测试锁定在底部右侧，同时测试右侧源码不再包含选中章节信息块。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲右侧 AI 输出框不应显示字数统计
+
+- 现象：章纲页右侧 AI 输出框边框标题旁仍显示 `0字`，用户要求删除；同时中间区域章纲卡片自身的字数统计不应被删。
+- 原因：右侧 AI 输出框的 `shouldShowOutlineDraftWordCount` 把 `isDetailOutlineTab` 也算作显示条件，导致章纲页右侧标题线继续浮出字数；此前修复时又误把中间卡片统计当作目标。
+- 处理：右侧 AI 输出框只在剧情链 standalone 模式显示字数；中间章纲卡片恢复基于 `outlineCardContent` 的字数统计，并保持它不进入边框标题 label。
+- 预防：章纲页有两个不同区域的字数统计：右侧 AI 输出框字数不要显示；中间章纲卡片内容字数要保留。测试需要分别锁定这两个位置。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链预览卡片状态按钮不应单独占用空白行
+
+- 现象：剧情链预览卡片顶部左侧整行空白，只在右侧显示“移回未写 / 标为已写”按钮，导致卡片内容被往下挤，视觉上像缺了一块。
+- 原因：测试页预览卡片把状态按钮放在独立的 `justify-end` 顶部行；正式页已选剧情点卡片也保留了一个 `aria-hidden` 的空 flex 占位。
+- 处理：测试页将状态按钮并入剧情点标题/正文同一行右侧；正式页将正文直接放到序号和按钮之间，删除空占位。
+- 预防：剧情链卡片的状态按钮应作为内容行的右侧操作，不再创建只有右侧按钮的空白行；测试锁定不再出现 `mb-3 flex items-center justify-end` 和空 `aria-hidden` 占位。
+- 验证：执行 `npm.cmd run test:run -- src/features/tests/pages/PlotChainTabbedLayoutTestPage.test.tsx`、`npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲关联设定需要支持关联剧情链
+
+- 现象：章纲的“关联设定”弹窗只能选择设定、角色和前文章纲，无法把当前剧情链作为章纲生成上下文一起发给 AI。
+- 原因：关联弹窗只有三类 `DetailOutlineReaderTab` 和三套选择状态，AI 请求上下文也只拼接 `关联设定 / 关联角色 / 关联章纲`。
+- 处理：新增 `剧情链` 标签和 `detailOutlineReaderPlotChainIds` 持久字段；将当前主链已选剧情点整理为可勾选条目，支持关联所有、清空和单项勾选；AI 上下文新增 `【关联剧情链】` 分组，章纲默认提示词同步说明会参考剧情链。
+- 预防：章纲生成新增上下文来源时，要同时补类型、草稿选择、持久配置、弹窗标签、字数统计、输出日志和最终请求文本，避免只显示入口但不发送给 AI。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲卡片边框标题不应和正文字数挤在一起
+
+- 现象：章纲卡片边框标题仍显示成“第N章章纲 0字（第N卷）”一类拥挤效果，正文字数和卷信息夹在同一条边框线上，截图中出现文字压叠。
+- 原因：此前只删除了左侧标题 label 里的正文计数，但右侧章节 meta 仍在章纲卡片边框线上渲染 `chapter.wordCount`，左侧标题还包含卷信息，双方继续抢空间。
+- 处理：章纲卡片左侧标题只保留 `第N章章纲`；右侧 meta 改为 `第N卷 · 章节名`，不再显示正文 `WordCountText`。概要卡片仍保留原本的章节字数显示。
+- 预防：章纲卡片边框线上只放定位信息和章节名，不放正文统计；正文统计如果需要显示，应放在中间章纲内容区的独立统计位置。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链预览测试页需要提供未写转已写入口
+
+- 现象：剧情链测试页里“当前承接”命名不符合当前设计语义；切到“剧情链预览”后，只能查看剧情点衔接，不能把未写剧情点标为已写，也看不到它移动到已写分组。
+- 原因：测试页仍使用固定 `plotPoints` 状态数组，左侧目录按初始状态分组，预览页没有状态迁移按钮。
+- 处理：将“当前承接”改名为“当前剧情点”；测试页根组件新增已写剧情点状态集合，预览页每个剧情点卡片新增“标为已写 / 移回未写”按钮，点击后同步刷新左侧“未写剧情 / 已写剧情”分组。
+- 预防：剧情链测试页涉及状态流转时，不能只做静态预览；预览页也要暴露推进状态按钮，并用交互测试确认分组迁移。
+- 验证：执行 `npm.cmd run test:run -- src/features/tests/pages/PlotChainTabbedLayoutTestPage.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲右侧 AI 输出需要支持替换所选章纲和撤销
+
+- 现象：章纲页最右侧区域仍按“章纲预览/保存章纲”理解，用户生成 AI 章纲后，无法明确用右侧 AI 输出替换当前选中的章纲，也没有误替换后的撤销入口。
+- 原因：右侧草稿 `outlinePreviewDraft` 同时承担预览和编辑保存含义，按钮只调用旧的保存逻辑，替换前没有记录所选章纲原内容。
+- 处理：将细纲页右侧标题改为 `AI输出章纲`，选择章节时不再把已保存章纲自动回填到右侧 AI 输出；把“保存章纲”改为“替换章纲”；替换前缓存章节序号、原章纲内容和 AI 输出草稿，并在“复制章纲”左侧新增“撤销替换”按钮用于恢复上一次替换。
+- 预防：AI 输出区和正式章纲内容区要保持职责分离；任何覆盖式写入都需要保存上一次快照并提供同屏撤销入口。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲卡片标题不应显示正文内容字数
+
+- 现象：章纲卡片上边框标题里显示“第N章章纲 + 0字 + 卷信息”，字数统计和标题挤在一起，仍会造成视觉重叠。
+- 原因：章纲卡片标题 label 在 `isDetailOutlineTab` 下额外渲染了 `countTextWords(outlineCardContent)`，把正文内容字数放到了卡片边框标题线上。
+- 处理：删除章纲卡片标题里的 `WordCountText`，只保留章纲标题本身；中间章纲预览区域原有的字数统计不改。
+- 预防：卡片边框标题只承担定位和标题职责；字数统计应放在预览区或独立统计位，避免和章节/卷信息抢同一条边框线。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 脑洞预览框边线颜色和新脑洞输出框不一致
+
+- 现象：脑洞页面左侧“脑洞4”预览框边线是浅灰蓝色，中间“新脑洞1”输出框边线是深色，两个相邻内容框视觉不统一。
+- 原因：左侧脑洞预览同时使用了 `xy-floating-outline-preview`，继承通用预览框的 `border-color: #d9e2ea`；中间新脑洞输出框只使用普通 `xy-floating-outline-fixed`，保留了深色 `#111827` 边线。
+- 处理：给 `xy-brainstorm-preview-field textarea` 增加专用 `border-color: #111827`，只把脑洞预览框改成和新脑洞输出框一致的深色线。
+- 预防：脑洞页左右相邻主内容框的边线颜色要单独锁定；通用预览框的浅色边线不能自动套到脑洞主预览。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 脑洞输出贴边标题和同排边框标题不在同一水平线
+
+- 现象：脑洞页面中间输出框的“新脑洞1 + 字数统计”贴边标题和黑色上边框，比左侧“脑洞4 + 字数统计”与右侧生成配置标题整体下沉，看起来没有水平对齐。
+- 原因：脑洞输出区是 `overflow-y-auto` 滚动列表，贴边标题会向边框上方伸出半个标题高度；如果顶部留白只有 `0.25rem`，标题会被滚动容器裁剪，如果留白保持 `0.625rem`，首个输出框边框又会比左侧下沉 6px。
+- 处理：保留 `xy-brainstorm-output-preview-list` 的 `padding-top: 0.625rem` 作为标题裁剪缓冲，同时增加 `margin-top: -0.375rem` 抵消这 6px 下沉，让中间输出框上边框与左侧脑洞预览对齐且标题完整显示。
+- 预防：滚动容器里的贴边标题不能只按边框位置调 padding；必须同时保留裁剪缓冲并用外层位移校正边框起点。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 章纲卡片浮动标题和右侧章节信息会重叠
+
+- 现象：章纲页面卡片上边框的“第N章章纲 + 字数”和右侧章节/卷信息在窄宽度下互相压住，出现文字重叠。
+- 原因：左侧 `xy-floating-title-count` 虽然有最大宽度，但章纲卡片右侧 meta 仍可占到 58%，左侧标题文本也没有独立截断容器，双方在同一条边框线上争空间。
+- 处理：给章纲卡片标题增加 `xy-detail-outline-title-count` 和 `xy-floating-title-text`，左侧标题按 `min(13rem, calc(42% - 1.5rem))` 限宽并省略；右侧章节 meta 从 `max-w-[58%]` 收到 `max-w-[44%]`。
+- 预防：同一条边框上同时有左右浮动信息时，两侧都必须有最大宽度，标题文本要独立支持 ellipsis，不能只依赖整组 label nowrap。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链卡片删除命名和生成章纲位置需要统一
+
+- 现象：已选剧情点卡片里的破坏性按钮仍叫“移除”，不如“删除”明确；“生成章纲”放在每张卡片右侧，和过滤按钮分散，卡片操作区也偏挤。
+- 原因：此前把生成章纲当成单张剧情点操作放进卡片按钮组，但当前需求是针对当前剧情链整体生成章纲；过滤按钮使用固定三列，扩展新按钮时不够灵活。
+- 处理：把“移除”改名为“删除”；将“生成章纲”移动到左二顶部过滤按钮行，放在 `全部 / 只看未写 / 只看已写` 右侧；按钮行改为 `flex-wrap` 和 `basis` 自适应宽度。
+- 预防：链级操作优先放在链级工具条，单卡片只保留该剧情点自身状态和删除动作；过滤/操作混排时用自适应宽度，不再固定三列。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链已写视图需要只显示已写并支持移回未写
+
+- 现象：正式剧情链左二的“已写隐藏”与“只看未写”效果重复，用户进入已写相关视图时仍看到未写内容；误点“标为已写”后也缺少撤回入口。
+- 原因：正式页沿用了测试方案里的 `hideWritten` 模式，但正式数据没有废弃状态，导致第三个过滤按钮没有独立价值；已写卡片按钮被禁用，只能显示状态不能恢复。
+- 处理：将第三个过滤模式改为“只看已写”，过滤时只显示已写剧情点；已写卡片按钮改为“移回未写”，点击后从当前链已写集合移除，并重新出现在未写序号导航里。
+- 预防：过滤按钮名称必须对应可见内容；所有容易误点的状态迁移都要提供同屏撤回动作。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链方案 E 需要转入正式页并删除临时测试
+
+- 现象：方案 E 已在测试集合里确认，但正式剧情链页面仍停留在多链目录和普通已选卡片结构，测试集合也继续保留“剧情链左二调试方案”临时入口。
+- 原因：方案选型完成后没有立即迁入 `WorkbenchLibraryPanel`，导致正式页面和测试预览出现两套剧情链交互。
+- 处理：正式剧情链页改为方案 E：左一显示当前主链、未写序号导航、右键重命名和备选链折叠；左二加入 `全部 / 只看未写 / 已写隐藏`、当前卡片高亮和“标为已写”；删除测试集合入口、临时测试页和测试页单测。
+- 预防：测试页选型完成后必须迁入正式页面，并同步删除测试入口，避免用户继续在临时方案和正式功能之间来回找。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链方案 E 主链操作不应占用左侧目录空间
+
+- 现象：方案 E 左侧当前主链下方仍显示“重命名 / 返回对比”两个按钮，占用目录树空间；用户确定主链后也不再需要返回多链对比入口。
+- 原因：主链锁定方案沿用了多链对比阶段的显性操作按钮，把低频操作和主线推进导航放在同一层级。
+- 处理：删除方案 E 的返回对比入口和对比分支；重命名改为当前主链分组的右键菜单项，默认界面只保留可折叠主链和未写序号导航。
+- 预防：确定主链后的左侧栏优先展示推进目录；低频链级操作放入上下文菜单，不再占用常驻按钮位。
+- 验证：执行 `npm.cmd run test:run -- src/features/tests/pages/PlotChainLeftDetailTestPage.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链方案 E 当前主链需要折叠未写序号导航
+
+- 现象：方案 E 左侧“当前主链”仍是大信息卡片，只显示主链名称和未写数量，不能像目录分组一样折叠，也不能直接按未写剧情点序号跳转。
+- 原因：主链信息展示和长链推进导航混在同一张卡片里，左侧空间被信息卡占用，几百个剧情点时缺少稳定的未写入口。
+- 处理：将当前主链改成可折叠分组，展开后只显示未写剧情点的数字按钮；点击数字会切回全部视图并选中对应剧情点，标为已写后该数字从未写导航中移除。
+- 预防：长剧情链确认主链后，左侧优先承担目录导航职责；信息说明保持在分组标题和计数里，未写推进入口必须跟状态流转联动并用交互测试覆盖。
+- 验证：执行 `npm.cmd run test:run -- src/features/tests/pages/PlotChainLeftDetailTestPage.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链方案 E 需要把已完成剧情点移入已写板块
+
+- 现象：剧情链左二调试方案 E 只展示过滤，用户看不到“未写剧情点写完以后进入已写板块”的迁移过程；卡片内容也太空，无法判断已写板块和未写板块的信息密度。
+- 原因：方案 E 最初只模拟长剧情链过滤状态，剧情点列表没有分成未写/已写/废弃板块，标记已写后也只是从当前过滤列表消失。
+- 处理：方案 E 改为本地看板状态，默认展示 `未写板块 / 已写板块 / 废弃板块`；列表卡片补两行正文预览，底部详情补正文、AI评价和衔接；点击“标为已写”后，当前卡片从未写板块移动到已写板块。
+- 预防：测试方案里的按钮不能只做样式占位；涉及状态流转时，要展示对象从一个板块迁移到另一个板块的完整过程，并用交互测试锁定迁移结果。
+- 验证：执行 `npm.cmd run test:run -- src/features/tests/pages/PlotChainLeftDetailTestPage.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 项目缺少一键快速验证门禁
+
+- 现象：项目优化和 UI 调整后，需要手动记住 `check`、Electron 语法检查、启动器检查、测试和构建命令，容易漏跑某一项。
+- 原因：`package.json` 只有分散脚本，没有 lint、format、launcher check 和快速验证组合脚本；长期会让回归问题更晚暴露。
+- 处理：新增 ESLint flat config、Prettier 配置和 `lint`、`format`、`format:check`、`check:launcher`、`verify:quick`、`verify` 脚本；`verify:quick` 覆盖 lint、类型检查、Electron/启动器语法检查和测试。
+- 预防：以后提交前优先跑 `npm.cmd run verify:quick`；涉及发布或打包前再跑 `npm.cmd run verify`。
+- 验证：执行 `npm.cmd run lint`、`npm.cmd run check`、`npm.cmd run check:electron`、`npm.cmd run check:launcher`、`npm.cmd run test:run`、`npm.cmd run build`。
+
+## 启动日志需要轮转避免越积越大
+
+- 现象：`launcher.log`、`dev-server.log`、`electron-dev.log` 会持续追加，时间久了会变成很大的本地文件，影响排查和 Git 清理。
+- 原因：启动器只负责追加日志，没有在写入前检查文件大小，也没有稳定的 `.old` 备份策略。
+- 处理：新增 `scripts/logRotation.mjs`，在启动器创建日志流前按 5MB 上限轮转三类日志，并补 `scripts/logRotation.test.mjs` 锁定空文件、小文件、大文件和目录缺失场景。
+- 预防：以后新增长期追加日志时先接入统一轮转函数，不要在启动脚本里各写一套文件大小判断。
+- 验证：执行 `npm.cmd run test:run -- scripts/logRotation.test.mjs`、`npm.cmd run check:launcher`。
+
+## 工作台存储读取需要统一 normalize
+
+- 现象：本地存储里的作品、卷章节映射或回收站数据一旦出现坏数据，工作台初始化容易回退不一致，后续页面会读到形状不稳定的数据。
+- 原因：`useWorkbenchData` 局部 JSON 读取逻辑和共享 `jsonStorage` 分散存在，初始化、刷新和回收站读取没有统一经过显式 normalizer。
+- 处理：`useWorkbenchData` 改为复用 `readJsonValue`、`writeJsonValue`，并导出 `normalizeWorkbenchNovels`、`normalizeWorkbenchVolumeMap`、`normalizeWorkbenchRecycledMap`；新增存储测试覆盖坏数据、缺失字段和回收站兜底。
+- 预防：以后新增工作台本地存储 key 时同步提供 normalizer 和单测，页面不直接信任 `localStorage` 反序列化结果。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/hooks/useWorkbenchData.storage.test.ts src/shared/storage/jsonStorage.test.ts`、`npm.cmd run check`。
+
+## 剧情链交互测试不能只靠源码字符串
+
+- 现象：剧情链测试页和正式页频繁改 UI 时，只检查源码字符串无法确认按钮真的能点击、折叠和切换。
+- 原因：之前测试更多锁定结构文本，缺少渲染后点击 `1/2/3`、`AI评价`、`AI建议`、隐藏已写、返回对比和确定主链的真实交互覆盖。
+- 处理：新增 `PlotChainLeftDetailTestPage.test.tsx`，渲染测试页并点击关键控件，确认方案 A 的序号跳转和 AI 折叠按钮、方案 E 的过滤与主链锁定都能实际生效。
+- 预防：后续测试页如果有按钮、折叠、过滤或切换状态，至少补一个真实交互测试，不再只做静态预览。
+- 验证：执行 `npm.cmd run test:run -- src/features/tests/pages/PlotChainLeftDetailTestPage.test.tsx`。
+
+## 剧情链模型逻辑不应堆在 WorkbenchLibraryPanel
+
+- 现象：`WorkbenchLibraryPanel.tsx` 已经承载大纲、脑洞、剧情链等大量逻辑，剧情链候选、分数、链名和 slot normalize 继续堆在里面会增加改 UI 时误伤数据逻辑的概率。
+- 原因：剧情链模型辅助函数和组件渲染混在同一个大组件中，测试只能从组件源码间接判断逻辑是否存在。
+- 处理：新增 `src/features/workbench/model/workbenchPlotChain.ts`，抽出剧情链类型、常量、normalize、候选转换、预览文本、评价文本和指标分级函数；新增模型单测并让组件测试读取新模型文件。
+- 预防：以后剧情链纯数据规则优先放在 model 层测试，`WorkbenchLibraryPanel` 只负责状态组合和渲染。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/model/workbenchPlotChain.test.ts src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`。
+
+## Electron 和 webview 安全边界需要测试锁定
+
+- 现象：Electron 主窗口、外部链接和内置 webview 的安全设置如果被后续改动放松，可能不会在普通 UI 测试里暴露。
+- 原因：安全边界主要写在 Electron 主进程和 webview 属性里，缺少针对 `contextIsolation`、`nodeIntegration`、`sandbox`、外部协议白名单和 `allowpopups` 的回归测试。
+- 处理：新增 `electron/security.test.mjs`，检查 BrowserWindow 安全配置、`setWindowOpenHandler` deny 默认策略、`http/https/mailto` 协议白名单，以及 webview 不再使用 `allowpopups`。
+- 预防：以后调整 Electron 窗口、外链打开或 webview 能力时先扩展安全测试，再放开具体协议或能力。
+- 验证：执行 `npm.cmd run test:run -- electron/security.test.mjs`、`npm.cmd run check:electron`。
+
+## 多条剧情链切换和左二栏调试需要方案对比
+
+- 现象：用户可能同时维护多条剧情链并进行对比，需要先快速切换剧情链，再查看当前剧情点正文、AI评价和接下来剧情点衔接；现有左二栏单独承载这些信息会显得拥挤。
+- 原因：剧情链切换和剧情点详情调试是两个不同层级，如果都塞在同一栏里，会导致链切换入口和当前点详情互相抢空间。
+- 处理：在测试集合 AI 链路测试分组末尾新增“剧情链左二调试方案”，四个方案都采用左侧窄栏切换剧情链、右侧调试当前链剧情点的结构，并分别提供顶部序号三段详情、焦点调试卡、时间线展开、折叠调试台。
+- 预防：涉及多条剧情链对比的布局改动，先明确“左侧切链、右侧调点”的层级，再在测试集合末尾新增多方案页，选定后再迁入正式页面并删除测试入口。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链需要主链锁定和隐藏已写测试方案
+
+- 现象：小说剧情链可能有几百个剧情点，已写剧情点继续显示会占用大量空间；确定一条剧情链后，剧情链2、剧情链3仍在左侧出现也会干扰继续推进。
+- 原因：现有测试方案主要围绕多链对比和单点详情，没有模拟“主链已确定后”的单链推进状态，也没有为剧情点状态过滤提供预览。
+- 处理：在“剧情链左二调试方案”末尾新增方案 E：主链锁定 + 隐藏已写剧情点。它默认展示当前主链、重命名、返回对比、备选链折叠，以及 `全部 / 只看未写 / 已写隐藏` 三个过滤按钮。
+- 预防：剧情链正式实现时，剧情点需要保存 `未写 / 已写 / 废弃` 状态；主链确定后只显示当前主链，备选链收进折叠区，不直接删除。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链左二调试方案需要序号跳转和 AI 按钮
+
+- 现象：测试页方案 A 里上方剧情点序号只是静态展示，点击后不会切换到对应剧情点；AI评价和接下来衔接仍是大块内容区，占用空间且不像可折叠操作。
+- 原因：测试预览最初只用于静态布局对比，没有给序号按钮绑定当前剧情点状态，也没有把评价和建议拆成独立按钮。
+- 处理：方案 A 新增当前剧情点状态，点击上方 `1 / 2 / 3` 会切换正文、标题和指标；把 AI评价和 AI建议改成两个按钮，点击后分别展开对应内容。
+- 预防：后续剧情链调试方案如果出现序号导航，必须绑定选中剧情点；AI评价、AI建议这类辅助内容默认以按钮入口呈现，避免直接占满正文空间。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链目录方案 A 需要转正并删除测试页
+
+- 现象：剧情链目录分组方案测试页已确认使用方案 A，继续保留测试入口会干扰测试集合查找。
+- 原因：多方案测试页完成了选型，但正式剧情链目录还没有迁入方案 A 的层级结构，测试集合也还保留临时入口。
+- 处理：正式剧情链目录改为方案 A：分组整行色块，剧情点缩进到左侧竖线下方；删除测试集合里的剧情链目录分组方案入口、预览组件和切换分支。
+- 预防：测试页选型完成后，应立即迁入正式页面并删除对应临时测试入口，避免测试集合长期堆积临时方案。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链目录方案测试页需要可滚动
+
+- 现象：剧情链目录分组方案测试页只能看到方案 A/B，看不到下方方案 C/D，也没有滚动条可往下拉。
+- 原因：测试页内容超过可视高度，但外层容器只设置最小高度，没有在测试集合嵌入视口内提供纵向滚动。
+- 处理：将测试页外层改为 `h-full overflow-y-auto`，并保留底部间距，让 A-D 四个方案都能在当前测试页内滚动查看。
+- 预防：测试集合里的多方案页面应在页面根容器提供自己的滚动，不依赖外层页面滚动。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链指标分数需要颜色等级
+
+- 现象：内容、潜力、衔接三个指标都使用白底，只靠数字区分强弱，80 分和 90 分以上的视觉差异不明显。
+- 原因：指标条没有按分数段建立颜色层级，用户需要逐个读数字才能判断优先级。
+- 处理：新增指标分数颜色函数，90 分以上为金色，80 分以上为紫色，70 分以上为蓝色，70 分以下为绿色；三个指标都按各自分数套用边框、底色和文字色。
+- 预防：评分型指标应同时提供数字和颜色层级，避免所有分数在视觉上同权。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链目录分组样式需要多方案对比
+
+- 现象：当前剧情链目录分组虽然有颜色，但分组块和数字块堆在一起，视觉拥挤且不够美观。
+- 原因：正式页直接迭代单一方案，缺少同尺寸、同数据下的目录树视觉对比。
+- 处理：在测试集合新增“剧情链目录分组方案”测试页，按真实窄栏宽度提供目录树层级、分组卡片、细线目录、紧凑深浅对比四个方案。
+- 预防：剧情链目录这类高频结构调整前，先用测试集合做多方案同域对比，再把选定方案迁入正式页面。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链未选中分组也需要可见底色
+
+- 现象：剧情链目录里只有当前分组是蓝底，未选中的剧情链分组是白底文字，视觉上像普通文本，容易看不到分组边界。
+- 原因：未选中分组按钮使用 `bg-white` 和透明边框，只在 hover 时才出现颜色。
+- 处理：未选中分组改为浅蓝底、浅蓝边框和蓝色文字，数量也改为蓝灰色；选中分组继续使用深蓝底白字。
+- 预防：目录树分组行不应完全依赖 hover 才可见；未选中状态也要保留轻量底色和边界。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链已选栏顶部操作行应移入卡片
+
+- 现象：已选剧情链栏顶部单独显示“剧情链1 / 3点 / 生成章纲”一整行，占用纵向空间；用户希望删除这一行，并把生成章纲放到每个已选剧情点卡片的移除按钮右侧。
+- 原因：生成章纲入口仍放在左二栏 header，和当前以剧情点卡片为主的布局不一致。
+- 处理：删除左二栏顶部 header；在已选剧情点卡片顶部右侧新增“移除 / 生成章纲”按钮组，生成章纲复用原来的 `openDetailOutlineFromPlotPoint`。
+- 预防：剧情链左二栏避免再增加独立顶部操作行；针对已选剧情点的操作优先收进卡片顶部按钮组。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链已选剧情点指标不应挤压正文宽度
+
+- 现象：内容、潜力、衔接三个指标放在卡片右侧固定列，指标名和分数之间留白偏大，同时挤压左侧剧情正文宽度。
+- 原因：指标使用右侧固定宽度列布局，正文和指标横向分栏后，正文区域被迫变窄。
+- 处理：删除右侧指标列，把三个指标改为正文下方、AI评价按钮上方的三列横向信息条。
+- 预防：剧情链已选卡片内的辅助指标不要抢正文横向空间；正文优先满宽，指标放在正文下方横排。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链已选剧情点卡片不应重复显示标题
+
+- 现象：已选剧情点卡片顶部同时显示蓝色数字圆点和“剧情点 1 / 剧情点 2”文字标题，信息重复，用户希望只保留数字序号。
+- 原因：卡片标题区在圆形序号之外又渲染了一行 `剧情点 {index + 1}` 文本。
+- 处理：删除已选剧情点卡片顶部的文字标题，只保留左侧数字序号和右侧移除按钮。
+- 预防：剧情链已选卡片的序号只保留一种表达；如果已有明显数字徽标，不再重复渲染文字编号标题。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链已选剧情点指标应横向单行显示
+
+- 现象：已选剧情点右侧的内容、潜力、衔接三个指标使用上下两行小卡片显示，占用高度偏大，和参考图的单行指标条不一致。
+- 原因：指标栏沿用窄列卡片结构，每个指标内部把标签和分数上下排列，导致三项叠加后视觉过高。
+- 处理：把指标栏改为 `104px` 宽的横向条目，每项使用白底圆角行，左侧显示指标名，右侧显示分数。
+- 预防：剧情链详情卡右侧指标应优先使用紧凑单行信息条，不要回退成上下分层的小卡片。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链目录按钮应白底蓝色选中且 AI 评价默认折叠
+
+- 现象：剧情链目录分组按钮和数字序号仍可能出现橙色选中态；已选剧情点卡片默认展开 AI评价，占用正文展示空间。
+- 原因：目录数字块和剧情链分组按钮继承了旧剧情链选中态的橙色风格；剧情点详情卡把评价内容作为固定内容块直接渲染。
+- 处理：目录分组按钮与数字块都改为白底默认态，当前项使用蓝色选中态；AI评价默认只显示折叠按钮，点击后才展开评价内容，正文区域可显示更多生成内容。
+- 预防：目录按钮的选中态应跟章纲数字块一致用蓝色；辅助评价类内容默认折叠，避免挤占主内容空间。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链目录数字序号块仍然偏大
+
+- 现象：剧情点数字序号块虽然固定尺寸，但视觉上仍然比参考图大，用户希望高度再缩小约 40%，宽度缩小约 20%。
+- 原因：上一版固定为 `48px` 宽、`54px` 高，仍接近卡片按钮尺寸，不够像紧凑目录序号。
+- 处理：把数字序号块压缩为 `38px` 宽、`32px` 高，同时收小圆角和字号。
+- 预防：目录数字块需要按参考图的紧凑尺度落地，避免把卡片按钮尺寸直接搬到目录里。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链目录数字序号块不应随栏宽拉伸
+
+- 现象：剧情链下的数字序号块在窄栏里被拉得过宽过高，和章纲目录里紧凑的固定尺寸数字块不一致。
+- 原因：数字块容器使用 CSS grid 的 `1fr` 列宽，按钮会跟随可用宽度均分拉伸。
+- 处理：改为 `flex-wrap` 固定尺寸数字块，每个序号按钮使用固定宽高并自动换行，不再随栏宽撑大。
+- 预防：固定格式的目录序号应使用稳定宽高和换行布局，不要使用 `1fr` 让按钮被容器拉伸。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链目录子项需要用数字序号网格
+
+- 现象：剧情链分组展开后显示“剧情点1、剧情点2”这类纵向文字行，但用户希望像章纲目录一样用 `1 / 2 / 3` 的数字方块网格表示剧情点序号。
+- 原因：此前沿用章节行列表结构，只改了文本，没有复用章纲目录的数字序号块视觉。
+- 处理：把每条剧情链下的剧情点子项改成自适应网格数字按钮，只显示序号数字，hover 和选中链时使用边框/底色强调。
+- 预防：用户引用章纲目录数字序号时，应优先使用数字块网格，而不是文字列表行。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链目录不应保留总剧情链分组
+
+- 现象：左侧目录树顶部还保留一个总“剧情链”分组，下面才是剧情链1、剧情链2、剧情链3；用户希望删除总分组，让每条剧情链本身成为可折叠分组，并在分组下显示具体剧情点序号。
+- 原因：此前按正文卷/章节结构做了“剧情链”总分组，但剧情链业务层级本身已经是分组，不需要再包一层总目录。
+- 处理：移除总“剧情链”分组，直接将剧情链1、剧情链2、剧情链3渲染为可折叠分组行；每个分组右侧显示剧情点数量，展开后列出剧情点1、剧情点2等序号项。
+- 预防：目录树层级要和业务层级一致；当业务对象本身就是分组时，不要额外再套一个同名父分组。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链详情需要可改名并重排剧情点卡片
+
+- 现象：左二顶部“剧情链1”只是静态标题，目录树不能同步自定义名称；已选剧情点卡片把来源、潜力、链头等标签混在正文上方，内容、AI评价和内容/潜力/衔接指标没有按用户指定结构分区显示。
+- 原因：剧情链只保存 slot 编号和候选 ID，没有保存链名；已选剧情点卡片沿用旧标签式摘要布局，没有把评价和指标拆成明确左右结构。
+- 处理：新增 `plotPointChainNames` 配置并持久化，左二标题改成可编辑输入框，目录树读取同一链名；已选剧情点卡片改成上方标题与移除按钮，下方左侧依次显示剧情内容和 AI评价，右侧固定显示内容、潜力、衔接三个指标。
+- 预防：多条剧情链需要有可命名状态并和目录树共享；剧情点详情卡应区分正文、评价和指标，不要把指标混入正文标签区。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链目录顶部标题多余且缺少左一左二拖拽线
+
+- 现象：剧情链目录顶部额外显示“剧情链 3”标题栏，占用空间；折叠入口不像整行可点击；左一目录树和左二剧情链详情之间没有拖拽分割线。
+- 原因：目录树在正文侧边栏结构外又加了一层独立标题栏，分组折叠按钮只包住内部内容；四栏 grid 只给左二到中间、第三栏到右侧配置加了拖拽 handle，没有给目录树宽度单独建状态。
+- 处理：删除目录顶部标题栏，把“剧情链”分组行改成整行按钮并增加 `aria-expanded`；新增剧情链目录宽度状态、持久化和拖拽分割线，让左一和左二之间可调整宽度。
+- 预防：目录树复用正文样式时不要额外叠标题栏；分组折叠入口应整行可点；新增独立分栏时要同步补宽度状态、持久化和拖拽手柄。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链目录树需要沿用正文目录结构
+
+- 现象：剧情链目录虽然改成竖排，但不像正文“未发布 / 已发布”目录树；用户希望“未发布”改名为“剧情链”，章节项改成剧情链1、剧情链2等，并且分组可以折叠。
+- 原因：此前只做了独立的竖向按钮列表，没有复用正文侧边栏的标题栏、数量徽标、卷分组行、Chevron 折叠和章节行样式。
+- 处理：把剧情链目录改成正文目录同款结构：顶部标题为“剧情链”，下方分组行也为“剧情链”并可折叠；子项显示剧情链1、剧情链2等，右侧显示各链剧情点数量。
+- 预防：用户明确要求参考已有目录树时，优先复用既有目录层级和视觉结构，不要只把按钮改成竖排。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链导航不应使用横向滚动条
+
+- 现象：剧情链1、剧情链2等按钮横向排列后，左侧区域出现底部滚动条；用户希望它像目录树一样显示，并把剧情链页面拆成目录、当前链详情、AI剧情点和右侧配置四个区域。
+- 原因：此前把剧情链 slot 导航和当前链详情放在同一个左侧栏里，为了容纳较长按钮只能使用 `overflow-x-auto`，导致出现横向滚动条。
+- 处理：新增固定宽度的剧情链目录树栏，剧情链按钮改为竖向全宽目录项；当前剧情链的剧情点列表独立为左二栏，页面 grid 改为目录树、当前链详情、AI生成候选、右侧配置四栏。
+- 预防：目录或链路选择器不要放在横向滚动导航里；当导航项需要显示名称和数量时，应优先使用竖向目录树，并把导航与详情拆成独立区域。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链切换按钮需要显示链名和剧情点数量
+
+- 现象：左侧顶部只有 `1 / 2 / 3` 三个数字按钮，用户需要自行理解它们代表剧情链；按钮上也看不出每条剧情链下已有多少剧情点。
+- 原因：剧情链切换沿用了紧凑数字 slot 样式，只用圆点提示是否有内容，没有把链名和内容数量作为导航信息展示出来。
+- 处理：把数字按钮改成横向剧情链导航，每个按钮显示“剧情链1 / 剧情链2”等名称，并在按钮内显示该链的剧情点数量，如“1点”。
+- 预防：多条业务链路的切换入口不要只显示编号；需要同时给出对象名称和关键状态数量，避免用户在不同链之间切换时丢失上下文。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链已选剧情点移除按钮不够醒目
+
+- 现象：已选剧情点卡片右上角的“移除”只是红色纯文字，和卡片内容混在一起，不像一个明确可点击的移除动作。
+- 原因：移除按钮只设置了文字颜色和粗体，没有边框、底色或固定点击区域，视觉权重不足。
+- 处理：把“移除”改为浅红底、红色边框、固定高度和阴影的警示按钮，并保留 hover 强调。
+- 预防：破坏性或移除类操作不能只用裸文字；至少要给出清晰的点击区域、边框和 hover 反馈。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 剧情链中间栏操作按钮仍停在顶部标题区
+
+- 现象：生成剧情链页面中间区域顶部仍显示“剧情点预览”和“等待手动刷新衔接剧情 · 5 个”等说明文字，`清空 / 重新生成 / 继续生成` 也停在顶部，没有移动到剧情点选择框下方的屏幕最下方。
+- 原因：`plotPointStandalone` 中间栏把标题、状态说明和三个操作按钮写在同一个顶部 header 中；此前调整时没有把按钮行从顶部结构迁出。
+- 处理：删除中间栏顶部标题和状态说明，让剧情点候选列表占据 `flex-1` 滚动空间；把 `清空 / 重新生成 / 继续生成` 三个按钮移动到候选列表之后的底部 `border-t` 操作行，只保留这三个按钮。
+- 预防：剧情链中间栏后续只保留候选选择内容和底部操作按钮；涉及“移动到最下方”的 UI 修改要用源码顺序测试确认操作行在候选列表之后，并确认旧标题/状态文案不在该区域出现。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 脑洞预览和输出贴边标题未完全按设定预览嵌入
+
+- 现象：脑洞页左侧“脑洞4”和字数统计仍不像“大纲/设定预览”的同组贴边标签；右侧“新脑洞1”和“清空”贴到容器顶部，被上边缘裁切，且“清空”还是独立白色圆角小框，不像边框内文字工具。
+- 原因：脑洞可编辑标题位于 `.xy-floating-field` 内，既会继承普通 input 的盒模型，又受组件里的 Tailwind `min-w` 撑宽，导致字数统计离标题不够像同组标签；此前还禁用了脑洞标题组的 `::before` 线遮罩，使它和设定预览的贴边遮线方式不一致。右侧输出列表顶部只留 `0.25rem`，负向浮动的标题和清空按钮没有足够空间；“清空”还保留 `bg-white shadow-sm` 的按钮外框，和透明贴边背板不一致。
+- 处理：脑洞预览/输出标题组改回和设定预览一致的 `20px` 行高、`22px` 左偏移、同组 `::before` 遮线；标题输入框宽度改按中英文字符估算为 `em`，并用 CSS 变量覆盖 Tailwind 最小宽度；通用贴边工具继续使用 `background-color`，避免清掉遮线背景图；右侧输出列表顶部留白收敛为 `0.625rem`，让输出框顶线和脑洞预览、模型/提示词框保持水平，同时保留 10px 顶部安全空间；“清空”改为 `xy-border-embedded-transparent-backplate` 透明贴边文字工具，和“新脑洞1”共用 `20px` 贴边行高。
+- 预防：可编辑贴边标题不能只看中心线是否对齐，还要复用设定预览的同组遮线、行高和标签宽度策略；带负向浮动标题/按钮的滚动容器必须给顶部预留可见空间；贴边清空类动作不能再回退成白色圆角浮框。
+- 验证：用 Chrome 真实渲染复现“脑洞4 106字 / 新脑洞1 0字 / 清空”：左侧标题与字数间距约 `6.31px`，脑洞标题组 `::before` 为 `block`；右侧输出标题相对滚动容器顶部约 `15.4px`，清空按钮约 `11px`，不再被裁切。执行 `npm.cmd run test:run -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
 
 ## 脑洞流式输出需要嵌入输出框底边
 

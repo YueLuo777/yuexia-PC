@@ -1,0 +1,8 @@
+node_modules
+dist
+release
+runtime/postgres
+shujuku/postgres-data
+*.log
+*.pid
+package-lock.json

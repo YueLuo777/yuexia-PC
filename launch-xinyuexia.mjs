@@ -3,6 +3,8 @@ import { createWriteStream, existsSync, openSync, readFileSync, rmSync, writeFil
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { rotateLogFile } from './scripts/logRotation.mjs';
+
 const root = path.dirname(fileURLToPath(import.meta.url));
 const mode = process.argv[2] ?? 'desktop';
 const port = 18328;
@@ -17,6 +19,7 @@ const electronExe = path.join(root, 'node_modules', 'electron', 'dist', 'electro
 const electronMain = path.join(root, 'electron', 'main.cjs');
 const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
+rotateLogFile(launcherLogFile);
 const logStream = createWriteStream(launcherLogFile, { flags: 'a' });
 const log = (message) => {
   const line = `[${new Date().toISOString()}] ${message}\n`;
@@ -149,6 +152,7 @@ function cleanupElectronMainProcesses() {
 
 function startVite() {
   ensureFileExists(viteEntry, 'Vite 启动文件');
+  rotateLogFile(viteLogFile);
   const outFd = openSync(viteLogFile, 'a');
   const child = spawn(process.execPath, [viteEntry, '--host', '127.0.0.1', '--port', String(port)], {
     cwd: root,
@@ -165,6 +169,7 @@ function startElectron(loadDist = false, startHash = '', disableAdjustmentMode =
   ensureFileExists(electronExe, 'Electron 可执行文件');
   ensureFileExists(electronMain, 'Electron 主进程文件');
   cleanupElectronMainProcesses();
+  rotateLogFile(electronLogFile);
   const outFd = openSync(electronLogFile, 'a');
   const child = spawn(electronExe, [electronMain], {
     cwd: root,

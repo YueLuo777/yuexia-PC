@@ -8,13 +8,40 @@ import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
 import { readModelSnapshot } from '@/features/models/hooks/useModels';
 import { callModel, callModelStream } from '@/features/models/services/callModel';
 import { readPlotLibrarySnapshot } from '@/features/plot-library/hooks/usePlotLibrary';
-import type { PlotLibraryItem } from '@/features/plot-library/model/plotLibraryTypes';
 import { normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import { clearWorkbenchLinkedBrainstorm } from '@/features/workbench/model/workbenchAssociationCleanup';
 import { shouldSyncOutlinePreviewDraft } from '@/features/workbench/model/workbenchOutlineSync';
-import { getPlotPointDisplayText, getPlotPointScoreColorClass, prepareCollapsedPlotPointCard } from '@/features/workbench/model/workbenchPlotPointCard';
+import { getPlotPointScoreColorClass, prepareCollapsedPlotPointCard } from '@/features/workbench/model/workbenchPlotPointCard';
+import {
+  DEFAULT_PLOT_POINT_OPENING_ELEMENTS,
+  PLOT_POINT_CHAIN_SLOTS,
+  PLOT_POINT_FALLBACK_CANDIDATES,
+  PLOT_POINT_GENERATE_COUNTS,
+  PLOT_POINT_OPENING_ELEMENT_OPTIONS,
+  getPlotPointLengthLabel,
+  getWorkbenchPlotPointDecisionMetrics,
+  getWorkbenchPlotPointDisplayText,
+  getWorkbenchPlotPointFitClass,
+  getWorkbenchPlotPointFitLabel,
+  getWorkbenchPlotPointMetricClass,
+  getWorkbenchPlotPointPreviewText,
+  getWorkbenchPlotPointReview,
+  getWorkbenchPlotPointText,
+  normalizePlotPointChainNames,
+  normalizePlotPointChainSelections,
+  normalizePlotPointChainSlot,
+  normalizePlotPointGenerateCount,
+  normalizePlotPointLengthMode,
+  normalizePlotPointOpeningElements,
+  normalizePlotPointSourceMode,
+  plotLibraryItemToCandidate,
+  type PlotPointChainSlot,
+  type PlotPointLengthMode,
+  type PlotPointSourceMode,
+  type WorkbenchPlotPointCandidate,
+} from '@/features/workbench/model/workbenchPlotChain';
 import { buildPlotPointOutputFormatInstruction } from '@/features/workbench/model/workbenchPlotPointPrompt';
 import {
   DEFAULT_WORKBENCH_ROLE_TYPES,
@@ -135,6 +162,9 @@ const BRAINSTORM_LAYOUT_RIGHT_MIN_WIDTH = 340;
 const BRAINSTORM_LAYOUT_RIGHT_MAX_WIDTH = 760;
 const BRAINSTORM_LAYOUT_OUTPUT_MIN_WIDTH = 320;
 const PLOT_POINT_LAYOUT_LEFT_WIDTH = 300;
+const PLOT_POINT_LAYOUT_TREE_WIDTH = 168;
+const PLOT_POINT_LAYOUT_TREE_MIN_WIDTH = 132;
+const PLOT_POINT_LAYOUT_TREE_MAX_WIDTH = 260;
 const PLOT_POINT_LAYOUT_LEFT_MIN_WIDTH = 220;
 const PLOT_POINT_LAYOUT_LEFT_MAX_WIDTH = 520;
 const PLOT_POINT_LAYOUT_RIGHT_WIDTH = 360;
@@ -205,177 +235,7 @@ type LibraryAiRequestLog = {
   readerContextWordCount?: number;
 };
 
-type PlotPointSourceMode = 'library' | 'ai' | 'mixed';
-type PlotPointLengthMode = 'short' | 'medium' | 'long';
-type PlotPointChainSlot = 1 | 2 | 3;
-type DetailOutlineReaderTab = 'settings' | 'roles' | 'outlines';
-
-type WorkbenchPlotPointCandidate = {
-  id: string;
-  title: string;
-  source: '剧情库' | 'AI生成';
-  originalGenre: string;
-  original: string;
-  adapted: string;
-  variable: string;
-  review?: string;
-  score?: string | null;
-};
-
-const PLOT_POINT_CHAIN_SLOTS: PlotPointChainSlot[] = [1, 2, 3];
-const HIDDEN_PLOT_POINT_SOURCE_MODES: PlotPointSourceMode[] = ['library', 'mixed'];
-const PLOT_POINT_GENERATE_COUNTS = [5, 10, 20] as const;
-const PLOT_POINT_LENGTH_MODES: PlotPointLengthMode[] = ['short', 'medium', 'long'];
-const PLOT_POINT_OPENING_ELEMENT_OPTIONS = ['强情绪', '强冲突', '强悬念', '强期待', '强爽点', '强压迫'];
-const DEFAULT_PLOT_POINT_OPENING_ELEMENTS = ['强情绪', '强冲突'];
-
-const PLOT_POINT_FALLBACK_CANDIDATES: WorkbenchPlotPointCandidate[] = [
-  {
-    id: 'fallback-pressure-start',
-    title: '开局强压迫',
-    source: 'AI生成',
-    originalGenre: '通用',
-    original: '主角刚进入故事就被推到压力中心，必须立刻做出选择。',
-    adapted: '主角在关键场合被当众否定，原本依靠的身份、资源或关系同时失效，只能靠一个微弱线索自救。',
-    variable: '压力场景 / 身份失效 / 自救线索',
-  },
-  {
-    id: 'fallback-hidden-cost',
-    title: '获得机会但付出代价',
-    source: '剧情库',
-    originalGenre: '成长流',
-    original: '主角得到一次翻身机会，但机会附带隐藏代价。',
-    adapted: '主角发现一条能逆转困局的路径，但每推进一步都会暴露更深的风险和敌人的关注。',
-    variable: '翻身机会 / 隐藏代价 / 敌人关注',
-  },
-  {
-    id: 'fallback-first-victory',
-    title: '第一场小胜',
-    source: '剧情库',
-    originalGenre: '爽文节奏',
-    original: '主角先赢下一场小胜，让读者看到希望，但大危机还没解除。',
-    adapted: '主角用一个不起眼的细节赢回第一点主动权，同时引出更大的幕后问题。',
-    variable: '小胜 / 主动权 / 幕后问题',
-  },
-];
-
-function getPlotPointLengthLabel(length: PlotPointLengthMode) {
-  if (length === 'short') return '短';
-  if (length === 'medium') return '中';
-  return '长';
-}
-
-function normalizePlotPointSourceMode(value?: string | null): PlotPointSourceMode {
-  if (value === 'ai') return 'ai';
-  if ((value === 'library' || value === 'mixed') && !HIDDEN_PLOT_POINT_SOURCE_MODES.includes(value)) return value;
-  return 'ai';
-}
-
-function normalizePlotPointGenerateCount(value?: number | null): typeof PLOT_POINT_GENERATE_COUNTS[number] {
-  return PLOT_POINT_GENERATE_COUNTS.includes(value as typeof PLOT_POINT_GENERATE_COUNTS[number])
-    ? value as typeof PLOT_POINT_GENERATE_COUNTS[number]
-    : 10;
-}
-
-function normalizePlotPointLengthMode(value?: string | null): PlotPointLengthMode {
-  return PLOT_POINT_LENGTH_MODES.includes(value as PlotPointLengthMode) ? value as PlotPointLengthMode : 'short';
-}
-
-function normalizePlotPointOpeningElements(value?: string[] | null) {
-  const elements = Array.isArray(value)
-    ? value.filter((item) => PLOT_POINT_OPENING_ELEMENT_OPTIONS.includes(item))
-    : DEFAULT_PLOT_POINT_OPENING_ELEMENTS;
-  return Array.from(new Set(elements));
-}
-
-function normalizePlotPointChainSlot(value?: number | null): PlotPointChainSlot {
-  return PLOT_POINT_CHAIN_SLOTS.includes(value as PlotPointChainSlot) ? value as PlotPointChainSlot : 1;
-}
-
-function normalizePlotPointChainSelections(value?: unknown): Record<PlotPointChainSlot, string[]> {
-  const source = value && typeof value === 'object' ? value as Record<string, unknown> : {};
-  return {
-    1: Array.isArray(source['1']) ? source['1'].filter((item): item is string => typeof item === 'string') : [],
-    2: Array.isArray(source['2']) ? source['2'].filter((item): item is string => typeof item === 'string') : [],
-    3: Array.isArray(source['3']) ? source['3'].filter((item): item is string => typeof item === 'string') : [],
-  };
-}
-
-function getWorkbenchPlotPointText(item: WorkbenchPlotPointCandidate, length: PlotPointLengthMode) {
-  if (length === 'short') return item.adapted;
-  if (length === 'medium') return `${item.adapted} 这个剧情点可以展开成一个完整场景，重点写清冲突、选择和结果。`;
-  return `${item.adapted} 这个剧情点可以扩展为多场连续推进：先制造压力，再给主角选择，随后出现代价或反转，最后留下下一步期待。`;
-}
-
-function getWorkbenchPlotPointPreviewText(item: WorkbenchPlotPointCandidate) {
-  return prepareCollapsedPlotPointCard(item).previewText || item.adapted.replace(/\s+/g, ' ').trim();
-}
-
-function getWorkbenchPlotPointDisplayText(item: WorkbenchPlotPointCandidate, previewText: string) {
-  const title = prepareCollapsedPlotPointCard(item).title;
-  return getPlotPointDisplayText({ title, previewText });
-}
-
-function getWorkbenchPlotPointReview(item: WorkbenchPlotPointCandidate, hasChain: boolean) {
-  if (item.review?.trim()) return `AI评价：${item.review.replace(/^AI评价[：:]\s*/, '').trim()}`;
-  if (hasChain) return 'AI评价：适合作为衔接点，重点要承接上一条剧情的后果，不要重新开一条无关冲突。';
-  if (item.source === '剧情库') return 'AI评价：有成熟剧情骨架，适合先做变量替换，再按当前设定调整人物、势力和道具。';
-  return 'AI评价：适合自由生成时使用，建议补足明确目标、强冲突和下一步期待。';
-}
-
-function getWorkbenchPlotPointNumericScore(value: string | null | undefined) {
-  if (!value) return null;
-  const match = value.match(/\d{1,3}(?:\.\d+)?/);
-  if (!match) return null;
-  const score = Number(match[0]);
-  return Number.isFinite(score) ? Math.max(0, Math.min(100, Math.round(score))) : null;
-}
-
-function getWorkbenchPlotPointDecisionMetrics(
-  item: WorkbenchPlotPointCandidate,
-  scoreText: string | null | undefined,
-  hasChain: boolean,
-  index: number,
-) {
-  const baseScore = getWorkbenchPlotPointNumericScore(scoreText) ?? 82;
-  const textLength = item.adapted.length;
-  const clarity = Math.max(68, Math.min(96, baseScore + (textLength < 180 ? 4 : 0) - (textLength > 360 ? 5 : 0)));
-  const potential = Math.max(70, Math.min(98, baseScore + (item.review ? 3 : 0) + (item.source === 'AI生成' ? 1 : 0)));
-  const fit = hasChain
-    ? Math.max(70, Math.min(98, baseScore + 4 - Math.min(index, 4)))
-    : Math.max(68, Math.min(94, baseScore - 1));
-  return { clarity, potential, fit };
-}
-
-function getWorkbenchPlotPointFitLabel(fit: number, hasChain: boolean) {
-  if (hasChain) {
-    if (fit >= 90) return '强衔接';
-    if (fit >= 82) return '可衔接';
-    return '需调整';
-  }
-  if (fit >= 90) return '强开端';
-  if (fit >= 82) return '开端可用';
-  return '需打磨';
-}
-
-function getWorkbenchPlotPointFitClass(fit: number) {
-  if (fit >= 90) return 'border-emerald-200 bg-emerald-50 text-emerald-700';
-  if (fit >= 82) return 'border-cyan-200 bg-cyan-50 text-cyan-700';
-  return 'border-amber-200 bg-amber-50 text-amber-700';
-}
-
-function plotLibraryItemToCandidate(item: PlotLibraryItem): WorkbenchPlotPointCandidate {
-  return {
-    id: `library:${item.id}`,
-    title: item.title || '未命名剧情点',
-    source: '剧情库',
-    originalGenre: item.tags[0] ?? item.chapter ?? '剧情库',
-    original: item.content.trim().slice(0, 120) || item.title,
-    adapted: item.content.trim().slice(0, 180) || item.title,
-    variable: item.tags.length > 0 ? item.tags.join(' / ') : '按当前小说设定替换变量',
-    score: item.rating == null ? undefined : String(item.rating),
-  };
-}
+type DetailOutlineReaderTab = 'settings' | 'roles' | 'outlines' | 'plotChain';
 
 export function parseGeneratedPlotPointCandidates(text: string): WorkbenchPlotPointCandidate[] {
   const clean = stripAiThinkingBlock(text).trim();
@@ -657,6 +517,7 @@ type LibraryTabConfig = {
   detailOutlineReaderSettingIds?: string[];
   detailOutlineReaderRoleIds?: string[];
   detailOutlineReaderOutlineIds?: string[];
+  detailOutlineReaderPlotChainIds?: string[];
   plotPointPromptId?: string;
   detailOutlinePromptId?: string;
   outlineSummaryPromptId?: string;
@@ -670,6 +531,8 @@ type LibraryTabConfig = {
   plotPointPreviewCleared?: boolean;
   plotPointSelectedCandidates?: WorkbenchPlotPointCandidate[];
   plotPointChainSelections?: Partial<Record<PlotPointChainSlot, string[]>>;
+  plotPointChainWrittenSelections?: Partial<Record<PlotPointChainSlot, string[]>>;
+  plotPointChainNames?: Partial<Record<PlotPointChainSlot, string>>;
   plotPointActiveChainSlot?: PlotPointChainSlot;
   modelId?: string;
   promptId?: string;
@@ -757,9 +620,15 @@ function getTemporaryBrainstormTitle(index: number) {
 }
 
 function getFloatingTitleInputStyle(value: string, minCh: number, maxCh: number): CSSProperties {
-  const normalizedLength = Math.max(minCh, Math.min(maxCh, Array.from(value.trim() || ' ').length + 1));
+  const normalizedLength = Math.max(
+    minCh,
+    Math.min(
+      maxCh,
+      Array.from(value.trim() || ' ').reduce((sum, char) => sum + (/[\u4e00-\u9fff]/.test(char) ? 1 : 0.62), 0) + 0.35,
+    ),
+  );
   return {
-    '--xy-floating-title-input-width': `${normalizedLength}ch`,
+    '--xy-floating-title-input-width': `${normalizedLength.toFixed(2)}em`,
   } as CSSProperties;
 }
 
@@ -936,8 +805,18 @@ function persistSettingLibraryWidth(storageKey: string, tab: string, side: 'left
   localStorage.setItem(getSettingLibraryWidthStorageKey(storageKey, tab, side), String(value));
 }
 
-function getPlotPointLayoutWidthStorageKey(storageKey: string, side: 'left' | 'right') {
+function getPlotPointLayoutWidthStorageKey(storageKey: string, side: 'tree' | 'left' | 'right') {
   return `${storageKey}_plot_point_layout_${side}_width_v1`;
+}
+
+function readPlotPointLayoutTreeWidth(storageKey: string) {
+  try {
+    const value = Number(localStorage.getItem(getPlotPointLayoutWidthStorageKey(storageKey, 'tree')) ?? PLOT_POINT_LAYOUT_TREE_WIDTH);
+    if (!Number.isFinite(value)) return PLOT_POINT_LAYOUT_TREE_WIDTH;
+    return Math.min(PLOT_POINT_LAYOUT_TREE_MAX_WIDTH, Math.max(PLOT_POINT_LAYOUT_TREE_MIN_WIDTH, value));
+  } catch {
+    return PLOT_POINT_LAYOUT_TREE_WIDTH;
+  }
 }
 
 function readPlotPointLayoutLeftWidth(storageKey: string) {
@@ -960,7 +839,7 @@ function readPlotPointLayoutRightWidth(storageKey: string) {
   }
 }
 
-function persistPlotPointLayoutWidth(storageKey: string, side: 'left' | 'right', value: number) {
+function persistPlotPointLayoutWidth(storageKey: string, side: 'tree' | 'left' | 'right', value: number) {
   localStorage.setItem(getPlotPointLayoutWidthStorageKey(storageKey, side), String(value));
 }
 
@@ -1659,6 +1538,11 @@ export function WorkbenchLibraryPanel({
   const [outlinePreviewDraft, setOutlinePreviewDraftState] = useState(() => (
     plotPointStandalone ? activeTabConfig.plotPointPreviewDraft ?? '' : ''
   ));
+  const [lastDetailOutlineReplacement, setLastDetailOutlineReplacement] = useState<{
+    chapterSerialNumber: number;
+    content: string;
+    draft: string;
+  } | null>(null);
   const [, forceOutlineSelectionRefresh] = useState(0);
   const [expandedOutlineVolumeIds, setExpandedOutlineVolumeIds] = useState<Set<number>>(() => (
     readExpandedNumberSet(outlineStorageKey ?? storageKey, activeTab, 'outline_volumes')
@@ -1675,6 +1559,7 @@ export function WorkbenchLibraryPanel({
   const [settingLibraryLeftWidth, setSettingLibraryLeftWidth] = useState(() => readSettingLibraryLeftWidth(storageKey, activeTab));
   const [settingLibraryRightWidth, setSettingLibraryRightWidth] = useState(() => readSettingLibraryRightWidth(storageKey, activeTab));
   const [brainstormPreviewWidth, setBrainstormPreviewWidth] = useState(() => readBrainstormPreviewWidth(storageKey, activeTab));
+  const [plotPointLayoutTreeWidth, setPlotPointLayoutTreeWidth] = useState(() => readPlotPointLayoutTreeWidth(storageKey));
   const [plotPointLayoutLeftWidth, setPlotPointLayoutLeftWidth] = useState(() => readPlotPointLayoutLeftWidth(storageKey));
   const [plotPointLayoutRightWidth, setPlotPointLayoutRightWidth] = useState(() => readPlotPointLayoutRightWidth(storageKey));
   const [expandedRoleTypes, setExpandedRoleTypes] = useState<Set<string>>(() => (
@@ -1712,6 +1597,7 @@ export function WorkbenchLibraryPanel({
   const [draftDetailOutlineReaderSettingIds, setDraftDetailOutlineReaderSettingIds] = useState<Set<string>>(() => new Set());
   const [draftDetailOutlineReaderRoleIds, setDraftDetailOutlineReaderRoleIds] = useState<Set<string>>(() => new Set());
   const [draftDetailOutlineReaderOutlineIds, setDraftDetailOutlineReaderOutlineIds] = useState<Set<string>>(() => new Set());
+  const [draftDetailOutlineReaderPlotChainIds, setDraftDetailOutlineReaderPlotChainIds] = useState<Set<string>>(() => new Set());
   const [isPlotPointModalOpen, setIsPlotPointModalOpen] = useState(false);
   const [plotPointInput, setPlotPointInput] = useState('');
   const [plotPointOutput, setPlotPointOutput] = useState('');
@@ -1736,6 +1622,17 @@ export function WorkbenchLibraryPanel({
   const [plotPointChainSelections, setPlotPointChainSelections] = useState<Record<PlotPointChainSlot, string[]>>(() => (
     normalizePlotPointChainSelections(activeTabConfig.plotPointChainSelections)
   ));
+  const [plotPointChainWrittenSelections, setPlotPointChainWrittenSelections] = useState<Record<PlotPointChainSlot, string[]>>(() => (
+    normalizePlotPointChainSelections(activeTabConfig.plotPointChainWrittenSelections)
+  ));
+  const [plotPointChainNames, setPlotPointChainNames] = useState<Record<PlotPointChainSlot, string>>(() => (
+    normalizePlotPointChainNames(activeTabConfig.plotPointChainNames)
+  ));
+  const [expandedPlotPointChainTreeSlots, setExpandedPlotPointChainTreeSlots] = useState<Record<PlotPointChainSlot, boolean>>({
+    1: true,
+    2: true,
+    3: true,
+  });
   const [plotPointChainRefreshStates, setPlotPointChainRefreshStates] = useState<Record<PlotPointChainSlot, boolean>>({
     1: false,
     2: false,
@@ -1745,6 +1642,10 @@ export function WorkbenchLibraryPanel({
     Object.fromEntries((activeTabConfig.plotPointSelectedCandidates ?? []).map((item) => [item.id, item]))
   ));
   const [expandedPlotPointPreviewIds, setExpandedPlotPointPreviewIds] = useState<string[]>([]);
+  const [plotPointChainMenuSlot, setPlotPointChainMenuSlot] = useState<PlotPointChainSlot | null>(null);
+  const [plotPointChainRenameDraft, setPlotPointChainRenameDraft] = useState('');
+  const [plotPointChainFilterMode, setPlotPointChainFilterMode] = useState<'all' | 'unwritten' | 'written'>('all');
+  const [activePlotPointChainItemId, setActivePlotPointChainItemId] = useState<string | null>(null);
   const [plotPointOpeningElements, setPlotPointOpeningElementsState] = useState<string[]>(() => (
     normalizePlotPointOpeningElements(activeTabConfig.plotPointOpeningElements)
   ));
@@ -1984,7 +1885,19 @@ export function WorkbenchLibraryPanel({
   };
   const setActivePlotPointChainSlot = (slot: PlotPointChainSlot) => {
     setPlotPointActiveChainSlot(slot);
+    setPlotPointChainMenuSlot(null);
+    setActivePlotPointChainItemId(null);
     updateActiveTabConfig({ plotPointActiveChainSlot: slot });
+  };
+  const renamePlotPointChain = (slot: PlotPointChainSlot, value: string) => {
+    const nextName = value.trim() || `剧情链${slot}`;
+    setPlotPointChainNames((current) => {
+      const next = { ...current, [slot]: nextName };
+      updateActiveTabConfig({ plotPointChainNames: next });
+      return next;
+    });
+    setPlotPointChainRenameDraft(nextName);
+    setPlotPointChainMenuSlot(null);
   };
   const setPlotPointGenerateCount = (value: typeof PLOT_POINT_GENERATE_COUNTS[number]) => {
     const normalizedValue = normalizePlotPointGenerateCount(value);
@@ -2089,6 +2002,8 @@ export function WorkbenchLibraryPanel({
     setIsPlotPointPreviewClearedState(nextConfig.plotPointPreviewCleared ?? !nextConfig.plotPointGeneratedCandidateText);
     setPlotPointSelectedCandidateMap(Object.fromEntries((nextConfig.plotPointSelectedCandidates ?? []).map((item) => [item.id, item])));
     setPlotPointChainSelections(normalizePlotPointChainSelections(nextConfig.plotPointChainSelections));
+    setPlotPointChainWrittenSelections(normalizePlotPointChainSelections(nextConfig.plotPointChainWrittenSelections));
+    setPlotPointChainNames(normalizePlotPointChainNames(nextConfig.plotPointChainNames));
     setPlotPointActiveChainSlot(normalizePlotPointChainSlot(nextConfig.plotPointActiveChainSlot));
     setPlotPointSourceModeState(normalizePlotPointSourceMode(nextConfig.plotPointSourceMode));
     setPlotPointGenerateCountState(normalizePlotPointGenerateCount(nextConfig.plotPointGenerateCount));
@@ -2318,6 +2233,46 @@ export function WorkbenchLibraryPanel({
     window.addEventListener('pointerup', stopResize);
   };
 
+  const startPlotPointTreeWidthResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.nativeEvent.stopImmediatePropagation();
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Window-level listeners keep the resize alive.
+    }
+    const eventScale = getResizeEventScale(event.currentTarget);
+    const startX = event.clientX;
+    const startWidth = Math.min(
+      PLOT_POINT_LAYOUT_TREE_MAX_WIDTH,
+      Math.max(PLOT_POINT_LAYOUT_TREE_MIN_WIDTH, plotPointLayoutTreeWidth),
+    );
+
+    const handleMove = (moveEvent: PointerEvent) => {
+      moveEvent.preventDefault();
+      moveEvent.stopPropagation();
+      const deltaX = (moveEvent.clientX - startX) / eventScale;
+      const nextWidth = Math.min(
+        PLOT_POINT_LAYOUT_TREE_MAX_WIDTH,
+        Math.max(PLOT_POINT_LAYOUT_TREE_MIN_WIDTH, startWidth + deltaX),
+      );
+      setPlotPointLayoutTreeWidth(nextWidth);
+      persistPlotPointLayoutWidth(storageKey, 'tree', nextWidth);
+    };
+    const stopResize = () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', stopResize);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', stopResize);
+  };
+
   const startPlotPointLeftWidthResize = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -2438,7 +2393,18 @@ export function WorkbenchLibraryPanel({
       className="group relative z-30 flex w-2 shrink-0 cursor-col-resize touch-none items-stretch justify-center bg-white transition-colors hover:bg-[#EAF9FD]"
       title="拖拽调整剧情链左侧宽度"
     >
-      <div className="w-px bg-transparent transition-colors group-hover:bg-[#08AACE]" />
+      <div className="w-px bg-slate-200 transition-colors group-hover:bg-[#08AACE]" />
+    </div>
+  );
+
+  const plotPointTreeResizeHandle = (
+    <div
+      data-no-modal-drag="true"
+      onPointerDown={startPlotPointTreeWidthResize}
+      className="group relative z-30 flex w-2 shrink-0 cursor-col-resize touch-none items-stretch justify-center bg-white transition-colors hover:bg-[#EAF9FD]"
+      title="拖拽调整剧情链目录宽度"
+    >
+      <div className="w-px bg-slate-200 transition-colors group-hover:bg-[#08AACE]" />
     </div>
   );
 
@@ -2449,7 +2415,7 @@ export function WorkbenchLibraryPanel({
       className="group relative z-30 flex w-2 shrink-0 cursor-col-resize touch-none items-stretch justify-center bg-white transition-colors hover:bg-[#EAF9FD]"
       title="拖拽调整剧情链右侧宽度"
     >
-      <div className="w-px bg-transparent transition-colors group-hover:bg-[#08AACE]" />
+      <div className="w-px bg-slate-200 transition-colors group-hover:bg-[#08AACE]" />
     </div>
   );
 
@@ -2643,6 +2609,7 @@ export function WorkbenchLibraryPanel({
     if (!shouldSyncOutlinePreviewDraft({ plotPointStandalone })) return;
     if ((!tabs.includes(CHAPTER_SUMMARY_TAB) || !tabs.includes(VOLUME_SUMMARY_TAB)) && activeTab !== OUTLINE_LIBRARY_TAB && activeTab !== DETAIL_OUTLINE_TAB) return;
     const isDetailOutlineTab = activeTab === DETAIL_OUTLINE_TAB;
+    if (isDetailOutlineTab) return;
     const currentOutlineEntries = activeTab === OUTLINE_LIBRARY_TAB && outlineStorageKey ? outlineEntries : entries;
     if (!isDetailOutlineTab && outlineSelectionType === 'volume') {
       const volume = volumes.find((item) => item.id === selectedOutlineVolumeId) ?? volumes[0];
@@ -3650,6 +3617,19 @@ export function WorkbenchLibraryPanel({
       >
         日志
       </button>
+    );
+  };
+  const renderDetailOutlineFontSizeTool = () => {
+    if (activeTab !== DETAIL_OUTLINE_TAB || plotPointStandalone) return null;
+    return (
+      <FontSizeStepper
+        value={detailOutlineFontSize}
+        min={DETAIL_OUTLINE_MIN_FONT_SIZE}
+        max={DETAIL_OUTLINE_MAX_FONT_SIZE}
+        ariaLabel="章纲字号"
+        onChange={setDetailOutlineFontSize}
+        className="shrink-0"
+      />
     );
   };
 
@@ -5273,12 +5253,12 @@ export function WorkbenchLibraryPanel({
                         </div>
                         {index === 0 && (
                           <>
-                            <div className="xy-floating-brainstorm-output-action-tool absolute top-0 z-30 -translate-y-1/2">
-                              <div className="flex h-7 max-w-full items-center overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                            <div className="xy-floating-brainstorm-output-action-tool xy-border-embedded-transparent-backplate absolute top-0 z-30 -translate-y-1/2">
+                              <div className="flex max-w-full items-center overflow-hidden">
                                 <button
                                   type="button"
                                   onClick={clearLibraryAiDialog}
-                                  className="h-full px-3 text-sm font-black text-red-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                                  className="text-base font-medium leading-5 text-red-500 transition-colors hover:text-red-600"
                                 >
                                   清空
                                 </button>
@@ -5687,20 +5667,13 @@ export function WorkbenchLibraryPanel({
     const selectedVolumeEntry = selectedOutlineVolume
       ? getVolumeSummaryEntry(selectedOutlineVolume.name)
       : null;
-    const selectedSummaryContent = safeOutlineSelectionType === 'volume'
-      ? selectedVolumeEntry?.content ?? ''
-      : selectedOutlineEntry?.content ?? '';
-    const selectedChapterTitle = selectedOutlineChapter?.chapter.title.trim() || '未命名章节';
-    const selectedVolumeWordCount = selectedOutlineVolume
-      ? selectedOutlineVolume.chapters.reduce((sum, chapter) => sum + chapter.wordCount, 0)
-      : 0;
     const getVolumeDisplayIndex = (volumeId: number) => {
       const index = volumes.findIndex((item) => item.id === volumeId);
       return index >= 0 ? index + 1 : 1;
     };
     const getOutlineChapterFrameTitle = (volume: Volume, chapter: Chapter) => (
       isDetailOutlineTab
-        ? `第${chapter.serialNumber}章章纲（第${getVolumeDisplayIndex(volume.id)}卷）`
+        ? `第${chapter.serialNumber}章章纲`
         : `第${chapter.serialNumber}章概要（第${getVolumeDisplayIndex(volume.id)}卷）`
     );
     const updateChapterSummary = (serialNumber: number, content: string) => {
@@ -5733,6 +5706,18 @@ export function WorkbenchLibraryPanel({
     };
     const saveOutlinePreviewDraft = () => {
       const cleanDraft = stripAiThinkingBlock(outlinePreviewDraft);
+      if (isDetailOutlineTab) {
+        if (selectedOutlineChapter) {
+          setLastDetailOutlineReplacement({
+            chapterSerialNumber: selectedOutlineChapter.chapter.serialNumber,
+            content: selectedOutlineEntry?.content ?? '',
+            draft: outlinePreviewDraft,
+          });
+          updateChapterSummary(selectedOutlineChapter.chapter.serialNumber, cleanDraft);
+          setOutlinePreviewDraft(cleanDraft);
+        }
+        return;
+      }
       if (safeOutlineSelectionType === 'volume' && selectedOutlineVolume) {
         updateVolumeSummary(selectedOutlineVolume.name, cleanDraft);
         setOutlinePreviewDraft(cleanDraft);
@@ -5743,6 +5728,12 @@ export function WorkbenchLibraryPanel({
         setOutlinePreviewDraft(cleanDraft);
       }
     };
+    const undoDetailOutlineReplacement = () => {
+      if (!lastDetailOutlineReplacement) return;
+      updateChapterSummary(lastDetailOutlineReplacement.chapterSerialNumber, lastDetailOutlineReplacement.content);
+      setOutlinePreviewDraft(lastDetailOutlineReplacement.draft);
+      setLastDetailOutlineReplacement(null);
+    };
     const selectOutlineChapter = (chapterId: number, serialNumber: number) => {
       forceOutlineSelectionRefresh((value) => value + 1);
       setOutlineSelectionType('chapter');
@@ -5751,7 +5742,7 @@ export function WorkbenchLibraryPanel({
       updateActiveTabConfig({ selectedOutlineChapterId: chapterId });
       const entry = getChapterSummaryEntry(serialNumber);
       setSelectedId(entry?.id ?? null);
-      setOutlinePreviewDraft(entry?.content ?? '');
+      if (!isDetailOutlineTab) setOutlinePreviewDraft(entry?.content ?? '');
     };
     const selectOutlineVolume = (volume: Volume) => {
       forceOutlineSelectionRefresh((value) => value + 1);
@@ -5772,7 +5763,7 @@ export function WorkbenchLibraryPanel({
       });
     };
     const outlineSidebarWidth = Math.max(settingLibraryLeftWidth, outlineColumns * 40 + 30);
-    const outlinePreviewTitle = plotPointStandalone ? '剧情点预览' : isDetailOutlineTab ? '章纲预览' : (safeOutlineSelectionType === 'volume' ? '卷概要预览' : '章节概要');
+    const outlinePreviewTitle = plotPointStandalone ? '剧情点预览' : isDetailOutlineTab ? 'AI输出章纲' : (safeOutlineSelectionType === 'volume' ? '卷概要预览' : '章节概要');
     const outlinePromptCategory = plotPointStandalone ? PLOT_CHAIN_PROMPT_CATEGORY : isDetailOutlineTab ? DETAIL_OUTLINE_TAB : '概要';
     const outlinePromptOptions = prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === outlinePromptCategory);
     const configuredOutlinePromptId = plotPointStandalone
@@ -5846,11 +5837,40 @@ export function WorkbenchLibraryPanel({
         };
       })
       .filter((item) => item.content.trim());
+    const detailOutlineReaderPlotPointMap = new Map(
+      [
+        ...Object.values(plotPointSelectedCandidateMap),
+        ...PLOT_POINT_FALLBACK_CANDIDATES,
+      ].map((item) => [item.id, item]),
+    );
+    const detailOutlineReaderPlotChainItems = (plotPointChainSelections[plotPointActiveChainSlot] ?? [])
+      .map((id, index) => {
+        const item = detailOutlineReaderPlotPointMap.get(id);
+        if (!item) return null;
+        const content = [
+          getWorkbenchPlotPointText(item, plotPointLength),
+          item.review ? `AI评价：${item.review}` : '',
+        ].filter(Boolean).join('\n');
+        return {
+          id: item.id,
+          title: `${index + 1}. ${item.title}`,
+          group: plotPointChainNames[plotPointActiveChainSlot] ?? `剧情链${plotPointActiveChainSlot}`,
+          content,
+        };
+      })
+      .filter((item): item is { id: string; title: string; group: string; content: string } => Boolean(item && item.content.trim()));
     const selectedDetailOutlineOutlineIds = new Set(activeTabConfig.detailOutlineReaderOutlineIds ?? []);
+    const selectedDetailOutlinePlotChainIds = new Set(activeTabConfig.detailOutlineReaderPlotChainIds ?? []);
     const selectedDetailOutlineSettingItems = detailOutlineReaderSettingItems.filter((item) => selectedDetailOutlineSettingIds.has(item.id));
     const selectedDetailOutlineRoleItems = detailOutlineReaderRoleItems.filter((item) => selectedDetailOutlineRoleIds.has(item.id));
     const selectedDetailOutlineOutlineItems = detailOutlineReaderOutlineItems.filter((item) => selectedDetailOutlineOutlineIds.has(item.id));
-    const selectedDetailOutlineReaderItems = [...selectedDetailOutlineSettingItems, ...selectedDetailOutlineRoleItems, ...selectedDetailOutlineOutlineItems];
+    const selectedDetailOutlinePlotChainItems = detailOutlineReaderPlotChainItems.filter((item) => selectedDetailOutlinePlotChainIds.has(item.id));
+    const selectedDetailOutlineReaderItems = [
+      ...selectedDetailOutlineSettingItems,
+      ...selectedDetailOutlineRoleItems,
+      ...selectedDetailOutlineOutlineItems,
+      ...selectedDetailOutlinePlotChainItems,
+    ];
     const detailOutlineReaderWordCount = selectedDetailOutlineReaderItems.reduce((sum, item) => sum + countTextWords(item.content), 0);
     const buildDetailOutlineReaderContext = () => {
       const settingText = selectedDetailOutlineSettingItems
@@ -5865,16 +5885,22 @@ export function WorkbenchLibraryPanel({
         .filter((item) => item.content.trim())
         .map((item) => `【${item.group} / ${item.title}】\n${item.content.trim()}`)
         .join('\n\n');
+      const plotChainText = selectedDetailOutlinePlotChainItems
+        .filter((item) => item.content.trim())
+        .map((item) => `【${item.group} / ${item.title}】\n${item.content.trim()}`)
+        .join('\n\n');
       return [
         settingText ? `【关联设定】\n${settingText}` : '',
         roleText ? `【关联角色】\n${roleText}` : '',
         outlineText ? `【关联章纲】\n${outlineText}` : '',
+        plotChainText ? `【关联剧情链】\n${plotChainText}` : '',
       ].filter(Boolean).join('\n\n');
     };
     const openDetailOutlineReader = () => {
       setDraftDetailOutlineReaderSettingIds(new Set(selectedDetailOutlineSettingIds));
       setDraftDetailOutlineReaderRoleIds(new Set(selectedDetailOutlineRoleIds));
       setDraftDetailOutlineReaderOutlineIds(new Set(selectedDetailOutlineOutlineIds));
+      setDraftDetailOutlineReaderPlotChainIds(new Set(selectedDetailOutlinePlotChainIds));
       setDetailOutlineReaderTab('settings');
       setIsDetailOutlineReaderOpen(true);
     };
@@ -5882,22 +5908,27 @@ export function WorkbenchLibraryPanel({
       setDraftDetailOutlineReaderSettingIds(new Set());
       setDraftDetailOutlineReaderRoleIds(new Set());
       setDraftDetailOutlineReaderOutlineIds(new Set());
+      setDraftDetailOutlineReaderPlotChainIds(new Set());
     };
     const confirmDetailOutlineReader = () => {
       const validSettingIds = detailOutlineReaderSettingItems.map((item) => item.id);
       const validRoleIds = detailOutlineReaderRoleItems.map((item) => item.id);
       const validOutlineIds = detailOutlineReaderOutlineItems.map((item) => item.id);
+      const validPlotChainIds = detailOutlineReaderPlotChainItems.map((item) => item.id);
       const nextSettingIds = Array.from(draftDetailOutlineReaderSettingIds)
         .filter((id) => validSettingIds.includes(id));
       const nextRoleIds = Array.from(draftDetailOutlineReaderRoleIds)
         .filter((id) => validRoleIds.includes(id));
       const nextOutlineIds = Array.from(draftDetailOutlineReaderOutlineIds)
         .filter((id) => validOutlineIds.includes(id));
+      const nextPlotChainIds = Array.from(draftDetailOutlineReaderPlotChainIds)
+        .filter((id) => validPlotChainIds.includes(id));
       updateActiveTabConfig({
         detailOutlineReaderTouched: true,
         detailOutlineReaderSettingIds: nextSettingIds,
         detailOutlineReaderRoleIds: nextRoleIds,
         detailOutlineReaderOutlineIds: nextOutlineIds,
+        detailOutlineReaderPlotChainIds: nextPlotChainIds,
       });
       setIsDetailOutlineReaderOpen(false);
     };
@@ -5907,10 +5938,12 @@ export function WorkbenchLibraryPanel({
         detailOutlineReaderSettingIds: [],
         detailOutlineReaderRoleIds: [],
         detailOutlineReaderOutlineIds: [],
+        detailOutlineReaderPlotChainIds: [],
       });
       setDraftDetailOutlineReaderSettingIds(new Set());
       setDraftDetailOutlineReaderRoleIds(new Set());
       setDraftDetailOutlineReaderOutlineIds(new Set());
+      setDraftDetailOutlineReaderPlotChainIds(new Set());
     };
     const toggleDraftDetailOutlineReaderSetting = (id: string) => {
       setDraftDetailOutlineReaderSettingIds((current) => {
@@ -5930,6 +5963,14 @@ export function WorkbenchLibraryPanel({
     };
     const toggleDraftDetailOutlineReaderOutline = (id: string) => {
       setDraftDetailOutlineReaderOutlineIds((current) => {
+        const next = new Set(current);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    };
+    const toggleDraftDetailOutlineReaderPlotChain = (id: string) => {
+      setDraftDetailOutlineReaderPlotChainIds((current) => {
         const next = new Set(current);
         if (next.has(id)) next.delete(id);
         else next.add(id);
@@ -5978,6 +6019,15 @@ export function WorkbenchLibraryPanel({
     const plotPointSelectedItems = plotPointSelectedIds
       .map((id) => plotPointCandidateMap.get(id))
       .filter((item): item is WorkbenchPlotPointCandidate => Boolean(item));
+    const plotPointWrittenIds = plotPointChainWrittenSelections[plotPointActiveChainSlot] ?? [];
+    const plotPointWrittenIdSet = new Set(plotPointWrittenIds);
+    const plotPointUnwrittenItems = plotPointSelectedItems.filter((item) => !plotPointWrittenIdSet.has(item.id));
+    const visiblePlotPointSelectedItems = plotPointSelectedItems.filter((item) => {
+      const written = plotPointWrittenIdSet.has(item.id);
+      if (plotPointChainFilterMode === 'written') return written;
+      if (plotPointChainFilterMode === 'unwritten') return !written;
+      return true;
+    });
     const firstPlotPointChainTitle = plotPointSelectedItems[0] ? '剧情点 1' : '还没有第1号剧情';
     const firstPlotPointChainContent = plotPointSelectedItems[0]
       ? getWorkbenchPlotPointText(plotPointSelectedItems[0], plotPointLength)
@@ -5997,9 +6047,44 @@ export function WorkbenchLibraryPanel({
             : [...currentChain, id],
         };
         updateActiveTabConfig({ plotPointChainSelections: next });
+        if (isSelected) {
+          setPlotPointChainWrittenSelections((writtenCurrent) => {
+            const nextWritten = {
+              ...writtenCurrent,
+              [plotPointActiveChainSlot]: (writtenCurrent[plotPointActiveChainSlot] ?? []).filter((itemId) => itemId !== id),
+            };
+            updateActiveTabConfig({ plotPointChainWrittenSelections: nextWritten });
+            return nextWritten;
+          });
+          if (activePlotPointChainItemId === id) setActivePlotPointChainItemId(null);
+        }
         return next;
       });
       setPlotPointChainRefreshStates((current) => ({ ...current, [plotPointActiveChainSlot]: false }));
+    };
+    const markPlotPointChainItemWritten = (id: string) => {
+      setPlotPointChainWrittenSelections((current) => {
+        const currentWritten = current[plotPointActiveChainSlot] ?? [];
+        if (currentWritten.includes(id)) return current;
+        const next = {
+          ...current,
+          [plotPointActiveChainSlot]: [...currentWritten, id],
+        };
+        updateActiveTabConfig({ plotPointChainWrittenSelections: next });
+        return next;
+      });
+    };
+    const movePlotPointChainItemToUnwritten = (id: string) => {
+      setPlotPointChainWrittenSelections((current) => {
+        const currentWritten = current[plotPointActiveChainSlot] ?? [];
+        if (!currentWritten.includes(id)) return current;
+        const next = {
+          ...current,
+          [plotPointActiveChainSlot]: currentWritten.filter((itemId) => itemId !== id),
+        };
+        updateActiveTabConfig({ plotPointChainWrittenSelections: next });
+        return next;
+      });
     };
     const togglePlotPointPreviewExpanded = (id: string) => {
       setExpandedPlotPointPreviewIds((current) => (
@@ -6108,7 +6193,7 @@ export function WorkbenchLibraryPanel({
           : selectedOutlineChapter
             ? '11.4rem'
             : '6.2rem';
-    const shouldShowOutlineDraftWordCount = plotPointStandalone || isDetailOutlineTab;
+    const shouldShowOutlineDraftWordCount = plotPointStandalone;
     const getSelectedOutlineContext = () => {
       if (safeOutlineSelectionType === 'volume' && selectedOutlineVolume) {
         return selectedOutlineVolume.chapters
@@ -6148,7 +6233,7 @@ export function WorkbenchLibraryPanel({
       plotPointStandalone
         ? '请根据关联的大纲设定、前文章纲、剧情链和用户要求，生成适合本书下一步展开的剧情点。'
         : isDetailOutlineTab
-        ? '请根据关联的设定和前文章纲生成章纲。'
+        ? '请根据关联的设定、前文章纲和剧情链生成章纲。'
         : '请根据所选章节正文生成章节概要。'
     );
     const buildOutlineAiRequestLog = (
@@ -6258,12 +6343,15 @@ export function WorkbenchLibraryPanel({
       ...detailOutlineReaderSettingItems.filter((item) => draftDetailOutlineReaderSettingIds.has(item.id)),
       ...detailOutlineReaderRoleItems.filter((item) => draftDetailOutlineReaderRoleIds.has(item.id)),
       ...detailOutlineReaderOutlineItems.filter((item) => draftDetailOutlineReaderOutlineIds.has(item.id)),
+      ...detailOutlineReaderPlotChainItems.filter((item) => draftDetailOutlineReaderPlotChainIds.has(item.id)),
     ];
     const draftDetailOutlineReaderWordCount = draftDetailOutlineReaderItems.reduce((sum, item) => sum + countTextWords(item.content), 0);
     const activeDetailOutlineReaderItems = detailOutlineReaderTab === 'settings'
       ? detailOutlineReaderSettingItems
       : detailOutlineReaderTab === 'roles'
       ? detailOutlineReaderRoleItems
+      : detailOutlineReaderTab === 'plotChain'
+      ? detailOutlineReaderPlotChainItems
       : detailOutlineReaderOutlineItems;
     const detailOutlineReaderNavGroups = Array.from(
       activeDetailOutlineReaderItems.reduce((map, item) => {
@@ -6281,6 +6369,7 @@ export function WorkbenchLibraryPanel({
     const setDraftDetailOutlineReaderIdsForActiveTab = (ids: Set<string>) => {
       if (detailOutlineReaderTab === 'settings') setDraftDetailOutlineReaderSettingIds(ids);
       else if (detailOutlineReaderTab === 'roles') setDraftDetailOutlineReaderRoleIds(ids);
+      else if (detailOutlineReaderTab === 'plotChain') setDraftDetailOutlineReaderPlotChainIds(ids);
       else setDraftDetailOutlineReaderOutlineIds(ids);
     };
     const getDraftDetailOutlineReaderIdsForActiveTab = () => (
@@ -6288,6 +6377,8 @@ export function WorkbenchLibraryPanel({
         ? draftDetailOutlineReaderSettingIds
         : detailOutlineReaderTab === 'roles'
         ? draftDetailOutlineReaderRoleIds
+        : detailOutlineReaderTab === 'plotChain'
+        ? draftDetailOutlineReaderPlotChainIds
         : draftDetailOutlineReaderOutlineIds
     );
     const selectAllActiveDetailOutlineReaderItems = () => {
@@ -6332,6 +6423,7 @@ export function WorkbenchLibraryPanel({
                 ['outlines', '章纲'],
                 ['settings', '设定'],
                 ['roles', '角色'],
+                ['plotChain', '剧情链'],
               ] as const).map(([tab, label]) => (
                 <button
                   key={tab}
@@ -6364,7 +6456,13 @@ export function WorkbenchLibraryPanel({
           <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] bg-white">
             <aside className="min-h-0 border-r border-slate-100 bg-slate-50 p-3">
               <div className="mb-2 px-2 text-[15px] font-black text-slate-400">
-                {detailOutlineReaderTab === 'settings' ? '设定导航' : detailOutlineReaderTab === 'roles' ? '角色导航' : '前文章纲'}
+                {detailOutlineReaderTab === 'settings'
+                  ? '设定导航'
+                  : detailOutlineReaderTab === 'roles'
+                  ? '角色导航'
+                  : detailOutlineReaderTab === 'plotChain'
+                  ? '剧情链'
+                  : '前文章纲'}
               </div>
               <div className="editor-scrollbar h-full space-y-1 overflow-y-auto pb-8">
                 {detailOutlineReaderNavGroups.length === 0 ? (
@@ -6373,6 +6471,8 @@ export function WorkbenchLibraryPanel({
                       ? '暂无设定分组'
                       : detailOutlineReaderTab === 'roles'
                       ? '暂无角色分组'
+                      : detailOutlineReaderTab === 'plotChain'
+                      ? '当前剧情链暂无可关联剧情点'
                       : '当前章节前面暂无可读章纲'}
                   </div>
                 ) : detailOutlineReaderNavGroups.map((group) => {
@@ -6386,7 +6486,7 @@ export function WorkbenchLibraryPanel({
                       >
                         <span className="min-w-0 truncate">{group.group}</span>
                         <span className="flex shrink-0 items-center gap-1 text-[13px] text-slate-400">
-                          {(detailOutlineReaderTab === 'settings' || detailOutlineReaderTab === 'roles') && (
+                          {(detailOutlineReaderTab === 'settings' || detailOutlineReaderTab === 'roles' || detailOutlineReaderTab === 'plotChain') && (
                             <span
                               role="button"
                               tabIndex={0}
@@ -6416,6 +6516,8 @@ export function WorkbenchLibraryPanel({
                               ? draftDetailOutlineReaderSettingIds.has(item.id)
                               : detailOutlineReaderTab === 'roles'
                               ? draftDetailOutlineReaderRoleIds.has(item.id)
+                              : detailOutlineReaderTab === 'plotChain'
+                              ? draftDetailOutlineReaderPlotChainIds.has(item.id)
                               : draftDetailOutlineReaderOutlineIds.has(item.id);
                             return (
                               <button
@@ -6425,6 +6527,7 @@ export function WorkbenchLibraryPanel({
                                   scrollDetailOutlineReaderItem(item.id);
                                   if (detailOutlineReaderTab === 'settings') toggleDraftDetailOutlineReaderSetting(item.id);
                                   else if (detailOutlineReaderTab === 'roles') toggleDraftDetailOutlineReaderRole(item.id);
+                                  else if (detailOutlineReaderTab === 'plotChain') toggleDraftDetailOutlineReaderPlotChain(item.id);
                                   else toggleDraftDetailOutlineReaderOutline(item.id);
                                 }}
                                 className={`flex h-10 w-full items-center gap-2 rounded-lg px-2 text-left text-[15px] font-black ${
@@ -6455,6 +6558,8 @@ export function WorkbenchLibraryPanel({
                       ? '暂无可关联设定'
                       : detailOutlineReaderTab === 'roles'
                       ? '暂无可关联角色'
+                      : detailOutlineReaderTab === 'plotChain'
+                      ? '暂无可关联剧情链'
                       : '暂无可关联章纲'}
                   </div>
                 )}
@@ -6463,6 +6568,8 @@ export function WorkbenchLibraryPanel({
                     ? draftDetailOutlineReaderSettingIds.has(item.id)
                     : detailOutlineReaderTab === 'roles'
                     ? draftDetailOutlineReaderRoleIds.has(item.id)
+                    : detailOutlineReaderTab === 'plotChain'
+                    ? draftDetailOutlineReaderPlotChainIds.has(item.id)
                     : draftDetailOutlineReaderOutlineIds.has(item.id);
                   return (
                     <button
@@ -6472,6 +6579,7 @@ export function WorkbenchLibraryPanel({
                       onClick={() => {
                         if (detailOutlineReaderTab === 'settings') toggleDraftDetailOutlineReaderSetting(item.id);
                         else if (detailOutlineReaderTab === 'roles') toggleDraftDetailOutlineReaderRole(item.id);
+                        else if (detailOutlineReaderTab === 'plotChain') toggleDraftDetailOutlineReaderPlotChain(item.id);
                         else toggleDraftDetailOutlineReaderOutline(item.id);
                       }}
                       className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
@@ -6844,93 +6952,212 @@ export function WorkbenchLibraryPanel({
           <main
             className="grid min-h-0 flex-1 overflow-hidden bg-white"
             style={{
-              gridTemplateColumns: `${plotPointLayoutLeftWidth}px 8px minmax(${PLOT_POINT_LAYOUT_CENTER_MIN_WIDTH}px,1fr) 8px ${plotPointLayoutRightWidth}px`,
+              gridTemplateColumns: `${plotPointLayoutTreeWidth}px 8px ${plotPointLayoutLeftWidth}px 8px minmax(${PLOT_POINT_LAYOUT_CENTER_MIN_WIDTH}px,1fr) 8px ${plotPointLayoutRightWidth}px`,
             }}
           >
             <aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-white">
-              <div className="shrink-0 border-b border-slate-100 px-4 py-3">
-                <div className="mb-2 flex items-center gap-1.5">
-                  {PLOT_POINT_CHAIN_SLOTS.map((slot) => {
-                    const active = plotPointActiveChainSlot === slot;
-                    const hasContent = plotPointChainSelections[slot].length > 0;
-                    return (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() => setActivePlotPointChainSlot(slot)}
-                        title={`剧情链 ${slot}`}
-                        className={`relative grid h-7 w-7 place-items-center rounded-lg text-xs font-black transition-colors ${
-                          active
-                            ? 'bg-[#08AACE] text-white'
-                            : hasContent
-                            ? 'border border-[#bdeef7] bg-[#EAF9FD] text-[#08AACE] hover:border-[#08AACE]'
-                            : 'border border-slate-200 bg-white text-slate-500 hover:border-[#08AACE] hover:text-[#08AACE]'
-                        }`}
-                      >
-                        {slot}
-                        {hasContent && !active && <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[#08AACE]" />}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-sm font-black text-slate-950">剧情链</h2>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className="rounded-full bg-[#EAF9FD] px-2 py-1 text-xs font-black text-[#08AACE]">{plotPointSelectedItems.length} 点</span>
+              <nav className="editor-scrollbar min-h-0 flex-1 overflow-y-auto px-2 py-2" aria-label="剧情链目录树">
+                <div className="space-y-3">
+                  <section
+                    className="relative rounded-xl border border-[#bdeef7] bg-white p-2 shadow-sm"
+                    aria-label="当前主链未写序号导航"
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      setPlotPointChainMenuSlot(plotPointActiveChainSlot);
+                      setPlotPointChainRenameDraft(plotPointChainNames[plotPointActiveChainSlot] ?? `剧情链${plotPointActiveChainSlot}`);
+                    }}
+                  >
                     <button
                       type="button"
-                      onClick={openDetailOutlineFromPlotPoint}
-                      disabled={plotPointSelectedItems.length === 0}
-                      className="h-8 rounded-xl bg-[#08AACE] px-3 text-xs font-black text-white hover:bg-[#0798b8] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                      aria-expanded={expandedPlotPointChainTreeSlots[plotPointActiveChainSlot] ?? true}
+                      onClick={() => {
+                        setPlotPointChainMenuSlot(null);
+                        setExpandedPlotPointChainTreeSlots((current) => ({ ...current, [plotPointActiveChainSlot]: !(current[plotPointActiveChainSlot] ?? true) }));
+                      }}
+                      className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg bg-[#EAF9FD] px-2 text-left text-[#078fb0] hover:bg-[#dff5fb]"
                     >
-                      生成章纲
+                      <span className="min-w-0">
+                        <span className="block text-[10px] font-black leading-4 text-[#078fb0]/70">当前主链</span>
+                        <span className="block truncate text-xs font-black leading-4">{plotPointChainNames[plotPointActiveChainSlot] ?? `剧情链${plotPointActiveChainSlot}`}</span>
+                      </span>
+                      <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-[#078fb0]">{plotPointUnwrittenItems.length} 未写</span>
                     </button>
-                  </div>
+                    {plotPointChainMenuSlot === plotPointActiveChainSlot && (
+                      <div role="menu" aria-label="当前主链菜单" className="absolute left-2 top-12 z-10 w-40 rounded-lg border border-[#bdeef7] bg-white p-2 shadow-lg">
+                        <label className="block text-[10px] font-black text-[#078fb0]" htmlFor="plot-point-chain-rename">重命名</label>
+                        <input
+                          id="plot-point-chain-rename"
+                          value={plotPointChainRenameDraft}
+                          onChange={(event) => setPlotPointChainRenameDraft(event.target.value)}
+                          className="mt-1 h-8 w-full rounded-md border border-[#bdeef7] px-2 text-xs font-bold text-slate-700 outline-none focus:border-[#08AACE]"
+                        />
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => renamePlotPointChain(plotPointActiveChainSlot, plotPointChainRenameDraft)}
+                          className="mt-2 h-8 w-full rounded-md bg-[#08AACE] px-2 text-[11px] font-black text-white hover:bg-[#0798b8]"
+                        >
+                          保存
+                        </button>
+                      </div>
+                    )}
+                    {(expandedPlotPointChainTreeSlots[plotPointActiveChainSlot] ?? true) && (
+                      <div className="mt-2 flex flex-wrap gap-1.5" aria-label="当前主链未写剧情点序号">
+                        {plotPointUnwrittenItems.length === 0 ? (
+                          <div className="px-2 py-2 text-xs font-medium text-gray-400">暂无未写剧情点</div>
+                        ) : (
+                          plotPointUnwrittenItems.map((item) => {
+                            const originalIndex = plotPointSelectedItems.findIndex((selectedItem) => selectedItem.id === item.id);
+                            const activePoint = activePlotPointChainItemId === item.id;
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                aria-label={`跳转未写剧情点${originalIndex + 1} ${item.title}`}
+                                onClick={() => {
+                                  setPlotPointChainMenuSlot(null);
+                                  setPlotPointChainFilterMode('all');
+                                  setActivePlotPointChainItemId(item.id);
+                                }}
+                                className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg border text-[11px] font-black ${
+                                  activePoint
+                                    ? 'border-[#08AACE] bg-[#08AACE] text-white shadow-sm'
+                                    : 'border-[#bdeef7] bg-white text-[#078fb0] hover:border-[#08AACE] hover:bg-[#F7FCFE]'
+                                }`}
+                              >
+                                {originalIndex + 1}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+                  </section>
+                  <details className="rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-bold text-slate-500">
+                    <summary className="cursor-pointer font-black text-slate-600">备选链 {PLOT_POINT_CHAIN_SLOTS.length - 1} 条</summary>
+                    <div className="mt-2 space-y-1.5">
+                      {PLOT_POINT_CHAIN_SLOTS.filter((slot) => slot !== plotPointActiveChainSlot).map((slot) => (
+                        <button
+                          key={slot}
+                          type="button"
+                          onClick={() => setActivePlotPointChainSlot(slot)}
+                          className="flex h-8 w-full items-center justify-between rounded-lg bg-slate-50 px-2 text-left text-[11px] font-black text-slate-500 hover:bg-[#EAF9FD] hover:text-[#078fb0]"
+                        >
+                          <span className="truncate">{plotPointChainNames[slot] ?? `剧情链${slot}`}</span>
+                          <span className="shrink-0">{(plotPointChainSelections[slot] ?? []).length}点</span>
+                        </button>
+                      ))}
+                    </div>
+                  </details>
                 </div>
-              </div>
+              </nav>
+            </aside>
+
+            {plotPointTreeResizeHandle}
+
+            <aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-white">
               <div className="editor-scrollbar flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  {[
+                    ['all', '全部'],
+                    ['unwritten', '只看未写'],
+                    ['written', '只看已写'],
+                  ].map(([mode, label]) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setPlotPointChainFilterMode(mode as typeof plotPointChainFilterMode)}
+                      className={`h-8 flex-1 basis-[72px] rounded-xl border px-3 text-xs font-black ${
+                        plotPointChainFilterMode === mode
+                          ? 'border-[#08AACE] bg-[#08AACE] text-white'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-[#08AACE] hover:text-[#08AACE]'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={openDetailOutlineFromPlotPoint}
+                    className="h-8 flex-1 basis-[88px] rounded-xl bg-[#08AACE] px-3 text-xs font-black text-white shadow-sm transition-colors hover:bg-[#0798b8]"
+                  >
+                    生成章纲
+                  </button>
+                </div>
                 {plotPointSelectedItems.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm font-bold leading-7 text-slate-500">
-                    先在右侧关联设定，再选择剧情点来源和剧情点类型。选中的剧情点会加入当前数字剧情链。
+                    先在右侧关联设定，再选择剧情点来源和剧情点类型。选中的剧情点会加入当前剧情链。
+                  </div>
+                ) : visiblePlotPointSelectedItems.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm font-bold leading-7 text-slate-500">
+                    当前过滤条件下没有剧情点，切到“全部”可以查看已写内容。
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {plotPointSelectedItems.map((item, index) => {
+                    {visiblePlotPointSelectedItems.map((item) => {
+                      const index = plotPointSelectedItems.findIndex((selectedItem) => selectedItem.id === item.id);
+                      const written = plotPointWrittenIdSet.has(item.id);
+                      const activeChainItem = activePlotPointChainItemId === item.id;
                       const collapsedCard = prepareCollapsedPlotPointCard(item);
                       const scoreText = item.score ?? collapsedCard.averageScore;
                       const metrics = getWorkbenchPlotPointDecisionMetrics(item, scoreText, index > 0, index);
                       const previewText = collapsedCard.previewText || getWorkbenchPlotPointPreviewText(item);
                       const displayText = getWorkbenchPlotPointDisplayText(item, previewText);
+                      const reviewExpanded = expandedPlotPointPreviewIds.includes(`chain-review:${item.id}`);
+                      const metricItems = [
+                        ['内容', metrics.clarity],
+                        ['潜力', metrics.potential],
+                        ['衔接', metrics.fit],
+                      ] as const;
                       return (
-                      <div key={item.id} className="rounded-xl border border-[#bdeef7] bg-[#EAF9FD] p-3">
-                        <div className="flex items-start gap-2">
-                          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#08AACE] text-xs font-black text-white">{index + 1}</span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <span className="min-w-0 truncate text-sm font-black text-slate-950">剧情点 {index + 1}</span>
-                              {scoreText && (
-                                <span className={`shrink-0 text-xs font-black ${getPlotPointScoreColorClass(scoreText)}`}>
-                                  {scoreText}分
-                                </span>
-                              )}
-                            </div>
-                            <div className="mt-1 flex flex-wrap gap-1.5">
-                              <span className={`rounded-full border px-2 py-0.5 text-[11px] font-black ${getWorkbenchPlotPointFitClass(metrics.fit)}`}>
-                                {index === 0 ? '链头' : getWorkbenchPlotPointFitLabel(metrics.fit, true)}
-                              </span>
-                              <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-black text-slate-500">潜力 {metrics.potential}</span>
-                              <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-black text-[#08AACE]">{item.source}</span>
+                        <div key={item.id} className={`rounded-xl border p-3 ${activeChainItem ? 'border-[#08AACE] bg-[#EAF9FD] ring-2 ring-[#bdeef7]' : written ? 'border-slate-200 bg-slate-50' : 'border-[#bdeef7] bg-[#EAF9FD]'}`}>
+                          <div className="flex items-start gap-2">
+                            <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-black ${written ? 'bg-slate-300 text-white' : 'bg-[#08AACE] text-white'}`}>{index + 1}</span>
+                            <p className="min-w-0 flex-1 line-clamp-6 text-sm font-bold leading-6 text-slate-700">{displayText}</p>
+                            <div className="flex shrink-0 items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => (written ? movePlotPointChainItemToUnwritten(item.id) : markPlotPointChainItemWritten(item.id))}
+                                className={`h-8 shrink-0 rounded-lg border px-3 text-xs font-black shadow-sm transition-colors ${
+                                  written
+                                    ? 'border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100'
+                                    : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                }`}
+                              >
+                                {written ? '移回未写' : '标为已写'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => togglePlotPointCandidate(item.id)}
+                                className="h-8 shrink-0 rounded-lg border border-red-200 bg-red-50 px-3 text-xs font-black text-red-500 shadow-sm transition-colors hover:border-red-300 hover:bg-red-100 hover:text-red-600"
+                              >
+                                删除
+                              </button>
                             </div>
                           </div>
-                          <button type="button" onClick={() => togglePlotPointCandidate(item.id)} className="shrink-0 text-xs font-black text-red-500">移除</button>
+                          <div className="mt-3 min-w-0">
+                            <div className="mt-3 grid grid-cols-3 gap-2">
+                              {metricItems.map(([label, value]) => (
+                                <div key={label} className={`flex h-8 items-center justify-between rounded-xl border px-3 shadow-sm ${getWorkbenchPlotPointMetricClass(value)}`}>
+                                  <span className="text-xs font-black opacity-80">{label}</span>
+                                  <span className="text-sm font-black">{value}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => togglePlotPointPreviewExpanded(`chain-review:${item.id}`)}
+                              className="mt-3 h-7 rounded-lg border border-[#bdeef7] bg-white px-3 text-xs font-black text-[#08AACE] transition-colors hover:border-[#08AACE] hover:bg-[#EAF9FD]"
+                            >
+                              {reviewExpanded ? '收起AI评价' : 'AI评价'}
+                            </button>
+                            {reviewExpanded && (
+                              <div className="mt-2 rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-[#078fb0]">
+                                {getWorkbenchPlotPointReview(item, isPlotPointFollowupStage)}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <p className="mt-2 line-clamp-3 text-xs font-bold leading-5 text-slate-600">{displayText}</p>
-                        <div className="mt-2 rounded-xl bg-white px-3 py-2 text-xs font-bold leading-5 text-[#078fb0]">
-                          {getWorkbenchPlotPointReview(item, isPlotPointFollowupStage)}
-                        </div>
-                      </div>
                     );
                     })}
                   </div>
@@ -6941,56 +7168,6 @@ export function WorkbenchLibraryPanel({
             {plotPointLeftResizeHandle}
 
             <section className="min-w-0 flex min-h-0 flex-col bg-white">
-              <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-4">
-                <div>
-                  <h2 className="text-sm font-black text-slate-950">剧情点预览</h2>
-                  <p className="text-xs font-bold text-slate-400">
-                    {isPlotPointFollowupStage ? `衔接「${firstPlotPointChainTitle}」` : hasPlotPointChain ? '等待手动刷新衔接剧情' : '生成候选剧情点'} · {plotPointGenerateCount} 个
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPlotPointGeneratedCandidateText('');
-                      setIsPlotPointPreviewCleared(true);
-                      setOutlinePreviewDraft('');
-                      setExpandedPlotPointPreviewIds([]);
-                    }}
-                    className="h-9 rounded-xl border border-red-200 bg-white px-3 text-xs font-black text-red-500 hover:bg-red-50"
-                  >
-                    清空
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isLibraryAiLoading) return;
-                      plotPointGenerationModeRef.current = 'restart';
-                      setPlotPointChainRefreshStates((current) => ({ ...current, [plotPointActiveChainSlot]: false }));
-                      setIsPlotPointPreviewCleared(false);
-                      void sendOutlineAiMessage();
-                    }}
-                    disabled={isLibraryAiLoading}
-                    className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:border-[#08AACE] hover:text-[#08AACE] disabled:cursor-not-allowed disabled:text-slate-300"
-                  >
-                    重新生成
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isLibraryAiLoading || !hasPlotPointChain) return;
-                      plotPointGenerationModeRef.current = 'continue';
-                      setPlotPointChainRefreshStates((current) => ({ ...current, [plotPointActiveChainSlot]: true }));
-                      setIsPlotPointPreviewCleared(false);
-                      void sendOutlineAiMessage();
-                    }}
-                    disabled={isLibraryAiLoading || !hasPlotPointChain}
-                    className="h-9 rounded-xl border border-[#08AACE] bg-white px-3 text-xs font-black text-[#08AACE] hover:bg-[#EAF9FD] disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300"
-                  >
-                    继续生成
-                  </button>
-                </div>
-              </div>
               <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto p-4">
                 {plotPointVisibleCandidates.length === 0 ? (
                   <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-sm font-bold text-slate-400">
@@ -7073,6 +7250,48 @@ export function WorkbenchLibraryPanel({
                 </div>
                 )}
               </div>
+              <div className="flex h-14 shrink-0 items-center justify-end gap-2 border-t border-slate-100 px-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPlotPointGeneratedCandidateText('');
+                    setIsPlotPointPreviewCleared(true);
+                    setOutlinePreviewDraft('');
+                    setExpandedPlotPointPreviewIds([]);
+                  }}
+                  className="h-9 rounded-xl border border-red-200 bg-white px-3 text-xs font-black text-red-500 hover:bg-red-50"
+                >
+                  清空
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isLibraryAiLoading) return;
+                    plotPointGenerationModeRef.current = 'restart';
+                    setPlotPointChainRefreshStates((current) => ({ ...current, [plotPointActiveChainSlot]: false }));
+                    setIsPlotPointPreviewCleared(false);
+                    void sendOutlineAiMessage();
+                  }}
+                  disabled={isLibraryAiLoading}
+                  className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:border-[#08AACE] hover:text-[#08AACE] disabled:cursor-not-allowed disabled:text-slate-300"
+                >
+                  重新生成
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isLibraryAiLoading || !hasPlotPointChain) return;
+                    plotPointGenerationModeRef.current = 'continue';
+                    setPlotPointChainRefreshStates((current) => ({ ...current, [plotPointActiveChainSlot]: true }));
+                    setIsPlotPointPreviewCleared(false);
+                    void sendOutlineAiMessage();
+                  }}
+                  disabled={isLibraryAiLoading || !hasPlotPointChain}
+                  className="h-9 rounded-xl border border-[#08AACE] bg-white px-3 text-xs font-black text-[#08AACE] hover:bg-[#EAF9FD] disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300"
+                >
+                  继续生成
+                </button>
+              </div>
             </section>
 
             {plotPointRightResizeHandle}
@@ -7084,8 +7303,9 @@ export function WorkbenchLibraryPanel({
                     {showInlineFieldSizeButton ? (
                     <div className="flex items-center justify-end gap-2">
                       <div className="flex shrink-0 items-center gap-2">
-                        {renderFieldSizeButton()}
                         {renderLibraryAiLogButton('outline', 'h-9 shrink-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 shadow-sm transition-colors hover:border-[#08AACE] hover:bg-[#EAF9FD] hover:text-[#08AACE]')}
+                        {renderDetailOutlineFontSizeTool()}
+                        {renderFieldSizeButton()}
                       </div>
                     </div>
                     ) : null}
@@ -7192,14 +7412,14 @@ export function WorkbenchLibraryPanel({
                     linkedLabel="已关联"
                     onOpen={openDetailOutlineReader}
                     onClear={clearDetailOutlineReaderSelection}
-                    meta={<>已关联：<WordCountText value={detailOutlineReaderWordCount} compact /></>}
+                    meta={detailOutlineReaderWordCount > 0 ? <WordCountText value={detailOutlineReaderWordCount} compact /> : null}
                     title={plotPointLinkedSettingSummary}
                     className="mt-3 flex items-center gap-3"
                     groupClassName="flex h-9 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white"
                     linkedButtonClassName="h-9 min-w-[78px] px-3 text-sm font-black text-slate-700 hover:bg-slate-50"
                     clearButtonClassName="flex h-9 w-10 items-center justify-center bg-red-500 text-white hover:bg-red-600"
                     buttonClassName="h-9 min-w-[84px] rounded-xl border border-[#08AACE] bg-white px-3 text-sm font-black text-[#08AACE] hover:bg-[#EAF9FD]"
-                    metaClassName="min-w-0 flex-1 truncate text-sm font-black text-[#08AACE]"
+                    metaClassName="shrink-0 text-sm font-black text-[#08AACE]"
                   />
                   <div className="mt-3">
                     <AiInlineInput
@@ -7247,8 +7467,9 @@ export function WorkbenchLibraryPanel({
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-base font-bold text-gray-900">{isDetailOutlineTab ? '章纲目录' : '章节概要'}</h3>
               <div className="flex shrink-0 items-center gap-2">
-                {renderFieldSizeButton()}
                 {renderLibraryAiLogButton('outline')}
+                {renderDetailOutlineFontSizeTool()}
+                {renderFieldSizeButton()}
                 <button
                   onClick={() => setIsOutlineSettingsOpen(true)}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
@@ -7400,23 +7621,27 @@ export function WorkbenchLibraryPanel({
                           fontSize: detailOutlineFontSize,
                         } : undefined}
                       />
-                      <label className={isDetailOutlineTab ? 'xy-floating-title-count' : undefined}>
-                        {outlineCardTitle}
-                        {isDetailOutlineTab && <span><WordCountText value={countTextWords(outlineCardContent)} /></span>}
+                      <label className={isDetailOutlineTab ? 'xy-floating-title-count xy-detail-outline-title-count' : undefined}>
+                        <span className={isDetailOutlineTab ? 'xy-floating-title-text' : undefined}>{outlineCardTitle}</span>
                       </label>
-                      <span className="xy-floating-outline-chapter-meta xy-border-embedded-transparent-backplate absolute right-9 top-0 z-20 max-w-[58%] -translate-y-1/2 truncate text-sm font-black leading-5 text-slate-950">
-                        第{chapter.serialNumber}章 {chapter.title.trim() || '未命名章节'} <WordCountText value={chapter.wordCount} compact />
+                      <span className="xy-floating-outline-chapter-meta xy-border-embedded-transparent-backplate absolute right-9 top-0 z-20 max-w-[44%] -translate-y-1/2 truncate text-sm font-black leading-5 text-slate-950">
+                        {isDetailOutlineTab
+                          ? `第${getVolumeDisplayIndex(volume.id)}卷 · ${chapter.title.trim() || '未命名章节'}`
+                          : <>第{chapter.serialNumber}章 {chapter.title.trim() || '未命名章节'} <WordCountText value={chapter.wordCount} compact /></>}
                       </span>
                       {isDetailOutlineTab && (
-                        <div className="xy-floating-border-font-tool">
-                          <FontSizeStepper
-                            value={detailOutlineFontSize}
-                            min={DETAIL_OUTLINE_MIN_FONT_SIZE}
-                            max={DETAIL_OUTLINE_MAX_FONT_SIZE}
-                            ariaLabel="章纲字号"
-                            onChange={setDetailOutlineFontSize}
-                          />
-                        </div>
+                        <span className="xy-floating-count">
+                          <WordCountText value={countTextWords(outlineCardContent)} />
+                        </span>
+                      )}
+                      {isDetailOutlineTab && (
+                        <button
+                          type="button"
+                          onClick={() => updateChapterSummary(chapter.serialNumber, '')}
+                          className="xy-floating-outline-clear-button xy-border-embedded-transparent-backplate xy-floating-outline-card-clear-tool absolute z-30 px-1 text-xs font-black text-red-500 hover:text-red-600"
+                        >
+                          清空
+                        </button>
                       )}
                     </section>
                   );
@@ -7460,7 +7685,7 @@ export function WorkbenchLibraryPanel({
                 <textarea
                   value={outlinePreviewDraft}
                   onChange={(event) => setOutlinePreviewDraft(event.target.value)}
-                  placeholder={plotPointStandalone ? '生成后的剧情点会显示在这里，也可以手动编辑后复制。' : isDetailOutlineTab ? '生成后的章纲会显示在这里，也可以手动编辑后保存。' : '生成后的概要会显示在这里，也可以手动编辑后保存。'}
+                  placeholder={plotPointStandalone ? '生成后的剧情点会显示在这里，也可以手动编辑后复制。' : isDetailOutlineTab ? '生成后的章纲会显示在这里，也可以手动编辑后替换所选章纲。' : '生成后的概要会显示在这里，也可以手动编辑后保存。'}
                   className="editor-scrollbar text-sm leading-6 text-gray-600 outline-none"
                 />
                 <label>{outlineDraftFrameTitle}</label>
@@ -7471,32 +7696,14 @@ export function WorkbenchLibraryPanel({
               </div>
             )}
           </div>
-          {isDetailOutlineTab && (
-          <div className="mt-3 shrink-0 text-sm font-bold leading-6 text-gray-600">
-              {safeOutlineSelectionType === 'volume' && selectedOutlineVolume ? (
-                <>
-                  <div><span className="font-bold text-gray-800">当前卷：</span>{selectedOutlineVolume.name}</div>
-                  <div><span className="font-bold text-gray-800">章节数量：</span>{selectedOutlineVolume.chapters.length} 章</div>
-                  <div><span className="font-bold text-gray-800">章节字数：</span><WordCountText value={selectedVolumeWordCount} /></div>
-                </>
-              ) : selectedOutlineChapter ? (
-                <>
-                  <div className="font-bold text-gray-800">第{selectedOutlineChapter.chapter.serialNumber}章 {selectedChapterTitle}</div>
-                  <div className="mt-1 text-gray-700">正文：<WordCountText value={selectedOutlineChapter.chapter.wordCount} compact /></div>
-                </>
-              ) : (
-                <span className="text-gray-400">请选择左侧章节。</span>
-              )}
-          </div>
-          )}
             {isDetailOutlineTab && (
               <LinkedSourceControl
                 linked={selectedDetailOutlineReaderItems.length > 0}
                 label="关联设定"
                 linkedLabel="关联设定"
                 onOpen={openDetailOutlineReader}
-                meta={<>已关联 {selectedDetailOutlineReaderItems.length} 项 · <WordCountText value={detailOutlineReaderWordCount} compact /></>}
-                className="mt-3 flex items-center justify-between gap-3"
+                meta={detailOutlineReaderWordCount > 0 ? <WordCountText value={detailOutlineReaderWordCount} compact /> : null}
+                className="mt-3 flex items-center gap-3"
                 buttonClassName={`h-9 shrink-0 rounded-xl px-3 text-sm font-black transition-colors ${
                   selectedDetailOutlineReaderItems.length > 0
                     ? 'bg-[#08AACE] text-white hover:bg-[#0798b8]'
@@ -7504,7 +7711,7 @@ export function WorkbenchLibraryPanel({
                 }`}
                 linkedButtonClassName="h-9 shrink-0 rounded-xl bg-[#08AACE] px-3 text-sm font-black text-white transition-colors hover:bg-[#0798b8]"
                 groupClassName="shrink-0"
-                metaClassName="min-w-0 truncate text-right text-xs font-bold text-slate-400"
+                metaClassName="shrink-0 text-xs font-bold text-slate-400"
               />
             )}
             <div className="mt-3">
@@ -7537,8 +7744,17 @@ export function WorkbenchLibraryPanel({
                 disabled={!stripAiThinkingBlock(outlinePreviewDraft).trim()}
                 className="min-w-0 flex-1 bg-brand px-3 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
               >
-                {plotPointStandalone ? '放入章纲要求' : isDetailOutlineTab ? '保存章纲' : '保存概要'}
+                {plotPointStandalone ? '放入章纲要求' : isDetailOutlineTab ? '替换章纲' : '保存概要'}
               </button>
+              {isDetailOutlineTab && !plotPointStandalone && (
+                <button
+                  onClick={undoDetailOutlineReplacement}
+                  disabled={!lastDetailOutlineReplacement}
+                  className="min-w-0 flex-1 border-l border-blue-200 bg-white px-3 py-2 text-sm font-bold text-blue-700 hover:bg-blue-50 disabled:text-gray-300"
+                >
+                  撤销替换
+                </button>
+              )}
               <button
                 onClick={() => void navigator.clipboard.writeText(stripAiThinkingBlock(outlinePreviewDraft))}
                 disabled={!stripAiThinkingBlock(outlinePreviewDraft).trim()}

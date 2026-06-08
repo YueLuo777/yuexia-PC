@@ -54,7 +54,7 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '' }: { isOp
     setStatus(result.message ?? (result.ok ? '图标已更新。' : '图标更新失败。'));
   };
 
-  const useProjectIcon = async (fileName: string) => {
+  const applyProjectIcon = async (fileName: string) => {
     if (!window.xinyuexiaAppIcon) {
       setStatus('当前运行环境不支持切换软件图标。');
       return;
@@ -254,7 +254,7 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '' }: { isOp
                             {icon.fileName}
                           </p>
                           <button
-                            onClick={() => void useProjectIcon(icon.fileName)}
+                            onClick={() => void applyProjectIcon(icon.fileName)}
                             disabled={isBusy || icon.isSelected}
                             className={`mt-1.5 w-full rounded-lg px-2 py-1.5 text-[11px] font-bold transition-colors ${
                               icon.isSelected

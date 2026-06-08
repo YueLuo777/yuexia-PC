@@ -5,6 +5,7 @@ import type { Chapter, RecycledChapter, Volume, WorkbenchNovel } from '@/feature
 import { countWords, ensureOneSelected, getSelectedChapter } from '@/features/workbench/model/workbenchRules';
 import { emitWorkspaceNovelSelected, WORKSPACE_NOVEL_SELECTED_EVENT, type WorkspaceNovelSelectedDetail } from '@/shared/events/workspaceEvents';
 import { recordWritingWords } from '@/shared/stats/writingStats';
+import { readJsonValue, writeJsonValue } from '@/shared/storage/jsonStorage';
 
 const NOVELS_KEY = 'xinyuexia_novels_v1';
 const CURRENT_ID_KEY = 'xinyuexia_current_novel_id';
@@ -12,17 +13,12 @@ const VOLUMES_KEY = 'xinyuexia_volumes_v1';
 const RECYCLED_CHAPTERS_KEY = 'xinyuexia_recycled_chapters_v1';
 const SORT_KEY = 'xinyuexia_workbench_sort_asc';
 
-function readJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
+function readJson<T>(key: string, fallback: T, normalize?: (value: unknown) => T): T {
+  return readJsonValue(key, fallback, normalize);
 }
 
 function writeJson<T>(key: string, value: T) {
-  localStorage.setItem(key, JSON.stringify(value));
+  writeJsonValue(key, value);
 }
 
 function uid() {
@@ -58,6 +54,100 @@ export function toChineseNumber(value: number) {
   const tens = Math.floor(value / 10);
   const ones = value % 10;
   return ones === 0 ? `${digits[tens]}十` : `${digits[tens]}十${digits[ones]}`;
+}
+
+function normalizeNumber(value: unknown, fallback: number) {
+  const next = Number(value);
+  return Number.isFinite(next) ? next : fallback;
+}
+
+function normalizeString(value: unknown, fallback = '') {
+  return typeof value === 'string' ? value : fallback;
+}
+
+export function normalizeWorkbenchNovels(value: unknown): WorkbenchNovel[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is Partial<WorkbenchNovel> => typeof item === 'object' && item !== null)
+    .map((item, index) => ({
+      id: normalizeNumber(item.id, index + 1),
+      title: normalizeString(item.title, `作品${index + 1}`),
+      type: item.type === 'script' ? 'script' : 'novel',
+      ...(typeof item.category === 'string' ? { category: item.category } : {}),
+      ...(typeof item.synopsis === 'string' ? { synopsis: item.synopsis } : {}),
+      ...(typeof item.wordCount === 'number' ? { wordCount: item.wordCount } : {}),
+      ...(typeof item.createdAt === 'string' ? { createdAt: item.createdAt } : {}),
+      ...(typeof item.lastModifiedAt === 'string' ? { lastModifiedAt: item.lastModifiedAt } : {}),
+    }));
+}
+
+function normalizeChapter(value: unknown, index: number): Chapter | null {
+  if (!value || typeof value !== 'object') return null;
+  const item = value as Partial<Chapter>;
+  return {
+    id: normalizeNumber(item.id, Date.now() + index),
+    title: normalizeString(item.title),
+    serialNumber: Math.max(1, normalizeNumber(item.serialNumber, index + 1)),
+    wordCount: Math.max(0, normalizeNumber(item.wordCount, 0)),
+    isSelected: item.isSelected === true,
+    ...(typeof item.isPublished === 'boolean' ? { isPublished: item.isPublished } : {}),
+  };
+}
+
+function normalizeVolume(value: unknown, index: number): Volume | null {
+  if (!value || typeof value !== 'object') return null;
+  const item = value as Partial<Volume>;
+  const chapters = Array.isArray(item.chapters)
+    ? item.chapters.map((chapter, chapterIndex) => normalizeChapter(chapter, chapterIndex)).filter((chapter): chapter is Chapter => Boolean(chapter))
+    : [];
+  return {
+    id: normalizeNumber(item.id, Date.now() + index),
+    name: normalizeString(item.name, `卷${index + 1}`),
+    isExpanded: item.isExpanded !== false,
+    chapters,
+  };
+}
+
+export function normalizeWorkbenchVolumeMap(value: unknown): Record<number, Volume[]> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .map(([novelId, volumes]) => [
+        Number(novelId),
+        Array.isArray(volumes)
+          ? volumes.map((volume, index) => normalizeVolume(volume, index)).filter((volume): volume is Volume => Boolean(volume))
+          : [],
+      ])
+      .filter(([novelId]) => Number.isFinite(novelId)),
+  ) as Record<number, Volume[]>;
+}
+
+function normalizeRecycledChapter(value: unknown, index: number): RecycledChapter | null {
+  const chapter = normalizeChapter(value, index);
+  if (!chapter || !value || typeof value !== 'object') return null;
+  const item = value as Partial<RecycledChapter>;
+  return {
+    ...chapter,
+    volumeId: normalizeNumber(item.volumeId, 0),
+    volumeName: normalizeString(item.volumeName),
+    deletedAt: normalizeString(item.deletedAt),
+    expireAt: normalizeString(item.expireAt),
+    content: normalizeString(item.content),
+  };
+}
+
+export function normalizeWorkbenchRecycledMap(value: unknown): Record<number, RecycledChapter[]> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .map(([novelId, chapters]) => [
+        Number(novelId),
+        Array.isArray(chapters)
+          ? chapters.map((chapter, index) => normalizeRecycledChapter(chapter, index)).filter((chapter): chapter is RecycledChapter => Boolean(chapter))
+          : [],
+      ])
+      .filter(([novelId]) => Number.isFinite(novelId)),
+  ) as Record<number, RecycledChapter[]>;
 }
 
 function normalizeVolumeNames(volumesMap: Record<number, Volume[]>) {
@@ -131,13 +221,13 @@ function createDefaultVolumes(type: WorkbenchNovel['type'] = 'novel'): Volume[] 
 }
 
 export function useWorkbenchData() {
-  const [novels, setNovels] = useState<WorkbenchNovel[]>(() => readJson<WorkbenchNovel[]>(NOVELS_KEY, []));
+  const [novels, setNovels] = useState<WorkbenchNovel[]>(() => readJson<WorkbenchNovel[]>(NOVELS_KEY, [], normalizeWorkbenchNovels));
   const [currentNovelId, setCurrentNovelIdState] = useState<number | null>(() => {
     const raw = localStorage.getItem(CURRENT_ID_KEY);
     return raw ? Number(raw) : null;
   });
-  const [volumesMap, setVolumesMap] = useState<Record<number, Volume[]>>(() => normalizeVolumeNames(readJson(VOLUMES_KEY, {})));
-  const [recycledMap, setRecycledMap] = useState<Record<number, RecycledChapter[]>>(() => readJson(RECYCLED_CHAPTERS_KEY, {}));
+  const [volumesMap, setVolumesMap] = useState<Record<number, Volume[]>>(() => normalizeVolumeNames(readJson(VOLUMES_KEY, {}, normalizeWorkbenchVolumeMap)));
+  const [recycledMap, setRecycledMap] = useState<Record<number, RecycledChapter[]>>(() => readJson(RECYCLED_CHAPTERS_KEY, {}, normalizeWorkbenchRecycledMap));
   const [sortAsc, setSortAsc] = useState(() => localStorage.getItem(SORT_KEY) !== 'false');
   const [editorContent, setEditorContent] = useState('');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
@@ -171,7 +261,7 @@ export function useWorkbenchData() {
   }, []);
 
   useEffect(() => {
-    setNovels(readJson<WorkbenchNovel[]>(NOVELS_KEY, []));
+    setNovels(readJson<WorkbenchNovel[]>(NOVELS_KEY, [], normalizeWorkbenchNovels));
     const raw = localStorage.getItem(CURRENT_ID_KEY);
     setCurrentNovelIdState(raw ? Number(raw) : null);
   }, []);
@@ -179,8 +269,8 @@ export function useWorkbenchData() {
   useEffect(() => {
     const handleSelected = (event: Event) => {
       const detail = (event as CustomEvent<WorkspaceNovelSelectedDetail>).detail;
-      setNovels(readJson<WorkbenchNovel[]>(NOVELS_KEY, []));
-      setVolumesMap(normalizeVolumeNames(readJson(VOLUMES_KEY, {})));
+      setNovels(readJson<WorkbenchNovel[]>(NOVELS_KEY, [], normalizeWorkbenchNovels));
+      setVolumesMap(normalizeVolumeNames(readJson(VOLUMES_KEY, {}, normalizeWorkbenchVolumeMap)));
       setCurrentNovelIdState(detail?.novelId ?? null);
     };
 

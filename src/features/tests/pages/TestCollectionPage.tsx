@@ -3,6 +3,7 @@ import {
   Check,
   ChevronDown,
   EyeOff,
+  GitBranch,
   Globe,
   NotebookText,
   Moon,
@@ -29,12 +30,27 @@ const BorderBackplateApplicationTestPage = lazy(() => import('@/features/tests/p
 const WorkbenchRightPanelUnifiedTestPage = lazy(() => import('@/features/tests/pages/WorkbenchRightPanelUnifiedTestPage').then((module) => ({ default: module.WorkbenchRightPanelUnifiedTestPage })));
 const WorkbenchShelllessAuditTestPage = lazy(() => import('@/features/tests/pages/WorkbenchShelllessAuditTestPage').then((module) => ({ default: module.WorkbenchShelllessAuditTestPage })));
 const WorkbenchAiPanelReplicaTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiPanelReplicaTestPage').then((module) => ({ default: module.WorkbenchAiPanelReplicaTestPage })));
+const PlotChainTabbedLayoutTestPage = lazy(() => import('@/features/tests/pages/PlotChainTabbedLayoutTestPage').then((module) => ({ default: module.PlotChainTabbedLayoutTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
   {
     title: 'UI 与主题',
     items: [
+      {
+        title: '错误日志',
+        description: '记录软件里出现过的问题、原因、修复办法和后续防复发规则。',
+        path: '/error-log',
+        icon: NotebookText,
+        badge: 'Log',
+      },
+      {
+        title: '隐藏页面',
+        description: '集中检查没有展示在正式导航里的页面、旧入口和内嵌功能。',
+        path: '/hidden-pages-test',
+        icon: EyeOff,
+        badge: 'Hidden',
+      },
       {
         title: 'UI库',
         description: '查看软件内可复用 UI、手动上传 UI 和技术词典记录。',
@@ -104,18 +120,11 @@ const testGroups = [
         badge: 'Log UI',
       },
       {
-        title: '隐藏页面',
-        description: '集中检查没有展示在正式导航里的页面、旧入口和内嵌功能。',
-        path: '/hidden-pages-test',
-        icon: EyeOff,
-        badge: 'Hidden',
-      },
-      {
-        title: '错误日志',
-        description: '记录软件里出现过的问题、原因、修复办法和后续防复发规则。',
-        path: '/error-log',
-        icon: NotebookText,
-        badge: 'Log',
+        title: '剧情链双标签布局测试',
+        description: '测试生成剧情链和剧情链预览拆成两个标签页后的三栏工作流。',
+        path: '/plot-chain-tabbed-layout-test',
+        icon: GitBranch,
+        badge: 'Plot Tabs',
       },
     ],
   },
@@ -406,6 +415,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <HiddenPagesTestPage />;
       case '/error-log':
         return <ErrorLogPage />;
+      case '/plot-chain-tabbed-layout-test':
+        return <PlotChainTabbedLayoutTestPage />;
       case '/software-ui-catalog':
         return <SoftwareUiCatalogPage embedded onClose={() => setActivePath(null)} />;
       case '/prompt-taxonomy-test':
