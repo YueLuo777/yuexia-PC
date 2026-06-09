@@ -79,11 +79,17 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('defaultActiveTab');
     expect(panelSource).not.toContain("tabs={['设定', '角色', '脑洞']}");
   });
-  it('places brainstorm output clear action on the top right and font tools on the bottom border', async () => {
+  it('places brainstorm output clear action on the top right and font tools in the header slot', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const styleSource = await readSharedStylesSource();
     const actionToolStart = panelSource.indexOf('<div className="xy-floating-brainstorm-output-action-tool');
-    const actionToolSource = panelSource.slice(actionToolStart, panelSource.indexOf('<div className="xy-floating-border-font-tool">', actionToolStart));
+    const actionToolSource = panelSource.slice(actionToolStart, panelSource.indexOf('<label', actionToolStart));
+    const brainstormPreviewStart = panelSource.indexOf('placeholder="这里显示选中的脑洞内容，也可以直接编辑。"');
+    const brainstormPreviewEnd = panelSource.indexOf('</main>', brainstormPreviewStart);
+    const brainstormPreviewSource = panelSource.slice(brainstormPreviewStart, brainstormPreviewEnd);
+    const brainstormOutputStart = panelSource.indexOf('xy-brainstorm-output-preview-list');
+    const brainstormOutputEnd = panelSource.indexOf('className="shrink-0 border-t border-gray-100 bg-white px-4 py-3"', brainstormOutputStart);
+    const brainstormOutputSource = panelSource.slice(brainstormOutputStart, brainstormOutputEnd);
 
     expect(panelSource).toContain('xy-floating-brainstorm-output-action-tool');
     expect(actionToolSource).toContain('onClick={clearLibraryAiDialog}');
@@ -91,9 +97,15 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(actionToolSource).not.toContain('border-r border-slate-200');
     expect(actionToolSource).toContain('xy-floating-brainstorm-output-action-tool xy-border-embedded-transparent-backplate');
     expect(actionToolSource).toContain('className="text-base font-medium leading-5 text-red-500');
+    expect(panelSource).toContain('const renderBrainstormFontSizeTool = () => {');
+    expect(panelSource).toContain('if (activeTab !== BRAINSTORM_TAB) return null;');
+    expect(panelSource).toContain('className="xy-header-stream-tool"');
     expect(panelSource).toContain('ariaLabel="脑洞输出字号"');
-    expect(panelSource).toContain('xy-floating-border-font-tool');
-    expect(panelSource).toContain('className="xy-floating-border-stream-tool"');
+    expect(panelSource).toContain('ariaLabel="脑洞预览字号"');
+    expect(panelSource).toContain('createPortal(renderLibraryHeaderFontSizeTool(), headerToolPortalTarget)');
+    expect(brainstormPreviewSource).not.toContain('xy-floating-border-font-tool');
+    expect(brainstormOutputSource).not.toContain('xy-floating-border-font-tool');
+    expect(brainstormOutputSource).not.toContain('xy-floating-border-stream-tool');
     expect(panelSource).toContain('className="xy-stream-toggle-text">流式输出</span>');
     expect(panelSource).toContain('className="xy-stream-toggle-track"');
     expect(panelSource).toContain('className="xy-stream-toggle-thumb"');
@@ -101,8 +113,10 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain('xy-floating-brainstorm-output-font-tool');
     expect(panelSource).not.toContain('<span>流式输出</span>');
     expect(styleSource).toContain('.xy-floating-border-stream-tool {');
+    expect(styleSource).toContain('.xy-header-stream-tool {');
     expect(styleSource).toContain('.xy-stream-toggle-text {');
     expect(styleSource).toContain('height: 1.76rem;');
+    expect(styleSource).toContain('height: 2.25rem;');
     expect(styleSource).toContain('background: #ffffff;');
     expect(styleSource).toContain('width: 2.02rem;');
     expect(styleSource).toContain('.xy-stream-toggle-track {');
@@ -249,7 +263,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(styleSource).toContain('transform: translateY(-50%) !important;');
     expect(styleSource).not.toContain('.xy-floating-edge-tool.xy-floating-brainstorm-session-tool');
     const actionToolStart = panelSource.indexOf('<div className="xy-floating-brainstorm-output-action-tool');
-    const actionToolSource = panelSource.slice(actionToolStart, panelSource.indexOf('<div className="xy-floating-border-font-tool">', actionToolStart));
+    const actionToolSource = panelSource.slice(actionToolStart, panelSource.indexOf('<label', actionToolStart));
 
     expect(actionToolSource).toContain('xy-floating-brainstorm-output-action-tool');
     expect(actionToolSource).toContain('清空');
@@ -442,8 +456,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain("const BRAINSTORM_OUTPUT_ONLY_INSTRUCTION = '请直接输出实际脑洞内容，不要复述提示词、其他要求、题材、故事主题等标签。';");
     expect(panelSource).toContain("const BRAINSTORM_REQUEST_HEADER = '【以下是用户输出的内容】';");
     expect(panelSource).toContain("const BRAINSTORM_OTHER_REQUIREMENTS_HEADER = '【其他要求】';");
+    expect(panelSource).toContain("const BRAINSTORM_GENERATE_TASK_TEXT = '请根据以下信息，生成一个可以保存进脑洞库的小说脑洞设定。';");
+    expect(panelSource).toContain("const BRAINSTORM_GENERATE_RULE_TEXT = '要求：内容要具体、可继续扩展，避免只复述问题；如果信息不足，请合理补全但不要偏离用户要求。';");
     expect(panelSource).toContain('function stripBrainstormRequestHeader(content: string)');
     expect(panelSource).toContain('function isBrainstormEchoedRequest(content: string, requestText: string)');
+    expect(panelSource).toContain('function getBrainstormOtherRequirementsBlock(requestText: string)');
     expect(panelSource).toContain('function getBrainstormDisplayContent(content: string, requestText: string)');
     expect(panelSource).toContain('const clean = stripBrainstormRequestHeader(stripAiThinkingBlock(text)).trim();');
     expect(panelSource).toContain("? [baseModelPrompt, BRAINSTORM_OUTPUT_ONLY_INSTRUCTION].filter(Boolean).join('\\n\\n')");
@@ -451,14 +468,18 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('const visibleUserText = (options.visibleText ?? text).trim();');
     expect(panelSource).toContain('const visibleText = stripBrainstormRequestHeader(promptText);');
     expect(panelSource).toContain('void sendLibraryAiMessage(promptText, { visibleText });');
-    expect(panelSource).toContain('const brainstormStreamDisplay = activeTab === BRAINSTORM_TAB && isBrainstormEchoedRequest(streamedContent, requestText)');
+    expect(panelSource).toContain('const brainstormStreamDisplay = stripBrainstormRequestHeader(streamedContent.trimStart());');
     expect(panelSource).toContain('if (activeTab === BRAINSTORM_TAB) setAiResult(brainstormStreamDisplay);');
+    expect(panelSource).toContain('const otherRequirements = normalizeBrainstormEchoText(getBrainstormOtherRequirementsBlock(requestText));');
+    expect(panelSource).toContain('output === request || output === otherRequirements');
     expect(panelSource).toContain('? getBrainstormDisplayContent(content, requestText)');
     expect(panelSource).toContain('【错误】模型只复述了输入内容，没有生成脑洞。请重试，或换一个提示词/模型。');
     expect(panelSource).toContain('【错误】模型没有返回内容。请重试，或检查模型、提示词和网络。');
     expect(panelSource).toContain('if (activeTab === BRAINSTORM_TAB) setAiResult(errorContent);');
     expect(latestUsefulSource).toContain("if (turns.length > 0) return '';");
-    expect(buildSource).toContain("return lines ? [BRAINSTORM_OTHER_REQUIREMENTS_HEADER, lines].join('\\n') : '';");
+    expect(buildSource).toContain('BRAINSTORM_GENERATE_TASK_TEXT');
+    expect(buildSource).toContain('BRAINSTORM_GENERATE_RULE_TEXT');
+    expect(buildSource).toContain('BRAINSTORM_OTHER_REQUIREMENTS_HEADER');
     expect(buildSource).not.toContain('BRAINSTORM_REQUEST_HEADER');
     expect(buildSource).not.toContain('【用户要求】');
     expect(panelSource).not.toContain("void sendLibraryAiMessage(promptText);");
@@ -500,16 +521,33 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
     expect(panelSource).toContain('previewTitles?: string[];');
     expect(panelSource).toContain('previewDrafts?: string[];');
+    expect(panelSource).toContain('previewSelectedIndexes?: number[];');
+    expect(panelSource).toContain('function getSelectedBrainstormPreviewIndexes(previews: string[], selectedIndexes?: number[])');
     expect(panelSource).toContain('function getBrainstormOutputCount(value: string)');
     expect(panelSource).toContain('return `脑洞输出框${index + 1}`;');
     expect(panelSource).not.toContain('return `新脑洞${index + 1}`;');
+    expect(panelSource).toContain('const getNextBrainstormTitles = (count: number) => {');
+    expect(panelSource).toContain('return Array.from({ length: count }, (_, index) => `脑洞${maxNumber + index + 1}`);');
+    expect(panelSource).toContain('const nextTitles = getNextBrainstormTitles(previews.length);');
+    expect(panelSource).toContain('const previews = getCurrentBrainstormOutputPreviews(true);');
+    expect(panelSource).toContain('createWorkbenchLibraryEntry(BRAINSTORM_TAB, nextTitles[index] ?? getNextBrainstormTitle())');
+    expect(panelSource).not.toContain('createWorkbenchLibraryEntry(BRAINSTORM_TAB, preview.title || getNextBrainstormTitle())');
     expect(panelSource).toContain('function splitBrainstormGeneratedText(text: string, count: number)');
     expect(panelSource).toContain('const brainstormOutputPreviewCount = activeIsBrainstorm ? getBrainstormOutputCount(brainstormQuestionDraft.brainstormCount) : 1;');
     expect(panelSource).toContain('const brainstormOutputPreviews = Array.from({ length: brainstormOutputPreviewCount }, (_, index) => (');
+    expect(panelSource).toContain('const selectedBrainstormOutputIndexes = getSelectedBrainstormPreviewIndexes(');
+    expect(panelSource).toContain('const selectedBrainstormOutputIndexSet = new Set(selectedBrainstormOutputIndexes);');
+    expect(panelSource).toContain('const selectedBrainstormOutputCount = selectedBrainstormOutputIndexes');
+    expect(panelSource).toContain('const showBrainstormOutputSelection = activeIsBrainstorm && brainstormOutputPreviewCount > 1;');
     expect(panelSource).toContain('{brainstormOutputPreviews.map((previewValue, index) => {');
+    expect(panelSource).toContain('role="checkbox"');
+    expect(panelSource).toContain('aria-checked={outputChecked}');
+    expect(panelSource).toContain('onClick={() => toggleBrainstormOutputPreviewSelected(index)}');
     expect(panelSource).toContain('aria-label={`脑洞输出名称 ${index + 1}`}');
     expect(panelSource).toContain('onChange={(event) => setBrainstormOutputPreviewTitle(index, event.target.value)}');
-    expect(panelSource).toContain('updateActiveBrainstormAiSession({ previewTitles: [], previewDrafts: [] });');
+    expect(panelSource).toContain('updateActiveBrainstormAiSession({ previewTitles: [], previewDrafts: [], previewSelectedIndexes: undefined });');
+    expect(panelSource).toContain('disabled={!currentSelectedEntry || selectedBrainstormOutputCount !== 1}');
+    expect(panelSource).toContain('disabled={selectedBrainstormOutputCount === 0}');
     expect(panelSource).toContain('clearStoredBrainstormAiSessionPreviews(storageKey);');
     expect(panelSource).not.toContain('currentSelectedEntry.title || \'未命名脑洞\'');
     expect(entryClickSource).not.toContain('setAiResult(getBrainstormEntryBody(entry));');
@@ -774,11 +812,17 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(styleSource).toContain('transform: translateY(50%);');
   });
 
-  it('places the detail outline font size control in the header tool slot and applies it to every chapter outline card', async () => {
+  it('places library preview font size controls in the header tool slot and applies detail outline size to every chapter outline card', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const cardSourceStart = panelSource.indexOf('const outlineCardTitle = getOutlineChapterFrameTitle(volume, chapter);');
     const cardSourceEnd = panelSource.indexOf('</section>', cardSourceStart);
     const cardSource = panelSource.slice(cardSourceStart, cardSourceEnd);
+    const settingPreviewStart = panelSource.indexOf('placeholder="这里显示选中的设定内容，也可以直接编辑。"');
+    const settingPreviewEnd = panelSource.indexOf('<div className="mt-6 flex shrink-0 justify-end">', settingPreviewStart);
+    const settingPreviewSource = panelSource.slice(settingPreviewStart, settingPreviewEnd);
+    const emptySettingPreviewStart = panelSource.indexOf('placeholder="这里会显示选中的设定内容。"');
+    const emptySettingPreviewEnd = panelSource.indexOf('</div>', emptySettingPreviewStart);
+    const emptySettingPreviewSource = panelSource.slice(emptySettingPreviewStart, emptySettingPreviewEnd);
     const toolbarStart = panelSource.indexOf('<h3 className="text-base font-bold text-gray-900">{isDetailOutlineTab ? \'章纲目录\' : \'章节概要\'}</h3>');
     const toolbarEnd = panelSource.indexOf('<div className="mt-3 min-h-0 flex-1 overflow-y-auto">', toolbarStart);
     const toolbarSource = panelSource.slice(toolbarStart, toolbarEnd);
@@ -791,17 +835,25 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('fontSize: detailOutlineFontSize');
     expect(panelSource).toContain('const renderDetailOutlineFontSizeTool = () => {');
     expect(panelSource).toContain('if (activeTab !== DETAIL_OUTLINE_TAB || plotPointStandalone) return null;');
+    expect(panelSource).toContain('const renderBrainstormFontSizeTool = () => {');
+    expect(panelSource).toContain('const renderSettingPreviewFontSizeTool = () => {');
+    expect(panelSource).toContain('const renderLibraryHeaderFontSizeTool = () => (');
     expect(panelSource).toContain('const [headerToolPortalTarget, setHeaderToolPortalTarget]');
     expect(panelSource).toContain("setHeaderToolPortalTarget(document.getElementById('workbench-header-extra-tools'))");
-    expect(panelSource).toContain('const detailOutlineHeaderFontSizePortal = headerToolPortalTarget && !showInlineFieldSizeButton');
-    expect(panelSource).toContain('createPortal(renderDetailOutlineFontSizeTool(), headerToolPortalTarget)');
-    expect(panelSource).toContain('{detailOutlineHeaderFontSizePortal}');
+    expect(panelSource).toContain('const libraryHeaderFontSizePortal = headerToolPortalTarget && !showInlineFieldSizeButton');
+    expect(panelSource).toContain('createPortal(renderLibraryHeaderFontSizeTool(), headerToolPortalTarget)');
+    expect(panelSource).toContain('{libraryHeaderFontSizePortal}');
     expect(panelSource).toContain('ariaLabel="章纲字号"');
+    expect(panelSource).toContain('ariaLabel="脑洞预览字号"');
+    expect(panelSource).toContain('ariaLabel="脑洞输出字号"');
+    expect(panelSource).toContain('ariaLabel="设定预览字号"');
     expect(panelSource).toContain('className="shrink-0"');
     expect(cardSourceStart).toBeGreaterThan(-1);
     expect(cardSourceEnd).toBeGreaterThan(cardSourceStart);
     expect(cardSource).not.toContain('ariaLabel="章纲字号"');
     expect(cardSource).not.toContain('<div className="xy-floating-border-font-tool">');
+    expect(settingPreviewSource).not.toContain('<div className="xy-floating-border-font-tool">');
+    expect(emptySettingPreviewSource).not.toContain('<div className="xy-floating-border-font-tool">');
     expect(toolbarStart).toBeGreaterThan(-1);
     expect(toolbarEnd).toBeGreaterThan(toolbarStart);
     expect(toolbarSource).not.toContain("{renderDetailOutlineFontSizeTool()}");

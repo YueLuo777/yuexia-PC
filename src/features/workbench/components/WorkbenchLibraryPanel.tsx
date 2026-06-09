@@ -573,7 +573,10 @@ type BrainstormAiSession = {
   result: string;
   previewTitles?: string[];
   previewDrafts?: string[];
+  previewSelectedIndexes?: number[];
 };
+
+type LibraryFontTarget = 'brainstormPreview' | 'brainstormOutput' | 'settingPreview' | 'detailOutline';
 
 function createBrainstormAiSession(id = '1', config?: Pick<LibraryTabConfig, 'aiInput' | 'aiOutput' | 'aiResult'>): BrainstormAiSession {
   return {
@@ -600,6 +603,9 @@ function normalizeBrainstormAiSessions(value: unknown, fallbackConfig: Pick<Libr
         result: typeof session.result === 'string' ? session.result : '',
         previewTitles: Array.isArray(session.previewTitles) ? session.previewTitles.filter((item): item is string => typeof item === 'string') : undefined,
         previewDrafts: Array.isArray(session.previewDrafts) ? session.previewDrafts.filter((item): item is string => typeof item === 'string') : undefined,
+        previewSelectedIndexes: Array.isArray(session.previewSelectedIndexes)
+          ? session.previewSelectedIndexes.filter((item): item is number => Number.isInteger(item) && item >= 0)
+          : undefined,
       };
     })
     .filter((session): session is BrainstormAiSession => Boolean(session));
@@ -618,6 +624,15 @@ function getBrainstormOutputCount(value: string) {
 
 function getTemporaryBrainstormTitle(index: number) {
   return `脑洞输出框${index + 1}`;
+}
+
+function getSelectedBrainstormPreviewIndexes(previews: string[], selectedIndexes?: number[]) {
+  if (Array.isArray(selectedIndexes)) {
+    return selectedIndexes.filter((index) => index >= 0 && index < previews.length);
+  }
+  return previews
+    .map((preview, index) => (preview.trim() ? index : -1))
+    .filter((index) => index >= 0);
 }
 
 function getFloatingTitleInputStyle(value: string, minCh: number, maxCh: number): CSSProperties {
@@ -654,7 +669,7 @@ function clearStoredBrainstormAiSessionPreviews(storageKey: string) {
   const activeId = getActiveBrainstormAiSessionId(currentConfig.activeAiSessionId, currentSessions);
   const nextSessions = currentSessions.map((session) => (
     session.id === activeId
-      ? { ...session, input: '', output: '', result: '', previewTitles: [], previewDrafts: [] }
+      ? { ...session, input: '', output: '', result: '', previewTitles: [], previewDrafts: [], previewSelectedIndexes: undefined }
       : session
   ));
   localStorage.setItem(getTabConfigsStorageKey(storageKey), JSON.stringify({
@@ -685,6 +700,8 @@ const BRAINSTORM_QUESTION_FIELDS: Array<{
 const BRAINSTORM_OUTPUT_ONLY_INSTRUCTION = '请直接输出实际脑洞内容，不要复述提示词、其他要求、题材、故事主题等标签。';
 const BRAINSTORM_REQUEST_HEADER = '【以下是用户输出的内容】';
 const BRAINSTORM_OTHER_REQUIREMENTS_HEADER = '【其他要求】';
+const BRAINSTORM_GENERATE_TASK_TEXT = '请根据以下信息，生成一个可以保存进脑洞库的小说脑洞设定。';
+const BRAINSTORM_GENERATE_RULE_TEXT = '要求：内容要具体、可继续扩展，避免只复述问题；如果信息不足，请合理补全但不要偏离用户要求。';
 
 function normalizeBrainstormCountValue(value: string) {
   const trimmed = value.trim();
@@ -1381,10 +1398,16 @@ function normalizeBrainstormEchoText(content: string) {
     .trim();
 }
 
+function getBrainstormOtherRequirementsBlock(requestText: string) {
+  const headerIndex = requestText.indexOf(BRAINSTORM_OTHER_REQUIREMENTS_HEADER);
+  return headerIndex >= 0 ? requestText.slice(headerIndex) : requestText;
+}
+
 function isBrainstormEchoedRequest(content: string, requestText: string) {
   const output = normalizeBrainstormEchoText(content);
   const request = normalizeBrainstormEchoText(requestText);
-  return Boolean(output && request && output === request);
+  const otherRequirements = normalizeBrainstormEchoText(getBrainstormOtherRequirementsBlock(requestText));
+  return Boolean(output && request && (output === request || output === otherRequirements));
 }
 
 function getBrainstormDisplayContent(content: string, requestText: string) {
@@ -1742,6 +1765,7 @@ export function WorkbenchLibraryPanel({
   const [libraryAiLogScope, setLibraryAiLogScope] = useState<'library' | 'outline'>('library');
   const [showLibraryAiLogTitles, setShowLibraryAiLogTitles] = useState(true);
   const [lastLibraryAiRequestLog, setLastLibraryAiRequestLog] = useState<LibraryAiRequestLog | null>(null);
+  const [activeLibraryFontTarget, setActiveLibraryFontTarget] = useState<LibraryFontTarget>('brainstormOutput');
   const [lastOutlineAiRequestLog, setLastOutlineAiRequestLog] = useState<LibraryAiRequestLog | null>(null);
   const [loadingDotCount, setLoadingDotCount] = useState(1);
   const [tabPortalTarget, setTabPortalTarget] = useState<HTMLElement | null>(null);
@@ -1951,6 +1975,7 @@ export function WorkbenchLibraryPanel({
       result: '',
       previewTitles: [],
       previewDrafts: [],
+      previewSelectedIndexes: undefined,
     });
   }, [activeTab, activeBrainstormAiSessionId]);
   const setOutlinePreviewDraft = (value: SetStateAction<string>) => {
@@ -2139,7 +2164,14 @@ export function WorkbenchLibraryPanel({
       })
       .filter((line): line is string => Boolean(line))
       .join('\n');
-    return lines ? [BRAINSTORM_OTHER_REQUIREMENTS_HEADER, lines].join('\n') : '';
+    if (!lines) return '';
+    return [
+      BRAINSTORM_GENERATE_TASK_TEXT,
+      BRAINSTORM_GENERATE_RULE_TEXT,
+      '',
+      BRAINSTORM_OTHER_REQUIREMENTS_HEADER,
+      lines,
+    ].join('\n');
   };
 
   const openBrainstormGenerateConfirm = () => {
@@ -2892,24 +2924,40 @@ export function WorkbenchLibraryPanel({
       .reduce((max, value) => Math.max(max, Number(value) || 0), 0);
     return `脑洞${maxNumber + 1}`;
   };
+  const getNextBrainstormTitles = (count: number) => {
+    const maxNumber = entries
+      .filter((entry) => entry.tab === BRAINSTORM_TAB)
+      .map((entry) => entry.title.match(/^脑洞(\d+)$/)?.[1])
+      .filter((value): value is string => Boolean(value))
+      .reduce((max, value) => Math.max(max, Number(value) || 0), 0);
+    return Array.from({ length: count }, (_, index) => `脑洞${maxNumber + index + 1}`);
+  };
 
-  const getCurrentBrainstormOutputPreviews = () => {
+  const getCurrentBrainstormOutputPreviews = (selectedOnly = false) => {
     const count = getBrainstormOutputCount(brainstormQuestionDraft.brainstormCount);
     const body = getLatestUsefulAiText(aiResult || aiOutput);
     const splitParts = splitBrainstormGeneratedText(body, count);
     const drafts = activeBrainstormAiSession?.previewDrafts;
     const titles = activeBrainstormAiSession?.previewTitles;
-    return Array.from({ length: count }, (_, index) => ({
+    const previews = Array.from({ length: count }, (_, index) => ({
       title: titles?.[index]?.trim() || getTemporaryBrainstormTitle(index),
       body: drafts?.[index] ?? splitParts[index] ?? '',
+      index,
     })).filter((item) => item.body.trim());
+    if (!selectedOnly) return previews;
+    const selectedIndexes = new Set(getSelectedBrainstormPreviewIndexes(
+      Array.from({ length: count }, (_, index) => drafts?.[index] ?? splitParts[index] ?? ''),
+      activeBrainstormAiSession?.previewSelectedIndexes,
+    ));
+    return previews.filter((item) => selectedIndexes.has(item.index));
   };
 
   const saveBrainstormOutputAsNew = () => {
-    const previews = getCurrentBrainstormOutputPreviews();
+    const previews = getCurrentBrainstormOutputPreviews(true);
     if (previews.length === 0) return;
-    const nextEntries = previews.map((preview) => ({
-      ...createWorkbenchLibraryEntry(BRAINSTORM_TAB, preview.title || getNextBrainstormTitle()),
+    const nextTitles = getNextBrainstormTitles(previews.length);
+    const nextEntries = previews.map((preview, index) => ({
+      ...createWorkbenchLibraryEntry(BRAINSTORM_TAB, nextTitles[index] ?? getNextBrainstormTitle()),
       content: stringifySettingContent({ type: BRAINSTORM_TYPE, body: preview.body }),
     }));
     persist([...nextEntries, ...entries]);
@@ -2919,7 +2967,9 @@ export function WorkbenchLibraryPanel({
   };
 
   const saveBrainstormOutput = (targetId?: string | null) => {
-    const body = getCurrentBrainstormOutputPreviews()[0]?.body.trim() ?? '';
+    const selectedPreviews = getCurrentBrainstormOutputPreviews(true);
+    if (selectedPreviews.length !== 1) return;
+    const body = selectedPreviews[0]?.body.trim() ?? '';
     if (!body || !targetId) return;
     updateEntry(targetId, {
       content: stringifySettingContent({ type: BRAINSTORM_TYPE, body }),
@@ -3145,7 +3195,7 @@ export function WorkbenchLibraryPanel({
     if (overrideText === undefined) setAiInput('');
     if (activeTab === BRAINSTORM_TAB) {
       setAiResult('');
-      updateActiveBrainstormAiSession({ previewTitles: [], previewDrafts: [] });
+      updateActiveBrainstormAiSession({ previewTitles: [], previewDrafts: [], previewSelectedIndexes: undefined });
     }
     const visibleUserText = (options.visibleText ?? text).trim();
     const pendingOutput = `${aiOutput.trim() ? `${aiOutput.trim()}\n\n` : ''}[[USER]]\n${visibleUserText}\n\n[[AI]]\n正在生成...`;
@@ -3179,9 +3229,7 @@ export function WorkbenchLibraryPanel({
           onChunk: (chunk) => {
             if (libraryAiRequestSeqRef.current !== requestSeq) return;
             streamedContent += chunk;
-            const brainstormStreamDisplay = activeTab === BRAINSTORM_TAB && isBrainstormEchoedRequest(streamedContent, requestText)
-              ? ''
-              : stripBrainstormRequestHeader(streamedContent.trimStart());
+            const brainstormStreamDisplay = stripBrainstormRequestHeader(streamedContent.trimStart());
             if (activeTab === BRAINSTORM_TAB) setAiResult(brainstormStreamDisplay);
             setAiOutput(replacePendingOutput(formatAiThinkingResponse(
               activeTab === BRAINSTORM_TAB ? brainstormStreamDisplay || '正在生成...' : streamedContent || '正在生成...',
@@ -3249,7 +3297,7 @@ export function WorkbenchLibraryPanel({
       libraryAiAbortRef.current = null;
       setIsLibraryAiLoading(false);
       updateActiveBrainstormAiSession({ input: '', output: '', result: '' });
-      updateActiveBrainstormAiSession({ previewTitles: [], previewDrafts: [] });
+      updateActiveBrainstormAiSession({ previewTitles: [], previewDrafts: [], previewSelectedIndexes: undefined });
       return;
     }
     libraryAiRequestSeqRef.current += 1;
@@ -3747,6 +3795,84 @@ export function WorkbenchLibraryPanel({
       />
     );
   };
+  const getActiveLibraryFontConfig = () => {
+    if (activeTab === BRAINSTORM_TAB) {
+      if (activeLibraryFontTarget === 'brainstormPreview') {
+        return {
+          value: brainstormPreviewFontSize,
+          min: BRAINSTORM_PREVIEW_MIN_FONT_SIZE,
+          max: BRAINSTORM_PREVIEW_MAX_FONT_SIZE,
+          onChange: setBrainstormPreviewFontSize,
+          ariaLabel: '脑洞预览字号',
+        };
+      }
+      return {
+        value: brainstormOutputFontSize,
+        min: BRAINSTORM_OUTPUT_MIN_FONT_SIZE,
+        max: BRAINSTORM_OUTPUT_MAX_FONT_SIZE,
+        onChange: setBrainstormOutputFontSize,
+        ariaLabel: '脑洞输出字号',
+      };
+    }
+    if (activeTab === SETTING_TAB) {
+      return {
+        value: settingPreviewFontSize,
+        min: SETTING_PREVIEW_MIN_FONT_SIZE,
+        max: SETTING_PREVIEW_MAX_FONT_SIZE,
+        onChange: setSettingPreviewFontSize,
+        ariaLabel: '设定预览字号',
+      };
+    }
+    if (activeTab === DETAIL_OUTLINE_TAB && !plotPointStandalone) {
+      return {
+        value: detailOutlineFontSize,
+        min: DETAIL_OUTLINE_MIN_FONT_SIZE,
+        max: DETAIL_OUTLINE_MAX_FONT_SIZE,
+        onChange: setDetailOutlineFontSize,
+        ariaLabel: '章纲字号',
+      };
+    }
+    return null;
+  };
+  const renderActiveLibraryFontSizeTool = () => {
+    const config = getActiveLibraryFontConfig();
+    if (!config) return null;
+    return (
+      <FontSizeStepper
+        value={config.value}
+        min={config.min}
+        max={config.max}
+        onChange={config.onChange}
+        ariaLabel={config.ariaLabel}
+        className="shrink-0"
+      />
+    );
+  };
+  const renderLibraryHeaderFontSizeTool = () => {
+    const fontSizeTool = renderActiveLibraryFontSizeTool();
+    if (!fontSizeTool) return null;
+    if (activeTab !== BRAINSTORM_TAB) return fontSizeTool;
+    return (
+      <div className="inline-flex shrink-0 items-center gap-2">
+        <label
+          className="xy-header-stream-tool"
+          title={brainstormStreamEnabled ? '关闭流式输出' : '开启流式输出'}
+          aria-label={brainstormStreamEnabled ? '关闭流式输出' : '开启流式输出'}
+        >
+          <span className="xy-stream-toggle-text">流式输出</span>
+          <input
+            type="checkbox"
+            checked={brainstormStreamEnabled}
+            onChange={(event) => updateActiveTabConfig({ brainstormStreamEnabled: event.target.checked })}
+          />
+          <span className="xy-stream-toggle-track">
+            <span className="xy-stream-toggle-thumb" />
+          </span>
+        </label>
+        {fontSizeTool}
+      </div>
+    );
+  };
 
   const topTabs = isSettingLibraryPanel ? null : (
     <div data-no-modal-drag="true" className="flex shrink-0 cursor-default items-center gap-2">
@@ -3774,8 +3900,8 @@ export function WorkbenchLibraryPanel({
       )
   );
 
-  const detailOutlineHeaderFontSizePortal = headerToolPortalTarget && !showInlineFieldSizeButton
-    ? createPortal(renderDetailOutlineFontSizeTool(), headerToolPortalTarget)
+  const libraryHeaderFontSizePortal = headerToolPortalTarget && !showInlineFieldSizeButton
+    ? createPortal(renderLibraryHeaderFontSizeTool(), headerToolPortalTarget)
     : null;
 
   const fieldSizeSettingsModal = isFieldSizeSettingsOpen ? createPortal(
@@ -4968,6 +5094,15 @@ export function WorkbenchLibraryPanel({
     const brainstormOutputTitles = Array.from({ length: brainstormOutputPreviewCount }, (_, index) => (
       activeBrainstormAiSession?.previewTitles?.[index]?.trim() || getTemporaryBrainstormTitle(index)
     ));
+    const selectedBrainstormOutputIndexes = getSelectedBrainstormPreviewIndexes(
+      brainstormOutputPreviews,
+      activeBrainstormAiSession?.previewSelectedIndexes,
+    );
+    const selectedBrainstormOutputIndexSet = new Set(selectedBrainstormOutputIndexes);
+    const selectedBrainstormOutputCount = selectedBrainstormOutputIndexes
+      .filter((index) => brainstormOutputPreviews[index]?.trim())
+      .length;
+    const showBrainstormOutputSelection = activeIsBrainstorm && brainstormOutputPreviewCount > 1;
     const setBrainstormOutputPreviewDraft = (index: number, value: string) => {
       const nextDrafts = [...brainstormOutputPreviews];
       nextDrafts[index] = value;
@@ -4977,6 +5112,12 @@ export function WorkbenchLibraryPanel({
       const nextTitles = [...brainstormOutputTitles];
       nextTitles[index] = value;
       updateActiveBrainstormAiSession({ previewTitles: nextTitles });
+    };
+    const toggleBrainstormOutputPreviewSelected = (index: number) => {
+      const nextSelected = selectedBrainstormOutputIndexSet.has(index)
+        ? selectedBrainstormOutputIndexes.filter((item) => item !== index)
+        : [...selectedBrainstormOutputIndexes, index].sort((a, b) => a - b);
+      updateActiveBrainstormAiSession({ previewSelectedIndexes: nextSelected });
     };
     const previewAiRequestText = activeIsBrainstorm
       ? buildBrainstormPromptFromQuestions(brainstormQuestionDraft)
@@ -5045,6 +5186,7 @@ export function WorkbenchLibraryPanel({
     ) : null;
     return (
       <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white" style={scaleStyle}>
+        {libraryHeaderFontSizePortal}
         {renderTopTabs()}
         {categoryContextMenu}
         {entryContextMenu}
@@ -5230,6 +5372,7 @@ export function WorkbenchLibraryPanel({
                 <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-brainstorm-preview-field xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${currentBrainstormBody.trim() ? 'xy-has-value' : ''}`}>
                   <textarea
                     value={currentBrainstormBody}
+                    onFocus={() => setActiveLibraryFontTarget('brainstormPreview')}
                     onChange={(event) => {
                       if (!currentSelectedEntry || !currentSelectedSetting) return;
                       updateEntry(currentSelectedEntry.id, {
@@ -5245,6 +5388,7 @@ export function WorkbenchLibraryPanel({
                     <div className="xy-floating-inline-title-tool xy-brainstorm-floating-title-tool xy-floating-title-count xy-border-embedded-transparent-backplate absolute top-0 z-20 -translate-y-1/2">
                       <input
                         value={currentSelectedEntry.title}
+                        onFocus={() => setActiveLibraryFontTarget('brainstormPreview')}
                         onChange={(event) => updateEntry(currentSelectedEntry.id, { title: event.target.value })}
                         className="xy-floating-title-input max-w-[120px] min-w-[58px] text-sm font-black leading-none text-slate-950 outline-none"
                         style={getFloatingTitleInputStyle(currentSelectedEntry.title, 3, 9)}
@@ -5253,15 +5397,6 @@ export function WorkbenchLibraryPanel({
                       <span><WordCountText value={currentBrainstormPreviewWordCount} /></span>
                     </div>
                   )}
-                </div>
-                <div className="xy-floating-border-font-tool">
-                  <FontSizeStepper
-                    value={brainstormPreviewFontSize}
-                    min={BRAINSTORM_PREVIEW_MIN_FONT_SIZE}
-                    max={BRAINSTORM_PREVIEW_MAX_FONT_SIZE}
-                    onChange={setBrainstormPreviewFontSize}
-                    ariaLabel="脑洞预览字号"
-                  />
                 </div>
               </div>
             </div>
@@ -5286,6 +5421,7 @@ export function WorkbenchLibraryPanel({
                 <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${(currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content).trim() ? 'xy-has-value' : ''}`}>
                   <textarea
                     value={currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content}
+                    onFocus={() => setActiveLibraryFontTarget('settingPreview')}
                     onChange={(event) => updateEntry(currentSelectedEntry.id, {
                       content: currentSelectedSetting
                         ? stringifySettingContent({ ...currentSelectedSetting, body: event.target.value })
@@ -5296,15 +5432,6 @@ export function WorkbenchLibraryPanel({
                     style={{ fontSize: settingPreviewFontSize }}
                   />
                   <label className="xy-floating-title-count">设定预览 <span><WordCountText value={countTextWords(currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content)} /></span></label>
-                </div>
-                <div className="xy-floating-border-font-tool">
-                  <FontSizeStepper
-                    value={settingPreviewFontSize}
-                    min={SETTING_PREVIEW_MIN_FONT_SIZE}
-                    max={SETTING_PREVIEW_MAX_FONT_SIZE}
-                    onChange={setSettingPreviewFontSize}
-                    ariaLabel="设定预览字号"
-                  />
                 </div>
               </div>
               <div className="mt-6 flex shrink-0 justify-end">
@@ -5339,20 +5466,12 @@ export function WorkbenchLibraryPanel({
                   <textarea
                     readOnly
                     value=""
+                    onFocus={() => setActiveLibraryFontTarget('settingPreview')}
                     placeholder="这里会显示选中的设定内容。"
                     className="editor-scrollbar text-sm leading-7 text-gray-700"
                     style={{ fontSize: settingPreviewFontSize }}
                   />
                   <label className="xy-floating-title-count">设定预览 <span><WordCountText value={0} /></span></label>
-                </div>
-                <div className="xy-floating-border-font-tool">
-                  <FontSizeStepper
-                    value={settingPreviewFontSize}
-                    min={SETTING_PREVIEW_MIN_FONT_SIZE}
-                    max={SETTING_PREVIEW_MAX_FONT_SIZE}
-                    onChange={setSettingPreviewFontSize}
-                    ariaLabel="设定预览字号"
-                  />
                 </div>
               </div>
             </div>
@@ -5368,11 +5487,13 @@ export function WorkbenchLibraryPanel({
                   {brainstormOutputPreviews.map((previewValue, index) => {
                     const titleValue = brainstormOutputTitles[index] ?? getTemporaryBrainstormTitle(index);
                     const previewWordCount = countTextWords(previewValue);
+                    const outputChecked = selectedBrainstormOutputIndexSet.has(index);
                     return (
                       <div key={index} className="relative min-h-[120px] flex-1">
                         <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${previewValue.trim() ? 'xy-has-value' : ''}`}>
                           <textarea
                             value={previewValue}
+                            onFocus={() => setActiveLibraryFontTarget('brainstormOutput')}
                             onChange={(event) => setBrainstormOutputPreviewDraft(index, event.target.value)}
                             placeholder={`这里显示本次 AI 生成的${titleValue}，保存脑洞时只保存这里的内容。`}
                             className="editor-scrollbar text-sm leading-6 text-gray-700"
@@ -5381,8 +5502,25 @@ export function WorkbenchLibraryPanel({
                           <label aria-hidden="true" className="opacity-0">脑洞输出框</label>
                         </div>
                         <div className="xy-floating-inline-title-tool xy-brainstorm-output-title-tool xy-floating-title-count xy-border-embedded-transparent-backplate absolute top-0 z-20 -translate-y-1/2">
+                          {showBrainstormOutputSelection && (
+                            <button
+                              type="button"
+                              role="checkbox"
+                              aria-checked={outputChecked}
+                              aria-label={`${titleValue}保存勾选`}
+                              onClick={() => toggleBrainstormOutputPreviewSelected(index)}
+                              className={`grid h-4 w-4 shrink-0 place-items-center rounded border text-[10px] font-black leading-none transition-colors ${
+                                outputChecked
+                                  ? 'border-[#08AACE] bg-[#08AACE] text-white'
+                                  : 'border-slate-300 bg-white text-transparent hover:border-[#08AACE]'
+                              }`}
+                            >
+                              ✓
+                            </button>
+                          )}
                           <input
                             value={titleValue}
+                            onFocus={() => setActiveLibraryFontTarget('brainstormOutput')}
                             onChange={(event) => setBrainstormOutputPreviewTitle(index, event.target.value)}
                             className="xy-floating-title-input max-w-[180px] min-w-[72px] text-sm font-black leading-none text-slate-950 outline-none"
                             style={getFloatingTitleInputStyle(titleValue, 4, 12)}
@@ -5403,30 +5541,6 @@ export function WorkbenchLibraryPanel({
                                 </button>
                               </div>
                             </div>
-                            <div className="xy-floating-border-font-tool">
-                              <FontSizeStepper
-                                value={brainstormOutputFontSize}
-                                min={BRAINSTORM_OUTPUT_MIN_FONT_SIZE}
-                                max={BRAINSTORM_OUTPUT_MAX_FONT_SIZE}
-                                onChange={setBrainstormOutputFontSize}
-                                ariaLabel="脑洞输出字号"
-                              />
-                            </div>
-                            <label
-                              className="xy-floating-border-stream-tool"
-                              title={brainstormStreamEnabled ? '关闭流式输出' : '开启流式输出'}
-                              aria-label={brainstormStreamEnabled ? '关闭流式输出' : '开启流式输出'}
-                            >
-                              <span className="xy-stream-toggle-text">流式输出</span>
-                              <input
-                                type="checkbox"
-                                checked={brainstormStreamEnabled}
-                                onChange={(event) => updateActiveTabConfig({ brainstormStreamEnabled: event.target.checked })}
-                              />
-                              <span className="xy-stream-toggle-track">
-                                <span className="xy-stream-toggle-thumb" />
-                              </span>
-                            </label>
                           </>
                         )}
                       </div>
@@ -5453,14 +5567,14 @@ export function WorkbenchLibraryPanel({
                       <div className="xy-capsule-group">
                       <button
                         onClick={() => saveBrainstormOutput(currentSelectedEntry?.id)}
-                        disabled={!currentSelectedEntry || !latestUsefulAiOutput}
+                        disabled={!currentSelectedEntry || selectedBrainstormOutputCount !== 1}
                         className="xy-capsule-button"
                       >
                         替换脑洞
                       </button>
                       <button
                         onClick={saveBrainstormOutputAsNew}
-                        disabled={!latestUsefulAiOutput}
+                        disabled={selectedBrainstormOutputCount === 0}
                         className="xy-capsule-button"
                       >
                         保存为新脑洞
@@ -7597,7 +7711,7 @@ export function WorkbenchLibraryPanel({
 
     return (
       <div className="flex min-h-0 flex-1 flex-col bg-white" style={scaleStyle}>
-        {detailOutlineHeaderFontSizePortal}
+        {libraryHeaderFontSizePortal}
         {(activeTab === OUTLINE_LIBRARY_TAB || activeTab === DETAIL_OUTLINE_TAB) && !plotPointStandalone && renderTopTabs()}
         {deleteConfirmDialog}
         {fieldSizeSettingsModal}

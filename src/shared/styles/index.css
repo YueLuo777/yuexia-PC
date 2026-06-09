@@ -2346,7 +2346,23 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   cursor: pointer;
 }
 
-.xy-floating-border-stream-tool input {
+.xy-header-stream-tool {
+  display: inline-flex;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 1px solid #d9e2ea;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  padding: 0 0.6rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.xy-floating-border-stream-tool input,
+.xy-header-stream-tool input {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -2391,12 +2407,19 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   background: #08AACE;
 }
 
-.xy-floating-border-stream-tool input:checked + .xy-stream-toggle-track .xy-stream-toggle-thumb {
+.xy-floating-border-stream-tool input:checked + .xy-stream-toggle-track .xy-stream-toggle-thumb,
+.xy-header-stream-tool input:checked + .xy-stream-toggle-track .xy-stream-toggle-thumb {
   transform: translateX(0.97rem);
 }
 
+.xy-header-stream-tool input:checked + .xy-stream-toggle-track {
+  background: #08AACE;
+}
+
 .xy-floating-border-stream-tool:hover .xy-stream-toggle-track,
-.xy-floating-border-stream-tool:focus-within .xy-stream-toggle-track {
+.xy-floating-border-stream-tool:focus-within .xy-stream-toggle-track,
+.xy-header-stream-tool:hover .xy-stream-toggle-track,
+.xy-header-stream-tool:focus-within .xy-stream-toggle-track {
   box-shadow: 0 0 0 1px rgba(8, 170, 206, 0.28);
 }
 
