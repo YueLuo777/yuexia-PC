@@ -1,9 +1,9 @@
-import { Settings } from 'lucide-react';
+import { ChevronDown, ChevronRight, Settings } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 
 import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
-import { readModelSnapshot } from '@/features/models/hooks/useModels';
+import { useModels } from '@/features/models/hooks/useModels';
 import { callModelStream } from '@/features/models/services/callModel';
 import { normalizePromptCategoryName, readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
 import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
@@ -16,7 +16,7 @@ import {
   writeWorkbenchLibraryEntries,
   type WorkbenchLibraryEntry,
 } from '@/features/workbench/model/workbenchLibraryStorage';
-import type { Chapter } from '@/features/workbench/model/workbenchTypes';
+import type { Chapter, Volume } from '@/features/workbench/model/workbenchTypes';
 import {
   ChapterAssociateModal,
   FontSettingsModal,
@@ -256,6 +256,7 @@ interface ChapterEditorProps {
   content: string;
   lastSavedAt: string | null;
   allChapters: Chapter[];
+  volumes?: Volume[];
   settingsStorageKey: string;
   outlineStorageKey?: string;
   getChapterContent: (chapterId: number) => string;
@@ -470,6 +471,7 @@ export function ChapterEditor({
   content,
   lastSavedAt,
   allChapters,
+  volumes = [],
   settingsStorageKey,
   outlineStorageKey,
   getChapterContent,
@@ -501,6 +503,8 @@ export function ChapterEditor({
   const [statusPageRightWidth, setStatusPageRightWidth] = useState(() => readStoredPanelWidth(STATUS_PAGE_RIGHT_WIDTH_STORAGE_KEY, STATUS_PAGE_RIGHT_WIDTH, STATUS_PAGE_RIGHT_WIDTH_LIMIT));
   const [reviewChapterId, setReviewChapterId] = useState<number | null>(() => chapter?.id ?? null);
   const [statusChapterId, setStatusChapterId] = useState<number | null>(() => chapter?.id ?? null);
+  const [expandedReviewVolumeIds, setExpandedReviewVolumeIds] = useState<Set<number>>(() => new Set());
+  const [expandedStatusVolumeIds, setExpandedStatusVolumeIds] = useState<Set<number>>(() => new Set());
   const [statusEntries, setStatusEntries] = useState<WorkbenchLibraryEntry[]>([]);
   const [statusTargetIds, setStatusTargetIds] = useState<Set<string>>(() => new Set());
   const [statusDraft, setStatusDraft] = useState('');
@@ -706,8 +710,9 @@ export function ChapterEditor({
     direction: -1,
     onChange: setReviewPageRightWidth,
   }));
-  const visualIndentEnabled = formatSettings.indent && !formatSettings.paragraphIndent;
-  const reviewModels = useMemo(() => readModelSnapshot().filter((model) => model.enabled), []);
+  const shouldIndentEmptyEditor = formatSettings.paragraphIndent && !content.trim();
+  const { models: modelSnapshot } = useModels();
+  const reviewModels = useMemo(() => modelSnapshot.filter((model) => model.enabled), [modelSnapshot]);
   const reviewPrompts = useMemo(() => readPromptSnapshot().prompts, []);
   const reviewAuditPrompts = useMemo(() => {
     return reviewPrompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === '审核');
@@ -719,6 +724,44 @@ export function ChapterEditor({
     return reviewPrompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === STATUS_PROMPT_CATEGORY);
   }, [reviewPrompts]);
   const sortedReviewChapters = useMemo(() => [...allChapters].sort((a, b) => a.serialNumber - b.serialNumber), [allChapters]);
+  const chapterDirectoryGroups = useMemo(() => {
+    if (volumes.length > 0) {
+      return volumes.map((volume) => ({
+        id: volume.id,
+        name: volume.name,
+        chapters: [...volume.chapters].sort((a, b) => a.serialNumber - b.serialNumber),
+      }));
+    }
+    return [{ id: 0, name: '章节目录', chapters: sortedReviewChapters }];
+  }, [sortedReviewChapters, volumes]);
+  useEffect(() => {
+    setExpandedReviewVolumeIds((current) => {
+      const next = new Set(current);
+      chapterDirectoryGroups.forEach((group) => next.add(group.id));
+      return next;
+    });
+    setExpandedStatusVolumeIds((current) => {
+      const next = new Set(current);
+      chapterDirectoryGroups.forEach((group) => next.add(group.id));
+      return next;
+    });
+  }, [chapterDirectoryGroups]);
+  const toggleReviewDirectoryVolume = (volumeId: number) => {
+    setExpandedReviewVolumeIds((current) => {
+      const next = new Set(current);
+      if (next.has(volumeId)) next.delete(volumeId);
+      else next.add(volumeId);
+      return next;
+    });
+  };
+  const toggleStatusDirectoryVolume = (volumeId: number) => {
+    setExpandedStatusVolumeIds((current) => {
+      const next = new Set(current);
+      if (next.has(volumeId)) next.delete(volumeId);
+      else next.add(volumeId);
+      return next;
+    });
+  };
   const activeReviewChapter = sortedReviewChapters.find((item) => item.id === reviewChapterId) ?? chapter ?? sortedReviewChapters[0] ?? null;
   const activeReviewContent = activeReviewChapter
     ? activeReviewChapter.id === chapter?.id
@@ -1160,12 +1203,6 @@ export function ChapterEditor({
   }, [copyToast]);
 
   useEffect(() => {
-    if (!visualIndentEnabled) return;
-    const cleaned = stripLineIndents(content);
-    if (cleaned !== content) onChangeContent(cleaned);
-  }, [content, onChangeContent, visualIndentEnabled]);
-
-  useEffect(() => {
     const handleShortcut = (event: Event) => {
       const action = event as CustomEvent<{ id?: string }>;
       if (!chapter) return;
@@ -1406,14 +1443,14 @@ export function ChapterEditor({
       >
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <div>
-            <h3 className="text-base font-black text-slate-900">作品编辑器字段尺寸</h3>
+            <h3 className="text-base font-black text-slate-900">作品编辑器设置</h3>
             <p className="mt-1 text-xs font-bold text-slate-400">调整审核、点评和状态相关按钮及选择框尺寸。</p>
           </div>
           <button
             type="button"
             onClick={() => setIsEditorFieldSizeOpen(false)}
             className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-700"
-            aria-label="关闭字段尺寸"
+            aria-label="关闭设置"
           >
             ×
           </button>
@@ -1644,7 +1681,7 @@ export function ChapterEditor({
             caretColor: fontSettings.fontColor,
             fontSize: `${fontSettings.fontSize}px`,
             lineHeight: fontSettings.lineHeight,
-            textIndent: visualIndentEnabled ? '2em' : undefined,
+            textIndent: shouldIndentEmptyEditor ? '2em' : undefined,
           }}
         />
       </div>
@@ -1737,36 +1774,51 @@ export function ChapterEditor({
               style={{ gridTemplateColumns: `${statusPageLeftWidth}px 8px minmax(0,1fr) 8px ${statusPageRightWidth}px` }}
             >
               <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-sm font-black text-slate-900">章节位置</span>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">{sortedStatusChapters.length}</span>
-                </div>
-                <div className="mb-3 flex items-center gap-3 text-[11px] font-black text-slate-400">
-                  <span className="inline-flex items-center gap-1"><i className="h-3 w-3 rounded bg-[#08B3D9]" />已更新</span>
-                  <span className="inline-flex items-center gap-1"><i className="h-3 w-3 rounded border border-slate-200 bg-slate-50" />未更新</span>
-                </div>
-                <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
-                  <div className="grid grid-cols-5 gap-2 pb-3">
-                    {sortedStatusChapters.map((item) => {
-                      const selected = activeStatusChapter?.id === item.id;
-                      const updated = statusUpdatedChapterIds.has(item.id);
-                      return (
+                <div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+                  {chapterDirectoryGroups.map((group) => {
+                    const expanded = expandedStatusVolumeIds.has(group.id);
+                    return (
+                      <div key={group.id}>
                         <button
-                          key={item.id}
                           type="button"
-                          onClick={() => selectStatusChapter(item.id)}
-                          title={`${updated ? '已更新状态到' : '未更新状态到'}第${item.serialNumber}章 ${item.title || ''}`}
-                          className={`relative h-9 rounded-lg border text-sm font-black transition-colors ${
-                            updated
-                              ? 'border-[#08B3D9] bg-[#08B3D9] text-white hover:border-[#067B96] hover:bg-[#067B96]'
-                              : 'border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
-                          } ${selected ? 'shadow-[inset_0_0_0_2px_#08B3D9]' : ''}`}
+                          onClick={() => toggleStatusDirectoryVolume(group.id)}
+                          className="flex w-full cursor-pointer items-center gap-2 rounded-lg bg-[#08B3D9] px-2 py-2 text-white transition-colors hover:brightness-95"
                         >
-                          {item.serialNumber}
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/15 text-white">
+                            {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">{group.name}</span>
+                          <span className="shrink-0 rounded-md bg-white/15 px-2.5 py-1.5 text-xs font-bold text-white">{group.chapters.length}章</span>
                         </button>
-                      );
-                    })}
-                  </div>
+                        {expanded && (
+                          <div
+                            className="mt-1 grid justify-start gap-2 px-1.5 py-1.5"
+                            style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}
+                          >
+                            {group.chapters.map((item) => {
+                              const selected = activeStatusChapter?.id === item.id;
+                              const updated = statusUpdatedChapterIds.has(item.id);
+                              return (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => selectStatusChapter(item.id)}
+                                  title={`${updated ? '已更新状态到' : '未更新状态到'}第${item.serialNumber}章 ${item.title || ''}`}
+                                  className={`relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
+                                    updated
+                                      ? 'border-[#08B3D9] bg-[#08B3D9] text-white hover:border-[#067B96] hover:bg-[#067B96]'
+                                      : 'border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
+                                  } ${selected ? 'ring-2 ring-[#08B3D9] ring-offset-2' : ''}`}
+                                >
+                                  {item.serialNumber}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </aside>
               {statusLeftResizeHandle}
@@ -1941,28 +1993,50 @@ export function ChapterEditor({
               className="grid min-h-0 flex-1 bg-slate-50"
               style={{ gridTemplateColumns: `${reviewPageLeftWidth}px 8px minmax(0,1fr) 8px ${reviewPageRightWidth}px` }}
             >
-              <aside className="min-h-0 border-r border-slate-100 bg-white p-4">
-                <div className="mb-3 text-sm font-black text-slate-900">章节目录</div>
-                <div className="editor-scrollbar h-full space-y-2 overflow-y-auto pr-1">
-                  {sortedReviewChapters.map((item) => {
-                    const selected = activeReviewChapter?.id === item.id;
+              <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white p-4">
+                <div className="mb-3 text-sm font-black text-slate-900">{reviewMode === 'audit' ? '审核目录' : '点评目录'}</div>
+                <div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+                  {chapterDirectoryGroups.map((group) => {
+                    const expanded = expandedReviewVolumeIds.has(group.id);
                     return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => selectReviewChapter(item.id)}
-                        className={`w-full rounded-xl border px-3 py-2.5 text-left transition-colors ${
-                          selected
-                            ? 'border-[#08AACE] bg-[#EAFBFF] text-slate-950'
-                            : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-sky-100 hover:bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="shrink-0 text-sm font-black">第{item.serialNumber}章</span>
-                          <span className="text-[11px] font-bold text-[#08AACE]"><WordCountText value={item.wordCount} compact /></span>
-                        </div>
-                        <div className="mt-1 truncate text-xs font-bold text-slate-400">{item.title || '未命名章节'}</div>
-                      </button>
+                      <div key={group.id}>
+                        <button
+                          type="button"
+                          onClick={() => toggleReviewDirectoryVolume(group.id)}
+                          className="flex w-full cursor-pointer items-center gap-2 rounded-lg bg-[#08B3D9] px-2 py-2 text-white transition-colors hover:brightness-95"
+                        >
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/15 text-white">
+                            {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">{group.name}</span>
+                          <span className="shrink-0 rounded-md bg-white/15 px-2.5 py-1.5 text-xs font-bold text-white">{group.chapters.length}章</span>
+                        </button>
+                        {expanded && (
+                          <div
+                            className="mt-1 grid justify-start gap-2 px-1.5 py-1.5"
+                            style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}
+                          >
+                            {group.chapters.map((item) => {
+                              const selected = activeReviewChapter?.id === item.id;
+                              return (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => selectReviewChapter(item.id)}
+                                  title={`第${item.serialNumber}章 ${item.title || '未命名章节'} · ${item.wordCount}字`}
+                                  className={`relative h-9 min-w-9 rounded-lg border px-2 text-sm font-bold transition-colors ${
+                                    selected
+                                      ? 'border-[#08B3D9] bg-[#08B3D9] text-white'
+                                      : 'border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
+                                  } ${selected ? 'ring-2 ring-[#08B3D9] ring-offset-2' : ''}`}
+                                >
+                                  {item.serialNumber}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -2116,7 +2190,7 @@ export function ChapterEditor({
                         onClick={() => setIsEditorFieldSizeOpen(true)}
                         className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 transition-colors hover:border-[#08AACE] hover:text-[#078fb0]"
                       >
-                        字段尺寸
+                        设置
                       </button>
                     ) : null}
                     {showInlineFieldSizeButton ? (

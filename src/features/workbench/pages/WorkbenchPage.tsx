@@ -139,9 +139,16 @@ function normalizeAiPanelWidth(value: number) {
   return Math.max(minWidth, Math.min(maxWidth, value));
 }
 
+function getChapterSidebarMaxWidth() {
+  if (typeof window === 'undefined') return CHAPTER_SIDEBAR_DEFAULT_WIDTH;
+  return Math.max(CHAPTER_SIDEBAR_MIN_WIDTH, Math.floor(window.innerWidth / (5 * getEffectiveAppScale())));
+}
+
 function normalizeChapterSidebarWidth(value: number) {
-  if (!Number.isFinite(value)) return CHAPTER_SIDEBAR_DEFAULT_WIDTH;
-  return Math.max(CHAPTER_SIDEBAR_MIN_WIDTH, Math.min(CHAPTER_SIDEBAR_MAX_WIDTH, value));
+  const maxWidth = Math.min(CHAPTER_SIDEBAR_MAX_WIDTH, getChapterSidebarMaxWidth());
+  const minWidth = Math.min(CHAPTER_SIDEBAR_MIN_WIDTH, maxWidth);
+  if (!Number.isFinite(value)) return Math.min(CHAPTER_SIDEBAR_DEFAULT_WIDTH, maxWidth);
+  return Math.max(minWidth, Math.min(maxWidth, value));
 }
 
 function normalizePublishedSidebarWidth(value: number) {
@@ -181,16 +188,16 @@ function escapeDocHtml(value: string) {
     .replace(/"/g, '&quot;');
 }
 
-function buildChapterExportText(novelTitle: string, workType: WorkbenchNovel['type'], items: ChapterExportItem[]) {
+export function buildChapterExportText(novelTitle: string, workType: WorkbenchNovel['type'], items: ChapterExportItem[]) {
   const lines: string[] = [`《${novelTitle}》`, ''];
   let currentVolumeId: number | null = null;
 
   items.forEach((item) => {
     if (currentVolumeId !== item.volumeId) {
       currentVolumeId = item.volumeId;
-      lines.push(`# ${item.volumeName}`, '');
+      lines.push(item.volumeName, '');
     }
-    lines.push(`## ${getChapterExportTitle(item, workType)}`);
+    lines.push(getChapterExportTitle(item, workType));
     if (item.content.trim()) lines.push(item.content.trim());
     lines.push('');
   });
@@ -1149,7 +1156,10 @@ export function WorkbenchPage() {
   }, [activeTabId, currentNovelId, setCurrentNovel, tabs]);
 
   useEffect(() => {
-    const handleResize = () => setAiPanelWidth((prev) => normalizeAiPanelWidth(prev));
+    const handleResize = () => {
+      setAiPanelWidth((prev) => normalizeAiPanelWidth(prev));
+      setChapterSidebarWidth((prev) => normalizeChapterSidebarWidth(prev));
+    };
     window.addEventListener('resize', handleResize);
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
@@ -1777,6 +1787,7 @@ export function WorkbenchPage() {
           content={editorContent}
           lastSavedAt={lastSavedAt}
           allChapters={volumes.flatMap((volume) => volume.chapters)}
+          volumes={volumes}
           settingsStorageKey={settingsStorageKey}
           outlineStorageKey={outlineStorageKey}
           getChapterContent={(chapterId) => (
@@ -1803,6 +1814,7 @@ export function WorkbenchPage() {
         content={editorContent}
         lastSavedAt={lastSavedAt}
         allChapters={volumes.flatMap((volume) => volume.chapters)}
+        volumes={volumes}
         settingsStorageKey={settingsStorageKey}
         outlineStorageKey={outlineStorageKey}
         getChapterContent={(chapterId) => (
@@ -1830,6 +1842,7 @@ export function WorkbenchPage() {
         activeFlow={activeCreationFlow}
         fieldSizeVisible={showFieldSizeButton}
         logVisible={showHeaderLogButton}
+        extraTools={<div id="workbench-header-extra-tools" className="inline-flex items-center gap-2" />}
         onOpenFieldSize={() => setFieldSizeOpenSignal((value) => value + 1)}
         onOpenLog={() => setAiLogOpenSignal((value) => value + 1)}
         onSelectFlow={switchCreationFlow}

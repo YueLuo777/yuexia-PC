@@ -75,20 +75,6 @@
     isolation: isolate;
   }
 
-  .adjustment-crisp,
-  .adjustment-crisp * {
-    -webkit-font-smoothing: subpixel-antialiased;
-    text-rendering: optimizeLegibility;
-    text-shadow: none !important;
-    filter: none !important;
-    backdrop-filter: none !important;
-  }
-
-  .adjustment-crisp {
-    isolation: isolate;
-    font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", system-ui, -apple-system, sans-serif;
-  }
-
   .ai-request-log-text {
     font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", system-ui, -apple-system, sans-serif;
     font-size: 15px;
@@ -2024,7 +2010,7 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 
 .xy-floating-field.xy-brainstorm-preview-field textarea {
   border-color: #111827;
-  padding-top: 2.35rem;
+  padding-top: 1.35rem;
 }
 
 .xy-floating-field.xy-floating-outline-preview .xy-floating-rich-preview {
@@ -2690,23 +2676,6 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 .xy-floating-field.xy-floating-compact.xy-has-value label {
   top: 0;
   transform: translateY(-50%) scale(0.8);
-}
-
-.xy-floating-field.xy-extract-compact-field input {
-  height: 44px;
-  min-height: 44px;
-  border-radius: 14px;
-  padding: 0 0.85rem;
-  font-size: 0.875rem;
-}
-
-.xy-floating-field.xy-extract-compact-field label,
-.xy-floating-field.xy-extract-compact-field:has(input) label,
-.xy-floating-field.xy-extract-compact-field:focus-within label,
-.xy-floating-field.xy-extract-compact-field.xy-has-value label {
-  left: 14px;
-  font-size: 0.8125rem;
-  line-height: 16px;
 }
 
 .xy-floating-field.xy-floating-ai textarea {

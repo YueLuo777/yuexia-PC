@@ -27,11 +27,8 @@ import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 import { WordCountText } from '@/shared/ui/WordCountText';
 
 export interface FormatOptions {
-  indent: boolean;
   paragraphIndent: boolean;
   mergeParagraphs: boolean;
-  smartBreak: boolean;
-  sentencesPerLine: number;
 }
 
 export interface FontSettings {
@@ -86,11 +83,8 @@ const defaultFontSettings: FontSettings = {
 };
 
 export const defaultFormatOptions: FormatOptions = {
-  indent: true,
   paragraphIndent: false,
   mergeParagraphs: true,
-  smartBreak: false,
-  sentencesPerLine: 3,
 };
 
 export const PARAGRAPH_INDENT = '\u3000\u3000';
@@ -244,17 +238,6 @@ export function applyFormat(text: string, options: FormatOptions) {
       .map((line) => line.trim())
       .filter(Boolean)
       .join('\n');
-  }
-  if (options.indent) {
-    result = stripLineIndents(result);
-  }
-  if (options.smartBreak) {
-    const sentences = result.replace(/([。！？.!?]+)/g, '$1\x00').split('\x00').filter((item) => item.trim());
-    const grouped: string[] = [];
-    for (let index = 0; index < sentences.length; index += options.sentencesPerLine) {
-      grouped.push(sentences.slice(index, index + options.sentencesPerLine).join(''));
-    }
-    result = grouped.join('\n');
   }
   if (options.paragraphIndent) {
     result = applyParagraphIndents(result);
@@ -736,26 +719,12 @@ export function SmartFormatModal({ isOpen, onClose, currentText, settings, onApp
     <ModalShell title="智能排版" icon={<Wand2 className="h-5 w-5 text-brand" />} onClose={onClose} widthClass="w-[560px]">
       <div className="space-y-1 p-5">
         <ToggleRow
-          label="首行缩进"
-          desc="只在编辑器里显示缩进，不写入正文空格"
-          checked={options.indent}
-          onChange={(value) => setOptions((prev) => ({ ...prev, indent: value, paragraphIndent: value ? false : prev.paragraphIndent }))}
-        />
-        <ToggleRow
           label="段落缩进"
           desc="写入正文，每段开头加入两个全角空格"
           checked={options.paragraphIndent}
-          onChange={(value) => setOptions((prev) => ({ ...prev, paragraphIndent: value, indent: value ? false : prev.indent }))}
+          onChange={(value) => setOptions((prev) => ({ ...prev, paragraphIndent: value }))}
         />
         <ToggleRow label="合并空段落" desc="合并空行并整理成连续正文段落" checked={options.mergeParagraphs} onChange={(value) => setOptions((prev) => ({ ...prev, mergeParagraphs: value }))} />
-        <ToggleRow label="智能断句" desc="按句子数量自动换行" checked={options.smartBreak} onChange={(value) => setOptions((prev) => ({ ...prev, smartBreak: value }))} />
-        {options.smartBreak && (
-          <div className="mb-2 ml-4 flex items-center gap-3">
-            <span className="text-sm text-gray-500">每</span>
-            <input type="number" min={1} max={10} value={options.sentencesPerLine} onChange={(event) => setOptions((prev) => ({ ...prev, sentencesPerLine: Math.max(1, Number(event.target.value)) }))} className="w-14 rounded border border-gray-200 px-2 py-1 text-center text-sm outline-none focus:border-brand" />
-            <span className="text-sm text-gray-500">句为一行</span>
-          </div>
-        )}
         {preview && (
           <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 p-3">
             <p className="mb-2 text-xs text-gray-400">预览</p>

@@ -4,7 +4,6 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppFrame } from '@/shared/layout/AppFrame';
 import { WorkspaceTabsProvider } from '@/shared/tabs/WorkspaceTabsContext';
 
-const ExtractTestPage = lazy(() => import('@/features/extract/pages/ExtractTestPage').then((module) => ({ default: module.ExtractTestPage })));
 const TestCollectionPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })));
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
 const BrainstormAiChainTestPage = lazy(() => import('@/features/tests/pages/BrainstormAiChainTestPage').then((module) => ({ default: module.BrainstormAiChainTestPage })));
@@ -14,13 +13,9 @@ const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').th
 const PromptTaxonomyTestPage = lazy(() => import('@/features/tests/pages/PromptTaxonomyTestPage').then((module) => ({ default: module.PromptTaxonomyTestPage })));
 const WorkbenchAiPanelReplicaTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiPanelReplicaTestPage').then((module) => ({ default: module.WorkbenchAiPanelReplicaTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
-const IdeaGeneratorPage = lazy(() => import('@/features/ideas/pages/IdeaGeneratorPage').then((module) => ({ default: module.IdeaGeneratorPage })));
-const IdeaLibraryPage = lazy(() => import('@/features/ideas/pages/IdeaLibraryPage').then((module) => ({ default: module.IdeaLibraryPage })));
 const LibraryHubPage = lazy(() => import('@/features/library-hub/pages/LibraryHubPage').then((module) => ({ default: module.LibraryHubPage })));
-const OutlineGeneratorPage = lazy(() => import('@/features/ideas/pages/OutlineGeneratorPage').then((module) => ({ default: module.OutlineGeneratorPage })));
 const DbSettingsPage = lazy(() => import('@/features/settings/pages/DbSettingsPage').then((module) => ({ default: module.DbSettingsPage })));
 const ModelManagePage = lazy(() => import('@/features/models/pages/ModelManagePage').then((module) => ({ default: module.ModelManagePage })));
-const MoonfallSettingsPage = lazy(() => import('@/features/moonfall-settings/pages/MoonfallSettingsPage').then((module) => ({ default: module.MoonfallSettingsPage })));
 const NovelLibraryPage = lazy(() => import('@/features/novels/pages/NovelLibraryPage').then((module) => ({ default: module.NovelLibraryPage })));
 const PromptsPage = lazy(() => import('@/features/prompts/pages/PromptsPage').then((module) => ({ default: module.PromptsPage })));
 const ScriptEditorPage = lazy(() => import('@/features/script-editor/pages/ScriptEditorPage'));
@@ -28,7 +23,6 @@ const WorkbenchPage = lazy(() => import('@/features/workbench/pages/WorkbenchPag
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
 const TokenUsagePage = lazy(() => import('@/pages/TokenUsagePage'));
 const TextOverridesPage = lazy(() => import('@/features/text-overrides/pages/TextOverridesPage').then((module) => ({ default: module.TextOverridesPage })));
-const AdjustmentModePage = lazy(() => import('@/features/adjustment-mode/pages/AdjustmentModePage').then((module) => ({ default: module.AdjustmentModePage })));
 const DashboardLayout = lazy(() => import('@/shared/layout/DashboardLayout').then((module) => ({ default: module.DashboardLayout })));
 
 function AppFallback() {
@@ -89,17 +83,11 @@ export default function App() {
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/novels" element={<NovelLibraryPage />} />
                 <Route path="/scripts" element={<NovelLibraryPage />} />
-                <Route path="/extract" element={<ExtractTestPage />} />
-                <Route path="/moonfall-settings" element={<MoonfallSettingsPage />} />
                 <Route path="/library" element={<LibraryHubPage />} />
                 <Route path="/prompts" element={<PromptsPage />} />
                 <Route path="/model-manage" element={<ModelManagePage />} />
                 <Route path="/db-settings" element={<DbSettingsPage />} />
                 <Route path="/text-overrides" element={<TextOverridesPage />} />
-                <Route path="/adjustment-mode" element={<AdjustmentModePage />} />
-                <Route path="/idea-generator" element={<IdeaGeneratorPage />} />
-                <Route path="/outline-generator" element={<OutlineGeneratorPage />} />
-                <Route path="/idea-library" element={<IdeaLibraryPage />} />
                 <Route path="/token-usage" element={<TokenUsagePage />} />
                 <Route path="/test-collection" element={<TestCollectionPage />} />
                 <Route path="/prompt-taxonomy-test" element={<PromptTaxonomyTestPage />} />

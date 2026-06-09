@@ -48,7 +48,7 @@ function getEnvPinaiModel(): ModelItem | null {
   };
 }
 
-function syncEnvModel(models: ModelItem[]) {
+function syncEnvModel(models: ModelItem[], notify = true) {
   const envModel = getEnvPinaiModel();
   if (!envModel) return models;
 
@@ -74,7 +74,7 @@ function syncEnvModel(models: ModelItem[]) {
     : [...models, envModel];
 
   if (JSON.stringify(next) !== JSON.stringify(models)) {
-    writeModels(next);
+    writeModels(next, { notify });
   }
   return next;
 }
@@ -82,7 +82,7 @@ function syncEnvModel(models: ModelItem[]) {
 function readModels() {
   try {
     const raw = localStorage.getItem(MODELS_KEY);
-    if (!raw) return syncEnvModel([]);
+    if (!raw) return syncEnvModel([], false);
     const parsed = JSON.parse(raw) as { models?: ModelItem[] };
     const storedModels = parsed.models ?? [];
     const rawModels = storedModels
@@ -99,26 +99,26 @@ function readModels() {
       });
     const models = rawModels;
     if (models.length !== storedModels.length) {
-      writeModels(models);
+      writeModels(models, { notify: false });
     }
     const migrated = localStorage.getItem(MODELS_MIGRATED_KEY) === '1';
     if (!migrated) {
       const cleaned = models.filter((model) => !['deepseek-v4-flash', 'deepseek-v4-pro'].includes(model.id));
       localStorage.setItem(MODELS_MIGRATED_KEY, '1');
       if (cleaned.length !== models.length) {
-        writeModels(cleaned);
-        return syncEnvModel(cleaned);
+        writeModels(cleaned, { notify: false });
+        return syncEnvModel(cleaned, false);
       }
     }
-    return syncEnvModel(models);
+    return syncEnvModel(models, false);
   } catch {
-    return syncEnvModel([]);
+    return syncEnvModel([], false);
   }
 }
 
-function writeModels(models: ModelItem[]) {
+function writeModels(models: ModelItem[], options: { notify?: boolean } = {}) {
   localStorage.setItem(MODELS_KEY, JSON.stringify({ models }));
-  window.dispatchEvent(new CustomEvent(APP_EVENTS.modelsUpdated));
+  if (options.notify !== false) window.dispatchEvent(new CustomEvent(APP_EVENTS.modelsUpdated));
 }
 
 export function readModelSnapshot() {

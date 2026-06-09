@@ -139,10 +139,11 @@ async function waitForStableDevServer() {
 
 function cleanupElectronMainProcesses() {
   try {
+    const escapedElectronMain = electronMain.replace(/'/g, "''");
     execFileSync('powershell.exe', [
       '-NoProfile',
       '-Command',
-      `Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'electron.exe' -and $_.CommandLine -like '*${electronMain.replace(/\\/g, '\\\\')}*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }`,
+      `Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'electron.exe' -and $_.CommandLine -like '*${escapedElectronMain}*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }`,
     ], { stdio: 'ignore' });
     log('stale electron main processes cleaned');
   } catch {

@@ -5,7 +5,7 @@ import type { DragEvent as ReactDragEvent, KeyboardEvent as ReactKeyboardEvent, 
 import { createPortal } from 'react-dom';
 
 import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
-import { readModelSnapshot } from '@/features/models/hooks/useModels';
+import { useModels } from '@/features/models/hooks/useModels';
 import { callModel, callModelStream } from '@/features/models/services/callModel';
 import { readPlotLibrarySnapshot } from '@/features/plot-library/hooks/usePlotLibrary';
 import { normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
@@ -144,20 +144,21 @@ const CHAPTER_SUMMARY_TAB = '章节概要';
 const VOLUME_SUMMARY_TAB = '卷概要';
 const CHAPTER_DETAIL_OUTLINE_TAB = '章节细纲';
 const SETTING_LIBRARY_TABS = new Set([ROLE_TAB, BRAINSTORM_TAB, SETTING_TAB, DETAIL_OUTLINE_TAB, OUTLINE_LIBRARY_TAB]);
-const OUTLINE_COLUMNS_KEY = 'xinyuexia_outline_library_columns';
-const OUTLINE_COLUMN_OPTIONS = [5, 6, 7, 8, 9, 10] as const;
 const UNCATEGORIZED_TYPE = '未分类';
 const SETTING_LIBRARY_LEFT_WIDTH = 430;
 const SETTING_LIBRARY_LEFT_MIN_WIDTH = 180;
 const SETTING_LIBRARY_LEFT_MAX_WIDTH = 640;
+const OUTLINE_LEFT_MAX_DISPLAY_WIDTH = 350;
+const OUTLINE_LEFT_TOOLBAR_SAFE_MIN_WIDTH = 400;
 const SETTING_LIBRARY_RIGHT_WIDTH = 350;
 const SETTING_LIBRARY_RIGHT_MIN_WIDTH = 280;
+const OUTLINE_ACTION_RIGHT_MIN_WIDTH = 420;
 const SETTING_LIBRARY_RIGHT_MAX_WIDTH = 620;
 const BRAINSTORM_PREVIEW_WIDTH = 520;
 const BRAINSTORM_PREVIEW_MIN_WIDTH = 320;
 const BRAINSTORM_PREVIEW_MAX_WIDTH = 760;
 const BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH = 280;
-const BRAINSTORM_LAYOUT_PREVIEW_MAX_WIDTH = 420;
+const BRAINSTORM_LAYOUT_PREVIEW_MAX_WIDTH = 480;
 const BRAINSTORM_LAYOUT_RIGHT_MIN_WIDTH = 340;
 const BRAINSTORM_LAYOUT_RIGHT_MAX_WIDTH = 760;
 const BRAINSTORM_LAYOUT_OUTPUT_MIN_WIDTH = 320;
@@ -616,7 +617,7 @@ function getBrainstormOutputCount(value: string) {
 }
 
 function getTemporaryBrainstormTitle(index: number) {
-  return `新脑洞${index + 1}`;
+  return `脑洞输出框${index + 1}`;
 }
 
 function getFloatingTitleInputStyle(value: string, minCh: number, maxCh: number): CSSProperties {
@@ -633,7 +634,7 @@ function getFloatingTitleInputStyle(value: string, minCh: number, maxCh: number)
 }
 
 function splitBrainstormGeneratedText(text: string, count: number) {
-  const clean = stripAiThinkingBlock(text).trim();
+  const clean = stripBrainstormRequestHeader(stripAiThinkingBlock(text)).trim();
   if (!clean) return Array.from({ length: count }, () => '');
   const numberedParts = clean
     .split(/\n(?=\s*(?:[-*]\s*)?(?:脑洞\s*)?\d+[.、）)]\s*)/)
@@ -681,6 +682,9 @@ const BRAINSTORM_QUESTION_FIELDS: Array<{
   { key: 'brainstormCount', label: '一次生成几个脑洞', placeholder: '' },
   { key: 'brainstormRequirement', label: '补充内容', placeholder: '主角名字、性格、女主设定等' },
 ];
+const BRAINSTORM_OUTPUT_ONLY_INSTRUCTION = '请直接输出实际脑洞内容，不要复述提示词、其他要求、题材、故事主题等标签。';
+const BRAINSTORM_REQUEST_HEADER = '【以下是用户输出的内容】';
+const BRAINSTORM_OTHER_REQUIREMENTS_HEADER = '【其他要求】';
 
 function normalizeBrainstormCountValue(value: string) {
   const trimmed = value.trim();
@@ -771,23 +775,83 @@ function persistExpandedNumberSet(storageKey: string, tab: string, name: string,
   localStorage.setItem(getExpandedNumberSetStorageKey(storageKey, tab, name), JSON.stringify([...values]));
 }
 
-function readSettingLibraryLeftWidth(storageKey: string, tab: string) {
+function getDisplayScale() {
+  if (typeof window === 'undefined') return 1;
+  return Number.isFinite(window.devicePixelRatio) && window.devicePixelRatio > 0 ? window.devicePixelRatio : 1;
+}
+
+function getOutlineLeftMaxDisplayWidth(scaleValue = 1) {
+  const normalizedScale = Number.isFinite(scaleValue) && scaleValue > 0 ? scaleValue : 1;
+  return Math.max(
+    SETTING_LIBRARY_LEFT_MIN_WIDTH,
+    Math.floor(OUTLINE_LEFT_MAX_DISPLAY_WIDTH / normalizedScale / getDisplayScale()),
+  );
+}
+
+function getSettingLibraryLeftMaxWidth(tab: string, scaleValue = 1) {
+  if (typeof window === 'undefined') return SETTING_LIBRARY_LEFT_MAX_WIDTH;
+  const normalizedScale = Number.isFinite(scaleValue) && scaleValue > 0 ? scaleValue : 1;
+  const viewportFifthWidth = Math.floor(window.innerWidth / normalizedScale / 5);
+  const fixedMaxWidth = tab === SETTING_TAB
+    ? getOutlineLeftMaxDisplayWidth(scaleValue)
+    : SETTING_LIBRARY_LEFT_MAX_WIDTH;
+  return Math.max(
+    SETTING_LIBRARY_LEFT_MIN_WIDTH,
+    Math.min(fixedMaxWidth, viewportFifthWidth),
+  );
+}
+
+function isOutlineLeftToolbarSafeTab(tab: string) {
+  return tab === SETTING_TAB;
+}
+
+function getDetailOutlineLeftMinWidth(scaleValue = 1) {
+  if (typeof window === 'undefined') return SETTING_LIBRARY_LEFT_MIN_WIDTH;
+  const normalizedScale = Number.isFinite(scaleValue) && scaleValue > 0 ? scaleValue : 1;
+  const viewportEighthWidth = Math.floor(window.innerWidth / normalizedScale / 8);
+  return Math.max(SETTING_LIBRARY_LEFT_MIN_WIDTH, viewportEighthWidth);
+}
+
+function getSettingLibraryLeftMinWidth(tab: string, scaleValue = 1) {
+  if (isOutlineLeftToolbarSafeTab(tab)) {
+    const maxWidth = getSettingLibraryLeftMaxWidth(tab, scaleValue);
+    if (maxWidth <= OUTLINE_LEFT_TOOLBAR_SAFE_MIN_WIDTH) return SETTING_LIBRARY_LEFT_MIN_WIDTH;
+    return OUTLINE_LEFT_TOOLBAR_SAFE_MIN_WIDTH;
+  }
+  return tab === DETAIL_OUTLINE_TAB || tab === OUTLINE_LIBRARY_TAB
+    ? getDetailOutlineLeftMinWidth(scaleValue)
+    : SETTING_LIBRARY_LEFT_MIN_WIDTH;
+}
+
+function clampSettingLibraryLeftWidth(value: number, tab: string, scaleValue = 1) {
+  const minWidth = getSettingLibraryLeftMinWidth(tab, scaleValue);
+  const maxWidth = Math.max(minWidth, getSettingLibraryLeftMaxWidth(tab, scaleValue));
+  return Math.min(maxWidth, Math.max(minWidth, value));
+}
+
+function readSettingLibraryLeftWidth(storageKey: string, tab: string, scaleValue = 1) {
+  const fallbackWidth = clampSettingLibraryLeftWidth(SETTING_LIBRARY_LEFT_WIDTH, tab, scaleValue);
   try {
     const value = Number(localStorage.getItem(getSettingLibraryWidthStorageKey(storageKey, tab, 'left')) ?? SETTING_LIBRARY_LEFT_WIDTH);
-    if (!Number.isFinite(value)) return SETTING_LIBRARY_LEFT_WIDTH;
-    return Math.min(SETTING_LIBRARY_LEFT_MAX_WIDTH, Math.max(SETTING_LIBRARY_LEFT_MIN_WIDTH, value));
+    if (!Number.isFinite(value)) return fallbackWidth;
+    return clampSettingLibraryLeftWidth(value, tab, scaleValue);
   } catch {
-    return SETTING_LIBRARY_LEFT_WIDTH;
+    return fallbackWidth;
   }
 }
 
 function readSettingLibraryRightWidth(storageKey: string, tab: string) {
   try {
     const value = Number(localStorage.getItem(getSettingLibraryWidthStorageKey(storageKey, tab, 'right')) ?? SETTING_LIBRARY_RIGHT_WIDTH);
-    if (!Number.isFinite(value)) return SETTING_LIBRARY_RIGHT_WIDTH;
-    return Math.min(SETTING_LIBRARY_RIGHT_MAX_WIDTH, Math.max(SETTING_LIBRARY_RIGHT_MIN_WIDTH, value));
+    const minWidth = tab === DETAIL_OUTLINE_TAB || tab === OUTLINE_LIBRARY_TAB
+      ? OUTLINE_ACTION_RIGHT_MIN_WIDTH
+      : SETTING_LIBRARY_RIGHT_MIN_WIDTH;
+    if (!Number.isFinite(value)) return minWidth;
+    return Math.min(SETTING_LIBRARY_RIGHT_MAX_WIDTH, Math.max(minWidth, value));
   } catch {
-    return SETTING_LIBRARY_RIGHT_WIDTH;
+    return tab === DETAIL_OUTLINE_TAB || tab === OUTLINE_LIBRARY_TAB
+      ? OUTLINE_ACTION_RIGHT_MIN_WIDTH
+      : SETTING_LIBRARY_RIGHT_WIDTH;
   }
 }
 
@@ -913,15 +977,6 @@ function readStringList(storageKey: string) {
     return parsed.filter((item) => typeof item === 'string' && item.trim());
   } catch {
     return [];
-  }
-}
-
-function loadOutlineColumns() {
-  try {
-    const value = Number(localStorage.getItem(OUTLINE_COLUMNS_KEY) ?? 10);
-    return OUTLINE_COLUMN_OPTIONS.includes(value as (typeof OUTLINE_COLUMN_OPTIONS)[number]) ? value : 10;
-  } catch {
-    return 10;
   }
 }
 
@@ -1261,6 +1316,13 @@ function buildLibraryLogGroups(log: LibraryAiRequestLog, options?: {
   return groups;
 }
 
+function buildRequestLogPlainPreview(groups: AiRequestLogGroup[]) {
+  return groups
+    .map((group) => group.content?.trim() ?? '')
+    .filter(Boolean)
+    .join('\n\n');
+}
+
 function getBrainstormQuestionRows(value: string) {
   const rows = value
     .split('\n')
@@ -1305,6 +1367,32 @@ function stripAiThinkingBlock(content: string) {
   return content
     .replace(/\[\[THINKING seconds=\d+ status=(?:thinking|done)\]\]\n[\s\S]*?\n\[\[\/THINKING\]\]\n?/g, '')
     .trim();
+}
+
+function stripBrainstormRequestHeader(content: string) {
+  const trimmed = content.trim();
+  if (!trimmed.startsWith(BRAINSTORM_REQUEST_HEADER)) return content;
+  return trimmed.slice(BRAINSTORM_REQUEST_HEADER.length).replace(/^\s+/, '');
+}
+
+function normalizeBrainstormEchoText(content: string) {
+  return stripBrainstormRequestHeader(stripAiThinkingBlock(content))
+    .replace(/\s+/g, '')
+    .trim();
+}
+
+function isBrainstormEchoedRequest(content: string, requestText: string) {
+  const output = normalizeBrainstormEchoText(content);
+  const request = normalizeBrainstormEchoText(requestText);
+  return Boolean(output && request && output === request);
+}
+
+function getBrainstormDisplayContent(content: string, requestText: string) {
+  if (isBrainstormEchoedRequest(content, requestText)) {
+    return '【错误】模型只复述了输入内容，没有生成脑洞。请重试，或换一个提示词/模型。';
+  }
+  const displayContent = stripBrainstormRequestHeader(content).trim();
+  return displayContent || '【错误】模型没有返回内容。请重试，或检查模型、提示词和网络。';
 }
 
 function isPendingAiThinkingDraft(content: string) {
@@ -1360,6 +1448,7 @@ function getLatestUsefulAiText(content: string) {
     .reverse()
     .find((turn) => turn.role === 'ai' && turn.content.trim() && !/^正在生成\.{1,3}$/.test(turn.content.trim()));
   if (latestAi) return stripAiThinkingBlock(latestAi.content);
+  if (turns.length > 0) return '';
 
   const legacyAiMatches = [...content.matchAll(/(?:^|\n)AI[：:]\s*([\s\S]*?)(?=\n\s*用户[：:]|\n\s*\[\[USER\]\]|$)/g)]
     .map((match) => match[1]?.trim() ?? '')
@@ -1547,8 +1636,6 @@ export function WorkbenchLibraryPanel({
   const [expandedOutlineVolumeIds, setExpandedOutlineVolumeIds] = useState<Set<number>>(() => (
     readExpandedNumberSet(outlineStorageKey ?? storageKey, activeTab, 'outline_volumes')
   ));
-  const [outlineColumns, setOutlineColumns] = useState(loadOutlineColumns);
-  const [isOutlineSettingsOpen, setIsOutlineSettingsOpen] = useState(false);
   const [isFieldSizeSettingsOpen, setIsFieldSizeSettingsOpen] = useState(false);
   const lastFieldSizeOpenSignalRef = useRef(fieldSizeOpenSignal);
   const lastOpenLogSignalRef = useRef(openLogSignal);
@@ -1556,7 +1643,7 @@ export function WorkbenchLibraryPanel({
   const fieldSizeSettingsDraggable = useDraggableModal('workbench_field_size_settings');
   const visibleFieldSizeKeys = WORKBENCH_FIELD_SIZE_KEYS_BY_TAB[activeTab] ?? WORKBENCH_FIELD_SIZE_SETTING_KEYS;
   const fieldSizeTabLabel = getWorkbenchFieldSizeTabLabel(activeTab);
-  const [settingLibraryLeftWidth, setSettingLibraryLeftWidth] = useState(() => readSettingLibraryLeftWidth(storageKey, activeTab));
+  const [settingLibraryLeftWidth, setSettingLibraryLeftWidth] = useState(() => readSettingLibraryLeftWidth(storageKey, activeTab, scale));
   const [settingLibraryRightWidth, setSettingLibraryRightWidth] = useState(() => readSettingLibraryRightWidth(storageKey, activeTab));
   const [brainstormPreviewWidth, setBrainstormPreviewWidth] = useState(() => readBrainstormPreviewWidth(storageKey, activeTab));
   const [plotPointLayoutTreeWidth, setPlotPointLayoutTreeWidth] = useState(() => readPlotPointLayoutTreeWidth(storageKey));
@@ -1653,10 +1740,12 @@ export function WorkbenchLibraryPanel({
   const [isLibraryAiLoading, setIsLibraryAiLoading] = useState(false);
   const [isLibraryAiLogOpen, setIsLibraryAiLogOpen] = useState(false);
   const [libraryAiLogScope, setLibraryAiLogScope] = useState<'library' | 'outline'>('library');
+  const [showLibraryAiLogTitles, setShowLibraryAiLogTitles] = useState(true);
   const [lastLibraryAiRequestLog, setLastLibraryAiRequestLog] = useState<LibraryAiRequestLog | null>(null);
   const [lastOutlineAiRequestLog, setLastOutlineAiRequestLog] = useState<LibraryAiRequestLog | null>(null);
   const [loadingDotCount, setLoadingDotCount] = useState(1);
   const [tabPortalTarget, setTabPortalTarget] = useState<HTMLElement | null>(null);
+  const [headerToolPortalTarget, setHeaderToolPortalTarget] = useState<HTMLElement | null>(null);
   const outlinePreviewRefs = useRef<Record<number, HTMLElement | null>>({});
   const libraryAiOutputRef = useRef<HTMLDivElement | null>(null);
   const libraryAiAutoScrollRef = useRef(true);
@@ -1673,7 +1762,8 @@ export function WorkbenchLibraryPanel({
   const roleExpandedReloadRef = useRef(false);
   const settingExpandedReloadRef = useRef(false);
   const outlineExpandedReloadRef = useRef(false);
-  const models = useMemo(() => readModelSnapshot().filter((model) => model.enabled), []);
+  const { models: modelSnapshot } = useModels();
+  const models = useMemo(() => modelSnapshot.filter((model) => model.enabled), [modelSnapshot]);
   const { prompts, addPrompt, updatePrompt, deletePrompt, togglePin } = usePrompts();
   const brainstormPrompts = useMemo(() => prompts.filter((prompt) => prompt.category === BRAINSTORM_TAB), [prompts]);
   const rolePromptOptions = useMemo(
@@ -2049,12 +2139,7 @@ export function WorkbenchLibraryPanel({
       })
       .filter((line): line is string => Boolean(line))
       .join('\n');
-    if (!lines) return '';
-    return [
-      '【以下是用户输出的内容】',
-      '',
-      lines,
-    ].join('\n');
+    return lines ? [BRAINSTORM_OTHER_REQUIREMENTS_HEADER, lines].join('\n') : '';
   };
 
   const openBrainstormGenerateConfirm = () => {
@@ -2127,8 +2212,8 @@ export function WorkbenchLibraryPanel({
     const eventScale = getResizeEventScale(event.currentTarget);
     const startX = event.clientX;
     const isBrainstormTab = activeTab === BRAINSTORM_TAB;
-    const minWidth = SETTING_LIBRARY_LEFT_MIN_WIDTH;
-    const maxWidth = isBrainstormTab ? BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH : SETTING_LIBRARY_LEFT_MAX_WIDTH;
+    const minWidth = getSettingLibraryLeftMinWidth(activeTab, eventScale);
+    const maxWidth = isBrainstormTab ? BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH : getSettingLibraryLeftMaxWidth(activeTab, eventScale);
     const startWidth = Math.min(maxWidth, Math.max(minWidth, settingLibraryLeftWidth));
 
     const handleMove = (moveEvent: PointerEvent) => {
@@ -2149,7 +2234,7 @@ export function WorkbenchLibraryPanel({
       document.body.style.userSelect = '';
     };
 
-    document.body.style.cursor = 'col-resize';
+    document.body.style.cursor = 'ew-resize';
     document.body.style.userSelect = 'none';
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', stopResize);
@@ -2167,7 +2252,12 @@ export function WorkbenchLibraryPanel({
     const eventScale = getResizeEventScale(event.currentTarget);
     const startX = event.clientX;
     const isBrainstormTab = activeTab === BRAINSTORM_TAB;
-    const minWidth = isBrainstormTab ? BRAINSTORM_LAYOUT_RIGHT_MIN_WIDTH : SETTING_LIBRARY_RIGHT_MIN_WIDTH;
+    const isOutlineActionTab = activeTab === DETAIL_OUTLINE_TAB || activeTab === OUTLINE_LIBRARY_TAB;
+    const minWidth = isBrainstormTab
+      ? BRAINSTORM_LAYOUT_RIGHT_MIN_WIDTH
+      : isOutlineActionTab
+        ? OUTLINE_ACTION_RIGHT_MIN_WIDTH
+        : SETTING_LIBRARY_RIGHT_MIN_WIDTH;
     const maxWidth = isBrainstormTab ? BRAINSTORM_LAYOUT_RIGHT_MAX_WIDTH : SETTING_LIBRARY_RIGHT_MAX_WIDTH;
     const startWidth = Math.min(maxWidth, Math.max(minWidth, settingLibraryRightWidth));
 
@@ -2189,7 +2279,7 @@ export function WorkbenchLibraryPanel({
       document.body.style.userSelect = '';
     };
 
-    document.body.style.cursor = 'col-resize';
+    document.body.style.cursor = 'ew-resize';
     document.body.style.userSelect = 'none';
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', stopResize);
@@ -2227,7 +2317,7 @@ export function WorkbenchLibraryPanel({
       document.body.style.userSelect = '';
     };
 
-    document.body.style.cursor = 'col-resize';
+    document.body.style.cursor = 'ew-resize';
     document.body.style.userSelect = 'none';
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', stopResize);
@@ -2267,7 +2357,7 @@ export function WorkbenchLibraryPanel({
       document.body.style.userSelect = '';
     };
 
-    document.body.style.cursor = 'col-resize';
+    document.body.style.cursor = 'ew-resize';
     document.body.style.userSelect = 'none';
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', stopResize);
@@ -2307,7 +2397,7 @@ export function WorkbenchLibraryPanel({
       document.body.style.userSelect = '';
     };
 
-    document.body.style.cursor = 'col-resize';
+    document.body.style.cursor = 'ew-resize';
     document.body.style.userSelect = 'none';
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', stopResize);
@@ -2347,7 +2437,7 @@ export function WorkbenchLibraryPanel({
       document.body.style.userSelect = '';
     };
 
-    document.body.style.cursor = 'col-resize';
+    document.body.style.cursor = 'ew-resize';
     document.body.style.userSelect = 'none';
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', stopResize);
@@ -2357,7 +2447,7 @@ export function WorkbenchLibraryPanel({
     <div
       data-no-modal-drag="true"
       onPointerDown={startLeftWidthResize}
-      className="group relative z-30 -mx-1 flex w-4 shrink-0 cursor-col-resize touch-none items-stretch justify-center bg-transparent"
+      className="group relative z-30 -mx-1 flex w-4 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
       title="拖拽调整左侧宽度"
     >
       <div className="my-3 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
@@ -2368,7 +2458,7 @@ export function WorkbenchLibraryPanel({
     <div
       data-no-modal-drag="true"
       onPointerDown={startRightWidthResize}
-      className="group relative z-30 -mx-1 flex w-4 shrink-0 cursor-col-resize touch-none items-stretch justify-center bg-transparent"
+      className="group relative z-30 -mx-1 flex w-4 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
       title="拖拽调整右侧宽度"
     >
       <div className="my-3 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
@@ -2379,7 +2469,7 @@ export function WorkbenchLibraryPanel({
     <div
       data-no-modal-drag="true"
       onPointerDown={startBrainstormPreviewWidthResize}
-      className="group relative z-30 -mx-1 flex w-4 shrink-0 cursor-col-resize touch-none items-stretch justify-center bg-transparent"
+      className="group relative z-30 -mx-1 flex w-4 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
       title="拖拽调整脑洞预览宽度"
     >
       <div className="my-3 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
@@ -2390,7 +2480,7 @@ export function WorkbenchLibraryPanel({
     <div
       data-no-modal-drag="true"
       onPointerDown={startPlotPointLeftWidthResize}
-      className="group relative z-30 flex w-2 shrink-0 cursor-col-resize touch-none items-stretch justify-center bg-white transition-colors hover:bg-[#EAF9FD]"
+      className="group relative z-30 flex w-2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-white transition-colors hover:bg-[#EAF9FD]"
       title="拖拽调整剧情链左侧宽度"
     >
       <div className="w-px bg-slate-200 transition-colors group-hover:bg-[#08AACE]" />
@@ -2401,7 +2491,7 @@ export function WorkbenchLibraryPanel({
     <div
       data-no-modal-drag="true"
       onPointerDown={startPlotPointTreeWidthResize}
-      className="group relative z-30 flex w-2 shrink-0 cursor-col-resize touch-none items-stretch justify-center bg-white transition-colors hover:bg-[#EAF9FD]"
+      className="group relative z-30 flex w-2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-white transition-colors hover:bg-[#EAF9FD]"
       title="拖拽调整剧情链目录宽度"
     >
       <div className="w-px bg-slate-200 transition-colors group-hover:bg-[#08AACE]" />
@@ -2412,7 +2502,7 @@ export function WorkbenchLibraryPanel({
     <div
       data-no-modal-drag="true"
       onPointerDown={startPlotPointRightWidthResize}
-      className="group relative z-30 flex w-2 shrink-0 cursor-col-resize touch-none items-stretch justify-center bg-white transition-colors hover:bg-[#EAF9FD]"
+      className="group relative z-30 flex w-2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-white transition-colors hover:bg-[#EAF9FD]"
       title="拖拽调整剧情链右侧宽度"
     >
       <div className="w-px bg-slate-200 transition-colors group-hover:bg-[#08AACE]" />
@@ -2427,10 +2517,26 @@ export function WorkbenchLibraryPanel({
 
   useEffect(() => {
     if (!SETTING_LIBRARY_TABS.has(activeTab)) return;
-    setSettingLibraryLeftWidth(readSettingLibraryLeftWidth(storageKey, activeTab));
+    setSettingLibraryLeftWidth(readSettingLibraryLeftWidth(storageKey, activeTab, scale));
     setSettingLibraryRightWidth(readSettingLibraryRightWidth(storageKey, activeTab));
     setBrainstormPreviewWidth(readBrainstormPreviewWidth(storageKey, activeTab));
-  }, [activeTab, storageKey]);
+  }, [activeTab, scale, storageKey]);
+
+  useEffect(() => {
+    if (!SETTING_LIBRARY_TABS.has(activeTab) || activeTab === BRAINSTORM_TAB) return;
+    const clampVisibleLeftWidth = () => {
+      setSettingLibraryLeftWidth((currentWidth) => {
+        const nextWidth = clampSettingLibraryLeftWidth(currentWidth, activeTab, scale);
+        if (nextWidth !== currentWidth) {
+          persistSettingLibraryWidth(storageKey, activeTab, 'left', nextWidth);
+        }
+        return nextWidth;
+      });
+    };
+    clampVisibleLeftWidth();
+    window.addEventListener('resize', clampVisibleLeftWidth);
+    return () => window.removeEventListener('resize', clampVisibleLeftWidth);
+  }, [activeTab, scale, storageKey]);
 
   useEffect(() => {
     const nextActiveTab = readActiveTab(storageKey, normalizedTabs, defaultActiveTab);
@@ -2439,7 +2545,7 @@ export function WorkbenchLibraryPanel({
     setTabConfigs(readTabConfigs(storageKey));
     setActiveTab(nextActiveTab);
     if (SETTING_LIBRARY_TABS.has(nextActiveTab)) {
-      setSettingLibraryLeftWidth(readSettingLibraryLeftWidth(storageKey, nextActiveTab));
+      setSettingLibraryLeftWidth(readSettingLibraryLeftWidth(storageKey, nextActiveTab, scale));
       setSettingLibraryRightWidth(readSettingLibraryRightWidth(storageKey, nextActiveTab));
       setBrainstormPreviewWidth(readBrainstormPreviewWidth(storageKey, nextActiveTab));
     }
@@ -2475,7 +2581,7 @@ export function WorkbenchLibraryPanel({
       window.removeEventListener('storage', syncStorageEntries);
       window.removeEventListener('storage', syncStorageBrainstormRecycleEntries);
     };
-  }, [defaultActiveTab, normalizedTabs, storageKey]);
+  }, [defaultActiveTab, normalizedTabs, scale, storageKey]);
 
   useEffect(() => {
     if (!categoryMenu && !entryMenu && !clearSettingsUnlockMenu && !promptDisableMenu) return;
@@ -2588,10 +2694,6 @@ export function WorkbenchLibraryPanel({
   }, [activeTab, outlineStorageKey, storageKey, volumes]);
 
   useEffect(() => {
-    localStorage.setItem(OUTLINE_COLUMNS_KEY, String(outlineColumns));
-  }, [outlineColumns]);
-
-  useEffect(() => {
     if (outlineSelectionType !== 'chapter' || selectedOutlineChapterId == null) return;
     const id = window.setTimeout(() => {
       outlinePreviewRefs.current[selectedOutlineChapterId]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -2629,7 +2731,10 @@ export function WorkbenchLibraryPanel({
   }, [activeTab, entries, outlineEntries, outlineSelectionType, outlineStorageKey, plotPointStandalone, selectedOutlineChapterId, selectedOutlineVolumeId, tabs, volumes]);
 
   useEffect(() => {
-    const updateTarget = () => setTabPortalTarget(document.getElementById('workbench-modal-header-extra'));
+    const updateTarget = () => {
+      setTabPortalTarget(document.getElementById('workbench-modal-header-extra'));
+      setHeaderToolPortalTarget(document.getElementById('workbench-header-extra-tools'));
+    };
     updateTarget();
     const id = window.setTimeout(updateTarget, 0);
     return () => window.clearTimeout(id);
@@ -2992,7 +3097,9 @@ export function WorkbenchLibraryPanel({
       : selectedPrompt?.content ?? `你是${activeTab}生成助手。请根据用户输入生成清晰、可编辑的中文内容。`;
     const modelPrompt = activeTab === SETTING_TAB
       ? ''
-      : baseModelPrompt;
+      : activeTab === BRAINSTORM_TAB
+        ? [baseModelPrompt, BRAINSTORM_OUTPUT_ONLY_INSTRUCTION].filter(Boolean).join('\n\n')
+        : baseModelPrompt;
     const linkedBrainstorm = getActiveLinkedBrainstormSnapshot();
     const hasLinkedBrainstorm = activeTab === SETTING_TAB && Boolean(activeTabConfig.loadedBrainstormId || linkedBrainstorm.text.trim());
     const requestText = activeTab === SETTING_TAB && overrideText === undefined
@@ -3020,7 +3127,7 @@ export function WorkbenchLibraryPanel({
     };
   };
 
-  const sendLibraryAiMessage = async (overrideText?: string) => {
+  const sendLibraryAiMessage = async (overrideText?: string, options: { visibleText?: string } = {}) => {
     const text = (overrideText ?? aiInput).trim();
     if (isLibraryAiLoading || (!text && activeTab !== SETTING_TAB)) return;
     const { selectedModel, modelPrompt, requestText, log } = buildLibraryAiRequestPayload(text, overrideText);
@@ -3040,7 +3147,7 @@ export function WorkbenchLibraryPanel({
       setAiResult('');
       updateActiveBrainstormAiSession({ previewTitles: [], previewDrafts: [] });
     }
-    const visibleUserText = text;
+    const visibleUserText = (options.visibleText ?? text).trim();
     const pendingOutput = `${aiOutput.trim() ? `${aiOutput.trim()}\n\n` : ''}[[USER]]\n${visibleUserText}\n\n[[AI]]\n正在生成...`;
     const replacePendingOutput = (content: string) => (
       pendingOutput.replace(/\[\[AI\]\]\n正在生成\.\.\.$/, `[[AI]]\n${content}`)
@@ -3072,9 +3179,12 @@ export function WorkbenchLibraryPanel({
           onChunk: (chunk) => {
             if (libraryAiRequestSeqRef.current !== requestSeq) return;
             streamedContent += chunk;
-            if (activeTab === BRAINSTORM_TAB) setAiResult(streamedContent.trimStart());
+            const brainstormStreamDisplay = activeTab === BRAINSTORM_TAB && isBrainstormEchoedRequest(streamedContent, requestText)
+              ? ''
+              : stripBrainstormRequestHeader(streamedContent.trimStart());
+            if (activeTab === BRAINSTORM_TAB) setAiResult(brainstormStreamDisplay);
             setAiOutput(replacePendingOutput(formatAiThinkingResponse(
-              streamedContent || '正在生成...',
+              activeTab === BRAINSTORM_TAB ? brainstormStreamDisplay || '正在生成...' : streamedContent || '正在生成...',
               reasoningContent,
               getThinkingSeconds(),
               false,
@@ -3102,8 +3212,11 @@ export function WorkbenchLibraryPanel({
         });
       }
       if (libraryAiRequestSeqRef.current !== requestSeq) return;
-      if (activeTab === BRAINSTORM_TAB) setAiResult(stripAiThinkingBlock(content));
-      setAiOutput(replacePendingOutput(content));
+      const displayContent = activeTab === BRAINSTORM_TAB
+        ? getBrainstormDisplayContent(content, requestText)
+        : content;
+      if (activeTab === BRAINSTORM_TAB) setAiResult(stripAiThinkingBlock(displayContent));
+      setAiOutput(replacePendingOutput(displayContent));
     } catch (error) {
       if (libraryAiRequestSeqRef.current !== requestSeq) return;
       if (error instanceof DOMException && error.name === 'AbortError') {
@@ -3112,8 +3225,9 @@ export function WorkbenchLibraryPanel({
         return;
       }
       const message = error instanceof Error ? error.message : '模型请求失败。';
-      if (activeTab === BRAINSTORM_TAB) setAiResult('');
-      setAiOutput(replacePendingOutput(`【错误】${message}`));
+      const errorContent = `【错误】${message}`;
+      if (activeTab === BRAINSTORM_TAB) setAiResult(errorContent);
+      setAiOutput(replacePendingOutput(errorContent));
     } finally {
       window.clearTimeout(timeoutId);
       if (libraryAiAbortRef.current === controller) libraryAiAbortRef.current = null;
@@ -3170,8 +3284,9 @@ export function WorkbenchLibraryPanel({
   const confirmBrainstormGenerate = () => {
     if (!brainstormGenerateDraft) return;
     const promptText = buildBrainstormPromptFromQuestions(brainstormGenerateDraft);
+    const visibleText = stripBrainstormRequestHeader(promptText);
     setBrainstormGenerateDraft(null);
-    void sendLibraryAiMessage(promptText);
+    void sendLibraryAiMessage(promptText, { visibleText });
   };
 
   const addRoleType = () => {
@@ -3571,10 +3686,10 @@ export function WorkbenchLibraryPanel({
         type="button"
         onClick={() => setIsFieldSizeSettingsOpen(true)}
         className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 shadow-sm hover:border-[#08AACE] hover:text-[#08AACE]"
-        aria-label={`${fieldSizeTabLabel}字段尺寸`}
+        aria-label={`${fieldSizeTabLabel}设置`}
       >
         <Settings className="h-4 w-4" />
-        字段尺寸
+        设置
       </button>
     );
   };
@@ -3659,6 +3774,10 @@ export function WorkbenchLibraryPanel({
       )
   );
 
+  const detailOutlineHeaderFontSizePortal = headerToolPortalTarget && !showInlineFieldSizeButton
+    ? createPortal(renderDetailOutlineFontSizeTool(), headerToolPortalTarget)
+    : null;
+
   const fieldSizeSettingsModal = isFieldSizeSettingsOpen ? createPortal(
     <div
       className="modal-sharp fixed inset-0 z-[280] flex items-center justify-center bg-black/30 p-4"
@@ -3676,7 +3795,7 @@ export function WorkbenchLibraryPanel({
           style={fieldSizeSettingsDraggable.dragHandleProps.style}
         >
           <div>
-            <h3 className="text-base font-black text-slate-900">{fieldSizeTabLabel}字段尺寸</h3>
+            <h3 className="text-base font-black text-slate-900">{fieldSizeTabLabel}设置</h3>
             <p className="mt-1 text-xs font-bold text-slate-400">只显示当前页面可调字段，调整后会自动保存。</p>
           </div>
           <button
@@ -3684,7 +3803,7 @@ export function WorkbenchLibraryPanel({
             onClick={() => setIsFieldSizeSettingsOpen(false)}
             data-no-modal-drag="true"
             className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-700"
-            aria-label="关闭字段尺寸"
+            aria-label="关闭设置"
           >
             <X className="h-4 w-4" />
           </button>
@@ -4866,6 +4985,14 @@ export function WorkbenchLibraryPanel({
       ? buildLibraryAiRequestPayload(previewAiRequestText, activeIsBrainstorm ? previewAiRequestText : undefined).log
       : null;
     const visibleAiRequestLog = previewAiRequestLog ?? lastLibraryAiRequestLog;
+    const visibleAiRequestLogGroups = visibleAiRequestLog
+      ? buildLibraryLogGroups(visibleAiRequestLog, {
+        includeContext: !activeIsBrainstorm,
+        omitEmptyUser: activeIsBrainstorm,
+        userTitle: activeIsBrainstorm ? '其他要求' : undefined,
+      })
+      : [];
+    const visibleAiRequestLogPlainPreview = buildRequestLogPlainPreview(visibleAiRequestLogGroups);
     const libraryAiLogModal = isLibraryAiLogOpen && libraryAiLogScope === 'library' && visibleAiRequestLog ? (
       <LibraryAiLogShell
         id={`workbench_library_ai_log_${activeTab}`}
@@ -4893,13 +5020,25 @@ export function WorkbenchLibraryPanel({
                     <div className="mt-1 break-words font-bold text-slate-800">{visibleAiRequestLog.visibleUserText}</div>
                   </div>
                 )}
+                <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-white p-3 text-sm font-bold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={showLibraryAiLogTitles}
+                    onChange={(event) => setShowLibraryAiLogTitles(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-[#08AACE] focus:ring-[#08AACE]/20"
+                  />
+                  <span>显示标题内容</span>
+                </label>
               </div>
             </aside>
             <div className="min-h-0 overflow-y-auto p-5">
-              <AiRequestLogGroups groups={buildLibraryLogGroups(visibleAiRequestLog, {
-                includeContext: !activeIsBrainstorm,
-                omitEmptyUser: activeIsBrainstorm,
-              })} />
+              {showLibraryAiLogTitles ? (
+                <AiRequestLogGroups groups={visibleAiRequestLogGroups} />
+              ) : (
+                <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-700">
+                  {visibleAiRequestLogPlainPreview || '暂无可预览内容'}
+                </div>
+              )}
             </div>
           </div>
       </LibraryAiLogShell>
@@ -4939,23 +5078,23 @@ export function WorkbenchLibraryPanel({
             <div className={`grid h-10 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm ${
               activeTab === SETTING_TAB ? 'grid-cols-4' : 'grid-cols-3'
             }`}>
-              <div className="flex min-w-0 items-center justify-center whitespace-nowrap bg-brand px-3 text-sm font-bold text-white">
-                新建
-              </div>
-              <button
-                type="button"
-                onClick={() => openSettingCreateDialog('category')}
-                className="min-w-0 border-l border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-100 whitespace-nowrap"
-              >
-                分类
-              </button>
-              <button
-                type="button"
-                onClick={() => openSettingCreateDialog('setting')}
-                className="min-w-0 border-l border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-100 whitespace-nowrap"
-              >
-                设定
-              </button>
+                <div className="flex min-w-0 items-center justify-center whitespace-nowrap bg-brand px-2 text-sm font-bold text-white">
+                  新建
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openSettingCreateDialog('category')}
+                  className="min-w-0 border-l border-gray-200 bg-white px-2 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-100 whitespace-nowrap"
+                >
+                  分类
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openSettingCreateDialog('setting')}
+                  className="min-w-0 border-l border-gray-200 bg-white px-2 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-100 whitespace-nowrap"
+                >
+                  设定
+                </button>
               {activeTab === SETTING_TAB && (
                 <button
                   type="button"
@@ -4979,7 +5118,7 @@ export function WorkbenchLibraryPanel({
                       y: event.clientY,
                     });
                   }}
-                  className={`min-w-0 border-l border-gray-200 px-3 text-sm font-bold text-white transition-colors whitespace-nowrap ${
+                  className={`min-w-0 border-l border-gray-200 px-2 text-sm font-bold text-white transition-colors whitespace-nowrap ${
                     isClearSettingsUnlocked
                       ? 'bg-red-500 hover:bg-red-600'
                       : 'cursor-default bg-red-500/80 text-white/75'
@@ -5458,18 +5597,18 @@ export function WorkbenchLibraryPanel({
                   })}
                 </div>
               </div>
-              <div className="mt-2 flex items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2">
+              <div className="mt-2 flex items-center gap-3">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
                   <span className="shrink-0 text-sm font-black text-slate-950">生成个数：</span>
-                  <div className="flex h-10 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
-                    {['1', '2', '3', '5', '10'].map((value) => {
+                  <div className="flex h-8 min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    {['1', '3', '5', '10'].map((value) => {
                       const active = brainstormQuestionDraft.brainstormCount === value;
                       return (
                         <button
                           {...{ key: value }}
                           type="button"
                           onClick={() => setBrainstormQuestionField('brainstormCount', active ? '' : value)}
-                          className={`min-w-[42px] border-r border-slate-200 px-3 text-sm font-black leading-none transition-colors last:border-r-0 ${
+                          className={`min-w-0 flex-1 border-r border-slate-200 px-2 text-sm font-black leading-none transition-colors last:border-r-0 ${
                             active
                               ? 'bg-[#08AACE] text-white'
                               : 'bg-white text-slate-700 hover:bg-[#EAF9FD] hover:text-[#08AACE]'
@@ -5484,7 +5623,7 @@ export function WorkbenchLibraryPanel({
                 <button
                   onClick={openBrainstormGenerateConfirm}
                   disabled={isLibraryAiLoading}
-                  className="rounded-xl bg-brand px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
+                  className="h-10 w-16 shrink-0 whitespace-nowrap rounded-xl bg-brand px-0 text-sm font-bold leading-none text-white shadow-sm hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
                   {isLibraryAiLoading ? '生成中...' : '生成'}
                 </button>
@@ -5762,7 +5901,7 @@ export function WorkbenchLibraryPanel({
         return next;
       });
     };
-    const outlineSidebarWidth = Math.max(settingLibraryLeftWidth, outlineColumns * 40 + 30);
+    const outlineSidebarWidth = settingLibraryLeftWidth;
     const outlinePreviewTitle = plotPointStandalone ? '剧情点预览' : isDetailOutlineTab ? 'AI输出章纲' : (safeOutlineSelectionType === 'volume' ? '卷概要预览' : '章节概要');
     const outlinePromptCategory = plotPointStandalone ? PLOT_CHAIN_PROMPT_CATEGORY : isDetailOutlineTab ? DETAIL_OUTLINE_TAB : '概要';
     const outlinePromptOptions = prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === outlinePromptCategory);
@@ -6959,7 +7098,7 @@ export function WorkbenchLibraryPanel({
               <nav className="editor-scrollbar min-h-0 flex-1 overflow-y-auto px-2 py-2" aria-label="剧情链目录树">
                 <div className="space-y-3">
                   <section
-                    className="relative rounded-xl border border-[#bdeef7] bg-white p-2 shadow-sm"
+                    className="relative"
                     aria-label="当前主链未写序号导航"
                     onContextMenu={(event) => {
                       event.preventDefault();
@@ -6974,13 +7113,17 @@ export function WorkbenchLibraryPanel({
                         setPlotPointChainMenuSlot(null);
                         setExpandedPlotPointChainTreeSlots((current) => ({ ...current, [plotPointActiveChainSlot]: !(current[plotPointActiveChainSlot] ?? true) }));
                       }}
-                      className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg bg-[#EAF9FD] px-2 text-left text-[#078fb0] hover:bg-[#dff5fb]"
+                      className="group flex h-[36px] w-full items-center gap-1 rounded-md bg-[#EAF9FD] px-2 py-1.5 text-left transition-colors hover:bg-[#dff5fb]"
                     >
-                      <span className="min-w-0">
-                        <span className="block text-[10px] font-black leading-4 text-[#078fb0]/70">当前主链</span>
-                        <span className="block truncate text-xs font-black leading-4">{plotPointChainNames[plotPointActiveChainSlot] ?? `剧情链${plotPointActiveChainSlot}`}</span>
+                      {(expandedPlotPointChainTreeSlots[plotPointActiveChainSlot] ?? true) ? (
+                        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[#078fb0]" />
+                      ) : (
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#078fb0]" />
+                      )}
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#078fb0]">
+                        主链
                       </span>
-                      <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-[#078fb0]">{plotPointUnwrittenItems.length} 未写</span>
+                      <span className="ml-1 shrink-0 text-xs text-gray-400">{plotPointUnwrittenItems.length} 未写</span>
                     </button>
                     {plotPointChainMenuSlot === plotPointActiveChainSlot && (
                       <div role="menu" aria-label="当前主链菜单" className="absolute left-2 top-12 z-10 w-40 rounded-lg border border-[#bdeef7] bg-white p-2 shadow-lg">
@@ -7002,9 +7145,9 @@ export function WorkbenchLibraryPanel({
                       </div>
                     )}
                     {(expandedPlotPointChainTreeSlots[plotPointActiveChainSlot] ?? true) && (
-                      <div className="mt-2 flex flex-wrap gap-1.5" aria-label="当前主链未写剧情点序号">
+                      <div className="ml-1 mt-0.5 space-y-0.5" aria-label="当前主链未写剧情点序号">
                         {plotPointUnwrittenItems.length === 0 ? (
-                          <div className="px-2 py-2 text-xs font-medium text-gray-400">暂无未写剧情点</div>
+                          <div className="rounded-md border-l-[3px] border-transparent px-3 py-2 text-sm font-medium text-gray-400">暂无未写剧情点</div>
                         ) : (
                           plotPointUnwrittenItems.map((item) => {
                             const originalIndex = plotPointSelectedItems.findIndex((selectedItem) => selectedItem.id === item.id);
@@ -7019,13 +7162,16 @@ export function WorkbenchLibraryPanel({
                                   setPlotPointChainFilterMode('all');
                                   setActivePlotPointChainItemId(item.id);
                                 }}
-                                className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg border text-[11px] font-black ${
+                                className={`group relative flex w-full cursor-pointer items-center gap-2 rounded-md border-l-[3px] px-3 py-2 text-left transition-colors ${
                                   activePoint
-                                    ? 'border-[#08AACE] bg-[#08AACE] text-white shadow-sm'
-                                    : 'border-[#bdeef7] bg-white text-[#078fb0] hover:border-[#08AACE] hover:bg-[#F7FCFE]'
+                                    ? 'border-orange-400 bg-orange-50'
+                                    : 'border-transparent hover:bg-gray-50'
                                 }`}
                               >
-                                {originalIndex + 1}
+                                <span className={`flex-1 truncate whitespace-nowrap text-sm font-medium ${activePoint ? 'text-orange-600' : 'text-gray-700'}`}>
+                                  剧情点{originalIndex + 1}
+                                </span>
+                                <span className="shrink-0 text-xs text-gray-400">未写</span>
                               </button>
                             );
                           })
@@ -7041,10 +7187,10 @@ export function WorkbenchLibraryPanel({
                           key={slot}
                           type="button"
                           onClick={() => setActivePlotPointChainSlot(slot)}
-                          className="flex h-8 w-full items-center justify-between rounded-lg bg-slate-50 px-2 text-left text-[11px] font-black text-slate-500 hover:bg-[#EAF9FD] hover:text-[#078fb0]"
+                          className="group flex h-[36px] w-full items-center gap-1 rounded-md bg-[#EAF9FD] px-2 py-1.5 text-left transition-colors hover:bg-[#dff5fb]"
                         >
-                          <span className="truncate">{plotPointChainNames[slot] ?? `剧情链${slot}`}</span>
-                          <span className="shrink-0">{(plotPointChainSelections[slot] ?? []).length}点</span>
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#078fb0]">{plotPointChainNames[slot] ?? `剧情链${slot}`}</span>
+                          <span className="ml-1 shrink-0 text-xs text-gray-400">{(plotPointChainSelections[slot] ?? []).length}点</span>
                         </button>
                       ))}
                     </div>
@@ -7067,7 +7213,7 @@ export function WorkbenchLibraryPanel({
                       key={mode}
                       type="button"
                       onClick={() => setPlotPointChainFilterMode(mode as typeof plotPointChainFilterMode)}
-                      className={`h-8 flex-1 basis-[72px] rounded-xl border px-3 text-xs font-black ${
+                      className={`h-10 w-20 whitespace-nowrap rounded-2xl border px-2 text-sm font-black ${
                         plotPointChainFilterMode === mode
                           ? 'border-[#08AACE] bg-[#08AACE] text-white'
                           : 'border-slate-200 bg-white text-slate-600 hover:border-[#08AACE] hover:text-[#08AACE]'
@@ -7079,7 +7225,7 @@ export function WorkbenchLibraryPanel({
                   <button
                     type="button"
                     onClick={openDetailOutlineFromPlotPoint}
-                    className="h-8 flex-1 basis-[88px] rounded-xl bg-[#08AACE] px-3 text-xs font-black text-white shadow-sm transition-colors hover:bg-[#0798b8]"
+                    className="h-10 w-20 whitespace-nowrap rounded-2xl bg-[#08AACE] px-2 text-sm font-black text-white shadow-sm transition-colors hover:bg-[#0798b8]"
                   >
                     生成章纲
                   </button>
@@ -7451,6 +7597,7 @@ export function WorkbenchLibraryPanel({
 
     return (
       <div className="flex min-h-0 flex-1 flex-col bg-white" style={scaleStyle}>
+        {detailOutlineHeaderFontSizePortal}
         {(activeTab === OUTLINE_LIBRARY_TAB || activeTab === DETAIL_OUTLINE_TAB) && !plotPointStandalone && renderTopTabs()}
         {deleteConfirmDialog}
         {fieldSizeSettingsModal}
@@ -7468,16 +7615,8 @@ export function WorkbenchLibraryPanel({
               <h3 className="text-base font-bold text-gray-900">{isDetailOutlineTab ? '章纲目录' : '章节概要'}</h3>
               <div className="flex shrink-0 items-center gap-2">
                 {renderLibraryAiLogButton('outline')}
-                {renderDetailOutlineFontSizeTool()}
+                {showInlineFieldSizeButton && renderDetailOutlineFontSizeTool()}
                 {renderFieldSizeButton()}
-                <button
-                  onClick={() => setIsOutlineSettingsOpen(true)}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
-                  title={isDetailOutlineTab ? '章纲设置' : '概要设置'}
-                  aria-label={isDetailOutlineTab ? '章纲设置' : '概要设置'}
-                >
-                  <Settings className="h-4 w-4" />
-                </button>
               </div>
             </div>
             <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
@@ -7528,8 +7667,8 @@ export function WorkbenchLibraryPanel({
                       </div>
                       {expandedOutlineVolumeIds.has(volume.id) && (
                         <div
-                          className="mt-1 grid gap-2 px-1.5 py-1.5"
-                          style={{ gridTemplateColumns: `repeat(${outlineColumns}, minmax(0, 1fr))` }}
+                          className="mt-1 grid justify-start gap-2 px-1.5 py-1.5"
+                          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}
                         >
                           {[...volume.chapters].sort((a, b) => a.serialNumber - b.serialNumber).map((chapter) => {
                             const selected = effectiveSelectedOutlineChapterId === chapter.id;
@@ -7547,7 +7686,7 @@ export function WorkbenchLibraryPanel({
                                   event.preventDefault();
                                   event.stopPropagation();
                                 }}
-                                className={`relative h-9 rounded-lg border text-sm font-bold transition-colors ${
+                                className={`relative h-9 min-w-9 rounded-lg border px-2 text-sm font-bold transition-colors ${
                                   hasSummary
                                     ? 'border-[#08B3D9] bg-[#08B3D9] text-white hover:border-[#067B96] hover:bg-[#067B96]'
                                     : 'border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
@@ -7742,7 +7881,7 @@ export function WorkbenchLibraryPanel({
                   else saveOutlinePreviewDraft();
                 }}
                 disabled={!stripAiThinkingBlock(outlinePreviewDraft).trim()}
-                className="min-w-0 flex-1 bg-brand px-3 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
+                className="min-w-[92px] flex-1 whitespace-nowrap bg-brand px-3 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
               >
                 {plotPointStandalone ? '放入章纲要求' : isDetailOutlineTab ? '替换章纲' : '保存概要'}
               </button>
@@ -7750,7 +7889,7 @@ export function WorkbenchLibraryPanel({
                 <button
                   onClick={undoDetailOutlineReplacement}
                   disabled={!lastDetailOutlineReplacement}
-                  className="min-w-0 flex-1 border-l border-blue-200 bg-white px-3 py-2 text-sm font-bold text-blue-700 hover:bg-blue-50 disabled:text-gray-300"
+                  className="min-w-[92px] flex-1 whitespace-nowrap border-l border-blue-200 bg-white px-3 py-2 text-sm font-bold text-blue-700 hover:bg-blue-50 disabled:text-gray-300"
                 >
                   撤销替换
                 </button>
@@ -7758,57 +7897,18 @@ export function WorkbenchLibraryPanel({
               <button
                 onClick={() => void navigator.clipboard.writeText(stripAiThinkingBlock(outlinePreviewDraft))}
                 disabled={!stripAiThinkingBlock(outlinePreviewDraft).trim()}
-                className="min-w-0 flex-1 border-l border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
+                className="min-w-[92px] flex-1 whitespace-nowrap border-l border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
               >
                 {isDetailOutlineTab ? '复制章纲' : '复制概要'}
               </button>
               <button
                 onClick={clearOutlinePreviewDraft}
-                className="min-w-0 flex-1 border-l border-red-200 bg-red-600 px-3 py-2 text-sm font-bold text-white hover:bg-red-700"
+                className="min-w-[92px] flex-1 whitespace-nowrap border-l border-red-200 bg-red-600 px-3 py-2 text-sm font-bold text-white hover:bg-red-700"
               >
                 {isDetailOutlineTab ? '清空章纲' : '清空概要'}
               </button>
             </div>
           </aside>
-        {isOutlineSettingsOpen && (
-          <div className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/30" onClick={() => setIsOutlineSettingsOpen(false)}>
-            <div
-              className="modal-sharp w-[420px] max-w-[92vw] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                <h3 className="text-base font-bold text-slate-900">{isDetailOutlineTab ? '章纲设置' : '概要设置'}</h3>
-                <button
-                  onClick={() => setIsOutlineSettingsOpen(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                  title="关闭"
-                  aria-label="关闭"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="px-6 py-5">
-                <div className="mb-3 text-sm font-bold text-slate-700">每行显示</div>
-                <div className="grid grid-cols-6 gap-2">
-                  {OUTLINE_COLUMN_OPTIONS.map((value) => (
-                    <button
-                      key={value}
-                      onClick={() => setOutlineColumns(value)}
-                      className={`h-10 rounded-xl border text-sm font-bold transition-colors ${
-                        outlineColumns === value
-                          ? 'border-brand bg-brand-light text-brand'
-                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {value}
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-4 text-xs leading-5 text-slate-400">可设置为每行 5-10 个章节，左侧{isDetailOutlineTab ? '章纲目录' : '章节概要'}区域宽度会同步调整。</p>
-              </div>
-            </div>
-          </div>
-        )}
         </div>
       </div>
     );

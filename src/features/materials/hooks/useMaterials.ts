@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import type { MaterialItem, NewMaterialInput } from '@/features/materials/model/materialTypes';
-import { hydrateDatabaseCollection, writeDatabaseCollection } from '@/features/settings/model/databaseCollectionStore';
 import { APP_EVENTS } from '@/shared/events/appEvents';
 
 const MATERIALS_KEY = 'xinyuexia_materials_v1';
@@ -18,7 +17,6 @@ function readItems() {
 
 function writeItems(items: MaterialItem[]) {
   localStorage.setItem(MATERIALS_KEY, JSON.stringify(items));
-  writeDatabaseCollection('materials', items);
   window.dispatchEvent(new CustomEvent(MATERIALS_UPDATED_EVENT));
 }
 
@@ -32,14 +30,6 @@ export function readMaterialSnapshot() {
 
 export function useMaterials() {
   const [items, setItems] = useState<MaterialItem[]>(readItems);
-
-  useEffect(() => {
-    void hydrateDatabaseCollection<MaterialItem>('materials', readItems(), (next) => {
-      localStorage.setItem(MATERIALS_KEY, JSON.stringify(next));
-      setItems(next);
-      window.dispatchEvent(new CustomEvent(MATERIALS_UPDATED_EVENT));
-    });
-  }, []);
 
   const persist = useCallback((next: MaterialItem[]) => {
     setItems(next);

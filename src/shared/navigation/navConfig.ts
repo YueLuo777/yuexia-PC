@@ -11,11 +11,8 @@ import {
   Image,
   LayoutGrid,
   Library,
-  Lightbulb,
-  ListTree,
   MessageSquare,
   Moon,
-  Palette,
   Settings,
   Sparkles,
   Star,
@@ -51,11 +48,8 @@ const iconMap: Record<string, LucideIcon> = {
   Image,
   LayoutGrid,
   Library,
-  Lightbulb,
-  ListTree,
   MessageSquare,
   Moon,
-  Palette,
   Settings,
   Sparkles,
   Star,
@@ -78,30 +72,11 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
     ],
   },
   {
-    title: '隐藏专区',
-    iconName: 'EyeOff',
-    items: [
-      { iconName: 'EyeOff', label: '隐藏内容', to: '/hidden-content' },
-      { iconName: 'Sparkles', label: '提炼剧情', to: '/extract' },
-      { iconName: 'Database', label: '提取设定', to: '/moonfall-settings' },
-    ],
-  },
-  {
     title: '数据专区',
     iconName: 'Database',
     items: [
       { iconName: 'Tag', label: '提示词管理', to: '/prompts' },
       { iconName: 'Settings', label: '模型管理', to: '/model-manage' },
-      { iconName: 'Cloud', label: '数据库设置', to: '/db-settings' },
-      { iconName: 'Palette', label: '调整模式', to: '/adjustment-mode' },
-    ],
-  },
-  {
-    title: '功能专区',
-    iconName: 'Lightbulb',
-    items: [
-      { iconName: 'Lightbulb', label: '脑洞生成器', to: '/idea-generator' },
-      { iconName: 'ListTree', label: '大纲生成器', to: '/outline-generator' },
       { iconName: 'BarChart3', label: 'Token用量', to: '/token-usage' },
     ],
   },
@@ -122,8 +97,14 @@ const REMOVED_ROUTES = new Set([
   '/call-data',
   '/button-test',
   '/brainstorm-library',
+  '/db-settings',
   '/extract-test',
   '/extract-1',
+  '/extract',
+  '/moonfall-settings',
+  '/adjustment-mode',
+  '/idea-generator',
+  '/outline-generator',
   '/cover-library',
   '/materials',
   '/materials/settings',
@@ -132,19 +113,15 @@ const REMOVED_ROUTES = new Set([
   '/software-ui-catalog',
   '/theme-colors',
   '/text-overrides',
+  '/hidden-content',
 ]);
-const REMOVED_GROUP_TITLES = new Set(['首页专区']);
-const HIDDEN_SECTION_TITLE = '隐藏专区';
-const HIDDEN_SECTION_ROUTES = new Set(['/hidden-content', '/extract', '/moonfall-settings']);
+const REMOVED_GROUP_TITLES = new Set(['首页专区', '隐藏专区', '功能专区']);
 const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
-  '/db-settings': '数据库设置',
   '/library': '库',
   '/text-overrides': '文案修改',
-  '/adjustment-mode': '调整模式',
   '/software-ui-catalog': 'UI库',
   '/theme-colors': '主题颜色',
   '/test-collection': '测试',
-  '/hidden-content': '隐藏内容',
 };
 
 function cloneDefaultConfig() {
@@ -159,7 +136,6 @@ function dedupeNavItems(config: NavGroupConfig[]) {
       ...group,
       items: group.items.filter((item) => {
         if (REMOVED_ROUTES.has(item.to)) return false;
-        if (group.title !== HIDDEN_SECTION_TITLE && HIDDEN_SECTION_ROUTES.has(item.to)) return false;
         if (seenRoutes.has(item.to)) return false;
         seenRoutes.add(item.to);
         if (NORMALIZED_ROUTE_LABELS[item.to]) {

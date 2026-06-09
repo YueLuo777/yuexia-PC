@@ -12,7 +12,7 @@ import { APP_EVENTS } from '@/shared/events/appEvents';
 import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 
 type TestStatus = 'idle' | 'running' | 'success' | 'failed' | 'aborted';
-type ChainId = 'brainstorm' | 'brainstormOutline' | 'outline' | 'detailOutline' | 'summary' | 'extract' | 'continue' | 'review' | 'update' | 'title';
+type ChainId = 'brainstorm' | 'brainstormOutline' | 'outline' | 'detailOutline' | 'summary' | 'continue' | 'review' | 'update' | 'title';
 
 interface ChainConfig {
   id: ChainId;
@@ -195,16 +195,6 @@ function buildChainConfigs(): ChainConfig[] {
       readContext: () => readChapterDraftContext() || readLibraryEntriesByTab(['章节概要', '卷概要', '概要'], 10),
     },
     {
-      id: 'extract',
-      group: '提炼剧情',
-      title: '提炼剧情',
-      promptCategory: '提炼剧情',
-      description: '模拟上传文本后的剧情提炼请求，检查提炼提示词和模型请求。',
-      defaultInput: '请从下面文本提炼剧情点：主角夜入阴阳阙，发现月光落地成灰，师姐留下的香炉突然裂开。',
-      contextLabel: '提炼文本',
-      readContext: () => '这里模拟 txt/doc 导入后的章节文本。正式提炼页会读取用户上传的文件，并按批次发送给 AI。',
-    },
-    {
       id: 'continue',
       group: '写作助手',
       title: '正文续写',
@@ -261,7 +251,7 @@ export function BrainstormAiChainTestPage() {
   const [models, setModels] = useState<ModelItem[]>(initialConfig.models);
   const [prompts, setPrompts] = useState<PromptItem[]>(initialConfig.prompts);
   const [activeChainId, setActiveChainId] = useState<ChainId>('brainstorm');
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set(['作品设定', '写作助手', '提炼剧情']));
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set(['作品设定', '写作助手']));
   const [selectedModelId, setSelectedModelId] = useState(initialConfig.models[0]?.id ?? '');
   const [selectedPromptIdByChain, setSelectedPromptIdByChain] = useState<Record<string, string>>({});
   const [inputByChain, setInputByChain] = useState<Record<string, string>>(() => (

@@ -1,4 +1,5 @@
 import { Settings } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 import type { WorkbenchCreationFlowPageKey, WorkbenchHeaderFlowItem } from '@/features/workbench/model/workbenchCreationFlow';
 
@@ -8,6 +9,7 @@ interface WorkbenchHeaderProps {
   activeFlow: WorkbenchCreationFlowPageKey;
   fieldSizeVisible?: boolean;
   logVisible?: boolean;
+  extraTools?: ReactNode;
   onOpenWorkInfo: () => void;
   onOpenFieldSize?: () => void;
   onOpenLog?: () => void;
@@ -20,6 +22,7 @@ export function WorkbenchHeader({
   activeFlow,
   fieldSizeVisible = false,
   logVisible = false,
+  extraTools = null,
   onOpenWorkInfo,
   onOpenFieldSize,
   onOpenLog,
@@ -28,7 +31,7 @@ export function WorkbenchHeader({
   const workInfoItem = flowItems.find((item) => item.id === 'workInfo');
   const creationFlowItems = flowItems.filter((item) => item.id !== 'workInfo' && item.flow && item.group === 'creation');
   const reviewFlowItems = flowItems.filter((item) => item.flow && item.group === 'review');
-  const hasRightTools = fieldSizeVisible || logVisible;
+  const hasRightTools = Boolean(extraTools) || fieldSizeVisible || logVisible;
 
   const renderFlowButton = (item: WorkbenchHeaderFlowItem) => {
     const active = item.flow === activeFlow;
@@ -76,15 +79,16 @@ export function WorkbenchHeader({
       </div>
       {hasRightTools ? (
         <div className="absolute right-5 top-6 inline-flex -translate-y-1/2 items-center gap-2">
+          {extraTools}
           {fieldSizeVisible ? (
             <button
               type="button"
               onClick={onOpenFieldSize}
               className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm transition-colors hover:border-[#08AACE] hover:text-[#08AACE]"
-              aria-label="字段尺寸"
+              aria-label="设置"
             >
               <Settings className="h-4 w-4" />
-              字段尺寸
+              设置
             </button>
           ) : null}
           {logVisible ? (

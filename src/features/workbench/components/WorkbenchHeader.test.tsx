@@ -51,4 +51,27 @@ describe('WorkbenchHeader', () => {
 
     expect(onSelectFlow).toHaveBeenCalledWith('brainstorm');
   });
+
+  it('renders extra tools before field size and log actions', () => {
+    const { container } = render(
+      <WorkbenchHeader
+        workTitle="榛樿灏忚1"
+        flowItems={WORKBENCH_HEADER_FLOW_ITEMS}
+        activeFlow="chapterOutline"
+        fieldSizeVisible
+        logVisible
+        extraTools={<span data-testid="extra-tool">14</span>}
+        onOpenWorkInfo={vi.fn()}
+        onOpenFieldSize={vi.fn()}
+        onOpenLog={vi.fn()}
+        onSelectFlow={vi.fn()}
+      />,
+    );
+
+    const rightTools = container.querySelector('.absolute.right-5');
+    expect(rightTools).not.toBeNull();
+    expect(rightTools?.children[0]).toBe(screen.getByTestId('extra-tool'));
+    expect(rightTools?.children[1]?.tagName).toBe('BUTTON');
+    expect(rightTools?.children[2]?.tagName).toBe('BUTTON');
+  });
 });

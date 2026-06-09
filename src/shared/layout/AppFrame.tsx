@@ -16,7 +16,6 @@ import {
 import { hasTopModalEscapeHandler, useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { HOME_TAB, useWorkspaceTabs, type WorkspaceTab } from '@/shared/tabs/WorkspaceTabsContext';
 import { TextOverrideLayer } from '@/shared/text-overrides/TextOverrideLayer';
-import { AdjustmentModeLayer } from '@/shared/adjustment-mode/AdjustmentModeLayer';
 
 declare global {
   interface Window {
@@ -1074,7 +1073,6 @@ export function AppFrame({ children }: AppFrameProps) {
         </div>
       )}
       <TextOverrideLayer />
-      <AdjustmentModeLayer />
     </div>
   );
 }

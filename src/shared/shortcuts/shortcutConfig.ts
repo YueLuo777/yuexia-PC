@@ -5,7 +5,6 @@ export type ShortcutActionId =
   | 'go_home'
   | 'close_work_tab'
   | 'toggle_text_edit_mode'
-  | 'toggle_adjustment_mode'
   | 'delete_chapter'
   | 'smart_format'
   | 'save_chapter'
@@ -49,7 +48,6 @@ export const shortcutActions: ShortcutAction[] = [
   { id: 'go_home', group: '界面与导航', title: '回到主页', desc: '快速返回软件首页', defaultBinding: { key: 'F1' } },
   { id: 'close_work_tab', group: '界面与导航', title: '关闭作品标签页', desc: '关闭当前打开的作品标签页', defaultBinding: { key: 'w', ctrl: true } },
   { id: 'toggle_text_edit_mode', group: '界面与导航', title: '文案修改模式', desc: '进入或退出点击文字修改文案的模式', defaultBinding: { key: '1', ctrl: true } },
-  { id: 'toggle_adjustment_mode', group: '界面与导航', title: '高级调整模式', desc: '进入或退出高级 UI 调整模式', defaultBinding: { key: '2', ctrl: true } },
   { id: 'delete_chapter', group: '章节编辑', title: '删除章节', desc: '删除当前选中的章节', defaultBinding: { key: 'Delete' } },
   { id: 'smart_format', group: '章节编辑', title: '自动排版', desc: '整理空行与首尾空白', defaultBinding: { key: 'r', ctrl: true } },
   { id: 'save_chapter', group: '章节编辑', title: '保存', desc: '保存当前章节内容', defaultBinding: { key: 's', ctrl: true } },

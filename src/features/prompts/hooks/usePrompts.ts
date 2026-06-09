@@ -10,9 +10,8 @@ const PROMPT_CATEGORIES_KEY = 'xinyuexia_prompt_categories_v1';
 const UNCATEGORIZED = '未分类';
 const PROMPT_CATEGORY_ALIASES: Record<string, string> = {
   大纲: '设定',
-  提炼: '提炼剧情',
 };
-export const DEFAULT_PROMPT_CATEGORIES = ['脑洞', '设定', '细纲', '剧情链', '正文', '审核', '润色', '更新', '概要', '提炼剧情', UNCATEGORIZED];
+export const DEFAULT_PROMPT_CATEGORIES = ['脑洞', '设定', '细纲', '剧情链', '正文', '审核', '润色', '更新', '概要', UNCATEGORIZED];
 
 export function normalizePromptCategoryName(category: string) {
   const trimmed = category.trim() || UNCATEGORIZED;

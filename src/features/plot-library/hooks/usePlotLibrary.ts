@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import type { NewPlotLibraryItem, PlotLibraryItem } from '@/features/plot-library/model/plotLibraryTypes';
-import { hydrateDatabaseCollection, writeDatabaseCollection } from '@/features/settings/model/databaseCollectionStore';
 
 const PLOT_LIBRARY_KEY = 'xinyuexia_plot_library_v1';
 const PLOT_RECYCLE_KEY = 'xinyuexia_plot_library_recycle_v1';
@@ -17,7 +16,6 @@ function readItems() {
 
 function writeItems(items: PlotLibraryItem[]) {
   localStorage.setItem(PLOT_LIBRARY_KEY, JSON.stringify(items));
-  writeDatabaseCollection('plotLibrary', items);
 }
 
 function readRecycleItems() {
@@ -31,7 +29,6 @@ function readRecycleItems() {
 
 function writeRecycleItems(items: PlotLibraryItem[]) {
   localStorage.setItem(PLOT_RECYCLE_KEY, JSON.stringify(items));
-  writeDatabaseCollection('plotRecycle', items);
 }
 
 function wordCount(text: string) {
@@ -150,17 +147,6 @@ export function readPlotLibrarySnapshot() {
 export function usePlotLibrary() {
   const [items, setItems] = useState<PlotLibraryItem[]>(readItems);
   const [recycleItems, setRecycleItems] = useState<PlotLibraryItem[]>(readRecycleItems);
-
-  useEffect(() => {
-    void hydrateDatabaseCollection<PlotLibraryItem>('plotLibrary', readItems(), (next) => {
-      localStorage.setItem(PLOT_LIBRARY_KEY, JSON.stringify(next));
-      setItems(next);
-    });
-    void hydrateDatabaseCollection<PlotLibraryItem>('plotRecycle', readRecycleItems(), (next) => {
-      localStorage.setItem(PLOT_RECYCLE_KEY, JSON.stringify(next));
-      setRecycleItems(next);
-    });
-  }, []);
 
   const tags = useMemo(() => {
     const counts = new Map<string, number>();

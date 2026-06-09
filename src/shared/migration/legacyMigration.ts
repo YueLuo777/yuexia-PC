@@ -172,21 +172,6 @@ function migratePlotLibrary() {
   writeJson('xinyuexia_plot_library_v1', mergeById(current as typeof items, items));
 }
 
-function migrateExtract() {
-  if (!hasKey('xinyuexia_extract_modules_v1') && hasKey('extract_modules_v2')) {
-    const modules = readJson<unknown>('extract_modules_v2', null);
-    if (modules) writeJson('xinyuexia_extract_modules_v1', modules);
-  }
-  if (!hasKey('xinyuexia_extract_history_v1') && hasKey('extract_history_v1')) {
-    const history = readJson<unknown>('extract_history_v1', []);
-    writeJson('xinyuexia_extract_history_v1', history);
-  }
-  if (!hasKey('xinyuexia_extract_files_v1') && hasKey('extract_files_cache')) {
-    const files = readJson<unknown>('extract_files_cache', []);
-    writeJson('xinyuexia_extract_files_v1', files);
-  }
-}
-
 export function runLegacyMigration() {
   if (localStorage.getItem(MIGRATION_KEY) === '1') return;
   try {
@@ -195,7 +180,6 @@ export function runLegacyMigration() {
     migrateMaterials();
     migratePrompts();
     migratePlotLibrary();
-    migrateExtract();
     localStorage.setItem(MIGRATION_KEY, '1');
   } catch (error) {
     console.warn('旧版数据迁移失败：', error);

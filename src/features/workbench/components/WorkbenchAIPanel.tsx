@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { readModelSnapshot } from '@/features/models/hooks/useModels';
 import type { ModelItem } from '@/features/models/model/modelTypes';
 import { callModelStream } from '@/features/models/services/callModel';
-import type { MoonfallRagBundle } from '@/features/moonfall-settings/model/moonfallSettingTypes';
 import {
   buildMoonfallRagBundle,
   readMoonfallState,
@@ -35,7 +34,7 @@ export interface WorkbenchLinkedContextItem {
   content: string;
 }
 
-const WORKBENCH_AI_EXCLUDED_PROMPT_CATEGORIES = new Set(['脑洞', '设定', '大纲', '更新', '概要', '提炼剧情', '设定提取']);
+const WORKBENCH_AI_EXCLUDED_PROMPT_CATEGORIES = new Set(['脑洞', '设定', '大纲', '更新', '概要']);
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 162;
@@ -212,10 +211,6 @@ function buildAiRequestLog({
   };
 }
 
-function isMoonfallRagBundle(value: unknown): value is MoonfallRagBundle {
-  return Boolean(value && typeof value === 'object' && 'contextText' in value && 'log' in value);
-}
-
 async function buildAutoRagContext(userInput: string, chapterContext: string) {
   const state = readMoonfallState();
   if (!state.config.autoRag) return '';
@@ -223,23 +218,6 @@ async function buildAutoRagContext(userInput: string, chapterContext: string) {
   if (!activeProject) return '';
   const query = [userInput, chapterContext.slice(-4000)].filter(Boolean).join('\n\n');
   if (!query.trim()) return '';
-
-  if (window.xinyuexiaDatabase?.retrieveMoonfallRag) {
-    try {
-      const result = await window.xinyuexiaDatabase.retrieveMoonfallRag<MoonfallRagBundle>({
-        projectId: activeProject.id,
-        userId: activeProject.userId,
-        query,
-        limit: state.config.retrievalLimit,
-        purpose: 'writing',
-        similarityThreshold: state.config.similarityThreshold,
-      });
-      const bundle = result.data.find(isMoonfallRagBundle);
-      if (result.ok && bundle?.contextText) return bundle.contextText;
-    } catch {
-      // Fall back to the local cache search below.
-    }
-  }
 
   const bundle = buildMoonfallRagBundle(state, {
     projectId: activeProject.id,

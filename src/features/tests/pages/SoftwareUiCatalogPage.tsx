@@ -342,7 +342,7 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="flex h-28 w-full max-w-[420px] overflow-hidden rounded-2xl border border-slate-100 bg-white">
         <div className="flex flex-1 items-center justify-center text-sm font-bold text-slate-400">左侧区域</div>
-        <div className="group flex w-3 cursor-col-resize items-stretch justify-center bg-white hover:bg-sky-50">
+        <div className="group flex w-3 cursor-ew-resize items-stretch justify-center bg-white hover:bg-sky-50">
           <div className="my-3 w-1 rounded-full bg-slate-200 group-hover:bg-[#08AACE]" />
         </div>
         <div className="flex flex-1 items-center justify-center text-sm font-bold text-slate-400">右侧区域</div>

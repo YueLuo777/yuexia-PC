@@ -149,7 +149,7 @@ async function readImportFile(file: File) {
   return stripControlText(await file.text());
 }
 
-function withLocalEmbedding(item: MoonfallSettingItem, modelName = 'local-hash-pgvector') {
+function withLocalEmbedding(item: MoonfallSettingItem, modelName = 'local-hash') {
   const embeddingText = buildEmbeddingText(item);
   return {
     ...item,
@@ -438,7 +438,7 @@ export function MoonfallSettingsPage() {
     const targets = reviewItems.filter((item) => (ids ? ids.has(item.id) : item.selected));
     const created = targets.map((draft) => {
       const item = createSettingFromReview(activeProject.id, draft);
-      if (mode === 'verified') return withLocalEmbedding({ ...item, status: '已整理' as const, isVerified: true, allowRag: true }, state.config.embeddingModel || 'local-hash-pgvector');
+      if (mode === 'verified') return withLocalEmbedding({ ...item, status: '已整理' as const, isVerified: true, allowRag: true }, state.config.embeddingModel || 'local-hash');
       return { ...item, status: '待确认' as const, isVerified: false, allowRag: false, importance: '素材' as const };
     });
     persist((prev) => ({ ...prev, settings: [...created, ...prev.settings] }));
@@ -450,7 +450,7 @@ export function MoonfallSettingsPage() {
   };
 
   const generateEmbeddingForItem = (item: MoonfallSettingItem) => {
-    updateItem(item.id, withLocalEmbedding(item, state.config.embeddingModel || 'local-hash-pgvector'), '重新生成向量');
+    updateItem(item.id, withLocalEmbedding(item, state.config.embeddingModel || 'local-hash'), '重新生成向量');
   };
 
   const buildRagPreview = async () => {
@@ -458,29 +458,6 @@ export function MoonfallSettingsPage() {
     if (!query.trim()) {
       setRetrievalPreview('请先输入搜索内容，或打开一条设定后再预览召回。');
       return;
-    }
-    if (window.xinyuexiaDatabase?.retrieveMoonfallRag) {
-      try {
-        const result = await window.xinyuexiaDatabase.retrieveMoonfallRag<MoonfallRagBundle>({
-          projectId: activeProject.id,
-          userId: activeProject.userId,
-          query,
-          limit: state.config.retrievalLimit,
-          purpose: 'debug',
-          includeUnverified: true,
-          similarityThreshold: state.config.similarityThreshold,
-        });
-        const bundle = result.data.find(isMoonfallRagBundle);
-        if (result.ok && bundle) {
-          persist((prev) => ({ ...prev, retrievalLogs: [bundle.log, ...prev.retrievalLogs].slice(0, 200) }));
-          setRetrievalPreview(bundle.contextText || '没有召回到相关设定。');
-          setMessage('已通过 PostgreSQL + pgvector 完成召回预览。');
-          return;
-        }
-        if (result.message) setMessage(`pgvector 召回失败，已改用本地召回：${result.message}`);
-      } catch (error) {
-        setMessage(error instanceof Error ? `pgvector 召回失败，已改用本地召回：${error.message}` : 'pgvector 召回失败，已改用本地召回。');
-      }
     }
     const bundle = buildMoonfallRagBundle(state, {
       projectId: activeProject.id,
@@ -493,6 +470,7 @@ export function MoonfallSettingsPage() {
     });
     persist((prev) => ({ ...prev, retrievalLogs: [bundle.log, ...prev.retrievalLogs].slice(0, 200) }));
     setRetrievalPreview(bundle.contextText || '没有召回到相关设定。');
+    setMessage('已使用本地设定库完成召回预览。');
   };
 
   const deleteSelected = () => {

@@ -38,28 +38,6 @@ const statusMeta: Record<HiddenItemStatus, { label: string; className: string; i
 
 const hiddenGroups: Array<{ title: string; desc: string; items: HiddenItem[] }> = [
   {
-    title: '导航移动到隐藏专区',
-    desc: '这些入口从日常创作导航里移走，但仍可在隐藏专区中打开。',
-    items: [
-      {
-        title: '提炼剧情',
-        path: '/extract',
-        status: 'nav-hidden',
-        hiddenFrom: '原位置：创作专区 / 提炼剧情；现位置：隐藏专区 / 提炼剧情。',
-        reason: '当前剧情库流程不再作为主线写作流程使用，避免干扰从脑洞、剧情链、章纲到正文的主流程。',
-        restore: '如果以后需要恢复，把 /extract 从隐藏专区移动回创作专区，或把 DEFAULT_NAV_CONFIG 中该项放回创作专区。',
-      },
-      {
-        title: '提取设定',
-        path: '/moonfall-settings',
-        status: 'nav-hidden',
-        hiddenFrom: '原位置：创作专区 / 提取设定；现位置：隐藏专区 / 提取设定。',
-        reason: '设定提取属于辅助整理功能，不放在主创作流程里，减少新用户看到的入口数量。',
-        restore: '如果以后需要恢复，把 /moonfall-settings 从隐藏专区移动回创作专区。',
-      },
-    ],
-  },
-  {
     title: '剧情链隐藏内容',
     desc: '这些剧情库相关入口从剧情链正式操作区隐藏，当前默认只保留 AI 生成来源。',
     items: [
@@ -94,16 +72,9 @@ const hiddenGroups: Array<{ title: string; desc: string; items: HiddenItem[] }> 
         title: '隐藏内容总览',
         path: '/hidden-content',
         status: 'route-kept',
-        hiddenFrom: '隐藏专区 / 隐藏内容。',
+        hiddenFrom: '测试 / 隐藏内容。',
         reason: '用于记录被隐藏的入口、功能位置和恢复方法。',
         restore: '这是恢复索引，不建议删除。',
-      },
-      {
-        title: '剧情库内嵌视图',
-        status: 'embedded-hidden',
-        hiddenFrom: '提炼剧情页面内部的剧情库标签。',
-        reason: '提炼剧情已经整体移动到隐藏专区，剧情库也随之离开主导航。',
-        restore: '恢复提炼剧情入口后，可继续从提炼剧情页面内部进入剧情库。',
       },
       {
         title: '旧隐藏页面路由',
@@ -111,7 +82,7 @@ const hiddenGroups: Array<{ title: string; desc: string; items: HiddenItem[] }> 
         status: 'route-kept',
         hiddenFrom: '旧测试路由别名。',
         reason: '保留兼容旧入口，实际内容已经统一到隐藏内容总览。',
-        restore: '无需恢复；正式入口使用 /hidden-content。',
+        restore: '无需恢复；测试集合入口使用 /hidden-content。',
       },
     ],
   },
