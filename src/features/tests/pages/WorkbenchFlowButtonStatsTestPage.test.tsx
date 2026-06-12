@@ -33,5 +33,8 @@ describe('WorkbenchFlowButtonStatsTestPage', () => {
     expect(pageSource).toContain('方案 B：紧凑，适合保留当前宽度');
     expect(pageSource).toContain('方案 C：状态更明显，待处理数量用胶囊');
     expect(pageSource).toContain("button.id === 'brainstorm' ? 'tracking-wide' : ''");
+    expect(pageSource).toContain("if (active) return 'z-10 border-[#1e71ef] bg-[#eaf2ff] text-[#1e71ef] shadow-[inset_0_0_0_1px_#1e71ef]';");
+    expect(pageSource).toContain('relative -ml-px inline-flex shrink-0 items-center justify-center gap-2 border first:ml-0');
+    expect(pageSource).not.toContain('border-y border-r first:rounded-l-[8px] first:border-l');
   });
 });

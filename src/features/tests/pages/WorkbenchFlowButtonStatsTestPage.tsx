@@ -28,7 +28,7 @@ const reviewButtons: FlowButtonPreview[] = [
 const allButtons = [...creationButtons, ...reviewButtons];
 
 function getButtonToneClass(button: FlowButtonPreview, active: boolean) {
-  if (active) return 'border-[#1e71ef] bg-[#eaf2ff] text-[#1e71ef] shadow-[inset_0_0_0_1px_rgba(30,113,239,0.12)]';
+  if (active) return 'z-10 border-[#1e71ef] bg-[#eaf2ff] text-[#1e71ef] shadow-[inset_0_0_0_1px_#1e71ef]';
   if (button.tone === 'warning') return 'border-[#e7edf5] bg-white text-[#1f2933] hover:border-[#f2bf84] hover:bg-[#fff7ed]';
   return 'border-[#e7edf5] bg-white text-[#1f2933] hover:border-[#b8caef] hover:bg-[#f7faff]';
 }
@@ -58,7 +58,7 @@ function FlowGroupPreview({
         key={button.id}
         type="button"
         onClick={() => onActiveChange(button.id)}
-        className={`${buttonClass} inline-flex shrink-0 items-center justify-center gap-2 border-y border-r first:rounded-l-[8px] first:border-l last:rounded-r-[8px] ${getButtonToneClass(button, active)}`}
+        className={`${buttonClass} relative -ml-px inline-flex shrink-0 items-center justify-center gap-2 border first:ml-0 first:rounded-l-[8px] last:rounded-r-[8px] ${getButtonToneClass(button, active)}`}
       >
         <span className={`${titleClass} font-black leading-none ${button.id === 'brainstorm' ? 'tracking-wide' : ''}`}>{button.title}</span>
         {button.meta ? (

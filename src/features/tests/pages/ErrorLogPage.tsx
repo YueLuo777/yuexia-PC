@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'workbench-flow-button-selected-left-border-fuzzy-001',
+    title: '测试10选中流程按钮左侧边线发虚',
+    area: '测试集合 / 作品编辑器流程按钮信息化方案',
+    symptom: '方案 A/B/C 中非首位按钮被选中时，按钮左侧蓝线看起来发虚或像灰线叠在一起，尤其是正文、梗概这类中间或末尾按钮明显。',
+    cause: '流程按钮使用 border-y border-r first:border-l，非第一个按钮没有自己的左边框；选中态左侧视觉线来自相邻按钮的右边框，且 inset 阴影为半透明，导致边线发虚。',
+    solution: '将按钮改为完整 border，并用 -ml-px 合并相邻边框；选中按钮加 z-10 覆盖相邻按钮边框，同时把内阴影改为实色 #1e71ef，让左侧边线清晰。',
+    prevention: '分段按钮只要存在选中态边框，就不要只画右边框；应让每个按钮都有完整边框，并用负边距和 z-index 解决相邻边框叠线问题。',
+    keywords: ['测试10', '流程按钮', '选中态', '左侧边线', 'border-y', 'z-10', 'WorkbenchFlowButtonStatsTestPage'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'workbench-soft-cyan-option-c-theme-override-001',
     title: '测试06 C方案文字色被全局主题蓝覆盖',
     area: '测试集合 / 作品编辑器浅青按钮状态测试 / 方案 C',
