@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Lock, Pin, Plus, Settings, Square, Trash2, Unlock, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Folder, FolderOpen, Lock, Pin, Plus, Settings, Square, Trash2, Unlock, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode, type SetStateAction } from 'react';
 import type { CSSProperties } from 'react';
 import type { DragEvent as ReactDragEvent, KeyboardEvent as ReactKeyboardEvent, MouseEvent, PointerEvent as ReactPointerEvent } from 'react';
@@ -81,6 +81,9 @@ import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
 import { LinkedSourceControl } from '@/shared/ui/LinkedSourceControl';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 import { WordCountText } from '@/shared/ui/WordCountText';
+
+const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md px-3 text-left text-[14px] font-medium text-[#1f2933] transition-colors hover:bg-[#eef3fb]';
+const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#68727f]';
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 162;
@@ -5661,6 +5664,7 @@ export function WorkbenchLibraryPanel({
               {groupedRoles.map((group) => {
                 const expanded = expandedRoleTypes.has(group.type);
                 const isDropTarget = libraryDropTarget?.tab === ROLE_TAB && libraryDropTarget.type === group.type;
+                const GroupFolderIcon = expanded ? FolderOpen : Folder;
                 return (
                   <div
                     key={group.type}
@@ -5669,7 +5673,7 @@ export function WorkbenchLibraryPanel({
                     onDrop={(event) => handleLibraryCategoryDrop(event, ROLE_TAB, group.type)}
                     className={isDropTarget ? 'rounded-xl ring-2 ring-brand/40' : undefined}
                   >
-                    <div className="group flex h-[36px] items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10">
+                    <div className={WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}>
                       <button
                         onContextMenu={(event) => openCategoryMenu(event, 'role', group.type)}
                         onClick={() => {
@@ -5680,14 +5684,11 @@ export function WorkbenchLibraryPanel({
                             return next;
                           });
                         }}
-                        className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+                        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                        aria-expanded={expanded}
                       >
-                        {expanded ? (
-                          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-brand-dark" />
-                        ) : (
-                          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-brand-dark" />
-                        )}
-                        <span className="truncate text-sm font-medium text-brand-dark">{group.type}</span>
+                        <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
+                        <span className="min-w-0 flex-1 truncate leading-none">{group.type}</span>
                         <span className="ml-1 shrink-0 text-xs text-gray-400">{group.entries.length}</span>
                       </button>
                     </div>
@@ -6135,6 +6136,7 @@ export function WorkbenchLibraryPanel({
             {(activeIsSettingLike ? groupedSettingEntries : [{ type: UNCATEGORIZED_TYPE, entries: currentEntries }]).map((group) => {
               const expanded = isOutlineCharacterScope ? expandedRoleTypes.has(group.type) : expandedSettingTypes.has(group.type);
               const isDropTarget = libraryDropTarget?.tab === effectiveLibraryTab && libraryDropTarget.type === group.type;
+              const GroupFolderIcon = expanded ? FolderOpen : Folder;
               return (
                 <div
                   key={group.type}
@@ -6143,7 +6145,7 @@ export function WorkbenchLibraryPanel({
                   onDrop={(event) => handleLibraryCategoryDrop(event, effectiveLibraryTab, group.type)}
                   className={isDropTarget ? 'rounded-xl ring-2 ring-brand/40' : undefined}
                 >
-                  <div className="group flex h-[36px] items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10">
+                  <div className={WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}>
                     <button
                       onContextMenu={(event) => {
                         if (activeIsSettingLike && !activeIsBrainstorm) openCategoryMenu(event, isOutlineCharacterScope ? 'role' : 'setting', group.type);
@@ -6165,14 +6167,11 @@ export function WorkbenchLibraryPanel({
                           });
                         }
                       }}
-                      className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                      aria-expanded={expanded}
                     >
-                      {expanded ? (
-                        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-brand-dark" />
-                      ) : (
-                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-brand-dark" />
-                      )}
-                      <span className="truncate text-sm font-medium text-brand-dark">{group.type}</span>
+                      <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
+                      <span className="min-w-0 flex-1 truncate leading-none">{group.type}</span>
                       <span className="ml-1 shrink-0 text-xs text-gray-400">{group.entries.length}</span>
                     </button>
                   </div>
@@ -7858,14 +7857,17 @@ export function WorkbenchLibraryPanel({
                   </div>
                 ) : detailOutlineReaderNavGroups.map((group) => {
                   const collapsed = collapsedDetailOutlineReaderGroups[`${detailOutlineReaderTab}:${group.group}`] ?? false;
+                  const GroupFolderIcon = collapsed ? Folder : FolderOpen;
                   return (
-                    <div key={group.group} className="rounded-xl border border-[#cceef6] bg-white p-1">
+                    <div key={group.group} className="rounded-md">
                       <button
                         type="button"
                         onClick={() => toggleDetailOutlineReaderGroup(group.group)}
-                        className="flex h-10 w-full items-center justify-between gap-2 rounded-lg bg-[#E6F7FB] px-2 text-left text-[15px] font-black text-slate-700 hover:bg-[#d7f1f8]"
+                        className={WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}
+                        aria-expanded={!collapsed}
                       >
-                        <span className="min-w-0 truncate">{group.group}</span>
+                        <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
+                        <span className="min-w-0 flex-1 truncate leading-none">{group.group}</span>
                         <span className="flex shrink-0 items-center gap-1 text-[13px] text-slate-400">
                           {(detailOutlineReaderTab === 'settings' || detailOutlineReaderTab === 'roles' || detailOutlineReaderTab === 'plotChain') && (
                             <span
@@ -7887,7 +7889,6 @@ export function WorkbenchLibraryPanel({
                             </span>
                           )}
                           {group.items.length}
-                          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                         </span>
                       </button>
                       {!collapsed && (
@@ -8902,7 +8903,11 @@ export function WorkbenchLibraryPanel({
                 <p className="pt-10 text-center text-xs text-gray-400">暂无章节</p>
               ) : (
                 <div className="space-y-3">
-                  {volumes.map((volume) => (
+                  {volumes.map((volume) => {
+                    const expanded = expandedOutlineVolumeIds.has(volume.id);
+                    const VolumeFolderIcon = expanded ? FolderOpen : Folder;
+
+                    return (
                     <div key={volume.id}>
                       <div
                         role="button"
@@ -8913,19 +8918,11 @@ export function WorkbenchLibraryPanel({
                           event.preventDefault();
                           toggleOutlineVolume(volume.id);
                         }}
-                        className="group flex h-[36px] cursor-pointer items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10"
+                        className={WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}
+                        aria-expanded={expanded}
                       >
-                        <span
-                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-brand-dark"
-                          title={expandedOutlineVolumeIds.has(volume.id) ? '收起' : '展开'}
-                        >
-                          {expandedOutlineVolumeIds.has(volume.id) ? (
-                            <ChevronDown className="h-3.5 w-3.5" />
-                          ) : (
-                            <ChevronRight className="h-3.5 w-3.5" />
-                          )}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-brand-dark">{volume.name}</span>
+                        <VolumeFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
+                        <span className="min-w-0 flex-1 truncate leading-none">{volume.name}</span>
                         <span className="ml-1 shrink-0 text-xs text-gray-400">{volume.chapters.length}章</span>
                         {enableVolumeSummary && (
                           <button
@@ -8943,7 +8940,7 @@ export function WorkbenchLibraryPanel({
                           </button>
                         )}
                       </div>
-                      {expandedOutlineVolumeIds.has(volume.id) && (
+                      {expanded && (
                         <div
                           className="mt-1 grid justify-start gap-2 px-1.5 py-1.5"
                           style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}
@@ -8977,7 +8974,8 @@ export function WorkbenchLibraryPanel({
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

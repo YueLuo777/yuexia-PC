@@ -61,6 +61,22 @@ const readChapterEditorSource = async () => {
   return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'ChapterEditor.tsx'), 'utf8');
 };
 
+const readChapterSidebarSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'ChapterSidebar.tsx'), 'utf8');
+};
+
+const readPublishedSidebarSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'PublishedSidebar.tsx'), 'utf8');
+};
+
 const readWorkbenchAiPanelSource = async () => {
   const { readFileSync } = await import('node:fs');
   const { fileURLToPath } = await import('node:url');
@@ -573,8 +589,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(chapterEditorSource).not.toContain('审核目录');
     expect(chapterEditorSource).not.toContain('点评目录');
     expect(chapterEditorSource).not.toContain('<div className="mb-3 text-sm font-black text-slate-900">章节目录</div>');
-    expect(chapterEditorSource).toContain('className="group flex h-[36px] w-full cursor-pointer items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 text-left transition-colors hover:bg-brand/10"');
-    expect(chapterEditorSource).toContain('<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-brand-dark">');
+    expect(chapterEditorSource).toContain('className={WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}');
+    expect(chapterEditorSource).toContain('const GroupFolderIcon = expanded ? FolderOpen : Folder;');
+    expect(chapterEditorSource).toContain('<GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />');
+    expect(chapterEditorSource).not.toContain('className="group flex h-[36px] w-full cursor-pointer items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 text-left transition-colors hover:bg-brand/10"');
+    expect(chapterEditorSource).not.toContain('<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-brand-dark">');
     expect(chapterEditorSource).toContain('<span className="ml-1 shrink-0 text-xs text-gray-400">{group.chapters.length}章</span>');
     expect(chapterEditorSource).toContain("style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}");
     expect(chapterEditorSource).toContain('relative h-9 min-w-9 rounded-lg border px-2 text-sm font-bold transition-colors');
@@ -590,6 +609,36 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('selectOutlineVolume(volume);');
     expect(panelSource).toContain('<div className="grid grid-cols-1 gap-3">');
     expect(panelSource).not.toContain("isDetailOutlineTab ? 'grid-cols-1' : 'grid-cols-2'");
+  });
+
+  it('syncs published and library group rows to the body folder navigation style', async () => {
+    const chapterSidebarSource = await readChapterSidebarSource();
+    const publishedSidebarSource = await readPublishedSidebarSource();
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const chapterEditorSource = await readChapterEditorSource();
+
+    for (const source of [chapterSidebarSource, publishedSidebarSource, panelSource, chapterEditorSource]) {
+      expect(source).toContain('WORKBENCH_FOLDER_GROUP_BUTTON_CLASS');
+      expect(source).toContain('WORKBENCH_FOLDER_GROUP_ICON_CLASS');
+      expect(source).toContain('FolderOpen');
+      expect(source).toContain('Folder');
+    }
+
+    expect(chapterSidebarSource).toContain('const VolumeFolderIcon = volume.isExpanded ? FolderOpen : Folder;');
+    expect(chapterSidebarSource).toContain('<VolumeFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />');
+    expect(publishedSidebarSource).toContain('const VolumeFolderIcon = expanded ? FolderOpen : Folder;');
+    expect(publishedSidebarSource).toContain('aria-expanded={expanded}');
+    expect(publishedSidebarSource).toContain("chapter.isSelected ? 'border-[#1e71ef] bg-[#d4e2f9]'");
+    expect(publishedSidebarSource).not.toContain('border-orange-400 bg-orange-50');
+    expect(publishedSidebarSource).not.toContain('text-orange-600');
+
+    expect(panelSource).toContain('const GroupFolderIcon = expanded ? FolderOpen : Folder;');
+    expect(panelSource).toContain('const GroupFolderIcon = collapsed ? Folder : FolderOpen;');
+    expect(panelSource).toContain('const VolumeFolderIcon = expanded ? FolderOpen : Folder;');
+    expect(panelSource).toContain('<GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />');
+    expect(panelSource).toContain('<VolumeFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />');
+    expect(panelSource).not.toContain('className="group flex h-[36px] items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10"');
+    expect(panelSource).not.toContain('className="group flex h-[36px] cursor-pointer items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10"');
   });
 
   it('keeps workbench model selects synchronized after model management changes', async () => {

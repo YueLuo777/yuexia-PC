@@ -1,7 +1,10 @@
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Folder, FolderOpen } from 'lucide-react';
 import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react';
 
 import type { Volume } from '@/features/workbench/model/workbenchTypes';
+
+const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md px-3 text-left text-[14px] font-medium text-[#1f2933] transition-colors hover:bg-[#eef3fb]';
+const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#68727f]';
 
 function getContextMenuPoint(event: ReactMouseEvent<HTMLElement>) {
   const target = event.currentTarget;
@@ -107,9 +110,13 @@ export function PublishedSidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 py-2">
-        {displayVolumes.map((volume) => (
+        {displayVolumes.map((volume) => {
+          const expanded = expandedIds.has(volume.id);
+          const VolumeFolderIcon = expanded ? FolderOpen : Folder;
+
+          return (
           <div key={volume.id} className="mb-1">
-            <div className="flex h-[36px] items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10">
+            <div className={WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}>
               <button
                 onClick={() => {
                   setExpandedIds((prev) => {
@@ -119,25 +126,22 @@ export function PublishedSidebar({
                     return next;
                   });
                 }}
-                className="flex flex-1 items-center gap-1.5 text-left"
+                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                aria-expanded={expanded}
               >
-                {expandedIds.has(volume.id) ? (
-                  <ChevronDown className="h-3.5 w-3.5 text-brand-dark" />
-                ) : (
-                  <ChevronRight className="h-3.5 w-3.5 text-brand-dark" />
-                )}
-                <span className="text-sm font-medium text-brand-dark">{volume.name}</span>
-                <span className="ml-1 text-xs text-gray-400">{volume.chapters.length}章</span>
+                <VolumeFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
+                <span className="min-w-0 flex-1 truncate leading-none">{volume.name}</span>
+                <span className="ml-1 shrink-0 text-xs text-gray-400">{volume.chapters.length}章</span>
               </button>
             </div>
 
-            {expandedIds.has(volume.id) && (
+            {expanded && (
               <div className="ml-1 mt-0.5 space-y-0.5">
                 {volume.chapters.map((chapter) => (
                   <div
                     key={chapter.id}
                     className={`group relative flex items-center gap-2 rounded-md border-l-[3px] px-3 py-2 transition-colors ${
-                      chapter.isSelected ? 'border-orange-400 bg-orange-50' : 'border-transparent hover:bg-gray-50'
+                      chapter.isSelected ? 'border-[#1e71ef] bg-[#d4e2f9]' : 'border-transparent hover:bg-gray-50'
                     }`}
                     onClick={() => onSelectChapter(volume.id, chapter.id)}
                     onContextMenu={(event) => {
@@ -146,7 +150,7 @@ export function PublishedSidebar({
                       setContextMenu({ visible: true, ...getContextMenuPoint(event), volumeId: volume.id, chapterId: chapter.id });
                     }}
                   >
-                    <span className={`flex-1 truncate whitespace-nowrap text-sm font-medium ${chapter.isSelected ? 'text-orange-600' : 'text-gray-700'}`}>
+                    <span className={`flex-1 truncate whitespace-nowrap text-sm font-medium ${chapter.isSelected ? 'text-[#1f2933]' : 'text-gray-700'}`}>
                       第{chapter.serialNumber}章<span className="hidden">{chapter.title ? ` ${chapter.title}` : ''}</span>
                     </span>
                     <span className="shrink-0 text-xs text-gray-400 transition-opacity group-hover:opacity-0">
@@ -166,7 +170,8 @@ export function PublishedSidebar({
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
 
         {displayVolumes.every((volume) => volume.chapters.length === 0) && (
           <div className="flex flex-col items-center justify-center py-10 text-gray-400">

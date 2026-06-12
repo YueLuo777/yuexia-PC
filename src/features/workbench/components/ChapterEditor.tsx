@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Settings } from 'lucide-react';
+import { Folder, FolderOpen, Settings } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -71,6 +71,8 @@ const REVIEW_PAGE_LEFT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_left
 const REVIEW_PAGE_RIGHT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_right_width';
 const STATUS_PAGE_LEFT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_status_left_width';
 const STATUS_PAGE_RIGHT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_status_right_width';
+const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md px-3 text-left text-[14px] font-medium text-[#1f2933] transition-colors hover:bg-[#eef3fb]';
+const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#68727f]';
 const REVIEW_PAGE_LEFT_WIDTH_LIMIT = { min: 180, max: 360 };
 const REVIEW_PAGE_RIGHT_WIDTH_LIMIT = { min: 260, max: 520 };
 const STATUS_PAGE_LEFT_WIDTH_LIMIT = { min: 190, max: 360 };
@@ -1918,17 +1920,17 @@ export function ChapterEditor({
                 <div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
                   {chapterDirectoryGroups.map((group) => {
                     const expanded = expandedStatusVolumeIds.has(group.id);
+                    const GroupFolderIcon = expanded ? FolderOpen : Folder;
                     return (
                       <div key={group.id}>
                         <button
                           type="button"
                           onClick={() => toggleStatusDirectoryVolume(group.id)}
-                          className="group flex h-[36px] w-full cursor-pointer items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 text-left transition-colors hover:bg-brand/10"
+                          className={WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}
+                          aria-expanded={expanded}
                         >
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-brand-dark">
-                            {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                          </span>
-                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-brand-dark">{group.name}</span>
+                          <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
+                          <span className="min-w-0 flex-1 truncate leading-none">{group.name}</span>
                           <span className="ml-1 shrink-0 text-xs text-gray-400">{group.chapters.length}章</span>
                         </button>
                         {expanded && (
@@ -2138,17 +2140,17 @@ export function ChapterEditor({
                 <div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
                   {chapterDirectoryGroups.map((group) => {
                     const expanded = expandedReviewVolumeIds.has(group.id);
+                    const GroupFolderIcon = expanded ? FolderOpen : Folder;
                     return (
                       <div key={group.id}>
                         <button
                           type="button"
                           onClick={() => toggleReviewDirectoryVolume(group.id)}
-                          className="group flex h-[36px] w-full cursor-pointer items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 text-left transition-colors hover:bg-brand/10"
+                          className={WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}
+                          aria-expanded={expanded}
                         >
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-brand-dark">
-                            {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                          </span>
-                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-brand-dark">{group.name}</span>
+                          <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
+                          <span className="min-w-0 flex-1 truncate leading-none">{group.name}</span>
                           <span className="ml-1 shrink-0 text-xs text-gray-400">{group.chapters.length}章</span>
                         </button>
                         {expanded && (

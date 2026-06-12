@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Folder, FolderOpen } from 'lucide-react';
 import { useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react';
 
 import type { Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
@@ -46,6 +46,8 @@ const emptyVolumeMenu: VolumeContextMenu = { visible: false, x: 0, y: 0, volumeI
 const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 300;
 const CHAPTER_SIDEBAR_BOTTOM_ROW_CLASS = 'flex items-center gap-1.5 border-t border-[#e6e8ec] px-2 py-2';
 const CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS = 'flex h-8 min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-md px-1.5 text-sm leading-none text-white transition-colors';
+const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md px-3 text-left text-[14px] font-medium text-[#1f2933] transition-colors hover:bg-[#eef3fb]';
+const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#68727f]';
 
 function getContextMenuPoint(event: ReactMouseEvent<HTMLElement>) {
   const target = event.currentTarget;
@@ -158,24 +160,21 @@ export function ChapterSidebar({
       <div className="editor-scrollbar flex-1 overflow-y-auto px-2 py-2">
         {volumes.map((volume) => {
           const chapters = sortedUnpublishedChapters(volume);
+          const VolumeFolderIcon = volume.isExpanded ? FolderOpen : Folder;
 
           return (
             <div key={volume.id} className="mb-1">
               <div
-                className="group flex h-[34px] items-center gap-1 rounded-md bg-[#f2f6ff] px-2 py-1.5 transition-colors hover:bg-[#eaf2ff]"
+                className={WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}
                 onContextMenu={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
                   setVolumeMenu({ visible: true, ...getContextMenuPoint(event), volumeId: volume.id });
                 }}
               >
-                <button onClick={() => onToggleVolume(volume.id)} className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
-                  {volume.isExpanded ? (
-                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[#1e71ef]" />
-                  ) : (
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#1e71ef]" />
-                  )}
-                  <span className="truncate text-sm font-medium text-[#1f2933]">{volume.name}</span>
+                <button onClick={() => onToggleVolume(volume.id)} className="flex min-w-0 flex-1 items-center gap-2 text-left" aria-expanded={volume.isExpanded}>
+                  <VolumeFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
+                  <span className="min-w-0 flex-1 truncate leading-none">{volume.name}</span>
                   <span className="ml-1 shrink-0 text-xs text-gray-400">{volume.chapters.length}{chapterUnit}</span>
                 </button>
 

@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'workbench-folder-group-style-sync-001',
+    title: '已发布和脑洞等左侧分组需要同步正文文件夹样式',
+    area: '作品编辑器 / 正文 / 已发布 / 脑洞 / 章纲 / 审核状态目录',
+    symptom: '正文目录已经按文件夹分组展示，但已发布、脑洞、设定、角色、章纲和审核状态等页面仍保留品牌色块、Chevron 折叠箭头或橙色选中态，切换页面时目录样式不统一。',
+    cause: '这些左侧目录分别由 ChapterSidebar、PublishedSidebar、WorkbenchLibraryPanel 和 ChapterEditor 独立渲染，之前只调整了单个入口，没有把分组行样式抽成一致的文件夹视觉。',
+    solution: '为这些组件统一使用 WORKBENCH_FOLDER_GROUP_BUTTON_CLASS 和 WORKBENCH_FOLDER_GROUP_ICON_CLASS；展开分组显示 FolderOpen，折叠分组显示 Folder；已发布章节选中态同步为正文同款蓝色选中底。',
+    prevention: '以后调整正文目录分组视觉时必须同步检查已发布、脑洞/设定/角色库、章纲卷目录、审核/点评/状态目录和资料读取弹窗，不要只改 ChapterSidebar 或单个页面。',
+    keywords: ['正文目录', '已发布', '脑洞', '分组折叠', '文件夹', 'FolderOpen', 'PublishedSidebar', 'WorkbenchLibraryPanel', 'ChapterEditor'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'dashboard-nav-group-folder-style-001',
     title: '首页左侧导航分组折叠需要像文件夹目录',
     area: '首页 / 左侧导航 / 分组折叠',
