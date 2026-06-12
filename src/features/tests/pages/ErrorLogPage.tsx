@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'chapter-editor-grid-line-faint-top-edge-001',
+    title: '正文稿纸线顶部遮罩边缘残留淡虚线',
+    area: '作品编辑器 / 正文 / 稿纸线',
+    symptom: '光标下方第一条可见虚线比其他虚线更淡，像是被半透明盖住或只显示了一部分。',
+    cause: '顶部遮罩高度使用 lineOffset + 1，刚好压在第一条 1px SVG 虚线的抗锯齿边缘上，浏览器在遮罩边界处混合渲染，留下淡线残影。',
+    solution: '新增 EDITOR_GRID_LINE_TOP_MASK_EXTRA_PX = 4，把顶部遮罩从临界 1px 扩大到完整覆盖第一条线和抗锯齿边缘，后续虚线不受影响。',
+    prevention: '以后做背景线遮罩时不要让遮罩边界正好落在线条中心或边缘上，至少预留 3-4px 额外覆盖，并用测试锁住常量。',
+    keywords: ['正文编辑器', '稿纸线', '虚线', '淡线', '顶部遮罩', '抗锯齿', 'EDITOR_GRID_LINE_TOP_MASK_EXTRA_PX'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'workbench-soft-cyan-button-text-option-c-001',
     title: '浅青按钮测试需要明确展示文字也变为 #08AACE 的 C 方案',
     area: '测试集合 / 作品编辑器浅青按钮状态测试',

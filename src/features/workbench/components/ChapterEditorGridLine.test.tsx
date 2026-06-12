@@ -19,11 +19,12 @@ describe('ChapterEditor grid line font setting', () => {
     expect(modalSource).toContain('const EDITOR_GRID_LINE_LEFT_OFFSET_PX = 64;');
     expect(modalSource).toContain('const EDITOR_GRID_LINE_RIGHT_OFFSET_PX = 64;');
     expect(modalSource).toContain("const EDITOR_GRID_LINE_MASK_COLOR = '#F5F5F7';");
+    expect(modalSource).toContain('const EDITOR_GRID_LINE_TOP_MASK_EXTRA_PX = 4;');
     expect(modalSource).toContain("const dash = mode === 'dashed' ? \" stroke-dasharray='7 7'\" : '';");
     expect(modalSource).toContain("x1='${EDITOR_GRID_LINE_LEFT_OFFSET_PX}'");
     expect(modalSource).toContain('export function getEditorGridLineStyle(fontSettings: FontSettings, scrollTop = 0): CSSProperties');
     expect(modalSource).toContain('const underlineGapPx = Math.max(8, Math.round(fontSettings.fontSize * 0.22));');
-    expect(modalSource).toContain('const firstLineCoverHeightPx = EDITOR_GRID_LINE_TOP_OFFSET_PX + lineOffsetPx + 1;');
+    expect(modalSource).toContain('const firstLineCoverHeightPx = EDITOR_GRID_LINE_TOP_OFFSET_PX + lineOffsetPx + EDITOR_GRID_LINE_TOP_MASK_EXTRA_PX;');
     expect(modalSource).toContain('backgroundPosition: `0 0, right 0, 0 ${EDITOR_GRID_LINE_TOP_OFFSET_PX - scrollTop}px`');
     expect(modalSource).toContain("backgroundRepeat: 'no-repeat, no-repeat, repeat-y'");
     expect(modalSource).toContain('backgroundSize: `100% ${firstLineCoverHeightPx}px, ${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px 100%, ${EDITOR_GRID_LINE_CANVAS_WIDTH_PX}px ${lineHeightPx}px`');

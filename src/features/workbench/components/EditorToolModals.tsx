@@ -93,6 +93,7 @@ const EDITOR_GRID_LINE_LEFT_OFFSET_PX = 64;
 const EDITOR_GRID_LINE_RIGHT_OFFSET_PX = 64;
 const EDITOR_GRID_LINE_CANVAS_WIDTH_PX = 3200;
 const EDITOR_GRID_LINE_MASK_COLOR = '#F5F5F7';
+const EDITOR_GRID_LINE_TOP_MASK_EXTRA_PX = 4;
 
 const editorGridLineModeOptions: Array<{ value: EditorGridLineMode; label: string }> = [
   { value: 'none', label: '无' },
@@ -128,7 +129,7 @@ export function getEditorGridLineStyle(fontSettings: FontSettings, scrollTop = 0
   const lineHeightPx = Math.round(fontSettings.fontSize * fontSettings.lineHeight);
   const underlineGapPx = Math.max(8, Math.round(fontSettings.fontSize * 0.22));
   const lineOffsetPx = Math.min(lineHeightPx - 2, Math.round((lineHeightPx + fontSettings.fontSize) / 2 + underlineGapPx));
-  const firstLineCoverHeightPx = EDITOR_GRID_LINE_TOP_OFFSET_PX + lineOffsetPx + 1;
+  const firstLineCoverHeightPx = EDITOR_GRID_LINE_TOP_OFFSET_PX + lineOffsetPx + EDITOR_GRID_LINE_TOP_MASK_EXTRA_PX;
   return {
     backgroundImage: `linear-gradient(${EDITOR_GRID_LINE_MASK_COLOR}, ${EDITOR_GRID_LINE_MASK_COLOR}), linear-gradient(${EDITOR_GRID_LINE_MASK_COLOR}, ${EDITOR_GRID_LINE_MASK_COLOR}), ${buildEditorGridLineBackground(lineHeightPx, lineOffsetPx, gridLineMode)}`,
     backgroundPosition: `0 0, right 0, 0 ${EDITOR_GRID_LINE_TOP_OFFSET_PX - scrollTop}px`,
