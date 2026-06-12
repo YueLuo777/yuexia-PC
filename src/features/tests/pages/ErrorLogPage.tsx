@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'app-titlebar-color-e4e9ef-001',
+    title: '顶部标题栏颜色需要统一为 #E4E9EF',
+    area: '全局框架 / 顶部标题栏 / 作品标签栏',
+    symptom: '作品编辑器顶部红框标注区域的标题栏颜色和目标色值不一致，需要调整为 #E4E9EF。',
+    cause: '标题栏颜色由全局 --xy-wa-titlebar 变量控制，旧值仍是 #e1e5eb，和当前指定色值有轻微色差。',
+    solution: '将 --xy-wa-titlebar 改为 #E4E9EF，继续由 .writer-assistant-theme .xy-wa-titlebar 应用到 AppFrame 顶部标题栏。',
+    prevention: '后续调整顶部标签栏或标题栏时优先修改 --xy-wa-titlebar，不要在 AppFrame 里写死其它背景色，避免首页标签、作品标签和右侧窗口按钮区域色值分裂。',
+    keywords: ['标题栏', '顶部导航栏', '#E4E9EF', 'xy-wa-titlebar', 'AppFrame', 'workspace-tab'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'workbench-editor-surface-background-f5f5f7-001',
     title: '作品编辑器正文输入区背景需要统一为 #F5F5F7',
     area: '作品编辑器 / 正文 / 中间输入区域',

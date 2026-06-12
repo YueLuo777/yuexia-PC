@@ -9,6 +9,15 @@ const readSource = async (relativePath: string) => {
 };
 
 describe('writer workspace chrome styling', () => {
+  it('uses the requested #E4E9EF color for the top titlebar', async () => {
+    const appFrame = await readSource('AppFrame.tsx');
+    const styles = await readSource('../styles/index.css');
+
+    expect(styles).toContain('--xy-wa-titlebar: #E4E9EF;');
+    expect(styles).toContain('.writer-assistant-theme .xy-wa-titlebar {\n  background: var(--xy-wa-titlebar);');
+    expect(appFrame).toContain('className="app-titlebar xy-wa-titlebar flex h-12 shrink-0 items-center border-b px-2"');
+  });
+
   it('keeps the writing editor surface free of ruled horizontal lines', async () => {
     const styles = await readSource('../styles/index.css');
     const editorRule = styles.slice(
