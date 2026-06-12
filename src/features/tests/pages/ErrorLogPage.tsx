@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'chapter-editor-grid-line-edge-mask-001',
+    title: '正文稿纸线首行和右侧贴边线段需要隐藏',
+    area: '作品编辑器 / 正文 / 字体设置 / 稿纸线',
+    symptom: '正文编辑器开启虚线后，工具栏下方第一条稿纸线过早出现；右侧边缘还能看到一小段虚线，视觉上贴到右侧区域。',
+    cause: '稿纸线背景只控制了左侧 x1 偏移，SVG 仍一直绘制到超宽画布右侧；首条背景线也会按第一组 tile 直接露出，没有单独避开顶部空白。',
+    solution: '在 getEditorGridLineStyle 里增加同色遮罩层：顶部遮罩盖掉第一条稿纸线，右侧 64px 遮罩盖掉贴边线段；保留原有左侧 64px 起线和字号联动行距。',
+    prevention: '以后调整稿纸线时同时检查左起点、右边距和顶部首行，不只看虚线是否跟随字号变化；需要用测试锁住背景层顺序和遮罩尺寸。',
+    keywords: ['正文编辑器', '稿纸线', '虚线', '右侧边距', '顶部遮罩', 'getEditorGridLineStyle', 'ChapterEditor'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'novel-library-recent-title-and-organize-icon-001',
     title: '最近编辑标题过大且作品整理标题图标多余',
     area: '我的小说 / 顶部四卡片 / 作品整理与最近编辑',
