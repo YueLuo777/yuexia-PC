@@ -2,6 +2,8 @@ import { Send, Square } from 'lucide-react';
 
 type Variant = 'recommended' | 'quiet' | 'cyanText';
 
+const CYAN_TEXT_FORCE_CLASS = 'xy-soft-cyan-force-text';
+
 const mainFlows = ['默认小说1', '作品信息', '脑洞', '设定', '章纲', '正文', '审核', '点评', '润色', '状态', '梗概'];
 const chapterRows = [
   { title: '第一卷', meta: '2章', active: false },
@@ -11,19 +13,21 @@ const chapterRows = [
 
 function softButtonClass(active = false, variant: Variant = 'recommended') {
   const base = 'inline-flex h-9 shrink-0 items-center justify-center rounded-[8px] border px-4 text-sm font-black transition-colors';
-  if (active) return `${base} border-[#E7F8FD] bg-[#E7F8FD] text-[#08AACE]`;
-  if (variant === 'cyanText') return `${base} border-[#E7F8FD] bg-white text-[#08AACE] hover:bg-[#E7F8FD]`;
+  const forceText = variant === 'cyanText' ? ` ${CYAN_TEXT_FORCE_CLASS}` : '';
+  if (active) return `${base} border-[#E7F8FD] bg-[#E7F8FD] text-[#08AACE]${forceText}`;
+  if (variant === 'cyanText') return `${base} border-[#E7F8FD] bg-white text-[#08AACE] hover:bg-[#E7F8FD]${forceText}`;
   if (variant === 'quiet') return `${base} border-[#E7F8FD] bg-white text-[#4f5d6b] hover:bg-[#E7F8FD] hover:text-[#08AACE]`;
   return `${base} border-[#E7F8FD] bg-white text-[#586574] hover:bg-[#DDF5FC] hover:text-[#08AACE]`;
 }
 
 function splitButtonClass(active = false, variant: Variant = 'recommended') {
+  const forceText = variant === 'cyanText' ? ` ${CYAN_TEXT_FORCE_CLASS}` : '';
   return [
     'inline-flex h-9 shrink-0 items-center justify-center border-y border-r px-3 text-sm font-black first:rounded-l-[8px] first:border-l last:rounded-r-[8px]',
     active
-      ? 'border-[#E7F8FD] bg-[#E7F8FD] text-[#08AACE]'
+      ? `border-[#E7F8FD] bg-[#E7F8FD] text-[#08AACE]${forceText}`
       : variant === 'cyanText'
-        ? 'border-[#E7F8FD] bg-white text-[#08AACE] hover:bg-[#E7F8FD]'
+        ? `border-[#E7F8FD] bg-white text-[#08AACE] hover:bg-[#E7F8FD]${forceText}`
       : 'border-[#E7F8FD] bg-white text-[#526171] hover:bg-[#DDF5FC] hover:text-[#08AACE]',
   ].join(' ');
 }
@@ -36,7 +40,7 @@ function HeaderFlowPreview({ variant }: { variant: Variant }) {
           <button
             key={flow}
             type="button"
-            className={`h-9 shrink-0 border-r border-[#edf1f5] px-4 text-sm font-black last:border-r-0 ${
+            className={`h-9 shrink-0 border-r border-[#edf1f5] px-4 text-sm font-black last:border-r-0 ${variant === 'cyanText' ? CYAN_TEXT_FORCE_CLASS : ''} ${
               flow === '作品信息' || flow === '正文'
                 ? 'bg-[#E7F8FD] text-[#08AACE]'
                 : variant === 'cyanText'
@@ -66,7 +70,7 @@ function LeftSidebarPreview({ variant }: { variant: Variant }) {
           <button
             key={row.title}
             type="button"
-            className={`mb-1 grid h-11 w-full grid-cols-[minmax(0,1fr)_auto] items-center rounded-[8px] border px-3 text-left text-sm font-bold ${
+            className={`mb-1 grid h-11 w-full grid-cols-[minmax(0,1fr)_auto] items-center rounded-[8px] border px-3 text-left text-sm font-bold ${variant === 'cyanText' ? CYAN_TEXT_FORCE_CLASS : ''} ${
               row.active
                 ? 'border-[#E7F8FD] bg-[#E7F8FD] text-[#08AACE]'
                 : variant === 'cyanText'
@@ -75,7 +79,7 @@ function LeftSidebarPreview({ variant }: { variant: Variant }) {
             }`}
           >
             <span className="truncate">{row.title}</span>
-            <span className={row.active || variant === 'cyanText' ? 'text-[#08AACE]' : 'text-[#9aa3af]'}>{row.meta}</span>
+            <span className={row.active || variant === 'cyanText' ? `text-[#08AACE] ${variant === 'cyanText' ? CYAN_TEXT_FORCE_CLASS : ''}` : 'text-[#9aa3af]'}>{row.meta}</span>
           </button>
         ))}
       </div>
@@ -152,7 +156,16 @@ function RightPanelPreview({ variant }: { variant: Variant }) {
       </div>
       <div className="mt-3 flex gap-2">
         {['替换正文', '撤回替换', '复制内容'].map((label) => (
-          <button key={label} className="h-10 flex-1 rounded-[8px] bg-[#edf1f5] text-sm font-black text-[#9aa3af]">{label}</button>
+          <button
+            key={label}
+            className={`h-10 flex-1 rounded-[8px] text-sm font-black ${
+              variant === 'cyanText'
+                ? `bg-[#E7F8FD] text-[#08AACE] ${CYAN_TEXT_FORCE_CLASS}`
+                : 'bg-[#edf1f5] text-[#9aa3af]'
+            }`}
+          >
+            {label}
+          </button>
         ))}
         <button className="h-10 flex-1 rounded-[8px] bg-red-500 text-sm font-black text-white">清空内容</button>
       </div>
@@ -186,6 +199,14 @@ function DesignPreview({ title, desc, variant }: { title: string; desc: string; 
 export function WorkbenchSoftCyanButtonStyleTestPage() {
   return (
     <div className="editor-scrollbar h-full overflow-y-auto bg-[#f5f5f7] p-6">
+      <style>
+        {`
+          .writer-assistant-theme .${CYAN_TEXT_FORCE_CLASS},
+          .${CYAN_TEXT_FORCE_CLASS} {
+            color: #08AACE !important;
+          }
+        `}
+      </style>
       <div className="mx-auto max-w-[1680px] space-y-5">
         <header className="rounded-[8px] border border-[#e2e8f0] bg-white px-5 py-4 shadow-sm">
           <h1 className="text-xl font-black text-[#1f2933]">作品编辑器浅青按钮状态测试</h1>

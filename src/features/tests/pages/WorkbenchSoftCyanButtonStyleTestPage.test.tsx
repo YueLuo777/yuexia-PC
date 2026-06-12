@@ -41,7 +41,9 @@ describe('WorkbenchSoftCyanButtonStyleTestPage', () => {
     expect(pageSource).toContain('方案 B：更轻，边框存在感继续降低');
     expect(pageSource).toContain('方案 C：按钮文字统一 #08AACE');
     expect(pageSource).toContain("type Variant = 'recommended' | 'quiet' | 'cyanText';");
-    expect(pageSource).toContain("if (variant === 'cyanText') return `${base} border-[#E7F8FD] bg-white text-[#08AACE] hover:bg-[#E7F8FD]`;");
+    expect(pageSource).toContain("const CYAN_TEXT_FORCE_CLASS = 'xy-soft-cyan-force-text';");
+    expect(pageSource).toContain('color: #08AACE !important;');
+    expect(pageSource).toContain("if (variant === 'cyanText') return `${base} border-[#E7F8FD] bg-white text-[#08AACE] hover:bg-[#E7F8FD]${forceText}`;");
     expect(pageSource).toContain("variant === 'cyanText'");
   });
 });

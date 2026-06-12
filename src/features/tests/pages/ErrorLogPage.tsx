@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'workbench-soft-cyan-option-c-theme-override-001',
+    title: '测试06 C方案文字色被全局主题蓝覆盖',
+    area: '测试集合 / 作品编辑器浅青按钮状态测试 / 方案 C',
+    symptom: '方案 C 源码里写了 text-[#08AACE]，但实际看起来仍不像 #08AACE，用户指出文字颜色不对。',
+    cause: '测试页运行在 writer-assistant-theme 下，全局样式会把 .text-[#08AACE] 强制映射为 var(--xy-wa-blue)，导致 Tailwind 任意色类不等于实际显示色。',
+    solution: '给 C 方案按钮增加 xy-soft-cyan-force-text，并在测试页内用更高优先级 CSS 将该类固定为 color: #08AACE !important；组合按钮、流程按钮、章节按钮和底部非危险按钮一起接入。',
+    prevention: '以后在测试页验证精确色值时，不只看类名是否包含色值，还要检查是否被 writer-assistant-theme 的全局色彩映射覆盖；必要时使用测试页局部强制类。',
+    keywords: ['测试06', '方案C', '#08AACE', 'writer-assistant-theme', 'xy-soft-cyan-force-text', '浅青按钮'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'chapter-editor-grid-line-faint-top-edge-001',
     title: '正文稿纸线顶部遮罩边缘残留淡虚线',
     area: '作品编辑器 / 正文 / 稿纸线',
