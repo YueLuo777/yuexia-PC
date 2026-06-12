@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'novel-library-title-card-data-row-001',
+    title: '我的小说顶部卡片需要在小说库页面变成数据卡片',
+    area: '我的小说 / 顶部卡片 / 数据卡片与最近编辑',
+    symptom: '用户截图中的“我的小说”卡片仍显示“共 X 部小说，保持专注写作和资料管理”，没有展示作品、昨日更新、字数和预留数据，也没有在同一行加入最近编辑快捷卡。',
+    cause: '之前把需求落在 DashboardPage 首页顶部卡片上，但截图实际指向 NovelLibraryPage 的作品库顶部标题卡片。',
+    solution: '将 NovelLibraryPage 顶部改为四卡片行：我的小说/我的剧本数据卡、作品整理操作卡、最近编辑快捷卡和预留扩展卡；最近编辑点击复用 handleOpen 进入对应作品。',
+    prevention: '以后用户用截图指出“这个卡片”时，先用页面文案反查真实组件，不要只按功能名推断到 DashboardPage；涉及作品库标题卡时优先检查 NovelLibraryPage。',
+    keywords: ['我的小说', '作品整理', '最近编辑', '数据卡片', 'NovelLibraryPage', 'DashboardPage', '截图定位'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'chapter-group-soft-blue-production-sync-001',
     title: '章节分组浅蓝底方案需要迁入所有正式目录并删除临时测试',
     area: '作品编辑器 / 正文目录 / 已发布 / 设定脑洞章纲目录 / 测试集合',
@@ -124,17 +135,6 @@ const defaultEntries: ErrorLogEntry[] = [
     solution: '将 --xy-wa-editor-bg 改为 #F5F5F7，并让 .xy-wa-editor-surface .xy-wa-editor-text-layer 同步使用 #F5F5F7 背景。',
     prevention: '后续调整正文输入区底色时，同时检查 xy-wa-editor-surface、xy-wa-editor-text-layer 和 ChapterEditor 的 textarea class，避免外层和输入层色值不一致。',
     keywords: ['作品编辑器', '正文', '输入区', '#F5F5F7', 'xy-wa-editor-surface', 'xy-wa-editor-text-layer', 'ChapterEditor'],
-    updatedAt: '2026-06-12',
-  },
-  {
-    id: 'dashboard-novel-summary-recent-card-row-001',
-    title: '首页我的小说需要变成数据卡片并加入最近编辑快捷卡',
-    area: '首页 / 顶部卡片 / 我的小说 / 作品整理 / 最近编辑',
-    symptom: '“我的小说”卡片只展示标题和一句说明，不能直接看到小说数量、昨日更新和总字数；最近编辑放在下方列表里，占用空间且不在作品整理卡片旁边。',
-    cause: 'DashboardPage 仍使用大欢迎卡、写作概览卡和独立最近编辑列表，顶部没有形成四个并列的可扫描数据/入口卡片。',
-    solution: '将首页顶部改为一行四卡片：我的小说数据卡、作品整理入口卡、最近编辑快捷卡和预留扩展卡；最近编辑卡复用 selectNovel + navigate 快速进入作品。',
-    prevention: '后续调整首页首屏时保持卡片紧凑并优先展示可扫描指标；最近编辑入口不要恢复成过长的大列表，除非用户明确要求展开。',
-    keywords: ['首页', '我的小说', '数据卡片', '作品整理', '最近编辑', '四卡片', 'DashboardPage'],
     updatedAt: '2026-06-12',
   },
   {
