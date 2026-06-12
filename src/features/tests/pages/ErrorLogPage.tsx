@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'dashboard-profile-nav-separator-001',
+    title: '首页头像区和导航区之间需要一条清晰分割线',
+    area: '首页 / 左侧导航 / 头像区域与导航列表',
+    symptom: '头像区下方直接进入导航列表，两个区域之间缺少边界，用户扫视时不容易判断头像信息区已经结束、导航区已经开始。',
+    cause: '之前为了删除专区分组层级，移除了头像区底部边线；导航改为扁平列表后，头像区和导航列表之间仍需要一个轻量边界。',
+    solution: '在 DashboardLayout 头像区容器上加入 border-b border-[#e1e5eb]，只分割头像区和导航区，不恢复专区标题或分组折叠线。',
+    prevention: '后续首页侧栏可以保留这一条头像/导航分割线；不要把它扩展回专区分组线、专区标题或折叠专区结构。',
+    keywords: ['首页', '左侧导航', '头像区', '分割线', '导航区', 'DashboardLayout', 'border-[#e1e5eb]'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'chapter-group-color-options-test-001',
     title: '章节分组行需要多套颜色和背景方案对比',
     area: '测试集合 / 作品编辑器 / 左侧章节侧栏',

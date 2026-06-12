@@ -11,12 +11,12 @@ const readDashboardLayoutSource = async () => {
 describe('DashboardLayout profile block', () => {
   it('centers the avatar with the user name underneath', async () => {
     const source = await readDashboardLayoutSource();
-    const profileStart = source.indexOf('<div className="shrink-0 px-3 py-[14px]">');
+    const profileStart = source.indexOf('<div className="shrink-0 border-b border-[#e1e5eb] px-3 py-[14px]">');
     const navStart = source.indexOf('<div\n          ref={sidebarRef}', profileStart);
     const profileSource = source.slice(profileStart, navStart);
 
     expect(profileStart).toBeGreaterThan(-1);
-    expect(profileSource).toContain('className="shrink-0 px-3 py-[14px]"');
+    expect(profileSource).toContain('className="shrink-0 border-b border-[#e1e5eb] px-3 py-[14px]"');
     expect(profileSource).toContain('flex flex-col items-center justify-center');
     expect(profileSource).toContain('className="group relative flex h-12 w-12');
     expect(profileSource).toContain('className="mt-3 w-full min-w-0"');
