@@ -22,6 +22,7 @@ const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/Software
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
 const BorderBackplateApplicationTestPage = lazy(() => import('@/features/tests/pages/BorderBackplateApplicationTestPage').then((module) => ({ default: module.BorderBackplateApplicationTestPage })));
+const WorkbenchSoftCyanButtonStyleTestPage = lazy(() => import('@/features/tests/pages/WorkbenchSoftCyanButtonStyleTestPage').then((module) => ({ default: module.WorkbenchSoftCyanButtonStyleTestPage })));
 const WorkbenchRightPanelUnifiedTestPage = lazy(() => import('@/features/tests/pages/WorkbenchRightPanelUnifiedTestPage').then((module) => ({ default: module.WorkbenchRightPanelUnifiedTestPage })));
 const WorkbenchAiRequestTagPolicyTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiRequestTagPolicyTestPage').then((module) => ({ default: module.WorkbenchAiRequestTagPolicyTestPage })));
 const SettingTaxonomyPlanTestPage = lazy(() => import('@/features/tests/pages/SettingTaxonomyPlanTestPage').then((module) => ({ default: module.SettingTaxonomyPlanTestPage })));
@@ -66,6 +67,13 @@ const testGroups = [
         path: '/border-backplate-application-test',
         icon: Type,
         badge: 'Backplate',
+      },
+      {
+        title: '作品编辑器浅青按钮状态测试',
+        description: '测试当前页、主要操作按钮、右侧配置边框、关联资料和已关联字数改为 #E7F8FD / #08AACE 的浅青方案。',
+        path: '/workbench-soft-cyan-button-style-test',
+        icon: Palette,
+        badge: 'Soft Cyan',
       },
     ],
   },
@@ -227,6 +235,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <SoftwareUiCatalogPage embedded onClose={() => setActivePath(null)} />;
       case '/border-backplate-application-test':
         return <BorderBackplateApplicationTestPage />;
+      case '/workbench-soft-cyan-button-style-test':
+        return <WorkbenchSoftCyanButtonStyleTestPage />;
       case '/theme-colors':
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
       case '/test-browser':

@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'workbench-soft-cyan-button-style-test-001',
+    title: '作品编辑器深蓝按钮和边框需要浅青方案测试',
+    area: '测试集合 / 作品编辑器 / 当前页按钮与右侧边框',
+    symptom: '正文、优化、查找、展开已发布、章节操作、右侧模型提示词框、关联资料和输入框等区域仍使用强蓝色选中态或蓝色边框，用户反馈角色蓝色不好看，希望改成作品信息按钮同款浅青底和青色文字。',
+    cause: '当前生产样式里按钮选中态、主要操作按钮和部分输入/配置边框分散使用深蓝背景、深蓝边框或高饱和蓝色，视觉权重过强。',
+    solution: '先新增 WorkbenchSoftCyanButtonStyleTestPage，在测试集合 UI 与主题分组末尾用 #E7F8FD 作为选中底色和边框色、#08AACE 作为选中文字和已关联数字色，集中预览当前页按钮、优化/查找/展开已发布、章节操作、右侧配置框、关联资料和输入框。',
+    prevention: '正式迁入前先确认测试页方案；迁入时要统一提取浅青状态样式，避免只改某个按钮导致同一页面继续混用深蓝边框和浅青选中态。',
+    keywords: ['浅青按钮', '选中态', '#E7F8FD', '#08AACE', '作品编辑器', '右侧边框', '已关联字数', '测试集合'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'workbench-flow-button-stats-test-001',
     title: '作品编辑器流程按钮需要显示内容数量和待处理状态',
     area: '测试集合 / 作品编辑器 / 顶部流程组合按钮',
