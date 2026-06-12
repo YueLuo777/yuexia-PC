@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   AtSign,
   BarChart3,
@@ -36,6 +36,7 @@ export interface FontSettings {
   fontColor: string;
   fontSize: number;
   lineHeight: number;
+  gridLineEnabled: boolean;
 }
 
 export interface SymbolReplaceRule {
@@ -80,7 +81,29 @@ const defaultFontSettings: FontSettings = {
   fontColor: '#374151',
   fontSize: 22,
   lineHeight: 1.8,
+  gridLineEnabled: true,
 };
+
+const EDITOR_GRID_LINE_TOP_OFFSET_PX = 12;
+
+function buildEditorGridLineBackground(lineHeightPx: number, lineOffsetPx: number) {
+  const stroke = encodeURIComponent('#aab4c0');
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='${lineHeightPx}' viewBox='0 0 1200 ${lineHeightPx}'><line x1='0' y1='${lineOffsetPx}.5' x2='1200' y2='${lineOffsetPx}.5' stroke='${stroke}' stroke-width='1' stroke-dasharray='7 7'/></svg>`;
+  return `url("data:image/svg+xml,${svg}")`;
+}
+
+export function getEditorGridLineStyle(fontSettings: FontSettings, scrollTop = 0): CSSProperties {
+  if (!fontSettings.gridLineEnabled) return {};
+  const lineHeightPx = Math.round(fontSettings.fontSize * fontSettings.lineHeight);
+  const underlineGapPx = Math.max(8, Math.round(fontSettings.fontSize * 0.22));
+  const lineOffsetPx = Math.min(lineHeightPx - 2, Math.round((lineHeightPx + fontSettings.fontSize) / 2 + underlineGapPx));
+  return {
+    backgroundImage: buildEditorGridLineBackground(lineHeightPx, lineOffsetPx),
+    backgroundPosition: `0 ${EDITOR_GRID_LINE_TOP_OFFSET_PX - scrollTop}px`,
+    backgroundRepeat: 'repeat-y',
+    backgroundSize: `100% ${lineHeightPx}px`,
+  };
+}
 
 export const defaultFormatOptions: FormatOptions = {
   paragraphIndent: false,
@@ -668,9 +691,15 @@ export function FontSettingsModal({ isOpen, onClose, settings, onChange }: {
           <input type="range" min={10} max={24} value={Math.round(local.lineHeight * 10)} onChange={(event) => update({ lineHeight: Number(event.target.value) / 10 })} className="flex-1" />
           <button onClick={() => update({ lineHeight: Math.min(2.4, Number((local.lineHeight + 0.1).toFixed(1))) })} className="h-7 w-7 rounded border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">+</button>
         </SliderSetting>
+        <ToggleRow
+          label="稿纸虚线"
+          desc="在正文编辑区显示随字号和行高同步变化的虚线"
+          checked={local.gridLineEnabled}
+          onChange={(gridLineEnabled) => update({ gridLineEnabled })}
+        />
         <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
           <p className="mb-2 text-xs text-gray-400">预览</p>
-          <div className="rounded border border-gray-200 bg-white p-3" style={{ fontFamily: local.fontFamily, color: local.fontColor, fontSize: Math.min(local.fontSize, 16), lineHeight: local.lineHeight }}>
+          <div className="rounded border border-gray-200 bg-white p-3" style={{ ...getEditorGridLineStyle(local), fontFamily: local.fontFamily, color: local.fontColor, fontSize: Math.min(local.fontSize, 16), lineHeight: local.lineHeight }}>
             这是一段预览文字，用于查看字体设置效果。
           </div>
         </div>
@@ -969,6 +998,7 @@ export function SymbolReplaceModal({ isOpen, onClose }: {
 export function HighlightOverlay({ content, fontSettings, scrollTop = 0 }: { content: string; fontSettings: FontSettings; scrollTop?: number }) {
   const [words, setWords] = useState<string[]>(getStoredHighFreqWords);
   const [enabled, setEnabled] = useState(isHighFreqEnabled);
+  const editorGridLineStyle = getEditorGridLineStyle(fontSettings);
 
   useEffect(() => {
     const sync = () => {
@@ -994,6 +1024,7 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0 }: { con
     <div
       className="xy-wa-editor-text-layer pointer-events-none absolute inset-0 z-0 overflow-hidden whitespace-pre-wrap break-words px-6 pb-6 pt-3 text-transparent"
       style={{
+        ...editorGridLineStyle,
         fontFamily: fontSettings.fontFamily,
         fontSize: `${fontSettings.fontSize}px`,
         lineHeight: fontSettings.lineHeight,

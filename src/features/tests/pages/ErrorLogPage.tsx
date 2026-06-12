@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'chapter-editor-grid-line-font-setting-001',
+    title: '正文编辑器需要接入稿纸虚线设置',
+    area: '作品编辑器 / 正文 / 字体设置',
+    symptom: '稿纸虚线只存在于测试集合，正式正文编辑器无法使用，用户要求迁入正文并加到字号设置里。',
+    cause: '前几版先在 EditorGridLineTestPage 验证了字号联动、文字下方线位和字底间隔，但 ChapterEditor 的 FontSettings 仍只保存字体、颜色、字号和行高。',
+    solution: '为 FontSettings 增加 gridLineEnabled，并在字体设置弹窗增加“稿纸虚线”开关；正文 textarea 和高频词覆盖层复用 getEditorGridLineStyle，根据字号、行高和滚动位置绘制虚线。',
+    prevention: '以后测试页视觉确认后迁入正式编辑器时，要同步接入持久化设置、正式输入层、覆盖层和源码回归测试，避免测试页可用但正式页面不可用。',
+    keywords: ['正文编辑器', '稿纸虚线', '字号设置', 'ChapterEditor', 'FontSettingsModal', 'gridLineEnabled'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'editor-grid-line-underline-gap-increase-001',
     title: '编辑器网格虚线与文字间隔需要加大',
     area: '测试集合 / 编辑器网格虚线测试 / 正文背景',

@@ -34,6 +34,7 @@ import {
   applySymbolReplace,
   getStoredFormatSettings,
   getStoredFontSettings,
+  getEditorGridLineStyle,
   getStoredSymbolReplaceSettings,
   isSymbolReplaceEnabled,
   normalizeParagraphIndents,
@@ -590,6 +591,7 @@ export function ChapterEditor({
   const [editorScrollTop, setEditorScrollTop] = useState(0);
   const [fontSettings, setFontSettings] = useState<FontSettings>(getStoredFontSettings);
   const [formatSettings, setFormatSettings] = useState<FormatOptions>(getStoredFormatSettings);
+  const editorGridLineStyle = useMemo(() => getEditorGridLineStyle(fontSettings, editorScrollTop), [editorScrollTop, fontSettings]);
   const [copyToast, setCopyToast] = useState('');
   const [associatedCount, setAssociatedCount] = useState(0);
   const reviewModalDraggable = useDraggableModal('chapter_review_panel');
@@ -1822,6 +1824,7 @@ export function ChapterEditor({
           className="xy-wa-editor-text-layer editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent px-6 pb-6 pt-3 outline-none"
           placeholder="从这里开始写..."
           style={{
+            ...editorGridLineStyle,
             fontFamily: fontSettings.fontFamily,
             color: fontSettings.fontColor,
             caretColor: fontSettings.fontColor,
