@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'chapter-sidebar-volume-chapter-left-alignment-001',
+    title: '章节侧栏卷名和章节名需要上下对齐并更靠左',
+    area: '作品编辑器 / 左侧章节侧栏 / 卷目录与章节行',
+    symptom: '卷行里的“第一卷”和文件夹图标整体偏右，章节行又带有额外缩进，导致卷名和第1章、第2章的文字起点上下不齐。',
+    cause: 'ChapterSidebar 的滚动区使用 px-2，卷行使用 px-3，章节容器还有 ml-1，章节行再叠加 border-left 和 px-3，多个缩进来源叠加后文字起点错位。',
+    solution: '将未发布和已发布章节侧栏滚动区改为 px-1，卷行改为 px-1，移除章节容器 ml-1，并把章节行左内边距调整为 px-[26px]，让卷名和章节名形成接近同一列的视觉对齐。',
+    prevention: '后续调整章节目录时同时检查 ChapterSidebar 和 PublishedSidebar；卷行、章节容器、选中边框和章节文本 padding 要作为一组处理，不要单独恢复 ml-1 或 px-3。',
+    keywords: ['作品编辑器', '章节侧栏', '第一卷', '第1章', '左对齐', 'ChapterSidebar', 'PublishedSidebar'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'dashboard-navigation-zones-removed-001',
     title: '首页导航和导航设置不应再出现专区功能',
     area: '首页 / 左侧导航 / 导航设置',

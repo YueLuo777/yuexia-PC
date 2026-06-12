@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from
 
 import type { Volume } from '@/features/workbench/model/workbenchTypes';
 
-const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md px-3 text-left text-[14px] font-medium text-[#1f2933] transition-colors hover:bg-[#eef3fb]';
+const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md px-1 text-left text-[14px] font-medium text-[#1f2933] transition-colors hover:bg-[#eef3fb]';
 const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#68727f]';
 
 function getContextMenuPoint(event: ReactMouseEvent<HTMLElement>) {
@@ -109,7 +109,7 @@ export function PublishedSidebar({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 py-2">
+      <div className="flex-1 overflow-y-auto px-1 py-2">
         {displayVolumes.map((volume) => {
           const expanded = expandedIds.has(volume.id);
           const VolumeFolderIcon = expanded ? FolderOpen : Folder;
@@ -136,11 +136,11 @@ export function PublishedSidebar({
             </div>
 
             {expanded && (
-              <div className="ml-1 mt-0.5 space-y-0.5">
+              <div className="mt-0.5 space-y-0.5">
                 {volume.chapters.map((chapter) => (
                   <div
                     key={chapter.id}
-                    className={`group relative flex items-center gap-2 rounded-md border-l-[3px] px-3 py-2 transition-colors ${
+                    className={`group relative flex items-center gap-2 rounded-md border-l-[3px] px-[26px] py-2 transition-colors ${
                       chapter.isSelected ? 'border-[#1e71ef] bg-[#d4e2f9]' : 'border-transparent hover:bg-gray-50'
                     }`}
                     onClick={() => onSelectChapter(volume.id, chapter.id)}

@@ -46,7 +46,7 @@ const emptyVolumeMenu: VolumeContextMenu = { visible: false, x: 0, y: 0, volumeI
 const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 300;
 const CHAPTER_SIDEBAR_BOTTOM_ROW_CLASS = 'flex items-center gap-1.5 border-t border-[#e6e8ec] px-2 py-2';
 const CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS = 'flex h-8 min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-md px-1.5 text-sm leading-none text-white transition-colors';
-const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md px-3 text-left text-[14px] font-medium text-[#1f2933] transition-colors hover:bg-[#eef3fb]';
+const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md px-1 text-left text-[14px] font-medium text-[#1f2933] transition-colors hover:bg-[#eef3fb]';
 const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#68727f]';
 
 function getContextMenuPoint(event: ReactMouseEvent<HTMLElement>) {
@@ -157,7 +157,7 @@ export function ChapterSidebar({
         </div>
       </div>
 
-      <div className="editor-scrollbar flex-1 overflow-y-auto px-2 py-2">
+      <div className="editor-scrollbar flex-1 overflow-y-auto px-1 py-2">
         {volumes.map((volume) => {
           const chapters = sortedUnpublishedChapters(volume);
           const VolumeFolderIcon = volume.isExpanded ? FolderOpen : Folder;
@@ -191,7 +191,7 @@ export function ChapterSidebar({
               </div>
 
               {volume.isExpanded && (
-                <div className="ml-1 mt-0.5 space-y-0.5">
+                <div className="mt-0.5 space-y-0.5">
                   {chapters.map((chapter) => (
                     <div
                       key={chapter.id}
@@ -201,7 +201,7 @@ export function ChapterSidebar({
                         event.stopPropagation();
                         setChapterMenu({ visible: true, ...getContextMenuPoint(event), volumeId: volume.id, chapterId: chapter.id });
                       }}
-                      className={`group relative flex w-full cursor-pointer items-center gap-2 rounded-md border-l-[3px] px-3 py-2 text-left transition-colors ${
+                      className={`group relative flex w-full cursor-pointer items-center gap-2 rounded-md border-l-[3px] px-[26px] py-2 text-left transition-colors ${
                         chapter.isSelected
                           ? 'border-[#1e71ef] bg-[#d4e2f9]'
                           : 'border-transparent hover:bg-gray-50'

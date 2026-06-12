@@ -1,3 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -44,6 +48,10 @@ const renderSidebar = () => render(
   />,
 );
 
+const readSource = (relativePath: string) => (
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8')
+);
+
 describe('ChapterSidebar', () => {
   it('shows an in-app prompt instead of a native alert when deleting a non-empty volume', () => {
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
@@ -60,5 +68,18 @@ describe('ChapterSidebar', () => {
     expect(screen.queryByRole('button', { name: '取消' })).not.toBeInTheDocument();
 
     alertSpy.mockRestore();
+  });
+
+  it('keeps volume and chapter labels visually aligned near the left edge', () => {
+    const chapterSidebarSource = readSource('ChapterSidebar.tsx');
+    const publishedSidebarSource = readSource('PublishedSidebar.tsx');
+
+    for (const source of [chapterSidebarSource, publishedSidebarSource]) {
+      expect(source).toContain('rounded-md px-1 text-left text-[14px]');
+      expect(source).toContain('overflow-y-auto px-1 py-2');
+      expect(source).toContain('className="mt-0.5 space-y-0.5"');
+      expect(source).toContain('border-l-[3px] px-[26px] py-2');
+      expect(source).not.toContain('className="ml-1 mt-0.5 space-y-0.5"');
+    }
   });
 });
