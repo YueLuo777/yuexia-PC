@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'workbench-ai-input-border-options-test-001',
+    title: '右侧 AI 输入框边框和已关联资料背景需要多方案对比',
+    area: '测试集合 / 作品编辑器 / 右侧 AI 输入区',
+    symptom: '当前亮蓝色边框和“已关联资料”背景过强，用户反馈颜色不好看，需要先看多套方案再决定正式迁入。',
+    cause: '正式页只有单一高饱和蓝色方案，输入框边框、已关联资料背景、字数提示和发送/停止按钮没有横向对比依据。',
+    solution: '在测试集合 AI 链路测试分组末尾新增“AI 输入框边框方案”，集中展示 8 套输入框边框线、已关联资料背景、已关联字数提示和按钮配色。',
+    prevention: '正式迁入前先在测试集合比较边框线、active 背景、字数提示和红色停止/清空按钮的整体协调，再把选定方案同步到真实 AI 输入区。',
+    keywords: ['AI输入框', '边框线', '已关联资料', '背景色', '测试集合', 'WorkbenchAIPanel', 'AiInlineInput'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'workbench-folder-group-style-sync-001',
     title: '已发布和脑洞等左侧分组需要同步正文文件夹样式',
     area: '作品编辑器 / 正文 / 已发布 / 脑洞 / 章纲 / 审核状态目录',
