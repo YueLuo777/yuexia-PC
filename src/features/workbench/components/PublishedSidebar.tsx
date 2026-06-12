@@ -1,4 +1,4 @@
-import { Folder, FolderOpen } from 'lucide-react';
+import { ChevronRight, Folder, FolderOpen } from 'lucide-react';
 import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react';
 
 import type { Volume } from '@/features/workbench/model/workbenchTypes';
@@ -6,6 +6,11 @@ import type { Volume } from '@/features/workbench/model/workbenchTypes';
 const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#c7dcff] bg-[#eaf2ff] px-1 text-left text-[14px] font-medium text-[#1f2933] shadow-sm transition-colors hover:bg-[#dfeaff]';
 const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#1e71ef]';
 const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-medium text-[#6f7e90]';
+const CHAPTER_CONTEXT_MENU_CLASS = 'fixed z-[100] w-[206px] overflow-visible rounded-[8px] border border-[#e5e7eb] bg-white py-1 shadow-[0_10px_28px_rgba(15,23,42,0.14)]';
+const CHAPTER_CONTEXT_MENU_ITEM_CLASS = 'flex h-[42px] w-full items-center gap-3 px-3 text-left text-[15px] font-medium text-[#1f2933] transition-colors hover:bg-[#f5f7fa]';
+const CHAPTER_CONTEXT_MENU_DANGER_CLASS = 'flex h-[42px] w-full items-center gap-3 px-3 text-left text-[15px] font-medium text-[#ff3b30] transition-colors hover:bg-[#fff1f0]';
+const CHAPTER_CONTEXT_MENU_SUBMENU_CLASS = 'absolute left-[calc(100%+4px)] top-0 hidden w-[176px] overflow-hidden rounded-[8px] border border-[#e5e7eb] bg-white py-1 shadow-[0_10px_28px_rgba(15,23,42,0.14)] group-hover:block';
+const CHAPTER_CONTEXT_MENU_DIVIDER_CLASS = 'mx-3 h-px bg-[#edf0f2]';
 
 function getContextMenuPoint(event: ReactMouseEvent<HTMLElement>) {
   const target = event.currentTarget;
@@ -183,34 +188,61 @@ export function PublishedSidebar({
 
       {contextMenu.visible && (
         <div
-          className="fixed z-[100] min-w-[120px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
+          className={CHAPTER_CONTEXT_MENU_CLASS}
           style={{ left: contextMenu.x, top: contextMenu.y }}
+          onContextMenu={(event) => event.preventDefault()}
         >
           <button
             onClick={() => {
               if (contextMenu.volumeId && contextMenu.chapterId) handleEditChapter(contextMenu.volumeId, contextMenu.chapterId);
             }}
-            className="w-full px-3 py-2 text-left text-base text-gray-700 transition-colors hover:bg-gray-50"
+            className={CHAPTER_CONTEXT_MENU_ITEM_CLASS}
+          >
+            重命名
+          </button>
+          <button
+            onClick={() => {
+              if (contextMenu.volumeId && contextMenu.chapterId) handleEditChapter(contextMenu.volumeId, contextMenu.chapterId);
+            }}
+            className={CHAPTER_CONTEXT_MENU_ITEM_CLASS}
           >
             修改章节
           </button>
-          <div className="mx-2 h-px bg-gray-100" />
+          <div className={CHAPTER_CONTEXT_MENU_DIVIDER_CLASS} />
           <button
             onClick={() => {
               if (contextMenu.chapterId) onUnpublishChapter(contextMenu.chapterId);
               setContextMenu({ visible: false, x: 0, y: 0, volumeId: null, chapterId: null });
             }}
-            className="w-full px-3 py-2 text-left text-base text-gray-600 transition-colors hover:bg-gray-50"
+            className={CHAPTER_CONTEXT_MENU_ITEM_CLASS}
           >
             撤回章节
           </button>
-          <div className="mx-2 h-px bg-gray-100" />
+          <div className="group relative">
+            <button
+              type="button"
+              className={`${CHAPTER_CONTEXT_MENU_ITEM_CLASS} bg-transparent`}
+            >
+              <span className="min-w-0 flex-1">移入分组</span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-[#c3c9d2]" />
+            </button>
+            <div className={CHAPTER_CONTEXT_MENU_SUBMENU_CLASS}>
+              <button
+                type="button"
+                disabled
+                className="flex h-[42px] w-full items-center px-4 text-left text-[15px] font-medium text-[#8d98a6]"
+              >
+                暂留选项
+              </button>
+            </div>
+          </div>
+          <div className={CHAPTER_CONTEXT_MENU_DIVIDER_CLASS} />
           <button
             onClick={() => {
               if (contextMenu.volumeId && contextMenu.chapterId) onDeleteChapter(contextMenu.volumeId, contextMenu.chapterId);
               setContextMenu({ visible: false, x: 0, y: 0, volumeId: null, chapterId: null });
             }}
-            className="w-full px-3 py-2 text-left text-base text-red-500 transition-colors hover:bg-red-50"
+            className={CHAPTER_CONTEXT_MENU_DANGER_CLASS}
           >
             删除章节
           </button>

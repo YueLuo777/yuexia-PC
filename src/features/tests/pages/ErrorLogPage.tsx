@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'chapter-context-menu-reference-style-apply-001',
+    title: '章节右键菜单需要套用测试页小型弹窗样式',
+    area: '作品编辑器 / 章节侧栏 / 已发布侧栏 / 右键菜单',
+    symptom: '测试页里的菜单示例仍是其他软件的“私密作品设置、书封管理”等占位内容，正式章节右键菜单也还保留普通小白框样式，没有同步成截图里的小型菜单和右侧子菜单。',
+    cause: '之前弹窗样式测试只用于预览，没有绑定到当前软件真实的章节右键菜单内容，也没有处理“移入分组”这种带右侧子菜单但暂时无功能的入口。',
+    solution: '把测试页“作品菜单”改为章节右键菜单：重命名、修改章节、发布章节、移入分组、删除章节；正式未发布和已发布章节右键菜单统一使用 8px 圆角、#e5e7eb 边框、浅阴影、红色危险操作，并给“移入分组”增加只含“暂留选项”的右侧子菜单。',
+    prevention: '以后把测试页样式转正时，先替换为本软件真实菜单文案，再同步正式组件；占位内容不能直接带入正式菜单。',
+    keywords: ['章节右键菜单', '08号测试', '移入分组', '暂留选项', 'ChapterSidebar', 'PublishedSidebar', 'SoftwareModalStyleTestPage'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'dashboard-sidebar-nav-divider-drag-multiple-001',
     title: '首页左侧导航分割线需要可拖拽且可新增删除',
     area: '首页 / 左侧导航 / 导航设置 / 分割线',

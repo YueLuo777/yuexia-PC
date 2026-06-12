@@ -23,7 +23,7 @@ type PopupItem = {
 };
 
 const variants: Array<{ id: PopupVariant; label: string; icon: typeof BookOpen }> = [
-  { id: 'work', label: '作品菜单', icon: BookOpen },
+  { id: 'work', label: '章节右键菜单', icon: BookOpen },
   { id: 'navigation', label: '导航设置', icon: Settings },
   { id: 'system', label: '系统设置', icon: Upload },
   { id: 'shortcut', label: '快捷键', icon: Keyboard },
@@ -31,13 +31,11 @@ const variants: Array<{ id: PopupVariant; label: string; icon: typeof BookOpen }
 
 const popupItems: Record<PopupVariant, PopupItem[]> = {
   work: [
-    { label: '私密作品设置' },
-    { label: '书封管理' },
-    { label: '发布平台设置', hasNext: true },
+    { label: '重命名' },
+    { label: '修改章节' },
+    { label: '发布章节' },
     { label: '移入分组', hasNext: true },
-    { label: '取消置顶' },
-    { label: '从桌面隐藏' },
-    { label: '移入回收站', danger: true },
+    { label: '删除章节', danger: true },
   ],
   navigation: [
     { label: '新增分割线' },
@@ -64,7 +62,7 @@ const popupItems: Record<PopupVariant, PopupItem[]> = {
 };
 
 const variantMeta: Record<PopupVariant, { title: string; updatedAt: string }> = {
-  work: { title: '月落软件', updatedAt: '2026-06-12 19:50 更新' },
+  work: { title: '章节右键菜单', updatedAt: '当前章节操作' },
   navigation: { title: '导航设置', updatedAt: '当前导航配置' },
   system: { title: '系统设置', updatedAt: '当前项目弹窗内容' },
   shortcut: { title: '快捷键设置', updatedAt: '当前快捷键与鼠标手势' },
@@ -73,27 +71,41 @@ const variantMeta: Record<PopupVariant, { title: string; updatedAt: string }> = 
 function ReferencePopup({ variant }: { variant: PopupVariant }) {
   const meta = variantMeta[variant];
   const items = popupItems[variant];
+  const showGroupSubmenu = variant === 'work';
 
   return (
-    <div className="w-[220px] overflow-hidden rounded-[8px] border border-[#e5e7eb] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.14)]">
-      <div className="border-b border-[#edf0f2] px-4 py-3 text-[14px] leading-none text-[#8d98a6]">
-        {meta.updatedAt}
+    <div className="relative inline-flex items-start">
+      <div className="w-[220px] overflow-hidden rounded-[8px] border border-[#e5e7eb] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.14)]">
+        <div className="border-b border-[#edf0f2] px-4 py-3 text-[14px] leading-none text-[#8d98a6]">
+          {meta.updatedAt}
+        </div>
+        <div>
+          {items.map((item, index) => (
+            <button
+              key={`${item.label}-${index}`}
+              type="button"
+              className={`flex h-[46px] w-full items-center gap-3 px-4 text-left text-[17px] font-medium transition-colors hover:bg-[#f5f7fa] ${
+                item.danger ? 'text-[#ff3b30]' : 'text-[#1f2933]'
+              } ${index === 1 || item.label === '移入分组' ? 'border-b border-[#edf0f2]' : ''}`}
+            >
+              <span className="min-w-0 flex-1 truncate">{item.label}</span>
+              {item.hint ? <span className="shrink-0 text-[12px] text-[#9aa3af]">{item.hint}</span> : null}
+              {item.hasNext ? <ChevronRight className="h-5 w-5 shrink-0 text-[#c3c9d2]" /> : null}
+            </button>
+          ))}
+        </div>
       </div>
-      <div>
-        {items.map((item, index) => (
+      {showGroupSubmenu ? (
+        <div className="ml-1 w-[176px] overflow-hidden rounded-[8px] border border-[#e5e7eb] bg-white py-1 shadow-[0_10px_28px_rgba(15,23,42,0.14)]">
           <button
-            key={`${item.label}-${index}`}
             type="button"
-            className={`flex h-[46px] w-full items-center gap-3 px-4 text-left text-[17px] font-medium transition-colors hover:bg-[#f5f7fa] ${
-              item.danger ? 'text-[#ff3b30]' : 'text-[#1f2933]'
-            } ${index === 1 ? 'border-b border-[#edf0f2]' : ''}`}
+            disabled
+            className="flex h-[46px] w-full items-center px-4 text-left text-[17px] font-medium text-[#8d98a6]"
           >
-            <span className="min-w-0 flex-1 truncate">{item.label}</span>
-            {item.hint ? <span className="shrink-0 text-[12px] text-[#9aa3af]">{item.hint}</span> : null}
-            {item.hasNext ? <ChevronRight className="h-5 w-5 shrink-0 text-[#c3c9d2]" /> : null}
+            暂留选项
           </button>
-        ))}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }
