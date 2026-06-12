@@ -1,5 +1,6 @@
 ﻿import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { ChapterEditor } from '@/features/workbench/components/ChapterEditor';
@@ -94,10 +95,9 @@ const PUBLISHED_SIDEBAR_DEFAULT_WIDTH = 190;
 const FIND_REPLACE_DEFAULT_GEOMETRY = {
   x: 0,
   y: 0,
-  left: 16,
-  top: 84,
   width: 592,
 };
+const FIND_REPLACE_MODAL_STORAGE_ID = 'workbench_find_replace_centered_v2';
 const CONTEXT_SETTING_TYPE_ORDER = ['核心设定', '主线剧情', '等级体系', '势力设定', '伏笔设定', '其他设定', '未分类'];
 const CONTEXT_ROLE_TYPE_ORDER = ['男主角', '女主角', '正派配角', '重要反派', '反派配角', '龙套', '未分类'];
 
@@ -972,7 +972,7 @@ function WorkbenchFindReplaceModal({
   onSelectChapter: (volumeId: number, chapterId: number) => void;
   onUpdateChapterContents: (updates: Record<number, string>) => void;
 }) {
-  const draggable = useDraggableModal('workbench_find_replace', FIND_REPLACE_DEFAULT_GEOMETRY);
+  const draggable = useDraggableModal(FIND_REPLACE_MODAL_STORAGE_ID, FIND_REPLACE_DEFAULT_GEOMETRY);
   useTopModalEscape(true, onClose);
   const [scope, setScope] = useState<FindScope>('chapter');
   const [searchText, setSearchText] = useState('');
@@ -1043,16 +1043,24 @@ function WorkbenchFindReplaceModal({
     setStatus(targetScope === 'chapter' ? `本章已替换 ${count} 处` : `全书已替换 ${count} 处`);
   };
 
-  return (
-    <div className="fixed inset-0 z-[230] flex items-center justify-center bg-black/30 px-6 py-6">
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[230] flex items-center justify-center bg-black/30 px-6 py-6"
+      style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
       <section
         data-draggable-managed="true"
         className="relative w-[592px] max-w-[94vw] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]"
-        style={draggable.style}
+        style={{ ...draggable.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
+        onMouseDown={(event) => event.stopPropagation()}
       >
         <header
           {...draggable.dragHandleProps}
           className="flex h-11 cursor-move items-center justify-between border-b border-gray-100 px-4"
+          style={{ ...draggable.dragHandleProps.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
         >
           <h2 className="text-base font-bold text-gray-900">查找替换</h2>
           <button data-no-modal-drag="true" onClick={onClose} className="rounded-lg px-2.5 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700">
@@ -1108,7 +1116,8 @@ function WorkbenchFindReplaceModal({
         </div>
         <ModalResizeHandles draggable={draggable} />
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

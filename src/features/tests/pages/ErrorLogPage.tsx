@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'workbench-find-replace-modal-position-001',
+    title: '查找替换弹窗不应每次出现在错误位置',
+    area: '作品编辑器 / 正文 / 查找替换弹窗',
+    symptom: '点击正文工具栏里的“查找”后，查找替换弹窗会出现在左上角或旧的错误位置，和用户当前操作区域脱节。',
+    cause: '查找替换弹窗是手写 fixed 浮层，渲染在工作台页面内部；工作台外层存在缩放/transform 场景时 fixed 坐标容易和视口坐标不一致。同时旧默认几何写死 left: 16、top: 84，并复用旧 localStorage 位置缓存。',
+    solution: '将查找替换弹窗改为 createPortal 渲染到 document.body，默认几何只保留居中偏移和宽度；使用新的稳定 storageId 避开旧错误缓存，并让 useDraggableModal 在保存拖动位置前按弹窗宽高夹到视口内。',
+    prevention: '以后新增或调整可拖动弹窗时，优先复用 WorkbenchModal 或 body portal；不要把 fixed 可拖拽弹窗放在缩放容器内，也不要用固定 left/top 作为默认打开位置。',
+    keywords: ['查找', '替换', '弹窗位置', 'createPortal', 'document.body', 'useDraggableModal', 'localStorage', 'WorkbenchPage'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'workbench-transient-ai-drafts-clear-on-exit-001',
     title: '作品编辑器临时输入和 AI 输出不应跨软件退出保留',
     area: '作品编辑器 / 设定 / 人物设定 / 脑洞 / 正文 AI 对话',
