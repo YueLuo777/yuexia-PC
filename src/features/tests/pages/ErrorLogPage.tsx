@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'novel-library-content-padding-too-wide-001',
+    title: '作品库内容区顶部和左侧留白过大',
+    area: '我的小说 / 内容区 / 顶部四卡片与侧边栏间距',
+    symptom: '作品库内容区与顶部标签栏、左侧导航之间的空白过宽，用户截图标注希望这些缝隙缩小一半。',
+    cause: 'NovelLibraryPage 主内容容器使用 px-8 py-7，左右 32px、上下 28px 的外侧留白在当前紧凑卡片布局下显得过大。',
+    solution: '将主内容容器改为 px-4 py-3.5，把左右留白压到 16px、上下留白压到 14px；只调整外侧内容区 padding，不改变卡片和作品列表功能逻辑。',
+    prevention: '以后压缩作品库卡片高度后，需要同步检查页面外侧 padding；紧凑布局下优先用 16px 左右边距和 14px 顶部边距作为默认。',
+    keywords: ['我的小说', '内容区', '左侧缝隙', '顶部缝隙', 'NovelLibraryPage', 'px-4', 'py-3.5'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'novel-library-top-cards-row-too-tall-001',
     title: '作品库顶部四卡片区域过高',
     area: '我的小说 / 顶部四卡片 / 数据卡与操作卡',
