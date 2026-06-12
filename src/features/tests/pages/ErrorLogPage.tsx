@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'editor-grid-line-underline-gap-increase-001',
+    title: '编辑器网格虚线与文字间隔需要加大',
+    area: '测试集合 / 编辑器网格虚线测试 / 正文背景',
+    symptom: '虚线已经落在文字下方，但参考图中字体底部到虚线之间的空隙更明显，当前测试页间隔仍偏小。',
+    cause: '上一版 lineOffsetPx 使用固定 +3px 作为字底下方间隔，在 28px 以上字号下视觉距离不够，虚线仍显得贴近文字。',
+    solution: '新增 underlineGapPx，按 Math.max(8, fontSize * 0.22) 计算下方间隔，再参与 lineOffsetPx 计算；默认字号下虚线进一步下移，字号变大时间隔同步放大。',
+    prevention: '以后调整稿纸虚线时同时检查线位和字底空隙，不只判断虚线是否在文字下方；字号联动值应单独命名，避免隐藏在 lineOffsetPx 魔法数里。',
+    keywords: ['编辑器', '网格虚线', '文字间隔', 'underlineGapPx', 'EditorGridLineTestPage'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'editor-grid-line-baseline-offset-001',
     title: '编辑器网格虚线需要落在文字下方',
     area: '测试集合 / 编辑器网格虚线测试 / 正文背景',

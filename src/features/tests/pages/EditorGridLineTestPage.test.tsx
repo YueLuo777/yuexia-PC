@@ -15,7 +15,8 @@ describe('EditorGridLineTestPage', () => {
     expect(source).toContain("type GridLineMode = 'none' | 'solid' | 'dashed'");
     expect(source).toContain("const [fontSize, setFontSize] = useState(28)");
     expect(source).toContain('const lineHeightPx = Math.round(fontSize * 1.72)');
-    expect(source).toContain('const lineOffsetPx = Math.min(lineHeightPx - 2, Math.round((lineHeightPx + fontSize) / 2 + 3))');
+    expect(source).toContain('const underlineGapPx = Math.max(8, Math.round(fontSize * 0.22))');
+    expect(source).toContain('const lineOffsetPx = Math.min(lineHeightPx - 2, Math.round((lineHeightPx + fontSize) / 2 + underlineGapPx))');
     expect(source).toContain("height='${lineHeightPx}' viewBox='0 0 1200 ${lineHeightPx}'");
     expect(source).toContain("y1='${lineOffsetPx}.5'");
     expect(source).toContain("backgroundPosition: '0 0'");

@@ -29,7 +29,8 @@ export function EditorGridLineTestPage() {
   const [fontSize, setFontSize] = useState(28);
   const [mode, setMode] = useState<GridLineMode>('dashed');
   const lineHeightPx = Math.round(fontSize * 1.72);
-  const lineOffsetPx = Math.min(lineHeightPx - 2, Math.round((lineHeightPx + fontSize) / 2 + 3));
+  const underlineGapPx = Math.max(8, Math.round(fontSize * 0.22));
+  const lineOffsetPx = Math.min(lineHeightPx - 2, Math.round((lineHeightPx + fontSize) / 2 + underlineGapPx));
   const gridBackground = useMemo(() => buildGridBackground(mode, lineHeightPx, lineOffsetPx), [lineHeightPx, lineOffsetPx, mode]);
 
   return (
