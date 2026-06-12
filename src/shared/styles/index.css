@@ -182,10 +182,29 @@
   font-weight: 700;
 }
 
+.xy-wa-book-cover {
+  background: #f5f8fd;
+}
+
 .xy-wa-book-cover-empty {
   background:
-    linear-gradient(90deg, rgba(30, 113, 239, 0.2) 0 4px, transparent 4px 8px),
-    linear-gradient(145deg, #a7d3ff 0%, #88b9ff 100%);
+    linear-gradient(90deg, rgba(51, 128, 231, 0.22) 0 3px, transparent 3px 7px),
+    linear-gradient(145deg, #a9d7ff 0%, #89b9ff 100%);
+}
+
+.xy-wa-book-cover-empty::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 18px;
+  background:
+    linear-gradient(90deg, rgba(49, 118, 218, 0.24), rgba(255, 255, 255, 0.16) 42%, rgba(49, 118, 218, 0.14) 100%);
+  border-right: 1px solid rgba(80, 145, 231, 0.18);
+  pointer-events: none;
+}
+
+.xy-wa-book-cover-image {
+  background: #f5f8fd;
 }
 
 ::-webkit-scrollbar {

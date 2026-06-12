@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'novel-card-cover-menu-reference-001',
+    title: '作品卡片封面需要接近参考书封并移除私密角标',
+    area: '我的小说 / 作品卡片 / 封面与更多菜单',
+    symptom: '默认作品封面和参考截图不一致，左上角仍显示“私密”角标；右下角三个点菜单打开后，点击页面空白处不会自动关闭。',
+    cause: 'NovelCard 的默认封面样式带有角标文本和通用图片占位图标，更多菜单只由按钮切换，没有在菜单打开期间监听外部点击。',
+    solution: '将默认封面拆成 xy-wa-book-cover-empty 专用书封样式，移除私密角标，使用浅蓝渐变书脊和右下角羽毛水印；菜单打开时挂载 pointerdown/keydown 监听，点击卡片外或按 Esc 自动关闭。',
+    prevention: '后续调整作品卡片时保持真实封面和默认封面样式分离；新增浮层菜单必须覆盖点击外部关闭和 Esc 关闭，避免菜单残留。',
+    keywords: ['作品卡片', '封面', '私密', '三个点', '更多菜单', '点击空白关闭', 'NovelCard'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'novel-library-search-background-f5f6f6-001',
     title: '我的小说搜索框背景色需要固定为 #F5F6F6',
     area: '我的小说 / 搜索小说输入框',
