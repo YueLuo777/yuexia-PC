@@ -11,7 +11,7 @@ const readDashboardLayoutSource = async () => {
 describe('DashboardLayout profile block', () => {
   it('centers the avatar with the user name underneath', async () => {
     const source = await readDashboardLayoutSource();
-    const profileStart = source.indexOf('<div className="shrink-0 border-b border-[#e7e9ee] px-3 py-7">');
+    const profileStart = source.indexOf('<div className="shrink-0 px-3 py-7">');
     const navStart = source.indexOf('<div\n          ref={sidebarRef}', profileStart);
     const profileSource = source.slice(profileStart, navStart);
 
@@ -20,6 +20,7 @@ describe('DashboardLayout profile block', () => {
     expect(profileSource).toContain('className="mt-3 w-full min-w-0"');
     expect(profileSource).toContain('text-center text-[15px]');
     expect(profileSource).not.toContain('flex items-center gap-2.5');
+    expect(profileSource).not.toContain('border-b border-[#e7e9ee]');
   });
 });
 
@@ -62,12 +63,14 @@ describe('DashboardLayout footer settings actions', () => {
 describe('DashboardLayout navigation groups', () => {
   it('renders collapsible groups as folder rows', async () => {
     const source = await readDashboardLayoutSource();
-    const navStart = source.indexOf('{navConfig.filter((group) => !group.hidden).map((group) => {');
+    const navStart = source.indexOf('{navConfig.filter((group) => !group.hidden).map((group, groupIndex) => {');
     const footerStart = source.indexOf('<div className="grid shrink-0 grid-cols-2 gap-2 border-t', navStart);
     const navSource = source.slice(navStart, footerStart);
 
     expect(source).toContain("import { Camera, Folder, FolderOpen, UserRound } from 'lucide-react'");
     expect(navSource).toContain('const GroupFolderIcon = isCollapsed ? Folder : FolderOpen');
+    expect(navSource).toContain('map((group, groupIndex) => {');
+    expect(navSource).toContain('groupIndex > 0 && <div className="mb-2 h-px w-full bg-[#e1e5eb]" aria-hidden="true" />');
     expect(navSource).toContain('<GroupFolderIcon className="h-[17px] w-[17px] shrink-0 text-[#68727f]" />');
     expect(navSource).toContain('aria-expanded={!isCollapsed}');
     expect(navSource).toContain('rounded-md px-3 text-left text-[14px] font-medium text-[#1f2933]');

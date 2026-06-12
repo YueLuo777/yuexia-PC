@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'dashboard-nav-group-divider-hierarchy-001',
+    title: '首页左侧导航分组线需要只分隔专区层级',
+    area: '首页 / 左侧导航 / 分组分隔线',
+    symptom: '头像区下方第一条横线让头像和第一个专区被过度切开，而第二、第三条分组线没有拉满整个导航宽度，专区层级不够清楚。',
+    cause: '头像区域保留了独立 border-b，同时分组区域没有显式按分组序号控制分隔线，导致第一组前也出现分隔感，后续分隔线宽度不够明确。',
+    solution: '移除头像区底部边线；导航分组 map 增加 groupIndex，只在第二个及之后的专区前渲染一条 w-full 的分隔线。',
+    prevention: '后续调整首页导航层级时，头像区不要再加底部分隔线；专区分隔线应从第二组开始显示，并保持导航内容区全宽。',
+    keywords: ['首页', '左侧导航', '分组线', '头像区', 'DashboardLayout', 'groupIndex', 'w-full'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'workbench-ai-input-border-options-test-001',
     title: '右侧 AI 输入框边框和已关联资料背景需要多方案对比',
     area: '测试集合 / 作品编辑器 / 右侧 AI 输入区',

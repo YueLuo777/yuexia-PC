@@ -230,7 +230,7 @@ export function DashboardLayout() {
         style={{ width: sidebarWidth }}
         className="flex shrink-0 flex-col overflow-hidden border-r border-[#e1e5eb] bg-[#f5f5f7]"
       >
-        <div className="shrink-0 border-b border-[#e7e9ee] px-3 py-7">
+        <div className="shrink-0 px-3 py-7">
           <input
             ref={avatarInputRef}
             type="file"
@@ -294,12 +294,13 @@ export function DashboardLayout() {
           ref={sidebarRef}
           className={`scrollbar-scroll-only min-h-0 flex-1 overflow-y-auto overflow-x-hidden ${isSidebarScrolling ? 'scrollbar-active' : ''}`}
         >
-          {navConfig.filter((group) => !group.hidden).map((group) => {
+          {navConfig.filter((group) => !group.hidden).map((group, groupIndex) => {
             const isCollapsed = collapsedSections[group.title] ?? false;
             const GroupFolderIcon = isCollapsed ? Folder : FolderOpen;
 
             return (
               <div key={group.title} className="mb-1 mt-1">
+                {groupIndex > 0 && <div className="mb-2 h-px w-full bg-[#e1e5eb]" aria-hidden="true" />}
                 <button
                   onClick={() => toggleSection(group.title)}
                   className="mx-1.5 flex h-9 w-[calc(100%-12px)] items-center gap-2 rounded-md px-3 text-left text-[14px] font-medium text-[#1f2933] transition-colors hover:bg-white/70"
