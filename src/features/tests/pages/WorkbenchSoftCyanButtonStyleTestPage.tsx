@@ -1,6 +1,6 @@
 import { Send, Square } from 'lucide-react';
 
-type Variant = 'recommended' | 'quiet';
+type Variant = 'recommended' | 'quiet' | 'cyanText';
 
 const mainFlows = ['默认小说1', '作品信息', '脑洞', '设定', '章纲', '正文', '审核', '点评', '润色', '状态', '梗概'];
 const chapterRows = [
@@ -12,15 +12,18 @@ const chapterRows = [
 function softButtonClass(active = false, variant: Variant = 'recommended') {
   const base = 'inline-flex h-9 shrink-0 items-center justify-center rounded-[8px] border px-4 text-sm font-black transition-colors';
   if (active) return `${base} border-[#E7F8FD] bg-[#E7F8FD] text-[#08AACE]`;
+  if (variant === 'cyanText') return `${base} border-[#E7F8FD] bg-white text-[#08AACE] hover:bg-[#E7F8FD]`;
   if (variant === 'quiet') return `${base} border-[#E7F8FD] bg-white text-[#4f5d6b] hover:bg-[#E7F8FD] hover:text-[#08AACE]`;
   return `${base} border-[#E7F8FD] bg-white text-[#586574] hover:bg-[#DDF5FC] hover:text-[#08AACE]`;
 }
 
-function splitButtonClass(active = false) {
+function splitButtonClass(active = false, variant: Variant = 'recommended') {
   return [
     'inline-flex h-9 shrink-0 items-center justify-center border-y border-r px-3 text-sm font-black first:rounded-l-[8px] first:border-l last:rounded-r-[8px]',
     active
       ? 'border-[#E7F8FD] bg-[#E7F8FD] text-[#08AACE]'
+      : variant === 'cyanText'
+        ? 'border-[#E7F8FD] bg-white text-[#08AACE] hover:bg-[#E7F8FD]'
       : 'border-[#E7F8FD] bg-white text-[#526171] hover:bg-[#DDF5FC] hover:text-[#08AACE]',
   ].join(' ');
 }
@@ -36,6 +39,8 @@ function HeaderFlowPreview({ variant }: { variant: Variant }) {
             className={`h-9 shrink-0 border-r border-[#edf1f5] px-4 text-sm font-black last:border-r-0 ${
               flow === '作品信息' || flow === '正文'
                 ? 'bg-[#E7F8FD] text-[#08AACE]'
+                : variant === 'cyanText'
+                  ? 'bg-white text-[#08AACE] hover:bg-[#E7F8FD]'
                 : 'bg-white text-[#586574]'
             }`}
           >
@@ -64,11 +69,13 @@ function LeftSidebarPreview({ variant }: { variant: Variant }) {
             className={`mb-1 grid h-11 w-full grid-cols-[minmax(0,1fr)_auto] items-center rounded-[8px] border px-3 text-left text-sm font-bold ${
               row.active
                 ? 'border-[#E7F8FD] bg-[#E7F8FD] text-[#08AACE]'
+                : variant === 'cyanText'
+                  ? 'border-transparent bg-white text-[#08AACE] hover:bg-[#E7F8FD]'
                 : 'border-transparent bg-white text-[#4f5d6b] hover:bg-[#f7fbfd]'
             }`}
           >
             <span className="truncate">{row.title}</span>
-            <span className={row.active ? 'text-[#08AACE]' : 'text-[#9aa3af]'}>{row.meta}</span>
+            <span className={row.active || variant === 'cyanText' ? 'text-[#08AACE]' : 'text-[#9aa3af]'}>{row.meta}</span>
           </button>
         ))}
       </div>
@@ -89,8 +96,8 @@ function EditorToolbarPreview({ variant }: { variant: Variant }) {
         <button className={softButtonClass(false, variant)}>第一卷</button>
         <button className={softButtonClass(false, variant)}>第1章</button>
         <input className="h-9 min-w-[260px] flex-1 rounded-[8px] border border-[#E7F8FD] bg-white px-3 text-sm font-bold text-[#586574] outline-none" placeholder="请输入章节标题" />
-        <button className={splitButtonClass(false)}>复制</button>
-        <button className={splitButtonClass(true)}>优化</button>
+        <button className={splitButtonClass(false, variant)}>复制</button>
+        <button className={splitButtonClass(true, variant)}>优化</button>
       </div>
       <div className="flex flex-wrap items-center gap-2 bg-white px-4 py-3">
         {['字体设置', '智能排版', '高频词', '一键替换', '复制正文', '历史'].map((label) => (
@@ -130,9 +137,9 @@ function RightPanelPreview({ variant }: { variant: Variant }) {
       </div>
       <div className="mt-4 flex items-center gap-3">
         <div className="flex overflow-hidden rounded-[12px] border border-[#E7F8FD]">
-          <button className={splitButtonClass(false)}>关联</button>
-          <button className={splitButtonClass(false)}>本章</button>
-          <button className={splitButtonClass(true)}>已关联资料</button>
+          <button className={splitButtonClass(false, variant)}>关联</button>
+          <button className={splitButtonClass(false, variant)}>本章</button>
+          <button className={splitButtonClass(true, variant)}>已关联资料</button>
         </div>
         <span className="text-sm font-bold text-[#9aa3af]">
           已关联：<span className="text-[#08AACE]">1865</span> 字
@@ -197,6 +204,12 @@ export function WorkbenchSoftCyanButtonStyleTestPage() {
           title="方案 B：更轻，边框存在感继续降低"
           desc="适合你觉得按钮还是太抢眼时使用。保留可点击感，但把 hover 和未选中状态都压低。"
           variant="quiet"
+        />
+
+        <DesignPreview
+          title="方案 C：按钮文字统一 #08AACE"
+          desc="不只改按钮底色，把按钮文字也统一成 #08AACE。选中态保留 #E7F8FD 底色，未选中按钮保持白底，但文字同样是 #08AACE。"
+          variant="cyanText"
         />
       </div>
     </div>

@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'workbench-soft-cyan-button-text-option-c-001',
+    title: '浅青按钮测试需要明确展示文字也变为 #08AACE 的 C 方案',
+    area: '测试集合 / 作品编辑器浅青按钮状态测试',
+    symptom: '浅青按钮测试页的方案容易被理解成只改了按钮底色和边框，用户指出按钮文字没有明确换成 #08AACE，需要新增 C 方案单独对照。',
+    cause: 'A/B 方案把重点放在选中底色和边框降噪，未选中按钮仍保留灰色文字，组合按钮也没有传入完整变体，导致“按钮文字统一青色”的效果不够直观。',
+    solution: '新增 cyanText 变体和方案 C：选中按钮继续使用 #E7F8FD 底色 + #08AACE 文字，未选中按钮保持白底但文字也改为 #08AACE；组合按钮、流程按钮和左侧章节按钮一起接入。',
+    prevention: '以后做配色测试时，如果用户指定“底色”和“字体颜色”，测试页需要单独给出文字色强制统一的方案，避免只在选中态或局部按钮上体现。',
+    keywords: ['浅青按钮', '方案C', '#08AACE', '#E7F8FD', '按钮文字', 'WorkbenchSoftCyanButtonStyleTestPage'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'chapter-editor-grid-line-edge-mask-001',
     title: '正文稿纸线首行和右侧贴边线段需要隐藏',
     area: '作品编辑器 / 正文 / 字体设置 / 稿纸线',

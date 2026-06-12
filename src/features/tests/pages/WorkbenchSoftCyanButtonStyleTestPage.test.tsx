@@ -39,5 +39,9 @@ describe('WorkbenchSoftCyanButtonStyleTestPage', () => {
 
     expect(pageSource).toContain('方案 A：推荐，浅青选中态 + 白底操作按钮');
     expect(pageSource).toContain('方案 B：更轻，边框存在感继续降低');
+    expect(pageSource).toContain('方案 C：按钮文字统一 #08AACE');
+    expect(pageSource).toContain("type Variant = 'recommended' | 'quiet' | 'cyanText';");
+    expect(pageSource).toContain("if (variant === 'cyanText') return `${base} border-[#E7F8FD] bg-white text-[#08AACE] hover:bg-[#E7F8FD]`;");
+    expect(pageSource).toContain("variant === 'cyanText'");
   });
 });
