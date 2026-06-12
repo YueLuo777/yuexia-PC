@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'novel-library-top-cards-density-clickable-recent-001',
+    title: '作品库顶部数据卡过空且最近编辑入口不够明确',
+    area: '我的小说 / 顶部四卡片 / 数据卡与最近编辑卡',
+    symptom: '第一张数据卡字号偏小、内容显得空；最近编辑卡顶部还有“快速进入”和右上角图标，占用空间，同时作品名只是普通文本感，用户不容易知道可以点击进入。',
+    cause: '数据卡仍停留在四行小字号统计，预留项没有提供信息密度；最近编辑卡沿用快捷入口卡的标题结构，没有把作品行做成可点击按钮的视觉。',
+    solution: '数据卡增加“作品概览”和当前库说明，统计值放大，并把空的预留行改为平均字数；最近编辑卡删除“快速进入”和右上角时钟图标，把每条最近作品改为带边框、浅底、悬停态的可点击行。',
+    prevention: '以后调整顶部四卡片时，数据卡优先用真实统计填充空位；最近编辑列表需要用按钮边框或明确点击态提示，避免只靠文字暗示可进入。',
+    keywords: ['我的小说', '顶部四卡片', '作品概览', '平均字数', '最近编辑', '快速进入', 'Clock3', 'NovelLibraryPage'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'chapter-context-menu-reference-style-apply-001',
     title: '章节右键菜单需要套用测试页小型弹窗样式',
     area: '作品编辑器 / 章节侧栏 / 已发布侧栏 / 右键菜单',

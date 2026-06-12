@@ -1,4 +1,4 @@
-import { AlertTriangle, Archive, Clock3, Image as ImageIcon, Plus, RefreshCw, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react';
+import { AlertTriangle, Archive, Image as ImageIcon, Plus, RefreshCw, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -601,6 +601,7 @@ export function NovelLibraryPage() {
 
   const sourceNovels = getNovelsByType(workType);
   const totalWorkWords = sourceNovels.reduce((sum, novel) => sum + novel.wordCount, 0);
+  const averageWorkWords = sourceNovels.length > 0 ? Math.round(totalWorkWords / sourceNovels.length) : 0;
   const recentWorks = [...sourceNovels]
     .sort((a, b) => parseWorkDateValue(b.lastModifiedAt || b.createdAt) - parseWorkDateValue(a.lastModifiedAt || a.createdAt))
     .slice(0, 3);
@@ -667,23 +668,30 @@ export function NovelLibraryPage() {
     <div className="flex h-screen flex-col bg-white">
       <main className="flex-1 overflow-y-auto px-8 py-7">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <section className="flex min-h-[154px] flex-col justify-center rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-5 py-5">
-            <div className="grid gap-2 text-[13px] font-medium text-[#586574]">
+          <section className="flex min-h-[154px] flex-col rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-6 py-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[16px] font-bold text-[#1f2933]">作品概览</p>
+                <p className="mt-1 truncate text-[12px] font-medium text-[#7b8794]">当前{typeLabel}库统计</p>
+              </div>
+              <span className="shrink-0 rounded-full border border-[#dbe7f8] bg-white/80 px-3 py-1 text-[12px] font-semibold text-[#6b7b8d]">预留 --</span>
+            </div>
+            <div className="mt-4 grid gap-2.5 text-[15px] font-semibold text-[#586574]">
               <div className="flex items-center justify-between gap-3">
                 <span>作品</span>
-                <strong className="text-[#1f2933]">{sourceNovels.length} 本</strong>
+                <strong className="text-[20px] leading-none text-[#1f2933]">{sourceNovels.length} 本</strong>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span>昨日更新</span>
-                <strong className="text-[#1f2933]">{formatWords(writingSummary.yesterdayWords)} 字</strong>
+                <strong className="text-[20px] leading-none text-[#1f2933]">{formatWords(writingSummary.yesterdayWords)} 字</strong>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span>字数</span>
-                <strong className="text-[#1f2933]">{formatWords(totalWorkWords)} 字</strong>
+                <strong className="text-[20px] leading-none text-[#1f2933]">{formatWords(totalWorkWords)} 字</strong>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span>预留</span>
-                <strong className="text-[#9aa3af]">--</strong>
+                <span>平均字数</span>
+                <strong className="text-[20px] leading-none text-[#1f2933]">{formatWords(averageWorkWords)} 字</strong>
               </div>
             </div>
           </section>
@@ -730,17 +738,9 @@ export function NovelLibraryPage() {
           </section>
 
           <section className="flex min-h-[154px] flex-col rounded-[8px] border border-[#e6e8ec] bg-white px-5 py-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[13px] font-medium text-[#6b7b8d]">快速进入</p>
-                <h2 className="mt-2 truncate text-[24px] font-bold text-[#1f2933]">最近编辑：</h2>
-              </div>
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-[#fff4e5] text-[#d97706]">
-                <Clock3 className="h-5 w-5" />
-              </span>
-            </div>
+            <h2 className="truncate text-[26px] font-bold leading-none text-[#1f2933]">最近编辑：</h2>
             {recentWorks.length > 0 ? (
-              <div className="mt-4 grid gap-2">
+              <div className="mt-5 grid gap-2.5">
                 {recentWorks.map((work) => (
                   <button
                     key={work.id}
@@ -748,9 +748,9 @@ export function NovelLibraryPage() {
                     onClick={() => handleOpen(work.id)}
                     onMouseEnter={() => handlePrepareOpen(work.id)}
                     onFocus={() => handlePrepareOpen(work.id)}
-                    className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[6px] px-1 text-left transition-colors hover:bg-[#f6f9ff]"
+                    className="grid min-h-[38px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[8px] border border-[#dfe5ec] bg-[#fbfdff] px-3 py-2 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
                   >
-                    <span className="min-w-0 truncate text-[14px] font-semibold text-[#1f2933]">{work.title}</span>
+                    <span className="min-w-0 truncate text-[15px] font-bold text-[#1f2933]">{work.title}</span>
                     <span className="shrink-0 text-[13px] font-medium text-[#8d98a6]">{formatWorkDate(work.lastModifiedAt || work.createdAt)}</span>
                   </button>
                 ))}
