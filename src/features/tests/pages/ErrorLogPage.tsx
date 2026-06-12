@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'editor-grid-line-test-font-size-sync-001',
+    title: '正文编辑器需要测试随字号变化的网格虚线',
+    area: '测试集合 / 编辑器网格虚线测试 / 正文背景',
+    symptom: '用户希望正文区域出现类似参考截图的稿纸网格虚线，并且网格线间距能随着字号大小变化，但直接放进正式编辑器会影响正文阅读和输入体验。',
+    cause: '当前正式正文背景已经去掉横线并使用纯色背景；网格线需要先验证线型、行高算法、字号变化联动以及无/实线/虚线切换是否适合现有编辑器。',
+    solution: '新增 EditorGridLineTestPage 并加入测试集合 UI 分组末尾；页面提供无、实线、虚线三种线型和字号滑块，用 lineHeightPx = Math.round(fontSize * 1.72) 驱动 background-size，让虚线网格随字号变化。',
+    prevention: '正式迁入前先在测试集合确认字号、行高、虚线颜色和线型；迁入时应复用同一套字号到行高的计算，避免背景线和文本行错位。',
+    keywords: ['编辑器', '网格线', '虚线', '字号', '测试集合', 'EditorGridLineTestPage', 'backgroundSize'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'novel-library-content-padding-too-wide-001',
     title: '作品库内容区顶部和左侧留白过大',
     area: '我的小说 / 内容区 / 顶部四卡片与侧边栏间距',
