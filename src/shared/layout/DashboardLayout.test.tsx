@@ -22,3 +22,19 @@ describe('DashboardLayout profile block', () => {
     expect(profileSource).not.toContain('flex items-center gap-2.5');
   });
 });
+
+describe('DashboardLayout sidebar splitter', () => {
+  it('keeps the home sidebar width resizable and persisted', async () => {
+    const source = await readDashboardLayoutSource();
+
+    expect(source).toContain("const DASHBOARD_SIDEBAR_WIDTH_KEY = 'xinyuexia_dashboard_sidebar_width'");
+    expect(source).toContain('style={{ width: sidebarWidth }}');
+    expect(source).toContain('onMouseDown={handleSidebarResizeStart}');
+    expect(source).toContain('onKeyDown={handleSidebarResizeKeyDown}');
+    expect(source).toContain("document.body.style.cursor = 'ew-resize'");
+    expect(source).toContain('localStorage.setItem(DASHBOARD_SIDEBAR_WIDTH_KEY, String(nextWidth))');
+    expect(source).toContain('role="separator"');
+    expect(source).toContain('cursor-ew-resize');
+    expect(source).not.toContain('className="flex w-[224px] shrink-0');
+  });
+});

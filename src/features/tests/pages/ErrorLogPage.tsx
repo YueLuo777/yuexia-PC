@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'dashboard-sidebar-resize-splitter-001',
+    title: '首页左侧导航需要可拖拽调整宽度',
+    area: '首页 / 左侧导航 / 拖拽分割线',
+    symptom: '首页左侧导航宽度固定，用户在不同窗口尺寸或不同导航内容密度下无法手动调整，正文区域和导航区域的空间分配不够灵活。',
+    cause: 'DashboardLayout 直接使用固定的 w-[224px] 侧栏宽度，首页外壳没有独立的宽度状态、拖拽热区或持久化记忆。',
+    solution: '为首页侧栏增加 xinyuexia_dashboard_sidebar_width 宽度记忆、176px 到 340px 的安全范围、鼠标拖拽分割线和键盘左右键/Home/End 调整；侧栏改用 style={{ width: sidebarWidth }} 渲染。',
+    prevention: '后续调整首页导航时不要恢复固定 w-[224px]；拖拽分割线的保存逻辑只应在用户拖拽或键盘调整时写入 localStorage，避免刷新、切页或窗口变化覆盖用户偏好。',
+    keywords: ['首页', '左侧导航', '拖拽分割线', '侧栏宽度', 'localStorage', 'DashboardLayout', 'cursor-ew-resize'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'dashboard-sidebar-avatar-name-layout-001',
     title: '首页侧栏头像和名字需要上下居中排列',
     area: '首页 / 左侧导航 / 头像区域',

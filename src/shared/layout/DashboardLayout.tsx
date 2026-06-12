@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Camera, ChevronDown, ChevronRight, Keyboard, ListTree, Palette, Settings, UserRound } from 'lucide-react';
 
@@ -23,6 +30,23 @@ const USER_NAME_KEY = 'xinyuexia_sidebar_user_name';
 const USER_AVATAR_KEY = 'xinyuexia_sidebar_user_avatar';
 const USER_NAME_UPDATED_EVENT = 'xinyuexia_user_name_updated';
 const SETTINGS_BUTTON_CLASS = 'xy-wa-icon-button';
+const DASHBOARD_SIDEBAR_WIDTH_KEY = 'xinyuexia_dashboard_sidebar_width';
+const DASHBOARD_SIDEBAR_DEFAULT_WIDTH = 224;
+const DASHBOARD_SIDEBAR_MIN_WIDTH = 176;
+const DASHBOARD_SIDEBAR_MAX_WIDTH = 340;
+
+function clampDashboardSidebarWidth(width: number) {
+  if (!Number.isFinite(width)) return DASHBOARD_SIDEBAR_DEFAULT_WIDTH;
+  return Math.min(DASHBOARD_SIDEBAR_MAX_WIDTH, Math.max(DASHBOARD_SIDEBAR_MIN_WIDTH, Math.round(width)));
+}
+
+function readDashboardSidebarWidth() {
+  const saved = Number.parseInt(
+    localStorage.getItem(DASHBOARD_SIDEBAR_WIDTH_KEY) ?? String(DASHBOARD_SIDEBAR_DEFAULT_WIDTH),
+    10,
+  );
+  return clampDashboardSidebarWidth(saved);
+}
 
 function readUserName() {
   return localStorage.getItem(USER_NAME_KEY) || '月下作者';
@@ -75,6 +99,7 @@ export function DashboardLayout() {
   const [isEditingUserName, setIsEditingUserName] = useState(false);
   const [userNameDraft, setUserNameDraft] = useState(userName);
   const [isSidebarScrolling, setIsSidebarScrolling] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(readDashboardSidebarWidth);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const sidebarScrollTimerRef = useRef<number | null>(null);
@@ -129,10 +154,80 @@ export function DashboardLayout() {
     localStorage.setItem(USER_AVATAR_KEY, nextAvatar);
   };
 
+  const persistSidebarWidth = useCallback((width: number) => {
+    const nextWidth = clampDashboardSidebarWidth(width);
+    setSidebarWidth(nextWidth);
+    localStorage.setItem(DASHBOARD_SIDEBAR_WIDTH_KEY, String(nextWidth));
+  }, []);
+
+  const handleSidebarResizeStart = useCallback((event: ReactMouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const startX = event.clientX;
+    const startWidth = sidebarWidth;
+    let nextWidth = startWidth;
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
+
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+
+    const finishResize = () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('blur', handleWindowBlur);
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousUserSelect;
+      persistSidebarWidth(nextWidth);
+    };
+
+    const calculateNextWidth = (clientX: number) => clampDashboardSidebarWidth(startWidth + clientX - startX);
+
+    function handleMouseMove(moveEvent: MouseEvent) {
+      nextWidth = calculateNextWidth(moveEvent.clientX);
+      setSidebarWidth(nextWidth);
+    }
+
+    function handleMouseUp(upEvent: MouseEvent) {
+      nextWidth = calculateNextWidth(upEvent.clientX);
+      finishResize();
+    }
+
+    function handleWindowBlur() {
+      finishResize();
+    }
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('blur', handleWindowBlur);
+  }, [persistSidebarWidth, sidebarWidth]);
+
+  const handleSidebarResizeKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const step = event.shiftKey ? 24 : 12;
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      persistSidebarWidth(sidebarWidth - step);
+    }
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      persistSidebarWidth(sidebarWidth + step);
+    }
+    if (event.key === 'Home') {
+      event.preventDefault();
+      persistSidebarWidth(DASHBOARD_SIDEBAR_MIN_WIDTH);
+    }
+    if (event.key === 'End') {
+      event.preventDefault();
+      persistSidebarWidth(DASHBOARD_SIDEBAR_MAX_WIDTH);
+    }
+  }, [persistSidebarWidth, sidebarWidth]);
+
   return (
     <div className="flex h-full overflow-hidden bg-white">
       <aside
-        className="flex w-[224px] shrink-0 flex-col overflow-hidden border-r border-[#e1e5eb] bg-[#f5f5f7]"
+        style={{ width: sidebarWidth }}
+        className="flex shrink-0 flex-col overflow-hidden border-r border-[#e1e5eb] bg-[#f5f5f7]"
       >
         <div className="shrink-0 border-b border-[#e7e9ee] px-3 py-7">
           <input
@@ -275,6 +370,23 @@ export function DashboardLayout() {
           </button>
         </div>
       </aside>
+
+      <div
+        data-no-modal-drag="true"
+        role="separator"
+        aria-label="调整左侧导航宽度"
+        aria-orientation="vertical"
+        aria-valuemin={DASHBOARD_SIDEBAR_MIN_WIDTH}
+        aria-valuemax={DASHBOARD_SIDEBAR_MAX_WIDTH}
+        aria-valuenow={sidebarWidth}
+        tabIndex={0}
+        className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent outline-none transition-colors hover:bg-[#eef7fb] focus-visible:bg-[#eef7fb]"
+        onMouseDown={handleSidebarResizeStart}
+        onKeyDown={handleSidebarResizeKeyDown}
+        title="拖拽调整左侧导航宽度"
+      >
+        <div className="h-full w-px rounded-full bg-[#08B3D9] opacity-0 transition-opacity group-hover:opacity-70 group-focus-visible:opacity-70" />
+      </div>
 
       <main className="min-w-0 flex-1 overflow-hidden">
         <Outlet />
