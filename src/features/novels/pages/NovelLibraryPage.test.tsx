@@ -39,9 +39,12 @@ describe('NovelLibraryPage summary cards', () => {
     expect(pageSource).toContain('averageWorkWords');
     expect(pageSource).toContain('<span>平均字数</span>');
     expect(pageSource).toContain('预留 --');
-    expect(pageSource).toContain('flex min-h-[154px] flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-5 py-4');
-    expect(pageSource).toContain('mt-3 grid flex-1 grid-cols-2 grid-rows-2 gap-2.5');
-    expect(pageSource).toContain('flex h-full min-h-[52px] items-center gap-2.5');
+    expect(pageSource).toContain('grid gap-3 sm:grid-cols-2 xl:grid-cols-4');
+    expect(pageSource).toContain('flex min-h-[126px] flex-col rounded-[8px]');
+    expect(pageSource).toContain('mt-3 grid grid-cols-2 gap-x-5 gap-y-2');
+    expect(pageSource).toContain('flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-4 py-3.5');
+    expect(pageSource).toContain('mt-2 grid flex-1 grid-cols-2 grid-rows-2 gap-2');
+    expect(pageSource).toContain('flex h-full min-h-[40px] items-center gap-2');
     expect(pageSource).toContain('作品整理');
     expect(pageSource).toContain('最近编辑');
     expect(pageSource).toContain('扩展卡片');
@@ -57,7 +60,7 @@ describe('NovelLibraryPage summary cards', () => {
     expect(pageSource).toContain('最近编辑：');
     expect(pageSource).toContain('recentWorks.map((work) => (');
     expect(pageSource).toContain('onClick={() => handleOpen(work.id)}');
-    expect(pageSource).toContain('rounded-[8px] border border-[#dfe5ec] bg-[#fbfdff] px-3 py-2');
+    expect(pageSource).toContain('rounded-[8px] border border-[#dfe5ec] bg-[#fbfdff] px-3 py-1.5');
     expect(pageSource).toContain('{work.title}');
     expect(pageSource).toContain('{formatWorkDate(work.lastModifiedAt || work.createdAt)}');
     expect(pageSource).not.toContain('Clock3');

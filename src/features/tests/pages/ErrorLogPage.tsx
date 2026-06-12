@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'novel-library-top-cards-row-too-tall-001',
+    title: '作品库顶部四卡片区域过高',
+    area: '我的小说 / 顶部四卡片 / 数据卡与操作卡',
+    symptom: '顶部四张卡片高度超过用户红框标注范围，尤其数据卡四行统计和作品整理 2x2 操作按钮把整行撑得过高。',
+    cause: '上一版为了增加信息密度放大了统计字号，并保留纵向四行统计；作品整理按钮仍使用 min-h-[52px]，导致卡片行高度继续增长。',
+    solution: '将顶部四卡片统一收紧到 min-h-[126px]；数据卡统计改为 2x2 紧凑排布；作品整理按钮降到 min-h-[40px] 并缩小图标和说明文字；最近编辑和预留卡同步压缩内边距与行高。',
+    prevention: '以后调整顶部四卡片信息量时，先控制整行高度，再决定展示密度；新增统计项优先用横向或 2x2 网格，不要继续增加纵向高度。',
+    keywords: ['我的小说', '顶部四卡片', '高度', '作品概览', '作品整理', '最近编辑', 'NovelLibraryPage', 'min-h-[126px]'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'chapter-context-menu-width-too-wide-001',
     title: '章节右键菜单主菜单宽度过大',
     area: '作品编辑器 / 章节侧栏 / 已发布侧栏 / 右键菜单',

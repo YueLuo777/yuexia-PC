@@ -667,46 +667,46 @@ export function NovelLibraryPage() {
   return (
     <div className="flex h-screen flex-col bg-white">
       <main className="flex-1 overflow-y-auto px-8 py-7">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <section className="flex min-h-[154px] flex-col rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-6 py-5">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-5 py-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[16px] font-bold text-[#1f2933]">作品概览</p>
-                <p className="mt-1 truncate text-[12px] font-medium text-[#7b8794]">当前{typeLabel}库统计</p>
+                <p className="text-[15px] font-bold text-[#1f2933]">作品概览</p>
+                <p className="mt-0.5 truncate text-[12px] font-medium text-[#7b8794]">当前{typeLabel}库统计</p>
               </div>
-              <span className="shrink-0 rounded-full border border-[#dbe7f8] bg-white/80 px-3 py-1 text-[12px] font-semibold text-[#6b7b8d]">预留 --</span>
+              <span className="shrink-0 rounded-full border border-[#dbe7f8] bg-white/80 px-2.5 py-0.5 text-[12px] font-semibold text-[#6b7b8d]">预留 --</span>
             </div>
-            <div className="mt-4 grid gap-2.5 text-[15px] font-semibold text-[#586574]">
-              <div className="flex items-center justify-between gap-3">
+            <div className="mt-3 grid grid-cols-2 gap-x-5 gap-y-2 text-[13px] font-semibold text-[#586574]">
+              <div className="grid gap-0.5">
                 <span>作品</span>
-                <strong className="text-[20px] leading-none text-[#1f2933]">{sourceNovels.length} 本</strong>
+                <strong className="text-[19px] leading-none text-[#1f2933]">{sourceNovels.length} 本</strong>
               </div>
-              <div className="flex items-center justify-between gap-3">
+              <div className="grid gap-0.5">
                 <span>昨日更新</span>
-                <strong className="text-[20px] leading-none text-[#1f2933]">{formatWords(writingSummary.yesterdayWords)} 字</strong>
+                <strong className="text-[19px] leading-none text-[#1f2933]">{formatWords(writingSummary.yesterdayWords)} 字</strong>
               </div>
-              <div className="flex items-center justify-between gap-3">
+              <div className="grid gap-0.5">
                 <span>字数</span>
-                <strong className="text-[20px] leading-none text-[#1f2933]">{formatWords(totalWorkWords)} 字</strong>
+                <strong className="text-[19px] leading-none text-[#1f2933]">{formatWords(totalWorkWords)} 字</strong>
               </div>
-              <div className="flex items-center justify-between gap-3">
+              <div className="grid gap-0.5">
                 <span>平均字数</span>
-                <strong className="text-[20px] leading-none text-[#1f2933]">{formatWords(averageWorkWords)} 字</strong>
+                <strong className="text-[19px] leading-none text-[#1f2933]">{formatWords(averageWorkWords)} 字</strong>
               </div>
             </div>
           </section>
 
-          <section className="flex min-h-[154px] flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-5 py-4">
+          <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-4 py-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#f2f5f8] text-[#586574]">
-                  <Archive className="h-4 w-4" />
+                <span className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-[#f2f5f8] text-[#586574]">
+                  <Archive className="h-3.5 w-3.5" />
                 </span>
-                <h2 className="text-[16px] font-semibold text-[#1f2933]">作品整理</h2>
+                <h2 className="text-[15px] font-semibold text-[#1f2933]">作品整理</h2>
               </div>
               <span className="text-[13px] font-medium text-[#9aa3af]">{filteredNovels.length}/{sourceNovels.length}</span>
             </div>
-            <div className="mt-3 grid flex-1 grid-cols-2 grid-rows-2 gap-2.5">
+            <div className="mt-2 grid flex-1 grid-cols-2 grid-rows-2 gap-2">
               {[
                 { label: `新建${typeLabel}`, desc: '创建作品', icon: Plus, onClick: () => setIsNewOpen(true), tone: 'blue' },
                 { label: '导入', desc: '本地导入', icon: Upload, onClick: () => setIsImportOpen(true), tone: 'green' },
@@ -719,17 +719,17 @@ export function NovelLibraryPage() {
                     key={item.label}
                     type="button"
                     onClick={item.onClick}
-                    className="flex h-full min-h-[52px] items-center gap-2.5 rounded-[8px] border border-[#e6e8ec] bg-white px-3 text-left transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
+                    className="flex h-full min-h-[40px] items-center gap-2 rounded-[8px] border border-[#e6e8ec] bg-white px-2.5 text-left transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
                   >
                     <span className={[
-                      'grid h-7 w-7 shrink-0 place-items-center rounded-[5px] text-white',
+                      'grid h-6 w-6 shrink-0 place-items-center rounded-[5px] text-white',
                       item.tone === 'green' ? 'bg-[#31a85f]' : item.tone === 'amber' ? 'bg-[#f3a400]' : item.tone === 'purple' ? 'bg-[#9b6cf0]' : 'bg-[#1e71ef]',
                     ].join(' ')}>
-                      <Icon className="h-3.5 w-3.5" />
+                      <Icon className="h-3 w-3" />
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-[13px] font-semibold text-[#1f2933]">{item.label}</span>
-                      <span className="mt-0.5 block truncate text-[11px] text-[#9aa3af]">{item.desc}</span>
+                      <span className="block truncate text-[12px] font-semibold text-[#1f2933]">{item.label}</span>
+                      <span className="block truncate text-[10px] text-[#9aa3af]">{item.desc}</span>
                     </span>
                   </button>
                 );
@@ -737,10 +737,10 @@ export function NovelLibraryPage() {
             </div>
           </section>
 
-          <section className="flex min-h-[154px] flex-col rounded-[8px] border border-[#e6e8ec] bg-white px-5 py-5">
-            <h2 className="truncate text-[26px] font-bold leading-none text-[#1f2933]">最近编辑：</h2>
+          <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-white px-4 py-4">
+            <h2 className="truncate text-[24px] font-bold leading-none text-[#1f2933]">最近编辑：</h2>
             {recentWorks.length > 0 ? (
-              <div className="mt-5 grid gap-2.5">
+              <div className="mt-4 grid gap-2">
                 {recentWorks.map((work) => (
                   <button
                     key={work.id}
@@ -748,7 +748,7 @@ export function NovelLibraryPage() {
                     onClick={() => handleOpen(work.id)}
                     onMouseEnter={() => handlePrepareOpen(work.id)}
                     onFocus={() => handlePrepareOpen(work.id)}
-                    className="grid min-h-[38px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[8px] border border-[#dfe5ec] bg-[#fbfdff] px-3 py-2 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
+                    className="grid min-h-[34px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[8px] border border-[#dfe5ec] bg-[#fbfdff] px-3 py-1.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
                   >
                     <span className="min-w-0 truncate text-[15px] font-bold text-[#1f2933]">{work.title}</span>
                     <span className="shrink-0 text-[13px] font-medium text-[#8d98a6]">{formatWorkDate(work.lastModifiedAt || work.createdAt)}</span>
@@ -760,10 +760,10 @@ export function NovelLibraryPage() {
             )}
           </section>
 
-          <section className="flex min-h-[154px] flex-col rounded-[8px] border border-dashed border-[#d7dce4] bg-[#fbfbfc] px-5 py-5">
+          <section className="flex min-h-[126px] flex-col rounded-[8px] border border-dashed border-[#d7dce4] bg-[#fbfbfc] px-5 py-4">
             <p className="text-[13px] font-medium text-[#9aa3af]">预留</p>
-            <h2 className="mt-2 truncate text-[24px] font-bold text-[#68727f]">扩展卡片</h2>
-            <p className="mt-5 text-[14px] font-medium leading-6 text-[#9aa3af]">后续可以放灵感、待办、今日目标或资料提醒。</p>
+            <h2 className="mt-1.5 truncate text-[23px] font-bold text-[#68727f]">扩展卡片</h2>
+            <p className="mt-3 text-[13px] font-medium leading-5 text-[#9aa3af]">后续可以放灵感、待办、今日目标或资料提醒。</p>
           </section>
         </div>
 
