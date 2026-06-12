@@ -46,8 +46,9 @@ const emptyVolumeMenu: VolumeContextMenu = { visible: false, x: 0, y: 0, volumeI
 const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 300;
 const CHAPTER_SIDEBAR_BOTTOM_ROW_CLASS = 'flex items-center gap-1.5 border-t border-[#e6e8ec] px-2 py-2';
 const CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS = 'flex h-8 min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-md px-1.5 text-sm leading-none text-white transition-colors';
-const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md px-1 text-left text-[14px] font-medium text-[#1f2933] transition-colors hover:bg-[#eef3fb]';
-const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#68727f]';
+const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#c7dcff] bg-[#eaf2ff] px-1 text-left text-[14px] font-medium text-[#1f2933] shadow-sm transition-colors hover:bg-[#dfeaff]';
+const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#1e71ef]';
+const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-medium text-[#6f7e90]';
 
 function getContextMenuPoint(event: ReactMouseEvent<HTMLElement>) {
   const target = event.currentTarget;
@@ -175,7 +176,7 @@ export function ChapterSidebar({
                 <button onClick={() => onToggleVolume(volume.id)} className="flex min-w-0 flex-1 items-center gap-2 text-left" aria-expanded={volume.isExpanded}>
                   <VolumeFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
                   <span className="min-w-0 flex-1 truncate leading-none">{volume.name}</span>
-                  <span className="ml-1 shrink-0 text-xs text-gray-400">{volume.chapters.length}{chapterUnit}</span>
+                  <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{volume.chapters.length}{chapterUnit}</span>
                 </button>
 
                 <button
@@ -183,7 +184,7 @@ export function ChapterSidebar({
                     event.stopPropagation();
                     onAddChapter(volume.id);
                   }}
-                  className="flex h-8 w-8 items-center justify-center rounded text-xl font-bold text-[#1e71ef] transition-colors hover:bg-[#d4e2f9]"
+                  className="grid h-7 w-7 place-items-center rounded-md bg-white/70 text-xl font-bold leading-none text-[#6f7e90] transition-colors hover:bg-white hover:text-[#1e71ef]"
                   title={`新增${chapterUnit}`}
                 >
                   +

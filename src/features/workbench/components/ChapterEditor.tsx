@@ -71,8 +71,9 @@ const REVIEW_PAGE_LEFT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_left
 const REVIEW_PAGE_RIGHT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_right_width';
 const STATUS_PAGE_LEFT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_status_left_width';
 const STATUS_PAGE_RIGHT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_status_right_width';
-const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md px-3 text-left text-[14px] font-medium text-[#1f2933] transition-colors hover:bg-[#eef3fb]';
-const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#68727f]';
+const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#c7dcff] bg-[#eaf2ff] px-1 text-left text-[14px] font-medium text-[#1f2933] shadow-sm transition-colors hover:bg-[#dfeaff]';
+const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#1e71ef]';
+const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-medium text-[#6f7e90]';
 const REVIEW_PAGE_LEFT_WIDTH_LIMIT = { min: 180, max: 360 };
 const REVIEW_PAGE_RIGHT_WIDTH_LIMIT = { min: 260, max: 520 };
 const STATUS_PAGE_LEFT_WIDTH_LIMIT = { min: 190, max: 360 };
@@ -1931,7 +1932,7 @@ export function ChapterEditor({
                         >
                           <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
                           <span className="min-w-0 flex-1 truncate leading-none">{group.name}</span>
-                          <span className="ml-1 shrink-0 text-xs text-gray-400">{group.chapters.length}章</span>
+                          <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{group.chapters.length}章</span>
                         </button>
                         {expanded && (
                           <div
@@ -2151,7 +2152,7 @@ export function ChapterEditor({
                         >
                           <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
                           <span className="min-w-0 flex-1 truncate leading-none">{group.name}</span>
-                          <span className="ml-1 shrink-0 text-xs text-gray-400">{group.chapters.length}章</span>
+                          <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{group.chapters.length}章</span>
                         </button>
                         {expanded && (
                           <div

@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'chapter-group-soft-blue-production-sync-001',
+    title: '章节分组浅蓝底方案需要迁入所有正式目录并删除临时测试',
+    area: '作品编辑器 / 正文目录 / 已发布 / 设定脑洞章纲目录 / 测试集合',
+    symptom: '用户已经在测试集合中确认“浅蓝底”章节分组方案，如果只停留在测试页，正式正文、已发布、脑洞、设定、章纲等目录仍会显示旧的弱分组样式。',
+    cause: '分组行样式分散在 ChapterSidebar、PublishedSidebar、WorkbenchLibraryPanel 和 ChapterEditor 中，测试方案页只是静态预览，不会自动同步到正式组件。',
+    solution: '将正式分组行统一改为 border-[#c7dcff] + bg-[#eaf2ff] 的浅蓝底，图标使用 #1e71ef，数量改为白色半透明胶囊；删除 ChapterGroupColorOptionsTestPage 及测试集合入口。',
+    prevention: '以后多方案测试页被用户确认后，应同步迁入正式组件、更新回归测试并删除临时方案入口；如果用户要求删除打钩测试，先读取待删除路径再同步清理入口、渲染分支和测试文件。',
+    keywords: ['章节分组', '浅蓝底', '正式迁入', 'ChapterSidebar', 'PublishedSidebar', 'WorkbenchLibraryPanel', 'ChapterEditor', '测试集合删除'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'dashboard-profile-nav-separator-001',
     title: '首页头像区和导航区之间需要一条清晰分割线',
     area: '首页 / 左侧导航 / 头像区域与导航列表',

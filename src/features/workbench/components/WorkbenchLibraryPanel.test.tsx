@@ -605,7 +605,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(chapterEditorSource).toContain('<GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />');
     expect(chapterEditorSource).not.toContain('className="group flex h-[36px] w-full cursor-pointer items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 text-left transition-colors hover:bg-brand/10"');
     expect(chapterEditorSource).not.toContain('<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-brand-dark">');
-    expect(chapterEditorSource).toContain('<span className="ml-1 shrink-0 text-xs text-gray-400">{group.chapters.length}章</span>');
+    expect(chapterEditorSource).toContain('<span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{group.chapters.length}章</span>');
     expect(chapterEditorSource).toContain("style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}");
     expect(chapterEditorSource).toContain('relative h-9 min-w-9 rounded-lg border px-2 text-sm font-bold transition-colors');
     expect(chapterEditorSource).toContain('relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors');
@@ -627,10 +627,15 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const publishedSidebarSource = await readPublishedSidebarSource();
     const panelSource = await readWorkbenchLibraryPanelSource();
     const chapterEditorSource = await readChapterEditorSource();
+    const testCollectionSource = await readTestCollectionSource();
 
     for (const source of [chapterSidebarSource, publishedSidebarSource, panelSource, chapterEditorSource]) {
       expect(source).toContain('WORKBENCH_FOLDER_GROUP_BUTTON_CLASS');
       expect(source).toContain('WORKBENCH_FOLDER_GROUP_ICON_CLASS');
+      expect(source).toContain('WORKBENCH_FOLDER_GROUP_COUNT_CLASS');
+      expect(source).toContain('border border-[#c7dcff] bg-[#eaf2ff]');
+      expect(source).toContain("const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#1e71ef]';");
+      expect(source).toContain("const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-medium text-[#6f7e90]';");
       expect(source).toContain('FolderOpen');
       expect(source).toContain('Folder');
     }
@@ -650,6 +655,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('<VolumeFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />');
     expect(panelSource).not.toContain('className="group flex h-[36px] items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10"');
     expect(panelSource).not.toContain('className="group flex h-[36px] cursor-pointer items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10"');
+    expect(testCollectionSource).not.toContain('ChapterGroupColorOptionsTestPage');
+    expect(testCollectionSource).not.toContain('/chapter-group-color-options-test');
   });
 
   it('keeps workbench model selects synchronized after model management changes', async () => {

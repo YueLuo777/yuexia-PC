@@ -82,8 +82,9 @@ import { LinkedSourceControl } from '@/shared/ui/LinkedSourceControl';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 import { WordCountText } from '@/shared/ui/WordCountText';
 
-const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md px-3 text-left text-[14px] font-medium text-[#1f2933] transition-colors hover:bg-[#eef3fb]';
-const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#68727f]';
+const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#c7dcff] bg-[#eaf2ff] px-1 text-left text-[14px] font-medium text-[#1f2933] shadow-sm transition-colors hover:bg-[#dfeaff]';
+const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#1e71ef]';
+const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-medium text-[#6f7e90]';
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 162;
@@ -5689,7 +5690,7 @@ export function WorkbenchLibraryPanel({
                       >
                         <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
                         <span className="min-w-0 flex-1 truncate leading-none">{group.type}</span>
-                        <span className="ml-1 shrink-0 text-xs text-gray-400">{group.entries.length}</span>
+                        <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{group.entries.length}</span>
                       </button>
                     </div>
                     {expanded && (
@@ -6172,7 +6173,7 @@ export function WorkbenchLibraryPanel({
                     >
                       <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
                       <span className="min-w-0 flex-1 truncate leading-none">{group.type}</span>
-                      <span className="ml-1 shrink-0 text-xs text-gray-400">{group.entries.length}</span>
+                      <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{group.entries.length}</span>
                     </button>
                   </div>
                   {expanded && (
@@ -7868,7 +7869,7 @@ export function WorkbenchLibraryPanel({
                       >
                         <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
                         <span className="min-w-0 flex-1 truncate leading-none">{group.group}</span>
-                        <span className="flex shrink-0 items-center gap-1 text-[13px] text-slate-400">
+                        <span className="flex shrink-0 items-center gap-1">
                           {(detailOutlineReaderTab === 'settings' || detailOutlineReaderTab === 'roles' || detailOutlineReaderTab === 'plotChain') && (
                             <span
                               role="button"
@@ -7888,7 +7889,7 @@ export function WorkbenchLibraryPanel({
                               全选
                             </span>
                           )}
-                          {group.items.length}
+                          <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{group.items.length}</span>
                         </span>
                       </button>
                       {!collapsed && (
@@ -8923,7 +8924,7 @@ export function WorkbenchLibraryPanel({
                       >
                         <VolumeFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
                         <span className="min-w-0 flex-1 truncate leading-none">{volume.name}</span>
-                        <span className="ml-1 shrink-0 text-xs text-gray-400">{volume.chapters.length}章</span>
+                        <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{volume.chapters.length}章</span>
                         {enableVolumeSummary && (
                           <button
                             onClick={(event) => {
