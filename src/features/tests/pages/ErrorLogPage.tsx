@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'nav-settings-add-divider-button-footer-001',
+    title: '导航设置新增分割线入口占用过大',
+    area: '首页 / 左侧导航 / 导航设置 / 分割线',
+    symptom: '导航设置弹窗顶部出现一整块“导航分割线”说明卡，视觉面积过大；用户只需要一个新增分割线按钮，并希望它靠近底部关闭按钮。',
+    cause: '新增多条分割线时把说明文字和按钮做成了内容区提示卡，功能入口被放大成独立区域，和实际使用频率不匹配。',
+    solution: '删除内容区的“导航分割线”说明卡，只保留一个“新增分割线”按钮；按钮移动到底部操作区，并放在“关闭”按钮左侧，原有 addDivider 逻辑和禁用条件保持不变。',
+    prevention: '以后低频设置动作优先放在弹窗底部操作区或紧凑工具栏，不要默认占用内容区大块说明位置；除非用户需要说明文案，否则只保留必要按钮。',
+    keywords: ['导航设置', '新增分割线', '关闭按钮', 'NavSettingsModal', 'addDivider', '分割线'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'novel-library-top-cards-density-clickable-recent-001',
     title: '作品库顶部数据卡过空且最近编辑入口不够明确',
     area: '我的小说 / 顶部四卡片 / 数据卡与最近编辑卡',

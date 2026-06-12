@@ -18,12 +18,17 @@ describe('NavSettingsModal flat navigation editing', () => {
     expect(source).toContain('const draftItems = draft[0]?.items ?? [];');
     expect(source).toContain("dividerAfterItemTo: '/novels'");
     expect(source).toContain("dividerAfterItemTos: ['/novels']");
-    expect(source).toContain('导航分割线');
     expect(source).toContain('addDivider');
     expect(source).toContain('removeDivider');
     expect(source).toContain('setDividerDragSrc(item.to)');
     expect(source).toContain('resolveDividerDropTarget');
+    expect(source).toContain('className="flex items-center gap-2"');
+    expect(source).toContain('disabled={visibleDraftItems.length <= draftDividerAfterItemTos.length}');
     expect(source).toContain('新增分割线');
+    expect(source.match(/新增分割线/g)?.length).toBe(1);
+    expect(source).not.toContain('mb-4 flex items-center justify-between gap-3 rounded-lg border border-[#e1e5eb]');
+    expect(source).not.toContain('导航分割线');
+    expect(source).not.toContain('点击新增分割线');
     expect(source).toContain('删除');
     expect(source).not.toContain('updateDividerAfterItem');
     expect(source).not.toContain('不显示分割线');

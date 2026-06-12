@@ -171,20 +171,6 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
-          <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-[#e1e5eb] bg-[#f8fafc] p-3">
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-[#1f2933]">导航分割线</div>
-              <p className="mt-1 text-xs text-[#8d98a6]">点击新增分割线，拖拽分割线到导航项上方或下方调整位置。</p>
-            </div>
-            <button
-              type="button"
-              onClick={addDivider}
-              disabled={visibleDraftItems.length <= draftDividerAfterItemTos.length}
-              className="h-9 shrink-0 rounded-md border border-[#d7dde6] bg-white px-3 text-sm font-medium text-[#1f2933] transition-colors hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              新增分割线
-            </button>
-          </div>
           <div className="space-y-1">
             {draftItems.map((item, itemIndex) => {
               const ItemIcon = getIconByName(item.iconName);
@@ -293,9 +279,19 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
             <RotateCcw className="h-3.5 w-3.5" />
             恢复默认
           </button>
-          <button onClick={onClose} className="rounded-lg border border-gray-200 px-4 py-2 text-base text-gray-600 hover:bg-gray-50">
-            关闭
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={addDivider}
+              disabled={visibleDraftItems.length <= draftDividerAfterItemTos.length}
+              className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-base text-gray-600 transition-colors hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              新增分割线
+            </button>
+            <button onClick={onClose} className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-base text-gray-600 hover:bg-gray-50">
+              关闭
+            </button>
+          </div>
         </div>
       </div>
     </div>
