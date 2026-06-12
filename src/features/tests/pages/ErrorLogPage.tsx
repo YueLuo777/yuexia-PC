@@ -28,6 +28,17 @@ const defaultEntries: ErrorLogEntry[] = [
     updatedAt: '2026-06-12',
   },
   {
+    id: 'chapter-editor-paper-line-mode-cleanup-001',
+    title: '正文稿纸线需要三态组合按钮并清理多余视觉元素',
+    area: '作品编辑器 / 正文 / 字体设置 / 稿纸线',
+    symptom: '字体设置里只有稿纸虚线开关，缺少刚验证过的实线选项；正文工具栏下方仍有一条横线；虚线从编辑区最左侧开始，空白缩进前出现多余线段；空白正文还显示“从这里开始写...”占位文字。',
+    cause: '稿纸线设置最初只用 gridLineEnabled 布尔值承载，无法表达无、实线、虚线三种状态；背景 SVG 从 x=0 绘制；正文 toolbar 保留 border-b；textarea placeholder 继续沿用旧引导文案。',
+    solution: '将字体设置升级为 gridLineMode: none/solid/dashed，并兼容旧 gridLineEnabled；背景线从固定左侧偏移后开始绘制，虚线模式保留 dasharray，实线模式不加 dasharray；正文工具栏删除 border-b，textarea 占位文字置空。',
+    prevention: '以后新增编辑器背景辅助线时要用明确枚举状态，不要用布尔值承载多个视觉版本；背景线需要检查正文起始位置、占位状态和工具栏边界，避免出现多余线段或重复分割线。',
+    keywords: ['稿纸线', '实线', '虚线', '组合按钮', 'placeholder', 'ChapterEditor', 'FontSettingsModal', 'gridLineMode'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'workbench-ai-input-neutral-style-migration-001',
     title: '21号测试的 AI 输入框中性灰线方案需要迁入正式页',
     area: '作品编辑器 / 右侧 AI 输入区 / AiInlineInput',

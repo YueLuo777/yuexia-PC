@@ -1718,7 +1718,7 @@ export function ChapterEditor({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 border-b border-[#e6e8ec] bg-white px-4 py-2">
+      <div className="flex items-center gap-2 bg-white px-4 py-2">
         <button onClick={() => setIsFontSettingsOpen(true)} className="rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
           字体设置
         </button>
@@ -1822,7 +1822,7 @@ export function ChapterEditor({
           onSelect={keepSelectionOutOfParagraphIndent}
           onScroll={(event) => setEditorScrollTop(event.currentTarget.scrollTop)}
           className="xy-wa-editor-text-layer editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent px-6 pb-6 pt-3 outline-none"
-          placeholder="从这里开始写..."
+          placeholder=""
           style={{
             ...editorGridLineStyle,
             fontFamily: fontSettings.fontFamily,

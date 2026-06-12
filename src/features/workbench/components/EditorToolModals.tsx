@@ -31,12 +31,15 @@ export interface FormatOptions {
   mergeParagraphs: boolean;
 }
 
+export type EditorGridLineMode = 'none' | 'solid' | 'dashed';
+
 export interface FontSettings {
   fontFamily: string;
   fontColor: string;
   fontSize: number;
   lineHeight: number;
-  gridLineEnabled: boolean;
+  gridLineMode: EditorGridLineMode;
+  gridLineEnabled?: boolean;
 }
 
 export interface SymbolReplaceRule {
@@ -81,27 +84,53 @@ const defaultFontSettings: FontSettings = {
   fontColor: '#374151',
   fontSize: 22,
   lineHeight: 1.8,
+  gridLineMode: 'dashed',
   gridLineEnabled: true,
 };
 
 const EDITOR_GRID_LINE_TOP_OFFSET_PX = 12;
+const EDITOR_GRID_LINE_LEFT_OFFSET_PX = 64;
+const EDITOR_GRID_LINE_CANVAS_WIDTH_PX = 3200;
 
-function buildEditorGridLineBackground(lineHeightPx: number, lineOffsetPx: number) {
+const editorGridLineModeOptions: Array<{ value: EditorGridLineMode; label: string }> = [
+  { value: 'none', label: '无' },
+  { value: 'solid', label: '实线' },
+  { value: 'dashed', label: '虚线' },
+];
+
+function normalizeEditorGridLineMode(value: unknown, legacyEnabled?: boolean): EditorGridLineMode {
+  if (value === 'none' || value === 'solid' || value === 'dashed') return value;
+  return legacyEnabled === false ? 'none' : 'dashed';
+}
+
+function normalizeFontSettings(value: Partial<FontSettings>): FontSettings {
+  const gridLineMode = normalizeEditorGridLineMode(value.gridLineMode, value.gridLineEnabled);
+  return {
+    ...defaultFontSettings,
+    ...value,
+    gridLineMode,
+    gridLineEnabled: gridLineMode !== 'none',
+  };
+}
+
+function buildEditorGridLineBackground(lineHeightPx: number, lineOffsetPx: number, mode: Exclude<EditorGridLineMode, 'none'>) {
   const stroke = encodeURIComponent('#aab4c0');
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='${lineHeightPx}' viewBox='0 0 1200 ${lineHeightPx}'><line x1='0' y1='${lineOffsetPx}.5' x2='1200' y2='${lineOffsetPx}.5' stroke='${stroke}' stroke-width='1' stroke-dasharray='7 7'/></svg>`;
+  const dash = mode === 'dashed' ? " stroke-dasharray='7 7'" : '';
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${EDITOR_GRID_LINE_CANVAS_WIDTH_PX}' height='${lineHeightPx}' viewBox='0 0 ${EDITOR_GRID_LINE_CANVAS_WIDTH_PX} ${lineHeightPx}'><line x1='${EDITOR_GRID_LINE_LEFT_OFFSET_PX}' y1='${lineOffsetPx}.5' x2='${EDITOR_GRID_LINE_CANVAS_WIDTH_PX}' y2='${lineOffsetPx}.5' stroke='${stroke}' stroke-width='1'${dash}/></svg>`;
   return `url("data:image/svg+xml,${svg}")`;
 }
 
 export function getEditorGridLineStyle(fontSettings: FontSettings, scrollTop = 0): CSSProperties {
-  if (!fontSettings.gridLineEnabled) return {};
+  const gridLineMode = normalizeEditorGridLineMode(fontSettings.gridLineMode, fontSettings.gridLineEnabled);
+  if (gridLineMode === 'none') return {};
   const lineHeightPx = Math.round(fontSettings.fontSize * fontSettings.lineHeight);
   const underlineGapPx = Math.max(8, Math.round(fontSettings.fontSize * 0.22));
   const lineOffsetPx = Math.min(lineHeightPx - 2, Math.round((lineHeightPx + fontSettings.fontSize) / 2 + underlineGapPx));
   return {
-    backgroundImage: buildEditorGridLineBackground(lineHeightPx, lineOffsetPx),
+    backgroundImage: buildEditorGridLineBackground(lineHeightPx, lineOffsetPx, gridLineMode),
     backgroundPosition: `0 ${EDITOR_GRID_LINE_TOP_OFFSET_PX - scrollTop}px`,
     backgroundRepeat: 'repeat-y',
-    backgroundSize: `100% ${lineHeightPx}px`,
+    backgroundSize: `${EDITOR_GRID_LINE_CANVAS_WIDTH_PX}px ${lineHeightPx}px`,
   };
 }
 
@@ -137,7 +166,7 @@ function writeJson<T>(key: string, value: T) {
 }
 
 export function getStoredFontSettings(): FontSettings {
-  return { ...defaultFontSettings, ...readJson<Partial<FontSettings>>(FONT_SETTINGS_KEY, {}) };
+  return normalizeFontSettings(readJson<Partial<FontSettings>>(FONT_SETTINGS_KEY, {}));
 }
 
 export function getStoredFormatSettings(): FormatOptions {
@@ -632,14 +661,14 @@ export function FontSettingsModal({ isOpen, onClose, settings, onChange }: {
   settings: FontSettings;
   onChange: (settings: FontSettings) => void;
 }) {
-  const [local, setLocal] = useState(settings);
+  const [local, setLocal] = useState(() => normalizeFontSettings(settings));
   const colorInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => setLocal(settings), [settings]);
+  useEffect(() => setLocal(normalizeFontSettings(settings)), [settings]);
   if (!isOpen) return null;
 
   const update = (patch: Partial<FontSettings>) => {
-    const next = { ...local, ...patch };
+    const next = normalizeFontSettings({ ...local, ...patch });
     setLocal(next);
     onChange(next);
     writeJson(FONT_SETTINGS_KEY, next);
@@ -691,12 +720,30 @@ export function FontSettingsModal({ isOpen, onClose, settings, onChange }: {
           <input type="range" min={10} max={24} value={Math.round(local.lineHeight * 10)} onChange={(event) => update({ lineHeight: Number(event.target.value) / 10 })} className="flex-1" />
           <button onClick={() => update({ lineHeight: Math.min(2.4, Number((local.lineHeight + 0.1).toFixed(1))) })} className="h-7 w-7 rounded border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">+</button>
         </SliderSetting>
-        <ToggleRow
-          label="稿纸虚线"
-          desc="在正文编辑区显示随字号和行高同步变化的虚线"
-          checked={local.gridLineEnabled}
-          onChange={(gridLineEnabled) => update({ gridLineEnabled })}
-        />
+        <section>
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-gray-700">稿纸线</p>
+              <p className="mt-0.5 text-xs text-gray-400">在正文编辑区显示随字号和行高同步变化的参考线</p>
+            </div>
+            <div className="grid h-8 shrink-0 grid-cols-3 overflow-hidden rounded-md border border-brand bg-white">
+              {editorGridLineModeOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => update({ gridLineMode: option.value })}
+                  className={`min-w-[46px] px-3 text-xs font-medium transition-colors ${
+                    local.gridLineMode === option.value
+                      ? 'bg-brand text-white'
+                      : 'border-l border-brand/20 text-brand first:border-l-0 hover:bg-brand-light'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
         <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
           <p className="mb-2 text-xs text-gray-400">预览</p>
           <div className="rounded border border-gray-200 bg-white p-3" style={{ ...getEditorGridLineStyle(local), fontFamily: local.fontFamily, color: local.fontColor, fontSize: Math.min(local.fontSize, 16), lineHeight: local.lineHeight }}>
