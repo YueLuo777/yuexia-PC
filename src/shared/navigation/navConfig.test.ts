@@ -1,0 +1,49 @@
+import { describe, expect, it } from 'vitest';
+
+import { DEFAULT_NAV_CONFIG, normalizeNavConfig } from '@/shared/navigation/navConfig';
+
+describe('navigation config without zones', () => {
+  it('keeps the default navigation as one flat internal group', () => {
+    expect(DEFAULT_NAV_CONFIG).toHaveLength(1);
+    expect(DEFAULT_NAV_CONFIG[0].title).toBe('导航');
+    expect(DEFAULT_NAV_CONFIG[0].items.map((item) => item.to)).toEqual([
+      '/novels',
+      '/scripts',
+      '/library',
+      '/prompts',
+      '/model-manage',
+      '/token-usage',
+      '/test-collection',
+    ]);
+    expect(JSON.stringify(DEFAULT_NAV_CONFIG)).not.toContain('专区');
+  });
+
+  it('flattens old zone-based navigation while preserving hidden item intent', () => {
+    const normalized = normalizeNavConfig([
+      {
+        title: '创作专区',
+        iconName: 'BookOpen',
+        items: [
+          { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
+          { iconName: 'Film', label: '我的剧本', to: '/scripts', hidden: true },
+        ],
+      },
+      {
+        title: '数据专区',
+        iconName: 'Database',
+        hidden: true,
+        items: [
+          { iconName: 'Tag', label: '提示词管理', to: '/prompts' },
+        ],
+      },
+    ]);
+
+    expect(normalized).toHaveLength(1);
+    expect(normalized[0].title).toBe('导航');
+    expect(normalized[0].items.some((item) => item.to === '/novels')).toBe(true);
+    expect(normalized[0].items.find((item) => item.to === '/scripts')?.hidden).toBe(true);
+    expect(normalized[0].items.find((item) => item.to === '/prompts')?.hidden).toBe(true);
+    expect(JSON.stringify(normalized)).not.toContain('创作专区');
+    expect(JSON.stringify(normalized)).not.toContain('数据专区');
+  });
+});

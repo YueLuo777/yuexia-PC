@@ -61,29 +61,19 @@ export function getIconByName(name: string): LucideIcon {
   return iconMap[name] ?? LayoutGrid;
 }
 
+const NAV_ROOT_GROUP_TITLE = '导航';
+
 export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
   {
-    title: '创作专区',
-    iconName: 'BookOpen',
+    title: NAV_ROOT_GROUP_TITLE,
+    iconName: 'LayoutGrid',
     items: [
       { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
       { iconName: 'Film', label: '我的剧本', to: '/scripts' },
       { iconName: 'Library', label: '库', to: '/library' },
-    ],
-  },
-  {
-    title: '数据专区',
-    iconName: 'Database',
-    items: [
       { iconName: 'Tag', label: '提示词管理', to: '/prompts' },
       { iconName: 'Settings', label: '模型管理', to: '/model-manage' },
       { iconName: 'BarChart3', label: 'Token用量', to: '/token-usage' },
-    ],
-  },
-  {
-    title: '测试专区',
-    iconName: 'FlaskConical',
-    items: [
       { iconName: 'FlaskConical', label: '测试', to: '/test-collection' },
     ],
   },
@@ -129,52 +119,41 @@ function cloneDefaultConfig() {
   return JSON.parse(JSON.stringify(DEFAULT_NAV_CONFIG)) as NavGroupConfig[];
 }
 
-function dedupeNavItems(config: NavGroupConfig[]) {
+function flattenNavConfig(config: NavGroupConfig[]) {
   const seenRoutes = new Set<string>();
-  return config
-    .filter((group) => !REMOVED_GROUP_TITLES.has(group.title))
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) => {
-        if (REMOVED_ROUTES.has(item.to)) return false;
-        if (seenRoutes.has(item.to)) return false;
-        seenRoutes.add(item.to);
-        if (NORMALIZED_ROUTE_LABELS[item.to]) {
-          item.label = NORMALIZED_ROUTE_LABELS[item.to];
-        }
-        return true;
-      }),
-    }))
-    .filter((group) => group.items.length > 0);
-}
+  const items: NavItemConfig[] = [];
 
-function findMatchingGroup(config: NavGroupConfig[], defaultGroup: NavGroupConfig) {
-  return config.find((item) => item.title === defaultGroup.title || item.iconName === defaultGroup.iconName);
+  for (const group of config) {
+    if (REMOVED_GROUP_TITLES.has(group.title)) continue;
+    for (const item of group.items) {
+      if (REMOVED_ROUTES.has(item.to)) continue;
+      if (seenRoutes.has(item.to)) continue;
+      seenRoutes.add(item.to);
+      items.push({
+        ...item,
+        label: NORMALIZED_ROUTE_LABELS[item.to] ?? item.label,
+        hidden: item.hidden || group.hidden || undefined,
+      });
+    }
+  }
+
+  return [{
+    title: NAV_ROOT_GROUP_TITLE,
+    iconName: 'LayoutGrid',
+    items,
+  }];
 }
 
 function mergeWithDefaultConfig(config: NavGroupConfig[]) {
-  const next = dedupeNavItems(JSON.parse(JSON.stringify(config)) as NavGroupConfig[]);
-  for (const defaultGroup of DEFAULT_NAV_CONFIG) {
-    const group = findMatchingGroup(next, defaultGroup);
-    if (!group) {
-      next.push(JSON.parse(JSON.stringify(defaultGroup)) as NavGroupConfig);
-      continue;
-    }
-    group.title = defaultGroup.title;
-    group.iconName = defaultGroup.iconName;
-    if (defaultGroup.title === '测试专区') {
-      group.hidden = false;
-    }
-    for (const defaultItem of defaultGroup.items) {
-      const existsAnywhere = next.some((candidateGroup) => (
-        candidateGroup.items.some((item) => item.to === defaultItem.to)
-      ));
-      if (!existsAnywhere) {
-        group.items.push({ ...defaultItem });
-      }
+  const next = flattenNavConfig(JSON.parse(JSON.stringify(config)) as NavGroupConfig[]);
+  const root = next[0];
+  for (const defaultItem of DEFAULT_NAV_CONFIG[0].items) {
+    const exists = root.items.some((item) => item.to === defaultItem.to);
+    if (!exists) {
+      root.items.push({ ...defaultItem });
     }
   }
-  return dedupeNavItems(next);
+  return flattenNavConfig(next);
 }
 
 export function normalizeNavConfig(config: NavGroupConfig[]) {

@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'dashboard-navigation-zones-removed-001',
+    title: '首页导航和导航设置不应再出现专区功能',
+    area: '首页 / 左侧导航 / 导航设置',
+    symptom: '左侧导航仍按“创作专区、数据专区、测试专区”展示分组，导航设置里也保留新增专区、隐藏专区和跨专区拖拽等管理入口。',
+    cause: '导航配置最初按 NavGroupConfig 分组设计，DashboardLayout 渲染分组折叠行，NavSettingsModal 也把分组作为可管理对象。',
+    solution: '默认导航改为单个内部“导航”容器，读取旧配置时自动拍平成导航项列表；左侧导航只渲染扁平导航项，导航设置只保留改名、隐藏/恢复和拖拽排序。',
+    prevention: '后续导航调整不要再新增“专区”概念；需要分类时优先考虑测试集合或页面内部筛选，不要恢复首页导航分组标题、折叠专区或新增专区按钮。',
+    keywords: ['首页', '左侧导航', '专区', '导航设置', 'NavSettingsModal', 'DashboardLayout', 'navConfig'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'dashboard-sidebar-profile-height-minus-20-001',
     title: '首页侧栏头像区域高度需要缩小约 20%',
     area: '首页 / 左侧导航 / 头像区域',

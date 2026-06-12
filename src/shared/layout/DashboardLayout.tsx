@@ -7,18 +7,16 @@ import {
   useState,
 } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Camera, Folder, FolderOpen, UserRound } from 'lucide-react';
+import { Camera, UserRound } from 'lucide-react';
 
 import { DarkThemeColorPage } from '@/features/tests/pages/DarkThemeColorPage';
 import { TEST_COLLECTION_SHOW_INDEX_EVENT } from '@/features/tests/model/testCollectionEvents';
 import { NavSettingsModal } from '@/shared/navigation/NavSettingsModal';
 import {
   getIconByName,
-  loadCollapsedSections,
   loadNavConfig,
   normalizeNavConfig,
   resetNavConfig,
-  saveCollapsedSections,
   saveNavConfig,
   type NavGroupConfig,
 } from '@/shared/navigation/navConfig';
@@ -90,7 +88,6 @@ function resizeAvatar(file: File) {
 export function DashboardLayout() {
   const location = useLocation();
   const [navConfig, setNavConfig] = useState<NavGroupConfig[]>(() => normalizeNavConfig(loadNavConfig()));
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => loadCollapsedSections());
   const [showNavSettings, setShowNavSettings] = useState(false);
   const [showShortcutSettings, setShowShortcutSettings] = useState(false);
   const [showSystemSettings, setShowSystemSettings] = useState(false);
@@ -129,14 +126,6 @@ export function DashboardLayout() {
   }, []);
 
   useTopModalEscape(showThemeColors, () => setShowThemeColors(false));
-
-  const toggleSection = useCallback((title: string) => {
-    setCollapsedSections((prev) => {
-      const next = { ...prev, [title]: !prev[title] };
-      saveCollapsedSections(next);
-      return next;
-    });
-  }, []);
 
   const commitUserName = () => {
     const next = userNameDraft.trim() || '月下作者';
@@ -224,6 +213,13 @@ export function DashboardLayout() {
     }
   }, [persistSidebarWidth, sidebarWidth]);
 
+  const visibleNavItems = navConfig.flatMap((group) => (
+    group.items.map((item) => ({
+      ...item,
+      hidden: item.hidden || group.hidden,
+    }))
+  )).filter((item) => !item.hidden);
+
   return (
     <div className="flex h-full overflow-hidden bg-white">
       <aside
@@ -294,49 +290,32 @@ export function DashboardLayout() {
           ref={sidebarRef}
           className={`scrollbar-scroll-only min-h-0 flex-1 overflow-y-auto overflow-x-hidden ${isSidebarScrolling ? 'scrollbar-active' : ''}`}
         >
-          {navConfig.filter((group) => !group.hidden).map((group, groupIndex) => {
-            const isCollapsed = collapsedSections[group.title] ?? false;
-            const GroupFolderIcon = isCollapsed ? Folder : FolderOpen;
+          <div className="space-y-1 px-1.5 py-1">
+            {visibleNavItems.map((item) => {
+              const ItemIcon = getIconByName(item.iconName);
+              const isActive = location.pathname === item.to;
 
-            return (
-              <div key={group.title} className="mb-1 mt-1">
-                {groupIndex > 0 && <div className="mb-2 h-px w-full bg-[#e1e5eb]" aria-hidden="true" />}
-                <button
-                  onClick={() => toggleSection(group.title)}
-                  className="mx-1.5 flex h-9 w-[calc(100%-12px)] items-center gap-2 rounded-md px-3 text-left text-[14px] font-medium text-[#1f2933] transition-colors hover:bg-white/70"
-                  aria-expanded={!isCollapsed}
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => {
+                    if (item.to === '/test-collection' && location.pathname === '/test-collection') {
+                      window.dispatchEvent(new Event(TEST_COLLECTION_SHOW_INDEX_EVENT));
+                    }
+                  }}
+                  className={`flex h-10 items-center gap-3 rounded-md px-4 transition-colors ${
+                    isActive
+                      ? 'bg-[#dbe7fb] font-medium text-[#1f2933]'
+                      : 'text-[#586574] hover:bg-white/70 hover:text-[#1f2933]'
+                  }`}
                 >
-                  <GroupFolderIcon className="h-[17px] w-[17px] shrink-0 text-[#68727f]" />
-                  <span className="min-w-0 truncate leading-none">{group.title}</span>
-                </button>
-
-                {!isCollapsed && group.items.filter((item) => !item.hidden).map((item) => {
-                  const ItemIcon = getIconByName(item.iconName);
-                  const isActive = location.pathname === item.to;
-
-                  return (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      onClick={() => {
-                        if (item.to === '/test-collection' && location.pathname === '/test-collection') {
-                          window.dispatchEvent(new Event(TEST_COLLECTION_SHOW_INDEX_EVENT));
-                        }
-                      }}
-                      className={`mx-1.5 flex h-10 items-center gap-3 rounded-md px-4 transition-colors ${
-                        isActive
-                          ? 'bg-[#dbe7fb] font-medium text-[#1f2933]'
-                          : 'text-[#586574] hover:bg-white/70 hover:text-[#1f2933]'
-                      }`}
-                    >
-                      <ItemIcon className={`h-[17px] w-[17px] ${isActive ? 'text-[#1e71ef]' : 'text-[#68727f]'}`} />
-                      <span className="text-[14px] leading-none">{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            );
-          })}
+                  <ItemIcon className={`h-[17px] w-[17px] ${isActive ? 'text-[#1e71ef]' : 'text-[#68727f]'}`} />
+                  <span className="text-[14px] leading-none">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
 
         <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-[#e1e5eb] bg-[#f5f5f7] p-3">
