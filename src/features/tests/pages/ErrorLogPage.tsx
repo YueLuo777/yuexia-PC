@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'workbench-editor-surface-background-f5f5f7-001',
+    title: '作品编辑器正文输入区背景需要统一为 #F5F5F7',
+    area: '作品编辑器 / 正文 / 中间输入区域',
+    symptom: '正文编辑器中间输入区域背景色和用户标注区域不一致，视觉上没有贴合 #F5F5F7 的页面工作区底色。',
+    cause: '正文编辑 surface 通过 --xy-wa-editor-bg 单独控制，且 textarea 文本层使用透明背景；只改外层或只改页面容器都可能被内部图层显示效果抵消。',
+    solution: '将 --xy-wa-editor-bg 改为 #F5F5F7，并让 .xy-wa-editor-surface .xy-wa-editor-text-layer 同步使用 #F5F5F7 背景。',
+    prevention: '后续调整正文输入区底色时，同时检查 xy-wa-editor-surface、xy-wa-editor-text-layer 和 ChapterEditor 的 textarea class，避免外层和输入层色值不一致。',
+    keywords: ['作品编辑器', '正文', '输入区', '#F5F5F7', 'xy-wa-editor-surface', 'xy-wa-editor-text-layer', 'ChapterEditor'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'dashboard-novel-summary-recent-card-row-001',
     title: '首页我的小说需要变成数据卡片并加入最近编辑快捷卡',
     area: '首页 / 顶部卡片 / 我的小说 / 作品整理 / 最近编辑',

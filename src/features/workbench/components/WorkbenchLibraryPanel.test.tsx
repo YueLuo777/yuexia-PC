@@ -570,6 +570,17 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(testCollectionSource).not.toContain('/outline-directory-state-test');
   });
 
+  it('keeps the main chapter writing surface on the requested #F5F5F7 background', async () => {
+    const styleSource = await readSharedStylesSource();
+    const chapterEditorSource = await readChapterEditorSource();
+
+    expect(styleSource).toContain('--xy-wa-editor-bg: #F5F5F7;');
+    expect(styleSource).toContain('.xy-wa-editor-surface {\n  background: var(--xy-wa-editor-bg);\n}');
+    expect(styleSource).toContain('.xy-wa-editor-surface .xy-wa-editor-text-layer {\n  background: #F5F5F7;\n}');
+    expect(chapterEditorSource).toContain('className="xy-wa-editor-surface relative min-h-0 flex-1 overflow-hidden"');
+    expect(chapterEditorSource).toContain('className="xy-wa-editor-text-layer editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent px-6 pb-6 pt-10 outline-none"');
+  });
+
   it('matches audit comment and status chapter directories to the detail outline volume style without losing summary actions', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const chapterEditorSource = await readChapterEditorSource();
