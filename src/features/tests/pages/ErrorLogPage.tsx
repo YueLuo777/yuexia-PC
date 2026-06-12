@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'dashboard-nav-group-folder-style-001',
+    title: '首页左侧导航分组折叠需要像文件夹目录',
+    area: '首页 / 左侧导航 / 分组折叠',
+    symptom: '左侧导航分组标题使用专区图标、顶部边线和右侧 Chevron 折叠箭头，看起来更像普通设置分区，不像截图里的文件夹目录树。',
+    cause: 'DashboardLayout 直接读取 group.iconName 渲染分组图标，并把折叠状态放在右侧 Chevron 上；分组标题还有 border-t 和较小的 12px 标签样式。',
+    solution: '将分组标题改成文件夹目录行：折叠时使用 Folder，展开时使用 FolderOpen，左侧图标加标题同一行显示，移除右侧 Chevron 和顶部边线，子项仍保留自己的页面图标与选中蓝底。',
+    prevention: '后续调整首页导航分组时保留“文件夹 + 标题”的目录树视觉；折叠状态应通过文件夹形态和 aria-expanded 表达，不要恢复成右侧箭头标题栏。',
+    keywords: ['首页', '左侧导航', '分组折叠', '文件夹', 'Folder', 'FolderOpen', 'Chevron', 'DashboardLayout'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'dashboard-footer-settings-text-buttons-001',
     title: '首页左下角设置入口不应只显示图标',
     area: '首页 / 左侧导航 / 底部设置按钮',

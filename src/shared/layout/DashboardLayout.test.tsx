@@ -58,3 +58,23 @@ describe('DashboardLayout footer settings actions', () => {
     expect(footerSource).not.toContain('<ListTree className=');
   });
 });
+
+describe('DashboardLayout navigation groups', () => {
+  it('renders collapsible groups as folder rows', async () => {
+    const source = await readDashboardLayoutSource();
+    const navStart = source.indexOf('{navConfig.filter((group) => !group.hidden).map((group) => {');
+    const footerStart = source.indexOf('<div className="grid shrink-0 grid-cols-2 gap-2 border-t', navStart);
+    const navSource = source.slice(navStart, footerStart);
+
+    expect(source).toContain("import { Camera, Folder, FolderOpen, UserRound } from 'lucide-react'");
+    expect(navSource).toContain('const GroupFolderIcon = isCollapsed ? Folder : FolderOpen');
+    expect(navSource).toContain('<GroupFolderIcon className="h-[17px] w-[17px] shrink-0 text-[#68727f]" />');
+    expect(navSource).toContain('aria-expanded={!isCollapsed}');
+    expect(navSource).toContain('rounded-md px-3 text-left text-[14px] font-medium text-[#1f2933]');
+    expect(navSource).toContain('const ItemIcon = getIconByName(item.iconName)');
+    expect(navSource).not.toContain('const GroupIcon = getIconByName(group.iconName)');
+    expect(navSource).not.toContain('<ChevronRight');
+    expect(navSource).not.toContain('<ChevronDown');
+    expect(navSource).not.toContain('border-t border-[#e1e5eb] pt-3 text-[12px]');
+  });
+});

@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Camera, ChevronDown, ChevronRight, UserRound } from 'lucide-react';
+import { Camera, Folder, FolderOpen, UserRound } from 'lucide-react';
 
 import { DarkThemeColorPage } from '@/features/tests/pages/DarkThemeColorPage';
 import { TEST_COLLECTION_SHOW_INDEX_EVENT } from '@/features/tests/model/testCollectionEvents';
@@ -295,20 +295,18 @@ export function DashboardLayout() {
           className={`scrollbar-scroll-only min-h-0 flex-1 overflow-y-auto overflow-x-hidden ${isSidebarScrolling ? 'scrollbar-active' : ''}`}
         >
           {navConfig.filter((group) => !group.hidden).map((group) => {
-            const GroupIcon = getIconByName(group.iconName);
             const isCollapsed = collapsedSections[group.title] ?? false;
+            const GroupFolderIcon = isCollapsed ? Folder : FolderOpen;
 
             return (
-              <div key={group.title} className="mb-1">
+              <div key={group.title} className="mb-1 mt-1">
                 <button
                   onClick={() => toggleSection(group.title)}
-                  className="mx-3 mt-3 flex w-[calc(100%-24px)] items-center justify-between border-t border-[#e1e5eb] pt-3 text-[12px] font-medium text-[#8a94a3] transition-colors hover:text-[#65707d]"
+                  className="mx-1.5 flex h-9 w-[calc(100%-12px)] items-center gap-2 rounded-md px-3 text-left text-[14px] font-medium text-[#1f2933] transition-colors hover:bg-white/70"
+                  aria-expanded={!isCollapsed}
                 >
-                  <span className="flex items-center gap-1.5">
-                    <GroupIcon className="h-3.5 w-3.5" />
-                    <span>{group.title}</span>
-                  </span>
-                  {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  <GroupFolderIcon className="h-[17px] w-[17px] shrink-0 text-[#68727f]" />
+                  <span className="min-w-0 truncate leading-none">{group.title}</span>
                 </button>
 
                 {!isCollapsed && group.items.filter((item) => !item.hidden).map((item) => {
