@@ -1,4 +1,4 @@
-import { BookOpen, ScrollText } from 'lucide-react';
+import { Archive, BookOpen, Clock3 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -56,6 +56,11 @@ export function DashboardPage() {
   const recentNovels = [...novels]
     .sort((a, b) => String(b.lastModifiedAt ?? '').localeCompare(String(a.lastModifiedAt ?? ''), 'zh-CN'))
     .slice(0, 4);
+  const latestNovel = recentNovels[0] ?? null;
+  const novelWordCount = useMemo(
+    () => novels.filter((novel) => novel.type === 'novel').reduce((sum, novel) => sum + novel.wordCount, 0),
+    [novels],
+  );
 
   const openNovel = (novelId: number, type: WorkType) => {
     selectNovel(novelId);
@@ -83,77 +88,95 @@ export function DashboardPage() {
   }, []);
 
   const visibleSections = useMemo(() => sections.filter((section) => section.visible), [sections]);
+  const showDashboardCards = visibleSections.some((section) => section.id === 'welcome' || section.id === 'stats' || section.id === 'recent');
 
   return (
     <main className="relative flex-1 overflow-y-auto bg-white px-8 py-7">
-      <div className="grid gap-5 xl:grid-cols-[minmax(520px,1fr)_minmax(520px,1.25fr)]">
-        {visibleSections.some((section) => section.id === 'welcome') && (
-          <section className="relative min-h-[184px] overflow-hidden rounded-[8px] border border-[#dfe5ec] bg-[#e7eef7] px-12 py-8">
-            <div className="absolute inset-0 opacity-75" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.96), rgba(207,222,240,0.6))' }} />
-            <div className="absolute right-0 top-0 h-full w-1/2 opacity-45" style={{ background: 'radial-gradient(circle at 72% 18%, rgba(96,132,88,0.35), transparent 28%), linear-gradient(140deg, transparent 0 46%, rgba(30,113,239,0.08) 46% 54%, transparent 54%)' }} />
-            <div className="relative">
-              <p className="text-[14px] font-medium text-[#4f6e8e]">欢迎回来</p>
-              <h1 className="mt-2 text-[34px] font-bold leading-tight text-[#16518f]">{userName}</h1>
-              <p className="mt-4 text-[15px] font-medium text-[#4f6e8e]">继续维护你的原创作品、章节和资料库。</p>
+      {showDashboardCards && (
+        <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          <article className="flex min-h-[184px] flex-col rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-5 py-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[13px] font-medium text-[#6b7b8d]">欢迎回来，{userName}</p>
+                <h2 className="mt-2 truncate text-[24px] font-bold text-[#16518f]">我的小说</h2>
+              </div>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-[#eaf2ff] text-[#1e71ef]">
+                <BookOpen className="h-5 w-5" />
+              </span>
             </div>
-          </section>
-        )}
+            <div className="mt-5 grid gap-2 text-[13px] font-medium text-[#586574]">
+              <div className="flex items-center justify-between gap-3">
+                <span>作品</span>
+                <strong className="text-[#1f2933]">{stats.novelCount} 本</strong>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>昨日更新</span>
+                <strong className="text-[#1f2933]">{formatWords(writingSummary.yesterdayWords)} 字</strong>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>字数</span>
+                <strong className="text-[#1f2933]">{formatWords(novelWordCount)} 字</strong>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>预留</span>
+                <strong className="text-[#9aa3af]">--</strong>
+              </div>
+            </div>
+          </article>
 
-        {visibleSections.some((section) => section.id === 'stats') && (
-          <section className="min-h-[184px] rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-7 py-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-[18px] font-semibold text-[#1f2933]">写作概览</h2>
-              <span className="text-[13px] font-medium text-[#9aa3af]">实时统计</span>
+          <button
+            type="button"
+            onClick={() => navigate('/novels')}
+            className="flex min-h-[184px] flex-col rounded-[8px] border border-[#dfe5ec] bg-white px-5 py-5 text-left transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[13px] font-medium text-[#6b7b8d]">作品入口</p>
+                <h2 className="mt-2 truncate text-[24px] font-bold text-[#1f2933]">作品整理</h2>
+              </div>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-[#f2f5f8] text-[#586574]">
+                <Archive className="h-5 w-5" />
+              </span>
             </div>
-            <div className="mt-5 grid grid-cols-4 gap-3">
-              {[
-                ['昨日新增', writingSummary.yesterdayWords],
-                ['本月新增', writingSummary.monthWords],
-                ['总字数', stats.totalWords],
-                ['作品总数', novels.length],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-[8px] border border-[#e6e8ec] bg-white px-4 py-4">
-                  <p className="text-[12px] text-[#9aa3af]">{label}</p>
-                  <p className="mt-2 truncate text-[22px] font-semibold text-[#1f2933]">{formatWords(Number(value))}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-      </div>
+            <p className="mt-5 text-[14px] font-medium leading-6 text-[#586574]">整理小说、分类、封面和导入作品。</p>
+            <span className="mt-auto text-[13px] font-semibold text-[#1e71ef]">进入作品整理</span>
+          </button>
 
-      {visibleSections.some((section) => section.id === 'recent') && (
-        <section className="mt-8">
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-[17px] font-semibold text-[#1f2933]">最近编辑</h2>
-            <div className="flex gap-2">
-              <button onClick={() => navigate('/novels')} className="h-8 rounded-md bg-[#1e71ef] px-4 text-sm font-medium text-white hover:bg-[#155ed1]">小说作品</button>
-              <button onClick={() => navigate('/scripts')} className="h-8 rounded-md border border-[#dce1e8] bg-white px-4 text-sm font-medium text-[#586574] hover:border-[#1e71ef] hover:text-[#1e71ef]">短剧剧本</button>
+          <button
+            type="button"
+            onClick={() => {
+              if (latestNovel) openNovel(latestNovel.id, latestNovel.type);
+              else navigate('/novels');
+            }}
+            className="flex min-h-[184px] flex-col rounded-[8px] border border-[#dfe5ec] bg-white px-5 py-5 text-left transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[13px] font-medium text-[#6b7b8d]">快速进入</p>
+                <h2 className="mt-2 truncate text-[24px] font-bold text-[#1f2933]">最近编辑</h2>
+              </div>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-[#fff4e5] text-[#d97706]">
+                <Clock3 className="h-5 w-5" />
+              </span>
             </div>
-          </div>
+            {latestNovel ? (
+              <div className="mt-5 min-w-0">
+                <span className="block truncate text-[16px] font-semibold text-[#1f2933]">{latestNovel.title}</span>
+                <span className="mt-2 block truncate text-[13px] font-medium text-[#9aa3af]">
+                  {latestNovel.type === 'script' ? '剧本' : '小说'} · {latestNovel.lastModifiedAt ?? latestNovel.createdAt}
+                </span>
+              </div>
+            ) : (
+              <p className="mt-5 text-[14px] font-medium text-[#9aa3af]">暂无最近编辑的作品</p>
+            )}
+            <span className="mt-auto text-[13px] font-semibold text-[#1e71ef]">{latestNovel ? '继续编辑' : '先创建作品'}</span>
+          </button>
 
-          {recentNovels.length === 0 ? (
-            <p className="rounded-[8px] border border-dashed border-[#d7dce4] bg-[#fbfbfc] py-12 text-center text-sm text-[#9aa3af]">暂无最近作品</p>
-          ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
-              {recentNovels.map((novel) => (
-                <button
-                  key={novel.id}
-                  onClick={() => openNovel(novel.id, novel.type)}
-                  className="flex h-[86px] items-center gap-3 rounded-[8px] border border-[#e6e8ec] bg-white px-4 text-left transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
-                >
-                  <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[6px] ${novel.type === 'script' ? 'bg-[#fff4e5] text-[#d97706]' : 'bg-[#eaf2ff] text-[#1e71ef]'}`}>
-                    {novel.type === 'script' ? <ScrollText className="h-5 w-5" /> : <BookOpen className="h-5 w-5" />}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[15px] font-medium text-[#1f2933]">{novel.title}</span>
-                    <span className="mt-1 block truncate text-[12px] text-[#9aa3af]">{novel.lastModifiedAt ?? novel.createdAt}</span>
-                  </span>
-                  <span className="shrink-0 text-[12px] font-medium text-[#9aa3af]">{novel.type === 'script' ? '剧本' : '小说'}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          <article className="flex min-h-[184px] flex-col rounded-[8px] border border-dashed border-[#d7dce4] bg-[#fbfbfc] px-5 py-5">
+            <p className="text-[13px] font-medium text-[#9aa3af]">预留</p>
+            <h2 className="mt-2 truncate text-[24px] font-bold text-[#68727f]">扩展卡片</h2>
+            <p className="mt-5 text-[14px] font-medium leading-6 text-[#9aa3af]">后续可以放灵感、待办、今日目标或资料提醒。</p>
+          </article>
         </section>
       )}
     </main>

@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'dashboard-novel-summary-recent-card-row-001',
+    title: '首页我的小说需要变成数据卡片并加入最近编辑快捷卡',
+    area: '首页 / 顶部卡片 / 我的小说 / 作品整理 / 最近编辑',
+    symptom: '“我的小说”卡片只展示标题和一句说明，不能直接看到小说数量、昨日更新和总字数；最近编辑放在下方列表里，占用空间且不在作品整理卡片旁边。',
+    cause: 'DashboardPage 仍使用大欢迎卡、写作概览卡和独立最近编辑列表，顶部没有形成四个并列的可扫描数据/入口卡片。',
+    solution: '将首页顶部改为一行四卡片：我的小说数据卡、作品整理入口卡、最近编辑快捷卡和预留扩展卡；最近编辑卡复用 selectNovel + navigate 快速进入作品。',
+    prevention: '后续调整首页首屏时保持卡片紧凑并优先展示可扫描指标；最近编辑入口不要恢复成过长的大列表，除非用户明确要求展开。',
+    keywords: ['首页', '我的小说', '数据卡片', '作品整理', '最近编辑', '四卡片', 'DashboardPage'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'dashboard-nav-group-divider-hierarchy-001',
     title: '首页左侧导航分组线需要只分隔专区层级',
     area: '首页 / 左侧导航 / 分组分隔线',
