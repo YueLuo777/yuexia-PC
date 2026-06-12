@@ -38,12 +38,28 @@ describe('WorkbenchSoftCyanButtonStyleTestPage', () => {
     }
 
     expect(pageSource).toContain('方案 A：推荐，浅青选中态 + 白底操作按钮');
-    expect(pageSource).toContain('方案 B：更轻，边框存在感继续降低');
+    expect(pageSource).toContain('方案 B：浅青边框加深，轮廓更清楚');
+    expect(pageSource).toContain('#BDEEF7');
     expect(pageSource).toContain('方案 C：按钮文字统一 #08AACE');
-    expect(pageSource).toContain("type Variant = 'recommended' | 'quiet' | 'cyanText';");
+    expect(pageSource).toContain('方案 D：基于 B，选中字体改为黑色');
+    expect(pageSource).toContain('只把选中态里原本偏蓝的字体强制改成黑色');
+    expect(pageSource).toContain('#1E71EF 主色替换 10 方案');
+    expect(pageSource).toContain('只在测试页预览');
+    for (const color of ['#08AACE', '#0891B2', '#0F766E', '#256D85', '#4F6F8F', '#475569', '#5B5F97', '#2D8C7C', '#386FA4', '#0E7490']) {
+      expect(pageSource).toContain(color);
+    }
+    for (const label of ['01 浅青蓝', '02 湖蓝', '03 青绿', '04 墨青', '05 蓝灰', '06 石板蓝', '07 蓝紫灰', '08 松石绿', '09 钢蓝', '10 深天青']) {
+      expect(pageSource).toContain(label);
+    }
+    expect(pageSource).toContain("type Variant = 'recommended' | 'quiet' | 'cyanText' | 'quietBlackText';");
     expect(pageSource).toContain("const CYAN_TEXT_FORCE_CLASS = 'xy-soft-cyan-force-text';");
+    expect(pageSource).toContain("const BLACK_TEXT_FORCE_CLASS = 'xy-soft-cyan-black-text';");
+    expect(pageSource).toContain("return variant === 'quiet' || variant === 'quietBlackText' ? SOFT_CYAN_STRONG_BORDER_CLASS : SOFT_CYAN_BORDER_CLASS;");
+    expect(pageSource).toContain("return variant === 'quietBlackText' ? `text-[#111827] ${BLACK_TEXT_FORCE_CLASS}` : 'text-[#08AACE]';");
     expect(pageSource).toContain('color: #08AACE !important;');
-    expect(pageSource).toContain("if (variant === 'cyanText') return `${base} border-[#E7F8FD] bg-white text-[#08AACE] hover:bg-[#E7F8FD]${forceText}`;");
+    expect(pageSource).toContain('color: #111827 !important;');
+    expect(pageSource).toContain("if (variant === 'cyanText') return `${base} ${borderClass} bg-white text-[#08AACE] hover:bg-[#E7F8FD]${forceText}`;");
     expect(pageSource).toContain("variant === 'cyanText'");
+    expect(pageSource).toContain("variant=\"quietBlackText\"");
   });
 });

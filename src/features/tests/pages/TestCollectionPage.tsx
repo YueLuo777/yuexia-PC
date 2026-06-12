@@ -27,6 +27,7 @@ const WorkbenchRightPanelUnifiedTestPage = lazy(() => import('@/features/tests/p
 const WorkbenchAiRequestTagPolicyTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiRequestTagPolicyTestPage').then((module) => ({ default: module.WorkbenchAiRequestTagPolicyTestPage })));
 const SettingTaxonomyPlanTestPage = lazy(() => import('@/features/tests/pages/SettingTaxonomyPlanTestPage').then((module) => ({ default: module.SettingTaxonomyPlanTestPage })));
 const WorkbenchFlowButtonStatsTestPage = lazy(() => import('@/features/tests/pages/WorkbenchFlowButtonStatsTestPage').then((module) => ({ default: module.WorkbenchFlowButtonStatsTestPage })));
+const WorkbenchSidebarBoldNavigationTestPage = lazy(() => import('@/features/tests/pages/WorkbenchSidebarBoldNavigationTestPage').then((module) => ({ default: module.WorkbenchSidebarBoldNavigationTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -107,6 +108,13 @@ const testGroups = [
         path: '/workbench-flow-button-stats-test',
         icon: SlidersHorizontal,
         badge: 'Flow Stats',
+      },
+      {
+        title: '作品编辑器左侧导航加粗测试',
+        description: '测试正文第一卷、章节，以及脑洞、设定等页面分组和设定条目加粗后的效果。',
+        path: '/workbench-sidebar-bold-navigation-test',
+        icon: NotebookText,
+        badge: 'Bold Nav',
       },
     ],
   },
@@ -227,6 +235,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <SettingTaxonomyPlanTestPage />;
       case '/workbench-flow-button-stats-test':
         return <WorkbenchFlowButtonStatsTestPage />;
+      case '/workbench-sidebar-bold-navigation-test':
+        return <WorkbenchSidebarBoldNavigationTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':

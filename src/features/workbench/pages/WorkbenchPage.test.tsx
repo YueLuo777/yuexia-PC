@@ -46,8 +46,19 @@ describe('Workbench splitters', () => {
     const source = await readSource('WorkbenchPage.tsx');
 
     expect(source).toContain('group relative z-10 -ml-[3px] -mr-[3px] flex w-[6px] shrink-0 cursor-ew-resize');
-    expect(source).toContain('h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100');
+    expect(source).toContain('h-full w-px bg-[#08AACE] opacity-0 transition-opacity group-hover:opacity-100');
     expect(source).not.toContain('bg-[#EF4444] opacity-0');
     expect(source).not.toContain('h-8 w-px rounded-full bg-slate-300');
+  });
+});
+
+describe('Workbench flow stats', () => {
+  it('marks summary flow as warning when summary chapters are fewer than writing chapters', async () => {
+    const source = await readSource('WorkbenchPage.tsx');
+
+    expect(source).toContain('const summaryChapterSerials = new Set(summaryContextItems.map((item) => getContextEntrySerial(item.title)).filter(Boolean));');
+    expect(source).toContain('const summaryChapterCount = summaryChapterSerials.size > 0 ? summaryChapterSerials.size : summaryContextItems.length;');
+    expect(source).toContain("summary: { meta: `${summaryChapterCount}章`, tone: summaryChapterCount < chapterCount ? 'warning' : 'normal' },");
+    expect(source).not.toContain("summary: { meta: `${summaryContextItems.length}章` },");
   });
 });

@@ -389,12 +389,13 @@ export function WorkbenchAIPanel({
   const selectedPrompt = chatPrompts.find((prompt) => prompt.id === selectedPromptId) ?? null;
   const outputWordCount = output.replace(/\s/g, '').length;
   const linkedChapterWordCount = selectedChapterContent.replace(/\s/g, '').length;
-  const linkedContextWordCount = linkedContextItems.reduce((sum, item) => sum + getTextWordCount(item.content), 0);
   const hasLinkedChapter = Boolean(activeSession?.linkChapter);
-  const hasLinkedContext = linkedContextItems.length > 0;
+  const activeLinkedContextItems = hasLinkedChapter ? [] : linkedContextItems;
+  const linkedContextWordCount = activeLinkedContextItems.reduce((sum, item) => sum + getTextWordCount(item.content), 0);
+  const hasLinkedContext = activeLinkedContextItems.length > 0;
   const activeLinkWordCount = hasLinkedContext ? linkedContextWordCount : (hasLinkedChapter ? linkedChapterWordCount : 0);
   const shouldShowActiveLinkStats = hasLinkedContext || hasLinkedChapter;
-  const previewLinkedContextPayload = buildBodyLinkedContextPayload(linkedContextItems);
+  const previewLinkedContextPayload = buildBodyLinkedContextPayload(activeLinkedContextItems);
   const previewUseChapter = !previewLinkedContextPayload && Boolean(activeSession?.linkChapter && selectedChapterContent.trim());
   const previewContextText = previewLinkedContextPayload || (previewUseChapter ? wrapAiRequestTag('前文正文', selectedChapterContent, { 标题: chapterContextLabel }) : '');
   const previewUserTextForAi = wrapAiRequestTag('写作要求', input.trim());
@@ -407,7 +408,7 @@ export function WorkbenchAIPanel({
     visibleUserContent: input.trim(),
     contextTitle: previewLinkedContextPayload ? '关联资料' : (previewContextText ? `${chapterContextLabel}内容` : ''),
     contextText: previewContextText,
-    linkedItems: previewLinkedContextPayload ? linkedContextItems : [],
+    linkedItems: previewLinkedContextPayload ? activeLinkedContextItems : [],
     linkChapter: Boolean(activeSession?.linkChapter),
   });
   const visibleRequestLog = previewRequestLog ?? lastRequestLog;
@@ -448,17 +449,9 @@ export function WorkbenchAIPanel({
     stopBackgroundAiTask(session.backgroundTaskId);
   };
 
-  useEffect(() => {
-    if (!activeSession?.linkChapter || linkedContextItems.length === 0) return;
-    updateSession(activeSession.id, {
-      linkChapter: false,
-      hasSentChapterContext: false,
-    });
-  }, [activeSession?.id, activeSession?.linkChapter, linkedContextItems.length]);
-
   const toggleChapterContext = () => {
     const nextLinkChapter = !activeSession?.linkChapter;
-    if (nextLinkChapter && hasLinkedContext) {
+    if (nextLinkChapter && linkedContextItems.length > 0) {
       onClearLinkedContext?.();
     }
     updateActiveSession({
@@ -468,8 +461,22 @@ export function WorkbenchAIPanel({
   };
 
   const openLinkedContextLibrary = () => {
+    if (hasLinkedChapter) {
+      updateActiveSession({
+        linkChapter: false,
+        hasSentChapterContext: false,
+      });
+    }
     onOpenContextLibrary?.();
     if (!onOpenContextLibrary) flashStatus('关联资料稍后配置');
+  };
+
+  const clearLinkedContext = () => {
+    onClearLinkedContext?.();
+    updateActiveSession({
+      linkChapter: false,
+      hasSentChapterContext: false,
+    });
   };
 
   useEffect(() => {
@@ -593,7 +600,8 @@ export function WorkbenchAIPanel({
     const sessionId = activeSession.id;
     const text = input.trim();
     if (!text || isLoading) return;
-    const linkedContextPayload = buildBodyLinkedContextPayload(linkedContextItems);
+    const activeRequestLinkedContextItems = activeSession.linkChapter ? [] : linkedContextItems;
+    const linkedContextPayload = buildBodyLinkedContextPayload(activeRequestLinkedContextItems);
     const shouldAttachChapter = !linkedContextPayload && activeSession.linkChapter && selectedChapterContent.trim();
     const contextPayload = linkedContextPayload || (shouldAttachChapter ? wrapAiRequestTag('前文正文', selectedChapterContent, { 标题: chapterContextLabel }) : '');
     const effectiveContextPayload = contextPayload;
@@ -609,7 +617,7 @@ export function WorkbenchAIPanel({
       visibleUserContent: text,
       contextTitle,
       contextText: effectiveContextPayload,
-      linkedItems: linkedContextPayload ? linkedContextItems : [],
+      linkedItems: linkedContextPayload ? activeRequestLinkedContextItems : [],
       linkChapter: Boolean(activeSession.linkChapter),
     });
     setLastRequestLog(requestLog);
@@ -972,6 +980,17 @@ export function WorkbenchAIPanel({
                 >
                   {hasLinkedContext ? '已关联资料' : '资料'}
                 </button>
+                {hasLinkedContext ? (
+                  <button
+                    type="button"
+                    onClick={clearLinkedContext}
+                    className="flex w-11 items-center justify-center border-l border-white/70 bg-[#ff4b4b] text-white transition-colors hover:bg-[#ef3b3b]"
+                    title="取消关联资料"
+                    aria-label="取消关联资料"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                ) : null}
               </div>
               {shouldShowActiveLinkStats && (
                 <span className="min-w-0 shrink text-sm font-bold text-slate-400">

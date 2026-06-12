@@ -82,8 +82,8 @@ import { LinkedSourceControl } from '@/shared/ui/LinkedSourceControl';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 import { WordCountText } from '@/shared/ui/WordCountText';
 
-const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#c7dcff] bg-[#eaf2ff] px-1 text-left text-[14px] font-medium text-[#1f2933] shadow-sm transition-colors hover:bg-[#dfeaff]';
-const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#1e71ef]';
+const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] bg-[#E7F8FD] px-1 text-left text-[14px] font-medium text-[#1f2933] shadow-sm transition-colors hover:bg-[#DDF5FC]';
+const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';
 const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-medium text-[#6f7e90]';
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
@@ -3062,7 +3062,7 @@ export function WorkbenchLibraryPanel({
       className="group relative z-50 flex h-full w-4 -translate-x-1/2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
       title="拖拽调整左侧宽度"
     >
-      <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
+      <div className="h-full w-px bg-[#08AACE] opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
 
@@ -3073,7 +3073,7 @@ export function WorkbenchLibraryPanel({
       className="group relative z-50 flex h-full w-4 -translate-x-1/2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
       title="拖拽调整右侧宽度"
     >
-      <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
+      <div className="h-full w-px bg-[#08AACE] opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
 
@@ -3084,7 +3084,7 @@ export function WorkbenchLibraryPanel({
       className="group relative z-30 flex h-full w-4 -translate-x-1/2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
       title="拖拽调整脑洞预览宽度"
     >
-      <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
+      <div className="h-full w-px bg-[#08AACE] opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
 
@@ -3095,7 +3095,7 @@ export function WorkbenchLibraryPanel({
       className="group relative z-30 flex h-full w-3 -translate-x-1/2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
       title="拖拽调整剧情链左侧宽度"
     >
-      <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
+      <div className="h-full w-px bg-[#08AACE] opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
 
@@ -3106,7 +3106,7 @@ export function WorkbenchLibraryPanel({
       className="group relative z-30 flex h-full w-3 -translate-x-1/2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
       title="拖拽调整剧情链目录宽度"
     >
-      <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
+      <div className="h-full w-px bg-[#08AACE] opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
 
@@ -3117,7 +3117,7 @@ export function WorkbenchLibraryPanel({
       className="group relative z-30 flex h-full w-3 -translate-x-1/2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
       title="拖拽调整剧情链右侧宽度"
     >
-      <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
+      <div className="h-full w-px bg-[#08AACE] opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
 

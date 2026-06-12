@@ -3,10 +3,18 @@ import type { ReactNode } from 'react';
 
 import type { WorkbenchCreationFlowPageKey, WorkbenchHeaderFlowItem } from '@/features/workbench/model/workbenchCreationFlow';
 
+export interface WorkbenchHeaderFlowStat {
+  meta?: string;
+  tone?: 'normal' | 'warning' | 'quiet';
+}
+
+export type WorkbenchHeaderFlowStats = Partial<Record<WorkbenchCreationFlowPageKey, WorkbenchHeaderFlowStat>>;
+
 interface WorkbenchHeaderProps {
   workTitle: string;
   flowItems: WorkbenchHeaderFlowItem[];
   activeFlow: WorkbenchCreationFlowPageKey;
+  flowStats?: WorkbenchHeaderFlowStats;
   fieldSizeVisible?: boolean;
   logVisible?: boolean;
   extraTools?: ReactNode;
@@ -20,6 +28,7 @@ export function WorkbenchHeader({
   workTitle,
   flowItems,
   activeFlow,
+  flowStats = {},
   fieldSizeVisible = false,
   logVisible = false,
   extraTools = null,
@@ -35,6 +44,9 @@ export function WorkbenchHeader({
 
   const renderFlowButton = (item: WorkbenchHeaderFlowItem) => {
     const active = item.flow === activeFlow;
+    const stat = item.flow ? flowStats[item.flow] : undefined;
+    const meta = stat?.meta?.trim() ?? '';
+    const tone = stat?.tone ?? 'normal';
     return (
       <button
         key = {item.id}
@@ -42,9 +54,21 @@ export function WorkbenchHeader({
         onClick={() => {
           if (item.flow) onSelectFlow(item.flow);
         }}
-        className={`xy-capsule-button shrink-0 ${active ? 'xy-active' : ''}`}
+        className={[
+          'xy-capsule-button xy-flow-status-button shrink-0',
+          active ? 'xy-active' : '',
+          tone === 'warning' ? 'xy-flow-warning' : '',
+          tone === 'quiet' ? 'xy-flow-quiet' : '',
+        ].filter(Boolean).join(' ')}
       >
-        {item.title}
+        <span className={`xy-flow-status-title ${item.flow === 'brainstorm' ? 'tracking-wide' : ''}`}>
+          {item.title}
+        </span>
+        {meta ? (
+          <span className={`xy-flow-status-meta ${tone === 'warning' ? 'xy-flow-status-meta-warning' : ''}`}>
+            {meta}
+          </span>
+        ) : null}
       </button>
     );
   };
@@ -70,10 +94,10 @@ export function WorkbenchHeader({
           ) : null}
         </div>
 
-        <div className="xy-capsule-group ml-3 shrink-0">
+        <div className="xy-capsule-group xy-flow-status-group ml-3 shrink-0">
           {creationFlowItems.map(renderFlowButton)}
         </div>
-        <div className="xy-capsule-group ml-3 shrink-0">
+        <div className="xy-capsule-group xy-flow-status-group ml-3 shrink-0">
           {reviewFlowItems.map(renderFlowButton)}
         </div>
       </div>
@@ -84,7 +108,7 @@ export function WorkbenchHeader({
             <button
               type="button"
               onClick={onOpenFieldSize}
-              className="inline-flex h-8 items-center gap-2 rounded-md border border-[#dce1e8] bg-white px-3 text-sm font-medium text-[#586574] transition-colors hover:border-[#1e71ef] hover:text-[#1e71ef]"
+              className="inline-flex h-8 items-center gap-2 rounded-md border border-[#dce1e8] bg-white px-3 text-sm font-medium text-[#586574] transition-colors hover:border-[#08AACE] hover:text-[#08AACE]"
               aria-label="设置"
             >
               <Settings className="h-4 w-4" />
@@ -95,7 +119,7 @@ export function WorkbenchHeader({
             <button
               type="button"
               onClick={onOpenLog}
-              className="h-8 rounded-md border border-[#dce1e8] bg-white px-3 text-sm font-medium text-[#586574] transition-colors hover:border-[#1e71ef] hover:text-[#1e71ef]"
+              className="h-8 rounded-md border border-[#dce1e8] bg-white px-3 text-sm font-medium text-[#586574] transition-colors hover:border-[#08AACE] hover:text-[#08AACE]"
             >
               日志
             </button>

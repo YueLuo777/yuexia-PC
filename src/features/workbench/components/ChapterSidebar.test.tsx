@@ -75,12 +75,22 @@ describe('ChapterSidebar', () => {
     const publishedSidebarSource = readSource('PublishedSidebar.tsx');
 
     for (const source of [chapterSidebarSource, publishedSidebarSource]) {
-      expect(source).toContain('rounded-md border border-[#c7dcff] bg-[#eaf2ff] px-1 text-left text-[14px]');
+      expect(source).toContain('rounded-md border border-[#BDEEF7] bg-[#E7F8FD] px-1 text-left text-[14px]');
       expect(source).toContain('overflow-y-auto px-1 py-2');
       expect(source).toContain('className="mt-0.5 space-y-0.5"');
-      expect(source).toContain('border-l-[3px] px-[26px] py-2');
       expect(source).not.toContain('className="ml-1 mt-0.5 space-y-0.5"');
     }
+    expect(chapterSidebarSource).toContain('rounded-[8px] border px-[24px] py-2');
+    expect(publishedSidebarSource).toContain('border-l-[3px] px-[26px] py-2');
+  });
+
+  it('uses the orange selected chapter style in the body chapter list', () => {
+    const chapterSidebarSource = readSource('ChapterSidebar.tsx');
+
+    expect(chapterSidebarSource).toContain("? 'border-[#FDBA74] bg-[#FFF7ED]'");
+    expect(chapterSidebarSource).toContain("? 'text-[#F97316]' : 'text-gray-700'");
+    expect(chapterSidebarSource).toContain("? 'text-[#2563EB]' : 'text-gray-400'");
+    expect(chapterSidebarSource).not.toContain("? 'border-[#BDEEF7] bg-[#E7F8FD]'");
   });
 
   it('uses the reference popup style for chapter context menus with a placeholder group submenu', () => {

@@ -1,9 +1,17 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { WORKBENCH_HEADER_FLOW_ITEMS } from '@/features/workbench/model/workbenchCreationFlow';
 
 import { WorkbenchHeader } from './WorkbenchHeader';
+
+const readSource = (relativePath: string) => (
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8')
+);
 
 describe('WorkbenchHeader', () => {
   it('renders work info, creation flow, and review flow as separate button groups', () => {
@@ -52,6 +60,41 @@ describe('WorkbenchHeader', () => {
     fireEvent.click(screen.getByRole('button', { name: '脑洞' }));
 
     expect(onSelectFlow).toHaveBeenCalledWith('brainstorm');
+  });
+
+  it('renders flow stats with the option D compact stacked layout', () => {
+    const { container } = render(
+      <WorkbenchHeader
+        workTitle="默认小说1"
+        flowItems={WORKBENCH_HEADER_FLOW_ITEMS}
+        activeFlow="writing"
+        flowStats={{
+          brainstorm: { meta: '12个脑洞' },
+          outline: { meta: '28个设定' },
+          chapterOutline: { meta: '46章' },
+          writing: { meta: '46章' },
+          audit: { meta: '11章未审', tone: 'warning' },
+          comment: { meta: '19章未点评', tone: 'warning' },
+          status: { meta: '8章未更新', tone: 'warning' },
+          summary: { meta: '43章', tone: 'warning' },
+        }}
+        onOpenWorkInfo={vi.fn()}
+        onSelectFlow={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /脑洞.*12个脑洞/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /正文.*46章/ })).toHaveClass('xy-active');
+    expect(screen.getByRole('button', { name: /审核.*11章未审/ })).toHaveClass('xy-flow-warning');
+    expect(container.querySelectorAll('.xy-flow-status-group')).toHaveLength(2);
+    expect(container.querySelectorAll('.xy-flow-status-meta-warning')).toHaveLength(4);
+    const styleSource = readSource('../../../shared/styles/index.css');
+    expect(styleSource).toContain('min-height: 2.375rem;');
+    expect(styleSource).toContain('min-width: 4.75rem;');
+    expect(styleSource).toContain('flex-direction: column;');
+    expect(styleSource).toContain('font-size: 0.5625rem;');
+    expect(styleSource).not.toContain('min-width: 8.25rem;');
+    expect(styleSource).not.toContain('background: #fff1e2;');
   });
 
   it('renders extra tools before field size and log actions', () => {

@@ -25,11 +25,12 @@ import {
   HighFreqToggle,
   HighlightOverlay,
   HistoryModal,
-  PARAGRAPH_INDENT,
   SmartFormatModal,
   SymbolReplaceModal,
   SymbolReplaceToggle,
   TitleOptimizeModal,
+  EDITOR_GRID_LINE_LEFT_OFFSET_PX,
+  EDITOR_GRID_LINE_RIGHT_OFFSET_PX,
   applyFormat,
   applySymbolReplace,
   getStoredFormatSettings,
@@ -37,7 +38,6 @@ import {
   getEditorGridLineStyle,
   getStoredSymbolReplaceSettings,
   isSymbolReplaceEnabled,
-  normalizeParagraphIndents,
   saveSnapshot,
   stripLineIndents,
   type FormatOptions,
@@ -72,8 +72,8 @@ const REVIEW_PAGE_LEFT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_left
 const REVIEW_PAGE_RIGHT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_right_width';
 const STATUS_PAGE_LEFT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_status_left_width';
 const STATUS_PAGE_RIGHT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_status_right_width';
-const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#c7dcff] bg-[#eaf2ff] px-1 text-left text-[14px] font-medium text-[#1f2933] shadow-sm transition-colors hover:bg-[#dfeaff]';
-const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#1e71ef]';
+const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] bg-[#E7F8FD] px-1 text-left text-[14px] font-medium text-[#1f2933] shadow-sm transition-colors hover:bg-[#DDF5FC]';
+const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';
 const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-medium text-[#6f7e90]';
 const REVIEW_PAGE_LEFT_WIDTH_LIMIT = { min: 180, max: 360 };
 const REVIEW_PAGE_RIGHT_WIDTH_LIMIT = { min: 260, max: 520 };
@@ -317,32 +317,6 @@ interface ChapterEditorProps {
   onDeleteChapter: (chapterId: number) => void;
   onOpenFind: () => void;
   onOpenSummaryLibrary: () => void;
-}
-
-function getParagraphIndentInfo(text: string, cursorPos: number) {
-  const safePos = Math.max(0, Math.min(cursorPos, text.length));
-  const lineStart = text.lastIndexOf('\n', Math.max(0, safePos - 1)) + 1;
-  const nextLineBreak = text.indexOf('\n', lineStart);
-  const lineEnd = nextLineBreak >= 0 ? nextLineBreak : text.length;
-  const lineIndentEnd = lineStart + PARAGRAPH_INDENT.length;
-  const hasIndent = text.slice(lineStart, lineIndentEnd) === PARAGRAPH_INDENT;
-  const lineBody = hasIndent ? text.slice(lineIndentEnd, lineEnd) : text.slice(lineStart, lineEnd);
-  return {
-    lineStart,
-    lineEnd,
-    lineIndentEnd,
-    hasIndent,
-    isBlankAfterIndent: hasIndent && !lineBody.trim(),
-  };
-}
-
-function clampEditableCursor(cursorPos: number, text: string, paragraphIndent: boolean) {
-  if (!paragraphIndent) return Math.max(0, Math.min(cursorPos, text.length));
-  const safePos = Math.max(0, Math.min(cursorPos, text.length));
-  const { lineStart, lineIndentEnd, hasIndent } = getParagraphIndentInfo(text, safePos);
-  if (!hasIndent) return safePos;
-  if (safePos >= lineStart && safePos < lineIndentEnd) return Math.min(lineIndentEnd, text.length);
-  return safePos;
 }
 
 function getStatusTargetLabel(entry: WorkbenchLibraryEntry) {
@@ -592,6 +566,9 @@ export function ChapterEditor({
   const [fontSettings, setFontSettings] = useState<FontSettings>(getStoredFontSettings);
   const [formatSettings, setFormatSettings] = useState<FormatOptions>(getStoredFormatSettings);
   const editorGridLineStyle = useMemo(() => getEditorGridLineStyle(fontSettings, editorScrollTop), [editorScrollTop, fontSettings]);
+  const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;
+  const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;
+  const editorTextIndent = formatSettings.paragraphIndent ? '2em' : undefined;
   const [copyToast, setCopyToast] = useState('');
   const [associatedCount, setAssociatedCount] = useState(0);
   const reviewModalDraggable = useDraggableModal('chapter_review_panel');
@@ -743,7 +720,7 @@ export function ChapterEditor({
       className={CHAPTER_EDITOR_RESIZE_HANDLE_CLASS}
       title="拖拽调整宽度"
     >
-      <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
+      <div className="h-full w-px bg-[#08AACE] opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
   const statusLeftResizeHandle = renderPanelResizeHandle((event) => startPanelWidthResize(event, {
@@ -774,7 +751,6 @@ export function ChapterEditor({
     direction: -1,
     onChange: setReviewPageRightWidth,
   }));
-  const shouldIndentEmptyEditor = formatSettings.paragraphIndent && !content.trim();
   const { models: modelSnapshot } = useModels();
   const reviewModels = useMemo(() => modelSnapshot.filter((model) => model.enabled), [modelSnapshot]);
   const reviewPrompts = useMemo(() => readPromptSnapshot().prompts, []);
@@ -1275,11 +1251,7 @@ export function ChapterEditor({
       const textarea = textareaRef.current;
       if (!textarea) return;
       if (textarea.value !== next && next !== content) return;
-      const safeCursor = clampEditableCursor(
-        Math.min(cursorPos, textarea.value.length),
-        textarea.value,
-        formatSettings.paragraphIndent,
-      );
+      const safeCursor = Math.max(0, Math.min(cursorPos, textarea.value.length));
       textarea.setSelectionRange(safeCursor, safeCursor);
       restoreTextareaScroll(textarea, scrollTop);
       if (textarea.value === next) pendingCursorRef.current = null;
@@ -1293,11 +1265,7 @@ export function ChapterEditor({
     if (!textarea) return;
 
     const applyCursor = () => {
-      const safeCursor = clampEditableCursor(
-        Math.min(pending.cursorPos, textarea.value.length),
-        textarea.value,
-        formatSettings.paragraphIndent,
-      );
+      const safeCursor = Math.max(0, Math.min(pending.cursorPos, textarea.value.length));
       textarea.setSelectionRange(safeCursor, safeCursor);
       restoreTextareaScroll(textarea, pending.scrollTop);
       pendingCursorRef.current = null;
@@ -1308,7 +1276,7 @@ export function ChapterEditor({
       return;
     }
     requestAnimationFrame(applyCursor);
-  }, [content, formatSettings.paragraphIndent]);
+  }, [content]);
 
   useEffect(() => {
     const openAssociate = () => setIsAssociateOpen(true);
@@ -1383,38 +1351,15 @@ export function ChapterEditor({
     );
   }
 
-  const normalizeEditorText = (value: string) => (
-    formatSettings.paragraphIndent ? normalizeParagraphIndents(value) : stripLineIndents(value)
-  );
-
-  const getParagraphIndentRange = (text: string, cursorPos: number) => {
-    return getParagraphIndentInfo(text, cursorPos);
-  };
-
-  const clampCursorToEditableText = (cursorPos: number, text = content) => {
-    return clampEditableCursor(cursorPos, text, formatSettings.paragraphIndent);
-  };
+  const normalizeEditorText = (value: string) => stripLineIndents(value);
 
   const getNormalizedCursor = (value: string, cursorPos: number) => (
-    clampCursorToEditableText(normalizeEditorText(value.slice(0, cursorPos)).length, normalizeEditorText(value))
+    Math.max(0, Math.min(normalizeEditorText(value.slice(0, cursorPos)).length, normalizeEditorText(value).length))
   );
 
   const getActiveSymbolReplaceSettings = () => (
     getStoredSymbolReplaceSettings().filter((rule) => rule.from && rule.from !== rule.to)
   );
-
-  const keepSelectionOutOfParagraphIndent = () => {
-    if (!formatSettings.paragraphIndent) return;
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    const selectionDirection = textarea.selectionDirection;
-    const safeStart = clampCursorToEditableText(textarea.selectionStart);
-    const safeEnd = clampCursorToEditableText(textarea.selectionEnd);
-    if (safeStart === textarea.selectionStart && safeEnd === textarea.selectionEnd) return;
-    requestAnimationFrame(() => {
-      textarea.setSelectionRange(safeStart, safeEnd, selectionDirection);
-    });
-  };
 
   const handleContentChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const rawText = event.target.value;
@@ -1441,9 +1386,9 @@ export function ChapterEditor({
     event.preventDefault();
     const pasted = event.clipboardData.getData('text');
     const target = event.currentTarget;
-    const start = clampCursorToEditableText(target.selectionStart);
-    const end = clampCursorToEditableText(target.selectionEnd);
-    const cleanedPaste = formatSettings.paragraphIndent ? normalizeParagraphIndents(pasted) : stripLineIndents(pasted);
+    const start = target.selectionStart;
+    const end = target.selectionEnd;
+    const cleanedPaste = stripLineIndents(pasted);
     const settings = isSymbolReplaceEnabled() ? getActiveSymbolReplaceSettings() : [];
     const pastedWithIndent = settings.length > 0 ? applySymbolReplace(cleanedPaste, settings) : cleanedPaste;
     const next = content.slice(0, start) + pastedWithIndent + content.slice(end);
@@ -1469,40 +1414,11 @@ export function ChapterEditor({
         commitContentWithCursor(next, 0);
         return;
       }
-      if (formatSettings.paragraphIndent) {
-        const { lineStart, lineIndentEnd, hasIndent } = getParagraphIndentRange(currentText, start);
-        if (event.key === 'Backspace' && hasIndent && start === lineIndentEnd && lineStart > 0) {
-          event.preventDefault();
-          const next = currentText.slice(0, lineStart - 1) + currentText.slice(lineIndentEnd);
-          commitContentWithCursor(next, lineStart - 1);
-          return;
-        }
-
-        if (event.key === 'Delete' && currentText[start] === '\n') {
-          const nextLine = getParagraphIndentRange(currentText, start + 1);
-          if (nextLine.hasIndent && nextLine.lineStart === start + 1) {
-            event.preventDefault();
-            const next = currentText.slice(0, start) + currentText.slice(nextLine.lineIndentEnd);
-            commitContentWithCursor(next, start);
-            return;
-          }
-        }
-
-        const shouldProtectBackspace = event.key === 'Backspace' && hasIndent && start > lineStart && start < lineIndentEnd;
-        const shouldProtectDelete = event.key === 'Delete' && hasIndent && start >= lineStart && start < lineIndentEnd;
-        if (shouldProtectBackspace || shouldProtectDelete) {
-          event.preventDefault();
-          const safeCursor = Math.min(lineIndentEnd, currentText.length);
-          textareaRef.current?.setSelectionRange(safeCursor, safeCursor);
-          return;
-        }
-      }
     }
     if (event.key !== 'Enter') return;
     event.preventDefault();
-    const lineBreak = formatSettings.paragraphIndent ? `\n${PARAGRAPH_INDENT}` : '\n';
-    const next = content.slice(0, start) + lineBreak + content.slice(end);
-    commitContentWithCursor(next, start + lineBreak.length);
+    const next = content.slice(0, start) + '\n' + content.slice(end);
+    commitContentWithCursor(next, start + 1);
   };
 
   const copyText = async (text: string, message: string) => {
@@ -1810,18 +1726,20 @@ export function ChapterEditor({
             <button onClick={() => setIsFindOpen(false)} className="rounded-lg px-2 py-1.5 text-xs text-gray-400 hover:bg-gray-100">关闭</button>
           </div>
         )}
-        <HighlightOverlay content={content} fontSettings={fontSettings} scrollTop={editorScrollTop} />
+        <HighlightOverlay
+          content={content}
+          fontSettings={fontSettings}
+          scrollTop={editorScrollTop}
+          paragraphIndent={formatSettings.paragraphIndent}
+        />
         <textarea
           ref={textareaRef}
           value={content}
           onChange={handleContentChange}
           onKeyDown={handleKeyDown}
-          onKeyUp={keepSelectionOutOfParagraphIndent}
-          onMouseUp={keepSelectionOutOfParagraphIndent}
           onPaste={handlePaste}
-          onSelect={keepSelectionOutOfParagraphIndent}
           onScroll={(event) => setEditorScrollTop(event.currentTarget.scrollTop)}
-          className="xy-wa-editor-text-layer editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent px-6 pb-6 pt-3 outline-none"
+          className="xy-wa-editor-text-layer editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent pb-6 pt-3 outline-none"
           placeholder=""
           style={{
             ...editorGridLineStyle,
@@ -1830,7 +1748,9 @@ export function ChapterEditor({
             caretColor: fontSettings.fontColor,
             fontSize: `${fontSettings.fontSize}px`,
             lineHeight: fontSettings.lineHeight,
-            textIndent: shouldIndentEmptyEditor ? '2em' : undefined,
+            paddingLeft: editorTextPaddingLeft,
+            paddingRight: editorTextPaddingRight,
+            textIndent: editorTextIndent,
           }}
         />
       </div>

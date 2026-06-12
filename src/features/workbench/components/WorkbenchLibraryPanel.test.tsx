@@ -586,20 +586,31 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(styleSource).toContain('.xy-wa-editor-surface {\n  background: var(--xy-wa-editor-bg);\n}');
     expect(styleSource).toContain('.xy-wa-editor-surface .xy-wa-editor-text-layer {\n  background: #F5F5F7;\n}');
     expect(chapterEditorSource).toContain('className="xy-wa-editor-surface relative min-h-0 flex-1 overflow-hidden"');
-    expect(chapterEditorSource).toContain('className="xy-wa-editor-text-layer editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent px-6 pb-6 pt-3 outline-none"');
+    expect(chapterEditorSource).toContain('className="xy-wa-editor-text-layer editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent pb-6 pt-3 outline-none"');
+    expect(chapterEditorSource).toContain('paddingLeft: editorTextPaddingLeft');
+    expect(chapterEditorSource).toContain('paddingRight: editorTextPaddingRight');
+    expect(chapterEditorSource).toContain('textIndent: editorTextIndent');
     expect(chapterEditorSource).not.toContain('px-6 pb-6 pt-10 outline-none');
   });
 
-  it('keeps paragraph indent blanks out of editor mouse selections', async () => {
+  it('keeps paragraph indentation visual instead of selectable editor blanks', async () => {
     const chapterEditorSource = await readChapterEditorSource();
     const modalSource = await readEditorToolModalsSource();
 
-    expect(chapterEditorSource).toContain('const keepSelectionOutOfParagraphIndent = () => {');
-    expect(chapterEditorSource).toContain('const safeStart = clampCursorToEditableText(textarea.selectionStart);');
-    expect(chapterEditorSource).toContain('const safeEnd = clampCursorToEditableText(textarea.selectionEnd);');
-    expect(chapterEditorSource).toContain('textarea.setSelectionRange(safeStart, safeEnd, selectionDirection);');
-    expect(chapterEditorSource).toContain('onSelect={keepSelectionOutOfParagraphIndent}');
-    expect(modalSource).toContain('whitespace-pre-wrap break-words px-6 pb-6 pt-3 text-transparent');
+    expect(chapterEditorSource).toContain('const normalizeEditorText = (value: string) => stripLineIndents(value);');
+    expect(chapterEditorSource).toContain('const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;');
+    expect(chapterEditorSource).toContain('const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;');
+    expect(chapterEditorSource).toContain("const editorTextIndent = formatSettings.paragraphIndent ? '2em' : undefined;");
+    expect(chapterEditorSource).toContain("const cleanedPaste = stripLineIndents(pasted);");
+    expect(chapterEditorSource).toContain("const next = content.slice(0, start) + '\\n' + content.slice(end);");
+    expect(chapterEditorSource).toContain('paragraphIndent={formatSettings.paragraphIndent}');
+    expect(chapterEditorSource).not.toContain('keepSelectionOutOfParagraphIndent');
+    expect(chapterEditorSource).not.toContain('normalizeParagraphIndents');
+    expect(modalSource).toContain('const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;');
+    expect(modalSource).toContain('const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;');
+    expect(modalSource).toContain("const editorTextIndent = paragraphIndent ? '2em' : undefined;");
+    expect(modalSource).toContain('whitespace-pre-wrap break-words pb-6 pt-3 text-transparent');
+    expect(modalSource).not.toContain('normalizeParagraphIndents');
   });
 
   it('matches audit comment and status chapter directories to the detail outline volume style without losing summary actions', async () => {
@@ -654,8 +665,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
       expect(source).toContain('WORKBENCH_FOLDER_GROUP_BUTTON_CLASS');
       expect(source).toContain('WORKBENCH_FOLDER_GROUP_ICON_CLASS');
       expect(source).toContain('WORKBENCH_FOLDER_GROUP_COUNT_CLASS');
-      expect(source).toContain('border border-[#c7dcff] bg-[#eaf2ff]');
-      expect(source).toContain("const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#1e71ef]';");
+      expect(source).toContain('border border-[#BDEEF7] bg-[#E7F8FD]');
+      expect(source).toContain("const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';");
       expect(source).toContain("const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-medium text-[#6f7e90]';");
       expect(source).toContain('FolderOpen');
       expect(source).toContain('Folder');
@@ -665,7 +676,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(chapterSidebarSource).toContain('<VolumeFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />');
     expect(publishedSidebarSource).toContain('const VolumeFolderIcon = expanded ? FolderOpen : Folder;');
     expect(publishedSidebarSource).toContain('aria-expanded={expanded}');
-    expect(publishedSidebarSource).toContain("chapter.isSelected ? 'border-[#1e71ef] bg-[#d4e2f9]'");
+    expect(publishedSidebarSource).toContain("chapter.isSelected ? 'border-[#BDEEF7] bg-[#E7F8FD]'");
     expect(publishedSidebarSource).not.toContain('border-orange-400 bg-orange-50');
     expect(publishedSidebarSource).not.toContain('text-orange-600');
 
@@ -1725,7 +1736,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(selectedListSource).not.toContain('潜力 {metrics.potential}');
     expect(panelSource).toContain('title="拖拽调整剧情链左侧宽度"');
     expect(panelSource).toContain('w-3 -translate-x-1/2 shrink-0 cursor-ew-resize');
-    expect(panelSource).toContain('h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100');
+    expect(panelSource).toContain('h-full w-px bg-[#08AACE] opacity-0 transition-opacity group-hover:opacity-100');
     expect(panelSource).not.toContain('transition-colors hover:bg-[#EAF9FD]');
   });
 

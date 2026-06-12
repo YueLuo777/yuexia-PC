@@ -10,7 +10,7 @@ import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
 import { PublishedSidebar } from '@/features/workbench/components/PublishedSidebar';
 import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
 import { WorkbenchAIPanel, type WorkbenchLinkedContextItem, type WorkbenchLinkedContextSource } from '@/features/workbench/components/WorkbenchAIPanel';
-import { WorkbenchHeader } from '@/features/workbench/components/WorkbenchHeader';
+import { WorkbenchHeader, type WorkbenchHeaderFlowStats } from '@/features/workbench/components/WorkbenchHeader';
 import { WorkbenchLibraryPanel } from '@/features/workbench/components/WorkbenchLibraryPanel';
 import { WorkbenchModal } from '@/features/workbench/components/WorkbenchModal';
 import { readChapterContent, useWorkbenchData } from '@/features/workbench/hooks/useWorkbenchData';
@@ -1847,6 +1847,18 @@ export function WorkbenchPage() {
       title: entry.title || '未命名梗概',
       content: entry.content || '',
     }));
+  const summaryChapterSerials = new Set(summaryContextItems.map((item) => getContextEntrySerial(item.title)).filter(Boolean));
+  const summaryChapterCount = summaryChapterSerials.size > 0 ? summaryChapterSerials.size : summaryContextItems.length;
+  const flowStats: WorkbenchHeaderFlowStats = {
+    brainstorm: { meta: `${settingsEntries.filter((entry) => entry.tab === '脑洞').length}个脑洞` },
+    outline: { meta: `${settingsEntries.filter((entry) => entry.tab === '大纲').length}个设定` },
+    chapterOutline: { meta: `${outlineContextItems.length}章` },
+    writing: { meta: `${chapterCount}章` },
+    audit: { meta: `${chapterCount}章未审`, tone: 'warning' },
+    comment: { meta: `${chapterCount}章未点评`, tone: 'warning' },
+    status: { meta: `${chapterCount}章未更新`, tone: 'warning' },
+    summary: { meta: `${summaryChapterCount}章`, tone: summaryChapterCount < chapterCount ? 'warning' : 'normal' },
+  };
   const selectedChapterSerialNumber = selectedChapter?.chapter.serialNumber ?? Number.POSITIVE_INFINITY;
   const chapterContextItems: WorkbenchLinkedContextItem[] = volumes.flatMap((volume) => (
     volume.chapters
@@ -2349,6 +2361,7 @@ export function WorkbenchPage() {
         workTitle={currentNovel.title}
         flowItems={WORKBENCH_HEADER_FLOW_ITEMS}
         activeFlow={activeCreationFlow}
+        flowStats={flowStats}
         fieldSizeVisible={showFieldSizeButton}
         logVisible={showHeaderLogButton}
         extraTools={<div id="workbench-header-extra-tools" className="inline-flex items-center gap-2" />}
@@ -2391,7 +2404,7 @@ export function WorkbenchPage() {
                   onMouseDown={handleChapterSidebarDragStart}
                   title="拖拽调整未发布栏宽度"
                 >
-                  <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
+                  <div className="h-full w-px bg-[#08AACE] opacity-0 transition-opacity group-hover:opacity-100" />
                 </div>
 
                 <PublishedSidebar
@@ -2412,7 +2425,7 @@ export function WorkbenchPage() {
               onMouseDown={showPublished ? handlePublishedSidebarDragStart : handleChapterSidebarDragStart}
               title="拖拽调整章节栏宽度"
             >
-              <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
+              <div className="h-full w-px bg-[#08AACE] opacity-0 transition-opacity group-hover:opacity-100" />
             </div>
 
             <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#f5f5f7]">
@@ -2427,7 +2440,7 @@ export function WorkbenchPage() {
               onMouseDown={handlePanelDragStart}
               title="拖拽调整宽度"
             >
-              <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
+              <div className="h-full w-px bg-[#08AACE] opacity-0 transition-opacity group-hover:opacity-100" />
             </div>
 
             <aside

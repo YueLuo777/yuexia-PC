@@ -28,9 +28,9 @@ const reviewButtons: FlowButtonPreview[] = [
 const allButtons = [...creationButtons, ...reviewButtons];
 
 function getButtonToneClass(button: FlowButtonPreview, active: boolean) {
-  if (active) return 'z-10 border-[#1e71ef] bg-[#eaf2ff] text-[#1e71ef] shadow-[inset_0_0_0_1px_#1e71ef]';
+  if (active) return 'z-10 border-[#BDEEF7] bg-[#E7F8FD] text-[#08AACE] shadow-[inset_0_0_0_1px_#BDEEF7]';
   if (button.tone === 'warning') return 'border-[#e7edf5] bg-white text-[#1f2933] hover:border-[#f2bf84] hover:bg-[#fff7ed]';
-  return 'border-[#e7edf5] bg-white text-[#1f2933] hover:border-[#b8caef] hover:bg-[#f7faff]';
+  return 'border-[#e7edf5] bg-white text-[#1f2933] hover:border-[#BDEEF7] hover:bg-[#E7F8FD]';
 }
 
 function FlowGroupPreview({
@@ -38,27 +38,29 @@ function FlowGroupPreview({
   activeId,
   onActiveChange,
 }: {
-  variant: 'balanced' | 'compact' | 'status';
+  variant: 'balanced' | 'compact' | 'status' | 'microStack';
   activeId: string;
   onActiveChange: (id: string) => void;
 }) {
   const buttonClass = useMemo(() => {
+    if (variant === 'microStack') return 'h-[38px] min-w-[82px] px-2';
     if (variant === 'compact') return 'h-10 min-w-[118px] px-3';
     if (variant === 'status') return 'h-[46px] min-w-[132px] px-3.5';
     return 'h-12 min-w-[136px] px-4';
   }, [variant]);
-  const titleClass = variant === 'compact' ? 'text-[15px]' : 'text-[17px]';
-  const metaClass = variant === 'compact' ? 'text-[11px]' : 'text-xs';
+  const titleClass = variant === 'microStack' ? 'text-[14px]' : variant === 'compact' ? 'text-[15px]' : 'text-[17px]';
+  const metaClass = variant === 'microStack' ? 'text-[10px]' : variant === 'compact' ? 'text-[11px]' : 'text-xs';
 
   const renderButton = (button: FlowButtonPreview) => {
     const active = button.id === activeId;
     const showPill = variant === 'status' && button.meta;
+    const stackMeta = variant === 'microStack';
     return (
       <button
         key={button.id}
         type="button"
         onClick={() => onActiveChange(button.id)}
-        className={`${buttonClass} relative -ml-px inline-flex shrink-0 items-center justify-center gap-2 border first:ml-0 first:rounded-l-[8px] last:rounded-r-[8px] ${getButtonToneClass(button, active)}`}
+        className={`${buttonClass} relative -ml-px inline-flex shrink-0 ${stackMeta ? 'flex-col gap-0.5' : 'items-center gap-2'} justify-center border first:ml-0 first:rounded-l-[8px] last:rounded-r-[8px] ${getButtonToneClass(button, active)}`}
       >
         <span className={`${titleClass} font-black leading-none ${button.id === 'brainstorm' ? 'tracking-wide' : ''}`}>{button.title}</span>
         {button.meta ? (
@@ -67,7 +69,7 @@ function FlowGroupPreview({
               {button.meta}
             </span>
           ) : (
-            <span className={`${metaClass} font-bold leading-none ${button.tone === 'warning' ? 'text-[#c26a19]' : active ? 'text-[#1e71ef]' : 'text-[#6f7e90]'}`}>
+            <span className={`${metaClass} font-bold leading-none ${button.tone === 'warning' ? 'text-[#c26a19]' : active ? 'text-[#08AACE]' : 'text-[#6f7e90]'}`}>
               {button.meta}
             </span>
           )
@@ -80,6 +82,70 @@ function FlowGroupPreview({
     <div className="flex flex-wrap items-center gap-4">
       <div className="flex min-w-0 overflow-x-auto">{creationButtons.map(renderButton)}</div>
       <div className="flex min-w-0 overflow-x-auto">{reviewButtons.map(renderButton)}</div>
+    </div>
+  );
+}
+
+function ToolbarMicroPreview() {
+  const [activeId, setActiveId] = useState('writing');
+
+  const renderButton = (button: FlowButtonPreview) => {
+    const active = button.id === activeId;
+    return (
+      <button
+        key={button.id}
+        type="button"
+        onClick={() => setActiveId(button.id)}
+        className={`relative -ml-px inline-flex h-[38px] min-w-[76px] shrink-0 flex-col items-center justify-center gap-0.5 border px-1.5 first:ml-0 first:rounded-l-[8px] last:rounded-r-[8px] ${getButtonToneClass(button, active)}`}
+      >
+        <span className={`text-[13px] font-black leading-none ${button.id === 'brainstorm' ? 'tracking-wide' : ''}`}>{button.title}</span>
+        {button.meta ? (
+          <span className={`max-w-[72px] truncate text-[9px] font-black leading-none ${button.tone === 'warning' ? 'text-[#c26a19]' : active ? 'text-[#08AACE]' : 'text-[#6f7e90]'}`}>
+            {button.meta}
+          </span>
+        ) : (
+          <span className="text-[9px] font-black leading-none text-transparent">-</span>
+        )}
+      </button>
+    );
+  };
+
+  return (
+    <div className="overflow-hidden rounded-[8px] border border-[#dce3eb] bg-[#f7f9fb]">
+      <div className="flex h-[52px] min-w-0 items-center gap-1.5 overflow-hidden border-b border-[#edf1f5] bg-white px-3">
+        <div className="flex shrink-0 overflow-hidden rounded-[8px] border border-[#edf1f5] bg-white">
+          <button type="button" className="h-[38px] shrink-0 border-r border-[#edf1f5] px-2.5 text-[13px] font-black text-[#1f2933]">
+            默认小说1
+          </button>
+          <button type="button" className="h-[38px] shrink-0 border border-[#08AACE] bg-[#E7F8FD] px-2.5 text-[13px] font-black text-[#08AACE] shadow-[inset_0_0_0_1px_#08AACE]">
+            作品信息
+          </button>
+        </div>
+
+        <div className="flex shrink-0">
+          {creationButtons.map(renderButton)}
+        </div>
+
+        <div className="flex shrink-0">
+          {reviewButtons.map(renderButton)}
+        </div>
+
+        <div className="min-w-2 flex-1" aria-hidden="true" />
+
+        <div className="flex h-8 shrink-0 overflow-hidden rounded-[8px] border border-[#edf1f5] bg-white">
+          <button type="button" className="w-7 border-r border-[#edf1f5] text-sm font-black text-[#6f7e90]">-</button>
+          <div className="flex w-9 items-center justify-center border-r border-[#edf1f5] text-sm font-black text-[#1f2933]">20</div>
+          <button type="button" className="w-7 text-sm font-black text-[#6f7e90]">+</button>
+        </div>
+
+        <button type="button" className="h-8 shrink-0 rounded-[8px] border border-[#edf1f5] bg-white px-2.5 text-[13px] font-black text-[#425466]">
+          日志
+        </button>
+      </div>
+      <div className="flex items-center justify-between gap-4 bg-[#f8fafc] px-4 py-3 text-xs font-bold text-[#6f7e90]">
+        <span>方案 D 把统计文字放到标题下方，按钮宽度更窄，适合正式顶部栏空间不足的情况。</span>
+        <span className="shrink-0 text-[#08AACE]">目标：保留数量信息，但减少横向占位</span>
+      </div>
     </div>
   );
 }
@@ -153,7 +219,7 @@ function DesignCard({
 }: {
   title: string;
   desc: string;
-  variant: 'balanced' | 'compact' | 'status';
+  variant: 'balanced' | 'compact' | 'status' | 'microStack';
 }) {
   const [activeId, setActiveId] = useState('writing');
   return (
@@ -203,6 +269,12 @@ export function WorkbenchFlowButtonStatsTestPage() {
           variant="status"
         />
 
+        <DesignCard
+          title="方案 D：推荐，小号上下排"
+          desc="把名称和数量改成上下两行，按钮高度控制在 38px 左右，宽度明显缩小；适合现在顶部栏空间偏紧、但又想保留数量信息的情况。"
+          variant="microStack"
+        />
+
         <section className="rounded-[8px] border border-[#e2e8f0] bg-white p-5 shadow-sm">
           <div className="mb-4">
             <h2 className="text-base font-black text-[#1f2933]">方案 C-工具栏形态：按截图结构检查剩余空间</h2>
@@ -211,6 +283,16 @@ export function WorkbenchFlowButtonStatsTestPage() {
             </p>
           </div>
           <ToolbarCPreview />
+        </section>
+
+        <section className="rounded-[8px] border border-[#e2e8f0] bg-white p-5 shadow-sm">
+          <div className="mb-4">
+            <h2 className="text-base font-black text-[#1f2933]">方案 D-工具栏形态：小号上下排，检查是否更省空间</h2>
+            <p className="mt-1 text-sm leading-6 text-[#6f7e90]">
+              这是我更推荐你看的缩小版：标题仍然清楚，数量信息保留，但不再把每个按钮横向拉得很宽。
+            </p>
+          </div>
+          <ToolbarMicroPreview />
         </section>
       </div>
     </div>

@@ -89,11 +89,10 @@ const defaultFontSettings: FontSettings = {
 };
 
 const EDITOR_GRID_LINE_TOP_OFFSET_PX = 12;
-const EDITOR_GRID_LINE_LEFT_OFFSET_PX = 64;
-const EDITOR_GRID_LINE_RIGHT_OFFSET_PX = 64;
+export const EDITOR_GRID_LINE_LEFT_OFFSET_PX = 64;
+export const EDITOR_GRID_LINE_RIGHT_OFFSET_PX = 64;
 const EDITOR_GRID_LINE_CANVAS_WIDTH_PX = 3200;
 const EDITOR_GRID_LINE_MASK_COLOR = '#F5F5F7';
-const EDITOR_GRID_LINE_TOP_MASK_EXTRA_PX = 4;
 
 const editorGridLineModeOptions: Array<{ value: EditorGridLineMode; label: string }> = [
   { value: 'none', label: '无' },
@@ -129,12 +128,12 @@ export function getEditorGridLineStyle(fontSettings: FontSettings, scrollTop = 0
   const lineHeightPx = Math.round(fontSettings.fontSize * fontSettings.lineHeight);
   const underlineGapPx = Math.max(8, Math.round(fontSettings.fontSize * 0.22));
   const lineOffsetPx = Math.min(lineHeightPx - 2, Math.round((lineHeightPx + fontSettings.fontSize) / 2 + underlineGapPx));
-  const firstLineCoverHeightPx = EDITOR_GRID_LINE_TOP_OFFSET_PX + lineOffsetPx + EDITOR_GRID_LINE_TOP_MASK_EXTRA_PX;
+  const repeatedTopLineMaskHeightPx = Math.max(0, EDITOR_GRID_LINE_TOP_OFFSET_PX + lineOffsetPx - lineHeightPx + 4);
   return {
     backgroundImage: `linear-gradient(${EDITOR_GRID_LINE_MASK_COLOR}, ${EDITOR_GRID_LINE_MASK_COLOR}), linear-gradient(${EDITOR_GRID_LINE_MASK_COLOR}, ${EDITOR_GRID_LINE_MASK_COLOR}), ${buildEditorGridLineBackground(lineHeightPx, lineOffsetPx, gridLineMode)}`,
-    backgroundPosition: `0 0, right 0, 0 ${EDITOR_GRID_LINE_TOP_OFFSET_PX - scrollTop}px`,
+    backgroundPosition: `left 0, right 0, 0 ${EDITOR_GRID_LINE_TOP_OFFSET_PX - scrollTop}px`,
     backgroundRepeat: 'no-repeat, no-repeat, repeat-y',
-    backgroundSize: `100% ${firstLineCoverHeightPx}px, ${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px 100%, ${EDITOR_GRID_LINE_CANVAS_WIDTH_PX}px ${lineHeightPx}px`,
+    backgroundSize: `100% ${repeatedTopLineMaskHeightPx}px, ${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px 100%, ${EDITOR_GRID_LINE_CANVAS_WIDTH_PX}px ${lineHeightPx}px`,
   };
 }
 
@@ -142,8 +141,6 @@ export const defaultFormatOptions: FormatOptions = {
   paragraphIndent: false,
   mergeParagraphs: true,
 };
-
-export const PARAGRAPH_INDENT = '\u3000\u3000';
 
 const fontOptions = [
   { label: '默认字体', value: 'PingFang SC, Microsoft YaHei, sans-serif' },
@@ -243,22 +240,13 @@ export function stripLineIndents(text: string) {
     .join('\n');
 }
 
-function applyParagraphIndents(text: string) {
+export function removeParagraphInnerFullWidthSpaces(text: string) {
   return text
     .split('\n')
     .map((line) => {
-      const trimmed = line.trim();
-      return trimmed ? `${PARAGRAPH_INDENT}${trimmed}` : '';
-    })
-    .join('\n');
-}
-
-export function normalizeParagraphIndents(text: string) {
-  return text
-    .split('\n')
-    .map((line) => {
-      if (!line.trim()) return '';
-      return `${PARAGRAPH_INDENT}${line.replace(/^[\u3000 ]+/, '')}`;
+      const leadingMatch = line.match(/^[\u3000 ]+/);
+      const leading = leadingMatch?.[0] ?? '';
+      return `${leading}${line.slice(leading.length).replace(/\u3000{2,}/g, '')}`;
     })
     .join('\n');
 }
@@ -285,6 +273,7 @@ function setHighFreqEnabled(value: boolean) {
 export function applyFormat(text: string, options: FormatOptions) {
   if (!text.trim()) return '';
   let result = stripLineIndents(text);
+  result = removeParagraphInnerFullWidthSpaces(result);
   result = result.replace(/([\u4e00-\u9fff])\s+([\u4e00-\u9fff])/g, '$1$2');
   result = result.replace(/(\d)\s+(\d)/g, '$1$2');
   if (options.mergeParagraphs) {
@@ -294,9 +283,6 @@ export function applyFormat(text: string, options: FormatOptions) {
       .map((line) => line.trim())
       .filter(Boolean)
       .join('\n');
-  }
-  if (options.paragraphIndent) {
-    result = applyParagraphIndents(result);
   }
   return result;
 }
@@ -800,7 +786,7 @@ export function SmartFormatModal({ isOpen, onClose, currentText, settings, onApp
       <div className="space-y-1 p-5">
         <ToggleRow
           label="段落缩进"
-          desc="写入正文，每段开头加入两个全角空格"
+          desc="视觉缩进，不写入正文空格"
           checked={options.paragraphIndent}
           onChange={(value) => setOptions((prev) => ({ ...prev, paragraphIndent: value }))}
         />
@@ -1046,7 +1032,12 @@ export function SymbolReplaceModal({ isOpen, onClose }: {
   );
 }
 
-export function HighlightOverlay({ content, fontSettings, scrollTop = 0 }: { content: string; fontSettings: FontSettings; scrollTop?: number }) {
+export function HighlightOverlay({ content, fontSettings, scrollTop = 0, paragraphIndent = false }: {
+  content: string;
+  fontSettings: FontSettings;
+  scrollTop?: number;
+  paragraphIndent?: boolean;
+}) {
   const [words, setWords] = useState<string[]>(getStoredHighFreqWords);
   const [enabled, setEnabled] = useState(isHighFreqEnabled);
   const editorGridLineStyle = getEditorGridLineStyle(fontSettings);
@@ -1065,6 +1056,9 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0 }: { con
   }, []);
 
   if (!enabled || words.length === 0 || !content) return null;
+  const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;
+  const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;
+  const editorTextIndent = paragraphIndent ? '2em' : undefined;
   const escaped = [...words]
     .sort((a, b) => b.length - a.length)
     .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
@@ -1073,12 +1067,15 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0 }: { con
 
   return (
     <div
-      className="xy-wa-editor-text-layer pointer-events-none absolute inset-0 z-0 overflow-hidden whitespace-pre-wrap break-words px-6 pb-6 pt-3 text-transparent"
+      className="xy-wa-editor-text-layer pointer-events-none absolute inset-0 z-0 overflow-hidden whitespace-pre-wrap break-words pb-6 pt-3 text-transparent"
       style={{
         ...editorGridLineStyle,
         fontFamily: fontSettings.fontFamily,
         fontSize: `${fontSettings.fontSize}px`,
         lineHeight: fontSettings.lineHeight,
+        paddingLeft: editorTextPaddingLeft,
+        paddingRight: editorTextPaddingRight,
+        textIndent: editorTextIndent,
         transform: `translateY(-${scrollTop}px)`,
       }}
     >

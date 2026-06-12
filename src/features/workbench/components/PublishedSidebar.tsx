@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from
 
 import type { Volume } from '@/features/workbench/model/workbenchTypes';
 
-const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#c7dcff] bg-[#eaf2ff] px-1 text-left text-[14px] font-medium text-[#1f2933] shadow-sm transition-colors hover:bg-[#dfeaff]';
-const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#1e71ef]';
+const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] bg-[#E7F8FD] px-1 text-left text-[14px] font-medium text-[#1f2933] shadow-sm transition-colors hover:bg-[#DDF5FC]';
+const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';
 const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-medium text-[#6f7e90]';
 const CHAPTER_CONTEXT_MENU_CLASS = 'fixed z-[100] w-[136px] overflow-visible rounded-[8px] border border-[#e5e7eb] bg-white py-1 shadow-[0_10px_28px_rgba(15,23,42,0.14)]';
 const CHAPTER_CONTEXT_MENU_ITEM_CLASS = 'flex h-[42px] w-full items-center gap-3 px-3 text-left text-[15px] font-medium text-[#1f2933] transition-colors hover:bg-[#f5f7fa]';
@@ -147,7 +147,7 @@ export function PublishedSidebar({
                   <div
                     key={chapter.id}
                     className={`group relative flex items-center gap-2 rounded-md border-l-[3px] px-[26px] py-2 transition-colors ${
-                      chapter.isSelected ? 'border-[#1e71ef] bg-[#d4e2f9]' : 'border-transparent hover:bg-gray-50'
+                      chapter.isSelected ? 'border-[#BDEEF7] bg-[#E7F8FD]' : 'border-transparent hover:bg-gray-50'
                     }`}
                     onClick={() => onSelectChapter(volume.id, chapter.id)}
                     onContextMenu={(event) => {
