@@ -153,7 +153,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('renders outline linked context as current-or-brainstorm segmented control', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
-    const linkControlStart = panelSource.indexOf("title={isOutlineCharacterScope ? '人物设定固定关联当前设定' : '关联当前选中的设定预览'}");
+    const linkControlStart = panelSource.indexOf("title={isOutlineCharacterScope ? '关联当前人物设定' : '关联当前选中的设定预览'}");
     const linkControlSource = panelSource.slice(panelSource.lastIndexOf('<div className="mt-3 flex min-w-0 items-center gap-1.5">', linkControlStart), panelSource.indexOf('<div className="mt-3 flex items-center gap-2">', linkControlStart));
 
     expect(linkControlStart).toBeGreaterThan(-1);
@@ -162,17 +162,15 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('promptDisabled: false');
     expect(panelSource).toContain("settingLinkSource: 'current'");
     expect(panelSource).toContain('const getActiveLinkedSettingSnapshot = () => {');
-    expect(panelSource).toContain("if (outlineSettingScope === 'character') return 'current';");
     expect(panelSource).toContain("source === 'current'");
     expect(panelSource).toContain('text: getSettingEntryBody(currentEntry)');
     expect(panelSource).toContain('text: currentRoleEntry && currentRole ? buildRoleReaderContent(currentRoleEntry, currentRole) :');
     expect(linkControlSource).toContain('关联');
     expect(linkControlSource).toContain('当前设定');
     expect(linkControlSource).toContain('脑洞');
-    expect(linkControlSource).toContain('if (isOutlineCharacterScope) return;');
-    expect(linkControlSource).toContain('!isOutlineCharacterScope && activeSettingLinkSource === \'brainstorm\'');
-    expect(linkControlSource).toContain('disabled={isOutlineCharacterScope}');
-    expect(linkControlSource).toContain('人物设定固定读取当前人物，不能关联脑洞');
+    expect(linkControlSource).not.toContain('if (isOutlineCharacterScope) return;');
+    expect(linkControlSource).not.toContain('disabled={isOutlineCharacterScope}');
+    expect(linkControlSource).toContain('关联脑洞库内容到人物设定');
     expect(linkControlSource).toContain('activeSettingLinkSource === \'current\'');
     expect(linkControlSource).toContain('activeSettingLinkSource === \'brainstorm\'');
     expect(linkControlSource).toContain('updateActiveTabConfig({ settingLinkSource: null, promptDisabled: false })');
@@ -181,8 +179,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(linkControlSource).toContain('已关联：<WordCountText value={linkedSettingWordCount} compact />');
     expect(linkControlSource).not.toContain('label="关联脑洞"');
     expect(linkControlSource).not.toContain('linkedLabel="已关联脑洞"');
-    expect(panelSource).toContain("const isPromptDisabledForRequest = activeTab === SETTING_TAB\n      ? getActiveSettingLinkSource() === 'current'\n      : Boolean(activeTabConfig.promptDisabled);");
-    expect(panelSource).toContain("const effectivePromptDisabled = activeTab === SETTING_TAB\n      ? isOutlineCharacterScope || activeSettingLinkSource === 'current'\n      : Boolean(activeTabConfig.promptDisabled);");
+    expect(panelSource).toContain("const isPromptDisabledForRequest = activeTab === SETTING_TAB\n      ? outlineSettingScope !== 'character' && getActiveSettingLinkSource() === 'current'\n      : Boolean(activeTabConfig.promptDisabled);");
+    expect(panelSource).toContain("const effectivePromptDisabled = activeTab === SETTING_TAB\n      ? !isOutlineCharacterScope && activeSettingLinkSource === 'current'\n      : Boolean(activeTabConfig.promptDisabled);");
     expect(panelSource).toContain('promptDisabled={effectivePromptDisabled}');
     expect(panelSource).not.toContain('autoDisablePromptOnCurrentLink');
     expect(panelSource).not.toContain('关联当前时自动禁用提示词');
@@ -575,9 +573,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(chapterEditorSource).not.toContain('审核目录');
     expect(chapterEditorSource).not.toContain('点评目录');
     expect(chapterEditorSource).not.toContain('<div className="mb-3 text-sm font-black text-slate-900">章节目录</div>');
-    expect(chapterEditorSource).toContain('className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-[#08AACE] bg-[#08AACE] px-3 py-1.5 text-sm font-bold leading-5 text-white transition-colors hover:brightness-95"');
-    expect(chapterEditorSource).toContain('<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/15 text-white">');
-    expect(chapterEditorSource).toContain('<span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-xs text-white">{group.chapters.length}章</span>');
+    expect(chapterEditorSource).toContain('className="group flex h-[36px] w-full cursor-pointer items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 text-left transition-colors hover:bg-brand/10"');
+    expect(chapterEditorSource).toContain('<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-brand-dark">');
+    expect(chapterEditorSource).toContain('<span className="ml-1 shrink-0 text-xs text-gray-400">{group.chapters.length}章</span>');
     expect(chapterEditorSource).toContain("style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}");
     expect(chapterEditorSource).toContain('relative h-9 min-w-9 rounded-lg border px-2 text-sm font-bold transition-colors');
     expect(chapterEditorSource).toContain('relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors');
@@ -1168,7 +1166,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(cardSource).toContain('splitDetailOutlineStateExpectation(outlineCardContent)');
     expect(cardSource).toContain('value={detailOutlineParts.outline}');
     expect(cardSource).toContain('value={detailOutlineParts.stateExpectation}');
-    expect(panelSource).toContain('状态变化预期');
+    expect(panelSource).toContain('<span className="xy-floating-title-text">状态变化</span>');
     expect(labelSource).toContain('xy-detail-outline-title-count');
     expect(labelSource).toContain('xy-floating-title-text');
     expect(labelSource).toContain('{outlineCardTitle}');
@@ -1730,7 +1728,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('splitDetailOutlineStateExpectation(outlineCardContent)');
     expect(panelSource).toContain('mergeDetailOutlineStateExpectation(');
     expect(panelSource).toContain('请根据关联的设定、前文章纲和剧情链生成章纲。请在章纲末尾输出${DETAIL_OUTLINE_STATE_MARKER}');
-    expect(panelSource).toContain('状态变化预期');
+    expect(panelSource).toContain('<span className="xy-floating-title-text">状态变化</span>');
   });
 
   it('adds a test preview for all suggested border transparent backplate placements', async () => {
@@ -1785,6 +1783,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   });
   it('requires right-click unlock before opening the clear settings confirmation dialog', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
+    const clearSettingsButtonStart = panelSource.indexOf('aria-label={`清空${activeClearSettingsLabel}`}');
+    const clearSettingsButtonSource = panelSource.slice(clearSettingsButtonStart, panelSource.indexOf('>\n                  清空', clearSettingsButtonStart));
 
     expect(panelSource).toContain('isActiveClearSettingsUnlocked');
     expect(panelSource).toContain('aria-disabled={!isActiveClearSettingsUnlocked');
@@ -1795,6 +1795,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('mt-3 grid h-11 shrink-0 overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.08)]');
     expect(panelSource).toContain('border-r border-slate-200 bg-[#DFF7FC] px-2 text-sm font-black text-[#08AACE]');
     expect(panelSource).toContain("isActiveClearSettingsUnlocked\n                      ? 'bg-red-50 text-red-500 hover:bg-red-100'");
+    expect(clearSettingsButtonSource).toContain('onContextMenu={(event) => {');
+    expect(clearSettingsButtonSource).toContain('setClearSettingsUnlockMenu({');
+    expect(clearSettingsButtonSource).not.toContain('if (activeClearSettingsCount === 0) return;');
     expect(panelSource).toContain("clearSettingsConfirmTarget === 'roles' && activeTab === SETTING_TAB && outlineSettingScope === 'character'");
     expect(panelSource).not.toContain('h-9 w-full rounded-xl border border-red-200');
   });
@@ -1803,8 +1806,10 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
 
     expect(panelSource).toContain("const [outlineSettingScope, setOutlineSettingScope] = useState<'work' | 'character'>('work')");
-    expect(panelSource).toContain("['work', '作品设定']");
-    expect(panelSource).toContain("['character', '人物设定']");
+    expect(panelSource).toContain("rounded-[22px] bg-slate-200/80 p-1 shadow-inner");
+    expect(panelSource).toContain("{ value: 'work', label: '作品设定', count: settingEntries.length }");
+    expect(panelSource).toContain("{ value: 'character', label: '人物设定', count: roleEntries.length }");
+    expect(panelSource).toContain("rounded-[18px] px-2.5 text-sm font-black");
     expect(panelSource).toContain("const effectiveLibraryTab = isOutlineCharacterScope ? ROLE_TAB : activeTab");
     expect(panelSource).toContain("const activeSettingTypeOptions = activeIsBrainstorm ? [BRAINSTORM_TYPE] : isOutlineCharacterScope ? roleTypeOptions : settingTypeOptions");
     expect(panelSource).toContain("{isOutlineCharacterScope ? '角色' : '设定'}");

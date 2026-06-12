@@ -1988,14 +1988,6 @@ function getSettingEntryBody(entry: WorkbenchLibraryEntry | null | undefined) {
   return getLatestUsefulAiText(parsed.body || entry.content);
 }
 
-function getRoleCategoryButtonTone(type: string) {
-  return {
-    className: 'border-[#08AACE] bg-[#08AACE] text-white hover:brightness-95',
-    badgeClassName: 'bg-white/20 text-white',
-    iconClassName: 'text-white',
-  };
-}
-
 function LibraryManagementModal({
   modal,
   onClose,
@@ -3672,7 +3664,6 @@ export function WorkbenchLibraryPanel({
 
   const getActiveSettingLinkSource = () => {
     if (activeTab !== SETTING_TAB) return null;
-    if (outlineSettingScope === 'character') return 'current';
     if (activeTabConfig.settingLinkSource === 'current' || activeTabConfig.settingLinkSource === 'brainstorm') {
       return activeTabConfig.settingLinkSource;
     }
@@ -3825,7 +3816,7 @@ export function WorkbenchLibraryPanel({
       ? rolePromptOptions
       : prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === requestPromptCategory);
     const isPromptDisabledForRequest = activeTab === SETTING_TAB
-      ? getActiveSettingLinkSource() === 'current'
+      ? outlineSettingScope !== 'character' && getActiveSettingLinkSource() === 'current'
       : Boolean(activeTabConfig.promptDisabled);
     const selectedPrompt = isPromptDisabledForRequest
       ? null
@@ -5669,7 +5660,6 @@ export function WorkbenchLibraryPanel({
             <div className="mt-5 min-h-0 flex-1 space-y-2 overflow-y-auto">
               {groupedRoles.map((group) => {
                 const expanded = expandedRoleTypes.has(group.type);
-                const tone = getRoleCategoryButtonTone(group.type);
                 const isDropTarget = libraryDropTarget?.tab === ROLE_TAB && libraryDropTarget.type === group.type;
                 return (
                   <div
@@ -5679,22 +5669,28 @@ export function WorkbenchLibraryPanel({
                     onDrop={(event) => handleLibraryCategoryDrop(event, ROLE_TAB, group.type)}
                     className={isDropTarget ? 'rounded-xl ring-2 ring-brand/40' : undefined}
                   >
-                    <button
-                      onContextMenu={(event) => openCategoryMenu(event, 'role', group.type)}
-                      onClick={() => {
-                        setExpandedRoleTypes((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(group.type)) next.delete(group.type);
-                          else next.add(group.type);
-                          return next;
-                        });
-                      }}
-                      className={`flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left font-bold transition-colors ${tone.className}`}
-                    >
-                      <span className="flex-1">{group.type}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs ${tone.badgeClassName}`}>{group.entries.length}</span>
-                      {expanded ? <ChevronDown className={`h-3.5 w-3.5 ${tone.iconClassName}`} /> : <ChevronRight className={`h-3.5 w-3.5 ${tone.iconClassName}`} />}
-                    </button>
+                    <div className="group flex h-[36px] items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10">
+                      <button
+                        onContextMenu={(event) => openCategoryMenu(event, 'role', group.type)}
+                        onClick={() => {
+                          setExpandedRoleTypes((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(group.type)) next.delete(group.type);
+                            else next.add(group.type);
+                            return next;
+                          });
+                        }}
+                        className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+                      >
+                        {expanded ? (
+                          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-brand-dark" />
+                        ) : (
+                          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-brand-dark" />
+                        )}
+                        <span className="truncate text-sm font-medium text-brand-dark">{group.type}</span>
+                        <span className="ml-1 shrink-0 text-xs text-gray-400">{group.entries.length}</span>
+                      </button>
+                    </div>
                     {expanded && (
                       <div className="editor-scrollbar mt-1 max-h-[464px] space-y-1 overflow-y-auto pr-1">
                         {group.entries.map((entry) => {
@@ -5933,7 +5929,7 @@ export function WorkbenchLibraryPanel({
     const currentLinkedSettingContext = getActiveLinkedSettingSnapshot();
     const linkedSettingWordCount = countTextWords(currentLinkedSettingContext.text);
     const effectivePromptDisabled = activeTab === SETTING_TAB
-      ? isOutlineCharacterScope || activeSettingLinkSource === 'current'
+      ? !isOutlineCharacterScope && activeSettingLinkSource === 'current'
       : Boolean(activeTabConfig.promptDisabled);
     const latestUsefulAiOutput = activeIsBrainstorm ? getLatestUsefulAiText(aiResult || aiOutput) : aiOutput.trim();
     const smartImportLocked = Boolean(activeTabConfig.smartImportLocked);
@@ -6113,22 +6109,23 @@ export function WorkbenchLibraryPanel({
         >
           <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-3 py-3">
           {activeTab === SETTING_TAB && !activeIsBrainstorm && (
-            <div className="grid h-10 shrink-0 grid-cols-2 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="flex h-11 shrink-0 items-center overflow-hidden rounded-[22px] bg-slate-200/80 p-1 shadow-inner">
               {([
-                ['work', '作品设定'],
-                ['character', '人物设定'],
-              ] as const).map(([value, label]) => (
+                { value: 'work', label: '作品设定', count: settingEntries.length },
+                { value: 'character', label: '人物设定', count: roleEntries.length },
+              ] as const).map(({ value, label, count }) => (
                 <button
                   key={value}
                   type="button"
                   onClick={() => setOutlineSettingScope(value)}
-                  className={`min-w-0 whitespace-nowrap text-sm font-black transition-colors ${
+                  className={`flex h-full min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[18px] px-2.5 text-sm font-black transition-colors ${
                     outlineSettingScope === value
-                      ? 'bg-[#08AACE] text-white'
-                      : 'bg-white text-slate-700 hover:bg-[#EAF9FD] hover:text-[#08AACE]'
+                      ? 'bg-white text-[#08AACE] shadow-sm'
+                      : 'bg-transparent text-slate-950 hover:bg-white/45 hover:text-[#08AACE]'
                   }`}
                 >
-                  {label}
+                  <span className="shrink-0 whitespace-nowrap">{label}</span>
+                  <span className={outlineSettingScope === value ? 'text-[#08AACE]' : 'text-slate-500'}>{count}</span>
                 </button>
               ))}
             </div>
@@ -6146,33 +6143,39 @@ export function WorkbenchLibraryPanel({
                   onDrop={(event) => handleLibraryCategoryDrop(event, effectiveLibraryTab, group.type)}
                   className={isDropTarget ? 'rounded-xl ring-2 ring-brand/40' : undefined}
                 >
-                  <button
-                    onContextMenu={(event) => {
-                      if (activeIsSettingLike && !activeIsBrainstorm) openCategoryMenu(event, isOutlineCharacterScope ? 'role' : 'setting', group.type);
-                    }}
-                    onClick={() => {
-                      setExpandedSettingTypes((prev) => {
-                        if (isOutlineCharacterScope) return prev;
-                        const next = new Set(prev);
-                        if (next.has(group.type)) next.delete(group.type);
-                        else next.add(group.type);
-                        return next;
-                      });
-                      if (isOutlineCharacterScope) {
-                        setExpandedRoleTypes((prev) => {
+                  <div className="group flex h-[36px] items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10">
+                    <button
+                      onContextMenu={(event) => {
+                        if (activeIsSettingLike && !activeIsBrainstorm) openCategoryMenu(event, isOutlineCharacterScope ? 'role' : 'setting', group.type);
+                      }}
+                      onClick={() => {
+                        setExpandedSettingTypes((prev) => {
+                          if (isOutlineCharacterScope) return prev;
                           const next = new Set(prev);
                           if (next.has(group.type)) next.delete(group.type);
                           else next.add(group.type);
                           return next;
                         });
-                      }
-                    }}
-                    className="flex w-full items-center gap-2 rounded-lg border border-[#08AACE] bg-[#08AACE] px-3 py-1.5 text-left text-sm font-bold leading-5 text-white transition-colors hover:brightness-95"
-                  >
-                    <span className="min-w-0 flex-1 truncate">{group.type}</span>
-                    <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs text-white">{group.entries.length}</span>
-                    {expanded ? <ChevronDown className="h-3.5 w-3.5 text-white" /> : <ChevronRight className="h-3.5 w-3.5 text-white" />}
-                  </button>
+                        if (isOutlineCharacterScope) {
+                          setExpandedRoleTypes((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(group.type)) next.delete(group.type);
+                            else next.add(group.type);
+                            return next;
+                          });
+                        }
+                      }}
+                      className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+                    >
+                      {expanded ? (
+                        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-brand-dark" />
+                      ) : (
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-brand-dark" />
+                      )}
+                      <span className="truncate text-sm font-medium text-brand-dark">{group.type}</span>
+                      <span className="ml-1 shrink-0 text-xs text-gray-400">{group.entries.length}</span>
+                    </button>
+                  </div>
                   {expanded && (
                     <div className="editor-scrollbar mt-0.5 max-h-[760px] space-y-0.5 overflow-y-auto pr-1">
                       {group.entries.length === 0 ? (
@@ -6193,12 +6196,16 @@ export function WorkbenchLibraryPanel({
                             }}
                             className={`group w-full rounded-lg border px-3 py-1.5 text-left text-sm leading-5 transition-colors ${
                               currentSelectedEntry?.id === entry.id
-                                ? 'border-brand bg-[#FFF7ED] text-gray-900'
-                                : 'border-transparent bg-white text-gray-600 hover:border-gray-200'
+                                ? activeIsBrainstorm
+                                  ? 'border-orange-300 bg-orange-50 text-orange-500'
+                                  : 'border-brand bg-[#FFF7ED] text-gray-900'
+                                : activeIsBrainstorm
+                                  ? 'border-transparent bg-white text-orange-500 hover:border-orange-200 hover:bg-orange-50/60'
+                                  : 'border-transparent bg-white text-gray-600 hover:border-gray-200'
                             } ${draggingLibraryEntry?.entryId === entry.id ? 'opacity-60' : ''}`}
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <span className="truncate text-sm font-bold">{entry.title}</span>
+                              <span className={`truncate text-sm font-bold ${activeIsBrainstorm ? 'text-orange-500' : ''}`}>{entry.title}</span>
                               <span className="flex shrink-0 items-center gap-2">
                                 <span className="rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-bold text-[#08AACE]">
                                   <WordCountText value={entryWordCount} compact />
@@ -6255,7 +6262,6 @@ export function WorkbenchLibraryPanel({
                   onContextMenu={(event) => {
                     event.preventDefault();
                     hideClearSettingsTooltip();
-                    if (activeClearSettingsCount === 0) return;
                     setClearSettingsUnlockMenu({
                       action: isActiveClearSettingsUnlocked ? 'lock' : 'unlock',
                       target: activeClearSettingsTarget,
@@ -6792,7 +6798,6 @@ export function WorkbenchLibraryPanel({
                     <button
                       type="button"
                       onClick={() => {
-                        if (isOutlineCharacterScope) return;
                         if (activeSettingLinkSource === 'current') {
                           updateActiveTabConfig({ settingLinkSource: null, promptDisabled: false });
                           return;
@@ -6811,11 +6816,11 @@ export function WorkbenchLibraryPanel({
                           ? 'bg-[#08B3D9] text-white'
                           : 'bg-white text-gray-600 hover:bg-[#E9FAFE] hover:text-[#08B3D9]'
                       }`}
-                      title={isOutlineCharacterScope ? '人物设定固定关联当前设定' : '关联当前选中的设定预览'}
+                      title={isOutlineCharacterScope ? '关联当前人物设定' : '关联当前选中的设定预览'}
                     >
                       当前设定
                     </button>
-                    {!isOutlineCharacterScope && activeSettingLinkSource === 'brainstorm' ? (
+                    {activeSettingLinkSource === 'brainstorm' ? (
                       <div className="flex border-l border-[#08B3D9]/30">
                         <button
                           type="button"
@@ -6840,18 +6845,12 @@ export function WorkbenchLibraryPanel({
                     ) : (
                       <button
                         type="button"
-                        disabled={isOutlineCharacterScope}
                         onClick={() => {
-                          if (isOutlineCharacterScope) return;
                           setSelectedBrainstormReaderId(activeTabConfig.loadedBrainstormId ?? null);
                           setIsBrainstormReaderOpen(true);
                         }}
-                        className={`w-[68px] border-l border-[#08B3D9]/30 px-2 text-sm font-bold transition-colors ${
-                          isOutlineCharacterScope
-                            ? 'cursor-not-allowed bg-gray-50 text-gray-300'
-                            : 'bg-white text-gray-600 hover:bg-[#E9FAFE] hover:text-[#08B3D9]'
-                        }`}
-                        title={isOutlineCharacterScope ? '人物设定固定读取当前人物，不能关联脑洞' : '关联脑洞库内容'}
+                        className="w-[68px] border-l border-[#08B3D9]/30 bg-white px-2 text-sm font-bold text-gray-600 transition-colors hover:bg-[#E9FAFE] hover:text-[#08B3D9]"
+                        title={isOutlineCharacterScope ? '关联脑洞库内容到人物设定' : '关联脑洞库内容'}
                       >
                         脑洞
                       </button>
@@ -8924,10 +8923,10 @@ export function WorkbenchLibraryPanel({
                           event.preventDefault();
                           toggleOutlineVolume(volume.id);
                         }}
-                        className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-[#08AACE] bg-[#08AACE] px-3 py-1.5 text-sm font-bold leading-5 text-white transition-colors hover:brightness-95"
+                        className="group flex h-[36px] cursor-pointer items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10"
                       >
                         <span
-                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/15 text-white"
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-brand-dark"
                           title={expandedOutlineVolumeIds.has(volume.id) ? '收起' : '展开'}
                         >
                           {expandedOutlineVolumeIds.has(volume.id) ? (
@@ -8936,7 +8935,8 @@ export function WorkbenchLibraryPanel({
                             <ChevronRight className="h-3.5 w-3.5" />
                           )}
                         </span>
-                        <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">{volume.name}</span>
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-brand-dark">{volume.name}</span>
+                        <span className="ml-1 shrink-0 text-xs text-gray-400">{volume.chapters.length}章</span>
                         {enableVolumeSummary && (
                           <button
                             onClick={(event) => {
@@ -8945,8 +8945,8 @@ export function WorkbenchLibraryPanel({
                             }}
                             className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-bold transition-colors ${
                               safeOutlineSelectionType === 'volume' && selectedOutlineVolume?.id === volume.id
-                                ? 'border-white bg-white text-[#08B3D9]'
-                                : 'border-white/70 bg-white/15 text-white hover:bg-white hover:text-[#08B3D9]'
+                                ? 'border-brand bg-brand text-white'
+                                : 'border-brand/40 bg-white/70 text-brand-dark hover:bg-white'
                             }`}
                           >
                             卷梗概
@@ -8976,8 +8976,8 @@ export function WorkbenchLibraryPanel({
                                 }}
                                 className={`relative h-9 min-w-9 rounded-lg border px-2 text-sm font-bold transition-colors ${
                                   hasSummary
-                                    ? 'border-[#08B3D9] bg-[#08B3D9] text-white hover:border-[#067B96] hover:bg-[#067B96]'
-                                    : 'border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
+                                    ? 'border-[#08B3D9] bg-[#E1F3F7] text-[#08AACE] hover:border-[#067B96] hover:bg-[#D3EEF5]'
+                                    : 'border-slate-200 bg-white text-slate-900 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
                                 } ${selected ? 'ring-2 ring-[#08B3D9] ring-offset-2' : ''}`}
                               >
                                 {chapter.serialNumber}
@@ -9089,7 +9089,7 @@ export function WorkbenchLibraryPanel({
                         }}
                       />
                       <label className="xy-floating-title-count xy-detail-outline-title-count">
-                        <span className="xy-floating-title-text">状态变化预期</span>
+                        <span className="xy-floating-title-text">状态变化</span>
                       </label>
                       <span className="xy-floating-count">
                         <WordCountText value={countTextWords(detailOutlineParts.stateExpectation)} />

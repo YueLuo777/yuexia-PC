@@ -1923,13 +1923,13 @@ export function ChapterEditor({
                         <button
                           type="button"
                           onClick={() => toggleStatusDirectoryVolume(group.id)}
-                          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-[#08AACE] bg-[#08AACE] px-3 py-1.5 text-sm font-bold leading-5 text-white transition-colors hover:brightness-95"
+                          className="group flex h-[36px] w-full cursor-pointer items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 text-left transition-colors hover:bg-brand/10"
                         >
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/15 text-white">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-brand-dark">
                             {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                           </span>
-                          <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">{group.name}</span>
-                          <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-xs text-white">{group.chapters.length}章</span>
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-brand-dark">{group.name}</span>
+                          <span className="ml-1 shrink-0 text-xs text-gray-400">{group.chapters.length}章</span>
                         </button>
                         {expanded && (
                           <div
@@ -2143,13 +2143,13 @@ export function ChapterEditor({
                         <button
                           type="button"
                           onClick={() => toggleReviewDirectoryVolume(group.id)}
-                          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-[#08AACE] bg-[#08AACE] px-3 py-1.5 text-sm font-bold leading-5 text-white transition-colors hover:brightness-95"
+                          className="group flex h-[36px] w-full cursor-pointer items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 text-left transition-colors hover:bg-brand/10"
                         >
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/15 text-white">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-brand-dark">
                             {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                           </span>
-                          <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">{group.name}</span>
-                          <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-xs text-white">{group.chapters.length}章</span>
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-brand-dark">{group.name}</span>
+                          <span className="ml-1 shrink-0 text-xs text-gray-400">{group.chapters.length}章</span>
                         </button>
                         {expanded && (
                           <div

@@ -24,6 +24,7 @@ const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeCo
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
 const PromptTaxonomyTestPage = lazy(() => import('@/features/tests/pages/PromptTaxonomyTestPage').then((module) => ({ default: module.PromptTaxonomyTestPage })));
 const BorderBackplateApplicationTestPage = lazy(() => import('@/features/tests/pages/BorderBackplateApplicationTestPage').then((module) => ({ default: module.BorderBackplateApplicationTestPage })));
+const BrainstormWhiteSurfaceExactTestPage = lazy(() => import('@/features/tests/pages/BrainstormWhiteSurfaceExactTestPage').then((module) => ({ default: module.BrainstormWhiteSurfaceExactTestPage })));
 const WorkbenchRightPanelUnifiedTestPage = lazy(() => import('@/features/tests/pages/WorkbenchRightPanelUnifiedTestPage').then((module) => ({ default: module.WorkbenchRightPanelUnifiedTestPage })));
 const WorkbenchAiRequestTagPolicyTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiRequestTagPolicyTestPage').then((module) => ({ default: module.WorkbenchAiRequestTagPolicyTestPage })));
 const LinkedContextSelectionInteractionTestPage = lazy(() => import('@/features/tests/pages/LinkedContextSelectionInteractionTestPage').then((module) => ({ default: module.LinkedContextSelectionInteractionTestPage })));
@@ -34,8 +35,7 @@ const DetailOutlineLifecycleTestPage = lazy(() => import('@/features/tests/pages
 const NoPlotPointCreationLoopTestPage = lazy(() => import('@/features/tests/pages/NoPlotPointCreationLoopTestPage').then((module) => ({ default: module.NoPlotPointCreationLoopTestPage })));
 const SettingCheckModalTestPage = lazy(() => import('@/features/tests/pages/SettingCheckModalTestPage').then((module) => ({ default: module.SettingCheckModalTestPage })));
 const SettingTaxonomyPlanTestPage = lazy(() => import('@/features/tests/pages/SettingTaxonomyPlanTestPage').then((module) => ({ default: module.SettingTaxonomyPlanTestPage })));
-const SettingScopeSegmentedTabsTestPage = lazy(() => import('@/features/tests/pages/SettingScopeSegmentedTabsTestPage').then((module) => ({ default: module.SettingScopeSegmentedTabsTestPage })));
-const WorkbenchGroupedDirectoryStyleTestPage = lazy(() => import('@/features/tests/pages/WorkbenchGroupedDirectoryStyleTestPage').then((module) => ({ default: module.WorkbenchGroupedDirectoryStyleTestPage })));
+const SettingNavigationColorOptionsTestPage = lazy(() => import('@/features/tests/pages/SettingNavigationColorOptionsTestPage').then((module) => ({ default: module.SettingNavigationColorOptionsTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -83,6 +83,13 @@ const testGroups = [
         path: '/border-backplate-application-test',
         icon: Type,
         badge: 'Backplate',
+      },
+      {
+        title: '脑洞页白侧栏成品测试',
+        description: '一比一复刻脑洞页面四栏结构，测试白侧栏和 #F5F5F7 工作区的成品效果。',
+        path: '/brainstorm-white-surface-exact-test',
+        icon: Lightbulb,
+        badge: 'Brainstorm Surface',
       },
     ],
   },
@@ -160,18 +167,11 @@ const testGroups = [
         badge: 'Setting Plan',
       },
       {
-        title: '设定双标签胶囊测试',
-        description: '测试设定页“作品设定 / 人物设定”切换改成截图同款胶囊分段，并保留数量统计。',
-        path: '/setting-scope-segmented-tabs-test',
-        icon: NotebookText,
-        badge: 'Setting Tabs',
-      },
-      {
-        title: '创作目录分组样式测试',
-        description: '测试把脑洞、设定、章纲的分组改成正文页浅蓝卷头和橙色选中章的目录样式。',
-        path: '/workbench-grouped-directory-style-test',
-        icon: NotebookText,
-        badge: 'Directory',
+        title: '设定导航配色方案',
+        description: '测试作品设定/人物设定侧栏导航的多套配色方案，参考当前主题、Linear、飞书和 Apple 侧栏。',
+        path: '/setting-navigation-color-options-test',
+        icon: Palette,
+        badge: 'Setting Color',
       },
     ],
   },
@@ -304,10 +304,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <SettingCheckModalTestPage />;
       case '/setting-taxonomy-plan-test':
         return <SettingTaxonomyPlanTestPage />;
-      case '/setting-scope-segmented-tabs-test':
-        return <SettingScopeSegmentedTabsTestPage />;
-      case '/workbench-grouped-directory-style-test':
-        return <WorkbenchGroupedDirectoryStyleTestPage />;
+      case '/setting-navigation-color-options-test':
+        return <SettingNavigationColorOptionsTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':
@@ -318,6 +316,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <PromptTaxonomyTestPage />;
       case '/border-backplate-application-test':
         return <BorderBackplateApplicationTestPage />;
+      case '/brainstorm-white-surface-exact-test':
+        return <BrainstormWhiteSurfaceExactTestPage />;
       case '/theme-colors':
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
       case '/test-browser':

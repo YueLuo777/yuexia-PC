@@ -988,14 +988,14 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 }
 
 .xy-work-info-primary {
-  background: #08b3d9;
-  color: #ffffff;
+  background: #e7f8fd;
+  color: #08aace;
 }
 
 .xy-work-info-primary:hover,
 .xy-work-info-primary.xy-active {
-  background: #0695b5;
-  color: #ffffff;
+  background: #d8f3fb;
+  color: #078fb0;
 }
 
 .xy-work-info-neon-button {
@@ -2231,7 +2231,7 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: inherit;
+  color: #08AACE;
   font-size: inherit;
   font-weight: inherit;
   line-height: inherit;
