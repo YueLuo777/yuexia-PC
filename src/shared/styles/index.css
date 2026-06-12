@@ -169,15 +169,13 @@
 }
 
 .xy-wa-editor-surface {
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent 45px,
-      #d4d8df 46px,
-      transparent 47px
-    ),
-    var(--xy-wa-editor-bg);
+  background: var(--xy-wa-editor-bg);
+}
+
+.workspace-tab-home,
+.workspace-tab-home-inactive {
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .xy-wa-book-cover-empty {

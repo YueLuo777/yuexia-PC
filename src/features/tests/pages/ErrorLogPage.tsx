@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'workbench-editor-lines-home-tab-size-001',
+    title: '正文编辑区横线应可移除且首页标签需要更醒目',
+    area: '作品编辑器 / 正文编辑区 / 顶部首页标签',
+    symptom: '正文编辑器中间区域铺满横线，空白状态显得像稿纸；左上角“首页”字号偏小，不容易一眼找到返回入口。',
+    cause: 'xy-wa-editor-surface 使用 repeating-linear-gradient 绘制横向分隔线；工作区标签统一使用 13px 字号，首页没有单独的可识别字号层级。',
+    solution: '将 xy-wa-editor-surface 背景改为纯编辑器底色；为 workspace-tab-home 和 workspace-tab-home-inactive 增加 15px、700 字重，让首页标签比普通作品标签更清楚。',
+    prevention: '以后调整正文编辑器背景时，不要默认恢复稿纸横线；顶部固定入口需要和普通作品标签区分视觉层级，尤其是“首页”这种返回入口。',
+    keywords: ['正文编辑器', '横线', 'xy-wa-editor-surface', '首页', 'workspace-tab-home', '字号', 'AppFrame'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'workbench-find-replace-modal-position-001',
     title: '查找替换弹窗不应每次出现在错误位置',
     area: '作品编辑器 / 正文 / 查找替换弹窗',
