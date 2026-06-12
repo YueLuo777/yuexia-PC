@@ -329,7 +329,7 @@ function CardSettingsModal({
                           key={`${label}-${option.value}`}
                           onClick={() => onChange({ ...settings, btnColors: { ...settings.btnColors, [label]: option.value } })}
                           className={`h-3.5 w-3.5 rounded-full border transition-all ${(settings.btnColors[label] || 'gray') === option.value ? 'scale-110 border-gray-800' : 'border-transparent hover:scale-110'}`}
-                          style={{ backgroundColor: option.value === 'blue' ? '#08B3D9' : option.value === 'red' ? '#EF4444' : '#9CA3AF' }}
+                          style={{ backgroundColor: option.value === 'blue' ? '#1E71EF' : option.value === 'red' ? '#EF4444' : '#9CA3AF' }}
                           title={option.label}
                         />
                       ))}
@@ -627,31 +627,53 @@ export function NovelLibraryPage() {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50">
-      <main className="flex-1 overflow-y-auto p-6">
-        <div className="mb-2 flex items-center justify-between">
-          <div>
-            <h1 className={`text-2xl font-bold ${workType === 'novel' ? 'text-blue-600' : 'text-orange-500'}`}>{title}</h1>
-            <p className="mt-1 text-sm text-gray-400">共 {sourceNovels.length} 部{typeLabel}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setShowCardSettings(true)} className="flex items-center gap-1.5 rounded-md bg-[#08B3D9] px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-[#07a0c2]">
-              <SlidersHorizontal className="h-4 w-4" />
-              <span>作品卡片设置</span>
-            </button>
-            <button onClick={() => setIsImportOpen(true)} className="flex items-center gap-1.5 rounded-md bg-[#08B3D9] px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-[#07a0c2]">
-              <Upload className="h-4 w-4" />
-              <span>导入</span>
-            </button>
-            <button onClick={() => setIsRecycleOpen(true)} className="flex items-center gap-1.5 rounded-md bg-red-500 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-red-600">
-              <Trash2 className="h-4 w-4" />
-              <span>回收站</span>
-            </button>
-            <button onClick={() => setIsNewOpen(true)} className="flex items-center gap-1.5 rounded-md bg-[#08B3D9] px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-[#07a0c2]">
-              <Plus className="h-4 w-4" />
-              <span>新建{typeLabel}</span>
-            </button>
-          </div>
+    <div className="flex h-screen flex-col bg-white">
+      <main className="flex-1 overflow-y-auto px-8 py-7">
+        <div className="grid gap-5 xl:grid-cols-[minmax(520px,1fr)_minmax(460px,1.6fr)]">
+          <section className="relative min-h-[182px] overflow-hidden rounded-[8px] border border-[#dfe5ec] bg-[#e7eef7] px-12 py-8">
+            <div className="absolute inset-0 opacity-70" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.92), rgba(209,224,241,0.52))' }} />
+            <div className="absolute right-0 top-0 h-full w-1/2 opacity-45" style={{ background: 'radial-gradient(circle at 70% 20%, rgba(126,158,102,0.38), transparent 28%), linear-gradient(140deg, transparent 0 46%, rgba(30,113,239,0.08) 46% 54%, transparent 54%)' }} />
+            <div className="relative">
+              <h1 className="max-w-[360px] text-[34px] font-bold leading-tight text-[#16518f]">{title}</h1>
+              <p className="mt-4 text-[15px] font-medium text-[#4f6e8e]">共 {sourceNovels.length} 部{typeLabel}，保持专注写作和资料管理。</p>
+            </div>
+          </section>
+
+          <section className="min-h-[182px] rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-7 py-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[18px] font-semibold text-[#1f2933]">作品整理</h2>
+              <span className="text-[13px] font-medium text-[#9aa3af]">{filteredNovels.length}/{sourceNovels.length}</span>
+            </div>
+            <div className="mt-5 grid grid-cols-4 gap-3">
+              {[
+                { label: `新建${typeLabel}`, desc: '创建作品', icon: Plus, onClick: () => setIsNewOpen(true), tone: 'blue' },
+                { label: '导入', desc: '本地导入', icon: Upload, onClick: () => setIsImportOpen(true), tone: 'green' },
+                { label: '卡片设置', desc: '调整封面', icon: SlidersHorizontal, onClick: () => setShowCardSettings(true), tone: 'amber' },
+                { label: '回收站', desc: `${recycledNovels.length} 项`, icon: Trash2, onClick: () => setIsRecycleOpen(true), tone: 'purple' },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={item.onClick}
+                    className="flex h-[76px] items-center gap-3 rounded-[8px] border border-[#e6e8ec] bg-white px-4 text-left transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
+                  >
+                    <span className={[
+                      'grid h-8 w-8 shrink-0 place-items-center rounded-[5px] text-white',
+                      item.tone === 'green' ? 'bg-[#31a85f]' : item.tone === 'amber' ? 'bg-[#f3a400]' : item.tone === 'purple' ? 'bg-[#9b6cf0]' : 'bg-[#1e71ef]',
+                    ].join(' ')}>
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[14px] font-semibold text-[#1f2933]">{item.label}</span>
+                      <span className="mt-0.5 block truncate text-[12px] text-[#9aa3af]">{item.desc}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
         </div>
 
         {notice && (
@@ -660,7 +682,7 @@ export function NovelLibraryPage() {
           </div>
         )}
 
-        <div className="mb-6 flex items-center justify-between gap-4">
+        <div className="mb-7 mt-7 flex items-center justify-between gap-4">
           <div className="xy-category-capsules min-w-0">
             {filters.map((filter) => (
               <button
@@ -687,11 +709,11 @@ export function NovelLibraryPage() {
         </div>
 
         {filteredNovels.length === 0 ? (
-          <div className="flex h-[360px] flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white">
+          <div className="flex h-[360px] flex-col items-center justify-center rounded-[8px] border border-dashed border-[#d7dce4] bg-[#fbfbfc]">
             <p className="text-3xl text-gray-500">暂无{typeLabel}</p>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-5">
+          <div className="flex flex-wrap gap-x-16 gap-y-14">
             {filteredNovels.map((novel) => (
               <NovelCard
                 key={novel.id}

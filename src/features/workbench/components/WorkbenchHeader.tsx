@@ -50,11 +50,11 @@ export function WorkbenchHeader({
   };
 
   return (
-    <header className="relative flex h-14 shrink-0 items-start border-b border-[#08AACE] bg-white px-4">
+    <header className="xy-wa-toolbar relative flex h-12 shrink-0 items-start border-b bg-white px-4">
       <div className={`absolute left-0 right-0 top-0 flex h-12 items-center overflow-x-auto px-4 ${hasRightTools ? 'pr-56' : ''}`}>
         <div className="xy-capsule-group min-w-0 shrink-0">
           <div
-            className="flex min-h-9 min-w-0 max-w-[260px] items-center px-3.5 text-[0.8125rem] font-extrabold text-slate-700"
+            className="flex min-h-8 min-w-0 max-w-[260px] items-center px-3 text-[0.8125rem] font-semibold text-[#1f2933]"
             title={workTitle}
           >
             <span className="min-w-0 truncate">{workTitle}</span>
@@ -84,7 +84,7 @@ export function WorkbenchHeader({
             <button
               type="button"
               onClick={onOpenFieldSize}
-              className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm transition-colors hover:border-[#08AACE] hover:text-[#08AACE]"
+              className="inline-flex h-8 items-center gap-2 rounded-md border border-[#dce1e8] bg-white px-3 text-sm font-medium text-[#586574] transition-colors hover:border-[#1e71ef] hover:text-[#1e71ef]"
               aria-label="设置"
             >
               <Settings className="h-4 w-4" />
@@ -95,7 +95,7 @@ export function WorkbenchHeader({
             <button
               type="button"
               onClick={onOpenLog}
-              className="h-9 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm transition-colors hover:border-[#08AACE] hover:text-[#08AACE]"
+              className="h-8 rounded-md border border-[#dce1e8] bg-white px-3 text-sm font-medium text-[#586574] transition-colors hover:border-[#1e71ef] hover:text-[#1e71ef]"
             >
               日志
             </button>

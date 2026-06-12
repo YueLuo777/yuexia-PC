@@ -7741,16 +7741,6 @@ export function WorkbenchLibraryPanel({
         ? draftDetailOutlineReaderPlotChainIds.has(activeDetailOutlineReaderPreviewItem.id)
         : draftDetailOutlineReaderOutlineIds.has(activeDetailOutlineReaderPreviewItem.id)
       : false;
-    useEffect(() => {
-      if (!isDetailOutlineReaderOpen) return;
-      if (activeDetailOutlineReaderItems.length === 0) {
-        if (detailOutlineReaderPreviewId) setDetailOutlineReaderPreviewId('');
-        return;
-      }
-      if (detailOutlineReaderPreviewId && !activeDetailOutlineReaderItems.some((item) => item.id === detailOutlineReaderPreviewId)) {
-        setDetailOutlineReaderPreviewId('');
-      }
-    }, [activeDetailOutlineReaderItems, detailOutlineReaderPreviewId, isDetailOutlineReaderOpen]);
     const detailOutlineReaderNavGroups = Array.from(
       activeDetailOutlineReaderItems.reduce((map, item) => {
         map.set(item.group, [...(map.get(item.group) ?? []), item]);

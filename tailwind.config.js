@@ -7,9 +7,9 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: '#08B3D9',
-        'brand-light': '#E6F7FB',
-        'brand-dark': '#0695B5',
+        brand: '#1E71EF',
+        'brand-light': '#EAF2FF',
+        'brand-dark': '#155ED1',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',

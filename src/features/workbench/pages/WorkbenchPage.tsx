@@ -2335,7 +2335,7 @@ export function WorkbenchPage() {
   };
 
   return (
-    <div className="relative flex h-full flex-col bg-gray-50">
+    <div className="relative flex h-full flex-col bg-[#f5f5f7]">
       <WorkbenchHeader
         workTitle={currentNovel.title}
         flowItems={WORKBENCH_HEADER_FLOW_ITEMS}
@@ -2406,7 +2406,7 @@ export function WorkbenchPage() {
               <div className="h-full w-px rounded-full bg-[#08B3D9] opacity-0 transition-opacity group-hover:opacity-70" />
             </div>
 
-            <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gray-50">
+            <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#f5f5f7]">
               <div className="flex min-h-0 flex-1 overflow-hidden bg-white">
                 {renderCreationFlowContent()}
               </div>
@@ -2422,7 +2422,7 @@ export function WorkbenchPage() {
             </div>
 
             <aside
-              className="relative shrink-0 border-l border-gray-200 bg-white"
+              className="relative shrink-0 border-l border-[#e1e5eb] bg-white"
               style={{
                 width: aiPanelWidth,
                 maxWidth: `calc(33.333vw / var(${APP_EFFECTIVE_SCALE_CSS_VAR}, 1))`,
@@ -2448,7 +2448,7 @@ export function WorkbenchPage() {
             </aside>
           </>
         ) : (
-          <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gray-50">
+          <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#f5f5f7]">
             <div className="flex min-h-0 flex-1 overflow-hidden bg-white">
               {renderCreationFlowContent()}
             </div>

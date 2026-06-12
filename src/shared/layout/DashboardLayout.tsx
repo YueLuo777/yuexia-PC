@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Camera, ChevronDown, ChevronRight, UserRound } from 'lucide-react';
+import { Camera, ChevronDown, ChevronRight, Keyboard, ListTree, Palette, Settings, UserRound } from 'lucide-react';
 
 import { DarkThemeColorPage } from '@/features/tests/pages/DarkThemeColorPage';
 import { TEST_COLLECTION_SHOW_INDEX_EVENT } from '@/features/tests/model/testCollectionEvents';
@@ -22,7 +22,7 @@ import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 const USER_NAME_KEY = 'xinyuexia_sidebar_user_name';
 const USER_AVATAR_KEY = 'xinyuexia_sidebar_user_avatar';
 const USER_NAME_UPDATED_EVENT = 'xinyuexia_user_name_updated';
-const SETTINGS_BUTTON_CLASS = 'flex h-[29px] w-full items-center justify-center whitespace-nowrap rounded-lg bg-brand px-3 text-[13px] font-medium text-white transition-colors hover:bg-brand-dark';
+const SETTINGS_BUTTON_CLASS = 'xy-wa-icon-button';
 
 function readUserName() {
   return localStorage.getItem(USER_NAME_KEY) || '月下作者';
@@ -130,11 +130,11 @@ export function DashboardLayout() {
   };
 
   return (
-    <div className="flex h-full overflow-hidden bg-slate-50">
+    <div className="flex h-full overflow-hidden bg-white">
       <aside
-        className="flex w-[198px] shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white"
+        className="flex w-[224px] shrink-0 flex-col overflow-hidden border-r border-[#e1e5eb] bg-[#f5f5f7]"
       >
-        <div className="shrink-0 border-b border-slate-100 px-3 py-2">
+        <div className="shrink-0 border-b border-[#e7e9ee] px-3 pb-4 pt-8">
           <input
             ref={avatarInputRef}
             type="file"
@@ -145,10 +145,10 @@ export function DashboardLayout() {
               event.target.value = '';
             }}
           />
-          <div className="flex items-center gap-3 px-3 py-2">
+          <div className="flex flex-col items-center gap-3 px-3 py-2 text-center">
             <button
               onClick={() => avatarInputRef.current?.click()}
-              className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-slate-400 transition-colors hover:border-brand/50 hover:text-brand"
+              className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#d4dae3] bg-white text-slate-400 shadow-sm transition-colors hover:border-brand/50 hover:text-brand"
               title="点击上传头像"
             >
               {avatar ? (
@@ -161,7 +161,7 @@ export function DashboardLayout() {
               </span>
             </button>
 
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0">
               {isEditingUserName ? (
                 <input
                   value={userNameDraft}
@@ -176,7 +176,7 @@ export function DashboardLayout() {
                   }}
                   maxLength={18}
                   autoFocus
-                  className="h-9 w-full rounded-lg border border-brand bg-white px-2 text-[18px] font-bold text-slate-900 outline-none"
+                  className="h-8 w-full rounded-md border border-brand bg-white px-2 text-center text-[15px] font-medium text-[#1f2933] outline-none"
                 />
               ) : (
                 <button
@@ -184,7 +184,7 @@ export function DashboardLayout() {
                     setUserNameDraft(userName);
                     setIsEditingUserName(true);
                   }}
-                  className="block max-w-full truncate text-left text-[18px] font-bold text-slate-800 transition-colors hover:text-brand"
+                  className="block max-w-[160px] truncate text-center text-[15px] font-medium text-[#1f2933] transition-colors hover:text-brand"
                   title="双击修改用户名"
                 >
                   {userName}
@@ -206,11 +206,10 @@ export function DashboardLayout() {
               <div key={group.title} className="mb-1">
                 <button
                   onClick={() => toggleSection(group.title)}
-                  className="mx-1.5 mt-1.5 flex w-[calc(100%-12px)] items-center justify-between rounded-lg bg-brand-light px-3.5 py-2 font-medium text-brand-dark transition-colors hover:bg-brand/10"
-                  style={{ fontSize: '16px' }}
+                  className="mx-3 mt-3 flex w-[calc(100%-24px)] items-center justify-between border-t border-[#e1e5eb] pt-3 text-[12px] font-medium text-[#8a94a3] transition-colors hover:text-[#65707d]"
                 >
                   <span className="flex items-center gap-1.5">
-                    <GroupIcon className="h-4 w-4" />
+                    <GroupIcon className="h-3.5 w-3.5" />
                     <span>{group.title}</span>
                   </span>
                   {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -229,14 +228,14 @@ export function DashboardLayout() {
                           window.dispatchEvent(new Event(TEST_COLLECTION_SHOW_INDEX_EVENT));
                         }
                       }}
-                      className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
+                      className={`mx-1.5 flex h-10 items-center gap-3 rounded-md px-4 transition-colors ${
                         isActive
-                          ? 'border-l-[3px] border-orange-500 bg-orange-50 font-medium text-orange-500'
-                          : 'border-l-[3px] border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          ? 'bg-[#dbe7fb] font-medium text-[#1f2933]'
+                          : 'text-[#586574] hover:bg-white/70 hover:text-[#1f2933]'
                       }`}
                     >
-                      <ItemIcon className="h-[17px] w-[17px]" />
-                      <span className="text-[15px] leading-none">{item.label}</span>
+                      <ItemIcon className={`h-[17px] w-[17px] ${isActive ? 'text-[#1e71ef]' : 'text-[#68727f]'}`} />
+                      <span className="text-[14px] leading-none">{item.label}</span>
                     </Link>
                   );
                 })}
@@ -245,30 +244,34 @@ export function DashboardLayout() {
           })}
         </div>
 
-        <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-slate-100 bg-white p-4">
+        <div className="flex shrink-0 items-center justify-center gap-2 border-t border-[#e1e5eb] bg-[#f5f5f7] p-3">
           <button
             onClick={() => setShowSystemSettings(true)}
             className={SETTINGS_BUTTON_CLASS}
+            title="系统设置"
           >
-            系统设置
+            <Settings className="h-4 w-4" />
           </button>
           <button
             onClick={() => setShowThemeColors(true)}
             className={SETTINGS_BUTTON_CLASS}
+            title="主题颜色"
           >
-            主题颜色
+            <Palette className="h-4 w-4" />
           </button>
           <button
             onClick={() => setShowShortcutSettings(true)}
             className={SETTINGS_BUTTON_CLASS}
+            title="快捷键"
           >
-            快捷键
+            <Keyboard className="h-4 w-4" />
           </button>
           <button
             onClick={() => setShowNavSettings(true)}
             className={SETTINGS_BUTTON_CLASS}
+            title="导航设置"
           >
-            导航设置
+            <ListTree className="h-4 w-4" />
           </button>
         </div>
       </aside>

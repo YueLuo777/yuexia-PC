@@ -828,9 +828,9 @@ export function AppFrame({ children }: AppFrameProps) {
   const mouseGestureArrow = mouseGesturePreview?.direction === 'right' ? '→' : '←';
 
   return (
-    <div className={`flex h-screen w-screen flex-col overflow-hidden bg-slate-50 ${isDarkTheme ? 'theme-dark' : ''}`}>
+    <div className={`writer-assistant-theme flex h-screen w-screen flex-col overflow-hidden bg-[var(--xy-wa-app-bg)] ${isDarkTheme ? 'theme-dark' : ''}`}>
       <header
-        className="app-titlebar flex h-12 shrink-0 items-center border-b border-slate-300 bg-[#dfe5ec] px-3"
+        className="app-titlebar xy-wa-titlebar flex h-12 shrink-0 items-center border-b px-2"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
         <nav
@@ -838,7 +838,7 @@ export function AppFrame({ children }: AppFrameProps) {
           style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
         >
           <div
-            className="flex max-w-full shrink-0 items-center overflow-hidden rounded-xl bg-[#eeeeee] p-1 shadow-[0_0_0_1px_rgba(0,0,0,0.06)]"
+            className="flex h-full max-w-full shrink-0 items-end overflow-hidden"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           >
           {tabs.map((tab) => {
@@ -855,11 +855,11 @@ export function AppFrame({ children }: AppFrameProps) {
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') activateTab(tab);
                   }}
-                  className={`workspace-tab group relative flex h-9 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-[15px] font-semibold text-slate-700 transition-all hover:text-slate-950 ${
+                  className={`workspace-tab group relative flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-t-md border px-3 text-[13px] font-medium text-[#68727f] transition-all hover:text-[#1f2933] ${
                     isActive
-                      ? `workspace-tab-active bg-white font-bold text-slate-950 shadow-[0_1px_2px_rgba(15,23,42,0.08)] ${isHomeTab ? 'workspace-tab-home' : ''}`
-                      : `workspace-tab-inactive bg-transparent ${isHomeTab ? 'workspace-tab-home-inactive' : ''}`
-                  } ${isHomeTab ? 'w-[150px] text-center' : 'min-w-[150px] max-w-[260px] text-left'}`}
+                      ? `workspace-tab-active border-[#cfd6df] border-b-white bg-white font-semibold text-[#1f2933] shadow-[0_-1px_0_rgba(255,255,255,0.6)_inset] ${isHomeTab ? 'workspace-tab-home' : ''}`
+                      : `workspace-tab-inactive border-transparent bg-transparent ${isHomeTab ? 'workspace-tab-home-inactive' : ''}`
+                  } ${isHomeTab ? 'w-[126px] text-center' : 'min-w-[128px] max-w-[230px] text-left'}`}
                   title={tab.title}
                 >
                   <span className={`${isHomeTab ? 'shrink-0' : 'min-w-0 flex-1 truncate text-center'}`}>{tab.title}</span>
@@ -868,7 +868,7 @@ export function AppFrame({ children }: AppFrameProps) {
                       type="button"
                       onClick={(event) => handleCloseTab(event, tab)}
                       className={`grid h-6 w-6 shrink-0 place-items-center rounded-md transition-colors ${
-                        isActive ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-500 hover:bg-slate-200 hover:text-slate-700'
+                        isActive ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-500 hover:bg-white/70 hover:text-slate-700'
                       }`}
                       aria-label={`关闭${tab.title}`}
                     >
@@ -891,22 +891,20 @@ export function AppFrame({ children }: AppFrameProps) {
               setShowSoftwareUiCatalog(false);
               setShowTestCollection(true);
             }}
-            className="flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+            className="xy-wa-icon-button"
             title="测试"
           >
             <FlaskConical className="h-4 w-4" />
-            测试
           </button>
           <button
             onClick={() => {
               setShowTestCollection(false);
               setShowSoftwareUiCatalog(true);
             }}
-            className="flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+            className="xy-wa-icon-button"
             title="UI库"
           >
             <BookOpen className="h-4 w-4" />
-            UI库
           </button>
           <button
             onClick={() => setIsDarkTheme((prev) => !prev)}

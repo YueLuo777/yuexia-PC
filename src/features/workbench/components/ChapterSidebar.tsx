@@ -44,7 +44,7 @@ interface VolumeContextMenu {
 const emptyChapterMenu: ChapterContextMenu = { visible: false, x: 0, y: 0, volumeId: null, chapterId: null };
 const emptyVolumeMenu: VolumeContextMenu = { visible: false, x: 0, y: 0, volumeId: null };
 const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 300;
-const CHAPTER_SIDEBAR_BOTTOM_ROW_CLASS = 'flex items-center gap-1.5 border-t border-gray-100 px-2 py-2';
+const CHAPTER_SIDEBAR_BOTTOM_ROW_CLASS = 'flex items-center gap-1.5 border-t border-[#e6e8ec] px-2 py-2';
 const CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS = 'flex h-8 min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-md px-1.5 text-sm leading-none text-white transition-colors';
 
 function getContextMenuPoint(event: ReactMouseEvent<HTMLElement>) {
@@ -134,11 +134,11 @@ export function ChapterSidebar({
   };
 
   return (
-    <aside className="flex shrink-0 flex-col border-r border-gray-300 bg-white" style={{ width }}>
-      <div className="flex h-[42px] shrink-0 items-center justify-between border-b border-gray-100 px-3 py-2.5">
+    <aside className="flex shrink-0 flex-col border-r border-[#e1e5eb] bg-white" style={{ width }}>
+      <div className="flex h-[42px] shrink-0 items-center justify-between border-b border-[#e6e8ec] bg-[#fbfbfc] px-3 py-2.5">
         <div className="flex items-center gap-2">
           <h2 className="whitespace-nowrap text-sm font-bold text-gray-900">未发布</h2>
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand/10 text-xs font-medium text-brand-dark">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#eaf2ff] text-xs font-medium text-[#1e71ef]">
             {unpublishedCount}
           </span>
         </div>
@@ -146,7 +146,7 @@ export function ChapterSidebar({
           {workType !== 'script' && (
           <button
             onClick={onTogglePublished}
-            className="flex items-center justify-center whitespace-nowrap rounded-md bg-orange-500 px-2 py-1 text-sm text-white transition-colors hover:bg-orange-600"
+            className="flex items-center justify-center whitespace-nowrap rounded-md bg-[#1e71ef] px-2 py-1 text-sm text-white transition-colors hover:bg-[#155ed1]"
             title="已发布"
           >
             {showPublished ? '收回已发布' : '展开已发布'}
@@ -162,7 +162,7 @@ export function ChapterSidebar({
           return (
             <div key={volume.id} className="mb-1">
               <div
-                className="group flex h-[36px] items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10"
+                className="group flex h-[34px] items-center gap-1 rounded-md bg-[#f2f6ff] px-2 py-1.5 transition-colors hover:bg-[#eaf2ff]"
                 onContextMenu={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
@@ -171,11 +171,11 @@ export function ChapterSidebar({
               >
                 <button onClick={() => onToggleVolume(volume.id)} className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
                   {volume.isExpanded ? (
-                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-brand-dark" />
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[#1e71ef]" />
                   ) : (
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-brand-dark" />
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#1e71ef]" />
                   )}
-                  <span className="truncate text-sm font-medium text-brand-dark">{volume.name}</span>
+                  <span className="truncate text-sm font-medium text-[#1f2933]">{volume.name}</span>
                   <span className="ml-1 shrink-0 text-xs text-gray-400">{volume.chapters.length}{chapterUnit}</span>
                 </button>
 
@@ -184,7 +184,7 @@ export function ChapterSidebar({
                     event.stopPropagation();
                     onAddChapter(volume.id);
                   }}
-                  className="flex h-9 w-9 items-center justify-center rounded text-xl font-bold text-brand-dark transition-colors hover:bg-brand/20"
+                  className="flex h-8 w-8 items-center justify-center rounded text-xl font-bold text-[#1e71ef] transition-colors hover:bg-[#d4e2f9]"
                   title={`新增${chapterUnit}`}
                 >
                   +
@@ -204,11 +204,11 @@ export function ChapterSidebar({
                       }}
                       className={`group relative flex w-full cursor-pointer items-center gap-2 rounded-md border-l-[3px] px-3 py-2 text-left transition-colors ${
                         chapter.isSelected
-                          ? 'border-orange-400 bg-orange-50'
+                          ? 'border-[#1e71ef] bg-[#d4e2f9]'
                           : 'border-transparent hover:bg-gray-50'
                       }`}
                     >
-                      <span className={`flex-1 truncate whitespace-nowrap text-sm font-medium ${chapter.isSelected ? 'text-orange-600' : 'text-gray-700'}`}>
+                      <span className={`flex-1 truncate whitespace-nowrap text-sm font-medium ${chapter.isSelected ? 'text-[#1f2933]' : 'text-gray-700'}`}>
                         第{chapter.serialNumber}{chapterUnit}{chapter.title ? ` ${chapter.title}` : ''}
                       </span>
                       <span className="shrink-0 text-xs text-gray-400 transition-opacity group-hover:opacity-0">
@@ -219,7 +219,7 @@ export function ChapterSidebar({
                           event.stopPropagation();
                           handlePublish(volume.id, chapter.id);
                         }}
-                        className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded bg-brand px-2 py-1 text-xs leading-none text-white opacity-0 transition-all hover:bg-brand-dark group-hover:opacity-100"
+                        className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded bg-[#1e71ef] px-2 py-1 text-xs leading-none text-white opacity-0 transition-all hover:bg-[#155ed1] group-hover:opacity-100"
                         title={`发布${chapterUnit}`}
                       >
                         发布
@@ -234,19 +234,19 @@ export function ChapterSidebar({
       </div>
 
       <div className={CHAPTER_SIDEBAR_BOTTOM_ROW_CLASS}>
-        <button onClick={onAddVolume} className={`${CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS} bg-[#08B3D9] hover:bg-[#0798B8]`} title={`新增${volumeUnit}`}>
+        <button onClick={onAddVolume} className={`${CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS} bg-[#1e71ef] hover:bg-[#155ed1]`} title={`新增${volumeUnit}`}>
           新增卷
         </button>
-        <button onClick={onToggleSort} className={`${CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS} bg-brand hover:bg-brand-dark`}>
+        <button onClick={onToggleSort} className={`${CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS} bg-[#1e71ef] hover:bg-[#155ed1]`}>
           {sortAsc ? '倒序' : '正序'}
         </button>
       </div>
 
-      <div className="border-t border-gray-100 px-2 py-2">
+      <div className="border-t border-[#e6e8ec] px-2 py-2">
         <div className="flex items-center gap-1.5">
           <button
             onClick={onExportChapters}
-            className={`${CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS} bg-[#08B3D9] hover:bg-[#0798B8]`}
+            className={`${CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS} bg-[#1e71ef] hover:bg-[#155ed1]`}
           >
             导出章节
           </button>

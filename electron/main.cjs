@@ -12,10 +12,6 @@ const APP_ICON = path.join(__dirname, '..', 'build', 'app-icon.ico');
 const APP_ID = 'com.yuexia.writer.desktop';
 const APP_NAME = '月下写作';
 const SHARED_STATE_DIR_NAME = 'xinyuexia-desktop';
-const USER_DATA_NAME =
-  process.env.XINYUEXIA_LOAD_DIST === '1' || app.isPackaged
-    ? SHARED_STATE_DIR_NAME
-    : 'xinyuexia-desktop-dev';
 const DEFAULT_WINDOW_BOUNDS = {
   width: 1366,
   height: 768,
@@ -42,6 +38,7 @@ let mainWindow = null;
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
+if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));

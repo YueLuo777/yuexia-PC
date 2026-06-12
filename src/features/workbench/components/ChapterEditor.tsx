@@ -1657,18 +1657,18 @@ export function ChapterEditor({
   const canRenderReviewPanel = showReviewPanel && Boolean(reviewPortalTarget);
 
   return (
-    <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gray-50">
+    <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#f5f5f7]">
       {editorFieldSizeModal}
       {isEmbeddedReviewMode && (
         <div ref={setEmbeddedPortalElement} className="min-h-0 flex-1 overflow-hidden bg-white" />
       )}
       {!embeddedMode && (
         <>
-      <div className="flex items-center gap-2 border-b border-gray-200 bg-white px-4 py-2.5">
-        <div className="flex items-center rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-sm">
+      <div className="flex items-center gap-2 border-b border-[#e6e8ec] bg-white px-4 py-2">
+        <div className="flex items-center rounded-md border border-[#dce1e8] bg-[#f5f6f8] px-2 py-1 text-sm">
           <span className="font-medium text-gray-700">{safeVolumeName}</span>
         </div>
-        <div className="flex items-center gap-0.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-sm">
+        <div className="flex items-center gap-0.5 rounded-md border border-[#dce1e8] bg-[#f5f6f8] px-2 py-1 text-sm">
           <span className="font-medium text-gray-700">第</span>
           <input
             type="text"
@@ -1690,7 +1690,7 @@ export function ChapterEditor({
           onChange={(event) => onRenameChapter(chapter.id, event.target.value.slice(0, 20))}
           maxLength={20}
           placeholder="请输入章节标题"
-          className="w-[320px] rounded-md border border-gray-200 bg-white px-3 py-1 text-sm outline-none focus:border-brand"
+          className="w-[320px] rounded-md border border-[#dce1e8] bg-white px-3 py-1 text-sm outline-none focus:border-brand"
         />
         <span className="text-xs text-gray-400">{titleCount}/20</span>
         <div className={`${SPLIT_BUTTON_OUTLINE_GROUP_CLASS} w-[104px]`}>
@@ -1711,7 +1711,7 @@ export function ChapterEditor({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 border-b border-gray-200 bg-white px-4 py-2">
+      <div className="flex items-center gap-2 border-b border-[#e6e8ec] bg-white px-4 py-2">
         <button onClick={() => setIsFontSettingsOpen(true)} className="rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
           字体设置
         </button>
@@ -1780,7 +1780,7 @@ export function ChapterEditor({
         </div>
       </div>
 
-      <div className="relative min-h-0 flex-1 overflow-hidden bg-white">
+      <div className="xy-wa-editor-surface relative min-h-0 flex-1 overflow-hidden">
         {isFindOpen && (
           <div className="absolute right-5 top-4 z-30 flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
             <input
@@ -1814,7 +1814,7 @@ export function ChapterEditor({
           onPaste={handlePaste}
           onSelect={keepCursorOutOfParagraphIndent}
           onScroll={(event) => setEditorScrollTop(event.currentTarget.scrollTop)}
-          className="editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent px-6 pb-6 pt-2 outline-none"
+          className="xy-wa-editor-text-layer editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent px-6 pb-6 pt-10 outline-none"
           placeholder="从这里开始写..."
           style={{
             fontFamily: fontSettings.fontFamily,
@@ -1827,7 +1827,7 @@ export function ChapterEditor({
         />
       </div>
 
-      <div className="flex min-h-[39px] items-center justify-between border-t border-[#08AACE] bg-white px-5 py-3 text-sm text-gray-400">
+      <div className="flex min-h-[34px] items-center justify-between border-t border-[#e1e5eb] bg-[#fbfbfc] px-5 py-2 text-sm text-gray-400">
         {associatedCount > 0 && <span>已关联 <span className="font-medium text-brand">{associatedCount}</span> 章</span>}
         <span className="ml-auto">字数 <span className="font-medium text-brand">{wordCount || chapter.wordCount}</span> · {lastSavedAt ? `已保存 ${lastSavedAt}` : '自动保存'}</span>
       </div>
