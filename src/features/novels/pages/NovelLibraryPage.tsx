@@ -629,22 +629,22 @@ export function NovelLibraryPage() {
   return (
     <div className="flex h-screen flex-col bg-white">
       <main className="flex-1 overflow-y-auto px-8 py-7">
-        <div className="grid gap-5 xl:grid-cols-[minmax(520px,1fr)_minmax(460px,1.6fr)]">
-          <section className="relative min-h-[182px] overflow-hidden rounded-[8px] border border-[#dfe5ec] bg-[#e7eef7] px-12 py-8">
+        <div className="grid max-w-[680px] gap-4 xl:grid-cols-[minmax(260px,0.95fr)_minmax(320px,1.05fr)]">
+          <section className="relative min-h-[118px] overflow-hidden rounded-[8px] border border-[#dfe5ec] bg-[#e7eef7] px-7 py-6">
             <div className="absolute inset-0 opacity-70" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.92), rgba(209,224,241,0.52))' }} />
             <div className="absolute right-0 top-0 h-full w-1/2 opacity-45" style={{ background: 'radial-gradient(circle at 70% 20%, rgba(126,158,102,0.38), transparent 28%), linear-gradient(140deg, transparent 0 46%, rgba(30,113,239,0.08) 46% 54%, transparent 54%)' }} />
             <div className="relative">
-              <h1 className="max-w-[360px] text-[34px] font-bold leading-tight text-[#16518f]">{title}</h1>
-              <p className="mt-4 text-[15px] font-medium text-[#4f6e8e]">共 {sourceNovels.length} 部{typeLabel}，保持专注写作和资料管理。</p>
+              <h1 className="max-w-[240px] text-[28px] font-bold leading-tight text-[#16518f]">{title}</h1>
+              <p className="mt-3 truncate text-[13px] font-medium text-[#4f6e8e]">共 {sourceNovels.length} 部{typeLabel}，保持专注写作和资料管理。</p>
             </div>
           </section>
 
-          <section className="min-h-[182px] rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-7 py-6">
+          <section className="min-h-[118px] rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-5 py-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-[18px] font-semibold text-[#1f2933]">作品整理</h2>
+              <h2 className="text-[16px] font-semibold text-[#1f2933]">作品整理</h2>
               <span className="text-[13px] font-medium text-[#9aa3af]">{filteredNovels.length}/{sourceNovels.length}</span>
             </div>
-            <div className="mt-5 grid grid-cols-4 gap-3">
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
               {[
                 { label: `新建${typeLabel}`, desc: '创建作品', icon: Plus, onClick: () => setIsNewOpen(true), tone: 'blue' },
                 { label: '导入', desc: '本地导入', icon: Upload, onClick: () => setIsImportOpen(true), tone: 'green' },
@@ -657,17 +657,17 @@ export function NovelLibraryPage() {
                     key={item.label}
                     type="button"
                     onClick={item.onClick}
-                    className="flex h-[76px] items-center gap-3 rounded-[8px] border border-[#e6e8ec] bg-white px-4 text-left transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
+                    className="flex h-[48px] items-center gap-2.5 rounded-[8px] border border-[#e6e8ec] bg-white px-3 text-left transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
                   >
                     <span className={[
-                      'grid h-8 w-8 shrink-0 place-items-center rounded-[5px] text-white',
+                      'grid h-7 w-7 shrink-0 place-items-center rounded-[5px] text-white',
                       item.tone === 'green' ? 'bg-[#31a85f]' : item.tone === 'amber' ? 'bg-[#f3a400]' : item.tone === 'purple' ? 'bg-[#9b6cf0]' : 'bg-[#1e71ef]',
                     ].join(' ')}>
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-3.5 w-3.5" />
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-[14px] font-semibold text-[#1f2933]">{item.label}</span>
-                      <span className="mt-0.5 block truncate text-[12px] text-[#9aa3af]">{item.desc}</span>
+                      <span className="block truncate text-[13px] font-semibold text-[#1f2933]">{item.label}</span>
+                      <span className="mt-0.5 block truncate text-[11px] text-[#9aa3af]">{item.desc}</span>
                     </span>
                   </button>
                 );

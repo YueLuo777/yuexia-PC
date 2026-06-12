@@ -180,11 +180,6 @@
     var(--xy-wa-editor-bg);
 }
 
-.xy-wa-editor-text-layer {
-  padding-right: clamp(48px, 10vw, 220px) !important;
-  padding-left: clamp(48px, 10vw, 220px) !important;
-}
-
 .xy-wa-book-cover-empty {
   background:
     linear-gradient(90deg, rgba(30, 113, 239, 0.2) 0 4px, transparent 4px 8px),

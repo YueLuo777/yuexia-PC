@@ -134,7 +134,7 @@ export function DashboardLayout() {
       <aside
         className="flex w-[224px] shrink-0 flex-col overflow-hidden border-r border-[#e1e5eb] bg-[#f5f5f7]"
       >
-        <div className="shrink-0 border-b border-[#e7e9ee] px-3 pb-4 pt-8">
+        <div className="shrink-0 border-b border-[#e7e9ee] px-3 py-3">
           <input
             ref={avatarInputRef}
             type="file"
@@ -145,23 +145,23 @@ export function DashboardLayout() {
               event.target.value = '';
             }}
           />
-          <div className="flex flex-col items-center gap-3 px-3 py-2 text-center">
+          <div className="flex items-center gap-2.5 px-2 py-1 text-left">
             <button
               onClick={() => avatarInputRef.current?.click()}
-              className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#d4dae3] bg-white text-slate-400 shadow-sm transition-colors hover:border-brand/50 hover:text-brand"
+              className="group relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#d4dae3] bg-white text-slate-400 shadow-sm transition-colors hover:border-brand/50 hover:text-brand"
               title="点击上传头像"
             >
               {avatar ? (
                 <img src={avatar} alt="用户头像" className="h-full w-full object-cover" />
               ) : (
-                <UserRound className="h-7 w-7" />
+                <UserRound className="h-5 w-5" />
               )}
               <span className="absolute inset-0 hidden items-center justify-center bg-black/35 text-white group-hover:flex">
-                <Camera className="h-5 w-5" />
+                <Camera className="h-4 w-4" />
               </span>
             </button>
 
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               {isEditingUserName ? (
                 <input
                   value={userNameDraft}
@@ -176,7 +176,7 @@ export function DashboardLayout() {
                   }}
                   maxLength={18}
                   autoFocus
-                  className="h-8 w-full rounded-md border border-brand bg-white px-2 text-center text-[15px] font-medium text-[#1f2933] outline-none"
+                  className="h-8 w-full rounded-md border border-brand bg-white px-2 text-left text-[14px] font-medium text-[#1f2933] outline-none"
                 />
               ) : (
                 <button
@@ -184,7 +184,7 @@ export function DashboardLayout() {
                     setUserNameDraft(userName);
                     setIsEditingUserName(true);
                   }}
-                  className="block max-w-[160px] truncate text-center text-[15px] font-medium text-[#1f2933] transition-colors hover:text-brand"
+                  className="block max-w-[150px] truncate text-left text-[14px] font-medium text-[#1f2933] transition-colors hover:text-brand"
                   title="双击修改用户名"
                 >
                   {userName}
