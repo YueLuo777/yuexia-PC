@@ -1401,14 +1401,16 @@ export function ChapterEditor({
     getStoredSymbolReplaceSettings().filter((rule) => rule.from && rule.from !== rule.to)
   );
 
-  const keepCursorOutOfParagraphIndent = () => {
+  const keepSelectionOutOfParagraphIndent = () => {
     if (!formatSettings.paragraphIndent) return;
     const textarea = textareaRef.current;
-    if (!textarea || textarea.selectionStart !== textarea.selectionEnd) return;
-    const safeCursor = clampCursorToEditableText(textarea.selectionStart);
-    if (safeCursor === textarea.selectionStart) return;
+    if (!textarea) return;
+    const selectionDirection = textarea.selectionDirection;
+    const safeStart = clampCursorToEditableText(textarea.selectionStart);
+    const safeEnd = clampCursorToEditableText(textarea.selectionEnd);
+    if (safeStart === textarea.selectionStart && safeEnd === textarea.selectionEnd) return;
     requestAnimationFrame(() => {
-      textarea.setSelectionRange(safeCursor, safeCursor);
+      textarea.setSelectionRange(safeStart, safeEnd, selectionDirection);
     });
   };
 
@@ -1812,12 +1814,12 @@ export function ChapterEditor({
           value={content}
           onChange={handleContentChange}
           onKeyDown={handleKeyDown}
-          onKeyUp={keepCursorOutOfParagraphIndent}
-          onMouseUp={keepCursorOutOfParagraphIndent}
+          onKeyUp={keepSelectionOutOfParagraphIndent}
+          onMouseUp={keepSelectionOutOfParagraphIndent}
           onPaste={handlePaste}
-          onSelect={keepCursorOutOfParagraphIndent}
+          onSelect={keepSelectionOutOfParagraphIndent}
           onScroll={(event) => setEditorScrollTop(event.currentTarget.scrollTop)}
-          className="xy-wa-editor-text-layer editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent px-6 pb-6 pt-10 outline-none"
+          className="xy-wa-editor-text-layer editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent px-6 pb-6 pt-3 outline-none"
           placeholder="从这里开始写..."
           style={{
             fontFamily: fontSettings.fontFamily,

@@ -992,7 +992,7 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0 }: { con
 
   return (
     <div
-      className="xy-wa-editor-text-layer pointer-events-none absolute inset-0 z-0 overflow-hidden whitespace-pre-wrap break-words px-6 pb-6 pt-2 text-transparent"
+      className="xy-wa-editor-text-layer pointer-events-none absolute inset-0 z-0 overflow-hidden whitespace-pre-wrap break-words px-6 pb-6 pt-3 text-transparent"
       style={{
         fontFamily: fontSettings.fontFamily,
         fontSize: `${fontSettings.fontSize}px`,

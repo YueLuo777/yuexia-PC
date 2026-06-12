@@ -61,6 +61,14 @@ const readChapterEditorSource = async () => {
   return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'ChapterEditor.tsx'), 'utf8');
 };
 
+const readEditorToolModalsSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'EditorToolModals.tsx'), 'utf8');
+};
+
 const readChapterSidebarSource = async () => {
   const { readFileSync } = await import('node:fs');
   const { fileURLToPath } = await import('node:url');
@@ -578,7 +586,20 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(styleSource).toContain('.xy-wa-editor-surface {\n  background: var(--xy-wa-editor-bg);\n}');
     expect(styleSource).toContain('.xy-wa-editor-surface .xy-wa-editor-text-layer {\n  background: #F5F5F7;\n}');
     expect(chapterEditorSource).toContain('className="xy-wa-editor-surface relative min-h-0 flex-1 overflow-hidden"');
-    expect(chapterEditorSource).toContain('className="xy-wa-editor-text-layer editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent px-6 pb-6 pt-10 outline-none"');
+    expect(chapterEditorSource).toContain('className="xy-wa-editor-text-layer editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent px-6 pb-6 pt-3 outline-none"');
+    expect(chapterEditorSource).not.toContain('px-6 pb-6 pt-10 outline-none');
+  });
+
+  it('keeps paragraph indent blanks out of editor mouse selections', async () => {
+    const chapterEditorSource = await readChapterEditorSource();
+    const modalSource = await readEditorToolModalsSource();
+
+    expect(chapterEditorSource).toContain('const keepSelectionOutOfParagraphIndent = () => {');
+    expect(chapterEditorSource).toContain('const safeStart = clampCursorToEditableText(textarea.selectionStart);');
+    expect(chapterEditorSource).toContain('const safeEnd = clampCursorToEditableText(textarea.selectionEnd);');
+    expect(chapterEditorSource).toContain('textarea.setSelectionRange(safeStart, safeEnd, selectionDirection);');
+    expect(chapterEditorSource).toContain('onSelect={keepSelectionOutOfParagraphIndent}');
+    expect(modalSource).toContain('whitespace-pre-wrap break-words px-6 pb-6 pt-3 text-transparent');
   });
 
   it('matches audit comment and status chapter directories to the detail outline volume style without losing summary actions', async () => {

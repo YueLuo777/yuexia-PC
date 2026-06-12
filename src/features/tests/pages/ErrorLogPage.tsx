@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'chapter-editor-top-gap-indent-selection-001',
+    title: '正文编辑区顶部不能出现假空行且缩进空格不能被拖选',
+    area: '作品编辑器 / 正文页面 / 输入区顶部间距与段落缩进',
+    symptom: '正文工具栏下方出现一整条像空行一样的空白；开启段落缩进后，鼠标从行首拖选会把缩进前的空格一起选中。',
+    cause: '正文 textarea 使用 pt-10 作为顶部内边距，视觉上像多了一行空白；段落缩进使用真实全角空格写入内容，原先只在单点光标时夹到缩进后，没有处理拖选范围的起止边界。',
+    solution: '将正文 textarea 和高频词覆盖层顶部内边距统一收紧为 pt-3；把光标保护升级为选择范围保护，onSelect/onMouseUp/onKeyUp 都把 selectionStart 和 selectionEnd 夹到缩进空格之后。',
+    prevention: '以后调整正文页顶部空白时优先检查 ChapterEditor 的 textarea padding 和 HighlightOverlay 对齐；段落缩进相关问题要同时覆盖点击、键盘移动和鼠标拖选。',
+    keywords: ['正文', '空行', 'pt-10', 'pt-3', '段落缩进', '拖选', 'selectionStart', 'ChapterEditor', 'HighlightOverlay'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'novel-library-title-card-data-row-001',
     title: '我的小说顶部卡片需要在小说库页面变成数据卡片',
     area: '我的小说 / 顶部卡片 / 数据卡片与最近编辑',
