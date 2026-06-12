@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'novel-library-search-background-f5f6f6-001',
+    title: '我的小说搜索框背景色需要固定为 #F5F6F6',
+    area: '我的小说 / 搜索小说输入框',
+    symptom: '搜索小说输入框背景色和目标色值不一致，且共享搜索框 hover/focus 样式可能把背景改回白色。',
+    cause: '小说库复用 xy-ui132-search 通用搜索框，默认背景和交互态由共享 CSS 控制，没有小说页专用色值覆盖。',
+    solution: '给小说库搜索框增加 xy-novel-search 专用 class，并在普通、hover、focus 状态下统一使用 #F5F6F6 背景。',
+    prevention: '后续调整小说库搜索框时保留 xy-novel-search 覆盖；若修改通用 xy-ui132-search，需确认不会覆盖小说页指定背景。',
+    keywords: ['我的小说', '搜索小说', '#F5F6F6', 'xy-ui132-search', 'xy-novel-search', 'NovelLibraryPage'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'app-titlebar-color-e4e9ef-001',
     title: '顶部标题栏颜色需要统一为 #E4E9EF',
     area: '全局框架 / 顶部标题栏 / 作品标签栏',

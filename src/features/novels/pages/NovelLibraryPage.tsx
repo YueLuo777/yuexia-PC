@@ -698,7 +698,7 @@ export function NovelLibraryPage() {
             ))}
           </div>
 
-          <label className="xy-ui132-search shrink-0">
+          <label className="xy-ui132-search xy-novel-search shrink-0">
             <Search />
             <input
               value={searchQuery}

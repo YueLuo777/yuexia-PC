@@ -1598,6 +1598,12 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   box-shadow: 0 0 0 3px rgba(30, 113, 239, 0.08);
 }
 
+.xy-ui132-search.xy-novel-search input,
+.xy-ui132-search.xy-novel-search input:focus,
+.xy-ui132-search.xy-novel-search input:hover {
+  background-color: #F5F6F6;
+}
+
 .xy-ui132-search svg {
   position: absolute;
   left: 1rem;
