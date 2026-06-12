@@ -15,6 +15,7 @@ interface WorkbenchModalProps {
   widthClass?: string;
   heightClass?: string;
   titleClassName?: string;
+  headerExtra?: ReactNode;
   closeOnBackdrop?: boolean;
   storageId?: string;
 }
@@ -27,6 +28,7 @@ export function WorkbenchModal({
   widthClass = 'w-[720px]',
   heightClass = 'h-[78vh] max-h-[86vh]',
   titleClassName = 'text-base',
+  headerExtra,
   closeOnBackdrop = true,
   storageId,
 }: WorkbenchModalProps) {
@@ -65,7 +67,7 @@ export function WorkbenchModal({
           style={{ ...draggable.dragHandleProps.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
         >
           <h2 className={`shrink-0 cursor-move font-bold text-gray-900 ${titleClassName}`}>{title}</h2>
-          <div id="workbench-modal-header-extra" className="min-w-0 flex-1" />
+          <div id="workbench-modal-header-extra" className="flex min-w-0 flex-1 items-center">{headerExtra}</div>
           <button
             onClick={onClose}
             data-no-modal-drag="true"

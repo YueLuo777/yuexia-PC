@@ -1,4 +1,5 @@
 const { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, screen } = require('electron');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -580,6 +581,125 @@ ipcMain.handle('app-icon:reset', async () => {
     };
   }
 });
+
+function normalizeCosConfig(input) {
+  const config = input && typeof input === 'object' ? input : {};
+  const bucket = typeof config.bucket === 'string' ? config.bucket.trim() : '';
+  const region = typeof config.region === 'string' ? config.region.trim() : '';
+  const secretId = typeof config.secretId === 'string' ? config.secretId.trim() : '';
+  const secretKey = typeof config.secretKey === 'string' ? config.secretKey.trim() : '';
+  if (!/^[a-z0-9][a-z0-9-]{2,62}-\d{5,}$/.test(bucket)) {
+    return { ok: false, message: 'COS Bucket 格式不正确，应类似 writer-1250000000。' };
+  }
+  if (!/^[a-z0-9-]{3,40}$/.test(region)) {
+    return { ok: false, message: 'COS Region 格式不正确，应类似 ap-guangzhou。' };
+  }
+  if (!secretId || !secretKey) {
+    return { ok: false, message: 'COS SecretId / SecretKey 不能为空。' };
+  }
+  return { ok: true, config: { bucket, region, secretId, secretKey } };
+}
+
+function normalizeCosObjectKey(value) {
+  const key = typeof value === 'string' ? value.trim().replace(/^\/+/, '') : '';
+  if (!key || key.includes('\\') || key.includes('\0') || key.split('/').some((part) => part === '..')) {
+    return { ok: false, message: 'COS 云端文件路径无效。' };
+  }
+  return { ok: true, key };
+}
+
+function encodeCosObjectPath(key) {
+  return `/${key.split('/').filter(Boolean).map((part) => encodeURIComponent(part)).join('/')}`;
+}
+
+function sha1Hex(value) {
+  return crypto.createHash('sha1').update(value).digest('hex');
+}
+
+function hmacSha1Hex(key, value) {
+  return crypto.createHmac('sha1', key).update(value).digest('hex');
+}
+
+function createCosAuthorization({ method, pathname, host, secretId, secretKey }) {
+  const now = Math.floor(Date.now() / 1000);
+  const keyTime = `${now};${now + 600}`;
+  const headerList = 'host';
+  const urlParamList = '';
+  const headerString = `host=${encodeURIComponent(host).toLowerCase()}`;
+  const httpString = [
+    method.toLowerCase(),
+    pathname,
+    '',
+    headerString,
+    '',
+  ].join('\n');
+  const signKey = hmacSha1Hex(secretKey, keyTime);
+  const stringToSign = ['sha1', keyTime, sha1Hex(httpString), ''].join('\n');
+  const signature = hmacSha1Hex(signKey, stringToSign);
+  return [
+    'q-sign-algorithm=sha1',
+    `q-ak=${secretId}`,
+    `q-sign-time=${keyTime}`,
+    `q-key-time=${keyTime}`,
+    `q-header-list=${headerList}`,
+    `q-url-param-list=${urlParamList}`,
+    `q-signature=${signature}`,
+  ].join('&');
+}
+
+async function requestCosObject({ method, config, key, body, contentType }) {
+  const normalizedConfig = normalizeCosConfig(config);
+  if (!normalizedConfig.ok) return { ok: false, status: 400, message: normalizedConfig.message };
+  const normalizedKey = normalizeCosObjectKey(key);
+  if (!normalizedKey.ok) return { ok: false, status: 400, message: normalizedKey.message };
+
+  const { bucket, region, secretId, secretKey } = normalizedConfig.config;
+  const host = `${bucket}.cos.${region}.myqcloud.com`;
+  const pathname = encodeCosObjectPath(normalizedKey.key);
+  const authorization = createCosAuthorization({ method, pathname, host, secretId, secretKey });
+  const headers = {
+    Authorization: authorization,
+  };
+  if (method === 'PUT') {
+    headers['Content-Type'] = contentType || 'application/json; charset=utf-8';
+  }
+
+  try {
+    const response = await fetch(`https://${host}${pathname}`, {
+      method,
+      headers,
+      body: method === 'PUT' ? String(body ?? '') : undefined,
+    });
+    const text = await response.text();
+    return {
+      ok: response.ok,
+      status: response.status,
+      text,
+      key: normalizedKey.key,
+      message: response.ok ? undefined : text.slice(0, 500) || `COS request failed (${response.status}).`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 0,
+      message: error instanceof Error ? error.message : 'COS request failed.',
+    };
+  }
+}
+
+ipcMain.handle('cos:put-object', async (_event, input) => requestCosObject({
+  method: 'PUT',
+  config: input?.config,
+  key: input?.key,
+  body: input?.body,
+  contentType: input?.contentType,
+}));
+
+ipcMain.handle('cos:get-object', async (_event, input) => requestCosObject({
+  method: 'GET',
+  config: input?.config,
+  key: input?.key,
+}));
 
 ipcMain.handle('model:request', async (_event, input) => {
   const request = normalizeModelRequestInput(input);

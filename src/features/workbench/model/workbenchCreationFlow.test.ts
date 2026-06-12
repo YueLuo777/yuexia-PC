@@ -4,17 +4,18 @@ import { WORKBENCH_HEADER_FLOW_ITEMS } from './workbenchCreationFlow';
 
 describe('WORKBENCH_HEADER_FLOW_ITEMS', () => {
   it('keeps the workbench header flow in the expected writing order', () => {
-    expect(WORKBENCH_HEADER_FLOW_ITEMS.map((item) => item.title)).toEqual([
-      '作品信息',
-      '脑洞',
-      '大纲',
-      '剧情链',
-      '章纲',
-      '正文',
-      '审核',
-      '点评',
-      '状态',
-      '概要',
+    expect(WORKBENCH_HEADER_FLOW_ITEMS.map((item) => item.id)).toEqual([
+      'workInfo',
+      'brainstorm',
+      'outline',
+      'chapterOutline',
+      'writing',
+      'audit',
+      'comment',
+      'polish',
+      'status',
+      'summary',
     ]);
+    expect(WORKBENCH_HEADER_FLOW_ITEMS.map((item) => item.id)).not.toContain('plotChain');
   });
 });

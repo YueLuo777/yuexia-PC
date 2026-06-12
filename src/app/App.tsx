@@ -1,18 +1,19 @@
-import { Component, Suspense, lazy, type ReactNode } from 'react';
+import { Component, Suspense, lazy, useEffect, type ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { AppFrame } from '@/shared/layout/AppFrame';
 import { WorkspaceTabsProvider } from '@/shared/tabs/WorkspaceTabsContext';
+import { bindWorkbenchTransientAiCleanup } from '@/features/workbench/model/workbenchTransientAiCleanup';
 
 const TestCollectionPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })));
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
-const BrainstormAiChainTestPage = lazy(() => import('@/features/tests/pages/BrainstormAiChainTestPage').then((module) => ({ default: module.BrainstormAiChainTestPage })));
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
 const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })));
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
 const PromptTaxonomyTestPage = lazy(() => import('@/features/tests/pages/PromptTaxonomyTestPage').then((module) => ({ default: module.PromptTaxonomyTestPage })));
-const WorkbenchAiPanelReplicaTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiPanelReplicaTestPage').then((module) => ({ default: module.WorkbenchAiPanelReplicaTestPage })));
+const SettingTaxonomyPlanTestPage = lazy(() => import('@/features/tests/pages/SettingTaxonomyPlanTestPage').then((module) => ({ default: module.SettingTaxonomyPlanTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
+const ConceptLibraryPage = lazy(() => import('@/features/concept-library/pages/ConceptLibraryPage').then((module) => ({ default: module.ConceptLibraryPage })));
 const LibraryHubPage = lazy(() => import('@/features/library-hub/pages/LibraryHubPage').then((module) => ({ default: module.LibraryHubPage })));
 const DbSettingsPage = lazy(() => import('@/features/settings/pages/DbSettingsPage').then((module) => ({ default: module.DbSettingsPage })));
 const ModelManagePage = lazy(() => import('@/features/models/pages/ModelManagePage').then((module) => ({ default: module.ModelManagePage })));
@@ -72,6 +73,10 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error
 }
 
 export default function App() {
+  useEffect(() => {
+    bindWorkbenchTransientAiCleanup();
+  }, []);
+
   return (
     <WorkspaceTabsProvider>
       <AppFrame>
@@ -84,6 +89,7 @@ export default function App() {
                 <Route path="/novels" element={<NovelLibraryPage />} />
                 <Route path="/scripts" element={<NovelLibraryPage />} />
                 <Route path="/library" element={<LibraryHubPage />} />
+                <Route path="/concept-library" element={<ConceptLibraryPage />} />
                 <Route path="/prompts" element={<PromptsPage />} />
                 <Route path="/model-manage" element={<ModelManagePage />} />
                 <Route path="/db-settings" element={<DbSettingsPage />} />
@@ -91,13 +97,12 @@ export default function App() {
                 <Route path="/token-usage" element={<TokenUsagePage />} />
                 <Route path="/test-collection" element={<TestCollectionPage />} />
                 <Route path="/prompt-taxonomy-test" element={<PromptTaxonomyTestPage />} />
-                <Route path="/brainstorm-ai-chain-test" element={<BrainstormAiChainTestPage />} />
+                <Route path="/setting-taxonomy-plan-test" element={<SettingTaxonomyPlanTestPage />} />
                 <Route path="/software-ui-catalog" element={<SoftwareUiCatalogPage />} />
                 <Route path="/hidden-content" element={<HiddenPagesTestPage />} />
                 <Route path="/hidden-pages-test" element={<HiddenPagesTestPage />} />
                 <Route path="/error-log" element={<ErrorLogPage />} />
                 <Route path="/theme-colors" element={<DarkThemeColorPage />} />
-                <Route path="/workbench-ai-panel-replica-test" element={<WorkbenchAiPanelReplicaTestPage />} />
                 <Route path="/test-browser" element={<TestBrowserPage />} />
               </Route>
               <Route path="/workbench" element={<WorkbenchPage />} />

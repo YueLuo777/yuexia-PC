@@ -57,6 +57,7 @@ export function BrainstormLibraryPage({ embedded = false }: BrainstormLibraryPag
             emptyText="暂无脑洞内容"
             volumes={[]}
             scale={1}
+            toolbarPortalId={embedded ? 'concept-library-toolbar-slot' : undefined}
           />
         </div>
       </main>

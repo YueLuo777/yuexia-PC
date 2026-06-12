@@ -4,7 +4,7 @@ const WORKBENCH_LINKED_CONTEXT_KEY_PREFIX = 'xinyuexia_workbench_linked_context_
 
 export type StoredWorkbenchLinkedContextItem = {
   id: string;
-  source: 'setting' | 'role' | 'summary' | 'chapter';
+  source: 'setting' | 'role' | 'outline' | 'summary' | 'chapter';
   group: string;
   title: string;
   content: string;
@@ -103,7 +103,7 @@ export function getWorkbenchLinkedContextStorageKey(workId: number | string) {
 }
 
 function isLinkedContextSource(value: unknown): value is StoredWorkbenchLinkedContextItem['source'] {
-  return value === 'setting' || value === 'role' || value === 'summary' || value === 'chapter';
+  return value === 'setting' || value === 'role' || value === 'outline' || value === 'summary' || value === 'chapter';
 }
 
 function normalizeLinkedContextItems(value: unknown): StoredWorkbenchLinkedContextItem[] {

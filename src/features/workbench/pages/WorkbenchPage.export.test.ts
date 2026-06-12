@@ -36,4 +36,13 @@ describe('buildChapterExportText', () => {
     expect(source).toContain('onMouseDown={handleChapterSidebarDragStart}');
     expect(source).toContain('title="拖拽调整未发布栏宽度"');
   });
+
+  it('opens the workbench on the writing page instead of restoring the previous creation flow', async () => {
+    const source = await readWorkbenchPageSource();
+
+    expect(source).toContain("const [activeCreationFlow, setActiveCreationFlow] = useState<WorkbenchCreationFlowPageKey>('writing');");
+    expect(source).toContain("setActiveCreationFlow('writing');");
+    expect(source).not.toContain('getStoredCreationFlowPage');
+    expect(source).not.toContain('xinyuexia_workbench_active_flow_page_');
+  });
 });

@@ -119,7 +119,7 @@ export function CapsuleSelect({
     );
     setDropdownRect({
       left: safeLeft,
-      top: rect.bottom + 6,
+      top: rect.bottom,
       width: safeWidth,
       fixed: true,
     });
@@ -160,7 +160,7 @@ export function CapsuleSelect({
   const dropdownMenu = open && !disabled ? (
     <div
       ref={dropdownRef}
-      className={`${shouldRenderLocalDropdown ? 'absolute left-0 right-0 top-[calc(100%+6px)]' : dropdownRect.fixed ? 'fixed' : 'absolute'} z-[10050] max-h-[240px] overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-2xl`}
+      className={`${shouldRenderLocalDropdown ? 'absolute left-0 right-0 top-full' : dropdownRect.fixed ? 'fixed' : 'absolute'} z-[10050] max-h-[240px] overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-2xl`}
       style={shouldRenderLocalDropdown ? undefined : {
         left: dropdownRect.left,
         top: dropdownRect.top,

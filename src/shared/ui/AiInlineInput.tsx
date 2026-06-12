@@ -32,8 +32,9 @@ export const AiInlineInput = forwardRef<HTMLTextAreaElement, AiInlineInputProps>
   'aria-label': ariaLabel,
 }, ref) {
   return (
-    <div className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${value.trim() ? 'xy-has-value' : ''} ${className}`.trim()}>
+    <div data-no-modal-drag="true" className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${value.trim() ? 'xy-has-value' : ''} ${className}`.trim()}>
       <textarea
+        data-no-modal-drag="true"
         ref={ref}
         rows={rows}
         value={value}

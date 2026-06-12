@@ -18,6 +18,7 @@ interface NovelCardProps {
   novel: Novel;
   isSelected: boolean;
   settings: NovelCardSettings;
+  onPrepareOpen?: (id: number) => void;
   onOpen: (id: number) => void;
   onRename: (id: number, title: string) => void;
   onCover: (id: number) => void;
@@ -69,7 +70,7 @@ function getBtnColorClasses(color: NonNullable<NovelCardSettings['btnColors']>[s
   }
 }
 
-export function NovelCard({ novel, settings, onOpen, onRename, onCover, onExport, onDelete }: NovelCardProps) {
+export function NovelCard({ novel, settings, onPrepareOpen, onOpen, onRename, onCover, onExport, onDelete }: NovelCardProps) {
   const btnOrder = settings.btnOrder?.length ? settings.btnOrder : ['重命名', '封面', '导出', '删除'];
   const btnPerRow = settings.btnPerRow ?? 2;
   const btnRows = settings.btnRows ?? 2;
@@ -102,8 +103,18 @@ export function NovelCard({ novel, settings, onOpen, onRename, onCover, onExport
 
   return (
     <article
+      tabIndex={0}
+      onPointerEnter={() => onPrepareOpen?.(novel.id)}
+      onPointerDown={() => onPrepareOpen?.(novel.id)}
+      onFocus={() => onPrepareOpen?.(novel.id)}
       onClick={() => onOpen(novel.id)}
-      className="group flex cursor-pointer flex-col rounded-[24px] border border-slate-100 bg-white p-3 transition-shadow hover:shadow-xl"
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        onOpen(novel.id);
+      }}
+      className="group flex cursor-pointer flex-col rounded-[24px] border border-slate-100 bg-white p-3 outline-none transition-shadow hover:shadow-xl focus-visible:ring-2 focus-visible:ring-[#08AACE]/35"
       style={{ width: widthMap[settings.cardWidth], minHeight: 340 }}
     >
       <div

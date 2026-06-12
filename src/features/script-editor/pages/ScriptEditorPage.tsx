@@ -1196,8 +1196,8 @@ export function ScriptEditorPage() {
     if (action === 'outline') {
       addWorkbenchLibraryEntry(
         `xinyuexia_workbench_outline_${currentScript.id}`,
-        '章节概要',
-        `AI概要-${selectedScriptChapter?.title || currentScript.title}`,
+        '章节梗概',
+        `AI梗概-${selectedScriptChapter?.title || currentScript.title}`,
         content,
       );
       return;

@@ -44,4 +44,11 @@ describe('WorkbenchAIPanel session deletion', () => {
     expect(sessionControlsBody).toContain('flex h-7 max-w-full items-center overflow-visible');
     expect(sessionControlsBody).not.toContain('overflow-hidden bg-white');
   });
+
+  it('renders the AI output font size control in the workbench header tool area', () => {
+    expect(source).toContain("setHeaderToolPortalTarget(document.getElementById('workbench-header-extra-tools'))");
+    expect(source).toContain('createPortal(outputFontSizeTool, headerToolPortalTarget)');
+    expect(source).toContain('ariaLabel="AI 输出字号"');
+    expect(source).not.toContain('className="xy-floating-chat-font-tool"');
+  });
 });

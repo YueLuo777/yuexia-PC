@@ -1,15 +1,13 @@
 import {
   ArrowLeft,
   Check,
-  ChevronDown,
   EyeOff,
-  GitBranch,
   Globe,
+  Lightbulb,
   NotebookText,
   Moon,
   Palette,
   SlidersHorizontal,
-  Sparkles,
   Search,
   Tags,
   Type,
@@ -20,7 +18,6 @@ import { useNavigate } from 'react-router-dom';
 
 import { TEST_COLLECTION_SHOW_INDEX_EVENT } from '@/features/tests/model/testCollectionEvents';
 
-const BrainstormAiChainTestPage = lazy(() => import('@/features/tests/pages/BrainstormAiChainTestPage').then((module) => ({ default: module.BrainstormAiChainTestPage })));
 const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })));
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
@@ -28,9 +25,17 @@ const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').th
 const PromptTaxonomyTestPage = lazy(() => import('@/features/tests/pages/PromptTaxonomyTestPage').then((module) => ({ default: module.PromptTaxonomyTestPage })));
 const BorderBackplateApplicationTestPage = lazy(() => import('@/features/tests/pages/BorderBackplateApplicationTestPage').then((module) => ({ default: module.BorderBackplateApplicationTestPage })));
 const WorkbenchRightPanelUnifiedTestPage = lazy(() => import('@/features/tests/pages/WorkbenchRightPanelUnifiedTestPage').then((module) => ({ default: module.WorkbenchRightPanelUnifiedTestPage })));
-const WorkbenchShelllessAuditTestPage = lazy(() => import('@/features/tests/pages/WorkbenchShelllessAuditTestPage').then((module) => ({ default: module.WorkbenchShelllessAuditTestPage })));
-const WorkbenchAiPanelReplicaTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiPanelReplicaTestPage').then((module) => ({ default: module.WorkbenchAiPanelReplicaTestPage })));
-const PlotChainTabbedLayoutTestPage = lazy(() => import('@/features/tests/pages/PlotChainTabbedLayoutTestPage').then((module) => ({ default: module.PlotChainTabbedLayoutTestPage })));
+const WorkbenchAiRequestTagPolicyTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiRequestTagPolicyTestPage').then((module) => ({ default: module.WorkbenchAiRequestTagPolicyTestPage })));
+const LinkedContextSelectionInteractionTestPage = lazy(() => import('@/features/tests/pages/LinkedContextSelectionInteractionTestPage').then((module) => ({ default: module.LinkedContextSelectionInteractionTestPage })));
+const BrainstormLinkVisualOptionsTestPage = lazy(() => import('@/features/tests/pages/BrainstormLinkVisualOptionsTestPage').then((module) => ({ default: module.BrainstormLinkVisualOptionsTestPage })));
+const DetailOutlineFocusLayoutTestPage = lazy(() => import('@/features/tests/pages/DetailOutlineFocusLayoutTestPage').then((module) => ({ default: module.DetailOutlineFocusLayoutTestPage })));
+const StructuredDetailOutlineTagFillTestPage = lazy(() => import('@/features/tests/pages/StructuredDetailOutlineTagFillTestPage').then((module) => ({ default: module.StructuredDetailOutlineTagFillTestPage })));
+const DetailOutlineLifecycleTestPage = lazy(() => import('@/features/tests/pages/DetailOutlineLifecycleTestPage').then((module) => ({ default: module.DetailOutlineLifecycleTestPage })));
+const NoPlotPointCreationLoopTestPage = lazy(() => import('@/features/tests/pages/NoPlotPointCreationLoopTestPage').then((module) => ({ default: module.NoPlotPointCreationLoopTestPage })));
+const SettingCheckModalTestPage = lazy(() => import('@/features/tests/pages/SettingCheckModalTestPage').then((module) => ({ default: module.SettingCheckModalTestPage })));
+const SettingTaxonomyPlanTestPage = lazy(() => import('@/features/tests/pages/SettingTaxonomyPlanTestPage').then((module) => ({ default: module.SettingTaxonomyPlanTestPage })));
+const SettingScopeSegmentedTabsTestPage = lazy(() => import('@/features/tests/pages/SettingScopeSegmentedTabsTestPage').then((module) => ({ default: module.SettingScopeSegmentedTabsTestPage })));
+const WorkbenchGroupedDirectoryStyleTestPage = lazy(() => import('@/features/tests/pages/WorkbenchGroupedDirectoryStyleTestPage').then((module) => ({ default: module.WorkbenchGroupedDirectoryStyleTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -85,13 +90,6 @@ const testGroups = [
     title: 'AI 链路测试',
     items: [
       {
-        title: 'AI 生成链路测试中心',
-        description: '集中测试脑洞、大纲、细纲、概要、提炼、续写、审核、更新等 AI 生成链路。',
-        path: '/brainstorm-ai-chain-test',
-        icon: Sparkles,
-        badge: 'AI',
-      },
-      {
         title: '右侧 AI 配置栏统一方案',
         description: '测试作品编辑器右侧 AI 区域的统一布局，并检查浮动按钮背后的白色垫片是否已去掉。',
         path: '/workbench-right-panel-unified-test',
@@ -99,32 +97,81 @@ const testGroups = [
         badge: 'Panel / 垫片',
       },
       {
-        title: '???????????',
-        description: '????????????????????????????????????????? shellless ???',
-        path: '/workbench-shellless-audit-test',
-        icon: SlidersHorizontal,
-        badge: 'Shellless',
+        title: 'AI 请求标签策略测试',
+        description: '测试脑洞、大纲、章纲、正文、审核、点评、润色、状态、梗概哪些链路需要用标签区分材料和要求。',
+        path: '/workbench-ai-request-tag-policy-test',
+        icon: Tags,
+        badge: 'Tag',
       },
       {
-        title: '????? AI ????',
-        description: '??????????????????????????????????? AI ????????????',
-        path: '/workbench-ai-panel-replica-test',
-        icon: SlidersHorizontal,
-        badge: 'Replica',
+        title: '关联资料选择交互测试',
+        description: '测试“点击条目只预览，点击勾选框或右侧按钮才关联”的资料选择交互。',
+        path: '/linked-context-selection-interaction-test',
+        icon: Check,
+        badge: 'Preview / Select',
       },
       {
-        title: '输出日志折叠分组测试',
-        description: '测试输出日志右侧区域按提示词、关联内容、用户要求分组折叠，只隐藏显示不影响发送给 AI。',
-        path: '/ai-log-folding-test',
+        title: '关联脑洞视觉方案',
+        description: '测试关联脑洞弹窗的多种视觉方案，让脑洞卡片、标签、预览和关联状态更突出。',
+        path: '/brainstorm-link-visual-options-test',
+        icon: Lightbulb,
+        badge: 'Brainstorm UI',
+      },
+      {
+        title: '章纲单章聚焦布局测试',
+        description: '测试左侧章节目录、中间当前章纲大编辑区、右侧 AI 工作区的单章聚焦章纲生产布局。',
+        path: '/detail-outline-focus-layout-test',
         icon: NotebookText,
-        badge: 'Log UI',
+        badge: 'Chapter UI',
       },
       {
-        title: '剧情链双标签布局测试',
-        description: '测试生成剧情链和剧情链预览拆成两个标签页后的三栏工作流。',
-        path: '/plot-chain-tabbed-layout-test',
-        icon: GitBranch,
-        badge: 'Plot Tabs',
+        title: '结构化章纲标签填充测试',
+        description: '测试 AI 输出 XML 标签后，软件把本章目标、剧情流程、伏笔信息和状态变化填入对应章纲区域的方案。',
+        path: '/structured-detail-outline-tag-fill-test',
+        icon: NotebookText,
+        badge: 'Tag Fill',
+      },
+      {
+        title: '章纲生命周期测试',
+        description: '测试正文生成后，章纲进入已执行、待核对、异常和反推章纲等状态的页面方案。',
+        path: '/detail-outline-lifecycle-test',
+        icon: NotebookText,
+        badge: 'Lifecycle',
+      },
+      {
+        title: '无剧情点创作闭环测试',
+        description: '测试大纲直接到章纲、状态改为更新，并由更新统一处理新增人物设定和状态同步的闭环方案。',
+        path: '/no-plot-point-creation-loop-test',
+        icon: NotebookText,
+        badge: 'Loop',
+      },
+      {
+        title: '设定检查弹窗测试',
+        description: '测试“大纲”改名为“设定”后，在人物设定右侧点击检查设定并关联资料补充新增人物、道具和状态的弹窗方案。',
+        path: '/setting-check-modal-test',
+        icon: NotebookText,
+        badge: 'Setting Check',
+      },
+      {
+        title: '设定分类与人物字段方案',
+        description: '临时保存作品设定分类顺序、人物设定字段，以及人物关系应放入人物设定卡片的后续实现方案。',
+        path: '/setting-taxonomy-plan-test',
+        icon: NotebookText,
+        badge: 'Setting Plan',
+      },
+      {
+        title: '设定双标签胶囊测试',
+        description: '测试设定页“作品设定 / 人物设定”切换改成截图同款胶囊分段，并保留数量统计。',
+        path: '/setting-scope-segmented-tabs-test',
+        icon: NotebookText,
+        badge: 'Setting Tabs',
+      },
+      {
+        title: '创作目录分组样式测试',
+        description: '测试把脑洞、设定、章纲的分组改成正文页浅蓝卷头和橙色选中章的目录样式。',
+        path: '/workbench-grouped-directory-style-test',
+        icon: NotebookText,
+        badge: 'Directory',
       },
     ],
   },
@@ -168,170 +215,6 @@ type TestCollectionPageProps = {
   embedded?: boolean;
   onClose?: () => void;
 };
-
-function LogFoldSection({
-  id,
-  title,
-  meta,
-  content,
-  collapsed,
-  onToggle,
-  tone = 'slate',
-}: {
-  id: string;
-  title: string;
-  meta: string;
-  content: string;
-  collapsed: boolean;
-  onToggle: (id: string) => void;
-  tone?: 'slate' | 'cyan' | 'amber';
-}) {
-  const toneClass = tone === 'cyan'
-    ? 'border-cyan-100 bg-cyan-50/70 text-cyan-700'
-    : tone === 'amber'
-      ? 'border-amber-100 bg-amber-50/80 text-amber-700'
-      : 'border-slate-100 bg-slate-50 text-slate-700';
-
-  return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-      <button
-        type="button"
-        onClick={() => onToggle(id)}
-        className="flex w-full items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 text-left transition-colors hover:bg-slate-50"
-      >
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-black text-slate-950">{title}</span>
-            <span className={`rounded-full border px-2 py-0.5 text-[11px] font-black ${toneClass}`}>{meta}</span>
-          </div>
-          <p className="mt-1 text-xs font-bold text-slate-400">折叠只影响当前查看，仍会完整发送给 AI。</p>
-        </div>
-        <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${collapsed ? '-rotate-90' : ''}`} />
-      </button>
-      {!collapsed && (
-        <div className="ai-request-log-text whitespace-pre-wrap break-words px-4 py-4 text-sm leading-7 text-slate-700">
-          {content}
-        </div>
-      )}
-    </section>
-  );
-}
-
-export function AiLogFoldingTestPage() {
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
-    prompt: false,
-    context: false,
-    user: false,
-  });
-  const toggleSection = (id: string) => {
-    setCollapsedSections((current) => ({ ...current, [id]: !current[id] }));
-  };
-
-  const promptText = [
-    '你是番茄小说男频细纲编辑。',
-    '',
-    '用户会提供【小说大纲】和【前文章节细纲】。',
-    '你的任务是根据这些内容，继续生成当前章节的“单章剧情细纲”。',
-    '',
-    '要求：',
-    '1. 只生成当前这一章，不要生成后续章节。',
-    '2. 细纲控制在300-500字。',
-    '3. 必须承接前文章节细纲，尤其是上一章的结尾钩子。',
-    '4. 不要写正文，不要写对白，只输出细纲结果。',
-  ].join('\n');
-  const contextText = [
-    '【关联脑洞】',
-    '主角修水管时发现小区地下水路连着旧城灵脉，水压异常其实是灵气潮汐。',
-    '',
-    '【读取设定 / 剧情大纲】',
-    '第一卷围绕主角从普通维修工误入高武世界展开，核心冲突是旧城灵脉被商业势力暗中抽取。',
-    '',
-    '【前文细纲】',
-    '第1章：主角接到深夜维修单，发现水表倒转。',
-    '第2章：主角被神秘住户提醒不要碰地下阀门，但仍因责任心进入地下管廊。',
-  ].join('\n');
-  const userText = '根据当前设定，生成第3章细纲。要求主角发现第一个可利用的能力，但不要让他立刻变强。';
-  const fullPayload = [
-    '【System Prompt】',
-    promptText,
-    '',
-    '【Context】',
-    contextText,
-    '',
-    '【User Request】',
-    userText,
-  ].join('\n');
-
-  return (
-    <div className="flex h-full min-h-0 flex-col bg-slate-50">
-      <header className="shrink-0 border-b border-slate-100 bg-white px-6 py-4">
-        <h1 className="text-xl font-black text-slate-950">输出日志折叠分组测试</h1>
-        <p className="mt-1 text-xs font-bold text-slate-400">以大纲设定输出日志为原型：右侧内容分组折叠，但底层发送内容保持完整。</p>
-      </header>
-      <div className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)] overflow-hidden bg-white">
-        <aside className="border-r border-slate-100 bg-slate-50 p-5 text-sm">
-          <div className="space-y-3">
-            {[
-              ['链路', '生成细纲'],
-              ['模型', 'GPT5.5'],
-              ['提示词', collapsedSections.prompt ? '已折叠 · 仍发送' : '展开显示'],
-              ['关联内容', collapsedSections.context ? '已折叠 · 仍发送' : '脑洞 + 读取设定'],
-              ['用户要求', collapsedSections.user ? '已折叠 · 仍发送' : '展开显示'],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-xl bg-white p-3">
-                <div className="text-xs font-bold text-slate-400">{label}</div>
-                <div className="mt-1 break-words font-black text-slate-800">{value}</div>
-              </div>
-            ))}
-          </div>
-        </aside>
-        <main className="min-h-0 overflow-y-auto p-6">
-          <div className="mb-4 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
-            这里测试的是“查看层折叠”：折叠某一组后只是不显示，下面完整发送预览仍然保留全部内容。
-          </div>
-          <div className="space-y-3">
-            <LogFoldSection
-              id="prompt"
-              title="提示词"
-              meta={`${promptText.length} 字符`}
-              content={promptText}
-              collapsed={Boolean(collapsedSections.prompt)}
-              onToggle={toggleSection}
-              tone="slate"
-            />
-            <LogFoldSection
-              id="context"
-              title="关联内容"
-              meta="脑洞 / 读取设定 / 前文细纲"
-              content={contextText}
-              collapsed={Boolean(collapsedSections.context)}
-              onToggle={toggleSection}
-              tone="cyan"
-            />
-            <LogFoldSection
-              id="user"
-              title="用户要求"
-              meta={`${userText.length} 字符`}
-              content={userText}
-              collapsed={Boolean(collapsedSections.user)}
-              onToggle={toggleSection}
-              tone="amber"
-            />
-            <section className="rounded-2xl border border-slate-200 bg-white">
-              <div className="border-b border-slate-100 px-4 py-3">
-                <h2 className="text-sm font-black text-slate-950">完整发送预览</h2>
-                <p className="mt-1 text-xs font-bold text-slate-400">用于确认折叠没有改变实际发送给 AI 的内容。</p>
-              </div>
-              <div className="ai-request-log-text whitespace-pre-wrap break-words px-4 py-4 text-sm leading-7 text-slate-700">
-                {fullPayload}
-              </div>
-            </section>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
-}
 
 export function TestCollectionPage({ embedded = false, onClose }: TestCollectionPageProps = {}) {
   const navigate = useNavigate();
@@ -401,22 +284,34 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
 
   const renderActiveTest = () => {
     switch (activePath) {
-      case '/brainstorm-ai-chain-test':
-        return <BrainstormAiChainTestPage />;
       case '/workbench-right-panel-unified-test':
         return <WorkbenchRightPanelUnifiedTestPage />;
-      case '/workbench-shellless-audit-test':
-        return <WorkbenchShelllessAuditTestPage />;
-      case '/workbench-ai-panel-replica-test':
-        return <WorkbenchAiPanelReplicaTestPage />;
-      case '/ai-log-folding-test':
-        return <AiLogFoldingTestPage />;
+      case '/workbench-ai-request-tag-policy-test':
+        return <WorkbenchAiRequestTagPolicyTestPage />;
+      case '/linked-context-selection-interaction-test':
+        return <LinkedContextSelectionInteractionTestPage />;
+      case '/brainstorm-link-visual-options-test':
+        return <BrainstormLinkVisualOptionsTestPage />;
+      case '/detail-outline-focus-layout-test':
+        return <DetailOutlineFocusLayoutTestPage />;
+      case '/structured-detail-outline-tag-fill-test':
+        return <StructuredDetailOutlineTagFillTestPage />;
+      case '/detail-outline-lifecycle-test':
+        return <DetailOutlineLifecycleTestPage />;
+      case '/no-plot-point-creation-loop-test':
+        return <NoPlotPointCreationLoopTestPage />;
+      case '/setting-check-modal-test':
+        return <SettingCheckModalTestPage />;
+      case '/setting-taxonomy-plan-test':
+        return <SettingTaxonomyPlanTestPage />;
+      case '/setting-scope-segmented-tabs-test':
+        return <SettingScopeSegmentedTabsTestPage />;
+      case '/workbench-grouped-directory-style-test':
+        return <WorkbenchGroupedDirectoryStyleTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':
         return <ErrorLogPage />;
-      case '/plot-chain-tabbed-layout-test':
-        return <PlotChainTabbedLayoutTestPage />;
       case '/software-ui-catalog':
         return <SoftwareUiCatalogPage embedded onClose={() => setActivePath(null)} />;
       case '/prompt-taxonomy-test':

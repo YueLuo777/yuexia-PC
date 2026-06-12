@@ -228,14 +228,27 @@ textarea.editor-scrollbar {
 }
 
 .scrollbar-scroll-only {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: transparent var(--xy-scrollbar-track, transparent);
+  -ms-overflow-style: auto;
 }
 
 .scrollbar-scroll-only::-webkit-scrollbar {
-  width: 0;
-  height: 0;
+  width: 8px;
+  height: 8px;
   background: transparent !important;
+}
+
+.scrollbar-scroll-only::-webkit-scrollbar-track {
+  background: var(--xy-scrollbar-track, transparent) !important;
+}
+
+.scrollbar-scroll-only::-webkit-scrollbar-thumb {
+  background: transparent !important;
+  background-clip: content-box !important;
+  border: 2px solid transparent !important;
+  border-radius: 999px;
 }
 
 .scrollbar-scroll-only.scrollbar-active {
@@ -1774,6 +1787,14 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   transition-delay: 0.16s;
 }
 
+.xy-plot-chain-summary {
+  list-style: none;
+}
+
+.xy-plot-chain-summary::-webkit-details-marker {
+  display: none;
+}
+
 .xy-floating-field {
   position: relative;
   width: 100%;
@@ -1877,6 +1898,19 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   padding-right: 1.35rem;
   font-size: 1.125rem;
   font-weight: 500;
+}
+
+.xy-floating-field.xy-role-name-compact-field input {
+  height: 44px;
+  border-radius: 18px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.xy-floating-field.xy-role-name-compact-field label {
+  font-size: 0.875rem;
 }
 
 .xy-floating-field.xy-floating-custom-field-size {
@@ -2020,6 +2054,28 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   padding: 1.35rem 1.25rem 3rem;
 }
 
+.xy-floating-field.xy-outline-ai-output-frame {
+  border: 2px solid #111827;
+  border-radius: 20px;
+  background: #ffffff;
+  overflow: visible;
+}
+
+.xy-floating-field.xy-outline-ai-output-frame textarea,
+.xy-floating-field.xy-outline-ai-output-frame .xy-floating-rich-preview {
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+}
+
+.xy-floating-field.xy-outline-ai-output-frame label.xy-floating-title-count,
+.xy-floating-field.xy-outline-ai-output-frame:focus-within label.xy-floating-title-count,
+.xy-floating-field.xy-outline-ai-output-frame.xy-has-value label.xy-floating-title-count {
+  top: 0;
+  left: 22px;
+  transform: translateY(-50%) scale(1);
+}
+
 .xy-border-embedded-transparent-backplate {
   background: transparent !important;
   background-image: linear-gradient(
@@ -2062,6 +2118,12 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   pointer-events: none;
 }
 
+.xy-floating-field label.xy-border-embedded-transparent-backplate,
+.xy-floating-field .xy-floating-count,
+.xy-floating-field .xy-floating-outline-chapter-meta {
+  pointer-events: none;
+}
+
 .xy-floating-field.xy-floating-outline-preview label.xy-floating-title-count::before,
 .xy-floating-inline-title-tool.xy-floating-title-count::before {
   right: -0.38em;
@@ -2069,6 +2131,10 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 
 .xy-border-embedded-transparent-backplate:not(.absolute) {
   position: relative;
+}
+
+.xy-floating-field label.xy-border-embedded-transparent-backplate {
+  position: absolute;
 }
 
 .xy-combined-ai-config-label,
@@ -2423,20 +2489,6 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   box-shadow: 0 0 0 1px rgba(8, 170, 206, 0.28);
 }
 
-.xy-floating-brainstorm-output-action-tool {
-  right: 4.8rem;
-  max-width: 9.5rem;
-  height: 20px;
-  display: inline-flex;
-  align-items: baseline;
-  top: 0 !important;
-  transform: translateY(-50%) !important;
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 20px;
-  isolation: isolate;
-}
-
 .xy-floating-session-buttons {
   gap: 0.375rem;
   isolation: isolate;
@@ -2659,10 +2711,23 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   transform: none;
 }
 
+.xy-floating-outline-top-clear-tool {
+  top: 0;
+  right: 1.65rem;
+  transform: translateY(-50%);
+}
+
 .xy-floating-outline-card-clear-tool {
   right: 1.65rem;
   bottom: 0;
   transform: translateY(50%);
+}
+
+.xy-floating-outline-draft-clear-tool {
+  top: 0;
+  right: 1.65rem;
+  bottom: auto;
+  transform: translateY(-50%);
 }
 
 .xy-floating-inline-title-tool {

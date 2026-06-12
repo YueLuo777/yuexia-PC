@@ -8,13 +8,16 @@ import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { RadialCreateButton } from '@/shared/ui/RadialCreateButton';
 
-type PromptTab = 'novel' | 'script' | 'default';
+type PromptTab = 'novel' | 'script';
 
 const TAB_LABELS: Record<PromptTab, string> = {
   novel: '小说提示词',
   script: '剧本提示词',
-  default: '默认提示词',
 };
+
+function normalizePromptTypeForTab(promptType?: PromptItem['promptType']): PromptTab {
+  return promptType === 'script' ? 'script' : 'novel';
+}
 
 function PromptEditorModal({
   isOpen,
@@ -178,7 +181,7 @@ function PromptRecycleModal({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <h3 className="truncate text-sm font-bold text-slate-900">{item.name}</h3>
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">{TAB_LABELS[item.promptType ?? 'novel']}</span>
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">{TAB_LABELS[normalizePromptTypeForTab(item.promptType)]}</span>
                         <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] text-blue-500">{item.category}</span>
                       </div>
                       <p className="mt-1 truncate text-xs text-slate-400">{item.description || '暂无说明'}</p>
@@ -251,7 +254,7 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
   const filteredPrompts = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();
     return prompts.filter((item) => {
-      const matchType = (item.promptType ?? 'novel') === activeTab;
+      const matchType = normalizePromptTypeForTab(item.promptType) === activeTab;
       const matchCategory = !activeCategory || item.category === activeCategory;
       const matchKeyword =
         !keyword
@@ -299,7 +302,7 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
                 onClick={() => setActiveTab(tab)}
                 className={`xy-radio-option ${activeTab === tab ? 'xy-active' : ''}`}
               >
-                {TAB_LABELS[tab]} <span className="ml-1 text-sm opacity-70">{prompts.filter((item) => (item.promptType ?? 'novel') === tab).length}</span>
+                {TAB_LABELS[tab]} <span className="ml-1 text-sm opacity-70">{prompts.filter((item) => normalizePromptTypeForTab(item.promptType) === tab).length}</span>
               </button>
             ))}
           </div>

@@ -90,7 +90,7 @@ const fontSamples: FontSample[] = [
   {
     id: 'F-02',
     name: '模块标题',
-    usage: '脑洞预览、设定预览、章节概要这类区域标题。',
+    usage: '脑洞预览、设定预览、章节梗概这类区域标题。',
     className: 'text-xl font-black text-slate-900',
     sample: '脑洞预览',
   },
@@ -928,11 +928,11 @@ const uiSamples: UiSample[] = [
     id: 'UI-60',
     group: 'AI',
     name: 'AI 链路测试面板',
-    usage: '测试中心里逐个测试脑洞、续写、概要、细纲等 AI 生成功能。',
+    usage: '测试中心里逐个测试脑洞、续写、梗概、细纲等 AI 生成功能。',
     preview: (
       <div className="grid h-28 w-[300px] grid-cols-[86px_1fr] overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div className="space-y-1 border-r border-slate-100 bg-slate-50 p-2">
-          {['脑洞', '续写', '概要'].map((item) => (
+          {['脑洞', '续写', '梗概'].map((item) => (
             <div key={item} className={`rounded-lg px-2 py-1.5 text-xs font-black ${item === '脑洞' ? 'bg-[#08AACE] text-white' : 'text-slate-500'}`}>{item}</div>
           ))}
         </div>
@@ -950,7 +950,7 @@ const uiSamples: UiSample[] = [
     usage: '页面顶部按钮很多时使用，按钮高度统一，适合作品编辑器功能区。',
     preview: (
       <div className="flex w-[320px] items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
-        {['智能排版', '一键替换', '章节概要'].map((item) => (
+        {['智能排版', '一键替换', '章节梗概'].map((item) => (
           <button key={item} className="h-8 rounded-lg bg-slate-50 px-3 text-xs font-black text-slate-600 hover:bg-brand-light hover:text-brand">
             {item}
           </button>
@@ -1127,7 +1127,7 @@ const uiSamples: UiSample[] = [
     id: 'UI-72',
     group: '表格',
     name: '列表选中行',
-    usage: '章节、概要、细纲点击选中时，用边框和浅橙背景增强反馈。',
+    usage: '章节、梗概、细纲点击选中时，用边框和浅橙背景增强反馈。',
     preview: (
       <div className="w-[300px] space-y-1.5 rounded-xl border border-slate-200 bg-white p-2">
         <div className="rounded-lg px-3 py-2 text-xs font-bold text-slate-500">第21章 雨夜来客</div>
@@ -1409,7 +1409,7 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="w-[300px] rounded-2xl border border-slate-200 bg-white p-3 shadow-lg">
         <div className="mb-2 text-sm font-black text-slate-900">修改文案</div>
-        <input className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold outline-none focus:border-brand" defaultValue="生成概要" />
+        <input className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold outline-none focus:border-brand" defaultValue="生成梗概" />
         <div className="mt-2 flex justify-end gap-2">
           <button className="h-8 rounded-lg bg-slate-100 px-3 text-xs font-black text-slate-500">取消</button>
           <button className="h-8 rounded-lg bg-[#08AACE] px-3 text-xs font-black text-white">应用</button>
@@ -1491,7 +1491,7 @@ const uiSamples: UiSample[] = [
     id: 'UI-98',
     group: '作品',
     name: '章节目录行',
-    usage: '编辑器章节列表、概要章节列表、细纲章节列表。',
+    usage: '编辑器章节列表、梗概章节列表、细纲章节列表。',
     preview: (
       <div className="w-[300px] rounded-xl border border-slate-200 bg-white p-2">
         <div className="rounded-lg border border-[#08AACE] bg-[#FFF7ED] px-3 py-2">
@@ -1520,7 +1520,7 @@ const uiSamples: UiSample[] = [
     id: 'UI-100',
     group: 'AI',
     name: 'AI 输出结果框',
-    usage: '脑洞输出框、概要预览、细纲预览，右上角带复制/清空。',
+    usage: '脑洞输出框、梗概预览、细纲预览，右上角带复制/清空。',
     preview: (
       <div className="w-[300px] rounded-2xl border border-slate-200 bg-white">
         <div className="flex h-10 items-center justify-between border-b border-slate-100 px-3">
@@ -4966,7 +4966,7 @@ const techItems: TechItem[] = [
   {
     id: 'T-18',
     name: '章节绑定内容',
-    plain: '概要、细纲、设定和某一章绑定，点章节时显示对应内容。',
+    plain: '梗概、细纲、设定和某一章绑定，点章节时显示对应内容。',
     tech: 'Chapter-linked state / selected chapter id',
   },
   {
@@ -5168,7 +5168,7 @@ function TechPreview({ item }: { item: TechItem }) {
     return (
       <div className={`${previewShell} grid grid-cols-[70px_1fr] gap-2 bg-slate-50 text-xs font-black`}>
         <div className="rounded-xl bg-[#08AACE] p-2 text-white">第3章</div>
-        <div className="rounded-xl bg-white p-2 text-slate-500 shadow-sm">对应概要 / 细纲</div>
+        <div className="rounded-xl bg-white p-2 text-slate-500 shadow-sm">对应梗概 / 细纲</div>
       </div>
     );
   }
@@ -6162,7 +6162,7 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
               <div className="min-w-0">
                 <div className="text-2xl font-black leading-none text-[#08AACE]">{activeSpecItem.id}</div>
                 <h2 className="mt-1 truncate text-base font-black text-slate-900">{activeSpecItem.name}</h2>
-                <p className="mt-1 text-xs font-bold text-slate-400">单独配置展示规格，列表里只保留简洁摘要。</p>
+                <p className="mt-1 text-xs font-bold text-slate-400">单独配置展示规格，列表里只保留简洁梗概。</p>
               </div>
               <button
                 type="button"

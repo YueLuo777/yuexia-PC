@@ -391,8 +391,8 @@ const compactSchemeMeta: Array<{ id: CompactScheme; title: string; desc: string 
   { id: 'gear', title: 'A 小齿轮展开行', desc: '默认只露出模型简称和配置入口，点击后在顶部原地展开。' },
   { id: 'capsule', title: 'B 折叠胶囊条', desc: '模型和提示词合成一条 AI 配置胶囊，展开后显示组合下拉框。' },
   { id: 'edge', title: 'C 侧边悬停配置', desc: '默认只在右边缘露出 AI 小按钮，悬停时在栏内覆盖配置层。' },
-  { id: 'bottom', title: 'D 底部工具条', desc: '配置摘要固定在底部，顶部和主体空间全部留给生成内容。' },
-  { id: 'summary', title: 'E 摘要行编辑态', desc: '默认是一行配置摘要，点击后原地切换成组合下拉框。' },
+  { id: 'bottom', title: 'D 底部工具条', desc: '配置梗概固定在底部，顶部和主体空间全部留给生成内容。' },
+  { id: 'summary', title: 'E 梗概行编辑态', desc: '默认是一行配置梗概，点击后原地切换成组合下拉框。' },
 ];
 
 function CombinedConfigSelectMock({ modelValue, promptValue }: { modelValue: string; promptValue: string }) {

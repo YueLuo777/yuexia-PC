@@ -25,14 +25,16 @@ describe('WorkbenchHeader', () => {
     expect(capsuleGroups[1]).toContainElement(screen.getByRole('button', { name: '正文' }));
     expect(capsuleGroups[1]).not.toContainElement(screen.getByRole('button', { name: '审核' }));
     expect(capsuleGroups[2]).toContainElement(screen.getByRole('button', { name: '审核' }));
-    expect(capsuleGroups[2]).toContainElement(screen.getByRole('button', { name: '概要' }));
+    expect(capsuleGroups[2]).toContainElement(screen.getByRole('button', { name: '梗概' }));
 
     const creationButtons = Array.from(capsuleGroups[1].querySelectorAll('button')).map((button) => button.textContent);
-    expect(creationButtons).toEqual(['脑洞', '大纲', '剧情链', '章纲', '正文']);
+    expect(creationButtons).toEqual(['脑洞', '设定', '章纲', '正文']);
+    expect(creationButtons).not.toContain('剧情链');
 
-    for (const label of ['作品信息', '大纲', '剧情链', '章纲', '正文', '脑洞', '审核', '点评', '状态', '概要']) {
+    for (const label of ['作品信息', '设定', '章纲', '正文', '脑洞', '审核', '点评', '润色', '状态', '梗概']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
     }
+    expect(screen.queryByRole('button', { name: '剧情链' })).not.toBeInTheDocument();
   });
 
   it('calls the selected flow when clicking brainstorm', () => {

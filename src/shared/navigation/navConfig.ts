@@ -114,6 +114,7 @@ const REMOVED_ROUTES = new Set([
   '/theme-colors',
   '/text-overrides',
   '/hidden-content',
+  '/concept-library',
 ]);
 const REMOVED_GROUP_TITLES = new Set(['首页专区', '隐藏专区', '功能专区']);
 const NORMALIZED_ROUTE_LABELS: Record<string, string> = {

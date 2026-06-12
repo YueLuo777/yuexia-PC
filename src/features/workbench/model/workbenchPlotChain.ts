@@ -116,13 +116,26 @@ export function getWorkbenchPlotPointPreviewText(item: WorkbenchPlotPointCandida
   return prepareCollapsedPlotPointCard(item).previewText || item.adapted.replace(/\s+/g, ' ').trim();
 }
 
+function splitWorkbenchPlotPointInlineReview(text: string) {
+  const normalized = text.replace(/\r\n/g, '\n').trim();
+  const marker = /(?:\\n|\n|\s)+(?:AI\s*评价|评价)[：:]\s*/;
+  const match = marker.exec(normalized);
+  if (!match || match.index < 0) return { content: normalized, review: '' };
+  return {
+    content: normalized.slice(0, match.index).trim(),
+    review: normalized.slice(match.index + match[0].length).trim(),
+  };
+}
+
 export function getWorkbenchPlotPointDisplayText(item: WorkbenchPlotPointCandidate, previewText: string) {
   const title = prepareCollapsedPlotPointCard(item).title;
-  return getPlotPointDisplayText({ title, previewText });
+  return splitWorkbenchPlotPointInlineReview(getPlotPointDisplayText({ title, previewText })).content;
 }
 
 export function getWorkbenchPlotPointReview(item: WorkbenchPlotPointCandidate, hasChain: boolean) {
   if (item.review?.trim()) return `AI评价：${item.review.replace(/^AI评价[：:]\s*/, '').trim()}`;
+  const inlineReview = splitWorkbenchPlotPointInlineReview(item.adapted || item.original).review;
+  if (inlineReview) return `AI评价：${inlineReview.replace(/^AI\s*评价[：:]\s*/, '').trim()}`;
   if (hasChain) return 'AI评价：适合作为衔接点，重点要承接上一条剧情的后果，不要重新开一条无关冲突。';
   if (item.source === '剧情库') return 'AI评价：有成熟剧情骨架，适合先做变量替换，再按当前设定调整人物、势力和道具。';
   return 'AI评价：适合自由生成时使用，建议补足明确目标、强冲突和下一步期待。';

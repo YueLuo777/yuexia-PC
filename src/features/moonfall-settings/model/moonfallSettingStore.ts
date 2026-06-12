@@ -289,7 +289,7 @@ export function buildEmbeddingText(item: Pick<MoonfallSettingItem, 'title' | 'ca
     `子分类：${item.subcategory || ''}`,
     `标签：${item.tags.join('、')}`,
     `关键词：${item.keywords.join('、')}`,
-    `摘要：${item.summary}`,
+    `梗概：${item.summary}`,
     `整理内容：${item.organizedText}`,
     `关联设定：${item.relatedItems.join('、')}`,
   ].join('\n');

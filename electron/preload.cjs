@@ -42,3 +42,8 @@ contextBridge.exposeInMainWorld('xinyuexiaAppIcon', {
   makeDefault: () => ipcRenderer.invoke('app-icon:make-default'),
   reset: () => ipcRenderer.invoke('app-icon:reset'),
 });
+
+contextBridge.exposeInMainWorld('xinyuexiaCos', {
+  putObject: (input) => ipcRenderer.invoke('cos:put-object', input),
+  getObject: (input) => ipcRenderer.invoke('cos:get-object', input),
+});

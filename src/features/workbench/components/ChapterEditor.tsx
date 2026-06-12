@@ -16,6 +16,7 @@ import {
   writeWorkbenchLibraryEntries,
   type WorkbenchLibraryEntry,
 } from '@/features/workbench/model/workbenchLibraryStorage';
+import { joinAiRequestSections, wrapAiRequestTag } from '@/features/workbench/model/workbenchAiRequestTagPolicy';
 import type { Chapter, Volume } from '@/features/workbench/model/workbenchTypes';
 import {
   ChapterAssociateModal,
@@ -42,6 +43,13 @@ import {
   type FontSettings,
 } from '@/features/workbench/components/EditorToolModals';
 import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
+import {
+  getBackgroundAiTask,
+  startBackgroundAiTask,
+  stopBackgroundAiTask,
+  subscribeBackgroundAiTasks,
+  type BackgroundAiTask,
+} from '@/shared/ai/backgroundAiTasks';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
@@ -69,6 +77,7 @@ const STATUS_PAGE_LEFT_WIDTH_LIMIT = { min: 190, max: 360 };
 const STATUS_PAGE_RIGHT_WIDTH_LIMIT = { min: 300, max: 560 };
 const CHAPTER_EDITOR_RESIZE_HANDLE_CLASS = 'group z-10 flex w-2 cursor-ew-resize items-center justify-center bg-transparent';
 const STATUS_PROMPT_CATEGORY = '状态';
+const POLISH_PROMPT_CATEGORY = '润色';
 type EditorFieldSizeKey = 'reviewActionGroup' | 'reviewModelSelect' | 'reviewAuditPromptSelect' | 'reviewCommentPromptSelect';
 type EditorFieldSizeSpec = { width: number; height: number; fontSize: number };
 type EditorFieldSizeProp = keyof EditorFieldSizeSpec;
@@ -81,8 +90,8 @@ const EDITOR_FIELD_SIZE_DEFAULTS: Record<EditorFieldSizeKey, EditorFieldSizeSpec
   reviewCommentPromptSelect: { width: 250, height: 44, fontSize: 13 },
 };
 const EDITOR_FIELD_SIZE_LABELS: Record<EditorFieldSizeKey, string> = {
-  reviewActionGroup: '审核点评状态按钮',
-  reviewModelSelect: '审核点评模型框',
+  reviewActionGroup: '审核点评润色状态按钮',
+  reviewModelSelect: '审核点评润色模型框',
   reviewAuditPromptSelect: '审核提示词框',
   reviewCommentPromptSelect: '点评提示词框',
 };
@@ -224,8 +233,8 @@ function readAssociatedChapterCount(chapters: Pick<Chapter, 'id'>[]) {
   }
 }
 
-type ChapterEditorEmbeddedMode = 'audit' | 'comment' | 'status';
-type ReviewMode = 'audit' | 'comment';
+type ChapterEditorEmbeddedMode = 'audit' | 'comment' | 'polish' | 'status';
+type ReviewMode = 'audit' | 'comment' | 'polish';
 type ReviewModeState = {
   input: string;
   output: string;
@@ -233,6 +242,19 @@ type ReviewModeState = {
   compareView: 'preview' | 'paragraph' | 'full';
   appliedParagraphs: Set<number>;
   requestLog: string;
+  backgroundTaskId?: string;
+};
+
+const REVIEW_MODE_TITLES: Record<ReviewMode, string> = {
+  audit: '审核',
+  comment: '点评',
+  polish: POLISH_PROMPT_CATEGORY,
+};
+
+const REVIEW_MODE_DEFAULT_INSTRUCTIONS: Record<ReviewMode, string> = {
+  audit: '请对文章内容进行审核：检查错别字、语病、逻辑问题，以及是否按照章纲来写。输出需要列出问题位置、问题说明和修改建议。',
+  comment: '请对文章内容进行点评：判断内容是否吸引人，重点点评开篇钩子、节奏、冲突、情绪张力和读者继续阅读欲望，并给出可执行的优化建议。',
+  polish: '请对文章内容进行润色：只优化语言表达、节奏、句子顺滑度、画面感和情绪力度，不改变剧情事件、人物行动、设定信息和章节结果。输出需要提供可替换的完整润色稿。',
 };
 
 function createReviewModeState(): ReviewModeState {
@@ -244,6 +266,30 @@ function createReviewModeState(): ReviewModeState {
     appliedParagraphs: new Set(),
     requestLog: '',
   };
+}
+
+function getReviewBackgroundTaskStorageKey(settingsStorageKey: string) {
+  return `${settingsStorageKey}_review_background_tasks_v1`;
+}
+
+function readReviewBackgroundTaskIds(settingsStorageKey: string): Partial<Record<ReviewMode, string>> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(getReviewBackgroundTaskStorageKey(settingsStorageKey)) ?? '{}') as Record<string, unknown>;
+    return {
+      audit: typeof parsed.audit === 'string' ? parsed.audit : undefined,
+      comment: typeof parsed.comment === 'string' ? parsed.comment : undefined,
+      polish: typeof parsed.polish === 'string' ? parsed.polish : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+function writeReviewBackgroundTaskId(settingsStorageKey: string, mode: ReviewMode, taskId?: string) {
+  const current = readReviewBackgroundTaskIds(settingsStorageKey);
+  const next = { ...current, [mode]: taskId };
+  if (!taskId) delete next[mode];
+  localStorage.setItem(getReviewBackgroundTaskStorageKey(settingsStorageKey), JSON.stringify(next));
 }
 
 interface ChapterEditorProps {
@@ -301,7 +347,7 @@ function getStatusTargetLabel(entry: WorkbenchLibraryEntry) {
 
 function isStatusTargetEntry(entry: WorkbenchLibraryEntry) {
   const source = `${entry.tab} ${entry.type ?? ''} ${entry.title} ${entry.content}`;
-  if (/脑洞|草稿|概要|细纲/.test(entry.tab)) return false;
+  if (/脑洞|草稿|概要|梗概|细纲/.test(entry.tab)) return false;
   return /角色|人物|主角|配角|反派|宝物|法宝|道具|装备|势力|组织|宗门|家族|王朝|学院/.test(source);
 }
 
@@ -398,6 +444,16 @@ function stripReviewThinkingBlock(content: string) {
     .trim();
 }
 
+function getReviewBackgroundTaskOutput(task: BackgroundAiTask, mode: ReviewMode) {
+  if (task.status === 'aborted' && !stripReviewThinkingBlock(task.output).trim()) {
+    return `【已停止】本次${REVIEW_MODE_TITLES[mode]}已停止。`;
+  }
+  if (task.status === 'failed' && task.error && !stripReviewThinkingBlock(task.output).trim()) {
+    return `【错误】${task.error}`;
+  }
+  return task.output;
+}
+
 function extractReviewRevisedText(output: string) {
   const clean = stripReviewThinkingBlock(output);
   const marked = clean.match(/【修改后全文】\s*([\s\S]*?)(?=\n?【(?:审核|点评|修改说明|问题|建议|原文|说明)[^】]*】|$)/);
@@ -491,7 +547,7 @@ export function ChapterEditor({
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isTitleOptimizeOpen, setIsTitleOptimizeOpen] = useState(false);
   const [isAssociateOpen, setIsAssociateOpen] = useState(false);
-  const [isReviewOpen, setIsReviewOpen] = useState(() => embeddedMode === 'audit' || embeddedMode === 'comment');
+  const [isReviewOpen, setIsReviewOpen] = useState(() => embeddedMode === 'audit' || embeddedMode === 'comment' || embeddedMode === 'polish');
   const [isStatusUpdateOpen, setIsStatusUpdateOpen] = useState(() => embeddedMode === 'status');
   const [isEditorFieldSizeOpen, setIsEditorFieldSizeOpen] = useState(false);
   const lastFieldSizeOpenSignalRef = useRef(fieldSizeOpenSignal);
@@ -509,13 +565,17 @@ export function ChapterEditor({
   const [statusTargetIds, setStatusTargetIds] = useState<Set<string>>(() => new Set());
   const [statusDraft, setStatusDraft] = useState('');
   const [reviewModelId, setReviewModelId] = useState('');
-  const [reviewMode, setReviewMode] = useState<ReviewMode>(() => embeddedMode === 'comment' ? 'comment' : 'audit');
+  const [reviewMode, setReviewMode] = useState<ReviewMode>(() => (
+    embeddedMode === 'comment' || embeddedMode === 'polish' ? embeddedMode : 'audit'
+  ));
   const [reviewAuditPromptId, setReviewAuditPromptId] = useState('');
   const [reviewCommentPromptId, setReviewCommentPromptId] = useState('');
+  const [reviewPolishPromptId, setReviewPolishPromptId] = useState('');
   const [statusPromptId, setStatusPromptId] = useState('');
   const [reviewModeStates, setReviewModeStates] = useState<Record<ReviewMode, ReviewModeState>>(() => ({
     audit: createReviewModeState(),
     comment: createReviewModeState(),
+    polish: createReviewModeState(),
   }));
   const [isReviewAiLoading, setIsReviewAiLoading] = useState(false);
   const [isReviewLogOpen, setIsReviewLogOpen] = useState(false);
@@ -531,7 +591,6 @@ export function ChapterEditor({
   const [associatedCount, setAssociatedCount] = useState(0);
   const reviewModalDraggable = useDraggableModal('chapter_review_panel');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const reviewAiAbortRef = useRef<AbortController | null>(null);
   const associatedSelectionRef = useRef(false);
   const prevContentRef = useRef('');
   const pendingCursorRef = useRef<{ text: string; cursorPos: number; scrollTop: number } | null>(null);
@@ -720,6 +779,9 @@ export function ChapterEditor({
   const reviewCommentPrompts = useMemo(() => {
     return reviewPrompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === '点评');
   }, [reviewPrompts]);
+  const reviewPolishPrompts = useMemo(() => {
+    return reviewPrompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === POLISH_PROMPT_CATEGORY);
+  }, [reviewPrompts]);
   const statusPrompts = useMemo(() => {
     return reviewPrompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === STATUS_PROMPT_CATEGORY);
   }, [reviewPrompts]);
@@ -781,11 +843,12 @@ export function ChapterEditor({
   const activeReviewModel = reviewModels.find((model) => model.id === reviewModelId) ?? reviewModels[0] ?? null;
   const activeAuditPrompt = reviewAuditPrompts.find((prompt) => prompt.id === reviewAuditPromptId) ?? reviewAuditPrompts[0] ?? null;
   const activeCommentPrompt = reviewCommentPrompts.find((prompt) => prompt.id === reviewCommentPromptId) ?? reviewCommentPrompts[0] ?? null;
-  const activeReviewPrompt = reviewMode === 'audit' ? activeAuditPrompt : activeCommentPrompt;
-  const activeReviewPromptOptions = reviewMode === 'audit' ? reviewAuditPrompts : reviewCommentPrompts;
-  const activeReviewPromptId = reviewMode === 'audit' ? reviewAuditPromptId : reviewCommentPromptId;
-  const setActiveReviewPromptId = reviewMode === 'audit' ? setReviewAuditPromptId : setReviewCommentPromptId;
-  const activeReviewPromptCategory = reviewMode === 'audit' ? '审核' : '点评';
+  const activePolishPrompt = reviewPolishPrompts.find((prompt) => prompt.id === reviewPolishPromptId) ?? reviewPolishPrompts[0] ?? null;
+  const activeReviewPrompt = reviewMode === 'audit' ? activeAuditPrompt : reviewMode === 'comment' ? activeCommentPrompt : activePolishPrompt;
+  const activeReviewPromptOptions = reviewMode === 'audit' ? reviewAuditPrompts : reviewMode === 'comment' ? reviewCommentPrompts : reviewPolishPrompts;
+  const activeReviewPromptId = reviewMode === 'audit' ? reviewAuditPromptId : reviewMode === 'comment' ? reviewCommentPromptId : reviewPolishPromptId;
+  const setActiveReviewPromptId = reviewMode === 'audit' ? setReviewAuditPromptId : reviewMode === 'comment' ? setReviewCommentPromptId : setReviewPolishPromptId;
+  const activeReviewPromptCategory = REVIEW_MODE_TITLES[reviewMode];
   const activeStatusPromptId = statusPrompts.some((prompt) => prompt.id === statusPromptId) ? statusPromptId : statusPrompts[0]?.id ?? '';
   const reviewParagraphDiffs = useMemo(
     () => buildReviewParagraphDiffs(activeReviewContent, reviewRevisedDraft),
@@ -832,6 +895,14 @@ export function ChapterEditor({
           compareView: 'preview',
           requestLog: '',
         },
+        polish: {
+          ...prev.polish,
+          output: '',
+          revisedDraft: '',
+          appliedParagraphs: new Set(),
+          compareView: 'preview',
+          requestLog: '',
+        },
       }));
     }
   }, [chapter?.id]);
@@ -853,14 +924,71 @@ export function ChapterEditor({
   }, [reviewCommentPromptId, reviewCommentPrompts]);
 
   useEffect(() => {
+    if (!reviewPolishPromptId && reviewPolishPrompts[0]) setReviewPolishPromptId(reviewPolishPrompts[0].id);
+  }, [reviewPolishPromptId, reviewPolishPrompts]);
+
+  useEffect(() => {
     if (!statusPromptId && statusPrompts[0]) setStatusPromptId(statusPrompts[0].id);
   }, [statusPromptId, statusPrompts]);
 
-  useEffect(() => () => {
-    reviewAiAbortRef.current?.abort();
-  }, []);
+  useEffect(() => {
+    const storedTaskIds = readReviewBackgroundTaskIds(settingsStorageKey);
+    setReviewModeStates((prev) => ({
+      audit: { ...prev.audit, backgroundTaskId: storedTaskIds.audit ?? prev.audit.backgroundTaskId },
+      comment: { ...prev.comment, backgroundTaskId: storedTaskIds.comment ?? prev.comment.backgroundTaskId },
+      polish: { ...prev.polish, backgroundTaskId: storedTaskIds.polish ?? prev.polish.backgroundTaskId },
+    }));
+  }, [settingsStorageKey]);
 
-  const openReviewPanel = (mode: 'audit' | 'comment') => {
+  useEffect(() => {
+    const syncBackgroundTasks = () => {
+      const storedTaskIds = readReviewBackgroundTaskIds(settingsStorageKey);
+      setReviewModeStates((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        (Object.keys(REVIEW_MODE_TITLES) as ReviewMode[]).forEach((mode) => {
+          const taskId = prev[mode].backgroundTaskId ?? storedTaskIds[mode];
+          if (!taskId) return;
+          const task = getBackgroundAiTask(taskId);
+          if (!task || task.meta?.target !== 'chapterReview' || task.meta.settingsStorageKey !== settingsStorageKey) return;
+          const nextOutput = getReviewBackgroundTaskOutput(task, mode);
+          const nextRequestLog = typeof task.meta?.requestLog === 'string' ? task.meta.requestLog : prev[mode].requestLog;
+          const nextState: ReviewModeState = {
+            ...prev[mode],
+            output: nextOutput,
+            requestLog: nextRequestLog,
+            backgroundTaskId: task.id,
+          };
+          if (task.status === 'success') {
+            const revised = extractReviewRevisedText(nextOutput);
+            if (revised && revised !== prev[mode].revisedDraft) {
+              nextState.revisedDraft = revised;
+              nextState.appliedParagraphs = new Set();
+              nextState.compareView = 'paragraph';
+            }
+          }
+          const stateChanged = nextState.output !== prev[mode].output
+            || nextState.requestLog !== prev[mode].requestLog
+            || nextState.backgroundTaskId !== prev[mode].backgroundTaskId
+            || nextState.revisedDraft !== prev[mode].revisedDraft
+            || nextState.compareView !== prev[mode].compareView;
+          if (!stateChanged) return;
+          changed = true;
+          next[mode] = nextState;
+        });
+        return changed ? next : prev;
+      });
+
+      const activeTaskId = reviewModeStates[reviewMode]?.backgroundTaskId ?? readReviewBackgroundTaskIds(settingsStorageKey)[reviewMode];
+      const activeTask = activeTaskId ? getBackgroundAiTask(activeTaskId) : null;
+      setIsReviewAiLoading(activeTask?.status === 'running');
+    };
+
+    syncBackgroundTasks();
+    return subscribeBackgroundAiTasks(syncBackgroundTasks);
+  }, [reviewMode, reviewModeStates, settingsStorageKey]);
+
+  const openReviewPanel = (mode: ReviewMode) => {
     setReviewMode(mode);
     setIsReviewLogOpen(false);
     setReviewManagementModal(null);
@@ -893,7 +1021,7 @@ export function ChapterEditor({
   };
 
   useEffect(() => {
-    if (embeddedMode === 'audit' || embeddedMode === 'comment') {
+    if (embeddedMode === 'audit' || embeddedMode === 'comment' || embeddedMode === 'polish') {
       openReviewPanel(embeddedMode);
       return;
     }
@@ -947,30 +1075,38 @@ export function ChapterEditor({
   const showToast = (text: string) => setCopyToast(text);
 
   const buildReviewPayload = () => {
-    const modeTitle = reviewMode === 'audit' ? '审核' : '点评';
-    const modeInstruction = reviewMode === 'audit'
-      ? '请对文章内容进行审核：检查错别字、语病、逻辑问题，以及是否按照章纲来写。输出需要列出问题位置、问题说明和修改建议。'
-      : '请对文章内容进行点评：判断内容是否吸引人，重点点评开篇钩子、节奏、冲突、情绪张力和读者继续阅读欲望，并给出可执行的优化建议。';
+    const modeTitle = REVIEW_MODE_TITLES[reviewMode];
+    const modeInstruction = REVIEW_MODE_DEFAULT_INSTRUCTIONS[reviewMode];
     const promptText = activeReviewPrompt?.content?.trim() || modeInstruction;
+    const bodyTag = reviewMode === 'audit'
+      ? '待审核正文'
+      : reviewMode === 'comment'
+      ? '待点评正文'
+      : '待润色正文';
+    const requirementTag = reviewMode === 'audit'
+      ? '审核要求'
+      : reviewMode === 'comment'
+      ? '点评要求'
+      : '润色要求';
     const compareInstruction = [
       '如果你需要修改正文，请务必额外输出一个独立区块：',
       '【修改后全文】',
       '这里放完整修改后的正文，只放正文，不要夹杂点评说明。',
       '【修改说明】',
       '这里再说明具体修改原因。',
+      reviewMode === 'polish' ? '润色只能优化表达，不要改变剧情事件、人物行动、设定信息和章节结果。' : '',
       '这样用户可以在软件中按段落对比并逐段确认替换。',
-    ].join('\n');
-    const userText = [reviewAiInput.trim() || modeInstruction, compareInstruction].join('\n\n');
+    ].filter(Boolean).join('\n');
+    const rawUserText = [reviewAiInput.trim() || modeInstruction, compareInstruction].join('\n\n');
+    const userText = wrapAiRequestTag(requirementTag, rawUserText);
     const chapterTitle = activeReviewChapter
       ? `第${activeReviewChapter.serialNumber}章 ${activeReviewChapter.title || '未命名章节'}`
       : '未选择章节';
     const detailOutlineText = activeReviewDetailOutline?.content?.trim() || '';
-    const chapterContext = [
-      `【审核点评模式】${modeTitle}`,
-      `【所选章节】${chapterTitle}`,
-      detailOutlineText ? `【关联章纲：${activeReviewDetailOutline?.title || '未命名章纲'}】\n${detailOutlineText}` : '',
-      activeReviewContent.trim() ? `【章节正文】\n${activeReviewContent}` : '',
-    ].filter(Boolean).join('\n\n');
+    const chapterContext = joinAiRequestSections([
+      detailOutlineText ? wrapAiRequestTag('关联章纲', detailOutlineText, { 标题: activeReviewDetailOutline?.title || '未命名章纲' }) : '',
+      wrapAiRequestTag(bodyTag, activeReviewContent, { 标题: chapterTitle, 模式: modeTitle }),
+    ]);
     const requestLogMeta = [
       `模式：${modeTitle}`,
       `模型：${activeReviewModel?.name ?? '未选择模型'}`,
@@ -1007,7 +1143,7 @@ export function ChapterEditor({
       }));
     };
     if (!activeReviewChapter) {
-      setRequestReviewOutput('【错误】请先选择需要审核点评的章节。');
+      setRequestReviewOutput(`【错误】请先选择需要${REVIEW_MODE_TITLES[requestMode]}的章节。`);
       return;
     }
     if (!activeReviewModel) {
@@ -1015,62 +1151,65 @@ export function ChapterEditor({
       return;
     }
     const { promptText, userText, chapterContext, requestLog } = buildReviewPayload();
-    const controller = new AbortController();
-    reviewAiAbortRef.current = controller;
+    const task = startBackgroundAiTask({
+      kind: requestMode === 'polish' ? 'polish' : 'review',
+      title: `${REVIEW_MODE_TITLES[requestMode]}：${activeReviewChapter.title || `第${activeReviewChapter.serialNumber}章`}`,
+      input: userText,
+      initialOutput: '正在思考...',
+      progressLabel: '正在生成',
+      meta: {
+        target: 'chapterReview',
+        settingsStorageKey,
+        mode: requestMode,
+        chapterId: activeReviewChapter.id,
+        requestLog,
+      },
+      runner: async ({ signal, emit }) => {
+        let answer = '';
+        let reasoningContent = '';
+        const startedAt = Date.now();
+        const getThinkingSeconds = () => Math.max(0, Math.round((Date.now() - startedAt) / 1000));
+        try {
+          answer = await callModelStream({
+            model: activeReviewModel,
+            prompt: promptText,
+            userContent: userText,
+            chapterContext,
+            recordType: 'stream',
+            signal,
+            onReasoning: (chunk) => {
+              reasoningContent += chunk;
+              emit(formatAiThinkingResponse(answer, reasoningContent, getThinkingSeconds(), false), { replace: true });
+            },
+            onChunk: (chunk) => {
+              answer += chunk;
+              emit(formatAiThinkingResponse(answer, reasoningContent, getThinkingSeconds(), false), { replace: true });
+            },
+          });
+          return reasoningContent.trim()
+            ? formatAiThinkingResponse(answer, reasoningContent, getThinkingSeconds(), true)
+            : answer;
+        } catch (error) {
+          if (!(error instanceof DOMException && error.name === 'AbortError')) {
+            const message = error instanceof Error ? error.message : '模型请求失败。';
+            emit(`【错误】${message}`, { replace: true, progressLabel: '失败' });
+          }
+          throw error;
+        }
+      },
+    });
+    writeReviewBackgroundTaskId(settingsStorageKey, requestMode, task.id);
     setIsReviewAiLoading(true);
     updateRequestReviewState((state) => ({
       ...state,
       requestLog,
       output: '正在思考...',
+      backgroundTaskId: task.id,
     }));
-    try {
-      let answer = '';
-      let reasoningContent = '';
-      const startedAt = Date.now();
-      const getThinkingSeconds = () => Math.max(0, Math.round((Date.now() - startedAt) / 1000));
-      answer = await callModelStream({
-        model: activeReviewModel,
-        prompt: promptText,
-        userContent: userText,
-        chapterContext,
-        recordType: 'stream',
-        signal: controller.signal,
-        onReasoning: (chunk) => {
-          reasoningContent += chunk;
-          setRequestReviewOutput(formatAiThinkingResponse(answer, reasoningContent, getThinkingSeconds(), false));
-        },
-        onChunk: (chunk) => {
-          answer += chunk;
-          setRequestReviewOutput(formatAiThinkingResponse(answer, reasoningContent, getThinkingSeconds(), false));
-        },
-      });
-      setRequestReviewOutput(reasoningContent.trim()
-        ? formatAiThinkingResponse(answer, reasoningContent, getThinkingSeconds(), true)
-        : answer);
-      const revised = extractReviewRevisedText(answer);
-      if (revised) {
-        updateRequestReviewState((state) => ({
-          ...state,
-          revisedDraft: revised,
-          appliedParagraphs: new Set(),
-          compareView: 'paragraph',
-        }));
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        setRequestReviewOutput((value) => value.trim() || '【已停止】本次审核点评已停止。');
-      } else {
-        const message = error instanceof Error ? error.message : '模型请求失败。';
-        setRequestReviewOutput(`【错误】${message}`);
-      }
-    } finally {
-      if (reviewAiAbortRef.current === controller) reviewAiAbortRef.current = null;
-      setIsReviewAiLoading(false);
-    }
   };
 
   const stopReviewAiMessage = () => {
-    reviewAiAbortRef.current?.abort();
+    if (activeReviewState.backgroundTaskId) stopBackgroundAiTask(activeReviewState.backgroundTaskId);
     setIsReviewAiLoading(false);
   };
 
@@ -1510,15 +1649,17 @@ export function ChapterEditor({
     document.body,
   ) : null;
 
+  const isEmbeddedReviewMode = embeddedMode === 'audit' || embeddedMode === 'comment' || embeddedMode === 'polish';
+  const activeReviewModeTitle = REVIEW_MODE_TITLES[reviewMode];
   const showStatusUpdatePanel = embeddedMode ? embeddedMode === 'status' : isStatusUpdateOpen;
-  const showReviewPanel = embeddedMode ? embeddedMode === 'audit' || embeddedMode === 'comment' : isReviewOpen;
-  const reviewPortalTarget = embeddedMode === 'audit' || embeddedMode === 'comment' ? embeddedPortalElement : document.body;
+  const showReviewPanel = embeddedMode ? isEmbeddedReviewMode : isReviewOpen;
+  const reviewPortalTarget = isEmbeddedReviewMode ? embeddedPortalElement : document.body;
   const canRenderReviewPanel = showReviewPanel && Boolean(reviewPortalTarget);
 
   return (
     <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gray-50">
       {editorFieldSizeModal}
-      {(embeddedMode === 'audit' || embeddedMode === 'comment') && (
+      {isEmbeddedReviewMode && (
         <div ref={setEmbeddedPortalElement} className="min-h-0 flex-1 overflow-hidden bg-white" />
       )}
       {!embeddedMode && (
@@ -1773,7 +1914,7 @@ export function ChapterEditor({
               className="grid min-h-0 flex-1 bg-slate-50"
               style={{ gridTemplateColumns: `${statusPageLeftWidth}px 8px minmax(0,1fr) 8px ${statusPageRightWidth}px` }}
             >
-              <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white p-4">
+              <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white px-3 py-3">
                 <div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
                   {chapterDirectoryGroups.map((group) => {
                     const expanded = expandedStatusVolumeIds.has(group.id);
@@ -1782,13 +1923,13 @@ export function ChapterEditor({
                         <button
                           type="button"
                           onClick={() => toggleStatusDirectoryVolume(group.id)}
-                          className="flex w-full cursor-pointer items-center gap-2 rounded-lg bg-[#08B3D9] px-2 py-2 text-white transition-colors hover:brightness-95"
+                          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-[#08AACE] bg-[#08AACE] px-3 py-1.5 text-sm font-bold leading-5 text-white transition-colors hover:brightness-95"
                         >
-                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/15 text-white">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/15 text-white">
                             {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                           </span>
                           <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">{group.name}</span>
-                          <span className="shrink-0 rounded-md bg-white/15 px-2.5 py-1.5 text-xs font-bold text-white">{group.chapters.length}章</span>
+                          <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-xs text-white">{group.chapters.length}章</span>
                         </button>
                         {expanded && (
                           <div
@@ -1948,7 +2089,7 @@ export function ChapterEditor({
       )}
       {canRenderReviewPanel && createPortal(
         <div
-          className={embeddedMode === 'audit' || embeddedMode === 'comment'
+          className={isEmbeddedReviewMode
             ? 'flex h-full min-h-0 bg-white'
             : 'fixed inset-0 z-[280] flex items-center justify-center bg-black/35 p-5'}
           style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
@@ -1963,7 +2104,7 @@ export function ChapterEditor({
               ...(embeddedMode ? {} : reviewModalDraggable.style),
               WebkitAppRegion: 'no-drag',
             } as CSSProperties}
-            className={embeddedMode === 'audit' || embeddedMode === 'comment'
+            className={isEmbeddedReviewMode
               ? 'relative flex h-full min-h-0 w-full flex-col overflow-hidden bg-white'
               : 'relative flex h-[min(720px,82vh)] w-[min(1180px,92vw)] max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'}
             onClick={(event) => event.stopPropagation()}
@@ -1977,8 +2118,8 @@ export function ChapterEditor({
               } as CSSProperties}
             >
               <div>
-                <h2 className="text-lg font-black text-slate-900">{reviewMode === 'audit' ? '审核' : '点评'}</h2>
-                <p className="mt-0.5 text-xs font-bold text-slate-400">左侧选择章节，中间预览正文，右侧配置 AI {reviewMode === 'audit' ? '审核' : '点评'}参数。</p>
+                <h2 className="text-lg font-black text-slate-900">{activeReviewModeTitle}</h2>
+                <p className="mt-0.5 text-xs font-bold text-slate-400">左侧选择章节，中间预览正文，右侧配置 AI {activeReviewModeTitle}参数。</p>
               </div>
               <button
                 type="button"
@@ -1993,8 +2134,7 @@ export function ChapterEditor({
               className="grid min-h-0 flex-1 bg-slate-50"
               style={{ gridTemplateColumns: `${reviewPageLeftWidth}px 8px minmax(0,1fr) 8px ${reviewPageRightWidth}px` }}
             >
-              <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white p-4">
-                <div className="mb-3 text-sm font-black text-slate-900">{reviewMode === 'audit' ? '审核目录' : '点评目录'}</div>
+              <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white px-3 py-3">
                 <div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
                   {chapterDirectoryGroups.map((group) => {
                     const expanded = expandedReviewVolumeIds.has(group.id);
@@ -2003,13 +2143,13 @@ export function ChapterEditor({
                         <button
                           type="button"
                           onClick={() => toggleReviewDirectoryVolume(group.id)}
-                          className="flex w-full cursor-pointer items-center gap-2 rounded-lg bg-[#08B3D9] px-2 py-2 text-white transition-colors hover:brightness-95"
+                          className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-[#08AACE] bg-[#08AACE] px-3 py-1.5 text-sm font-bold leading-5 text-white transition-colors hover:brightness-95"
                         >
-                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white/15 text-white">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/15 text-white">
                             {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                           </span>
                           <span className="min-w-0 flex-1 truncate text-sm font-bold text-white">{group.name}</span>
-                          <span className="shrink-0 rounded-md bg-white/15 px-2.5 py-1.5 text-xs font-bold text-white">{group.chapters.length}章</span>
+                          <span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-xs text-white">{group.chapters.length}章</span>
                         </button>
                         {expanded && (
                           <div
@@ -2242,7 +2382,7 @@ export function ChapterEditor({
                     <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill h-full xy-has-value">
                       <div className="xy-floating-rich-preview editor-scrollbar h-full w-full overflow-y-auto text-sm leading-6 text-slate-700">
                         {reviewAiOutput.trim() ? renderAiThinkingContent(reviewAiOutput) : (
-                          <span className="text-slate-400">审核或点评结果会显示在这里。</span>
+                          <span className="text-slate-400">{activeReviewModeTitle}结果会显示在这里。</span>
                         )}
                       </div>
                     </div>
@@ -2291,7 +2431,7 @@ export function ChapterEditor({
                         />
                       ) : (
                         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-500">
-                          还没有发送审核点评请求。
+                          还没有发送{activeReviewModeTitle}请求。
                         </div>
                       )}
                     </div>

@@ -46,6 +46,19 @@ const defaultCardSettings: FullCardSettings = {
   btnColors: { ...defaultBtnColors },
 };
 
+let workbenchPagePreload: Promise<unknown> | null = null;
+let scriptEditorPagePreload: Promise<unknown> | null = null;
+
+function preloadEditorPage(workType: WorkType) {
+  if (workType === 'script') {
+    scriptEditorPagePreload ??= import('@/features/script-editor/pages/ScriptEditorPage');
+    return scriptEditorPagePreload;
+  }
+
+  workbenchPagePreload ??= import('@/features/workbench/pages/WorkbenchPage');
+  return workbenchPagePreload;
+}
+
 const colorOptions: { value: BtnColor; label: string }[] = [
   { value: 'blue', label: '蓝色' },
   { value: 'red', label: '红色' },
@@ -559,6 +572,10 @@ export function NovelLibraryPage() {
     setNotice('');
   }, [workType]);
 
+  useEffect(() => {
+    void preloadEditorPage(workType);
+  }, [workType]);
+
   const sourceNovels = getNovelsByType(workType);
   const filters = ['全部', ...categories];
   const filteredNovels = useMemo(() => sourceNovels.filter((novel) => {
@@ -569,9 +586,16 @@ export function NovelLibraryPage() {
 
   const coverTarget = novels.find((novel) => novel.id === coverTargetId) ?? null;
 
+  const handlePrepareOpen = (id: number) => {
+    const novel = novels.find((item) => item.id === id);
+    if (!novel) return;
+    void preloadEditorPage(novel.type);
+  };
+
   const handleOpen = (id: number) => {
     const novel = novels.find((item) => item.id === id);
     if (!novel) return;
+    void preloadEditorPage(novel.type);
     selectNovel(id);
     const path = novel.type === 'script' ? '/script-editor-v2' : '/workbench';
     openWorkTab({
@@ -674,6 +698,7 @@ export function NovelLibraryPage() {
                 novel={novel}
                 isSelected={currentNovelId === novel.id}
                 settings={cardSettings}
+                onPrepareOpen={handlePrepareOpen}
                 onOpen={handleOpen}
                 onRename={(id, currentTitle) => setRenameTarget({ id, title: currentTitle })}
                 onCover={(id) => setCoverTargetId(id)}

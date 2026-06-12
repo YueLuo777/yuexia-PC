@@ -40,6 +40,33 @@ interface AppIconResult {
   message?: string;
 }
 
+interface CosConfigInput {
+  bucket: string;
+  region: string;
+  secretId: string;
+  secretKey: string;
+}
+
+interface CosPutObjectInput {
+  config: CosConfigInput;
+  key: string;
+  body: string;
+  contentType?: string;
+}
+
+interface CosGetObjectInput {
+  config: CosConfigInput;
+  key: string;
+}
+
+interface CosObjectResult {
+  ok: boolean;
+  status: number;
+  text?: string;
+  key?: string;
+  message?: string;
+}
+
 interface Window {
   xinyuexiaModel?: {
     request(input: ModelRequestInput): Promise<ModelRequestResult>;
@@ -56,5 +83,9 @@ interface Window {
     useDataUrl(dataUrl: string, sourceFileName?: string): Promise<AppIconResult>;
     makeDefault(): Promise<AppIconResult>;
     reset(): Promise<AppIconResult>;
+  };
+  xinyuexiaCos?: {
+    putObject(input: CosPutObjectInput): Promise<CosObjectResult>;
+    getObject(input: CosGetObjectInput): Promise<CosObjectResult>;
   };
 }

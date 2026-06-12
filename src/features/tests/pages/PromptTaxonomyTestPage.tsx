@@ -1,7 +1,7 @@
 import { Check, EyeOff, Search, Star, Tags } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-type PromptCategory = '脑洞' | '大纲' | '剧情链' | '章纲' | '正文续写' | '审核点评' | '通用';
+type PromptCategory = '脑洞' | '大纲' | '章纲' | '正文续写' | '审核点评' | '通用';
 
 type PromptItem = {
   id: string;
@@ -14,12 +14,11 @@ type PromptItem = {
   disabled?: boolean;
 };
 
-const categories: PromptCategory[] = ['脑洞', '大纲', '剧情链', '章纲', '正文续写', '审核点评', '通用'];
+const categories: PromptCategory[] = ['脑洞', '大纲', '章纲', '正文续写', '审核点评', '通用'];
 
 const pageTagMap: Record<PromptCategory, string[]> = {
   脑洞: ['开书', '题材', '卖点', '强期待'],
   大纲: ['世界观', '主线', '分卷', '人物关系'],
-  剧情链: ['开头', '衔接', '强冲突', '强爽点'],
   章纲: ['章节拆分', '承接前文', '节奏', '伏笔'],
   正文续写: ['文风', '场景', '对话', '爽点'],
   审核点评: ['查错', '点评', '节奏优化', '逻辑'],
@@ -31,16 +30,16 @@ const prompts: PromptItem[] = [
   { id: 'brainstorm-2', title: '强情绪脑洞', category: '脑洞', tags: ['开书', '强冲突', '强情绪'], scene: '强调羞辱、压迫、反击和期待感。' },
   { id: 'outline-1', title: '大纲设定整理', category: '大纲', tags: ['世界观', '主线', '人物关系'], scene: '把设定整理成可持续写作的大纲结构。', favorite: true },
   { id: 'outline-2', title: '分卷节奏规划', category: '大纲', tags: ['分卷', '节奏', '主线'], scene: '把长篇小说拆成多个卷，每卷有目标和转折。' },
-  { id: 'plot-chain-1', title: '剧情链候选', category: '剧情链', tags: ['开头', '衔接', '强冲突', '强爽点'], scene: '一次生成同一进度的多个候选剧情点。', favorite: true, recent: true },
-  { id: 'plot-chain-2', title: '剧情链2', category: '剧情链', tags: ['衔接', '强期待', '变量替换'], scene: '根据已选剧情链继续生成下一步候选。', recent: true },
-  { id: 'plot-chain-old', title: '剧情库混合旧版', category: '剧情链', tags: ['剧情库', '混合', '旧版'], scene: '旧剧情库来源，暂时隐藏到后面。', disabled: true },
+  { id: 'plot-chain-1', title: '剧情点候选转章纲', category: '章纲', tags: ['开头', '衔接', '强冲突', '强爽点'], scene: '把同一进度的剧情点候选整理成本章可执行章纲。', favorite: true, recent: true },
+  { id: 'plot-chain-2', title: '剧情点续接章纲', category: '章纲', tags: ['衔接', '强期待', '变量替换'], scene: '根据已选剧情点继续生成下一步章纲素材。', recent: true },
+  { id: 'plot-chain-old', title: '剧情库混合旧版', category: '章纲', tags: ['剧情库', '混合', '旧版'], scene: '旧剧情库来源，暂时隐藏到后面。', disabled: true },
   { id: 'chapter-outline-1', title: '章纲生成', category: '章纲', tags: ['章节拆分', '承接前文', '节奏'], scene: '把剧情链展开成当前章节的章纲。', favorite: true },
   { id: 'chapter-outline-2', title: '伏笔回收章纲', category: '章纲', tags: ['伏笔', '承接前文', '节奏'], scene: '让本章回收前文信息并埋下一步钩子。' },
   { id: 'continue-1', title: '正文续写', category: '正文续写', tags: ['文风', '场景', '对话'], scene: '根据章纲和上下文继续写正文。', recent: true },
   { id: 'continue-2', title: '爽点强化续写', category: '正文续写', tags: ['爽点', '强情绪', '节奏'], scene: '保持正文推进，同时强化读者情绪回报。' },
   { id: 'review-1', title: '章节审核', category: '审核点评', tags: ['查错', '逻辑', '节奏优化'], scene: '检查错字、逻辑断点、节奏问题。', favorite: true },
   { id: 'review-2', title: '章节点评', category: '审核点评', tags: ['点评', '节奏优化', '爽点'], scene: '从读者体验角度点评本章优缺点。' },
-  { id: 'common-1', title: '压缩总结', category: '通用', tags: ['通用', '压缩'], scene: '把长内容压缩成短摘要。' },
+  { id: 'common-1', title: '压缩总结', category: '通用', tags: ['通用', '压缩'], scene: '把长内容压缩成短梗概。' },
 ];
 
 const tagOptions = Array.from(new Set(prompts.flatMap((prompt) => prompt.tags)));
@@ -52,7 +51,7 @@ function pillClass(active: boolean) {
 }
 
 export function PromptTaxonomyTestPage() {
-  const [activePage, setActivePage] = useState<PromptCategory>('剧情链');
+  const [activePage, setActivePage] = useState<PromptCategory>('章纲');
   const [activeTag, setActiveTag] = useState<string>('全部');
   const [search, setSearch] = useState('');
 

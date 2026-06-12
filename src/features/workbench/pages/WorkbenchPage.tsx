@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
+﻿import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -26,7 +26,7 @@ import {
   readWorkbenchLinkedContextItems,
   writeWorkbenchLinkedContextItems,
 } from '@/features/workbench/model/workbenchAssociationCleanup';
-import { readWorkbenchLibraryEntries } from '@/features/workbench/model/workbenchLibraryStorage';
+import { readWorkbenchLibraryEntries, type WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
@@ -37,20 +37,20 @@ import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 import { WordCountText } from '@/shared/ui/WordCountText';
 import type { Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
 
-type ModalKey = 'workInfo' | 'notes' | 'settingLibrary' | 'plotPointGenerator' | 'detailOutlineLibrary';
+type ModalKey = 'workInfo' | 'notes' | 'settingLibrary' | 'detailOutlineLibrary';
 type ManagementModalKey = 'models' | 'agents';
 type FindScope = 'chapter' | 'book';
 type ChapterExportFormat = 'txt' | 'doc';
 type PendingPublish = { type: 'single'; volumeId: number; chapterId: number; title: string };
 type MemoScope = 'global' | 'work';
 type MemoItem = { id: string; title: string; content: string; updatedAt: string };
-type ContextLibraryTab = 'chapterSummary' | 'other';
+type ContextLibraryTab = 'outlineChapter' | 'setting' | 'role' | 'status';
 
 const FIELD_SIZE_FLOW_IDS = new Set<WorkbenchCreationFlowPageKey>([
   'brainstorm',
   'outline',
-  'plotChain',
   'chapterOutline',
+  'polish',
   'audit',
   'comment',
   'status',
@@ -70,7 +70,9 @@ interface ContextChapterPair {
   chapterId: number;
   serialNumber: number;
   title: string;
+  isCurrent: boolean;
   chapterItem: WorkbenchLinkedContextItem;
+  outlineItem: WorkbenchLinkedContextItem;
   summaryItem: WorkbenchLinkedContextItem | null;
 }
 interface ChapterExportItem {
@@ -96,6 +98,8 @@ const FIND_REPLACE_DEFAULT_GEOMETRY = {
   top: 84,
   width: 592,
 };
+const CONTEXT_SETTING_TYPE_ORDER = ['核心设定', '主线剧情', '等级体系', '势力设定', '伏笔设定', '其他设定', '未分类'];
+const CONTEXT_ROLE_TYPE_ORDER = ['男主角', '女主角', '正派配角', '重要反派', '反派配角', '龙套', '未分类'];
 
 const WORKBENCH_FLOW_PAGE_STORAGE_PREFIX = 'xinyuexia_workbench_active_flow_page_';
 function getStoredCreationFlowPage(novelId: number): WorkbenchCreationFlowPageKey {
@@ -264,17 +268,262 @@ function normalizeContextSource(tab: string): WorkbenchLinkedContextSource | nul
   const value = tab.trim();
   if (!value) return null;
   if (/角色|角色库|瑙掕壊/.test(value)) return 'role';
-  if (/概要|梗概|章节概要|卷概要|姒傝|绔犺妭|鍗锋/.test(value)) return 'summary';
-  if (/设定|设定库|大纲|细纲|澶х翰|缁嗙翰|璁惧畾/.test(value)) return 'setting';
+  if (/章纲|细纲|章节细纲|章节章纲|绔犵翰|缁嗙翰/.test(value)) return 'outline';
+  if (/梗概|摘要|概要|章节梗概|章节摘要|章节概要|卷梗概|卷摘要|卷概要|姒傝|鍗锋/.test(value)) return 'summary';
+  if (/设定|设定库|大纲|澶х翰|璁惧畾/.test(value)) return 'setting';
   return null;
+}
+
+function isContextOutlineEntry(entry: WorkbenchLibraryEntry) {
+  return normalizeContextSource(`${entry.tab} ${entry.title} ${entry.type ?? ''}`) === 'outline';
+}
+
+function isContextSummaryEntry(entry: WorkbenchLibraryEntry) {
+  return normalizeContextSource(`${entry.tab} ${entry.title} ${entry.type ?? ''}`) === 'summary';
 }
 
 function getContextWordCount(text: string) {
   return text.replace(/\s/g, '').length;
 }
 
+function getContextItemsWordCount(items: WorkbenchLinkedContextItem[], source?: WorkbenchLinkedContextSource) {
+  return items
+    .filter((item) => !source || item.source === source)
+    .reduce((sum, item) => sum + getContextWordCount(item.content), 0);
+}
+
+function getPreferredChapterNarrativeItem(row: ContextChapterPair) {
+  if (getContextWordCount(row.chapterItem.content) > 0) return row.chapterItem;
+  if (row.summaryItem && getContextWordCount(row.summaryItem.content) > 0) return row.summaryItem;
+  return null;
+}
+
+function keepExclusiveChapterNarrativeItems(
+  rows: ContextChapterPair[],
+  items: WorkbenchLinkedContextItem[],
+) {
+  const ids = new Set(items.map((item) => item.id));
+  rows.forEach((row) => {
+    if (!row.summaryItem) return;
+    if (!ids.has(row.chapterItem.id) || !ids.has(row.summaryItem.id)) return;
+    const preferred = getPreferredChapterNarrativeItem(row);
+    if (preferred?.id === row.summaryItem.id) ids.delete(row.chapterItem.id);
+    else ids.delete(row.summaryItem.id);
+  });
+  return items.filter((item) => ids.has(item.id));
+}
+
+function ContextSourceWordStatus({
+  label,
+  value,
+}: {
+  label: string;
+  value: number;
+}) {
+  if (value <= 0) {
+    return <span className="font-black text-red-500">无{label}</span>;
+  }
+  return (
+    <>
+      <span className="shrink-0">{label}</span>
+      <WordCountText value={value} compact />
+    </>
+  );
+}
+
+function ContextSourceRowWordStatus({
+  label,
+  value,
+  muted = false,
+}: {
+  label: string;
+  value: number;
+  muted?: boolean;
+}) {
+  if (value <= 0) {
+    return <span className="shrink-0 text-xs font-black text-red-500">无{label}</span>;
+  }
+  return (
+    <>
+      <span className="shrink-0">{label}</span>
+      <span className={['w-[6ch] shrink-0 text-right text-xs font-black tabular-nums', muted ? 'text-slate-300' : 'text-brand'].join(' ')}>
+        {value}
+      </span>
+      <span className={['shrink-0 text-xs font-black', muted ? 'text-slate-300' : 'text-slate-500'].join(' ')}>
+        字
+      </span>
+    </>
+  );
+}
+
+function ContextSelectionDot({
+  checked,
+  disabled = false,
+}: {
+  checked: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <span
+      className={['grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 bg-white', checked ? 'border-[#3B82F6]' : disabled ? 'border-slate-200' : 'border-slate-300'].join(' ')}
+    >
+      {checked && <span className="h-2 w-2 rounded-full bg-[#3B82F6]" />}
+    </span>
+  );
+}
+
+function mergeContextItems(items: WorkbenchLinkedContextItem[]) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
 function getContextEntryGroup(tab: string, type?: string) {
   return type?.trim() || tab.trim() || '未分类';
+}
+
+function parseContextSettingContent(content: string) {
+  try {
+    const parsed = JSON.parse(content) as Partial<{ type: string; body: string }>;
+    return {
+      type: parsed.type === '境界体系' ? '等级体系' : parsed.type || '未分类',
+      body: parsed.body || '',
+    };
+  } catch {
+    return {
+      type: '未分类',
+      body: content || '',
+    };
+  }
+}
+
+const CONTEXT_ROLE_STATE_FIELDS = [
+  ['currentSituation', '当前处境'],
+  ['currentGoal', '当前目标'],
+  ['identityState', '身份状态'],
+  ['abilityState', '能力状态'],
+  ['resourceState', '资源状态'],
+  ['relationshipState', '关系状态'],
+  ['informationState', '信息状态'],
+  ['plotMarkers', '剧情标记'],
+  ['hardConstraints', '硬性约束'],
+] as const;
+
+function formatContextRoleStateSettings(value: unknown, legacyStatus = '') {
+  if (!value || typeof value !== 'object') return legacyStatus.trim();
+  const record = value as Partial<Record<(typeof CONTEXT_ROLE_STATE_FIELDS)[number][0], unknown>>;
+  const text = CONTEXT_ROLE_STATE_FIELDS
+    .map(([key, label]) => {
+      const fieldValue = record[key];
+      return typeof fieldValue === 'string' && fieldValue.trim()
+        ? `${label}：${fieldValue.trim()}`
+        : '';
+    })
+    .filter(Boolean)
+    .join('\n\n');
+  return text || legacyStatus.trim();
+}
+
+function parseContextRoleStatusContent(content: string) {
+  try {
+    const parsed = JSON.parse(content) as Partial<{ type: string; lifeStatus: string; status: string; stateSettings: unknown }>;
+    const stateText = formatContextRoleStateSettings(parsed.stateSettings, parsed.status);
+    const body = [
+      parsed.lifeStatus ? `生存状态：${parsed.lifeStatus}` : '',
+      stateText ? `状态设定：${stateText}` : '',
+    ].filter(Boolean).join('\n');
+    return {
+      type: parsed.type || '角色状态',
+      body,
+    };
+  } catch {
+    return {
+      type: '角色状态',
+      body: extractContextStatusRecord(content),
+    };
+  }
+}
+
+function parseContextRoleContent(content: string) {
+  try {
+    const parsed = JSON.parse(content) as Partial<{
+      type: string;
+      lifeStatus: string;
+      baseSetting: string;
+      stateSettings: unknown;
+      personality: string;
+      background: string;
+      status: string;
+    }>;
+    const legacyBaseSetting = [
+      parsed.personality?.trim() ? `人物设定：${parsed.personality.trim()}` : '',
+      parsed.background?.trim() ? parsed.background.trim() : '',
+    ].filter(Boolean).join('\n\n');
+    const baseSetting = parsed.baseSetting?.trim() || legacyBaseSetting;
+    const stateText = formatContextRoleStateSettings(parsed.stateSettings, parsed.status);
+    const body = [
+      parsed.lifeStatus ? `生存状态：${parsed.lifeStatus}` : '',
+      baseSetting ? `基础设定：${baseSetting}` : '',
+      stateText ? `状态设定：${stateText}` : '',
+    ].filter(Boolean).join('\n\n');
+    return {
+      type: parsed.type || '人物设定',
+      body: body || content,
+    };
+  } catch {
+    return {
+      type: '人物设定',
+      body: content || '',
+    };
+  }
+}
+
+function orderContextEntriesByType(
+  entries: WorkbenchLibraryEntry[],
+  typeOrder: string[],
+  getType: (entry: WorkbenchLibraryEntry) => string,
+  options?: { pinnedFirst?: boolean },
+) {
+  const normalizedOrder = [...typeOrder, ...entries.map(getType)]
+    .map((type) => type.trim() || '未分类')
+    .filter((type, index, source) => source.indexOf(type) === index);
+  return normalizedOrder.flatMap((type) => (
+    entries
+      .map((entry, index) => ({ entry, index }))
+      .filter(({ entry }) => (getType(entry).trim() || '未分类') === type)
+      .sort((left, right) => {
+        if (options?.pinnedFirst) {
+          const leftPinned = typeof left.entry.pinnedAt === 'number';
+          const rightPinned = typeof right.entry.pinnedAt === 'number';
+          if (leftPinned && rightPinned) return (left.entry.pinnedAt ?? 0) - (right.entry.pinnedAt ?? 0);
+          if (leftPinned) return -1;
+          if (rightPinned) return 1;
+        }
+        return left.index - right.index;
+      })
+      .map(({ entry }) => entry)
+  ));
+}
+
+function extractContextStatusRecord(content: string) {
+  const marker = '【状态记录】';
+  const markerIndex = content.indexOf(marker);
+  if (markerIndex >= 0) return content.slice(markerIndex).trim();
+  return content
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .filter((block) => /状态|变化|当前|进度|持有|关系|立场/.test(block))
+    .join('\n\n')
+    .trim() || content;
+}
+
+function isContextStatusCandidate(tab: string, type?: string, title?: string, content?: string) {
+  const value = `${tab} ${type ?? ''} ${title ?? ''} ${content ?? ''}`;
+  return /状态|状态记录|人物状态|角色状态|道具状态|势力状态|关系变化|进度/.test(value);
 }
 
 function getContextEntrySerial(title: string) {
@@ -287,6 +536,7 @@ function getContextEntrySerial(title: string) {
 function ContextChapterSummaryList({
   rows,
   selectedIds,
+  lockedIds,
   searchText,
   onSearchChange,
   onToggleChapter,
@@ -296,6 +546,7 @@ function ContextChapterSummaryList({
 }: {
   rows: ContextChapterPair[];
   selectedIds: Set<string>;
+  lockedIds: Set<string>;
   searchText: string;
   onSearchChange: (value: string) => void;
   onToggleChapter: (row: ContextChapterPair) => void;
@@ -365,10 +616,13 @@ function ContextChapterSummaryList({
           <div className="divide-y divide-slate-100">
             {volumeGroups.map((group) => {
               const collapsed = collapsedVolumeIds.has(group.volumeId);
-              const selectedCount = group.rows.filter((row) => (
-                selectedIds.has(row.chapterItem.id) || Boolean(row.summaryItem && selectedIds.has(row.summaryItem.id))
+      const selectedCount = group.rows.filter((row) => (
+                selectedIds.has(row.chapterItem.id)
+                || selectedIds.has(row.outlineItem.id)
+                || Boolean(row.summaryItem && selectedIds.has(row.summaryItem.id))
               )).length;
               const totalChapterWords = group.rows.reduce((sum, row) => sum + getContextWordCount(row.chapterItem.content), 0);
+              const totalOutlineWords = group.rows.reduce((sum, row) => sum + getContextWordCount(row.outlineItem.content), 0);
               const totalSummaryWords = group.rows.reduce((sum, row) => sum + (row.summaryItem ? getContextWordCount(row.summaryItem.content) : 0), 0);
               return (
                 <section key={group.volumeId} className="bg-white">
@@ -386,17 +640,27 @@ function ContextChapterSummaryList({
                         </span>
                       )}
                     </span>
-                    <span className="shrink-0 text-xs font-bold text-slate-900">
-                      {group.rows.length} 章 · 正文 <WordCountText value={totalChapterWords} /> · 概要 <WordCountText value={totalSummaryWords} /></span>
+                    <span className="flex shrink-0 items-center gap-2 text-xs font-bold text-slate-900">
+                      <span>{group.rows.length} 章</span>
+                      <span>·</span>
+                      <ContextSourceWordStatus label="正文" value={totalChapterWords} />
+                      <span>·</span>
+                      <ContextSourceWordStatus label="梗概" value={totalSummaryWords} />
+                      <span>·</span>
+                      <ContextSourceWordStatus label="章纲" value={totalOutlineWords} />
+                    </span>
                   </button>
                   {!collapsed && (
                     <div className="divide-y divide-slate-50">
                       {group.rows.map((row) => {
                         const selectedChapter = selectedIds.has(row.chapterItem.id);
+                        const selectedOutline = selectedIds.has(row.outlineItem.id);
                         const selectedSummary = row.summaryItem ? selectedIds.has(row.summaryItem.id) : false;
-                        const checked = selectedChapter || selectedSummary;
+                        const checked = selectedChapter || selectedOutline || selectedSummary;
                         const chapterWordCount = getContextWordCount(row.chapterItem.content);
+                        const outlineWordCount = getContextWordCount(row.outlineItem.content);
                         const summaryWordCount = row.summaryItem ? getContextWordCount(row.summaryItem.content) : 0;
+                        const rowSelectable = !row.isCurrent;
                         return (
                           <div
                             key={row.chapterId}
@@ -409,64 +673,71 @@ function ContextChapterSummaryList({
                                 onToggleChapter(row);
                               }
                             }}
-                            className={['grid cursor-pointer grid-cols-[36px_minmax(0,1fr)_96px_288px] items-center gap-3 py-3 pl-4 pr-10 text-sm transition-colors hover:bg-sky-50/60', checked ? 'bg-sky-50/45' : 'bg-white'].join(' ')}
+                            className={['grid cursor-pointer grid-cols-[36px_minmax(0,1fr)_96px_auto] items-center gap-3 py-3 pl-4 pr-10 text-sm transition-colors hover:bg-sky-50/60', checked ? 'bg-sky-50/45' : 'bg-white'].join(' ')}
                           >
                             <button
                               type="button"
+                              disabled={!rowSelectable}
                               onClick={(event) => {
                                 event.stopPropagation();
                                 onToggleChapter(row);
                               }}
-                              className={['grid h-5 w-5 place-items-center rounded-md border text-xs font-black', checked ? 'border-[#08AACE] bg-[#08AACE] text-white' : 'border-slate-300 bg-white text-transparent'].join(' ')}
-                              aria-label={checked ? '取消关联章节' : '关联章节'}
+                              className="grid h-5 w-5 place-items-center disabled:cursor-not-allowed disabled:opacity-60"
+                              aria-label={checked ? '取消关联章节资料' : '关联章节资料'}
                             >
-                              ✓
+                              <ContextSelectionDot checked={checked} disabled={!rowSelectable} />
                             </button>
                             <div className="min-w-0">
-                              <div className="truncate text-base font-black text-slate-900">
+                              <div className="flex min-w-0 items-center gap-2 text-base font-black text-slate-900">
                                 第{row.serialNumber}章 {row.title || '未命名章节'}
+                                {row.isCurrent && (
+                                  <span className="shrink-0 rounded-md bg-red-50 px-2 py-0.5 text-xs font-black text-red-500">
+                                    当前
+                                  </span>
+                                )}
                               </div>
                             </div>
                             <div className="truncate text-center text-xs font-bold text-slate-400">
                               {row.volumeName}
                             </div>
                             <div
-                              className="flex items-center justify-end gap-2 text-sm font-bold"
+                              className="flex items-center justify-end whitespace-nowrap text-sm font-bold"
                               onClick={(event) => event.stopPropagation()}
                             >
-                              <label className="grid w-[112px] cursor-pointer grid-cols-[16px_32px_4ch_auto] items-center gap-x-0.5 text-slate-700">
+                              <label className={['inline-flex h-8 shrink-0 items-center gap-1.5', row.isCurrent ? 'cursor-not-allowed text-slate-300' : 'cursor-pointer text-slate-700'].join(' ')}>
                                 <input
                                   type="radio"
-                                  checked={selectedChapter || (!checked && !selectedSummary)}
+                                  disabled={row.isCurrent}
+                                  checked={selectedChapter}
                                   onChange={() => onPickItem(row, row.chapterItem)}
-                                  className="h-4 w-4 text-[#08AACE] focus:ring-[#08AACE]/20"
+                                  className="sr-only"
                                 />
-                                <span>正文</span>
-                                <span className="w-full text-right text-xs font-black tabular-nums text-brand"
-                                >
-                                  {chapterWordCount}
-                                </span>
-                                <span className="text-xs font-black text-slate-500">字</span>
+                                <ContextSelectionDot checked={selectedChapter} disabled={row.isCurrent} />
+                                <ContextSourceRowWordStatus label="正文" value={chapterWordCount} muted={row.isCurrent} />
                               </label>
                               <label
-                                className={['grid w-[112px] grid-cols-[16px_32px_4ch_auto] items-center gap-x-0.5', row.summaryItem ? 'cursor-pointer text-slate-700' : 'cursor-not-allowed text-slate-300'].join(' ')}
+                                className={['ml-3 inline-flex h-8 shrink-0 items-center gap-1.5 border-l border-slate-200 pl-3', row.summaryItem && !row.isCurrent ? 'cursor-pointer text-slate-700' : 'cursor-not-allowed text-slate-300'].join(' ')}
                               >
                                 <input
                                   type="radio"
-                                  disabled={!row.summaryItem}
+                                  disabled={!row.summaryItem || row.isCurrent}
                                   checked={selectedSummary}
                                   onChange={() => row.summaryItem && onPickItem(row, row.summaryItem)}
-                                  className="h-4 w-4 text-[#08AACE] focus:ring-[#08AACE]/20 disabled:border-slate-200"
+                                  className="sr-only"
                                 />
-                                <span>概要</span>
-                                <span
-                                  className={['w-full text-right text-xs font-black tabular-nums', row.summaryItem ? 'text-brand' : 'text-slate-300'].join(' ')}
-                                >
-                                  {summaryWordCount}
-                                </span>
-                                <span className={['text-xs font-black', row.summaryItem ? 'text-slate-500' : 'text-slate-300'].join(' ')}>
-                                  字
-                                </span>
+                                <ContextSelectionDot checked={selectedSummary} disabled={!row.summaryItem || row.isCurrent} />
+                                <ContextSourceRowWordStatus label="梗概" value={summaryWordCount} muted={!row.summaryItem} />
+                              </label>
+                              <label className={['ml-3 inline-flex h-8 shrink-0 items-center gap-1.5 border-l border-slate-200 pl-3', lockedIds.has(row.outlineItem.id) ? 'cursor-not-allowed text-slate-700' : 'cursor-pointer text-slate-700'].join(' ')}>
+                                <input
+                                  type="checkbox"
+                                  disabled={lockedIds.has(row.outlineItem.id)}
+                                  checked={selectedOutline}
+                                  onChange={() => onPickItem(row, row.outlineItem)}
+                                  className="sr-only"
+                                />
+                                <ContextSelectionDot checked={selectedOutline} disabled={lockedIds.has(row.outlineItem.id)} />
+                                <ContextSourceRowWordStatus label="章纲" value={outlineWordCount} />
                               </label>
                             </div>
                           </div>
@@ -494,65 +765,174 @@ function ContextSelectionColumn({
   selectedIds: Set<string>;
   onToggle: (id: string) => void;
 }) {
+  const [previewItemId, setPreviewItemId] = useState('');
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const groupedItems = new Map<string, WorkbenchLinkedContextItem[]>();
   column.items.forEach((item) => {
     const group = item.group || '未分类';
     groupedItems.set(group, [...(groupedItems.get(group) ?? []), item]);
   });
+  const previewItem = column.items.find((item) => item.id === previewItemId) ?? null;
+  const navGroups = Array.from(groupedItems.entries()).map(([group, items]) => ({ group, items }));
+
+  const toggleGroupCollapsed = (group: string) => {
+    setCollapsedGroups((prev) => ({ ...prev, [group]: !prev[group] }));
+  };
+
+  const toggleItemsSelection = (items: WorkbenchLinkedContextItem[]) => {
+    const allSelected = items.length > 0 && items.every((item) => selectedIds.has(item.id));
+    items.forEach((item) => {
+      if (allSelected || !selectedIds.has(item.id)) onToggle(item.id);
+    });
+  };
+
+  useEffect(() => {
+    if (column.items.length === 0) {
+      if (previewItemId) setPreviewItemId('');
+      return;
+    }
+    if (previewItemId && !column.items.some((item) => item.id === previewItemId)) {
+      setPreviewItemId('');
+    }
+  }, [column.items, previewItemId]);
 
   return (
-    <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-100 bg-white">
-      <div className="border-b border-slate-100 px-3 py-2">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-black text-slate-900">{column.title}</h3>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">{column.items.length}</span>
-        </div>
-        <p className="mt-0.5 text-[11px] font-bold text-slate-400">{column.subtitle}</p>
-      </div>
-      <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
-        {column.items.length === 0 ? (
-          <div className="flex h-44 items-center justify-center rounded-xl border border-dashed border-slate-200 text-sm font-bold text-slate-300">
-            暂无可关联内容
+    <section className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] overflow-hidden bg-white">
+      <aside className="min-h-0 border-r border-slate-100 bg-slate-50 p-3">
+        <div className="mb-2 flex items-center justify-between gap-2 px-2">
+          <div className="min-w-0 truncate text-[15px] font-black text-slate-400">
+            {column.title}
           </div>
-        ) : (
-          <div className="space-y-2">
-            {Array.from(groupedItems.entries()).map(([group, items]) => (
-              <div key={`${column.source}:${group}`}>
-                <div className="mb-1.5 flex items-center justify-between rounded-md bg-slate-50 px-2 py-1 text-[11px] font-black text-slate-500">
-                  <span className="truncate">{group}</span>
-                  <span>{items.length}</span>
-                </div>
-                <div className="space-y-1.5">
-                  {items.map((item) => {
-                    const checked = selectedIds.has(item.id);
-                    return (
-                      <label
-                        key={item.id}
-                        className={`block cursor-pointer rounded-lg border p-2 transition-colors ${
-                          checked ? 'border-[#08AACE] bg-sky-50/60' : 'border-slate-100 bg-white hover:border-sky-100 hover:bg-slate-50'
-                        }`}
+          <button
+            type="button"
+            onClick={() => toggleItemsSelection(column.items)}
+            disabled={column.items.length === 0}
+            className="h-8 shrink-0 rounded-xl border border-[#08AACE] bg-white px-3 text-xs font-black text-[#08AACE] hover:bg-[#EAF9FD] disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300"
+          >
+            关联所有
+          </button>
+        </div>
+        <div className="editor-scrollbar h-full space-y-1 overflow-y-auto pb-8">
+          {column.items.length === 0 ? (
+            <div className="rounded-xl bg-white px-3 py-4 text-xs font-bold leading-5 text-slate-400">
+              暂无可关联内容
+            </div>
+          ) : (
+            navGroups.map(({ group, items }) => {
+              const collapsed = collapsedGroups[group] ?? false;
+              return (
+                <div key={`${column.source}:${group}`} className="rounded-xl border border-[#cceef6] bg-white p-1">
+                  <button
+                    type="button"
+                    onClick={() => toggleGroupCollapsed(group)}
+                    className="flex h-10 w-full items-center justify-between gap-2 rounded-lg bg-[#E6F7FB] px-2 text-left text-[15px] font-black text-slate-700 hover:bg-[#d7f1f8]"
+                  >
+                    <span className="min-w-0 truncate">{group}</span>
+                    <span className="flex shrink-0 items-center gap-1 text-[13px] text-slate-400">
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggleItemsSelection(items);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key !== 'Enter' && event.key !== ' ') return;
+                          event.preventDefault();
+                          event.stopPropagation();
+                          toggleItemsSelection(items);
+                        }}
+                        className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-black text-[#08AACE] hover:bg-[#EAF9FD]"
                       >
-                        <div className="flex items-start gap-1.5">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => onToggle(item.id)}
-                            className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-[#08AACE] focus:ring-[#08AACE]/20"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-xs font-black text-slate-900">{item.title}</div>
-                            <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-[11px] font-semibold leading-4 text-slate-500">
-                              {item.content || '暂无内容'}
-                            </p>
-                            <div className="mt-2 text-[11px] font-black text-slate-400"><WordCountText value={getContextWordCount(item.content)} compact /></div>
-                          </div>
-                        </div>
-                      </label>
-                    );
-                  })}
+                        全选
+                      </span>
+                      {items.length}
+                      {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    </span>
+                  </button>
+                  {!collapsed && (
+                    <div className="mt-1 space-y-1 bg-white">
+                      {items.map((item) => {
+                        const checked = selectedIds.has(item.id);
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setPreviewItemId(item.id)}
+                            className={
+                              'flex h-10 w-full items-center gap-2 rounded-lg px-2 text-left text-[15px] font-black ' +
+                              (checked ? 'bg-[#FFF7ED] text-gray-900' : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800')
+                            }
+                          >
+                            <span
+                              role="checkbox"
+                              aria-checked={checked}
+                              tabIndex={0}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setPreviewItemId(item.id);
+                                onToggle(item.id);
+                              }}
+                              onKeyDown={(event) => {
+                                if (event.key !== 'Enter' && event.key !== ' ') return;
+                                event.preventDefault();
+                                event.stopPropagation();
+                                setPreviewItemId(item.id);
+                                onToggle(item.id);
+                              }}
+                              className={
+                                'grid h-4 w-4 shrink-0 place-items-center rounded border text-[10px] ' +
+                                (checked ? 'border-[#08AACE] bg-[#08AACE] text-white' : 'border-slate-300 bg-white text-transparent')
+                              }
+                            >
+                              ✓
+                            </span>
+                            <span className="min-w-0 truncate">{item.title}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </aside>
+      <div className="min-h-0 p-3">
+        {previewItem ? (
+          <article
+            className={
+              'flex h-full min-h-0 flex-col rounded-2xl border px-5 py-4 ' +
+              (selectedIds.has(previewItem.id) ? 'border-[#08AACE] bg-[#FFF7ED] text-slate-900' : 'border-gray-100 bg-gray-50 text-gray-600')
+            }
+          >
+            <div className="mb-3 flex shrink-0 items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onToggle(previewItem.id)}
+                    className={
+                      'grid h-6 w-6 shrink-0 place-items-center rounded-md border text-xs font-black ' +
+                      (selectedIds.has(previewItem.id) ? 'border-[#08AACE] bg-[#08AACE] text-white' : 'border-slate-300 bg-white text-transparent')
+                    }
+                  >
+                    ✓
+                  </button>
+                  <h4 className="truncate text-lg font-black text-slate-900">{previewItem.title}</h4>
+                  <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-black text-[#08AACE]">{previewItem.group}</span>
                 </div>
               </div>
-            ))}
+              <span className="shrink-0 text-sm font-black text-[#08AACE]"><WordCountText value={getContextWordCount(previewItem.content)} /></span>
+            </div>
+            <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words pr-2 text-sm font-semibold leading-7 text-slate-600">
+              {previewItem.content || '暂无内容'}
+            </div>
+          </article>
+        ) : (
+          <div className="flex h-full min-h-[260px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-gray-50 text-sm font-bold text-slate-300">
+            暂无预览内容
           </div>
         )}
       </div>
@@ -1024,15 +1404,15 @@ export function WorkbenchPage() {
   const [activeModal, setActiveModal] = useState<ModalKey | null>(null);
   const [activeCreationFlow, setActiveCreationFlow] = useState<WorkbenchCreationFlowPageKey>('writing');
   const [managementModal, setManagementModal] = useState<ManagementModalKey | null>(null);
-  const [plotPointOpenSignal, setPlotPointOpenSignal] = useState(0);
   const [fieldSizeOpenSignal, setFieldSizeOpenSignal] = useState(0);
   const [aiLogOpenSignal, setAiLogOpenSignal] = useState(0);
   const [settingLibraryInitialTab, setSettingLibraryInitialTab] = useState<'脑洞' | '大纲'>('大纲');
   const [isContextLibraryOpen, setIsContextLibraryOpen] = useState(false);
-  const [contextLibraryTab, setContextLibraryTab] = useState<ContextLibraryTab>('chapterSummary');
+  const [contextLibraryTab, setContextLibraryTab] = useState<ContextLibraryTab>('outlineChapter');
   const [contextSearchText, setContextSearchText] = useState('');
   const [draftContextIds, setDraftContextIds] = useState<Set<string>>(() => new Set());
   const [linkedContextItems, setLinkedContextItems] = useState<WorkbenchLinkedContextItem[]>([]);
+  const [contextSelectionTouched, setContextSelectionTouched] = useState(false);
   const [publishConfirm, setPublishConfirm] = useState(() => localStorage.getItem(PUBLISH_CONFIRM_KEY) === 'true');
   const [pendingPublish, setPendingPublish] = useState<PendingPublish | null>(null);
   const [globalNotes, setGlobalNotes] = useState<MemoItem[]>(() => readMemoItems(GLOBAL_NOTES_LIST_KEY, GLOBAL_NOTES_KEY, 'global'));
@@ -1121,14 +1501,23 @@ export function WorkbenchPage() {
   useEffect(() => {
     if (!currentNovelId) return;
     if (isRememberAssociationsEnabled()) {
-      setLinkedContextItems(readWorkbenchLinkedContextItems(currentNovelId));
+      const storedItems = readWorkbenchLinkedContextItems(currentNovelId);
+      setLinkedContextItems(storedItems);
+      setContextSelectionTouched(storedItems.length > 0);
     } else {
       setLinkedContextItems([]);
+      setContextSelectionTouched(false);
       clearWorkbenchLinkedContextItems(currentNovelId);
     }
     setDraftContextIds(new Set());
     setIsContextLibraryOpen(false);
   }, [currentNovelId]);
+
+  useEffect(() => {
+    setContextSelectionTouched(false);
+    setDraftContextIds(new Set());
+    setIsContextLibraryOpen(false);
+  }, [selectedChapter?.chapter.id]);
 
   useEffect(() => {
     if (!currentNovel) return;
@@ -1374,26 +1763,79 @@ export function WorkbenchPage() {
   const outlineStorageKey = `xinyuexia_workbench_outline_${currentNovel.id}`;
   const settingsEntries = readWorkbenchLibraryEntries(settingsStorageKey);
   const outlineEntries = readWorkbenchLibraryEntries(outlineStorageKey);
-  const settingContextItems: WorkbenchLinkedContextItem[] = settingsEntries
-    .filter((entry) => normalizeContextSource(entry.tab) === 'setting')
+  const settingContextEntries = orderContextEntriesByType(
+    settingsEntries.filter((entry) => entry.tab === '大纲'),
+    CONTEXT_SETTING_TYPE_ORDER,
+    (entry) => parseContextSettingContent(entry.content).type,
+  );
+  const roleContextEntries = orderContextEntriesByType(
+    settingsEntries.filter((entry) => normalizeContextSource(entry.tab) === 'role'),
+    CONTEXT_ROLE_TYPE_ORDER,
+    (entry) => parseContextRoleContent(entry.content).type,
+    { pinnedFirst: true },
+  );
+  const settingContextItems: WorkbenchLinkedContextItem[] = settingContextEntries
+    .map((entry) => {
+      const parsed = parseContextSettingContent(entry.content);
+      return {
+        id: `setting:${entry.id}`,
+        source: 'setting' as const,
+        group: parsed.type || '未分类',
+        title: entry.title || '未命名设定',
+        content: parsed.body || entry.content || '',
+      };
+    })
+    .filter((item) => item.content.trim());
+  const roleContextItems: WorkbenchLinkedContextItem[] = roleContextEntries
+    .map((entry) => {
+      const parsed = parseContextRoleContent(entry.content);
+      return {
+        id: `role:${entry.id}`,
+        source: 'role' as const,
+        group: parsed.type || getContextEntryGroup(entry.tab, entry.type),
+        title: entry.title || '未命名角色',
+        content: parsed.body || entry.content || '',
+      };
+    })
+    .filter((item) => item.content.trim());
+  const roleStatusContextItems: WorkbenchLinkedContextItem[] = roleContextEntries
+    .map((entry) => {
+      const parsed = parseContextRoleStatusContent(entry.content);
+      return {
+        id: `status:role:${entry.id}`,
+        source: 'role' as const,
+        group: parsed.type || getContextEntryGroup(entry.tab, entry.type),
+        title: entry.title || '未命名角色',
+        content: parsed.body,
+      };
+    })
+    .filter((item) => item.content.trim());
+  const settingStatusContextItems: WorkbenchLinkedContextItem[] = settingContextEntries
+    .filter((entry) => isContextStatusCandidate(entry.tab, entry.type, entry.title, entry.content))
+    .map((entry) => {
+      const parsed = parseContextSettingContent(entry.content);
+      return {
+        id: `status:setting:${entry.id}`,
+        source: 'setting' as const,
+        group: parsed.type || getContextEntryGroup(entry.tab, entry.type),
+        title: entry.title || '未命名设定',
+        content: extractContextStatusRecord(parsed.body || entry.content),
+      };
+    })
+    .filter((item) => item.content.trim());
+  const statusContextItems = [...roleStatusContextItems, ...settingStatusContextItems];
+  const libraryContextEntries = [...settingsEntries, ...outlineEntries];
+  const outlineContextItems: WorkbenchLinkedContextItem[] = libraryContextEntries
+    .filter(isContextOutlineEntry)
     .map((entry) => ({
-      id: `setting:${entry.id}`,
-      source: 'setting',
+      id: `outline:${entry.id}`,
+      source: 'outline',
       group: getContextEntryGroup(entry.tab, entry.type),
-      title: entry.title || '未命名设定',
+      title: entry.title || '未命名章纲',
       content: entry.content || '',
     }));
-  const roleContextItems: WorkbenchLinkedContextItem[] = settingsEntries
-    .filter((entry) => normalizeContextSource(entry.tab) === 'role')
-    .map((entry) => ({
-      id: `role:${entry.id}`,
-      source: 'role',
-      group: getContextEntryGroup(entry.tab, entry.type),
-      title: entry.title || '未命名角色',
-      content: entry.content || '',
-    }));
-  const summaryContextItems: WorkbenchLinkedContextItem[] = outlineEntries
-    .filter((entry) => normalizeContextSource(entry.tab) === 'summary')
+  const summaryContextItems: WorkbenchLinkedContextItem[] = libraryContextEntries
+    .filter(isContextSummaryEntry)
     .map((entry) => ({
       id: `summary:${entry.id}`,
       source: 'summary',
@@ -1401,15 +1843,23 @@ export function WorkbenchPage() {
       title: entry.title || '未命名梗概',
       content: entry.content || '',
     }));
+  const selectedChapterSerialNumber = selectedChapter?.chapter.serialNumber ?? Number.POSITIVE_INFINITY;
   const chapterContextItems: WorkbenchLinkedContextItem[] = volumes.flatMap((volume) => (
-    volume.chapters.map((chapter) => ({
-      id: `chapter:${chapter.id}`,
-      source: 'chapter' as const,
-      group: volume.name,
-      title: chapter.title || `第${chapter.serialNumber}章`,
-      content: selectedChapter?.chapter.id === chapter.id ? editorContent : readChapterContent(currentNovel.id, chapter.id),
-    }))
+    volume.chapters
+      .filter((chapter) => chapter.serialNumber <= selectedChapterSerialNumber)
+      .map((chapter) => ({
+        id: `chapter:${chapter.id}`,
+        source: 'chapter' as const,
+        group: volume.name,
+        title: chapter.title || `第${chapter.serialNumber}章`,
+        content: readChapterContent(currentNovel.id, chapter.id),
+      }))
   ));
+  const outlineItemBySerial = new Map<number, WorkbenchLinkedContextItem>();
+  outlineContextItems.forEach((item) => {
+    const serial = getContextEntrySerial(item.title);
+    if (serial && !outlineItemBySerial.has(serial)) outlineItemBySerial.set(serial, item);
+  });
   const summaryItemBySerial = new Map<number, WorkbenchLinkedContextItem>();
   summaryContextItems.forEach((item) => {
     const serial = getContextEntrySerial(item.title);
@@ -1417,6 +1867,7 @@ export function WorkbenchPage() {
   });
   const contextChapterRows: ContextChapterPair[] = volumes.flatMap((volume) => (
     [...volume.chapters]
+      .filter((chapter) => chapter.serialNumber <= selectedChapterSerialNumber)
       .sort((a, b) => b.serialNumber - a.serialNumber)
       .map((chapter) => {
         const chapterItem = chapterContextItems.find((item) => item.id === `chapter:${chapter.id}`) ?? {
@@ -1424,7 +1875,14 @@ export function WorkbenchPage() {
           source: 'chapter' as const,
           group: volume.name,
           title: chapter.title || `第${chapter.serialNumber}章`,
-          content: selectedChapter?.chapter.id === chapter.id ? editorContent : readChapterContent(currentNovel.id, chapter.id),
+          content: readChapterContent(currentNovel.id, chapter.id),
+        };
+        const outlineItem = outlineItemBySerial.get(chapter.serialNumber) ?? {
+          id: `outline:chapter:${chapter.id}`,
+          source: 'outline' as const,
+          group: volume.name,
+          title: `第${chapter.serialNumber}章章纲`,
+          content: '',
         };
         return {
           volumeId: volume.id,
@@ -1432,21 +1890,56 @@ export function WorkbenchPage() {
           chapterId: chapter.id,
           serialNumber: chapter.serialNumber,
           title: chapter.title,
+          isCurrent: chapter.id === selectedChapter?.chapter.id,
           chapterItem,
+          outlineItem,
           summaryItem: summaryItemBySerial.get(chapter.serialNumber) ?? null,
         };
       })
   )).sort((a, b) => b.serialNumber - a.serialNumber);
   const otherContextColumns: ContextColumn[] = [
-    { source: 'setting', title: '设定', subtitle: '读取大纲设定中的设定分类和卡片', items: settingContextItems },
-    { source: 'role', title: '角色', subtitle: '读取大纲设定中的角色分类和卡片', items: roleContextItems },
+    { source: 'setting', title: '大纲设定', subtitle: '读取大纲里的设定分类和卡片', items: settingContextItems },
   ];
-  const allContextItems = [...chapterContextItems, ...summaryContextItems, ...settingContextItems, ...roleContextItems];
+  const roleContextColumns: ContextColumn[] = [
+    { source: 'role', title: '人物设定', subtitle: '读取大纲里的人物设定，并保持分类和卡片顺序', items: roleContextItems },
+  ];
+  const statusContextColumns: ContextColumn[] = [
+    { source: 'role', title: '状态', subtitle: '读取角色、道具、势力等卡片里的最新状态记录', items: statusContextItems },
+  ];
+  const activeContextColumns = contextLibraryTab === 'status'
+    ? statusContextColumns
+    : contextLibraryTab === 'role'
+    ? roleContextColumns
+    : otherContextColumns;
+  const chapterRowContextItems = contextChapterRows.flatMap((row) => [
+    row.chapterItem,
+    row.outlineItem,
+    row.summaryItem,
+  ].filter((item): item is WorkbenchLinkedContextItem => Boolean(item)));
+  const allContextItems = [...chapterRowContextItems, ...outlineContextItems, ...summaryContextItems, ...settingContextItems, ...roleContextItems, ...statusContextItems];
   const contextItemById = new Map(allContextItems.map((item) => [item.id, item]));
+  const requiredContextItems = contextChapterRows
+    .filter((row) => row.isCurrent)
+    .map((row) => row.outlineItem);
+  const requiredContextIds = new Set(requiredContextItems.map((item) => item.id));
+  const previousContextRow = contextChapterRows.find((row) => !row.isCurrent && row.serialNumber < selectedChapterSerialNumber) ?? null;
+  const defaultOptionalContextItems = [
+    previousContextRow ? getPreferredChapterNarrativeItem(previousContextRow) : null,
+  ].filter((item): item is WorkbenchLinkedContextItem => Boolean(item));
+  const rawOptionalLinkedContextItems = contextSelectionTouched
+    ? linkedContextItems.filter((item) => !requiredContextIds.has(item.id))
+    : defaultOptionalContextItems;
+  const optionalLinkedContextItems = keepExclusiveChapterNarrativeItems(contextChapterRows, rawOptionalLinkedContextItems);
+  const effectiveLinkedContextItems = mergeContextItems([...requiredContextItems, ...optionalLinkedContextItems]);
   const selectedDraftContextItems = Array.from(draftContextIds)
     .map((id) => contextItemById.get(id))
     .filter((item): item is WorkbenchLinkedContextItem => Boolean(item));
   const draftContextWordCount = selectedDraftContextItems.reduce((sum, item) => sum + getContextWordCount(item.content), 0);
+  const draftChapterWordCount = getContextItemsWordCount(selectedDraftContextItems, 'chapter');
+  const draftOutlineWordCount = getContextItemsWordCount(selectedDraftContextItems, 'outline');
+  const draftSummaryWordCount = getContextItemsWordCount(selectedDraftContextItems, 'summary');
+  const canConfirmContextLibrary = requiredContextItems.length > 0
+    && requiredContextItems.every((item) => getContextWordCount(item.content) > 0);
   const updateLinkedContextItems = (items: WorkbenchLinkedContextItem[]) => {
     setLinkedContextItems(items);
     if (!currentNovelId) return;
@@ -1458,8 +1951,8 @@ export function WorkbenchPage() {
   };
 
   const openContextLibrary = () => {
-    setDraftContextIds(new Set(linkedContextItems.map((item) => item.id)));
-    setContextLibraryTab('chapterSummary');
+    setDraftContextIds(new Set(effectiveLinkedContextItems.map((item) => item.id)));
+    setContextLibraryTab('outlineChapter');
     setIsContextLibraryOpen(true);
   };
 
@@ -1473,10 +1966,12 @@ export function WorkbenchPage() {
   };
 
   const pickDraftContextItem = (item: WorkbenchLinkedContextItem, siblingId?: string | null) => {
+    if (requiredContextIds.has(item.id)) return;
     setDraftContextIds((current) => {
       const next = new Set(current);
       if (siblingId) next.delete(siblingId);
-      next.add(item.id);
+      if (next.has(item.id)) next.delete(item.id);
+      else next.add(item.id);
       return next;
     });
   };
@@ -1484,34 +1979,69 @@ export function WorkbenchPage() {
   const toggleChapterContextRow = (row: ContextChapterPair) => {
     setDraftContextIds((current) => {
       const next = new Set(current);
-      const rowIds = [row.chapterItem.id, row.summaryItem?.id].filter(Boolean) as string[];
-      const selected = rowIds.some((id) => next.has(id));
-      rowIds.forEach((id) => next.delete(id));
-      if (!selected) next.add(row.chapterItem.id);
+      if (row.isCurrent) {
+        next.add(row.outlineItem.id);
+        return next;
+      }
+      const rowIds = [
+        row.isCurrent ? null : row.chapterItem.id,
+        row.isCurrent ? null : row.outlineItem.id,
+        row.isCurrent ? null : row.summaryItem?.id,
+      ].filter((id): id is string => Boolean(id && !requiredContextIds.has(id)));
+      const selected = rowIds.length > 0 && rowIds.some((id) => next.has(id));
+      rowIds.forEach((id) => {
+        if (selected) next.delete(id);
+      });
+      if (!selected) {
+        next.add(row.outlineItem.id);
+        const preferred = getPreferredChapterNarrativeItem(row);
+        if (preferred) next.add(preferred.id);
+      }
       return next;
     });
   };
 
   const pickChapterContextItem = (row: ContextChapterPair, item: WorkbenchLinkedContextItem) => {
-    const siblingId = item.id === row.chapterItem.id ? row.summaryItem?.id : row.chapterItem.id;
-    pickDraftContextItem(item, siblingId);
+    if (row.isCurrent && item.id !== row.outlineItem.id) return;
+    if (item.id === row.chapterItem.id || item.id === row.summaryItem?.id) {
+      setDraftContextIds((current) => {
+        const next = new Set(current);
+        next.delete(row.chapterItem.id);
+        if (row.summaryItem) next.delete(row.summaryItem.id);
+        next.add(item.id);
+        return next;
+      });
+      return;
+    }
+    pickDraftContextItem(item);
   };
 
   const selectRecentChapterContexts = (count: number) => {
-    const rows = contextChapterRows.slice(0, count);
+    const rows = contextChapterRows.filter((row) => !row.isCurrent).slice(0, count);
     setDraftContextIds((current) => {
       const next = new Set(current);
-      rows.forEach((row) => next.add(row.chapterItem.id));
+      rows.forEach((row) => {
+        next.delete(row.chapterItem.id);
+        if (row.summaryItem) next.delete(row.summaryItem.id);
+        const preferred = getPreferredChapterNarrativeItem(row);
+        if (preferred) next.add(preferred.id);
+      });
       return next;
     });
   };
 
   const confirmContextLibrary = () => {
+    if (!canConfirmContextLibrary) return;
     const selectedItems = Array.from(draftContextIds)
       .map((id) => contextItemById.get(id))
       .filter((item): item is WorkbenchLinkedContextItem => Boolean(item));
-    updateLinkedContextItems(selectedItems);
-    setDraftContextIds(new Set(selectedItems.map((item) => item.id)));
+    const optionalSelectedItems = keepExclusiveChapterNarrativeItems(
+      contextChapterRows,
+      selectedItems.filter((item) => !requiredContextIds.has(item.id)),
+    );
+    setContextSelectionTouched(true);
+    updateLinkedContextItems(optionalSelectedItems);
+    setDraftContextIds(new Set([...requiredContextIds, ...optionalSelectedItems.map((item) => item.id)]));
     setIsContextLibraryOpen(false);
   };
 
@@ -1687,7 +2217,6 @@ export function WorkbenchPage() {
   const switchCreationFlow = (flow: WorkbenchCreationFlowPageKey) => {
     setActiveCreationFlow(flow);
     localStorage.setItem(`${WORKBENCH_FLOW_PAGE_STORAGE_PREFIX}${currentNovel.id}`, flow);
-    if (flow === 'plotChain') setPlotPointOpenSignal((value) => value + 1);
   };
 
   const showFieldSizeButton = FIELD_SIZE_FLOW_IDS.has(activeCreationFlow);
@@ -1708,29 +2237,6 @@ export function WorkbenchPage() {
           fieldSizeOpenSignal={fieldSizeOpenSignal}
           openLogSignal={aiLogOpenSignal}
           showInlineFieldSizeButton={false}
-        />
-      );
-    }
-
-    if (activeCreationFlow === 'plotChain') {
-      return (
-        <WorkbenchLibraryPanel
-          key="plotChain"
-          storageKey={settingsStorageKey}
-          outlineStorageKey={outlineStorageKey}
-          tabs={['细纲']}
-          emptyText="暂无章纲内容"
-          volumes={volumes}
-          getChapterContent={(chapterId) => (
-            selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
-          )}
-          scale={1}
-          fieldSizeOpenSignal={fieldSizeOpenSignal}
-          openLogSignal={aiLogOpenSignal}
-          showInlineFieldSizeButton={false}
-          openPlotPointSignal={plotPointOpenSignal}
-          plotPointStandalone
-          onOpenDetailOutlineFromPlotChain={() => switchCreationFlow('chapterOutline')}
         />
       );
     }
@@ -1764,8 +2270,8 @@ export function WorkbenchPage() {
           showInlineFieldSizeButton={false}
           storageKey={outlineStorageKey}
           outlineStorageKey={outlineStorageKey}
-          tabs={['概要']}
-          emptyText="暂无概要内容"
+          tabs={['梗概']}
+          emptyText="暂无梗概内容"
           volumes={volumes}
           getChapterContent={(chapterId) => (
             selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
@@ -1775,7 +2281,7 @@ export function WorkbenchPage() {
       );
     }
 
-    if (activeCreationFlow === 'audit' || activeCreationFlow === 'comment' || activeCreationFlow === 'status') {
+    if (activeCreationFlow === 'audit' || activeCreationFlow === 'comment' || activeCreationFlow === 'polish' || activeCreationFlow === 'status') {
       return (
         <ChapterEditor
           embeddedMode={activeCreationFlow}
@@ -1932,14 +2438,17 @@ export function WorkbenchPage() {
                 activeTool="ai"
                 workId={currentNovel.id}
                 selectedChapterContent={editorContent}
-                linkedContextItems={linkedContextItems}
+                linkedContextItems={effectiveLinkedContextItems}
                 onReplaceContent={replaceEditorContent}
                 onUndoReplace={undoReplaceEditorContent}
                 canUndoReplace={canUndoReplace}
                 onOpenModelManage={() => setManagementModal('models')}
                 onOpenAgentManage={() => setManagementModal('agents')}
                 onOpenContextLibrary={openContextLibrary}
-                onClearLinkedContext={() => updateLinkedContextItems([])}
+                onClearLinkedContext={() => {
+                  setContextSelectionTouched(true);
+                  updateLinkedContextItems([]);
+                }}
                 openLogSignal={aiLogOpenSignal}
               />
             </aside>
@@ -1990,63 +2499,79 @@ export function WorkbenchPage() {
 
       {isContextLibraryOpen && (
         <WorkbenchModal
-          title="选择关联章节"
+          title="关联资料"
           isOpen={isContextLibraryOpen}
           onClose={() => setIsContextLibraryOpen(false)}
           storageId="workbench_context_library"
-          widthClass="w-[min(1120px,92vw)]"
+          widthClass="w-[min(1296px,94vw)]"
           heightClass="h-[min(820px,88vh)] min-h-[520px]"
+          headerExtra={(
+            <div data-no-modal-drag="true" className="inline-flex shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 text-sm font-black">
+              <button
+                type="button"
+                onClick={() => setContextLibraryTab('outlineChapter')}
+                className={`h-10 rounded-xl px-5 transition-colors ${
+                  contextLibraryTab === 'outlineChapter'
+                    ? 'bg-[#08AACE] text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                正文/梗概/章纲
+              </button>
+              <button
+                type="button"
+                onClick={() => setContextLibraryTab('setting')}
+                className={`h-10 rounded-xl px-5 transition-colors ${
+                  contextLibraryTab === 'setting'
+                    ? 'bg-[#08AACE] text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                大纲设定
+              </button>
+              <button
+                type="button"
+                onClick={() => setContextLibraryTab('role')}
+                className={`h-10 rounded-xl px-5 transition-colors ${
+                  contextLibraryTab === 'role'
+                    ? 'bg-[#08AACE] text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                人物设定
+              </button>
+              <button
+                type="button"
+                onClick={() => setContextLibraryTab('status')}
+                className={`h-10 rounded-xl px-5 transition-colors ${
+                  contextLibraryTab === 'status'
+                    ? 'bg-[#08AACE] text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                状态
+              </button>
+            </div>
+          )}
         >
           <div className="flex min-h-0 flex-1 flex-col bg-white p-5">
-            <div className="mb-4 flex shrink-0 items-center justify-between gap-3">
-              <div className="flex overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-1 text-sm font-black">
-                <button
-                  type="button"
-                  onClick={() => setContextLibraryTab('chapterSummary')}
-                  className={`h-10 rounded-xl px-5 transition-colors ${
-                    contextLibraryTab === 'chapterSummary'
-                      ? 'bg-white text-[#08AACE] shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  正文梗概
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setContextLibraryTab('other')}
-                  className={`h-10 rounded-xl px-5 transition-colors ${
-                    contextLibraryTab === 'other'
-                      ? 'bg-white text-[#08AACE] shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  其他
-                </button>
-              </div>
-              <div className="min-w-0 flex-1 text-right">
-                <div className="truncate text-sm font-black text-slate-900">{currentNovel.title}</div>
-                <div className="mt-0.5 text-xs font-bold text-slate-400">
-                  已选择 {selectedDraftContextItems.length} 项 · 共 <WordCountText value={draftContextWordCount} />
-                </div>
-              </div>
-            </div>
-
-            {contextLibraryTab === 'chapterSummary' ? (
+            {contextLibraryTab === 'outlineChapter' ? (
               <ContextChapterSummaryList
                 rows={contextChapterRows}
                 selectedIds={draftContextIds}
+                lockedIds={requiredContextIds}
                 searchText={contextSearchText}
                 onSearchChange={setContextSearchText}
                 onToggleChapter={toggleChapterContextRow}
                 onPickItem={pickChapterContextItem}
                 onSelectRecent={selectRecentChapterContexts}
-                onClear={() => setDraftContextIds(new Set())}
+                onClear={() => setDraftContextIds(new Set(requiredContextIds))}
               />
             ) : (
-              <main className="grid min-h-0 flex-1 grid-cols-2 gap-3">
-                {otherContextColumns.map((column) => (
+              <main className="grid min-h-0 flex-1 grid-cols-1 gap-3">
+                {activeContextColumns.map((column) => (
                   <ContextSelectionColumn
-                    key={column.source}
+                    key={contextLibraryTab + ':' + column.source}
                     column={column}
                     selectedIds={draftContextIds}
                     onToggle={toggleDraftContext}
@@ -2055,21 +2580,18 @@ export function WorkbenchPage() {
               </main>
             )}
 
-            <div className="mt-4 flex shrink-0 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <div className="flex min-w-0 items-center gap-4 text-sm font-bold text-slate-600">
-                <span className="inline-flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#3B82F6]" />
-                  已选择 {selectedDraftContextItems.length} 项
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  共 <WordCountText value={draftContextWordCount} />
-                </span>
+            <div className="mt-4 flex shrink-0 items-center justify-between gap-4 border-t border-gray-100 bg-white px-5 py-4">
+              <div className="min-w-0 space-y-1 text-sm font-bold text-gray-500">
+                <div>将读取 {selectedDraftContextItems.length} 项</div>
+                <div>正文：<ContextSourceWordStatus label="正文" value={draftChapterWordCount} /></div>
+                <div>梗概：<ContextSourceWordStatus label="梗概" value={draftSummaryWordCount} /></div>
+                <div>章纲：<ContextSourceWordStatus label="章纲" value={draftOutlineWordCount} /></div>
+                <div>共多少字：<WordCountText value={draftContextWordCount} /></div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setDraftContextIds(new Set())}
+                  onClick={() => setDraftContextIds(new Set(requiredContextIds))}
                   className="h-10 rounded-xl border border-slate-200 bg-white px-5 text-sm font-black text-slate-500 hover:bg-slate-50"
                 >
                   清空
@@ -2083,10 +2605,12 @@ export function WorkbenchPage() {
                 </button>
                 <button
                   type="button"
+                  disabled={!canConfirmContextLibrary}
                   onClick={confirmContextLibrary}
-                  className="h-10 rounded-xl bg-[#2563EB] px-6 text-sm font-black text-white hover:bg-[#1D4ED8]"
+                  className={['h-10 rounded-xl px-6 text-sm font-black text-white shadow-sm', canConfirmContextLibrary ? 'bg-[#08AACE] hover:bg-[#0798b8]' : 'cursor-not-allowed bg-slate-300 shadow-none'].join(' ')}
+                  title={canConfirmContextLibrary ? '确认读取关联资料' : '当前章节没有章纲，无法确认读取'}
                 >
-                  确认选择
+                  确认读取
                 </button>
               </div>
             </div>
@@ -2172,21 +2696,6 @@ export function WorkbenchPage() {
           volumes={volumes}
           getChapterContent={(chapterId) => readChapterContent(currentNovel.id, chapterId)}
           scale={1.1}
-        />
-      </WorkbenchModal>
-
-      <WorkbenchModal title="剧情链" isOpen={activeModal === 'plotPointGenerator'} onClose={() => setActiveModal(null)} storageId="workbench_plot_point_generator" widthClass="w-[1180px]" heightClass="h-[82vh] max-h-[92vh]" titleClassName="text-3xl" closeOnBackdrop={false}>
-        <WorkbenchLibraryPanel
-          storageKey={settingsStorageKey}
-          outlineStorageKey={outlineStorageKey}
-          tabs={['细纲']}
-          emptyText="暂无章纲内容"
-          volumes={volumes}
-          getChapterContent={(chapterId) => readChapterContent(currentNovel.id, chapterId)}
-          scale={1}
-          openPlotPointSignal={plotPointOpenSignal}
-          plotPointStandalone
-          onOpenDetailOutlineFromPlotChain={() => setActiveModal('detailOutlineLibrary')}
         />
       </WorkbenchModal>
 

@@ -1,6 +1,8 @@
 ﻿import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { getWorkbenchPlotPointDisplayText, getWorkbenchPlotPointReview } from '@/features/workbench/model/workbenchPlotChain';
+
 import { WorkbenchLibraryPanel, parseGeneratedPlotPointCandidates } from './WorkbenchLibraryPanel';
 
 const readWorkbenchLibraryPanelSource = async () => {
@@ -27,6 +29,22 @@ const readCombinedAiConfigSelectSource = async () => {
   return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../shared/ui/CombinedAiConfigSelect.tsx'), 'utf8');
 };
 
+const readAiRequestLogGroupsSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../shared/ui/AiRequestLogGroups.tsx'), 'utf8');
+};
+
+const readCapsuleSelectSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../shared/ui/CapsuleSelect.tsx'), 'utf8');
+};
+
 const readModelHookSource = async () => {
   const { readFileSync } = await import('node:fs');
   const { fileURLToPath } = await import('node:url');
@@ -41,6 +59,22 @@ const readChapterEditorSource = async () => {
   const { dirname, join } = await import('node:path');
 
   return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'ChapterEditor.tsx'), 'utf8');
+};
+
+const readWorkbenchAiPanelSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchAIPanel.tsx'), 'utf8');
+};
+
+const readAiInlineInputSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../shared/ui/AiInlineInput.tsx'), 'utf8');
 };
 
 const readWorkbenchPlotChainSource = async () => {
@@ -72,6 +106,43 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     localStorage.clear();
   });
 
+  it('auto-creates an editable outline setting when typing into the empty setting name field', async () => {
+    render(
+      <WorkbenchLibraryPanel
+        storageKey="workbench-outline-empty-name-edit-test"
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无内容"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('输入设定名'), { target: { value: '测试设定名' } });
+
+    expect(await screen.findByDisplayValue('测试设定名')).toBeInTheDocument();
+    const storedEntries = JSON.parse(localStorage.getItem('workbench-outline-empty-name-edit-test') ?? '[]');
+    expect(storedEntries).toHaveLength(1);
+    expect(storedEntries[0]).toMatchObject({ tab: '大纲', title: '测试设定名' });
+  });
+
+  it('auto-creates an editable outline setting when typing into the empty setting preview field', async () => {
+    render(
+      <WorkbenchLibraryPanel
+        storageKey="workbench-outline-empty-preview-edit-test"
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无内容"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.change(screen.getByPlaceholderText('这里可以直接输入设定内容，会自动新建设定。'), { target: { value: '测试设定正文' } });
+
+    expect(await screen.findByDisplayValue('测试设定正文')).toBeInTheDocument();
+    const storedEntries = JSON.parse(localStorage.getItem('workbench-outline-empty-preview-edit-test') ?? '[]');
+    expect(storedEntries).toHaveLength(1);
+    expect(storedEntries[0]).toMatchObject({ tab: '大纲', title: '新建大纲' });
+    expect(JSON.parse(storedEntries[0].content)).toMatchObject({ type: '未分类', body: '测试设定正文' });
+  });
+
   it('does not render the internal setting role brainstorm tabs and shows the requested brainstorm page', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
 
@@ -79,29 +150,124 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('defaultActiveTab');
     expect(panelSource).not.toContain("tabs={['设定', '角色', '脑洞']}");
   });
-  it('places brainstorm output clear action on the top right and font tools in the header slot', async () => {
+
+  it('renders outline linked context as current-or-brainstorm segmented control', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const linkControlStart = panelSource.indexOf("title={isOutlineCharacterScope ? '人物设定固定关联当前设定' : '关联当前选中的设定预览'}");
+    const linkControlSource = panelSource.slice(panelSource.lastIndexOf('<div className="mt-3 flex min-w-0 items-center gap-1.5">', linkControlStart), panelSource.indexOf('<div className="mt-3 flex items-center gap-2">', linkControlStart));
+
+    expect(linkControlStart).toBeGreaterThan(-1);
+    expect(panelSource).toContain("settingLinkSource?: 'current' | 'brainstorm' | null;");
+    expect(panelSource).toContain("settingLinkSource: 'brainstorm'");
+    expect(panelSource).toContain('promptDisabled: false');
+    expect(panelSource).toContain("settingLinkSource: 'current'");
+    expect(panelSource).toContain('const getActiveLinkedSettingSnapshot = () => {');
+    expect(panelSource).toContain("if (outlineSettingScope === 'character') return 'current';");
+    expect(panelSource).toContain("source === 'current'");
+    expect(panelSource).toContain('text: getSettingEntryBody(currentEntry)');
+    expect(panelSource).toContain('text: currentRoleEntry && currentRole ? buildRoleReaderContent(currentRoleEntry, currentRole) :');
+    expect(linkControlSource).toContain('关联');
+    expect(linkControlSource).toContain('当前设定');
+    expect(linkControlSource).toContain('脑洞');
+    expect(linkControlSource).toContain('if (isOutlineCharacterScope) return;');
+    expect(linkControlSource).toContain('!isOutlineCharacterScope && activeSettingLinkSource === \'brainstorm\'');
+    expect(linkControlSource).toContain('disabled={isOutlineCharacterScope}');
+    expect(linkControlSource).toContain('人物设定固定读取当前人物，不能关联脑洞');
+    expect(linkControlSource).toContain('activeSettingLinkSource === \'current\'');
+    expect(linkControlSource).toContain('activeSettingLinkSource === \'brainstorm\'');
+    expect(linkControlSource).toContain('updateActiveTabConfig({ settingLinkSource: null, promptDisabled: false })');
+    expect(linkControlSource).toContain('loadedBrainstormId: null');
+    expect(linkControlSource).toContain('promptDisabled: true');
+    expect(linkControlSource).toContain('已关联：<WordCountText value={linkedSettingWordCount} compact />');
+    expect(linkControlSource).not.toContain('label="关联脑洞"');
+    expect(linkControlSource).not.toContain('linkedLabel="已关联脑洞"');
+    expect(panelSource).toContain("const isPromptDisabledForRequest = activeTab === SETTING_TAB\n      ? getActiveSettingLinkSource() === 'current'\n      : Boolean(activeTabConfig.promptDisabled);");
+    expect(panelSource).toContain("const effectivePromptDisabled = activeTab === SETTING_TAB\n      ? isOutlineCharacterScope || activeSettingLinkSource === 'current'\n      : Boolean(activeTabConfig.promptDisabled);");
+    expect(panelSource).toContain('promptDisabled={effectivePromptDisabled}');
+    expect(panelSource).not.toContain('autoDisablePromptOnCurrentLink');
+    expect(panelSource).not.toContain('关联当前时自动禁用提示词');
+  });
+
+  it('keeps the clear settings unlock menu inside the viewport', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const menuStart = panelSource.indexOf('const clearSettingsUnlockContextMenu = clearSettingsUnlockMenu ? createPortal(');
+    const menuSource = panelSource.slice(menuStart, panelSource.indexOf('const clearSettingsTooltipLayer', menuStart));
+
+    expect(panelSource).toContain('function clampFixedMenuPosition(x: number, y: number, width: number, height: number)');
+    expect(panelSource).toContain('window.innerWidth - width - padding');
+    expect(panelSource).toContain('window.innerHeight - height - padding');
+    expect(menuSource).toContain('style={clampFixedMenuPosition(clearSettingsUnlockMenu.x, clearSettingsUnlockMenu.y, 116, 52)}');
+    expect(menuSource).not.toContain('style={{ left: clearSettingsUnlockMenu.x, top: clearSettingsUnlockMenu.y }}');
+  });
+
+  it('supports clearing character settings from the setting page without clearing work settings', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+
+    expect(panelSource).toContain("type ClearSettingsTarget = 'settings' | 'roles';");
+    expect(panelSource).toContain("const activeClearSettingsTarget: ClearSettingsTarget = activeTab === SETTING_TAB && outlineSettingScope === 'character' ? 'roles' : 'settings';");
+    expect(panelSource).toContain("const activeClearSettingsCount = activeClearSettingsTarget === 'roles' ? roleEntries.length : settingEntries.length;");
+    expect(panelSource).toContain("const activeClearSettingsLabel = activeClearSettingsTarget === 'roles' ? '人物设定' : '设定';");
+    expect(panelSource).toContain("const isActiveClearSettingsUnlocked = clearSettingsUnlockedTarget === activeClearSettingsTarget;");
+    expect(panelSource).toContain("const targetTab = clearSettingsConfirmTarget === 'roles' ? ROLE_TAB : SETTING_TAB;");
+    expect(panelSource).toContain('persist(entries.filter((entry) => entry.tab !== targetTab));');
+    expect(panelSource).toContain('setSelectedIdForTab(targetTab, null);');
+    expect(panelSource).toContain('{activeTab === SETTING_TAB && (');
+    expect(panelSource).toContain('setClearSettingsConfirmTarget(activeClearSettingsTarget);');
+    expect(panelSource).toContain('target: activeClearSettingsTarget,');
+    expect(panelSource).not.toContain('activeTab === SETTING_TAB && !isOutlineCharacterScope && (');
+  });
+
+  it('does not overwrite saved setting splitter width while syncing visible width', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const syncStart = panelSource.indexOf('const syncVisibleLeftWidth = () => {');
+    const syncEffectSource = panelSource.slice(syncStart, panelSource.indexOf('}, [activeTab, scale, storageKey]);', syncStart));
+
+    expect(syncStart).toBeGreaterThan(-1);
+    expect(syncEffectSource).toContain('setSettingLibraryLeftWidth(readSettingLibraryLeftWidth(storageKey, activeTab, scale));');
+    expect(syncEffectSource).toContain("window.addEventListener('resize', syncVisibleLeftWidth);");
+    expect(syncEffectSource).not.toContain('persistSettingLibraryWidth');
+    expect(syncEffectSource).not.toContain('clampSettingLibraryLeftWidth(currentWidth');
+  });
+
+  it('places brainstorm output clear action in the save action group and font tools in the header slot', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const styleSource = await readSharedStylesSource();
-    const actionToolStart = panelSource.indexOf('<div className="xy-floating-brainstorm-output-action-tool');
-    const actionToolSource = panelSource.slice(actionToolStart, panelSource.indexOf('<label', actionToolStart));
     const brainstormPreviewStart = panelSource.indexOf('placeholder="这里显示选中的脑洞内容，也可以直接编辑。"');
     const brainstormPreviewEnd = panelSource.indexOf('</main>', brainstormPreviewStart);
     const brainstormPreviewSource = panelSource.slice(brainstormPreviewStart, brainstormPreviewEnd);
     const brainstormOutputStart = panelSource.indexOf('xy-brainstorm-output-preview-list');
     const brainstormOutputEnd = panelSource.indexOf('className="shrink-0 border-t border-gray-100 bg-white px-4 py-3"', brainstormOutputStart);
     const brainstormOutputSource = panelSource.slice(brainstormOutputStart, brainstormOutputEnd);
+    const actionGroupStart = panelSource.indexOf('<div className="flex min-w-0 flex-wrap items-center gap-2">', brainstormOutputEnd);
+    const actionGroupSource = panelSource.slice(actionGroupStart, panelSource.indexOf('</div>\n                    </div>', actionGroupStart));
 
-    expect(panelSource).toContain('xy-floating-brainstorm-output-action-tool');
-    expect(actionToolSource).toContain('onClick={clearLibraryAiDialog}');
-    expect(actionToolSource).not.toContain('confirmDeleteEntry(currentSelectedEntry);');
-    expect(actionToolSource).not.toContain('border-r border-slate-200');
-    expect(actionToolSource).toContain('xy-floating-brainstorm-output-action-tool xy-border-embedded-transparent-backplate');
-    expect(actionToolSource).toContain('className="text-base font-medium leading-5 text-red-500');
-    expect(panelSource).toContain('const renderBrainstormFontSizeTool = () => {');
-    expect(panelSource).toContain('if (activeTab !== BRAINSTORM_TAB) return null;');
+    expect(panelSource).not.toContain('xy-floating-brainstorm-output-action-tool');
+    expect(actionGroupStart).toBeGreaterThan(-1);
+    expect(actionGroupSource).toContain('替换当前脑洞');
+    expect(actionGroupSource).not.toContain('替换脑洞');
+    expect(actionGroupSource).toContain('保存为新脑洞');
+    expect(actionGroupSource).toContain('复制脑洞');
+    expect(actionGroupSource).toContain('清空脑洞');
+    expect(actionGroupSource).toContain('onClick={copyBrainstormOutputArea}');
+    expect(actionGroupSource).toContain('disabled={!brainstormOutputValue.trim()}');
+    expect(actionGroupSource).toContain('onClick={clearBrainstormOutputArea}');
+    expect(actionGroupSource).toContain('disabled={!brainstormOutputValue.trim() && !isLibraryAiLoading}');
+    expect(actionGroupSource).not.toContain('onClick={clearLibraryAiDialog}');
+    expect(panelSource).toContain('const clearBrainstormOutputArea = () => {');
+    expect(panelSource).toContain('const copyBrainstormOutputArea = () => {');
+    expect(panelSource).toContain('void navigator.clipboard.writeText(outputText);');
+    expect(panelSource).toContain("if (activeTab !== BRAINSTORM_TAB) return;");
+    expect(panelSource).toContain("output: '',");
+    expect(panelSource).toContain("result: '',");
+    expect(actionGroupSource).not.toContain('confirmDeleteEntry(currentSelectedEntry);');
+    expect(panelSource).toContain("const [activeLibraryFontTarget, setActiveLibraryFontTarget] = useState<LibraryFontTarget>('brainstormOutput');");
+    expect(panelSource).toContain('const renderActiveLibraryFontSizeTool = () => {');
+    expect(panelSource).toContain("if (activeLibraryFontTarget === 'brainstormPreview')");
     expect(panelSource).toContain('className="xy-header-stream-tool"');
-    expect(panelSource).toContain('ariaLabel="脑洞输出字号"');
-    expect(panelSource).toContain('ariaLabel="脑洞预览字号"');
+    expect(panelSource).toContain("ariaLabel: '脑洞输出字号'");
+    expect(panelSource).toContain("ariaLabel: '脑洞预览字号'");
+    expect(panelSource).toContain("onFocus={() => setActiveLibraryFontTarget('brainstormPreview')}");
+    expect(panelSource).toContain("onFocus={() => setActiveLibraryFontTarget('brainstormOutput')}");
     expect(panelSource).toContain('createPortal(renderLibraryHeaderFontSizeTool(), headerToolPortalTarget)');
     expect(brainstormPreviewSource).not.toContain('xy-floating-border-font-tool');
     expect(brainstormOutputSource).not.toContain('xy-floating-border-font-tool');
@@ -140,6 +306,53 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(styleSource).toContain('.xy-combined-ai-config-manage svg');
     expect(styleSource).toContain('drop-shadow(0 0 1px #ffffff)');
   });
+  it('keeps model and prompt dropdowns flush with their selectors', async () => {
+    const capsuleSource = await readCapsuleSelectSource();
+    const combinedSource = await readCombinedAiConfigSelectSource();
+
+    expect(capsuleSource).toContain('top: rect.bottom,');
+    expect(capsuleSource).toContain("'absolute left-0 right-0 top-full'");
+    expect(capsuleSource).not.toContain('rect.bottom + 6');
+    expect(capsuleSource).not.toContain('top-[calc(100%+6px)]');
+    expect(combinedSource).toContain('absolute top-full z-[10050]');
+    expect(combinedSource).not.toContain('top-[calc(100%+6px)]');
+  });
+  it('routes prompt management categories to setting and chapter-outline names', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const aiPanelSource = await readWorkbenchAiPanelSource();
+
+    expect(panelSource).toContain("const PROMPT_SETTING_CATEGORY = '设定';");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_PROMPT_CATEGORY = '章纲';");
+    expect(panelSource).toContain('const PLOT_CHAIN_PROMPT_CATEGORY = DETAIL_OUTLINE_PROMPT_CATEGORY;');
+    expect(panelSource).toContain("activeTab === DETAIL_OUTLINE_TAB\n      ? DETAIL_OUTLINE_PROMPT_CATEGORY");
+    expect(panelSource).toContain("const outlinePromptCategory = plotPointStandalone ? PLOT_CHAIN_PROMPT_CATEGORY : isDetailOutlineTab ? DETAIL_OUTLINE_PROMPT_CATEGORY : '梗概';");
+    expect(panelSource).not.toContain("const PROMPT_SETTING_CATEGORY = '大纲';");
+    expect(panelSource).not.toContain("const PLOT_CHAIN_PROMPT_CATEGORY = '剧情链';");
+    expect(panelSource).toContain("'暂无设定提示词'");
+    expect(aiPanelSource).toContain("new Set(['脑洞', '设定', '章纲', '审核', '点评', '润色', '状态', '梗概'])");
+  });
+  it('keeps production AI output boxes running through background tasks', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const aiPanelSource = await readWorkbenchAiPanelSource();
+    const chapterEditorSource = await readChapterEditorSource();
+
+    expect(panelSource).toContain("target: 'workbenchLibraryAi'");
+    expect(panelSource).toContain("target: 'workbenchOutlineAi'");
+    expect(panelSource).toContain("target: 'workbenchPlotPointAi'");
+    expect(panelSource).toContain('subscribeBackgroundAiTasks(syncBackgroundTasks)');
+    expect(panelSource).toContain('stopBackgroundAiTask');
+    expect(panelSource).not.toContain('libraryAiAbortRef');
+
+    expect(aiPanelSource).toContain("target: 'workbenchAiPanel'");
+    expect(aiPanelSource).toContain('backgroundTaskId?: string');
+    expect(aiPanelSource).toContain('subscribeBackgroundAiTasks(syncBackgroundTasks)');
+    expect(aiPanelSource).not.toContain('abortControllerRef.current?.abort()');
+
+    expect(chapterEditorSource).toContain("target: 'chapterReview'");
+    expect(chapterEditorSource).toContain('writeReviewBackgroundTaskId');
+    expect(chapterEditorSource).toContain('subscribeBackgroundAiTasks(syncBackgroundTasks)');
+    expect(chapterEditorSource).not.toContain('reviewAiAbortRef');
+  });
   it('keeps full plot point text when generated content contains a narrative colon', () => {
     const candidates = parseGeneratedPlotPointCandidates([
       '1. 林刻猛地从课桌上惊醒，发现自己竟然回到了高考考场上，但周围一切又不太对劲——这不是三年前的高考，而是三年后他死去的那一刻！脑海深处突然响起机械声：“学霸修仙系统绑定成功，倒计时72小时，请宿主做好准备，三日后地球将迎来第一波灵气潮汐。”',
@@ -151,6 +364,27 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(candidates[0].adapted).toContain('脑海深处突然响起机械声');
     expect(candidates[0].adapted).toContain('学霸修仙系统绑定成功');
     expect(candidates[0].review).toContain('这个开头直接建立主角处境');
+  });
+
+  it('moves inline plot point AI review text out of the timeline preview body', () => {
+    const item = {
+      id: 'ai:inline-review',
+      title: '缴费窗口冲突',
+      source: 'AI生成',
+      originalGenre: 'AI生成',
+      original: '',
+      adapted: '林刻盯着那份合同沉默几秒，最终还是咬破指尖按了下去。\\nAI评价：医院到武馆的切入把妹妹这条软肋立得很稳，压力直接。',
+      variable: '',
+      score: '82',
+    } as const;
+
+    const displayText = getWorkbenchPlotPointDisplayText(item, item.adapted);
+    const reviewText = getWorkbenchPlotPointReview(item, true);
+
+    expect(displayText).toContain('林刻盯着那份合同沉默几秒');
+    expect(displayText).not.toContain('AI评价');
+    expect(displayText).not.toContain('医院到武馆');
+    expect(reviewText).toContain('AI评价：医院到武馆的切入');
   });
   it('places preview word counts on the top-left border beside frame titles', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
@@ -255,23 +489,25 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const styleSource = await readSharedStylesSource();
 
-    expect(styleSource).toContain('.xy-floating-brainstorm-output-action-tool {');
-    expect(styleSource).toContain('right: 4.8rem;');
-    expect(styleSource).toContain('max-width: 9.5rem;');
-    expect(styleSource).toContain('height: 20px;');
-    expect(styleSource).toContain('top: 0 !important;');
-    expect(styleSource).toContain('transform: translateY(-50%) !important;');
+    expect(styleSource).not.toContain('.xy-floating-brainstorm-output-action-tool {');
     expect(styleSource).not.toContain('.xy-floating-edge-tool.xy-floating-brainstorm-session-tool');
-    const actionToolStart = panelSource.indexOf('<div className="xy-floating-brainstorm-output-action-tool');
-    const actionToolSource = panelSource.slice(actionToolStart, panelSource.indexOf('<label', actionToolStart));
+    const outputListStart = panelSource.indexOf('xy-brainstorm-output-preview-list');
+    const outputListEnd = panelSource.indexOf('className="shrink-0 space-y-3"', outputListStart);
+    const outputListSource = panelSource.slice(outputListStart, outputListEnd);
+    const actionGroupStart = panelSource.indexOf('<div className="flex min-w-0 flex-wrap items-center gap-2">', outputListEnd);
+    const actionGroupSource = panelSource.slice(actionGroupStart, panelSource.indexOf('</div>\n                    </div>', actionGroupStart));
 
-    expect(actionToolSource).toContain('xy-floating-brainstorm-output-action-tool');
-    expect(actionToolSource).toContain('清空');
-    expect(actionToolSource).not.toContain('删除');
-    expect(actionToolSource).not.toContain('confirmDeleteEntry(currentSelectedEntry);');
-    expect(actionToolSource).toContain('xy-floating-brainstorm-output-action-tool xy-border-embedded-transparent-backplate');
-    expect(actionToolSource).toContain('flex max-w-full items-center overflow-hidden');
-    expect(actionToolSource).not.toContain('rounded-lg border border-slate-200 bg-white shadow-sm');
+    expect(outputListSource).not.toContain('清空脑洞');
+    expect(actionGroupStart).toBeGreaterThan(-1);
+    expect(actionGroupSource).toContain('替换当前脑洞');
+    expect(actionGroupSource).toContain('保存为新脑洞');
+    expect(actionGroupSource).toContain('复制脑洞');
+    expect(actionGroupSource).toContain('清空脑洞');
+    expect(actionGroupSource).toContain('onClick={copyBrainstormOutputArea}');
+    expect(actionGroupSource).toContain('onClick={clearBrainstormOutputArea}');
+    expect(actionGroupSource).not.toContain('onClick={clearLibraryAiDialog}');
+    expect(actionGroupSource).not.toContain('删除');
+    expect(actionGroupSource).not.toContain('confirmDeleteEntry(currentSelectedEntry);');
     expect(panelSource).not.toContain('px-2 text-[11px] font-bold text-gray-600 hover:bg-slate-50 hover:text-slate-900');
   });
   it('removes white backplates from outline preview labels and edge text tools', async () => {
@@ -335,9 +571,13 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(chapterEditorSource).toContain('chapterDirectoryGroups.forEach((group) => next.add(group.id));');
     expect(chapterEditorSource).toContain('onClick={() => toggleReviewDirectoryVolume(group.id)}');
     expect(chapterEditorSource).toContain('onClick={() => toggleStatusDirectoryVolume(group.id)}');
-    expect(chapterEditorSource).toContain("{reviewMode === 'audit' ? '审核目录' : '点评目录'}");
+    expect(chapterEditorSource).not.toContain("{reviewMode === 'audit' ? '审核目录' : '点评目录'}");
+    expect(chapterEditorSource).not.toContain('审核目录');
+    expect(chapterEditorSource).not.toContain('点评目录');
     expect(chapterEditorSource).not.toContain('<div className="mb-3 text-sm font-black text-slate-900">章节目录</div>');
-    expect(chapterEditorSource).toContain('className="flex w-full cursor-pointer items-center gap-2 rounded-lg bg-[#08B3D9] px-2 py-2 text-white transition-colors hover:brightness-95"');
+    expect(chapterEditorSource).toContain('className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-[#08AACE] bg-[#08AACE] px-3 py-1.5 text-sm font-bold leading-5 text-white transition-colors hover:brightness-95"');
+    expect(chapterEditorSource).toContain('<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/15 text-white">');
+    expect(chapterEditorSource).toContain('<span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-xs text-white">{group.chapters.length}章</span>');
     expect(chapterEditorSource).toContain("style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}");
     expect(chapterEditorSource).toContain('relative h-9 min-w-9 rounded-lg border px-2 text-sm font-bold transition-colors');
     expect(chapterEditorSource).toContain('relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors');
@@ -346,10 +586,12 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(chapterEditorSource).not.toContain('<span className="text-sm font-black text-slate-900">章节位置</span>');
     expect(chapterEditorSource).not.toContain('<span className="inline-flex items-center gap-1"><i className="h-3 w-3 rounded bg-[#08B3D9]" />已更新</span>');
     expect(chapterEditorSource).not.toContain('<span className="inline-flex items-center gap-1"><i className="h-3 w-3 rounded border border-slate-200 bg-slate-50" />未更新</span>');
-    expect(panelSource).toContain('卷概要');
+    expect(panelSource).toContain('卷梗概');
     expect(panelSource).toContain('const enableVolumeSummary = !isDetailOutlineTab;');
     expect(panelSource).toContain('safeOutlineSelectionType === \'volume\' && selectedOutlineVolume?.id === volume.id');
     expect(panelSource).toContain('selectOutlineVolume(volume);');
+    expect(panelSource).toContain('<div className="grid grid-cols-1 gap-3">');
+    expect(panelSource).not.toContain("isDetailOutlineTab ? 'grid-cols-1' : 'grid-cols-2'");
   });
 
   it('keeps workbench model selects synchronized after model management changes', async () => {
@@ -425,7 +667,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('renders brainstorm count as a labeled segmented button group aligned to the input left edge', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
-    const countButtonStart = panelSource.indexOf("{['1', '3', '5', '10'].map((value) => {");
+    const countButtonStart = panelSource.indexOf("{['3', '5', '10'].map((value) => {");
     const generateButtonStart = panelSource.indexOf('onClick={openBrainstormGenerateConfirm}', countButtonStart);
     const countButtonSource = panelSource.slice(countButtonStart, generateButtonStart);
 
@@ -434,12 +676,18 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain('xy-brainstorm-count-field');
     expect(panelSource).not.toContain('xy-brainstorm-count-options');
     expect(panelSource).toContain('一次生成几个脑洞');
-    expect(panelSource).toContain('<span className="shrink-0 text-sm font-black text-slate-950">生成个数：</span>');
+    expect(panelSource).toContain("['sequential', '逐个']");
+    expect(panelSource).toContain("['batch', '一次']");
+    expect(panelSource).toContain("const brainstormGenerateMode: BrainstormGenerateMode = activeTabConfig.brainstormGenerateMode === 'batch' ? 'batch' : 'sequential';");
+    expect(panelSource).toContain('onClick={() => updateActiveTabConfig({ brainstormGenerateMode: value })}');
+    expect(panelSource).toContain('<span className="shrink-0 text-sm font-black text-slate-950">生成</span>');
+    expect(panelSource).not.toContain('<span className="shrink-0 text-sm font-black text-slate-950">生成个数：</span>');
     expect(panelSource).toContain('<div className="mt-2 flex items-center gap-3">');
     expect(panelSource).toContain('<div className="flex min-w-0 flex-1 items-center gap-2">');
     expect(panelSource).toContain('flex h-8 min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white');
     expect(countButtonSource).toContain('setBrainstormQuestionField(\'brainstormCount\', active ? \'\' : value)');
     expect(countButtonSource).toContain('last:border-r-0');
+    expect(countButtonSource).not.toContain("'1'");
     expect(countButtonSource).not.toContain("'2'");
     expect(countButtonSource).not.toContain('3个');
   });
@@ -464,18 +712,19 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('function getBrainstormDisplayContent(content: string, requestText: string)');
     expect(panelSource).toContain('const clean = stripBrainstormRequestHeader(stripAiThinkingBlock(text)).trim();');
     expect(panelSource).toContain("? [baseModelPrompt, BRAINSTORM_OUTPUT_ONLY_INSTRUCTION].filter(Boolean).join('\\n\\n')");
-    expect(panelSource).toContain('const sendLibraryAiMessage = async (overrideText?: string, options: { visibleText?: string } = {}) => {');
+    expect(panelSource).toContain('options: { visibleText?: string; previewCount?: number; generationMode?: BrainstormGenerateMode } = {},');
     expect(panelSource).toContain('const visibleUserText = (options.visibleText ?? text).trim();');
     expect(panelSource).toContain('const visibleText = stripBrainstormRequestHeader(promptText);');
-    expect(panelSource).toContain('void sendLibraryAiMessage(promptText, { visibleText });');
+    expect(panelSource).toContain('void sendLibraryAiMessage(promptText, { visibleText, previewCount, generationMode });');
     expect(panelSource).toContain('const brainstormStreamDisplay = stripBrainstormRequestHeader(streamedContent.trimStart());');
-    expect(panelSource).toContain('if (activeTab === BRAINSTORM_TAB) setAiResult(brainstormStreamDisplay);');
+    expect(panelSource).toContain("target: 'workbenchLibraryAi'");
+    expect(panelSource).toContain('function getBrainstormBackgroundTaskResult(task: BackgroundAiTask)');
     expect(panelSource).toContain('const otherRequirements = normalizeBrainstormEchoText(getBrainstormOtherRequirementsBlock(requestText));');
     expect(panelSource).toContain('output === request || output === otherRequirements');
     expect(panelSource).toContain('? getBrainstormDisplayContent(content, requestText)');
     expect(panelSource).toContain('【错误】模型只复述了输入内容，没有生成脑洞。请重试，或换一个提示词/模型。');
     expect(panelSource).toContain('【错误】模型没有返回内容。请重试，或检查模型、提示词和网络。');
-    expect(panelSource).toContain('if (activeTab === BRAINSTORM_TAB) setAiResult(errorContent);');
+    expect(panelSource).toContain('emit(replacePendingOutput(`【错误】${message}`), { replace: true, progressLabel: \'失败\' });');
     expect(latestUsefulSource).toContain("if (turns.length > 0) return '';");
     expect(buildSource).toContain('BRAINSTORM_GENERATE_TASK_TEXT');
     expect(buildSource).toContain('BRAINSTORM_GENERATE_RULE_TEXT');
@@ -485,21 +734,77 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain("void sendLibraryAiMessage(promptText);");
   });
 
+  it('locks brainstorm output box count to the requested generation count', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const confirmStart = panelSource.indexOf('const confirmBrainstormGenerate = () => {');
+    const confirmEnd = panelSource.indexOf('const addRoleTypeByName', confirmStart);
+    const confirmSource = panelSource.slice(confirmStart, confirmEnd);
+    const previewStart = panelSource.indexOf('const brainstormOutputPreviewCount = activeIsBrainstorm');
+    const previewEnd = panelSource.indexOf('const brainstormOutputSplitParts', previewStart);
+    const previewSource = panelSource.slice(previewStart, previewEnd);
+
+    expect(panelSource).toContain('previewCount?: number;');
+    expect(confirmSource).toContain('const previewCount = getBrainstormOutputCount(brainstormGenerateDraft.brainstormCount);');
+    expect(confirmSource).toContain('const generationMode = brainstormGenerateMode;');
+    expect(confirmSource).toContain('void sendLibraryAiMessage(promptText, { visibleText, previewCount, generationMode });');
+    expect(confirmSource).not.toContain('setBrainstormQuestionDraft(EMPTY_BRAINSTORM_QUESTION_DRAFT)');
+    expect(previewSource).toContain('activeBrainstormAiSession?.previewCount ?? getBrainstormOutputCount(brainstormQuestionDraft.brainstormCount)');
+    expect(panelSource).toContain('previewCount: targetBrainstormPreviewCount');
+  });
+
+  it('generates multiple brainstorm outputs sequentially when sequential mode is selected', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const sendStart = panelSource.indexOf('const sendLibraryAiMessage = async (');
+    const sendEnd = panelSource.indexOf('const stopLibraryAiMessage = () => {', sendStart);
+    const sendSource = panelSource.slice(sendStart, sendEnd);
+
+    expect(panelSource).toContain("type BrainstormGenerateMode = 'sequential' | 'batch';");
+    expect(panelSource).toContain('function buildSequentialBrainstormRequestText(baseRequestText: string, index: number, total: number, completedItems: string[])');
+    expect(panelSource).toContain('function formatSequentialBrainstormOutput(completedItems: string[], activeIndex?: number, activeContent = \'\')');
+    expect(sendSource).toContain('const shouldGenerateBrainstormSequentially = targetTab === BRAINSTORM_TAB');
+    expect(sendSource).toContain("targetBrainstormGenerateMode === 'sequential'");
+    expect(sendSource).toContain('for (let index = 1; index <= targetBrainstormPreviewCount; index += 1)');
+    expect(sendSource).toContain('const itemRequestText = buildSequentialBrainstormRequestText(requestText, index, targetBrainstormPreviewCount, completedItems);');
+    expect(sendSource).toContain('userContent: itemRequestText');
+    expect(sendSource).toContain('completedItems.push(stripAiThinkingBlock(itemDisplayContent));');
+    expect(sendSource).toContain('return replacePendingOutput(formatSequentialBrainstormOutput(completedItems));');
+  });
+
   it('can switch the library AI request log between titled sections and plain concatenated content', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
+    const logGroupsSource = await readAiRequestLogGroupsSource();
+    const settingRequestStart = panelSource.indexOf('const buildSettingLibraryRequestText = (promptText: string, userText: string) => {');
+    const settingRequestEnd = panelSource.indexOf('const buildLibraryAiRequestPayload = (text: string, overrideText?: string) => {', settingRequestStart);
+    const settingRequestSource = panelSource.slice(settingRequestStart, settingRequestEnd);
 
+    expect(panelSource).toContain('import { AiRequestLogContent, AiRequestLogGroups, type AiRequestLogGroup }');
     expect(panelSource).toContain('function buildRequestLogPlainPreview(groups: AiRequestLogGroup[])');
     expect(panelSource).toContain(".join('\\n\\n');");
     expect(panelSource).toContain('const [showLibraryAiLogTitles, setShowLibraryAiLogTitles] = useState(true);');
     expect(panelSource).toContain('const visibleAiRequestLogGroups = visibleAiRequestLog');
-    expect(panelSource).toContain("userTitle: activeIsBrainstorm ? '其他要求' : undefined");
+    expect(panelSource).toContain('function formatSettingLinkedContextForAi');
+    expect(panelSource).toContain("const tagName = context.source === 'brainstorm' ? '关联脑洞' : '待处理设定';");
+    expect(panelSource).toContain('return wrapAiRequestTag(tagName, text, { 标题: title });');
+    expect(panelSource).toContain('function formatSettingUserRequirementForAi');
+    expect(panelSource).toContain("return wrapAiRequestTag('修改要求', text);");
+    expect(settingRequestSource).toContain('const linkedSettingContext = formatSettingLinkedContextForAi(getActiveLinkedSettingSnapshot());');
+    expect(settingRequestSource).toContain('const userRequirement = formatSettingUserRequirementForAi(userText);');
+    expect(settingRequestSource).not.toContain("'【其他要求】'");
+    expect(settingRequestSource).not.toContain("'【用户要求】'");
+    expect(panelSource).toContain('userContent: activeTab === SETTING_TAB ? settingUserRequirementForAi : requestText');
+    expect(panelSource).toContain("userTitle: activeTab === SETTING_TAB ? '修改要求' : activeIsBrainstorm ? '其他要求' : undefined");
+    expect(panelSource).toContain("{activeTab === SETTING_TAB ? '修改要求' : '其他要求'}");
     expect(panelSource).toContain('const visibleAiRequestLogPlainPreview = buildRequestLogPlainPreview(visibleAiRequestLogGroups);');
     expect(panelSource).toContain('checked={showLibraryAiLogTitles}');
     expect(panelSource).toContain('onChange={(event) => setShowLibraryAiLogTitles(event.target.checked)}');
     expect(panelSource).toContain('<span>显示标题内容</span>');
     expect(panelSource).toContain('{showLibraryAiLogTitles ? (');
     expect(panelSource).toContain('<AiRequestLogGroups groups={visibleAiRequestLogGroups} />');
-    expect(panelSource).toContain('{visibleAiRequestLogPlainPreview || \'暂无可预览内容\'}');
+    expect(panelSource).toContain("visibleAiRequestLogPlainPreview ? <AiRequestLogContent content={visibleAiRequestLogPlainPreview} /> : '暂无可预览内容'");
+    expect(logGroupsSource).toContain('function isSoftwareLogMarkerLine(line: string)');
+    expect(logGroupsSource).toContain('export function AiRequestLogContent');
+    expect(logGroupsSource).toContain('font-black text-red-500');
+    expect(logGroupsSource).toContain('<AiRequestLogContent content={content} />');
   });
 
   it('keeps brainstorm count buttons compact while the generate button stays on the right', async () => {
@@ -522,9 +827,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('previewTitles?: string[];');
     expect(panelSource).toContain('previewDrafts?: string[];');
     expect(panelSource).toContain('previewSelectedIndexes?: number[];');
+    expect(panelSource).toContain('previewCount?: number;');
     expect(panelSource).toContain('function getSelectedBrainstormPreviewIndexes(previews: string[], selectedIndexes?: number[])');
     expect(panelSource).toContain('function getBrainstormOutputCount(value: string)');
-    expect(panelSource).toContain('return `脑洞输出框${index + 1}`;');
+    expect(panelSource).toContain('return `${index + 1}号脑洞`;');
+    expect(panelSource).not.toContain('return `脑洞输出框${index + 1}`;');
     expect(panelSource).not.toContain('return `新脑洞${index + 1}`;');
     expect(panelSource).toContain('const getNextBrainstormTitles = (count: number) => {');
     expect(panelSource).toContain('return Array.from({ length: count }, (_, index) => `脑洞${maxNumber + index + 1}`);');
@@ -533,7 +840,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('createWorkbenchLibraryEntry(BRAINSTORM_TAB, nextTitles[index] ?? getNextBrainstormTitle())');
     expect(panelSource).not.toContain('createWorkbenchLibraryEntry(BRAINSTORM_TAB, preview.title || getNextBrainstormTitle())');
     expect(panelSource).toContain('function splitBrainstormGeneratedText(text: string, count: number)');
-    expect(panelSource).toContain('const brainstormOutputPreviewCount = activeIsBrainstorm ? getBrainstormOutputCount(brainstormQuestionDraft.brainstormCount) : 1;');
+    expect(panelSource).toContain('activeBrainstormAiSession?.previewCount ?? getBrainstormOutputCount(brainstormQuestionDraft.brainstormCount)');
     expect(panelSource).toContain('const brainstormOutputPreviews = Array.from({ length: brainstormOutputPreviewCount }, (_, index) => (');
     expect(panelSource).toContain('const selectedBrainstormOutputIndexes = getSelectedBrainstormPreviewIndexes(');
     expect(panelSource).toContain('const selectedBrainstormOutputIndexSet = new Set(selectedBrainstormOutputIndexes);');
@@ -545,7 +852,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('onClick={() => toggleBrainstormOutputPreviewSelected(index)}');
     expect(panelSource).toContain('aria-label={`脑洞输出名称 ${index + 1}`}');
     expect(panelSource).toContain('onChange={(event) => setBrainstormOutputPreviewTitle(index, event.target.value)}');
-    expect(panelSource).toContain('updateActiveBrainstormAiSession({ previewTitles: [], previewDrafts: [], previewSelectedIndexes: undefined });');
+    expect(panelSource).toContain('previewCount: targetBrainstormPreviewCount');
     expect(panelSource).toContain('disabled={!currentSelectedEntry || selectedBrainstormOutputCount !== 1}');
     expect(panelSource).toContain('disabled={selectedBrainstormOutputCount === 0}');
     expect(panelSource).toContain('clearStoredBrainstormAiSessionPreviews(storageKey);');
@@ -555,7 +862,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('keeps the brainstorm output action area shellless under the bordered frame', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
-    const outputAreaStart = panelSource.indexOf('ariaLabel="脑洞输出字号"');
+    const outputAreaStart = panelSource.indexOf('xy-brainstorm-output-preview-list');
     const actionAreaStart = panelSource.indexOf('<AiInlineInput', outputAreaStart);
     const actionAreaEnd = panelSource.indexOf('{settingLibraryMode ===', actionAreaStart);
     const actionAreaSource = panelSource.slice(actionAreaStart, actionAreaEnd);
@@ -609,7 +916,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(brainstormPanelSource).not.toContain('items-start justify-end gap-2');
     expect(brainstormPanelSource).toContain('<div key="brainstorm-genre-background-row" className="grid shrink-0 grid-cols-2 gap-4');
     expect(panelSource).toContain('<div className="mt-2 flex items-center gap-3">');
-    expect(panelSource).toContain('<span className="shrink-0 text-sm font-black text-slate-950">生成个数：</span>');
+    expect(panelSource).toContain('<span className="shrink-0 text-sm font-black text-slate-950">生成</span>');
+    expect(panelSource).not.toContain('<span className="shrink-0 text-sm font-black text-slate-950">生成个数：</span>');
   });
 
   it('allows the brainstorm preview and output splitter to drag in both directions', async () => {
@@ -636,43 +944,90 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(testCollectionSource).not.toContain('/drag-splitter-icon-test');
   });
 
-  it('limits the outline left sidebar width to a fifth of the viewport', async () => {
+  it('keeps setting and outline action sidebars wide enough to drag', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
 
-    expect(panelSource).toContain('const OUTLINE_LEFT_MAX_DISPLAY_WIDTH = 350;');
-    expect(panelSource).toContain('function getDisplayScale()');
-    expect(panelSource).toContain('window.devicePixelRatio');
-    expect(panelSource).toContain('function getOutlineLeftMaxDisplayWidth(scaleValue = 1)');
-    expect(panelSource).toContain('Math.floor(OUTLINE_LEFT_MAX_DISPLAY_WIDTH / normalizedScale / getDisplayScale())');
+    expect(panelSource).toContain('const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 260;');
+    expect(panelSource).toContain('const OUTLINE_LEFT_MAX_DISPLAY_WIDTH = 560;');
     expect(panelSource).toContain('function getSettingLibraryLeftMaxWidth(tab: string, scaleValue = 1)');
-    expect(panelSource).toContain('const OUTLINE_LEFT_TOOLBAR_SAFE_MIN_WIDTH = 400;');
-    expect(panelSource).toContain('function isOutlineLeftToolbarSafeTab(tab: string)');
-    expect(panelSource).toContain('return tab === SETTING_TAB;');
+    expect(panelSource).toContain('const isSettingTab = tab === SETTING_TAB;');
+    expect(panelSource).toContain('const minWidth = isSettingTab ? SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH : SETTING_LIBRARY_LEFT_MIN_WIDTH;');
     expect(panelSource).toContain('function getDetailOutlineLeftMinWidth(scaleValue = 1)');
     expect(panelSource).toContain('const viewportEighthWidth = Math.floor(window.innerWidth / normalizedScale / 8);');
     expect(panelSource).toContain('return Math.max(SETTING_LIBRARY_LEFT_MIN_WIDTH, viewportEighthWidth);');
-    expect(panelSource).toContain('const maxWidth = getSettingLibraryLeftMaxWidth(tab, scaleValue);');
-    expect(panelSource).toContain('if (maxWidth <= OUTLINE_LEFT_TOOLBAR_SAFE_MIN_WIDTH) return SETTING_LIBRARY_LEFT_MIN_WIDTH;');
-    expect(panelSource).toContain('return OUTLINE_LEFT_TOOLBAR_SAFE_MIN_WIDTH;');
+    expect(panelSource).toContain('if (tab === SETTING_TAB) return SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH;');
     expect(panelSource).toContain('return tab === DETAIL_OUTLINE_TAB || tab === OUTLINE_LIBRARY_TAB');
-    expect(panelSource).toContain('const viewportFifthWidth = Math.floor(window.innerWidth / normalizedScale / 5);');
+    expect(panelSource).toContain('const isOutlineActionTab = tab === DETAIL_OUTLINE_TAB || tab === OUTLINE_LIBRARY_TAB;');
+    expect(panelSource).toContain('const viewportDivider = isSettingTab ? 2 : isOutlineActionTab ? 2.5 : 5;');
+    expect(panelSource).toContain('const viewportLimitWidth = Math.floor(window.innerWidth / normalizedScale / viewportDivider);');
     expect(panelSource).toContain('return Math.max(');
-    expect(panelSource).toContain('const fixedMaxWidth = tab === SETTING_TAB');
-    expect(panelSource).toContain('Math.min(fixedMaxWidth, viewportFifthWidth)');
+    expect(panelSource).toContain('const fixedMaxWidth = isSettingTab');
+    expect(panelSource).toContain('isOutlineActionTab');
+    expect(panelSource).toContain('Math.min(fixedMaxWidth, viewportLimitWidth)');
     expect(panelSource).toContain('const minWidth = getSettingLibraryLeftMinWidth(activeTab, eventScale);');
     expect(panelSource).toContain('const maxWidth = Math.max(minWidth, getSettingLibraryLeftMaxWidth(tab, scaleValue));');
     expect(panelSource).toContain('readSettingLibraryLeftWidth(storageKey, activeTab, scale)');
-    expect(panelSource).toContain('const maxWidth = isBrainstormTab ? BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH : getSettingLibraryLeftMaxWidth(activeTab, eventScale);');
+    expect(panelSource).toContain('isBrainstormTab ? BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH : getSettingLibraryLeftMaxWidth(activeTab, eventScale),');
     expect(panelSource).toContain('const outlineSidebarWidth = settingLibraryLeftWidth;');
+    expect(panelSource).toContain('style={{ gridTemplateColumns: `${outlineSidebarWidth}px 16px minmax(0,1fr) 8px ${settingLibraryRightWidth}px` }}');
     expect(panelSource).toContain("style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}");
     expect(panelSource).toContain('relative h-9 min-w-9 rounded-lg border px-2 text-sm font-bold');
-    expect(panelSource).toContain('window.addEventListener(\'resize\', clampVisibleLeftWidth);');
+    expect(panelSource).toContain('window.addEventListener(\'resize\', syncVisibleLeftWidth);');
+    expect(panelSource).not.toContain('window.addEventListener(\'resize\', clampVisibleLeftWidth);');
     expect(panelSource).not.toContain('const maxWidth = isBrainstormTab ? BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH : SETTING_LIBRARY_LEFT_MAX_WIDTH;');
     expect(panelSource).not.toContain('const outlineSidebarWidth = Math.max(settingLibraryLeftWidth, outlineColumns * 40 + 30);');
     expect(panelSource).not.toContain('const outlineSidebarWidth = Math.min(');
     expect(panelSource).not.toContain('OUTLINE_COLUMN_OPTIONS');
     expect(panelSource).not.toContain('loadOutlineColumns');
     expect(panelSource).not.toContain('每行显示');
+    expect(panelSource).not.toContain('const OUTLINE_LEFT_TOOLBAR_SAFE_MIN_WIDTH = 400;');
+    expect(panelSource).not.toContain('function isOutlineLeftToolbarSafeTab(tab: string)');
+    expect(panelSource).not.toContain('function getOutlineLeftMaxDisplayWidth(scaleValue = 1)');
+    expect(panelSource).not.toContain('window.devicePixelRatio');
+  });
+
+  it('drags and restores the setting page left splitter width', () => {
+    const storageKey = 'workbench-setting-left-resize-interaction-test';
+    const widthStorageKey = `${storageKey}_大纲_left_width`;
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+
+    try {
+      const { unmount } = render(
+        <WorkbenchLibraryPanel
+          storageKey={storageKey}
+          tabs={['大纲', '角色', '脑洞']}
+          emptyText="暂无内容"
+          defaultActiveTab="大纲"
+        />,
+      );
+
+      const leftSplitter = screen.getByTitle('拖拽调整左侧宽度');
+      fireEvent.pointerDown(leftSplitter, { clientX: 100, pointerId: 1 });
+      fireEvent.pointerMove(window, { clientX: 190 });
+      fireEvent.pointerUp(window);
+
+      const savedWidth = Number(localStorage.getItem(widthStorageKey));
+      expect(savedWidth).toBeGreaterThan(430);
+      expect(savedWidth).toBeLessThanOrEqual(640);
+
+      unmount();
+      render(
+        <WorkbenchLibraryPanel
+          storageKey={storageKey}
+          tabs={['大纲', '角色', '脑洞']}
+          emptyText="暂无内容"
+          defaultActiveTab="大纲"
+        />,
+      );
+
+      const restoredSplitter = screen.getByTitle('拖拽调整左侧宽度');
+      expect(restoredSplitter.parentElement).toHaveStyle({
+        gridTemplateColumns: `${savedWidth}px 16px minmax(0,1fr) 8px 350px`,
+      });
+    } finally {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalInnerWidth });
+    }
   });
 
   it('uses a narrower scrollbar for the setting sidebar list', async () => {
@@ -696,18 +1051,19 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(outlineRightPanelStart).toBeGreaterThan(-1);
     expect(outlineRightPanelEnd).toBeGreaterThan(outlineRightPanelStart);
     expect(outlineRightPanelSource).toContain('<div className="relative mt-5 min-h-[170px] flex-1">');
-    expect(outlineRightPanelSource).toContain('xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count h-full');
+    expect(outlineRightPanelSource).toContain('xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-outline-ai-output-frame xy-floating-fill xy-floating-with-bottom-count h-full');
     expect(outlineRightPanelSource).not.toContain('AI对话框');
     expect(outlineRightPanelSource).not.toContain('xy-soft-shell-panel');
     expect(outlineRightPanelSource).not.toContain('relative mt-6 flex min-h-[310px] flex-1 flex-col rounded-xl border border-slate-200 bg-white px-3 pb-3 pt-5');
-    expect(outlineRightPanelSource).toContain('xy-floating-outline-clear-button xy-border-embedded-transparent-backplate xy-floating-outline-inner-clear-tool absolute z-40 px-1');
-    expect(styleSource).toContain('.xy-floating-outline-inner-clear-tool {');
-    expect(styleSource).toContain('bottom: 0.75rem;');
-    expect(styleSource).toContain('transform: none;');
+    expect(outlineRightPanelSource).not.toContain('xy-floating-outline-clear-button xy-border-embedded-transparent-backplate xy-floating-outline-inner-clear-tool absolute z-40 px-1');
+    expect(styleSource).toContain('.xy-floating-field.xy-outline-ai-output-frame {');
+    expect(styleSource).toContain('border: 2px solid #111827;');
+    expect(styleSource).toContain('.xy-floating-field.xy-outline-ai-output-frame label.xy-floating-title-count,');
+    expect(styleSource).toContain('transform: translateY(-50%) scale(1);');
     expect(panelSource).toContain('const shouldShowOutlineDraftWordCount = plotPointStandalone;');
     expect(panelSource).not.toContain('const shouldShowOutlineDraftWordCount = plotPointStandalone || isDetailOutlineTab;');
-    expect(panelSource).toContain('if (isDetailOutlineTab) return;');
-    expect(panelSource).toContain("if (!isDetailOutlineTab) setOutlinePreviewDraft(entry?.content ?? '');");
+    expect(panelSource).toContain('if (isDetailOutlineLikeTab(activeTab)) return;');
+    expect(panelSource).toContain("if (!isDetailOutlineTab && !isDetailOutlineLikeTab(activeTab)) setOutlinePreviewDraft(entry?.content ?? '');");
     expect(panelSource).not.toContain('const outlineDraftChapterMeta');
     expect(outlineRightPanelSource).not.toContain('outlineDraftChapterMeta');
     expect(outlineRightPanelSource).not.toContain('selectedOutlineChapter?.chapter.wordCount');
@@ -717,32 +1073,53 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(outlineRightPanelSource).not.toContain('正文：<WordCountText value={selectedOutlineChapter.chapter.wordCount} compact />');
     expect(outlineRightPanelSource).not.toContain('第{selectedOutlineChapter.chapter.serialNumber}章 {selectedChapterTitle}');
     expect(outlineRightPanelSource).toContain('{shouldShowOutlineDraftWordCount && (');
-    expect(panelSource).toContain(': `第${selectedOutlineChapter.chapter.serialNumber}章概要`');
+    expect(panelSource).toContain(': `第${selectedOutlineChapter.chapter.serialNumber}章梗概`');
     expect(outlineRightPanelSource).toContain('{isDetailOutlineTab && (');
-    expect(outlineRightPanelSource).toContain('meta={detailOutlineReaderWordCount > 0 ? <WordCountText value={detailOutlineReaderWordCount} compact /> : null}');
-    expect(outlineRightPanelSource).toContain('className="mt-3 flex items-center gap-3"');
-    expect(outlineRightPanelSource).toContain('metaClassName="shrink-0 text-xs font-bold text-slate-400"');
+    expect(outlineRightPanelSource).toContain('label="关联大纲"');
+    expect(outlineRightPanelSource).toContain('linkedLabel="已关联大纲"');
+    expect(outlineRightPanelSource).toContain('onClear={clearDetailOutlineReaderSelection}');
+    expect(outlineRightPanelSource).toContain('meta={<>已关联：<WordCountText value={detailOutlineReaderWordCount} compact /></>}');
+    expect(outlineRightPanelSource).toContain('className="mt-3 flex items-center gap-2"');
+    expect(outlineRightPanelSource).toContain('groupClassName="flex h-10 w-[132px] shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white"');
+    expect(outlineRightPanelSource).toContain('buttonClassName="h-10 w-[132px] whitespace-nowrap rounded-xl border border-[#08AACE] bg-white px-3 text-sm font-black text-[#08AACE] hover:bg-[#EAF9FD]"');
+    expect(outlineRightPanelSource).toContain('clearButtonClassName="flex h-full w-9 shrink-0 items-center justify-center border-l border-red-300 bg-red-500 text-white transition-colors hover:bg-red-600"');
+    expect(panelSource).toContain("readerTitle: '关联资料'");
+    expect(panelSource).toContain("readerEmptyText: '未关联章纲、设定或角色'");
+    expect(panelSource).toContain("if (isDetailOutlineTab) return wrapAiRequestTag('本章要求', userText);");
+    expect(panelSource).toContain("return wrapAiRequestTag('梗概要求', userText);");
+    expect(panelSource).toContain("const outlineUserLogTitle = isDetailOutlineTab && !plotPointStandalone ? '其他要求' : '输入内容';");
+    expect(panelSource).toContain('userTitle: outlineUserLogTitle');
+    expect(panelSource).toContain('<div className="text-xs text-slate-400">{outlineUserLogTitle}</div>');
+    expect(panelSource).not.toContain("userTitle: '输入内容'");
+    expect(outlineRightPanelSource).not.toContain('label="关联设定"');
+    expect(outlineRightPanelSource).not.toContain('linkedButtonClassName="h-9 shrink-0 rounded-xl bg-[#08AACE] px-3 text-sm font-black text-white transition-colors hover:bg-[#0798b8]"');
+    expect(outlineRightPanelSource).not.toContain('metaClassName="shrink-0 text-xs font-bold text-slate-400"');
     expect(outlineRightPanelSource).not.toContain('已关联 {selectedDetailOutlineReaderItems.length} 项');
     expect(outlineRightPanelSource).not.toContain('className="mt-3 flex items-center justify-between gap-3"');
     expect(outlineRightPanelSource).not.toContain('metaClassName="min-w-0 truncate text-right text-xs font-bold text-slate-400"');
     expect(panelSource).toContain("isDetailOutlineTab ? 'AI输出章纲'");
+    expect(panelSource).toContain("? 'AI输出框'");
+    expect(panelSource).not.toContain('? getOutlineChapterFrameTitle(selectedOutlineChapter.volume, selectedOutlineChapter.chapter)');
     expect(outlineRightPanelSource).toContain('生成后的章纲会显示在这里，也可以手动编辑后替换所选章纲。');
     expect(panelSource).toContain("const [lastDetailOutlineReplacement, setLastDetailOutlineReplacement]");
     expect(panelSource).toContain('setLastDetailOutlineReplacement({');
     expect(panelSource).toContain('content: selectedOutlineEntry?.content ??');
+    expect(panelSource).toContain('updateActiveTabConfig({ outlineAiTaskId: undefined });');
+    expect(panelSource).toContain("setOutlinePreviewDraft('');");
     expect(panelSource).toContain('updateChapterSummary(lastDetailOutlineReplacement.chapterSerialNumber, lastDetailOutlineReplacement.content);');
     expect(panelSource).toContain('const undoDetailOutlineReplacement = () => {');
-    expect(outlineRightPanelSource).toContain("isDetailOutlineTab ? '替换章纲' : '保存概要'");
+    expect(outlineRightPanelSource).toContain("isDetailOutlineTab ? '替换章纲' : '保存梗概'");
     expect(outlineRightPanelSource).toContain('onClick={undoDetailOutlineReplacement}');
     expect(outlineRightPanelSource).toContain('disabled={!lastDetailOutlineReplacement}');
     expect(outlineRightPanelSource).toContain('撤销替换');
-    expect(outlineRightPanelSource).toContain("isDetailOutlineTab ? '复制章纲' : '复制概要'");
+    expect(outlineRightPanelSource).toContain("isDetailOutlineTab ? '复制章纲' : '复制梗概'");
     expect(panelSource).toContain('const OUTLINE_ACTION_RIGHT_MIN_WIDTH = 420;');
     expect(panelSource).toContain('? OUTLINE_ACTION_RIGHT_MIN_WIDTH');
     expect(outlineRightPanelSource).toContain('min-w-[92px] flex-1 whitespace-nowrap bg-brand');
     expect(outlineRightPanelSource).toContain('min-w-[92px] flex-1 whitespace-nowrap border-l border-blue-200');
     expect(outlineRightPanelSource).toContain('min-w-[92px] flex-1 whitespace-nowrap border-l border-gray-200');
-    expect(outlineRightPanelSource).toContain('min-w-[92px] flex-1 whitespace-nowrap border-l border-red-200');
+    expect(outlineRightPanelSource).not.toContain('min-w-[92px] flex-1 whitespace-nowrap border-l border-red-200');
+    expect(outlineRightPanelSource).not.toContain("isDetailOutlineTab ? '清空章纲' : '清空梗概'");
     expect(outlineRightPanelSource).not.toContain('保存章纲');
     expect(outlineRightPanelSource).not.toContain('xy-floating-outline-output-clear-tool');
     expect(outlineRightPanelSource).not.toContain('xy-floating-outline-clear-button xy-border-embedded-transparent-backplate absolute -top-2 right-4 px-1');
@@ -762,8 +1139,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(cardMetaEnd).toBeGreaterThan(cardMetaStart);
     expect(cardMetaSource).toContain('chapter.serialNumber');
     expect(cardMetaSource).toContain('chapter.title.trim() ||');
-    expect(cardMetaSource).toContain('WordCountText value={chapter.wordCount} compact');
-    expect(cardMetaSource).toContain("? `第${getVolumeDisplayIndex(volume.id)}卷 · ${chapter.title.trim() || '未命名章节'}`");
+    expect(cardMetaSource).toContain('detailOutlineParts.outline');
+    expect(cardMetaSource).toContain('WordCountText value={countTextWords(detailOutlineParts.outline)}');
+    expect(cardMetaSource).toContain("`第${getVolumeDisplayIndex(volume.id)}卷 · ${chapter.title.trim() || '未命名章节'}`");
     expect(cardMetaSource).toContain('max-w-[44%]');
     expect(cardMetaSource).not.toContain('max-w-[58%]');
     expect(cardMetaSource).not.toContain('正文：');
@@ -777,9 +1155,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const styleSource = await readSharedStylesSource();
     const cardSourceStart = panelSource.indexOf('const outlineCardTitle = getOutlineChapterFrameTitle(volume, chapter);');
-    const cardSourceEnd = panelSource.indexOf('</section>', cardSourceStart);
+    const cardSourceEnd = panelSource.indexOf('})()', cardSourceStart);
     const cardSource = panelSource.slice(cardSourceStart, cardSourceEnd);
-    const labelStart = cardSource.indexOf('<label className={isDetailOutlineTab ?');
+    const labelStart = cardSource.indexOf('<label className="xy-floating-title-count xy-detail-outline-title-count">');
     const labelEnd = cardSource.indexOf('</label>', labelStart);
     const labelSource = cardSource.slice(labelStart, labelEnd);
 
@@ -787,18 +1165,31 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(cardSourceEnd).toBeGreaterThan(cardSourceStart);
     expect(labelStart).toBeGreaterThan(-1);
     expect(labelEnd).toBeGreaterThan(labelStart);
+    expect(cardSource).toContain('splitDetailOutlineStateExpectation(outlineCardContent)');
+    expect(cardSource).toContain('value={detailOutlineParts.outline}');
+    expect(cardSource).toContain('value={detailOutlineParts.stateExpectation}');
+    expect(panelSource).toContain('状态变化预期');
     expect(labelSource).toContain('xy-detail-outline-title-count');
     expect(labelSource).toContain('xy-floating-title-text');
     expect(labelSource).toContain('{outlineCardTitle}');
     expect(panelSource).toContain("? `第${chapter.serialNumber}章章纲`");
     expect(panelSource).not.toContain("? `第${chapter.serialNumber}章章纲（第${getVolumeDisplayIndex(volume.id)}卷）`");
-    expect(labelSource).toContain("isDetailOutlineTab ? 'xy-floating-title-count xy-detail-outline-title-count' : undefined");
     expect(labelSource).not.toContain('countTextWords(outlineCardContent)');
     expect(labelSource).not.toContain('WordCountText');
     expect(labelSource).not.toContain('章纲：');
-    expect(cardSource).toContain('<WordCountText value={countTextWords(outlineCardContent)} />');
-    expect(cardSource).toContain('onClick={() => updateChapterSummary(chapter.serialNumber, \'\')}');
-    expect(cardSource).toContain('xy-floating-outline-clear-button xy-border-embedded-transparent-backplate xy-floating-outline-card-clear-tool absolute z-30 px-1');
+    expect(cardSource).toContain('<WordCountText value={countTextWords(detailOutlineParts.outline)} />');
+    expect(panelSource).toContain('<WordCountText value={countTextWords(detailOutlineParts.stateExpectation)} />');
+    const rightPreviewStart = panelSource.indexOf('<div className="relative mt-5 min-h-[170px] flex-1">');
+    const rightPreviewEnd = panelSource.indexOf('{isDetailOutlineTab && (', rightPreviewStart);
+    const rightPreviewSource = panelSource.slice(rightPreviewStart, rightPreviewEnd);
+
+    expect(panelSource).toContain('const clearSelectedDetailOutlineChapter = () => {');
+    expect(panelSource).toContain('updateChapterSummary(selectedOutlineChapter.chapter.serialNumber, \'\');');
+    expect(panelSource).toContain('const renderDetailOutlineDraftClearButton = () => {');
+    expect(panelSource).toContain('xy-floating-outline-clear-button xy-border-embedded-transparent-backplate xy-floating-outline-draft-clear-tool absolute z-40 px-1');
+    expect(cardSource).not.toContain('onClick={() => updateChapterSummary(chapter.serialNumber, \'\')}');
+    expect(cardSource).not.toContain('xy-floating-outline-clear-button xy-border-embedded-transparent-backplate xy-floating-outline-card-clear-tool absolute z-30 px-1');
+    expect(rightPreviewSource).toContain('{renderDetailOutlineDraftClearButton()}');
     expect(cardSource).not.toContain("'--xy-floating-count-left': '12.8rem'");
     expect(cardSource).not.toContain("'--xy-floating-count-left': isDetailOutlineTab ? '12.8rem' : '11.4rem'");
     expect(cardSource).not.toContain('{!isDetailOutlineTab && (');
@@ -806,10 +1197,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(styleSource).toContain('max-width: min(13rem, calc(42% - 1.5rem));');
     expect(styleSource).toContain('.xy-detail-outline-title-count .xy-floating-title-text');
     expect(styleSource).toContain('text-overflow: ellipsis;');
-    expect(styleSource).toContain('.xy-floating-outline-card-clear-tool {');
+    expect(styleSource).toContain('.xy-floating-outline-draft-clear-tool {');
+    expect(styleSource).toContain('top: 0;');
     expect(styleSource).toContain('right: 1.65rem;');
-    expect(styleSource).toContain('bottom: 0;');
-    expect(styleSource).toContain('transform: translateY(50%);');
+    expect(styleSource).toContain('bottom: auto;');
+    expect(styleSource).toContain('transform: translateY(-50%);');
   });
 
   it('places library preview font size controls in the header tool slot and applies detail outline size to every chapter outline card', async () => {
@@ -820,14 +1212,12 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const settingPreviewStart = panelSource.indexOf('placeholder="这里显示选中的设定内容，也可以直接编辑。"');
     const settingPreviewEnd = panelSource.indexOf('<div className="mt-6 flex shrink-0 justify-end">', settingPreviewStart);
     const settingPreviewSource = panelSource.slice(settingPreviewStart, settingPreviewEnd);
-    const emptySettingPreviewStart = panelSource.indexOf('placeholder="这里会显示选中的设定内容。"');
+    const emptySettingPreviewStart = panelSource.indexOf('placeholder="这里可以直接输入设定内容，会自动新建设定。"');
     const emptySettingPreviewEnd = panelSource.indexOf('</div>', emptySettingPreviewStart);
     const emptySettingPreviewSource = panelSource.slice(emptySettingPreviewStart, emptySettingPreviewEnd);
-    const toolbarStart = panelSource.indexOf('<h3 className="text-base font-bold text-gray-900">{isDetailOutlineTab ? \'章纲目录\' : \'章节概要\'}</h3>');
-    const toolbarEnd = panelSource.indexOf('<div className="mt-3 min-h-0 flex-1 overflow-y-auto">', toolbarStart);
-    const toolbarSource = panelSource.slice(toolbarStart, toolbarEnd);
-    const fontIndex = toolbarSource.indexOf('showInlineFieldSizeButton && renderDetailOutlineFontSizeTool()');
-    const fieldSizeIndex = toolbarSource.indexOf('renderFieldSizeButton()');
+    const outlineDirectoryStart = panelSource.indexOf('style={{ gridTemplateColumns: `${outlineSidebarWidth}px 16px minmax(0,1fr) 8px ${settingLibraryRightWidth}px` }}');
+    const outlineDirectoryEnd = panelSource.indexOf('{leftResizeHandle}', outlineDirectoryStart);
+    const outlineDirectorySource = panelSource.slice(outlineDirectoryStart, outlineDirectoryEnd);
 
     expect(panelSource).toContain('detailOutlineFontSize?: number');
     expect(panelSource).toContain('const detailOutlineFontSize = Math.min(');
@@ -835,18 +1225,25 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('fontSize: detailOutlineFontSize');
     expect(panelSource).toContain('const renderDetailOutlineFontSizeTool = () => {');
     expect(panelSource).toContain('if (activeTab !== DETAIL_OUTLINE_TAB || plotPointStandalone) return null;');
-    expect(panelSource).toContain('const renderBrainstormFontSizeTool = () => {');
-    expect(panelSource).toContain('const renderSettingPreviewFontSizeTool = () => {');
-    expect(panelSource).toContain('const renderLibraryHeaderFontSizeTool = () => (');
+    expect(panelSource).toContain('const getActiveLibraryFontConfig = () => {');
+    expect(panelSource).toContain('const renderActiveLibraryFontSizeTool = () => {');
+    expect(panelSource).toContain('const renderLibraryHeaderFontSizeTool = () => {');
     expect(panelSource).toContain('const [headerToolPortalTarget, setHeaderToolPortalTarget]');
     expect(panelSource).toContain("setHeaderToolPortalTarget(document.getElementById('workbench-header-extra-tools'))");
     expect(panelSource).toContain('const libraryHeaderFontSizePortal = headerToolPortalTarget && !showInlineFieldSizeButton');
     expect(panelSource).toContain('createPortal(renderLibraryHeaderFontSizeTool(), headerToolPortalTarget)');
     expect(panelSource).toContain('{libraryHeaderFontSizePortal}');
-    expect(panelSource).toContain('ariaLabel="章纲字号"');
-    expect(panelSource).toContain('ariaLabel="脑洞预览字号"');
-    expect(panelSource).toContain('ariaLabel="脑洞输出字号"');
-    expect(panelSource).toContain('ariaLabel="设定预览字号"');
+    expect(panelSource).toContain("ariaLabel: '章纲字号'");
+    expect(panelSource).toContain("ariaLabel: '脑洞预览字号'");
+    expect(panelSource).toContain("ariaLabel: '脑洞输出字号'");
+    expect(panelSource).toContain("ariaLabel: '设定预览字号'");
+    expect(panelSource).not.toContain('章纲目录');
+    expect(panelSource).not.toContain('<h3 className="text-base font-bold text-gray-900">{isDetailOutlineTab ?');
+    expect(panelSource).not.toContain('>章节梗概</h3>');
+    expect(panelSource).toContain("onFocus={() => setActiveLibraryFontTarget('settingPreview')}");
+    expect(panelSource).toContain("if (isDetailOutlineTab) setActiveLibraryFontTarget('detailOutline');");
+    expect(panelSource).toContain('style={isDetailOutlineTab ? { fontSize: detailOutlineFontSize } : undefined}');
+    expect(panelSource).toContain("onMouseDown={() => {");
     expect(panelSource).toContain('className="shrink-0"');
     expect(cardSourceStart).toBeGreaterThan(-1);
     expect(cardSourceEnd).toBeGreaterThan(cardSourceStart);
@@ -854,11 +1251,13 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(cardSource).not.toContain('<div className="xy-floating-border-font-tool">');
     expect(settingPreviewSource).not.toContain('<div className="xy-floating-border-font-tool">');
     expect(emptySettingPreviewSource).not.toContain('<div className="xy-floating-border-font-tool">');
-    expect(toolbarStart).toBeGreaterThan(-1);
-    expect(toolbarEnd).toBeGreaterThan(toolbarStart);
-    expect(toolbarSource).not.toContain("{renderDetailOutlineFontSizeTool()}");
-    expect(fontIndex).toBeGreaterThan(-1);
-    expect(fieldSizeIndex).toBeGreaterThan(fontIndex);
+    expect(outlineDirectoryStart).toBeGreaterThan(-1);
+    expect(outlineDirectoryEnd).toBeGreaterThan(outlineDirectoryStart);
+    expect(outlineDirectorySource).not.toContain('mb-3 flex min-h-9 items-center justify-end gap-2');
+    expect(outlineDirectorySource).not.toContain("renderLibraryAiLogButton('outline')");
+    expect(outlineDirectorySource).not.toContain('renderDetailOutlineFontSizeTool()');
+    expect(outlineDirectorySource).not.toContain('renderFieldSizeButton()');
+    expect(outlineDirectorySource).toContain('<div className="min-h-0 flex-1 overflow-y-auto">');
   });
 
   it('uses border-embedded transparent backplates without rectangular white shadows', async () => {
@@ -910,7 +1309,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('does not show an AI dialogue label in the setting outline generator output area', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
-    const outputAreaAnchor = panelSource.indexOf('可以在这里生成');
+    const styleSource = await readSharedStylesSource();
+    const outputAreaAnchor = panelSource.indexOf('<label className="xy-floating-title-count xy-border-embedded-transparent-backplate">生成设定</label>');
     const outputAreaStart = panelSource.lastIndexOf('<div className="relative mt-5 min-h-0 flex-1">', outputAreaAnchor);
     const outputAreaEnd = panelSource.indexOf('{activeTab === SETTING_TAB && (', outputAreaAnchor);
     const outputAreaSource = panelSource.slice(outputAreaStart, outputAreaEnd);
@@ -918,10 +1318,17 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(outputAreaAnchor).toBeGreaterThan(-1);
     expect(outputAreaStart).toBeGreaterThan(-1);
     expect(outputAreaEnd).toBeGreaterThan(outputAreaStart);
-    expect(outputAreaSource).toContain('xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill h-full');
+    expect(outputAreaSource).toContain('xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-outline-ai-output-frame xy-floating-fill h-full');
+    expect(outputAreaSource).toContain('<label className="xy-floating-title-count xy-border-embedded-transparent-backplate">生成设定</label>');
+    expect(outputAreaSource).toContain('onClick={clearLibraryAiDialog}');
+    expect(outputAreaSource).toContain('xy-floating-outline-clear-button xy-border-embedded-transparent-backplate xy-floating-outline-top-clear-tool absolute z-40 px-1');
+    expect(outputAreaSource).not.toContain('可以在这里生成');
+    expect(outputAreaSource).not.toContain('text-gray-400');
     expect(outputAreaSource).not.toContain('AI对话框');
     expect(outputAreaSource).not.toContain('rounded-xl border border-gray-200 bg-white px-3 pb-3 pt-5');
     expect(outputAreaSource).not.toContain('absolute -top-2 left-4 bg-white px-1 text-sm font-black text-gray-900');
+    expect(styleSource).toContain('.xy-floating-outline-top-clear-tool {');
+    expect(styleSource).toContain('transform: translateY(-50%);');
   });
 
   it('does not show an AI dialogue label in the plot point generator output area', async () => {
@@ -945,7 +1352,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
     expect(panelSource).toContain('<aside className="flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 px-4 pb-4 pt-2">');
     expect(panelSource).toContain('<aside className="min-w-0 flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 px-4 pb-4 pt-2">');
-    expect(panelSource).toContain('xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count h-full');
+    expect(panelSource).toContain('xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-outline-ai-output-frame xy-floating-fill xy-floating-with-bottom-count h-full');
     expect(chapterSource).toContain('xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count mt-4 min-h-0 flex-1');
     expect(chapterSource).toContain('xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill h-full xy-has-value');
     expect(panelSource).not.toContain('relative mt-5 flex min-h-0 flex-1 flex-col rounded-xl border border-gray-200 bg-white px-3 pb-3 pt-5');
@@ -967,6 +1374,65 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(plotPointControlsSource).toContain('剧情点类型：');
     expect(plotPointControlsSource).toContain('剧情点数量：');
     expect(plotPointControlsSource).not.toContain('生成规则</div>');
+  });
+
+  it('places detail outline reader tabs in the header and link-all beside the navigation title', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const modalHeaderStart = panelSource.indexOf('<div className="flex shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">');
+    const modalHeaderEnd = panelSource.indexOf('<div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] bg-white">', modalHeaderStart);
+    const modalHeaderSource = panelSource.slice(modalHeaderStart, modalHeaderEnd);
+    const readerAsideStart = panelSource.indexOf('<aside className="min-h-0 border-r border-slate-100 bg-slate-50 p-3">', modalHeaderEnd);
+    const readerAsideEnd = panelSource.indexOf('<div className="editor-scrollbar h-full space-y-1 overflow-y-auto pb-8">', readerAsideStart);
+    const readerAsideHeaderSource = panelSource.slice(readerAsideStart, readerAsideEnd);
+
+    expect(modalHeaderStart).toBeGreaterThan(-1);
+    expect(modalHeaderEnd).toBeGreaterThan(modalHeaderStart);
+    expect(readerAsideStart).toBeGreaterThan(-1);
+    expect(readerAsideEnd).toBeGreaterThan(readerAsideStart);
+    expect(modalHeaderSource).toContain('<h3 className="text-xl font-bold text-gray-900">关联资料</h3>');
+    expect(modalHeaderSource).toContain("['outlines', '章纲']");
+    expect(modalHeaderSource).toContain("['settings', '设定']");
+    expect(modalHeaderSource).toContain("['roles', '角色']");
+    expect(modalHeaderSource).not.toContain("['plotChain', '剧情链']");
+    expect(modalHeaderSource).not.toContain('选择会随本次请求一起发给 AI；剧情大纲也可按需要勾选或取消。');
+    expect(modalHeaderSource).not.toContain('已选择 {draftDetailOutlineReaderItems.length} 项');
+    expect(modalHeaderSource).not.toContain('关联所有');
+    expect(panelSource).not.toContain('选择会随本次请求一起发给 AI；剧情大纲也可按需要勾选或取消。');
+    expect(panelSource).toContain("setDetailOutlineReaderTab('outlines');");
+    expect(panelSource).not.toContain("setDetailOutlineReaderTab('settings');");
+    expect(readerAsideHeaderSource).toContain('mb-2 flex items-center justify-between gap-2 px-2');
+    expect(readerAsideHeaderSource).toContain('设定导航');
+    expect(readerAsideHeaderSource).toContain('onClick={selectAllActiveDetailOutlineReaderItems}');
+    expect(readerAsideHeaderSource).toContain('关联所有');
+  });
+
+  it('keeps outline page text inputs protected from draggable overlays and decorative hit targets', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const styleSource = await readSharedStylesSource();
+    const aiInlineInputSource = await readAiInlineInputSource();
+    const selectedSettingStart = panelSource.indexOf('placeholder="这里显示选中的设定内容，也可以直接编辑。"');
+    const selectedSettingSource = panelSource.slice(panelSource.lastIndexOf('<textarea', selectedSettingStart), selectedSettingStart);
+    const volumeStart = panelSource.indexOf('placeholder="这一卷的梗概会显示在这里，内容是该卷下所有章节内容的总结。"');
+    const volumeSource = panelSource.slice(panelSource.lastIndexOf('<textarea', volumeStart), volumeStart);
+    const chapterStart = panelSource.indexOf('placeholder={isDetailOutlineTab ? \'该章章纲会显示在这里，可由 AI 根据章节内容生成。\'');
+    const chapterSource = panelSource.slice(panelSource.lastIndexOf('<textarea', chapterStart), chapterStart);
+    const draftStart = panelSource.indexOf('placeholder={plotPointStandalone ? \'生成后的剧情点会显示在这里，也可以手动编辑后复制。\'');
+    const draftSource = panelSource.slice(panelSource.lastIndexOf('<textarea', draftStart), draftStart);
+
+    expect(selectedSettingStart).toBeGreaterThan(-1);
+    expect(volumeStart).toBeGreaterThan(-1);
+    expect(chapterStart).toBeGreaterThan(-1);
+    expect(draftStart).toBeGreaterThan(-1);
+    expect(selectedSettingSource).toContain('data-no-modal-drag="true"');
+    expect(volumeSource).toContain('data-no-modal-drag="true"');
+    expect(chapterSource).toContain('data-no-modal-drag="true"');
+    expect(draftSource).toContain('data-no-modal-drag="true"');
+    expect(aiInlineInputSource).toContain('<div data-no-modal-drag="true"');
+    expect(aiInlineInputSource).toContain('<textarea\n        data-no-modal-drag="true"');
+    expect(styleSource).not.toContain('.xy-floating-field input,\n.xy-floating-field textarea {\n  position: relative;\n  z-index: 1;');
+    expect(styleSource).toContain('.xy-floating-field label.xy-border-embedded-transparent-backplate,');
+    expect(styleSource).toContain('.xy-floating-field label.xy-border-embedded-transparent-backplate {\n  position: absolute;');
+    expect(styleSource).toContain('.xy-floating-field .xy-floating-outline-chapter-meta {\n  pointer-events: none;');
   });
 
   it('keeps plot point preview actions at the bottom without the preview title or status copy', async () => {
@@ -1013,8 +1479,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   it('renders plot chain slots with the same collapsible tree structure as the chapter sidebar', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const plotPointStandaloneStart = panelSource.indexOf('if (plotPointStandalone) {');
-    const gridTemplateStart = panelSource.indexOf('gridTemplateColumns:', plotPointStandaloneStart);
-    const navStart = panelSource.indexOf('<nav className="editor-scrollbar min-h-0 flex-1 overflow-y-auto px-2 py-2" aria-label="剧情链目录树">');
+    const gridTemplateStart = panelSource.indexOf('gridTemplateColumns: `${plotPointLayoutTreeWidth}', plotPointStandaloneStart);
+    const navStart = panelSource.indexOf('<nav className="editor-scrollbar min-h-0 flex-1 overflow-y-auto pr-1" aria-label="剧情链目录树">');
     const navEnd = panelSource.indexOf('</nav>', navStart);
     const navSource = panelSource.slice(navStart, navEnd);
 
@@ -1034,6 +1500,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain('onChange={(event) => renamePlotPointChain(event.target.value)}');
     expect(panelSource).toContain('const [expandedPlotPointChainTreeSlots, setExpandedPlotPointChainTreeSlots] = useState<Record<PlotPointChainSlot, boolean>>({');
     expect(panelSource).not.toContain('<h2 className="whitespace-nowrap text-sm font-bold text-gray-900">剧情链</h2>');
+    expect(panelSource).toContain('<aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-white px-3 py-3">');
     expect(navSource).toContain('aria-label="当前主链未写序号导航"');
     expect(navSource).toContain('onContextMenu={(event) => {');
     expect(navSource).toContain('setPlotPointChainMenuSlot(plotPointActiveChainSlot)');
@@ -1046,7 +1513,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(navSource).toContain("setPlotPointChainFilterMode('all')");
     expect(navSource).toContain('setActivePlotPointChainItemId(item.id)');
     expect(navSource).toContain('暂无未写剧情点');
-    expect(navSource).toContain('备选链 {PLOT_POINT_CHAIN_SLOTS.length - 1} 条');
+    expect(navSource).toContain('style={{ gridTemplateColumns: \'repeat(auto-fit, minmax(36px, max-content))\' }}');
+    expect(navSource).toContain('<span className="min-w-0 flex-1 truncate text-sm font-bold text-white">备选链</span>');
+    expect(navSource).toContain('{PLOT_POINT_CHAIN_SLOTS.length - 1}条');
     expect(navSource).toContain('PLOT_POINT_CHAIN_SLOTS.filter((slot) => slot !== plotPointActiveChainSlot).map((slot) => (');
     expect(navSource).toContain('onClick={() => setActivePlotPointChainSlot(slot)}');
     expect(navSource).toContain('aria-expanded={expandedPlotPointChainTreeSlots[plotPointActiveChainSlot] ?? true}');
@@ -1054,14 +1523,24 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(navSource).not.toContain('{PLOT_POINT_CHAIN_SLOTS.length}条');
     expect(navSource).toContain('主链');
     expect(navSource).not.toContain('{plotPointChainNames[plotPointActiveChainSlot] ?? `剧情链${plotPointActiveChainSlot}`}');
-    expect(navSource).toContain('{plotPointUnwrittenItems.length} 未写');
-    expect(navSource).toContain('className="group flex h-[36px] w-full items-center gap-1 rounded-md bg-[#EAF9FD] px-2 py-1.5 text-left transition-colors hover:bg-[#dff5fb]"');
-    expect(navSource).toContain('<span className="min-w-0 flex-1 truncate text-sm font-medium text-[#078fb0]">{plotPointChainNames[slot] ?? `剧情链${slot}`}</span>');
-    expect(navSource).toContain('<span className="ml-1 shrink-0 text-xs text-gray-400">{(plotPointChainSelections[slot] ?? []).length}点</span>');
-    expect(navSource).toContain('className="ml-1 mt-0.5 space-y-0.5"');
-    expect(navSource).toContain("activePoint ? 'text-orange-600' : 'text-gray-700'");
-    expect(navSource).toContain('剧情点{originalIndex + 1}');
-    expect(navSource).toContain('border-transparent hover:bg-gray-50');
+    expect(navSource).toContain('{plotPointUnwrittenItems.length}未写');
+    expect(navSource).toContain('className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-[#08AACE] bg-[#08AACE] px-3 py-1.5 text-left text-sm font-bold leading-5 text-white transition-colors hover:brightness-95"');
+    expect(navSource).toContain('<summary className="xy-plot-chain-summary flex cursor-pointer items-center gap-2 rounded-lg border border-[#08AACE] bg-[#08AACE] px-3 py-1.5 text-sm font-bold leading-5 text-white transition-colors hover:brightness-95">');
+    expect(navSource).toContain('<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/15 text-white">');
+    expect(navSource).toContain('<span className="min-w-0 flex-1 truncate text-sm font-bold text-white">{plotPointChainNames[slot] ?? `剧情链${slot}`}</span>');
+    expect(navSource).toContain('<span className="shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-xs text-white">{(plotPointChainSelections[slot] ?? []).length}点</span>');
+    expect(navSource).toContain('xy-plot-chain-summary');
+    expect(navSource).toContain('className="mt-1 grid justify-start gap-2 px-1.5 py-1.5"');
+    expect(navSource).toContain('className="mt-1 grid gap-2 px-1.5 py-1.5"');
+    expect(navSource).toContain('relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors');
+    expect(navSource).toContain('activePoint');
+    expect(navSource).toContain("'border-[#08B3D9] bg-[#08B3D9] text-white'");
+    expect(navSource).toContain('title={`未写剧情点${originalIndex + 1} ${item.title}`}');
+    expect(navSource).toContain('{originalIndex + 1}');
+    expect(navSource).not.toContain('className="ml-1 mt-0.5 space-y-0.5"');
+    expect(navSource).not.toContain("activePoint ? 'text-orange-600' : 'text-gray-700'");
+    expect(navSource).not.toContain('剧情点{originalIndex + 1}');
+    expect(navSource).not.toContain('border-transparent hover:bg-gray-50');
     expect(navSource).not.toContain("ring-2 ring-[#bdeef7]");
     expect(navSource).not.toContain('border-orange-400 bg-orange-50 text-orange-600 ring-2 ring-orange-100');
     expect(navSource).not.toContain("border-[#08AACE] bg-[#08AACE] text-white");
@@ -1076,10 +1555,10 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain('选中的剧情点会加入当前数字剧情链。');
   });
 
-  it('renders selected plot point cards as full-width content, inline metrics, and folded AI review', async () => {
+  it('renders selected plot point cards as a full-content timeline preview area', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const plotChainSource = await readWorkbenchPlotChainSource();
-    const selectedListStart = panelSource.indexOf('visiblePlotPointSelectedItems.map((item) => {');
+    const selectedListStart = panelSource.indexOf('relative space-y-4 pl-6 before:absolute');
     const selectedListEnd = panelSource.indexOf('{plotPointLeftResizeHandle}', selectedListStart);
     const selectedListSource = panelSource.slice(selectedListStart, selectedListEnd);
 
@@ -1111,10 +1590,18 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(selectedListSource).toContain("['潜力', metrics.potential]");
     expect(selectedListSource).toContain("['衔接', metrics.fit]");
     expect(selectedListSource).toContain('const reviewExpanded = expandedPlotPointPreviewIds.includes(`chain-review:${item.id}`);');
-    expect(selectedListSource).toContain('<p className="min-w-0 flex-1 line-clamp-6 text-sm font-bold leading-6 text-slate-700">{displayText}</p>');
+    expect(selectedListSource).not.toContain('时间线预览 · 剧情点');
+    expect(selectedListSource).not.toContain('item.title || `剧情点 ${index + 1}`');
+    expect(selectedListSource).not.toContain('className="flex items-start justify-end gap-3"');
+    expect(selectedListSource).toContain('className="mt-3 flex items-center justify-between gap-3"');
+    expect(selectedListSource).toContain('className="flex shrink-0 flex-wrap items-center justify-end gap-2"');
+    expect(selectedListSource).toContain('relative space-y-4 pl-6 before:absolute');
+    expect(selectedListSource).toContain('editor-scrollbar mt-1 max-h-64 overflow-y-auto rounded-2xl border border-[#BDEEF7] bg-[#F1FBFE]');
+    expect(selectedListSource).not.toContain('editor-scrollbar mt-3 max-h-64 overflow-y-auto rounded-2xl border border-[#BDEEF7] bg-[#F1FBFE]');
+    expect(selectedListSource).toContain('{displayText}');
     expect(selectedListSource).not.toContain('aria-hidden="true"');
     expect(selectedListSource).not.toContain('>剧情点 {index + 1}</span>');
-    expect(selectedListSource).toContain('line-clamp-6 text-sm font-bold leading-6 text-slate-700');
+    expect(selectedListSource).not.toContain('line-clamp-6 text-sm font-bold leading-6 text-slate-700');
     expect(selectedListSource).toContain('mt-3 grid grid-cols-3 gap-2');
     expect(panelSource).toContain("from '@/features/workbench/model/workbenchPlotChain'");
     expect(plotChainSource).toContain('function getWorkbenchPlotPointMetricClass(score: number)');
@@ -1126,6 +1613,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(selectedListSource).toContain('onClick={() => togglePlotPointPreviewExpanded(`chain-review:${item.id}`)}');
     expect(selectedListSource.indexOf('mt-3 grid grid-cols-3 gap-2')).toBeLessThan(
       selectedListSource.indexOf('onClick={() => togglePlotPointPreviewExpanded(`chain-review:${item.id}`)}'),
+    );
+    expect(selectedListSource.indexOf('onClick={() => togglePlotPointPreviewExpanded(`chain-review:${item.id}`)}')).toBeLessThan(
+      selectedListSource.indexOf('onClick={() => (written ? movePlotPointChainItemToUnwritten(item.id) : markPlotPointChainItemWritten(item.id))}'),
     );
     expect(selectedListSource).toContain("{reviewExpanded ? '收起AI评价' : 'AI评价'}");
     expect(selectedListSource).toContain('{reviewExpanded && (');
@@ -1160,6 +1650,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
 
     expect(panelSource).toContain('defaultActiveTab');
+    expect(panelSource).toContain("const tabsSignature = tabs.map(normalizeTabName).join('\\u001f');");
+    expect(panelSource).toContain('const normalizedTabs = useMemo(() => tabs.map(normalizeTabName), [tabsSignature]);');
+    expect(panelSource).not.toContain('const normalizedTabs = useMemo(() => tabs.map(normalizeTabName), [tabs]);');
     expect(panelSource).toContain('readActiveTab(storageKey, normalizedTabs, defaultActiveTab)');
     expect(panelSource).toContain('这里显示选中的脑洞内容，也可以直接编辑。');
   });
@@ -1211,25 +1704,33 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(testCollectionSource).not.toContain('剧情链左二调试方案');
     expect(panelSource).toContain('aria-label="当前主链未写序号导航"');
     expect(panelSource).toContain('aria-label="当前主链菜单"');
-    expect(panelSource).toContain('备选链 {PLOT_POINT_CHAIN_SLOTS.length - 1} 条');
+    expect(panelSource).toContain('<span className="min-w-0 flex-1 truncate text-sm font-bold text-white">备选链</span>');
+    expect(panelSource).toContain('{PLOT_POINT_CHAIN_SLOTS.length - 1}条');
     expect(panelSource).toContain('plotPointChainWrittenSelections');
     expect(panelSource).toContain('markPlotPointChainItemWritten(item.id)');
     expect(panelSource).toContain("['written', '只看已写']");
   });
 
-  it('lets detail outline reader associate the current plot chain', async () => {
+  it('keeps detail outline reader plot chain plumbing out of the visible tabs', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
 
     expect(panelSource).toContain("type DetailOutlineReaderTab = 'settings' | 'roles' | 'outlines' | 'plotChain';");
     expect(panelSource).toContain('detailOutlineReaderPlotChainIds?: string[];');
     expect(panelSource).toContain('const [draftDetailOutlineReaderPlotChainIds, setDraftDetailOutlineReaderPlotChainIds]');
     expect(panelSource).toContain('const detailOutlineReaderPlotChainItems = (plotPointChainSelections[plotPointActiveChainSlot] ?? [])');
-    expect(panelSource).toContain("['plotChain', '剧情链']");
+    expect(panelSource).not.toContain("['plotChain', '剧情链']");
     expect(panelSource).toContain("detailOutlineReaderTab === 'plotChain'");
     expect(panelSource).toContain('toggleDraftDetailOutlineReaderPlotChain(item.id)');
     expect(panelSource).toContain('detailOutlineReaderPlotChainIds: nextPlotChainIds');
-    expect(panelSource).toContain('plotChainText ? `【关联剧情链】');
-    expect(panelSource).toContain('请根据关联的设定、前文章纲和剧情链生成章纲。');
+    expect(panelSource).toContain("wrapAiRequestTag('关联资料', innerContext)");
+    expect(panelSource).toContain("wrapAiRequestTag('设定资料', settingText)");
+    expect(panelSource).toContain("wrapAiRequestTag('角色资料', roleText)");
+    expect(panelSource).toContain("wrapAiRequestTag('剧情链', plotChainText)");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_STATE_MARKER = '【本章状态变化预期】';");
+    expect(panelSource).toContain('splitDetailOutlineStateExpectation(outlineCardContent)');
+    expect(panelSource).toContain('mergeDetailOutlineStateExpectation(');
+    expect(panelSource).toContain('请根据关联的设定、前文章纲和剧情链生成章纲。请在章纲末尾输出${DETAIL_OUTLINE_STATE_MARKER}');
+    expect(panelSource).toContain('状态变化预期');
   });
 
   it('adds a test preview for all suggested border transparent backplate placements', async () => {
@@ -1285,12 +1786,34 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   it('requires right-click unlock before opening the clear settings confirmation dialog', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
 
-    expect(panelSource).toContain('isClearSettingsUnlocked');
-    expect(panelSource).toContain('aria-disabled={!isClearSettingsUnlocked');
+    expect(panelSource).toContain('isActiveClearSettingsUnlocked');
+    expect(panelSource).toContain('aria-disabled={!isActiveClearSettingsUnlocked');
     expect(panelSource).toContain('setClearSettingsUnlockMenu({');
+    expect(panelSource).toContain('target: activeClearSettingsTarget,');
     expect(panelSource).toContain('setIsClearSettingsConfirmOpen(true)');
     expect(panelSource).toContain("activeTab === SETTING_TAB ? 'grid-cols-4' : 'grid-cols-3'");
-    expect(panelSource).toContain('min-w-0 border-l border-gray-200 px-2 text-sm font-bold text-white');
+    expect(panelSource).toContain('mt-3 grid h-11 shrink-0 overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.08)]');
+    expect(panelSource).toContain('border-r border-slate-200 bg-[#DFF7FC] px-2 text-sm font-black text-[#08AACE]');
+    expect(panelSource).toContain("isActiveClearSettingsUnlocked\n                      ? 'bg-red-50 text-red-500 hover:bg-red-100'");
+    expect(panelSource).toContain("clearSettingsConfirmTarget === 'roles' && activeTab === SETTING_TAB && outlineSettingScope === 'character'");
     expect(panelSource).not.toContain('h-9 w-full rounded-xl border border-red-200');
+  });
+
+  it('keeps outline work settings and character settings as a left sidebar scope switch', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+
+    expect(panelSource).toContain("const [outlineSettingScope, setOutlineSettingScope] = useState<'work' | 'character'>('work')");
+    expect(panelSource).toContain("['work', '作品设定']");
+    expect(panelSource).toContain("['character', '人物设定']");
+    expect(panelSource).toContain("const effectiveLibraryTab = isOutlineCharacterScope ? ROLE_TAB : activeTab");
+    expect(panelSource).toContain("const activeSettingTypeOptions = activeIsBrainstorm ? [BRAINSTORM_TYPE] : isOutlineCharacterScope ? roleTypeOptions : settingTypeOptions");
+    expect(panelSource).toContain("{isOutlineCharacterScope ? '角色' : '设定'}");
+    expect(panelSource).toContain("addRole(UNCATEGORIZED_TYPE, { switchToRoleTab: false, title })");
+    expect(panelSource).toContain('<RoleBaseStateEditor');
+    expect(panelSource).toContain('baseSetting: string;');
+    expect(panelSource).toContain('stateSettings: RoleStateSettings;');
+    expect(panelSource).toContain('>基础设定<');
+    expect(panelSource).toContain('>状态设定<');
+    expect(panelSource).toContain("style={{ fontSize: roleTextFontSize }}");
   });
 });

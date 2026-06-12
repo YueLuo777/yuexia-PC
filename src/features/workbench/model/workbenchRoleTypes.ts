@@ -1,16 +1,17 @@
-export const DEFAULT_WORKBENCH_ROLE_TYPES = ['男主', '女主', '正派配角', '重要反派', '反派配角', '龙套', '未分类'];
+export const DEFAULT_WORKBENCH_ROLE_TYPES = ['男主角', '女主角', '正派配角', '重要反派', '反派配角', '龙套', '未分类'];
 
 export function normalizeWorkbenchRoleType(value?: string | null) {
   const trimmed = value?.trim();
   if (!trimmed) return '未分类';
-  if (trimmed === '男女主') return '男主';
+  if (trimmed === '男女主' || trimmed === '男主') return '男主角';
+  if (trimmed === '女主') return '女主角';
   return trimmed;
 }
 
 export type WorkbenchRoleLifeStatus = '存活' | '死亡';
 
 export function isMaleProtagonistRoleType(value?: string | null) {
-  return normalizeWorkbenchRoleType(value) === '男主';
+  return normalizeWorkbenchRoleType(value) === '男主角';
 }
 
 export function normalizeWorkbenchRoleLifeStatus(
@@ -27,7 +28,7 @@ export function shouldShowRolePinAction(roleType?: string | null) {
 
 export function getDefaultPlotChainRoleIds(roles: Array<{ id: string; group: string }>) {
   return roles
-    .filter((role) => normalizeWorkbenchRoleType(role.group) === '男主')
+    .filter((role) => normalizeWorkbenchRoleType(role.group) === '男主角')
     .map((role) => role.id);
 }
 
@@ -47,13 +48,13 @@ export function getInitialPlotChainRoleIds({
 
 export function canCreateWorkbenchRoleInType(existingTypes: string[], targetType: string) {
   const normalizedTargetType = normalizeWorkbenchRoleType(targetType);
-  if (normalizedTargetType !== '男主') return true;
-  return !existingTypes.some((type) => normalizeWorkbenchRoleType(type) === '男主');
+  if (normalizedTargetType !== '男主角') return true;
+  return !existingTypes.some((type) => normalizeWorkbenchRoleType(type) === '男主角');
 }
 
 export function getMaleProtagonistNames(roles: Array<{ title: string; group: string }>) {
   return roles
-    .filter((role) => normalizeWorkbenchRoleType(role.group) === '男主')
+    .filter((role) => normalizeWorkbenchRoleType(role.group) === '男主角')
     .map((role) => role.title.trim())
     .filter(Boolean);
 }

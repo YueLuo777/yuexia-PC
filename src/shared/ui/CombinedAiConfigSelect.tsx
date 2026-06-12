@@ -99,7 +99,7 @@ export function CombinedAiConfigSelect({
     if (!openSegment || (openSegment === 'prompt' && promptDisabled)) return null;
     return (
       <div
-        className={`absolute top-[calc(100%+6px)] z-[10050] max-h-[240px] overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-2xl ${
+        className={`absolute top-full z-[10050] max-h-[240px] overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-2xl ${
           openSegment === 'model' ? 'left-0 w-1/2' : 'right-0 w-1/2'
         }`}
       >
