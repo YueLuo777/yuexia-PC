@@ -25,7 +25,6 @@ const BorderBackplateApplicationTestPage = lazy(() => import('@/features/tests/p
 const WorkbenchRightPanelUnifiedTestPage = lazy(() => import('@/features/tests/pages/WorkbenchRightPanelUnifiedTestPage').then((module) => ({ default: module.WorkbenchRightPanelUnifiedTestPage })));
 const WorkbenchAiRequestTagPolicyTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiRequestTagPolicyTestPage').then((module) => ({ default: module.WorkbenchAiRequestTagPolicyTestPage })));
 const SettingTaxonomyPlanTestPage = lazy(() => import('@/features/tests/pages/SettingTaxonomyPlanTestPage').then((module) => ({ default: module.SettingTaxonomyPlanTestPage })));
-const AiInputBorderOptionsTestPage = lazy(() => import('@/features/tests/pages/AiInputBorderOptionsTestPage').then((module) => ({ default: module.AiInputBorderOptionsTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -92,13 +91,6 @@ const testGroups = [
         path: '/setting-taxonomy-plan-test',
         icon: NotebookText,
         badge: 'Setting Plan',
-      },
-      {
-        title: 'AI 输入框边框方案',
-        description: '测试右侧 AI 输入框边框线、已关联资料背景、已关联字数提示和发送/停止按钮的多套视觉方案。',
-        path: '/ai-input-border-options-test',
-        icon: Palette,
-        badge: 'Input UI',
       },
     ],
   },
@@ -217,8 +209,6 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <WorkbenchAiRequestTagPolicyTestPage />;
       case '/setting-taxonomy-plan-test':
         return <SettingTaxonomyPlanTestPage />;
-      case '/ai-input-border-options-test':
-        return <AiInputBorderOptionsTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':

@@ -3115,3 +3115,28 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 .writer-assistant-theme .xy-ai-inline-stop {
   border-left-color: var(--xy-wa-blue);
 }
+
+.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral.xy-floating-with-inline-actions textarea {
+  border-color: #d7dee8;
+}
+
+.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral.xy-floating-with-inline-actions:focus-within textarea,
+.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral.xy-floating-with-inline-actions.xy-has-value textarea {
+  border-color: #94a3b8;
+}
+
+.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral .xy-ai-inline-send {
+  color: #334155;
+}
+
+.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral .xy-ai-inline-send:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral .xy-ai-inline-send:active:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral .xy-ai-inline-stop {
+  border-left-color: #d7dee8;
+}

@@ -1514,7 +1514,14 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(chapterSource).toContain('data-no-modal-drag="true"');
     expect(draftSource).toContain('data-no-modal-drag="true"');
     expect(aiInlineInputSource).toContain('<div data-no-modal-drag="true"');
+    expect(aiInlineInputSource).toContain("variant?: 'default' | 'neutral'");
+    expect(aiInlineInputSource).toContain("variant = 'neutral'");
+    expect(aiInlineInputSource).toContain("variant === 'neutral' ? 'xy-ai-inline-neutral' : ''");
     expect(aiInlineInputSource).toContain('<textarea\n        data-no-modal-drag="true"');
+    expect(styleSource).toContain('.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral.xy-floating-with-inline-actions textarea');
+    expect(styleSource).toContain('border-color: #d7dee8;');
+    expect(styleSource).toContain('.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral .xy-ai-inline-send');
+    expect(styleSource).toContain('color: #334155;');
     expect(styleSource).not.toContain('.xy-floating-field input,\n.xy-floating-field textarea {\n  position: relative;\n  z-index: 1;');
     expect(styleSource).toContain('.xy-floating-field label.xy-border-embedded-transparent-backplate,');
     expect(styleSource).toContain('.xy-floating-field label.xy-border-embedded-transparent-backplate {\n  position: absolute;');

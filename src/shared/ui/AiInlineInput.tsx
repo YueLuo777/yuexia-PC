@@ -14,6 +14,7 @@ type AiInlineInputProps = {
   className?: string;
   textareaClassName?: string;
   rows?: number;
+  variant?: 'default' | 'neutral';
 } & Pick<TextareaHTMLAttributes<HTMLTextAreaElement>, 'aria-label'>;
 
 export const AiInlineInput = forwardRef<HTMLTextAreaElement, AiInlineInputProps>(function AiInlineInput({
@@ -29,10 +30,13 @@ export const AiInlineInput = forwardRef<HTMLTextAreaElement, AiInlineInputProps>
   className = '',
   textareaClassName = 'scrollbar-hidden',
   rows = 1,
+  variant = 'neutral',
   'aria-label': ariaLabel,
 }, ref) {
+  const variantClassName = variant === 'neutral' ? 'xy-ai-inline-neutral' : '';
+
   return (
-    <div data-no-modal-drag="true" className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${value.trim() ? 'xy-has-value' : ''} ${className}`.trim()}>
+    <div data-no-modal-drag="true" className={`xy-floating-field xy-floating-ai xy-floating-compact xy-floating-with-inline-actions ${variantClassName} ${value.trim() ? 'xy-has-value' : ''} ${className}`.trim()}>
       <textarea
         data-no-modal-drag="true"
         ref={ref}

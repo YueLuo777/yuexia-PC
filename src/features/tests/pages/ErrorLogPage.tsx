@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'workbench-ai-input-neutral-style-migration-001',
+    title: '21号测试的 AI 输入框中性灰线方案需要迁入正式页',
+    area: '作品编辑器 / 右侧 AI 输入区 / AiInlineInput',
+    symptom: '21号测试已经验证 AI 输入框边框和发送区颜色方案，需要迁入正式编辑器；同时用户要求不要改变现有 UI 样式，不能重做布局、尺寸或按钮结构。',
+    cause: '测试页的默认中性灰线方案只涉及颜色语义，但正式共享输入控件此前仍由主题蓝色覆盖边框、发送按钮和停止按钮分割线。',
+    solution: '给 AiInlineInput 增加默认 neutral 变体，保留原 xy-floating-field、xy-floating-ai、xy-floating-with-inline-actions 结构，只在 writer-assistant-theme 下覆盖输入框边框、发送按钮 hover/active 和停止按钮分割线为中性色；迁入后删除 21 号临时测试页入口和文件。',
+    prevention: '以后把视觉测试迁入正式页时，先判断是否需要改结构；若用户要求不改 UI 样式，只做可控变体或颜色 token 覆盖，并用测试锁住原控件结构。',
+    keywords: ['21号测试', 'AI输入框', '中性灰线', 'AiInlineInput', 'xy-ai-inline-neutral', '不改UI样式'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'test-collection-delete-marked-pages-001',
     title: '测试集合里勾选完成的临时测试需要彻底退场',
     area: '测试集合 / 临时测试页 / 路由清理',
