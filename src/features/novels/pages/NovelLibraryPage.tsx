@@ -1,4 +1,4 @@
-import { AlertTriangle, Archive, BookOpen, Clock3, Image as ImageIcon, Plus, RefreshCw, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react';
+import { AlertTriangle, Archive, Clock3, Image as ImageIcon, Plus, RefreshCw, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -62,6 +62,24 @@ function preloadEditorPage(workType: WorkType) {
 
 function formatWords(value: number) {
   return new Intl.NumberFormat('zh-CN').format(value);
+}
+
+function parseWorkDateValue(value?: string) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return 0;
+  const parsed = new Date(raw).getTime();
+  if (!Number.isNaN(parsed)) return parsed;
+  const normalized = raw.replace(/\./g, '/').replace(/-/g, '/');
+  const normalizedTime = new Date(normalized).getTime();
+  return Number.isNaN(normalizedTime) ? 0 : normalizedTime;
+}
+
+function formatWorkDate(value?: string) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '--';
+  const parts = raw.match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})/);
+  if (parts) return `${parts[1]}/${Number(parts[2])}/${Number(parts[3])}`;
+  return raw;
 }
 
 const colorOptions: { value: BtnColor; label: string }[] = [
@@ -537,7 +555,6 @@ export function NovelLibraryPage() {
   const { openWorkTab } = useWorkspaceTabs();
   const workType: WorkType = location.pathname === '/scripts' ? 'script' : 'novel';
   const typeLabel = workType === 'novel' ? '小说' : '剧本';
-  const title = workType === 'novel' ? '我的小说' : '我的剧本';
 
   const {
     novels,
@@ -584,9 +601,9 @@ export function NovelLibraryPage() {
 
   const sourceNovels = getNovelsByType(workType);
   const totalWorkWords = sourceNovels.reduce((sum, novel) => sum + novel.wordCount, 0);
-  const latestWork = [...sourceNovels]
-    .sort((a, b) => String(b.lastModifiedAt || b.createdAt).localeCompare(String(a.lastModifiedAt || a.createdAt), 'zh-CN'))
-    [0] ?? null;
+  const recentWorks = [...sourceNovels]
+    .sort((a, b) => parseWorkDateValue(b.lastModifiedAt || b.createdAt) - parseWorkDateValue(a.lastModifiedAt || a.createdAt))
+    .slice(0, 3);
   const filters = ['全部', ...categories];
   const filteredNovels = useMemo(() => sourceNovels.filter((novel) => {
     const matchFilter = activeFilter === '全部' || novel.category === activeFilter;
@@ -650,17 +667,8 @@ export function NovelLibraryPage() {
     <div className="flex h-screen flex-col bg-white">
       <main className="flex-1 overflow-y-auto px-8 py-7">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <section className="flex min-h-[154px] flex-col rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-5 py-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[13px] font-medium text-[#6b7b8d]">{typeLabel}数据</p>
-                <h1 className="mt-2 truncate text-[24px] font-bold text-[#16518f]">{title}</h1>
-              </div>
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-[#eaf2ff] text-[#1e71ef]">
-                <BookOpen className="h-5 w-5" />
-              </span>
-            </div>
-            <div className="mt-4 grid gap-2 text-[13px] font-medium text-[#586574]">
+          <section className="flex min-h-[154px] flex-col justify-center rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-5 py-5">
+            <div className="grid gap-2 text-[13px] font-medium text-[#586574]">
               <div className="flex items-center justify-between gap-3">
                 <span>作品</span>
                 <strong className="text-[#1f2933]">{sourceNovels.length} 本</strong>
@@ -721,33 +729,36 @@ export function NovelLibraryPage() {
             </div>
           </section>
 
-          <button
-            type="button"
-            onClick={() => {
-              if (latestWork) handleOpen(latestWork.id);
-              else setIsNewOpen(true);
-            }}
-            className="flex min-h-[154px] flex-col rounded-[8px] border border-[#e6e8ec] bg-white px-5 py-5 text-left transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
-          >
+          <section className="flex min-h-[154px] flex-col rounded-[8px] border border-[#e6e8ec] bg-white px-5 py-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[13px] font-medium text-[#6b7b8d]">快速进入</p>
-                <h2 className="mt-2 truncate text-[24px] font-bold text-[#1f2933]">最近编辑</h2>
+                <h2 className="mt-2 truncate text-[24px] font-bold text-[#1f2933]">最近编辑：</h2>
               </div>
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-[#fff4e5] text-[#d97706]">
                 <Clock3 className="h-5 w-5" />
               </span>
             </div>
-            {latestWork ? (
-              <div className="mt-5 min-w-0">
-                <span className="block truncate text-[16px] font-semibold text-[#1f2933]">{latestWork.title}</span>
-                <span className="mt-2 block truncate text-[13px] font-medium text-[#9aa3af]">{latestWork.lastModifiedAt ?? latestWork.createdAt}</span>
+            {recentWorks.length > 0 ? (
+              <div className="mt-4 grid gap-2">
+                {recentWorks.map((work) => (
+                  <button
+                    key={work.id}
+                    type="button"
+                    onClick={() => handleOpen(work.id)}
+                    onMouseEnter={() => handlePrepareOpen(work.id)}
+                    onFocus={() => handlePrepareOpen(work.id)}
+                    className="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[6px] px-1 text-left transition-colors hover:bg-[#f6f9ff]"
+                  >
+                    <span className="min-w-0 truncate text-[14px] font-semibold text-[#1f2933]">{work.title}</span>
+                    <span className="shrink-0 text-[13px] font-medium text-[#8d98a6]">{formatWorkDate(work.lastModifiedAt || work.createdAt)}</span>
+                  </button>
+                ))}
               </div>
             ) : (
               <p className="mt-5 text-[14px] font-medium text-[#9aa3af]">暂无最近编辑的{typeLabel}</p>
             )}
-            <span className="mt-auto text-[13px] font-semibold text-[#1e71ef]">{latestWork ? '继续编辑' : `新建${typeLabel}`}</span>
-          </button>
+          </section>
 
           <section className="flex min-h-[154px] flex-col rounded-[8px] border border-dashed border-[#d7dce4] bg-[#fbfbfc] px-5 py-5">
             <p className="text-[13px] font-medium text-[#9aa3af]">预留</p>

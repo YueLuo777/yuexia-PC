@@ -24,7 +24,10 @@ describe('NovelLibraryPage summary cards', () => {
     const pageSource = readSource('NovelLibraryPage.tsx');
 
     expect(pageSource).toContain('xl:grid-cols-4');
-    expect(pageSource).toContain('{typeLabel}数据');
+    expect(pageSource).not.toContain('{typeLabel}数据');
+    expect(pageSource).not.toContain('const title = workType');
+    expect(pageSource).not.toContain('text-[#16518f]">{title}</h1>');
+    expect(pageSource).not.toContain('BookOpen');
     expect(pageSource).toContain('<span>作品</span>');
     expect(pageSource).toContain('{sourceNovels.length} 本');
     expect(pageSource).toContain('<span>昨日更新</span>');
@@ -38,11 +41,19 @@ describe('NovelLibraryPage summary cards', () => {
     expect(pageSource).not.toContain('保持专注写作和资料管理');
   });
 
-  it('keeps recent edit as a quick entry into the selected work', () => {
+  it('renders recent edits as a compact quick-entry list', () => {
     const pageSource = readSource('NovelLibraryPage.tsx');
 
-    expect(pageSource).toContain('const latestWork = [...sourceNovels]');
-    expect(pageSource).toContain('if (latestWork) handleOpen(latestWork.id);');
+    expect(pageSource).toContain('const recentWorks = [...sourceNovels]');
+    expect(pageSource).toContain('parseWorkDateValue(b.lastModifiedAt || b.createdAt)');
+    expect(pageSource).toContain('.slice(0, 3);');
+    expect(pageSource).toContain('最近编辑：');
+    expect(pageSource).toContain('recentWorks.map((work) => (');
+    expect(pageSource).toContain('onClick={() => handleOpen(work.id)}');
+    expect(pageSource).toContain('{work.title}');
+    expect(pageSource).toContain('{formatWorkDate(work.lastModifiedAt || work.createdAt)}');
+    expect(pageSource).not.toContain('if (latestWork) handleOpen(latestWork.id);');
+    expect(pageSource).not.toContain('继续编辑');
     expect(pageSource).toContain('暂无最近编辑的{typeLabel}');
     expect(pageSource).toContain('WRITING_STATS_UPDATED_EVENT');
   });

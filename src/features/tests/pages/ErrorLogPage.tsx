@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'novel-library-data-card-title-remove-recent-list-001',
+    title: '我的小说数据卡标题区需要删除且最近编辑显示多条作品',
+    area: '我的小说 / 顶部四卡片 / 数据卡与最近编辑卡',
+    symptom: '数据卡顶部仍显示“小说数据 / 我的小说”和书本图标，占用空间；最近编辑卡只显示一个作品和“继续编辑”，不能像列表一样快速看到最近几个作品及日期。',
+    cause: '之前按概览卡设计保留了标题区，并把最近编辑实现成单个最近作品的大按钮，不符合用户希望的紧凑列表格式。',
+    solution: '删除数据卡标题区和 BookOpen 图标，只保留作品、昨日更新、字数、预留统计；最近编辑改为最多 3 条作品列表，每行左侧标题、右侧日期，日期统一显示为年/月/日，点击单行进入对应作品。',
+    prevention: '以后调整作品库顶部卡片时，数据卡优先保留统计密度；最近编辑卡应优先展示多条最近作品，除非用户明确要求单个大入口。',
+    keywords: ['我的小说', '数据卡', '最近编辑', '多条作品', 'NovelLibraryPage', 'BookOpen', 'recentWorks'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'software-modal-reference-style-test-001',
     title: '弹窗样式先用测试页承接截图参考',
     area: '测试集合 / 弹窗样式测试 / 现有弹窗内容预览',
