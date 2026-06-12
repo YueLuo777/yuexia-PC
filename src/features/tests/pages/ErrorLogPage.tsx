@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'panel-splitter-overlay-existing-border-001',
+    title: '拖拽分割线不应额外画在真实边界旁边',
+    area: '首页导航 / 作品编辑器 / 章纲脑洞剧情链状态审核分栏',
+    symptom: '鼠标可拖拽分割线显示在真实区域边界线右侧，视觉上变成两条线；用户指出真正的区域分割线是左边那条，hover 时应像参考图一样只把边界线显示为蓝色。',
+    cause: '部分分栏用 6px、8px 或 16px 独立轨道承载拖拽热区，并在热区中间再画一条线；grid 分栏还为这条热区额外占位，导致边界线和拖拽线分离。',
+    solution: '首页和正文页的 6px 热区用负 margin 覆盖相邻面板边界；WorkbenchLibraryPanel 和 ChapterEditor 的 grid 拖拽轨道改为 0px，热区用 translate 覆盖原 border-r/border-l；所有 hover 反馈统一为 #1E71EF 蓝线，不再绘制独立红线或居中灰线。',
+    prevention: '以后新增分栏拖拽时，热区可以比线宽，但视觉线必须贴在真实面板边界上；不要为了拖拽命中率新增可见中线或额外占位列。',
+    keywords: ['拖拽分割线', '边界线', 'hover蓝色', 'DashboardLayout', 'WorkbenchPage', 'WorkbenchLibraryPanel', 'ChapterEditor', 'gridTemplateColumns'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'workbench-ai-input-neutral-style-migration-001',
     title: '21号测试的 AI 输入框中性灰线方案需要迁入正式页',
     area: '作品编辑器 / 右侧 AI 输入区 / AiInlineInput',

@@ -2387,11 +2387,11 @@ export function WorkbenchPage() {
               <>
                 <div
                   data-no-modal-drag="true"
-                  className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent"
+                  className="group relative z-10 -ml-[3px] -mr-[3px] flex w-[6px] shrink-0 cursor-ew-resize items-stretch justify-center bg-transparent"
                   onMouseDown={handleChapterSidebarDragStart}
                   title="拖拽调整未发布栏宽度"
                 >
-                  <div className="h-full w-px rounded-full bg-[#EF4444] opacity-0 transition-opacity group-hover:opacity-80" />
+                  <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
                 </div>
 
                 <PublishedSidebar
@@ -2408,11 +2408,11 @@ export function WorkbenchPage() {
 
             <div
               data-no-modal-drag="true"
-              className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent"
+              className="group relative z-10 -ml-[3px] -mr-[3px] flex w-[6px] shrink-0 cursor-ew-resize items-stretch justify-center bg-transparent"
               onMouseDown={showPublished ? handlePublishedSidebarDragStart : handleChapterSidebarDragStart}
               title="拖拽调整章节栏宽度"
             >
-              <div className="h-full w-px rounded-full bg-[#08B3D9] opacity-0 transition-opacity group-hover:opacity-70" />
+              <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
             </div>
 
             <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#f5f5f7]">
@@ -2423,11 +2423,11 @@ export function WorkbenchPage() {
 
             <div
               data-no-modal-drag="true"
-              className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent"
+              className="group relative z-10 -ml-[3px] -mr-[3px] flex w-[6px] shrink-0 cursor-ew-resize items-stretch justify-center bg-transparent"
               onMouseDown={handlePanelDragStart}
               title="拖拽调整宽度"
             >
-              <div className="h-8 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
+              <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
             </div>
 
             <aside

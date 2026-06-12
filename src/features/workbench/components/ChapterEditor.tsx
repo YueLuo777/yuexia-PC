@@ -79,7 +79,7 @@ const REVIEW_PAGE_LEFT_WIDTH_LIMIT = { min: 180, max: 360 };
 const REVIEW_PAGE_RIGHT_WIDTH_LIMIT = { min: 260, max: 520 };
 const STATUS_PAGE_LEFT_WIDTH_LIMIT = { min: 190, max: 360 };
 const STATUS_PAGE_RIGHT_WIDTH_LIMIT = { min: 300, max: 560 };
-const CHAPTER_EDITOR_RESIZE_HANDLE_CLASS = 'group z-10 flex w-2 cursor-ew-resize items-center justify-center bg-transparent';
+const CHAPTER_EDITOR_RESIZE_HANDLE_CLASS = 'group relative z-10 flex h-full w-3 -translate-x-1/2 cursor-ew-resize items-stretch justify-center bg-transparent';
 const STATUS_PROMPT_CATEGORY = '状态';
 const POLISH_PROMPT_CATEGORY = '润色';
 type EditorFieldSizeKey = 'reviewActionGroup' | 'reviewModelSelect' | 'reviewAuditPromptSelect' | 'reviewCommentPromptSelect';
@@ -743,7 +743,7 @@ export function ChapterEditor({
       className={CHAPTER_EDITOR_RESIZE_HANDLE_CLASS}
       title="拖拽调整宽度"
     >
-      <div className="h-8 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
+      <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
   const statusLeftResizeHandle = renderPanelResizeHandle((event) => startPanelWidthResize(event, {
@@ -1920,7 +1920,7 @@ export function ChapterEditor({
             </header>
             <div
               className="grid min-h-0 flex-1 bg-slate-50"
-              style={{ gridTemplateColumns: `${statusPageLeftWidth}px 8px minmax(0,1fr) 8px ${statusPageRightWidth}px` }}
+              style={{ gridTemplateColumns: `${statusPageLeftWidth}px 0px minmax(0,1fr) 0px ${statusPageRightWidth}px` }}
             >
               <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white px-3 py-3">
                 <div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
@@ -2140,7 +2140,7 @@ export function ChapterEditor({
             </header>
             <div
               className="grid min-h-0 flex-1 bg-slate-50"
-              style={{ gridTemplateColumns: `${reviewPageLeftWidth}px 8px minmax(0,1fr) 8px ${reviewPageRightWidth}px` }}
+              style={{ gridTemplateColumns: `${reviewPageLeftWidth}px 0px minmax(0,1fr) 0px ${reviewPageRightWidth}px` }}
             >
               <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white px-3 py-3">
                 <div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">

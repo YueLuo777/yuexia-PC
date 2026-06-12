@@ -1055,7 +1055,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('readSettingLibraryLeftWidth(storageKey, activeTab, scale)');
     expect(panelSource).toContain('isBrainstormTab ? BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH : getSettingLibraryLeftMaxWidth(activeTab, eventScale),');
     expect(panelSource).toContain('const outlineSidebarWidth = settingLibraryLeftWidth;');
-    expect(panelSource).toContain('style={{ gridTemplateColumns: `${outlineSidebarWidth}px 16px minmax(0,1fr) 8px ${settingLibraryRightWidth}px` }}');
+    expect(panelSource).toContain('style={{ gridTemplateColumns: `${outlineSidebarWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px` }}');
     expect(panelSource).toContain("style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}");
     expect(panelSource).toContain('relative h-9 min-w-9 rounded-lg border px-2 text-sm font-bold');
     expect(panelSource).toContain('window.addEventListener(\'resize\', syncVisibleLeftWidth);');
@@ -1109,7 +1109,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
       const restoredSplitter = screen.getByTitle('拖拽调整左侧宽度');
       expect(restoredSplitter.parentElement).toHaveStyle({
-        gridTemplateColumns: `${savedWidth}px 16px minmax(0,1fr) 8px 350px`,
+        gridTemplateColumns: `${savedWidth}px 0px minmax(0,1fr) 0px 350px`,
       });
     } finally {
       Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalInnerWidth });
@@ -1301,7 +1301,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const emptySettingPreviewStart = panelSource.indexOf('placeholder="这里可以直接输入设定内容，会自动新建设定。"');
     const emptySettingPreviewEnd = panelSource.indexOf('</div>', emptySettingPreviewStart);
     const emptySettingPreviewSource = panelSource.slice(emptySettingPreviewStart, emptySettingPreviewEnd);
-    const outlineDirectoryStart = panelSource.indexOf('style={{ gridTemplateColumns: `${outlineSidebarWidth}px 16px minmax(0,1fr) 8px ${settingLibraryRightWidth}px` }}');
+    const outlineDirectoryStart = panelSource.indexOf('style={{ gridTemplateColumns: `${outlineSidebarWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px` }}');
     const outlineDirectoryEnd = panelSource.indexOf('{leftResizeHandle}', outlineDirectoryStart);
     const outlineDirectorySource = panelSource.slice(outlineDirectoryStart, outlineDirectoryEnd);
 
@@ -1441,6 +1441,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-outline-ai-output-frame xy-floating-fill xy-floating-with-bottom-count h-full');
     expect(chapterSource).toContain('xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count mt-4 min-h-0 flex-1');
     expect(chapterSource).toContain('xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill h-full xy-has-value');
+    expect(chapterSource).toContain("const CHAPTER_EDITOR_RESIZE_HANDLE_CLASS = 'group relative z-10 flex h-full w-3 -translate-x-1/2 cursor-ew-resize items-stretch justify-center bg-transparent';");
+    expect(chapterSource).toContain('style={{ gridTemplateColumns: `${statusPageLeftWidth}px 0px minmax(0,1fr) 0px ${statusPageRightWidth}px` }}');
+    expect(chapterSource).toContain('style={{ gridTemplateColumns: `${reviewPageLeftWidth}px 0px minmax(0,1fr) 0px ${reviewPageRightWidth}px` }}');
     expect(panelSource).not.toContain('relative mt-5 flex min-h-0 flex-1 flex-col rounded-xl border border-gray-200 bg-white px-3 pb-3 pt-5');
     expect(panelSource).not.toContain('relative flex h-full min-h-0 flex-col rounded-xl border border-gray-200 bg-white px-3 pb-3 pt-5');
     expect(panelSource).not.toContain('relative flex min-h-0 flex-1 flex-col rounded-xl border border-slate-200 bg-white px-3 pb-3 pt-5');
@@ -1578,7 +1581,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const navSource = panelSource.slice(navStart, navEnd);
 
     expect(gridTemplateStart).toBeGreaterThan(-1);
-    expect(panelSource.slice(gridTemplateStart, gridTemplateStart + 240)).toContain('${plotPointLayoutTreeWidth}px 8px ${plotPointLayoutLeftWidth}px 8px');
+    expect(panelSource.slice(gridTemplateStart, gridTemplateStart + 240)).toContain('${plotPointLayoutTreeWidth}px 0px ${plotPointLayoutLeftWidth}px 0px');
     expect(navStart).toBeGreaterThan(-1);
     expect(navEnd).toBeGreaterThan(navStart);
     expect(panelSource).toContain('const [plotPointLayoutTreeWidth, setPlotPointLayoutTreeWidth] = useState(() => readPlotPointLayoutTreeWidth(storageKey));');
@@ -1721,8 +1724,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(selectedListSource).not.toContain('text-center shadow-sm');
     expect(selectedListSource).not.toContain('潜力 {metrics.potential}');
     expect(panelSource).toContain('title="拖拽调整剧情链左侧宽度"');
-    expect(panelSource).toContain('group-hover:bg-[#08AACE]" />');
-    expect(panelSource).not.toContain('title="拖拽调整剧情链左侧宽度"\\n    >\\n      <div className="w-px bg-transparent');
+    expect(panelSource).toContain('w-3 -translate-x-1/2 shrink-0 cursor-ew-resize');
+    expect(panelSource).toContain('h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100');
+    expect(panelSource).not.toContain('transition-colors hover:bg-[#EAF9FD]');
   });
 
   it('hides raw reasoning text in the plot chain right output so it matches final candidates', async () => {

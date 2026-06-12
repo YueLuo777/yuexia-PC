@@ -366,12 +366,12 @@ export function DashboardLayout() {
         aria-valuemax={DASHBOARD_SIDEBAR_MAX_WIDTH}
         aria-valuenow={sidebarWidth}
         tabIndex={0}
-        className="group z-10 flex w-[6px] shrink-0 cursor-ew-resize items-center justify-center bg-transparent outline-none transition-colors hover:bg-[#eef7fb] focus-visible:bg-[#eef7fb]"
+        className="group relative z-10 -ml-[3px] -mr-[3px] flex w-[6px] shrink-0 cursor-ew-resize items-stretch justify-center bg-transparent outline-none"
         onMouseDown={handleSidebarResizeStart}
         onKeyDown={handleSidebarResizeKeyDown}
         title="拖拽调整左侧导航宽度"
       >
-        <div className="h-full w-px rounded-full bg-[#08B3D9] opacity-0 transition-opacity group-hover:opacity-70 group-focus-visible:opacity-70" />
+        <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
       </div>
 
       <main className="min-w-0 flex-1 overflow-hidden">

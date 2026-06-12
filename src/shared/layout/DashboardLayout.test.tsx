@@ -39,6 +39,9 @@ describe('DashboardLayout sidebar splitter', () => {
     expect(source).toContain('localStorage.setItem(DASHBOARD_SIDEBAR_WIDTH_KEY, String(nextWidth))');
     expect(source).toContain('role="separator"');
     expect(source).toContain('cursor-ew-resize');
+    expect(source).toContain('-ml-[3px] -mr-[3px]');
+    expect(source).toContain('h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100');
+    expect(source).not.toContain('hover:bg-[#eef7fb]');
     expect(source).not.toContain('className="flex w-[224px] shrink-0');
   });
 });

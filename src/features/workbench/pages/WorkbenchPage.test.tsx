@@ -40,3 +40,14 @@ describe('Workbench find replace modal placement', () => {
     expect(source).toContain('saveGeometry(storageKey, next);');
   });
 });
+
+describe('Workbench splitters', () => {
+  it('overlays draggable hit areas on the existing panel border lines', async () => {
+    const source = await readSource('WorkbenchPage.tsx');
+
+    expect(source).toContain('group relative z-10 -ml-[3px] -mr-[3px] flex w-[6px] shrink-0 cursor-ew-resize');
+    expect(source).toContain('h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100');
+    expect(source).not.toContain('bg-[#EF4444] opacity-0');
+    expect(source).not.toContain('h-8 w-px rounded-full bg-slate-300');
+  });
+});

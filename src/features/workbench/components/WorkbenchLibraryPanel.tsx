@@ -3059,10 +3059,10 @@ export function WorkbenchLibraryPanel({
     <div
       data-no-modal-drag="true"
       onPointerDown={startLeftWidthResize}
-      className="group relative z-50 flex h-full w-full min-w-4 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
+      className="group relative z-50 flex h-full w-4 -translate-x-1/2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
       title="拖拽调整左侧宽度"
     >
-      <div className="my-3 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
+      <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
 
@@ -3070,10 +3070,10 @@ export function WorkbenchLibraryPanel({
     <div
       data-no-modal-drag="true"
       onPointerDown={startRightWidthResize}
-      className="group relative z-50 flex h-full w-full min-w-4 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
+      className="group relative z-50 flex h-full w-4 -translate-x-1/2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
       title="拖拽调整右侧宽度"
     >
-      <div className="my-3 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
+      <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
 
@@ -3081,10 +3081,10 @@ export function WorkbenchLibraryPanel({
     <div
       data-no-modal-drag="true"
       onPointerDown={startBrainstormPreviewWidthResize}
-      className="group relative z-30 -mx-1 flex w-4 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
+      className="group relative z-30 flex h-full w-4 -translate-x-1/2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
       title="拖拽调整脑洞预览宽度"
     >
-      <div className="my-3 w-px rounded-full bg-slate-300 opacity-0 transition-opacity group-hover:opacity-60" />
+      <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
 
@@ -3092,10 +3092,10 @@ export function WorkbenchLibraryPanel({
     <div
       data-no-modal-drag="true"
       onPointerDown={startPlotPointLeftWidthResize}
-      className="group relative z-30 flex w-2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-white transition-colors hover:bg-[#EAF9FD]"
+      className="group relative z-30 flex h-full w-3 -translate-x-1/2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
       title="拖拽调整剧情链左侧宽度"
     >
-      <div className="w-px bg-slate-200 transition-colors group-hover:bg-[#08AACE]" />
+      <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
 
@@ -3103,10 +3103,10 @@ export function WorkbenchLibraryPanel({
     <div
       data-no-modal-drag="true"
       onPointerDown={startPlotPointTreeWidthResize}
-      className="group relative z-30 flex w-2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-white transition-colors hover:bg-[#EAF9FD]"
+      className="group relative z-30 flex h-full w-3 -translate-x-1/2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
       title="拖拽调整剧情链目录宽度"
     >
-      <div className="w-px bg-slate-200 transition-colors group-hover:bg-[#08AACE]" />
+      <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
 
@@ -3114,10 +3114,10 @@ export function WorkbenchLibraryPanel({
     <div
       data-no-modal-drag="true"
       onPointerDown={startPlotPointRightWidthResize}
-      className="group relative z-30 flex w-2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-white transition-colors hover:bg-[#EAF9FD]"
+      className="group relative z-30 flex h-full w-3 -translate-x-1/2 shrink-0 cursor-ew-resize touch-none items-stretch justify-center bg-transparent"
       title="拖拽调整剧情链右侧宽度"
     >
-      <div className="w-px bg-slate-200 transition-colors group-hover:bg-[#08AACE]" />
+      <div className="h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
 
@@ -5641,8 +5641,8 @@ export function WorkbenchLibraryPanel({
           className="grid h-full min-h-0 flex-1 overflow-hidden bg-white"
           style={{
             gridTemplateColumns: settingLibraryMode === 'advanced'
-              ? `${settingLibraryLeftWidth}px 16px minmax(0,1fr) 8px ${settingLibraryRightWidth}px`
-              : `${settingLibraryLeftWidth}px 16px minmax(0,1fr)`,
+              ? `${settingLibraryLeftWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px`
+              : `${settingLibraryLeftWidth}px 0px minmax(0,1fr)`,
           }}
         >
           <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-4 pb-3 pt-2">
@@ -6103,10 +6103,10 @@ export function WorkbenchLibraryPanel({
           className="grid h-full min-h-0 flex-1 overflow-hidden bg-white"
           style={{
             gridTemplateColumns: activeIsBrainstorm
-              ? `${brainstormLayoutLeftWidth}px 8px ${brainstormLayoutPreviewWidth}px 8px minmax(${BRAINSTORM_LAYOUT_OUTPUT_MIN_WIDTH}px,1fr) 8px ${brainstormLayoutRightWidth}px`
+              ? `${brainstormLayoutLeftWidth}px 0px ${brainstormLayoutPreviewWidth}px 0px minmax(${BRAINSTORM_LAYOUT_OUTPUT_MIN_WIDTH}px,1fr) 0px ${brainstormLayoutRightWidth}px`
               : settingLibraryMode === 'advanced'
-              ? `${settingLibraryLeftWidth}px 16px minmax(0,1fr) 8px ${settingLibraryRightWidth}px`
-              : `${settingLibraryLeftWidth}px 16px minmax(0,1fr)`,
+              ? `${settingLibraryLeftWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px`
+              : `${settingLibraryLeftWidth}px 0px minmax(0,1fr)`,
           }}
         >
           <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-3 py-3">
@@ -8355,7 +8355,7 @@ export function WorkbenchLibraryPanel({
           <main
             className="grid min-h-0 flex-1 overflow-hidden bg-white"
             style={{
-              gridTemplateColumns: `${plotPointLayoutTreeWidth}px 8px ${plotPointLayoutLeftWidth}px 8px minmax(${PLOT_POINT_LAYOUT_CENTER_MIN_WIDTH}px,1fr) 8px ${plotPointLayoutRightWidth}px`,
+              gridTemplateColumns: `${plotPointLayoutTreeWidth}px 0px ${plotPointLayoutLeftWidth}px 0px minmax(${PLOT_POINT_LAYOUT_CENTER_MIN_WIDTH}px,1fr) 0px ${plotPointLayoutRightWidth}px`,
             }}
           >
             <aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-white px-3 py-3">
@@ -8895,7 +8895,7 @@ export function WorkbenchLibraryPanel({
         {detailOutlineReaderModal}
         <div
           className="relative grid min-h-0 flex-1 overflow-hidden bg-white"
-          style={{ gridTemplateColumns: `${outlineSidebarWidth}px 16px minmax(0,1fr) 8px ${settingLibraryRightWidth}px` }}
+          style={{ gridTemplateColumns: `${outlineSidebarWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px` }}
         >
             <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-3 py-3">
           <section className="flex min-h-0 flex-1 flex-col">
