@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'editor-grid-line-baseline-offset-001',
+    title: '编辑器网格虚线需要落在文字下方',
+    area: '测试集合 / 编辑器网格虚线测试 / 正文背景',
+    symptom: '测试页里的虚线看起来穿过文字中部，和参考图中虚线贴在每行文字下方的效果不一致。',
+    cause: '原实现使用 1px 高的 SVG 横线，再通过 background-size 拉伸到整行高度；SVG 内部的 0.5px 横线被等比例缩放后落到行盒中间。',
+    solution: '将背景 SVG 改为与 lineHeightPx 同高，并新增 lineOffsetPx，把横线绘制在每个行盒内的文字下沿位置；字号变化时行高和线位同步更新。',
+    prevention: '以后做编辑器稿纸线时不要拉伸 1px 图片充当整行背景；应在完整行高画布里按字体尺寸计算线位，避免线条穿过文字。',
+    keywords: ['编辑器', '网格虚线', '文字下方', 'EditorGridLineTestPage', 'lineOffsetPx'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'novel-library-left-gutter-increase-001',
     title: '作品库左侧留白需要增加 30%',
     area: '我的小说 / 作品库主内容区 / 左侧留白',

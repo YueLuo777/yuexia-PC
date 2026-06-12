@@ -15,6 +15,11 @@ describe('EditorGridLineTestPage', () => {
     expect(source).toContain("type GridLineMode = 'none' | 'solid' | 'dashed'");
     expect(source).toContain("const [fontSize, setFontSize] = useState(28)");
     expect(source).toContain('const lineHeightPx = Math.round(fontSize * 1.72)');
+    expect(source).toContain('const lineOffsetPx = Math.min(lineHeightPx - 2, Math.round((lineHeightPx + fontSize) / 2 + 3))');
+    expect(source).toContain("height='${lineHeightPx}' viewBox='0 0 1200 ${lineHeightPx}'");
+    expect(source).toContain("y1='${lineOffsetPx}.5'");
+    expect(source).toContain("backgroundPosition: '0 0'");
+    expect(source).not.toContain('backgroundPosition: `0 ${lineHeightPx - 1}px`');
     expect(source).toContain('backgroundSize: `100% ${lineHeightPx}px`');
     expect(source).toContain('stroke-dasharray');
     expect(source).toContain('无');

@@ -17,11 +17,11 @@ const sampleText = [
   '给出一个模板，让Ai去抄，',
 ].join('\n');
 
-function buildGridBackground(mode: GridLineMode, lineHeightPx: number) {
+function buildGridBackground(mode: GridLineMode, lineHeightPx: number, lineOffsetPx: number) {
   if (mode === 'none') return 'none';
   const stroke = encodeURIComponent('#aab4c0');
   const dash = mode === 'dashed' ? " stroke-dasharray='7 7'" : '';
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='1' viewBox='0 0 1200 1'><line x1='0' y1='0.5' x2='1200' y2='0.5' stroke='${stroke}' stroke-width='1'${dash}/></svg>`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='${lineHeightPx}' viewBox='0 0 1200 ${lineHeightPx}'><line x1='0' y1='${lineOffsetPx}.5' x2='1200' y2='${lineOffsetPx}.5' stroke='${stroke}' stroke-width='1'${dash}/></svg>`;
   return `url("data:image/svg+xml,${svg}")`;
 }
 
@@ -29,7 +29,8 @@ export function EditorGridLineTestPage() {
   const [fontSize, setFontSize] = useState(28);
   const [mode, setMode] = useState<GridLineMode>('dashed');
   const lineHeightPx = Math.round(fontSize * 1.72);
-  const gridBackground = useMemo(() => buildGridBackground(mode, lineHeightPx), [lineHeightPx, mode]);
+  const lineOffsetPx = Math.min(lineHeightPx - 2, Math.round((lineHeightPx + fontSize) / 2 + 3));
+  const gridBackground = useMemo(() => buildGridBackground(mode, lineHeightPx, lineOffsetPx), [lineHeightPx, lineOffsetPx, mode]);
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-[#f5f5f7]">
@@ -111,7 +112,7 @@ export function EditorGridLineTestPage() {
               className="mt-16 min-h-[620px] whitespace-pre-wrap px-16 py-0 text-[#162232]"
               style={{
                 backgroundImage: gridBackground,
-                backgroundPosition: `0 ${lineHeightPx - 1}px`,
+                backgroundPosition: '0 0',
                 backgroundRepeat: mode === 'none' ? 'no-repeat' : 'repeat-y',
                 backgroundSize: `100% ${lineHeightPx}px`,
                 fontSize,
