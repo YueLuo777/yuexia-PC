@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'workbench-flow-button-stats-test-001',
+    title: '作品编辑器流程按钮需要显示内容数量和待处理状态',
+    area: '测试集合 / 作品编辑器 / 顶部流程组合按钮',
+    symptom: '顶部两组组合按钮只显示“脑洞、设定、章纲、正文、审核、点评、润色、状态、梗概”等入口名称，用户无法从按钮上直接知道对应库里有多少内容或还有多少章待处理。',
+    cause: 'WorkbenchHeader 的按钮文本只来自流程 title，未承载脑洞数、设定数、章纲章数、正文章数，以及审核/点评/状态这类待处理数量。',
+    solution: '先新增 WorkbenchFlowButtonStatsTestPage，在测试集合 AI 链路测试分组末尾展示三套方案：名称加粗+数量同排、紧凑同排、待处理数量胶囊化；按钮文案覆盖“脑洞 X个脑洞、设定 X个设定、章纲 X章、正文 X章、审核 X章未审、点评 X章未点评、状态 X章未更新、梗概 X章”。',
+    prevention: '正式迁入前先确认按钮宽度和信息密度；迁入时需要从真实小说数据计算数量，并保持润色入口不强行添加数量，避免顶部工具栏拥挤或出现假数据。',
+    keywords: ['流程按钮', '组合按钮', '脑洞数量', '章纲数量', '审核未审', '点评未点评', '状态未更新', '测试集合', 'WorkbenchHeader'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'panel-splitter-overlay-existing-border-001',
     title: '拖拽分割线不应额外画在真实边界旁边',
     area: '首页导航 / 作品编辑器 / 章纲脑洞剧情链状态审核分栏',

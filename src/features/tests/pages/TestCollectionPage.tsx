@@ -25,6 +25,7 @@ const BorderBackplateApplicationTestPage = lazy(() => import('@/features/tests/p
 const WorkbenchRightPanelUnifiedTestPage = lazy(() => import('@/features/tests/pages/WorkbenchRightPanelUnifiedTestPage').then((module) => ({ default: module.WorkbenchRightPanelUnifiedTestPage })));
 const WorkbenchAiRequestTagPolicyTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiRequestTagPolicyTestPage').then((module) => ({ default: module.WorkbenchAiRequestTagPolicyTestPage })));
 const SettingTaxonomyPlanTestPage = lazy(() => import('@/features/tests/pages/SettingTaxonomyPlanTestPage').then((module) => ({ default: module.SettingTaxonomyPlanTestPage })));
+const WorkbenchFlowButtonStatsTestPage = lazy(() => import('@/features/tests/pages/WorkbenchFlowButtonStatsTestPage').then((module) => ({ default: module.WorkbenchFlowButtonStatsTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -91,6 +92,13 @@ const testGroups = [
         path: '/setting-taxonomy-plan-test',
         icon: NotebookText,
         badge: 'Setting Plan',
+      },
+      {
+        title: '作品编辑器流程按钮信息化方案',
+        description: '测试顶部两组组合按钮在按钮内部显示脑洞、设定、章纲、正文、审核、点评、状态和梗概数量的方案。',
+        path: '/workbench-flow-button-stats-test',
+        icon: SlidersHorizontal,
+        badge: 'Flow Stats',
       },
     ],
   },
@@ -209,6 +217,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <WorkbenchAiRequestTagPolicyTestPage />;
       case '/setting-taxonomy-plan-test':
         return <SettingTaxonomyPlanTestPage />;
+      case '/workbench-flow-button-stats-test':
+        return <WorkbenchFlowButtonStatsTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':
