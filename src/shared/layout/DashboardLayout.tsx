@@ -219,6 +219,7 @@ export function DashboardLayout() {
       hidden: item.hidden || group.hidden,
     }))
   )).filter((item) => !item.hidden);
+  const navDividerAfterItemTo = navConfig[0]?.dividerAfterItemTo ?? null;
 
   return (
     <div className="flex h-full overflow-hidden bg-white">
@@ -296,23 +297,27 @@ export function DashboardLayout() {
               const isActive = location.pathname === item.to;
 
               return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => {
-                    if (item.to === '/test-collection' && location.pathname === '/test-collection') {
-                      window.dispatchEvent(new Event(TEST_COLLECTION_SHOW_INDEX_EVENT));
-                    }
-                  }}
-                  className={`flex h-10 items-center gap-3 rounded-md px-4 transition-colors ${
-                    isActive
-                      ? 'bg-[#dbe7fb] font-medium text-[#1f2933]'
-                      : 'text-[#586574] hover:bg-white/70 hover:text-[#1f2933]'
-                  }`}
-                >
-                  <ItemIcon className={`h-[17px] w-[17px] ${isActive ? 'text-[#1e71ef]' : 'text-[#68727f]'}`} />
-                  <span className="text-[14px] leading-none">{item.label}</span>
-                </Link>
+                <div key={item.to}>
+                  <Link
+                    to={item.to}
+                    onClick={() => {
+                      if (item.to === '/test-collection' && location.pathname === '/test-collection') {
+                        window.dispatchEvent(new Event(TEST_COLLECTION_SHOW_INDEX_EVENT));
+                      }
+                    }}
+                    className={`flex h-10 items-center gap-3 rounded-md px-4 transition-colors ${
+                      isActive
+                        ? 'bg-[#dbe7fb] font-medium text-[#1f2933]'
+                        : 'text-[#586574] hover:bg-white/70 hover:text-[#1f2933]'
+                    }`}
+                  >
+                    <ItemIcon className={`h-[17px] w-[17px] ${isActive ? 'text-[#1e71ef]' : 'text-[#68727f]'}`} />
+                    <span className="text-[14px] leading-none">{item.label}</span>
+                  </Link>
+                  {navDividerAfterItemTo === item.to ? (
+                    <div aria-hidden="true" className="mx-3 my-2 border-t border-[#e1e5eb]" />
+                  ) : null}
+                </div>
               );
             })}
           </div>

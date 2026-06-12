@@ -32,6 +32,7 @@ export interface NavGroupConfig {
   title: string;
   iconName: string;
   hidden?: boolean;
+  dividerAfterItemTo?: string | null;
   items: NavItemConfig[];
 }
 
@@ -67,6 +68,7 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
   {
     title: NAV_ROOT_GROUP_TITLE,
     iconName: 'LayoutGrid',
+    dividerAfterItemTo: '/novels',
     items: [
       { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
       { iconName: 'Film', label: '我的剧本', to: '/scripts' },
@@ -122,9 +124,11 @@ function cloneDefaultConfig() {
 function flattenNavConfig(config: NavGroupConfig[]) {
   const seenRoutes = new Set<string>();
   const items: NavItemConfig[] = [];
+  let dividerAfterItemTo: string | null | undefined;
 
   for (const group of config) {
     if (REMOVED_GROUP_TITLES.has(group.title)) continue;
+    if (group.dividerAfterItemTo !== undefined) dividerAfterItemTo = group.dividerAfterItemTo;
     for (const item of group.items) {
       if (REMOVED_ROUTES.has(item.to)) continue;
       if (seenRoutes.has(item.to)) continue;
@@ -137,9 +141,19 @@ function flattenNavConfig(config: NavGroupConfig[]) {
     }
   }
 
+  const fallbackDividerAfterItemTo = DEFAULT_NAV_CONFIG[0].dividerAfterItemTo ?? null;
+  const normalizedDividerAfterItemTo = dividerAfterItemTo === null
+    ? null
+    : items.some((item) => item.to === dividerAfterItemTo)
+      ? dividerAfterItemTo
+      : items.some((item) => item.to === fallbackDividerAfterItemTo)
+        ? fallbackDividerAfterItemTo
+        : null;
+
   return [{
     title: NAV_ROOT_GROUP_TITLE,
     iconName: 'LayoutGrid',
+    dividerAfterItemTo: normalizedDividerAfterItemTo,
     items,
   }];
 }
@@ -166,6 +180,7 @@ function isValidConfig(config: unknown): config is NavGroupConfig[] {
     typeof group === 'object' &&
     typeof group.title === 'string' &&
     typeof group.iconName === 'string' &&
+    (group.dividerAfterItemTo === undefined || typeof group.dividerAfterItemTo === 'string' || group.dividerAfterItemTo === null) &&
     Array.isArray(group.items)
   ));
 }

@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'dashboard-sidebar-configurable-nav-divider-001',
+    title: '首页左侧导航删除专区后仍需要可配置分割线',
+    area: '首页 / 左侧导航 / 导航设置 / 分割线',
+    symptom: '专区删除后，导航项变成一整列平铺列表，用户无法用横线把常用入口和其他入口区分开，也不能在导航设置里指定横线位置。',
+    cause: '之前去掉专区时只保留扁平 NavItem 列表，NavGroupConfig 没有保存分割线位置，DashboardLayout 也没有按导航配置渲染列表内分割线。',
+    solution: '在 NavGroupConfig 增加 dividerAfterItemTo，默认放在 /novels 后；DashboardLayout 在对应导航项后渲染与头像区一致的 #e1e5eb 横线；NavSettingsModal 增加“导航分割线位置”下拉框，可选择任意可见导航项后或不显示。',
+    prevention: '以后删除分组/专区时，如果用户仍需要视觉层级，应保留轻量分割线这种配置项，不要把它和专区管理绑定在一起。',
+    keywords: ['首页', '左侧导航', '导航设置', '分割线', 'dividerAfterItemTo', 'DashboardLayout', 'NavSettingsModal', 'navConfig'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'chapter-editor-top-gap-indent-selection-001',
     title: '正文编辑区顶部不能出现假空行且缩进空格不能被拖选',
     area: '作品编辑器 / 正文页面 / 输入区顶部间距与段落缩进',

@@ -6,6 +6,7 @@ describe('navigation config without zones', () => {
   it('keeps the default navigation as one flat internal group', () => {
     expect(DEFAULT_NAV_CONFIG).toHaveLength(1);
     expect(DEFAULT_NAV_CONFIG[0].title).toBe('导航');
+    expect(DEFAULT_NAV_CONFIG[0].dividerAfterItemTo).toBe('/novels');
     expect(DEFAULT_NAV_CONFIG[0].items.map((item) => item.to)).toEqual([
       '/novels',
       '/scripts',
@@ -18,7 +19,7 @@ describe('navigation config without zones', () => {
     expect(JSON.stringify(DEFAULT_NAV_CONFIG)).not.toContain('专区');
   });
 
-  it('flattens old zone-based navigation while preserving hidden item intent', () => {
+  it('flattens old zone-based navigation while preserving hidden item intent and default divider', () => {
     const normalized = normalizeNavConfig([
       {
         title: '创作专区',
@@ -40,10 +41,27 @@ describe('navigation config without zones', () => {
 
     expect(normalized).toHaveLength(1);
     expect(normalized[0].title).toBe('导航');
+    expect(normalized[0].dividerAfterItemTo).toBe('/novels');
     expect(normalized[0].items.some((item) => item.to === '/novels')).toBe(true);
     expect(normalized[0].items.find((item) => item.to === '/scripts')?.hidden).toBe(true);
     expect(normalized[0].items.find((item) => item.to === '/prompts')?.hidden).toBe(true);
     expect(JSON.stringify(normalized)).not.toContain('创作专区');
     expect(JSON.stringify(normalized)).not.toContain('数据专区');
+  });
+
+  it('preserves a custom navigation divider and allows hiding it', () => {
+    expect(normalizeNavConfig([{
+      title: '导航',
+      iconName: 'LayoutGrid',
+      dividerAfterItemTo: '/prompts',
+      items: DEFAULT_NAV_CONFIG[0].items,
+    }])[0].dividerAfterItemTo).toBe('/prompts');
+
+    expect(normalizeNavConfig([{
+      title: '导航',
+      iconName: 'LayoutGrid',
+      dividerAfterItemTo: null,
+      items: DEFAULT_NAV_CONFIG[0].items,
+    }])[0].dividerAfterItemTo).toBeNull();
   });
 });

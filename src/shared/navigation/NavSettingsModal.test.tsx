@@ -13,9 +13,14 @@ describe('NavSettingsModal flat navigation editing', () => {
     const source = readSource('NavSettingsModal.tsx');
 
     expect(source).toContain("title: '导航'");
-    expect(source).toContain('支持双击改名、隐藏显示和拖拽排序。');
+    expect(source).toContain('支持双击改名、隐藏显示、拖拽排序和分割线位置。');
     expect(source).toContain('config.flatMap((group) => (');
     expect(source).toContain('const draftItems = draft[0]?.items ?? [];');
+    expect(source).toContain("dividerAfterItemTo: '/novels'");
+    expect(source).toContain('导航分割线位置');
+    expect(source).toContain('updateDividerAfterItem');
+    expect(source).toContain('不显示分割线');
+    expect(source).toContain('在「{item.label}」后面');
     expect(source).not.toContain('新增专区');
     expect(source).not.toContain('隐藏专区');
     expect(source).not.toContain('恢复专区');

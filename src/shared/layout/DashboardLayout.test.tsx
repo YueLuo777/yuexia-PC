@@ -72,8 +72,11 @@ describe('DashboardLayout navigation items', () => {
 
     expect(source).toContain("import { Camera, UserRound } from 'lucide-react'");
     expect(source).toContain('const visibleNavItems = navConfig.flatMap((group) => (');
+    expect(source).toContain('const navDividerAfterItemTo = navConfig[0]?.dividerAfterItemTo ?? null;');
     expect(navSource).toContain('visibleNavItems.map((item) => {');
     expect(navSource).toContain('const ItemIcon = getIconByName(item.iconName)');
+    expect(navSource).toContain('navDividerAfterItemTo === item.to');
+    expect(navSource).toContain('className="mx-3 my-2 border-t border-[#e1e5eb]"');
     expect(navSource).not.toContain('GroupFolderIcon');
     expect(navSource).not.toContain('groupIndex > 0');
     expect(navSource).not.toContain('aria-expanded={!isCollapsed}');

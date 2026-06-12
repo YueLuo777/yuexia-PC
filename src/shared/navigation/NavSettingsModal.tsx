@@ -16,6 +16,7 @@ interface NavSettingsModalProps {
 const ROOT_NAV_GROUP: NavGroupConfig = {
   title: '导航',
   iconName: 'LayoutGrid',
+  dividerAfterItemTo: '/novels',
   items: [],
 };
 
@@ -29,6 +30,7 @@ function normalizeDraft(config: NavGroupConfig[]) {
 
   return [{
     ...ROOT_NAV_GROUP,
+    dividerAfterItemTo: config[0]?.dividerAfterItemTo ?? null,
     items,
   }];
 }
@@ -52,9 +54,11 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
   if (!isOpen) return null;
 
   const draftItems = draft[0]?.items ?? [];
+  const draftDividerAfterItemTo = draft[0]?.dividerAfterItemTo ?? null;
+  const visibleDraftItems = draftItems.filter((item) => !item.hidden);
 
-  const saveItems = (items: NavItemConfig[]) => {
-    const next = [{ ...ROOT_NAV_GROUP, items }];
+  const saveItems = (items: NavItemConfig[], dividerAfterItemTo = draftDividerAfterItemTo) => {
+    const next = [{ ...ROOT_NAV_GROUP, dividerAfterItemTo, items }];
     setDraft(next);
     onSave(JSON.parse(JSON.stringify(next)));
   };
@@ -70,7 +74,14 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
     const nextItems = draftItems.map((item, index) => (
       index === itemIndex ? { ...item, hidden: !item.hidden } : item
     ));
-    saveItems(nextItems);
+    const nextDividerAfterItemTo = draftItems[itemIndex]?.to === draftDividerAfterItemTo && !draftItems[itemIndex]?.hidden
+      ? null
+      : draftDividerAfterItemTo;
+    saveItems(nextItems, nextDividerAfterItemTo);
+  };
+
+  const updateDividerAfterItem = (value: string) => {
+    saveItems(draftItems, value || null);
   };
 
   const handleDragOver = (event: React.DragEvent, itemIdx: number) => {
@@ -107,7 +118,7 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
               <Settings className="h-4 w-4 text-brand" />
               导航设置
             </h2>
-            <p className="mt-0.5 text-base text-gray-400">支持双击改名、隐藏显示和拖拽排序。</p>
+            <p className="mt-0.5 text-base text-gray-400">支持双击改名、隐藏显示、拖拽排序和分割线位置。</p>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
             <X className="h-4 w-4" />
@@ -115,6 +126,25 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
+          <div className="mb-4 rounded-lg border border-[#e1e5eb] bg-[#f8fafc] p-3">
+            <label className="block text-sm font-medium text-[#1f2933]" htmlFor="nav-divider-position">
+              导航分割线位置
+            </label>
+            <div className="mt-2 flex items-center gap-3">
+              <select
+                id="nav-divider-position"
+                value={visibleDraftItems.some((item) => item.to === draftDividerAfterItemTo) ? (draftDividerAfterItemTo ?? '') : ''}
+                onChange={(event) => updateDividerAfterItem(event.target.value)}
+                className="h-9 min-w-0 flex-1 rounded-md border border-[#d7dde6] bg-white px-3 text-sm text-[#1f2933] outline-none focus:border-brand"
+              >
+                <option value="">不显示分割线</option>
+                {visibleDraftItems.map((item) => (
+                  <option key={item.to} value={item.to}>在「{item.label}」后面</option>
+                ))}
+              </select>
+              <span className="hidden h-px w-20 bg-[#e1e5eb] sm:block" aria-hidden="true" />
+            </div>
+          </div>
           <div className="space-y-1">
             {draftItems.map((item, itemIndex) => {
               const ItemIcon = getIconByName(item.iconName);
