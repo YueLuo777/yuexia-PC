@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'chapter-group-color-options-test-001',
+    title: '章节分组行需要多套颜色和背景方案对比',
+    area: '测试集合 / 作品编辑器 / 左侧章节侧栏',
+    symptom: '当前“第一卷”这类分组行和普通章节行的背景、图标、边框层级区分不够明显，用户扫视左侧目录时容易忽视分卷分组。',
+    cause: '正式侧栏分组行主要依赖透明或浅色背景、文件夹图标和文字粗细来区分层级，而选中章节行的蓝色底更突出，导致分组行视觉权重偏低。',
+    solution: '新增 ChapterGroupColorOptionsTestPage，在测试集合里集中展示 6 套分组行方案，对比行背景、边框线、图标色、章数胶囊和左侧强调线。',
+    prevention: '正式迁入章节分组配色前，先在测试页比较可读性和干扰度；应用时同步检查 ChapterSidebar、PublishedSidebar 以及脑洞、设定、章纲等左侧分组目录，避免只改正文目录。',
+    keywords: ['章节分组', '第一卷', '背景色', '分组行', '测试集合', 'ChapterGroupColorOptionsTestPage', 'ChapterSidebar', 'PublishedSidebar'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'chapter-sidebar-volume-chapter-left-alignment-001',
     title: '章节侧栏卷名和章节名需要上下对齐并更靠左',
     area: '作品编辑器 / 左侧章节侧栏 / 卷目录与章节行',

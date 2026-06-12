@@ -37,6 +37,7 @@ const SettingCheckModalTestPage = lazy(() => import('@/features/tests/pages/Sett
 const SettingTaxonomyPlanTestPage = lazy(() => import('@/features/tests/pages/SettingTaxonomyPlanTestPage').then((module) => ({ default: module.SettingTaxonomyPlanTestPage })));
 const SettingNavigationColorOptionsTestPage = lazy(() => import('@/features/tests/pages/SettingNavigationColorOptionsTestPage').then((module) => ({ default: module.SettingNavigationColorOptionsTestPage })));
 const AiInputBorderOptionsTestPage = lazy(() => import('@/features/tests/pages/AiInputBorderOptionsTestPage').then((module) => ({ default: module.AiInputBorderOptionsTestPage })));
+const ChapterGroupColorOptionsTestPage = lazy(() => import('@/features/tests/pages/ChapterGroupColorOptionsTestPage').then((module) => ({ default: module.ChapterGroupColorOptionsTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -181,6 +182,13 @@ const testGroups = [
         icon: Palette,
         badge: 'Input UI',
       },
+      {
+        title: '章节分组配色方案',
+        description: '测试作品编辑器左侧“第一卷”这类分组行的多套背景色、边框线、图标色和章数胶囊方案。',
+        path: '/chapter-group-color-options-test',
+        icon: Palette,
+        badge: 'Chapter Group',
+      },
     ],
   },
   {
@@ -316,6 +324,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <SettingNavigationColorOptionsTestPage />;
       case '/ai-input-border-options-test':
         return <AiInputBorderOptionsTestPage />;
+      case '/chapter-group-color-options-test':
+        return <ChapterGroupColorOptionsTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':
