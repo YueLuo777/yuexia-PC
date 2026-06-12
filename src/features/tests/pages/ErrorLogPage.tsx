@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'dashboard-sidebar-avatar-name-layout-001',
+    title: '首页侧栏头像和名字需要上下居中排列',
+    area: '首页 / 左侧导航 / 头像区域',
+    symptom: '左侧个人信息区把头像和名字横向放在同一行，不符合参考软件里“头像居中、名字在头像下面”的识别方式。',
+    cause: 'DashboardLayout 的头像区使用 flex row、items-center 和横向 gap，用户名容器占据右侧 flex-1，导致视觉重心偏左。',
+    solution: '将头像区改成 flex-col items-center justify-center；头像使用 48px 圆形按钮居中，用户名和编辑输入框都放在头像下方并居中显示。',
+    prevention: '后续调整侧栏个人信息区时，头像与用户名保持上下结构；上传头像、双击改名等交互只改内部控件，不要把容器恢复为横向排列。',
+    keywords: ['首页', '侧栏', '头像', '用户名', '居中', 'DashboardLayout', 'flex-col'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'workbench-editor-lines-home-tab-size-001',
     title: '正文编辑区横线应可移除且首页标签需要更醒目',
     area: '作品编辑器 / 正文编辑区 / 顶部首页标签',
