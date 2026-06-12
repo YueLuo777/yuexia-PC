@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'novel-library-left-gutter-increase-001',
+    title: '作品库左侧留白需要增加 30%',
+    area: '我的小说 / 作品库主内容区 / 左侧留白',
+    symptom: '作品库内容紧贴左侧，截图标注的左侧留白宽度偏窄，用户要求将该区域宽度提高 30%。',
+    cause: '上一版为了压缩页面缝隙，把 NovelLibraryPage 主内容容器左右 padding 收到 px-4，也就是 16px；在当前视觉稿里左侧留白需要略宽一些。',
+    solution: '将主内容容器从 px-4 调整为 px-[21px]，按 16px * 1.3 约等于 20.8px 取整为 21px；只调整外侧留白，不改卡片、搜索和作品列表逻辑。',
+    prevention: '以后微调作品库外侧留白时保留源码测试断言，避免重新回到 px-4 或 px-8 这类过窄/过宽的旧值。',
+    keywords: ['我的小说', '左侧留白', '作品库', 'NovelLibraryPage', 'px-[21px]'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'novel-library-overview-subtitle-remove-001',
     title: '作品概览副标题需要删除',
     area: '我的小说 / 顶部四卡片 / 作品概览卡',

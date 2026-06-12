@@ -666,7 +666,7 @@ export function NovelLibraryPage() {
 
   return (
     <div className="flex h-screen flex-col bg-white">
-      <main className="flex-1 overflow-y-auto px-4 py-3.5">
+      <main className="flex-1 overflow-y-auto px-[21px] py-3.5">
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-5 py-4">
             <div className="flex items-start justify-between gap-3">

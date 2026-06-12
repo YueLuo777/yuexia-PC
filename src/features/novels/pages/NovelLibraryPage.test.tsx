@@ -23,7 +23,8 @@ describe('NovelLibraryPage summary cards', () => {
   it('turns the library title card into a four-card data row', () => {
     const pageSource = readSource('NovelLibraryPage.tsx');
 
-    expect(pageSource).toContain('className="flex-1 overflow-y-auto px-4 py-3.5"');
+    expect(pageSource).toContain('className="flex-1 overflow-y-auto px-[21px] py-3.5"');
+    expect(pageSource).not.toContain('className="flex-1 overflow-y-auto px-4 py-3.5"');
     expect(pageSource).not.toContain('className="flex-1 overflow-y-auto px-8 py-7"');
     expect(pageSource).toContain('xl:grid-cols-4');
     expect(pageSource).not.toContain('{typeLabel}数据');
