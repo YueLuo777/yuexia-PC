@@ -84,6 +84,68 @@ function FlowGroupPreview({
   );
 }
 
+function ToolbarCPreview() {
+  const [activeId, setActiveId] = useState('writing');
+
+  const renderButton = (button: FlowButtonPreview) => {
+    const active = button.id === activeId;
+    return (
+      <button
+        key={button.id}
+        type="button"
+        onClick={() => setActiveId(button.id)}
+        className={`relative -ml-px inline-flex h-10 shrink-0 items-center justify-center gap-0.5 border px-2 first:ml-0 first:rounded-l-[8px] last:rounded-r-[8px] ${getButtonToneClass(button, active)}`}
+      >
+        <span className={`text-[13px] font-black leading-none ${button.id === 'brainstorm' ? 'tracking-wide' : ''}`}>{button.title}</span>
+        {button.meta ? (
+          <span className={`rounded-full px-1 py-0.5 text-[9px] font-black leading-none ${button.tone === 'warning' ? 'bg-[#fff1e2] text-[#c26a19]' : 'bg-white/80 text-[#64748b]'}`}>
+            {button.meta}
+          </span>
+        ) : null}
+      </button>
+    );
+  };
+
+  return (
+    <div className="overflow-hidden rounded-[8px] border border-[#dce3eb] bg-[#f7f9fb]">
+      <div className="flex h-[62px] min-w-0 items-center gap-1.5 overflow-hidden border-b border-[#edf1f5] bg-white px-3">
+        <div className="flex shrink-0 overflow-hidden rounded-[8px] border border-[#edf1f5] bg-white">
+          <button type="button" className="h-10 shrink-0 border-r border-[#edf1f5] px-2.5 text-sm font-black text-[#1f2933]">
+            默认小说1
+          </button>
+          <button type="button" className="h-10 shrink-0 border border-[#08AACE] bg-[#E7F8FD] px-2.5 text-sm font-black text-[#08AACE] shadow-[inset_0_0_0_1px_#08AACE]">
+            作品信息
+          </button>
+        </div>
+
+        <div className="flex shrink-0">
+          {creationButtons.map(renderButton)}
+        </div>
+
+        <div className="flex shrink-0">
+          {reviewButtons.map(renderButton)}
+        </div>
+
+        <div className="min-w-2 flex-1" aria-hidden="true" />
+
+        <div className="flex h-9 shrink-0 overflow-hidden rounded-[8px] border border-[#edf1f5] bg-white">
+          <button type="button" className="w-8 border-r border-[#edf1f5] text-base font-black text-[#6f7e90]">-</button>
+          <div className="flex w-10 items-center justify-center border-r border-[#edf1f5] text-base font-black text-[#1f2933]">20</div>
+          <button type="button" className="w-8 text-base font-black text-[#6f7e90]">+</button>
+        </div>
+
+        <button type="button" className="h-9 shrink-0 rounded-[8px] border border-[#edf1f5] bg-white px-2.5 text-sm font-black text-[#425466]">
+          日志
+        </button>
+      </div>
+      <div className="flex items-center justify-between gap-4 bg-[#f8fafc] px-4 py-3 text-xs font-bold text-[#6f7e90]">
+        <span>按正式顶部栏结构预览：左侧小说入口 + C 方案流程按钮 + 右侧字号/日志控件。</span>
+        <span className="shrink-0 text-[#08AACE]">观察中间空白即可判断剩余空间</span>
+      </div>
+    </div>
+  );
+}
+
 function DesignCard({
   title,
   desc,
@@ -140,6 +202,16 @@ export function WorkbenchFlowButtonStatsTestPage() {
           desc="审核、点评、状态这类待处理入口更醒目，适合后续把未审、未点评、未更新作为提醒。"
           variant="status"
         />
+
+        <section className="rounded-[8px] border border-[#e2e8f0] bg-white p-5 shadow-sm">
+          <div className="mb-4">
+            <h2 className="text-base font-black text-[#1f2933]">方案 C-工具栏形态：按截图结构检查剩余空间</h2>
+            <p className="mt-1 text-sm leading-6 text-[#6f7e90]">
+              保留 C 方案的数量胶囊，但把它放进接近正式顶部栏的横向结构里，用来观察放入小说入口、作品信息、字号和日志之后会不会拥挤。
+            </p>
+          </div>
+          <ToolbarCPreview />
+        </section>
       </div>
     </div>
   );
