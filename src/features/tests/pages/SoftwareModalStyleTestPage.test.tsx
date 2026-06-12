@@ -33,6 +33,7 @@ describe('SoftwareModalStyleTestPage', () => {
     expect(source).toContain('记忆关联');
     expect(source).toContain('右键左划回首页');
     expect(source).toContain('rounded-[8px] border border-[#e5e7eb] bg-white');
+    expect(source).toContain('w-[136px] overflow-hidden rounded-[8px]');
     expect(source).toContain('shadow-[0_10px_28px_rgba(15,23,42,0.14)]');
     expect(source).toContain('text-[#ff3b30]');
     expect(source).toContain('当前章节操作');

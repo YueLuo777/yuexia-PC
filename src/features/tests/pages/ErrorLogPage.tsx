@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'chapter-context-menu-width-too-wide-001',
+    title: '章节右键菜单主菜单宽度过大',
+    area: '作品编辑器 / 章节侧栏 / 已发布侧栏 / 右键菜单',
+    symptom: '章节右键弹窗主菜单宽度明显超过菜单文字所需宽度，右侧留白过多，看起来比截图中红框标注的目标宽度更笨重。',
+    cause: '套用测试页小型弹窗样式时主菜单宽度沿用 206px，测试预览里甚至使用 220px，适合普通设置菜单但不适合只有四五个短中文操作项的章节右键菜单。',
+    solution: '把正式未发布章节和已发布章节右键菜单主宽度统一收窄为 136px，并同步测试页章节右键菜单预览宽度；右侧“暂留选项”子菜单保持独立宽度，不再由主菜单撑宽。',
+    prevention: '以后右键菜单宽度应按最长菜单项和是否有箭头决定，短操作菜单不要复用设置弹窗宽度；测试预览转正后也要跟随真实组件尺寸。',
+    keywords: ['章节右键菜单', '宽度', 'ChapterSidebar', 'PublishedSidebar', 'SoftwareModalStyleTestPage', 'w-[136px]'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'nav-settings-add-divider-button-footer-001',
     title: '导航设置新增分割线入口占用过大',
     area: '首页 / 左侧导航 / 导航设置 / 分割线',

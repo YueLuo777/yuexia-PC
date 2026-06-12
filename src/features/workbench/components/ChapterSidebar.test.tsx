@@ -88,7 +88,7 @@ describe('ChapterSidebar', () => {
     const publishedSidebarSource = readSource('PublishedSidebar.tsx');
 
     for (const source of [chapterSidebarSource, publishedSidebarSource]) {
-      expect(source).toContain("w-[206px] overflow-visible rounded-[8px] border border-[#e5e7eb] bg-white py-1 shadow-[0_10px_28px_rgba(15,23,42,0.14)]");
+      expect(source).toContain("w-[136px] overflow-visible rounded-[8px] border border-[#e5e7eb] bg-white py-1 shadow-[0_10px_28px_rgba(15,23,42,0.14)]");
       expect(source).toContain("left-[calc(100%+4px)] top-0 hidden w-[176px]");
       expect(source).toContain('重命名');
       expect(source).toContain('修改章节');

@@ -75,7 +75,7 @@ function ReferencePopup({ variant }: { variant: PopupVariant }) {
 
   return (
     <div className="relative inline-flex items-start">
-      <div className="w-[220px] overflow-hidden rounded-[8px] border border-[#e5e7eb] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.14)]">
+      <div className="w-[136px] overflow-hidden rounded-[8px] border border-[#e5e7eb] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.14)]">
         <div className="border-b border-[#edf0f2] px-4 py-3 text-[14px] leading-none text-[#8d98a6]">
           {meta.updatedAt}
         </div>
