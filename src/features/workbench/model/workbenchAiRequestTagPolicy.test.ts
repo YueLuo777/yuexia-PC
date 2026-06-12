@@ -38,7 +38,7 @@ describe('workbench AI request tag policy', () => {
 
     expect(policyByLabel.get('大纲')?.tags).toEqual(['待处理设定', '关联脑洞', '修改要求']);
     expect(policyByLabel.get('章纲')?.tags).toEqual(['关联资料', '设定资料', '角色资料', '前文章纲', '剧情链', '本章要求']);
-    expect(policyByLabel.get('正文')?.tags).toEqual(['本章章纲', '前文正文', '关联设定', '写作要求']);
+    expect(policyByLabel.get('正文')?.tags).toEqual(['本章章纲', '前文正文', '前文梗概', '关联设定', '写作要求']);
     expect(policyByLabel.get('审核')?.tags).toEqual(['待审核正文', '关联章纲', '审核要求']);
     expect(policyByLabel.get('点评')?.tags).toEqual(['待点评正文', '关联章纲', '点评要求']);
     expect(policyByLabel.get('润色')?.tags).toEqual(['待润色正文', '关联章纲', '润色要求']);

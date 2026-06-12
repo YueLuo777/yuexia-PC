@@ -101,11 +101,6 @@ const FIND_REPLACE_DEFAULT_GEOMETRY = {
 const CONTEXT_SETTING_TYPE_ORDER = ['核心设定', '主线剧情', '等级体系', '势力设定', '伏笔设定', '其他设定', '未分类'];
 const CONTEXT_ROLE_TYPE_ORDER = ['男主角', '女主角', '正派配角', '重要反派', '反派配角', '龙套', '未分类'];
 
-const WORKBENCH_FLOW_PAGE_STORAGE_PREFIX = 'xinyuexia_workbench_active_flow_page_';
-function getStoredCreationFlowPage(novelId: number): WorkbenchCreationFlowPageKey {
-  const stored = localStorage.getItem(`${WORKBENCH_FLOW_PAGE_STORAGE_PREFIX}${novelId}`);
-  return isWorkbenchCreationFlowPageKey(stored) ? stored : 'writing';
-}
 const PUBLISH_CONFIRM_KEY = 'xinyuexia_workbench_publish_confirm';
 const GLOBAL_NOTES_KEY = 'xinyuexia_workbench_notes';
 const WORK_NOTES_KEY_PREFIX = 'xinyuexia_workbench_notes_';
@@ -1471,7 +1466,7 @@ export function WorkbenchPage() {
 
   useEffect(() => {
     if (!currentNovel) return;
-    setActiveCreationFlow(getStoredCreationFlowPage(currentNovel.id));
+    setActiveCreationFlow('writing');
     if (currentNovel.type === 'script') {
       setShowPublished(false);
       return;
@@ -2216,7 +2211,6 @@ export function WorkbenchPage() {
 
   const switchCreationFlow = (flow: WorkbenchCreationFlowPageKey) => {
     setActiveCreationFlow(flow);
-    localStorage.setItem(`${WORKBENCH_FLOW_PAGE_STORAGE_PREFIX}${currentNovel.id}`, flow);
   };
 
   const showFieldSizeButton = FIELD_SIZE_FLOW_IDS.has(activeCreationFlow);
