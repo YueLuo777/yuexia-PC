@@ -35,6 +35,9 @@ describe('NovelLibraryPage summary cards', () => {
     expect(pageSource).toContain('<span>字数</span>');
     expect(pageSource).toContain('formatWords(totalWorkWords)');
     expect(pageSource).toContain('<span>预留</span>');
+    expect(pageSource).toContain('flex min-h-[154px] flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-5 py-4');
+    expect(pageSource).toContain('mt-3 grid flex-1 grid-cols-2 grid-rows-2 gap-2.5');
+    expect(pageSource).toContain('flex h-full min-h-[52px] items-center gap-2.5');
     expect(pageSource).toContain('作品整理');
     expect(pageSource).toContain('最近编辑');
     expect(pageSource).toContain('扩展卡片');

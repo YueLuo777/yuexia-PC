@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'novel-library-organize-card-bottom-blank-001',
+    title: '作品整理卡片底部出现明显空白',
+    area: '我的小说 / 顶部四卡片 / 作品整理卡',
+    symptom: '作品整理卡片里“卡片设置”和“回收站”下方留出一大块空白，四个操作按钮集中在上半部分，视觉重心不稳。',
+    cause: '卡片本身有固定最小高度，但内部操作按钮使用固定 48px 高度，按钮网格没有占满卡片剩余高度。',
+    solution: '将作品整理卡片改为 flex 纵向布局，按钮网格使用 flex-1 和两行等高 grid，按钮改为 h-full + min-h-[52px]，让四个操作入口自然填满卡片内容区。',
+    prevention: '以后调整顶部操作卡时，避免在固定高度卡片内只使用固定高度按钮；操作网格应跟随卡片高度伸展，减少底部无效空白。',
+    keywords: ['作品整理', '卡片设置', '回收站', '底部空白', 'NovelLibraryPage', 'grid-rows-2', 'flex-1'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'novel-library-data-card-title-remove-recent-list-001',
     title: '我的小说数据卡标题区需要删除且最近编辑显示多条作品',
     area: '我的小说 / 顶部四卡片 / 数据卡与最近编辑卡',

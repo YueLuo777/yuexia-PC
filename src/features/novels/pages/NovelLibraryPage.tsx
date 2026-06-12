@@ -688,7 +688,7 @@ export function NovelLibraryPage() {
             </div>
           </section>
 
-          <section className="min-h-[154px] rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-5 py-4">
+          <section className="flex min-h-[154px] flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-5 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#f2f5f8] text-[#586574]">
@@ -698,7 +698,7 @@ export function NovelLibraryPage() {
               </div>
               <span className="text-[13px] font-medium text-[#9aa3af]">{filteredNovels.length}/{sourceNovels.length}</span>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2.5">
+            <div className="mt-3 grid flex-1 grid-cols-2 grid-rows-2 gap-2.5">
               {[
                 { label: `新建${typeLabel}`, desc: '创建作品', icon: Plus, onClick: () => setIsNewOpen(true), tone: 'blue' },
                 { label: '导入', desc: '本地导入', icon: Upload, onClick: () => setIsImportOpen(true), tone: 'green' },
@@ -711,7 +711,7 @@ export function NovelLibraryPage() {
                     key={item.label}
                     type="button"
                     onClick={item.onClick}
-                    className="flex h-[48px] items-center gap-2.5 rounded-[8px] border border-[#e6e8ec] bg-white px-3 text-left transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
+                    className="flex h-full min-h-[52px] items-center gap-2.5 rounded-[8px] border border-[#e6e8ec] bg-white px-3 text-left transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
                   >
                     <span className={[
                       'grid h-7 w-7 shrink-0 place-items-center rounded-[5px] text-white',
