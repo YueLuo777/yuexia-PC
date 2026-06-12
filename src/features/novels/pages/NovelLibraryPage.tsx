@@ -672,7 +672,6 @@ export function NovelLibraryPage() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[15px] font-bold text-[#1f2933]">作品概览</p>
-                <p className="mt-0.5 truncate text-[12px] font-medium text-[#7b8794]">当前{typeLabel}库统计</p>
               </div>
               <span className="shrink-0 rounded-full border border-[#dbe7f8] bg-white/80 px-2.5 py-0.5 text-[12px] font-semibold text-[#6b7b8d]">预留 --</span>
             </div>

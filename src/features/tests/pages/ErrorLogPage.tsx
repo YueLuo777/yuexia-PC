@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'novel-library-overview-subtitle-remove-001',
+    title: '作品概览副标题需要删除',
+    area: '我的小说 / 顶部四卡片 / 作品概览卡',
+    symptom: '作品概览标题下方的“当前小说库统计/当前剧本库统计”占用纵向空间，用户明确要求删除。',
+    cause: '上一版为了说明数据来源给作品概览卡增加了副标题，但在紧凑四卡片布局中这个说明不是必要信息。',
+    solution: '删除作品概览标题下方的当前库统计说明，只保留标题、预留标签和 2x2 统计数据；测试同步断言不再包含该文案。',
+    prevention: '以后顶部数据卡优先保留直接统计项，避免添加解释性副标题占用紧凑卡片高度，除非用户明确要求说明来源。',
+    keywords: ['我的小说', '作品概览', '当前小说库统计', '当前剧本库统计', 'NovelLibraryPage'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'editor-grid-line-test-font-size-sync-001',
     title: '正文编辑器需要测试随字号变化的网格虚线',
     area: '测试集合 / 编辑器网格虚线测试 / 正文背景',

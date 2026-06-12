@@ -31,7 +31,7 @@ describe('NovelLibraryPage summary cards', () => {
     expect(pageSource).not.toContain('text-[#16518f]">{title}</h1>');
     expect(pageSource).not.toContain('BookOpen');
     expect(pageSource).toContain('作品概览');
-    expect(pageSource).toContain('当前{typeLabel}库统计');
+    expect(pageSource).not.toContain('当前{typeLabel}库统计');
     expect(pageSource).toContain('<span>作品</span>');
     expect(pageSource).toContain('{sourceNovels.length} 本');
     expect(pageSource).toContain('<span>昨日更新</span>');
