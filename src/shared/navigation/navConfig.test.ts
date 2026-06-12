@@ -7,6 +7,7 @@ describe('navigation config without zones', () => {
     expect(DEFAULT_NAV_CONFIG).toHaveLength(1);
     expect(DEFAULT_NAV_CONFIG[0].title).toBe('导航');
     expect(DEFAULT_NAV_CONFIG[0].dividerAfterItemTo).toBe('/novels');
+    expect(DEFAULT_NAV_CONFIG[0].dividerAfterItemTos).toEqual(['/novels']);
     expect(DEFAULT_NAV_CONFIG[0].items.map((item) => item.to)).toEqual([
       '/novels',
       '/scripts',
@@ -42,6 +43,7 @@ describe('navigation config without zones', () => {
     expect(normalized).toHaveLength(1);
     expect(normalized[0].title).toBe('导航');
     expect(normalized[0].dividerAfterItemTo).toBe('/novels');
+    expect(normalized[0].dividerAfterItemTos).toEqual(['/novels']);
     expect(normalized[0].items.some((item) => item.to === '/novels')).toBe(true);
     expect(normalized[0].items.find((item) => item.to === '/scripts')?.hidden).toBe(true);
     expect(normalized[0].items.find((item) => item.to === '/prompts')?.hidden).toBe(true);
@@ -56,6 +58,12 @@ describe('navigation config without zones', () => {
       dividerAfterItemTo: '/prompts',
       items: DEFAULT_NAV_CONFIG[0].items,
     }])[0].dividerAfterItemTo).toBe('/prompts');
+    expect(normalizeNavConfig([{
+      title: '导航',
+      iconName: 'LayoutGrid',
+      dividerAfterItemTo: '/prompts',
+      items: DEFAULT_NAV_CONFIG[0].items,
+    }])[0].dividerAfterItemTos).toEqual(['/prompts']);
 
     expect(normalizeNavConfig([{
       title: '导航',
@@ -63,5 +71,25 @@ describe('navigation config without zones', () => {
       dividerAfterItemTo: null,
       items: DEFAULT_NAV_CONFIG[0].items,
     }])[0].dividerAfterItemTo).toBeNull();
+    expect(normalizeNavConfig([{
+      title: '导航',
+      iconName: 'LayoutGrid',
+      dividerAfterItemTo: null,
+      items: DEFAULT_NAV_CONFIG[0].items,
+    }])[0].dividerAfterItemTos).toEqual([]);
+  });
+
+  it('preserves multiple navigation dividers and drops invalid or hidden targets', () => {
+    const normalized = normalizeNavConfig([{
+      title: '导航',
+      iconName: 'LayoutGrid',
+      dividerAfterItemTos: ['/novels', '/prompts', '/missing', '/prompts', '/scripts'],
+      items: DEFAULT_NAV_CONFIG[0].items.map((item) => (
+        item.to === '/scripts' ? { ...item, hidden: true } : item
+      )),
+    }]);
+
+    expect(normalized[0].dividerAfterItemTo).toBe('/novels');
+    expect(normalized[0].dividerAfterItemTos).toEqual(['/novels', '/prompts']);
   });
 });

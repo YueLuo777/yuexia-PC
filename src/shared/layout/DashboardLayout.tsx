@@ -219,7 +219,9 @@ export function DashboardLayout() {
       hidden: item.hidden || group.hidden,
     }))
   )).filter((item) => !item.hidden);
-  const navDividerAfterItemTo = navConfig[0]?.dividerAfterItemTo ?? null;
+  const navDividerAfterItemTos = new Set(navConfig[0]?.dividerAfterItemTos ?? (
+    navConfig[0]?.dividerAfterItemTo ? [navConfig[0].dividerAfterItemTo] : []
+  ));
 
   return (
     <div className="flex h-full overflow-hidden bg-white">
@@ -314,7 +316,7 @@ export function DashboardLayout() {
                     <ItemIcon className={`h-[17px] w-[17px] ${isActive ? 'text-[#1e71ef]' : 'text-[#68727f]'}`} />
                     <span className="text-[14px] leading-none">{item.label}</span>
                   </Link>
-                  {navDividerAfterItemTo === item.to ? (
+                  {navDividerAfterItemTos.has(item.to) ? (
                     <div aria-hidden="true" className="mx-3 my-2 border-t border-[#e1e5eb]" />
                   ) : null}
                 </div>

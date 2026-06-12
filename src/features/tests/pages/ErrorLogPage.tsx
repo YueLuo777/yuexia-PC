@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'dashboard-sidebar-nav-divider-drag-multiple-001',
+    title: '首页左侧导航分割线需要可拖拽且可新增删除',
+    area: '首页 / 左侧导航 / 导航设置 / 分割线',
+    symptom: '导航设置里只能通过下拉框选择一条分割线位置，无法像列表项一样直接拖拽，也不能自由新增或删除多条分割线。',
+    cause: '导航配置只保存单个 dividerAfterItemTo，NavSettingsModal 把分割线当作一个下拉字段，而不是导航列表里的可操作条目。',
+    solution: '新增 dividerAfterItemTos 数组并兼容旧 dividerAfterItemTo；DashboardLayout 按数组渲染多条分割线；NavSettingsModal 提供“新增分割线”，并把分割线渲染为可拖拽、可删除的列表行。',
+    prevention: '以后导航视觉层级调整不要再只做单字段下拉；分割线、导航项这类会影响列表结构的对象应尽量在同一个可拖拽列表里管理。',
+    keywords: ['首页', '左侧导航', '导航设置', '分割线', '拖拽', '新增分割线', '删除分割线', 'dividerAfterItemTos'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'novel-library-organize-card-bottom-blank-001',
     title: '作品整理卡片底部出现明显空白',
     area: '我的小说 / 顶部四卡片 / 作品整理卡',

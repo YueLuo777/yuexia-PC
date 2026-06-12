@@ -40,7 +40,9 @@ const popupItems: Record<PopupVariant, PopupItem[]> = {
     { label: '移入回收站', danger: true },
   ],
   navigation: [
-    { label: '导航分割线位置', hasNext: true },
+    { label: '新增分割线' },
+    { label: '拖拽分割线' },
+    { label: '删除分割线', danger: true },
     { label: '修改导航名称' },
     { label: '隐藏或恢复入口' },
     { label: '拖拽排序' },

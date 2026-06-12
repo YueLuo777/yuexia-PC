@@ -17,6 +17,7 @@ const ROOT_NAV_GROUP: NavGroupConfig = {
   title: '导航',
   iconName: 'LayoutGrid',
   dividerAfterItemTo: '/novels',
+  dividerAfterItemTos: ['/novels'],
   items: [],
 };
 
@@ -31,6 +32,9 @@ function normalizeDraft(config: NavGroupConfig[]) {
   return [{
     ...ROOT_NAV_GROUP,
     dividerAfterItemTo: config[0]?.dividerAfterItemTo ?? null,
+    dividerAfterItemTos: config[0]?.dividerAfterItemTos ?? (
+      config[0]?.dividerAfterItemTo ? [config[0].dividerAfterItemTo] : []
+    ),
     items,
   }];
 }
@@ -41,6 +45,7 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
   const [editingItem, setEditingItem] = useState<number | null>(null);
   const [editingValue, setEditingValue] = useState('');
   const [dragSrc, setDragSrc] = useState<number | null>(null);
+  const [dividerDragSrc, setDividerDragSrc] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<{ itemIdx: number; pos: 'before' | 'after' } | null>(null);
 
   useEffect(() => {
@@ -48,17 +53,31 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
     setDraft(normalizeDraft(config));
     setEditingItem(null);
     setDragSrc(null);
+    setDividerDragSrc(null);
     setDragOver(null);
   }, [config, isOpen]);
 
   if (!isOpen) return null;
 
   const draftItems = draft[0]?.items ?? [];
-  const draftDividerAfterItemTo = draft[0]?.dividerAfterItemTo ?? null;
+  const draftDividerAfterItemTos = draft[0]?.dividerAfterItemTos ?? (
+    draft[0]?.dividerAfterItemTo ? [draft[0].dividerAfterItemTo] : []
+  );
   const visibleDraftItems = draftItems.filter((item) => !item.hidden);
 
-  const saveItems = (items: NavItemConfig[], dividerAfterItemTo = draftDividerAfterItemTo) => {
-    const next = [{ ...ROOT_NAV_GROUP, dividerAfterItemTo, items }];
+  const normalizeDividerAfterItemTos = (items: NavItemConfig[], dividerAfterItemTos: string[]) => {
+    const visibleItemTos = new Set(items.filter((item) => !item.hidden).map((item) => item.to));
+    return Array.from(new Set(dividerAfterItemTos)).filter((itemTo) => visibleItemTos.has(itemTo));
+  };
+
+  const saveItems = (items: NavItemConfig[], dividerAfterItemTos = draftDividerAfterItemTos) => {
+    const normalizedDividerAfterItemTos = normalizeDividerAfterItemTos(items, dividerAfterItemTos);
+    const next = [{
+      ...ROOT_NAV_GROUP,
+      dividerAfterItemTo: normalizedDividerAfterItemTos[0] ?? null,
+      dividerAfterItemTos: normalizedDividerAfterItemTos,
+      items,
+    }];
     setDraft(next);
     onSave(JSON.parse(JSON.stringify(next)));
   };
@@ -74,14 +93,18 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
     const nextItems = draftItems.map((item, index) => (
       index === itemIndex ? { ...item, hidden: !item.hidden } : item
     ));
-    const nextDividerAfterItemTo = draftItems[itemIndex]?.to === draftDividerAfterItemTo && !draftItems[itemIndex]?.hidden
-      ? null
-      : draftDividerAfterItemTo;
-    saveItems(nextItems, nextDividerAfterItemTo);
+    saveItems(nextItems);
   };
 
-  const updateDividerAfterItem = (value: string) => {
-    saveItems(draftItems, value || null);
+  const addDivider = () => {
+    const existingDividerTos = new Set(draftDividerAfterItemTos);
+    const target = visibleDraftItems.find((item) => !existingDividerTos.has(item.to));
+    if (!target) return;
+    saveItems(draftItems, [...draftDividerAfterItemTos, target.to]);
+  };
+
+  const removeDivider = (itemTo: string) => {
+    saveItems(draftItems, draftDividerAfterItemTos.filter((dividerItemTo) => dividerItemTo !== itemTo));
   };
 
   const handleDragOver = (event: React.DragEvent, itemIdx: number) => {
@@ -91,7 +114,29 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
     setDragOver({ itemIdx, pos });
   };
 
+  const resolveDividerDropTarget = (targetItemIdx: number) => {
+    const targetItem = draftItems[targetItemIdx];
+    const previousVisibleItem = draftItems.slice(0, targetItemIdx).reverse().find((item) => !item.hidden);
+    const nextVisibleItem = draftItems.slice(targetItemIdx + 1).find((item) => !item.hidden);
+    if (dragOver?.pos === 'before') return previousVisibleItem?.to ?? (!targetItem?.hidden ? targetItem?.to : nextVisibleItem?.to) ?? null;
+    return (!targetItem?.hidden ? targetItem?.to : previousVisibleItem?.to ?? nextVisibleItem?.to) ?? null;
+  };
+
   const handleDrop = (targetItemIdx: number) => {
+    if (dividerDragSrc) {
+      const nextItemTo = resolveDividerDropTarget(targetItemIdx);
+      if (!nextItemTo) {
+        setDividerDragSrc(null);
+        setDragOver(null);
+        return;
+      }
+      saveItems(draftItems, draftDividerAfterItemTos.map((itemTo) => (
+        itemTo === dividerDragSrc ? nextItemTo : itemTo
+      )));
+      setDividerDragSrc(null);
+      setDragOver(null);
+      return;
+    }
     if (dragSrc === null) return;
     const nextItems = [...draftItems];
     const [moved] = nextItems.splice(dragSrc, 1);
@@ -118,7 +163,7 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
               <Settings className="h-4 w-4 text-brand" />
               导航设置
             </h2>
-            <p className="mt-0.5 text-base text-gray-400">支持双击改名、隐藏显示、拖拽排序和分割线位置。</p>
+            <p className="mt-0.5 text-base text-gray-400">支持双击改名、隐藏显示、拖拽排序，以及新增、拖拽、删除分割线。</p>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
             <X className="h-4 w-4" />
@@ -126,30 +171,26 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
-          <div className="mb-4 rounded-lg border border-[#e1e5eb] bg-[#f8fafc] p-3">
-            <label className="block text-sm font-medium text-[#1f2933]" htmlFor="nav-divider-position">
-              导航分割线位置
-            </label>
-            <div className="mt-2 flex items-center gap-3">
-              <select
-                id="nav-divider-position"
-                value={visibleDraftItems.some((item) => item.to === draftDividerAfterItemTo) ? (draftDividerAfterItemTo ?? '') : ''}
-                onChange={(event) => updateDividerAfterItem(event.target.value)}
-                className="h-9 min-w-0 flex-1 rounded-md border border-[#d7dde6] bg-white px-3 text-sm text-[#1f2933] outline-none focus:border-brand"
-              >
-                <option value="">不显示分割线</option>
-                {visibleDraftItems.map((item) => (
-                  <option key={item.to} value={item.to}>在「{item.label}」后面</option>
-                ))}
-              </select>
-              <span className="hidden h-px w-20 bg-[#e1e5eb] sm:block" aria-hidden="true" />
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-[#e1e5eb] bg-[#f8fafc] p-3">
+            <div className="min-w-0">
+              <div className="text-sm font-medium text-[#1f2933]">导航分割线</div>
+              <p className="mt-1 text-xs text-[#8d98a6]">点击新增分割线，拖拽分割线到导航项上方或下方调整位置。</p>
             </div>
+            <button
+              type="button"
+              onClick={addDivider}
+              disabled={visibleDraftItems.length <= draftDividerAfterItemTos.length}
+              className="h-9 shrink-0 rounded-md border border-[#d7dde6] bg-white px-3 text-sm font-medium text-[#1f2933] transition-colors hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              新增分割线
+            </button>
           </div>
           <div className="space-y-1">
             {draftItems.map((item, itemIndex) => {
               const ItemIcon = getIconByName(item.iconName);
               const isEditing = editingItem === itemIndex;
               const isHidden = !!item.hidden;
+              const hasDividerAfter = draftDividerAfterItemTos.includes(item.to);
 
               return (
                 <div key={`${item.to}-${itemIndex}`} className="relative">
@@ -215,6 +256,32 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
                   {dragOver?.itemIdx === itemIndex && dragOver.pos === 'after' && (
                     <div className="absolute -bottom-[3px] left-0 right-0 z-10 h-[3px] rounded-full bg-brand" />
                   )}
+                  {hasDividerAfter ? (
+                    <div
+                      draggable={!isHidden}
+                      onDragStart={() => setDividerDragSrc(item.to)}
+                      onDragOver={(event) => handleDragOver(event, itemIndex)}
+                      onDrop={() => handleDrop(itemIndex)}
+                      onDragEnd={() => {
+                        setDividerDragSrc(null);
+                        setDragOver(null);
+                      }}
+                      className={`group my-1 flex h-7 cursor-grab items-center gap-2 rounded-md px-3 transition-colors active:cursor-grabbing ${
+                        dividerDragSrc === item.to ? 'bg-brand/10' : 'hover:bg-[#f2f7fb]'
+                      }`}
+                    >
+                      <span className="h-px flex-1 bg-[#e1e5eb] transition-colors group-hover:bg-brand/45" />
+                      <span className="text-xs font-medium text-[#8d98a6]">分割线</span>
+                      <span className="h-px flex-1 bg-[#e1e5eb] transition-colors group-hover:bg-brand/45" />
+                      <button
+                        type="button"
+                        onClick={() => removeDivider(item.to)}
+                        className="rounded px-2 py-0.5 text-xs font-medium text-[#8d98a6] hover:bg-red-50 hover:text-red-500"
+                      >
+                        删除
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               );
             })}

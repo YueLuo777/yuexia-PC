@@ -18,7 +18,9 @@ describe('SoftwareModalStyleTestPage', () => {
 
     expect(source).toContain("type PopupVariant = 'work' | 'navigation' | 'system' | 'shortcut'");
     expect(source).toContain('私密作品设置');
-    expect(source).toContain('导航分割线位置');
+    expect(source).toContain('新增分割线');
+    expect(source).toContain('拖拽分割线');
+    expect(source).toContain('删除分割线');
     expect(source).toContain('记忆关联');
     expect(source).toContain('右键左划回首页');
     expect(source).toContain('rounded-[8px] border border-[#e5e7eb] bg-white');

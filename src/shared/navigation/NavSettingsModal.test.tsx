@@ -13,14 +13,21 @@ describe('NavSettingsModal flat navigation editing', () => {
     const source = readSource('NavSettingsModal.tsx');
 
     expect(source).toContain("title: '导航'");
-    expect(source).toContain('支持双击改名、隐藏显示、拖拽排序和分割线位置。');
+    expect(source).toContain('支持双击改名、隐藏显示、拖拽排序，以及新增、拖拽、删除分割线。');
     expect(source).toContain('config.flatMap((group) => (');
     expect(source).toContain('const draftItems = draft[0]?.items ?? [];');
     expect(source).toContain("dividerAfterItemTo: '/novels'");
-    expect(source).toContain('导航分割线位置');
-    expect(source).toContain('updateDividerAfterItem');
-    expect(source).toContain('不显示分割线');
-    expect(source).toContain('在「{item.label}」后面');
+    expect(source).toContain("dividerAfterItemTos: ['/novels']");
+    expect(source).toContain('导航分割线');
+    expect(source).toContain('addDivider');
+    expect(source).toContain('removeDivider');
+    expect(source).toContain('setDividerDragSrc(item.to)');
+    expect(source).toContain('resolveDividerDropTarget');
+    expect(source).toContain('新增分割线');
+    expect(source).toContain('删除');
+    expect(source).not.toContain('updateDividerAfterItem');
+    expect(source).not.toContain('不显示分割线');
+    expect(source).not.toContain('在「{item.label}」后面');
     expect(source).not.toContain('新增专区');
     expect(source).not.toContain('隐藏专区');
     expect(source).not.toContain('恢复专区');

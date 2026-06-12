@@ -33,6 +33,7 @@ export interface NavGroupConfig {
   iconName: string;
   hidden?: boolean;
   dividerAfterItemTo?: string | null;
+  dividerAfterItemTos?: string[];
   items: NavItemConfig[];
 }
 
@@ -69,6 +70,7 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
     title: NAV_ROOT_GROUP_TITLE,
     iconName: 'LayoutGrid',
     dividerAfterItemTo: '/novels',
+    dividerAfterItemTos: ['/novels'],
     items: [
       { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
       { iconName: 'Film', label: '我的剧本', to: '/scripts' },
@@ -124,11 +126,12 @@ function cloneDefaultConfig() {
 function flattenNavConfig(config: NavGroupConfig[]) {
   const seenRoutes = new Set<string>();
   const items: NavItemConfig[] = [];
-  let dividerAfterItemTo: string | null | undefined;
+  let dividerAfterItemTos: string[] | null | undefined;
 
   for (const group of config) {
     if (REMOVED_GROUP_TITLES.has(group.title)) continue;
-    if (group.dividerAfterItemTo !== undefined) dividerAfterItemTo = group.dividerAfterItemTo;
+    if (Array.isArray(group.dividerAfterItemTos)) dividerAfterItemTos = group.dividerAfterItemTos;
+    else if (group.dividerAfterItemTo !== undefined) dividerAfterItemTos = group.dividerAfterItemTo === null ? [] : [group.dividerAfterItemTo];
     for (const item of group.items) {
       if (REMOVED_ROUTES.has(item.to)) continue;
       if (seenRoutes.has(item.to)) continue;
@@ -141,19 +144,19 @@ function flattenNavConfig(config: NavGroupConfig[]) {
     }
   }
 
-  const fallbackDividerAfterItemTo = DEFAULT_NAV_CONFIG[0].dividerAfterItemTo ?? null;
-  const normalizedDividerAfterItemTo = dividerAfterItemTo === null
-    ? null
-    : items.some((item) => item.to === dividerAfterItemTo)
-      ? dividerAfterItemTo
-      : items.some((item) => item.to === fallbackDividerAfterItemTo)
-        ? fallbackDividerAfterItemTo
-        : null;
+  const visibleItemRoutes = new Set(items.filter((item) => !item.hidden).map((item) => item.to));
+  const fallbackDividerAfterItemTos = DEFAULT_NAV_CONFIG[0].dividerAfterItemTos ?? (
+    DEFAULT_NAV_CONFIG[0].dividerAfterItemTo ? [DEFAULT_NAV_CONFIG[0].dividerAfterItemTo] : []
+  );
+  const rawDividerAfterItemTos = dividerAfterItemTos === undefined ? fallbackDividerAfterItemTos : dividerAfterItemTos;
+  const normalizedDividerAfterItemTos = Array.from(new Set(rawDividerAfterItemTos ?? []))
+    .filter((itemTo) => visibleItemRoutes.has(itemTo));
 
   return [{
     title: NAV_ROOT_GROUP_TITLE,
     iconName: 'LayoutGrid',
-    dividerAfterItemTo: normalizedDividerAfterItemTo,
+    dividerAfterItemTo: normalizedDividerAfterItemTos[0] ?? null,
+    dividerAfterItemTos: normalizedDividerAfterItemTos,
     items,
   }];
 }
@@ -181,6 +184,7 @@ function isValidConfig(config: unknown): config is NavGroupConfig[] {
     typeof group.title === 'string' &&
     typeof group.iconName === 'string' &&
     (group.dividerAfterItemTo === undefined || typeof group.dividerAfterItemTo === 'string' || group.dividerAfterItemTo === null) &&
+    (group.dividerAfterItemTos === undefined || (Array.isArray(group.dividerAfterItemTos) && group.dividerAfterItemTos.every((item: unknown) => typeof item === 'string'))) &&
     Array.isArray(group.items)
   ));
 }
