@@ -49,7 +49,12 @@ describe('NovelLibraryPage summary cards', () => {
     expect(pageSource).toContain('mt-2 grid flex-1 grid-cols-2 grid-rows-2 gap-2');
     expect(pageSource).toContain('flex h-full min-h-[40px] items-center gap-2');
     expect(pageSource).toContain('作品整理');
+    expect(pageSource).toContain('<h2 className="text-[15px] font-semibold text-[#1f2933]">作品整理</h2>');
+    expect(pageSource).not.toContain('Archive');
+    expect(pageSource).not.toContain('<Archive className="h-3.5 w-3.5" />');
     expect(pageSource).toContain('最近编辑');
+    expect(pageSource).toContain('<h2 className="truncate text-[15px] font-semibold leading-none text-[#1f2933]">最近编辑：</h2>');
+    expect(pageSource).not.toContain('text-[24px] font-bold leading-none text-[#1f2933]">最近编辑：');
     expect(pageSource).toContain('扩展卡片');
     expect(pageSource).not.toContain('保持专注写作和资料管理');
   });

@@ -1,4 +1,4 @@
-import { AlertTriangle, Archive, Image as ImageIcon, Plus, RefreshCw, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react';
+import { AlertTriangle, Image as ImageIcon, Plus, RefreshCw, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -697,10 +697,7 @@ export function NovelLibraryPage() {
 
           <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-4 py-3.5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-[#f2f5f8] text-[#586574]">
-                  <Archive className="h-3.5 w-3.5" />
-                </span>
+              <div className="flex items-center">
                 <h2 className="text-[15px] font-semibold text-[#1f2933]">作品整理</h2>
               </div>
               <span className="text-[13px] font-medium text-[#9aa3af]">{filteredNovels.length}/{sourceNovels.length}</span>
@@ -737,7 +734,7 @@ export function NovelLibraryPage() {
           </section>
 
           <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-white px-4 py-4">
-            <h2 className="truncate text-[24px] font-bold leading-none text-[#1f2933]">最近编辑：</h2>
+            <h2 className="truncate text-[15px] font-semibold leading-none text-[#1f2933]">最近编辑：</h2>
             {recentWorks.length > 0 ? (
               <div className="mt-4 grid gap-2">
                 {recentWorks.map((work) => (

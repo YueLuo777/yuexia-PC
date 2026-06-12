@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'novel-library-recent-title-and-organize-icon-001',
+    title: '最近编辑标题过大且作品整理标题图标多余',
+    area: '我的小说 / 顶部四卡片 / 作品整理与最近编辑',
+    symptom: '最近编辑卡片标题字号明显大于作品整理，视觉重心过重；作品整理标题左侧还有一个归档图标，和当前简洁卡片标题层级不一致。',
+    cause: '最近编辑标题沿用了更早的大标题样式 text-[24px] font-bold；作品整理标题保留 Archive 图标容器，但顶部四卡片已经改成紧凑数据卡风格。',
+    solution: '将最近编辑标题改为和作品整理一致的 text-[15px] font-semibold；删除作品整理标题左侧 Archive 图标和对应 import，只保留文字标题与右侧数量。',
+    prevention: '以后调整顶部四卡片时，标题层级应保持统一，图标只用于按钮或列表项，不再放在作品整理这类卡片标题左侧。',
+    keywords: ['我的小说', '作品整理', '最近编辑', '标题字号', 'Archive', 'NovelLibraryPage'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'workbench-soft-cyan-button-style-test-001',
     title: '作品编辑器深蓝按钮和边框需要浅青方案测试',
     area: '测试集合 / 作品编辑器 / 当前页按钮与右侧边框',
