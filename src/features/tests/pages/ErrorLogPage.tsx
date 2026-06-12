@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'dashboard-sidebar-profile-height-minus-20-001',
+    title: '首页侧栏头像区域高度需要缩小约 20%',
+    area: '首页 / 左侧导航 / 头像区域',
+    symptom: '左侧导航顶部头像区域纵向占用过高，截图红框位置留白偏多，压缩了下方导航的首屏可见空间。',
+    cause: 'DashboardLayout 头像区外层使用 px-3 py-7，上下各 28px 的内边距让头像、姓名和留白组合后显得过高。',
+    solution: '将头像区外层改为 px-3 py-[14px]，保留头像居中和姓名在下方的结构，只压缩容器垂直留白，使整体高度约减少 20%。',
+    prevention: '后续调整首页侧栏头像区时不要恢复 py-7；若需要再改高度，优先只调整外层垂直内边距，避免破坏头像尺寸、姓名居中和上传交互。',
+    keywords: ['首页', '左侧导航', '头像区域', '高度', '20%', 'DashboardLayout', 'py-[14px]'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'novel-card-cover-menu-reference-001',
     title: '作品卡片封面需要接近参考书封并移除私密角标',
     area: '我的小说 / 作品卡片 / 封面与更多菜单',

@@ -230,7 +230,7 @@ export function DashboardLayout() {
         style={{ width: sidebarWidth }}
         className="flex shrink-0 flex-col overflow-hidden border-r border-[#e1e5eb] bg-[#f5f5f7]"
       >
-        <div className="shrink-0 px-3 py-7">
+        <div className="shrink-0 px-3 py-[14px]">
           <input
             ref={avatarInputRef}
             type="file"
