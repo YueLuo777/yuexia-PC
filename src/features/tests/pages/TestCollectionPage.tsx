@@ -3,7 +3,6 @@ import {
   Check,
   EyeOff,
   Globe,
-  Lightbulb,
   NotebookText,
   Moon,
   Palette,
@@ -22,23 +21,11 @@ const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPage
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
-const PromptTaxonomyTestPage = lazy(() => import('@/features/tests/pages/PromptTaxonomyTestPage').then((module) => ({ default: module.PromptTaxonomyTestPage })));
 const BorderBackplateApplicationTestPage = lazy(() => import('@/features/tests/pages/BorderBackplateApplicationTestPage').then((module) => ({ default: module.BorderBackplateApplicationTestPage })));
-const BrainstormWhiteSurfaceExactTestPage = lazy(() => import('@/features/tests/pages/BrainstormWhiteSurfaceExactTestPage').then((module) => ({ default: module.BrainstormWhiteSurfaceExactTestPage })));
 const WorkbenchRightPanelUnifiedTestPage = lazy(() => import('@/features/tests/pages/WorkbenchRightPanelUnifiedTestPage').then((module) => ({ default: module.WorkbenchRightPanelUnifiedTestPage })));
 const WorkbenchAiRequestTagPolicyTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiRequestTagPolicyTestPage').then((module) => ({ default: module.WorkbenchAiRequestTagPolicyTestPage })));
-const LinkedContextSelectionInteractionTestPage = lazy(() => import('@/features/tests/pages/LinkedContextSelectionInteractionTestPage').then((module) => ({ default: module.LinkedContextSelectionInteractionTestPage })));
-const BrainstormLinkVisualOptionsTestPage = lazy(() => import('@/features/tests/pages/BrainstormLinkVisualOptionsTestPage').then((module) => ({ default: module.BrainstormLinkVisualOptionsTestPage })));
-const DetailOutlineFocusLayoutTestPage = lazy(() => import('@/features/tests/pages/DetailOutlineFocusLayoutTestPage').then((module) => ({ default: module.DetailOutlineFocusLayoutTestPage })));
-const StructuredDetailOutlineTagFillTestPage = lazy(() => import('@/features/tests/pages/StructuredDetailOutlineTagFillTestPage').then((module) => ({ default: module.StructuredDetailOutlineTagFillTestPage })));
-const DetailOutlineLifecycleTestPage = lazy(() => import('@/features/tests/pages/DetailOutlineLifecycleTestPage').then((module) => ({ default: module.DetailOutlineLifecycleTestPage })));
-const NoPlotPointCreationLoopTestPage = lazy(() => import('@/features/tests/pages/NoPlotPointCreationLoopTestPage').then((module) => ({ default: module.NoPlotPointCreationLoopTestPage })));
-const SettingCheckModalTestPage = lazy(() => import('@/features/tests/pages/SettingCheckModalTestPage').then((module) => ({ default: module.SettingCheckModalTestPage })));
 const SettingTaxonomyPlanTestPage = lazy(() => import('@/features/tests/pages/SettingTaxonomyPlanTestPage').then((module) => ({ default: module.SettingTaxonomyPlanTestPage })));
-const SettingNavigationColorOptionsTestPage = lazy(() => import('@/features/tests/pages/SettingNavigationColorOptionsTestPage').then((module) => ({ default: module.SettingNavigationColorOptionsTestPage })));
 const AiInputBorderOptionsTestPage = lazy(() => import('@/features/tests/pages/AiInputBorderOptionsTestPage').then((module) => ({ default: module.AiInputBorderOptionsTestPage })));
-const SoftwareModalStyleTestPage = lazy(() => import('@/features/tests/pages/SoftwareModalStyleTestPage').then((module) => ({ default: module.SoftwareModalStyleTestPage })));
-const EditorGridLineTestPage = lazy(() => import('@/features/tests/pages/EditorGridLineTestPage').then((module) => ({ default: module.EditorGridLineTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -74,39 +61,11 @@ const testGroups = [
         badge: 'Theme',
       },
       {
-        title: '提示词分类优化测试',
-        description: '测试提示词少分类、多标签、页面自动筛选，以及使用页下拉框只显示相关提示词。',
-        path: '/prompt-taxonomy-test',
-        icon: Tags,
-        badge: 'Prompt',
-      },
-      {
         title: '边框透明背板应用预览',
         description: '集中预览作品编辑器里适合使用边框透明背板技术的贴边标题、字数、清空、章节信息和配置标签。',
         path: '/border-backplate-application-test',
         icon: Type,
         badge: 'Backplate',
-      },
-      {
-        title: '脑洞页白侧栏成品测试',
-        description: '一比一复刻脑洞页面四栏结构，测试白侧栏和 #F5F5F7 工作区的成品效果。',
-        path: '/brainstorm-white-surface-exact-test',
-        icon: Lightbulb,
-        badge: 'Brainstorm Surface',
-      },
-      {
-        title: '弹窗样式测试',
-        description: '参考截图里的小型菜单弹窗，把作品菜单、导航设置、系统设置和快捷键内容套入同一套弹窗样式。',
-        path: '/software-modal-style-test',
-        icon: Palette,
-        badge: 'Modal UI',
-      },
-      {
-        title: '编辑器网格虚线测试',
-        description: '测试正文背景网格线随字号同步变化，可切换无、实线和虚线，先用于确认目标稿纸效果。',
-        path: '/editor-grid-line-test',
-        icon: Type,
-        badge: 'Grid',
       },
     ],
   },
@@ -128,67 +87,11 @@ const testGroups = [
         badge: 'Tag',
       },
       {
-        title: '关联资料选择交互测试',
-        description: '测试“点击条目只预览，点击勾选框或右侧按钮才关联”的资料选择交互。',
-        path: '/linked-context-selection-interaction-test',
-        icon: Check,
-        badge: 'Preview / Select',
-      },
-      {
-        title: '关联脑洞视觉方案',
-        description: '测试关联脑洞弹窗的多种视觉方案，让脑洞卡片、标签、预览和关联状态更突出。',
-        path: '/brainstorm-link-visual-options-test',
-        icon: Lightbulb,
-        badge: 'Brainstorm UI',
-      },
-      {
-        title: '章纲单章聚焦布局测试',
-        description: '测试左侧章节目录、中间当前章纲大编辑区、右侧 AI 工作区的单章聚焦章纲生产布局。',
-        path: '/detail-outline-focus-layout-test',
-        icon: NotebookText,
-        badge: 'Chapter UI',
-      },
-      {
-        title: '结构化章纲标签填充测试',
-        description: '测试 AI 输出 XML 标签后，软件把本章目标、剧情流程、伏笔信息和状态变化填入对应章纲区域的方案。',
-        path: '/structured-detail-outline-tag-fill-test',
-        icon: NotebookText,
-        badge: 'Tag Fill',
-      },
-      {
-        title: '章纲生命周期测试',
-        description: '测试正文生成后，章纲进入已执行、待核对、异常和反推章纲等状态的页面方案。',
-        path: '/detail-outline-lifecycle-test',
-        icon: NotebookText,
-        badge: 'Lifecycle',
-      },
-      {
-        title: '无剧情点创作闭环测试',
-        description: '测试大纲直接到章纲、状态改为更新，并由更新统一处理新增人物设定和状态同步的闭环方案。',
-        path: '/no-plot-point-creation-loop-test',
-        icon: NotebookText,
-        badge: 'Loop',
-      },
-      {
-        title: '设定检查弹窗测试',
-        description: '测试“大纲”改名为“设定”后，在人物设定右侧点击检查设定并关联资料补充新增人物、道具和状态的弹窗方案。',
-        path: '/setting-check-modal-test',
-        icon: NotebookText,
-        badge: 'Setting Check',
-      },
-      {
         title: '设定分类与人物字段方案',
         description: '临时保存作品设定分类顺序、人物设定字段，以及人物关系应放入人物设定卡片的后续实现方案。',
         path: '/setting-taxonomy-plan-test',
         icon: NotebookText,
         badge: 'Setting Plan',
-      },
-      {
-        title: '设定导航配色方案',
-        description: '测试作品设定/人物设定侧栏导航的多套配色方案，参考当前主题、Linear、飞书和 Apple 侧栏。',
-        path: '/setting-navigation-color-options-test',
-        icon: Palette,
-        badge: 'Setting Color',
       },
       {
         title: 'AI 输入框边框方案',
@@ -312,24 +215,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <WorkbenchRightPanelUnifiedTestPage />;
       case '/workbench-ai-request-tag-policy-test':
         return <WorkbenchAiRequestTagPolicyTestPage />;
-      case '/linked-context-selection-interaction-test':
-        return <LinkedContextSelectionInteractionTestPage />;
-      case '/brainstorm-link-visual-options-test':
-        return <BrainstormLinkVisualOptionsTestPage />;
-      case '/detail-outline-focus-layout-test':
-        return <DetailOutlineFocusLayoutTestPage />;
-      case '/structured-detail-outline-tag-fill-test':
-        return <StructuredDetailOutlineTagFillTestPage />;
-      case '/detail-outline-lifecycle-test':
-        return <DetailOutlineLifecycleTestPage />;
-      case '/no-plot-point-creation-loop-test':
-        return <NoPlotPointCreationLoopTestPage />;
-      case '/setting-check-modal-test':
-        return <SettingCheckModalTestPage />;
       case '/setting-taxonomy-plan-test':
         return <SettingTaxonomyPlanTestPage />;
-      case '/setting-navigation-color-options-test':
-        return <SettingNavigationColorOptionsTestPage />;
       case '/ai-input-border-options-test':
         return <AiInputBorderOptionsTestPage />;
       case '/hidden-pages-test':
@@ -338,16 +225,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <ErrorLogPage />;
       case '/software-ui-catalog':
         return <SoftwareUiCatalogPage embedded onClose={() => setActivePath(null)} />;
-      case '/prompt-taxonomy-test':
-        return <PromptTaxonomyTestPage />;
       case '/border-backplate-application-test':
         return <BorderBackplateApplicationTestPage />;
-      case '/brainstorm-white-surface-exact-test':
-        return <BrainstormWhiteSurfaceExactTestPage />;
-      case '/software-modal-style-test':
-        return <SoftwareModalStyleTestPage />;
-      case '/editor-grid-line-test':
-        return <EditorGridLineTestPage />;
       case '/theme-colors':
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
       case '/test-browser':

@@ -29,9 +29,8 @@ describe('AiInputBorderOptionsTestPage', () => {
     expect(source).toContain('#F5F3FF');
   });
 
-  it('is registered at the end of the AI test collection group', () => {
+  it('is registered in the AI test collection group before tool tests', () => {
     const source = readTestCollectionSource();
-    const settingColorIndex = source.indexOf("path: '/setting-navigation-color-options-test'");
     const aiInputIndex = source.indexOf("path: '/ai-input-border-options-test'");
     const toolGroupIndex = source.indexOf("title: '工具测试'");
 
@@ -39,7 +38,6 @@ describe('AiInputBorderOptionsTestPage', () => {
     expect(source).toContain("import('@/features/tests/pages/AiInputBorderOptionsTestPage')");
     expect(source).toContain("case '/ai-input-border-options-test':");
     expect(source).toContain('<AiInputBorderOptionsTestPage />');
-    expect(aiInputIndex).toBeGreaterThan(settingColorIndex);
     expect(aiInputIndex).toBeLessThan(toolGroupIndex);
   });
 });

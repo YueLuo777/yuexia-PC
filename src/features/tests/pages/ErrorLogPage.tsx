@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'test-collection-delete-marked-pages-001',
+    title: '测试集合里勾选完成的临时测试需要彻底退场',
+    area: '测试集合 / 临时测试页 / 路由清理',
+    symptom: '用户在测试集合里勾选了一批已经测试完成的页面，要求从测试里删除；如果只删除列表入口，仍可能留下独立路由、懒加载引用或孤立测试文件。',
+    cause: '临时测试页通常同时存在于 TestCollectionPage 懒加载入口、测试列表、活动页渲染分支、部分独立路由和对应源码文件中，退场时需要按同一份勾选记录逐项清理。',
+    solution: '按本机 xinyuexia_test_collection_delete_marks_v1 记录移除 12 个勾选测试页；同步删除 TestCollectionPage 的 import、列表项和 render switch，删除 /prompt-taxonomy-test 独立路由，并移除对应临时页文件及只服务这些页面的断言测试。',
+    prevention: '以后处理“勾选测试已完成，请删除”时，先读取勾选路径，再逐项核对 collection 入口、App 独立路由、页面文件、相关测试断言和残留 rg 结果，避免留下不可达代码或失效引用。',
+    keywords: ['测试集合', '勾选删除', '临时测试页', 'TestCollectionPage', 'PromptTaxonomyTestPage', 'EditorGridLineTestPage', 'SoftwareModalStyleTestPage'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'chapter-editor-grid-line-font-setting-001',
     title: '正文编辑器需要接入稿纸虚线设置',
     area: '作品编辑器 / 正文 / 字体设置',

@@ -10,7 +10,6 @@ const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeCo
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
 const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })));
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
-const PromptTaxonomyTestPage = lazy(() => import('@/features/tests/pages/PromptTaxonomyTestPage').then((module) => ({ default: module.PromptTaxonomyTestPage })));
 const SettingTaxonomyPlanTestPage = lazy(() => import('@/features/tests/pages/SettingTaxonomyPlanTestPage').then((module) => ({ default: module.SettingTaxonomyPlanTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 const ConceptLibraryPage = lazy(() => import('@/features/concept-library/pages/ConceptLibraryPage').then((module) => ({ default: module.ConceptLibraryPage })));
@@ -96,7 +95,6 @@ export default function App() {
                 <Route path="/text-overrides" element={<TextOverridesPage />} />
                 <Route path="/token-usage" element={<TokenUsagePage />} />
                 <Route path="/test-collection" element={<TestCollectionPage />} />
-                <Route path="/prompt-taxonomy-test" element={<PromptTaxonomyTestPage />} />
                 <Route path="/setting-taxonomy-plan-test" element={<SettingTaxonomyPlanTestPage />} />
                 <Route path="/software-ui-catalog" element={<SoftwareUiCatalogPage />} />
                 <Route path="/hidden-content" element={<HiddenPagesTestPage />} />
