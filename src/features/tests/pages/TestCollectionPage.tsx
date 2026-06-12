@@ -37,6 +37,7 @@ const SettingCheckModalTestPage = lazy(() => import('@/features/tests/pages/Sett
 const SettingTaxonomyPlanTestPage = lazy(() => import('@/features/tests/pages/SettingTaxonomyPlanTestPage').then((module) => ({ default: module.SettingTaxonomyPlanTestPage })));
 const SettingNavigationColorOptionsTestPage = lazy(() => import('@/features/tests/pages/SettingNavigationColorOptionsTestPage').then((module) => ({ default: module.SettingNavigationColorOptionsTestPage })));
 const AiInputBorderOptionsTestPage = lazy(() => import('@/features/tests/pages/AiInputBorderOptionsTestPage').then((module) => ({ default: module.AiInputBorderOptionsTestPage })));
+const SoftwareModalStyleTestPage = lazy(() => import('@/features/tests/pages/SoftwareModalStyleTestPage').then((module) => ({ default: module.SoftwareModalStyleTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -91,6 +92,13 @@ const testGroups = [
         path: '/brainstorm-white-surface-exact-test',
         icon: Lightbulb,
         badge: 'Brainstorm Surface',
+      },
+      {
+        title: '弹窗样式测试',
+        description: '参考截图里的小型菜单弹窗，把作品菜单、导航设置、系统设置和快捷键内容套入同一套弹窗样式。',
+        path: '/software-modal-style-test',
+        icon: Palette,
+        badge: 'Modal UI',
       },
     ],
   },
@@ -328,6 +336,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <BorderBackplateApplicationTestPage />;
       case '/brainstorm-white-surface-exact-test':
         return <BrainstormWhiteSurfaceExactTestPage />;
+      case '/software-modal-style-test':
+        return <SoftwareModalStyleTestPage />;
       case '/theme-colors':
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
       case '/test-browser':

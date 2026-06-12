@@ -1,0 +1,38 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { describe, expect, it } from 'vitest';
+
+const readPageSource = () => (
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'SoftwareModalStyleTestPage.tsx'), 'utf8')
+);
+
+const readTestCollectionSource = () => (
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'TestCollectionPage.tsx'), 'utf8')
+);
+
+describe('SoftwareModalStyleTestPage', () => {
+  it('shows the reference popup style with current modal content scenarios', () => {
+    const source = readPageSource();
+
+    expect(source).toContain("type PopupVariant = 'work' | 'navigation' | 'system' | 'shortcut'");
+    expect(source).toContain('私密作品设置');
+    expect(source).toContain('导航分割线位置');
+    expect(source).toContain('记忆关联');
+    expect(source).toContain('右键左划回首页');
+    expect(source).toContain('rounded-[8px] border border-[#e5e7eb] bg-white');
+    expect(source).toContain('shadow-[0_10px_28px_rgba(15,23,42,0.14)]');
+    expect(source).toContain('text-[#ff3b30]');
+    expect(source).toContain('2026-06-12 19:50 更新');
+  });
+
+  it('is available from the test collection only', () => {
+    const source = readTestCollectionSource();
+
+    expect(source).toContain('SoftwareModalStyleTestPage');
+    expect(source).toContain("path: '/software-modal-style-test'");
+    expect(source).toContain("badge: 'Modal UI'");
+    expect(source).toContain("case '/software-modal-style-test':");
+  });
+});

@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'software-modal-reference-style-test-001',
+    title: '弹窗样式先用测试页承接截图参考',
+    area: '测试集合 / 弹窗样式测试 / 现有弹窗内容预览',
+    symptom: '用户希望把项目弹窗改成参考软件的小型白底菜单样式，但直接改正式弹窗会影响导航设置、系统设置、快捷键、作品菜单等多个入口。',
+    cause: '正式弹窗分散在共享设置、导航、快捷键、作品和工作台组件中，样式和尺寸差异较大，需要先确认目标样式是否适合当前内容密度。',
+    solution: '新增 SoftwareModalStyleTestPage，只挂在测试集合；用 8px 圆角、#e5e7eb 边框、细分割线、浅阴影、灰色更新时间、右侧箭头和 #ff3b30 危险操作色，套入作品菜单、导航设置、系统设置和快捷键内容预览。',
+    prevention: '正式迁移前先让用户确认测试页样式；确认后再抽共享弹窗/菜单样式，不要一次性改所有正式弹窗造成回归风险。',
+    keywords: ['弹窗样式', '测试集合', 'SoftwareModalStyleTestPage', '作品菜单', '导航设置', '系统设置', '快捷键', '菜单弹窗'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'dashboard-sidebar-configurable-nav-divider-001',
     title: '首页左侧导航删除专区后仍需要可配置分割线',
     area: '首页 / 左侧导航 / 导航设置 / 分割线',
