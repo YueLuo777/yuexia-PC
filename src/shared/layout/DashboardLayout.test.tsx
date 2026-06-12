@@ -38,3 +38,23 @@ describe('DashboardLayout sidebar splitter', () => {
     expect(source).not.toContain('className="flex w-[224px] shrink-0');
   });
 });
+
+describe('DashboardLayout footer settings actions', () => {
+  it('uses readable text buttons instead of icon-only buttons', async () => {
+    const source = await readDashboardLayoutSource();
+    const footerStart = source.indexOf('<div className="grid shrink-0 grid-cols-2 gap-2 border-t');
+    const asideEnd = source.indexOf('</aside>', footerStart);
+    const footerSource = source.slice(footerStart, asideEnd);
+
+    expect(footerSource).toContain('系统设置');
+    expect(footerSource).toContain('主题颜色');
+    expect(footerSource).toContain('快捷键');
+    expect(footerSource).toContain('导航设置');
+    expect(footerSource).toContain('className={SETTINGS_TEXT_BUTTON_CLASS}');
+    expect(footerSource).not.toContain('className={SETTINGS_BUTTON_CLASS}');
+    expect(footerSource).not.toContain('<Settings className=');
+    expect(footerSource).not.toContain('<Palette className=');
+    expect(footerSource).not.toContain('<Keyboard className=');
+    expect(footerSource).not.toContain('<ListTree className=');
+  });
+});

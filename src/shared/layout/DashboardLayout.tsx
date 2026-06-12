@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Camera, ChevronDown, ChevronRight, Keyboard, ListTree, Palette, Settings, UserRound } from 'lucide-react';
+import { Camera, ChevronDown, ChevronRight, UserRound } from 'lucide-react';
 
 import { DarkThemeColorPage } from '@/features/tests/pages/DarkThemeColorPage';
 import { TEST_COLLECTION_SHOW_INDEX_EVENT } from '@/features/tests/model/testCollectionEvents';
@@ -29,7 +29,8 @@ import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 const USER_NAME_KEY = 'xinyuexia_sidebar_user_name';
 const USER_AVATAR_KEY = 'xinyuexia_sidebar_user_avatar';
 const USER_NAME_UPDATED_EVENT = 'xinyuexia_user_name_updated';
-const SETTINGS_BUTTON_CLASS = 'xy-wa-icon-button';
+const SETTINGS_TEXT_BUTTON_CLASS =
+  'flex h-8 min-w-0 items-center justify-center rounded-md border border-transparent px-2 text-[12px] font-medium text-[#586574] transition-colors hover:border-[#d7dde6] hover:bg-white/75 hover:text-[#1f2933] focus-visible:border-[#08B3D9] focus-visible:bg-white focus-visible:outline-none';
 const DASHBOARD_SIDEBAR_WIDTH_KEY = 'xinyuexia_dashboard_sidebar_width';
 const DASHBOARD_SIDEBAR_DEFAULT_WIDTH = 224;
 const DASHBOARD_SIDEBAR_MIN_WIDTH = 176;
@@ -339,34 +340,34 @@ export function DashboardLayout() {
           })}
         </div>
 
-        <div className="flex shrink-0 items-center justify-center gap-2 border-t border-[#e1e5eb] bg-[#f5f5f7] p-3">
+        <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-[#e1e5eb] bg-[#f5f5f7] p-3">
           <button
             onClick={() => setShowSystemSettings(true)}
-            className={SETTINGS_BUTTON_CLASS}
+            className={SETTINGS_TEXT_BUTTON_CLASS}
             title="系统设置"
           >
-            <Settings className="h-4 w-4" />
+            系统设置
           </button>
           <button
             onClick={() => setShowThemeColors(true)}
-            className={SETTINGS_BUTTON_CLASS}
+            className={SETTINGS_TEXT_BUTTON_CLASS}
             title="主题颜色"
           >
-            <Palette className="h-4 w-4" />
+            主题颜色
           </button>
           <button
             onClick={() => setShowShortcutSettings(true)}
-            className={SETTINGS_BUTTON_CLASS}
+            className={SETTINGS_TEXT_BUTTON_CLASS}
             title="快捷键"
           >
-            <Keyboard className="h-4 w-4" />
+            快捷键
           </button>
           <button
             onClick={() => setShowNavSettings(true)}
-            className={SETTINGS_BUTTON_CLASS}
+            className={SETTINGS_TEXT_BUTTON_CLASS}
             title="导航设置"
           >
-            <ListTree className="h-4 w-4" />
+            导航设置
           </button>
         </div>
       </aside>

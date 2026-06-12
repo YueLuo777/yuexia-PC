@@ -17,6 +17,17 @@ const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'dashboard-footer-settings-text-buttons-001',
+    title: '首页左下角设置入口不应只显示图标',
+    area: '首页 / 左侧导航 / 底部设置按钮',
+    symptom: '首页左下角只有系统、主题、快捷键和导航设置的图标按钮，新用户难以判断每个入口具体作用。',
+    cause: 'DashboardLayout 底部操作区复用了 xy-wa-icon-button，只依赖图标和 title 提示；用户需要先悬停或猜测图标含义。',
+    solution: '将底部设置入口改为两列文字按钮，直接显示“系统设置 / 主题颜色 / 快捷键 / 导航设置”，保留原有点击打开对应弹窗的逻辑。',
+    prevention: '后续调整首页左下角入口时优先保留可见文字；除非空间极端受限，不要把这些低频但重要的配置入口恢复成纯图标。',
+    keywords: ['首页', '左下角', '文字按钮', '设置入口', '系统设置', '主题颜色', '快捷键', '导航设置', 'DashboardLayout'],
+    updatedAt: '2026-06-12',
+  },
+  {
     id: 'dashboard-sidebar-resize-splitter-001',
     title: '首页左侧导航需要可拖拽调整宽度',
     area: '首页 / 左侧导航 / 拖拽分割线',
