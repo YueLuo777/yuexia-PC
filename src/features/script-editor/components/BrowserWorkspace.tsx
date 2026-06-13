@@ -126,7 +126,7 @@ export function BrowserWorkspace({ width }: { width: number }) {
     setInputUrl(activeTab.url);
     setCanGoBack(false);
     setCanGoForward(false);
-  }, [activeTabId]);
+  }, [activeTab]);
 
   useEffect(() => {
     localStorage.setItem(BROWSER_SAVED_URLS_KEY, JSON.stringify(savedUrls));

@@ -44,7 +44,7 @@ type DarkThemeColorPageProps = {
   dragHandleProps?: HTMLAttributes<HTMLElement>;
 };
 
-const THEME_PALETTE_TARGET_COLOR_COUNT = 100;
+const THEME_PALETTE_TARGET_COLOR_COUNT = 86;
 
 const colorGroups: ColorGroup[] = [
   {
@@ -243,7 +243,17 @@ const defaultAssignments: Record<ThemeMode, Record<string, string>> = {
   },
 };
 
-const themePaletteColors = [...colorGroups.flatMap((group) => group.colors), ...extraColors];
+function uniqueThemePaletteColors(colors: ColorItem[]) {
+  const seen = new Set<string>();
+  return colors.filter((color) => {
+    const normalized = color.value.toLowerCase();
+    if (seen.has(normalized)) return false;
+    seen.add(normalized);
+    return true;
+  });
+}
+
+const themePaletteColors = uniqueThemePaletteColors([...colorGroups.flatMap((group) => group.colors), ...extraColors]);
 if (themePaletteColors.length !== THEME_PALETTE_TARGET_COLOR_COUNT) {
   throw new Error(`Theme palette should contain ${THEME_PALETTE_TARGET_COLOR_COUNT} colors, got ${themePaletteColors.length}.`);
 }
@@ -515,6 +525,11 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
   };
 
   const confirmCustomColors = () => {
+    if (!hasCustomThemeChanges) {
+      setSaveStatus('当前没有新的颜色变化');
+      return;
+    }
+
     const previous = savedColors;
     const next = writeCustomThemeColors(draftColors);
     applyCustomThemeColors(next);
@@ -661,7 +676,14 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
                     <span className="mt-0.5 line-clamp-2 block text-xs font-medium text-slate-500">{slot.description}</span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="h-6 w-6 rounded-md border border-slate-200" style={{ backgroundColor: draftColors[slot.key] }} />
+                    <span
+                      className="h-6 w-6 rounded-md border"
+                      style={{
+                        backgroundColor: slot.key === 'detailOutlineSelected' ? '#ffffff' : draftColors[slot.key],
+                        borderColor: slot.key === 'detailOutlineSelected' ? draftColors[slot.key] : '#e2e8f0',
+                        boxShadow: slot.key === 'detailOutlineSelected' ? `0 0 0 2px ${draftColors[slot.key]}` : undefined,
+                      }}
+                    />
                     <span className="font-mono text-[11px] font-black text-slate-500">{draftColors[slot.key]}</span>
                     {changed ? <span className="rounded-full bg-[#E7F8FD] px-2 py-0.5 text-[11px] font-black text-[#08AACE]">预览中</span> : null}
                   </span>
@@ -693,9 +715,9 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
                   <div
                     className="grid h-9 w-9 place-items-center rounded-lg border text-sm font-black text-slate-950"
                     style={{
-                      backgroundColor: previewColors[key],
-                      borderColor: key === 'detailOutlineNoOutline' ? '#e2e8f0' : '#08AACE',
-                      boxShadow: key === 'detailOutlineSelected' ? '0 0 0 2px #ffffff, 0 0 0 4px rgba(8,170,206,0.72)' : '0 1px 4px rgba(15,23,42,0.10)',
+                      backgroundColor: key === 'detailOutlineSelected' ? previewColors.detailOutlineHasOutline : previewColors[key],
+                      borderColor: key === 'detailOutlineSelected' ? previewColors.detailOutlineSelected : key === 'detailOutlineNoOutline' ? '#e2e8f0' : '#08AACE',
+                      boxShadow: key === 'detailOutlineSelected' ? `0 0 0 2px #ffffff, 0 0 0 4px ${previewColors.detailOutlineSelected}` : '0 1px 4px rgba(15,23,42,0.10)',
                     }}
                   >
                     {index + 1}
@@ -809,18 +831,16 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
               />
               <input
                 value={manualColorValue}
-                onChange={(event) => setManualColorValue(event.target.value.toUpperCase())}
+                onChange={(event) => {
+                  const nextValue = event.target.value.toUpperCase();
+                  setManualColorValue(nextValue);
+                  if (normalizeCustomThemeHexColor(nextValue)) applyDraftColor(nextValue);
+                }}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') applyDraftColor(manualColorValue);
                 }}
                 className="h-9 w-full rounded-lg border border-slate-200 px-3 font-mono text-sm font-bold text-slate-700"
               />
-              <button
-                onClick={() => applyDraftColor(manualColorValue)}
-                className="h-9 w-full rounded-lg bg-[#08AACE] px-3 text-sm font-black text-white"
-              >
-                使用此颜色
-              </button>
               <button
                 onClick={resetSelectedTarget}
                 className="min-h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-black leading-5 text-slate-600"
@@ -835,8 +855,7 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
               </button>
               <button
                 onClick={confirmCustomColors}
-                disabled={!hasCustomThemeChanges}
-                className="h-9 w-full rounded-lg bg-[#08AACE] px-3 text-sm font-black text-white disabled:bg-slate-300"
+                className="h-9 w-full rounded-lg bg-[#08AACE] px-3 text-sm font-black text-white hover:bg-[#0695B5]"
               >
                 确认替换
               </button>

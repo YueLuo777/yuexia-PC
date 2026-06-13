@@ -1082,7 +1082,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('readSettingLibraryLeftWidth(storageKey, activeTab, scale)');
     expect(panelSource).toContain('isBrainstormTab ? BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH : getSettingLibraryLeftMaxWidth(activeTab, eventScale),');
     expect(panelSource).toContain('const outlineSidebarWidth = settingLibraryLeftWidth;');
-    expect(panelSource).toContain('style={{ gridTemplateColumns: `${outlineSidebarWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px` }}');
+    expect(panelSource).toContain('gridTemplateColumns: isDetailOutlineTab && showDetailOutlinePublished');
+    expect(panelSource).toContain('`${outlineSidebarWidth}px 0px 190px minmax(0,1fr) 0px ${settingLibraryRightWidth}px`');
+    expect(panelSource).toContain('`${outlineSidebarWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px`');
     expect(panelSource).toContain("style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}");
     expect(panelSource).toContain('relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black');
     expect(panelSource).toContain('window.addEventListener(\'resize\', syncVisibleLeftWidth);');
@@ -1097,6 +1099,35 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain('function isOutlineLeftToolbarSafeTab(tab: string)');
     expect(panelSource).not.toContain('function getOutlineLeftMaxDisplayWidth(scaleValue = 1)');
     expect(panelSource).not.toContain('window.devicePixelRatio');
+  });
+
+  it('migrates the number 13 detail outline sidebar replica into production and retires the test route', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const testCollectionSource = await readTestCollectionSource();
+    const outlineDirectoryStart = panelSource.indexOf('gridTemplateColumns: isDetailOutlineTab && showDetailOutlinePublished');
+    const outlineDirectoryEnd = panelSource.indexOf('{leftResizeHandle}', outlineDirectoryStart);
+    const outlineDirectorySource = panelSource.slice(outlineDirectoryStart, outlineDirectoryEnd);
+
+    expect(outlineDirectoryStart).toBeGreaterThan(-1);
+    expect(outlineDirectoryEnd).toBeGreaterThan(outlineDirectoryStart);
+    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS = 'grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[#E5E7EB] bg-white px-2';");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_TITLE_CLASS = 'shrink-0 text-[23px] font-black leading-none text-[#030712]';");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_COUNT_CLASS = 'grid h-8 min-w-8 place-items-center rounded-full bg-[#E7F8FD] px-2 text-[16px] font-black leading-none text-[#08AACE]';");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_TOGGLE_CLASS = 'h-10 rounded-[12px] bg-[#08AACE] px-4 text-[18px] font-black leading-none text-white shadow-sm transition-colors hover:bg-[#0797B7]';");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_ROW_CLASS = 'grid h-[54px] w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[8px] border border-[#BDEEF7] bg-[#E7F8FD] px-3 text-left shadow-[0_1px_4px_rgba(8,170,206,0.14)]';");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_ICON_CLASS = 'h-[23px] w-[23px] shrink-0 text-[#08AACE]';");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_TITLE_CLASS = 'min-w-0 truncate text-[19px] font-black leading-none text-[#031525]';");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_COUNT_CLASS = 'rounded-full bg-white/80 px-3 py-1 text-[17px] font-black leading-none text-[#667085]';");
+    expect(outlineDirectorySource).toContain('className={isDetailOutlineTab ? DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS :');
+    expect(outlineDirectorySource).toContain('className={isDetailOutlineTab ? DETAIL_OUTLINE_SIDEBAR_TOGGLE_CLASS :');
+    expect(outlineDirectorySource).toContain('className={isDetailOutlineTab ? DETAIL_OUTLINE_VOLUME_ROW_CLASS : WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}');
+    expect(outlineDirectorySource).toContain('strokeWidth={isDetailOutlineTab ? 2.4 : undefined}');
+    expect(outlineDirectorySource).toContain('className={isDetailOutlineTab ? DETAIL_OUTLINE_VOLUME_ICON_CLASS : WORKBENCH_FOLDER_GROUP_ICON_CLASS}');
+    expect(outlineDirectorySource).toContain('className={isDetailOutlineTab ? DETAIL_OUTLINE_VOLUME_TITLE_CLASS :');
+    expect(outlineDirectorySource).toContain('className={isDetailOutlineTab ? DETAIL_OUTLINE_VOLUME_COUNT_CLASS : WORKBENCH_FOLDER_GROUP_COUNT_CLASS}');
+    expect(testCollectionSource).not.toContain('WorkbenchDetailOutlineSidebarReplicaTestPage');
+    expect(testCollectionSource).not.toContain('/workbench-detail-outline-sidebar-replica-test');
+    expect(testCollectionSource).not.toContain('13号测试');
   });
 
   it('drags and restores the setting page left splitter width', () => {
@@ -1335,7 +1366,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const emptySettingPreviewStart = panelSource.indexOf('placeholder="这里可以直接输入设定内容，会自动新建设定。"');
     const emptySettingPreviewEnd = panelSource.indexOf('</div>', emptySettingPreviewStart);
     const emptySettingPreviewSource = panelSource.slice(emptySettingPreviewStart, emptySettingPreviewEnd);
-    const outlineDirectoryStart = panelSource.indexOf('style={{ gridTemplateColumns: `${outlineSidebarWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px` }}');
+    const outlineDirectoryStart = panelSource.indexOf('gridTemplateColumns: isDetailOutlineTab && showDetailOutlinePublished');
     const outlineDirectoryEnd = panelSource.indexOf('{leftResizeHandle}', outlineDirectoryStart);
     const outlineDirectorySource = panelSource.slice(outlineDirectoryStart, outlineDirectoryEnd);
 
@@ -1781,9 +1812,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
 
     expect(panelSource).toContain('defaultActiveTab');
-    expect(panelSource).toContain("const tabsSignature = tabs.map(normalizeTabName).join('\\u001f');");
-    expect(panelSource).toContain('const normalizedTabs = useMemo(() => tabs.map(normalizeTabName), [tabsSignature]);');
-    expect(panelSource).not.toContain('const normalizedTabs = useMemo(() => tabs.map(normalizeTabName), [tabs]);');
+    expect(panelSource).not.toContain("const tabsSignature = tabs.map(normalizeTabName).join('\\u001f');");
+    expect(panelSource).toContain('const normalizedTabs = useMemo(() => tabs.map(normalizeTabName), [tabs]);');
     expect(panelSource).toContain('readActiveTab(storageKey, normalizedTabs, defaultActiveTab)');
     expect(panelSource).toContain('这里显示选中的脑洞内容，也可以直接编辑。');
   });

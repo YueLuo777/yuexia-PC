@@ -18,6 +18,23 @@ describe('writer workspace chrome styling', () => {
     expect(appFrame).toContain('className="app-titlebar xy-wa-titlebar flex h-12 shrink-0 items-center border-b px-2"');
   });
 
+  it('lets confirmed custom theme colors override fixed selected and dark-theme chrome styles', async () => {
+    const styles = await readSource('../styles/index.css');
+    const selectedRuleStart = styles.indexOf('.writer-assistant-theme .xy-selected-orange-bg,');
+    const selectedRuleEnd = styles.indexOf('.writer-assistant-theme .border-\\[\\#08AACE\\]', selectedRuleStart);
+    const selectedRule = styles.slice(selectedRuleStart, selectedRuleEnd);
+    const darkTitlebarRules = [...styles.matchAll(/\.theme-dark \.app-titlebar \{[\s\S]*?\}/g)].map((match) => match[0]);
+
+    expect(selectedRule).toContain('background-color: var(--xy-custom-content-selected-bg) !important;');
+    expect(selectedRule).not.toContain('background-color: #FFF7ED !important;');
+    expect(darkTitlebarRules.length).toBeGreaterThan(0);
+    darkTitlebarRules.forEach((rule) => {
+      expect(rule).toContain('background: var(--xy-wa-titlebar) !important;');
+      expect(rule).not.toContain('background: #252525 !important;');
+      expect(rule).not.toContain('background: #1b1b1b !important;');
+    });
+  });
+
   it('keeps the writing editor surface free of ruled horizontal lines', async () => {
     const styles = await readSource('../styles/index.css');
     const editorRule = styles.slice(

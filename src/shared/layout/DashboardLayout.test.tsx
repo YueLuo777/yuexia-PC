@@ -8,6 +8,22 @@ const readDashboardLayoutSource = async () => {
   return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'DashboardLayout.tsx'), 'utf8');
 };
 
+const readErrorLogSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { dirname, join } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../features/tests/model/errorLogEntries.ts'), 'utf8');
+};
+
+const readSharedStylesSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { dirname, join } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../styles/index.css'), 'utf8');
+};
+
 describe('DashboardLayout profile block', () => {
   it('centers the avatar with the user name underneath', async () => {
     const source = await readDashboardLayoutSource();
@@ -47,9 +63,23 @@ describe('DashboardLayout sidebar splitter', () => {
 });
 
 describe('DashboardLayout footer settings actions', () => {
+  it('frames the four footer settings buttons as one compact group', async () => {
+    const source = await readDashboardLayoutSource();
+    const footerStart = source.indexOf('data-testid="dashboard-footer-settings-group"');
+    const asideEnd = source.indexOf('</aside>', footerStart);
+    const footerSource = source.slice(footerStart, asideEnd);
+
+    expect(footerStart).toBeGreaterThan(-1);
+    expect(footerSource).toContain('grid grid-cols-2 gap-1.5 rounded-lg border border-[#dfe5ee] bg-white/55 p-1.5 shadow-sm');
+    expect(footerSource).toContain('to="/system-settings"');
+    expect(footerSource).toContain('to="/theme-colors"');
+    expect(footerSource).toContain('to="/shortcut-settings"');
+    expect(footerSource).toContain('to="/nav-settings"');
+  });
+
   it('uses readable text buttons instead of icon-only buttons', async () => {
     const source = await readDashboardLayoutSource();
-    const footerStart = source.indexOf('<div className="grid shrink-0 grid-cols-2 gap-2 border-t');
+    const footerStart = source.indexOf('data-testid="dashboard-footer-settings-group"');
     const asideEnd = source.indexOf('</aside>', footerStart);
     const footerSource = source.slice(footerStart, asideEnd);
 
@@ -64,9 +94,30 @@ describe('DashboardLayout footer settings actions', () => {
     expect(footerSource).not.toContain('<Keyboard className=');
     expect(footerSource).not.toContain('<ListTree className=');
   });
+
+  it('records the framed footer settings group in the in-app error log', async () => {
+    const errorLog = await readErrorLogSource();
+
+    expect(errorLog).toContain('dashboard-footer-settings-actions-framed-group-001');
+  });
 });
 
 describe('DashboardLayout navigation items', () => {
+  it('uses custom theme variables for the sidebar shell, footer, and active navigation item', async () => {
+    const source = await readDashboardLayoutSource();
+    const styles = await readSharedStylesSource();
+    const navStart = source.indexOf('{visibleNavItems.map((item) => {');
+    const navEnd = source.indexOf('{navDividerAfterItemTos.has(item.to)', navStart);
+    const navSource = source.slice(navStart, navEnd);
+
+    expect(source).toContain('xy-dashboard-sidebar');
+    expect(source).toContain('xy-dashboard-sidebar-footer');
+    expect(navSource).toContain('xy-dashboard-sidebar-active');
+    expect(navSource).not.toContain('bg-[#dbe7fb]');
+    expect(styles).toContain('.xy-dashboard-sidebar-active');
+    expect(styles).toContain('background: var(--xy-custom-sidebar-active-bg);');
+  });
+
   it('renders the sidebar as a flat list without zone group rows', async () => {
     const source = await readDashboardLayoutSource();
     const navStart = source.indexOf('{visibleNavItems.map((item) => {');

@@ -1,5 +1,5 @@
 import { Folder, FolderOpen, Settings } from 'lucide-react';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 
 import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
@@ -577,6 +577,7 @@ export function ChapterEditor({
   const prevContentRef = useRef('');
   const pendingCursorRef = useRef<{ text: string; cursorPos: number; scrollTop: number } | null>(null);
   const activeReviewState = reviewModeStates[reviewMode];
+  const activeChapterId = chapter?.id ?? null;
   const updateReviewModeState = (mode: ReviewMode, updater: (state: ReviewModeState) => ReviewModeState) => {
     setReviewModeStates((prev) => ({
       ...prev,
@@ -857,8 +858,8 @@ export function ChapterEditor({
       .map((item) => item.id),
   ), [sortedStatusChapters, statusUpdateSourceEntries]);
   useEffect(() => {
-    if (chapter) {
-      setReviewChapterId(chapter.id);
+    if (activeChapterId !== null) {
+      setReviewChapterId(activeChapterId);
       setReviewModeStates((prev) => ({
         audit: {
           ...prev.audit,
@@ -886,11 +887,11 @@ export function ChapterEditor({
         },
       }));
     }
-  }, [chapter?.id]);
+  }, [activeChapterId]);
 
   useEffect(() => {
-    if (chapter) setStatusChapterId(chapter.id);
-  }, [chapter?.id]);
+    if (activeChapterId !== null) setStatusChapterId(activeChapterId);
+  }, [activeChapterId]);
 
   useEffect(() => {
     if (!reviewModelId && reviewModels[0]) setReviewModelId(reviewModels[0].id);
@@ -989,7 +990,7 @@ export function ChapterEditor({
     }));
   };
 
-  const openStatusUpdate = () => {
+  const openStatusUpdate = useCallback(() => {
     const entries = readWorkbenchLibraryEntries(settingsStorageKey);
     const targets = entries.filter(isStatusTargetEntry);
     const firstTarget = targets[0] ?? null;
@@ -999,7 +1000,7 @@ export function ChapterEditor({
     setStatusDraft(firstTarget && nextChapter ? getExistingStatusForChapter(firstTarget.content, nextChapter.serialNumber) : '');
     setStatusChapterId(nextChapter?.id ?? null);
     setIsStatusUpdateOpen(true);
-  };
+  }, [chapter, settingsStorageKey, sortedStatusChapters]);
 
   useEffect(() => {
     if (embeddedMode === 'audit' || embeddedMode === 'comment' || embeddedMode === 'polish') {
@@ -1009,7 +1010,7 @@ export function ChapterEditor({
     if (embeddedMode === 'status') {
       openStatusUpdate();
     }
-  }, [embeddedMode, chapter?.id]);
+  }, [embeddedMode, activeChapterId, openStatusUpdate]);
 
   const toggleStatusTarget = (entry: WorkbenchLibraryEntry) => {
     setStatusTargetIds((current) => {
@@ -1237,11 +1238,11 @@ export function ChapterEditor({
     });
   };
 
-  const commitContent = (next: string) => {
+  const commitContent = useCallback((next: string) => {
     if (chapter && content !== next) saveSnapshot(chapter.id, content);
     prevContentRef.current = content;
     onChangeContent(next);
-  };
+  }, [chapter, content, onChangeContent]);
 
   const commitContentWithCursor = (next: string, cursorPos: number) => {
     const scrollTop = textareaRef.current?.scrollTop ?? editorScrollTop;
@@ -1306,7 +1307,7 @@ export function ChapterEditor({
 
   useEffect(() => {
     prevContentRef.current = content;
-  }, [chapter?.id]);
+  }, [activeChapterId, content]);
 
   useEffect(() => {
     if (!copyToast) return;
@@ -1330,7 +1331,7 @@ export function ChapterEditor({
     };
     window.addEventListener(SHORTCUT_ACTION_EVENT, handleShortcut);
     return () => window.removeEventListener(SHORTCUT_ACTION_EVENT, handleShortcut);
-  }, [chapter, content, onChangeContent]);
+  }, [chapter, commitContent, content, onChangeContent]);
 
   useEffect(() => {
     const handleFindShortcut = (event: KeyboardEvent) => {

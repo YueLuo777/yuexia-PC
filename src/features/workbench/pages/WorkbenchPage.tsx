@@ -1,5 +1,5 @@
 ﻿import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -1240,11 +1240,14 @@ function ChapterExportPanel({
   const [format, setFormat] = useState<ChapterExportFormat>('txt');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [notice, setNotice] = useState('');
-  const chapterGroups = volumes.map((volume) => ({
+  const chapterGroups = useMemo(() => volumes.map((volume) => ({
     volume,
     chapters: [...volume.chapters].sort((a, b) => a.serialNumber - b.serialNumber),
-  }));
-  const allChapterIds = chapterGroups.flatMap((group) => group.chapters.map((chapter) => chapter.id));
+  })), [volumes]);
+  const allChapterIds = useMemo(
+    () => chapterGroups.flatMap((group) => group.chapters.map((chapter) => chapter.id)),
+    [chapterGroups],
+  );
   const chapterSignature = chapterGroups
     .map((group) => `${group.volume.id}:${group.chapters.map((chapter) => chapter.id).join(',')}`)
     .join('|');
@@ -1259,7 +1262,7 @@ function ChapterExportPanel({
   useEffect(() => {
     setSelectedIds(allChapterIds);
     setNotice('');
-  }, [chapterSignature]);
+  }, [allChapterIds, chapterSignature]);
 
   const normalizeSelectedIds = (ids: Set<number>) => allChapterIds.filter((chapterId) => ids.has(chapterId));
 
@@ -1482,16 +1485,18 @@ export function WorkbenchPage() {
     setCurrentNovel,
   } = useWorkbenchData();
 
+  const currentNovelType = currentNovel?.type ?? null;
+
   useEffect(() => {
-    if (!currentNovel) return;
+    if (!currentNovelType) return;
     setActiveCreationFlow('writing');
-    if (currentNovel.type === 'script') {
+    if (currentNovelType === 'script') {
       setShowPublished(false);
       return;
     }
-    const key = `workbench_show_published_${currentNovel.type}`;
+    const key = `workbench_show_published_${currentNovelType}`;
     setShowPublished(localStorage.getItem(key) === 'true');
-  }, [currentNovel?.id, currentNovel?.type]);
+  }, [currentNovelId, currentNovelType]);
 
   useEffect(() => {
     if (!currentNovelId) return;

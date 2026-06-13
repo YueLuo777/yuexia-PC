@@ -113,7 +113,7 @@ const REMOVED_ROUTES = new Set([
 ]);
 const REMOVED_GROUP_TITLES = new Set(['首页专区', '隐藏专区', '功能专区']);
 const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
-  '/library': '库',
+  '/library': '资料库',
   '/text-overrides': '文案修改',
   '/software-ui-catalog': 'UI库',
   '/theme-colors': '主题颜色',

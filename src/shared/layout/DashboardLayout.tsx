@@ -225,7 +225,7 @@ export function DashboardLayout() {
     <div className="flex h-full overflow-hidden bg-white">
       <aside
         style={{ width: sidebarWidth }}
-        className="flex shrink-0 flex-col overflow-hidden border-r border-[#e1e5eb] bg-[#f5f5f7]"
+        className="xy-dashboard-sidebar flex shrink-0 flex-col overflow-hidden border-r border-[#e1e5eb]"
       >
         <div className="shrink-0 border-b border-[#e1e5eb] px-3 py-[14px]">
           <input
@@ -307,7 +307,7 @@ export function DashboardLayout() {
                     }}
                     className={`flex h-10 items-center gap-3 rounded-md px-4 transition-colors ${
                       isActive
-                        ? 'bg-[#dbe7fb] font-medium text-[#1f2933]'
+                        ? 'xy-dashboard-sidebar-active font-medium text-[#1f2933]'
                         : 'text-[#586574] hover:bg-white/70 hover:text-[#1f2933]'
                     }`}
                   >
@@ -323,35 +323,40 @@ export function DashboardLayout() {
           </div>
         </div>
 
-        <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-[#e1e5eb] bg-[#f5f5f7] p-3">
-          <Link
-            to="/system-settings"
-            className={SETTINGS_TEXT_BUTTON_CLASS}
-            title="系统设置"
+        <div className="xy-dashboard-sidebar-footer shrink-0 border-t border-[#e1e5eb] p-3">
+          <div
+            data-testid="dashboard-footer-settings-group"
+            className="grid grid-cols-2 gap-1.5 rounded-lg border border-[#dfe5ee] bg-white/55 p-1.5 shadow-sm"
           >
-            系统设置
-          </Link>
-          <Link
-            to="/theme-colors"
-            className={SETTINGS_TEXT_BUTTON_CLASS}
-            title="主题颜色"
-          >
-            主题颜色
-          </Link>
-          <Link
-            to="/shortcut-settings"
-            className={SETTINGS_TEXT_BUTTON_CLASS}
-            title="快捷键"
-          >
-            快捷键
-          </Link>
-          <Link
-            to="/nav-settings"
-            className={SETTINGS_TEXT_BUTTON_CLASS}
-            title="导航设置"
-          >
-            导航设置
-          </Link>
+            <Link
+              to="/system-settings"
+              className={SETTINGS_TEXT_BUTTON_CLASS}
+              title="系统设置"
+            >
+              系统设置
+            </Link>
+            <Link
+              to="/theme-colors"
+              className={SETTINGS_TEXT_BUTTON_CLASS}
+              title="主题颜色"
+            >
+              主题颜色
+            </Link>
+            <Link
+              to="/shortcut-settings"
+              className={SETTINGS_TEXT_BUTTON_CLASS}
+              title="快捷键"
+            >
+              快捷键
+            </Link>
+            <Link
+              to="/nav-settings"
+              className={SETTINGS_TEXT_BUTTON_CLASS}
+              title="导航设置"
+            >
+              导航设置
+            </Link>
+          </div>
         </div>
       </aside>
 

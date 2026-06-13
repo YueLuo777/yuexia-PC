@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight, Folder, FolderOpen, Lock, Pin, Plus, Settings, Square, Trash2, Unlock, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type ReactNode, type SetStateAction } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type SetStateAction } from 'react';
 import type { CSSProperties } from 'react';
 import type { DragEvent as ReactDragEvent, KeyboardEvent as ReactKeyboardEvent, MouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
@@ -85,6 +85,14 @@ import { WordCountText } from '@/shared/ui/WordCountText';
 const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] xy-flow-group-bg px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors';
 const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';
 const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#6f7e90]';
+const DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS = 'grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[#E5E7EB] bg-white px-2';
+const DETAIL_OUTLINE_SIDEBAR_TITLE_CLASS = 'shrink-0 text-[23px] font-black leading-none text-[#030712]';
+const DETAIL_OUTLINE_SIDEBAR_COUNT_CLASS = 'grid h-8 min-w-8 place-items-center rounded-full bg-[#E7F8FD] px-2 text-[16px] font-black leading-none text-[#08AACE]';
+const DETAIL_OUTLINE_SIDEBAR_TOGGLE_CLASS = 'h-10 rounded-[12px] bg-[#08AACE] px-4 text-[18px] font-black leading-none text-white shadow-sm transition-colors hover:bg-[#0797B7]';
+const DETAIL_OUTLINE_VOLUME_ROW_CLASS = 'grid h-[54px] w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[8px] border border-[#BDEEF7] bg-[#E7F8FD] px-3 text-left shadow-[0_1px_4px_rgba(8,170,206,0.14)]';
+const DETAIL_OUTLINE_VOLUME_ICON_CLASS = 'h-[23px] w-[23px] shrink-0 text-[#08AACE]';
+const DETAIL_OUTLINE_VOLUME_TITLE_CLASS = 'min-w-0 truncate text-[19px] font-black leading-none text-[#031525]';
+const DETAIL_OUTLINE_VOLUME_COUNT_CLASS = 'rounded-full bg-white/80 px-3 py-1 text-[17px] font-black leading-none text-[#667085]';
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 162;
@@ -2183,8 +2191,7 @@ export function WorkbenchLibraryPanel({
   onOpenDetailOutlineFromPlotChain,
   toolbarPortalId,
 }: WorkbenchLibraryPanelProps) {
-  const tabsSignature = tabs.map(normalizeTabName).join('\u001f');
-  const normalizedTabs = useMemo(() => tabs.map(normalizeTabName), [tabsSignature]);
+  const normalizedTabs = useMemo(() => tabs.map(normalizeTabName), [tabs]);
   const isSettingLibraryPanel = useMemo(
     () => normalizedTabs.every((tab) => SETTING_LIBRARY_TABS.has(tab)),
     [normalizedTabs],
@@ -2471,7 +2478,7 @@ export function WorkbenchLibraryPanel({
     };
   }, [storageKey]);
 
-  const updateTabConfig = (tab: string, updates: LibraryTabConfig) => {
+  const updateTabConfig = useCallback((tab: string, updates: LibraryTabConfig) => {
     setTabConfigs((prev) => {
       const next = {
         ...prev,
@@ -2483,9 +2490,9 @@ export function WorkbenchLibraryPanel({
       localStorage.setItem(getTabConfigsStorageKey(storageKey), JSON.stringify(next));
       return next;
     });
-  };
-  const updateActiveTabConfig = (updates: LibraryTabConfig) => updateTabConfig(activeTab, updates);
-  const updateBrainstormAiSession = (sessionId: string, patch: Partial<Omit<BrainstormAiSession, 'id'>>) => {
+  }, [storageKey]);
+  const updateActiveTabConfig = useCallback((updates: LibraryTabConfig) => updateTabConfig(activeTab, updates), [activeTab, updateTabConfig]);
+  const updateBrainstormAiSession = useCallback((sessionId: string, patch: Partial<Omit<BrainstormAiSession, 'id'>>) => {
     setTabConfigs((prev) => {
       const currentConfig = prev[BRAINSTORM_TAB] ?? {};
       const currentSessions = normalizeBrainstormAiSessions(currentConfig.aiSessions, currentConfig);
@@ -2510,7 +2517,7 @@ export function WorkbenchLibraryPanel({
       localStorage.setItem(getTabConfigsStorageKey(storageKey), JSON.stringify(next));
       return next;
     });
-  };
+  }, [storageKey]);
   const updateActiveBrainstormAiSession = (patch: Partial<Omit<BrainstormAiSession, 'id'>>) => {
     updateBrainstormAiSession(activeBrainstormAiSessionId, patch);
   };
@@ -2526,12 +2533,14 @@ export function WorkbenchLibraryPanel({
       previewDrafts: [],
       previewSelectedIndexes: undefined,
     });
-  }, [activeTab, activeBrainstormAiSessionId]);
-  const setOutlinePreviewDraft = (value: SetStateAction<string>) => {
-    const nextValue = typeof value === 'function' ? value(outlinePreviewDraft) : value;
-    setOutlinePreviewDraftState(nextValue);
-    if (plotPointStandalone) updateActiveTabConfig({ plotPointPreviewDraft: nextValue });
-  };
+  }, [activeTab, activeBrainstormAiSessionId, updateBrainstormAiSession]);
+  const setOutlinePreviewDraft = useCallback((value: SetStateAction<string>) => {
+    setOutlinePreviewDraftState((current) => {
+      const nextValue = typeof value === 'function' ? value(current) : value;
+      if (plotPointStandalone) updateActiveTabConfig({ plotPointPreviewDraft: nextValue });
+      return nextValue;
+    });
+  }, [plotPointStandalone, updateActiveTabConfig]);
   const setPlotPointGeneratedCandidateText = (value: string) => {
     setPlotPointGeneratedCandidateTextState(value);
     updateActiveTabConfig({ plotPointGeneratedCandidateText: value });
@@ -2705,6 +2714,7 @@ export function WorkbenchLibraryPanel({
     plotPointStandalone,
     storageKey,
     tabConfigs,
+    updateActiveTabConfig,
   ]);
 
   const setBrainstormPreviewFontSize = (value: number) => {
@@ -2870,7 +2880,7 @@ export function WorkbenchLibraryPanel({
     scrollLibraryAiOutputToBottom();
   }, [animatedAiOutput, isLibraryAiLoading]);
 
-  const setRememberedActiveTab = (tab: string) => {
+  const setRememberedActiveTab = useCallback((tab: string) => {
     const normalizedTab = normalizeTabName(tab);
     setActiveTab(normalizedTab);
     try {
@@ -2880,7 +2890,7 @@ export function WorkbenchLibraryPanel({
     } catch {
       // Local tab memory is a convenience; the panel should still work without it.
     }
-  };
+  }, [normalizedTabs, storageKey]);
 
   const getResizeEventScale = (element: HTMLElement) => {
     const rectWidth = element.getBoundingClientRect().width;
@@ -3320,7 +3330,7 @@ export function WorkbenchLibraryPanel({
   useEffect(() => {
     if (normalizedTabs.includes(activeTab)) return;
     setRememberedActiveTab(normalizedTabs[0] ?? '');
-  }, [activeTab, normalizedTabs]);
+  }, [activeTab, normalizedTabs, setRememberedActiveTab]);
 
   useEffect(() => {
     roleExpandedReloadRef.current = true;
@@ -3449,7 +3459,7 @@ export function WorkbenchLibraryPanel({
       )
     ))?.content ?? '';
     setOutlinePreviewDraft(content);
-  }, [activeTab, entries, outlineEntries, outlineSelectionType, outlineStorageKey, plotPointStandalone, selectedOutlineChapterId, selectedOutlineVolumeId, tabs, volumes]);
+  }, [activeTab, entries, outlineEntries, outlineSelectionType, outlineStorageKey, plotPointStandalone, selectedOutlineChapterId, selectedOutlineVolumeId, setOutlinePreviewDraft, tabs, volumes]);
 
   useEffect(() => {
     const updateTarget = () => {
@@ -3828,6 +3838,7 @@ export function WorkbenchLibraryPanel({
     activeTabConfig.loadedBrainstormText,
     activeTabConfig.loadedBrainstormTitle,
     entries,
+    updateTabConfig,
   ]);
 
   function openBrainstormPromptManager() {
@@ -9100,18 +9111,72 @@ export function WorkbenchLibraryPanel({
         {outlineAiLogModal}
         {plotPointModal}
         {detailOutlineReaderModal}
+        {detailOutlineChapterMenu.visible && detailOutlineChapterMenu.chapter && (
+          <div
+            className="fixed z-[100] w-[136px] rounded-lg border border-slate-200 bg-white p-1 shadow-xl"
+            style={{
+              left: detailOutlineChapterMenu.x,
+              top: detailOutlineChapterMenu.y,
+            }}
+            onContextMenu={(event) => event.preventDefault()}
+          >
+            {isDetailOutlineChapterPublished(detailOutlineChapterMenu.chapter) ? (
+              <button
+                type="button"
+                disabled={detailOutlineChapterMenu.chapter.isPublished}
+                onClick={() => moveDetailOutlineChapterToUnpublished(detailOutlineChapterMenu.chapter!)}
+                className="w-full rounded-md px-3 py-2 text-left text-xs font-bold text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-white"
+                title={detailOutlineChapterMenu.chapter.isPublished ? '正文已发布，章纲会自动留在已发布' : undefined}
+              >
+                移回未发布
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => moveDetailOutlineChapterToPublished(detailOutlineChapterMenu.chapter!.id)}
+                className="w-full rounded-md px-3 py-2 text-left text-xs font-bold text-slate-700 transition-colors hover:bg-slate-100"
+              >
+                移动到已发布
+              </button>
+            )}
+          </div>
+        )}
         <div
           className="relative grid min-h-0 flex-1 overflow-hidden bg-white"
-          style={{ gridTemplateColumns: `${outlineSidebarWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px` }}
+          style={{
+            gridTemplateColumns: isDetailOutlineTab && showDetailOutlinePublished
+              ? `${outlineSidebarWidth}px 0px 190px minmax(0,1fr) 0px ${settingLibraryRightWidth}px`
+              : `${outlineSidebarWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px`,
+          }}
         >
-            <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-3 py-3">
-          <section className="flex min-h-0 flex-1 flex-col">
+            <aside className={`min-w-0 flex min-h-0 flex-col border-r border-gray-100 ${isDetailOutlineTab ? 'bg-[#F8FAFC]' : 'bg-gray-50 px-3 py-3'}`}>
+          {isDetailOutlineTab && (
+            <div className={isDetailOutlineTab ? DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS : 'mb-3 flex h-9 shrink-0 items-center justify-between gap-2'}>
+              <div className="flex min-w-0 items-center gap-2">
+                <span className={DETAIL_OUTLINE_SIDEBAR_TITLE_CLASS}>未发布</span>
+                <span className={DETAIL_OUTLINE_SIDEBAR_COUNT_CLASS}>
+                  {detailOutlineUnpublishedCount}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDetailOutlinePublished((prev) => !prev)}
+                className={isDetailOutlineTab ? DETAIL_OUTLINE_SIDEBAR_TOGGLE_CLASS : 'shrink-0 rounded-lg bg-[#08AACE] px-3 py-1.5 text-xs font-black text-white transition-colors hover:bg-[#0798b8]'}
+              >
+                {showDetailOutlinePublished ? '收回已发布' : '展开已发布'}
+              </button>
+            </div>
+          )}
+          <section className={`flex min-h-0 flex-1 flex-col ${isDetailOutlineTab ? 'px-1 py-2' : ''}`}>
             <div className="min-h-0 flex-1 overflow-y-auto">
-              {volumes.length === 0 ? (
+              {(isDetailOutlineTab ? detailOutlineUnpublishedCount === 0 : volumes.length === 0) ? (
                 <p className="pt-10 text-center text-xs text-gray-400">暂无章节</p>
               ) : (
-                <div className="space-y-3">
-                  {volumes.map((volume) => {
+                <div className={isDetailOutlineTab ? 'space-y-2' : 'space-y-3'}>
+                  {(isDetailOutlineTab
+                    ? detailOutlineUnpublishedVolumes.filter((volume) => volume.chapters.length > 0)
+                    : volumes
+                  ).map((volume) => {
                     const expanded = expandedOutlineVolumeIds.has(volume.id);
                     const VolumeFolderIcon = expanded ? FolderOpen : Folder;
                     const volumeIsSelected = safeOutlineSelectionType === 'volume' && selectedOutlineVolume?.id === volume.id;
@@ -9127,12 +9192,15 @@ export function WorkbenchLibraryPanel({
                           event.preventDefault();
                           toggleOutlineVolume(volume.id);
                         }}
-                        className={WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}
+                        className={isDetailOutlineTab ? DETAIL_OUTLINE_VOLUME_ROW_CLASS : WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}
                         aria-expanded={expanded}
                       >
-                        <VolumeFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
-                        <span className="min-w-0 flex-1 truncate leading-none">{volume.name}</span>
-                        <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{volume.chapters.length}章</span>
+                        <VolumeFolderIcon
+                          className={isDetailOutlineTab ? DETAIL_OUTLINE_VOLUME_ICON_CLASS : WORKBENCH_FOLDER_GROUP_ICON_CLASS}
+                          strokeWidth={isDetailOutlineTab ? 2.4 : undefined}
+                        />
+                        <span className={isDetailOutlineTab ? DETAIL_OUTLINE_VOLUME_TITLE_CLASS : 'min-w-0 flex-1 truncate leading-none'}>{volume.name}</span>
+                        <span className={isDetailOutlineTab ? DETAIL_OUTLINE_VOLUME_COUNT_CLASS : WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{volume.chapters.length}章</span>
                         {enableVolumeSummary && (
                           <button
                             onClick={(event) => {
@@ -9189,7 +9257,19 @@ export function WorkbenchLibraryPanel({
                                   event.preventDefault();
                                   event.stopPropagation();
                                 }}
+                                onContextMenu={(event) => {
+                                  if (!isDetailOutlineTab) return;
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  setDetailOutlineChapterMenu({
+                                    visible: true,
+                                    x: event.clientX,
+                                    y: event.clientY,
+                                    chapter,
+                                  });
+                                }}
                                 className={outlineButtonClass}
+                                title={isDetailOutlineTab ? '移动到已发布' : undefined}
                               >
                                 {isDetailOutlineTab ? (
                                   chapter.serialNumber
@@ -9210,6 +9290,25 @@ export function WorkbenchLibraryPanel({
           </section>
         </aside>
         {leftResizeHandle}
+        {isDetailOutlineTab && showDetailOutlinePublished && (
+          <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-white px-3 py-3">
+            <div className="mb-3 flex h-9 shrink-0 items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="whitespace-nowrap text-sm font-black text-slate-950">章纲已发布</span>
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E7F8FD] px-1.5 text-xs font-black text-[#08AACE]">
+                  {detailOutlinePublishedCount}
+                </span>
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {detailOutlinePublishedCount === 0 ? (
+                <p className="pt-10 text-center text-xs text-gray-400">暂无已发布章纲</p>
+              ) : (
+                renderDetailOutlineVolumeTree(detailOutlinePublishedVolumes, true)
+              )}
+            </div>
+          </aside>
+        )}
 
         <main className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-white p-5">
           <div className={`editor-scrollbar min-h-0 flex-1 overflow-y-auto ${isDetailOutlineTab ? '-mr-4 pr-4 pt-2.5' : '-mr-4 pr-4 pt-5'}`}>

@@ -182,6 +182,7 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
   const defaultTop = defaultGeometry?.top;
   const defaultWidth = defaultGeometry?.width;
   const defaultHeight = defaultGeometry?.height;
+  const hasDefaultGeometry = Boolean(defaultGeometry);
   const [geometry, setGeometry] = useState<ModalGeometry>(() => normalizeGeometryToViewport(readGeometry(storageKey, defaultGeometry)));
   const geometryRef = useRef(geometry);
   const dragRef = useRef<{
@@ -214,7 +215,7 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
   };
 
   useEffect(() => {
-    const fallback = defaultGeometry
+    const fallback = hasDefaultGeometry
       ? {
         x: defaultX ?? 0,
         y: defaultY ?? 0,
@@ -227,7 +228,7 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
     const next = normalizeGeometryToViewport(readGeometry(storageKey, fallback));
     geometryRef.current = next;
     setGeometry((current) => (isSameGeometry(current, next) ? current : next));
-  }, [defaultHeight, defaultLeft, defaultTop, defaultWidth, defaultX, defaultY, storageKey]);
+  }, [defaultHeight, defaultLeft, defaultTop, defaultWidth, defaultX, defaultY, hasDefaultGeometry, storageKey]);
 
   useEffect(() => {
     geometryRef.current = geometry;

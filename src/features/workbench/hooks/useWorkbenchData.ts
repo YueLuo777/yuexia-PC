@@ -248,6 +248,7 @@ export function useWorkbenchData() {
   }, [currentNovelId, recycledMap]);
 
   const selectedChapter = useMemo(() => getSelectedChapter(volumes), [volumes]);
+  const selectedChapterId = selectedChapter?.chapter.id ?? null;
 
   const setCurrentNovel = useCallback((novelId: number | null) => {
     setCurrentNovelIdState(novelId);
@@ -289,12 +290,12 @@ export function useWorkbenchData() {
   }, [currentNovel?.type, currentNovelId, volumesMap]);
 
   useEffect(() => {
-    if (!currentNovelId || !selectedChapter) {
+    if (!currentNovelId || selectedChapterId === null) {
       setEditorContent('');
       return;
     }
-    setEditorContent(readChapterContent(currentNovelId, selectedChapter.chapter.id));
-  }, [currentNovelId, selectedChapter?.chapter.id]);
+    setEditorContent(readChapterContent(currentNovelId, selectedChapterId));
+  }, [currentNovelId, selectedChapterId]);
 
   const persistVolumes = useCallback((updater: (prev: Volume[]) => Volume[]) => {
     if (!currentNovelId) return;

@@ -2,17 +2,88 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+
+import { CUSTOM_THEME_COLORS_STORAGE_KEY } from '@/features/theme/model/customThemeColors';
+import { DarkThemeColorPage } from './DarkThemeColorPage';
 
 const readSource = (relativePath: string) =>
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
 
 describe('DarkThemeColorPage custom color tab', () => {
-  it('shares one 100-color palette between the palette tab and custom color picker', () => {
+  it('enables confirm replacement as soon as a valid manual color is typed', () => {
+    localStorage.clear();
+    document.documentElement.removeAttribute('style');
+
+    const { container } = render(
+      <MemoryRouter>
+        <DarkThemeColorPage />
+      </MemoryRouter>,
+    );
+
+    const confirmButton = screen.getByRole('button', { name: '确认替换' });
+    expect(confirmButton).toBeEnabled();
+    expect(screen.queryByRole('button', { name: '使用此颜色' })).toBeNull();
+
+    const manualInput = container.querySelector('input:not([type])') as HTMLInputElement | null;
+    expect(manualInput).not.toBeNull();
+
+    fireEvent.change(manualInput!, { target: { value: '#111827' } });
+
+    expect(confirmButton).toBeEnabled();
+
+    fireEvent.click(confirmButton);
+
+    expect(JSON.parse(localStorage.getItem(CUSTOM_THEME_COLORS_STORAGE_KEY) ?? '{}').sidebarBackground).toBe('#111827');
+    expect(document.documentElement.style.getPropertyValue('--xy-custom-sidebar-bg')).toBe('#111827');
+  });
+
+  it('records the manual color confirm regression in the in-app error log', () => {
+    const errorLog = readSource('../model/errorLogEntries.ts');
+
+    expect(errorLog).toContain('theme-color-manual-input-confirm-disabled-001');
+  });
+
+  it('keeps confirm replacement clickable even when there is no pending change', () => {
+    localStorage.clear();
+    document.documentElement.removeAttribute('style');
+
+    render(
+      <MemoryRouter>
+        <DarkThemeColorPage />
+      </MemoryRouter>,
+    );
+
+    const confirmButton = screen.getByRole('button', { name: '确认替换' });
+
+    expect(confirmButton).toBeEnabled();
+
+    fireEvent.click(confirmButton);
+
+    expect(screen.getByText('当前没有新的颜色变化')).toBeInTheDocument();
+  });
+
+  it('does not define duplicate colors in the shared theme palette', () => {
+    const source = readSource('DarkThemeColorPage.tsx');
+    const paletteBlock = source.slice(
+      source.indexOf('const colorGroups: ColorGroup[] = ['),
+      source.indexOf('const CUSTOM_COLOR_START_ID'),
+    );
+    const paletteHexValues = [...paletteBlock.matchAll(/value:\s*'(#(?:[0-9a-fA-F]{6}))'/g)]
+      .map((match) => match[1].toLowerCase());
+
+    expect(source).toContain('function uniqueThemePaletteColors(colors: ColorItem[])');
+    expect(source).toContain('const themePaletteColors = uniqueThemePaletteColors([...colorGroups.flatMap((group) => group.colors), ...extraColors]);');
+    expect(new Set(paletteHexValues).size).toBe(86);
+  });
+
+  it('shares one deduplicated palette between the palette tab and custom color picker', () => {
     const source = readSource('DarkThemeColorPage.tsx');
 
-    expect(source).toContain('const THEME_PALETTE_TARGET_COLOR_COUNT = 100;');
-    expect(source).toContain('const themePaletteColors = [...colorGroups.flatMap((group) => group.colors), ...extraColors];');
+    expect(source).toContain('const THEME_PALETTE_TARGET_COLOR_COUNT = 86;');
+    expect(source).toContain('const themePaletteColors = uniqueThemePaletteColors([...colorGroups.flatMap((group) => group.colors), ...extraColors]);');
     expect(source).toContain('function getThemePaletteSortKey(color: ColorItem)');
     expect(source).toContain('const sortedThemePaletteColors = [...themePaletteColors].sort(');
     expect(source).toContain('if (themePaletteColors.length !== THEME_PALETTE_TARGET_COLOR_COUNT)');
@@ -161,11 +232,13 @@ describe('DarkThemeColorPage custom color tab', () => {
     expect(source).toContain('确认替换');
     expect(source).toContain('常用颜色');
     expect(source).toContain('type="color"');
+    expect(source).not.toContain('使用此颜色');
   });
 
   it('adds a dedicated detail-outline number-block color tab and preview states', () => {
     const source = readSource('DarkThemeColorPage.tsx');
     const modelSource = readSource('../../theme/model/customThemeColors.ts');
+    const styleSource = readSource('../../../shared/styles/index.css');
 
     expect(source).toContain("const GLOBAL_CUSTOM_THEME_SLOT_KEYS: CustomThemeColorSlotKey[] = [");
     expect(source).toContain("const DETAIL_OUTLINE_NUMBER_SLOT_KEYS: CustomThemeColorSlotKey[] = [");
@@ -187,6 +260,15 @@ describe('DarkThemeColorPage custom color tab', () => {
       '--xy-detail-outline-number-has-outline',
       '--xy-detail-outline-number-no-outline',
     ].forEach((token) => expect(modelSource).toContain(token));
+    expect(modelSource).toContain("defaultColor: '#08AACE'");
+    expect(modelSource).toContain("if (slot.key === 'detailOutlineSelected' && normalized === LEGACY_DETAIL_OUTLINE_SELECTED_FILL_COLOR)");
+    expect(styleSource).toContain('border-color: var(--xy-detail-outline-number-selected);');
+    expect(styleSource).toContain('background: var(--xy-detail-outline-number-has-outline);');
+    expect(styleSource).toContain('color-mix(in srgb, var(--xy-detail-outline-number-selected) 78%, transparent)');
+    expect(styleSource).not.toContain('background: var(--xy-detail-outline-number-selected);');
+    expect(source).toContain("backgroundColor: key === 'detailOutlineSelected' ? previewColors.detailOutlineHasOutline : previewColors[key]");
+    expect(source).toContain("borderColor: key === 'detailOutlineSelected' ? previewColors.detailOutlineSelected");
+    expect(source).toContain("boxShadow: key === 'detailOutlineSelected' ? `0 0 0 2px #ffffff, 0 0 0 4px ${previewColors.detailOutlineSelected}`");
   });
 
   it('offers every requested global color target and previews before saving', () => {

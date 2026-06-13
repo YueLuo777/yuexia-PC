@@ -116,7 +116,7 @@ export function TestBrowserPage() {
     setPageTitle(activeTab.title || getBrowserHostLabel(activeTab.url));
     setCanGoBack(false);
     setCanGoForward(false);
-  }, [activeTabId]);
+  }, [activeTab.id, activeTab.title, activeTab.url]);
 
   useEffect(() => {
     localStorage.setItem(BROWSER_BOOKMARKS_KEY, JSON.stringify(bookmarks));

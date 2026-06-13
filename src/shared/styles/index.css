@@ -43,7 +43,7 @@
     --xy-custom-sidebar-active-bg: #DBE7FB;
     --xy-custom-content-selected-bg: #EAFBF3;
     --xy-custom-flow-group-bg: #E7F8FD;
-    --xy-detail-outline-number-selected: #E7F8FD;
+    --xy-detail-outline-number-selected: #08AACE;
     --xy-detail-outline-number-used: #FFF7ED;
     --xy-detail-outline-number-has-outline: #E7F8FD;
     --xy-detail-outline-number-no-outline: #FFFFFF;
@@ -211,11 +211,11 @@
 }
 
 .xy-detail-outline-number-selected {
-  border-color: #08AACE;
-  background: var(--xy-detail-outline-number-selected);
+  border-color: var(--xy-detail-outline-number-selected);
+  background: var(--xy-detail-outline-number-has-outline);
   box-shadow:
     0 0 0 2px #ffffff,
-    0 0 0 4px color-mix(in srgb, #08AACE 78%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--xy-detail-outline-number-selected) 78%, transparent),
     0 2px 8px rgba(8, 170, 206, 0.18);
 }
 
@@ -686,7 +686,7 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 }
 
 .theme-dark .app-titlebar {
-  background: #252525 !important;
+  background: var(--xy-wa-titlebar) !important;
   border-color: #3a3a3a !important;
 }
 
@@ -930,7 +930,7 @@ html.theme-dark body,
 }
 
 .theme-dark .app-titlebar {
-  background: #1b1b1b !important;
+  background: var(--xy-wa-titlebar) !important;
   border-color: #303030 !important;
 }
 
@@ -3219,7 +3219,7 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 .writer-assistant-theme .xy-selected-orange-bg:hover,
 .xy-selected-orange-bg,
 .xy-selected-orange-bg:hover {
-  background-color: #FFF7ED !important;
+  background-color: var(--xy-custom-content-selected-bg) !important;
 }
 
 .writer-assistant-theme .xy-selected-mint-bg,

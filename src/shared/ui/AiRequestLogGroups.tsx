@@ -80,7 +80,10 @@ export function AiRequestLogGroups({
   defaultCollapsed?: boolean;
   storageKey?: string;
 }) {
-  const visibleGroups = groups.filter((group) => group.content?.trim());
+  const visibleGroups = useMemo(
+    () => groups.filter((group) => group.content?.trim()),
+    [groups],
+  );
   const visibleGroupKeys = useMemo(() => visibleGroups.map(getGroupStorageKey), [visibleGroups]);
   const visibleGroupKeysSignature = visibleGroupKeys.join('\u0000');
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
@@ -97,7 +100,7 @@ export function AiRequestLogGroups({
     const storedKeys = readCollapsedLogGroupKeys(storageKey);
     if (!storedKeys) return;
     setCollapsedIds(new Set(visibleGroupKeys.filter((key) => storedKeys.has(key))));
-  }, [storageKey, visibleGroupKeysSignature]);
+  }, [storageKey, visibleGroupKeys, visibleGroupKeysSignature]);
 
   const toggleGroup = (key: string) => {
     setCollapsedIds((current) => {

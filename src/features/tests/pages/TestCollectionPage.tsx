@@ -29,7 +29,6 @@ const WorkbenchAiRequestTagPolicyTestPage = lazy(() => import('@/features/tests/
 const WorkbenchFlowButtonStatsTestPage = lazy(() => import('@/features/tests/pages/WorkbenchFlowButtonStatsTestPage').then((module) => ({ default: module.WorkbenchFlowButtonStatsTestPage })));
 const WorkbenchSidebarBoldNavigationTestPage = lazy(() => import('@/features/tests/pages/WorkbenchSidebarBoldNavigationTestPage').then((module) => ({ default: module.WorkbenchSidebarBoldNavigationTestPage })));
 const WorkbenchFlowGraySelectedStateTestPage = lazy(() => import('@/features/tests/pages/WorkbenchFlowGraySelectedStateTestPage').then((module) => ({ default: module.WorkbenchFlowGraySelectedStateTestPage })));
-const WorkbenchDetailOutlineNumberBlockTestPage = lazy(() => import('@/features/tests/pages/WorkbenchDetailOutlineNumberBlockTestPage').then((module) => ({ default: module.WorkbenchDetailOutlineNumberBlockTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -124,13 +123,6 @@ const testGroups = [
         path: '/workbench-flow-gray-selected-state-test',
         icon: Palette,
         badge: 'Gray Active',
-      },
-      {
-        title: '章纲目录数字块最终方案',
-        description: '测试 36px 小数字块 + 三状态颜色 + 已用筛选，确认后再迁入正式章纲页。',
-        path: '/workbench-detail-outline-number-block-test',
-        icon: NotebookText,
-        badge: 'Outline 36',
       },
     ],
   },
@@ -253,8 +245,6 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <WorkbenchSidebarBoldNavigationTestPage />;
       case '/workbench-flow-gray-selected-state-test':
         return <WorkbenchFlowGraySelectedStateTestPage />;
-      case '/workbench-detail-outline-number-block-test':
-        return <WorkbenchDetailOutlineNumberBlockTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':

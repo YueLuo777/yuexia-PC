@@ -5492,13 +5492,34 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
   const collectedStandardUiSamples = standardUiSamples.filter((item) => catalogCollection[item.id] && matchesCatalogSearch([item.id, item.name, item.group, item.usage]));
   const collectedManualUiSamples = manualUiSamples.filter((item) => catalogCollection[item.id] && matchesCatalogSearch([item.id, item.name, item.group, item.usage]));
   const collectedTechItems = techItems.filter((item) => catalogCollection[item.id] && matchesCatalogSearch([item.id, item.name, item.plain, item.tech]));
-  const collectedCatalogItems = [
-    ...collectedFontSamples.map((item) => ({ id: item.id, label: item.name, group: '字体设置', tab: 'collection' as CatalogTab })),
-    ...collectedColorSamples.map((item) => ({ id: item.id, label: item.name, group: '颜色记录', tab: 'collection' as CatalogTab })),
-    ...collectedStandardUiSamples.map((item) => ({ id: item.id, label: item.name, group: item.group, tab: 'collection' as CatalogTab })),
-    ...collectedManualUiSamples.map((item) => ({ id: item.id, label: item.name, group: getManualUiType(item), tab: 'collection' as CatalogTab })),
-    ...collectedTechItems.map((item) => ({ id: item.id, label: item.name, group: '技术词典', tab: 'collection' as CatalogTab })),
-  ];
+  const collectedCatalogItems = useMemo(() => {
+    const matchesCollectionSearch = (parts: Array<string | undefined>) => {
+      if (!normalizedSearch) return true;
+      return parts.some((part) => part?.toLowerCase().includes(normalizedSearch));
+    };
+    const collectedStandardSamples = uiSamples.filter((item) => (
+      item.id !== 'UI-102' &&
+      item.group !== '手动上传' &&
+      catalogCollection[item.id] &&
+      matchesCollectionSearch([item.id, item.name, item.group, item.usage])
+    ));
+    const collectedManualSamples = uiSamples.filter((item) => (
+      (item.id === 'UI-102' || item.group === '手动上传') &&
+      catalogCollection[item.id] &&
+      matchesCollectionSearch([item.id, item.name, item.group, item.usage])
+    ));
+
+    return [
+      ...fontSamples.filter((item) => catalogCollection[item.id] && matchesCollectionSearch([item.id, item.name, item.usage, item.sample]))
+        .map((item) => ({ id: item.id, label: item.name, group: '字体设置', tab: 'collection' as CatalogTab })),
+      ...colorSamples.filter((item) => catalogCollection[item.id] && matchesCollectionSearch([item.id, item.name, item.usage, item.value]))
+        .map((item) => ({ id: item.id, label: item.name, group: '颜色记录', tab: 'collection' as CatalogTab })),
+      ...collectedStandardSamples.map((item) => ({ id: item.id, label: item.name, group: item.group, tab: 'collection' as CatalogTab })),
+      ...collectedManualSamples.map((item) => ({ id: item.id, label: item.name, group: getManualUiType(item), tab: 'collection' as CatalogTab })),
+      ...techItems.filter((item) => catalogCollection[item.id] && matchesCollectionSearch([item.id, item.name, item.plain, item.tech]))
+        .map((item) => ({ id: item.id, label: item.name, group: '技术词典', tab: 'collection' as CatalogTab })),
+    ];
+  }, [catalogCollection, normalizedSearch]);
   const collectedTotalCount = collectedCatalogItems.length;
   const groups = Array.from(new Set(filteredStandardUiSamples.map((item) => item.group)));
   const catalogNavItems = useMemo(() => {

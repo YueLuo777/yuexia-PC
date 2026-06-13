@@ -26,6 +26,10 @@ describe('custom theme colors', () => {
       'flowGroup',
       'editorBackground',
       'titlebar',
+      'detailOutlineSelected',
+      'detailOutlineUsed',
+      'detailOutlineHasOutline',
+      'detailOutlineNoOutline',
     ]);
     expect(CUSTOM_THEME_COLOR_SLOTS.map((slot) => slot.defaultColor)).toEqual([
       '#F5F5F7',
@@ -34,6 +38,10 @@ describe('custom theme colors', () => {
       '#E7F8FD',
       '#F5F5F7',
       '#E4E9EF',
+      '#08AACE',
+      '#FFF7ED',
+      '#E7F8FD',
+      '#FFFFFF',
     ]);
     expect(CUSTOM_THEME_COLOR_SLOTS.map((slot) => slot.cssVar)).toEqual([
       '--xy-custom-sidebar-bg',
@@ -42,6 +50,10 @@ describe('custom theme colors', () => {
       '--xy-custom-flow-group-bg',
       '--xy-wa-editor-bg',
       '--xy-wa-titlebar',
+      '--xy-detail-outline-number-selected',
+      '--xy-detail-outline-number-used',
+      '--xy-detail-outline-number-has-outline',
+      '--xy-detail-outline-number-no-outline',
     ]);
   });
 
@@ -62,18 +74,32 @@ describe('custom theme colors', () => {
     expect(readCustomThemeColors().sidebarActive).toBe('#DBE7FB');
   });
 
+  it('migrates the legacy selected number block fill color to the selected outline color', () => {
+    localStorage.setItem(
+      CUSTOM_THEME_COLORS_STORAGE_KEY,
+      JSON.stringify({
+        detailOutlineSelected: '#E7F8FD',
+      }),
+    );
+
+    expect(readCustomThemeColors().detailOutlineSelected).toBe('#08AACE');
+  });
+
   it('writes colors, applies them to css variables, and keeps only 20 recent colors', () => {
     writeCustomThemeColors({
       sidebarBackground: '#111827',
+      sidebarActive: '#FED7AA',
       contentSelected: '#CCFBF1',
     });
 
     const saved = JSON.parse(localStorage.getItem(CUSTOM_THEME_COLORS_STORAGE_KEY) ?? '{}');
     expect(saved.sidebarBackground).toBe('#111827');
+    expect(saved.sidebarActive).toBe('#FED7AA');
     expect(saved.contentSelected).toBe('#CCFBF1');
 
     applyCustomThemeColors(readCustomThemeColors());
     expect(document.documentElement.style.getPropertyValue('--xy-custom-sidebar-bg')).toBe('#111827');
+    expect(document.documentElement.style.getPropertyValue('--xy-custom-sidebar-active-bg')).toBe('#FED7AA');
     expect(document.documentElement.style.getPropertyValue('--xy-custom-content-selected-bg')).toBe('#CCFBF1');
     expect(document.documentElement.style.getPropertyValue('--xy-wa-titlebar')).toBe('#E4E9EF');
 

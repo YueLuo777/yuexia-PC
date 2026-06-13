@@ -17,7 +17,21 @@ describe('navigation config without zones', () => {
       '/token-usage',
       '/test-collection',
     ]);
+    expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/library')?.label).toBe('资料库');
     expect(JSON.stringify(DEFAULT_NAV_CONFIG)).not.toContain('专区');
+  });
+
+  it('renames the library navigation entry to materials library even for saved old configs', () => {
+    const normalized = normalizeNavConfig([{
+      title: '导航',
+      iconName: 'LayoutGrid',
+      items: [
+        { iconName: 'Library', label: '库', to: '/library' },
+      ],
+    }]);
+
+    expect(normalized[0].items.find((item) => item.to === '/library')?.label).toBe('资料库');
+    expect(JSON.stringify(normalized)).not.toContain('"label":"库"');
   });
 
   it('flattens old zone-based navigation while preserving hidden item intent and default divider', () => {

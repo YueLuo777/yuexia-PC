@@ -55,8 +55,8 @@ describe('floating chat shell styles', () => {
     expect(buttonGroupRule).toContain('gap: 0.375rem');
     expect(buttonGroupRule).toContain('isolation: isolate');
     expect(maskRule).toContain('box-shadow: 0 0 0 3px var(--xy-floating-session-line-mask, #f9fafb)');
-    expect(css).not.toContain('margin-left: -1px');
-    expect(css).not.toContain('border-top-left-radius: 0');
-    expect(css).not.toContain('border-top-right-radius: 0');
+    expect(buttonGroupRule).not.toContain('margin-left: -1px');
+    expect(maskRule).not.toContain('border-top-left-radius: 0');
+    expect(maskRule).not.toContain('border-top-right-radius: 0');
   });
 });

@@ -22,6 +22,7 @@ export type CustomThemeColorMap = Record<CustomThemeColorSlotKey, string>;
 
 export const CUSTOM_THEME_COLORS_STORAGE_KEY = 'xinyuexia_custom_theme_colors_v1';
 export const CUSTOM_THEME_RECENT_COLORS_STORAGE_KEY = 'xinyuexia_custom_theme_recent_colors_v1';
+const LEGACY_DETAIL_OUTLINE_SELECTED_FILL_COLOR = '#E7F8FD';
 
 export const CUSTOM_THEME_COLOR_SLOTS: CustomThemeColorSlot[] = [
   {
@@ -69,8 +70,8 @@ export const CUSTOM_THEME_COLOR_SLOTS: CustomThemeColorSlot[] = [
   {
     key: 'detailOutlineSelected',
     label: '章纲数字块：选中',
-    description: '当前正在查看或编辑的章纲章节数字块。',
-    defaultColor: '#E7F8FD',
+    description: '当前正在查看或编辑的章纲章节数字块外圈高亮颜色。',
+    defaultColor: '#08AACE',
     cssVar: '--xy-detail-outline-number-selected',
   },
   {
@@ -120,7 +121,12 @@ export function readCustomThemeColors(): CustomThemeColorMap {
       Record<CustomThemeColorSlotKey, string>
     >;
     return CUSTOM_THEME_COLOR_SLOTS.reduce((result, slot) => {
-      result[slot.key] = normalizeCustomThemeHexColor(parsed[slot.key] ?? '') ?? slot.defaultColor;
+      const normalized = normalizeCustomThemeHexColor(parsed[slot.key] ?? '');
+      if (slot.key === 'detailOutlineSelected' && normalized === LEGACY_DETAIL_OUTLINE_SELECTED_FILL_COLOR) {
+        result[slot.key] = slot.defaultColor;
+        return result;
+      }
+      result[slot.key] = normalized ?? slot.defaultColor;
       return result;
     }, {} as CustomThemeColorMap);
   } catch {

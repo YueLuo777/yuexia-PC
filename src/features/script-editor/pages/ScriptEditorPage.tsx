@@ -996,7 +996,10 @@ export function ScriptEditorPage() {
     () => novels.find((novel) => novel.id === linkedNovelId && novel.type === 'novel') ?? null,
     [linkedNovelId, novels],
   );
-  const linkedNovelVolumes = linkedNovelId ? (volumesMap[linkedNovelId] ?? []) : [];
+  const linkedNovelVolumes = useMemo(
+    () => (linkedNovelId ? (volumesMap[linkedNovelId] ?? []) : []),
+    [linkedNovelId, volumesMap],
+  );
   const selectedMaterial = useMemo(
     () => materials.find((material) => material.id === selectedMaterialId) ?? null,
     [materials, selectedMaterialId],
