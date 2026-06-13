@@ -177,7 +177,7 @@ function RightPanelPreview({ variant }: { variant: Variant }) {
           <button className={splitButtonClass(true, variant)}>已关联资料</button>
         </div>
         <span className="text-sm font-bold text-[#9aa3af]">
-          已关联：<span className="text-[#08AACE]">1865</span> 字
+          关联 <span className="text-[#08AACE]">1865</span> 字
         </span>
       </div>
       <div className={`mt-3 flex h-12 items-center overflow-hidden rounded-[16px] border ${borderClass} bg-white`}>

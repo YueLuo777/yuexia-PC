@@ -374,7 +374,7 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
   const embeddedToolbarTarget = embedded && typeof document !== 'undefined'
     ? document.getElementById('concept-library-toolbar-slot')
     : null;
-  const embeddedToolbar = (
+  const embeddedToolbar = useMemo(() => (
     <>
       <button
         type="button"
@@ -392,7 +392,7 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
         日志
       </button>
     </>
-  );
+  ), [navigate]);
 
   const deleteConceptItem = (id: string) => {
     const item = items.find((current) => current.id === id);

@@ -23,11 +23,13 @@ const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeCo
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
 const BorderBackplateApplicationTestPage = lazy(() => import('@/features/tests/pages/BorderBackplateApplicationTestPage').then((module) => ({ default: module.BorderBackplateApplicationTestPage })));
 const WorkbenchSoftCyanButtonStyleTestPage = lazy(() => import('@/features/tests/pages/WorkbenchSoftCyanButtonStyleTestPage').then((module) => ({ default: module.WorkbenchSoftCyanButtonStyleTestPage })));
+const WorkbenchSurfaceColorStyleTestPage = lazy(() => import('@/features/tests/pages/WorkbenchSurfaceColorStyleTestPage').then((module) => ({ default: module.WorkbenchSurfaceColorStyleTestPage })));
 const WorkbenchRightPanelUnifiedTestPage = lazy(() => import('@/features/tests/pages/WorkbenchRightPanelUnifiedTestPage').then((module) => ({ default: module.WorkbenchRightPanelUnifiedTestPage })));
 const WorkbenchAiRequestTagPolicyTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiRequestTagPolicyTestPage').then((module) => ({ default: module.WorkbenchAiRequestTagPolicyTestPage })));
-const SettingTaxonomyPlanTestPage = lazy(() => import('@/features/tests/pages/SettingTaxonomyPlanTestPage').then((module) => ({ default: module.SettingTaxonomyPlanTestPage })));
 const WorkbenchFlowButtonStatsTestPage = lazy(() => import('@/features/tests/pages/WorkbenchFlowButtonStatsTestPage').then((module) => ({ default: module.WorkbenchFlowButtonStatsTestPage })));
 const WorkbenchSidebarBoldNavigationTestPage = lazy(() => import('@/features/tests/pages/WorkbenchSidebarBoldNavigationTestPage').then((module) => ({ default: module.WorkbenchSidebarBoldNavigationTestPage })));
+const WorkbenchFlowGraySelectedStateTestPage = lazy(() => import('@/features/tests/pages/WorkbenchFlowGraySelectedStateTestPage').then((module) => ({ default: module.WorkbenchFlowGraySelectedStateTestPage })));
+const WorkbenchDetailOutlineNumberBlockTestPage = lazy(() => import('@/features/tests/pages/WorkbenchDetailOutlineNumberBlockTestPage').then((module) => ({ default: module.WorkbenchDetailOutlineNumberBlockTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -76,6 +78,13 @@ const testGroups = [
         icon: Palette,
         badge: 'Soft Cyan',
       },
+      {
+        title: '作品编辑器输入区与标题栏配色测试',
+        description: '测试内容输入 #F5F5F7 搭配不同软件标题栏、右侧面板和边界深浅的多套方案。',
+        path: '/workbench-surface-color-style-test',
+        icon: Palette,
+        badge: 'Surface',
+      },
     ],
   },
   {
@@ -96,13 +105,6 @@ const testGroups = [
         badge: 'Tag',
       },
       {
-        title: '设定分类与人物字段方案',
-        description: '临时保存作品设定分类顺序、人物设定字段，以及人物关系应放入人物设定卡片的后续实现方案。',
-        path: '/setting-taxonomy-plan-test',
-        icon: NotebookText,
-        badge: 'Setting Plan',
-      },
-      {
         title: '作品编辑器流程按钮信息化方案',
         description: '测试顶部两组组合按钮在按钮内部显示脑洞、设定、章纲、正文、审核、点评、状态和梗概数量的方案。',
         path: '/workbench-flow-button-stats-test',
@@ -115,6 +117,20 @@ const testGroups = [
         path: '/workbench-sidebar-bold-navigation-test',
         icon: NotebookText,
         badge: 'Bold Nav',
+      },
+      {
+        title: '脑洞正文导航灰色选中态测试',
+        description: '测试脑洞、设定、章纲、正文顶部导航选中状态使用不同灰色背景、边框和阴影的方案。',
+        path: '/workbench-flow-gray-selected-state-test',
+        icon: Palette,
+        badge: 'Gray Active',
+      },
+      {
+        title: '章纲目录数字块最终方案',
+        description: '测试 36px 小数字块 + 三状态颜色 + 已用筛选，确认后再迁入正式章纲页。',
+        path: '/workbench-detail-outline-number-block-test',
+        icon: NotebookText,
+        badge: 'Outline 36',
       },
     ],
   },
@@ -189,7 +205,7 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
       navigate(-1);
       return;
     }
-    navigate('/dashboard');
+    navigate('/novels');
   };
 
   const openTestPage = (path: string) => {
@@ -231,12 +247,14 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <WorkbenchRightPanelUnifiedTestPage />;
       case '/workbench-ai-request-tag-policy-test':
         return <WorkbenchAiRequestTagPolicyTestPage />;
-      case '/setting-taxonomy-plan-test':
-        return <SettingTaxonomyPlanTestPage />;
       case '/workbench-flow-button-stats-test':
         return <WorkbenchFlowButtonStatsTestPage />;
       case '/workbench-sidebar-bold-navigation-test':
         return <WorkbenchSidebarBoldNavigationTestPage />;
+      case '/workbench-flow-gray-selected-state-test':
+        return <WorkbenchFlowGraySelectedStateTestPage />;
+      case '/workbench-detail-outline-number-block-test':
+        return <WorkbenchDetailOutlineNumberBlockTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':
@@ -247,6 +265,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <BorderBackplateApplicationTestPage />;
       case '/workbench-soft-cyan-button-style-test':
         return <WorkbenchSoftCyanButtonStyleTestPage />;
+      case '/workbench-surface-color-style-test':
+        return <WorkbenchSurfaceColorStyleTestPage />;
       case '/theme-colors':
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
       case '/test-browser':

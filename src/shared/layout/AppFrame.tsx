@@ -16,6 +16,7 @@ import {
 import { hasTopModalEscapeHandler, useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { HOME_TAB, useWorkspaceTabs, type WorkspaceTab } from '@/shared/tabs/WorkspaceTabsContext';
 import { TextOverrideLayer } from '@/shared/text-overrides/TextOverrideLayer';
+import { applyCustomThemeColors } from '@/features/theme/model/customThemeColors';
 
 declare global {
   interface Window {
@@ -82,7 +83,8 @@ function loadDarkTheme() {
 
 function readLastHomeRoute() {
   try {
-    return sessionStorage.getItem(HOME_LAST_ROUTE_KEY) || HOME_TAB.path;
+    const saved = sessionStorage.getItem(HOME_LAST_ROUTE_KEY);
+    return saved && saved !== '/dashboard' ? saved : HOME_TAB.path;
   } catch {
     return HOME_TAB.path;
   }
@@ -90,6 +92,7 @@ function readLastHomeRoute() {
 
 function rememberHomeRoute(pathname: string) {
   if (pathname === HOME_TAB.path) return;
+  if (pathname === '/dashboard') return;
   try {
     sessionStorage.setItem(HOME_LAST_ROUTE_KEY, pathname);
   } catch {
@@ -123,6 +126,10 @@ export function AppFrame({ children }: AppFrameProps) {
 
   useTopModalEscape(showTestCollection, () => setShowTestCollection(false));
   useTopModalEscape(showSoftwareUiCatalog, () => setShowSoftwareUiCatalog(false));
+
+  useEffect(() => {
+    applyCustomThemeColors();
+  }, []);
 
   const activateHomeTab = useCallback(() => {
     setActiveTabId(HOME_TAB.id);
@@ -823,7 +830,7 @@ export function AppFrame({ children }: AppFrameProps) {
     ? '前进'
     : location.pathname === '/test-collection'
     ? '返回测试'
-    : '返回首页';
+    : '返回我的小说';
   const mouseGestureContinueLabel = mouseGesturePreview?.direction === 'right' ? '继续右滑' : '继续左滑';
   const mouseGestureArrow = mouseGesturePreview?.direction === 'right' ? '→' : '←';
 

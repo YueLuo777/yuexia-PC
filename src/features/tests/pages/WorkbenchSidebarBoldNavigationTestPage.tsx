@@ -15,8 +15,8 @@ type LibraryGroupPreview = {
 };
 
 const chapterRows: ChapterPreview[] = [
-  { id: 'chapter-1', title: '第1章 初入月下', count: '812字', selected: true },
-  { id: 'chapter-2', title: '第2章 风雨将至', count: '1,246字' },
+  { id: 'chapter-1', title: '第1章 初入月下', count: '812字' },
+  { id: 'chapter-2', title: '第2章 风雨将至', count: '1,246字', selected: true },
   { id: 'chapter-3', title: '第3章 旧案重启', count: '935字' },
 ];
 
@@ -54,7 +54,7 @@ function PreviewShell({ title, children }: { title: string; children: ReactNode 
   return (
     <section className="rounded-[8px] border border-[#e2e8f0] bg-white p-5 shadow-sm">
       <h2 className="text-base font-black text-[#1f2933]">{title}</h2>
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">{children}</div>
+      <div className="mt-4 grid gap-4 lg:grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">{children}</div>
     </section>
   );
 }
@@ -87,7 +87,38 @@ function ChapterGroupHeader({ bold = false }: { bold?: boolean }) {
   );
 }
 
-function ChapterRows({ bold = false }: { bold?: boolean }) {
+type SelectedTone = 'default' | 'orange' | 'softBlue' | 'coolGray' | 'mint' | 'outline' | 'lavender';
+
+function getSelectedPreviewClass(selected: boolean | undefined, tone: SelectedTone) {
+  if (!selected) return 'border-transparent hover:bg-gray-50';
+  switch (tone) {
+    case 'orange':
+      return 'border-transparent xy-selected-orange-bg';
+    case 'softBlue':
+      return 'border-[#BDEEF7] bg-[#E7F8FD] shadow-[0_0_0_1px_rgba(8,170,206,0.10)]';
+    case 'coolGray':
+      return 'border-[#CBD5E1] bg-[#EEF2F7] shadow-[0_1px_2px_rgba(15,23,42,0.06)]';
+    case 'mint':
+      return 'border-[#A7F3D0] bg-[#ECFDF5] shadow-[0_0_0_1px_rgba(16,185,129,0.10)]';
+    case 'outline':
+      return 'border-[#08AACE] bg-white shadow-[inset_0_0_0_1px_rgba(8,170,206,0.24)]';
+    case 'lavender':
+      return 'border-[#DDD6FE] bg-[#F5F3FF] shadow-[0_1px_2px_rgba(139,92,246,0.08)]';
+    default:
+      return 'border-[#BDEEF7] bg-[#F1FBFE]';
+  }
+}
+
+const selectedTonePlans: { id: string; title: string; note: string; tone: SelectedTone }[] = [
+  { id: 'current-orange', title: '当前橙底', note: '当前效果，仅作为对照。', tone: 'orange' },
+  { id: 'soft-blue', title: '方案 1：浅青蓝', note: '和卷标题同色系，弱化橙色跳出感。', tone: 'softBlue' },
+  { id: 'cool-gray', title: '方案 2：冷灰', note: '更克制，适合长时间写作。', tone: 'coolGray' },
+  { id: 'mint', title: '方案 3：薄荷绿', note: '区分度比灰色高，但比橙色安静。', tone: 'mint' },
+  { id: 'outline', title: '方案 4：蓝色描边', note: '主要用边框表示选中，背景保持白色。', tone: 'outline' },
+  { id: 'lavender', title: '方案 5：淡紫灰', note: '柔和但有轻微识别度。', tone: 'lavender' },
+];
+
+function ChapterRows({ bold = false, selectedTone = 'default' }: { bold?: boolean; selectedTone?: SelectedTone }) {
   return (
     <div className="mt-0.5 space-y-0.5">
       {chapterRows.map((chapter) => (
@@ -95,13 +126,13 @@ function ChapterRows({ bold = false }: { bold?: boolean }) {
           key={chapter.id}
           className={[
             'group relative flex w-full cursor-pointer items-center gap-2 rounded-[8px] border px-[24px] py-2 text-left transition-colors',
-            chapter.selected ? 'border-[#FDBA74] bg-[#FFF7ED]' : 'border-transparent hover:bg-gray-50',
+            getSelectedPreviewClass(chapter.selected, selectedTone),
           ].join(' ')}
         >
-          <span className={`flex-1 truncate whitespace-nowrap text-sm ${bold ? 'font-black' : 'font-medium'} ${chapter.selected ? 'text-[#F97316]' : 'text-gray-700'}`}>
+          <span className={`flex-1 truncate whitespace-nowrap text-sm text-gray-700 ${bold ? 'font-black' : 'font-medium'}`}>
             {chapter.title}
           </span>
-          <span className={`shrink-0 text-xs ${bold ? 'font-black' : 'font-medium'} ${chapter.selected ? 'text-[#2563EB]' : 'text-gray-400'}`}>
+          <span className={`shrink-0 text-xs text-gray-400 ${bold ? 'font-black' : 'font-medium'}`}>
             {chapter.count}
           </span>
         </div>
@@ -110,7 +141,7 @@ function ChapterRows({ bold = false }: { bold?: boolean }) {
   );
 }
 
-function LibraryPreview({ bold = false }: { bold?: boolean }) {
+function LibraryPreview({ bold = false, selectedTone = 'default' }: { bold?: boolean; selectedTone?: SelectedTone }) {
   return (
     <div className="space-y-1">
       {libraryGroups.map((group) => (
@@ -130,7 +161,7 @@ function LibraryPreview({ bold = false }: { bold?: boolean }) {
                 key={entry.id}
                 className={[
                   'flex cursor-pointer items-center gap-2 rounded-[8px] border px-3 py-2 text-left transition-colors',
-                  entry.selected ? 'border-[#BDEEF7] bg-[#F1FBFE]' : 'border-transparent hover:bg-gray-50',
+                  getSelectedPreviewClass(entry.selected, selectedTone),
                 ].join(' ')}
               >
                 <span className={`min-w-0 flex-1 truncate text-sm ${bold ? 'font-black text-[#1f2933]' : 'font-medium text-gray-700'}`}>
@@ -159,6 +190,15 @@ export function WorkbenchSidebarBoldNavigationTestPage() {
           </p>
         </header>
 
+        <PreviewShell title="正文目录：选中背景方案对比">
+          {selectedTonePlans.map((plan) => (
+            <PreviewColumn key={plan.id} title={plan.title} note={plan.note}>
+              <ChapterGroupHeader bold />
+              <ChapterRows bold selectedTone={plan.tone} />
+            </PreviewColumn>
+          ))}
+        </PreviewShell>
+
         <PreviewShell title="正文目录：第一卷与章节加粗">
           <PreviewColumn title="当前样式" note="卷名和章节保持中等字重。">
             <ChapterGroupHeader />
@@ -168,6 +208,10 @@ export function WorkbenchSidebarBoldNavigationTestPage() {
             <ChapterGroupHeader bold />
             <ChapterRows bold />
           </PreviewColumn>
+          <PreviewColumn title="加粗橙底方案" note="在加粗基础上，把选中章节背景改为 #FFF7ED。">
+            <ChapterGroupHeader bold />
+            <ChapterRows bold selectedTone="orange" />
+          </PreviewColumn>
         </PreviewShell>
 
         <PreviewShell title="脑洞 / 设定等页面：分组与设定条目加粗">
@@ -176,6 +220,9 @@ export function WorkbenchSidebarBoldNavigationTestPage() {
           </PreviewColumn>
           <PreviewColumn title="加粗方案" note="分组名、分组数量、设定条目和字数全部加粗。">
             <LibraryPreview bold />
+          </PreviewColumn>
+          <PreviewColumn title="加粗橙底方案" note="保持加粗效果，选中条目背景改为 #FFF7ED。">
+            <LibraryPreview bold selectedTone="orange" />
           </PreviewColumn>
         </PreviewShell>
       </div>

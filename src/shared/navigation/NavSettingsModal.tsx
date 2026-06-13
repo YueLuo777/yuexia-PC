@@ -1,8 +1,18 @@
-import { RotateCcw, Settings, X } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Settings, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
-import { getIconByName } from '@/shared/navigation/navConfig';
+import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
+import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
+import {
+  NAV_CONFIG_UPDATED_EVENT,
+  getIconByName,
+  loadNavConfig,
+  normalizeNavConfig,
+  resetNavConfig,
+  saveNavConfig,
+} from '@/shared/navigation/navConfig';
 import type { NavGroupConfig, NavItemConfig } from '@/shared/navigation/navConfig';
 
 interface NavSettingsModalProps {
@@ -11,6 +21,7 @@ interface NavSettingsModalProps {
   config: NavGroupConfig[];
   onSave: (config: NavGroupConfig[]) => void;
   onReset: () => void;
+  variant?: 'modal' | 'page';
 }
 
 const ROOT_NAV_GROUP: NavGroupConfig = {
@@ -39,8 +50,10 @@ function normalizeDraft(config: NavGroupConfig[]) {
   }];
 }
 
-export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: NavSettingsModalProps) {
-  useTopModalEscape(isOpen, onClose);
+export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, variant = 'modal' }: NavSettingsModalProps) {
+  const isPage = variant === 'page';
+  useTopModalEscape(!isPage && isOpen, onClose);
+  const draggable = useDraggableModal('dashboard_nav_settings', { x: 0, y: 0, width: 640, height: 520 });
   const [draft, setDraft] = useState<NavGroupConfig[]>([]);
   const [editingItem, setEditingItem] = useState<number | null>(null);
   const [editingValue, setEditingValue] = useState('');
@@ -151,23 +164,46 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      className={isPage ? 'h-full min-h-0 overflow-hidden bg-slate-50 p-5' : 'fixed inset-0 z-50 flex items-center justify-center bg-black/40'}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (!isPage && event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="flex max-h-[85vh] w-[640px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-          <div>
+      <div
+        data-draggable-managed={isPage ? undefined : 'true'}
+        data-modal-id={isPage ? undefined : 'dashboard-nav-settings'}
+        className={isPage ? 'mx-auto flex h-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm' : 'relative flex max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] w-[640px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'}
+        style={isPage ? undefined : ({
+          ...draggable.style,
+          maxWidth: 'calc((100vw - 32px) / var(--xinyuexia-effective-scale, 1))',
+          maxHeight: 'calc((100vh - 112px) / var(--xinyuexia-effective-scale, 1))',
+        } as React.CSSProperties)}
+      >
+        <div {...(isPage ? {} : draggable.dragHandleProps)} className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+          <div className="flex items-center gap-3">
+            {isPage ? (
+              <button
+                onClick={onClose}
+                className="flex h-9 w-9 items-center justify-center rounded-lg border transition-colors border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                title="返回我的小说"
+                aria-label="返回我的小说"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+            ) : null}
+            <div>
             <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900">
               <Settings className="h-4 w-4 text-brand" />
               导航设置
             </h2>
             <p className="mt-0.5 text-base text-gray-400">支持双击改名、隐藏显示、拖拽排序，以及新增、拖拽、删除分割线。</p>
+            </div>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
-            <X className="h-4 w-4" />
-          </button>
+          {!isPage ? (
+            <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
@@ -275,7 +311,7 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
         </div>
 
         <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-6 py-3">
-          <button onClick={() => { onReset(); onClose(); }} className="flex items-center gap-1 px-3 py-2 text-base text-gray-500 hover:text-gray-700">
+          <button onClick={() => { onReset(); if (!isPage) onClose(); }} className="flex items-center gap-1 px-3 py-2 text-base text-gray-500 hover:text-gray-700">
             <RotateCcw className="h-3.5 w-3.5" />
             恢复默认
           </button>
@@ -288,12 +324,39 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset }: N
             >
               新增分割线
             </button>
-            <button onClick={onClose} className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-base text-gray-600 hover:bg-gray-50">
+            <button hidden={isPage} onClick={onClose} className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-base text-gray-600 hover:bg-gray-50">
               关闭
             </button>
           </div>
         </div>
+        {!isPage && <ModalResizeHandles draggable={draggable} />}
       </div>
     </div>
+  );
+}
+
+export function NavSettingsPage() {
+  const navigate = useNavigate();
+  const [config, setConfig] = useState<NavGroupConfig[]>(() => normalizeNavConfig(loadNavConfig()));
+
+  useEffect(() => {
+    const reloadConfig = () => setConfig(normalizeNavConfig(loadNavConfig()));
+    window.addEventListener(NAV_CONFIG_UPDATED_EVENT, reloadConfig);
+    window.addEventListener('storage', reloadConfig);
+    return () => {
+      window.removeEventListener(NAV_CONFIG_UPDATED_EVENT, reloadConfig);
+      window.removeEventListener('storage', reloadConfig);
+    };
+  }, []);
+
+  return (
+    <NavSettingsModal
+      isOpen
+      onClose={() => navigate('/novels')}
+      config={config}
+      onSave={(next) => setConfig(saveNavConfig(next))}
+      onReset={() => setConfig(resetNavConfig())}
+      variant="page"
+    />
   );
 }

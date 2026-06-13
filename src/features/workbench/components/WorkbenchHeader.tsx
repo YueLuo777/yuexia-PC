@@ -94,11 +94,13 @@ export function WorkbenchHeader({
           ) : null}
         </div>
 
-        <div className="xy-capsule-group xy-flow-status-group ml-3 shrink-0">
-          {creationFlowItems.map(renderFlowButton)}
-        </div>
-        <div className="xy-capsule-group xy-flow-status-group ml-3 shrink-0">
-          {reviewFlowItems.map(renderFlowButton)}
+        <div className="xy-workbench-flow-groups ml-8 flex shrink-0 items-center gap-4">
+          <div className="xy-capsule-group xy-flow-status-group shrink-0">
+            {creationFlowItems.map(renderFlowButton)}
+          </div>
+          <div className="xy-capsule-group xy-flow-status-group shrink-0">
+            {reviewFlowItems.map(renderFlowButton)}
+          </div>
         </div>
       </div>
       {hasRightTools ? (

@@ -70,6 +70,7 @@ const SMART_FORMAT_KEY = 'xinyuexia_smart_format_settings';
 const SMART_FORMAT_ENABLED_KEY = 'xinyuexia_smart_format_enabled';
 const HIGH_FREQ_WORDS_KEY = 'xinyuexia_high_freq_words';
 const HIGH_FREQ_ENABLED_KEY = 'xinyuexia_high_freq_enabled';
+const HIGH_FREQ_HIGHLIGHT_COLOR_KEY = 'xinyuexia_high_freq_highlight_color';
 const SYMBOL_REPLACE_KEY = 'xinyuexia_symbol_replace_settings';
 const SYMBOL_REPLACE_ENABLED_KEY = 'xinyuexia_symbol_replace_enabled';
 const LEGACY_SMART_FORMAT_KEY = 'smart_format_settings';
@@ -152,6 +153,25 @@ const colorOptions = [
   '#374151', '#111827', '#DC2626', '#EA580C', '#D97706',
   '#059669', '#0891B2', '#2563EB', '#7C3AED', '#DB2777',
 ];
+
+const highFreqHighlightColorOptions = [
+  { label: '暖黄', value: '#FDE68A', ring: 'rgba(234,179,8,0.35)' },
+  { label: '浅橙', value: '#FED7AA', ring: 'rgba(249,115,22,0.30)' },
+  { label: '浅青', value: '#BDEEF7', ring: 'rgba(8,170,206,0.30)' },
+  { label: '浅绿', value: '#BBF7D0', ring: 'rgba(34,197,94,0.30)' },
+  { label: '浅蓝', value: '#BFDBFE', ring: 'rgba(37,99,235,0.28)' },
+  { label: '浅紫', value: '#DDD6FE', ring: 'rgba(124,58,237,0.28)' },
+  { label: '浅粉', value: '#FBCFE8', ring: 'rgba(219,39,119,0.25)' },
+  { label: '浅灰', value: '#E5E7EB', ring: 'rgba(100,116,139,0.24)' },
+];
+
+const defaultHighFreqHighlightColor = highFreqHighlightColorOptions[0].value;
+
+function normalizeHighFreqHighlightColor(value: unknown) {
+  return highFreqHighlightColorOptions.some((option) => option.value === value)
+    ? String(value)
+    : defaultHighFreqHighlightColor;
+}
 
 function readJson<T>(key: string, fallback: T): T {
   try {
@@ -268,6 +288,10 @@ function isHighFreqEnabled() {
 function setHighFreqEnabled(value: boolean) {
   writeJson(HIGH_FREQ_ENABLED_KEY, value);
   writeJson(LEGACY_HIGH_FREQ_ENABLED_KEY, value);
+}
+
+function getStoredHighFreqHighlightColor() {
+  return normalizeHighFreqHighlightColor(readJson<string>(HIGH_FREQ_HIGHLIGHT_COLOR_KEY, defaultHighFreqHighlightColor));
 }
 
 export function applyFormat(text: string, options: FormatOptions) {
@@ -838,9 +862,13 @@ export function Switch({ checked, onClick }: { checked: boolean; onClick: () => 
 export function HighFreqModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [words, setWords] = useState<string[]>(getStoredHighFreqWords);
   const [input, setInput] = useState('');
+  const [highlightColor, setHighlightColor] = useState(getStoredHighFreqHighlightColor);
 
   useEffect(() => {
-    if (isOpen) setWords(getStoredHighFreqWords());
+    if (isOpen) {
+      setWords(getStoredHighFreqWords());
+      setHighlightColor(getStoredHighFreqHighlightColor());
+    }
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -878,10 +906,34 @@ export function HighFreqModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
           </div>
           <p className="mt-3 text-xs text-gray-400">用逗号或换行分隔多个词。</p>
         </div>
+        <div>
+          <p className="mb-2 text-sm text-gray-700">高频词高亮颜色</p>
+          <div className="grid grid-cols-4 gap-2">
+            {highFreqHighlightColorOptions.map((option) => {
+              const selected = highlightColor === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setHighlightColor(option.value)}
+                  className={`flex h-10 items-center gap-2 rounded-lg border px-2 text-xs font-bold transition-colors ${
+                    selected ? 'border-brand bg-brand-light text-brand' : 'border-gray-200 bg-white text-gray-600 hover:border-brand/40'
+                  }`}
+                >
+                  <span
+                    className="h-5 w-5 rounded-md border border-black/10"
+                    style={{ backgroundColor: option.value }}
+                  />
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
       <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-3">
         <button onClick={onClose} className="rounded-md border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">取消</button>
-        <button onClick={() => { writeJson(HIGH_FREQ_WORDS_KEY, words); writeJson(LEGACY_HIGH_FREQ_WORDS_KEY, words); window.dispatchEvent(new CustomEvent('xinyuexia_high_freq_updated')); onClose(); }} className="rounded-md bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-900">保存</button>
+        <button onClick={() => { writeJson(HIGH_FREQ_WORDS_KEY, words); writeJson(LEGACY_HIGH_FREQ_WORDS_KEY, words); writeJson(HIGH_FREQ_HIGHLIGHT_COLOR_KEY, highlightColor); window.dispatchEvent(new CustomEvent('xinyuexia_high_freq_updated')); onClose(); }} className="rounded-md bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-900">保存</button>
       </div>
     </ModalShell>
   );
@@ -1040,12 +1092,14 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0, paragra
 }) {
   const [words, setWords] = useState<string[]>(getStoredHighFreqWords);
   const [enabled, setEnabled] = useState(isHighFreqEnabled);
+  const [highlightColor, setHighlightColor] = useState(getStoredHighFreqHighlightColor);
   const editorGridLineStyle = getEditorGridLineStyle(fontSettings);
 
   useEffect(() => {
     const sync = () => {
       setWords(getStoredHighFreqWords());
       setEnabled(isHighFreqEnabled());
+      setHighlightColor(getStoredHighFreqHighlightColor());
     };
     window.addEventListener('xinyuexia_high_freq_updated', sync);
     window.addEventListener('storage', sync);
@@ -1064,6 +1118,8 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0, paragra
     .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   const regex = new RegExp(`(${escaped.join('|')})`, 'g');
   const wordSet = new Set(words);
+  const highlightOption = highFreqHighlightColorOptions.find((option) => option.value === highlightColor) ?? highFreqHighlightColorOptions[0];
+  const lines = content.split('\n');
 
   return (
     <div
@@ -1079,14 +1135,25 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0, paragra
         transform: `translateY(-${scrollTop}px)`,
       }}
     >
-      {content.split('\n').map((line, lineIndex) => {
+      {lines.map((line, lineIndex) => {
         const parts = line.split(regex);
         return (
           <span key={lineIndex}>
             {parts.map((part, partIndex) => wordSet.has(part)
-              ? <span key={partIndex} className="rounded-sm bg-yellow-300/90 shadow-[0_0_0_1px_rgba(234,179,8,0.35)] text-transparent">{part}</span>
+              ? (
+                <span
+                  key={partIndex}
+                  className="rounded-sm text-transparent"
+                  style={{
+                    backgroundColor: highlightOption.value,
+                    boxShadow: `0 0 0 1px ${highlightOption.ring}`,
+                  }}
+                >
+                  {part}
+                </span>
+              )
               : <span key={partIndex}>{part}</span>)}
-            {lineIndex < content.split('\n').length - 1 ? '\n' : null}
+            {lineIndex < lines.length - 1 ? '\n' : null}
           </span>
         );
       })}

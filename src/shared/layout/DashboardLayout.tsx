@@ -9,20 +9,14 @@ import {
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Camera, UserRound } from 'lucide-react';
 
-import { DarkThemeColorPage } from '@/features/tests/pages/DarkThemeColorPage';
 import { TEST_COLLECTION_SHOW_INDEX_EVENT } from '@/features/tests/model/testCollectionEvents';
-import { NavSettingsModal } from '@/shared/navigation/NavSettingsModal';
 import {
+  NAV_CONFIG_UPDATED_EVENT,
   getIconByName,
   loadNavConfig,
   normalizeNavConfig,
-  resetNavConfig,
-  saveNavConfig,
   type NavGroupConfig,
 } from '@/shared/navigation/navConfig';
-import { ShortcutSettingsModal } from '@/shared/shortcuts/ShortcutSettingsModal';
-import { SystemSettingsModal } from '@/shared/settings/SystemSettingsModal';
-import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 
 const USER_NAME_KEY = 'xinyuexia_sidebar_user_name';
 const USER_AVATAR_KEY = 'xinyuexia_sidebar_user_avatar';
@@ -88,10 +82,6 @@ function resizeAvatar(file: File) {
 export function DashboardLayout() {
   const location = useLocation();
   const [navConfig, setNavConfig] = useState<NavGroupConfig[]>(() => normalizeNavConfig(loadNavConfig()));
-  const [showNavSettings, setShowNavSettings] = useState(false);
-  const [showShortcutSettings, setShowShortcutSettings] = useState(false);
-  const [showSystemSettings, setShowSystemSettings] = useState(false);
-  const [showThemeColors, setShowThemeColors] = useState(false);
   const [userName, setUserName] = useState(readUserName);
   const [avatar, setAvatar] = useState(readUserAvatar);
   const [isEditingUserName, setIsEditingUserName] = useState(false);
@@ -125,7 +115,15 @@ export function DashboardLayout() {
     };
   }, []);
 
-  useTopModalEscape(showThemeColors, () => setShowThemeColors(false));
+  useEffect(() => {
+    const reloadNavConfig = () => setNavConfig(normalizeNavConfig(loadNavConfig()));
+    window.addEventListener(NAV_CONFIG_UPDATED_EVENT, reloadNavConfig);
+    window.addEventListener('storage', reloadNavConfig);
+    return () => {
+      window.removeEventListener(NAV_CONFIG_UPDATED_EVENT, reloadNavConfig);
+      window.removeEventListener('storage', reloadNavConfig);
+    };
+  }, []);
 
   const commitUserName = () => {
     const next = userNameDraft.trim() || '月下作者';
@@ -326,34 +324,34 @@ export function DashboardLayout() {
         </div>
 
         <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-[#e1e5eb] bg-[#f5f5f7] p-3">
-          <button
-            onClick={() => setShowSystemSettings(true)}
+          <Link
+            to="/system-settings"
             className={SETTINGS_TEXT_BUTTON_CLASS}
             title="系统设置"
           >
             系统设置
-          </button>
-          <button
-            onClick={() => setShowThemeColors(true)}
+          </Link>
+          <Link
+            to="/theme-colors"
             className={SETTINGS_TEXT_BUTTON_CLASS}
             title="主题颜色"
           >
             主题颜色
-          </button>
-          <button
-            onClick={() => setShowShortcutSettings(true)}
+          </Link>
+          <Link
+            to="/shortcut-settings"
             className={SETTINGS_TEXT_BUTTON_CLASS}
             title="快捷键"
           >
             快捷键
-          </button>
-          <button
-            onClick={() => setShowNavSettings(true)}
+          </Link>
+          <Link
+            to="/nav-settings"
             className={SETTINGS_TEXT_BUTTON_CLASS}
             title="导航设置"
           >
             导航设置
-          </button>
+          </Link>
         </div>
       </aside>
 
@@ -377,38 +375,6 @@ export function DashboardLayout() {
       <main className="min-w-0 flex-1 overflow-hidden">
         <Outlet />
       </main>
-
-      {showThemeColors ? (
-        <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/25 p-5">
-          <div className="flex h-[min(860px,calc(100vh-40px))] w-[min(1280px,calc(100vw-40px))] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
-            <DarkThemeColorPage variant="modal" onClose={() => setShowThemeColors(false)} />
-          </div>
-        </div>
-      ) : null}
-
-      <NavSettingsModal
-        isOpen={showNavSettings}
-        onClose={() => setShowNavSettings(false)}
-        config={navConfig}
-        onSave={(next) => {
-          const saved = saveNavConfig(next);
-          setNavConfig(saved);
-        }}
-        onReset={() => {
-          const fresh = resetNavConfig();
-          setNavConfig(fresh);
-        }}
-          />
-
-      <ShortcutSettingsModal
-        isOpen={showShortcutSettings}
-        onClose={() => setShowShortcutSettings(false)}
-      />
-      <SystemSettingsModal
-        isOpen={showSystemSettings}
-        onClose={() => setShowSystemSettings(false)}
-        homeAvatar={avatar}
-      />
     </div>
   );
 }

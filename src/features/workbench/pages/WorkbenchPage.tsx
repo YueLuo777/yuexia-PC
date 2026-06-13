@@ -281,6 +281,10 @@ function getContextWordCount(text: string) {
   return text.replace(/\s/g, '').length;
 }
 
+function hasContextContent(item: WorkbenchLinkedContextItem | null | undefined) {
+  return Boolean(item && getContextWordCount(item.content) > 0);
+}
+
 function getContextItemsWordCount(items: WorkbenchLinkedContextItem[], source?: WorkbenchLinkedContextSource) {
   return items
     .filter((item) => !source || item.source === source)
@@ -288,8 +292,8 @@ function getContextItemsWordCount(items: WorkbenchLinkedContextItem[], source?: 
 }
 
 function getPreferredChapterNarrativeItem(row: ContextChapterPair) {
-  if (getContextWordCount(row.chapterItem.content) > 0) return row.chapterItem;
-  if (row.summaryItem && getContextWordCount(row.summaryItem.content) > 0) return row.summaryItem;
+  if (hasContextContent(row.chapterItem)) return row.chapterItem;
+  if (hasContextContent(row.summaryItem)) return row.summaryItem;
   return null;
 }
 
@@ -354,15 +358,17 @@ function ContextSourceRowWordStatus({
 function ContextSelectionDot({
   checked,
   disabled = false,
+  locked = false,
 }: {
   checked: boolean;
   disabled?: boolean;
+  locked?: boolean;
 }) {
   return (
     <span
-      className={['grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 bg-white', checked ? 'border-[#3B82F6]' : disabled ? 'border-slate-200' : 'border-slate-300'].join(' ')}
+      className={['grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 bg-white', locked ? 'border-slate-300' : checked ? 'border-[#3B82F6]' : disabled ? 'border-slate-200' : 'border-slate-300'].join(' ')}
     >
-      {checked && <span className="h-2 w-2 rounded-full bg-[#3B82F6]" />}
+      {checked && <span className={['h-2 w-2 rounded-full', locked ? 'bg-slate-400' : 'bg-[#3B82F6]'].join(' ')} />}
     </span>
   );
 }
@@ -656,6 +662,9 @@ function ContextChapterSummaryList({
                         const outlineWordCount = getContextWordCount(row.outlineItem.content);
                         const summaryWordCount = row.summaryItem ? getContextWordCount(row.summaryItem.content) : 0;
                         const rowSelectable = !row.isCurrent;
+                        const canPickChapter = rowSelectable && chapterWordCount > 0;
+                        const canPickSummary = Boolean(row.summaryItem) && !row.isCurrent && summaryWordCount > 0;
+                        const outlineLocked = lockedIds.has(row.outlineItem.id);
                         return (
                           <div
                             key={row.chapterId}
@@ -699,40 +708,40 @@ function ContextChapterSummaryList({
                               className="flex items-center justify-end whitespace-nowrap text-sm font-bold"
                               onClick={(event) => event.stopPropagation()}
                             >
-                              <label className={['inline-flex h-8 shrink-0 items-center gap-1.5', row.isCurrent ? 'cursor-not-allowed text-slate-300' : 'cursor-pointer text-slate-700'].join(' ')}>
+                              <label className={['inline-flex h-8 shrink-0 items-center gap-1.5', canPickChapter ? 'cursor-pointer text-slate-700' : 'cursor-not-allowed text-slate-300'].join(' ')}>
                                 <input
                                   type="radio"
-                                  disabled={row.isCurrent}
+                                  disabled={!canPickChapter}
                                   checked={selectedChapter}
                                   onChange={() => onPickItem(row, row.chapterItem)}
                                   className="sr-only"
                                 />
-                                <ContextSelectionDot checked={selectedChapter} disabled={row.isCurrent} />
-                                <ContextSourceRowWordStatus label="正文" value={chapterWordCount} muted={row.isCurrent} />
+                                <ContextSelectionDot checked={selectedChapter} disabled={!canPickChapter} />
+                                <ContextSourceRowWordStatus label="正文" value={chapterWordCount} muted={!canPickChapter} />
                               </label>
                               <label
-                                className={['ml-3 inline-flex h-8 shrink-0 items-center gap-1.5 border-l border-slate-200 pl-3', row.summaryItem && !row.isCurrent ? 'cursor-pointer text-slate-700' : 'cursor-not-allowed text-slate-300'].join(' ')}
+                                className={['ml-3 inline-flex h-8 shrink-0 items-center gap-1.5 border-l border-slate-200 pl-3', canPickSummary ? 'cursor-pointer text-slate-700' : 'cursor-not-allowed text-slate-300'].join(' ')}
                               >
                                 <input
                                   type="radio"
-                                  disabled={!row.summaryItem || row.isCurrent}
+                                  disabled={!canPickSummary}
                                   checked={selectedSummary}
                                   onChange={() => row.summaryItem && onPickItem(row, row.summaryItem)}
                                   className="sr-only"
                                 />
-                                <ContextSelectionDot checked={selectedSummary} disabled={!row.summaryItem || row.isCurrent} />
-                                <ContextSourceRowWordStatus label="梗概" value={summaryWordCount} muted={!row.summaryItem} />
+                                <ContextSelectionDot checked={selectedSummary} disabled={!canPickSummary} />
+                                <ContextSourceRowWordStatus label="梗概" value={summaryWordCount} muted={!canPickSummary} />
                               </label>
-                              <label className={['ml-3 inline-flex h-8 shrink-0 items-center gap-1.5 border-l border-slate-200 pl-3', lockedIds.has(row.outlineItem.id) ? 'cursor-not-allowed text-slate-700' : 'cursor-pointer text-slate-700'].join(' ')}>
+                              <label className="ml-3 inline-flex h-8 shrink-0 cursor-not-allowed items-center gap-1.5 border-l border-slate-200 pl-3 text-slate-300">
                                 <input
                                   type="checkbox"
-                                  disabled={lockedIds.has(row.outlineItem.id)}
+                                  disabled
                                   checked={selectedOutline}
                                   onChange={() => onPickItem(row, row.outlineItem)}
                                   className="sr-only"
                                 />
-                                <ContextSelectionDot checked={selectedOutline} disabled={lockedIds.has(row.outlineItem.id)} />
-                                <ContextSourceRowWordStatus label="章纲" value={outlineWordCount} />
+                                <ContextSelectionDot checked={selectedOutline} disabled locked={outlineLocked} />
+                                <ContextSourceRowWordStatus label={`第${row.serialNumber}章章纲`} value={outlineWordCount} muted={!outlineLocked} />
                               </label>
                             </div>
                           </div>
@@ -1626,7 +1635,7 @@ export function WorkbenchPage() {
         setPendingPublish(null);
         return;
       }
-      navigate('/dashboard');
+      navigate('/novels');
     };
     window.addEventListener(SHORTCUT_ACTION_EVENT, handleShortcut);
     return () => window.removeEventListener(SHORTCUT_ACTION_EVENT, handleShortcut);
@@ -1946,7 +1955,9 @@ export function WorkbenchPage() {
     ? linkedContextItems.filter((item) => !requiredContextIds.has(item.id))
     : defaultOptionalContextItems;
   const optionalLinkedContextItems = keepExclusiveChapterNarrativeItems(contextChapterRows, rawOptionalLinkedContextItems);
-  const effectiveLinkedContextItems = mergeContextItems([...requiredContextItems, ...optionalLinkedContextItems]);
+  const shouldAttachRequiredContext = !contextSelectionTouched || linkedContextItems.length > 0;
+  const effectiveRequiredContextItems = shouldAttachRequiredContext ? requiredContextItems : [];
+  const effectiveLinkedContextItems = mergeContextItems([...effectiveRequiredContextItems, ...optionalLinkedContextItems]);
   const selectedDraftContextItems = Array.from(draftContextIds)
     .map((id) => contextItemById.get(id))
     .filter((item): item is WorkbenchLinkedContextItem => Boolean(item));
@@ -1955,7 +1966,13 @@ export function WorkbenchPage() {
   const draftOutlineWordCount = getContextItemsWordCount(selectedDraftContextItems, 'outline');
   const draftSummaryWordCount = getContextItemsWordCount(selectedDraftContextItems, 'summary');
   const canConfirmContextLibrary = requiredContextItems.length > 0
-    && requiredContextItems.every((item) => getContextWordCount(item.content) > 0);
+    && requiredContextItems.every(hasContextContent)
+    && draftContextWordCount > 0
+    && selectedDraftContextItems.every(hasContextContent);
+  const contextLibraryConfirmTitle = canConfirmContextLibrary ? '确认关联资料'
+    : requiredContextItems.length === 0 || !requiredContextItems.every(hasContextContent)
+      ? '当前章节没有章纲，无法确认关联'
+      : '请选择至少一项有内容的资料';
   const updateLinkedContextItems = (items: WorkbenchLinkedContextItem[]) => {
     setLinkedContextItems(items);
     if (!currentNovelId) return;
@@ -1996,20 +2013,18 @@ export function WorkbenchPage() {
     setDraftContextIds((current) => {
       const next = new Set(current);
       if (row.isCurrent) {
-        next.add(row.outlineItem.id);
+        if (hasContextContent(row.outlineItem)) next.add(row.outlineItem.id);
         return next;
       }
       const rowIds = [
-        row.isCurrent ? null : row.chapterItem.id,
-        row.isCurrent ? null : row.outlineItem.id,
-        row.isCurrent ? null : row.summaryItem?.id,
+        row.chapterItem.id,
+        row.summaryItem?.id,
       ].filter((id): id is string => Boolean(id && !requiredContextIds.has(id)));
       const selected = rowIds.length > 0 && rowIds.some((id) => next.has(id));
       rowIds.forEach((id) => {
         if (selected) next.delete(id);
       });
       if (!selected) {
-        next.add(row.outlineItem.id);
         const preferred = getPreferredChapterNarrativeItem(row);
         if (preferred) next.add(preferred.id);
       }
@@ -2018,7 +2033,9 @@ export function WorkbenchPage() {
   };
 
   const pickChapterContextItem = (row: ContextChapterPair, item: WorkbenchLinkedContextItem) => {
+    if (!hasContextContent(item)) return;
     if (row.isCurrent && item.id !== row.outlineItem.id) return;
+    if (item.id === row.outlineItem.id) return;
     if (item.id === row.chapterItem.id || item.id === row.summaryItem?.id) {
       setDraftContextIds((current) => {
         const next = new Set(current);
@@ -2055,9 +2072,10 @@ export function WorkbenchPage() {
       contextChapterRows,
       selectedItems.filter((item) => !requiredContextIds.has(item.id)),
     );
+    const confirmedSelectedItems = mergeContextItems([...requiredContextItems, ...optionalSelectedItems]);
     setContextSelectionTouched(true);
-    updateLinkedContextItems(optionalSelectedItems);
-    setDraftContextIds(new Set([...requiredContextIds, ...optionalSelectedItems.map((item) => item.id)]));
+    updateLinkedContextItems(confirmedSelectedItems);
+    setDraftContextIds(new Set(confirmedSelectedItems.map((item) => item.id)));
     setIsContextLibraryOpen(false);
   };
 
@@ -2624,9 +2642,9 @@ export function WorkbenchPage() {
                   disabled={!canConfirmContextLibrary}
                   onClick={confirmContextLibrary}
                   className={['h-10 rounded-xl px-6 text-sm font-black text-white shadow-sm', canConfirmContextLibrary ? 'bg-[#08AACE] hover:bg-[#0798b8]' : 'cursor-not-allowed bg-slate-300 shadow-none'].join(' ')}
-                  title={canConfirmContextLibrary ? '确认读取关联资料' : '当前章节没有章纲，无法确认读取'}
+                  title={contextLibraryConfirmTitle}
                 >
-                  确认读取
+                  确认关联
                 </button>
               </div>
             </div>

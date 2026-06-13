@@ -72,9 +72,9 @@ const REVIEW_PAGE_LEFT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_left
 const REVIEW_PAGE_RIGHT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_right_width';
 const STATUS_PAGE_LEFT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_status_left_width';
 const STATUS_PAGE_RIGHT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_status_right_width';
-const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] bg-[#E7F8FD] px-1 text-left text-[14px] font-medium text-[#1f2933] shadow-sm transition-colors hover:bg-[#DDF5FC]';
+const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] xy-flow-group-bg px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors';
 const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';
-const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-medium text-[#6f7e90]';
+const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#6f7e90]';
 const REVIEW_PAGE_LEFT_WIDTH_LIMIT = { min: 180, max: 360 };
 const REVIEW_PAGE_RIGHT_WIDTH_LIMIT = { min: 260, max: 520 };
 const STATUS_PAGE_LEFT_WIDTH_LIMIT = { min: 190, max: 360 };
@@ -1748,6 +1748,7 @@ export function ChapterEditor({
             caretColor: fontSettings.fontColor,
             fontSize: `${fontSettings.fontSize}px`,
             lineHeight: fontSettings.lineHeight,
+            backgroundColor: 'transparent',
             paddingLeft: editorTextPaddingLeft,
             paddingRight: editorTextPaddingRight,
             textIndent: editorTextIndent,
@@ -1874,10 +1875,12 @@ export function ChapterEditor({
                                   onClick={() => selectStatusChapter(item.id)}
                                   title={`${updated ? '已更新状态到' : '未更新状态到'}第${item.serialNumber}章 ${item.title || ''}`}
                                   className={`relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
-                                    updated
+                                    selected
+                                      ? 'border-transparent xy-selected-orange-bg text-slate-900'
+                                      : updated
                                       ? 'border-[#08B3D9] bg-[#08B3D9] text-white hover:border-[#067B96] hover:bg-[#067B96]'
                                       : 'border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
-                                  } ${selected ? 'ring-2 ring-[#08B3D9] ring-offset-2' : ''}`}
+                                  }`}
                                 >
                                   {item.serialNumber}
                                 </button>
@@ -2092,11 +2095,11 @@ export function ChapterEditor({
                                   type="button"
                                   onClick={() => selectReviewChapter(item.id)}
                                   title={`第${item.serialNumber}章 ${item.title || '未命名章节'} · ${item.wordCount}字`}
-                                  className={`relative h-9 min-w-9 rounded-lg border px-2 text-sm font-bold transition-colors ${
+                                  className={`relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
                                     selected
-                                      ? 'border-[#08B3D9] bg-[#08B3D9] text-white'
+                                      ? 'border-transparent xy-selected-orange-bg text-slate-900'
                                       : 'border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
-                                  } ${selected ? 'ring-2 ring-[#08B3D9] ring-offset-2' : ''}`}
+                                  }`}
                                 >
                                   {item.serialNumber}
                                 </button>

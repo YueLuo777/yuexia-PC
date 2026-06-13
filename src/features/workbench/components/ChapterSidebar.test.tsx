@@ -74,23 +74,49 @@ describe('ChapterSidebar', () => {
     const chapterSidebarSource = readSource('ChapterSidebar.tsx');
     const publishedSidebarSource = readSource('PublishedSidebar.tsx');
 
-    for (const source of [chapterSidebarSource, publishedSidebarSource]) {
-      expect(source).toContain('rounded-md border border-[#BDEEF7] bg-[#E7F8FD] px-1 text-left text-[14px]');
+    expect(chapterSidebarSource).toContain('group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border px-1 text-left text-[14px]');
+    expect(chapterSidebarSource).toContain("const WORKBENCH_FOLDER_GROUP_DEFAULT_TONE_CLASS = 'border-[#BDEEF7] xy-flow-group-bg';");
+
+    for (const source of [publishedSidebarSource]) {
+      expect(source).toContain('group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border px-1 text-left text-[14px]');
+      expect(source).toContain("const WORKBENCH_FOLDER_GROUP_DEFAULT_TONE_CLASS = 'border-[#BDEEF7] xy-flow-group-bg';");
       expect(source).toContain('overflow-y-auto px-1 py-2');
       expect(source).toContain('className="mt-0.5 space-y-0.5"');
       expect(source).not.toContain('className="ml-1 mt-0.5 space-y-0.5"');
     }
+    expect(chapterSidebarSource).toContain('overflow-y-auto px-1 py-2');
+    expect(chapterSidebarSource).toContain('className="mt-0.5 space-y-0.5"');
+    expect(chapterSidebarSource).not.toContain('className="ml-1 mt-0.5 space-y-0.5"');
     expect(chapterSidebarSource).toContain('rounded-[8px] border px-[24px] py-2');
     expect(publishedSidebarSource).toContain('border-l-[3px] px-[26px] py-2');
   });
 
-  it('uses the orange selected chapter style in the body chapter list', () => {
+  it('only changes the selected chapter background in the body chapter list', () => {
     const chapterSidebarSource = readSource('ChapterSidebar.tsx');
 
-    expect(chapterSidebarSource).toContain("? 'border-[#FDBA74] bg-[#FFF7ED]'");
-    expect(chapterSidebarSource).toContain("? 'text-[#F97316]' : 'text-gray-700'");
-    expect(chapterSidebarSource).toContain("? 'text-[#2563EB]' : 'text-gray-400'");
+    expect(chapterSidebarSource).toContain("? 'border-transparent xy-selected-mint-bg'");
+    expect(chapterSidebarSource).toContain('className="flex-1 truncate whitespace-nowrap text-sm font-black text-gray-700"');
+    expect(chapterSidebarSource).toContain('className="shrink-0 text-xs font-black text-gray-400 transition-opacity group-hover:opacity-0"');
+    expect(chapterSidebarSource).not.toContain("? 'border-[#FDBA74] bg-[#FFF7ED]'");
+    expect(chapterSidebarSource).not.toContain("? 'text-[#F97316]' : 'text-gray-700'");
+    expect(chapterSidebarSource).not.toContain("? 'text-[#2563EB]' : 'text-gray-400'");
     expect(chapterSidebarSource).not.toContain("? 'border-[#BDEEF7] bg-[#E7F8FD]'");
+  });
+
+  it('keeps volume rows in the default folder color while selected chapters use mint green', () => {
+    const chapterSidebarSource = readSource('ChapterSidebar.tsx');
+    const publishedSidebarSource = readSource('PublishedSidebar.tsx');
+    const sharedStylesSource = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../shared/styles/index.css'), 'utf8');
+
+    expect(chapterSidebarSource).toContain('className={`${WORKBENCH_FOLDER_GROUP_BUTTON_BASE_CLASS} ${WORKBENCH_FOLDER_GROUP_DEFAULT_TONE_CLASS}`');
+    expect(publishedSidebarSource).toContain('className={`${WORKBENCH_FOLDER_GROUP_BUTTON_BASE_CLASS} ${WORKBENCH_FOLDER_GROUP_DEFAULT_TONE_CLASS}`');
+    expect(chapterSidebarSource).toContain("font-black text-[#1f2933]");
+    expect(sharedStylesSource).toContain('.xy-selected-mint-bg,');
+    expect(sharedStylesSource).toContain('background-color: var(--xy-custom-content-selected-bg) !important;');
+    expect(chapterSidebarSource).not.toContain('volumeHasSelectedChapter');
+    expect(publishedSidebarSource).not.toContain('volumeHasSelectedChapter');
+    expect(chapterSidebarSource).not.toContain('WORKBENCH_FOLDER_GROUP_SELECTED_TONE_CLASS');
+    expect(publishedSidebarSource).not.toContain('WORKBENCH_FOLDER_GROUP_SELECTED_TONE_CLASS');
   });
 
   it('uses the reference popup style for chapter context menus with a placeholder group submenu', () => {

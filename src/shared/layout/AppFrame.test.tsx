@@ -29,14 +29,17 @@ describe('writer workspace chrome styling', () => {
     expect(editorRule).not.toContain('repeating-linear-gradient');
   });
 
-  it('makes the fixed home tab easier to find than normal work tabs', async () => {
+  it('makes the fixed novel-library tab easier to find than normal work tabs', async () => {
     const appFrame = await readSource('AppFrame.tsx');
+    const tabs = await readSource('../tabs/WorkspaceTabsContext.tsx');
     const styles = await readSource('../styles/index.css');
     const homeRule = styles.slice(
       styles.indexOf('.workspace-tab-home,'),
       styles.indexOf('.xy-wa-book-cover-empty {'),
     );
 
+    expect(tabs).toContain("title: '我的小说'");
+    expect(tabs).toContain("path: '/novels'");
     expect(appFrame).toContain('workspace-tab-home');
     expect(appFrame).toContain('workspace-tab-home-inactive');
     expect(homeRule).toContain('font-size: 15px;');

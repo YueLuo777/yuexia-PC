@@ -22,9 +22,14 @@ describe('WorkbenchAIPanel linked context controls', () => {
     expect(source).toContain('const linkedContextPayload = buildBodyLinkedContextPayload(activeRequestLinkedContextItems);');
     expect(source).toContain('linkedItems: linkedContextPayload ? activeRequestLinkedContextItems : []');
     expect(source).toContain('const clearLinkedContext = () => {');
-    expect(source).toContain('aria-label="取消关联资料"');
-    expect(source).toContain('title="取消关联资料"');
-    expect(source).toContain('bg-[#ff4b4b]');
+    expect(source).toContain('if (hasLinkedContext) {');
+    expect(source).toContain('clearLinkedContext();');
+    expect(source).toContain('return;');
+    expect(source).not.toContain('aria-label="取消关联资料"');
+    expect(source).not.toContain('title="取消关联资料"');
+    expect(source).not.toContain('bg-[#ff4b4b]');
+    expect(source).toContain('关联 <WordCountText value={activeLinkWordCount} compact />');
+    expect(source).not.toContain('已关联：<WordCountText value={activeLinkWordCount} compact />');
     expect(source).not.toContain('if (!activeSession?.linkChapter || linkedContextItems.length === 0) return;');
   });
 });

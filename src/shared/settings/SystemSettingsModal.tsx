@@ -1,7 +1,10 @@
-import { X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
+import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
+import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 import {
   isRememberAssociationsEnabled,
   setRememberAssociationsEnabled,
@@ -14,8 +17,23 @@ const tabs: Array<{ id: SettingsTab; label: string }> = [
   { id: 'appIcon', label: '软件图标' },
 ];
 
-export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '' }: { isOpen: boolean; onClose: () => void; homeAvatar?: string }) {
-  useTopModalEscape(isOpen, onClose);
+const USER_AVATAR_KEY = 'xinyuexia_sidebar_user_avatar';
+
+interface SystemSettingsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  homeAvatar?: string;
+  variant?: 'modal' | 'page';
+}
+
+function readHomeAvatar() {
+  return localStorage.getItem(USER_AVATAR_KEY) || '';
+}
+
+export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant = 'modal' }: SystemSettingsModalProps) {
+  const isPage = variant === 'page';
+  useTopModalEscape(!isPage && isOpen, onClose);
+  const draggable = useDraggableModal('dashboard_system_settings', { x: 0, y: 0, width: 936, height: 720 });
   const [activeTab, setActiveTab] = useState<SettingsTab>('association');
   const [iconInfo, setIconInfo] = useState<AppIconResult | null>(null);
   const [status, setStatus] = useState('');
@@ -107,15 +125,40 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '' }: { isOp
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="flex h-[min(720px,calc(100vh-32px))] w-[936px] max-w-[96vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3">
-          <div>
+    <div
+      className={isPage ? 'h-full min-h-0 overflow-hidden bg-slate-50 p-5' : 'fixed inset-0 z-[120] flex items-center justify-center bg-black/40 p-4'}
+      onClick={isPage ? undefined : onClose}
+    >
+      <div
+        data-draggable-managed={isPage ? undefined : 'true'}
+        data-modal-id={isPage ? undefined : 'dashboard-system-settings'}
+        className={isPage ? 'mx-auto flex h-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm' : 'relative flex h-[min(720px,calc(100vh-32px))] w-[936px] max-w-[96vw] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'}
+        style={isPage ? undefined : ({
+          ...draggable.style,
+          maxWidth: 'calc((100vw - 32px) / var(--xinyuexia-effective-scale, 1))',
+          maxHeight: 'calc((100vh - 112px) / var(--xinyuexia-effective-scale, 1))',
+        } as React.CSSProperties)}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div {...(isPage ? {} : draggable.dragHandleProps)} className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3">
+          <div className="flex items-center gap-3">
+            {isPage ? (
+              <button
+                onClick={onClose}
+                className="flex h-9 w-9 items-center justify-center rounded-lg border transition-colors border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                title="返回我的小说"
+                aria-label="返回我的小说"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+            ) : null}
             <h2 className="text-base font-bold text-slate-900">系统设置</h2>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-4 w-4" />
-          </button>
+          {!isPage ? (
+            <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
         </div>
 
         <div className="flex min-h-0 flex-1">
@@ -292,7 +335,21 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '' }: { isOp
             )}
           </div>
         </div>
+        {!isPage && <ModalResizeHandles draggable={draggable} />}
       </div>
     </div>
   );
+}
+
+export function SystemSettingsPage() {
+  const navigate = useNavigate();
+  const [homeAvatar, setHomeAvatar] = useState(readHomeAvatar);
+
+  useEffect(() => {
+    const refreshHomeAvatar = () => setHomeAvatar(readHomeAvatar());
+    window.addEventListener('storage', refreshHomeAvatar);
+    return () => window.removeEventListener('storage', refreshHomeAvatar);
+  }, []);
+
+  return <SystemSettingsModal isOpen onClose={() => navigate('/novels')} homeAvatar={homeAvatar} variant="page" />;
 }

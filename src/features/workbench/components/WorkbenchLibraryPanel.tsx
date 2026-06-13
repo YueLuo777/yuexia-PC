@@ -82,9 +82,9 @@ import { LinkedSourceControl } from '@/shared/ui/LinkedSourceControl';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 import { WordCountText } from '@/shared/ui/WordCountText';
 
-const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] bg-[#E7F8FD] px-1 text-left text-[14px] font-medium text-[#1f2933] shadow-sm transition-colors hover:bg-[#DDF5FC]';
+const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] xy-flow-group-bg px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors';
 const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';
-const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-medium text-[#6f7e90]';
+const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#6f7e90]';
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 162;
@@ -154,6 +154,7 @@ interface RoleContent {
   type: string;
   lifeStatus: '存活' | '死亡';
   baseSetting: string;
+  relationship: string;
   stateSettings: RoleStateSettings;
   stateUpdateChapters?: RoleStateUpdateChapters;
   personality: string;
@@ -167,6 +168,7 @@ interface RoleHistoryVersion {
   type: string;
   lifeStatus: '存活' | '死亡';
   baseSetting: string;
+  relationship: string;
   stateSettings: RoleStateSettings;
   stateUpdateChapters?: RoleStateUpdateChapters;
   personality: string;
@@ -181,7 +183,7 @@ interface SettingContent {
 }
 
 const DEFAULT_ROLE_TYPES = DEFAULT_WORKBENCH_ROLE_TYPES;
-const DEFAULT_SETTING_TYPES = ['核心设定', '主线剧情', '等级体系', '势力设定', '伏笔设定', '其他设定', '未分类'];
+const DEFAULT_SETTING_TYPES = ['核心设定', '题材卖点', '世界规则', '成长体系', '金手指', '势力组织', '人物关系', '道具资源', '地点地图', '主线剧情', '伏笔谜团', '禁写规则', '其他设定', '未分类'];
 const ROLE_TAB = '角色';
 const BRAINSTORM_TAB = '脑洞';
 const SETTING_TAB = '大纲';
@@ -369,6 +371,7 @@ function getDetailOutlinePreviewHeight() {
 }
 
 const DETAIL_OUTLINE_STATE_MARKER = '【本章状态变化预期】';
+const DETAIL_OUTLINE_PUBLISHED_GROUP_NAME = 'detail_outline_published_chapters';
 
 function splitDetailOutlineStateExpectation(content: string) {
   const markerIndex = content.indexOf(DETAIL_OUTLINE_STATE_MARKER);
@@ -622,7 +625,6 @@ type LibraryTabConfig = {
   brainstormIdea?: string;
   brainstormCheat?: string;
   brainstormCount?: string;
-  brainstormGenerateMode?: BrainstormGenerateMode;
   brainstormRequirement?: string;
   brainstormPreviewFontSize?: number;
   brainstormOutputFontSize?: number;
@@ -646,7 +648,6 @@ type BrainstormQuestionKey =
   | 'brainstormRequirement';
 
 type BrainstormQuestionDraft = Record<BrainstormQuestionKey, string>;
-type BrainstormGenerateMode = 'sequential' | 'batch';
 
 const EMPTY_BRAINSTORM_QUESTION_DRAFT: BrainstormQuestionDraft = {
   brainstormGenre: '',
@@ -805,7 +806,7 @@ const BRAINSTORM_QUESTION_FIELDS: Array<{
   { key: 'brainstormBackground', label: '故事主题', placeholder: '如系统流' },
   { key: 'brainstormIdea', label: '主角金手指', placeholder: '如吞噬系统、神豪系统' },
   { key: 'brainstormCheat', label: '你的构思', placeholder: '任何灵感都可以' },
-  { key: 'brainstormCount', label: '一次生成几个脑洞', placeholder: '' },
+  { key: 'brainstormCount', label: '逐个生成几个脑洞', placeholder: '' },
   { key: 'brainstormRequirement', label: '补充内容', placeholder: '主角名字、性格、女主设定等' },
 ];
 const BRAINSTORM_OUTPUT_ONLY_INSTRUCTION = '请直接输出实际脑洞内容，不要复述提示词、其他要求、题材、故事主题等标签。';
@@ -901,6 +902,24 @@ function hasStoredExpandedNumberSet(storageKey: string, tab: string, name: strin
 
 function persistExpandedNumberSet(storageKey: string, tab: string, name: string, values: Set<number>) {
   localStorage.setItem(getExpandedNumberSetStorageKey(storageKey, tab, name), JSON.stringify([...values]));
+}
+
+function getManualDetailOutlinePublishedStorageKey(storageKey: string) {
+  return `${storageKey}_${DETAIL_OUTLINE_PUBLISHED_GROUP_NAME}_v1`;
+}
+
+function readManualDetailOutlinePublishedChapterIds(storageKey: string) {
+  try {
+    const raw = localStorage.getItem(getManualDetailOutlinePublishedStorageKey(storageKey));
+    const parsed = raw ? JSON.parse(raw) as number[] : [];
+    return new Set(parsed.filter((item) => Number.isFinite(item)));
+  } catch {
+    return new Set<number>();
+  }
+}
+
+function persistManualDetailOutlinePublishedChapterIds(storageKey: string, values: Set<number>) {
+  localStorage.setItem(getManualDetailOutlinePublishedStorageKey(storageKey), JSON.stringify([...values]));
 }
 
 function getSettingLibraryLeftMaxWidth(tab: string, scaleValue = 1) {
@@ -1210,6 +1229,7 @@ function buildRoleStateSettingsText(settings: RoleStateSettings) {
 function getRoleReadableContent(role: RoleContent) {
   return [
     getRoleBaseSetting(role),
+    role.relationship?.trim() ? `人物关系：${role.relationship.trim()}` : '',
     buildRoleStateSettingsText(getRoleStateSettings(role)),
   ].filter((part) => part.trim()).join('\n\n');
 }
@@ -1228,6 +1248,7 @@ function parseRoleContent(content: string): RoleContent {
       type,
       lifeStatus,
       baseSetting,
+      relationship: parsed.relationship || '',
       stateSettings,
       stateUpdateChapters,
       personality: parsed.personality || '',
@@ -1241,6 +1262,7 @@ function parseRoleContent(content: string): RoleContent {
       type: '未分类',
       lifeStatus: '存活',
       baseSetting: content || '',
+      relationship: '',
       stateSettings,
       stateUpdateChapters: {},
       personality: '',
@@ -1261,6 +1283,7 @@ function stringifyRoleContent(value: RoleContent) {
     type,
     lifeStatus: normalizeWorkbenchRoleLifeStatus(type, value.lifeStatus),
     baseSetting,
+    relationship: value.relationship || '',
     stateSettings,
     stateUpdateChapters,
     background: value.background || baseSetting,
@@ -1282,6 +1305,7 @@ function buildRoleReaderContent(entry: WorkbenchLibraryEntry, role: RoleContent)
   ].filter(Boolean).join('\n\n');
   return [
     wrapAiRequestTag('基础设定', baseContent),
+    role.relationship.trim() ? wrapAiRequestTag('人物关系', truncateTextForAi(role.relationship, 700)) : '',
     wrapAiRequestTag('状态设定', stateContent),
   ].filter(Boolean).join('\n\n');
 }
@@ -1292,6 +1316,7 @@ function createRoleHistoryVersion(entry: WorkbenchLibraryEntry, role: RoleConten
     type: role.type,
     lifeStatus: role.lifeStatus,
     baseSetting: getRoleBaseSetting(role),
+    relationship: role.relationship,
     stateSettings: getRoleStateSettings(role),
     stateUpdateChapters: getRoleStateUpdateChapters(role),
     personality: role.personality,
@@ -1306,6 +1331,7 @@ function isSameRoleVersion(left: RoleHistoryVersion, right: RoleHistoryVersion) 
     left.type === right.type &&
     left.lifeStatus === right.lifeStatus &&
     left.baseSetting === right.baseSetting &&
+    left.relationship === right.relationship &&
     JSON.stringify(left.stateSettings) === JSON.stringify(right.stateSettings) &&
     JSON.stringify(left.stateUpdateChapters ?? {}) === JSON.stringify(right.stateUpdateChapters ?? {}) &&
     left.personality === right.personality &&
@@ -1319,11 +1345,19 @@ function appendRoleHistory(history: RoleHistoryVersion[] | undefined, version: R
   return [version, ...current].slice(0, ROLE_HISTORY_LIMIT);
 }
 
+function normalizeSettingType(value: string | undefined) {
+  const type = value?.trim() || UNCATEGORIZED_TYPE;
+  if (type === '境界体系' || type === '等级体系') return '成长体系';
+  if (type === '势力设定') return '势力组织';
+  if (type === '伏笔设定') return '伏笔谜团';
+  return type;
+}
+
 function parseSettingContent(content: string): SettingContent {
   try {
     const parsed = JSON.parse(content) as Partial<SettingContent>;
     return {
-      type: parsed.type === '境界体系' ? '等级体系' : parsed.type || '未分类',
+      type: normalizeSettingType(parsed.type),
       body: parsed.body || '',
     };
   } catch {
@@ -1335,7 +1369,10 @@ function parseSettingContent(content: string): SettingContent {
 }
 
 function stringifySettingContent(value: SettingContent) {
-  return JSON.stringify(value);
+  return JSON.stringify({
+    ...value,
+    type: normalizeSettingType(value.type),
+  });
 }
 
 function normalizeImportedSettingKey(value: string) {
@@ -1348,11 +1385,18 @@ function normalizeImportedSettingBody(value: string) {
 
 function classifySettingText(text: string) {
   const source = text.toLowerCase();
-  if (/(境界|等级|阶位|修炼|突破|修为|练气|筑基|金丹|元婴|化神|职业等级|异能等级|机甲等级|基因等级)/.test(source)) return '等级体系';
-  if (/(宗门|家族|王朝|帮派|军队|学院|公司|财团|组织|势力|联盟|官方|邪教)/.test(source)) return '势力设定';
+  if (/(爽点|卖点|期待感|差异点|题材|男频|读者第一眼)/.test(source)) return '题材卖点';
+  if (/(境界|等级|阶位|成长|修炼|突破|修为|职业|技能|资源消耗|晋升|练气|筑基|金丹|元婴|化神|异能等级|机甲等级|基因等级)/.test(source)) return '成长体系';
+  if (/(金手指|外挂|独有能力|代价|升级方式|误用风险|系统|面板)/.test(source)) return '金手指';
+  if (/(宗门|家族|王朝|帮派|军队|学院|公司|财团|组织|势力|联盟|官方|邪教|反派组织|阵营)/.test(source)) return '势力组织';
+  if (/(人物关系|关系网|关系规则|家族谱系|阵营关系)/.test(source)) return '人物关系';
+  if (/(道具|资源|货币|装备|权限|稀缺性|物品)/.test(source)) return '道具资源';
+  if (/(地点|地图|交通|地域|地理|重要地点)/.test(source)) return '地点地图';
   if (/(主线|剧情|任务|目标|冲突|开局|转折|高潮|结局|章节|卷|事件)/.test(source)) return '主线剧情';
-  if (/(伏笔|线索|暗示|秘密|谜团|隐藏|后续|埋下|回收)/.test(source)) return '伏笔设定';
-  if (/(世界观|规则|背景|核心|设定|体系|灾变|时代|能量|天道|科技规则)/.test(source)) return '核心设定';
+  if (/(伏笔|线索|暗示|秘密|谜团|隐藏|后续|埋下|回收|真相)/.test(source)) return '伏笔谜团';
+  if (/(禁写|不能写错|不能越界|硬约束|前后矛盾|规则红线)/.test(source)) return '禁写规则';
+  if (/(世界|规则|背景|科技|修炼|社会秩序|限制条件|天道|能量)/.test(source)) return '世界规则';
+  if (/(核心|定位|承诺|主角处境|底层设定)/.test(source)) return '核心设定';
   return '其他设定';
 }
 
@@ -1511,6 +1555,7 @@ function RoleBaseStateEditor({
   const stateSettings = getRoleStateSettings(role);
   const stateUpdateChapters = getRoleStateUpdateChapters(role);
   const baseWords = countTextWords(baseSetting);
+  const relationshipWords = countTextWords(role.relationship);
   const stateWords = countTextWords(buildRoleStateSettingsText(stateSettings));
   const isDeleteLocked = roleIsMaleProtagonist || !deleteUnlocked;
   const currentChapterLabel = currentChapterNumber ? `当前编辑：第${currentChapterNumber}章` : '当前编辑：未选择章节';
@@ -1539,6 +1584,10 @@ function RoleBaseStateEditor({
       stateUpdateChapters: nextStateUpdateChapters,
       status: buildRoleStateSettingsText(nextStateSettings),
     });
+  };
+
+  const updateRelationship = (value: string) => {
+    onRoleChange({ relationship: value });
   };
 
   return (
@@ -1602,7 +1651,7 @@ function RoleBaseStateEditor({
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(300px,0.9fr)_minmax(380px,1.1fr)] gap-4 p-5">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(280px,0.85fr)_minmax(260px,0.7fr)_minmax(380px,1.1fr)] gap-4 p-5">
         <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
           <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 px-5">
             <div className="flex items-center gap-2">
@@ -1615,13 +1664,35 @@ function RoleBaseStateEditor({
             <textarea
               value={baseSetting}
               onChange={(event) => updateBaseSetting(event.target.value)}
-              placeholder="记录姓名、身份、外貌、角色定位、核心性格、人物背景、能力规则、关系设定等低频变化内容。"
+              placeholder="记录姓名、身份、外貌、角色定位、核心性格、人物背景、能力规则等低频变化内容。"
               className="editor-scrollbar h-full w-full resize-none rounded-xl border border-slate-200 bg-white p-5 text-sm leading-8 text-slate-700 outline-none transition-colors focus:border-[#08AACE]/50"
               style={{ fontSize: roleTextFontSize }}
             />
           </div>
           <div className="shrink-0 border-t border-slate-200 px-5 py-3 text-xs font-bold leading-5 text-slate-500">
             AI 默认只读取，不直接覆盖。发现缺失时进入“基础设定补充建议”，由用户确认后写入。
+          </div>
+        </section>
+
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50/40">
+          <div className="flex h-14 shrink-0 items-center justify-between border-b border-emerald-100 px-5">
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full bg-emerald-500" />
+              <h3 className="text-base font-black text-slate-950">人物关系</h3>
+            </div>
+            <span className="text-sm font-black text-slate-400">{relationshipWords}字</span>
+          </div>
+          <div className="min-h-0 flex-1 p-4">
+            <textarea
+              value={role.relationship}
+              onChange={(event) => updateRelationship(event.target.value)}
+              placeholder="记录与主角、阵营、亲友、敌人、师徒、利益对象的关系。关系绑定人物，不绑定世界。"
+              className="editor-scrollbar h-full w-full resize-none rounded-xl border border-emerald-100 bg-white p-5 text-sm leading-8 text-slate-700 outline-none transition-colors focus:border-emerald-300"
+              style={{ fontSize: roleTextFontSize }}
+            />
+          </div>
+          <div className="shrink-0 border-t border-emerald-100 px-5 py-3 text-xs font-bold leading-5 text-slate-500">
+            只写这个人物自己的关系；全局关系网仍放到作品设定的“人物关系”分类。
           </div>
         </section>
 
@@ -2154,6 +2225,16 @@ export function WorkbenchLibraryPanel({
   const [expandedOutlineVolumeIds, setExpandedOutlineVolumeIds] = useState<Set<number>>(() => (
     readExpandedNumberSet(outlineStorageKey ?? storageKey, activeTab, 'outline_volumes')
   ));
+  const [showDetailOutlinePublished, setShowDetailOutlinePublished] = useState(false);
+  const [manualDetailOutlinePublishedChapterIds, setManualDetailOutlinePublishedChapterIds] = useState<Set<number>>(() => (
+    readManualDetailOutlinePublishedChapterIds(outlineStorageKey ?? storageKey)
+  ));
+  const [detailOutlineChapterMenu, setDetailOutlineChapterMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    chapter: Chapter | null;
+  }>({ visible: false, x: 0, y: 0, chapter: null });
   const [isFieldSizeSettingsOpen, setIsFieldSizeSettingsOpen] = useState(false);
   const lastFieldSizeOpenSignalRef = useRef(fieldSizeOpenSignal);
   const lastOpenLogSignalRef = useRef(openLogSignal);
@@ -2328,7 +2409,6 @@ export function WorkbenchLibraryPanel({
     Math.max(BRAINSTORM_OUTPUT_MIN_FONT_SIZE, activeTabConfig.brainstormOutputFontSize ?? 14),
   );
   const brainstormStreamEnabled = activeTabConfig.brainstormStreamEnabled !== false;
-  const brainstormGenerateMode: BrainstormGenerateMode = activeTabConfig.brainstormGenerateMode === 'batch' ? 'batch' : 'sequential';
   const settingPreviewFontSize = Math.min(
     SETTING_PREVIEW_MAX_FONT_SIZE,
     Math.max(SETTING_PREVIEW_MIN_FONT_SIZE, activeTabConfig.settingPreviewFontSize ?? 14),
@@ -3258,6 +3338,11 @@ export function WorkbenchLibraryPanel({
   }, [activeTab, outlineStorageKey, storageKey]);
 
   useEffect(() => {
+    setManualDetailOutlinePublishedChapterIds(readManualDetailOutlinePublishedChapterIds(outlineStorageKey ?? storageKey));
+    setShowDetailOutlinePublished(false);
+  }, [outlineStorageKey, storageKey]);
+
+  useEffect(() => {
     if (roleExpandedReloadRef.current) {
       roleExpandedReloadRef.current = false;
       return;
@@ -3280,6 +3365,17 @@ export function WorkbenchLibraryPanel({
     }
     persistExpandedNumberSet(outlineStorageKey ?? storageKey, activeTab, 'outline_volumes', expandedOutlineVolumeIds);
   }, [activeTab, expandedOutlineVolumeIds, outlineStorageKey, storageKey]);
+
+  useEffect(() => {
+    persistManualDetailOutlinePublishedChapterIds(outlineStorageKey ?? storageKey, manualDetailOutlinePublishedChapterIds);
+  }, [manualDetailOutlinePublishedChapterIds, outlineStorageKey, storageKey]);
+
+  useEffect(() => {
+    if (!detailOutlineChapterMenu.visible) return;
+    const close = () => setDetailOutlineChapterMenu({ visible: false, x: 0, y: 0, chapter: null });
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [detailOutlineChapterMenu.visible]);
 
   useEffect(() => {
     if ((!tabs.includes(CHAPTER_SUMMARY_TAB) || !tabs.includes(VOLUME_SUMMARY_TAB)) && activeTab !== OUTLINE_LIBRARY_TAB && activeTab !== DETAIL_OUTLINE_TAB) return;
@@ -3865,7 +3961,7 @@ export function WorkbenchLibraryPanel({
 
   const sendLibraryAiMessage = async (
     overrideText?: string,
-    options: { visibleText?: string; previewCount?: number; generationMode?: BrainstormGenerateMode } = {},
+    options: { visibleText?: string; previewCount?: number } = {},
   ) => {
     const text = (overrideText ?? aiInput).trim();
     if (isLibraryAiLoading || (!text && activeTab !== SETTING_TAB)) return;
@@ -3882,9 +3978,6 @@ export function WorkbenchLibraryPanel({
     const targetBrainstormPreviewCount = targetTab === BRAINSTORM_TAB
       ? options.previewCount ?? getBrainstormOutputCount(brainstormQuestionDraft.brainstormCount)
       : undefined;
-    const targetBrainstormGenerateMode: BrainstormGenerateMode = targetTab === BRAINSTORM_TAB
-      ? options.generationMode ?? brainstormGenerateMode
-      : 'batch';
     setIsLibraryAiLoading(true);
     if (overrideText === undefined) setAiInput('');
     if (targetTab === BRAINSTORM_TAB) {
@@ -3904,7 +3997,6 @@ export function WorkbenchLibraryPanel({
     setAiOutput(pendingOutput);
     const shouldStream = targetTab === SETTING_TAB || (targetTab === BRAINSTORM_TAB && brainstormStreamEnabled);
     const shouldGenerateBrainstormSequentially = targetTab === BRAINSTORM_TAB
-      && targetBrainstormGenerateMode === 'sequential'
       && typeof targetBrainstormPreviewCount === 'number'
       && targetBrainstormPreviewCount > 1;
     const task = startBackgroundAiTask({
@@ -4110,9 +4202,8 @@ export function WorkbenchLibraryPanel({
     const promptText = buildBrainstormPromptFromQuestions(brainstormGenerateDraft);
     const visibleText = stripBrainstormRequestHeader(promptText);
     const previewCount = getBrainstormOutputCount(brainstormGenerateDraft.brainstormCount);
-    const generationMode = brainstormGenerateMode;
     setBrainstormGenerateDraft(null);
-    void sendLibraryAiMessage(promptText, { visibleText, previewCount, generationMode });
+    void sendLibraryAiMessage(promptText, { visibleText, previewCount });
   };
 
   const addRoleTypeByName = (name: string) => {
@@ -4144,6 +4235,7 @@ export function WorkbenchLibraryPanel({
         type: normalizedType,
         lifeStatus: '存活',
         baseSetting: '',
+        relationship: '',
         stateSettings,
         personality: '',
         background: '',
@@ -5705,9 +5797,9 @@ export function WorkbenchLibraryPanel({
                               onDragEnd={handleLibraryEntryDragEnd}
                               onContextMenu={(event) => openEntryMenu(event, entry)}
                               onClick={() => setSelectedId(entry.id)}
-                              className={`flex w-full cursor-pointer items-center gap-2 rounded-xl border px-4 py-2 text-left text-sm transition-colors ${
+                              className={`flex w-full cursor-pointer items-center gap-2 rounded-xl border px-4 py-2 text-left text-sm font-black transition-colors ${
                                 selectedEntry?.id === entry.id
-                                  ? 'border-brand bg-[#FFF7ED] text-gray-900'
+                                  ? 'border-transparent xy-selected-mint-bg text-gray-900'
                                   : 'border-transparent bg-white text-gray-600 hover:border-gray-200'
                               } ${draggingLibraryEntry?.entryId === entry.id ? 'opacity-60' : ''}`}
                             >
@@ -6194,20 +6286,20 @@ export function WorkbenchLibraryPanel({
                             onClick={() => {
                               setSelectedIdForTab(effectiveLibraryTab, entry.id);
                             }}
-                            className={`group w-full rounded-lg border px-3 py-1.5 text-left text-sm leading-5 transition-colors ${
+                            className={`group w-full rounded-lg border px-3 py-1.5 text-left text-sm font-black leading-5 transition-colors ${
                               currentSelectedEntry?.id === entry.id
                                 ? activeIsBrainstorm
-                                  ? 'border-orange-300 bg-orange-50 text-orange-500'
-                                  : 'border-brand bg-[#FFF7ED] text-gray-900'
+                                  ? 'border-transparent xy-selected-mint-bg text-gray-900'
+                                  : 'border-transparent xy-selected-mint-bg text-gray-900'
                                 : activeIsBrainstorm
-                                  ? 'border-transparent bg-white text-orange-500 hover:border-orange-200 hover:bg-orange-50/60'
+                                  ? 'border-transparent bg-white text-gray-700 hover:border-gray-200 hover:bg-gray-50'
                                   : 'border-transparent bg-white text-gray-600 hover:border-gray-200'
                             } ${draggingLibraryEntry?.entryId === entry.id ? 'opacity-60' : ''}`}
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <span className={`truncate text-sm font-bold ${activeIsBrainstorm ? 'text-orange-500' : ''}`}>{entry.title}</span>
+                              <span className="truncate text-sm font-black text-gray-700">{entry.title}</span>
                               <span className="flex shrink-0 items-center gap-2">
-                                <span className="rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-bold text-[#08AACE]">
+                                <span className={activeIsBrainstorm ? 'text-xs font-black text-gray-400' : 'rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-bold text-[#08AACE]'}>
                                   <WordCountText value={entryWordCount} compact />
                                 </span>
                               </span>
@@ -6696,29 +6788,7 @@ export function WorkbenchLibraryPanel({
               </div>
               <div className="mt-2 flex items-center gap-3">
                 <div className="flex min-w-0 flex-1 items-center gap-2">
-                  <div className="flex h-8 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
-                    {([
-                      ['sequential', '逐个'],
-                      ['batch', '一次'],
-                    ] as const).map(([value, label]) => {
-                      const active = brainstormGenerateMode === value;
-                      return (
-                        <button
-                          {...{ key: value }}
-                          type="button"
-                          onClick={() => updateActiveTabConfig({ brainstormGenerateMode: value })}
-                          className={`w-12 border-r border-slate-200 text-sm font-black leading-none transition-colors last:border-r-0 ${
-                            active
-                              ? 'bg-[#08AACE] text-white'
-                              : 'bg-white text-slate-700 hover:bg-[#EAF9FD] hover:text-[#08AACE]'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <span className="shrink-0 text-sm font-black text-slate-950">生成</span>
+                  <span className="shrink-0 text-sm font-black text-slate-950">逐个生成</span>
                   <div className="flex h-8 min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white">
                     {['3', '5', '10'].map((value) => {
                       const active = brainstormQuestionDraft.brainstormCount === value;
@@ -6742,9 +6812,9 @@ export function WorkbenchLibraryPanel({
                 <button
                   onClick={openBrainstormGenerateConfirm}
                   disabled={isLibraryAiLoading}
-                  className="h-10 w-16 shrink-0 whitespace-nowrap rounded-xl bg-brand px-0 text-sm font-bold leading-none text-white shadow-sm hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
+                  className="h-10 w-20 shrink-0 whitespace-nowrap rounded-xl bg-brand px-0 text-sm font-bold leading-none text-white shadow-sm hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
-                  {isLibraryAiLoading ? '生成中...' : '生成'}
+                  {isLibraryAiLoading ? '生成中...' : '逐个生成'}
                 </button>
               </div>
             </div>
@@ -6858,7 +6928,7 @@ export function WorkbenchLibraryPanel({
                   </div>
                   {activeSettingLinkSource && (
                     <span className="min-w-0 shrink whitespace-nowrap text-xs font-bold text-slate-400">
-                      已关联：<WordCountText value={linkedSettingWordCount} compact />
+                      关联 <WordCountText value={linkedSettingWordCount} compact />
                     </span>
                   )}
                 </div>
@@ -6965,6 +7035,20 @@ export function WorkbenchLibraryPanel({
         .sort((a, b) => a.serialNumber - b.serialNumber)
         .map((chapter) => ({ volume, chapter }))
     ));
+    const isDetailOutlineChapterPublished = (chapter: Chapter) => Boolean(chapter.isPublished) || manualDetailOutlinePublishedChapterIds.has(chapter.id);
+    const filterDetailOutlineVolumesByPublishState = (published: boolean) => (
+      volumes
+        .map((volume) => ({
+          ...volume,
+          chapters: [...volume.chapters]
+            .filter((chapter) => isDetailOutlineChapterPublished(chapter) === published)
+            .sort((a, b) => a.serialNumber - b.serialNumber),
+        }))
+    );
+    const detailOutlineUnpublishedVolumes = filterDetailOutlineVolumesByPublishState(false);
+    const detailOutlinePublishedVolumes = filterDetailOutlineVolumesByPublishState(true);
+    const detailOutlineUnpublishedCount = detailOutlineUnpublishedVolumes.reduce((sum, volume) => sum + volume.chapters.length, 0);
+    const detailOutlinePublishedCount = detailOutlinePublishedVolumes.reduce((sum, volume) => sum + volume.chapters.length, 0);
     const selectedOutlineChapter = outlineChapters.find((item) => item.chapter.id === selectedOutlineChapterId) ?? outlineChapters[0] ?? null;
     const selectedOutlineVolume = volumes.find((volume) => volume.id === selectedOutlineVolumeId) ?? volumes[0] ?? null;
     const effectiveSelectedOutlineChapterId = safeOutlineSelectionType === 'chapter'
@@ -7111,6 +7195,24 @@ export function WorkbenchLibraryPanel({
         else next.add(volumeId);
         return next;
       });
+    };
+    const moveDetailOutlineChapterToPublished = (chapterId: number) => {
+      setManualDetailOutlinePublishedChapterIds((prev) => {
+        const next = new Set(prev);
+        next.add(chapterId);
+        return next;
+      });
+      setDetailOutlineChapterMenu({ visible: false, x: 0, y: 0, chapter: null });
+      setShowDetailOutlinePublished(true);
+    };
+    const moveDetailOutlineChapterToUnpublished = (chapter: Chapter) => {
+      if (chapter.isPublished) return;
+      setManualDetailOutlinePublishedChapterIds((prev) => {
+        const next = new Set(prev);
+        next.delete(chapter.id);
+        return next;
+      });
+      setDetailOutlineChapterMenu({ visible: false, x: 0, y: 0, chapter: null });
     };
     const outlineSidebarWidth = settingLibraryLeftWidth;
     const outlinePreviewTitle = plotPointStandalone ? '剧情点预览' : isDetailOutlineTab ? 'AI输出章纲' : (safeOutlineSelectionType === 'volume' ? '卷梗概预览' : '章节梗概');
@@ -7908,7 +8010,7 @@ export function WorkbenchLibraryPanel({
                                 type="button"
                                 onClick={() => setDetailOutlineReaderPreviewId(item.id)}
                                 className={`flex h-10 w-full items-center gap-2 rounded-lg px-2 text-left text-[15px] font-black ${
-                                  checked ? 'bg-[#FFF7ED] text-gray-900' : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                                  checked ? 'xy-selected-orange-bg text-gray-900' : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                                 }`}
                               >
                                 <span
@@ -7955,7 +8057,7 @@ export function WorkbenchLibraryPanel({
                 <article
                   className={
                     'flex h-full min-h-0 flex-col rounded-2xl border px-5 py-4 ' +
-                    (isActiveDetailOutlineReaderPreviewChecked ? 'border-[#08AACE] bg-[#FFF7ED] text-slate-900' : 'border-gray-100 bg-gray-50 text-gray-600')
+                    (isActiveDetailOutlineReaderPreviewChecked ? 'border-transparent xy-selected-orange-bg text-slate-900' : 'border-gray-100 bg-gray-50 text-gray-600')
                   }
                 >
                   <div className="mb-3 flex shrink-0 items-start justify-between gap-4">
@@ -8345,6 +8447,111 @@ export function WorkbenchLibraryPanel({
     const plotPointUserRequirementSummary = plotPointOpeningElements.length > 0
       ? plotPointOpeningElements.join('、')
       : '未选择';
+    const renderDetailOutlineVolumeTree = (displayVolumes: Volume[], publishedLane = false) => (
+      <div className="space-y-3">
+        {displayVolumes.map((volume) => {
+          const expanded = expandedOutlineVolumeIds.has(volume.id);
+          const VolumeFolderIcon = expanded ? FolderOpen : Folder;
+          const volumeIsSelected = safeOutlineSelectionType === 'volume' && selectedOutlineVolume?.id === volume.id;
+
+          return (
+            <div key={volume.id}>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => toggleOutlineVolume(volume.id)}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Enter' && event.key !== ' ') return;
+                  event.preventDefault();
+                  toggleOutlineVolume(volume.id);
+                }}
+                className={WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}
+                aria-expanded={expanded}
+              >
+                <VolumeFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
+                <span className="min-w-0 flex-1 truncate leading-none">{volume.name}</span>
+                <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{volume.chapters.length}章</span>
+                {enableVolumeSummary && !publishedLane && (
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      selectOutlineVolume(volume);
+                    }}
+                    className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-bold transition-colors ${
+                      volumeIsSelected
+                        ? 'border-brand bg-brand text-white'
+                        : 'border-brand/40 bg-white/70 text-brand-dark hover:bg-white'
+                    }`}
+                  >
+                    卷梗概
+                  </button>
+                )}
+              </div>
+              {expanded && (
+                <div
+                  className="mt-1 grid justify-start gap-2 px-1.5 py-1.5"
+                  style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}
+                >
+                  {volume.chapters.map((chapter) => {
+                    const entry = getChapterSummaryEntry(chapter.serialNumber);
+                    const selected = effectiveSelectedOutlineChapterId === chapter.id;
+                    const outlineWordCount = countTextWords(entry?.content ?? '');
+                    const chapterContentWordCount = countTextWords(getChapterContent?.(chapter.id) ?? '');
+                    const hasSummary = outlineWordCount > 0;
+                    const outlineButtonStateClass = selected
+                      ? 'xy-detail-outline-number-selected'
+                      : chapterContentWordCount > 0
+                        ? 'xy-detail-outline-number-used'
+                        : hasSummary
+                          ? 'xy-detail-outline-number-has-outline'
+                          : 'xy-detail-outline-number-no-outline';
+                    const outlineButtonClass = isDetailOutlineTab
+                      ? `relative grid h-9 w-9 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block ${outlineButtonStateClass}`
+                      : `relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
+                          selected
+                            ? 'border-transparent xy-selected-orange-bg text-slate-900'
+                            : hasSummary
+                            ? 'border-[#08B3D9] bg-[#E1F3F7] text-[#08AACE] hover:border-[#067B96] hover:bg-[#D3EEF5]'
+                            : 'border-slate-200 bg-white text-slate-900 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
+                        }`;
+                    return (
+                      <button
+                        key={chapter.id}
+                        onMouseDown={(event) => {
+                          if (event.button !== 0) return;
+                          event.preventDefault();
+                          event.stopPropagation();
+                          selectOutlineChapter(chapter.id, chapter.serialNumber);
+                        }}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                        }}
+                        onContextMenu={(event) => {
+                          if (!isDetailOutlineTab) return;
+                          event.preventDefault();
+                          event.stopPropagation();
+                          setDetailOutlineChapterMenu({
+                            visible: true,
+                            x: event.clientX,
+                            y: event.clientY,
+                            chapter,
+                          });
+                        }}
+                        className={outlineButtonClass}
+                        title={publishedLane ? '移回未发布' : '移动到已发布'}
+                      >
+                        {chapter.serialNumber}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
     if (plotPointStandalone) {
       return (
         <div className="flex min-h-0 flex-1 flex-col bg-white" style={scaleStyle}>
@@ -8435,7 +8642,7 @@ export function WorkbenchLibraryPanel({
                                 title={`未写剧情点${originalIndex + 1} ${item.title}`}
                                 className={`relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
                                   activePoint
-                                    ? 'border-[#08B3D9] bg-[#08B3D9] text-white'
+                                    ? 'border-transparent xy-selected-orange-bg text-slate-900'
                                     : 'border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
                                 }`}
                               >
@@ -8907,6 +9114,7 @@ export function WorkbenchLibraryPanel({
                   {volumes.map((volume) => {
                     const expanded = expandedOutlineVolumeIds.has(volume.id);
                     const VolumeFolderIcon = expanded ? FolderOpen : Folder;
+                    const volumeIsSelected = safeOutlineSelectionType === 'volume' && selectedOutlineVolume?.id === volume.id;
 
                     return (
                     <div key={volume.id}>
@@ -8932,7 +9140,7 @@ export function WorkbenchLibraryPanel({
                               selectOutlineVolume(volume);
                             }}
                             className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-bold transition-colors ${
-                              safeOutlineSelectionType === 'volume' && selectedOutlineVolume?.id === volume.id
+                              volumeIsSelected
                                 ? 'border-brand bg-brand text-white'
                                 : 'border-brand/40 bg-white/70 text-brand-dark hover:bg-white'
                             }`}
@@ -8947,8 +9155,27 @@ export function WorkbenchLibraryPanel({
                           style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}
                         >
                           {[...volume.chapters].sort((a, b) => a.serialNumber - b.serialNumber).map((chapter) => {
+                            const entry = getChapterSummaryEntry(chapter.serialNumber);
                             const selected = effectiveSelectedOutlineChapterId === chapter.id;
-                            const hasSummary = Boolean(getChapterSummaryEntry(chapter.serialNumber)?.content.trim());
+                            const outlineWordCount = countTextWords(entry?.content ?? '');
+                            const chapterContentWordCount = countTextWords(getChapterContent?.(chapter.id) ?? '');
+                            const hasSummary = outlineWordCount > 0;
+                            const outlineButtonStateClass = selected
+                              ? 'xy-detail-outline-number-selected'
+                              : chapterContentWordCount > 0
+                                ? 'xy-detail-outline-number-used'
+                                : hasSummary
+                                  ? 'xy-detail-outline-number-has-outline'
+                                  : 'xy-detail-outline-number-no-outline';
+                            const outlineButtonClass = isDetailOutlineTab
+                              ? `relative grid h-9 w-9 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block ${outlineButtonStateClass}`
+                              : `relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
+                                  selected
+                                    ? 'border-transparent xy-selected-orange-bg text-slate-900'
+                                    : hasSummary
+                                    ? 'border-[#08B3D9] bg-[#E1F3F7] text-[#08AACE] hover:border-[#067B96] hover:bg-[#D3EEF5]'
+                                    : 'border-slate-200 bg-white text-slate-900 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
+                                }`;
                             return (
                               <button
                                 key={chapter.id}
@@ -8962,13 +9189,13 @@ export function WorkbenchLibraryPanel({
                                   event.preventDefault();
                                   event.stopPropagation();
                                 }}
-                                className={`relative h-9 min-w-9 rounded-lg border px-2 text-sm font-bold transition-colors ${
-                                  hasSummary
-                                    ? 'border-[#08B3D9] bg-[#E1F3F7] text-[#08AACE] hover:border-[#067B96] hover:bg-[#D3EEF5]'
-                                    : 'border-slate-200 bg-white text-slate-900 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
-                                } ${selected ? 'ring-2 ring-[#08B3D9] ring-offset-2' : ''}`}
+                                className={outlineButtonClass}
                               >
-                                {chapter.serialNumber}
+                                {isDetailOutlineTab ? (
+                                  chapter.serialNumber
+                                ) : (
+                                  chapter.serialNumber
+                                )}
                               </button>
                             );
                           })}
@@ -8989,7 +9216,7 @@ export function WorkbenchLibraryPanel({
             {outlineChapters.length === 0 ? (
               <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-gray-200 text-sm text-gray-400">暂无章节可预览</div>
             ) : safeOutlineSelectionType === 'volume' && selectedOutlineVolume ? (
-              <section className="rounded-xl border border-brand bg-[#FFF7ED] p-4">
+              <section className="xy-selected-orange-bg rounded-xl border border-transparent p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <h4 className="min-w-0 truncate text-sm font-bold text-gray-900">{selectedOutlineVolume.name}梗概</h4>
                   <span className="shrink-0 text-lg font-bold text-gray-900">{selectedOutlineVolume.chapters.length}章</span>
@@ -9049,7 +9276,7 @@ export function WorkbenchLibraryPanel({
                         }}
                       />
                       <label className="xy-floating-title-count xy-detail-outline-title-count">
-                        <span className="xy-floating-title-text">{outlineCardTitle}</span>
+                        <span className="xy-floating-title-text xy-detail-outline-heading-title">{outlineCardTitle}</span>
                       </label>
                       <span className="xy-floating-outline-chapter-meta xy-border-embedded-transparent-backplate absolute right-9 top-0 z-20 max-w-[44%] -translate-y-1/2 truncate text-sm font-black leading-5 text-slate-950">
                         {`第${getVolumeDisplayIndex(volume.id)}卷 · ${chapter.title.trim() || '未命名章节'}`}
@@ -9078,7 +9305,7 @@ export function WorkbenchLibraryPanel({
                         }}
                       />
                       <label className="xy-floating-title-count xy-detail-outline-title-count">
-                        <span className="xy-floating-title-text">状态变化</span>
+                        <span className="xy-floating-title-text xy-detail-outline-heading-title">状态变化</span>
                       </label>
                       <span className="xy-floating-count">
                         <WordCountText value={countTextWords(detailOutlineParts.stateExpectation)} />
@@ -9125,7 +9352,7 @@ export function WorkbenchLibraryPanel({
                         } : undefined}
                       />
                       <label className={isDetailOutlineTab ? 'xy-floating-title-count xy-detail-outline-title-count' : undefined}>
-                        <span className={isDetailOutlineTab ? 'xy-floating-title-text' : undefined}>{outlineCardTitle}</span>
+                        <span className={isDetailOutlineTab ? 'xy-floating-title-text xy-detail-outline-heading-title' : undefined}>{outlineCardTitle}</span>
                       </label>
                       <span className="xy-floating-outline-chapter-meta xy-border-embedded-transparent-backplate absolute right-9 top-0 z-20 max-w-[44%] -translate-y-1/2 truncate text-sm font-black leading-5 text-slate-950">
                         {isDetailOutlineTab
@@ -9206,12 +9433,12 @@ export function WorkbenchLibraryPanel({
                 linkedLabel="已关联大纲"
                 onOpen={openDetailOutlineReader}
                 onClear={clearDetailOutlineReaderSelection}
-                meta={<>已关联：<WordCountText value={detailOutlineReaderWordCount} compact /></>}
+                clearOnLinkedClick
+                meta={<>关联 <WordCountText value={detailOutlineReaderWordCount} compact /></>}
                 className="mt-3 flex items-center gap-2"
                 groupClassName="flex h-10 w-[132px] shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white"
                 buttonClassName="h-10 w-[132px] whitespace-nowrap rounded-xl border border-[#08AACE] bg-white px-3 text-sm font-black text-[#08AACE] hover:bg-[#EAF9FD]"
-                linkedButtonClassName="min-w-0 flex-1 whitespace-nowrap px-3 text-sm font-bold text-gray-700 hover:bg-gray-100"
-                clearButtonClassName="flex h-full w-9 shrink-0 items-center justify-center border-l border-red-300 bg-red-500 text-white transition-colors hover:bg-red-600"
+                linkedButtonClassName="min-w-0 flex-1 whitespace-nowrap px-3 text-sm font-black text-white bg-red-500 hover:bg-red-600"
               />
             )}
             <div className="mt-3">
@@ -9289,11 +9516,11 @@ export function WorkbenchLibraryPanel({
                   <button
                     key={entry.id}
                     onClick={() => setSelectedId(entry.id)}
-                    className={`group w-full rounded-lg border px-2 py-2 text-left transition-colors ${
-                      selectedEntry?.id === entry.id ? 'border-brand bg-[#FFF7ED]' : 'border-gray-100 bg-gray-50 hover:border-brand/40'
+                    className={`group w-full rounded-lg border px-2 py-2 text-left font-black transition-colors ${
+                      selectedEntry?.id === entry.id ? 'border-transparent xy-selected-mint-bg' : 'border-gray-100 bg-gray-50 hover:border-brand/40'
                     }`}
                   >
-                    <div className="truncate text-xs font-medium text-gray-800">{entry.title}</div>
+                    <div className="truncate text-xs font-black text-gray-800">{entry.title}</div>
                     <div className="mt-1 flex items-center justify-between">
                       <span className="text-[10px] text-gray-400">{entry.updatedAt}</span>
                       <span

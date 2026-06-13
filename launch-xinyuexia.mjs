@@ -9,7 +9,7 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 const mode = process.argv[2] ?? 'desktop';
 const port = 18328;
 const baseUrl = `http://127.0.0.1:${port}/`;
-const dashboardUrl = `${baseUrl}#/dashboard`;
+const startupUrl = `${baseUrl}#/novels`;
 const launcherLogFile = path.join(root, 'launcher.log');
 const viteLogFile = path.join(root, 'dev-server.log');
 const electronLogFile = path.join(root, 'electron-dev.log');
@@ -128,7 +128,7 @@ async function wait(ms) {
 
 async function waitForStableDevServer() {
   for (let i = 0; i < 8; i += 1) {
-    if (await isReady(dashboardUrl)) {
+    if (await isReady(startupUrl)) {
       await wait(300);
       return;
     }
@@ -248,17 +248,17 @@ async function main() {
   }
 
   if (mode === 'desktop') {
-    await ensureElectronWindow(false, '#/dashboard', true);
+    await ensureElectronWindow(false, '#/novels', true);
     return;
   }
 
   if (mode === 'web') {
-    spawn('rundll32.exe', ['url.dll,FileProtocolHandler', dashboardUrl], {
+    spawn('rundll32.exe', ['url.dll,FileProtocolHandler', startupUrl], {
       detached: true,
       windowsHide: true,
       stdio: 'ignore',
     }).unref();
-    log(`browser opened ${dashboardUrl}`);
+    log(`browser opened ${startupUrl}`);
     return;
   }
 

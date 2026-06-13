@@ -49,6 +49,7 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterEditorSource).toContain('const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;');
     expect(chapterEditorSource).toContain("const editorTextIndent = formatSettings.paragraphIndent ? '2em' : undefined;");
     expect(chapterEditorSource).toContain('...editorGridLineStyle');
+    expect(chapterEditorSource).toContain("backgroundColor: 'transparent'");
     expect(chapterEditorSource).toContain("paddingLeft: editorTextPaddingLeft");
     expect(chapterEditorSource).toContain("paddingRight: editorTextPaddingRight");
     expect(chapterEditorSource).toContain("textIndent: editorTextIndent");
@@ -62,7 +63,27 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterEditorSource).toContain('onScroll={(event) => setEditorScrollTop(event.currentTarget.scrollTop)}');
     expect(chapterEditorSource).toContain('placeholder=""');
     expect(chapterEditorSource).not.toContain('placeholder="从这里开始写..."');
-    expect(chapterEditorSource).toContain("const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] bg-[#E7F8FD]");
+    expect(chapterEditorSource).toContain("const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] xy-flow-group-bg");
     expect(chapterEditorSource).toContain("const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';");
+  });
+
+  it('keeps high frequency word highlighting visible and color configurable', () => {
+    const chapterEditorSource = readSource('ChapterEditor.tsx');
+    const modalSource = readSource('EditorToolModals.tsx');
+
+    expect(modalSource).toContain("const HIGH_FREQ_HIGHLIGHT_COLOR_KEY = 'xinyuexia_high_freq_highlight_color';");
+    expect(modalSource).toContain('const highFreqHighlightColorOptions = [');
+    expect(modalSource).toContain("{ label: '暖黄', value: '#FDE68A'");
+    expect(modalSource).toContain("{ label: '浅青', value: '#BDEEF7'");
+    expect(modalSource).toContain("{ label: '浅紫', value: '#DDD6FE'");
+    expect(modalSource).toContain('function getStoredHighFreqHighlightColor()');
+    expect(modalSource).toContain('const [highlightColor, setHighlightColor] = useState(getStoredHighFreqHighlightColor);');
+    expect(modalSource).toContain('setHighlightColor(getStoredHighFreqHighlightColor());');
+    expect(modalSource).toContain('writeJson(HIGH_FREQ_HIGHLIGHT_COLOR_KEY, highlightColor)');
+    expect(modalSource).toContain('style={{ backgroundColor: option.value }}');
+    expect(modalSource).toContain('backgroundColor: highlightOption.value');
+    expect(modalSource).toContain('boxShadow: `0 0 0 1px ${highlightOption.ring}`');
+    expect(modalSource).not.toContain('bg-yellow-300/90');
+    expect(chapterEditorSource).toContain("backgroundColor: 'transparent'");
   });
 });

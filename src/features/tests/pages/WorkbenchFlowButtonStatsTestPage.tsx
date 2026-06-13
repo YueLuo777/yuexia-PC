@@ -27,6 +27,109 @@ const reviewButtons: FlowButtonPreview[] = [
 
 const allButtons = [...creationButtons, ...reviewButtons];
 
+type FlowCombinationDesign = {
+  id: string;
+  title: string;
+  note: string;
+  activeClass: string;
+  buttonClass: string;
+  metaClass: string;
+  mode: 'classic' | 'stack' | 'pill' | 'numbered' | 'progress' | 'tab' | 'groupTitle' | 'timeline' | 'dashboard' | 'underline';
+};
+
+const flowCombinationDesigns: FlowCombinationDesign[] = [
+  {
+    id: '01',
+    title: '01 经典分段',
+    note: '最接近当前样式，边框更清晰，适合直接迁入。',
+    mode: 'classic',
+    activeClass: 'border-[#8FE4F2] bg-[#E7F8FD] text-[#08AACE] shadow-[0_0_0_1px_rgba(8,170,206,0.18)]',
+    buttonClass: 'h-11 min-w-[104px] border-[#CBD5E1] bg-white px-3',
+    metaClass: 'text-[#64748b]',
+  },
+  {
+    id: '02',
+    title: '02 双行紧凑',
+    note: '标题和数据上下排，横向最省，适合你现在截图里的拥挤区域。',
+    mode: 'stack',
+    activeClass: 'border-[#8FE4F2] bg-[#E7F8FD] text-[#08AACE]',
+    buttonClass: 'h-10 min-w-[78px] border-[#D8E1EC] bg-white px-2',
+    metaClass: 'text-[#6f7e90]',
+  },
+  {
+    id: '03',
+    title: '03 状态胶囊',
+    note: '把数量放进胶囊里，待处理项更像提醒，不容易被忽略。',
+    mode: 'pill',
+    activeClass: 'border-[#8FE4F2] bg-[#E7F8FD] text-[#08AACE]',
+    buttonClass: 'h-11 min-w-[112px] border-[#D8E1EC] bg-white px-2.5',
+    metaClass: 'bg-slate-100 text-[#64748b]',
+  },
+  {
+    id: '04',
+    title: '04 步骤编号',
+    note: '每个按钮带编号，流程感最强，适合强调创作顺序。',
+    mode: 'numbered',
+    activeClass: 'border-[#8FE4F2] bg-[#E7F8FD] text-[#08AACE]',
+    buttonClass: 'h-12 min-w-[112px] border-[#D8E1EC] bg-white px-2.5',
+    metaClass: 'text-[#64748b]',
+  },
+  {
+    id: '05',
+    title: '05 底部进度条',
+    note: '按钮主体很克制，用底部色条表达当前页和待处理压力。',
+    mode: 'progress',
+    activeClass: 'border-[#8FE4F2] bg-white text-[#08AACE]',
+    buttonClass: 'h-11 min-w-[106px] border-[#D8E1EC] bg-white px-3',
+    metaClass: 'text-[#64748b]',
+  },
+  {
+    id: '06',
+    title: '06 标签页浮层',
+    note: '像浏览器标签，当前页抬起来一点，适合软件标题栏附近。',
+    mode: 'tab',
+    activeClass: 'border-[#8FE4F2] bg-white text-[#08AACE] shadow-[0_-1px_0_#E7F8FD_inset]',
+    buttonClass: 'h-11 min-w-[108px] border-[#D8E1EC] bg-[#F8FAFC] px-3',
+    metaClass: 'text-[#64748b]',
+  },
+  {
+    id: '07',
+    title: '07 分组标题栏',
+    note: '保留组合按钮，但给两组加“创作/后期”标题，结构最清楚。',
+    mode: 'groupTitle',
+    activeClass: 'border-[#8FE4F2] bg-[#E7F8FD] text-[#08AACE]',
+    buttonClass: 'h-10 min-w-[88px] border-[#D8E1EC] bg-white px-2',
+    metaClass: 'text-[#64748b]',
+  },
+  {
+    id: '08',
+    title: '08 时间线节点',
+    note: '按钮变成节点，适合表达从脑洞到梗概的连续流程。',
+    mode: 'timeline',
+    activeClass: 'border-[#08AACE] bg-[#08AACE] text-white',
+    buttonClass: 'h-12 min-w-[92px] border-transparent bg-transparent px-2',
+    metaClass: 'text-[#64748b]',
+  },
+  {
+    id: '09',
+    title: '09 小仪表盘',
+    note: '每个入口像小数据块，最适合信息密度优先的工具型页面。',
+    mode: 'dashboard',
+    activeClass: 'border-[#8FE4F2] bg-[#E7F8FD] text-[#08AACE]',
+    buttonClass: 'h-[54px] min-w-[96px] border-[#D8E1EC] bg-white px-2.5',
+    metaClass: 'text-[#64748b]',
+  },
+  {
+    id: '10',
+    title: '10 极简下划线',
+    note: '去掉外框重量，只用底线和文字层级，最轻但识别略弱。',
+    mode: 'underline',
+    activeClass: 'border-[#08AACE] bg-white text-[#08AACE]',
+    buttonClass: 'h-11 min-w-[96px] border-transparent bg-white px-3',
+    metaClass: 'text-[#64748b]',
+  },
+];
+
 function getButtonToneClass(button: FlowButtonPreview, active: boolean) {
   if (active) return 'z-10 border-[#BDEEF7] bg-[#E7F8FD] text-[#08AACE] shadow-[inset_0_0_0_1px_#BDEEF7]';
   if (button.tone === 'warning') return 'border-[#e7edf5] bg-white text-[#1f2933] hover:border-[#f2bf84] hover:bg-[#fff7ed]';
@@ -212,6 +315,139 @@ function ToolbarCPreview() {
   );
 }
 
+function FlowCombinationDesignPreview({ design }: { design: FlowCombinationDesign }) {
+  const [activeId, setActiveId] = useState('writing');
+  const renderButton = (button: FlowButtonPreview, index: number) => {
+    const active = button.id === activeId;
+    const warning = button.tone === 'warning';
+    const base = `${design.buttonClass} relative inline-flex shrink-0 items-center justify-center transition-colors ${active ? design.activeClass : 'text-[#1f2933] hover:border-[#BDEEF7] hover:bg-[#F8FDFF]'}`;
+
+    if (design.mode === 'timeline') {
+      return (
+        <button key={button.id} type="button" onClick={() => setActiveId(button.id)} className={`${base} flex-col gap-1`}>
+          <span className={`grid h-6 w-6 place-items-center rounded-full text-xs font-black ${active ? 'bg-[#08AACE] text-white' : warning ? 'bg-[#FFF7ED] text-[#C46A00]' : 'bg-slate-100 text-slate-500'}`}>{index + 1}</span>
+          <span className="text-xs font-black leading-none">{button.title}</span>
+          <span className={`text-[10px] font-black leading-none ${active ? 'text-[#08AACE]' : warning ? 'text-[#C46A00]' : design.metaClass}`}>{button.meta || '待定'}</span>
+        </button>
+      );
+    }
+
+    if (design.mode === 'dashboard') {
+      return (
+        <button key={button.id} type="button" onClick={() => setActiveId(button.id)} className={`${base} flex-col rounded-[8px] border`}>
+          <span className="text-sm font-black leading-none">{button.title}</span>
+          <span className={`mt-1 text-base font-black leading-none ${warning ? 'text-[#C46A00]' : active ? 'text-[#08AACE]' : 'text-slate-500'}`}>{button.meta || '--'}</span>
+        </button>
+      );
+    }
+
+    if (design.mode === 'numbered') {
+      return (
+        <button key={button.id} type="button" onClick={() => setActiveId(button.id)} className={`${base} gap-2 border -ml-px first:ml-0 first:rounded-l-[8px] last:rounded-r-[8px]`}>
+          <span className={`grid h-6 w-6 place-items-center rounded-full text-[11px] font-black ${active ? 'bg-white text-[#08AACE]' : 'bg-slate-100 text-slate-500'}`}>{index + 1}</span>
+          <span className="flex flex-col items-start gap-0.5">
+            <span className="text-sm font-black leading-none">{button.title}</span>
+            <span className={`text-[10px] font-black leading-none ${warning ? 'text-[#C46A00]' : design.metaClass}`}>{button.meta || '待定'}</span>
+          </span>
+        </button>
+      );
+    }
+
+    if (design.mode === 'pill') {
+      return (
+        <button key={button.id} type="button" onClick={() => setActiveId(button.id)} className={`${base} gap-1.5 border -ml-px first:ml-0 first:rounded-l-[8px] last:rounded-r-[8px]`}>
+          <span className="text-sm font-black leading-none">{button.title}</span>
+          {button.meta && <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-black leading-none ${warning ? 'bg-[#FFF7ED] text-[#C46A00]' : active ? 'bg-white text-[#08AACE]' : design.metaClass}`}>{button.meta}</span>}
+        </button>
+      );
+    }
+
+    if (design.mode === 'progress') {
+      return (
+        <button key={button.id} type="button" onClick={() => setActiveId(button.id)} className={`${base} flex-col gap-0.5 overflow-hidden border -ml-px first:ml-0 first:rounded-l-[8px] last:rounded-r-[8px]`}>
+          <span className="text-sm font-black leading-none">{button.title}</span>
+          <span className={`text-[10px] font-black leading-none ${warning ? 'text-[#C46A00]' : design.metaClass}`}>{button.meta || '待定'}</span>
+          <span className={`absolute bottom-0 left-0 h-1 ${warning ? 'bg-[#F59E0B]' : active ? 'bg-[#08AACE]' : 'bg-slate-200'}`} style={{ width: button.meta ? '72%' : '18%' }} />
+        </button>
+      );
+    }
+
+    if (design.mode === 'tab') {
+      return (
+        <button key={button.id} type="button" onClick={() => setActiveId(button.id)} className={`${base} -mb-px gap-1.5 rounded-t-[8px] border border-b-0`}>
+          <span className="text-sm font-black leading-none">{button.title}</span>
+          <span className={`text-[10px] font-black leading-none ${warning ? 'text-[#C46A00]' : design.metaClass}`}>{button.meta || '待定'}</span>
+        </button>
+      );
+    }
+
+    if (design.mode === 'underline') {
+      return (
+        <button key={button.id} type="button" onClick={() => setActiveId(button.id)} className={`${base} flex-col gap-0.5 border-b-2`}>
+          <span className="text-sm font-black leading-none">{button.title}</span>
+          <span className={`text-[10px] font-black leading-none ${warning ? 'text-[#C46A00]' : design.metaClass}`}>{button.meta || '待定'}</span>
+        </button>
+      );
+    }
+
+    return (
+      <button key={button.id} type="button" onClick={() => setActiveId(button.id)} className={`${base} ${design.mode === 'stack' ? 'flex-col gap-0.5' : 'gap-1.5'} border -ml-px first:ml-0 first:rounded-l-[8px] last:rounded-r-[8px]`}>
+        <span className={`${design.mode === 'stack' ? 'text-sm' : 'text-[15px]'} font-black leading-none`}>{button.title}</span>
+        <span className={`text-[10px] font-black leading-none ${warning ? 'text-[#C46A00]' : active ? 'text-[#08AACE]' : design.metaClass}`}>{button.meta || '待定'}</span>
+      </button>
+    );
+  };
+
+  const renderGroup = (buttons: FlowButtonPreview[], label: string, offset = 0) => {
+    const content = (
+      <div className={design.mode === 'dashboard' ? 'grid grid-cols-4 gap-2' : design.mode === 'timeline' ? 'flex items-center gap-1 rounded-[8px] bg-white px-2 py-2' : 'flex min-w-0 overflow-x-auto'}>
+        {buttons.map((button, index) => renderButton(button, index + offset))}
+      </div>
+    );
+    if (design.mode !== 'groupTitle') return content;
+    return (
+      <div className="rounded-[8px] border border-[#D8E1EC] bg-white p-2">
+        <div className="mb-1 text-[11px] font-black text-slate-400">{label}</div>
+        <div className="flex min-w-0 overflow-x-auto">{buttons.map((button, index) => renderButton(button, index + offset))}</div>
+      </div>
+    );
+  };
+
+  return (
+    <section className="rounded-[8px] border border-[#D8E1EC] bg-white p-4 shadow-sm">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-black text-slate-950">{design.title}</h2>
+          <p className="mt-1 text-xs font-bold leading-5 text-slate-500">{design.note}</p>
+        </div>
+        <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-500">当前：{allButtons.find((item) => item.id === activeId)?.title}</span>
+      </div>
+      <div className={`${design.mode === 'tab' ? 'items-end border-b border-[#D8E1EC] pb-0' : 'items-center'} flex flex-wrap gap-3 rounded-[8px] bg-[#F5F7FA] p-3`}>
+        {renderGroup(creationButtons, '创作流程')}
+        {renderGroup(reviewButtons, '后期流程', creationButtons.length)}
+      </div>
+    </section>
+  );
+}
+
+function FlowCombinationDesignMatrix() {
+  return (
+    <section className="rounded-[8px] border border-[#e2e8f0] bg-white p-5 shadow-sm">
+      <div className="mb-4">
+        <h2 className="text-lg font-black text-slate-950">十套组合按钮设计方向</h2>
+        <p className="mt-1 text-sm font-bold leading-6 text-slate-500">
+          这组只比较顶部流程组合按钮本身：有些更接近当前实现，有些更像标签、时间线或小型仪表盘。点击任意按钮可以看选中态。
+        </p>
+      </div>
+      <div className="grid gap-4">
+        {flowCombinationDesigns.map((design) => (
+          <FlowCombinationDesignPreview key={design.id} design={design} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function DesignCard({
   title,
   desc,
@@ -250,6 +486,8 @@ export function WorkbenchFlowButtonStatsTestPage() {
             目标是让顶部两组组合按钮不只显示入口名称，也直接反馈每个入口里的内容数量或待处理数量。下面三套都是同一组真实文案方向，区别在于按钮宽度、数字权重和待处理状态的强调程度。
           </p>
         </header>
+
+        <FlowCombinationDesignMatrix />
 
         <DesignCard
           title="方案 A：推荐，名称加粗 + 数量同排"

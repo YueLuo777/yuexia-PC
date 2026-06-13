@@ -45,6 +45,23 @@ describe('WorkbenchFlowButtonStatsTestPage', () => {
     expect(pageSource).toContain('默认小说1');
     expect(pageSource).toContain('作品信息');
     expect(pageSource).toContain('观察中间空白即可判断剩余空间');
+    expect(pageSource).toContain('十套组合按钮设计方向');
+    for (const text of [
+      '01 经典分段',
+      '02 双行紧凑',
+      '03 状态胶囊',
+      '04 步骤编号',
+      '05 底部进度条',
+      '06 标签页浮层',
+      '07 分组标题栏',
+      '08 时间线节点',
+      '09 小仪表盘',
+      '10 极简下划线',
+      'FlowCombinationDesignMatrix',
+      'flowCombinationDesigns',
+    ]) {
+      expect(pageSource).toContain(text);
+    }
     expect(pageSource).toContain("button.id === 'brainstorm' ? 'tracking-wide' : ''");
     expect(pageSource).toContain("if (active) return 'z-10 border-[#BDEEF7] bg-[#E7F8FD] text-[#08AACE] shadow-[inset_0_0_0_1px_#BDEEF7]';");
     expect(pageSource).toContain("relative -ml-px inline-flex shrink-0 ${stackMeta ? 'flex-col gap-0.5' : 'items-center gap-2'} justify-center border first:ml-0");

@@ -45,7 +45,7 @@ export const defaultMouseGestureSettings: MouseGestureSettings = {
 
 export const shortcutActions: ShortcutAction[] = [
   { id: 'close_floating', group: '界面与导航', title: '关闭浮层', desc: '关闭当前弹层或右侧栏', defaultBinding: { key: 'Escape' } },
-  { id: 'go_home', group: '界面与导航', title: '回到主页', desc: '快速返回软件首页', defaultBinding: { key: 'F1' } },
+  { id: 'go_home', group: '界面与导航', title: '回到我的小说', desc: '快速返回我的小说页面', defaultBinding: { key: 'F1' } },
   { id: 'close_work_tab', group: '界面与导航', title: '关闭作品标签页', desc: '关闭当前打开的作品标签页', defaultBinding: { key: 'w', ctrl: true } },
   { id: 'toggle_text_edit_mode', group: '界面与导航', title: '文案修改模式', desc: '进入或退出点击文字修改文案的模式', defaultBinding: { key: '1', ctrl: true } },
   { id: 'delete_chapter', group: '章节编辑', title: '删除章节', desc: '删除当前选中的章节', defaultBinding: { key: 'Delete' } },

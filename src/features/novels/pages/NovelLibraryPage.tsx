@@ -675,23 +675,24 @@ export function NovelLibraryPage() {
               </div>
               <span className="shrink-0 rounded-full border border-[#dbe7f8] bg-white/80 px-2.5 py-0.5 text-[12px] font-semibold text-[#6b7b8d]">预留 --</span>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-x-5 gap-y-2 text-[13px] font-semibold text-[#586574]">
-              <div className="grid gap-0.5">
-                <span>作品</span>
-                <strong className="text-[19px] leading-none text-[#1f2933]">{sourceNovels.length} 本</strong>
-              </div>
-              <div className="grid gap-0.5">
-                <span>昨日更新</span>
-                <strong className="text-[19px] leading-none text-[#1f2933]">{formatWords(writingSummary.yesterdayWords)} 字</strong>
-              </div>
-              <div className="grid gap-0.5">
-                <span>字数</span>
-                <strong className="text-[19px] leading-none text-[#1f2933]">{formatWords(totalWorkWords)} 字</strong>
-              </div>
-              <div className="grid gap-0.5">
-                <span>平均字数</span>
-                <strong className="text-[19px] leading-none text-[#1f2933]">{formatWords(averageWorkWords)} 字</strong>
-              </div>
+            <div className="mt-3 grid flex-1 grid-cols-2 grid-rows-2 gap-2">
+              {[
+                { label: '作品', value: `${sourceNovels.length} 本`, desc: `当前${typeLabel}库` },
+                { label: '昨日更新', value: `${formatWords(writingSummary.yesterdayWords)} 字`, desc: '昨日新增字数' },
+                { label: '字数', value: `${formatWords(totalWorkWords)} 字`, desc: '累计作品字数' },
+                { label: '平均字数', value: `${formatWords(averageWorkWords)} 字`, desc: '单本平均字数' },
+              ].map((item) => (
+                <article
+                  key={item.label}
+                  className="grid h-full min-h-[40px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[8px] border border-[#e6e8ec] bg-white px-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-[12px] font-semibold text-[#1f2933]">{item.label}</span>
+                    <span className="block truncate text-[10px] text-[#9aa3af]">{item.desc}</span>
+                  </span>
+                  <strong className="shrink-0 text-right text-[19px] font-bold leading-none text-[#111827]">{item.value}</strong>
+                </article>
+              ))}
             </div>
           </section>
 

@@ -461,6 +461,10 @@ export function WorkbenchAIPanel({
   };
 
   const openLinkedContextLibrary = () => {
+    if (hasLinkedContext) {
+      clearLinkedContext();
+      return;
+    }
     if (hasLinkedChapter) {
       updateActiveSession({
         linkChapter: false,
@@ -980,21 +984,10 @@ export function WorkbenchAIPanel({
                 >
                   {hasLinkedContext ? '已关联资料' : '资料'}
                 </button>
-                {hasLinkedContext ? (
-                  <button
-                    type="button"
-                    onClick={clearLinkedContext}
-                    className="flex w-11 items-center justify-center border-l border-white/70 bg-[#ff4b4b] text-white transition-colors hover:bg-[#ef3b3b]"
-                    title="取消关联资料"
-                    aria-label="取消关联资料"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                ) : null}
               </div>
               {shouldShowActiveLinkStats && (
                 <span className="min-w-0 shrink text-sm font-bold text-slate-400">
-                  已关联：<WordCountText value={activeLinkWordCount} compact />
+                  关联 <WordCountText value={activeLinkWordCount} compact />
                 </span>
               )}
             </div>

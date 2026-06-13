@@ -62,7 +62,7 @@ describe('WorkbenchHeader', () => {
     expect(onSelectFlow).toHaveBeenCalledWith('brainstorm');
   });
 
-  it('renders flow stats with the option D compact stacked layout', () => {
+  it('renders flow stats with the option 02 compact double-line layout', () => {
     const { container } = render(
       <WorkbenchHeader
         workTitle="默认小说1"
@@ -88,13 +88,35 @@ describe('WorkbenchHeader', () => {
     expect(screen.getByRole('button', { name: /审核.*11章未审/ })).toHaveClass('xy-flow-warning');
     expect(container.querySelectorAll('.xy-flow-status-group')).toHaveLength(2);
     expect(container.querySelectorAll('.xy-flow-status-meta-warning')).toHaveLength(4);
+    const flowGroups = container.querySelector('.xy-workbench-flow-groups');
+    expect(flowGroups).not.toBeNull();
+    expect(flowGroups).toHaveClass('ml-8');
     const styleSource = readSource('../../../shared/styles/index.css');
-    expect(styleSource).toContain('min-height: 2.375rem;');
-    expect(styleSource).toContain('min-width: 4.75rem;');
+    expect(styleSource).toContain('min-height: 2.5rem;');
+    expect(styleSource).toContain('min-width: 4.875rem;');
     expect(styleSource).toContain('flex-direction: column;');
+    expect(styleSource).toContain('border: 1px solid #D8E1EC;');
+    expect(styleSource).toContain('border-left: 1px solid #D8E1EC;');
     expect(styleSource).toContain('font-size: 0.5625rem;');
+    expect(styleSource).not.toContain('border: 1px solid #CBD5E1;');
+    expect(styleSource).not.toContain('border-left: 1px solid #E2E8F0;');
     expect(styleSource).not.toContain('min-width: 8.25rem;');
     expect(styleSource).not.toContain('background: #fff1e2;');
+  });
+
+  it('applies the option 02 compact border without importing preview-only dividers', () => {
+    const styleSource = readSource('../../../shared/styles/index.css');
+
+    expect(styleSource).toContain('border: 1px solid #D8E1EC;');
+    expect(styleSource).toContain('border-left: 1px solid #D8E1EC;');
+    expect(styleSource).toContain('border-color: #8FE4F2;');
+    expect(styleSource).toContain('background: var(--xy-custom-flow-group-bg);');
+    expect(styleSource).toContain('border-right-color: transparent;');
+    expect(styleSource).not.toContain('box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);');
+    expect(styleSource).not.toContain('border: 1px solid #111827;');
+    expect(styleSource).not.toContain('box-shadow: 0 0 0 1px rgba(17, 24, 39, 0.12);');
+    expect(styleSource.indexOf('.xy-flow-status-group > * + *')).toBeGreaterThan(styleSource.indexOf('.xy-flow-status-button {'));
+    expect(styleSource.indexOf('.xy-flow-status-button.xy-active')).toBeGreaterThan(styleSource.indexOf('.xy-flow-status-group > * + *'));
   });
 
   it('renders extra tools before field size and log actions', () => {

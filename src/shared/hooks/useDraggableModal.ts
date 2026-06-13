@@ -21,6 +21,7 @@ type ResizeDirection = 'left' | 'right' | 'top' | 'bottom' | 'bottom-right';
 const MIN_MODAL_WIDTH = 360;
 const MIN_MODAL_HEIGHT = 260;
 const VIEWPORT_PADDING = 32;
+const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -48,6 +49,23 @@ function saveGeometry(storageKey: string, geometry: ModalGeometry) {
   localStorage.setItem(storageKey, JSON.stringify(geometry));
 }
 
+function isSameGeometry(a: ModalGeometry, b: ModalGeometry) {
+  return a.x === b.x
+    && a.y === b.y
+    && a.left === b.left
+    && a.top === b.top
+    && a.width === b.width
+    && a.height === b.height;
+}
+
+function getEffectiveModalScale() {
+  if (typeof window === 'undefined') return 1;
+  const scale = Number.parseFloat(
+    window.getComputedStyle(document.documentElement).getPropertyValue(APP_EFFECTIVE_SCALE_CSS_VAR),
+  );
+  return Number.isFinite(scale) && scale > 0 ? scale : 1;
+}
+
 function getViewportBounds() {
   if (typeof window === 'undefined') {
     return {
@@ -55,9 +73,12 @@ function getViewportBounds() {
       maxHeight: 820,
     };
   }
+  const scale = getEffectiveModalScale();
+  const visualViewportWidth = window.innerWidth / scale;
+  const visualViewportHeight = window.innerHeight / scale;
   return {
-    maxWidth: Math.max(MIN_MODAL_WIDTH, window.innerWidth - VIEWPORT_PADDING),
-    maxHeight: Math.max(MIN_MODAL_HEIGHT, window.innerHeight - VIEWPORT_PADDING),
+    maxWidth: Math.max(MIN_MODAL_WIDTH, visualViewportWidth - VIEWPORT_PADDING),
+    maxHeight: Math.max(MIN_MODAL_HEIGHT, visualViewportHeight - VIEWPORT_PADDING),
   };
 }
 
@@ -69,21 +90,27 @@ function normalizeGeometryToViewport(geometry: ModalGeometry): ModalGeometry {
 
   const fixed = Number.isFinite(next.left) && Number.isFinite(next.top);
   if (fixed && typeof window !== 'undefined') {
-    const width = next.width ?? Math.min(maxWidth, Math.max(MIN_MODAL_WIDTH, window.innerWidth * 0.72));
-    const height = next.height ?? Math.min(maxHeight, Math.max(MIN_MODAL_HEIGHT, window.innerHeight * 0.72));
-    next.left = clamp(Number(next.left), VIEWPORT_PADDING / 2, Math.max(VIEWPORT_PADDING / 2, window.innerWidth - width - VIEWPORT_PADDING / 2));
-    next.top = clamp(Number(next.top), VIEWPORT_PADDING / 2, Math.max(VIEWPORT_PADDING / 2, window.innerHeight - height - VIEWPORT_PADDING / 2));
+    const scale = getEffectiveModalScale();
+    const visualViewportWidth = window.innerWidth / scale;
+    const visualViewportHeight = window.innerHeight / scale;
+    const width = next.width ?? Math.min(maxWidth, Math.max(MIN_MODAL_WIDTH, visualViewportWidth * 0.72));
+    const height = next.height ?? Math.min(maxHeight, Math.max(MIN_MODAL_HEIGHT, visualViewportHeight * 0.72));
+    next.left = clamp(Number(next.left), VIEWPORT_PADDING / 2, Math.max(VIEWPORT_PADDING / 2, visualViewportWidth - width - VIEWPORT_PADDING / 2));
+    next.top = clamp(Number(next.top), VIEWPORT_PADDING / 2, Math.max(VIEWPORT_PADDING / 2, visualViewportHeight - height - VIEWPORT_PADDING / 2));
     next.x = 0;
     next.y = 0;
   } else if (typeof window !== 'undefined') {
+    const scale = getEffectiveModalScale();
+    const visualViewportWidth = window.innerWidth / scale;
+    const visualViewportHeight = window.innerHeight / scale;
     const centeredWidth = Number.isFinite(next.width) ? Number(next.width) : 0;
     const centeredHeight = Number.isFinite(next.height) ? Number(next.height) : 0;
     const maxX = centeredWidth > 0
-      ? Math.max(0, (window.innerWidth - centeredWidth) / 2 - VIEWPORT_PADDING / 2)
-      : Math.max(0, window.innerWidth / 2 - VIEWPORT_PADDING);
+      ? Math.max(0, (visualViewportWidth - centeredWidth) / 2 - VIEWPORT_PADDING / 2)
+      : Math.max(0, visualViewportWidth / 2 - VIEWPORT_PADDING);
     const maxY = centeredHeight > 0
-      ? Math.max(0, (window.innerHeight - centeredHeight) / 2 - VIEWPORT_PADDING / 2)
-      : Math.max(0, window.innerHeight / 2 - VIEWPORT_PADDING);
+      ? Math.max(0, (visualViewportHeight - centeredHeight) / 2 - VIEWPORT_PADDING / 2)
+      : Math.max(0, visualViewportHeight / 2 - VIEWPORT_PADDING);
     next.x = clamp(Number.isFinite(next.x) ? Number(next.x) : 0, -maxX, maxX);
     next.y = clamp(Number.isFinite(next.y) ? Number(next.y) : 0, -maxY, maxY);
   }
@@ -102,22 +129,59 @@ function getSafeFixedGeometryFromRect(rect: DOMRect): ModalGeometry {
     };
   }
   const { maxWidth, maxHeight } = getViewportBounds();
-  const width = Math.round(clamp(rect.width, MIN_MODAL_WIDTH, maxWidth));
-  const height = Math.round(clamp(rect.height, MIN_MODAL_HEIGHT, maxHeight));
-  const maxLeft = Math.max(VIEWPORT_PADDING / 2, window.innerWidth - width - VIEWPORT_PADDING / 2);
-  const maxTop = Math.max(VIEWPORT_PADDING / 2, window.innerHeight - height - VIEWPORT_PADDING / 2);
+  const scale = getEffectiveModalScale();
+  const visualViewportWidth = window.innerWidth / scale;
+  const visualViewportHeight = window.innerHeight / scale;
+  const width = Math.round(clamp(rect.width / scale, MIN_MODAL_WIDTH, maxWidth));
+  const height = Math.round(clamp(rect.height / scale, MIN_MODAL_HEIGHT, maxHeight));
+  const maxLeft = Math.max(VIEWPORT_PADDING / 2, visualViewportWidth - width - VIEWPORT_PADDING / 2);
+  const maxTop = Math.max(VIEWPORT_PADDING / 2, visualViewportHeight - height - VIEWPORT_PADDING / 2);
   return {
     x: 0,
     y: 0,
-    left: Math.round(clamp(rect.left, VIEWPORT_PADDING / 2, maxLeft)),
-    top: Math.round(clamp(rect.top, VIEWPORT_PADDING / 2, maxTop)),
+    left: Math.round(clamp(rect.left / scale, VIEWPORT_PADDING / 2, maxLeft)),
+    top: Math.round(clamp(rect.top / scale, VIEWPORT_PADDING / 2, maxTop)),
     width,
     height,
   };
 }
 
+function clampFixedGeometryToVisualViewport(element: HTMLElement, geometry: ModalGeometry): ModalGeometry {
+  if (typeof window === 'undefined') return geometry;
+  const scale = getEffectiveModalScale();
+  const visualPadding = VIEWPORT_PADDING / 2;
+  const rect = element.getBoundingClientRect();
+  const next = { ...geometry };
+
+  if (Number.isFinite(next.left)) {
+    if (rect.left < visualPadding) {
+      next.left = Number(next.left) + (visualPadding - rect.left) / scale;
+    }
+    if (rect.right > window.innerWidth - visualPadding) {
+      next.left = Number(next.left) - (rect.right - (window.innerWidth - visualPadding)) / scale;
+    }
+  }
+
+  if (Number.isFinite(next.top)) {
+    if (rect.top < visualPadding) {
+      next.top = Number(next.top) + (visualPadding - rect.top) / scale;
+    }
+    if (rect.bottom > window.innerHeight - visualPadding) {
+      next.top = Number(next.top) - (rect.bottom - (window.innerHeight - visualPadding)) / scale;
+    }
+  }
+
+  return next;
+}
+
 export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
   const storageKey = `xinyuexia_modal_position_${id}`;
+  const defaultX = defaultGeometry?.x;
+  const defaultY = defaultGeometry?.y;
+  const defaultLeft = defaultGeometry?.left;
+  const defaultTop = defaultGeometry?.top;
+  const defaultWidth = defaultGeometry?.width;
+  const defaultHeight = defaultGeometry?.height;
   const [geometry, setGeometry] = useState<ModalGeometry>(() => normalizeGeometryToViewport(readGeometry(storageKey, defaultGeometry)));
   const geometryRef = useRef(geometry);
   const dragRef = useRef<{
@@ -150,10 +214,20 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
   };
 
   useEffect(() => {
-    const next = normalizeGeometryToViewport(readGeometry(storageKey, defaultGeometry));
+    const fallback = defaultGeometry
+      ? {
+        x: defaultX ?? 0,
+        y: defaultY ?? 0,
+        left: defaultLeft,
+        top: defaultTop,
+        width: defaultWidth,
+        height: defaultHeight,
+      }
+      : undefined;
+    const next = normalizeGeometryToViewport(readGeometry(storageKey, fallback));
     geometryRef.current = next;
-    setGeometry(next);
-  }, [defaultGeometry, storageKey]);
+    setGeometry((current) => (isSameGeometry(current, next) ? current : next));
+  }, [defaultHeight, defaultLeft, defaultTop, defaultWidth, defaultX, defaultY, storageKey]);
 
   useEffect(() => {
     geometryRef.current = geometry;
@@ -194,19 +268,22 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
       const resize = resizeRef.current;
       if (drag && drag.pointerId === event.pointerId) {
         event.preventDefault();
+        const scale = getEffectiveModalScale();
+        const deltaX = (event.clientX - drag.startX) / scale;
+        const deltaY = (event.clientY - drag.startY) / scale;
         const isFixed = Number.isFinite(drag.origin.left) && Number.isFinite(drag.origin.top);
         const next = isFixed
           ? {
             ...geometryRef.current,
-            left: Math.round((drag.origin.left ?? 0) + event.clientX - drag.startX),
-            top: Math.round((drag.origin.top ?? 0) + event.clientY - drag.startY),
+            left: Math.round((drag.origin.left ?? 0) + deltaX),
+            top: Math.round((drag.origin.top ?? 0) + deltaY),
             x: 0,
             y: 0,
           }
           : {
             ...geometryRef.current,
-            x: drag.origin.x + event.clientX - drag.startX,
-            y: drag.origin.y + event.clientY - drag.startY,
+            x: drag.origin.x + deltaX,
+            y: drag.origin.y + deltaY,
           };
         geometryRef.current = next;
         setGeometry(next);
@@ -214,10 +291,11 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
       }
       if (resize && resize.pointerId === event.pointerId) {
         event.preventDefault();
-        const deltaX = event.clientX - resize.startX;
-        const deltaY = event.clientY - resize.startY;
+        const scale = getEffectiveModalScale();
+        const deltaX = (event.clientX - resize.startX) / scale;
+        const deltaY = (event.clientY - resize.startY) / scale;
         if (!resize.active) {
-          if (Math.hypot(deltaX, deltaY) < 3) return;
+          if (Math.hypot(deltaX * scale, deltaY * scale) < 3) return;
           resize.active = true;
           applyFixedGeometry(resize.element, {
             ...geometryRef.current,
@@ -229,8 +307,9 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
             height: resize.originHeight,
           });
         }
-        const maxWidth = Math.max(MIN_MODAL_WIDTH, window.innerWidth - VIEWPORT_PADDING);
-        const maxHeight = Math.max(MIN_MODAL_HEIGHT, window.innerHeight - VIEWPORT_PADDING);
+        const { maxWidth, maxHeight } = getViewportBounds();
+        const visualViewportWidth = window.innerWidth / scale;
+        const visualViewportHeight = window.innerHeight / scale;
         const rightEdge = resize.originLeft + resize.originWidth;
         const bottomEdge = resize.originTop + resize.originHeight;
         const maxLeftResizeWidth = Math.max(MIN_MODAL_WIDTH, rightEdge - VIEWPORT_PADDING / 2);
@@ -251,9 +330,9 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
         );
         const rawLeft = resize.direction === 'left' ? rightEdge - width : resize.originLeft;
         const rawTop = resize.direction === 'top' ? bottomEdge - height : resize.originTop;
-        const left = clamp(rawLeft, VIEWPORT_PADDING / 2, Math.max(VIEWPORT_PADDING / 2, window.innerWidth - width - VIEWPORT_PADDING / 2));
-        const top = clamp(rawTop, VIEWPORT_PADDING / 2, Math.max(VIEWPORT_PADDING / 2, window.innerHeight - height - VIEWPORT_PADDING / 2));
-        const next = {
+        const left = clamp(rawLeft, VIEWPORT_PADDING / 2, Math.max(VIEWPORT_PADDING / 2, visualViewportWidth - width - VIEWPORT_PADDING / 2));
+        const top = clamp(rawTop, VIEWPORT_PADDING / 2, Math.max(VIEWPORT_PADDING / 2, visualViewportHeight - height - VIEWPORT_PADDING / 2));
+        let next: ModalGeometry = {
           ...geometryRef.current,
           x: 0,
           y: 0,
@@ -262,6 +341,8 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
           width,
           height,
         };
+        applyFixedGeometry(resize.element, next);
+        next = clampFixedGeometryToVisualViewport(resize.element, next);
         geometryRef.current = next;
         applyFixedGeometry(resize.element, next);
       }
@@ -280,8 +361,11 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
       if (resize && resize.pointerId === event.pointerId) {
         resizeRef.current = null;
         if (resize.active) {
-          setGeometry(geometryRef.current);
-          saveGeometry(storageKey, geometryRef.current);
+          const next = clampFixedGeometryToVisualViewport(resize.element, geometryRef.current);
+          geometryRef.current = next;
+          applyFixedGeometry(resize.element, next);
+          setGeometry(next);
+          saveGeometry(storageKey, next);
         }
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
@@ -324,19 +408,22 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
   const onPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
+    const scale = getEffectiveModalScale();
+    const deltaX = (event.clientX - drag.startX) / scale;
+    const deltaY = (event.clientY - drag.startY) / scale;
     const isFixed = Number.isFinite(drag.origin.left) && Number.isFinite(drag.origin.top);
     const rawNext = isFixed
       ? {
         ...geometryRef.current,
-        left: Math.round((drag.origin.left ?? 0) + event.clientX - drag.startX),
-        top: Math.round((drag.origin.top ?? 0) + event.clientY - drag.startY),
+        left: Math.round((drag.origin.left ?? 0) + deltaX),
+        top: Math.round((drag.origin.top ?? 0) + deltaY),
         x: 0,
         y: 0,
       }
       : {
         ...geometryRef.current,
-        x: drag.origin.x + event.clientX - drag.startX,
-        y: drag.origin.y + event.clientY - drag.startY,
+        x: drag.origin.x + deltaX,
+        y: drag.origin.y + deltaY,
       };
     const next = normalizeGeometryToViewport(rawNext);
     geometryRef.current = next;
@@ -346,19 +433,22 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
   const onPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
+    const scale = getEffectiveModalScale();
+    const deltaX = (event.clientX - drag.startX) / scale;
+    const deltaY = (event.clientY - drag.startY) / scale;
     const isFixed = Number.isFinite(drag.origin.left) && Number.isFinite(drag.origin.top);
     const rawNext = isFixed
       ? {
         ...geometryRef.current,
-        left: Math.round((drag.origin.left ?? 0) + event.clientX - drag.startX),
-        top: Math.round((drag.origin.top ?? 0) + event.clientY - drag.startY),
+        left: Math.round((drag.origin.left ?? 0) + deltaX),
+        top: Math.round((drag.origin.top ?? 0) + deltaY),
         x: 0,
         y: 0,
       }
       : {
         ...geometryRef.current,
-        x: drag.origin.x + event.clientX - drag.startX,
-        y: drag.origin.y + event.clientY - drag.startY,
+        x: drag.origin.x + deltaX,
+        y: drag.origin.y + deltaY,
       };
     const next = normalizeGeometryToViewport(rawNext);
     dragRef.current = null;

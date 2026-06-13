@@ -7,6 +7,7 @@ type LinkedSourceControlProps = {
   linkedLabel?: string;
   onOpen: () => void;
   onClear?: () => void;
+  clearOnLinkedClick?: boolean;
   meta?: ReactNode;
   title?: string;
   className?: string;
@@ -23,6 +24,7 @@ export function LinkedSourceControl({
   linkedLabel = '已关联',
   onOpen,
   onClear,
+  clearOnLinkedClick = false,
   meta,
   title,
   className = 'flex items-center gap-2',
@@ -32,19 +34,21 @@ export function LinkedSourceControl({
   clearButtonClassName = 'flex h-full w-10 shrink-0 items-center justify-center border-l border-red-300 bg-red-500 text-white transition-colors hover:bg-red-600',
   metaClassName = 'text-xs font-black leading-5 text-[#08AACE]',
 }: LinkedSourceControlProps) {
+  const handleLinkedClick = clearOnLinkedClick && onClear ? onClear : onOpen;
+
   return (
     <div className={className}>
       {linked ? (
         <div className={groupClassName}>
           <button
             type="button"
-            onClick={onOpen}
+            onClick={handleLinkedClick}
             className={linkedButtonClassName}
             title={title}
           >
             {linkedLabel}
           </button>
-          {onClear && (
+          {onClear && !clearOnLinkedClick && (
             <button
               type="button"
               onClick={onClear}

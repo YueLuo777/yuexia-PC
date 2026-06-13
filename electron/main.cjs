@@ -5,7 +5,7 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { normalizeModelRequestInput } = require('./ipcValidation.cjs');
 
-const DEV_URL = process.env.XINYUEXIA_URL || 'http://127.0.0.1:18328/#/dashboard';
+const DEV_URL = process.env.XINYUEXIA_URL || 'http://127.0.0.1:18328/#/novels';
 const DIST_ENTRY = path.join(__dirname, '..', 'dist', 'index.html');
 const PRELOAD_ENTRY = path.join(__dirname, 'preload.cjs');
 const APP_ICON = path.join(__dirname, '..', 'build', 'app-icon.ico');
@@ -48,7 +48,7 @@ function resolveStartUrl() {
   if (process.env.XINYUEXIA_URL) {
     return process.env.XINYUEXIA_URL;
   }
-  const startHash = process.env.XINYUEXIA_START_HASH || '#/dashboard';
+  const startHash = process.env.XINYUEXIA_START_HASH || '#/novels';
   if (process.env.XINYUEXIA_LOAD_DIST === '1' || app.isPackaged) {
     return new URL(startHash, pathToFileURL(DIST_ENTRY).href).href;
   }

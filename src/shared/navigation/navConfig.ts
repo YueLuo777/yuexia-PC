@@ -74,7 +74,7 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
     items: [
       { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
       { iconName: 'Film', label: '我的剧本', to: '/scripts' },
-      { iconName: 'Library', label: '库', to: '/library' },
+      { iconName: 'Library', label: '资料库', to: '/library' },
       { iconName: 'Tag', label: '提示词管理', to: '/prompts' },
       { iconName: 'Settings', label: '模型管理', to: '/model-manage' },
       { iconName: 'BarChart3', label: 'Token用量', to: '/token-usage' },
@@ -85,6 +85,7 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
 
 const NAV_CONFIG_KEY = 'xinyuexia_nav_config_v1';
 const COLLAPSED_KEY = 'xinyuexia_sidebar_collapsed_v1';
+export const NAV_CONFIG_UPDATED_EVENT = 'xinyuexia_nav_config_updated';
 const REMOVED_ROUTES = new Set([
   '/dashboard',
   '/ai-chat',
@@ -203,6 +204,9 @@ export function loadNavConfig(): NavGroupConfig[] {
 export function saveNavConfig(config: NavGroupConfig[]) {
   const next = normalizeNavConfig(config);
   localStorage.setItem(NAV_CONFIG_KEY, JSON.stringify(next));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(NAV_CONFIG_UPDATED_EVENT, { detail: { config: next } }));
+  }
   return next;
 }
 
