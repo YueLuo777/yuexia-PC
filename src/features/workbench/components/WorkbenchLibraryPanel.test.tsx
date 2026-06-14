@@ -581,18 +581,21 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(testCollectionSource).not.toContain('/outline-directory-state-test');
   });
 
-  it('keeps the main chapter writing surface on the requested #F5F5F7 background', async () => {
+  it('keeps the main chapter writing surface on the white paper background', async () => {
     const styleSource = await readSharedStylesSource();
     const chapterEditorSource = await readChapterEditorSource();
 
-    expect(styleSource).toContain('--xy-wa-editor-bg: #F5F5F7;');
+    expect(styleSource).toContain('--xy-wa-editor-bg: #FFFFFF;');
+    expect(styleSource).toContain('.xy-wa-editor-root {\n  background: var(--xy-wa-editor-bg);\n}');
     expect(styleSource).toContain('.xy-wa-editor-surface {\n  background: var(--xy-wa-editor-bg);\n}');
     expect(styleSource).toContain('.xy-wa-editor-surface .xy-wa-editor-text-layer {\n  background: var(--xy-wa-editor-bg);\n}');
+    expect(chapterEditorSource).toContain('className="xy-wa-editor-root flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"');
     expect(chapterEditorSource).toContain('className="xy-wa-editor-surface relative min-h-0 flex-1 overflow-hidden"');
     expect(chapterEditorSource).toContain('className="xy-wa-editor-text-layer editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent pb-6 pt-3 outline-none"');
     expect(chapterEditorSource).toContain('paddingLeft: editorTextPaddingLeft');
     expect(chapterEditorSource).toContain('paddingRight: editorTextPaddingRight');
     expect(chapterEditorSource).toContain('textIndent: editorTextIndent');
+    expect(chapterEditorSource).not.toContain('overflow-hidden bg-[#f5f5f7]');
     expect(chapterEditorSource).not.toContain('px-6 pb-6 pt-10 outline-none');
   });
 

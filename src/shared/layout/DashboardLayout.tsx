@@ -22,7 +22,7 @@ const USER_NAME_KEY = 'xinyuexia_sidebar_user_name';
 const USER_AVATAR_KEY = 'xinyuexia_sidebar_user_avatar';
 const USER_NAME_UPDATED_EVENT = 'xinyuexia_user_name_updated';
 const SETTINGS_TEXT_BUTTON_CLASS =
-  'flex h-8 min-w-0 items-center justify-center rounded-md border border-transparent px-2 text-[12px] font-medium text-[#586574] transition-colors hover:border-[#d7dde6] hover:bg-white/75 hover:text-[#1f2933] focus-visible:border-[#08B3D9] focus-visible:bg-white focus-visible:outline-none';
+  'flex h-8 min-w-0 items-center justify-center rounded-md border border-[#dfe5ee] bg-white/60 px-2 text-[12px] font-medium text-[#586574] shadow-sm transition-colors hover:border-[#cfd8e6] hover:bg-white hover:text-[#1f2933] focus-visible:border-[#08B3D9] focus-visible:bg-white focus-visible:outline-none';
 const DASHBOARD_SIDEBAR_WIDTH_KEY = 'xinyuexia_dashboard_sidebar_width';
 const DASHBOARD_SIDEBAR_DEFAULT_WIDTH = 224;
 const DASHBOARD_SIDEBAR_MIN_WIDTH = 176;
@@ -326,7 +326,7 @@ export function DashboardLayout() {
         <div className="xy-dashboard-sidebar-footer shrink-0 border-t border-[#e1e5eb] p-3">
           <div
             data-testid="dashboard-footer-settings-group"
-            className="grid grid-cols-2 gap-1.5 rounded-lg border border-[#dfe5ee] bg-white/55 p-1.5 shadow-sm"
+            className="grid grid-cols-2 gap-1.5"
           >
             <Link
               to="/system-settings"

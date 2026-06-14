@@ -18,7 +18,7 @@ describe('ChapterEditor grid line font setting', () => {
     expect(modalSource).toContain("gridLineEnabled: gridLineMode !== 'none'");
     expect(modalSource).toContain('export const EDITOR_GRID_LINE_LEFT_OFFSET_PX = 64;');
     expect(modalSource).toContain('export const EDITOR_GRID_LINE_RIGHT_OFFSET_PX = 64;');
-    expect(modalSource).toContain("const EDITOR_GRID_LINE_MASK_COLOR = '#F5F5F7';");
+    expect(modalSource).toContain("const EDITOR_GRID_LINE_MASK_COLOR = '#FFFFFF';");
     expect(modalSource).toContain("const dash = mode === 'dashed' ? \" stroke-dasharray='7 7'\" : '';");
     expect(modalSource).toContain("x1='${EDITOR_GRID_LINE_LEFT_OFFSET_PX}'");
     expect(modalSource).toContain('export function getEditorGridLineStyle(fontSettings: FontSettings, scrollTop = 0): CSSProperties');
@@ -57,6 +57,8 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterEditorSource).toContain('const normalizeEditorText = (value: string) => stripLineIndents(value);');
     expect(chapterEditorSource).toContain("const cleanedPaste = stripLineIndents(pasted);");
     expect(chapterEditorSource).toContain("const next = content.slice(0, start) + '\\n' + content.slice(end);");
+    expect(chapterEditorSource).toContain('className="flex items-center gap-2 border-b border-[#e1e5eb] bg-white px-4 py-2"');
+    expect(chapterEditorSource).not.toContain('className="flex items-center gap-2 bg-white px-4 py-2"');
     expect(chapterEditorSource).not.toContain('normalizeParagraphIndents');
     expect(chapterEditorSource).not.toContain('PARAGRAPH_INDENT');
     expect(chapterEditorSource).not.toContain('keepSelectionOutOfParagraphIndent');

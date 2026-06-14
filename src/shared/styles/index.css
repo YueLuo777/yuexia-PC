@@ -61,7 +61,7 @@
     --xy-wa-text: #1f2933;
     --xy-wa-muted: #68727f;
     --xy-wa-faint: #9aa3af;
-    --xy-wa-editor-bg: #F5F5F7;
+    --xy-wa-editor-bg: #FFFFFF;
     --xy-wa-cover-blue: #98c3f9;
   }
 
@@ -178,6 +178,10 @@
 }
 
 .xy-wa-editor-surface {
+  background: var(--xy-wa-editor-bg);
+}
+
+.xy-wa-editor-root {
   background: var(--xy-wa-editor-bg);
 }
 

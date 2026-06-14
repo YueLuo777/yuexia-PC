@@ -93,7 +93,7 @@ const EDITOR_GRID_LINE_TOP_OFFSET_PX = 12;
 export const EDITOR_GRID_LINE_LEFT_OFFSET_PX = 64;
 export const EDITOR_GRID_LINE_RIGHT_OFFSET_PX = 64;
 const EDITOR_GRID_LINE_CANVAS_WIDTH_PX = 3200;
-const EDITOR_GRID_LINE_MASK_COLOR = '#F5F5F7';
+const EDITOR_GRID_LINE_MASK_COLOR = '#FFFFFF';
 
 const editorGridLineModeOptions: Array<{ value: EditorGridLineMode; label: string }> = [
   { value: 'none', label: '无' },

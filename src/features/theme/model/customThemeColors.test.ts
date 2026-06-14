@@ -36,7 +36,7 @@ describe('custom theme colors', () => {
       '#DBE7FB',
       '#EAFBF3',
       '#E7F8FD',
-      '#F5F5F7',
+      '#FFFFFF',
       '#E4E9EF',
       '#08AACE',
       '#FFF7ED',
@@ -83,6 +83,26 @@ describe('custom theme colors', () => {
     );
 
     expect(readCustomThemeColors().detailOutlineSelected).toBe('#08AACE');
+  });
+
+  it('migrates legacy editor backgrounds to the white paper background', () => {
+    localStorage.setItem(
+      CUSTOM_THEME_COLORS_STORAGE_KEY,
+      JSON.stringify({
+        editorBackground: '#F5F5F7',
+      }),
+    );
+
+    expect(readCustomThemeColors().editorBackground).toBe('#FFFFFF');
+
+    localStorage.setItem(
+      CUSTOM_THEME_COLORS_STORAGE_KEY,
+      JSON.stringify({
+        editorBackground: '#F8FAFC',
+      }),
+    );
+
+    expect(readCustomThemeColors().editorBackground).toBe('#FFFFFF');
   });
 
   it('writes colors, applies them to css variables, and keeps only 20 recent colors', () => {

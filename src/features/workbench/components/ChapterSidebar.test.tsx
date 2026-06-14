@@ -87,8 +87,10 @@ describe('ChapterSidebar', () => {
     expect(chapterSidebarSource).toContain('overflow-y-auto px-1 py-2');
     expect(chapterSidebarSource).toContain('className="mt-0.5 space-y-0.5"');
     expect(chapterSidebarSource).not.toContain('className="ml-1 mt-0.5 space-y-0.5"');
-    expect(chapterSidebarSource).toContain('rounded-[8px] border px-[24px] py-2');
-    expect(publishedSidebarSource).toContain('border-l-[3px] px-[26px] py-2');
+    expect(chapterSidebarSource).toContain('rounded-[8px] border px-[24px] py-1');
+    expect(publishedSidebarSource).toContain('border-l-[3px] px-[26px] py-1');
+    expect(chapterSidebarSource).not.toContain('rounded-[8px] border px-[24px] py-2');
+    expect(publishedSidebarSource).not.toContain('border-l-[3px] px-[26px] py-2');
   });
 
   it('only changes the selected chapter background in the body chapter list', () => {

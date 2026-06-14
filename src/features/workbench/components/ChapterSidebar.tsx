@@ -207,7 +207,7 @@ export function ChapterSidebar({
                         event.stopPropagation();
                         setChapterMenu({ visible: true, ...getContextMenuPoint(event), volumeId: volume.id, chapterId: chapter.id });
                       }}
-                      className={`group relative flex w-full cursor-pointer items-center gap-2 rounded-[8px] border px-[24px] py-2 text-left transition-colors ${
+                      className={`group relative flex w-full cursor-pointer items-center gap-2 rounded-[8px] border px-[24px] py-1 text-left transition-colors ${
                         chapter.isSelected
                           ? 'border-transparent xy-selected-mint-bg'
                           : 'border-transparent hover:bg-gray-50'

@@ -148,7 +148,7 @@ export function PublishedSidebar({
                 {volume.chapters.map((chapter) => (
                   <div
                     key={chapter.id}
-                    className={`group relative flex items-center gap-2 rounded-md border-l-[3px] px-[26px] py-2 transition-colors ${
+                    className={`group relative flex items-center gap-2 rounded-md border-l-[3px] px-[26px] py-1 transition-colors ${
                       chapter.isSelected ? 'border-transparent xy-selected-mint-bg' : 'border-transparent hover:bg-gray-50'
                     }`}
                     onClick={() => onSelectChapter(volume.id, chapter.id)}

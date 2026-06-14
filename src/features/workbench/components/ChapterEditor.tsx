@@ -1581,7 +1581,7 @@ export function ChapterEditor({
   const canRenderReviewPanel = showReviewPanel && Boolean(reviewPortalTarget);
 
   return (
-    <section className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#f5f5f7]">
+    <section className="xy-wa-editor-root flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       {editorFieldSizeModal}
       {isEmbeddedReviewMode && (
         <div ref={setEmbeddedPortalElement} className="min-h-0 flex-1 overflow-hidden bg-white" />
@@ -1635,7 +1635,7 @@ export function ChapterEditor({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 bg-white px-4 py-2">
+      <div className="flex items-center gap-2 border-b border-[#e1e5eb] bg-white px-4 py-2">
         <button onClick={() => setIsFontSettingsOpen(true)} className="rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
           字体设置
         </button>

@@ -23,6 +23,7 @@ export type CustomThemeColorMap = Record<CustomThemeColorSlotKey, string>;
 export const CUSTOM_THEME_COLORS_STORAGE_KEY = 'xinyuexia_custom_theme_colors_v1';
 export const CUSTOM_THEME_RECENT_COLORS_STORAGE_KEY = 'xinyuexia_custom_theme_recent_colors_v1';
 const LEGACY_DETAIL_OUTLINE_SELECTED_FILL_COLOR = '#E7F8FD';
+const LEGACY_EDITOR_BACKGROUND_COLORS = new Set(['#F5F5F7', '#F8FAFC']);
 
 export const CUSTOM_THEME_COLOR_SLOTS: CustomThemeColorSlot[] = [
   {
@@ -57,7 +58,7 @@ export const CUSTOM_THEME_COLOR_SLOTS: CustomThemeColorSlot[] = [
     key: 'editorBackground',
     label: '正文内容输入区域背景',
     description: '正文编辑器中间输入区域的纸面底色。',
-    defaultColor: '#F5F5F7',
+    defaultColor: '#FFFFFF',
     cssVar: '--xy-wa-editor-bg',
   },
   {
@@ -123,6 +124,10 @@ export function readCustomThemeColors(): CustomThemeColorMap {
     return CUSTOM_THEME_COLOR_SLOTS.reduce((result, slot) => {
       const normalized = normalizeCustomThemeHexColor(parsed[slot.key] ?? '');
       if (slot.key === 'detailOutlineSelected' && normalized === LEGACY_DETAIL_OUTLINE_SELECTED_FILL_COLOR) {
+        result[slot.key] = slot.defaultColor;
+        return result;
+      }
+      if (slot.key === 'editorBackground' && normalized && LEGACY_EDITOR_BACKGROUND_COLORS.has(normalized)) {
         result[slot.key] = slot.defaultColor;
         return result;
       }

@@ -63,14 +63,16 @@ describe('DashboardLayout sidebar splitter', () => {
 });
 
 describe('DashboardLayout footer settings actions', () => {
-  it('frames the four footer settings buttons as one compact group', async () => {
+  it('frames each footer settings button separately instead of framing the whole group', async () => {
     const source = await readDashboardLayoutSource();
     const footerStart = source.indexOf('data-testid="dashboard-footer-settings-group"');
     const asideEnd = source.indexOf('</aside>', footerStart);
     const footerSource = source.slice(footerStart, asideEnd);
 
     expect(footerStart).toBeGreaterThan(-1);
-    expect(footerSource).toContain('grid grid-cols-2 gap-1.5 rounded-lg border border-[#dfe5ee] bg-white/55 p-1.5 shadow-sm');
+    expect(footerSource).toContain('className="grid grid-cols-2 gap-1.5"');
+    expect(source).toContain('border border-[#dfe5ee] bg-white/60');
+    expect(footerSource).not.toContain('rounded-lg border border-[#dfe5ee] bg-white/55 p-1.5 shadow-sm');
     expect(footerSource).toContain('to="/system-settings"');
     expect(footerSource).toContain('to="/theme-colors"');
     expect(footerSource).toContain('to="/shortcut-settings"');
@@ -98,7 +100,7 @@ describe('DashboardLayout footer settings actions', () => {
   it('records the framed footer settings group in the in-app error log', async () => {
     const errorLog = await readErrorLogSource();
 
-    expect(errorLog).toContain('dashboard-footer-settings-actions-framed-group-001');
+    expect(errorLog).toContain('dashboard-footer-settings-actions-individual-frames-001');
   });
 });
 
