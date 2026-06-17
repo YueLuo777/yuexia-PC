@@ -194,8 +194,35 @@ const DEFAULT_ROLE_TYPES = DEFAULT_WORKBENCH_ROLE_TYPES;
 const DEFAULT_MALE_PROTAGONIST_ROLE_TYPE = '男主角';
 const DEFAULT_MALE_PROTAGONIST_ROLE_TITLE = '男主角';
 const DEFAULT_WORK_SETTING_TYPES = ['核心设定', '世界规则', '剧情规划'];
-const DEFAULT_WORK_SETTING_STARTER_VERSION = '2026-06-16-setting-starter-v2';
+const DEFAULT_WORK_SETTING_STARTER_VERSION = '2026-06-17-setting-starter-no-auto-domain-items-v4';
 const DEFAULT_WORK_SETTING_STARTER_ENTRIES = [
+  { type: '核心设定', title: '作品定位' },
+  { type: '核心设定', title: '主角初始处境' },
+  { type: '核心设定', title: '核心爽点' },
+  { type: '核心设定', title: '核心矛盾' },
+  { type: '世界规则', title: '力量规则' },
+  { type: '世界规则', title: '世界背景与秩序' },
+  { type: '剧情规划', title: '主线目标与阶段剧情' },
+  { type: '剧情规划', title: '关键转折与结局方向' },
+  { type: '主线伏笔', title: '主线伏笔' },
+  { type: '人物伏笔', title: '人物伏笔' },
+  { type: '已回收伏笔', title: '已回收伏笔' },
+  { type: '硬规则', title: '硬规则' },
+  { type: '禁写规则', title: '禁写规则' },
+];
+const LEGACY_AUTO_DOMAIN_SETTING_STARTER_ENTRIES = [
+  { type: '正派势力', title: '正派势力' },
+  { type: '反派势力', title: '反派势力' },
+  { type: '中立势力', title: '中立势力' },
+  { type: '其他势力', title: '其他势力' },
+  { type: '功法能力', title: '功法能力' },
+  { type: '物品装备', title: '物品装备' },
+  { type: '资源货币', title: '资源货币' },
+  { type: '特殊资源', title: '特殊资源' },
+  { type: '世界地图', title: '世界地图' },
+  { type: '危险区域', title: '危险区域' },
+];
+const LEGACY_DEFAULT_WORK_SETTING_INSTRUCTIONS = [
   { type: '核心设定', title: '作品定位', body: '填写说明：记录题材、风格、目标读者、主打体验和整体卖点，让 AI 明白这本书要给读者什么感觉。' },
   { type: '核心设定', title: '主角初始处境', body: '填写说明：记录主角开局身份、困境、资源、敌人、弱点和眼前目标，让 AI 明白故事从哪里起步。' },
   { type: '核心设定', title: '核心爽点', body: '填写说明：记录本书最主要的爽感来源，例如越级反杀、扮猪吃虎、资源暴富、势力崛起。' },
@@ -1248,15 +1275,45 @@ function getDefaultWorkSettingStarterVersionStorageKey(storageKey: string) {
 function createDefaultWorkSettingStarterEntry(item: typeof DEFAULT_WORK_SETTING_STARTER_ENTRIES[number]) {
   return {
     ...createWorkbenchLibraryEntry(SETTING_TAB, item.title),
-    content: stringifySettingContent({ type: item.type, body: item.body }),
+    content: stringifySettingContent({ type: item.type, body: '' }),
   };
 }
 
+function clearLegacyDefaultWorkSettingInstructions(entries: WorkbenchLibraryEntry[]) {
+  const legacyInstructions = new Set(LEGACY_DEFAULT_WORK_SETTING_INSTRUCTIONS.map((item) => `${item.type}::${item.title}::${item.body}`));
+  let changed = false;
+  const nextEntries = entries.map((entry) => {
+    if (entry.tab !== SETTING_TAB) return entry;
+    const setting = parseSettingContent(entry.content);
+    if (!legacyInstructions.has(`${setting.type}::${entry.title.trim()}::${setting.body}`)) return entry;
+    changed = true;
+    return {
+      ...entry,
+      content: stringifySettingContent({ ...setting, body: '' }),
+    };
+  });
+  return changed ? nextEntries : entries;
+}
+
+function removeLegacyAutoDomainSettingStarterEntries(entries: WorkbenchLibraryEntry[]) {
+  const legacyAutoEntries = new Set(LEGACY_AUTO_DOMAIN_SETTING_STARTER_ENTRIES.map((item) => `${item.type}::${item.title}`));
+  let changed = false;
+  const nextEntries = entries.filter((entry) => {
+    if (entry.tab !== SETTING_TAB) return true;
+    const setting = parseSettingContent(entry.content);
+    const shouldRemove = legacyAutoEntries.has(`${setting.type}::${entry.title.trim()}`) && !setting.body.trim();
+    if (shouldRemove) changed = true;
+    return !shouldRemove;
+  });
+  return changed ? nextEntries : entries;
+}
+
 function withDefaultWorkSettingStarterEntries(entries: WorkbenchLibraryEntry[], storageKey: string) {
+  const clearedEntries = removeLegacyAutoDomainSettingStarterEntries(clearLegacyDefaultWorkSettingInstructions(entries));
   if (localStorage.getItem(getDefaultWorkSettingStarterVersionStorageKey(storageKey)) === DEFAULT_WORK_SETTING_STARTER_VERSION) {
-    return entries;
+    return clearedEntries;
   }
-  const existingKeys = new Set(entries
+  const existingKeys = new Set(clearedEntries
     .filter((entry) => entry.tab === SETTING_TAB)
     .map((entry) => {
       const setting = parseSettingContent(entry.content);
@@ -1266,7 +1323,7 @@ function withDefaultWorkSettingStarterEntries(entries: WorkbenchLibraryEntry[], 
     .filter((item) => !existingKeys.has(`${item.type}::${item.title}`))
     .map(createDefaultWorkSettingStarterEntry);
   localStorage.setItem(getDefaultWorkSettingStarterVersionStorageKey(storageKey), DEFAULT_WORK_SETTING_STARTER_VERSION);
-  return missingEntries.length > 0 ? [...missingEntries, ...entries] : entries;
+  return missingEntries.length > 0 ? [...missingEntries, ...clearedEntries] : clearedEntries;
 }
 
 function createDefaultMaleProtagonistRoleEntry() {

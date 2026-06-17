@@ -5,7 +5,7 @@ import { getWorkbenchPlotPointDisplayText, getWorkbenchPlotPointReview } from '@
 
 import { WorkbenchLibraryPanel, parseGeneratedPlotPointCandidates } from './WorkbenchLibraryPanel';
 
-const TEST_WORK_SETTING_STARTER_VERSION = '2026-06-16-setting-starter-v2';
+const TEST_WORK_SETTING_STARTER_VERSION = '2026-06-17-setting-starter-no-auto-domain-items-v4';
 
 const readWorkbenchLibraryPanelSource = async () => {
   const { readFileSync } = await import('node:fs');
@@ -2392,17 +2392,17 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(screen.queryByRole('button', { name: '未分类0' })).not.toBeInTheDocument();
 
     const groupsByTab = [
-      { tab: '势力设定4', groups: ['正派势力', '反派势力', '中立势力', '其他势力'] },
-      { tab: '道具资源4', groups: ['功法能力', '物品装备', '资源货币', '特殊资源'] },
-      { tab: '地点场景2', groups: ['世界地图', '危险区域'] },
-      { tab: '伏笔线索3', groups: ['主线伏笔', '人物伏笔', '已回收伏笔'] },
-      { tab: '书写规则2', groups: ['硬规则', '禁写规则'] },
+      { tab: '势力设定0', groups: ['正派势力', '反派势力', '中立势力', '其他势力'], count: 0 },
+      { tab: '道具资源0', groups: ['功法能力', '物品装备', '资源货币', '特殊资源'], count: 0 },
+      { tab: '地点场景0', groups: ['世界地图', '危险区域'], count: 0 },
+      { tab: '伏笔线索3', groups: ['主线伏笔', '人物伏笔', '已回收伏笔'], count: 1 },
+      { tab: '书写规则2', groups: ['硬规则', '禁写规则'], count: 1 },
     ];
 
-    groupsByTab.forEach(({ tab, groups }) => {
+    groupsByTab.forEach(({ tab, groups, count }) => {
       fireEvent.click(screen.getByRole('button', { name: tab }));
       groups.forEach((group) => {
-        expect(screen.getByRole('button', { name: `${group}1` })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: `${group}${count}` })).toBeInTheDocument();
       });
     });
 
@@ -2437,22 +2437,22 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     });
   });
 
-  it('seeds the approved default setting entries by the current setting workspace groups', async () => {
+  it('seeds the approved default setting entries with empty bodies by the current setting workspace groups', async () => {
     const storageKey = 'workbench-default-core-setting-starter-test';
     const expectedEntriesByType = new Map([
       ['核心设定', ['作品定位', '主角初始处境', '核心爽点', '核心矛盾']],
       ['世界规则', ['力量规则', '世界背景与秩序']],
       ['剧情规划', ['主线目标与阶段剧情', '关键转折与结局方向']],
-      ['正派势力', ['正派势力']],
-      ['反派势力', ['反派势力']],
-      ['中立势力', ['中立势力']],
-      ['其他势力', ['其他势力']],
-      ['功法能力', ['功法能力']],
-      ['物品装备', ['物品装备']],
-      ['资源货币', ['资源货币']],
-      ['特殊资源', ['特殊资源']],
-      ['世界地图', ['世界地图']],
-      ['危险区域', ['危险区域']],
+      ['正派势力', []],
+      ['反派势力', []],
+      ['中立势力', []],
+      ['其他势力', []],
+      ['功法能力', []],
+      ['物品装备', []],
+      ['资源货币', []],
+      ['特殊资源', []],
+      ['世界地图', []],
+      ['危险区域', []],
       ['主线伏笔', ['主线伏笔']],
       ['人物伏笔', ['人物伏笔']],
       ['已回收伏笔', ['已回收伏笔']],
@@ -2490,9 +2490,108 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const powerRuleEntry = storedSettingEntries.find((entry: { title: string }) => entry.title === '力量规则');
     expect(powerRuleEntry).toBeTruthy();
     expect(JSON.parse(powerRuleEntry.content).type).toBe('世界规则');
-    expect(JSON.parse(powerRuleEntry.content).body).toContain('力量来源');
+    expect(JSON.parse(powerRuleEntry.content).body).toBe('');
     const positioningEntry = storedSettingEntries.find((entry: { title: string }) => entry.title === '作品定位');
-    expect(JSON.parse(positioningEntry.content).body).toContain('题材');
+    expect(JSON.parse(positioningEntry.content).body).toBe('');
+    expect(storedSettingEntries.some((entry: { title: string }) => entry.title === '正派势力')).toBe(false);
+    expect(storedSettingEntries.some((entry: { title: string }) => entry.title === '功法能力')).toBe(false);
+    expect(storedSettingEntries.some((entry: { title: string }) => entry.title === '世界地图')).toBe(false);
+    storedSettingEntries.forEach((entry: { content: string }) => {
+      expect(JSON.parse(entry.content).body).not.toContain('填写说明');
+    });
+  });
+
+  it('removes old empty auto-created faction item and location entries without removing user content', async () => {
+    const storageKey = 'workbench-clear-old-auto-domain-setting-items-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, '2026-06-17-setting-starter-empty-body-v3');
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'old-auto-faction',
+        tab: '大纲',
+        title: '正派势力',
+        content: JSON.stringify({ type: '正派势力', body: '' }),
+        updatedAt: '2026/6/17 10:00:00',
+      },
+      {
+        id: 'old-auto-item',
+        tab: '大纲',
+        title: '功法能力',
+        content: JSON.stringify({ type: '功法能力', body: '' }),
+        updatedAt: '2026/6/17 10:01:00',
+      },
+      {
+        id: 'old-auto-location',
+        tab: '大纲',
+        title: '世界地图',
+        content: JSON.stringify({ type: '世界地图', body: '' }),
+        updatedAt: '2026/6/17 10:02:00',
+      },
+      {
+        id: 'user-faction',
+        tab: '大纲',
+        title: '正派势力',
+        content: JSON.stringify({ type: '正派势力', body: '这是我自己写的正派势力。' }),
+        updatedAt: '2026/6/17 10:03:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    expect(storedEntries.some((entry: { id: string }) => entry.id === 'old-auto-faction')).toBe(false);
+    expect(storedEntries.some((entry: { id: string }) => entry.id === 'old-auto-item')).toBe(false);
+    expect(storedEntries.some((entry: { id: string }) => entry.id === 'old-auto-location')).toBe(false);
+    const userFactionEntry = storedEntries.find((entry: { id: string }) => entry.id === 'user-faction');
+    expect(JSON.parse(userFactionEntry.content).body).toBe('这是我自己写的正派势力。');
+  });
+
+  it('clears old default filling instructions without touching user setting content', async () => {
+    const storageKey = 'workbench-clear-old-default-setting-instructions-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, '2026-06-16-setting-starter-v2');
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'old-default-positioning',
+        tab: '大纲',
+        title: '作品定位',
+        content: JSON.stringify({
+          type: '核心设定',
+          body: '填写说明：记录题材、风格、目标读者、主打体验和整体卖点，让 AI 明白这本书要给读者什么感觉。',
+        }),
+        updatedAt: '2026/6/16 20:00:00',
+      },
+      {
+        id: 'user-positioning',
+        tab: '大纲',
+        title: '作品定位',
+        content: JSON.stringify({
+          type: '核心设定',
+          body: '这是我自己写的作品定位。',
+        }),
+        updatedAt: '2026/6/16 20:01:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const oldDefaultEntry = storedEntries.find((entry: { id: string }) => entry.id === 'old-default-positioning');
+    const userEntry = storedEntries.find((entry: { id: string }) => entry.id === 'user-positioning');
+    expect(JSON.parse(oldDefaultEntry.content).body).toBe('');
+    expect(JSON.parse(userEntry.content).body).toBe('这是我自己写的作品定位。');
   });
 
   it('removes the role editor delete button because protagonist settings are renamed instead of deleted', async () => {
