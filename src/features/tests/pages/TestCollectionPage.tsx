@@ -29,6 +29,8 @@ const WorkbenchAiRequestTagPolicyTestPage = lazy(() => import('@/features/tests/
 const WorkbenchFlowButtonStatsTestPage = lazy(() => import('@/features/tests/pages/WorkbenchFlowButtonStatsTestPage').then((module) => ({ default: module.WorkbenchFlowButtonStatsTestPage })));
 const WorkbenchSidebarBoldNavigationTestPage = lazy(() => import('@/features/tests/pages/WorkbenchSidebarBoldNavigationTestPage').then((module) => ({ default: module.WorkbenchSidebarBoldNavigationTestPage })));
 const WorkbenchFlowGraySelectedStateTestPage = lazy(() => import('@/features/tests/pages/WorkbenchFlowGraySelectedStateTestPage').then((module) => ({ default: module.WorkbenchFlowGraySelectedStateTestPage })));
+const SettingImportHierarchyTestPage = lazy(() => import('@/features/tests/pages/SettingImportHierarchyTestPage').then((module) => ({ default: module.SettingImportHierarchyTestPage })));
+const SettingWorkspaceMultiLayoutTestPage = lazy(() => import('@/features/tests/pages/SettingWorkspaceMultiLayoutTestPage').then((module) => ({ default: module.SettingWorkspaceMultiLayoutTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -123,6 +125,20 @@ const testGroups = [
         path: '/workbench-flow-gray-selected-state-test',
         icon: Palette,
         badge: 'Gray Active',
+      },
+      {
+        title: '设定三层智能导入测试',
+        description: '测试智能导入把一级分组、二级设定、三级子设定分层识别，并预览已有则填入、没有则创建和分组重命名。',
+        path: '/setting-import-hierarchy-test',
+        icon: Tags,
+        badge: 'Import 3',
+      },
+      {
+        title: '设定工作台多标签布局测试',
+        description: '测试作品设定、人物设定、势力组织、道具资源等一级标签的多种布局方案。',
+        path: '/setting-workspace-multi-layout-test',
+        icon: Tags,
+        badge: 'Setting UI',
       },
     ],
   },
@@ -245,6 +261,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <WorkbenchSidebarBoldNavigationTestPage />;
       case '/workbench-flow-gray-selected-state-test':
         return <WorkbenchFlowGraySelectedStateTestPage />;
+      case '/setting-import-hierarchy-test':
+        return <SettingImportHierarchyTestPage />;
+      case '/setting-workspace-multi-layout-test':
+        return <SettingWorkspaceMultiLayoutTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':

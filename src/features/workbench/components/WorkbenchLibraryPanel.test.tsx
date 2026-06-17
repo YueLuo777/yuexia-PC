@@ -5,6 +5,8 @@ import { getWorkbenchPlotPointDisplayText, getWorkbenchPlotPointReview } from '@
 
 import { WorkbenchLibraryPanel, parseGeneratedPlotPointCandidates } from './WorkbenchLibraryPanel';
 
+const TEST_WORK_SETTING_STARTER_VERSION = '2026-06-16-setting-starter-v2';
+
 const readWorkbenchLibraryPanelSource = async () => {
   const { readFileSync } = await import('node:fs');
   const { fileURLToPath } = await import('node:url');
@@ -125,12 +127,22 @@ const readBorderBackplateApplicationTestSource = async () => {
   return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../tests/pages/BorderBackplateApplicationTestPage.tsx'), 'utf8');
 };
 
+const readSettingImportHierarchyTestSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../tests/pages/SettingImportHierarchyTestPage.tsx'), 'utf8');
+};
+
 describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   beforeEach(() => {
     localStorage.clear();
   });
 
   it('auto-creates an editable outline setting when typing into the empty setting name field', async () => {
+    localStorage.setItem('workbench-outline-empty-name-edit-test_work_setting_starter_version', TEST_WORK_SETTING_STARTER_VERSION);
+
     render(
       <WorkbenchLibraryPanel
         storageKey="workbench-outline-empty-name-edit-test"
@@ -144,11 +156,14 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
     expect(await screen.findByDisplayValue('测试设定名')).toBeInTheDocument();
     const storedEntries = JSON.parse(localStorage.getItem('workbench-outline-empty-name-edit-test') ?? '[]');
-    expect(storedEntries).toHaveLength(1);
-    expect(storedEntries[0]).toMatchObject({ tab: '大纲', title: '测试设定名' });
+    const storedSettingEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '大纲');
+    expect(storedSettingEntries).toHaveLength(1);
+    expect(storedSettingEntries[0]).toMatchObject({ tab: '大纲', title: '测试设定名' });
   });
 
   it('auto-creates an editable outline setting when typing into the empty setting preview field', async () => {
+    localStorage.setItem('workbench-outline-empty-preview-edit-test_work_setting_starter_version', TEST_WORK_SETTING_STARTER_VERSION);
+
     render(
       <WorkbenchLibraryPanel
         storageKey="workbench-outline-empty-preview-edit-test"
@@ -162,9 +177,196 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
     expect(await screen.findByDisplayValue('测试设定正文')).toBeInTheDocument();
     const storedEntries = JSON.parse(localStorage.getItem('workbench-outline-empty-preview-edit-test') ?? '[]');
-    expect(storedEntries).toHaveLength(1);
-    expect(storedEntries[0]).toMatchObject({ tab: '大纲', title: '新建大纲' });
-    expect(JSON.parse(storedEntries[0].content)).toMatchObject({ type: '未分类', body: '测试设定正文' });
+    const storedSettingEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '大纲');
+    expect(storedSettingEntries).toHaveLength(1);
+    expect(storedSettingEntries[0]).toMatchObject({ tab: '大纲', title: '新建大纲' });
+    expect(JSON.parse(storedSettingEntries[0].content)).toMatchObject({ type: '核心设定', body: '测试设定正文' });
+  });
+
+  it('smart-imports bracket subsections inside one tagged setting', async () => {
+    const storageKey = 'workbench-smart-import-new-group-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(`${storageKey}_tab_configs_v1`, JSON.stringify({
+      大纲: {
+        aiOutput: '<人物设定>\n*人物设定*：\n\n【主角人设】：\n林刻冷酷果决。\n\n【重要配角】：\n吞吞是系统助手。\n\n【核心反派】：\n永恒神庭追杀吞噬修士。\n</人物设定>',
+      },
+    }));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '智能导入设定' }));
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const storedSettingEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '大纲');
+    expect(storedSettingEntries).toHaveLength(1);
+    expect(storedSettingEntries[0].title).toBe('人物设定');
+    expect(JSON.parse(storedSettingEntries[0].content).type).toBe('人物设定');
+    expect(JSON.parse(storedSettingEntries[0].content).body).toContain('【主角人设】：\n林刻冷酷果决。');
+    expect(JSON.parse(storedSettingEntries[0].content).body).toContain('【重要配角】：\n吞吞是系统助手。');
+    expect(JSON.parse(storedSettingEntries[0].content).body).toContain('【核心反派】：\n永恒神庭追杀吞噬修士。');
+  });
+
+  it('smart-imports each tagged group as one setting when brackets are subsections', async () => {
+    const storageKey = 'workbench-smart-import-direct-subsections-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(`${storageKey}_tab_configs_v1`, JSON.stringify({
+      大纲: {
+        aiOutput: [
+          '<核心设定>',
+          '【故事起点】：',
+          '林刻开局被退婚。',
+          '',
+          '【核心矛盾】：',
+          '永恒神庭追杀吞噬修士。',
+          '</核心设定>',
+          '',
+          '<人物设定>',
+          '*人物设定*：',
+          '',
+          '【主角人设】：',
+          '林刻冷酷果决。',
+          '',
+          '【重要配角】：',
+          '吞吞是系统助手。',
+          '</人物设定>',
+          '',
+          '<主线剧情>',
+          '【剧情大纲】：',
+          '主角从凡界一路杀上永恒天。',
+          '',
+          '【黄金三章钩子】：',
+          '退婚、反杀、逃亡。',
+          '</主线剧情>',
+        ].join('\n'),
+      },
+    }));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '智能导入设定' }));
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const storedSettingEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '大纲');
+    expect(storedSettingEntries).toHaveLength(3);
+    expect(storedSettingEntries.map((entry: { title: string }) => entry.title)).toEqual([
+      '核心设定',
+      '人物设定',
+      '剧情规划',
+    ]);
+    expect(storedSettingEntries.map((entry: { content: string }) => JSON.parse(entry.content).type)).toEqual([
+      '核心设定',
+      '人物设定',
+      '剧情规划',
+    ]);
+    expect(JSON.parse(storedSettingEntries[0].content).body).toContain('【故事起点】：\n林刻开局被退婚。');
+    expect(JSON.parse(storedSettingEntries[0].content).body).toContain('【核心矛盾】：\n永恒神庭追杀吞噬修士。');
+    expect(JSON.parse(storedSettingEntries[1].content).body).toContain('【主角人设】：\n林刻冷酷果决。');
+    expect(JSON.parse(storedSettingEntries[2].content).body).toContain('【黄金三章钩子】：\n退婚、反杀、逃亡。');
+  });
+
+  it('reveals hidden setting groups when smart import fills them', async () => {
+    const storageKey = 'workbench-smart-import-reveals-hidden-groups-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(`${storageKey}_hidden_setting_types`, JSON.stringify(['核心设定', '主线剧情']));
+    localStorage.setItem(`${storageKey}_tab_configs_v1`, JSON.stringify({
+      大纲: {
+        aiOutput: [
+          '<核心设定>',
+          '【故事起点】：',
+          '林刻开局被退婚。',
+          '',
+          '【核心矛盾】：',
+          '永恒神庭追杀吞噬修士。',
+          '</核心设定>',
+          '',
+          '<人物设定>',
+          '【主角人设】：',
+          '林刻冷酷果决。',
+          '',
+          '【重要配角】：',
+          '吞吞是系统助手。',
+          '</人物设定>',
+          '',
+          '<主线剧情>',
+          '【剧情大纲】：',
+          '主角从凡界一路杀上永恒天。',
+          '',
+          '【黄金三章钩子】：',
+          '退婚、反杀、逃亡。',
+          '</主线剧情>',
+        ].join('\n'),
+      },
+    }));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '智能导入设定' }));
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const storedSettingEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '大纲');
+    const hiddenTypes = JSON.parse(localStorage.getItem(`${storageKey}_hidden_setting_types`) ?? '[]');
+    expect(storedSettingEntries).toHaveLength(3);
+    expect(hiddenTypes).toEqual([]);
+    expect(screen.getByRole('button', { name: '作品设定3' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '核心设定1' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: '人物设定1' }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: '剧情规划1' })).toBeInTheDocument();
+  });
+
+  it('counts only visible work settings in the work setting scope badge', async () => {
+    const storageKey = 'workbench-visible-setting-count-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    const visibleEntries = Array.from({ length: 5 }, (_, index) => ({
+      id: `visible-${index}`,
+      tab: '大纲',
+      title: `人物设定${index + 1}`,
+      content: JSON.stringify({ type: '人物设定', body: `人物设定内容${index + 1}` }),
+      updatedAt: '2026/6/15 19:00:00',
+    }));
+    const hiddenEntries = Array.from({ length: 43 }, (_, index) => ({
+      id: `hidden-${index}`,
+      tab: '大纲',
+      title: `隐藏设定${index + 1}`,
+      content: JSON.stringify({ type: '测试隐藏组', body: `隐藏内容${index + 1}` }),
+      updatedAt: '2026/6/15 19:00:00',
+    }));
+    localStorage.setItem(storageKey, JSON.stringify([...visibleEntries, ...hiddenEntries]));
+    localStorage.setItem(`${storageKey}_hidden_setting_types`, JSON.stringify(['测试隐藏组']));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '作品设定5' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '作品设定48' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '人物设定5' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '测试隐藏组' })).not.toBeInTheDocument();
   });
 
   it('does not render the internal setting role brainstorm tabs and shows the requested brainstorm page', async () => {
@@ -212,32 +414,28 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain('关联当前时自动禁用提示词');
   });
 
-  it('keeps the clear settings unlock menu inside the viewport', async () => {
+  it('removes the old right-click unlock flow from clear settings', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
-    const menuStart = panelSource.indexOf('const clearSettingsUnlockContextMenu = clearSettingsUnlockMenu ? createPortal(');
-    const menuSource = panelSource.slice(menuStart, panelSource.indexOf('const clearSettingsTooltipLayer', menuStart));
 
-    expect(panelSource).toContain('function clampFixedMenuPosition(x: number, y: number, width: number, height: number)');
-    expect(panelSource).toContain('window.innerWidth - width - padding');
-    expect(panelSource).toContain('window.innerHeight - height - padding');
-    expect(menuSource).toContain('style={clampFixedMenuPosition(clearSettingsUnlockMenu.x, clearSettingsUnlockMenu.y, 116, 52)}');
-    expect(menuSource).not.toContain('style={{ left: clearSettingsUnlockMenu.x, top: clearSettingsUnlockMenu.y }}');
+    expect(panelSource).not.toContain('clearSettingsUnlockContextMenu');
+    expect(panelSource).not.toContain('clearSettingsTooltipLayer');
+    expect(panelSource).not.toContain('clearSettingsUnlockedTarget');
+    expect(panelSource).not.toContain('已锁定，右键可以解锁');
+    expect(panelSource).toContain('aria-disabled="true"');
   });
 
   it('supports clearing character settings from the setting page without clearing work settings', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
 
-    expect(panelSource).toContain("type ClearSettingsTarget = 'settings' | 'roles';");
-    expect(panelSource).toContain("const activeClearSettingsTarget: ClearSettingsTarget = activeTab === SETTING_TAB && outlineSettingScope === 'character' ? 'roles' : 'settings';");
-    expect(panelSource).toContain("const activeClearSettingsCount = activeClearSettingsTarget === 'roles' ? roleEntries.length : settingEntries.length;");
-    expect(panelSource).toContain("const activeClearSettingsLabel = activeClearSettingsTarget === 'roles' ? '人物设定' : '设定';");
-    expect(panelSource).toContain("const isActiveClearSettingsUnlocked = clearSettingsUnlockedTarget === activeClearSettingsTarget;");
-    expect(panelSource).toContain("const targetTab = clearSettingsConfirmTarget === 'roles' ? ROLE_TAB : SETTING_TAB;");
-    expect(panelSource).toContain('persist(entries.filter((entry) => entry.tab !== targetTab));');
-    expect(panelSource).toContain('setSelectedIdForTab(targetTab, null);');
+    expect(panelSource).toContain("type ClearSettingsTarget = 'settingCategories' | 'settingEntries' | 'roleCategories' | 'roleEntries';");
+    expect(panelSource).toContain("const activeClearSettingsCategoryTarget: ClearSettingsTarget = activeTab === SETTING_TAB && outlineSettingScope === 'character' ? 'roleCategories' : 'settingCategories';");
+    expect(panelSource).toContain("const activeClearSettingsEntryTarget: ClearSettingsTarget = activeTab === SETTING_TAB && outlineSettingScope === 'character' ? 'roleEntries' : 'settingEntries';");
+    expect(panelSource).toContain('const clearRoleEntries = () => {');
+    expect(panelSource).toContain('persist(entries.filter((entry) => entry.tab !== ROLE_TAB || isMaleProtagonistRoleType(parseRoleContent(entry.content).type)));');
+    expect(panelSource).toContain('const deletableRoleEntries = useMemo(() => (');
     expect(panelSource).toContain('{activeTab === SETTING_TAB && (');
-    expect(panelSource).toContain('setClearSettingsConfirmTarget(activeClearSettingsTarget);');
-    expect(panelSource).toContain('target: activeClearSettingsTarget,');
+    expect(panelSource).toContain('onClick={() => openClearSettingsConfirm(activeClearSettingsEntryTarget)}');
+    expect(panelSource).toContain("if (clearSettingsConfirmTarget === 'roleEntries') clearRoleEntries();");
     expect(panelSource).not.toContain('activeTab === SETTING_TAB && !isOutlineCharacterScope && (');
   });
 
@@ -898,8 +1096,16 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain(".join('\\n\\n');");
     expect(panelSource).toContain('const [showLibraryAiLogTitles, setShowLibraryAiLogTitles] = useState(true);');
     expect(panelSource).toContain('const visibleAiRequestLogGroups = visibleAiRequestLog');
+    expect(panelSource).toContain('function formatBrainstormReferenceForAi(title: string, text: string)');
+    expect(panelSource).toContain('【参考资料开始：用户关联脑洞】');
+    expect(panelSource).toContain('注意：以下内容只是参考资料，不是输出格式，不要照抄标签，不要为它单独生成设定，不要输出本段任何标签。');
+    expect(panelSource).toContain('资料类型：脑洞');
+    expect(panelSource).toContain('`资料标题：${safeTitle}`');
+    expect(panelSource).toContain('【参考资料结束：用户关联脑洞】');
     expect(panelSource).toContain('function formatSettingLinkedContextForAi');
-    expect(panelSource).toContain("const tagName = context.source === 'brainstorm' ? '关联脑洞' : '待处理设定';");
+    expect(panelSource).toContain("if (context.source === 'brainstorm') return formatBrainstormReferenceForAi(context.title, text);");
+    expect(panelSource).not.toContain("const tagName = context.source === 'brainstorm' ? '关联脑洞' : '待处理设定';");
+    expect(panelSource).not.toContain("wrapAiRequestTag('关联脑洞'");
     expect(panelSource).toContain('return wrapAiRequestTag(tagName, text, { 标题: title });');
     expect(panelSource).toContain('function formatSettingUserRequirementForAi');
     expect(panelSource).toContain("return wrapAiRequestTag('修改要求', text);");
@@ -1088,7 +1294,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('gridTemplateColumns: isDetailOutlineTab && showDetailOutlinePublished');
     expect(panelSource).toContain('`${outlineSidebarWidth}px 0px 190px minmax(0,1fr) 0px ${settingLibraryRightWidth}px`');
     expect(panelSource).toContain('`${outlineSidebarWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px`');
-    expect(panelSource).toContain("style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}");
+    expect(panelSource).toContain("style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(32px, max-content))' }}");
     expect(panelSource).toContain('relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black');
     expect(panelSource).toContain('window.addEventListener(\'resize\', syncVisibleLeftWidth);');
     expect(panelSource).not.toContain('window.addEventListener(\'resize\', clampVisibleLeftWidth);');
@@ -1113,18 +1319,21 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
     expect(outlineDirectoryStart).toBeGreaterThan(-1);
     expect(outlineDirectoryEnd).toBeGreaterThan(outlineDirectoryStart);
-    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS = 'grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[#E5E7EB] bg-white px-2';");
-    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_TITLE_CLASS = 'shrink-0 text-[23px] font-black leading-none text-[#030712]';");
-    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_COUNT_CLASS = 'grid h-8 min-w-8 place-items-center rounded-full bg-[#E7F8FD] px-2 text-[16px] font-black leading-none text-[#08AACE]';");
-    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_TOGGLE_CLASS = 'h-10 rounded-[12px] bg-[#08AACE] px-4 text-[18px] font-black leading-none text-white shadow-sm transition-colors hover:bg-[#0797B7]';");
-    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_ROW_CLASS = 'grid h-[54px] w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[8px] border border-[#BDEEF7] bg-[#E7F8FD] px-3 text-left shadow-[0_1px_4px_rgba(8,170,206,0.14)]';");
-    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_ICON_CLASS = 'h-[23px] w-[23px] shrink-0 text-[#08AACE]';");
-    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_TITLE_CLASS = 'min-w-0 truncate text-[19px] font-black leading-none text-[#031525]';");
-    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_COUNT_CLASS = 'rounded-full bg-white/80 px-3 py-1 text-[17px] font-black leading-none text-[#667085]';");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS = 'flex h-[42px] shrink-0 items-center justify-between border-b border-[#e6e8ec] bg-[#fbfbfc] px-3 py-2.5';");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_TITLE_CLASS = 'whitespace-nowrap text-sm font-bold text-gray-900';");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_COUNT_CLASS = 'flex h-5 w-5 items-center justify-center rounded-full bg-[#E7F8FD] text-xs font-medium text-[#08AACE]';");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_TOGGLE_CLASS = 'flex items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-2 py-1 text-sm text-white transition-colors hover:bg-[#0798b8]';");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_ROW_CLASS = WORKBENCH_FOLDER_GROUP_BUTTON_CLASS;");
+    expect(panelSource).not.toContain("const DETAIL_OUTLINE_VOLUME_ROW_CLASS = 'flex h-[54px]");
+    expect(panelSource).not.toContain("const DETAIL_OUTLINE_VOLUME_ROW_CLASS = 'grid h-[54px]");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_ICON_CLASS = WORKBENCH_FOLDER_GROUP_ICON_CLASS;");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_TITLE_CLASS = 'min-w-0 flex-1 truncate leading-none';");
+    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_COUNT_CLASS = WORKBENCH_FOLDER_GROUP_COUNT_CLASS;");
     expect(outlineDirectorySource).toContain('className={isDetailOutlineTab ? DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS :');
     expect(outlineDirectorySource).toContain('className={isDetailOutlineTab ? DETAIL_OUTLINE_SIDEBAR_TOGGLE_CLASS :');
     expect(outlineDirectorySource).toContain('className={isDetailOutlineTab ? DETAIL_OUTLINE_VOLUME_ROW_CLASS : WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}');
-    expect(outlineDirectorySource).toContain('strokeWidth={isDetailOutlineTab ? 2.4 : undefined}');
+    expect(outlineDirectorySource).toContain('<div key={volume.id} className="mb-1">');
+    expect(outlineDirectorySource).not.toContain('strokeWidth={isDetailOutlineTab ? 2.4 : undefined}');
     expect(outlineDirectorySource).toContain('className={isDetailOutlineTab ? DETAIL_OUTLINE_VOLUME_ICON_CLASS : WORKBENCH_FOLDER_GROUP_ICON_CLASS}');
     expect(outlineDirectorySource).toContain('className={isDetailOutlineTab ? DETAIL_OUTLINE_VOLUME_TITLE_CLASS :');
     expect(outlineDirectorySource).toContain('className={isDetailOutlineTab ? DETAIL_OUTLINE_VOLUME_COUNT_CLASS : WORKBENCH_FOLDER_GROUP_COUNT_CLASS}');
@@ -1332,13 +1541,26 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const rightPreviewEnd = panelSource.indexOf('{isDetailOutlineTab && (', rightPreviewStart);
     const rightPreviewSource = panelSource.slice(rightPreviewStart, rightPreviewEnd);
 
-    expect(panelSource).toContain('const clearSelectedDetailOutlineChapter = () => {');
-    expect(panelSource).toContain('updateChapterSummary(selectedOutlineChapter.chapter.serialNumber, \'\');');
+    expect(panelSource).toContain('const clearOutlineAiOutputDraft = () => {');
+    expect(panelSource).toContain('onClick={clearOutlineAiOutputDraft}');
     expect(panelSource).toContain('const renderDetailOutlineDraftClearButton = () => {');
     expect(panelSource).toContain('xy-floating-outline-clear-button xy-border-embedded-transparent-backplate xy-floating-outline-draft-clear-tool absolute z-40 px-1');
     expect(cardSource).not.toContain('onClick={() => updateChapterSummary(chapter.serialNumber, \'\')}');
     expect(cardSource).not.toContain('xy-floating-outline-clear-button xy-border-embedded-transparent-backplate xy-floating-outline-card-clear-tool absolute z-30 px-1');
     expect(rightPreviewSource).toContain('{renderDetailOutlineDraftClearButton()}');
+    const clearOutputStart = panelSource.indexOf('const clearOutlineAiOutputDraft = () => {');
+    const clearOutputEnd = panelSource.indexOf('const renderDetailOutlineDraftClearButton = () => {', clearOutputStart);
+    const clearOutputSource = panelSource.slice(clearOutputStart, clearOutputEnd);
+    const clearPreviewStart = panelSource.indexOf('const clearOutlinePreviewDraft = () => {');
+    const clearPreviewEnd = panelSource.indexOf('const plotPointLinkedSettingSummary =', clearPreviewStart);
+    const clearPreviewSource = panelSource.slice(clearPreviewStart, clearPreviewEnd);
+
+    expect(clearOutputSource).toContain("setOutlinePreviewDraft('');");
+    expect(clearOutputSource).not.toContain('updateChapterSummary');
+    expect(clearOutputSource).not.toContain('updateVolumeSummary');
+    expect(clearPreviewSource).toContain("setOutlinePreviewDraft('');");
+    expect(clearPreviewSource).not.toContain('updateChapterSummary');
+    expect(clearPreviewSource).not.toContain('updateVolumeSummary');
     expect(cardSource).not.toContain("'--xy-floating-count-left': '12.8rem'");
     expect(cardSource).not.toContain("'--xy-floating-count-left': isDetailOutlineTab ? '12.8rem' : '11.4rem'");
     expect(cardSource).not.toContain('{!isDetailOutlineTab && (');
@@ -1815,8 +2037,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
 
     expect(panelSource).toContain('defaultActiveTab');
-    expect(panelSource).not.toContain("const tabsSignature = tabs.map(normalizeTabName).join('\\u001f');");
-    expect(panelSource).toContain('const normalizedTabs = useMemo(() => tabs.map(normalizeTabName), [tabs]);');
+    expect(panelSource).toContain("const tabsSignature = tabs.map(normalizeTabName).join('\\u001f');");
+    expect(panelSource).toContain("const normalizedTabs = useMemo(() => (tabsSignature ? tabsSignature.split('\\u001f') : []), [tabsSignature]);");
+    expect(panelSource).not.toContain('const normalizedTabs = useMemo(() => tabs.map(normalizeTabName), [tabs]);');
     expect(panelSource).toContain('readActiveTab(storageKey, normalizedTabs, defaultActiveTab)');
     expect(panelSource).toContain('这里显示选中的脑洞内容，也可以直接编辑。');
   });
@@ -1912,20 +2135,22 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('<span className="xy-floating-title-text xy-detail-outline-heading-title">状态变化</span>');
   });
 
-  it('uses configurable 36px detail outline chapter number blocks without word count badges', async () => {
+  it('uses compact detail outline chapter number blocks without word count badges', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
+    const styleSource = await readSharedStylesSource();
 
     expect(panelSource).toContain("const outlineWordCount = countTextWords(entry?.content ?? '');");
     expect(panelSource).toContain("const chapterContentWordCount = countTextWords(getChapterContent?.(chapter.id) ?? '');");
-    expect(panelSource).toContain("const outlineButtonStateClass = selected");
-    expect(panelSource).toContain("? 'xy-detail-outline-number-selected'");
-    expect(panelSource).toContain(": chapterContentWordCount > 0");
+    expect(panelSource).toContain("const outlineButtonContentStateClass = chapterContentWordCount > 0");
     expect(panelSource).toContain("? 'xy-detail-outline-number-used'");
     expect(panelSource).toContain("? 'xy-detail-outline-number-has-outline'");
     expect(panelSource).toContain(": 'xy-detail-outline-number-no-outline';");
+    expect(panelSource).toContain("const outlineButtonSelectedClass = selected ? 'xy-detail-outline-number-selected' : '';");
+    expect(panelSource).toContain('${outlineButtonContentStateClass} ${outlineButtonSelectedClass}');
+    expect(panelSource).not.toContain("const outlineButtonStateClass = selected");
     expect(panelSource).not.toContain("const outlineWordLabel = outlineWordCount > 0 ? `${outlineWordCount}字` : '无章纲';");
-    expect(panelSource).toContain("gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))'");
-    expect(panelSource).toContain("relative grid h-9 w-9 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block");
+    expect(panelSource).toContain("gridTemplateColumns: 'repeat(auto-fit, minmax(32px, max-content))'");
+    expect(panelSource).toContain("relative grid h-8 w-8 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block");
     expect(panelSource).not.toContain("relative grid h-[50px] w-[50px] place-items-center rounded-[13px] border text-center text-2xl font-black leading-none transition-colors");
     expect(panelSource).not.toContain("'border-[#8CEBC0] bg-[#EAFBF3] text-slate-950 shadow-[0_0_0_1px_rgba(16,185,129,0.16)]'");
     expect(panelSource).not.toContain(": 'border-[#FED7AA] bg-[#FFF7ED] text-slate-950 shadow-[0_0_0_1px_rgba(249,115,22,0.12)]'");
@@ -1933,6 +2158,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain(": 'border-slate-200 bg-white text-slate-400 hover:border-orange-200 hover:bg-orange-50/50'");
     expect(panelSource).not.toContain('outlineBadgeClass');
     expect(panelSource).not.toContain("label: '有章纲'");
+    const selectedStyle = styleSource.match(/\.xy-detail-outline-number-selected \{[\s\S]*?\n\}/)?.[0] ?? '';
+    expect(selectedStyle).toContain('border-color: var(--xy-detail-outline-number-selected);');
+    expect(selectedStyle).toContain('box-shadow:');
+    expect(selectedStyle).not.toContain('background:');
+    expect(styleSource.indexOf('.xy-detail-outline-number-selected')).toBeGreaterThan(styleSource.indexOf('.xy-detail-outline-number-no-outline'));
   });
 
   it('adds a detail outline published lane that follows published chapters and manual moves', async () => {
@@ -1948,7 +2178,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain("const moveDetailOutlineChapterToUnpublished = (chapter: Chapter) => {");
     expect(panelSource).toContain("if (chapter.isPublished) return;");
     expect(panelSource).toContain("showDetailOutlinePublished ? '收回已发布' : '展开已发布'");
-    expect(panelSource).toContain('章纲已发布');
+    expect(panelSource).toContain('>已发布</span>');
+    expect(panelSource).not.toContain('章纲已发布');
     expect(panelSource).toContain('暂无已发布章纲');
     expect(panelSource).toContain('移动到已发布');
     expect(panelSource).toContain('移回未发布');
@@ -1984,6 +2215,23 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(backplateTestSource).toContain('xy-floating-outline-output-clear-tool');
   });
 
+  it('adds a test preview for three-level setting smart import and group rename behavior', async () => {
+    const testCollectionSource = await readTestCollectionSource();
+    const hierarchyTestSource = await readSettingImportHierarchyTestSource();
+
+    expect(testCollectionSource).toContain('SettingImportHierarchyTestPage');
+    expect(testCollectionSource).toContain('/setting-import-hierarchy-test');
+    expect(testCollectionSource).toContain('设定三层智能导入测试');
+    expect(testCollectionSource).toContain('AI 链路测试');
+    expect(hierarchyTestSource).toContain('智能导入三层结构测试');
+    expect(hierarchyTestSource).toContain('一级分组');
+    expect(hierarchyTestSource).toContain('二级设定');
+    expect(hierarchyTestSource).toContain('三级子设定');
+    expect(hierarchyTestSource).toContain('已有则填入，没有则创建');
+    expect(hierarchyTestSource).toContain('右键分组菜单');
+    expect(hierarchyTestSource).toContain('重命名');
+  });
+
   it('hides inline field size control when the workbench header owns the entry and opens from external signal', () => {
     const { rerender } = render(
       <WorkbenchLibraryPanel
@@ -2013,26 +2261,255 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
     expect(screen.getByRole('heading', { name: /设置/ })).toBeInTheDocument();
   });
-  it('requires right-click unlock before opening the clear settings confirmation dialog', async () => {
+  it('renders clear settings as a segmented double-confirm action', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
-    const clearSettingsButtonStart = panelSource.indexOf('aria-label={`清空${activeClearSettingsLabel}`}');
-    const clearSettingsButtonSource = panelSource.slice(clearSettingsButtonStart, panelSource.indexOf('>\n                  清空', clearSettingsButtonStart));
 
-    expect(panelSource).toContain('isActiveClearSettingsUnlocked');
-    expect(panelSource).toContain('aria-disabled={!isActiveClearSettingsUnlocked');
-    expect(panelSource).toContain('setClearSettingsUnlockMenu({');
-    expect(panelSource).toContain('target: activeClearSettingsTarget,');
-    expect(panelSource).toContain('setIsClearSettingsConfirmOpen(true)');
-    expect(panelSource).toContain("activeTab === SETTING_TAB ? 'grid-cols-4' : 'grid-cols-3'");
-    expect(panelSource).toContain('mt-3 grid h-11 shrink-0 overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.08)]');
-    expect(panelSource).toContain('border-r border-slate-200 bg-[#DFF7FC] px-2 text-sm font-black text-[#08AACE]');
-    expect(panelSource).toContain('isActiveClearSettingsUnlocked');
-    expect(panelSource).toContain("? 'bg-red-50 text-red-500 hover:bg-red-100'");
-    expect(clearSettingsButtonSource).toContain('onContextMenu={(event) => {');
-    expect(clearSettingsButtonSource).toContain('setClearSettingsUnlockMenu({');
-    expect(clearSettingsButtonSource).not.toContain('if (activeClearSettingsCount === 0) return;');
-    expect(panelSource).toContain("clearSettingsConfirmTarget === 'roles' && activeTab === SETTING_TAB && outlineSettingScope === 'character'");
+    expect(panelSource).toContain("type ClearSettingsTarget = 'settingCategories' | 'settingEntries' | 'roleCategories' | 'roleEntries';");
+    expect(panelSource).toContain("const [clearSettingsConfirmStep, setClearSettingsConfirmStep] = useState<1 | 2>(1);");
+    expect(panelSource).toContain("const openClearSettingsConfirm = (target: ClearSettingsTarget) => {");
+    expect(panelSource).toContain("if (clearSettingsConfirmStep === 1) {");
+    expect(panelSource).toContain('setClearSettingsConfirmStep(2);');
+    expect(panelSource).toContain('clearSettingsTargetMeta[clearSettingsConfirmTarget]');
+    expect(panelSource).toContain('clearSettingCategories();');
+    expect(panelSource).toContain('clearSettingEntries();');
+    expect(panelSource).toContain('aria-disabled="true"');
+    expect(panelSource).toContain("settingCreateDialog === 'category' ? '新建分组'");
+    expect(panelSource).toContain("settingCreateDialog === 'category' ? '输入分组名字'");
+    expect(panelSource).toContain('aria-label="清空分组"');
+    expect(panelSource).toContain("label: '分组'");
+    expect(panelSource).toContain('确认清空${currentClearSettingsMeta.label}');
+    expect(panelSource).toContain('onClick={() => openClearSettingsConfirm(activeClearSettingsCategoryTarget)}');
+    expect(panelSource).toContain('onClick={() => openClearSettingsConfirm(activeClearSettingsEntryTarget)}');
+    expect(panelSource).toContain('mt-3 shrink-0 space-y-2');
+    expect(panelSource).toContain('grid h-11 grid-cols-3 overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.08)]');
+    expect(panelSource).toContain('border-r border-red-100 bg-red-50 px-2 text-sm font-black text-red-500');
+    expect(panelSource).not.toContain('isActiveClearSettingsUnlocked');
+    expect(panelSource).not.toContain('setClearSettingsUnlockMenu({');
+    expect(panelSource).not.toContain('clearSettingsUnlockContextMenu');
     expect(panelSource).not.toContain('h-9 w-full rounded-xl border border-red-200');
+  });
+
+  it('removes entries when their setting or character group is removed', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const clearSettingCategoriesStart = panelSource.indexOf('const clearSettingCategories = () => {');
+    const clearSettingCategoriesEnd = panelSource.indexOf('const clearSettingEntries = () => {', clearSettingCategoriesStart);
+    const clearRoleCategoriesStart = panelSource.indexOf('const clearRoleCategories = () => {');
+    const clearRoleCategoriesEnd = panelSource.indexOf('const clearRoleEntries = () => {', clearRoleCategoriesStart);
+    const deleteRoleTypeStart = panelSource.indexOf('const deleteRoleType = (type: string) => {');
+    const deleteRoleTypeEnd = panelSource.indexOf('const deleteSettingType = (type: string) => {', deleteRoleTypeStart);
+    const deleteSettingTypeStart = panelSource.indexOf('const deleteSettingType = (type: string) => {');
+    const deleteSettingTypeEnd = panelSource.indexOf('const deleteCategoryFromMenu = () => {', deleteSettingTypeStart);
+    const clearSettingCategoriesSource = panelSource.slice(clearSettingCategoriesStart, clearSettingCategoriesEnd);
+    const clearRoleCategoriesSource = panelSource.slice(clearRoleCategoriesStart, clearRoleCategoriesEnd);
+    const deleteRoleTypeSource = panelSource.slice(deleteRoleTypeStart, deleteRoleTypeEnd);
+    const deleteSettingTypeSource = panelSource.slice(deleteSettingTypeStart, deleteSettingTypeEnd);
+
+    expect(clearSettingCategoriesSource).toContain('persist(entries.filter((entry) => entry.tab !== SETTING_TAB));');
+    expect(clearSettingCategoriesSource).not.toContain('content: stringifySettingContent({ ...setting, type: UNCATEGORIZED_TYPE })');
+    expect(clearRoleCategoriesSource).toContain('persist(entries.filter((entry) => entry.tab !== ROLE_TAB || isMaleProtagonistRoleType(parseRoleContent(entry.content).type)));');
+    expect(clearRoleCategoriesSource).toContain("setExpandedRoleTypes(new Set([DEFAULT_MALE_PROTAGONIST_ROLE_TYPE]));");
+    expect(clearRoleCategoriesSource).not.toContain('content: stringifyRoleContent({ ...role, type: UNCATEGORIZED_TYPE })');
+    expect(deleteSettingTypeSource).toContain('persist(entries.filter((entry) => {');
+    expect(deleteSettingTypeSource).toContain('return setting.type !== type;');
+    expect(deleteSettingTypeSource).not.toContain('content: stringifySettingContent({ ...setting, type: UNCATEGORIZED_TYPE })');
+    expect(deleteRoleTypeSource).toContain('persist(entries.filter((entry) => {');
+    expect(deleteRoleTypeSource).toContain('return role.type !== type;');
+    expect(deleteRoleTypeSource).not.toContain('content: stringifyRoleContent({ ...role, type: DEFAULT_ROLE_TYPES[0] ?? UNCATEGORIZED_TYPE })');
+  });
+
+  it('does not confirm the setting create dialog while Chinese IME composition is active', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const modalStart = panelSource.indexOf('const settingCreateModal = settingCreateDialog ? createPortal(');
+    const modalEnd = panelSource.indexOf(') : null;', modalStart);
+    const modalSource = panelSource.slice(modalStart, modalEnd);
+    const confirmStart = panelSource.indexOf('const confirmSettingCreate = () => {');
+    const confirmEnd = panelSource.indexOf('const openSettingCreateDialog', confirmStart);
+    const confirmSource = panelSource.slice(confirmStart, confirmEnd);
+
+    expect(modalStart).toBeGreaterThan(-1);
+    expect(panelSource).toContain("const [settingCreateDraft, setSettingCreateDraft] = useState('');");
+    expect(confirmSource).toContain('const createTitle = settingCreateDraft.trim();');
+    expect(confirmSource).not.toContain('addSettingTypeByName(settingTitleDraft);');
+    expect(confirmSource).not.toContain('addRoleTypeByName(settingTitleDraft);');
+    expect(modalSource).toContain("event.key === 'Enter'");
+    expect(modalSource).toContain('event.nativeEvent.isComposing');
+    expect(modalSource).toContain('event.keyCode === 229');
+    expect(modalSource).toContain('!isImeComposing');
+    expect(modalSource).toContain('value={settingCreateDraft}');
+    expect(modalSource).toContain('onChange={(event) => setSettingCreateDraft(event.target.value)}');
+    expect(modalSource).toContain('confirmSettingCreate();');
+  });
+
+  it('shows a newly created setting group in the current setting workspace tab', async () => {
+    const storageKey = 'workbench-create-setting-group-in-domain-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '势力设定0' }));
+    fireEvent.click(screen.getByRole('button', { name: '分组' }));
+    fireEvent.change(screen.getByPlaceholderText('输入分组名字'), { target: { value: '宗门势力' } });
+    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+    expect(screen.getByRole('button', { name: /宗门势力/ })).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem(`${storageKey}_setting_types`) ?? '[]')).toContain('宗门势力');
+    expect(JSON.parse(localStorage.getItem(`${storageKey}_setting_type_domains`) ?? '{}')).toMatchObject({
+      宗门势力: 'setting:faction',
+    });
+  });
+
+  it('shows the approved default groups for character and setting workspace tabs', async () => {
+    const storageKey = 'workbench-approved-setting-default-groups-test';
+    localStorage.setItem(`${storageKey}_hidden_role_types`, JSON.stringify(['男主角', '女主角', '重要正派角色', '正派配角', '重要反派角色', '反派配角', '龙套角色']));
+    localStorage.setItem(`${storageKey}_hidden_setting_types`, JSON.stringify(['核心设定', '世界规则', '剧情规划', '硬规则', '禁写规则']));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '核心设定4' })).toBeInTheDocument();
+    ['世界规则', '剧情规划'].forEach((group) => {
+      expect(screen.getByRole('button', { name: `${group}2` })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '人物设定1' }));
+    expect(screen.getByRole('button', { name: '男主角1' })).toBeInTheDocument();
+    ['女主角', '重要正派角色', '正派配角', '重要反派角色', '反派配角', '龙套角色'].forEach((group) => {
+      expect(screen.getByRole('button', { name: `${group}0` })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: '未分类0' })).not.toBeInTheDocument();
+
+    const groupsByTab = [
+      { tab: '势力设定4', groups: ['正派势力', '反派势力', '中立势力', '其他势力'] },
+      { tab: '道具资源4', groups: ['功法能力', '物品装备', '资源货币', '特殊资源'] },
+      { tab: '地点场景2', groups: ['世界地图', '危险区域'] },
+      { tab: '伏笔线索3', groups: ['主线伏笔', '人物伏笔', '已回收伏笔'] },
+      { tab: '书写规则2', groups: ['硬规则', '禁写规则'] },
+    ];
+
+    groupsByTab.forEach(({ tab, groups }) => {
+      fireEvent.click(screen.getByRole('button', { name: tab }));
+      groups.forEach((group) => {
+        expect(screen.getByRole('button', { name: `${group}1` })).toBeInTheDocument();
+      });
+    });
+
+    expect(JSON.parse(localStorage.getItem(`${storageKey}_hidden_role_types`) ?? '[]')).toEqual([]);
+    expect(JSON.parse(localStorage.getItem(`${storageKey}_hidden_setting_types`) ?? '[]')).toEqual([]);
+  });
+
+  it('seeds a locked male protagonist role for a new novel and opens it from character settings', async () => {
+    const storageKey = 'workbench-default-male-protagonist-role-test';
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '人物设定1' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '人物设定1' }));
+    expect(screen.getByRole('button', { name: '男主角1' })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('男主角')).toBeInTheDocument();
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const roleEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '角色');
+    expect(roleEntries).toHaveLength(1);
+    expect(roleEntries[0].title).toBe('男主角');
+    expect(JSON.parse(roleEntries[0].content)).toMatchObject({
+      type: '男主角',
+      lifeStatus: '存活',
+    });
+  });
+
+  it('seeds the approved default setting entries by the current setting workspace groups', async () => {
+    const storageKey = 'workbench-default-core-setting-starter-test';
+    const expectedEntriesByType = new Map([
+      ['核心设定', ['作品定位', '主角初始处境', '核心爽点', '核心矛盾']],
+      ['世界规则', ['力量规则', '世界背景与秩序']],
+      ['剧情规划', ['主线目标与阶段剧情', '关键转折与结局方向']],
+      ['正派势力', ['正派势力']],
+      ['反派势力', ['反派势力']],
+      ['中立势力', ['中立势力']],
+      ['其他势力', ['其他势力']],
+      ['功法能力', ['功法能力']],
+      ['物品装备', ['物品装备']],
+      ['资源货币', ['资源货币']],
+      ['特殊资源', ['特殊资源']],
+      ['世界地图', ['世界地图']],
+      ['危险区域', ['危险区域']],
+      ['主线伏笔', ['主线伏笔']],
+      ['人物伏笔', ['人物伏笔']],
+      ['已回收伏笔', ['已回收伏笔']],
+      ['硬规则', ['硬规则']],
+      ['禁写规则', ['禁写规则']],
+    ]);
+    const expectedEntryCount = Array.from(expectedEntriesByType.values()).reduce((total, titles) => total + titles.length, 0);
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '作品设定8' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '核心设定4' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '核心设定4' }));
+    ['作品定位', '主角初始处境', '核心爽点', '核心矛盾'].forEach((title) => {
+      expect(screen.getByText(title)).toBeInTheDocument();
+    });
+    expect(screen.queryByText('力量规则')).not.toBeInTheDocument();
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const storedSettingEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '大纲');
+    expect(storedSettingEntries).toHaveLength(expectedEntryCount);
+    expectedEntriesByType.forEach((expectedTitles, type) => {
+      const titles = storedSettingEntries
+        .filter((entry: { content: string }) => JSON.parse(entry.content).type === type)
+        .map((entry: { title: string }) => entry.title);
+      expect(titles).toEqual(expectedTitles);
+    });
+    const powerRuleEntry = storedSettingEntries.find((entry: { title: string }) => entry.title === '力量规则');
+    expect(powerRuleEntry).toBeTruthy();
+    expect(JSON.parse(powerRuleEntry.content).type).toBe('世界规则');
+    expect(JSON.parse(powerRuleEntry.content).body).toContain('力量来源');
+    const positioningEntry = storedSettingEntries.find((entry: { title: string }) => entry.title === '作品定位');
+    expect(JSON.parse(positioningEntry.content).body).toContain('题材');
+  });
+
+  it('removes the role editor delete button because protagonist settings are renamed instead of deleted', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const propsStart = panelSource.indexOf('type RoleBaseStateEditorProps = {');
+    const propsEnd = panelSource.indexOf('function RoleBaseStateEditor', propsStart);
+    const editorStart = propsEnd;
+    const editorEnd = panelSource.indexOf('<div className="grid min-h-0 flex-1', editorStart);
+    const propsSource = panelSource.slice(propsStart, propsEnd);
+    const editorHeaderSource = panelSource.slice(editorStart, editorEnd);
+
+    expect(propsSource).not.toContain('deleteUnlocked');
+    expect(propsSource).not.toContain('onDelete');
+    expect(propsSource).not.toContain('onToggleDeleteUnlocked');
+    expect(editorHeaderSource).not.toContain('删除');
+    expect(editorHeaderSource).not.toContain('onDelete();');
+    expect(editorHeaderSource).not.toContain('onToggleDeleteUnlocked();');
   });
 
   it('keeps outline work settings and character settings as a left sidebar scope switch', async () => {
@@ -2040,13 +2517,15 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
     expect(panelSource).toContain("const [outlineSettingScope, setOutlineSettingScope] = useState<'work' | 'character'>('work')");
     expect(panelSource).toContain("rounded-[22px] bg-slate-200/80 p-1 shadow-inner");
-    expect(panelSource).toContain("{ value: 'work', label: '作品设定', count: settingEntries.length }");
-    expect(panelSource).toContain("{ value: 'character', label: '人物设定', count: roleEntries.length }");
+    expect(panelSource).toContain('const visibleWorkSettingCount = settingEntries.filter');
+    expect(panelSource).toContain('const visibleRoleCount = roleEntries.filter');
+    expect(panelSource).toContain("{ value: 'work', label: '作品设定', count: visibleWorkSettingCount }");
+    expect(panelSource).toContain("{ value: 'character', label: '人物设定', count: visibleRoleCount }");
     expect(panelSource).toContain("rounded-[18px] px-2.5 text-sm font-black");
     expect(panelSource).toContain("const effectiveLibraryTab = isOutlineCharacterScope ? ROLE_TAB : activeTab");
     expect(panelSource).toContain("const activeSettingTypeOptions = activeIsBrainstorm ? [BRAINSTORM_TYPE] : isOutlineCharacterScope ? roleTypeOptions : settingTypeOptions");
     expect(panelSource).toContain("{isOutlineCharacterScope ? '角色' : '设定'}");
-    expect(panelSource).toContain("addRole(UNCATEGORIZED_TYPE, { switchToRoleTab: false, title })");
+    expect(panelSource).toContain("addRole(getDefaultRoleCreateType(), { switchToRoleTab: false, title: createTitle })");
     expect(panelSource).toContain('<RoleBaseStateEditor');
     expect(panelSource).toContain('baseSetting: string;');
     expect(panelSource).toContain('stateSettings: RoleStateSettings;');
@@ -2055,16 +2534,48 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain("style={{ fontSize: roleTextFontSize }}");
   });
 
-  it('migrates the approved setting taxonomy into the production setting library', async () => {
+  it('moves setting page scheme A into the production red-frame area without replacing the right AI panel', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
 
-    expect(panelSource).toContain("const DEFAULT_SETTING_TYPES = ['核心设定', '题材卖点', '世界规则', '成长体系', '金手指', '势力组织', '人物关系', '道具资源', '地点地图', '主线剧情', '伏笔谜团', '禁写规则', '其他设定', '未分类'];");
-    expect(panelSource).toContain("if (/(爽点|卖点|期待感|差异点|题材|男频|读者第一眼)/.test(source)) return '题材卖点';");
+    expect(panelSource).toContain("const [outlineSettingDomain, setOutlineSettingDomain] = useState('work')");
+    expect(panelSource).toContain('const settingWorkspaceDomainTabs = [');
+    expect(panelSource).toContain("{ id: 'work', label: '作品设定', count: visibleWorkSettingCount, type: null }");
+    expect(panelSource).toContain("{ id: 'character', label: '人物设定', count: visibleRoleCount, type: null }");
+    expect(panelSource).toContain("{ id: 'setting:faction', label: '势力设定', type: 'setting:faction' }");
+    expect(panelSource).toContain("{ id: 'setting:item', label: '道具资源', type: 'setting:item' }");
+    expect(panelSource).toContain("{ id: 'setting:location', label: '地点场景', type: 'setting:location' }");
+    expect(panelSource).toContain("{ id: 'setting:foreshadow', label: '伏笔线索', type: 'setting:foreshadow' }");
+    expect(panelSource).toContain("{ id: 'setting:rule', label: '书写规则', type: 'setting:rule' }");
+    expect(panelSource).toContain("gridTemplateRows: activeTab === SETTING_TAB && !activeIsBrainstorm ? 'auto minmax(0,1fr)' : undefined");
+    expect(panelSource).toContain("gridColumn: '1 / 4'");
+    expect(panelSource).toContain('settingWorkspaceTopTabs');
+    expect(panelSource).toContain('getSettingTypeWorkspaceDomain(type) === activeSettingWorkspaceDomain');
+    expect(panelSource).toContain("const selectedSettingWorkspaceType = getSelectedSettingWorkspaceType();");
+    expect(panelSource).toContain("rightResizeHandle");
+    expect(panelSource).toContain("CombinedAiConfigSelect");
+  });
+
+  it('migrates the approved setting taxonomy into the production setting library', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const settingTypeOptionsStart = panelSource.indexOf('const settingTypeOptions = useMemo(() => {');
+    const settingTypeOptionsEnd = panelSource.indexOf('const activeClearSettingsCategoryTarget', settingTypeOptionsStart);
+    const settingTypeOptionsSource = panelSource.slice(settingTypeOptionsStart, settingTypeOptionsEnd);
+
+    expect(panelSource).toContain("const DEFAULT_WORK_SETTING_TYPES = ['核心设定', '世界规则', '剧情规划'];");
+    expect(panelSource).toContain("'setting:faction': ['正派势力', '反派势力', '中立势力', '其他势力']");
+    expect(panelSource).toContain("'setting:item': ['功法能力', '物品装备', '资源货币', '特殊资源']");
+    expect(panelSource).toContain("'setting:location': ['世界地图', '危险区域']");
+    expect(panelSource).toContain("'setting:foreshadow': ['主线伏笔', '人物伏笔', '已回收伏笔']");
+    expect(panelSource).toContain("'setting:rule': ['硬规则', '禁写规则']");
+    expect(panelSource).toContain('const DEFAULT_SETTING_ENTRY_TYPE = DEFAULT_SETTING_TYPES[0] ?? UNCATEGORIZED_TYPE;');
+    expect(settingTypeOptionsSource).toContain('return merged;');
+    expect(settingTypeOptionsSource).not.toContain('return [...merged, UNCATEGORIZED_TYPE];');
+    expect(panelSource).toContain("if (type === '主线剧情') return '剧情规划';");
     expect(panelSource).toContain("if (/(世界|规则|背景|科技|修炼|社会秩序|限制条件|天道|能量)/.test(source)) return '世界规则';");
-    expect(panelSource).toContain("if (/(金手指|外挂|独有能力|代价|升级方式|误用风险|系统|面板)/.test(source)) return '金手指';");
-    expect(panelSource).toContain("if (/(人物关系|关系网|关系规则|家族谱系|阵营关系)/.test(source)) return '人物关系';");
-    expect(panelSource).toContain("if (/(道具|资源|货币|装备|权限|稀缺性|物品)/.test(source)) return '道具资源';");
-    expect(panelSource).toContain("if (/(地点|地图|交通|地域|地理|重要地点)/.test(source)) return '地点地图';");
+    expect(panelSource).toContain("if (/(主线|剧情|任务|目标|冲突|开局|转折|高潮|结局|章节|卷|事件)/.test(source)) return '剧情规划';");
+    expect(panelSource).toContain("if (/(功法|能力|技能|神通|法术|异能|招式)/.test(source)) return '功法能力';");
+    expect(panelSource).toContain("if (/(道具|装备|物品|法宝|武器|载具|机甲)/.test(source)) return '物品装备';");
+    expect(panelSource).toContain("if (/(地点|地图|交通|地域|地理|重要地点|世界地图)/.test(source)) return '世界地图';");
     expect(panelSource).toContain("if (/(禁写|不能写错|不能越界|硬约束|前后矛盾|规则红线)/.test(source)) return '禁写规则';");
   });
 
@@ -2079,10 +2590,18 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('>人物关系<');
     expect(panelSource).toContain('placeholder="记录与主角、阵营、亲友、敌人、师徒、利益对象的关系。关系绑定人物，不绑定世界。"');
     expect(panelSource).toContain("wrapAiRequestTag('人物关系', truncateTextForAi(role.relationship, 700))");
+    expect(panelSource).toContain('grid-cols-[minmax(360px,0.9fr)_minmax(380px,1.1fr)]');
+    expect(panelSource).toContain('<div className="flex min-h-0 flex-col gap-4">');
+    expect(panelSource).not.toContain('grid-cols-[minmax(280px,0.85fr)_minmax(260px,0.7fr)_minmax(380px,1.1fr)]');
 
+    const stackedColumnIndex = panelSource.indexOf('<div className="flex min-h-0 flex-col gap-4">');
+    const baseIndex = panelSource.indexOf('>基础设定<', stackedColumnIndex);
     const relationshipIndex = panelSource.indexOf('>人物关系<');
     const statusIndex = panelSource.indexOf('>状态设定<');
+    expect(stackedColumnIndex).toBeGreaterThan(-1);
+    expect(baseIndex).toBeGreaterThan(stackedColumnIndex);
     expect(relationshipIndex).toBeGreaterThan(-1);
+    expect(relationshipIndex).toBeGreaterThan(baseIndex);
     expect(statusIndex).toBeGreaterThan(relationshipIndex);
   });
 });

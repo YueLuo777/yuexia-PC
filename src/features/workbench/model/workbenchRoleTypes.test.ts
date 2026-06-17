@@ -12,6 +12,19 @@ import {
 } from './workbenchRoleTypes';
 
 describe('workbenchRoleTypes', () => {
+  it('uses the approved default character groups without uncategorized', () => {
+    expect(DEFAULT_WORKBENCH_ROLE_TYPES).toEqual([
+      '男主角',
+      '女主角',
+      '重要正派角色',
+      '正派配角',
+      '重要反派角色',
+      '反派配角',
+      '龙套角色',
+    ]);
+    expect(DEFAULT_WORKBENCH_ROLE_TYPES).not.toContain('未分类');
+  });
+
   it('splits the old combined protagonist category into male and female protagonist categories', () => {
     expect(DEFAULT_WORKBENCH_ROLE_TYPES).toContain('男主角');
     expect(DEFAULT_WORKBENCH_ROLE_TYPES).toContain('女主角');
@@ -22,6 +35,8 @@ describe('workbenchRoleTypes', () => {
     expect(normalizeWorkbenchRoleType('男女主')).toBe('男主角');
     expect(normalizeWorkbenchRoleType('男主')).toBe('男主角');
     expect(normalizeWorkbenchRoleType('女主')).toBe('女主角');
+    expect(normalizeWorkbenchRoleType('未分类')).toBe('龙套角色');
+    expect(normalizeWorkbenchRoleType('')).toBe('龙套角色');
   });
 
   it('defaults plot-chain role association to male protagonist roles when no explicit selection exists', () => {

@@ -1,10 +1,20 @@
-export const DEFAULT_WORKBENCH_ROLE_TYPES = ['男主角', '女主角', '正派配角', '重要反派', '反派配角', '龙套', '未分类'];
+export const DEFAULT_WORKBENCH_ROLE_TYPES = [
+  '男主角',
+  '女主角',
+  '重要正派角色',
+  '正派配角',
+  '重要反派角色',
+  '反派配角',
+  '龙套角色',
+];
 
 export function normalizeWorkbenchRoleType(value?: string | null) {
   const trimmed = value?.trim();
-  if (!trimmed) return '未分类';
+  if (!trimmed || trimmed === '未分类') return '龙套角色';
   if (trimmed === '男女主' || trimmed === '男主') return '男主角';
   if (trimmed === '女主') return '女主角';
+  if (trimmed === '重要反派') return '重要反派角色';
+  if (trimmed === '龙套') return '龙套角色';
   return trimmed;
 }
 

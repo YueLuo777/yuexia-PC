@@ -214,15 +214,6 @@
   color: #0f172a;
 }
 
-.xy-detail-outline-number-selected {
-  border-color: var(--xy-detail-outline-number-selected);
-  background: var(--xy-detail-outline-number-has-outline);
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px color-mix(in srgb, var(--xy-detail-outline-number-selected) 78%, transparent),
-    0 2px 8px rgba(8, 170, 206, 0.18);
-}
-
 .xy-detail-outline-number-used {
   border-color: color-mix(in srgb, var(--xy-detail-outline-number-used) 62%, #f97316);
   background: var(--xy-detail-outline-number-used);
@@ -239,6 +230,14 @@
   border-color: #e2e8f0;
   background: var(--xy-detail-outline-number-no-outline);
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+
+.xy-detail-outline-number-selected {
+  border-color: var(--xy-detail-outline-number-selected);
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 4px color-mix(in srgb, var(--xy-detail-outline-number-selected) 78%, transparent),
+    0 2px 8px rgba(8, 170, 206, 0.18);
 }
 
 .workspace-tab-home,

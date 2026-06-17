@@ -98,8 +98,26 @@ const FIND_REPLACE_DEFAULT_GEOMETRY = {
   width: 592,
 };
 const FIND_REPLACE_MODAL_STORAGE_ID = 'workbench_find_replace_centered_v2';
-const CONTEXT_SETTING_TYPE_ORDER = ['核心设定', '主线剧情', '等级体系', '势力设定', '伏笔设定', '其他设定', '未分类'];
-const CONTEXT_ROLE_TYPE_ORDER = ['男主角', '女主角', '正派配角', '重要反派', '反派配角', '龙套', '未分类'];
+const CONTEXT_SETTING_TYPE_ORDER = [
+  '核心设定',
+  '世界规则',
+  '剧情规划',
+  '成长体系',
+  '正派势力',
+  '反派势力',
+  '中立势力',
+  '功法能力',
+  '物品装备',
+  '世界地图',
+  '危险区域',
+  '主线伏笔',
+  '人物伏笔',
+  '硬规则',
+  '禁写规则',
+  '其他设定',
+  '未分类',
+];
+const CONTEXT_ROLE_TYPE_ORDER = ['男主角', '女主角', '重要正派角色', '正派配角', '重要反派角色', '反派配角', '龙套角色', '未分类'];
 
 const PUBLISH_CONFIRM_KEY = 'xinyuexia_workbench_publish_confirm';
 const GLOBAL_NOTES_KEY = 'xinyuexia_workbench_notes';
@@ -389,8 +407,13 @@ function getContextEntryGroup(tab: string, type?: string) {
 function parseContextSettingContent(content: string) {
   try {
     const parsed = JSON.parse(content) as Partial<{ type: string; body: string }>;
+    const parsedType = parsed.type === '境界体系' || parsed.type === '等级体系'
+      ? '成长体系'
+      : parsed.type === '主线剧情'
+        ? '剧情规划'
+        : parsed.type;
     return {
-      type: parsed.type === '境界体系' ? '等级体系' : parsed.type || '未分类',
+      type: parsedType || '未分类',
       body: parsed.body || '',
     };
   } catch {
