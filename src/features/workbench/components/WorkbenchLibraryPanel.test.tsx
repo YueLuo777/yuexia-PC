@@ -5,7 +5,7 @@ import { getWorkbenchPlotPointDisplayText, getWorkbenchPlotPointReview } from '@
 
 import { WorkbenchLibraryPanel, parseGeneratedPlotPointCandidates } from './WorkbenchLibraryPanel';
 
-const TEST_WORK_SETTING_STARTER_VERSION = '2026-06-17-setting-starter-no-auto-domain-items-v4';
+const TEST_WORK_SETTING_STARTER_VERSION = '2026-06-17-setting-starter-full-title-items-v5';
 
 const readWorkbenchLibraryPanelSource = async () => {
   const { readFileSync } = await import('node:fs');
@@ -2328,7 +2328,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
     expect(modalStart).toBeGreaterThan(-1);
     expect(panelSource).toContain("const [settingCreateDraft, setSettingCreateDraft] = useState('');");
+    expect(panelSource).toContain("const [settingCreateTypeDraft, setSettingCreateTypeDraft] = useState('');");
     expect(confirmSource).toContain('const createTitle = settingCreateDraft.trim();');
+    expect(confirmSource).toContain('const selectedCreateType = getValidSettingCreateType();');
     expect(confirmSource).not.toContain('addSettingTypeByName(settingTitleDraft);');
     expect(confirmSource).not.toContain('addRoleTypeByName(settingTitleDraft);');
     expect(modalSource).toContain("event.key === 'Enter'");
@@ -2337,6 +2339,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(modalSource).toContain('!isImeComposing');
     expect(modalSource).toContain('value={settingCreateDraft}');
     expect(modalSource).toContain('onChange={(event) => setSettingCreateDraft(event.target.value)}');
+    expect(modalSource).toContain('所属分组');
+    expect(modalSource).toContain('value={settingCreateTypeValue}');
+    expect(modalSource).toContain('onChange={(event) => setSettingCreateTypeDraft(event.target.value)}');
     expect(modalSource).toContain('confirmSettingCreate();');
   });
 
@@ -2365,6 +2370,72 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     });
   });
 
+  it('creates a new setting in the selected group instead of the first group', async () => {
+    const storageKey = 'workbench-create-setting-in-selected-group-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '道具资源0' }));
+    fireEvent.click(screen.getByRole('button', { name: '设定' }));
+    fireEvent.change(screen.getByPlaceholderText('输入设定名字'), { target: { value: '测试装备设定' } });
+    fireEvent.change(screen.getByLabelText('所属分组'), { target: { value: '物品装备' } });
+    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const createdEntry = storedEntries.find((entry: { title: string }) => entry.title === '测试装备设定');
+    expect(createdEntry).toBeTruthy();
+    expect(JSON.parse(createdEntry.content).type).toBe('物品装备');
+    expect(JSON.parse(createdEntry.content).type).not.toBe('功法能力');
+  });
+
+  it('persists manual setting order when dragging one setting entry before another', async () => {
+    const storageKey = 'workbench-drag-sort-setting-entry-test';
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定6' }));
+    const source = screen.getByText('核心矛盾').closest('button');
+    const target = screen.getByText('作品定位').closest('button');
+    expect(source).toBeTruthy();
+    expect(target).toBeTruthy();
+    const dataTransfer = {
+      data: {} as Record<string, string>,
+      effectAllowed: '',
+      dropEffect: '',
+      setData(type: string, value: string) {
+        this.data[type] = value;
+      },
+      getData(type: string) {
+        return this.data[type] ?? '';
+      },
+    };
+
+    fireEvent.dragStart(source as HTMLElement, { dataTransfer });
+    fireEvent.dragOver(target as HTMLElement, { dataTransfer });
+    fireEvent.drop(target as HTMLElement, { dataTransfer });
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const coreTitles = storedEntries
+      .filter((entry: { content: string }) => JSON.parse(entry.content).type === '核心设定')
+      .map((entry: { title: string }) => entry.title);
+    expect(coreTitles.slice(0, 4)).toEqual(['核心矛盾', '作品定位', '主角初始处境', '核心爽点']);
+  });
+
   it('shows the approved default groups for character and setting workspace tabs', async () => {
     const storageKey = 'workbench-approved-setting-default-groups-test';
     localStorage.setItem(`${storageKey}_hidden_role_types`, JSON.stringify(['男主角', '女主角', '重要正派角色', '正派配角', '重要反派角色', '反派配角', '龙套角色']));
@@ -2379,9 +2450,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: '核心设定4' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '核心设定6' })).toBeInTheDocument();
     ['世界规则', '剧情规划'].forEach((group) => {
-      expect(screen.getByRole('button', { name: `${group}2` })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: `${group}6` })).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole('button', { name: '人物设定1' }));
@@ -2393,10 +2464,10 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
     const groupsByTab = [
       { tab: '势力设定0', groups: ['正派势力', '反派势力', '中立势力', '其他势力'], count: 0 },
-      { tab: '道具资源0', groups: ['功法能力', '物品装备', '资源货币', '特殊资源'], count: 0 },
-      { tab: '地点场景0', groups: ['世界地图', '危险区域'], count: 0 },
-      { tab: '伏笔线索3', groups: ['主线伏笔', '人物伏笔', '已回收伏笔'], count: 1 },
-      { tab: '书写规则2', groups: ['硬规则', '禁写规则'], count: 1 },
+      { tab: '道具资源16', groups: ['功法能力', '物品装备', '资源货币', '特殊资源'], count: 4 },
+      { tab: '地点场景10', groups: ['世界地图', '危险区域'], count: 5 },
+      { tab: '伏笔线索11', groups: ['主线伏笔', '人物伏笔'], count: 4 },
+      { tab: '书写规则9', groups: ['硬规则'], count: 4 },
     ];
 
     groupsByTab.forEach(({ tab, groups, count }) => {
@@ -2405,6 +2476,10 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
         expect(screen.getByRole('button', { name: `${group}${count}` })).toBeInTheDocument();
       });
     });
+    fireEvent.click(screen.getByRole('button', { name: '伏笔线索11' }));
+    expect(screen.getByRole('button', { name: '已回收伏笔3' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '书写规则9' }));
+    expect(screen.getByRole('button', { name: '禁写规则5' })).toBeInTheDocument();
 
     expect(JSON.parse(localStorage.getItem(`${storageKey}_hidden_role_types`) ?? '[]')).toEqual([]);
     expect(JSON.parse(localStorage.getItem(`${storageKey}_hidden_setting_types`) ?? '[]')).toEqual([]);
@@ -2440,24 +2515,24 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   it('seeds the approved default setting entries with empty bodies by the current setting workspace groups', async () => {
     const storageKey = 'workbench-default-core-setting-starter-test';
     const expectedEntriesByType = new Map([
-      ['核心设定', ['作品定位', '主角初始处境', '核心爽点', '核心矛盾']],
-      ['世界规则', ['力量规则', '世界背景与秩序']],
-      ['剧情规划', ['主线目标与阶段剧情', '关键转折与结局方向']],
+      ['核心设定', ['作品定位', '主角初始处境', '核心爽点', '核心矛盾', '核心金手指', '主角成长方向']],
+      ['世界规则', ['力量规则', '境界体系', '资源规则', '世界背景', '社会秩序', '禁忌规则']],
+      ['剧情规划', ['主线目标', '阶段剧情', '开局事件', '关键转折', '高潮节点', '结局方向']],
       ['正派势力', []],
       ['反派势力', []],
       ['中立势力', []],
       ['其他势力', []],
-      ['功法能力', []],
-      ['物品装备', []],
-      ['资源货币', []],
-      ['特殊资源', []],
-      ['世界地图', []],
-      ['危险区域', []],
-      ['主线伏笔', ['主线伏笔']],
-      ['人物伏笔', ['人物伏笔']],
-      ['已回收伏笔', ['已回收伏笔']],
-      ['硬规则', ['硬规则']],
-      ['禁写规则', ['禁写规则']],
+      ['功法能力', ['主修功法', '战斗技能', '特殊能力', '能力限制']],
+      ['物品装备', ['武器', '防具/护身物', '法宝/特殊装备', '关键道具']],
+      ['资源货币', ['通用货币', '修炼资源', '材料资源', '交易规则']],
+      ['特殊资源', ['传承资格', '权限令牌', '唯一资源', '稀缺名额']],
+      ['世界地图', ['大陆结构', '国家城池', '宗门位置', '交通路线', '重要地点']],
+      ['危险区域', ['秘境', '禁区', '遗迹', '战场', '污染/灾变区域']],
+      ['主线伏笔', ['核心秘密', '世界真相', '主线线索', '后期反转']],
+      ['人物伏笔', ['身份秘密', '血脉/身世', '关系伏笔', '背叛/转变']],
+      ['已回收伏笔', ['已揭露秘密', '已解决线索', '已完成回收']],
+      ['硬规则', ['战力规则', '时间规则', '能力边界', '世界不可违背规则']],
+      ['禁写规则', ['不能前后矛盾', '不能写崩人设', '不能跳过铺垫', '不能破坏爽点承诺', '不能滥加设定']],
     ]);
     const expectedEntryCount = Array.from(expectedEntriesByType.values()).reduce((total, titles) => total + titles.length, 0);
 
@@ -2470,10 +2545,10 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: '作品设定8' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '核心设定4' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '核心设定4' }));
-    ['作品定位', '主角初始处境', '核心爽点', '核心矛盾'].forEach((title) => {
+    expect(screen.getByRole('button', { name: '作品设定18' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '核心设定6' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '核心设定6' }));
+    ['作品定位', '主角初始处境', '核心爽点', '核心矛盾', '核心金手指', '主角成长方向'].forEach((title) => {
       expect(screen.getByText(title)).toBeInTheDocument();
     });
     expect(screen.queryByText('力量规则')).not.toBeInTheDocument();
@@ -2494,10 +2569,13 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const positioningEntry = storedSettingEntries.find((entry: { title: string }) => entry.title === '作品定位');
     expect(JSON.parse(positioningEntry.content).body).toBe('');
     expect(storedSettingEntries.some((entry: { title: string }) => entry.title === '正派势力')).toBe(false);
-    expect(storedSettingEntries.some((entry: { title: string }) => entry.title === '功法能力')).toBe(false);
-    expect(storedSettingEntries.some((entry: { title: string }) => entry.title === '世界地图')).toBe(false);
-    storedSettingEntries.forEach((entry: { content: string }) => {
+    expect(storedSettingEntries.some((entry: { title: string }) => entry.title === '反派势力')).toBe(false);
+    expect(storedSettingEntries.some((entry: { title: string }) => entry.title === '中立势力')).toBe(false);
+    expect(storedSettingEntries.some((entry: { title: string }) => entry.title === '其他势力')).toBe(false);
+    storedSettingEntries.forEach((entry: { title: string; content: string }) => {
+      expect(entry.title).not.toContain('：');
       expect(JSON.parse(entry.content).body).not.toContain('填写说明');
+      expect(JSON.parse(entry.content).body).toBe('');
     });
   });
 
@@ -2624,7 +2702,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain("const effectiveLibraryTab = isOutlineCharacterScope ? ROLE_TAB : activeTab");
     expect(panelSource).toContain("const activeSettingTypeOptions = activeIsBrainstorm ? [BRAINSTORM_TYPE] : isOutlineCharacterScope ? roleTypeOptions : settingTypeOptions");
     expect(panelSource).toContain("{isOutlineCharacterScope ? '角色' : '设定'}");
-    expect(panelSource).toContain("addRole(getDefaultRoleCreateType(), { switchToRoleTab: false, title: createTitle })");
+    expect(panelSource).toContain("addRole(selectedCreateType, { switchToRoleTab: false, title: createTitle })");
     expect(panelSource).toContain('<RoleBaseStateEditor');
     expect(panelSource).toContain('baseSetting: string;');
     expect(panelSource).toContain('stateSettings: RoleStateSettings;');

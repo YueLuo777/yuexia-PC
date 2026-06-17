@@ -12,6 +12,17 @@ export type ErrorLogEntry = {
 
 export const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'setting-create-selected-group-and-drag-sort-001',
+    title: '设定页新建设定默认落到最上分组且条目不能自由排序',
+    area: '工作台 / 设定 / 新建设定 / 条目排序',
+    symptom: '在道具资源、地点场景等设定标签下点击“新建 / 设定”时，新条目会自动创建到当前标签的第一个分组，例如道具资源总是落到“功法能力”；同时左侧设定条目只能拖到分组上改归属，不能把同一分组内的条目拖到指定位置排序。',
+    cause: '新建设定流程只读取当前一级标签的默认第一个分组，没有给弹窗提供“所属分组”选择；拖拽逻辑也只处理分组 drop，没有处理条目 drop，因此缺少“拖到某个条目前面”的持久排序路径。',
+    solution: '新建设定弹窗增加“所属分组”下拉选择，确认时按用户选择的分组创建设定或角色；列表条目新增 drag over/drop 处理，拖到目标条目上时会把当前条目移动到目标条目前，并在跨分组拖放时同步修改分组归属。',
+    prevention: '设定页新建流程测试要覆盖“选择非首个分组后创建”，拖拽测试要覆盖“把一个设定拖到另一个设定前并保存顺序”，防止以后回退成默认首组或只能移动分组。',
+    keywords: ['设定', '新建设定', '所属分组', '拖拽排序', '道具资源', 'WorkbenchLibraryPanel', 'settingCreateTypeDraft'],
+    updatedAt: '2026-06-17',
+  },
+  {
     id: 'setting-domain-default-entry-filter-first-group-001',
     title: '设定页一级标签只显示第一个分组的默认条目',
     area: '工作台 / 设定 / 一级标签 / 默认设定条目',

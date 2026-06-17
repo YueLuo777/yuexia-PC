@@ -194,21 +194,72 @@ const DEFAULT_ROLE_TYPES = DEFAULT_WORKBENCH_ROLE_TYPES;
 const DEFAULT_MALE_PROTAGONIST_ROLE_TYPE = '男主角';
 const DEFAULT_MALE_PROTAGONIST_ROLE_TITLE = '男主角';
 const DEFAULT_WORK_SETTING_TYPES = ['核心设定', '世界规则', '剧情规划'];
-const DEFAULT_WORK_SETTING_STARTER_VERSION = '2026-06-17-setting-starter-no-auto-domain-items-v4';
+const DEFAULT_WORK_SETTING_STARTER_VERSION = '2026-06-17-setting-starter-full-title-items-v5';
 const DEFAULT_WORK_SETTING_STARTER_ENTRIES = [
   { type: '核心设定', title: '作品定位' },
   { type: '核心设定', title: '主角初始处境' },
   { type: '核心设定', title: '核心爽点' },
   { type: '核心设定', title: '核心矛盾' },
+  { type: '核心设定', title: '核心金手指' },
+  { type: '核心设定', title: '主角成长方向' },
   { type: '世界规则', title: '力量规则' },
-  { type: '世界规则', title: '世界背景与秩序' },
-  { type: '剧情规划', title: '主线目标与阶段剧情' },
-  { type: '剧情规划', title: '关键转折与结局方向' },
-  { type: '主线伏笔', title: '主线伏笔' },
-  { type: '人物伏笔', title: '人物伏笔' },
-  { type: '已回收伏笔', title: '已回收伏笔' },
-  { type: '硬规则', title: '硬规则' },
-  { type: '禁写规则', title: '禁写规则' },
+  { type: '世界规则', title: '境界体系' },
+  { type: '世界规则', title: '资源规则' },
+  { type: '世界规则', title: '世界背景' },
+  { type: '世界规则', title: '社会秩序' },
+  { type: '世界规则', title: '禁忌规则' },
+  { type: '剧情规划', title: '主线目标' },
+  { type: '剧情规划', title: '阶段剧情' },
+  { type: '剧情规划', title: '开局事件' },
+  { type: '剧情规划', title: '关键转折' },
+  { type: '剧情规划', title: '高潮节点' },
+  { type: '剧情规划', title: '结局方向' },
+  { type: '功法能力', title: '主修功法' },
+  { type: '功法能力', title: '战斗技能' },
+  { type: '功法能力', title: '特殊能力' },
+  { type: '功法能力', title: '能力限制' },
+  { type: '物品装备', title: '武器' },
+  { type: '物品装备', title: '防具/护身物' },
+  { type: '物品装备', title: '法宝/特殊装备' },
+  { type: '物品装备', title: '关键道具' },
+  { type: '资源货币', title: '通用货币' },
+  { type: '资源货币', title: '修炼资源' },
+  { type: '资源货币', title: '材料资源' },
+  { type: '资源货币', title: '交易规则' },
+  { type: '特殊资源', title: '传承资格' },
+  { type: '特殊资源', title: '权限令牌' },
+  { type: '特殊资源', title: '唯一资源' },
+  { type: '特殊资源', title: '稀缺名额' },
+  { type: '世界地图', title: '大陆结构' },
+  { type: '世界地图', title: '国家城池' },
+  { type: '世界地图', title: '宗门位置' },
+  { type: '世界地图', title: '交通路线' },
+  { type: '世界地图', title: '重要地点' },
+  { type: '危险区域', title: '秘境' },
+  { type: '危险区域', title: '禁区' },
+  { type: '危险区域', title: '遗迹' },
+  { type: '危险区域', title: '战场' },
+  { type: '危险区域', title: '污染/灾变区域' },
+  { type: '主线伏笔', title: '核心秘密' },
+  { type: '主线伏笔', title: '世界真相' },
+  { type: '主线伏笔', title: '主线线索' },
+  { type: '主线伏笔', title: '后期反转' },
+  { type: '人物伏笔', title: '身份秘密' },
+  { type: '人物伏笔', title: '血脉/身世' },
+  { type: '人物伏笔', title: '关系伏笔' },
+  { type: '人物伏笔', title: '背叛/转变' },
+  { type: '已回收伏笔', title: '已揭露秘密' },
+  { type: '已回收伏笔', title: '已解决线索' },
+  { type: '已回收伏笔', title: '已完成回收' },
+  { type: '硬规则', title: '战力规则' },
+  { type: '硬规则', title: '时间规则' },
+  { type: '硬规则', title: '能力边界' },
+  { type: '硬规则', title: '世界不可违背规则' },
+  { type: '禁写规则', title: '不能前后矛盾' },
+  { type: '禁写规则', title: '不能写崩人设' },
+  { type: '禁写规则', title: '不能跳过铺垫' },
+  { type: '禁写规则', title: '不能破坏爽点承诺' },
+  { type: '禁写规则', title: '不能滥加设定' },
 ];
 const LEGACY_AUTO_DOMAIN_SETTING_STARTER_ENTRIES = [
   { type: '正派势力', title: '正派势力' },
@@ -2572,6 +2623,7 @@ export function WorkbenchLibraryPanel({
   ));
   const [settingCreateDialog, setSettingCreateDialog] = useState<'category' | 'setting' | null>(null);
   const [settingCreateDraft, setSettingCreateDraft] = useState('');
+  const [settingCreateTypeDraft, setSettingCreateTypeDraft] = useState('');
   const [isLibraryAiLoading, setIsLibraryAiLoading] = useState(false);
   const [isLibraryAiLogOpen, setIsLibraryAiLogOpen] = useState(false);
   const [libraryAiLogScope, setLibraryAiLogScope] = useState<'library' | 'outline'>('library');
@@ -3765,9 +3817,26 @@ export function WorkbenchLibraryPanel({
     setSettingTypeDraft('');
   };
 
-  const addSetting = (tab = SETTING_TAB, titleDraft = settingTitleDraft) => {
+  const getSettingCreateTypeOptions = () => {
+    if (activeTab === SETTING_TAB && outlineSettingScope === 'character') return roleTypeOptions;
+    if (activeTab === SETTING_TAB) {
+      const domain = getSelectedSettingWorkspaceDomain();
+      return domain
+        ? settingTypeOptions.filter((type) => getSettingTypeWorkspaceDomain(type) === domain)
+        : settingTypeOptions.filter((type) => !getSettingTypeWorkspaceDomain(type));
+    }
+    return settingTypeOptions;
+  };
+
+  const getValidSettingCreateType = () => {
+    const options = getSettingCreateTypeOptions();
+    if (settingCreateTypeDraft && options.includes(settingCreateTypeDraft)) return settingCreateTypeDraft;
+    return options[0] ?? DEFAULT_SETTING_ENTRY_TYPE;
+  };
+
+  const addSetting = (tab = SETTING_TAB, titleDraft = settingTitleDraft, typeDraft?: string) => {
     const title = titleDraft.trim() || `新建${tab}`;
-    const selectedSettingWorkspaceType = getSelectedSettingWorkspaceType();
+    const selectedSettingWorkspaceType = typeDraft ?? getSelectedSettingWorkspaceType();
     const entry = {
       ...createWorkbenchLibraryEntry(tab, title),
       content: stringifySettingContent({
@@ -3790,27 +3859,33 @@ export function WorkbenchLibraryPanel({
       if (creatingOutlineCharacter) {
         addRoleTypeByName(createTitle);
         setSettingCreateDraft('');
+        setSettingCreateTypeDraft('');
         setSettingCreateDialog(null);
         return;
       }
       addSettingTypeByName(createTitle);
       setSettingCreateDraft('');
+      setSettingCreateTypeDraft('');
       setSettingCreateDialog(null);
       return;
     }
+    const selectedCreateType = getValidSettingCreateType();
     if (creatingOutlineCharacter) {
-      addRole(getDefaultRoleCreateType(), { switchToRoleTab: false, title: createTitle });
+      addRole(selectedCreateType, { switchToRoleTab: false, title: createTitle });
       setSettingCreateDraft('');
+      setSettingCreateTypeDraft('');
       setSettingCreateDialog(null);
       return;
     }
-    addSetting(activeTab, createTitle);
+    addSetting(activeTab, createTitle, selectedCreateType);
     setSettingCreateDraft('');
+    setSettingCreateTypeDraft('');
     setSettingCreateDialog(null);
   };
 
   const openSettingCreateDialog = (kind: 'category' | 'setting') => {
     setSettingCreateDraft('');
+    setSettingCreateTypeDraft(kind === 'setting' ? getValidSettingCreateType() : '');
     setSettingCreateDialog(kind);
   };
 
@@ -4687,6 +4762,61 @@ export function WorkbenchLibraryPanel({
     setExpandedSettingTypes((prev) => new Set(prev).add(targetType));
   };
 
+  const moveLibraryEntryBefore = (
+    entryId: string,
+    targetEntryId: string,
+    targetTab: string,
+    targetType: string,
+  ) => {
+    if (!entryId || entryId === targetEntryId) return;
+    const normalizedTargetTab = normalizeTabName(targetTab);
+    const draggedEntry = entries.find((entry) => entry.id === entryId);
+    const targetEntry = entries.find((entry) => entry.id === targetEntryId);
+    if (!draggedEntry || !targetEntry || draggedEntry.tab !== normalizedTargetTab || targetEntry.tab !== normalizedTargetTab) return;
+
+    let nextDraggedEntry = draggedEntry;
+    if (normalizedTargetTab === ROLE_TAB) {
+      const role = parseRoleContent(draggedEntry.content);
+      if (role.type !== targetType) {
+        if (!canCreateWorkbenchRoleInType(
+          entries
+            .filter((entry) => entry.id !== draggedEntry.id && entry.tab === ROLE_TAB)
+            .map((entry) => parseRoleContent(entry.content).type),
+          targetType,
+        )) return;
+        nextDraggedEntry = {
+          ...draggedEntry,
+          content: stringifyRoleContent({
+            ...role,
+            type: targetType,
+            history: appendRoleHistory(role.history, createRoleHistoryVersion(draggedEntry, role)),
+          }),
+          updatedAt: new Date().toLocaleString('zh-CN'),
+        };
+      }
+    } else if (isSettingLikeTab(normalizedTargetTab)) {
+      const setting = parseSettingContent(draggedEntry.content);
+      if (setting.type !== targetType) {
+        nextDraggedEntry = {
+          ...draggedEntry,
+          content: stringifySettingContent({ ...setting, type: targetType }),
+          updatedAt: new Date().toLocaleString('zh-CN'),
+        };
+      }
+    }
+
+    const nextEntries = entries.filter((entry) => entry.id !== entryId);
+    const targetIndex = nextEntries.findIndex((entry) => entry.id === targetEntryId);
+    if (targetIndex < 0) return;
+    nextEntries.splice(targetIndex, 0, nextDraggedEntry);
+    persist(nextEntries);
+    if (normalizedTargetTab === ROLE_TAB) {
+      setExpandedRoleTypes((prev) => new Set(prev).add(targetType));
+      return;
+    }
+    setExpandedSettingTypes((prev) => new Set(prev).add(targetType));
+  };
+
   const handleLibraryEntryDragStart = (
     event: ReactDragEvent<HTMLElement>,
     entry: WorkbenchLibraryEntry,
@@ -4727,6 +4857,27 @@ export function WorkbenchLibraryPanel({
     setDraggingLibraryEntry(null);
     if (!entryId || draggingLibraryEntry?.tab !== tab) return;
     moveLibraryEntryToType(entryId, tab, type);
+  };
+
+  const handleLibraryEntryDragOver = (event: ReactDragEvent<HTMLElement>) => {
+    if (!draggingLibraryEntry) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleLibraryEntryDrop = (
+    event: ReactDragEvent<HTMLElement>,
+    targetEntry: WorkbenchLibraryEntry,
+    targetType: string,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const entryId = draggingLibraryEntry?.entryId || event.dataTransfer.getData('text/plain');
+    setLibraryDropTarget(null);
+    setDraggingLibraryEntry(null);
+    if (!entryId || draggingLibraryEntry?.tab !== targetEntry.tab) return;
+    moveLibraryEntryBefore(entryId, targetEntry.id, targetEntry.tab, targetType);
   };
 
   const handleLibraryEntryDragEnd = () => {
@@ -5921,6 +6072,10 @@ export function WorkbenchLibraryPanel({
   ) : null;
   const settingCreateIsCharacter = activeTab === SETTING_TAB && outlineSettingScope === 'character';
   const settingCreateItemLabel = settingCreateIsCharacter ? '角色' : '设定';
+  const settingCreateTypeOptions = settingCreateDialog === 'setting' ? getSettingCreateTypeOptions() : [];
+  const settingCreateTypeValue = settingCreateTypeOptions.includes(settingCreateTypeDraft)
+    ? settingCreateTypeDraft
+    : settingCreateTypeOptions[0] ?? '';
   const settingCreateModal = settingCreateDialog ? createPortal(
     <div
       className="modal-sharp fixed inset-0 z-[280] flex items-center justify-center bg-black/35"
@@ -5936,7 +6091,7 @@ export function WorkbenchLibraryPanel({
               {settingCreateDialog === 'category' ? '新建分组' : `新建${settingCreateItemLabel}`}
             </h3>
             <p className="mt-1 text-xs text-gray-400">
-              {settingCreateDialog === 'category' ? '输入分组名称，确认后会显示在左侧分组里。' : `输入${settingCreateItemLabel}名称，确认后会创建到未分类。`}
+              {settingCreateDialog === 'category' ? '输入分组名称，确认后会显示在左侧分组里。' : `选择所属分组，确认后会创建新的${settingCreateItemLabel}。`}
             </p>
           </div>
           <button
@@ -5961,6 +6116,20 @@ export function WorkbenchLibraryPanel({
             />
             <label>{settingCreateDialog === 'category' ? '分组名字' : `${settingCreateItemLabel}名字`}</label>
           </div>
+          {settingCreateDialog === 'setting' && (
+            <label className="mt-4 block text-sm font-black text-slate-700">
+              <span className="mb-2 block text-xs text-slate-400">所属分组</span>
+              <select
+                value={settingCreateTypeValue}
+                onChange={(event) => setSettingCreateTypeDraft(event.target.value)}
+                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none transition-colors focus:border-[#08AACE] focus:ring-2 focus:ring-[#08AACE]/15"
+              >
+                {settingCreateTypeOptions.map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
         <div className="flex shrink-0 justify-end gap-3 border-t border-gray-100 px-5 py-4">
           <button
@@ -6665,6 +6834,8 @@ export function WorkbenchLibraryPanel({
                             key={entry.id}
                             draggable
                             onDragStart={(event) => handleLibraryEntryDragStart(event, entry, role?.type ?? parsed?.type ?? group.type)}
+                            onDragOver={handleLibraryEntryDragOver}
+                            onDrop={(event) => handleLibraryEntryDrop(event, entry, role?.type ?? parsed?.type ?? group.type)}
                             onDragEnd={handleLibraryEntryDragEnd}
                             onContextMenu={(event) => openEntryMenu(event, entry)}
                             onClick={() => {
