@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   Check,
   EyeOff,
+  FolderTree,
   Globe,
   NotebookText,
   Moon,
@@ -31,6 +32,9 @@ const WorkbenchSidebarBoldNavigationTestPage = lazy(() => import('@/features/tes
 const WorkbenchFlowGraySelectedStateTestPage = lazy(() => import('@/features/tests/pages/WorkbenchFlowGraySelectedStateTestPage').then((module) => ({ default: module.WorkbenchFlowGraySelectedStateTestPage })));
 const SettingImportHierarchyTestPage = lazy(() => import('@/features/tests/pages/SettingImportHierarchyTestPage').then((module) => ({ default: module.SettingImportHierarchyTestPage })));
 const SettingWorkspaceMultiLayoutTestPage = lazy(() => import('@/features/tests/pages/SettingWorkspaceMultiLayoutTestPage').then((module) => ({ default: module.SettingWorkspaceMultiLayoutTestPage })));
+const SettingEntryMergePlanTestPage = lazy(() => import('@/features/tests/pages/SettingEntryMergePlanTestPage').then((module) => ({ default: module.SettingEntryMergePlanTestPage })));
+const PromptLibraryStructureTestPage = lazy(() => import('@/features/tests/pages/PromptLibraryStructureTestPage').then((module) => ({ default: module.PromptLibraryStructureTestPage })));
+const PromptWorkflowPreviewTestPage = lazy(() => import('@/features/tests/pages/PromptWorkflowPreviewTestPage').then((module) => ({ default: module.PromptWorkflowPreviewTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -139,6 +143,27 @@ const testGroups = [
         path: '/setting-workspace-multi-layout-test',
         icon: Tags,
         badge: 'Setting UI',
+      },
+      {
+        title: '设定条目合并方案测试',
+        description: '测试作品设定、道具资源、地点场景、伏笔线索和书写规则的条目合并粒度。',
+        path: '/setting-entry-merge-plan-test',
+        icon: Tags,
+        badge: 'Merge',
+      },
+      {
+        title: '提示词资料库结构测试',
+        description: '整理旧提示词会创建的资料库、模板字段、读取链路和章节发布更新方式。',
+        path: '/prompt-library-structure-test',
+        icon: FolderTree,
+        badge: 'Prompt Lib',
+      },
+      {
+        title: '提示词目录预览测试',
+        description: '左侧按流程列出提示词文件，右侧预览选中的提示词原文。',
+        path: '/prompt-workflow-preview-test',
+        icon: FolderTree,
+        badge: 'Prompt View',
       },
     ],
   },
@@ -265,6 +290,12 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <SettingImportHierarchyTestPage />;
       case '/setting-workspace-multi-layout-test':
         return <SettingWorkspaceMultiLayoutTestPage />;
+      case '/setting-entry-merge-plan-test':
+        return <SettingEntryMergePlanTestPage />;
+      case '/prompt-library-structure-test':
+        return <PromptLibraryStructureTestPage />;
+      case '/prompt-workflow-preview-test':
+        return <PromptWorkflowPreviewTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':
