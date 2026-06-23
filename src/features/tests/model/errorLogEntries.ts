@@ -12,6 +12,17 @@ export type ErrorLogEntry = {
 
 export const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'test-collection-tested-bucket-and-format-log-migration-001',
+    title: '测试集合页必须保留已测试分栏，测试迁入正式页后要清理临时入口',
+    area: '测试集合 / 设定日志 / 智能导入格式',
+    symptom: '测试集合页被简化后，原本勾选测试并放入“已测试”的功能消失；同时 14 号智能导入格式日志测试迁入正式日志后，测试集合仍可能残留临时入口。',
+    cause: '整理测试集合时只保留了普通测试列表，遗漏了已测试分栏、本地标记、卡片勾选和详情页标记逻辑；测试方案合入正式页面后，也需要同步删除测试页、集合入口和旧测试文件。',
+    solution: '恢复 TEST_COLLECTION_TESTED_PATHS_KEY、待测试/已测试分栏、卡片勾选、详情页标记；将智能导入格式日志合入正式输出日志的“格式”标签，并删除 SettingImportFormatLogTestPage 及集合入口。',
+    prevention: '以后调整 TestCollectionPage 时，必须保留“待测试/已测试”分栏和勾选入口；临时测试页迁入正式功能后，要同时删除测试页、路由入口、render 分支和旧测试文件，并补正式页面守护测试。',
+    keywords: ['测试集合', '已测试', '智能导入格式', '输出日志', '格式标签', 'TestCollectionPage', 'WorkbenchLibraryPanel'],
+    updatedAt: '2026-06-23',
+  },
+  {
     id: 'setting-and-outline-link-picker-bulk-select-unified-001',
     title: '关联其他设定与章纲关联大纲需要统一批量勾选和弹窗样式',
     area: '作品编辑器 / 设定 / 章纲 / 关联资料',

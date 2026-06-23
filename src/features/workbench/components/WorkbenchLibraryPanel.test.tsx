@@ -1361,6 +1361,28 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(logGroupsSource).not.toContain('ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 text-xs leading-5');
   });
 
+  it('adds a format tab to the library AI log using the current setting import structure', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+
+    expect(panelSource).toContain("const LIBRARY_AI_LOG_VIEW_TABS = ['输出日志', '格式'] as const;");
+    expect(panelSource).toContain('type SettingImportFormatEntry');
+    expect(panelSource).toContain('function buildSettingImportFormatTabs()');
+    expect(panelSource).toContain('function buildSettingImportFormatPreview(entry: SettingImportFormatEntry)');
+    expect(panelSource).toContain('const [libraryAiLogViewTab, setLibraryAiLogViewTab] = useState<LibraryAiLogViewTab>(\'输出日志\');');
+    expect(panelSource).toContain('const [settingImportFormatTabId, setSettingImportFormatTabId] = useState(DEFAULT_SETTING_IMPORT_FORMAT_TAB_ID);');
+    expect(panelSource).toContain('const [settingImportFormatEntryId, setSettingImportFormatEntryId] = useState(DEFAULT_SETTING_IMPORT_FORMAT_ENTRY_ID);');
+    expect(panelSource).toContain('智能导入会写入到');
+    expect(panelSource).toContain('可复制格式');
+    expect(panelSource).toContain('DEFAULT_WORK_SETTING_STARTER_ENTRIES');
+    expect(panelSource).toContain('SETTING_WORKSPACE_DOMAIN_GROUPS');
+    expect(panelSource).toContain('ROLE_BASE_SETTING_FIELD_DEFINITIONS');
+    expect(panelSource).toContain('ROLE_STATE_FIELD_DEFINITIONS');
+    expect(panelSource).toContain('世界架构');
+    expect(panelSource).toContain('危险区域');
+    expect(panelSource).toContain('资源货币');
+    expect(panelSource).toContain('特殊资源');
+  });
+
   it('keeps brainstorm count buttons compact while the generate button stays on the right', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const styleSource = await readSharedStylesSource();

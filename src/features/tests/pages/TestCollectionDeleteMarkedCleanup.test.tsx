@@ -28,12 +28,17 @@ describe('TestCollectionPage delete marked cleanup', () => {
     });
   });
 
-  it('removes the completed-test bucket and the migrated 15th review sync test', async () => {
+  it('keeps the completed-test bucket for checked test entries', async () => {
     const source = await readFile(collectionPagePath, 'utf8');
 
     [
       ['ReviewPreviewAnnotationSync', 'TestPage'].join(''),
       ['/review-preview-annotation-sync', '-test'].join(''),
+    ].forEach((removedText) => {
+      expect(source).not.toContain(removedText);
+    });
+
+    [
       ['TEST_COLLECTION_TESTED', '_PATHS_KEY'].join(''),
       ['readTested', 'TestPaths'].join(''),
       ['toggleTested', 'Test'].join(''),
@@ -42,8 +47,8 @@ describe('TestCollectionPage delete marked cleanup', () => {
       '\u5df2\u6d4b\u8bd5',
       '\u5f85\u6d4b\u8bd5',
       '\u6807\u8bb0\u5df2\u6d4b\u8bd5',
-    ].forEach((removedText) => {
-      expect(source).not.toContain(removedText);
+    ].forEach((requiredText) => {
+      expect(source).toContain(requiredText);
     });
   });
 });

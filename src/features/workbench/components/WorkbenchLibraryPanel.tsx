@@ -867,6 +867,30 @@ type OtherSettingLinkTab = {
   groups: OtherSettingLinkGroup[];
 };
 type SettingLinkSource = 'current' | 'other' | 'brainstorm' | null;
+const LIBRARY_AI_LOG_VIEW_TABS = ['输出日志', '格式'] as const;
+type LibraryAiLogViewTab = (typeof LIBRARY_AI_LOG_VIEW_TABS)[number];
+type SettingImportFormatField = {
+  title: string;
+  placeholder?: string;
+};
+type SettingImportFormatEntry = {
+  id: string;
+  tabId: OtherSettingLinkTabId;
+  tabTitle: string;
+  groupName: string;
+  title: string;
+  fields: SettingImportFormatField[];
+  note?: string;
+};
+type SettingImportFormatGroup = {
+  name: string;
+  entries: SettingImportFormatEntry[];
+};
+type SettingImportFormatTab = {
+  id: OtherSettingLinkTabId;
+  title: string;
+  groups: SettingImportFormatGroup[];
+};
 
 export function parseGeneratedPlotPointCandidates(text: string): WorkbenchPlotPointCandidate[] {
   const clean = stripAiThinkingBlock(text).trim();
@@ -2345,6 +2369,159 @@ function getStructuredSettingFieldSetByDefaultTitle(type: string, title: string)
   )) ?? null;
 }
 
+function getSettingImportFormatFieldSet(type: string, title: string) {
+  const directFieldSet = getStructuredSettingFieldSetByDefaultTitle(type, title);
+  if (directFieldSet) return directFieldSet;
+  const normalizedType = normalizeSettingType(type);
+  if (['正派势力', '反派势力', '中立势力', '其他势力'].includes(normalizedType)) {
+    return STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => fieldSet.id === 'faction-righteous-no-1') ?? null;
+  }
+  if (normalizedType === '世界地图' && title.trim() === '危险区域') {
+    return STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => fieldSet.id === 'faction-danger-zone') ?? null;
+  }
+  return STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => (
+    fieldSet.matchAllTitles && normalizeSettingType(fieldSet.entryType) === normalizedType
+  )) ?? null;
+}
+
+function mapStructuredFieldsToImportFormat(fields: readonly StructuredSettingFieldDefinition[]): SettingImportFormatField[] {
+  return fields.map((field) => ({ title: field.title, placeholder: field.placeholder }));
+}
+
+function getSettingImportFormatFields(type: string, title: string): SettingImportFormatField[] {
+  const fieldSet = getSettingImportFormatFieldSet(type, title);
+  if (fieldSet) return mapStructuredFieldsToImportFormat(fieldSet.fields);
+  return [{ title: '内容', placeholder: '直接填写该设定条目的正文内容。' }];
+}
+
+function getSettingImportFormatEntryTitles(type: string) {
+  const normalizedType = normalizeSettingType(type);
+  if (normalizedType === '正派势力') return ['1号势力'];
+  if (normalizedType === '反派势力') return ['反派势力'];
+  if (normalizedType === '中立势力') return ['中立势力'];
+  if (normalizedType === '其他势力') return ['其他势力'];
+  if (normalizedType === '世界地图') return ['世界架构', '危险区域'];
+  if (normalizedType === '怪物列表') return ['怪物图鉴'];
+  const starterTitles = DEFAULT_WORK_SETTING_STARTER_ENTRIES
+    .filter((entry) => normalizeSettingType(entry.type) === normalizedType)
+    .map((entry) => entry.title);
+  const structuredTitles = STRUCTURED_SETTING_FIELD_SETS
+    .filter((fieldSet) => normalizeSettingType(fieldSet.entryType) === normalizedType && !fieldSet.matchAllTitles)
+    .map((fieldSet) => fieldSet.entryTitle);
+  return Array.from(new Set([...starterTitles, ...structuredTitles, normalizedType]));
+}
+
+function createSettingImportFormatEntry(
+  tabId: OtherSettingLinkTabId,
+  tabTitle: string,
+  groupName: string,
+  title: string,
+): SettingImportFormatEntry {
+  return {
+    id: `${tabId}:${groupName}:${title}`,
+    tabId,
+    tabTitle,
+    groupName,
+    title,
+    fields: getSettingImportFormatFields(groupName, title),
+  };
+}
+
+function buildSettingImportFormatTabs(): SettingImportFormatTab[] {
+  const workGroups = DEFAULT_WORK_SETTING_TYPES.map((groupName) => ({
+    name: groupName,
+    entries: getSettingImportFormatEntryTitles(groupName).map((title) => (
+      createSettingImportFormatEntry('work', '作品设定', groupName, title)
+    )),
+  }));
+  const roleFields: SettingImportFormatField[] = [
+    { title: '人物姓名', placeholder: '角色姓名。' },
+    { title: '身份定位', placeholder: '男主角、女主角、配角、反派等。' },
+    ...ROLE_BASE_SETTING_FIELD_DEFINITIONS.map((field) => ({ title: field.title, placeholder: field.placeholder })),
+    { title: '人物关系', placeholder: '与主角、阵营、亲友、敌人、师徒、利益对象的关系。' },
+    ...ROLE_STATE_FIELD_DEFINITIONS.map((field) => ({ title: field.title, placeholder: `${field.level}的状态内容。` })),
+  ];
+  const domainTabs: SettingImportFormatTab[] = [
+    {
+      id: 'work',
+      title: '作品设定',
+      groups: workGroups,
+    },
+    {
+      id: 'roles',
+      title: '人物设定',
+      groups: [
+        {
+          name: DEFAULT_MALE_PROTAGONIST_ROLE_TITLE,
+          entries: [
+            {
+              id: 'roles:男主角:男主角设定',
+              tabId: 'roles',
+              tabTitle: '人物设定',
+              groupName: DEFAULT_MALE_PROTAGONIST_ROLE_TITLE,
+              title: '男主角设定',
+              fields: roleFields,
+              note: '人物设定会写入角色库；写入“身份定位：男主角”时，会优先匹配男主角角色。',
+            },
+          ],
+        },
+      ],
+    },
+    ...([
+      ['factions', '势力地图', SETTING_WORKSPACE_DOMAIN_GROUPS['setting:faction']],
+      ['items', '道具资源', SETTING_WORKSPACE_DOMAIN_GROUPS['setting:item']],
+      ['monsters', '怪物图鉴', SETTING_WORKSPACE_DOMAIN_GROUPS['setting:monster']],
+      ['foreshadow', '伏笔线索', SETTING_WORKSPACE_DOMAIN_GROUPS['setting:foreshadow']],
+    ] as const).map(([tabId, tabTitle, groupNames]) => ({
+      id: tabId,
+      title: tabTitle,
+      groups: groupNames.map((groupName) => ({
+        name: groupName,
+        entries: getSettingImportFormatEntryTitles(groupName).map((title) => (
+          createSettingImportFormatEntry(tabId, tabTitle, groupName, title)
+        )),
+      })),
+    })),
+  ];
+  return domainTabs;
+}
+
+const SETTING_IMPORT_FORMAT_GUIDE_TABS = buildSettingImportFormatTabs();
+const DEFAULT_SETTING_IMPORT_FORMAT_TAB_ID = SETTING_IMPORT_FORMAT_GUIDE_TABS[0]?.id ?? 'work';
+const DEFAULT_SETTING_IMPORT_FORMAT_ENTRY_ID = SETTING_IMPORT_FORMAT_GUIDE_TABS[0]?.groups[0]?.entries[0]?.id ?? '';
+
+function findSettingImportFormatEntry(entryId: string) {
+  return SETTING_IMPORT_FORMAT_GUIDE_TABS
+    .flatMap((tab) => tab.groups.flatMap((group) => group.entries))
+    .find((entry) => entry.id === entryId) ?? SETTING_IMPORT_FORMAT_GUIDE_TABS[0]?.groups[0]?.entries[0] ?? null;
+}
+
+function buildSettingImportFormatPreview(entry: SettingImportFormatEntry) {
+  const fieldLines = entry.fields.flatMap((field) => [
+    `【${field.title}】：`,
+    field.title === '身份定位' ? '男主角' : '内容',
+    '',
+  ]);
+  if (entry.tabTitle === '人物设定') {
+    return [
+      '<人物设定>',
+      `*${entry.title}*：`,
+      '',
+      ...fieldLines,
+      '</人物设定>',
+    ].join('\n').trimEnd();
+  }
+  return [
+    `<${entry.tabTitle}>`,
+    `<${entry.groupName}>`,
+    `*${entry.title}*：`,
+    '',
+    ...fieldLines,
+    `</${entry.groupName}>`,
+    `</${entry.tabTitle}>`,
+  ].join('\n').trimEnd();
+}
+
 function normalizeImportedSettingKey(value: string) {
   return value.trim().replace(/\s+/g, ' ');
 }
@@ -3447,7 +3624,10 @@ export function WorkbenchLibraryPanel({
   const [isLibraryAiLoading, setIsLibraryAiLoading] = useState(false);
   const [isLibraryAiLogOpen, setIsLibraryAiLogOpen] = useState(false);
   const [libraryAiLogScope, setLibraryAiLogScope] = useState<'library' | 'outline'>('library');
+  const [libraryAiLogViewTab, setLibraryAiLogViewTab] = useState<LibraryAiLogViewTab>('输出日志');
   const [showLibraryAiLogTitles, setShowLibraryAiLogTitles] = useState(true);
+  const [settingImportFormatTabId, setSettingImportFormatTabId] = useState(DEFAULT_SETTING_IMPORT_FORMAT_TAB_ID);
+  const [settingImportFormatEntryId, setSettingImportFormatEntryId] = useState(DEFAULT_SETTING_IMPORT_FORMAT_ENTRY_ID);
   const [lastLibraryAiRequestLog, setLastLibraryAiRequestLog] = useState<LibraryAiRequestLog | null>(null);
   const suppressNextOutlinePreviewSyncRef = useRef(false);
   const [activeLibraryFontTarget, setActiveLibraryFontTarget] = useState<LibraryFontTarget>('brainstormOutput');
@@ -8445,54 +8625,190 @@ export function WorkbenchLibraryPanel({
       })
       : [];
     const visibleAiRequestLogPlainPreview = buildRequestLogPlainPreview(visibleAiRequestLogGroups);
-    const libraryAiLogModal = isLibraryAiLogOpen && libraryAiLogScope === 'library' && visibleAiRequestLog ? (
+    const activeSettingImportFormatTab = SETTING_IMPORT_FORMAT_GUIDE_TABS.find((tab) => tab.id === settingImportFormatTabId) ?? SETTING_IMPORT_FORMAT_GUIDE_TABS[0];
+    const selectedSettingImportFormatEntry = findSettingImportFormatEntry(settingImportFormatEntryId);
+    const settingImportFormatPreview = selectedSettingImportFormatEntry
+      ? buildSettingImportFormatPreview(selectedSettingImportFormatEntry)
+      : '';
+    const selectSettingImportFormatTab = (tabId: OtherSettingLinkTabId) => {
+      const nextTab = SETTING_IMPORT_FORMAT_GUIDE_TABS.find((tab) => tab.id === tabId) ?? SETTING_IMPORT_FORMAT_GUIDE_TABS[0];
+      setSettingImportFormatTabId(nextTab.id);
+      setSettingImportFormatEntryId(nextTab.groups[0]?.entries[0]?.id ?? DEFAULT_SETTING_IMPORT_FORMAT_ENTRY_ID);
+    };
+    const libraryAiLogModal = isLibraryAiLogOpen && libraryAiLogScope === 'library' ? (
       <LibraryAiLogShell
         id={`workbench_library_ai_log_${activeTab}`}
-        subtitle="当前预览：点击发送后会按这里的内容发给 AI"
+        subtitle={libraryAiLogViewTab === '格式' ? '查看智能导入能识别的标签、分组、条目和子设定格式' : '当前预览：点击发送后会按这里的内容发给 AI'}
         onClose={() => setIsLibraryAiLogOpen(false)}
       >
-          <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)]">
-            <aside className="border-r border-slate-100 bg-slate-50 p-4 text-sm">
-              <div className="space-y-3">
-                <div className="rounded-xl bg-white p-3">
-                  <div className="text-xs text-slate-400">链路</div>
-                  <div className="mt-1 font-bold text-slate-800">{visibleAiRequestLog.tab}生成</div>
-                </div>
-                <div className="rounded-xl bg-white p-3">
-                  <div className="text-xs text-slate-400">模型</div>
-                  <div className="mt-1 font-bold text-slate-800">{visibleAiRequestLog.modelName}</div>
-                </div>
-                <div className="rounded-xl bg-white p-3">
-                  <div className="text-xs text-slate-400">提示词</div>
-                  <div className="mt-1 font-bold text-slate-800">{visibleAiRequestLog.promptName}</div>
-                </div>
-                {visibleAiRequestLog.visibleUserText.trim() && (
-                  <div className="rounded-xl bg-white p-3">
-                    <div className="text-xs text-slate-400">{activeTab === SETTING_TAB ? '修改要求' : '其他要求'}</div>
-                    <div className="mt-1 break-words font-bold text-slate-800">{visibleAiRequestLog.visibleUserText}</div>
-                  </div>
-                )}
-                <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-white p-3 text-sm font-bold text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={showLibraryAiLogTitles}
-                    onChange={(event) => setShowLibraryAiLogTitles(event.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-[#08AACE] focus:ring-[#08AACE]/20"
-                  />
-                  <span>显示标题内容</span>
-                </label>
-              </div>
-            </aside>
-            <div className="min-h-0 overflow-y-auto p-5">
-              {showLibraryAiLogTitles ? (
-                <AiRequestLogGroups groups={visibleAiRequestLogGroups} />
-              ) : (
-                <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-700">
-                  {visibleAiRequestLogPlainPreview ? <AiRequestLogContent content={visibleAiRequestLogPlainPreview} /> : '暂无可预览内容'}
-                </div>
-              )}
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex shrink-0 items-center justify-end border-b border-slate-100 bg-white px-5 py-3">
+            <div className={SETTING_SEGMENTED_TAB_GROUP_CLASS}>
+              {LIBRARY_AI_LOG_VIEW_TABS.map((tab, index) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setLibraryAiLogViewTab(tab)}
+                  className={`${SETTING_SEGMENTED_TAB_BUTTON_CLASS} ${index === 0 ? '' : 'border-l border-gray-200'} ${
+                    libraryAiLogViewTab === tab ? SETTING_SEGMENTED_TAB_ACTIVE_CLASS : SETTING_SEGMENTED_TAB_IDLE_CLASS
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
             </div>
           </div>
+          {libraryAiLogViewTab === '输出日志' ? (
+            visibleAiRequestLog ? (
+              <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)]">
+                <aside className="border-r border-slate-100 bg-slate-50 p-4 text-sm">
+                  <div className="space-y-3">
+                    <div className="rounded-xl bg-white p-3">
+                      <div className="text-xs text-slate-400">链路</div>
+                      <div className="mt-1 font-bold text-slate-800">{visibleAiRequestLog.tab}生成</div>
+                    </div>
+                    <div className="rounded-xl bg-white p-3">
+                      <div className="text-xs text-slate-400">模型</div>
+                      <div className="mt-1 font-bold text-slate-800">{visibleAiRequestLog.modelName}</div>
+                    </div>
+                    <div className="rounded-xl bg-white p-3">
+                      <div className="text-xs text-slate-400">提示词</div>
+                      <div className="mt-1 font-bold text-slate-800">{visibleAiRequestLog.promptName}</div>
+                    </div>
+                    {visibleAiRequestLog.visibleUserText.trim() && (
+                      <div className="rounded-xl bg-white p-3">
+                        <div className="text-xs text-slate-400">{activeTab === SETTING_TAB ? '修改要求' : '其他要求'}</div>
+                        <div className="mt-1 break-words font-bold text-slate-800">{visibleAiRequestLog.visibleUserText}</div>
+                      </div>
+                    )}
+                    <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-white p-3 text-sm font-bold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={showLibraryAiLogTitles}
+                        onChange={(event) => setShowLibraryAiLogTitles(event.target.checked)}
+                        className="h-4 w-4 rounded border-slate-300 text-[#08AACE] focus:ring-[#08AACE]/20"
+                      />
+                      <span>显示标题内容</span>
+                    </label>
+                  </div>
+                </aside>
+                <div className="min-h-0 overflow-y-auto p-5">
+                  {showLibraryAiLogTitles ? (
+                    <AiRequestLogGroups groups={visibleAiRequestLogGroups} />
+                  ) : (
+                    <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-700">
+                      {visibleAiRequestLogPlainPreview ? <AiRequestLogContent content={visibleAiRequestLogPlainPreview} /> : '暂无可预览内容'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 text-sm font-bold text-slate-400">
+                暂无输出日志
+              </div>
+            )
+          ) : selectedSettingImportFormatEntry ? (
+            <div className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)] overflow-hidden">
+              <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-slate-50">
+                <div className="shrink-0 border-b border-slate-100 bg-white p-3">
+                  <div className="grid grid-cols-2 gap-1">
+                    {SETTING_IMPORT_FORMAT_GUIDE_TABS.map((tab) => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => selectSettingImportFormatTab(tab.id)}
+                        className={`h-9 rounded-lg text-xs font-black transition-colors ${
+                          activeSettingImportFormatTab?.id === tab.id
+                            ? 'border border-[#9FEAF6] bg-[#EAF9FD] text-[#08AACE]'
+                            : 'border border-transparent bg-white text-slate-600 hover:border-cyan-100 hover:text-[#08AACE]'
+                        }`}
+                      >
+                        {tab.title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
+                  {activeSettingImportFormatTab?.groups.map((group) => (
+                    <section key={group.name}>
+                      <div className="flex h-9 items-center gap-2 rounded-md border border-[#BDEEF7] bg-[#EAF9FD] px-2 text-sm font-black text-slate-900">
+                        <Folder className="h-4 w-4 text-[#08AACE]" />
+                        <span className="min-w-0 flex-1 truncate">{group.name}</span>
+                        <span className="rounded-full bg-white px-2 py-0.5 text-xs text-slate-500">{group.entries.length}</span>
+                      </div>
+                      <div className="mt-1 space-y-1">
+                        {group.entries.map((entry) => (
+                          <button
+                            key={entry.id}
+                            type="button"
+                            onClick={() => setSettingImportFormatEntryId(entry.id)}
+                            className={`flex min-h-[34px] w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-left text-sm font-black transition-colors ${
+                              selectedSettingImportFormatEntry.id === entry.id
+                                ? 'border border-[#9FEAF6] bg-[#EAF9FD] text-[#08AACE]'
+                                : 'bg-white text-slate-700 hover:bg-[#F8FEFF]'
+                            }`}
+                          >
+                            <span className="min-w-0 truncate">{entry.title}</span>
+                            <span className="shrink-0 rounded-full bg-slate-50 px-2 py-0.5 text-xs text-[#08AACE]">{entry.fields.length}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              </aside>
+              <section className="min-h-0 overflow-y-auto bg-white p-5">
+                <div className="mb-4 flex items-start justify-between gap-4">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-black text-[#08AACE]">
+                      <span>{selectedSettingImportFormatEntry.tabTitle}</span>
+                      <span>/</span>
+                      <span>{selectedSettingImportFormatEntry.groupName}</span>
+                    </div>
+                    <h3 className="mt-1 text-2xl font-black text-slate-950">{selectedSettingImportFormatEntry.title}</h3>
+                    <p className="mt-2 text-sm font-bold text-slate-500">
+                      智能导入会写入到：{selectedSettingImportFormatEntry.tabTitle} / {selectedSettingImportFormatEntry.groupName} / {selectedSettingImportFormatEntry.title}
+                    </p>
+                  </div>
+                  <span className="rounded-xl border border-cyan-200 bg-[#EAF9FD] px-3 py-2 text-xs font-black text-[#08AACE]">格式预览</span>
+                </div>
+                {selectedSettingImportFormatEntry.note && (
+                  <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-black leading-6 text-amber-800">
+                    {selectedSettingImportFormatEntry.note}
+                  </div>
+                )}
+                <div className="mb-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="mb-3 text-sm font-black text-slate-900">条目下的子设定</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {selectedSettingImportFormatEntry.fields.map((field) => (
+                      <div key={field.title} className="rounded-xl border border-slate-200 bg-white p-3">
+                        <div className="text-sm font-black text-slate-900">【{field.title}】：</div>
+                        <div className="mt-2 min-h-12 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold leading-5 text-slate-400">
+                          {field.placeholder ?? '内容'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-slate-900 bg-white p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="text-sm font-black text-slate-900">可复制格式</div>
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700">
+                      按智能导入结构生成
+                    </span>
+                  </div>
+                  <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-xl bg-slate-950 p-4 text-sm font-bold leading-7 text-slate-100">
+                    {settingImportFormatPreview}
+                  </pre>
+                </div>
+              </section>
+            </div>
+          ) : (
+            <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 text-sm font-bold text-slate-400">
+              暂无格式内容
+            </div>
+          )}
+        </div>
       </LibraryAiLogShell>
     ) : null;
     return (
