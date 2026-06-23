@@ -3,6 +3,10 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { AppFrame } from '@/shared/layout/AppFrame';
 import { WorkspaceTabsProvider } from '@/shared/tabs/WorkspaceTabsContext';
+import {
+  bindWorkbenchAssociationCloseCleanup,
+  resetWorkbenchAssociationsForNewAppSession,
+} from '@/features/workbench/model/workbenchAssociationCleanup';
 import { bindWorkbenchTransientAiCleanup } from '@/features/workbench/model/workbenchTransientAiCleanup';
 
 const TestCollectionPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })));
@@ -74,7 +78,10 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error
 
 export default function App() {
   useEffect(() => {
+    resetWorkbenchAssociationsForNewAppSession();
+    const disposeAssociationCleanup = bindWorkbenchAssociationCloseCleanup();
     bindWorkbenchTransientAiCleanup();
+    return disposeAssociationCleanup;
   }, []);
 
   return (

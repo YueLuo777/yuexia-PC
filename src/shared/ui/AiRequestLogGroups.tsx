@@ -137,7 +137,7 @@ export function AiRequestLogGroups({
             </button>
             {!collapsed && (
               <div className="border-t border-slate-100 bg-slate-50/60 p-3">
-                <div className={`ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 text-xs leading-5 text-slate-700 ${group.contentClassName ?? 'max-h-[360px] overflow-y-auto'}`}>
+                <div className={`ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 ${group.contentClassName ?? 'max-h-[360px] overflow-y-auto'}`}>
                   <AiRequestLogContent content={content} />
                 </div>
               </div>

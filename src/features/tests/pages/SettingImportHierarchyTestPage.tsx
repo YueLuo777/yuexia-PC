@@ -14,38 +14,26 @@ type ImportPreviewEntry = ParsedSettingEntry & {
   status: 'created' | 'updated';
 };
 
-const sampleImportText = `<核心设定>
-*核心设定*：
+const sampleImportText = `<剧情规划>
+*剧情蓝图*：
 
-【故事起点】：
-林刻在昆仑山挖出神秘骨架，被万界吞噬系统绑定。未婚妻上门退婚时，他意外吞噬魔剑残魂，第一次解锁活物吞噬。
+【主线目标】：
+内容
 
-【核心矛盾】：
-九重天界十大正统势力垄断资源，视吞噬之道为邪魔外道。林刻每吞一个目标，就会引来越强的追杀者。
+【阶段剧情】：
+内容
 
-【读者期待】：
-期待主角吞噬强敌后战力反超，用敌人的功法打脸敌人，最终吞噬九重天旧秩序。
-</核心设定>
-
-<资源装备>
-*资源装备*：
-
-【核心资源】：
-本源幽火、魔剑残魂、九重天界通行令。
-
-【获取方式】：
-吞噬强敌、破解秘境、夺取大势力封存的禁物。
-</资源装备>`;
+</剧情规划>`;
 
 const existingEntries: SettingEntry[] = [
   {
-    group: '核心设定',
-    title: '核心设定',
-    body: '【故事起点】：\n旧版本开局。\n\n【核心矛盾】：\n旧版本矛盾。\n\n【读者期待】：\n旧版本期待。',
+    group: '剧情规划',
+    title: '剧情蓝图',
+    body: '【主线目标】：\n旧版本目标。\n\n【阶段剧情】：\n旧版本阶段。',
   },
   {
-    group: '世界规则',
-    title: '世界结构',
+    group: '核心设定',
+    title: '世界架构',
     body: '九重天界按灵气浓度和血脉阶层分层。',
   },
 ];
@@ -94,9 +82,9 @@ const parsedEntries = parseSettingImportText(sampleImportText);
 const importPreviewEntries = applyImportPreview(existingEntries, parsedEntries);
 const groupedPreviewEntries = groupPreviewEntries(importPreviewEntries);
 const renamedEntries = renameGroup(
-  [...existingEntries, { group: '资源装备', title: '资源装备', body: '【核心资源】：\n本源幽火。\n\n【获取方式】：\n吞噬强敌。' }],
-  '资源装备',
-  '资源与装备',
+  [...existingEntries, { group: '临时分组', title: '临时条目', body: '【主线目标】：\n临时目标。' }],
+  '临时分组',
+  '正式分组',
 );
 
 const statusStyles = {
@@ -115,7 +103,7 @@ export function SettingImportHierarchyTestPage() {
       <header className="shrink-0 border-b border-slate-100 bg-white px-6 py-4">
         <h1 className="text-xl font-black text-slate-950">智能导入三层结构测试</h1>
         <p className="mt-1 text-xs font-bold text-slate-400">
-          验证一级分组、二级设定、三级子设定的识别方式，以及右键分组菜单新增重命名后的迁移效果。
+          验证上一级标签、设定条目、条目子设定的识别方式，以及右键分组菜单新增重命名后的迁移效果。
         </p>
       </header>
 
@@ -124,7 +112,7 @@ export function SettingImportHierarchyTestPage() {
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <h2 className="text-sm font-black text-slate-900">导入文本样例</h2>
-              <p className="mt-1 text-xs font-bold text-slate-400">顶层标签是一级分组，星号标题是二级设定，方括号标题是三级子设定。</p>
+              <p className="mt-1 text-xs font-bold text-slate-400">尖括号标签是上一级标签，星号标题是设定条目，方括号标题是条目里的子设定。</p>
             </div>
             <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">Prompt</span>
           </div>
@@ -137,7 +125,7 @@ export function SettingImportHierarchyTestPage() {
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <h2 className="text-sm font-black text-slate-900">模拟导入结果</h2>
-              <p className="mt-1 text-xs font-bold text-slate-400">已有则填入，没有则创建；三级子设定会拆成分组下的多条设定。</p>
+              <p className="mt-1 text-xs font-bold text-slate-400">已有则填入，没有则创建；子设定会保留在对应设定条目的正文里。</p>
             </div>
             <span className="rounded-full border border-brand/20 bg-brand-light px-2.5 py-1 text-xs font-black text-brand">Import 3</span>
           </div>
@@ -148,7 +136,7 @@ export function SettingImportHierarchyTestPage() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <FolderOpen className="h-5 w-5 text-brand" />
-                    <span className="text-sm font-black text-slate-900">一级分组：{group}</span>
+                    <span className="text-sm font-black text-slate-900">上一级标签：{group}</span>
                   </div>
                   <span className="rounded-full bg-white px-2 py-0.5 text-xs font-black text-brand">{entries.length}</span>
                 </div>
@@ -157,7 +145,7 @@ export function SettingImportHierarchyTestPage() {
                   {entries.map((entry) => (
                     <article key={`${entry.group}-${entry.title}`} className="rounded-xl border border-slate-100 bg-white p-3">
                       <div className="flex items-center justify-between gap-3">
-                        <h3 className="text-sm font-black text-slate-900">二级设定：{entry.title}</h3>
+                        <h3 className="text-sm font-black text-slate-900">设定条目：{entry.title}</h3>
                         <span className={`rounded-full border px-2.5 py-1 text-xs font-black ${statusStyles[entry.status]}`}>
                           {statusText[entry.status]}
                         </span>
@@ -166,7 +154,7 @@ export function SettingImportHierarchyTestPage() {
                       <div className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2">
                         {entry.children.map((child) => (
                           <div key={child} className="contents">
-                            <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-500">三级子设定</span>
+                            <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-black text-slate-500">子设定</span>
                             <span className="min-w-0 rounded-lg border border-slate-100 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700">{child}</span>
                           </div>
                         ))}
@@ -196,20 +184,20 @@ export function SettingImportHierarchyTestPage() {
               </button>
             </div>
             <p className="mt-3 text-xs font-bold leading-5 text-slate-400">
-              分组重命名后，所有属于旧分组的二级设定一起迁移到新分组名下。
+              分组重命名后，所有属于原分组的设定条目一起迁移到新分组名下。
             </p>
           </section>
 
           <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
             <h2 className="text-sm font-black text-slate-900">重命名迁移预览</h2>
             <div className="mt-4 flex items-center gap-2 text-xs font-black text-slate-600">
-              <span className="rounded-lg bg-slate-100 px-2 py-1">资源装备</span>
+              <span className="rounded-lg bg-slate-100 px-2 py-1">临时分组</span>
               <ArrowRight className="h-4 w-4 text-slate-300" />
-              <span className="rounded-lg bg-brand-light px-2 py-1 text-brand">资源与装备</span>
+              <span className="rounded-lg bg-brand-light px-2 py-1 text-brand">正式分组</span>
             </div>
             <div className="mt-4 space-y-2">
               {renamedEntries
-                .filter((entry) => entry.group === '资源与装备')
+                .filter((entry) => entry.group === '正式分组')
                 .map((entry) => (
                   <div key={`${entry.group}-${entry.title}`} className="flex items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2">
                     <span className="text-xs font-black text-slate-700">{entry.title}</span>
@@ -225,9 +213,9 @@ export function SettingImportHierarchyTestPage() {
           <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
             <h2 className="text-sm font-black text-slate-900">正式功能落地判断</h2>
             <ul className="mt-3 space-y-2 text-xs font-bold leading-5 text-slate-500">
-              <li>1. 一级分组不存在时创建分组。</li>
-              <li>2. 二级设定同名存在时覆盖正文，不存在时新建。</li>
-              <li>3. 三级子设定拆成分组下的多条设定。</li>
+              <li>1. 上一级标签不存在时创建分组。</li>
+              <li>2. 设定条目同名存在时覆盖正文，不存在时新建。</li>
+              <li>3. 子设定保留在对应条目正文里，不拆成独立条目。</li>
               <li>4. 分组右键菜单增加重命名。</li>
             </ul>
           </section>

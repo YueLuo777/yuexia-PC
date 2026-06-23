@@ -9,6 +9,36 @@ const readSource = (relativePath: string) => (
 );
 
 describe('ChapterEditor grid line font setting', () => {
+  it('keeps review chapter selection non-orange and strengthens review preview dividers', () => {
+    const chapterEditorSource = readSource('ChapterEditor.tsx');
+    const reviewPanelStart = chapterEditorSource.indexOf('canRenderReviewPanel && createPortal');
+    const reviewPanelSource = chapterEditorSource.slice(reviewPanelStart, reviewPanelStart + 22000);
+
+    expect(reviewPanelStart).toBeGreaterThan(-1);
+    expect(reviewPanelSource).toContain("selected\n                                      ? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'");
+    expect(reviewPanelSource).toContain('flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white');
+    expect(reviewPanelSource).not.toContain('flex h-full min-h-0 flex-col overflow-hidden rounded-t-2xl border border-slate-200 bg-white');
+    expect(reviewPanelSource).not.toContain('flex h-full min-h-0 flex-col rounded-2xl border border-slate-200 bg-white');
+    expect(reviewPanelSource).toContain('grid min-h-0 flex-1 grid-cols-2 divide-x divide-slate-300');
+    expect(chapterEditorSource).toContain("import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';");
+    expect(chapterEditorSource).toContain('const [reviewPreviewFontSize, setReviewPreviewFontSize] = useState(14);');
+    expect(reviewPanelSource).toContain('ariaLabel="审核原文字号"');
+    expect(reviewPanelSource).toContain('style={{ fontSize: reviewPreviewFontSize }}');
+    expect(reviewPanelSource).not.toContain('xy-selected-orange-bg');
+    expect(reviewPanelSource).not.toContain('grid min-h-0 flex-1 grid-cols-2 divide-x divide-slate-100');
+  });
+
+  it('uses minimum left panel widths as review and status defaults for new works', () => {
+    const chapterEditorSource = readSource('ChapterEditor.tsx');
+
+    expect(chapterEditorSource).toContain('const REVIEW_PAGE_LEFT_WIDTH = 180;');
+    expect(chapterEditorSource).toContain('const STATUS_PAGE_LEFT_WIDTH = 190;');
+    expect(chapterEditorSource).toContain('const REVIEW_PAGE_LEFT_WIDTH_LIMIT = { min: 180, max: 360 };');
+    expect(chapterEditorSource).toContain('const STATUS_PAGE_LEFT_WIDTH_LIMIT = { min: 190, max: 360 };');
+    expect(chapterEditorSource).not.toContain('const REVIEW_PAGE_LEFT_WIDTH = 220;');
+    expect(chapterEditorSource).not.toContain('const STATUS_PAGE_LEFT_WIDTH = 230;');
+  });
+
   it('keeps the editor paper line mode in the real chapter editor font settings', () => {
     const chapterEditorSource = readSource('ChapterEditor.tsx');
     const modalSource = readSource('EditorToolModals.tsx');

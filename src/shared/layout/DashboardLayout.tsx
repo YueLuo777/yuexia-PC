@@ -307,12 +307,12 @@ export function DashboardLayout() {
                     }}
                     className={`flex h-10 items-center gap-3 rounded-md px-4 transition-colors ${
                       isActive
-                        ? 'xy-dashboard-sidebar-active font-medium text-[#1f2933]'
-                        : 'text-[#586574] hover:bg-white/70 hover:text-[#1f2933]'
+                        ? 'xy-dashboard-sidebar-active font-black text-[#142033]'
+                        : 'font-bold text-[#354154] hover:bg-white/70 hover:text-[#142033]'
                     }`}
                   >
-                    <ItemIcon className={`h-[17px] w-[17px] ${isActive ? 'text-[#1e71ef]' : 'text-[#68727f]'}`} />
-                    <span className="text-[14px] leading-none">{item.label}</span>
+                    <ItemIcon className={`h-[18px] w-[18px] stroke-[2.4] ${isActive ? 'text-[#1e71ef]' : 'text-[#4d5b6c]'}`} />
+                    <span className="text-[15px] leading-none">{item.label}</span>
                   </Link>
                   {navDividerAfterItemTos.has(item.to) ? (
                     <div aria-hidden="true" className="mx-3 my-2 border-t border-[#e1e5eb]" />

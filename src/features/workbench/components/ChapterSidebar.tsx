@@ -43,7 +43,7 @@ interface VolumeContextMenu {
 
 const emptyChapterMenu: ChapterContextMenu = { visible: false, x: 0, y: 0, volumeId: null, chapterId: null };
 const emptyVolumeMenu: VolumeContextMenu = { visible: false, x: 0, y: 0, volumeId: null };
-const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 300;
+const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 200;
 const CHAPTER_SIDEBAR_BOTTOM_ROW_CLASS = 'flex items-center gap-1.5 border-t border-[#e6e8ec] px-2 py-2';
 const CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS = 'flex h-8 min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-md px-1.5 text-sm leading-none text-white transition-colors';
 const WORKBENCH_FOLDER_GROUP_BUTTON_BASE_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors';

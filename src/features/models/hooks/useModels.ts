@@ -7,8 +7,6 @@ import { APP_EVENTS } from '@/shared/events/appEvents';
 const MODELS_KEY = 'xinyuexia_api_settings_v1';
 const MODELS_MIGRATED_KEY = 'xinyuexia_models_migrated_v1';
 const ACTIVE_MODEL_KEY = 'xinyuexia_active_model_id';
-const PINAI_MODEL_ID = 'gpt-5.4';
-const PINAI_BASE_URL = 'https://us.pinai-cn.com/v1';
 
 function createModelInstanceId(id: string) {
   return `${id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -29,60 +27,10 @@ function isLegacyImageModel(model: ModelItem & { modelKind?: string }) {
   return model.modelKind === 'image' || /^gpt[-_]?image[-_]?/.test((model.model || model.id || '').trim());
 }
 
-function getEnvPinaiModel(): ModelItem | null {
-  const apiKey = import.meta.env.VITE_PINAI_API_KEY?.trim();
-  if (!apiKey) return null;
-
-  return {
-    id: PINAI_MODEL_ID,
-    instanceId: PINAI_MODEL_ID,
-    name: import.meta.env.VITE_PINAI_MODEL_NAME?.trim() || 'PinAI GPT-5.4',
-    baseUrl: import.meta.env.VITE_PINAI_BASE_URL?.trim() || PINAI_BASE_URL,
-    apiKey,
-    model: import.meta.env.VITE_PINAI_MODEL_ID?.trim() || PINAI_MODEL_ID,
-    provider: 'openai-compatible',
-    enabled: true,
-    locked: false,
-    connectionStatus: 'unknown',
-    temperature: 0.7,
-  };
-}
-
-function syncEnvModel(models: ModelItem[], notify = true) {
-  const envModel = getEnvPinaiModel();
-  if (!envModel) return models;
-
-  const existing = models.find((model) => model.id === envModel.id);
-  const next = existing
-    ? models.map((model) => (
-      model.id === envModel.id
-        ? {
-            ...envModel,
-            ...model,
-            name: model.name || envModel.name,
-            baseUrl: model.baseUrl || envModel.baseUrl,
-            apiKey: model.apiKey || envModel.apiKey,
-            model: model.model || envModel.model,
-            provider: model.provider ?? envModel.provider,
-            enabled: true,
-            locked: model.locked ?? envModel.locked,
-            connectionStatus: model.connectionStatus ?? envModel.connectionStatus,
-            temperature: normalizeTemperature(model.temperature ?? envModel.temperature),
-          }
-        : model
-    ))
-    : [...models, envModel];
-
-  if (JSON.stringify(next) !== JSON.stringify(models)) {
-    writeModels(next, { notify });
-  }
-  return next;
-}
-
 function readModels() {
   try {
     const raw = localStorage.getItem(MODELS_KEY);
-    if (!raw) return syncEnvModel([], false);
+    if (!raw) return [];
     const parsed = JSON.parse(raw) as { models?: ModelItem[] };
     const storedModels = parsed.models ?? [];
     const rawModels = storedModels
@@ -107,12 +55,12 @@ function readModels() {
       localStorage.setItem(MODELS_MIGRATED_KEY, '1');
       if (cleaned.length !== models.length) {
         writeModels(cleaned, { notify: false });
-        return syncEnvModel(cleaned, false);
+        return cleaned;
       }
     }
-    return syncEnvModel(models, false);
+    return models;
   } catch {
-    return syncEnvModel([], false);
+    return [];
   }
 }
 

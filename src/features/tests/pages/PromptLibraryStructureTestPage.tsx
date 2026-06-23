@@ -220,7 +220,7 @@ export function PromptLibraryStructureTestPage() {
             <div>
               <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-cyan-50 px-3 py-1 text-xs font-black text-cyan-700">
                 <FolderTree className="h-4 w-4" />
-                提示词资料库结构测试
+                所有提示词
               </div>
               <h1 className="text-2xl font-black tracking-normal text-slate-950">旧提示词会创建什么库，库里怎么写</h1>
               <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-500">

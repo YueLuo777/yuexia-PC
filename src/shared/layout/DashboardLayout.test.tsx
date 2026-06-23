@@ -115,6 +115,10 @@ describe('DashboardLayout navigation items', () => {
     expect(source).toContain('xy-dashboard-sidebar');
     expect(source).toContain('xy-dashboard-sidebar-footer');
     expect(navSource).toContain('xy-dashboard-sidebar-active');
+    expect(navSource).toContain('font-black text-[#142033]');
+    expect(navSource).toContain('font-bold text-[#354154]');
+    expect(navSource).toContain('h-[18px] w-[18px] stroke-[2.4]');
+    expect(navSource).toContain('text-[15px] leading-none');
     expect(navSource).not.toContain('bg-[#dbe7fb]');
     expect(styles).toContain('.xy-dashboard-sidebar-active');
     expect(styles).toContain('background: var(--xy-custom-sidebar-active-bg);');

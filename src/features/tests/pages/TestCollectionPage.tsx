@@ -1,16 +1,13 @@
 import {
   ArrowLeft,
-  Check,
   EyeOff,
   FolderTree,
   Globe,
   NotebookText,
   Moon,
   Palette,
-  SlidersHorizontal,
   Search,
   Tags,
-  Type,
   X,
 } from 'lucide-react';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
@@ -21,18 +18,18 @@ import { TEST_COLLECTION_SHOW_INDEX_EVENT } from '@/features/tests/model/testCol
 const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })));
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
+const ChapterSidebarCompactTitleTestPage = lazy(() => import('@/features/tests/pages/ChapterSidebarCompactTitleTestPage').then((module) => ({ default: module.ChapterSidebarCompactTitleTestPage })));
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
-const BorderBackplateApplicationTestPage = lazy(() => import('@/features/tests/pages/BorderBackplateApplicationTestPage').then((module) => ({ default: module.BorderBackplateApplicationTestPage })));
-const WorkbenchSoftCyanButtonStyleTestPage = lazy(() => import('@/features/tests/pages/WorkbenchSoftCyanButtonStyleTestPage').then((module) => ({ default: module.WorkbenchSoftCyanButtonStyleTestPage })));
-const WorkbenchSurfaceColorStyleTestPage = lazy(() => import('@/features/tests/pages/WorkbenchSurfaceColorStyleTestPage').then((module) => ({ default: module.WorkbenchSurfaceColorStyleTestPage })));
-const WorkbenchRightPanelUnifiedTestPage = lazy(() => import('@/features/tests/pages/WorkbenchRightPanelUnifiedTestPage').then((module) => ({ default: module.WorkbenchRightPanelUnifiedTestPage })));
-const WorkbenchAiRequestTagPolicyTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiRequestTagPolicyTestPage').then((module) => ({ default: module.WorkbenchAiRequestTagPolicyTestPage })));
-const WorkbenchFlowButtonStatsTestPage = lazy(() => import('@/features/tests/pages/WorkbenchFlowButtonStatsTestPage').then((module) => ({ default: module.WorkbenchFlowButtonStatsTestPage })));
-const WorkbenchSidebarBoldNavigationTestPage = lazy(() => import('@/features/tests/pages/WorkbenchSidebarBoldNavigationTestPage').then((module) => ({ default: module.WorkbenchSidebarBoldNavigationTestPage })));
-const WorkbenchFlowGraySelectedStateTestPage = lazy(() => import('@/features/tests/pages/WorkbenchFlowGraySelectedStateTestPage').then((module) => ({ default: module.WorkbenchFlowGraySelectedStateTestPage })));
 const SettingImportHierarchyTestPage = lazy(() => import('@/features/tests/pages/SettingImportHierarchyTestPage').then((module) => ({ default: module.SettingImportHierarchyTestPage })));
-const SettingWorkspaceMultiLayoutTestPage = lazy(() => import('@/features/tests/pages/SettingWorkspaceMultiLayoutTestPage').then((module) => ({ default: module.SettingWorkspaceMultiLayoutTestPage })));
 const SettingEntryMergePlanTestPage = lazy(() => import('@/features/tests/pages/SettingEntryMergePlanTestPage').then((module) => ({ default: module.SettingEntryMergePlanTestPage })));
+const SettingStateStructurePlanTestPage = lazy(() => import('@/features/tests/pages/SettingStateStructurePlanTestPage').then((module) => ({ default: module.SettingStateStructurePlanTestPage })));
+const SettingWorkflowOptimizationTestPage = lazy(() => import('@/features/tests/pages/SettingWorkflowOptimizationTestPage').then((module) => ({ default: module.SettingWorkflowOptimizationTestPage })));
+const SettingMapDangerLayoutTestPage = lazy(() => import('@/features/tests/pages/SettingMapDangerLayoutTestPage').then((module) => ({ default: module.SettingMapDangerLayoutTestPage })));
+const SettingItemResourceStatusLayoutTestPage = lazy(() => import('@/features/tests/pages/SettingItemResourceStatusLayoutTestPage').then((module) => ({ default: module.SettingItemResourceStatusLayoutTestPage })));
+const SettingClearContextMenuTestPage = lazy(() => import('@/features/tests/pages/SettingClearContextMenuTestPage').then((module) => ({ default: module.SettingClearContextMenuTestPage })));
+const SettingOtherLinkPickerTestPage = lazy(() => import('@/features/tests/pages/SettingOtherLinkPickerTestPage').then((module) => ({ default: module.SettingOtherLinkPickerTestPage })));
+const SettingImportFormatLogTestPage = lazy(() => import('@/features/tests/pages/SettingImportFormatLogTestPage').then((module) => ({ default: module.SettingImportFormatLogTestPage })));
+const PostWritingWorkflowPlanTestPage = lazy(() => import('@/features/tests/pages/PostWritingWorkflowPlanTestPage').then((module) => ({ default: module.PostWritingWorkflowPlanTestPage })));
 const PromptLibraryStructureTestPage = lazy(() => import('@/features/tests/pages/PromptLibraryStructureTestPage').then((module) => ({ default: module.PromptLibraryStructureTestPage })));
 const PromptWorkflowPreviewTestPage = lazy(() => import('@/features/tests/pages/PromptWorkflowPreviewTestPage').then((module) => ({ default: module.PromptWorkflowPreviewTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
@@ -70,25 +67,11 @@ const testGroups = [
         badge: 'Theme',
       },
       {
-        title: '边框透明背板应用预览',
-        description: '集中预览作品编辑器里适合使用边框透明背板技术的贴边标题、字数、清空、章节信息和配置标签。',
-        path: '/border-backplate-application-test',
-        icon: Type,
-        badge: 'Backplate',
-      },
-      {
-        title: '作品编辑器浅青按钮状态测试',
-        description: '测试当前页、主要操作按钮、右侧配置边框、关联资料和已关联字数改为 #E7F8FD / #08AACE 的浅青方案。',
-        path: '/workbench-soft-cyan-button-style-test',
-        icon: Palette,
-        badge: 'Soft Cyan',
-      },
-      {
-        title: '作品编辑器输入区与标题栏配色测试',
-        description: '测试内容输入 #F5F5F7 搭配不同软件标题栏、右侧面板和边界深浅的多套方案。',
-        path: '/workbench-surface-color-style-test',
-        icon: Palette,
-        badge: 'Surface',
+        title: '正文目录左移测试',
+        description: '测试正文区域左侧目录的章节标题整体左移后，能否把“第X章”的第字移动到更靠左的位置并扩大标题展示空间。',
+        path: '/chapter-sidebar-compact-title-test',
+        icon: NotebookText,
+        badge: 'Chapter',
       },
     ],
   },
@@ -96,53 +79,11 @@ const testGroups = [
     title: 'AI 链路测试',
     items: [
       {
-        title: '右侧 AI 配置栏统一方案',
-        description: '测试作品编辑器右侧 AI 区域的统一布局，并检查浮动按钮背后的白色垫片是否已去掉。',
-        path: '/workbench-right-panel-unified-test',
-        icon: SlidersHorizontal,
-        badge: 'Panel / 垫片',
-      },
-      {
-        title: 'AI 请求标签策略测试',
-        description: '测试脑洞、大纲、章纲、正文、审核、点评、润色、状态、梗概哪些链路需要用标签区分材料和要求。',
-        path: '/workbench-ai-request-tag-policy-test',
-        icon: Tags,
-        badge: 'Tag',
-      },
-      {
-        title: '作品编辑器流程按钮信息化方案',
-        description: '测试顶部两组组合按钮在按钮内部显示脑洞、设定、章纲、正文、审核、点评、状态和梗概数量的方案。',
-        path: '/workbench-flow-button-stats-test',
-        icon: SlidersHorizontal,
-        badge: 'Flow Stats',
-      },
-      {
-        title: '作品编辑器左侧导航加粗测试',
-        description: '测试正文第一卷、章节，以及脑洞、设定等页面分组和设定条目加粗后的效果。',
-        path: '/workbench-sidebar-bold-navigation-test',
-        icon: NotebookText,
-        badge: 'Bold Nav',
-      },
-      {
-        title: '脑洞正文导航灰色选中态测试',
-        description: '测试脑洞、设定、章纲、正文顶部导航选中状态使用不同灰色背景、边框和阴影的方案。',
-        path: '/workbench-flow-gray-selected-state-test',
-        icon: Palette,
-        badge: 'Gray Active',
-      },
-      {
         title: '设定三层智能导入测试',
         description: '测试智能导入把一级分组、二级设定、三级子设定分层识别，并预览已有则填入、没有则创建和分组重命名。',
         path: '/setting-import-hierarchy-test',
         icon: Tags,
         badge: 'Import 3',
-      },
-      {
-        title: '设定工作台多标签布局测试',
-        description: '测试作品设定、人物设定、势力组织、道具资源等一级标签的多种布局方案。',
-        path: '/setting-workspace-multi-layout-test',
-        icon: Tags,
-        badge: 'Setting UI',
       },
       {
         title: '设定条目合并方案测试',
@@ -152,7 +93,63 @@ const testGroups = [
         badge: 'Merge',
       },
       {
-        title: '提示词资料库结构测试',
+        title: '设定状态结构方案测试',
+        description: '测试主角金手指、势力分组、世界地图、危险区域、道具资源、伏笔线索的固定档案和状态设定拆分方案。',
+        path: '/setting-state-structure-plan-test',
+        icon: Tags,
+        badge: 'State',
+      },
+      {
+        title: '设定流程优化建议测试',
+        description: '单独测试整体设定流程优化建议，包括补充分类、状态更新、AI 确认和关联读取规则。',
+        path: '/setting-workflow-optimization-test',
+        icon: Tags,
+        badge: 'Workflow',
+      },
+      {
+        title: '世界地图与危险区域布局测试',
+        description: '测试世界地图和危险区域按人物设定、势力地图格局拆成固定设定、状态设定和确认更新的具体排版。',
+        path: '/setting-map-danger-layout-test',
+        icon: Tags,
+        badge: 'Map / Danger',
+      },
+      {
+        title: '道具资源状态结构测试',
+        description: '测试道具资源按固定设定、状态设定、确认更新拆分后的布局，并标明功法能力、物品装备、资源货币、特殊资源哪些需要状态设定。',
+        path: '/setting-item-resource-status-layout-test',
+        icon: Tags,
+        badge: 'Item State',
+      },
+      {
+        title: '设定清空右键菜单测试',
+        description: '测试清空分组、清空角色、清空势力、清空道具资源等危险操作移动到右键菜单后的文案和两次确认流程。',
+        path: '/setting-clear-context-menu-test',
+        icon: Tags,
+        badge: 'Clear Menu',
+      },
+      {
+        title: '关联其他设定测试',
+        description: '测试设定页在当前设定和脑洞之间新增“其他设定”关联按钮后，弹窗按作品设定、人物设定等标签读取所有设定条目。',
+        path: '/setting-other-link-picker-test',
+        icon: Tags,
+        badge: 'Other Link',
+      },
+      {
+        title: '智能导入格式日志测试',
+        description: '测试输出日志新增“格式”标签后，按作品设定、人物设定、势力地图等标签预览每个分组和设定条目的智能导入格式。',
+        path: '/setting-import-format-log-test',
+        icon: Tags,
+        badge: 'Format',
+      },
+      {
+        title: '正文后处理流程方案测试',
+        description: '测试审核、点评、润色、状态和梗概合并成一套章节后处理流程后的布局、操作顺序和写回规则。',
+        path: '/post-writing-workflow-plan-test',
+        icon: Tags,
+        badge: 'Post Flow',
+      },
+      {
+        title: '所有提示词',
         description: '整理旧提示词会创建的资料库、模板字段、读取链路和章节发布更新方式。',
         path: '/prompt-library-structure-test',
         icon: FolderTree,
@@ -186,18 +183,6 @@ const testNumberByPath = new Map(
     .flatMap((group) => group.items)
     .map((item, index) => [item.path, index + 1] as const),
 );
-const TEST_COLLECTION_DELETE_MARKS_KEY = 'xinyuexia_test_collection_delete_marks_v1';
-
-function readDeleteMarkedTestPaths() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(TEST_COLLECTION_DELETE_MARKS_KEY) ?? '[]') as unknown;
-    return Array.isArray(parsed)
-      ? parsed.filter((item): item is string => typeof item === 'string' && testNumberByPath.has(item))
-      : [];
-  } catch {
-    return [];
-  }
-}
 
 function formatTestNumber(path: string) {
   return String(testNumberByPath.get(path) ?? 0).padStart(2, '0');
@@ -212,7 +197,6 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [activePath, setActivePath] = useState<string | null>(null);
-  const [deleteMarkedTestPaths, setDeleteMarkedTestPaths] = useState<Set<string>>(() => new Set(readDeleteMarkedTestPaths()));
 
   useEffect(() => {
     const showIndex = () => setActivePath(null);
@@ -245,53 +229,46 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
     setActivePath(path);
   };
 
-  const toggleDeleteMarkedTest = (path: string) => {
-    setDeleteMarkedTestPaths((current) => {
-      const next = new Set(current);
-      if (next.has(path)) next.delete(path);
-      else next.add(path);
-      localStorage.setItem(TEST_COLLECTION_DELETE_MARKS_KEY, JSON.stringify(Array.from(next)));
-      return next;
-    });
-  };
-
   const visibleGroups = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    if (!keyword) return testGroups;
     return testGroups
       .map((group) => ({
         ...group,
         items: group.items.filter((item) => (
-          formatTestNumber(item.path).includes(keyword) ||
-          item.title.toLowerCase().includes(keyword) ||
-          item.description.toLowerCase().includes(keyword) ||
-          item.badge.toLowerCase().includes(keyword)
+          !keyword ||
+            formatTestNumber(item.path).includes(keyword) ||
+            item.title.toLowerCase().includes(keyword) ||
+            item.description.toLowerCase().includes(keyword) ||
+            item.badge.toLowerCase().includes(keyword)
         )),
       }))
       .filter((group) => group.items.length > 0);
   }, [search]);
 
   const totalCount = testGroups.reduce((sum, group) => sum + group.items.length, 0);
-  const deleteMarkedCount = deleteMarkedTestPaths.size;
 
   const renderActiveTest = () => {
     switch (activePath) {
-      case '/workbench-right-panel-unified-test':
-        return <WorkbenchRightPanelUnifiedTestPage />;
-      case '/workbench-ai-request-tag-policy-test':
-        return <WorkbenchAiRequestTagPolicyTestPage />;
-      case '/workbench-flow-button-stats-test':
-        return <WorkbenchFlowButtonStatsTestPage />;
-      case '/workbench-sidebar-bold-navigation-test':
-        return <WorkbenchSidebarBoldNavigationTestPage />;
-      case '/workbench-flow-gray-selected-state-test':
-        return <WorkbenchFlowGraySelectedStateTestPage />;
       case '/setting-import-hierarchy-test':
         return <SettingImportHierarchyTestPage />;
-      case '/setting-workspace-multi-layout-test':
-        return <SettingWorkspaceMultiLayoutTestPage />;
       case '/setting-entry-merge-plan-test':
         return <SettingEntryMergePlanTestPage />;
+      case '/setting-state-structure-plan-test':
+        return <SettingStateStructurePlanTestPage />;
+      case '/setting-workflow-optimization-test':
+        return <SettingWorkflowOptimizationTestPage />;
+      case '/setting-map-danger-layout-test':
+        return <SettingMapDangerLayoutTestPage />;
+      case '/setting-item-resource-status-layout-test':
+        return <SettingItemResourceStatusLayoutTestPage />;
+      case '/setting-clear-context-menu-test':
+        return <SettingClearContextMenuTestPage />;
+      case '/setting-other-link-picker-test':
+        return <SettingOtherLinkPickerTestPage />;
+      case '/setting-import-format-log-test':
+        return <SettingImportFormatLogTestPage />;
+      case '/post-writing-workflow-plan-test':
+        return <PostWritingWorkflowPlanTestPage />;
       case '/prompt-library-structure-test':
         return <PromptLibraryStructureTestPage />;
       case '/prompt-workflow-preview-test':
@@ -302,14 +279,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <ErrorLogPage />;
       case '/software-ui-catalog':
         return <SoftwareUiCatalogPage embedded onClose={() => setActivePath(null)} />;
-      case '/border-backplate-application-test':
-        return <BorderBackplateApplicationTestPage />;
-      case '/workbench-soft-cyan-button-style-test':
-        return <WorkbenchSoftCyanButtonStyleTestPage />;
-      case '/workbench-surface-color-style-test':
-        return <WorkbenchSurfaceColorStyleTestPage />;
       case '/theme-colors':
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
+      case '/chapter-sidebar-compact-title-test':
+        return <ChapterSidebarCompactTitleTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       default:
@@ -330,22 +303,6 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
           </button>
           <div className="flex min-w-0 flex-1 items-center justify-center gap-3 px-4 text-sm font-black text-slate-700">
             <span className="min-w-0 truncate">{activeItem ? `${activeNumber}号测试：${activeItem.title}` : '测试内容'}</span>
-            {activePath && (
-              <button
-                type="button"
-                onClick={() => toggleDeleteMarkedTest(activePath)}
-                className={`flex h-7 shrink-0 items-center gap-1.5 rounded-lg border px-2 text-xs font-black transition-colors ${
-                  deleteMarkedTestPaths.has(activePath)
-                    ? 'border-red-200 bg-red-50 text-red-500'
-                    : 'border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:text-red-500'
-                }`}
-              >
-                <span className={`grid h-4 w-4 place-items-center rounded border ${deleteMarkedTestPaths.has(activePath) ? 'border-red-500 bg-red-500 text-white' : 'border-slate-300 text-transparent'}`}>
-                  <Check className="h-3 w-3" />
-                </span>
-                标记待删除
-              </button>
-            )}
           </div>
           <button
             onClick={() => setActivePath(null)}
@@ -370,7 +327,7 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         <div className="flex w-full items-center justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-slate-900">测试</h1>
-            <p className="mt-0.5 text-xs text-slate-400">已收纳 {totalCount} 个测试内容 · 已标记待删除 {deleteMarkedCount} 个</p>
+            <p className="mt-0.5 text-xs text-slate-400">共 {totalCount} 个测试</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -404,7 +361,6 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
               <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
                 {group.items.map((item) => {
                   const Icon = item.icon;
-                  const deleteMarked = deleteMarkedTestPaths.has(item.path);
                   return (
                     <button
                       key={item.path}
@@ -421,29 +377,6 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span
-                            role="checkbox"
-                            aria-checked={deleteMarked}
-                            tabIndex={0}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              toggleDeleteMarkedTest(item.path);
-                            }}
-                            onKeyDown={(event) => {
-                              if (event.key !== 'Enter' && event.key !== ' ') return;
-                              event.preventDefault();
-                              event.stopPropagation();
-                              toggleDeleteMarkedTest(item.path);
-                            }}
-                            className={`grid h-7 w-7 place-items-center rounded-lg border transition-colors ${
-                              deleteMarked
-                                ? 'border-red-500 bg-red-500 text-white'
-                                : 'border-slate-200 bg-white text-slate-300 hover:border-red-200 hover:text-red-500'
-                            }`}
-                            title={deleteMarked ? '取消待删除标记' : '标记待删除，之后告诉 Codex 删除'}
-                          >
-                            <Check className="h-4 w-4" />
-                          </span>
                           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-400 transition-colors group-hover:bg-brand-light group-hover:text-brand">
                             {item.badge}
                           </span>

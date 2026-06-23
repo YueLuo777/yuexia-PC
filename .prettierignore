@@ -3,6 +3,10 @@ dist
 release
 runtime/postgres
 shujuku/postgres-data
+archived
+recovered-localstorage
+shujuku/data
+提示词
 *.log
 *.pid
 package-lock.json

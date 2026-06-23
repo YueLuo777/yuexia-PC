@@ -39,7 +39,7 @@ describe('custom theme colors', () => {
       '#FFFFFF',
       '#E4E9EF',
       '#08AACE',
-      '#FFF7ED',
+      '#EAF9FD',
       '#E7F8FD',
       '#FFFFFF',
     ]);
@@ -83,6 +83,17 @@ describe('custom theme colors', () => {
     );
 
     expect(readCustomThemeColors().detailOutlineSelected).toBe('#08AACE');
+  });
+
+  it('migrates the legacy used number block warm fill color to the current cyan fill', () => {
+    localStorage.setItem(
+      CUSTOM_THEME_COLORS_STORAGE_KEY,
+      JSON.stringify({
+        detailOutlineUsed: '#FFF7ED',
+      }),
+    );
+
+    expect(readCustomThemeColors().detailOutlineUsed).toBe('#EAF9FD');
   });
 
   it('migrates legacy editor backgrounds to the white paper background', () => {

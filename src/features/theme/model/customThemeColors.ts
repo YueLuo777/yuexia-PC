@@ -23,6 +23,7 @@ export type CustomThemeColorMap = Record<CustomThemeColorSlotKey, string>;
 export const CUSTOM_THEME_COLORS_STORAGE_KEY = 'xinyuexia_custom_theme_colors_v1';
 export const CUSTOM_THEME_RECENT_COLORS_STORAGE_KEY = 'xinyuexia_custom_theme_recent_colors_v1';
 const LEGACY_DETAIL_OUTLINE_SELECTED_FILL_COLOR = '#E7F8FD';
+const LEGACY_DETAIL_OUTLINE_USED_FILL_COLOR = '#FFF7ED';
 const LEGACY_EDITOR_BACKGROUND_COLORS = new Set(['#F5F5F7', '#F8FAFC']);
 
 export const CUSTOM_THEME_COLOR_SLOTS: CustomThemeColorSlot[] = [
@@ -79,7 +80,7 @@ export const CUSTOM_THEME_COLOR_SLOTS: CustomThemeColorSlot[] = [
     key: 'detailOutlineUsed',
     label: '章纲数字块：已用',
     description: '正文已经写过内容的章节数字块。',
-    defaultColor: '#FFF7ED',
+    defaultColor: '#EAF9FD',
     cssVar: '--xy-detail-outline-number-used',
   },
   {
@@ -124,6 +125,10 @@ export function readCustomThemeColors(): CustomThemeColorMap {
     return CUSTOM_THEME_COLOR_SLOTS.reduce((result, slot) => {
       const normalized = normalizeCustomThemeHexColor(parsed[slot.key] ?? '');
       if (slot.key === 'detailOutlineSelected' && normalized === LEGACY_DETAIL_OUTLINE_SELECTED_FILL_COLOR) {
+        result[slot.key] = slot.defaultColor;
+        return result;
+      }
+      if (slot.key === 'detailOutlineUsed' && normalized === LEGACY_DETAIL_OUTLINE_USED_FILL_COLOR) {
         result[slot.key] = slot.defaultColor;
         return result;
       }

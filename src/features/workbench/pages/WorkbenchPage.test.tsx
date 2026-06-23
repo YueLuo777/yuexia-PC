@@ -50,6 +50,17 @@ describe('Workbench find replace modal placement', () => {
 });
 
 describe('Workbench splitters', () => {
+  it('uses the minimum sidebar widths as the default for new works', async () => {
+    const source = await readSource('WorkbenchPage.tsx');
+
+    expect(source).toContain('const CHAPTER_SIDEBAR_MIN_WIDTH = 200;');
+    expect(source).toContain('const CHAPTER_SIDEBAR_DEFAULT_WIDTH = CHAPTER_SIDEBAR_MIN_WIDTH;');
+    expect(source).toContain('const PUBLISHED_SIDEBAR_MIN_WIDTH = 170;');
+    expect(source).toContain('const PUBLISHED_SIDEBAR_DEFAULT_WIDTH = PUBLISHED_SIDEBAR_MIN_WIDTH;');
+    expect(source).not.toContain('const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 300;');
+    expect(source).not.toContain('const PUBLISHED_SIDEBAR_DEFAULT_WIDTH = 190;');
+  });
+
   it('overlays draggable hit areas on the existing panel border lines', async () => {
     const source = await readSource('WorkbenchPage.tsx');
 

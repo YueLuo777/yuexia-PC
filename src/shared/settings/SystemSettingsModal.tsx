@@ -5,10 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
-import {
-  isRememberAssociationsEnabled,
-  setRememberAssociationsEnabled,
-} from '@/shared/settings/associationMemory';
 
 type SettingsTab = 'association' | 'appIcon';
 
@@ -38,7 +34,6 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
   const [iconInfo, setIconInfo] = useState<AppIconResult | null>(null);
   const [status, setStatus] = useState('');
   const [isBusy, setIsBusy] = useState(false);
-  const [rememberAssociations, setRememberAssociations] = useState(isRememberAssociationsEnabled);
   const fallbackIconDir = 'E:\\0yuexia\\0,月下PC\\ruanjianfengmian';
   const iconDir = iconInfo?.projectIconDir ?? fallbackIconDir;
   const projectIcons = iconInfo?.projectIcons ?? [];
@@ -53,7 +48,6 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
     if (!isOpen) return;
     setStatus('');
     setActiveTab('association');
-    setRememberAssociations(isRememberAssociationsEnabled());
     void refreshIconInfo();
   }, [isOpen]);
 
@@ -179,28 +173,15 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
           <div className="min-w-0 flex-1 overflow-y-auto p-4">
             {activeTab === 'association' && (
               <div className="space-y-4">
-                <div className="rounded-2xl border border-slate-100 bg-white p-4">
-                  <div className="flex items-center justify-between gap-4">
+                <div className="rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4">
+                  <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-slate-900">记忆关联</h3>
+                      <h3 className="text-sm font-bold text-slate-900">关联有效期</h3>
                       <p className="mt-1 text-xs leading-5 text-slate-500">
-                        勾选后会记住本章、上下文、脑洞、关联小说等关联内容；取消勾选后，关闭页面时会自动取消这些关联。
+                        本章、上下文、脑洞、其他设定、关联小说等内容只在当前打开软件期间保留；关闭软件后会自动取消，下一次打开恢复未关联。
                       </p>
                     </div>
-                    <label className="relative inline-flex h-8 w-14 shrink-0 cursor-pointer items-center">
-                      <input
-                        type="checkbox"
-                        checked={rememberAssociations}
-                        onChange={(event) => {
-                          const next = event.target.checked;
-                          setRememberAssociations(next);
-                          setRememberAssociationsEnabled(next);
-                        }}
-                        className="peer sr-only"
-                      />
-                      <span className="h-8 w-14 rounded-full bg-slate-200 transition-colors peer-checked:bg-brand" />
-                      <span className="absolute left-1 h-6 w-6 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-6" />
-                    </label>
+                    <span className="shrink-0 rounded-full border border-cyan-200 bg-white px-3 py-1 text-xs font-bold text-brand">当前会话</span>
                   </div>
                 </div>
               </div>

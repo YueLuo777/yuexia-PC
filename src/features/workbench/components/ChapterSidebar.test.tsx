@@ -74,6 +74,12 @@ describe('ChapterSidebar', () => {
     const chapterSidebarSource = readSource('ChapterSidebar.tsx');
     const publishedSidebarSource = readSource('PublishedSidebar.tsx');
 
+    expect(chapterSidebarSource).toContain('const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 200;');
+    expect(chapterSidebarSource).toContain('width = CHAPTER_SIDEBAR_DEFAULT_WIDTH,');
+    expect(publishedSidebarSource).toContain('width = 170,');
+    expect(chapterSidebarSource).not.toContain('const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 300;');
+    expect(publishedSidebarSource).not.toContain('width = 190,');
+
     expect(chapterSidebarSource).toContain('group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border px-1 text-left text-[14px]');
     expect(chapterSidebarSource).toContain("const WORKBENCH_FOLDER_GROUP_DEFAULT_TONE_CLASS = 'border-[#BDEEF7] xy-flow-group-bg';");
 

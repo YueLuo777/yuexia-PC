@@ -1,8 +1,8 @@
 import { useRef, useState, type ChangeEvent } from 'react';
 import { BookOpen, CheckCircle, Loader2, RotateCcw, Sparkles, Upload, X } from 'lucide-react';
 
-import { useNovelLibrary, type ImportedChapterInput } from '@/features/novels/hooks/useNovelLibrary';
-import type { WorkType } from '@/features/novels/model/novelTypes';
+import type { ImportedChapterInput } from '@/features/novels/hooks/useNovelLibrary';
+import type { NewNovelInput, WorkType } from '@/features/novels/model/novelTypes';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 
 type ImportMode = 'smart' | 'local';
@@ -10,6 +10,7 @@ type ImportMode = 'smart' | 'local';
 interface ImportModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onImport: (input: NewNovelInput, chapters: ImportedChapterInput[]) => number;
   defaultType?: WorkType;
 }
 
@@ -121,12 +122,12 @@ function convertToImportedChapters(result: SmartImportResult, mode: ImportMode, 
   }];
 }
 
-export function ImportModal({ isOpen, onClose, defaultType = 'novel' }: ImportModalProps) {
-  const { importNovelWithChapters } = useNovelLibrary();
+export function ImportModal({ isOpen, onClose, onImport, defaultType = 'novel' }: ImportModalProps) {
   useTopModalEscape(isOpen, onClose);
   const [importMode, setImportMode] = useState<ImportMode>('smart');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [manualTitle, setManualTitle] = useState('');
   const [isParsing, setIsParsing] = useState(false);
   const [parsedResult, setParsedResult] = useState<SmartImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -137,6 +138,7 @@ export function ImportModal({ isOpen, onClose, defaultType = 'novel' }: ImportMo
     setImportMode('smart');
     setSelectedFile(null);
     setFileName(null);
+    setManualTitle('');
     setParsedResult(null);
     setIsParsing(false);
     onClose();
@@ -154,7 +156,9 @@ export function ImportModal({ isOpen, onClose, defaultType = 'novel' }: ImportMo
         throw new Error('当前 doc/docx 文件无法提取文本，请先转成 txt 再导入。');
       }
     }
-    setParsedResult(parseSmartImport(content));
+    const result = parseSmartImport(content);
+    setParsedResult(result);
+    return result;
   };
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -172,14 +176,17 @@ export function ImportModal({ isOpen, onClose, defaultType = 'novel' }: ImportMo
 
     setSelectedFile(file);
     setFileName(file.name);
+    setManualTitle(file.name.replace(/\.[^.]+$/, ''));
     setParsedResult(null);
     setIsParsing(true);
     try {
-      await parseSelectedFile(file);
+      const result = await parseSelectedFile(file);
+      setManualTitle(result.bookName?.trim() || file.name.replace(/\.[^.]+$/, ''));
     } catch (error) {
       alert(error instanceof Error ? error.message : '文件解析失败');
       setSelectedFile(null);
       setFileName(null);
+      setManualTitle('');
     } finally {
       setIsParsing(false);
     }
@@ -190,10 +197,10 @@ export function ImportModal({ isOpen, onClose, defaultType = 'novel' }: ImportMo
     const chapters = convertToImportedChapters(parsedResult, importMode, selectedFile);
     const title =
       importMode === 'smart'
-        ? parsedResult.bookName?.trim() || selectedFile.name.replace(/\.[^.]+$/, '')
+        ? manualTitle.trim() || parsedResult.bookName?.trim() || selectedFile.name.replace(/\.[^.]+$/, '')
         : selectedFile.name.replace(/\.[^.]+$/, '');
 
-    importNovelWithChapters(
+    onImport(
       {
         title,
         type: defaultType,
@@ -285,7 +292,8 @@ export function ImportModal({ isOpen, onClose, defaultType = 'novel' }: ImportMo
                       if (!selectedFile) return;
                       setIsParsing(true);
                       try {
-                        await parseSelectedFile(selectedFile);
+                        const result = await parseSelectedFile(selectedFile);
+                        setManualTitle((current) => current.trim() || result.bookName?.trim() || selectedFile.name.replace(/\.[^.]+$/, ''));
                       } catch (error) {
                         alert(error instanceof Error ? error.message : '重新解析失败');
                       } finally {
@@ -314,11 +322,12 @@ export function ImportModal({ isOpen, onClose, defaultType = 'novel' }: ImportMo
                       <BookOpen className="h-3.5 w-3.5 text-gray-400" />
                       <span className="text-xs text-gray-500">书名</span>
                     </div>
-                    {parsedResult?.bookName ? (
-                      <span className="text-sm font-bold text-gray-900">{parsedResult.bookName}</span>
-                    ) : (
-                      <span className="text-sm italic text-gray-400">未识别</span>
-                    )}
+                    <input
+                      value={manualTitle}
+                      onChange={(event) => setManualTitle(event.target.value)}
+                      placeholder={parsedResult?.bookName || selectedFile?.name.replace(/\.[^.]+$/, '') || '输入书名'}
+                      className="h-9 w-[240px] rounded-md border border-orange-200 bg-white px-3 text-sm font-semibold text-gray-900 outline-none transition-colors placeholder:font-normal placeholder:text-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                    />
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex min-w-[60px] items-center gap-1.5">

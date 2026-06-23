@@ -30,7 +30,6 @@ import {
   normalizeNavConfig,
   type NavGroupConfig,
 } from '@/shared/navigation/navConfig';
-import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
 
 type EditorMode = 'dual' | 'script' | 'browser';
 type AIResultAction = 'replace' | 'append' | 'setting' | 'outline' | 'plot';
@@ -973,9 +972,7 @@ export function ScriptEditorPage() {
     (localStorage.getItem(EDITOR_MODE_KEY) as EditorMode) || 'dual'
   ));
   const [aiCollapsed, setAiCollapsed] = useState<boolean>(() => readStoredJson(AI_COLLAPSED_KEYS[editorMode], false));
-  const [linkedNovelId, setLinkedNovelId] = useState<number | null>(() => (
-    isRememberAssociationsEnabled() ? readLinkedNovelStorage() : null
-  ));
+  const [linkedNovelId, setLinkedNovelId] = useState<number | null>(() => readLinkedNovelStorage());
   const [selectedNovelChapterId, setSelectedNovelChapterId] = useState<number | null>(null);
   const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
@@ -1007,26 +1004,9 @@ export function ScriptEditorPage() {
   const activeTab = tabs.find((tab) => tab.id === activeTabId);
 
   useEffect(() => {
-    if (isRememberAssociationsEnabled()) {
-      setLinkedNovelId(readLinkedNovelStorage());
-      setSelectedNovelChapterId(null);
-      return;
-    }
-    setLinkedNovelId(null);
+    setLinkedNovelId(readLinkedNovelStorage());
     setSelectedNovelChapterId(null);
-    clearLinkedNovelStorage();
   }, [currentScript?.id]);
-
-  useEffect(() => {
-    const clearLinkedNovelIfNeeded = () => {
-      if (!isRememberAssociationsEnabled()) clearLinkedNovelStorage();
-    };
-    window.addEventListener('pagehide', clearLinkedNovelIfNeeded);
-    return () => {
-      window.removeEventListener('pagehide', clearLinkedNovelIfNeeded);
-      clearLinkedNovelIfNeeded();
-    };
-  }, []);
 
   useEffect(() => {
     const activeTab = tabs.find((tab) => tab.id === activeTabId);

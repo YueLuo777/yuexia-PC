@@ -1,4 +1,4 @@
-import { AlertCircle, Eye, EyeOff, GripVertical, Server, Settings, X } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Server, Settings, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useModels } from '@/features/models/hooks/useModels';
@@ -77,6 +77,67 @@ function normalizeModelDraft(draft: ModelDraft) {
     baseUrl: draft.baseUrl.trim().replace(/^(?:POST|GET)\s+/i, ''),
     apiKey: draft.apiKey.trim(),
   };
+}
+
+function getSwapPreviewItems<T>(items: T[], dragSourceIndex: number | null, targetIndex: number | null) {
+  if (
+    dragSourceIndex === null
+    || targetIndex === null
+    || dragSourceIndex === targetIndex
+    || dragSourceIndex < 0
+    || targetIndex < 0
+    || dragSourceIndex >= items.length
+    || targetIndex >= items.length
+  ) return items;
+  const next = [...items];
+  const [moved] = next.splice(dragSourceIndex, 1);
+  next.splice(targetIndex, 0, moved);
+  return next;
+}
+
+type ModelPointerDragState = {
+  sourceIndex: number;
+  pointerId: number;
+  element: HTMLElement;
+  startX: number;
+  startY: number;
+  active: boolean;
+  armed: boolean;
+  activationTimer: number;
+  lastPreviewX: number;
+  lastPreviewY: number;
+  lastPreviewTargetKey: string | null;
+  cleanup: () => void;
+} | null;
+
+const MODEL_POINTER_DRAG_ACTIVATION_DISTANCE = 14;
+const MODEL_POINTER_DRAG_ACTIVATION_DELAY_MS = 160;
+const MODEL_POINTER_DRAG_RETARGET_DISTANCE = 28;
+const MODEL_POINTER_DRAG_RETURN_DISTANCE = 28;
+
+function hasModelPointerRetargetedTooSoon(
+  pointerDrag: NonNullable<ModelPointerDragState>,
+  targetKey: string,
+  clientX: number,
+  clientY: number,
+) {
+  if (!pointerDrag.lastPreviewTargetKey || pointerDrag.lastPreviewTargetKey === targetKey) return false;
+  const distanceFromLastPreview = Math.hypot(clientX - pointerDrag.lastPreviewX, clientY - pointerDrag.lastPreviewY);
+  const retargetDistance = targetKey === `model:${pointerDrag.sourceIndex}`
+    ? MODEL_POINTER_DRAG_RETURN_DISTANCE
+    : MODEL_POINTER_DRAG_RETARGET_DISTANCE;
+  return distanceFromLastPreview < retargetDistance;
+}
+
+function rememberModelPointerPreviewTarget(
+  pointerDrag: NonNullable<ModelPointerDragState>,
+  targetKey: string,
+  clientX: number,
+  clientY: number,
+) {
+  pointerDrag.lastPreviewTargetKey = targetKey;
+  pointerDrag.lastPreviewX = clientX;
+  pointerDrag.lastPreviewY = clientY;
 }
 
 function formatLogTime(timestamp: number) {
@@ -296,6 +357,7 @@ export function ModelManagePage() {
   const { records, clearApiTestFailures } = useCallRecords();
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<ModelItem | null>(null);
+  const [dragSourceIndex, setDragSourceIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [temperatureDragId, setTemperatureDragId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ModelItem | null>(null);
@@ -303,8 +365,14 @@ export function ModelManagePage() {
   const [cardsPerRow, setCardsPerRow] = useState<ModelCardsPerRow>(loadCardsPerRow);
   const [toast, setToast] = useState('');
   const dragIndexRef = useRef<number | null>(null);
+  const modelDropHandledRef = useRef(false);
+  const modelDragOverIndexRef = useRef<number | null>(null);
+  const modelPointerDragRef = useRef<ModelPointerDragState>(null);
 
   const enabledCount = models.filter((model) => model.enabled).length;
+  const previewModels = dragSourceIndex !== null && dragOverIndex !== null
+    ? getSwapPreviewItems(models, dragSourceIndex, dragOverIndex)
+    : models;
   const failureLogs = useMemo(
     () => records
       .filter((record) => record.type === 'api_test' && record.status === 'failed')
@@ -330,6 +398,127 @@ export function ModelManagePage() {
   const openEdit = (model: ModelItem) => {
     setEditing(model);
     setShowAdd(false);
+  };
+
+  const clearModelDragState = () => {
+    dragIndexRef.current = null;
+    modelDragOverIndexRef.current = null;
+    setDragSourceIndex(null);
+    setDragOverIndex(null);
+    setTemperatureDragId(null);
+  };
+
+  const setModelDragOverIndex = (targetIndex: number | null) => {
+    modelDragOverIndexRef.current = targetIndex;
+    setDragOverIndex(targetIndex);
+  };
+
+  const commitModelDragDrop = (targetIndex: number | null) => {
+    const from = dragIndexRef.current;
+    if (typeof from === 'number' && typeof targetIndex === 'number') reorderModels(from, targetIndex);
+  };
+
+  const beginWindowModelPointerTracking = (pointerId: number) => {
+    const handleWindowPointerMove = (moveEvent: PointerEvent) => {
+      if (moveEvent.pointerId !== pointerId) return;
+      updateModelPointerPreviewAt(moveEvent.clientX, moveEvent.clientY);
+      if (modelPointerDragRef.current?.active) moveEvent.preventDefault();
+    };
+    const handleWindowPointerEnd = (endEvent: PointerEvent) => {
+      if (endEvent.pointerId !== pointerId) return;
+      finishModelPointerDragById(pointerId);
+    };
+    window.addEventListener('pointermove', handleWindowPointerMove, { capture: true });
+    window.addEventListener('pointerup', handleWindowPointerEnd, { capture: true });
+    window.addEventListener('pointercancel', handleWindowPointerEnd, { capture: true });
+    return () => {
+      window.removeEventListener('pointermove', handleWindowPointerMove, { capture: true });
+      window.removeEventListener('pointerup', handleWindowPointerEnd, { capture: true });
+      window.removeEventListener('pointercancel', handleWindowPointerEnd, { capture: true });
+    };
+  };
+
+  const beginModelPointerDrag = (event: React.PointerEvent<HTMLElement>, sourceIndex: number) => {
+    if (event.button !== 0 || temperatureDragId) return;
+    const target = event.target as HTMLElement;
+    if (target.closest('button,input,.model-temp-slider')) return;
+    const pointerId = event.pointerId;
+    modelPointerDragRef.current?.cleanup();
+    const activationTimer = window.setTimeout(() => {
+      const pointerDrag = modelPointerDragRef.current;
+      if (pointerDrag && pointerDrag.sourceIndex === sourceIndex) pointerDrag.armed = true;
+    }, MODEL_POINTER_DRAG_ACTIVATION_DELAY_MS);
+    const dragElement = event.currentTarget;
+    const cleanup = beginWindowModelPointerTracking(pointerId);
+    modelPointerDragRef.current = {
+      sourceIndex,
+      pointerId,
+      element: dragElement,
+      startX: event.clientX,
+      startY: event.clientY,
+      active: false,
+      armed: false,
+      activationTimer,
+      lastPreviewX: event.clientX,
+      lastPreviewY: event.clientY,
+      lastPreviewTargetKey: null,
+      cleanup: () => {
+        window.clearTimeout(activationTimer);
+        cleanup();
+      },
+    };
+    try {
+      dragElement.setPointerCapture(pointerId);
+    } catch {
+      // Pointer capture is optional; the hovered card is still detected below.
+    }
+  };
+
+  const updateModelPointerPreviewAt = (clientX: number, clientY: number) => {
+    const pointerDrag = modelPointerDragRef.current;
+    if (!pointerDrag) return;
+    const distance = Math.hypot(clientX - pointerDrag.startX, clientY - pointerDrag.startY);
+    if (!pointerDrag.active && !pointerDrag.armed) return;
+    if (!pointerDrag.active && distance < MODEL_POINTER_DRAG_ACTIVATION_DISTANCE) return;
+    if (!pointerDrag.active) {
+      pointerDrag.active = true;
+      modelDropHandledRef.current = false;
+      dragIndexRef.current = pointerDrag.sourceIndex;
+      setDragSourceIndex(pointerDrag.sourceIndex);
+    }
+    const hoverElement = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+    const hoverModel = hoverElement?.closest('[data-model-index]') as HTMLElement | null;
+    const targetIndex = Number(hoverModel?.dataset.modelPreviewIndex);
+    if (!Number.isInteger(targetIndex)) return;
+    const targetKey = `model:${targetIndex}`;
+    if (!pointerDrag.lastPreviewTargetKey && targetKey === `model:${pointerDrag.sourceIndex}`) return;
+    if (hasModelPointerRetargetedTooSoon(pointerDrag, targetKey, clientX, clientY)) return;
+    rememberModelPointerPreviewTarget(pointerDrag, targetKey, clientX, clientY);
+    setModelDragOverIndex(targetIndex);
+  };
+
+  const updateModelPointerPreview = (event: React.PointerEvent<HTMLElement>) => {
+    updateModelPointerPreviewAt(event.clientX, event.clientY);
+    if (modelPointerDragRef.current?.active) event.preventDefault();
+  };
+
+  const finishModelPointerDragById = (pointerId: number) => {
+    const pointerDrag = modelPointerDragRef.current;
+    if (!pointerDrag || pointerDrag.pointerId !== pointerId) return;
+    modelPointerDragRef.current = null;
+    pointerDrag.cleanup();
+    try {
+      pointerDrag.element.releasePointerCapture(pointerId);
+    } catch {
+      // Ignore release failures when capture was not established.
+    }
+    if (!pointerDrag?.active) return;
+    commitModelDragDrop(modelDragOverIndexRef.current);
+    clearModelDragState();
+  };
+
+  const finishModelPointerDrag = (event: React.PointerEvent<HTMLElement>) => {
+    finishModelPointerDragById(event.pointerId);
   };
 
   const testModel = async (model: ModelItem) => {
@@ -395,8 +584,7 @@ export function ModelManagePage() {
         <div className="min-w-0 flex-1 overflow-y-auto pr-1">
           <div className="mb-5 flex items-center gap-4">
             {models.length > 1 && (
-              <div className="flex items-center gap-1.5 text-sm text-slate-400">
-                <GripVertical className="h-4 w-4" />
+              <div className="text-sm text-slate-400">
                 拖拽卡片可调整模型顺序
               </div>
             )}
@@ -406,35 +594,47 @@ export function ModelManagePage() {
             className={`grid auto-rows-fr items-stretch ${cardsPerRow === 4 ? 'gap-4' : 'gap-5'}`}
             style={{ gridTemplateColumns: `repeat(${cardsPerRow}, minmax(0, 1fr))` }}
           >
-            {models.map((model, index) => (
-              <div
-                key={model.id}
-                draggable={temperatureDragId !== model.id}
-                onDragStart={() => {
-                  if (temperatureDragId === model.id) return;
-                  dragIndexRef.current = index;
-                }}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setDragOverIndex(index);
-                }}
-                onDragLeave={() => setDragOverIndex(null)}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  const from = dragIndexRef.current;
-                  if (typeof from === 'number') reorderModels(from, index);
-                  dragIndexRef.current = null;
-                  setDragOverIndex(null);
-                }}
-                onDragEnd={() => {
-                  dragIndexRef.current = null;
-                  setDragOverIndex(null);
-                  setTemperatureDragId(null);
-                }}
-                className={`model-card relative flex h-full min-h-[296px] flex-col overflow-hidden rounded-[20px] border bg-white transition-colors ${
-                  cardsPerRow === 4 ? 'p-4 pr-[66px]' : 'p-5 pr-[78px]'
-                } ${dragOverIndex === index ? 'border-brand ring-1 ring-brand' : 'border-slate-200'}`}
-              >
+            {previewModels.map((model, previewIndex) => {
+              const targetIndex = models.findIndex((item) => item.id === model.id);
+              const isDraggingPreview = dragSourceIndex === targetIndex && dragOverIndex !== null;
+              return (
+                <div
+                  key={model.id}
+                  data-model-index={targetIndex}
+                  data-model-preview-index={previewIndex}
+                  draggable={temperatureDragId !== model.id}
+                  onDragStart={() => {
+                    if (temperatureDragId === model.id) return;
+                    modelDropHandledRef.current = false;
+                    dragIndexRef.current = targetIndex;
+                    setDragSourceIndex(targetIndex);
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setModelDragOverIndex(previewIndex);
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    modelDropHandledRef.current = true;
+                    commitModelDragDrop(previewIndex);
+                    clearModelDragState();
+                  }}
+                  onDragEnd={() => {
+                    if (!modelDropHandledRef.current) commitModelDragDrop(modelDragOverIndexRef.current);
+                    modelDropHandledRef.current = false;
+                    clearModelDragState();
+                  }}
+                  onPointerDown={(event) => beginModelPointerDrag(event, targetIndex)}
+                  onPointerMove={updateModelPointerPreview}
+                  onPointerUp={finishModelPointerDrag}
+                  onPointerCancel={finishModelPointerDrag}
+                  className={`model-card relative flex h-full min-h-[296px] flex-col overflow-hidden rounded-[20px] border bg-white transition-colors ${
+                    cardsPerRow === 4 ? 'p-4 pr-[66px]' : 'p-5 pr-[78px]'
+                  } ${isDraggingPreview ? 'border-dashed border-brand/45 bg-brand/10 shadow-inner' : 'border-slate-200'}`}
+                >
+                {isDraggingPreview ? (
+                  <span className="absolute left-4 top-4 z-20 rounded-full bg-white/85 px-2.5 py-1 text-xs font-black text-brand shadow-sm">虚影，松手后落实</span>
+                ) : null}
                 <div
                   className={`model-temp-slider absolute z-10 flex flex-col items-center rounded-full border border-slate-200 bg-slate-50 px-1.5 py-3 ${
                     cardsPerRow === 4 ? 'bottom-4 right-3 top-[92px] w-12' : 'bottom-5 right-4 top-[96px] w-14'
@@ -514,7 +714,8 @@ export function ModelManagePage() {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
             <button
               onClick={openAdd}
               className="xy-radial-create-card model-card model-add-card flex h-full min-h-[296px] flex-col items-center justify-center rounded-[20px] border border-dashed border-blue-400 bg-white text-blue-600 transition-colors hover:border-blue-500 hover:bg-blue-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"

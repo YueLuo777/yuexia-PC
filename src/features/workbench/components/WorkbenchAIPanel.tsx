@@ -12,7 +12,6 @@ import {
 } from '@/features/moonfall-settings/model/moonfallSettingStore';
 import { readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
-import { clearWorkbenchAiSessionLinksByStorageKey } from '@/features/workbench/model/workbenchAssociationCleanup';
 import { joinAiRequestSections, wrapAiRequestTag } from '@/features/workbench/model/workbenchAiRequestTagPolicy';
 import {
   getBackgroundAiTask,
@@ -23,7 +22,6 @@ import {
 } from '@/shared/ai/backgroundAiTasks';
 import { APP_EVENTS } from '@/shared/events/appEvents';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
-import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
 import { AiRequestLogGroups } from '@/shared/ui/AiRequestLogGroups';
 import { AiInlineInput } from '@/shared/ui/AiInlineInput';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
@@ -267,7 +265,6 @@ function createDefaultSession(id = 1): AiSession {
 
 function normalizeSessions(value: unknown): AiSession[] {
   if (!Array.isArray(value)) return [createDefaultSession()];
-  const rememberAssociations = isRememberAssociationsEnabled();
   const sessions = value
     .map((item, index): AiSession | null => {
       if (!item || typeof item !== 'object') return null;
@@ -286,8 +283,8 @@ function normalizeSessions(value: unknown): AiSession[] {
                 content: typeof message.content === 'string' ? message.content : '',
               }))
           : [],
-        linkChapter: rememberAssociations ? Boolean(session.linkChapter) : false,
-        hasSentChapterContext: rememberAssociations ? Boolean(session.hasSentChapterContext) : false,
+        linkChapter: Boolean(session.linkChapter),
+        hasSentChapterContext: Boolean(session.hasSentChapterContext),
         backgroundTaskId: typeof session.backgroundTaskId === 'string' ? session.backgroundTaskId : undefined,
         backgroundAssistantMessageId: Number.isFinite(session.backgroundAssistantMessageId)
           ? Number(session.backgroundAssistantMessageId)
@@ -413,12 +410,6 @@ export function WorkbenchAIPanel({
   });
   const visibleRequestLog = previewRequestLog ?? lastRequestLog;
   const loadingText = `正在生成${'.'.repeat(loadingDotCount)}`;
-
-  useEffect(() => {
-    return () => {
-      if (!isRememberAssociationsEnabled()) clearWorkbenchAiSessionLinksByStorageKey(storageKey);
-    };
-  }, [storageKey]);
 
   useEffect(() => {
     if (openLogSignal === lastOpenLogSignalRef.current) return;

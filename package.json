@@ -18,11 +18,12 @@
     "check": "tsc --noEmit",
     "check:electron": "node --check electron/main.cjs && node --check electron/preload.cjs",
     "check:launcher": "node --check launch-xinyuexia.mjs",
+    "scan:dist-secrets": "node scripts/check-dist-secrets.cjs dist",
     "test": "vitest",
     "test:run": "vitest run",
     "verify:quick": "npm run lint && npm run check && npm run check:electron && npm run check:launcher && npm run test:run",
-    "verify": "npm run verify:quick && npm run build",
-    "pack:win": "npm run build && electron-builder --win portable"
+    "verify": "npm run verify:quick && npm run build && npm run scan:dist-secrets",
+    "pack:win": "npm run verify && electron-builder --win portable"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",

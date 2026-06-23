@@ -14,6 +14,7 @@ type CapsuleSelectProps = {
   onChange: (value: string) => void;
   disabled?: boolean;
   disabledLabel?: string;
+  title?: string;
   placeholder?: string;
   className?: string;
   style?: CSSProperties;
@@ -33,6 +34,17 @@ function getInlineActionShape(buttonClassName: string) {
       controlRadius: 'rounded-[22px]',
       innerRadius: 'rounded-[20px]',
       actionRadius: 'rounded-r-[20px]',
+      arrowWidth: 'w-6',
+      actionWidth: 'w-10',
+      actionPadding: 'pr-10',
+    };
+  }
+  if (/\bh-\[42px\]\b/.test(buttonClassName)) {
+    return {
+      controlHeight: 'h-[42px]',
+      controlRadius: 'rounded-[23px]',
+      innerRadius: 'rounded-[21px]',
+      actionRadius: 'rounded-r-[21px]',
       arrowWidth: 'w-6',
       actionWidth: 'w-10',
       actionPadding: 'pr-10',
@@ -77,6 +89,7 @@ export function CapsuleSelect({
   onChange,
   disabled = false,
   disabledLabel,
+  title,
   placeholder = '请选择',
   className = '',
   style,
@@ -198,7 +211,7 @@ export function CapsuleSelect({
 
   if (hasInlineActions) {
     return (
-      <div ref={rootRef} style={style} className={`relative min-w-0 ${floatingLabel ? 'pt-3' : ''} ${className}`}>
+      <div ref={rootRef} style={style} title={title} className={`relative min-w-0 ${floatingLabel ? 'pt-3' : ''} ${className}`}>
         <div
           ref={(element) => {
             controlRef.current = element;
@@ -270,17 +283,17 @@ export function CapsuleSelect({
 
   if (floatingLabel) {
     return (
-      <div ref={rootRef} style={style} className={`relative min-w-0 pt-3 ${className}`}>
+      <div ref={rootRef} style={style} title={title} className={`relative min-w-0 pt-3 ${className}`}>
         <div
           ref={(element) => {
             controlRef.current = element;
           }}
           data-capsule-control="true"
           className={`relative min-w-0 border-2 bg-white p-0 text-slate-900 shadow-[0_8px_18px_rgba(8,170,206,0.08)] ${inlineActionShape.controlHeight} ${inlineActionShape.controlRadius} ${
-            disabled ? 'border-slate-200 bg-slate-100 text-slate-400' : 'border-[#08AACE]'
+            disabled ? 'border-slate-200 bg-white text-slate-400' : 'border-[#08AACE]'
           }`}
         >
-          <span className={`pointer-events-none absolute left-5 top-0 z-20 max-w-[128px] -translate-y-1/2 px-1 text-[12px] font-black leading-none text-slate-800 ${disabled ? 'bg-slate-100' : 'bg-white'}`}>
+          <span className={`pointer-events-none absolute left-5 top-0 z-20 max-w-[128px] -translate-y-1/2 px-1 text-[12px] font-black leading-none text-slate-800 ${disabled ? 'bg-white' : 'bg-white'}`}>
             {floatingLabel}
           </span>
           <div className="flex h-full min-w-0 overflow-hidden rounded-[inherit]">
@@ -329,7 +342,7 @@ export function CapsuleSelect({
   }
 
   return (
-    <div ref={rootRef} style={style} className={`relative min-w-0 ${className}`}>
+    <div ref={rootRef} style={style} title={title} className={`relative min-w-0 ${className}`}>
       <button
         ref={buttonRef}
         id={id}

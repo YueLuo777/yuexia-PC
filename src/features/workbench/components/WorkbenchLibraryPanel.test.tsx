@@ -1,11 +1,16 @@
 ﻿import { fireEvent, render, screen, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { waitFor } from '@testing-library/react';
 
 import { getWorkbenchPlotPointDisplayText, getWorkbenchPlotPointReview } from '@/features/workbench/model/workbenchPlotChain';
 
 import { WorkbenchLibraryPanel, parseGeneratedPlotPointCandidates } from './WorkbenchLibraryPanel';
 
-const TEST_WORK_SETTING_STARTER_VERSION = '2026-06-17-setting-starter-full-title-items-v5';
+const TEST_WORK_SETTING_STARTER_VERSION = '2026-06-22-danger-zone-under-world-map-v1';
+
+const unlockSmartImportSettings = () => {
+  fireEvent.click(screen.getByTitle('解锁智能导入设定'));
+};
 
 const readWorkbenchLibraryPanelSource = async () => {
   const { readFileSync } = await import('node:fs');
@@ -119,14 +124,6 @@ const readTestCollectionSource = async () => {
   return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../tests/pages/TestCollectionPage.tsx'), 'utf8');
 };
 
-const readBorderBackplateApplicationTestSource = async () => {
-  const { readFileSync } = await import('node:fs');
-  const { fileURLToPath } = await import('node:url');
-  const { dirname, join } = await import('node:path');
-
-  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../tests/pages/BorderBackplateApplicationTestPage.tsx'), 'utf8');
-};
-
 const readSettingImportHierarchyTestSource = async () => {
   const { readFileSync } = await import('node:fs');
   const { fileURLToPath } = await import('node:url');
@@ -138,6 +135,54 @@ const readSettingImportHierarchyTestSource = async () => {
 describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   beforeEach(() => {
     localStorage.clear();
+  });
+
+  it('keeps the empty setting row the same height as a normal setting item', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+
+    expect(panelSource).toContain("const WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS = 'min-h-[34px] w-full rounded-lg border border-transparent bg-white px-3 py-1.5 text-left text-sm font-black leading-5';");
+    expect(panelSource).toContain('const WORKBENCH_LIBRARY_ENTRY_BUTTON_CLASS = `group cursor-default select-none ${WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS}');
+    expect(panelSource).toContain('const WORKBENCH_LIBRARY_ENTRY_EMPTY_CLASS = `flex items-center ${WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS} text-gray-400`;');
+    expect(panelSource).toContain('className={WORKBENCH_LIBRARY_ENTRY_EMPTY_CLASS}');
+    expect(panelSource).toContain('className={`${WORKBENCH_LIBRARY_ENTRY_BUTTON_CLASS} ${');
+    expect(panelSource).not.toContain('text-xs font-bold leading-5 text-gray-400');
+    expect(panelSource).not.toContain('<p className="px-3 py-4 text-xs text-gray-400">{isOutlineCharacterScope ?');
+  });
+
+  it('keeps setting and brainstorm sidebar rows flush with the sidebar divider', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const { readFileSync } = await import('node:fs');
+    const { fileURLToPath } = await import('node:url');
+    const { dirname, join } = await import('node:path');
+    const chapterSidebarSource = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'ChapterSidebar.tsx'), 'utf8');
+    const settingSidebarStart = panelSource.indexOf('gridTemplateRows: activeTab === SETTING_TAB && !activeIsBrainstorm');
+    const settingSidebarSource = panelSource.slice(settingSidebarStart, settingSidebarStart + 12000);
+
+    expect(settingSidebarStart).toBeGreaterThan(-1);
+    expect(settingSidebarSource).toContain('className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-1 py-2"');
+    expect(settingSidebarSource).toContain("xy-setting-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto space-y-1");
+    expect(settingSidebarSource).toContain('className="mt-0.5 space-y-0.5"');
+    expect(chapterSidebarSource).toContain('className="editor-scrollbar flex-1 overflow-y-auto px-1 py-2"');
+    expect(panelSource).toContain("const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full");
+    expect(panelSource).toContain("const WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS = 'min-h-[34px] w-full");
+    expect(settingSidebarSource).not.toContain('bg-gray-50 px-3 py-3');
+    expect(settingSidebarSource).not.toContain('xy-setting-sidebar-scrollbar scrollbar-scroll-only');
+    expect(settingSidebarSource).not.toContain('scrollbar-half-width min-h-0 flex-1 overflow-y-auto space-y-1');
+    expect(settingSidebarSource).not.toContain('space-y-0.5 overflow-y-auto pr-1');
+    expect(settingSidebarSource).not.toContain('max-h-[760px] space-y-0.5 overflow-y-auto');
+    expect(settingSidebarSource).not.toContain('setting-group:${effectiveLibraryTab}:${group.type}');
+  });
+
+  it('uses minimum left navigation widths as setting library defaults for new works', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+
+    expect(panelSource).toContain('const SETTING_LIBRARY_LEFT_MIN_WIDTH = 180;');
+    expect(panelSource).toContain('const SETTING_LIBRARY_LEFT_WIDTH = SETTING_LIBRARY_LEFT_MIN_WIDTH;');
+    expect(panelSource).toContain('const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 260;');
+    expect(panelSource).toContain('const PLOT_POINT_LAYOUT_TREE_MIN_WIDTH = 132;');
+    expect(panelSource).toContain('const PLOT_POINT_LAYOUT_TREE_WIDTH = PLOT_POINT_LAYOUT_TREE_MIN_WIDTH;');
+    expect(panelSource).not.toContain('const SETTING_LIBRARY_LEFT_WIDTH = 430;');
+    expect(panelSource).not.toContain('const PLOT_POINT_LAYOUT_TREE_WIDTH = 168;');
   });
 
   it('auto-creates an editable outline setting when typing into the empty setting name field', async () => {
@@ -201,16 +246,37 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '智能导入设定' }));
+    const smartImportButton = screen.getByRole('button', { name: '智能导入设定' });
+    const entriesBeforeLockedClick = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    expect(smartImportButton).toBeDisabled();
+    expect(smartImportButton).toHaveClass('bg-gray-50', 'text-gray-300');
+    const lockedSmartImportToggle = screen.getByTitle('解锁智能导入设定');
+    expect(lockedSmartImportToggle).not.toBeDisabled();
+    expect(lockedSmartImportToggle).toHaveClass('bg-amber-50', 'text-amber-500');
+    expect(lockedSmartImportToggle).not.toHaveClass('text-gray-400');
+    fireEvent.click(smartImportButton);
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '[]')).toHaveLength(entriesBeforeLockedClick.length);
+
+    unlockSmartImportSettings();
+    expect(smartImportButton).not.toBeDisabled();
+    expect(smartImportButton).toHaveClass('bg-[#08AACE]', 'text-white');
+    expect(screen.getByTitle('锁定智能导入设定')).toHaveClass('bg-[#EAF9FD]', 'text-[#08AACE]');
+    fireEvent.click(smartImportButton);
+    await waitFor(() => {
+      const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+      expect(storedEntries.some((entry: { tab: string }) => entry.tab === '角色')).toBe(true);
+    });
 
     const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
     const storedSettingEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '大纲');
-    expect(storedSettingEntries).toHaveLength(1);
-    expect(storedSettingEntries[0].title).toBe('人物设定');
-    expect(JSON.parse(storedSettingEntries[0].content).type).toBe('人物设定');
-    expect(JSON.parse(storedSettingEntries[0].content).body).toContain('【主角人设】：\n林刻冷酷果决。');
-    expect(JSON.parse(storedSettingEntries[0].content).body).toContain('【重要配角】：\n吞吞是系统助手。');
-    expect(JSON.parse(storedSettingEntries[0].content).body).toContain('【核心反派】：\n永恒神庭追杀吞噬修士。');
+    const storedRoleEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '角色');
+    expect(storedSettingEntries).toHaveLength(0);
+    const importedRoleEntry = storedRoleEntries.find((entry: { title: string }) => entry.title === '人物');
+    expect(importedRoleEntry).toBeTruthy();
+    const importedRole = JSON.parse(importedRoleEntry.content);
+    expect(importedRole.baseSetting).toContain('【主角人设】：\n林刻冷酷果决。');
+    expect(importedRole.baseSetting).toContain('【重要配角】：\n吞吞是系统助手。');
+    expect(importedRole.baseSetting).toContain('【核心反派】：\n永恒神庭追杀吞噬修士。');
   });
 
   it('smart-imports each tagged group as one setting when brackets are subsections', async () => {
@@ -227,23 +293,13 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
           '永恒神庭追杀吞噬修士。',
           '</核心设定>',
           '',
-          '<人物设定>',
-          '*人物设定*：',
-          '',
-          '【主角人设】：',
-          '林刻冷酷果决。',
-          '',
-          '【重要配角】：',
-          '吞吞是系统助手。',
-          '</人物设定>',
-          '',
-          '<主线剧情>',
+          '<剧情规划>',
           '【剧情大纲】：',
           '主角从凡界一路杀上永恒天。',
           '',
           '【黄金三章钩子】：',
           '退婚、反杀、逃亡。',
-          '</主线剧情>',
+          '</剧情规划>',
         ].join('\n'),
       },
     }));
@@ -257,31 +313,144 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
       />,
     );
 
+    unlockSmartImportSettings();
     fireEvent.click(screen.getByRole('button', { name: '智能导入设定' }));
 
     const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
     const storedSettingEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '大纲');
-    expect(storedSettingEntries).toHaveLength(3);
+    expect(storedSettingEntries).toHaveLength(2);
     expect(storedSettingEntries.map((entry: { title: string }) => entry.title)).toEqual([
       '核心设定',
-      '人物设定',
       '剧情规划',
     ]);
     expect(storedSettingEntries.map((entry: { content: string }) => JSON.parse(entry.content).type)).toEqual([
       '核心设定',
-      '人物设定',
       '剧情规划',
     ]);
     expect(JSON.parse(storedSettingEntries[0].content).body).toContain('【故事起点】：\n林刻开局被退婚。');
     expect(JSON.parse(storedSettingEntries[0].content).body).toContain('【核心矛盾】：\n永恒神庭追杀吞噬修士。');
-    expect(JSON.parse(storedSettingEntries[1].content).body).toContain('【主角人设】：\n林刻冷酷果决。');
-    expect(JSON.parse(storedSettingEntries[2].content).body).toContain('【黄金三章钩子】：\n退婚、反杀、逃亡。');
+    expect(JSON.parse(storedSettingEntries[1].content).body).toContain('【黄金三章钩子】：\n退婚、反杀、逃亡。');
+  });
+
+  it('smart-imports top page tags into settings and role libraries', async () => {
+    const storageKey = 'workbench-smart-import-top-page-tags-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(`${storageKey}_tab_configs_v1`, JSON.stringify({
+      大纲: {
+        aiOutput: [
+          '<作品设定>',
+          '<核心设定>',
+          '*基础设定*：',
+          '',
+          '【故事类型】：',
+          '东方玄幻升级流。',
+          '</核心设定>',
+          '</作品设定>',
+          '',
+          '<人物设定>',
+          '*男主角设定*：',
+          '',
+          '【人物姓名】：',
+          '林刻',
+          '',
+          '【身份定位】：',
+          '男主角',
+          '',
+          '【外貌】：',
+          '黑衣少年，目光冷静。',
+          '',
+          '【核心性格】：',
+          '果断但不滥杀。',
+          '</人物设定>',
+          '',
+          '<势力地图>',
+          '<世界地图>',
+          '*世界架构*：',
+          '',
+          '【世界架构】：',
+          '凡界、灵界、九重天依次递进。',
+          '</世界地图>',
+          '<正派势力>',
+          '*青云宗*：',
+          '',
+          '【基本信息】：',
+          '东域正道宗门。',
+          '</正派势力>',
+          '</势力地图>',
+          '',
+          '<道具资源>',
+          '<物品装备>',
+          '*黑玉令*：',
+          '',
+          '【基本信息】：',
+          '旧界门钥匙。',
+          '</物品装备>',
+          '</道具资源>',
+          '',
+          '<怪物图鉴>',
+          '<怪物列表>',
+          '*黑鳞妖狼*：',
+          '',
+          '【怪物形象】：',
+          '黑鳞覆身，眼泛青光。',
+          '</怪物列表>',
+          '</怪物图鉴>',
+          '',
+          '<伏笔线索>',
+          '<主线伏笔>',
+          '*黑玉令真相*：',
+          '',
+          '【埋设内容】：',
+          '黑玉令来自旧界。',
+          '</主线伏笔>',
+          '</伏笔线索>',
+        ].join('\n'),
+      },
+    }));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    unlockSmartImportSettings();
+    fireEvent.click(screen.getByRole('button', { name: '智能导入设定' }));
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const storedSettings = storedEntries.filter((entry: { tab: string }) => entry.tab === '大纲');
+    const storedRoles = storedEntries.filter((entry: { tab: string }) => entry.tab === '角色');
+    expect(storedSettings.map((entry: { title: string }) => entry.title)).toEqual([
+      '基础设定',
+      '世界架构',
+      '青云宗',
+      '黑玉令',
+      '黑鳞妖狼',
+      '黑玉令真相',
+    ]);
+    expect(storedSettings.map((entry: { content: string }) => JSON.parse(entry.content).type)).toEqual([
+      '核心设定',
+      '世界地图',
+      '正派势力',
+      '物品装备',
+      '怪物列表',
+      '主线伏笔',
+    ]);
+    expect(storedRoles).toHaveLength(1);
+    expect(storedRoles[0].title).toBe('林刻');
+    const importedRole = JSON.parse(storedRoles[0].content);
+    expect(importedRole.type).toBe('男主角');
+    expect(importedRole.baseSetting).toContain('【外貌】：\n黑衣少年，目光冷静。');
+    expect(importedRole.baseSetting).toContain('【核心性格】：\n果断但不滥杀。');
   });
 
   it('reveals hidden setting groups when smart import fills them', async () => {
     const storageKey = 'workbench-smart-import-reveals-hidden-groups-test';
     localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
-    localStorage.setItem(`${storageKey}_hidden_setting_types`, JSON.stringify(['核心设定', '主线剧情']));
+    localStorage.setItem(`${storageKey}_hidden_setting_types`, JSON.stringify(['核心设定', '剧情规划']));
     localStorage.setItem(`${storageKey}_tab_configs_v1`, JSON.stringify({
       大纲: {
         aiOutput: [
@@ -292,22 +461,13 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
           '【核心矛盾】：',
           '永恒神庭追杀吞噬修士。',
           '</核心设定>',
-          '',
-          '<人物设定>',
-          '【主角人设】：',
-          '林刻冷酷果决。',
-          '',
-          '【重要配角】：',
-          '吞吞是系统助手。',
-          '</人物设定>',
-          '',
-          '<主线剧情>',
+          '<剧情规划>',
           '【剧情大纲】：',
           '主角从凡界一路杀上永恒天。',
           '',
           '【黄金三章钩子】：',
           '退婚、反杀、逃亡。',
-          '</主线剧情>',
+          '</剧情规划>',
         ].join('\n'),
       },
     }));
@@ -321,16 +481,16 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
       />,
     );
 
+    unlockSmartImportSettings();
     fireEvent.click(screen.getByRole('button', { name: '智能导入设定' }));
 
     const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
     const storedSettingEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '大纲');
     const hiddenTypes = JSON.parse(localStorage.getItem(`${storageKey}_hidden_setting_types`) ?? '[]');
-    expect(storedSettingEntries).toHaveLength(3);
+    expect(storedSettingEntries).toHaveLength(2);
     expect(hiddenTypes).toEqual([]);
-    expect(screen.getByRole('button', { name: '作品设定3' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '作品设定2' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '核心设定1' })).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: '人物设定1' }).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: '剧情规划1' })).toBeInTheDocument();
   });
 
@@ -377,34 +537,67 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain("tabs={['设定', '角色', '脑洞']}");
   });
 
-  it('renders outline linked context as current-or-brainstorm segmented control', async () => {
+  it('renders outline linked context as current, other-setting, or brainstorm segmented control', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const linkControlStart = panelSource.indexOf("title={isOutlineCharacterScope ? '关联当前人物设定' : '关联当前选中的设定预览'}");
     const linkControlSource = panelSource.slice(panelSource.lastIndexOf('<div className="mt-3 flex min-w-0 items-center gap-1.5">', linkControlStart), panelSource.indexOf('<div className="mt-3 flex items-center gap-2">', linkControlStart));
 
     expect(linkControlStart).toBeGreaterThan(-1);
-    expect(panelSource).toContain("settingLinkSource?: 'current' | 'brainstorm' | null;");
+    expect(panelSource).toContain("settingLinkSource?: 'current' | 'other' | 'brainstorm' | null;");
+    expect(panelSource).toContain('associationSessionId?: string | null;');
+    expect(panelSource).toContain('linkedOtherSettingIds?: string[];');
+    expect(panelSource).toContain('getWorkbenchAssociationRuntimeId');
+    expect(panelSource).toContain('isWorkbenchAssociationRuntimeCurrent(activeTabConfig.associationSessionId)');
     expect(panelSource).toContain("settingLinkSource: 'brainstorm'");
     expect(panelSource).toContain('promptDisabled: false');
     expect(panelSource).toContain("settingLinkSource: 'current'");
-    expect(panelSource).toContain('const getActiveLinkedSettingSnapshot = () => {');
+    expect(panelSource).toContain("settingLinkSource: selectedIds.length > 0 ? 'other' : null");
+    expect(panelSource).toContain('const getActiveLinkedSettingSnapshot = (): { source: SettingLinkSource; title: string; text: string } => {');
     expect(panelSource).toContain("source === 'current'");
+    expect(panelSource).toContain("source === 'other'");
     expect(panelSource).toContain('text: getSettingEntryBody(currentEntry)');
     expect(panelSource).toContain('text: currentRoleEntry && currentRole ? buildRoleReaderContent(currentRoleEntry, currentRole) :');
     expect(linkControlSource).toContain('关联');
     expect(linkControlSource).toContain('当前设定');
+    expect(linkControlSource).toContain('其他设定');
     expect(linkControlSource).toContain('脑洞');
     expect(linkControlSource).not.toContain('if (isOutlineCharacterScope) return;');
     expect(linkControlSource).not.toContain('disabled={isOutlineCharacterScope}');
     expect(linkControlSource).toContain('关联脑洞库内容到人物设定');
+    expect(linkControlSource).toContain('openOtherSettingReader');
     expect(linkControlSource).toContain('activeSettingLinkSource === \'current\'');
+    expect(linkControlSource).toContain('activeSettingLinkSource === \'other\'');
     expect(linkControlSource).toContain('activeSettingLinkSource === \'brainstorm\'');
-    expect(linkControlSource).toContain('updateActiveTabConfig({ settingLinkSource: null, promptDisabled: false })');
+    expect(linkControlSource).toContain('updateActiveTabConfig({ associationSessionId: null, settingLinkSource: null, promptDisabled: false })');
     expect(linkControlSource).toContain('loadedBrainstormId: null');
+    expect(linkControlSource).toContain('linkedOtherSettingIds: []');
     expect(linkControlSource).toContain('promptDisabled: true');
     expect(linkControlSource).toContain('关联 <WordCountText value={linkedSettingWordCount} compact />');
     expect(linkControlSource).not.toContain('label="关联脑洞"');
     expect(linkControlSource).not.toContain('linkedLabel="已关联脑洞"');
+    expect(panelSource).toContain('const OTHER_SETTING_LINK_TABS');
+    expect(panelSource).toContain('关联其他设定');
+    const otherSettingModalStart = panelSource.indexOf('const otherSettingReaderModal = isOtherSettingReaderOpen ? createPortal(');
+    const otherSettingModalSource = panelSource.slice(otherSettingModalStart, panelSource.indexOf('const brainstormEntries = entries.filter', otherSettingModalStart));
+    expect(otherSettingModalStart).toBeGreaterThan(-1);
+    expect(otherSettingModalSource).toContain('selectAllCurrentOtherSettingLinkTab');
+    expect(otherSettingModalSource).toContain('toggleVisibleOtherSettingLinkGroupSelection(group.entries)');
+    expect(otherSettingModalSource).toContain('关联所有');
+    expect(otherSettingModalSource).toContain('全选');
+    expect(otherSettingModalSource).toContain('aria-label={`${draftOtherSettingReaderIds.has(entry.id) ? \'取消选择\' : \'选择\'}${entry.title}`}');
+    expect(otherSettingModalSource).toContain('toggleDraftOtherSettingReaderId(entry.id)');
+    expect(otherSettingModalSource).toContain("draftOtherSettingReaderIds.has(selectedOtherSettingLinkEntry.id) ? '已勾选' : '未勾选'");
+    expect(otherSettingModalSource).not.toContain('关联此项');
+    expect(otherSettingModalSource).not.toContain('selectedOtherSettingLinkEntry.tabTitle');
+    expect(otherSettingModalSource).not.toContain('selectedOtherSettingLinkEntry.type} ·');
+    expect(panelSource).toContain("rawContent.startsWith('{') ? '' : entry.content");
+    expect(panelSource).toContain('作品设定');
+    expect(panelSource).toContain('人物设定');
+    expect(panelSource).toContain('势力地图');
+    expect(panelSource).toContain('道具资源');
+    expect(panelSource).toContain('怪物图鉴');
+    expect(panelSource).toContain('伏笔线索');
+    expect(panelSource).toContain("wrapAiRequestTag('关联其他设定'");
     expect(panelSource).toContain('const isPromptDisabledForRequest = activeTab === SETTING_TAB');
     expect(panelSource).toContain("outlineSettingScope !== 'character' && getActiveSettingLinkSource() === 'current'");
     expect(panelSource).toContain('const effectivePromptDisabled = activeTab === SETTING_TAB');
@@ -428,14 +621,14 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
 
     expect(panelSource).toContain("type ClearSettingsTarget = 'settingCategories' | 'settingEntries' | 'roleCategories' | 'roleEntries';");
-    expect(panelSource).toContain("const activeClearSettingsCategoryTarget: ClearSettingsTarget = activeTab === SETTING_TAB && outlineSettingScope === 'character' ? 'roleCategories' : 'settingCategories';");
-    expect(panelSource).toContain("const activeClearSettingsEntryTarget: ClearSettingsTarget = activeTab === SETTING_TAB && outlineSettingScope === 'character' ? 'roleEntries' : 'settingEntries';");
+    expect(panelSource).toContain("const categoryMenuClearCategoryTarget: ClearSettingsTarget = categoryMenu?.kind === 'role' ? 'roleCategories' : 'settingCategories';");
+    expect(panelSource).toContain("const categoryMenuClearEntryTarget: ClearSettingsTarget = categoryMenu?.kind === 'role' ? 'roleEntries' : 'settingEntries';");
     expect(panelSource).toContain('const clearRoleEntries = () => {');
     expect(panelSource).toContain('persist(entries.filter((entry) => entry.tab !== ROLE_TAB || isMaleProtagonistRoleType(parseRoleContent(entry.content).type)));');
     expect(panelSource).toContain('const deletableRoleEntries = useMemo(() => (');
-    expect(panelSource).toContain('{activeTab === SETTING_TAB && (');
-    expect(panelSource).toContain('onClick={() => openClearSettingsConfirm(activeClearSettingsEntryTarget)}');
+    expect(panelSource).toContain('openClearSettingsConfirmFromMenu(categoryMenuClearEntryTarget)');
     expect(panelSource).toContain("if (clearSettingsConfirmTarget === 'roleEntries') clearRoleEntries();");
+    expect(panelSource).toContain("roleEntries: {\n      label: '角色'");
     expect(panelSource).not.toContain('activeTab === SETTING_TAB && !isOutlineCharacterScope && (');
   });
 
@@ -538,6 +731,14 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(capsuleSource).not.toContain('top-[calc(100%+6px)]');
     expect(combinedSource).toContain('absolute top-full z-[10050]');
     expect(combinedSource).not.toContain('top-[calc(100%+6px)]');
+  });
+  it('keeps disabled floating capsule selects outlined instead of filled', async () => {
+    const capsuleSource = await readCapsuleSelectSource();
+
+    expect(capsuleSource).toContain("controlHeight: 'h-[42px]'");
+    expect(capsuleSource).toContain("disabled ? 'border-slate-200 bg-white text-slate-400' : 'border-[#08AACE]'");
+    expect(capsuleSource).toContain("${disabled ? 'bg-white' : 'bg-white'}");
+    expect(capsuleSource).not.toContain("disabled ? 'border-slate-200 bg-slate-100 text-slate-400' : 'border-[#08AACE]'");
   });
   it('routes prompt management categories to setting and chapter-outline names', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
@@ -832,6 +1033,10 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(chapterEditorSource).toContain('chapterDirectoryGroups.forEach((group) => next.add(group.id));');
     expect(chapterEditorSource).toContain('onClick={() => toggleReviewDirectoryVolume(group.id)}');
     expect(chapterEditorSource).toContain('onClick={() => toggleStatusDirectoryVolume(group.id)}');
+    expect(chapterEditorSource).toContain('<aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white px-1 py-2">');
+    expect(chapterEditorSource).toContain('<div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto">');
+    expect(chapterEditorSource).not.toContain('<aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white px-3 py-3">');
+    expect(chapterEditorSource).not.toContain('<div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">');
     expect(chapterEditorSource).not.toContain("{reviewMode === 'audit' ? '审核目录' : '点评目录'}");
     expect(chapterEditorSource).not.toContain('审核目录');
     expect(chapterEditorSource).not.toContain('点评目录');
@@ -844,7 +1049,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(chapterEditorSource).toContain('<span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{group.chapters.length}章</span>');
     expect(chapterEditorSource).toContain("style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}");
     expect(chapterEditorSource).toContain('relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors');
-    expect(chapterEditorSource).toContain("'border-transparent xy-selected-orange-bg text-slate-900'");
+    expect(chapterEditorSource).toContain("'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'");
+    expect(chapterEditorSource).not.toContain("'border-transparent xy-detail-outline-number-selected xy-selected-orange-bg text-slate-900'");
     expect(chapterEditorSource).not.toContain("groupHasSelectedChapter ? 'xy-selected-orange-bg' : ''");
     expect(chapterEditorSource).toContain('statusUpdatedChapterIds.has(item.id)');
     expect(chapterEditorSource).toContain("'border-[#08B3D9] bg-[#08B3D9] text-white hover:border-[#067B96] hover:bg-[#067B96]'");
@@ -855,8 +1061,32 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('const enableVolumeSummary = !isDetailOutlineTab;');
     expect(panelSource).toContain("const volumeIsSelected = safeOutlineSelectionType === 'volume' && selectedOutlineVolume?.id === volume.id;");
     expect(panelSource).toContain('selectOutlineVolume(volume);');
+    const summaryChapterButtonSources = Array.from(
+      panelSource.matchAll(/const outlineButtonClass = isDetailOutlineTab[\s\S]*?\}\`;/g),
+      (match) => match[0],
+    );
+    expect(summaryChapterButtonSources.length).toBeGreaterThanOrEqual(2);
+    summaryChapterButtonSources.forEach((buttonSource) => {
+      expect(buttonSource).toContain("? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'");
+      expect(buttonSource).not.toContain("? 'border-transparent xy-selected-orange-bg text-slate-900'");
+    });
+    expect(panelSource).toContain('<nav className="editor-scrollbar min-h-0 flex-1 overflow-y-auto" aria-label="剧情链目录树">');
+    expect(panelSource).toContain("isDetailOutlineTab ? 'bg-[#F8FAFC]' : 'bg-gray-50 px-1 py-2'");
+    expect(panelSource).not.toContain('<nav className="editor-scrollbar min-h-0 flex-1 overflow-y-auto pr-1" aria-label="剧情链目录树">');
+    expect(panelSource).not.toContain("isDetailOutlineTab ? 'bg-[#F8FAFC]' : 'bg-gray-50 px-3 py-3'");
     expect(panelSource).toContain('<div className="grid grid-cols-1 gap-3">');
     expect(panelSource).not.toContain("isDetailOutlineTab ? 'grid-cols-1' : 'grid-cols-2'");
+  });
+
+  it('splits the review preview area into original text and AI annotation panes', async () => {
+    const chapterEditorSource = await readChapterEditorSource();
+
+    expect(chapterEditorSource).toContain('type ReviewAnnotation = {');
+    expect(chapterEditorSource).toContain('function extractReviewAnnotations(output: string)');
+    expect(chapterEditorSource).toContain('const reviewAnnotationsByParagraph = useMemo(() => {');
+    expect(chapterEditorSource).toContain('AI标注');
+    expect(chapterEditorSource).toContain('AI 返回“原文标注”JSON 后，这里会高亮问题片段并显示审核说明。');
+    expect(chapterEditorSource).toContain('renderAnnotatedReviewParagraph(paragraph, paragraphAnnotations)');
   });
 
   it('syncs published and library group rows to the body folder navigation style', async () => {
@@ -897,7 +1127,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain('volumeHasSelectedOutlineChapter');
     expect(panelSource).toContain("volumeIsSelected\n                                ? 'border-brand bg-brand text-white'");
     expect(panelSource).toContain('xy-selected-mint-bg text-gray-900');
-    expect(panelSource).toContain('xy-selected-orange-bg text-slate-900');
+    expect(panelSource).toContain('xy-selected-content-bg text-slate-900');
     expect(panelSource).not.toContain('className="group flex h-[36px] items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10"');
     expect(panelSource).not.toContain('className="group flex h-[36px] cursor-pointer items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10"');
     expect(testCollectionSource).not.toContain('ChapterGroupColorOptionsTestPage');
@@ -919,11 +1149,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(chapterEditorSource).toContain('const reviewModels = useMemo(() => modelSnapshot.filter((model) => model.enabled), [modelSnapshot]);');
     expect(chapterEditorSource).not.toContain("import { readModelSnapshot } from '@/features/models/hooks/useModels';");
     expect(chapterEditorSource).not.toContain('const reviewModels = useMemo(() => readModelSnapshot().filter((model) => model.enabled), []);');
-    expect(modelHookSource).toContain('function syncEnvModel(models: ModelItem[], notify = true)');
-    expect(modelHookSource).toContain('writeModels(next, { notify });');
+    expect(modelHookSource).not.toContain('function syncEnvModel');
+    expect(modelHookSource).not.toContain('import.meta.env.VITE_PINAI_API_KEY');
     expect(modelHookSource).toContain('function writeModels(models: ModelItem[], options: { notify?: boolean } = {})');
     expect(modelHookSource).toContain('if (options.notify !== false) window.dispatchEvent(new CustomEvent(APP_EVENTS.modelsUpdated));');
-    expect(modelHookSource).toContain('return syncEnvModel(models, false);');
+    expect(modelHookSource).toContain('if (!raw) return [];');
     expect(modelHookSource).toContain('writeModels(models, { notify: false });');
   });
 
@@ -1127,6 +1357,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(logGroupsSource).toContain('export function AiRequestLogContent');
     expect(logGroupsSource).toContain('font-black text-red-500');
     expect(logGroupsSource).toContain('<AiRequestLogContent content={content} />');
+    expect(logGroupsSource).toContain('ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4');
+    expect(logGroupsSource).not.toContain('ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 text-xs leading-5');
   });
 
   it('keeps brainstorm count buttons compact while the generate button stays on the right', async () => {
@@ -1152,7 +1384,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('previewCount?: number;');
     expect(panelSource).toContain('function getSelectedBrainstormPreviewIndexes(previews: string[], selectedIndexes?: number[])');
     expect(panelSource).toContain('function getBrainstormOutputCount(value: string)');
-    expect(panelSource).toContain('return `${index + 1}号脑洞`;');
+    expect(panelSource).toContain("return '脑洞输出';");
+    expect(panelSource).not.toContain('return `${index + 1}号脑洞`;');
     expect(panelSource).not.toContain('return `脑洞输出框${index + 1}`;');
     expect(panelSource).not.toContain('return `新脑洞${index + 1}`;');
     expect(panelSource).toContain('const getNextBrainstormTitles = (count: number) => {');
@@ -1364,7 +1597,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
       fireEvent.pointerUp(window);
 
       const savedWidth = Number(localStorage.getItem(widthStorageKey));
-      expect(savedWidth).toBeGreaterThan(430);
+      expect(savedWidth).toBeGreaterThan(180);
       expect(savedWidth).toBeLessThanOrEqual(640);
 
       unmount();
@@ -1386,13 +1619,23 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     }
   });
 
-  it('uses a narrower scrollbar for the setting sidebar list', async () => {
+  it('keeps setting map text fields hidden until scrolling with half-width scrollbars', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const styleSource = await readSharedStylesSource();
+    const settingSidebarStart = panelSource.indexOf('gridTemplateRows: activeTab === SETTING_TAB && !activeIsBrainstorm');
+    const settingSidebarSource = panelSource.slice(settingSidebarStart, settingSidebarStart + 12000);
 
-    expect(panelSource).toContain('xy-setting-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto');
+    expect(panelSource).toContain("const [activeSettingSidebarScrollKey, setActiveSettingSidebarScrollKey] = useState<string | null>(null);");
+    expect(panelSource).toContain('onScroll={() => handleSettingSidebarScroll');
+    expect(settingSidebarSource).not.toContain('scrollbar-scroll-only scrollbar-half-width min-h-0 flex-1 overflow-y-auto');
+    expect(panelSource).toContain('className="mt-0.5 space-y-0.5"');
+    expect(panelSource).not.toContain('scrollbar-scroll-only scrollbar-half-width mt-0.5 max-h-[760px] space-y-0.5 overflow-y-auto');
+    expect(panelSource).toContain('scrollbar-scroll-only scrollbar-half-width text-sm leading-7 text-gray-700');
+    expect(panelSource).toContain('onScroll={() => handleSettingSidebarScroll(`setting-textarea:');
     expect(styleSource).toContain('.xy-setting-sidebar-scrollbar::-webkit-scrollbar');
-    expect(styleSource).toContain('width: 5px;');
+    expect(styleSource).toContain('.scrollbar-scroll-only.scrollbar-half-width::-webkit-scrollbar');
+    expect(styleSource).toContain('width: 4px;');
+    expect(styleSource).toContain('height: 4px;');
   });
 
   it('uses the body page format for the outline right-side output card', async () => {
@@ -1755,34 +1998,35 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(plotPointControlsSource).not.toContain('生成规则</div>');
   });
 
-  it('places detail outline reader tabs in the header and link-all beside the navigation title', async () => {
+  it('keeps detail outline reader aligned with the setting link picker layout', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
-    const modalHeaderStart = panelSource.indexOf('<div className="flex shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">');
-    const modalHeaderEnd = panelSource.indexOf('<div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] bg-white">', modalHeaderStart);
+    const modalHeaderStart = panelSource.indexOf('const detailOutlineReaderModal = isDetailOutlineReaderOpen && isDetailOutlineTab ? createPortal(');
+    const modalHeaderEnd = panelSource.indexOf('const sendPlotPointAiMessage = async () => {', modalHeaderStart);
     const modalHeaderSource = panelSource.slice(modalHeaderStart, modalHeaderEnd);
-    const readerAsideStart = panelSource.indexOf('<aside className="min-h-0 border-r border-slate-100 bg-slate-50 p-3">', modalHeaderEnd);
-    const readerAsideEnd = panelSource.indexOf('<div className="editor-scrollbar h-full space-y-1 overflow-y-auto pb-8">', readerAsideStart);
-    const readerAsideHeaderSource = panelSource.slice(readerAsideStart, readerAsideEnd);
+    const readerAsideStart = modalHeaderSource.indexOf('<aside className="editor-scrollbar min-h-0 overflow-y-auto border-r border-gray-100 bg-slate-50 px-1 py-2">');
+    const readerAsideEnd = modalHeaderSource.indexOf('<main className="editor-scrollbar min-h-0 overflow-y-auto p-6">', readerAsideStart);
+    const readerAsideHeaderSource = modalHeaderSource.slice(readerAsideStart, readerAsideEnd);
 
     expect(modalHeaderStart).toBeGreaterThan(-1);
     expect(modalHeaderEnd).toBeGreaterThan(modalHeaderStart);
     expect(readerAsideStart).toBeGreaterThan(-1);
     expect(readerAsideEnd).toBeGreaterThan(readerAsideStart);
     expect(modalHeaderSource).toContain('<h3 className="text-xl font-bold text-gray-900">关联资料</h3>');
+    expect(modalHeaderSource).toContain('grid-cols-[300px_minmax(0,1fr)_280px]');
+    expect(modalHeaderSource).toContain('本次将读取');
+    expect(modalHeaderSource).toContain('draftDetailOutlineReaderItems.map((entry) => (');
+    expect(modalHeaderSource).toContain('setDetailOutlineReaderPreviewId(entry.id);');
     expect(modalHeaderSource).toContain("['outlines', '章纲']");
     expect(modalHeaderSource).toContain("['settings', '设定']");
     expect(modalHeaderSource).toContain("['roles', '角色']");
     expect(modalHeaderSource).not.toContain("['plotChain', '剧情链']");
     expect(modalHeaderSource).not.toContain('选择会随本次请求一起发给 AI；剧情大纲也可按需要勾选或取消。');
-    expect(modalHeaderSource).not.toContain('已选择 {draftDetailOutlineReaderItems.length} 项');
-    expect(modalHeaderSource).not.toContain('关联所有');
     expect(panelSource).not.toContain('选择会随本次请求一起发给 AI；剧情大纲也可按需要勾选或取消。');
     expect(panelSource).toContain("setDetailOutlineReaderTab('outlines');");
     expect(panelSource).not.toContain("setDetailOutlineReaderTab('settings');");
-    expect(readerAsideHeaderSource).toContain('mb-2 flex items-center justify-between gap-2 px-2');
-    expect(readerAsideHeaderSource).toContain('设定导航');
-    expect(readerAsideHeaderSource).toContain('onClick={selectAllActiveDetailOutlineReaderItems}');
-    expect(readerAsideHeaderSource).toContain('关联所有');
+    expect(readerAsideHeaderSource).toContain('WORKBENCH_FOLDER_GROUP_BUTTON_CLASS');
+    expect(modalHeaderSource).toContain('onClick={selectAllActiveDetailOutlineReaderItems}');
+    expect(modalHeaderSource).toContain('关联所有');
   });
 
   it('keeps outline page text inputs protected from draggable overlays and decorative hit targets', async () => {
@@ -1866,7 +2110,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const plotPointStandaloneStart = panelSource.indexOf('if (plotPointStandalone) {');
     const gridTemplateStart = panelSource.indexOf('gridTemplateColumns: `${plotPointLayoutTreeWidth}', plotPointStandaloneStart);
-    const navStart = panelSource.indexOf('<nav className="editor-scrollbar min-h-0 flex-1 overflow-y-auto pr-1" aria-label="剧情链目录树">');
+    const navStart = panelSource.indexOf('<nav className="editor-scrollbar min-h-0 flex-1 overflow-y-auto" aria-label="剧情链目录树">');
     const navEnd = panelSource.indexOf('</nav>', navStart);
     const navSource = panelSource.slice(navStart, navEnd);
 
@@ -1886,7 +2130,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain('onChange={(event) => renamePlotPointChain(event.target.value)}');
     expect(panelSource).toContain('const [expandedPlotPointChainTreeSlots, setExpandedPlotPointChainTreeSlots] = useState<Record<PlotPointChainSlot, boolean>>({');
     expect(panelSource).not.toContain('<h2 className="whitespace-nowrap text-sm font-bold text-gray-900">剧情链</h2>');
-    expect(panelSource).toContain('<aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-white px-3 py-3">');
+    expect(panelSource).toContain('<aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-white px-1 py-2">');
     expect(navSource).toContain('aria-label="当前主链未写序号导航"');
     expect(navSource).toContain('onContextMenu={(event) => {');
     expect(navSource).toContain('setPlotPointChainMenuSlot(plotPointActiveChainSlot)');
@@ -1920,7 +2164,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(navSource).toContain('className="mt-1 grid gap-2 px-1.5 py-1.5"');
     expect(navSource).toContain('relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors');
     expect(navSource).toContain('activePoint');
-    expect(navSource).toContain("'border-transparent xy-selected-orange-bg text-slate-900'");
+    expect(navSource).toContain("'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'");
     expect(navSource).toContain('title={`未写剧情点${originalIndex + 1} ${item.title}`}');
     expect(navSource).toContain('{originalIndex + 1}');
     expect(navSource).not.toContain('className="ml-1 mt-0.5 space-y-0.5"');
@@ -2065,7 +2309,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('uses the chapter-style black text selected state for brainstorm entries', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
-    const entryListStart = panelSource.indexOf('group.entries.map((entry) => {');
+    const entryListStart = panelSource.indexOf('previewEntries.map((entry, previewIndex) => {');
     const entryListEnd = panelSource.indexOf('{!activeIsBrainstorm && (', entryListStart);
     const entryListSource = panelSource.slice(entryListStart, entryListEnd);
 
@@ -2073,7 +2317,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(entryListEnd).toBeGreaterThan(entryListStart);
     expect(entryListSource).toContain("activeIsBrainstorm\n                                  ? 'border-transparent xy-selected-mint-bg text-gray-900'");
     expect(entryListSource).toContain("activeIsBrainstorm\n                                  ? 'border-transparent bg-white text-gray-700 hover:border-gray-200 hover:bg-gray-50'");
-    expect(entryListSource).toContain('className="truncate text-sm font-black text-gray-700"');
+    expect(entryListSource).toContain('className="min-w-0 truncate text-sm font-black text-gray-700"');
     expect(entryListSource).toContain("activeIsBrainstorm ? 'text-xs font-black text-gray-400'");
     expect(entryListSource).not.toContain('text-orange-500');
   });
@@ -2185,6 +2429,15 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('移回未发布');
   });
 
+  it('keeps published detail outline volume groups synced even when no outline chapters are published', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+
+    expect(panelSource).toContain('renderDetailOutlineVolumeTree(detailOutlinePublishedVolumes, true)');
+    expect(panelSource).toContain('detailOutlinePublishedVolumes = filterDetailOutlineVolumesByPublishState(true);');
+    expect(panelSource).not.toContain('detailOutlinePublishedCount === 0 ? (');
+    expect(panelSource).toContain('volumes.length === 0 ? (');
+  });
+
   it('removes the detail outline selection scheme test page after applying it to the workbench', async () => {
     const testCollectionSource = await readTestCollectionSource();
 
@@ -2194,25 +2447,12 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(testCollectionSource).not.toContain('章纲选中态方案测试');
   });
 
-  it('adds a test preview for all suggested border transparent backplate placements', async () => {
+  it('removes the completed border transparent backplate placement test page', async () => {
     const testCollectionSource = await readTestCollectionSource();
-    const backplateTestSource = await readBorderBackplateApplicationTestSource();
 
-    expect(testCollectionSource).toContain('BorderBackplateApplicationTestPage');
-    expect(testCollectionSource).toContain('/border-backplate-application-test');
-    expect(testCollectionSource).toContain('边框透明背板应用预览');
-    expect(backplateTestSource).toContain('左上标题');
-    expect(backplateTestSource).toContain('章纲字数位置');
-    expect(backplateTestSource).toContain('右上章节元信息');
-    expect(backplateTestSource).toContain('右上删除清空');
-    expect(backplateTestSource).toContain('左下字号');
-    expect(backplateTestSource).toContain('底边流式输出');
-    expect(backplateTestSource).toContain('模型提示词标签');
-    expect(backplateTestSource).toContain('会话按钮');
-    expect(backplateTestSource).toContain('xy-border-embedded-transparent-backplate');
-    expect(backplateTestSource).toContain('xy-floating-count');
-    expect(backplateTestSource).toContain('xy-floating-border-font-tool');
-    expect(backplateTestSource).toContain('xy-floating-outline-output-clear-tool');
+    expect(testCollectionSource).not.toContain('BorderBackplateApplicationTestPage');
+    expect(testCollectionSource).not.toContain('/border-backplate-application-test');
+    expect(testCollectionSource).not.toContain('边框透明背板应用预览');
   });
 
   it('adds a test preview for three-level setting smart import and group rename behavior', async () => {
@@ -2224,9 +2464,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(testCollectionSource).toContain('设定三层智能导入测试');
     expect(testCollectionSource).toContain('AI 链路测试');
     expect(hierarchyTestSource).toContain('智能导入三层结构测试');
-    expect(hierarchyTestSource).toContain('一级分组');
-    expect(hierarchyTestSource).toContain('二级设定');
-    expect(hierarchyTestSource).toContain('三级子设定');
+    expect(hierarchyTestSource).toContain('上一级标签');
+    expect(hierarchyTestSource).toContain('设定条目');
+    expect(hierarchyTestSource).toContain('子设定');
     expect(hierarchyTestSource).toContain('已有则填入，没有则创建');
     expect(hierarchyTestSource).toContain('右键分组菜单');
     expect(hierarchyTestSource).toContain('重命名');
@@ -2261,12 +2501,13 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
     expect(screen.getByRole('heading', { name: /设置/ })).toBeInTheDocument();
   });
-  it('renders clear settings as a segmented double-confirm action', async () => {
+  it('renders clear settings in the category context menu with double confirmation', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
 
     expect(panelSource).toContain("type ClearSettingsTarget = 'settingCategories' | 'settingEntries' | 'roleCategories' | 'roleEntries';");
     expect(panelSource).toContain("const [clearSettingsConfirmStep, setClearSettingsConfirmStep] = useState<1 | 2>(1);");
     expect(panelSource).toContain("const openClearSettingsConfirm = (target: ClearSettingsTarget) => {");
+    expect(panelSource).toContain('const openClearSettingsConfirmFromMenu = (target: ClearSettingsTarget) => {');
     expect(panelSource).toContain("if (clearSettingsConfirmStep === 1) {");
     expect(panelSource).toContain('setClearSettingsConfirmStep(2);');
     expect(panelSource).toContain('clearSettingsTargetMeta[clearSettingsConfirmTarget]');
@@ -2275,14 +2516,22 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('aria-disabled="true"');
     expect(panelSource).toContain("settingCreateDialog === 'category' ? '新建分组'");
     expect(panelSource).toContain("settingCreateDialog === 'category' ? '输入分组名字'");
-    expect(panelSource).toContain('aria-label="清空分组"');
-    expect(panelSource).toContain("label: '分组'");
+    expect(panelSource).toContain('清空{clearSettingsTargetMeta[categoryMenuClearEntryTarget].label}');
+    expect(panelSource).toContain('清空{clearSettingsTargetMeta[categoryMenuClearCategoryTarget].label}');
+    expect(panelSource).toContain("label: `${settingClearItemLabel}分组`");
+    expect(panelSource).toContain("roleEntries: {\n      label: '角色'");
+    expect(panelSource).toContain("roleCategories: {\n      label: '角色分组'");
+    expect(panelSource).toContain("const SETTING_CLEAR_DOMAIN_LABELS: Record<string, string> = {");
+    expect(panelSource).toContain("'setting:faction': '势力'");
+    expect(panelSource).toContain("'setting:item': '道具资源'");
+    expect(panelSource).toContain('确定要清空全部角色吗？');
     expect(panelSource).toContain('确认清空${currentClearSettingsMeta.label}');
-    expect(panelSource).toContain('onClick={() => openClearSettingsConfirm(activeClearSettingsCategoryTarget)}');
-    expect(panelSource).toContain('onClick={() => openClearSettingsConfirm(activeClearSettingsEntryTarget)}');
+    expect(panelSource).toContain('onClick={() => openClearSettingsConfirmFromMenu(categoryMenuClearCategoryTarget)}');
+    expect(panelSource).toContain('onClick={() => openClearSettingsConfirmFromMenu(categoryMenuClearEntryTarget)}');
     expect(panelSource).toContain('mt-3 shrink-0 space-y-2');
     expect(panelSource).toContain('grid h-11 grid-cols-3 overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.08)]');
-    expect(panelSource).toContain('border-r border-red-100 bg-red-50 px-2 text-sm font-black text-red-500');
+    expect(panelSource).not.toContain('aria-label="清空分组"');
+    expect(panelSource).not.toContain('border-r border-red-100 bg-red-50 px-2 text-sm font-black text-red-500');
     expect(panelSource).not.toContain('isActiveClearSettingsUnlocked');
     expect(panelSource).not.toContain('setClearSettingsUnlockMenu({');
     expect(panelSource).not.toContain('clearSettingsUnlockContextMenu');
@@ -2293,6 +2542,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const clearSettingCategoriesStart = panelSource.indexOf('const clearSettingCategories = () => {');
     const clearSettingCategoriesEnd = panelSource.indexOf('const clearSettingEntries = () => {', clearSettingCategoriesStart);
+    const clearSettingEntriesStart = panelSource.indexOf('const clearSettingEntries = () => {');
+    const clearSettingEntriesEnd = panelSource.indexOf('const clearRoleCategories = () => {', clearSettingEntriesStart);
     const clearRoleCategoriesStart = panelSource.indexOf('const clearRoleCategories = () => {');
     const clearRoleCategoriesEnd = panelSource.indexOf('const clearRoleEntries = () => {', clearRoleCategoriesStart);
     const deleteRoleTypeStart = panelSource.indexOf('const deleteRoleType = (type: string) => {');
@@ -2300,17 +2551,24 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const deleteSettingTypeStart = panelSource.indexOf('const deleteSettingType = (type: string) => {');
     const deleteSettingTypeEnd = panelSource.indexOf('const deleteCategoryFromMenu = () => {', deleteSettingTypeStart);
     const clearSettingCategoriesSource = panelSource.slice(clearSettingCategoriesStart, clearSettingCategoriesEnd);
+    const clearSettingEntriesSource = panelSource.slice(clearSettingEntriesStart, clearSettingEntriesEnd);
     const clearRoleCategoriesSource = panelSource.slice(clearRoleCategoriesStart, clearRoleCategoriesEnd);
     const deleteRoleTypeSource = panelSource.slice(deleteRoleTypeStart, deleteRoleTypeEnd);
     const deleteSettingTypeSource = panelSource.slice(deleteSettingTypeStart, deleteSettingTypeEnd);
 
-    expect(clearSettingCategoriesSource).toContain('persist(entries.filter((entry) => entry.tab !== SETTING_TAB));');
+    expect(clearSettingCategoriesSource).toContain('const domain = getSelectedSettingWorkspaceDomain();');
+    expect(clearSettingCategoriesSource).toContain('if (entry.tab !== SETTING_TAB) return true;');
+    expect(clearSettingCategoriesSource).toContain('if (isLockedDefaultSettingEntry(entry)) return true;');
+    expect(clearSettingCategoriesSource).toContain('return !isSettingTypeInActiveClearDomain(parseSettingContent(entry.content).type);');
+    expect(clearSettingCategoriesSource).toContain('const nextCustomTypes = customSettingTypes.filter((type) => !shouldClearType(type));');
+    expect(clearSettingEntriesSource).toContain('return !isSettingTypeInActiveClearDomain(parseSettingContent(entry.content).type);');
     expect(clearSettingCategoriesSource).not.toContain('content: stringifySettingContent({ ...setting, type: UNCATEGORIZED_TYPE })');
     expect(clearRoleCategoriesSource).toContain('persist(entries.filter((entry) => entry.tab !== ROLE_TAB || isMaleProtagonistRoleType(parseRoleContent(entry.content).type)));');
     expect(clearRoleCategoriesSource).toContain("setExpandedRoleTypes(new Set([DEFAULT_MALE_PROTAGONIST_ROLE_TYPE]));");
     expect(clearRoleCategoriesSource).not.toContain('content: stringifyRoleContent({ ...role, type: UNCATEGORIZED_TYPE })');
     expect(deleteSettingTypeSource).toContain('persist(entries.filter((entry) => {');
     expect(deleteSettingTypeSource).toContain('return setting.type !== type;');
+    expect(deleteSettingTypeSource).toContain('if (DEFAULT_SETTING_TYPES.includes(type)) return;');
     expect(deleteSettingTypeSource).not.toContain('content: stringifySettingContent({ ...setting, type: UNCATEGORIZED_TYPE })');
     expect(deleteRoleTypeSource).toContain('persist(entries.filter((entry) => {');
     expect(deleteRoleTypeSource).toContain('return role.type !== type;');
@@ -2358,7 +2616,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '势力设定0' }));
+    fireEvent.click(screen.getByRole('button', { name: '势力地图0' }));
     fireEvent.click(screen.getByRole('button', { name: '分组' }));
     fireEvent.change(screen.getByPlaceholderText('输入分组名字'), { target: { value: '宗门势力' } });
     fireEvent.click(screen.getByRole('button', { name: '确认' }));
@@ -2396,8 +2654,25 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(JSON.parse(createdEntry.content).type).not.toBe('功法能力');
   });
 
-  it('persists manual setting order when dragging one setting entry before another', async () => {
-    const storageKey = 'workbench-drag-sort-setting-entry-test';
+  it('defaults new setting creation to the selected setting entry group', async () => {
+    const storageKey = 'workbench-create-setting-defaults-to-selected-entry-group-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'basic-setting',
+        tab: '大纲',
+        title: '基础设定',
+        content: JSON.stringify({ type: '核心设定', body: '' }),
+        updatedAt: '2026/6/18 12:00:00',
+      },
+      {
+        id: 'world-view',
+        tab: '大纲',
+        title: '世界观',
+        content: JSON.stringify({ type: '核心设定', body: '' }),
+        updatedAt: '2026/6/18 12:01:00',
+      },
+    ]));
 
     render(
       <WorkbenchLibraryPanel
@@ -2408,9 +2683,67 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '核心设定6' }));
-    const source = screen.getByText('核心矛盾').closest('button');
-    const target = screen.getByText('作品定位').closest('button');
+    fireEvent.click(screen.getByRole('button', { name: '核心设定2' }));
+    fireEvent.click(screen.getByText('世界观').closest('button') as HTMLElement);
+    fireEvent.click(screen.getByRole('button', { name: '设定' }));
+
+    expect(screen.getByLabelText('所属分组')).toHaveValue('核心设定');
+
+    fireEvent.change(screen.getByPlaceholderText('输入设定名字'), { target: { value: '新核心设定条目' } });
+    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const createdEntry = storedEntries.find((entry: { title: string }) => entry.title === '新核心设定条目');
+    expect(createdEntry).toBeTruthy();
+    expect(JSON.parse(createdEntry.content).type).toBe('核心设定');
+  });
+
+  it('persists manual setting order when dragging one setting entry before another', async () => {
+    const storageKey = 'workbench-drag-sort-setting-entry-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-positioning',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-start',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+      {
+        id: 'core-refreshing',
+        tab: '大纲',
+        title: '自定义核心三',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有核心爽点。' }),
+        updatedAt: '2026/6/18 01:02:00',
+      },
+      {
+        id: 'core-conflict',
+        tab: '大纲',
+        title: '自定义核心四',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有核心矛盾。' }),
+        updatedAt: '2026/6/18 01:03:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定4' }));
+    const source = screen.getByText('自定义核心四').closest('button');
+    const target = screen.getByText('自定义核心一').closest('button');
     expect(source).toBeTruthy();
     expect(target).toBeTruthy();
     const dataTransfer = {
@@ -2433,13 +2766,35 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const coreTitles = storedEntries
       .filter((entry: { content: string }) => JSON.parse(entry.content).type === '核心设定')
       .map((entry: { title: string }) => entry.title);
-    expect(coreTitles.slice(0, 4)).toEqual(['核心矛盾', '作品定位', '主角初始处境', '核心爽点']);
+    expect(coreTitles.slice(0, 4)).toEqual(['自定义核心四', '自定义核心一', '自定义核心二', '自定义核心三']);
   });
 
-  it('shows the approved default groups for character and setting workspace tabs', async () => {
-    const storageKey = 'workbench-approved-setting-default-groups-test';
-    localStorage.setItem(`${storageKey}_hidden_role_types`, JSON.stringify(['男主角', '女主角', '重要正派角色', '正派配角', '重要反派角色', '反派配角', '龙套角色']));
-    localStorage.setItem(`${storageKey}_hidden_setting_types`, JSON.stringify(['核心设定', '世界规则', '剧情规划', '硬规则', '禁写规则']));
+  it('previews setting entry order while dragging over another entry', async () => {
+    const storageKey = 'workbench-drag-preview-setting-entry-order-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-one',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-two',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+      {
+        id: 'core-three',
+        tab: '大纲',
+        title: '自定义核心三',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有核心爽点。' }),
+        updatedAt: '2026/6/18 01:02:00',
+      },
+    ]));
 
     render(
       <WorkbenchLibraryPanel
@@ -2450,10 +2805,1053 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: '核心设定6' })).toBeInTheDocument();
-    ['世界规则', '剧情规划'].forEach((group) => {
-      expect(screen.getByRole('button', { name: `${group}6` })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '核心设定3' }));
+    const getVisibleCoreTitles = () => screen.getAllByRole('button')
+      .map((button) => ['自定义核心一', '自定义核心二', '自定义核心三'].find((title) => button.textContent?.includes(title)))
+      .filter((title): title is string => Boolean(title));
+
+    expect(getVisibleCoreTitles()).toEqual(['自定义核心一', '自定义核心二', '自定义核心三']);
+
+    const source = screen.getByText('自定义核心二').closest('button');
+    const target = screen.getByText('自定义核心一').closest('button');
+    expect(source).toBeTruthy();
+    expect(target).toBeTruthy();
+    const dataTransfer = {
+      data: {} as Record<string, string>,
+      effectAllowed: '',
+      dropEffect: '',
+      setData(type: string, value: string) {
+        this.data[type] = value;
+      },
+      getData(type: string) {
+        return this.data[type] ?? '';
+      },
+    };
+
+    fireEvent.dragStart(source as HTMLElement, { dataTransfer });
+    fireEvent.dragOver(target as HTMLElement, { dataTransfer });
+
+    expect(getVisibleCoreTitles()).toEqual(['自定义核心二', '自定义核心一', '自定义核心三']);
+
+    fireEvent.drop(target as HTMLElement, { dataTransfer });
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const coreTitles = storedEntries
+      .filter((entry: { content: string }) => JSON.parse(entry.content).type === '核心设定')
+      .map((entry: { title: string }) => entry.title);
+    expect(coreTitles).toEqual(['自定义核心二', '自定义核心一', '自定义核心三']);
+  });
+
+  it('uses swap-style preview when dragging a setting entry onto the next row', async () => {
+    const storageKey = 'workbench-drag-swap-preview-setting-entry-order-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-one',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-two',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+      {
+        id: 'core-three',
+        tab: '大纲',
+        title: '自定义核心三',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有核心爽点。' }),
+        updatedAt: '2026/6/18 01:02:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定3' }));
+    const getVisibleCoreTitles = () => screen.getAllByRole('button')
+      .map((button) => ['自定义核心一', '自定义核心二', '自定义核心三'].find((title) => button.textContent?.includes(title)))
+      .filter((title): title is string => Boolean(title));
+
+    expect(getVisibleCoreTitles()).toEqual(['自定义核心一', '自定义核心二', '自定义核心三']);
+
+    const source = screen.getByText('自定义核心一').closest('button');
+    const target = screen.getByText('自定义核心二').closest('button');
+    expect(source).toBeTruthy();
+    expect(target).toBeTruthy();
+    const dataTransfer = {
+      data: {} as Record<string, string>,
+      effectAllowed: '',
+      dropEffect: '',
+      setData(type: string, value: string) {
+        this.data[type] = value;
+      },
+      getData(type: string) {
+        return this.data[type] ?? '';
+      },
+    };
+
+    fireEvent.dragStart(source as HTMLElement, { dataTransfer });
+    fireEvent.dragOver(target as HTMLElement, { dataTransfer });
+
+    expect(getVisibleCoreTitles()).toEqual(['自定义核心二', '自定义核心一', '自定义核心三']);
+
+    fireEvent.drop(target as HTMLElement, { dataTransfer });
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const coreTitles = storedEntries
+      .filter((entry: { content: string }) => JSON.parse(entry.content).type === '核心设定')
+      .map((entry: { title: string }) => entry.title);
+    expect(coreTitles).toEqual(['自定义核心二', '自定义核心一', '自定义核心三']);
+  });
+
+  it('commits the last previewed setting order when drag end fires without a drop event', async () => {
+    const storageKey = 'workbench-drag-end-commits-preview-setting-entry-order-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-one',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-two',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+      {
+        id: 'core-three',
+        tab: '大纲',
+        title: '自定义核心三',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有核心爽点。' }),
+        updatedAt: '2026/6/18 01:02:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定3' }));
+    const source = screen.getByText('自定义核心一').closest('button');
+    const target = screen.getByText('自定义核心二').closest('button');
+    expect(source).toBeTruthy();
+    expect(target).toBeTruthy();
+    const dataTransfer = {
+      data: {} as Record<string, string>,
+      effectAllowed: '',
+      dropEffect: '',
+      setData(type: string, value: string) {
+        this.data[type] = value;
+      },
+      getData(type: string) {
+        return this.data[type] ?? '';
+      },
+    };
+
+    fireEvent.dragStart(source as HTMLElement, { dataTransfer });
+    fireEvent.dragOver(target as HTMLElement, { dataTransfer });
+    fireEvent.dragEnd(source as HTMLElement, { dataTransfer });
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const coreTitles = storedEntries
+      .filter((entry: { content: string }) => JSON.parse(entry.content).type === '核心设定')
+      .map((entry: { title: string }) => entry.title);
+    expect(coreTitles).toEqual(['自定义核心二', '自定义核心一', '自定义核心三']);
+  });
+
+  it('keeps the latest drag preview in a synchronous ref for real browser drag end timing', async () => {
+    const source = await readWorkbenchLibraryPanelSource();
+
+    expect(source).toContain('const libraryEntryDropPreviewRef = useRef<LibraryEntryDropPreviewState>(null);');
+    expect(source).toContain('const setLibraryEntryDropPreviewState = (next: LibraryEntryDropPreviewState)');
+    expect(source).toContain('libraryEntryDropPreviewRef.current = next;');
+    expect(source).toContain('commitLibraryEntryDropPreview(libraryEntryDropPreviewRef.current);');
+    expect(source).toContain('type LibraryEntryPointerDragState');
+    expect(source).toContain('beginLibraryEntryPointerDrag');
+    expect(source).toContain('updateLibraryEntryPointerPreview');
+    expect(source).toContain('finishLibraryEntryPointerDrag');
+    expect(source).toContain('data-library-entry-id={entry.id}');
+  });
+
+  it('uses pointer sorting instead of native draggable attributes on setting entries', () => {
+    const storageKey = 'workbench-setting-entry-pointer-sort-only-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-one',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-two',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定2' }));
+
+    expect(screen.getByText('自定义核心一').closest('button')).not.toHaveAttribute('draggable');
+    expect(screen.getByText('自定义核心二').closest('button')).not.toHaveAttribute('draggable');
+  });
+
+  it('persists setting order after a real pointer move and pointer up', () => {
+    vi.useFakeTimers();
+    const storageKey = 'workbench-setting-entry-pointer-sort-commit-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-one',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-two',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+      {
+        id: 'core-three',
+        tab: '大纲',
+        title: '自定义核心三',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有核心爽点。' }),
+        updatedAt: '2026/6/18 01:02:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定3' }));
+    const source = screen.getByText('自定义核心一').closest('button');
+    const target = screen.getByText('自定义核心二').closest('button');
+    expect(source).toBeTruthy();
+    expect(target).toBeTruthy();
+
+    const originalElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: () => target,
     });
+
+    try {
+      fireEvent.pointerDown(source as HTMLElement, { button: 0, pointerId: 11, clientX: 10, clientY: 10 });
+      vi.advanceTimersByTime(180);
+      fireEvent.pointerMove(window, { pointerId: 11, clientX: 10, clientY: 42 });
+      fireEvent.pointerUp(window, { pointerId: 11, clientX: 10, clientY: 42 });
+    } finally {
+      Object.defineProperty(document, 'elementFromPoint', {
+        configurable: true,
+        value: originalElementFromPoint,
+      });
+      vi.useRealTimers();
+    }
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const coreTitles = storedEntries
+      .filter((entry: { content: string }) => JSON.parse(entry.content).type === '核心设定')
+      .map((entry: { title: string }) => entry.title);
+    expect(coreTitles).toEqual(['自定义核心二', '自定义核心一', '自定义核心三']);
+  });
+
+  it('does not start setting pointer sorting from a small accidental movement', () => {
+    const storageKey = 'workbench-setting-entry-pointer-sort-threshold-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-one',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-two',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定2' }));
+    const source = screen.getByText('自定义核心一').closest('button');
+    const target = screen.getByText('自定义核心二').closest('button');
+    expect(source).toBeTruthy();
+    expect(target).toBeTruthy();
+
+    const originalElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: () => target,
+    });
+
+    try {
+      fireEvent.pointerDown(source as HTMLElement, { button: 0, pointerId: 12, clientX: 10, clientY: 10 });
+      fireEvent.pointerMove(window, { pointerId: 12, clientX: 10, clientY: 22 });
+      fireEvent.pointerUp(window, { pointerId: 12, clientX: 10, clientY: 22 });
+    } finally {
+      Object.defineProperty(document, 'elementFromPoint', {
+        configurable: true,
+        value: originalElementFromPoint,
+      });
+    }
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const coreTitles = storedEntries
+      .filter((entry: { content: string }) => JSON.parse(entry.content).type === '核心设定')
+      .map((entry: { title: string }) => entry.title);
+    expect(coreTitles).toEqual(['自定义核心一', '自定义核心二']);
+  });
+
+  it('does not start setting pointer sorting before the intentional hold delay', () => {
+    vi.useFakeTimers();
+    const storageKey = 'workbench-setting-entry-pointer-sort-hold-delay-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-one',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-two',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定2' }));
+    const source = screen.getByText('自定义核心一').closest('button');
+    const target = screen.getByText('自定义核心二').closest('button');
+    expect(source).toBeTruthy();
+    expect(target).toBeTruthy();
+
+    const originalElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: () => target,
+    });
+
+    try {
+      fireEvent.pointerDown(source as HTMLElement, { button: 0, pointerId: 13, clientX: 10, clientY: 10 });
+      fireEvent.pointerMove(window, { pointerId: 13, clientX: 10, clientY: 48 });
+      fireEvent.pointerUp(window, { pointerId: 13, clientX: 10, clientY: 48 });
+    } finally {
+      Object.defineProperty(document, 'elementFromPoint', {
+        configurable: true,
+        value: originalElementFromPoint,
+      });
+      vi.useRealTimers();
+    }
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const coreTitles = storedEntries
+      .filter((entry: { content: string }) => JSON.parse(entry.content).type === '核心设定')
+      .map((entry: { title: string }) => entry.title);
+    expect(coreTitles).toEqual(['自定义核心一', '自定义核心二']);
+  });
+
+  it('keeps the first setting entry from chaining into the third row on the same pointer position', () => {
+    vi.useFakeTimers();
+    const storageKey = 'workbench-setting-entry-pointer-sort-retarget-guard-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-one',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-two',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+      {
+        id: 'core-three',
+        tab: '大纲',
+        title: '自定义核心三',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有核心爽点。' }),
+        updatedAt: '2026/6/18 01:02:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定3' }));
+    const source = screen.getByText('自定义核心一').closest('button');
+    const secondRow = screen.getByText('自定义核心二').closest('button');
+    const thirdRow = screen.getByText('自定义核心三').closest('button');
+    expect(source).toBeTruthy();
+    expect(secondRow).toBeTruthy();
+    expect(thirdRow).toBeTruthy();
+
+    let hoverTarget: Element | null = secondRow;
+    const originalElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: () => hoverTarget,
+    });
+
+    try {
+      fireEvent.pointerDown(source as HTMLElement, { button: 0, pointerId: 14, clientX: 10, clientY: 10 });
+      vi.advanceTimersByTime(180);
+      fireEvent.pointerMove(window, { pointerId: 14, clientX: 10, clientY: 42 });
+      hoverTarget = thirdRow;
+      fireEvent.pointerMove(window, { pointerId: 14, clientX: 10, clientY: 42 });
+      fireEvent.pointerUp(window, { pointerId: 14, clientX: 10, clientY: 42 });
+    } finally {
+      Object.defineProperty(document, 'elementFromPoint', {
+        configurable: true,
+        value: originalElementFromPoint,
+      });
+      vi.useRealTimers();
+    }
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const coreTitles = storedEntries
+      .filter((entry: { content: string }) => JSON.parse(entry.content).type === '核心设定')
+      .map((entry: { title: string }) => entry.title);
+    expect(coreTitles).toEqual(['自定义核心二', '自定义核心一', '自定义核心三']);
+  });
+
+  it('does not retarget a dragged setting entry from the second row to the third row on a modest movement', () => {
+    vi.useFakeTimers();
+    const storageKey = 'workbench-setting-entry-pointer-sort-modest-retarget-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-one',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-two',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+      {
+        id: 'core-three',
+        tab: '大纲',
+        title: '自定义核心三',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有核心爽点。' }),
+        updatedAt: '2026/6/18 01:02:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定3' }));
+    const source = screen.getByText('自定义核心一').closest('button');
+    const secondRow = screen.getByText('自定义核心二').closest('button');
+    const thirdRow = screen.getByText('自定义核心三').closest('button');
+    expect(source).toBeTruthy();
+    expect(secondRow).toBeTruthy();
+    expect(thirdRow).toBeTruthy();
+
+    let hoverTarget: Element | null = secondRow;
+    const originalElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: () => hoverTarget,
+    });
+
+    try {
+      fireEvent.pointerDown(source as HTMLElement, { button: 0, pointerId: 18, clientX: 10, clientY: 10 });
+      vi.advanceTimersByTime(180);
+      fireEvent.pointerMove(window, { pointerId: 18, clientX: 10, clientY: 42 });
+      hoverTarget = thirdRow;
+      fireEvent.pointerMove(window, { pointerId: 18, clientX: 10, clientY: 64 });
+      fireEvent.pointerUp(window, { pointerId: 18, clientX: 10, clientY: 64 });
+    } finally {
+      Object.defineProperty(document, 'elementFromPoint', {
+        configurable: true,
+        value: originalElementFromPoint,
+      });
+      vi.useRealTimers();
+    }
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const coreTitles = storedEntries
+      .filter((entry: { content: string }) => JSON.parse(entry.content).type === '核心设定')
+      .map((entry: { title: string }) => entry.title);
+    expect(coreTitles).toEqual(['自定义核心二', '自定义核心一', '自定义核心三']);
+  });
+
+  it('keeps a dragged setting entry on its preview row when the pointer is over its own ghost', () => {
+    vi.useFakeTimers();
+    const storageKey = 'workbench-setting-entry-pointer-sort-ghost-row-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-one',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-two',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+      {
+        id: 'core-three',
+        tab: '大纲',
+        title: '自定义核心三',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有核心爽点。' }),
+        updatedAt: '2026/6/18 01:02:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定3' }));
+    const source = screen.getByText('自定义核心一').closest('button');
+    const secondRow = screen.getByText('自定义核心二').closest('button');
+    expect(source).toBeTruthy();
+    expect(secondRow).toBeTruthy();
+
+    let hoverTarget: Element | null = secondRow;
+    const originalElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: () => hoverTarget,
+    });
+
+    try {
+      fireEvent.pointerDown(source as HTMLElement, { button: 0, pointerId: 19, clientX: 10, clientY: 10 });
+      vi.advanceTimersByTime(180);
+      fireEvent.pointerMove(window, { pointerId: 19, clientX: 10, clientY: 42 });
+      hoverTarget = source;
+      fireEvent.pointerMove(window, { pointerId: 19, clientX: 10, clientY: 74 });
+      fireEvent.pointerUp(window, { pointerId: 19, clientX: 10, clientY: 74 });
+    } finally {
+      Object.defineProperty(document, 'elementFromPoint', {
+        configurable: true,
+        value: originalElementFromPoint,
+      });
+      vi.useRealTimers();
+    }
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const coreTitles = storedEntries
+      .filter((entry: { content: string }) => JSON.parse(entry.content).type === '核心设定')
+      .map((entry: { title: string }) => entry.title);
+    expect(coreTitles).toEqual(['自定义核心二', '自定义核心一', '自定义核心三']);
+  });
+
+  it('does not return a dragged setting entry to its original row from a tiny reverse movement', () => {
+    vi.useFakeTimers();
+    const storageKey = 'workbench-setting-entry-pointer-sort-return-to-origin-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-one',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-two',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+      {
+        id: 'core-three',
+        tab: '大纲',
+        title: '自定义核心三',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有核心爽点。' }),
+        updatedAt: '2026/6/18 01:02:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定3' }));
+    const source = screen.getByText('自定义核心一').closest('button');
+    const secondRow = screen.getByText('自定义核心二').closest('button');
+    expect(source).toBeTruthy();
+    expect(secondRow).toBeTruthy();
+
+    let hoverTarget: Element | null = secondRow;
+    const originalElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: () => hoverTarget,
+    });
+
+    try {
+      fireEvent.pointerDown(source as HTMLElement, { button: 0, pointerId: 16, clientX: 10, clientY: 10 });
+      vi.advanceTimersByTime(180);
+      fireEvent.pointerMove(window, { pointerId: 16, clientX: 10, clientY: 42 });
+      hoverTarget = source;
+      fireEvent.pointerMove(window, { pointerId: 16, clientX: 10, clientY: 30 });
+      fireEvent.pointerUp(window, { pointerId: 16, clientX: 10, clientY: 30 });
+    } finally {
+      Object.defineProperty(document, 'elementFromPoint', {
+        configurable: true,
+        value: originalElementFromPoint,
+      });
+      vi.useRealTimers();
+    }
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const coreTitles = storedEntries
+      .filter((entry: { content: string }) => JSON.parse(entry.content).type === '核心设定')
+      .map((entry: { title: string }) => entry.title);
+    expect(coreTitles).toEqual(['自定义核心二', '自定义核心一', '自定义核心三']);
+  });
+
+  it('lets a dragged setting entry return to its original row after a deliberate reverse movement', () => {
+    vi.useFakeTimers();
+    const storageKey = 'workbench-setting-entry-pointer-sort-deliberate-return-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-one',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-two',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+      {
+        id: 'core-three',
+        tab: '大纲',
+        title: '自定义核心三',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有核心爽点。' }),
+        updatedAt: '2026/6/18 01:02:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定3' }));
+    const source = screen.getByText('自定义核心一').closest('button');
+    const secondRow = screen.getByText('自定义核心二').closest('button');
+    expect(source).toBeTruthy();
+    expect(secondRow).toBeTruthy();
+
+    let hoverTarget: Element | null = secondRow;
+    const originalElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: () => hoverTarget,
+    });
+
+    try {
+      fireEvent.pointerDown(source as HTMLElement, { button: 0, pointerId: 17, clientX: 10, clientY: 10 });
+      vi.advanceTimersByTime(180);
+      fireEvent.pointerMove(window, { pointerId: 17, clientX: 10, clientY: 42 });
+      hoverTarget = secondRow;
+      fireEvent.pointerMove(window, { pointerId: 17, clientX: 10, clientY: 12 });
+      fireEvent.pointerUp(window, { pointerId: 17, clientX: 10, clientY: 12 });
+    } finally {
+      Object.defineProperty(document, 'elementFromPoint', {
+        configurable: true,
+        value: originalElementFromPoint,
+      });
+      vi.useRealTimers();
+    }
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const coreTitles = storedEntries
+      .filter((entry: { content: string }) => JSON.parse(entry.content).type === '核心设定')
+      .map((entry: { title: string }) => entry.title);
+    expect(coreTitles).toEqual(['自定义核心一', '自定义核心二', '自定义核心三']);
+  });
+
+  it('does not send the first setting entry to the group end before the pointer reaches another row', () => {
+    vi.useFakeTimers();
+    const storageKey = 'workbench-setting-entry-pointer-sort-group-end-guard-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-one',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-two',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+      {
+        id: 'core-three',
+        tab: '大纲',
+        title: '自定义核心三',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有核心爽点。' }),
+        updatedAt: '2026/6/18 01:02:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    const groupButton = screen.getByRole('button', { name: '核心设定3' });
+    fireEvent.click(groupButton);
+    const groupRoot = groupButton.closest('[data-library-group-type]');
+    const source = screen.getByText('自定义核心一').closest('button');
+    const secondRow = screen.getByText('自定义核心二').closest('button');
+    const thirdRow = screen.getByText('自定义核心三').closest('button');
+    expect(groupRoot).toBeTruthy();
+    expect(source).toBeTruthy();
+    expect(secondRow).toBeTruthy();
+    expect(thirdRow).toBeTruthy();
+
+    const makeRect = (top: number, bottom: number) => ({
+      x: 0,
+      y: top,
+      top,
+      bottom,
+      left: 0,
+      right: 260,
+      width: 260,
+      height: bottom - top,
+      toJSON: () => ({}),
+    }) as DOMRect;
+    const sourceRect = vi.spyOn(source as HTMLElement, 'getBoundingClientRect').mockReturnValue(makeRect(10, 34));
+    const secondRect = vi.spyOn(secondRow as HTMLElement, 'getBoundingClientRect').mockReturnValue(makeRect(38, 62));
+    const thirdRect = vi.spyOn(thirdRow as HTMLElement, 'getBoundingClientRect').mockReturnValue(makeRect(66, 90));
+    const originalElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, 'elementFromPoint', {
+      configurable: true,
+      value: () => groupRoot,
+    });
+
+    try {
+      fireEvent.pointerDown(source as HTMLElement, { button: 0, pointerId: 15, clientX: 10, clientY: 10 });
+      vi.advanceTimersByTime(180);
+      fireEvent.pointerMove(window, { pointerId: 15, clientX: 10, clientY: 35 });
+      fireEvent.pointerUp(window, { pointerId: 15, clientX: 10, clientY: 35 });
+    } finally {
+      Object.defineProperty(document, 'elementFromPoint', {
+        configurable: true,
+        value: originalElementFromPoint,
+      });
+      sourceRect.mockRestore();
+      secondRect.mockRestore();
+      thirdRect.mockRestore();
+      vi.useRealTimers();
+    }
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const coreTitles = storedEntries
+      .filter((entry: { content: string }) => JSON.parse(entry.content).type === '核心设定')
+      .map((entry: { title: string }) => entry.title);
+    expect(coreTitles).toEqual(['自定义核心一', '自定义核心二', '自定义核心三']);
+  });
+
+  it('keeps setting entry order stable when dragging across a non-empty group header', async () => {
+    const storageKey = 'workbench-drag-stable-over-non-empty-group-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-one',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-two',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+      {
+        id: 'core-three',
+        tab: '大纲',
+        title: '自定义核心三',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有核心爽点。' }),
+        updatedAt: '2026/6/18 01:02:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    const groupHeader = screen.getByRole('button', { name: '核心设定3' });
+    fireEvent.click(groupHeader);
+    const getVisibleCoreTitles = () => screen.getAllByRole('button')
+      .map((button) => ['自定义核心一', '自定义核心二', '自定义核心三'].find((title) => button.textContent?.includes(title)))
+      .filter((title): title is string => Boolean(title));
+    const source = screen.getByText('自定义核心二').closest('button');
+    expect(source).toBeTruthy();
+    const dataTransfer = {
+      data: {} as Record<string, string>,
+      effectAllowed: '',
+      dropEffect: '',
+      setData(type: string, value: string) {
+        this.data[type] = value;
+      },
+      getData(type: string) {
+        return this.data[type] ?? '';
+      },
+    };
+
+    fireEvent.dragStart(source as HTMLElement, { dataTransfer });
+    fireEvent.dragOver(groupHeader, { dataTransfer });
+
+    expect(getVisibleCoreTitles()).toEqual(['自定义核心一', '自定义核心二', '自定义核心三']);
+  });
+
+  it('does not render the setting entry grip dot icon', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const entryListStart = panelSource.indexOf('previewEntries.map((entry, previewIndex) => {');
+    const entryListEnd = panelSource.indexOf('{!activeIsBrainstorm && (', entryListStart);
+    const entryListSource = panelSource.slice(entryListStart, entryListEnd);
+
+    expect(entryListStart).toBeGreaterThan(-1);
+    expect(entryListEnd).toBeGreaterThan(entryListStart);
+    expect(entryListSource).not.toContain('GripVertical');
+  });
+
+  it('keeps the normal arrow cursor on setting entry rows', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const entryListStart = panelSource.indexOf('previewEntries.map((entry, previewIndex) => {');
+    const entryListEnd = panelSource.indexOf('{!activeIsBrainstorm && (', entryListStart);
+    const entryListSource = panelSource.slice(entryListStart, entryListEnd);
+
+    expect(entryListStart).toBeGreaterThan(-1);
+    expect(entryListEnd).toBeGreaterThan(entryListStart);
+    expect(entryListSource).toContain('cursor-default select-none');
+    expect(entryListSource).not.toContain('cursor-grab select-none');
+    expect(entryListSource).not.toContain('active:cursor-grabbing');
+  });
+
+  it('shows the grabbing cursor only after a setting entry enters drag mode', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const entryListStart = panelSource.indexOf('previewEntries.map((entry, previewIndex) => {');
+    const entryListEnd = panelSource.indexOf('{!activeIsBrainstorm && (', entryListStart);
+    const entryListSource = panelSource.slice(entryListStart, entryListEnd);
+
+    expect(entryListStart).toBeGreaterThan(-1);
+    expect(entryListEnd).toBeGreaterThan(entryListStart);
+    expect(entryListSource).toContain('cursor-default select-none');
+    expect(entryListSource).toContain("draggingLibraryEntry?.entryId === entry.id ? 'cursor-grabbing");
+    expect(entryListSource).not.toContain('cursor-grab select-none');
+    expect(entryListSource).not.toContain('active:cursor-grabbing');
+  });
+
+  it('moves a setting entry to the end of its group when dropping on the group area', async () => {
+    const storageKey = 'workbench-drag-setting-entry-to-group-end-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'core-one',
+        tab: '大纲',
+        title: '自定义核心一',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有作品定位。' }),
+        updatedAt: '2026/6/18 01:00:00',
+      },
+      {
+        id: 'core-two',
+        tab: '大纲',
+        title: '自定义核心二',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有主角初始处境。' }),
+        updatedAt: '2026/6/18 01:01:00',
+      },
+      {
+        id: 'core-three',
+        tab: '大纲',
+        title: '自定义核心三',
+        content: JSON.stringify({ type: '核心设定', body: '用户已有核心爽点。' }),
+        updatedAt: '2026/6/18 01:02:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定3' }));
+    const source = screen.getByText('自定义核心一').closest('button');
+    const targetGroup = screen.getByRole('button', { name: '核心设定3' });
+    expect(source).toBeTruthy();
+    const dataTransfer = {
+      data: {} as Record<string, string>,
+      effectAllowed: '',
+      dropEffect: '',
+      setData(type: string, value: string) {
+        this.data[type] = value;
+      },
+      getData(type: string) {
+        return this.data[type] ?? '';
+      },
+    };
+
+    fireEvent.dragStart(source as HTMLElement, { dataTransfer });
+    fireEvent.dragOver(targetGroup, { dataTransfer });
+    fireEvent.drop(targetGroup, { dataTransfer });
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const coreTitles = storedEntries
+      .filter((entry: { content: string }) => JSON.parse(entry.content).type === '核心设定')
+      .map((entry: { title: string }) => entry.title);
+    expect(coreTitles).toEqual(['自定义核心二', '自定义核心三', '自定义核心一']);
+  });
+
+  it('shows the approved default groups for character and setting workspace tabs', async () => {
+    const storageKey = 'workbench-approved-setting-default-groups-test';
+    localStorage.setItem(`${storageKey}_hidden_role_types`, JSON.stringify(['男主角', '女主角', '重要正派角色', '正派配角', '重要反派角色', '反派配角', '龙套角色']));
+    localStorage.setItem(`${storageKey}_hidden_setting_types`, JSON.stringify(['核心设定', '剧情规划', '书写规则']));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '核心设定3' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '世界规则1' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '剧情规划3' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '书写规则2' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '人物设定1' }));
     expect(screen.getByRole('button', { name: '男主角1' })).toBeInTheDocument();
@@ -2463,11 +3861,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(screen.queryByRole('button', { name: '未分类0' })).not.toBeInTheDocument();
 
     const groupsByTab = [
-      { tab: '势力设定0', groups: ['正派势力', '反派势力', '中立势力', '其他势力'], count: 0 },
-      { tab: '道具资源16', groups: ['功法能力', '物品装备', '资源货币', '特殊资源'], count: 4 },
-      { tab: '地点场景10', groups: ['世界地图', '危险区域'], count: 5 },
-      { tab: '伏笔线索11', groups: ['主线伏笔', '人物伏笔'], count: 4 },
-      { tab: '书写规则9', groups: ['硬规则'], count: 4 },
+      { tab: '势力地图2', groups: ['正派势力', '反派势力', '中立势力', '其他势力'], count: 0 },
+      { tab: '势力地图2', groups: ['世界地图'], count: 2 },
+      { tab: '道具资源0', groups: ['功法能力', '物品装备', '资源货币', '特殊资源'], count: 0 },
+      { tab: '怪物图鉴0', groups: ['怪物列表'], count: 0 },
+      { tab: '伏笔线索3', groups: ['主线伏笔', '人物伏笔', '已回收伏笔'], count: 1 },
     ];
 
     groupsByTab.forEach(({ tab, groups, count }) => {
@@ -2476,17 +3874,13 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
         expect(screen.getByRole('button', { name: `${group}${count}` })).toBeInTheDocument();
       });
     });
-    fireEvent.click(screen.getByRole('button', { name: '伏笔线索11' }));
-    expect(screen.getByRole('button', { name: '已回收伏笔3' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '书写规则9' }));
-    expect(screen.getByRole('button', { name: '禁写规则5' })).toBeInTheDocument();
-
     expect(JSON.parse(localStorage.getItem(`${storageKey}_hidden_role_types`) ?? '[]')).toEqual([]);
     expect(JSON.parse(localStorage.getItem(`${storageKey}_hidden_setting_types`) ?? '[]')).toEqual([]);
   });
 
   it('seeds a locked male protagonist role for a new novel and opens it from character settings', async () => {
     const storageKey = 'workbench-default-male-protagonist-role-test';
+    const panelSource = await readWorkbenchLibraryPanelSource();
 
     render(
       <WorkbenchLibraryPanel
@@ -2501,6 +3895,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: '人物设定1' }));
     expect(screen.getByRole('button', { name: '男主角1' })).toBeInTheDocument();
     expect(screen.getByDisplayValue('男主角')).toBeInTheDocument();
+    expect(screen.queryByText('身份定位')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '存活' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '死亡' })).not.toBeInTheDocument();
 
     const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
     const roleEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '角色');
@@ -2510,29 +3907,38 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
       type: '男主角',
       lifeStatus: '存活',
     });
+    expect(panelSource).toContain('function isMaleProtagonistRoleTypeChangeLocked(currentType: string, nextType: string) {');
+    expect(panelSource).toContain('return isMaleProtagonistRoleType(currentType) && !isMaleProtagonistRoleType(nextType);');
+    expect(panelSource).toContain('if (normalizedUpdates.type && isMaleProtagonistRoleTypeChangeLocked(selectedRole.type, normalizedUpdates.type)) return;');
+    expect(panelSource).toContain('if (normalizedUpdates.type && isMaleProtagonistRoleTypeChangeLocked(currentSelectedRole.type, normalizedUpdates.type)) return;');
+    expect(panelSource).toContain('if (isMaleProtagonistRoleTypeChangeLocked(role.type, targetType)) return;');
+    expect(panelSource).toContain('const showRoleIdentityControls = !roleIsMaleProtagonist;');
+    expect(panelSource).toContain('{showRoleIdentityControls ? (');
+    expect(panelSource).toContain('<div aria-hidden="true" className="h-[42px] min-w-[168px] shrink-0" />');
+    expect(panelSource).toContain('<div aria-hidden="true" className="h-9 w-[112px] shrink-0" />');
+    expect(panelSource).toContain('buttonClassName="h-[42px] px-3 text-sm"');
+    expect(panelSource).not.toContain('buttonClassName="h-10 rounded-xl border-2 border-cyan-200 px-3 text-sm"');
   });
 
   it('seeds the approved default setting entries with empty bodies by the current setting workspace groups', async () => {
     const storageKey = 'workbench-default-core-setting-starter-test';
     const expectedEntriesByType = new Map([
-      ['核心设定', ['作品定位', '主角初始处境', '核心爽点', '核心矛盾', '核心金手指', '主角成长方向']],
-      ['世界规则', ['力量规则', '境界体系', '资源规则', '世界背景', '社会秩序', '禁忌规则']],
-      ['剧情规划', ['主线目标', '阶段剧情', '开局事件', '关键转折', '高潮节点', '结局方向']],
+      ['核心设定', ['基础设定', '世界观', '主角金手指/优势']],
+      ['剧情规划', ['剧情蓝图', '爽点设计', '分卷剧情']],
       ['正派势力', []],
       ['反派势力', []],
       ['中立势力', []],
       ['其他势力', []],
-      ['功法能力', ['主修功法', '战斗技能', '特殊能力', '能力限制']],
-      ['物品装备', ['武器', '防具/护身物', '法宝/特殊装备', '关键道具']],
-      ['资源货币', ['通用货币', '修炼资源', '材料资源', '交易规则']],
-      ['特殊资源', ['传承资格', '权限令牌', '唯一资源', '稀缺名额']],
-      ['世界地图', ['大陆结构', '国家城池', '宗门位置', '交通路线', '重要地点']],
-      ['危险区域', ['秘境', '禁区', '遗迹', '战场', '污染/灾变区域']],
-      ['主线伏笔', ['核心秘密', '世界真相', '主线线索', '后期反转']],
-      ['人物伏笔', ['身份秘密', '血脉/身世', '关系伏笔', '背叛/转变']],
-      ['已回收伏笔', ['已揭露秘密', '已解决线索', '已完成回收']],
-      ['硬规则', ['战力规则', '时间规则', '能力边界', '世界不可违背规则']],
-      ['禁写规则', ['不能前后矛盾', '不能写崩人设', '不能跳过铺垫', '不能破坏爽点承诺', '不能滥加设定']],
+      ['功法能力', []],
+      ['物品装备', []],
+      ['资源货币', []],
+      ['特殊资源', []],
+      ['怪物列表', []],
+      ['世界地图', ['世界架构', '危险区域']],
+      ['主线伏笔', ['主线伏笔']],
+      ['人物伏笔', ['人物伏笔']],
+      ['已回收伏笔', ['已回收伏笔']],
+      ['书写规则', ['写作规范', '写作禁忌']],
     ]);
     const expectedEntryCount = Array.from(expectedEntriesByType.values()).reduce((total, titles) => total + titles.length, 0);
 
@@ -2545,13 +3951,13 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: '作品设定18' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '核心设定6' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '核心设定6' }));
-    ['作品定位', '主角初始处境', '核心爽点', '核心矛盾', '核心金手指', '主角成长方向'].forEach((title) => {
-      expect(screen.getByText(title)).toBeInTheDocument();
-    });
-    expect(screen.queryByText('力量规则')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '作品设定8' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '势力地图2' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '核心设定3' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '核心设定3' }));
+    expect(screen.getAllByText('核心设定').length).toBeGreaterThan(0);
+    expect(screen.getByDisplayValue('基础设定')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('世界规则')).not.toBeInTheDocument();
 
     const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
     const storedSettingEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '大纲');
@@ -2562,11 +3968,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
         .map((entry: { title: string }) => entry.title);
       expect(titles).toEqual(expectedTitles);
     });
-    const powerRuleEntry = storedSettingEntries.find((entry: { title: string }) => entry.title === '力量规则');
-    expect(powerRuleEntry).toBeTruthy();
-    expect(JSON.parse(powerRuleEntry.content).type).toBe('世界规则');
-    expect(JSON.parse(powerRuleEntry.content).body).toBe('');
-    const positioningEntry = storedSettingEntries.find((entry: { title: string }) => entry.title === '作品定位');
+    const worldViewEntry = storedSettingEntries.find((entry: { title: string }) => entry.title === '世界观');
+    expect(worldViewEntry).toBeTruthy();
+    expect(JSON.parse(worldViewEntry.content).type).toBe('核心设定');
+    expect(JSON.parse(worldViewEntry.content).body).toBe('');
+    const positioningEntry = storedSettingEntries.find((entry: { title: string }) => entry.title === '基础设定');
     expect(JSON.parse(positioningEntry.content).body).toBe('');
     expect(storedSettingEntries.some((entry: { title: string }) => entry.title === '正派势力')).toBe(false);
     expect(storedSettingEntries.some((entry: { title: string }) => entry.title === '反派势力')).toBe(false);
@@ -2577,6 +3983,903 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
       expect(JSON.parse(entry.content).body).not.toContain('填写说明');
       expect(JSON.parse(entry.content).body).toBe('');
     });
+  });
+
+  it('locks default setting groups and default setting entries from rename and delete actions', async () => {
+    const storageKey = 'workbench-default-setting-entry-lock-test';
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '剧情规划3' }));
+    fireEvent.click(screen.getByText('剧情蓝图').closest('button') as HTMLElement);
+
+    const defaultTitleInput = screen.getByDisplayValue('剧情蓝图');
+    expect(defaultTitleInput).toBeDisabled();
+    expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+
+    fireEvent.contextMenu(screen.getByText('剧情蓝图').closest('button') as HTMLElement);
+    expect(screen.queryByText('重命名')).not.toBeInTheDocument();
+    expect(screen.queryByText('删除')).not.toBeInTheDocument();
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: '剧情规划3' }));
+    expect(screen.queryByText('删除分类')).not.toBeInTheDocument();
+  });
+
+  it('keeps custom setting entries editable and deletable from the context menu without a footer delete button', async () => {
+    const storageKey = 'workbench-custom-setting-entry-stays-editable-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'custom-setting',
+        tab: '大纲',
+        title: '自定义剧情设定',
+        content: JSON.stringify({ type: '剧情规划', body: '' }),
+        updatedAt: '2026/6/19 01:00:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '剧情规划1' }));
+    fireEvent.click(screen.getByText('自定义剧情设定').closest('button') as HTMLElement);
+
+    expect(screen.getByDisplayValue('自定义剧情设定')).not.toBeDisabled();
+    expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument();
+
+    fireEvent.contextMenu(screen.getByText('自定义剧情设定').closest('button') as HTMLElement);
+    expect(screen.getByText('重命名')).toBeInTheDocument();
+    expect(screen.getAllByText('删除').length).toBeGreaterThan(0);
+  });
+
+  it('freezes the current setting workspace catalog as the new-novel default', async () => {
+    const storageKey = 'workbench-current-setting-default-catalog-test';
+    const expectedCatalog = {
+      作品设定: {
+        核心设定: ['基础设定', '世界观', '主角金手指/优势'],
+        剧情规划: ['剧情蓝图', '爽点设计', '分卷剧情'],
+        书写规则: ['写作规范', '写作禁忌'],
+      },
+      势力地图: {
+        正派势力: [],
+        反派势力: [],
+        中立势力: [],
+        其他势力: [],
+        世界地图: ['世界架构', '危险区域'],
+      },
+      道具资源: {
+        功法能力: [],
+        物品装备: [],
+        资源货币: [],
+        特殊资源: [],
+      },
+      怪物图鉴: {
+        怪物列表: [],
+      },
+      伏笔线索: {
+        主线伏笔: ['主线伏笔'],
+        人物伏笔: ['人物伏笔'],
+        已回收伏笔: ['已回收伏笔'],
+      },
+    };
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '作品设定8' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '人物设定1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '势力地图2' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '道具资源0' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '怪物图鉴0' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '伏笔线索3' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '书写规则2' })).toBeInTheDocument();
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const settingEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '大纲');
+    const entriesByType = new Map<string, string[]>();
+    settingEntries.forEach((entry: { title: string; content: string }) => {
+      const type = JSON.parse(entry.content).type;
+      entriesByType.set(type, [...(entriesByType.get(type) ?? []), entry.title]);
+      expect(JSON.parse(entry.content).body).toBe('');
+    });
+
+    Object.values(expectedCatalog).forEach((groups) => {
+      Object.entries(groups).forEach(([group, titles]) => {
+        expect(entriesByType.get(group) ?? []).toEqual(titles);
+      });
+    });
+  });
+
+  it('splits basic setting preview into story type, core concept, and one sentence summary fields', async () => {
+    const storageKey = 'workbench-basic-setting-structured-preview-test';
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const basicSetStart = panelSource.indexOf("id: 'work-core-basic'");
+    const basicSetEnd = panelSource.indexOf("id: 'work-core-world-view'", basicSetStart);
+    const basicSetSource = panelSource.slice(basicSetStart, basicSetEnd);
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定3' }));
+
+    expect(screen.getByDisplayValue('基础设定')).toBeInTheDocument();
+    expect(basicSetSource).toContain("gridColumnsClassName: 'grid-cols-2'");
+    expect(basicSetSource).not.toContain("gridColumnsClassName: 'grid-cols-3'");
+    expect(screen.getByLabelText('故事类型')).toBeInTheDocument();
+    expect(screen.getByLabelText('核心创意')).toBeInTheDocument();
+    expect(screen.getByLabelText('一句话概括')).toBeInTheDocument();
+    expect(screen.queryByText('设定预览')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('故事类型'), { target: { value: '玄幻升级流' } });
+    fireEvent.change(screen.getByLabelText('核心创意'), { target: { value: '主角靠吞噬旧神残骸修炼。' } });
+    fireEvent.change(screen.getByLabelText('一句话概括'), { target: { value: '被逐出宗门的少年一路吞噬神明遗骨，推翻天道秩序。' } });
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const basicSettingEntry = storedEntries.find((entry: { title: string }) => entry.title === '基础设定');
+    const body = JSON.parse(basicSettingEntry.content).body;
+    expect(body).toContain('【故事类型】：\n玄幻升级流');
+    expect(body).toContain('【核心创意】：\n主角靠吞噬旧神残骸修炼。');
+    expect(body).toContain('【一句话概括】：\n被逐出宗门的少年一路吞噬神明遗骨，推翻天道秩序。');
+  });
+
+  it('splits world view preview into era background, world pattern, and social order fields', async () => {
+    const storageKey = 'workbench-world-view-structured-preview-test';
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const worldViewSetStart = panelSource.indexOf("id: 'work-core-world-view'");
+    const worldViewSetEnd = panelSource.indexOf("id: 'work-core-cheat-advantage'", worldViewSetStart);
+    const worldViewSetSource = panelSource.slice(worldViewSetStart, worldViewSetEnd);
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'world-view',
+        tab: '大纲',
+        title: '世界观',
+        content: JSON.stringify({ type: '核心设定', body: '' }),
+        updatedAt: '2026/6/18 12:00:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定1' }));
+
+    expect(screen.getByDisplayValue('世界观')).toBeInTheDocument();
+    expect(worldViewSetSource).toContain("gridColumnsClassName: 'grid-cols-2'");
+    expect(worldViewSetSource).not.toContain("gridColumnsClassName: 'grid-cols-3'");
+    expect(screen.getByLabelText('时代背景')).toBeInTheDocument();
+    expect(screen.getByLabelText('世界格局')).toBeInTheDocument();
+    expect(screen.getByLabelText('社会秩序')).toBeInTheDocument();
+    expect(screen.queryByText('设定预览')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('时代背景'), { target: { value: '诸国割据后的灵气复苏时代。' } });
+    fireEvent.change(screen.getByLabelText('世界格局'), { target: { value: '宗门、王朝与商会三方争夺新矿脉。' } });
+    fireEvent.change(screen.getByLabelText('社会秩序'), { target: { value: '凡人依附城邦，修士受宗门律令和资源契约约束。' } });
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const worldViewEntry = storedEntries.find((entry: { title: string }) => entry.title === '世界观');
+    const body = JSON.parse(worldViewEntry.content).body;
+    expect(body).toContain('【时代背景】：\n诸国割据后的灵气复苏时代。');
+    expect(body).toContain('【世界格局】：\n宗门、王朝与商会三方争夺新矿脉。');
+    expect(body).toContain('【社会秩序】：\n凡人依附城邦，修士受宗门律令和资源契约约束。');
+  });
+
+  it('splits protagonist cheat advantage preview into the approved five fields', async () => {
+    const storageKey = 'workbench-cheat-advantage-structured-preview-test';
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const cheatSetStart = panelSource.indexOf("id: 'work-core-cheat-advantage'");
+    const cheatSetEnd = panelSource.indexOf("id: 'faction-righteous-no-1'", cheatSetStart);
+    const cheatSetSource = panelSource.slice(cheatSetStart, cheatSetEnd);
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '核心设定3' }));
+    fireEvent.click(screen.getByText('主角金手指/优势').closest('button') as HTMLElement);
+
+    expect(screen.getByDisplayValue('主角金手指/优势')).toBeInTheDocument();
+    expect(cheatSetSource).toContain("gridColumnsClassName: 'grid-cols-2'");
+    expect(cheatSetSource).not.toContain("gridColumnsClassName: 'grid-cols-5'");
+    expect(screen.getByLabelText('能力来源')).toBeInTheDocument();
+    expect(screen.getByLabelText('核心功能')).toBeInTheDocument();
+    expect(screen.getByLabelText('升级方式')).toBeInTheDocument();
+    expect(screen.getByLabelText('使用限制')).toBeInTheDocument();
+    expect(screen.getByLabelText('隐藏真相')).toBeInTheDocument();
+    expect(screen.queryByText('设定预览')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('能力来源'), { target: { value: '主角误入旧神遗迹后绑定残缺系统。' } });
+    fireEvent.change(screen.getByLabelText('核心功能'), { target: { value: '吞噬遗物并提取其中的能力碎片。' } });
+    fireEvent.change(screen.getByLabelText('升级方式'), { target: { value: '通过完成遗迹任务解锁新模块。' } });
+    fireEvent.change(screen.getByLabelText('使用限制'), { target: { value: '短时间内吞噬过量会污染神魂。' } });
+    fireEvent.change(screen.getByLabelText('隐藏真相'), { target: { value: '系统其实是旧神复苏前留下的筛选器。' } });
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const cheatEntry = storedEntries.find((entry: { title: string }) => entry.title === '主角金手指/优势');
+    const body = JSON.parse(cheatEntry.content).body;
+    expect(body).toContain('【能力来源】：\n主角误入旧神遗迹后绑定残缺系统。');
+    expect(body).toContain('【核心功能】：\n吞噬遗物并提取其中的能力碎片。');
+    expect(body).toContain('【升级方式】：\n通过完成遗迹任务解锁新模块。');
+    expect(body).toContain('【使用限制】：\n短时间内吞噬过量会污染神魂。');
+    expect(body).toContain('【隐藏真相】：\n系统其实是旧神复苏前留下的筛选器。');
+  });
+
+  it('uses role-style tabs for righteous faction fixed, status, and confirmation settings', async () => {
+    const storageKey = 'workbench-righteous-faction-structured-preview-test';
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'righteous-faction-1',
+        tab: '大纲',
+        title: '1号势力',
+        content: JSON.stringify({ type: '正派势力', body: '' }),
+        updatedAt: '2026/6/19 01:00:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '势力地图1' }));
+    fireEvent.click(screen.getByRole('button', { name: '正派势力1' }));
+    fireEvent.click(screen.getByText('1号势力').closest('button') as HTMLElement);
+
+    expect(screen.getByRole('button', { name: '固定设定' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '状态设定' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '确认' })).toBeInTheDocument();
+    expect(screen.queryByText(/长期档案，智能导入时优先补全/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('势力名')).toHaveValue('1号势力');
+    expect(screen.getByTestId('structured-title-field')).toContainElement(screen.getByLabelText('势力名'));
+    expect(screen.getByTestId('structured-setting-fields')).not.toContainElement(screen.getByLabelText('势力名'));
+    expect(screen.queryByText('设定名')).not.toBeInTheDocument();
+    expect(panelSource).toContain("currentStructuredTitleFieldLabel ? 'px-5 py-3' : 'p-5'");
+    expect(panelSource).toContain('className="relative flex h-[48px] w-[168px] shrink-0 items-center rounded-[20px] border-2 border-slate-950 bg-white px-4 py-0"');
+    expect(panelSource).toContain('className={`h-7 w-full bg-transparent text-lg font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400');
+    expect(panelSource).toContain('<div aria-hidden="true" className="h-9 w-[112px] shrink-0" />');
+    expect(panelSource).toContain('{currentStructuredActiveGroup.title}共 {currentStructuredActiveGroupWordCount} 字');
+    expect(panelSource).not.toContain('className={`h-full w-full bg-transparent text-xl font-black leading-7 text-slate-950 outline-none placeholder:text-slate-400');
+    expect(panelSource).not.toContain('className="relative h-[54px] w-[168px] shrink-0 rounded-[22px] border-2 border-slate-950 bg-white px-4 pb-2 pt-4"');
+    expect(screen.getByLabelText('基本信息')).toBeInTheDocument();
+    expect(screen.getByLabelText('势力特点')).toBeInTheDocument();
+    expect(screen.getByLabelText('组织架构')).toBeInTheDocument();
+    expect(screen.getByLabelText('主要人物')).toBeInTheDocument();
+    expect(screen.queryByLabelText('势力关系')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('势力名'), { target: { value: '青云宗' } });
+    fireEvent.change(screen.getByLabelText('基本信息'), { target: { value: '青云宗，东洲正道宗门。' } });
+
+    fireEvent.click(screen.getByRole('button', { name: '状态设定' }));
+    expect(screen.queryByText(/智能更新时优先刷新这一侧/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('势力关系')).toBeInTheDocument();
+    expect(screen.getByLabelText('对主角策略')).toBeInTheDocument();
+    expect(screen.getByLabelText('核心问题/矛盾')).toBeInTheDocument();
+    expect(screen.queryByLabelText('基本信息')).not.toBeInTheDocument();
+    expect(screen.queryByText('设定预览')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('势力关系'), { target: { value: '暂时与主角合作，暗中防备魔道。' } });
+    fireEvent.change(screen.getByLabelText('对主角策略'), { target: { value: '先保护主角，再观察其金手指来源。' } });
+    fireEvent.change(screen.getByLabelText('核心问题/矛盾'), { target: { value: '内部长老对是否支持主角存在分歧。' } });
+
+    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+    expect(screen.getByText('确认更新')).toBeInTheDocument();
+    expect(screen.getByText(/AI 反馈进入确认区后/)).toBeInTheDocument();
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const factionEntry = storedEntries.find((entry: { title: string }) => entry.title === '青云宗');
+    const body = JSON.parse(factionEntry.content).body;
+    expect(body).toContain('【基本信息】：\n青云宗，东洲正道宗门。');
+    expect(body).toContain('【势力关系】：\n暂时与主角合作，暗中防备魔道。');
+    expect(body).toContain('【对主角策略】：\n先保护主角，再观察其金手指来源。');
+    expect(body).toContain('【核心问题/矛盾】：\n内部长老对是否支持主角存在分歧。');
+  });
+
+  it('uses dedicated structured templates for world maps and danger zones', async () => {
+    const storageKey = 'workbench-world-map-danger-zone-structured-template-test';
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'world-map-1',
+        tab: '大纲',
+        title: '东洲全图',
+        content: JSON.stringify({ type: '世界地图', body: '' }),
+        updatedAt: '2026/6/22 02:00:00',
+      },
+      {
+        id: 'danger-zone-1',
+        tab: '大纲',
+        title: '危险区域',
+        content: JSON.stringify({ type: '世界地图', body: '' }),
+        updatedAt: '2026/6/22 02:10:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    expect(panelSource).toContain("id: 'faction-world-map'");
+    expect(panelSource).toContain("entryType: '世界地图'");
+    expect(panelSource).toContain("titleFieldLabel: '地图名'");
+    expect(panelSource).toContain("fieldKeys: ['mapOverview', 'regionDivision', 'factionDistribution', 'resourceDistribution', 'geographyRules']");
+    expect(panelSource).toContain("title: '世界架构'");
+    expect(panelSource).toContain("title: '区域划分'");
+    expect(panelSource).toContain("title: '势力分布'");
+    expect(panelSource).toContain("title: '资源分布'");
+    expect(panelSource).toContain("title: '世界规则'");
+    expect(panelSource).not.toContain("key: 'trafficRoutes'");
+    expect(panelSource).not.toContain("title: '交通路线'");
+    expect(panelSource).toContain("title: '主角已知范围'");
+    expect(panelSource).toContain("id: 'faction-danger-zone'");
+    expect(panelSource).toContain("entryType: '世界地图'");
+    expect(panelSource).toContain("titleFieldLabel: '区域名'");
+    expect(panelSource).toContain("title: '区域概况'");
+    expect(panelSource).toContain("title: '危险来源'");
+    expect(panelSource).toContain("title: '进入条件'");
+    expect(panelSource).toContain("title: '资源收益'");
+    expect(panelSource).toContain("title: '核心规则'");
+    expect(panelSource).toContain("title: '探索进度'");
+    expect(panelSource).toContain("title: '外部势力介入'");
+
+    fireEvent.click(screen.getByRole('button', { name: '势力地图2' }));
+    fireEvent.click(screen.getByRole('button', { name: '世界地图2' }));
+    fireEvent.click(screen.getByText('东洲全图').closest('button') as HTMLElement);
+
+    expect(screen.getByTestId('structured-title-field')).toContainElement(screen.getByLabelText('地图名'));
+    expect(screen.getByLabelText('地图名')).toHaveValue('东洲全图');
+    expect(screen.getByRole('button', { name: '固定设定' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '状态设定' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '确认' })).toBeInTheDocument();
+    expect(screen.getByLabelText('世界架构')).toBeInTheDocument();
+    expect(screen.getByLabelText('区域划分')).toBeInTheDocument();
+    expect(screen.getByLabelText('势力分布')).toBeInTheDocument();
+    expect(screen.getByLabelText('资源分布')).toBeInTheDocument();
+    expect(screen.getByLabelText('世界规则')).toBeInTheDocument();
+    expect(screen.queryByLabelText('交通路线')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '状态设定' }));
+    expect(screen.getByLabelText('当前局势')).toBeInTheDocument();
+    expect(screen.getByLabelText('封锁/开放')).toBeInTheDocument();
+    expect(screen.getByLabelText('主角已知范围')).toBeInTheDocument();
+    expect(screen.getByLabelText('近期变化')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('危险区域').closest('button') as HTMLElement);
+
+    expect(screen.getByTestId('structured-title-field')).toContainElement(screen.getByLabelText('区域名'));
+    expect(screen.getByLabelText('区域名')).toHaveValue('危险区域');
+    fireEvent.click(screen.getByRole('button', { name: '固定设定' }));
+    expect(screen.getByLabelText('区域概况')).toBeInTheDocument();
+    expect(screen.getByLabelText('危险来源')).toBeInTheDocument();
+    expect(screen.getByLabelText('进入条件')).toBeInTheDocument();
+    expect(screen.getByLabelText('资源收益')).toBeInTheDocument();
+    expect(screen.getByLabelText('历史背景')).toBeInTheDocument();
+    expect(screen.getByLabelText('核心规则')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '状态设定' }));
+    expect(screen.getByLabelText('当前状态')).toBeInTheDocument();
+    expect(screen.getByLabelText('探索进度')).toBeInTheDocument();
+    expect(screen.getByLabelText('风险变化')).toBeInTheDocument();
+    expect(screen.getByLabelText('资源剩余')).toBeInTheDocument();
+    expect(screen.getByLabelText('已触发事件')).toBeInTheDocument();
+    expect(screen.getByLabelText('外部势力介入')).toBeInTheDocument();
+  });
+
+  it('adds monster bestiary as a structured setting workspace', async () => {
+    const storageKey = 'workbench-monster-bestiary-structured-preview-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'monster-bestiary-1',
+        tab: '大纲',
+        title: '黑鳞妖狼',
+        content: JSON.stringify({ type: '怪物列表', body: '' }),
+        updatedAt: '2026/6/22 01:00:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '怪物图鉴1' }));
+    fireEvent.click(screen.getByRole('button', { name: '怪物列表1' }));
+    fireEvent.click(screen.getByText('黑鳞妖狼').closest('button') as HTMLElement);
+
+    expect(screen.getByTestId('structured-title-field')).toContainElement(screen.getByLabelText('怪物名'));
+    expect(screen.getByLabelText('怪物名')).toHaveValue('黑鳞妖狼');
+    expect(screen.queryByRole('button', { name: '固定设定' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '状态设定' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '确认' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('怪物形象')).toBeInTheDocument();
+    expect(screen.getByLabelText('怪物能力')).toBeInTheDocument();
+    expect(screen.getByLabelText('怪物背景')).toBeInTheDocument();
+    expect(screen.getByLabelText('怪物弱点')).toBeInTheDocument();
+    expect(screen.getByLabelText('出没位置')).toBeInTheDocument();
+    expect(screen.getByLabelText('掉落/资源')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('怪物形象'), { target: { value: '黑鳞覆背，额头有银色竖纹。' } });
+    fireEvent.change(screen.getByLabelText('怪物能力'), { target: { value: '夜间群猎，速度极快，擅长围杀。' } });
+    fireEvent.change(screen.getByLabelText('怪物背景'), { target: { value: '三阶妖狼，首次出现在黑松岭。' } });
+    fireEvent.change(screen.getByLabelText('怪物弱点'), { target: { value: '惧火，腹部鳞片较薄。' } });
+    fireEvent.change(screen.getByLabelText('出没位置'), { target: { value: '第十二章追踪主角至山谷。' } });
+    fireEvent.change(screen.getByLabelText('掉落/资源'), { target: { value: '妖丹、黑鳞、狼牙。' } });
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const monsterEntry = storedEntries.find((entry: { title: string }) => entry.title === '黑鳞妖狼');
+    const body = JSON.parse(monsterEntry.content).body;
+    expect(body).toContain('【怪物形象】：\n黑鳞覆背，额头有银色竖纹。');
+    expect(body).toContain('【怪物能力】：\n夜间群猎，速度极快，擅长围杀。');
+    expect(body).toContain('【怪物背景】：\n三阶妖狼，首次出现在黑松岭。');
+    expect(body).toContain('【怪物弱点】：\n惧火，腹部鳞片较薄。');
+    expect(body).toContain('【出没位置】：\n第十二章追踪主角至山谷。');
+    expect(body).toContain('【掉落/资源】：\n妖丹、黑鳞、狼牙。');
+  });
+
+  it('splits item equipment preview into the approved resource fields', async () => {
+    const storageKey = 'workbench-item-equipment-structured-preview-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'item-equipment',
+        tab: '大纲',
+        title: '玄青药鼎',
+        content: JSON.stringify({ type: '物品装备', body: '' }),
+        updatedAt: '2026/6/19 01:00:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '道具资源1' }));
+    fireEvent.click(screen.getByRole('button', { name: '物品装备1' }));
+    fireEvent.click(screen.getByText('玄青药鼎').closest('button') as HTMLElement);
+
+    expect(screen.getByDisplayValue('玄青药鼎')).toBeInTheDocument();
+    expect(screen.getByLabelText('基本信息')).toBeInTheDocument();
+    expect(screen.getByLabelText('物品描述')).toBeInTheDocument();
+    expect(screen.getByLabelText('效果/功能')).toBeInTheDocument();
+    expect(screen.getByLabelText('来历')).toBeInTheDocument();
+    expect(screen.getByLabelText('归属变化')).toBeInTheDocument();
+    expect(screen.getByLabelText('当前状态')).toBeInTheDocument();
+    expect(screen.getByLabelText('相关伏笔')).toBeInTheDocument();
+    expect(screen.queryByText('设定预览')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('基本信息'), { target: { value: '法宝，玄阶上品，第三章初次登场。' } });
+    fireEvent.change(screen.getByLabelText('物品描述'), { target: { value: '青铜小鼎，鼎身有裂纹和云纹。' } });
+    fireEvent.change(screen.getByLabelText('效果/功能'), { target: { value: '可炼化灵草并短暂压制魔气。' } });
+    fireEvent.change(screen.getByLabelText('来历'), { target: { value: '来自上古药宗遗址，是宗门叛徒偷出的残器。' } });
+    fireEvent.change(screen.getByLabelText('归属变化'), { target: { value: '先由反派持有，后被主角夺回。' } });
+    fireEvent.change(screen.getByLabelText('当前状态'), { target: { value: '主角持有，器灵沉睡，裂纹未修复。' } });
+    fireEvent.change(screen.getByLabelText('相关伏笔'), { target: { value: '鼎底残符指向药宗真正传承地。' } });
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const itemEntry = storedEntries.find((entry: { title: string }) => entry.title === '玄青药鼎');
+    const body = JSON.parse(itemEntry.content).body;
+    expect(body).toContain('【基本信息】：\n法宝，玄阶上品，第三章初次登场。');
+    expect(body).toContain('【物品描述】：\n青铜小鼎，鼎身有裂纹和云纹。');
+    expect(body).toContain('【效果/功能】：\n可炼化灵草并短暂压制魔气。');
+    expect(body).toContain('【来历】：\n来自上古药宗遗址，是宗门叛徒偷出的残器。');
+    expect(body).toContain('【归属变化】：\n先由反派持有，后被主角夺回。');
+    expect(body).toContain('【当前状态】：\n主角持有，器灵沉睡，裂纹未修复。');
+    expect(body).toContain('【相关伏笔】：\n鼎底残符指向药宗真正传承地。');
+  });
+
+  it('splits ability settings into fixed settings, status settings, and confirmation tabs', async () => {
+    const storageKey = 'workbench-item-ability-structured-preview-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'item-ability',
+        tab: '大纲',
+        title: '玄雷步',
+        content: JSON.stringify({ type: '功法能力', body: '' }),
+        updatedAt: '2026/6/22 23:10:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '道具资源1' }));
+    fireEvent.click(screen.getByRole('button', { name: '功法能力1' }));
+    fireEvent.click(screen.getByText('玄雷步').closest('button') as HTMLElement);
+
+    expect(screen.getByRole('button', { name: '固定设定' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '状态设定' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '确认' })).toBeInTheDocument();
+    expect(screen.getByLabelText('基本信息')).toBeInTheDocument();
+    expect(screen.getByLabelText('能力来源')).toBeInTheDocument();
+    expect(screen.getByLabelText('核心效果')).toBeInTheDocument();
+    expect(screen.getByLabelText('修炼/升级')).toBeInTheDocument();
+    expect(screen.getByLabelText('使用限制')).toBeInTheDocument();
+    expect(screen.getByLabelText('相关伏笔')).toBeInTheDocument();
+    expect(screen.queryByText('功法能力的长期规则，记录来源、核心效果、成长方式、限制和伏笔。')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '状态设定' }));
+    expect(screen.getByLabelText('当前熟练度')).toBeInTheDocument();
+    expect(screen.getByLabelText('当前突破')).toBeInTheDocument();
+    expect(screen.getByLabelText('受损/封印')).toBeInTheDocument();
+    expect(screen.getByLabelText('暴露程度')).toBeInTheDocument();
+    expect(screen.getByLabelText('冷却/代价')).toBeInTheDocument();
+    expect(screen.getByLabelText('最近使用')).toBeInTheDocument();
+    expect(screen.queryByText('章节推进后会变化，AI 更新时只刷新熟练度、突破、受损封印、暴露程度、代价和最近使用。')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+    expect(screen.getByText('确认更新')).toBeInTheDocument();
+    expect(screen.getByText(/确认后才写入状态设定/)).toBeInTheDocument();
+  });
+
+  it('keeps resource currency as fixed structured settings without status or confirm tabs', async () => {
+    const storageKey = 'workbench-resource-currency-structured-preview-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'resource-currency',
+        tab: '大纲',
+        title: '灵石体系',
+        content: JSON.stringify({ type: '资源货币', body: '' }),
+        updatedAt: '2026/6/22 22:30:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '道具资源1' }));
+    fireEvent.click(screen.getByRole('button', { name: '资源货币1' }));
+    fireEvent.click(screen.getByText('灵石体系').closest('button') as HTMLElement);
+
+    expect(screen.getByDisplayValue('灵石体系')).toBeInTheDocument();
+    expect(screen.getByLabelText('基本信息')).toBeInTheDocument();
+    expect(screen.getByLabelText('价值等级')).toBeInTheDocument();
+    expect(screen.getByLabelText('获取渠道')).toBeInTheDocument();
+    expect(screen.getByLabelText('消耗用途')).toBeInTheDocument();
+    expect(screen.getByLabelText('流通限制')).toBeInTheDocument();
+    expect(screen.getByLabelText('关联规则')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '固定设定' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '状态设定' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '确认' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('当前库存')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('债务关系')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('基本信息'), { target: { value: '灵石是修行界通用资源。' } });
+    fireEvent.change(screen.getByLabelText('价值等级'), { target: { value: '一枚中品灵石可换一百枚下品灵石。' } });
+    fireEvent.change(screen.getByLabelText('获取渠道'), { target: { value: '矿脉、任务、宗门俸禄和黑市交易。' } });
+    fireEvent.change(screen.getByLabelText('消耗用途'), { target: { value: '修炼、炼器、阵法、传送和购买情报。' } });
+    fireEvent.change(screen.getByLabelText('流通限制'), { target: { value: '边境城只认下品灵石，黑市交易抽成。' } });
+    fireEvent.change(screen.getByLabelText('关联规则'), { target: { value: '矿脉枯竭会推高边境灵石价格。' } });
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const resourceEntry = storedEntries.find((entry: { title: string }) => entry.title === '灵石体系');
+    const body = JSON.parse(resourceEntry.content).body;
+    expect(body).toContain('【基本信息】：\n灵石是修行界通用资源。');
+    expect(body).toContain('【价值等级】：\n一枚中品灵石可换一百枚下品灵石。');
+    expect(body).toContain('【获取渠道】：\n矿脉、任务、宗门俸禄和黑市交易。');
+    expect(body).toContain('【消耗用途】：\n修炼、炼器、阵法、传送和购买情报。');
+    expect(body).toContain('【流通限制】：\n边境城只认下品灵石，黑市交易抽成。');
+    expect(body).toContain('【关联规则】：\n矿脉枯竭会推高边境灵石价格。');
+    expect(body).not.toContain('【当前库存】');
+    expect(body).not.toContain('【债务关系】');
+  });
+
+  it('splits special resources into fixed settings, status settings, and confirmation tabs', async () => {
+    const storageKey = 'workbench-special-resource-structured-preview-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'special-resource',
+        tab: '大纲',
+        title: '龙脉权限',
+        content: JSON.stringify({ type: '特殊资源', body: '' }),
+        updatedAt: '2026/6/22 22:31:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '道具资源1' }));
+    fireEvent.click(screen.getByRole('button', { name: '特殊资源1' }));
+    fireEvent.click(screen.getByText('龙脉权限').closest('button') as HTMLElement);
+
+    expect(screen.getByRole('button', { name: '固定设定' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '状态设定' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '确认' })).toBeInTheDocument();
+    expect(screen.getByLabelText('基本信息')).toBeInTheDocument();
+    expect(screen.getByLabelText('获取条件')).toBeInTheDocument();
+    expect(screen.getByLabelText('使用规则')).toBeInTheDocument();
+    expect(screen.getByLabelText('权限边界')).toBeInTheDocument();
+    expect(screen.getByLabelText('失效条件')).toBeInTheDocument();
+    expect(screen.getByLabelText('主线关联')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '状态设定' }));
+    expect(screen.getByLabelText('当前归属')).toBeInTheDocument();
+    expect(screen.getByLabelText('可用状态')).toBeInTheDocument();
+    expect(screen.getByLabelText('剩余次数')).toBeInTheDocument();
+    expect(screen.getByLabelText('竞争风险')).toBeInTheDocument();
+    expect(screen.getByLabelText('激活进度')).toBeInTheDocument();
+    expect(screen.getByLabelText('最近触发')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+    expect(screen.getByText('确认更新')).toBeInTheDocument();
+    expect(screen.getByText(/确认后才写入状态设定/)).toBeInTheDocument();
+  });
+
+  it('keeps structured setting group tabs aligned with role editor styling and smaller placeholders', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const styleSource = await readSharedStylesSource();
+
+    expect(panelSource).toContain("const STRUCTURED_SETTING_TABS = ['固定设定', '状态设定', '确认'] as const;");
+    expect(panelSource).toContain('activeStructuredSettingTab');
+    expect(panelSource).toContain('function SettingSegmentedTabs<T extends string>');
+    expect(panelSource).toContain("const SETTING_SEGMENTED_TAB_GROUP_CLASS = 'flex h-10 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white';");
+    expect(panelSource).toContain("const SETTING_SEGMENTED_TAB_ACTIVE_CLASS = 'border-[#08AACE] bg-[#EAF9FD] text-[#078FAE]';");
+    expect(panelSource).toContain("const SETTING_SEGMENTED_TAB_IDLE_CLASS = 'bg-white text-slate-600 hover:bg-[#EAF9FD] hover:text-[#078FAE]';");
+    expect(panelSource).toContain('onChange={setActiveStructuredSettingTab}');
+    expect(panelSource).toContain("activeStructuredSettingTab === '确认'");
+    expect(panelSource).not.toContain('{activeGroup.description}');
+    expect(panelSource).not.toContain('currentStructuredSettingFieldSet.groups.map((group)');
+    expect(panelSource).not.toContain("'border-slate-950 bg-slate-950 text-white'");
+    expect(panelSource).not.toContain("'border-slate-200 bg-white text-slate-500 hover:border-cyan-200 hover:text-cyan-700'");
+    expect(panelSource).toContain('xy-structured-setting-field');
+    expect(styleSource).toContain('.xy-floating-field.xy-structured-setting-field textarea::placeholder');
+    expect(styleSource).toContain('font-size: 0.8125rem;');
+  });
+
+  it('splits plot planning previews into blueprint, volume, and payoff fields', async () => {
+    const storageKey = 'workbench-plot-planning-structured-preview-test';
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const blueprintSetStart = panelSource.indexOf("id: 'work-plot-blueprint'");
+    const blueprintSetEnd = panelSource.indexOf("id: 'work-plot-volume'", blueprintSetStart);
+    const blueprintSetSource = panelSource.slice(blueprintSetStart, blueprintSetEnd);
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '剧情规划3' }));
+
+    fireEvent.click(screen.getByText('剧情蓝图').closest('button') as HTMLElement);
+    expect(screen.getByLabelText('整体规划')).toBeInTheDocument();
+    expect(screen.getByLabelText('主线目标')).toBeInTheDocument();
+    expect(screen.getByLabelText('阶段节奏')).toBeInTheDocument();
+    expect(blueprintSetSource).toContain("gridColumnsClassName: 'grid-cols-2'");
+    expect(blueprintSetSource).not.toContain("gridColumnsClassName: 'grid-cols-3'");
+    fireEvent.change(screen.getByLabelText('整体规划'), { target: { value: '全书三卷，一百万字。' } });
+    fireEvent.change(screen.getByLabelText('主线目标'), { target: { value: '主角推翻旧天庭。' } });
+    fireEvent.change(screen.getByLabelText('阶段节奏'), { target: { value: '前期求生，中期扩张，后期决战。' } });
+
+    fireEvent.click(screen.getByText('分卷剧情').closest('button') as HTMLElement);
+    expect(screen.getByLabelText('分卷总览')).toBeInTheDocument();
+    expect(screen.getByLabelText('卷核心事件')).toBeInTheDocument();
+    expect(screen.getByLabelText('卷末高潮')).toBeInTheDocument();
+    expect(screen.getByLabelText('下一卷钩子')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('分卷总览'), { target: { value: '第一卷凡界崛起。' } });
+    fireEvent.change(screen.getByLabelText('卷核心事件'), { target: { value: '主角夺回祖地。' } });
+    fireEvent.change(screen.getByLabelText('卷末高潮'), { target: { value: '宗门大比反杀。' } });
+    fireEvent.change(screen.getByLabelText('下一卷钩子'), { target: { value: '通往上界的钥匙出现。' } });
+
+    fireEvent.click(screen.getByText('爽点设计').closest('button') as HTMLElement);
+    expect(screen.getByLabelText('核心爽点类型')).toBeInTheDocument();
+    expect(screen.getByLabelText('打脸对象设计')).toBeInTheDocument();
+    expect(screen.getByLabelText('爽点公式')).toBeInTheDocument();
+    expect(screen.getByLabelText('爽点节奏')).toBeInTheDocument();
+    expect(screen.queryByText('设定预览')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('核心爽点类型'), { target: { value: '升级、反杀、打脸。' } });
+    fireEvent.change(screen.getByLabelText('打脸对象设计'), { target: { value: '看不起主角的宗门长老。' } });
+    fireEvent.change(screen.getByLabelText('爽点公式'), { target: { value: '误判主角实力，公开挑衅，被当场反杀。' } });
+    fireEvent.change(screen.getByLabelText('爽点节奏'), { target: { value: '每三章一个小回报，每卷一个大爆点。' } });
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const blueprintBody = JSON.parse(storedEntries.find((entry: { title: string }) => entry.title === '剧情蓝图').content).body;
+    const volumeBody = JSON.parse(storedEntries.find((entry: { title: string }) => entry.title === '分卷剧情').content).body;
+    const payoffBody = JSON.parse(storedEntries.find((entry: { title: string }) => entry.title === '爽点设计').content).body;
+    expect(blueprintBody).toContain('【整体规划】：\n全书三卷，一百万字。');
+    expect(blueprintBody).toContain('【主线目标】：\n主角推翻旧天庭。');
+    expect(blueprintBody).toContain('【阶段节奏】：\n前期求生，中期扩张，后期决战。');
+    expect(volumeBody).toContain('【分卷总览】：\n第一卷凡界崛起。');
+    expect(volumeBody).toContain('【卷核心事件】：\n主角夺回祖地。');
+    expect(volumeBody).toContain('【卷末高潮】：\n宗门大比反杀。');
+    expect(volumeBody).toContain('【下一卷钩子】：\n通往上界的钥匙出现。');
+    expect(payoffBody).toContain('【核心爽点类型】：\n升级、反杀、打脸。');
+    expect(payoffBody).toContain('【打脸对象设计】：\n看不起主角的宗门长老。');
+    expect(payoffBody).toContain('【爽点公式】：\n误判主角实力，公开挑衅，被当场反杀。');
+    expect(payoffBody).toContain('【爽点节奏】：\n每三章一个小回报，每卷一个大爆点。');
+  });
+
+  it('keeps structured plot planning fields after renaming a custom structured setting entry', async () => {
+    const storageKey = 'workbench-structured-setting-fields-survive-rename-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'custom-structured-blueprint',
+        tab: '大纲',
+        title: '剧情蓝图总表',
+        content: JSON.stringify({
+          type: '剧情规划',
+          body: '',
+          structuredFieldSetId: 'work-plot-blueprint',
+        }),
+        updatedAt: '2026/6/19 00:10:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '剧情规划1' }));
+    fireEvent.click(screen.getByText('剧情蓝图总表').closest('button') as HTMLElement);
+    fireEvent.change(screen.getByLabelText('整体规划'), { target: { value: '全书三卷，一百万字。' } });
+
+    fireEvent.change(screen.getByDisplayValue('剧情蓝图总表'), { target: { value: '完整剧情蓝图' } });
+
+    expect(screen.getByLabelText('整体规划')).toBeInTheDocument();
+    expect(screen.getByLabelText('整体规划')).toHaveValue('全书三卷，一百万字。');
+    expect(screen.getByLabelText('主线目标')).toBeInTheDocument();
+    expect(screen.getByLabelText('阶段节奏')).toBeInTheDocument();
+    expect(screen.queryByText('设定预览')).not.toBeInTheDocument();
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const renamedEntry = storedEntries.find((entry: { title: string }) => entry.title === '完整剧情蓝图');
+    expect(renamedEntry).toBeTruthy();
+    const renamedSetting = JSON.parse(renamedEntry.content);
+    expect(renamedSetting.structuredFieldSetId).toBe('work-plot-blueprint');
+    expect(renamedSetting.body).toContain('【整体规划】：\n全书三卷，一百万字。');
+  });
+
+  it('recovers structured fields for custom entries when their body already has matching section titles', async () => {
+    const storageKey = 'workbench-structured-setting-fields-recover-custom-entry-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(storageKey, JSON.stringify([
+      {
+        id: 'custom-body-blueprint',
+        tab: '大纲',
+        title: '剧情蓝图总表',
+        content: JSON.stringify({
+          type: '剧情规划',
+          body: '【整体规划】：\n全书三卷，一百万字。\n\n【主线目标】：\n主角推翻旧天庭。\n\n【阶段节奏】：\n前期求生，中期扩张，后期决战。',
+        }),
+        updatedAt: '2026/6/19 00:10:00',
+      },
+    ]));
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '剧情规划1' }));
+    fireEvent.click(screen.getByText('剧情蓝图总表').closest('button') as HTMLElement);
+
+    expect(screen.getByLabelText('整体规划')).toHaveValue('全书三卷，一百万字。');
+    expect(screen.getByLabelText('主线目标')).toHaveValue('主角推翻旧天庭。');
+    expect(screen.getByLabelText('阶段节奏')).toHaveValue('前期求生，中期扩张，后期决战。');
+    expect(screen.queryByText('设定预览')).not.toBeInTheDocument();
+  });
+
+  it('uses gray placeholder prompts for structured setting fields without saving them as content', async () => {
+    const storageKey = 'workbench-structured-setting-field-placeholder-test';
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '剧情规划3' }));
+
+    fireEvent.click(screen.getByText('剧情蓝图').closest('button') as HTMLElement);
+    expect(screen.getByLabelText('整体规划')).toHaveAttribute('placeholder', '预计总字数、共几卷、故事从哪里开始到哪里结束。');
+    expect(screen.getByLabelText('整体规划').closest('.xy-floating-field')).toHaveClass('xy-floating-visible-placeholder');
+    expect(screen.getByLabelText('主线目标')).toHaveAttribute('placeholder', '主角长期要完成的大目标。');
+    expect(screen.getByLabelText('阶段节奏')).toHaveAttribute('placeholder', '前期、中期、后期分别推进什么内容。');
+
+    fireEvent.click(screen.getByText('分卷剧情').closest('button') as HTMLElement);
+    expect(screen.getByLabelText('分卷总览')).toHaveAttribute('placeholder', '每一卷的卷名、字数、核心阶段和主要任务。');
+    expect(screen.getByLabelText('卷核心事件')).toHaveAttribute('placeholder', '这一卷最重要的剧情事件和冲突推进。');
+
+    fireEvent.click(screen.getByText('爽点设计').closest('button') as HTMLElement);
+    expect(screen.getByLabelText('爽点公式')).toHaveAttribute('placeholder', '主角想法、实际行动、结果、配角反应、主角内心反应。');
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const blueprintBody = JSON.parse(storedEntries.find((entry: { title: string }) => entry.title === '剧情蓝图').content).body;
+    expect(blueprintBody).not.toContain('预计总字数');
   });
 
   it('removes old empty auto-created faction item and location entries without removing user content', async () => {
@@ -2668,7 +4971,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
     const oldDefaultEntry = storedEntries.find((entry: { id: string }) => entry.id === 'old-default-positioning');
     const userEntry = storedEntries.find((entry: { id: string }) => entry.id === 'user-positioning');
-    expect(JSON.parse(oldDefaultEntry.content).body).toBe('');
+    expect(oldDefaultEntry).toBeUndefined();
     expect(JSON.parse(userEntry.content).body).toBe('这是我自己写的作品定位。');
   });
 
@@ -2677,7 +4980,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const propsStart = panelSource.indexOf('type RoleBaseStateEditorProps = {');
     const propsEnd = panelSource.indexOf('function RoleBaseStateEditor', propsStart);
     const editorStart = propsEnd;
-    const editorEnd = panelSource.indexOf('<div className="grid min-h-0 flex-1', editorStart);
+    const editorEnd = panelSource.indexOf('<section className=', editorStart);
     const propsSource = panelSource.slice(propsStart, propsEnd);
     const editorHeaderSource = panelSource.slice(editorStart, editorEnd);
 
@@ -2693,12 +4996,12 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
 
     expect(panelSource).toContain("const [outlineSettingScope, setOutlineSettingScope] = useState<'work' | 'character'>('work')");
-    expect(panelSource).toContain("rounded-[22px] bg-slate-200/80 p-1 shadow-inner");
+    expect(panelSource).not.toContain('{false && activeTab === SETTING_TAB');
     expect(panelSource).toContain('const visibleWorkSettingCount = settingEntries.filter');
     expect(panelSource).toContain('const visibleRoleCount = roleEntries.filter');
-    expect(panelSource).toContain("{ value: 'work', label: '作品设定', count: visibleWorkSettingCount }");
-    expect(panelSource).toContain("{ value: 'character', label: '人物设定', count: visibleRoleCount }");
-    expect(panelSource).toContain("rounded-[18px] px-2.5 text-sm font-black");
+    expect(panelSource).toContain("{ id: 'work', label: '作品设定', count: visibleWorkSettingCount, type: null }");
+    expect(panelSource).toContain("{ id: 'character', label: '人物设定', count: visibleRoleCount, type: null }");
+    expect(panelSource).toContain('settingWorkspaceTopTabs');
     expect(panelSource).toContain("const effectiveLibraryTab = isOutlineCharacterScope ? ROLE_TAB : activeTab");
     expect(panelSource).toContain("const activeSettingTypeOptions = activeIsBrainstorm ? [BRAINSTORM_TYPE] : isOutlineCharacterScope ? roleTypeOptions : settingTypeOptions");
     expect(panelSource).toContain("{isOutlineCharacterScope ? '角色' : '设定'}");
@@ -2718,11 +5021,12 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('const settingWorkspaceDomainTabs = [');
     expect(panelSource).toContain("{ id: 'work', label: '作品设定', count: visibleWorkSettingCount, type: null }");
     expect(panelSource).toContain("{ id: 'character', label: '人物设定', count: visibleRoleCount, type: null }");
-    expect(panelSource).toContain("{ id: 'setting:faction', label: '势力设定', type: 'setting:faction' }");
+    expect(panelSource).toContain("{ id: 'setting:faction', label: '势力地图', type: 'setting:faction' }");
     expect(panelSource).toContain("{ id: 'setting:item', label: '道具资源', type: 'setting:item' }");
-    expect(panelSource).toContain("{ id: 'setting:location', label: '地点场景', type: 'setting:location' }");
+    expect(panelSource).toContain("{ id: 'setting:monster', label: '怪物图鉴', type: 'setting:monster' }");
+    expect(panelSource).not.toContain("label: '地点场景'");
     expect(panelSource).toContain("{ id: 'setting:foreshadow', label: '伏笔线索', type: 'setting:foreshadow' }");
-    expect(panelSource).toContain("{ id: 'setting:rule', label: '书写规则', type: 'setting:rule' }");
+    expect(panelSource).not.toContain("{ id: 'setting:rule', label: '书写规则', type: 'setting:rule' }");
     expect(panelSource).toContain("gridTemplateRows: activeTab === SETTING_TAB && !activeIsBrainstorm ? 'auto minmax(0,1fr)' : undefined");
     expect(panelSource).toContain("gridColumn: '1 / 4'");
     expect(panelSource).toContain('settingWorkspaceTopTabs');
@@ -2735,50 +5039,163 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   it('migrates the approved setting taxonomy into the production setting library', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const settingTypeOptionsStart = panelSource.indexOf('const settingTypeOptions = useMemo(() => {');
-    const settingTypeOptionsEnd = panelSource.indexOf('const activeClearSettingsCategoryTarget', settingTypeOptionsStart);
+    const settingTypeOptionsEnd = panelSource.indexOf('const clearSettingsTargetMeta', settingTypeOptionsStart);
     const settingTypeOptionsSource = panelSource.slice(settingTypeOptionsStart, settingTypeOptionsEnd);
 
-    expect(panelSource).toContain("const DEFAULT_WORK_SETTING_TYPES = ['核心设定', '世界规则', '剧情规划'];");
-    expect(panelSource).toContain("'setting:faction': ['正派势力', '反派势力', '中立势力', '其他势力']");
+    expect(panelSource).toContain("const DEFAULT_WORK_SETTING_TYPES = ['核心设定', '剧情规划', '书写规则'];");
+    expect(panelSource).toContain("'setting:faction': ['正派势力', '反派势力', '中立势力', '其他势力', '世界地图']");
     expect(panelSource).toContain("'setting:item': ['功法能力', '物品装备', '资源货币', '特殊资源']");
-    expect(panelSource).toContain("'setting:location': ['世界地图', '危险区域']");
+    expect(panelSource).toContain("'setting:monster': ['怪物列表']");
+    expect(panelSource).not.toContain("'setting:location': ['世界地图', '危险区域']");
     expect(panelSource).toContain("'setting:foreshadow': ['主线伏笔', '人物伏笔', '已回收伏笔']");
-    expect(panelSource).toContain("'setting:rule': ['硬规则', '禁写规则']");
+    expect(panelSource).not.toContain("'setting:rule': ['硬规则', '禁写规则']");
     expect(panelSource).toContain('const DEFAULT_SETTING_ENTRY_TYPE = DEFAULT_SETTING_TYPES[0] ?? UNCATEGORIZED_TYPE;');
     expect(settingTypeOptionsSource).toContain('return merged;');
     expect(settingTypeOptionsSource).not.toContain('return [...merged, UNCATEGORIZED_TYPE];');
-    expect(panelSource).toContain("if (type === '主线剧情') return '剧情规划';");
-    expect(panelSource).toContain("if (/(世界|规则|背景|科技|修炼|社会秩序|限制条件|天道|能量)/.test(source)) return '世界规则';");
+    expect(panelSource).not.toContain("if (type === '主线剧情') return '剧情规划';");
+    expect(panelSource).not.toContain("if (type === '道具资源') return '物品装备';");
+    expect(panelSource).not.toContain("if (type === '妖兽图鉴' || type === '异兽图鉴'");
+    expect(panelSource).not.toContain("if (type === '危险区域') return '世界地图';");
+    expect(panelSource).toContain("if (/(世界|规则|背景|科技|修炼|社会秩序|限制条件|天道|能量)/.test(source)) return '核心设定';");
     expect(panelSource).toContain("if (/(主线|剧情|任务|目标|冲突|开局|转折|高潮|结局|章节|卷|事件)/.test(source)) return '剧情规划';");
     expect(panelSource).toContain("if (/(功法|能力|技能|神通|法术|异能|招式)/.test(source)) return '功法能力';");
     expect(panelSource).toContain("if (/(道具|装备|物品|法宝|武器|载具|机甲)/.test(source)) return '物品装备';");
+    expect(panelSource).toContain("if (/(妖兽|怪兽|怪物|魔兽|异兽|凶兽|灵兽|灵宠|邪祟|兽潮|妖丹|兽骨|鳞甲|毒囊)/.test(source)) return '怪物列表';");
+    expect(panelSource).toContain("if (/(禁区|危险|秘境|遗迹|灾区|战场|污染区)/.test(source)) return '世界地图';");
     expect(panelSource).toContain("if (/(地点|地图|交通|地域|地理|重要地点|世界地图)/.test(source)) return '世界地图';");
-    expect(panelSource).toContain("if (/(禁写|不能写错|不能越界|硬约束|前后矛盾|规则红线)/.test(source)) return '禁写规则';");
+    expect(panelSource).toContain("if (/(禁写|不能写错|不能越界|硬约束|前后矛盾|规则红线)/.test(source)) return '书写规则';");
   });
 
   it('adds character relationship as a first-class role field before status settings', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
+    const roleEditorStart = panelSource.indexOf('function RoleBaseStateEditor');
+    const roleEditorEnd = panelSource.indexOf('function WorkbenchLibraryPanel', roleEditorStart);
+    const roleEditorSource = panelSource.slice(roleEditorStart, roleEditorEnd);
 
     expect(panelSource).toContain('relationship: string;');
     expect(panelSource).toContain("relationship: parsed.relationship || '',");
     expect(panelSource).toContain("relationship: value.relationship || '',");
     expect(panelSource).toContain('const relationshipWords = countTextWords(role.relationship);');
-    expect(panelSource).toContain('const updateRelationship = (value: string) => {');
-    expect(panelSource).toContain('>人物关系<');
+    expect(panelSource).toContain("type RoleStateUpdateChapterKey = RoleStateFieldKey | 'relationshipState';");
+    expect(panelSource).toContain("const relationshipUpdateLabel = getRoleStateUpdateLabel(stateUpdateChapters.relationshipState);");
+    expect(panelSource).toContain("relationshipState: currentChapterNumber,");
+    expect(panelSource).toContain('const updateRelationshipState = (value: string) => {');
+    expect(panelSource).toContain('人物关系');
+    expect(panelSource).not.toContain('AI 默认只读取，不直接覆盖。发现缺失时进入“基础设定补充建议”，由用户确认后写入。');
+    expect(panelSource).not.toContain('只写这个人物自己的关系；全局关系网仍放到作品设定的“人物关系”分类。');
+    expect(panelSource).not.toContain('placeholder="记录姓名、身份、外貌、角色定位、核心性格、人物背景、能力规则等低频变化内容。"');
+    expect(panelSource).toContain("placeholder: '身形、容貌、衣着、气质、标志性细节。'");
     expect(panelSource).toContain('placeholder="记录与主角、阵营、亲友、敌人、师徒、利益对象的关系。关系绑定人物，不绑定世界。"');
     expect(panelSource).toContain("wrapAiRequestTag('人物关系', truncateTextForAi(role.relationship, 700))");
-    expect(panelSource).toContain('grid-cols-[minmax(360px,0.9fr)_minmax(380px,1.1fr)]');
-    expect(panelSource).toContain('<div className="flex min-h-0 flex-col gap-4">');
+    expect(roleEditorSource).toContain("const roleSettingTabs = ['基础设定', '状态设定', '未确认'] as const;");
+    expect(roleEditorSource).toContain("const [activeRoleSettingTab, setActiveRoleSettingTab] = useState<(typeof roleSettingTabs)[number]>('基础设定');");
+    expect(roleEditorSource).toContain('<SettingSegmentedTabs');
+    expect(roleEditorSource).toContain('tabs={roleSettingTabs}');
+    expect(roleEditorSource).toContain('onChange={setActiveRoleSettingTab}');
+    expect(panelSource).toContain("const SETTING_SEGMENTED_TAB_GROUP_CLASS = 'flex h-10 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white';");
+    expect(panelSource).toContain("const SETTING_SEGMENTED_TAB_ACTIVE_CLASS = 'border-[#08AACE] bg-[#EAF9FD] text-[#078FAE]';");
+    expect(panelSource).toContain("const SETTING_SEGMENTED_TAB_IDLE_CLASS = 'bg-white text-slate-600 hover:bg-[#EAF9FD] hover:text-[#078FAE]';");
+    expect(roleEditorSource).toContain("activeRoleSettingTab === '状态设定'");
+    expect(roleEditorSource).toContain('updateRelationshipState(event.target.value)');
+    expect(roleEditorSource).toContain('{relationshipUpdateLabel}');
+    expect(roleEditorSource).toContain("stateUpdateChapters.relationshipState ? 'text-[#08AACE]' : 'text-red-500'");
+    expect(roleEditorSource).toContain('未确认更新');
+    expect(roleEditorSource).toContain('自动确认');
+    expect(roleEditorSource).toContain('一键确认');
+    expect(roleEditorSource).toContain("activeRoleSettingTab === '未确认' ? (");
+    expect(roleEditorSource).toContain('className="flex shrink-0 items-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-1.5"');
+    expect(roleEditorSource).not.toContain('className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2.5"');
+    expect(roleEditorSource).not.toContain('AI 只更新状态设定，AI反馈先进入未确认区，确认后才写入状态设定。');
+    expect(roleEditorSource).not.toContain("自动确认 {autoConfirmRoleState ? '开启后自动写入状态设定' : '关闭'}");
+    expect(roleEditorSource).toContain('手动确认');
+    expect(roleEditorSource).toContain("beforeTitle: '人物关系未更新前'");
+    expect(roleEditorSource).toContain("afterTitle: '人物关系更新后'");
+    expect(roleEditorSource).toContain('item.beforeTitle');
+    expect(roleEditorSource).toContain('item.afterTitle');
+    expect(roleEditorSource).toContain('item.beforeValue');
+    expect(roleEditorSource).toContain('item.afterValue');
+    expect(roleEditorSource).toContain('className="grid gap-3 md:grid-cols-2"');
+    expect(roleEditorSource).not.toContain('正文中出现新的关系变化，建议确认后写入人物关系。');
+    expect(panelSource).toContain('grid-cols-1');
     expect(panelSource).not.toContain('grid-cols-[minmax(280px,0.85fr)_minmax(260px,0.7fr)_minmax(380px,1.1fr)]');
+    expect(roleEditorSource).not.toContain('<aside');
 
-    const stackedColumnIndex = panelSource.indexOf('<div className="flex min-h-0 flex-col gap-4">');
-    const baseIndex = panelSource.indexOf('>基础设定<', stackedColumnIndex);
-    const relationshipIndex = panelSource.indexOf('>人物关系<');
-    const statusIndex = panelSource.indexOf('>状态设定<');
-    expect(stackedColumnIndex).toBeGreaterThan(-1);
-    expect(baseIndex).toBeGreaterThan(stackedColumnIndex);
+    const relationshipIndex = roleEditorSource.indexOf('人物关系');
+    const statusIndex = roleEditorSource.indexOf('状态设定');
     expect(relationshipIndex).toBeGreaterThan(-1);
-    expect(relationshipIndex).toBeGreaterThan(baseIndex);
-    expect(statusIndex).toBeGreaterThan(relationshipIndex);
+    expect(relationshipIndex).toBeGreaterThan(statusIndex);
+  });
+
+  it('moves character editor scheme seven into production and retires the layout test page', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const testCollectionSource = await readTestCollectionSource();
+    const roleEditorStart = panelSource.indexOf('function RoleBaseStateEditor');
+    const roleEditorEnd = panelSource.indexOf('function WorkbenchLibraryPanel', roleEditorStart);
+    const roleEditorSource = panelSource.slice(roleEditorStart, roleEditorEnd);
+
+    expect(panelSource).toContain('const ROLE_BASE_SETTING_FIELD_DEFINITIONS');
+    expect(roleEditorSource).toContain('人物姓名');
+    expect(panelSource).toContain('settingName: { width: 220, height: 56, fontSize: 18 }');
+    expect(roleEditorSource).toContain('className="relative flex h-[48px] w-[148px] shrink-0 items-center rounded-[20px] border-2 border-slate-950 bg-white px-4 py-0"');
+    expect(roleEditorSource).not.toContain('className="relative h-[54px] w-[148px] shrink-0 rounded-[22px] border-2 border-slate-950 bg-white px-4 pb-2 pt-4"');
+    expect(roleEditorSource).not.toContain('className="relative h-[58px] w-[148px]');
+    expect(roleEditorSource).toContain('className="xy-border-embedded-transparent-backplate absolute left-5 top-0 z-10 -translate-y-1/2 pr-2 text-sm font-medium leading-5 text-slate-500"');
+    expect(roleEditorSource).toContain('className="h-6 w-full bg-transparent text-[17px] font-medium leading-6 text-slate-950 outline-none placeholder:text-slate-400"');
+    expect(roleEditorSource).not.toContain('className="h-7 w-full bg-transparent text-lg font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400"');
+    expect(roleEditorSource).not.toContain('className="flex min-w-[160px] items-center gap-2"');
+    expect(roleEditorSource).not.toContain('className="min-w-0 bg-transparent text-2xl font-black leading-8 text-slate-950 outline-none placeholder:text-slate-400"');
+    expect(roleEditorSource).not.toContain('className="h-full w-full bg-transparent text-xl font-black leading-7 text-slate-950 outline-none placeholder:text-slate-400"');
+    expect(roleEditorSource).toContain('floatingLabel="身份定位"');
+    expect(panelSource).toContain("title: '外貌'");
+    expect(panelSource).toContain("title: '称号/外号/别称'");
+    expect(panelSource).not.toContain("title: '角色定位'");
+    expect(panelSource).toContain("title: '核心性格'");
+    expect(panelSource).toContain("title: '人物背景'");
+    expect(panelSource).toContain("title: '金手指/能力'");
+    expect(roleEditorSource).toContain('{field.title}');
+    expect(panelSource).toContain("key: 'appearance'");
+    expect(panelSource).toContain("key: 'aliasName'");
+    expect(panelSource).not.toContain("key: 'rolePosition'");
+    expect(panelSource).toContain("key: 'corePersonality'");
+    expect(panelSource).toContain("key: 'background'");
+    expect(panelSource).toContain("key: 'abilityRules'");
+    expect(roleEditorSource).toContain('updateRoleBaseSettingField(field.key, event.target.value)');
+    expect(roleEditorSource).toContain('onTitleChange(event.target.value)');
+    expect(roleEditorSource).not.toContain('floatingLabel="分类"');
+    expect(roleEditorSource).not.toContain('flex h-[86px] shrink-0');
+    expect(roleEditorSource).toContain('className="flex min-h-0 flex-1 flex-col gap-3 px-5 py-3"');
+    expect(roleEditorSource).not.toContain('className="grid min-h-0 flex-1 grid-cols-1 gap-4 p-5"');
+    expect(roleEditorSource).toContain('className="shrink-0 border-b border-slate-200 pb-3"');
+    expect(roleEditorSource).toContain('className="mt-3 flex items-center justify-between gap-4 overflow-x-auto pb-1"');
+    expect(roleEditorSource).not.toContain('className="flex shrink-0 gap-2"');
+    expect(roleEditorSource).not.toContain('rounded-full border px-4 py-2 text-sm font-black');
+    expect(roleEditorSource).toContain('className="shrink-0 text-xs font-black text-slate-400"');
+    expect(roleEditorSource).not.toContain('className="mt-2 text-xs font-black text-slate-400"');
+    expect(roleEditorSource).toContain('className="editor-scrollbar min-h-0 flex-1 overflow-y-auto px-1 pb-1 pr-2 pt-3"');
+    expect(roleEditorSource).toContain("const roleSettingTabs = ['基础设定', '状态设定', '未确认'] as const;");
+    expect(roleEditorSource).toContain('className="relative flex min-h-[150px] flex-col rounded-[22px] border-2 border-slate-950 bg-white p-4 pt-5"');
+    expect(roleEditorSource).toContain("const contentGridClassName = 'grid min-h-full grid-cols-2 auto-rows-fr gap-3';");
+    expect(roleEditorSource).not.toContain('grid grid-cols-3');
+    expect(roleEditorSource).not.toContain('col-span-2');
+    expect(roleEditorSource).not.toContain('h-[116px]');
+    expect(roleEditorSource).not.toContain('h-24');
+    expect(roleEditorSource).toContain('min-h-[150px]');
+    expect(roleEditorSource).not.toContain('placeholder="记录身份、外貌、角色定位、核心性格、人物背景、能力规则等低频变化内容。"');
+    expect(testCollectionSource).not.toContain('CharacterSettingLayoutPlanTestPage');
+    expect(testCollectionSource).not.toContain('/character-setting-layout-plan-test');
+    expect(testCollectionSource).not.toContain('人物设定布局方案测试');
+  });
+
+  it('stretches character setting cards to the available editor height like structured setting pages', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const roleEditorStart = panelSource.indexOf('function RoleBaseStateEditor');
+    const roleEditorEnd = panelSource.indexOf('function getWorkbenchLibraryEntryUpdatedAt', roleEditorStart);
+    const roleEditorSource = panelSource.slice(roleEditorStart, roleEditorEnd);
+
+    expect(roleEditorSource).toContain("const contentGridClassName = 'grid min-h-full grid-cols-2 auto-rows-fr gap-3';");
+    expect(roleEditorSource).toContain('className="editor-scrollbar min-h-0 flex-1 overflow-y-auto px-1 pb-1 pr-2 pt-3"');
+    expect(roleEditorSource).toContain('className="relative flex min-h-[150px] flex-col rounded-[22px] border-2 border-slate-950 bg-white p-4 pt-5"');
+    expect(roleEditorSource).toContain('className="editor-scrollbar min-h-0 flex-1 resize-none bg-transparent text-sm leading-7 text-slate-700 outline-none placeholder:text-slate-400"');
+    expect(roleEditorSource).not.toContain('className="editor-scrollbar h-[116px] w-full resize-none');
   });
 });

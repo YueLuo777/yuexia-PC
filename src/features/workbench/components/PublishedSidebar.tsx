@@ -43,7 +43,7 @@ interface PublishedSidebarProps {
 
 export function PublishedSidebar({
   volumes,
-  width = 190,
+  width = 170,
   onSelectChapter,
   onEditChapter,
   onUnpublishChapter,

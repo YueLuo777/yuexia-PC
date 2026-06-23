@@ -1681,3 +1681,19 @@
 - 处理：内嵌流程页按 `activeCreationFlow` 设置 React `key`，并让传入的 `defaultActiveTab` 优先于旧存储；`WorkbenchHeader` 拆成“作品信息”按钮组和独立创作流程按钮组。
 - 预防：同一组件承载不同流程页时，流程切换必须重置或显式同步内部页签；作品级信息入口和创作流程入口不要共用一个组合按钮。
 - 验证：`npm.cmd run test:run -- src/features/workbench/components/WorkbenchHeader.test.tsx src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`、`npm.cmd run check`、`npm.cmd run build`。
+
+## 设定多框预览不应在条目改名后消失
+
+- 现象：作品设定里把“剧情蓝图”等多框设定条目改名后，原本的“整体规划 / 主线目标 / 阶段节奏”等拆分预览会消失，界面退回普通设定预览。
+- 原因：结构化设定预览只按“分组 + 固定条目名”匹配，没有把使用的预览模板身份写入设定内容；标题一变，模板关系就断开。
+- 处理：给结构化设定模板增加稳定 ID；默认创建这些条目时写入 `structuredFieldSetId`；读取时优先按模板 ID 匹配，旧数据继续兼容原标题识别；改名时若能识别模板，会同步补写模板 ID。
+- 预防：结构化预览不能只依赖用户可改的标题，应依赖稳定模板标记；测试覆盖“填写剧情蓝图内容后改名，拆分预览和内容仍保留”。
+- 验证：执行 `npm.cmd test -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`。
+
+## 默认设定骨架不应被改名或删除
+
+- 现象：默认生成的设定条目可以被改名或删除，清空设定/清空分组也可能绕过单条锁定，导致新小说默认设定骨架被破坏。
+- 原因：默认设定条目和用户自建条目没有稳定区分标记；标题输入框、右键菜单、底部删除按钮、清空入口各自处理，没有统一默认骨架锁定规则。
+- 处理：给默认设定条目写入 `lockedDefaultEntryId`，旧数据按默认分组和默认标题兼容识别；默认设定条目禁用设定名输入、隐藏删除按钮、右键不显示重命名/删除；默认分组不打开删除菜单；清空设定和清空分组只删除用户自建内容，默认骨架保留。
+- 预防：默认骨架类数据必须通过统一锁定判断保护；后续新增删除、重命名、清空、拖拽归类或迁移入口时，都要确认不会绕过默认骨架锁定。
+- 验证：执行 `npm.cmd test -- src/features/workbench/components/WorkbenchLibraryPanel.test.tsx`。

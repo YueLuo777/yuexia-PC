@@ -1,12 +1,5 @@
 /// <reference types="vite/client" />
 
-interface ImportMetaEnv {
-  readonly VITE_PINAI_API_KEY?: string;
-  readonly VITE_PINAI_BASE_URL?: string;
-  readonly VITE_PINAI_MODEL_ID?: string;
-  readonly VITE_PINAI_MODEL_NAME?: string;
-}
-
 interface ModelRequestInput {
   endpoint: string;
   headers: Record<string, string>;

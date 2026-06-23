@@ -85,3 +85,29 @@ describe('NovelLibraryPage summary cards', () => {
     expect(pageSource).toContain('WRITING_STATS_UPDATED_EVENT');
   });
 });
+
+describe('NovelLibraryPage import flow', () => {
+  it('uses the page library state when importing so the new work appears immediately', () => {
+    const pageSource = readSource('NovelLibraryPage.tsx');
+    const modalSource = readSource('../components/ImportModal.tsx');
+
+    expect(pageSource).toContain('importNovelWithChapters,');
+    expect(pageSource).toContain('onImport={importNovelWithChapters}');
+    expect(modalSource).toContain('onImport: (input: NewNovelInput, chapters: ImportedChapterInput[]) => number;');
+    expect(modalSource).toContain('export function ImportModal({ isOpen, onClose, onImport, defaultType = ');
+    expect(modalSource).toContain('onImport(');
+    expect(modalSource).not.toContain('useNovelLibrary()');
+  });
+
+  it('lets smart import use a manually entered title before falling back to recognition or file name', () => {
+    const modalSource = readSource('../components/ImportModal.tsx');
+
+    expect(modalSource).toContain("const [manualTitle, setManualTitle] = useState('');");
+    expect(modalSource).toContain("setManualTitle(file.name.replace(/\\.[^.]+$/, ''));");
+    expect(modalSource).toContain("setManualTitle(result.bookName?.trim() || file.name.replace(/\\.[^.]+$/, ''));");
+    expect(modalSource).toContain("? manualTitle.trim() || parsedResult.bookName?.trim() || selectedFile.name.replace(/\\.[^.]+$/, '')");
+    expect(modalSource).toContain('value={manualTitle}');
+    expect(modalSource).toContain('onChange={(event) => setManualTitle(event.target.value)}');
+    expect(modalSource).toContain("placeholder={parsedResult?.bookName || selectedFile?.name.replace(/\\.[^.]+$/, '') || '输入书名'}");
+  });
+});

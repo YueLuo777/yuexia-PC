@@ -570,6 +570,7 @@ export function NovelLibraryPage() {
     selectNovel,
     updateCover,
     exportNovelAsText,
+    importNovelWithChapters,
   } = useNovelLibrary();
 
   const [activeFilter, setActiveFilter] = useState('全部');
@@ -831,6 +832,7 @@ export function NovelLibraryPage() {
       <ImportModal
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
+        onImport={importNovelWithChapters}
         defaultType={workType}
       />
 

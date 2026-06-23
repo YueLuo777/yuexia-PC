@@ -20,8 +20,8 @@ describe('writer workspace chrome styling', () => {
 
   it('lets confirmed custom theme colors override fixed selected and dark-theme chrome styles', async () => {
     const styles = await readSource('../styles/index.css');
-    const selectedRuleStart = styles.indexOf('.writer-assistant-theme .xy-selected-orange-bg,');
-    const selectedRuleEnd = styles.indexOf('.writer-assistant-theme .border-\\[\\#08AACE\\]', selectedRuleStart);
+    const selectedRuleStart = styles.indexOf('.writer-assistant-theme .xy-selected-content-bg,');
+    const selectedRuleEnd = styles.indexOf('.writer-assistant-theme .xy-selected-mint-bg,', selectedRuleStart);
     const selectedRule = styles.slice(selectedRuleStart, selectedRuleEnd);
     const darkTitlebarRules = [...styles.matchAll(/\.theme-dark \.app-titlebar \{[\s\S]*?\}/g)].map((match) => match[0]);
 

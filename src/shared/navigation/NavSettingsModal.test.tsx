@@ -20,7 +20,7 @@ describe('NavSettingsModal flat navigation editing', () => {
     expect(source).toContain("dividerAfterItemTos: ['/novels']");
     expect(source).toContain('addDivider');
     expect(source).toContain('removeDivider');
-    expect(source).toContain('setDividerDragSrc(item.to)');
+    expect(source).toContain('setNavDividerDragSrc(item.to)');
     expect(source).toContain('resolveDividerDropTarget');
     expect(source).toContain('className="flex items-center gap-2"');
     expect(source).toContain('disabled={visibleDraftItems.length <= draftDividerAfterItemTos.length}');
@@ -41,5 +41,33 @@ describe('NavSettingsModal flat navigation editing', () => {
     expect(source).not.toContain('handleAddGroup');
     expect(source).not.toContain('toggleGroupHidden');
     expect(source).not.toContain('editingGroup');
+  });
+
+  it('uses swap-style preview for draggable navigation rows', () => {
+    const source = readSource('NavSettingsModal.tsx');
+
+    expect(source).toContain('const previewDraftItems =');
+    expect(source).toContain('getSwapPreviewItems');
+    expect(source).toContain('const navDropHandledRef = useRef(false);');
+    expect(source).toContain('const navDragOverRef = useRef<{ itemIdx: number; pos:');
+    expect(source).toContain('const setNavDragOver = (next:');
+    expect(source).toContain('commitDragDrop(navDragOverRef.current.itemIdx);');
+    expect(source).toContain('type NavPointerDragState');
+    expect(source).toContain('beginNavPointerDrag');
+    expect(source).toContain('const NAV_POINTER_DRAG_ACTIVATION_DISTANCE = 14;');
+    expect(source).toContain('const NAV_POINTER_DRAG_ACTIVATION_DELAY_MS = 160;');
+    expect(source).toContain('const NAV_POINTER_DRAG_RETARGET_DISTANCE = 28;');
+    expect(source).toContain('const NAV_POINTER_DRAG_RETURN_DISTANCE = 28;');
+    expect(source).toContain('distance < NAV_POINTER_DRAG_ACTIVATION_DISTANCE');
+    expect(source).toContain('!pointerDrag.armed');
+    expect(source).toContain('beginWindowNavPointerTracking');
+    expect(source).toContain('hasNavPointerRetargetedTooSoon');
+    expect(source).toContain('data-nav-item-index={itemIndex}');
+    expect(source).toContain('data-nav-item-preview-index={previewIndex}');
+    expect(source).toContain("navDragSrcRef.current < previewIndex ? 'after' : 'before'");
+    expect(source).toContain('previewDraftItems.map((item, previewIndex) =>');
+    expect(source).toContain('虚影，松手后落实');
+    expect(source).not.toContain('targetIndex === pointerDrag.sourceIndex');
+    expect(source).not.toContain("dragSrc === itemIndex\n                          ? 'scale-[0.98]");
   });
 });

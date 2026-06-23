@@ -1,6 +1,30 @@
 export const ASSOCIATED_CHAPTERS_KEY = 'xinyuexia_associated_chapters';
 export const CHAPTER_ASSOCIATE_UPDATED_EVENT = 'chapter_associate_updated';
+export const WORKBENCH_ASSOCIATION_SESSION_RESET_KEY = 'xinyuexia_association_session_reset_v1';
 const WORKBENCH_LINKED_CONTEXT_KEY_PREFIX = 'xinyuexia_workbench_linked_context_';
+const WORKBENCH_AI_SESSIONS_KEY_PREFIX = 'xinyuexia_workbench_ai_sessions_';
+const WORKBENCH_TAB_CONFIG_KEY_PREFIX = 'xinyuexia_workbench_';
+const WORKBENCH_TAB_CONFIG_KEY_SUFFIX = '_tab_configs_v1';
+const WORKBENCH_ASSOCIATION_RUNTIME_ID = `runtime-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const SCRIPT_EDITOR_LINKED_NOVEL_KEYS = [
+  'xinyuexia_script_editor_linked_novel',
+  'sev2_linked_novel',
+  'script_editor_linked_novel',
+];
+const TAB_CONFIG_ASSOCIATION_DEFAULTS: Record<string, unknown> = {
+  associationSessionId: null,
+  loadedBrainstormId: null,
+  loadedBrainstormTitle: '',
+  loadedBrainstormText: '',
+  linkedOtherSettingIds: [],
+  settingLinkSource: null,
+  detailOutlineReaderSessionId: null,
+  detailOutlineReaderTouched: false,
+  detailOutlineReaderSettingIds: [],
+  detailOutlineReaderRoleIds: [],
+  detailOutlineReaderOutlineIds: [],
+  detailOutlineReaderPlotChainIds: [],
+};
 
 export type StoredWorkbenchLinkedContextItem = {
   id: string;
@@ -9,6 +33,19 @@ export type StoredWorkbenchLinkedContextItem = {
   title: string;
   content: string;
 };
+
+type StoredWorkbenchLinkedContextEnvelope = {
+  associationSessionId?: unknown;
+  items?: unknown;
+};
+
+export function getWorkbenchAssociationRuntimeId() {
+  return WORKBENCH_ASSOCIATION_RUNTIME_ID;
+}
+
+export function isWorkbenchAssociationRuntimeCurrent(value: unknown) {
+  return typeof value === 'string' && value === WORKBENCH_ASSOCIATION_RUNTIME_ID;
+}
 
 function safeReadJson<T>(key: string): T | null {
   try {
@@ -70,7 +107,10 @@ export function clearWorkbenchAiSessionLinks(workId: number | string) {
 }
 
 export function clearWorkbenchLinkedBrainstorm(storageKey: string) {
-  const tabConfigStorageKey = `${storageKey}_tab_configs_v1`;
+  clearWorkbenchTabConfigAssociationsByStorageKey(`${storageKey}${WORKBENCH_TAB_CONFIG_KEY_SUFFIX}`);
+}
+
+function clearWorkbenchTabConfigAssociationsByStorageKey(tabConfigStorageKey: string) {
   const stored = safeReadJson<Record<string, Record<string, unknown>>>(tabConfigStorageKey);
   if (!stored || typeof stored !== 'object') return;
 
@@ -78,19 +118,14 @@ export function clearWorkbenchLinkedBrainstorm(storageKey: string) {
   const next = Object.fromEntries(
     Object.entries(stored).map(([tab, config]) => {
       if (!config || typeof config !== 'object') return [tab, config];
-      const hasLinkedBrainstorm = (
-        'loadedBrainstormId' in config
-        || 'loadedBrainstormTitle' in config
-        || 'loadedBrainstormText' in config
-      );
-      if (!hasLinkedBrainstorm) return [tab, config];
+      const associationKeys = Object.keys(TAB_CONFIG_ASSOCIATION_DEFAULTS)
+        .filter((key) => Object.prototype.hasOwnProperty.call(config, key));
+      if (associationKeys.length === 0) return [tab, config];
       changed = true;
-      return [tab, {
-        ...config,
-        loadedBrainstormId: null,
-        loadedBrainstormTitle: '',
-        loadedBrainstormText: '',
-      }];
+      return [tab, Object.keys(TAB_CONFIG_ASSOCIATION_DEFAULTS).reduce<Record<string, unknown>>((nextConfig, key) => ({
+        ...nextConfig,
+        [key]: TAB_CONFIG_ASSOCIATION_DEFAULTS[key],
+      }), { ...config })];
     }),
   );
 
@@ -121,11 +156,18 @@ function normalizeLinkedContextItems(value: unknown): StoredWorkbenchLinkedConte
 }
 
 export function readWorkbenchLinkedContextItems(workId: number | string) {
-  return normalizeLinkedContextItems(safeReadJson<unknown>(getWorkbenchLinkedContextStorageKey(workId)));
+  const stored = safeReadJson<unknown>(getWorkbenchLinkedContextStorageKey(workId));
+  if (!stored || Array.isArray(stored) || typeof stored !== 'object') return [];
+  const envelope = stored as StoredWorkbenchLinkedContextEnvelope;
+  if (!isWorkbenchAssociationRuntimeCurrent(envelope.associationSessionId)) return [];
+  return normalizeLinkedContextItems(envelope.items);
 }
 
 export function writeWorkbenchLinkedContextItems(workId: number | string, items: StoredWorkbenchLinkedContextItem[]) {
-  safeWriteJson(getWorkbenchLinkedContextStorageKey(workId), normalizeLinkedContextItems(items));
+  safeWriteJson(getWorkbenchLinkedContextStorageKey(workId), {
+    associationSessionId: getWorkbenchAssociationRuntimeId(),
+    items: normalizeLinkedContextItems(items),
+  });
 }
 
 export function clearWorkbenchLinkedContextItems(workId: number | string) {
@@ -134,4 +176,73 @@ export function clearWorkbenchLinkedContextItems(workId: number | string) {
   } catch {
     // Ignore storage failures.
   }
+}
+
+function getLocalStorageKeys() {
+  const keys: string[] = [];
+  try {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (key) keys.push(key);
+    }
+  } catch {
+    // Ignore storage failures.
+  }
+  return keys;
+}
+
+export function clearAllWorkbenchAssociations() {
+  clearAssociatedChapters();
+
+  getLocalStorageKeys().forEach((key) => {
+    if (key.startsWith(WORKBENCH_LINKED_CONTEXT_KEY_PREFIX)) {
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        // Ignore storage failures.
+      }
+      return;
+    }
+
+    if (key.startsWith(WORKBENCH_AI_SESSIONS_KEY_PREFIX)) {
+      clearWorkbenchAiSessionLinksByStorageKey(key);
+      return;
+    }
+
+    if (key.startsWith(WORKBENCH_TAB_CONFIG_KEY_PREFIX) && key.endsWith(WORKBENCH_TAB_CONFIG_KEY_SUFFIX)) {
+      clearWorkbenchTabConfigAssociationsByStorageKey(key);
+    }
+  });
+
+  SCRIPT_EDITOR_LINKED_NOVEL_KEYS.forEach((key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Ignore storage failures.
+    }
+  });
+}
+
+export function resetWorkbenchAssociationsForNewAppSession() {
+  try {
+    clearAllWorkbenchAssociations();
+    sessionStorage.setItem(WORKBENCH_ASSOCIATION_SESSION_RESET_KEY, '1');
+  } catch {
+    clearAllWorkbenchAssociations();
+  }
+}
+
+export function bindWorkbenchAssociationCloseCleanup() {
+  const cleanup = () => clearAllWorkbenchAssociations();
+  const cleanupWhenHidden = () => {
+    if (document.visibilityState === 'hidden') cleanup();
+  };
+  window.addEventListener('pagehide', cleanup);
+  window.addEventListener('beforeunload', cleanup);
+  document.addEventListener('visibilitychange', cleanupWhenHidden);
+  return () => {
+    window.removeEventListener('pagehide', cleanup);
+    window.removeEventListener('beforeunload', cleanup);
+    document.removeEventListener('visibilitychange', cleanupWhenHidden);
+  };
 }

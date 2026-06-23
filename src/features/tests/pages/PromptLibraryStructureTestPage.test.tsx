@@ -20,7 +20,7 @@ describe('PromptLibraryStructureTestPage', () => {
 
     expect(source).toContain('const promptLibraries');
     expect(source).toContain('const promptWorkflows');
-    expect(source).toContain('提示词资料库结构测试');
+    expect(source).toContain('所有提示词');
     expect(source).toContain('00_核心设定');
     expect(source).toContain('01_人物列表库');
     expect(source).toContain('02_势力设定库');
@@ -49,7 +49,7 @@ describe('PromptLibraryStructureTestPage', () => {
 
     expect(source).toContain('PromptLibraryStructureTestPage');
     expect(source).toContain('/prompt-library-structure-test');
-    expect(source).toContain('提示词资料库结构测试');
+    expect(source).toContain('所有提示词');
     expect(source).toContain('整理旧提示词会创建的资料库、模板字段、读取链路和章节发布更新方式。');
   });
 });

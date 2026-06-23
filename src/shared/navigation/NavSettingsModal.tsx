@@ -1,5 +1,5 @@
 import { ArrowLeft, RotateCcw, Settings, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
@@ -50,6 +50,67 @@ function normalizeDraft(config: NavGroupConfig[]) {
   }];
 }
 
+function getSwapPreviewItems<T>(items: T[], dragSourceIndex: number | null, targetIndex: number | null) {
+  if (
+    dragSourceIndex === null
+    || targetIndex === null
+    || dragSourceIndex === targetIndex
+    || dragSourceIndex < 0
+    || targetIndex < 0
+    || dragSourceIndex >= items.length
+    || targetIndex >= items.length
+  ) return items;
+  const next = [...items];
+  const [moved] = next.splice(dragSourceIndex, 1);
+  next.splice(targetIndex, 0, moved);
+  return next;
+}
+
+type NavPointerDragState = {
+  sourceIndex: number;
+  pointerId: number;
+  element: HTMLElement;
+  startX: number;
+  startY: number;
+  active: boolean;
+  armed: boolean;
+  activationTimer: number;
+  lastPreviewX: number;
+  lastPreviewY: number;
+  lastPreviewTargetKey: string | null;
+  cleanup: () => void;
+} | null;
+
+const NAV_POINTER_DRAG_ACTIVATION_DISTANCE = 14;
+const NAV_POINTER_DRAG_ACTIVATION_DELAY_MS = 160;
+const NAV_POINTER_DRAG_RETARGET_DISTANCE = 28;
+const NAV_POINTER_DRAG_RETURN_DISTANCE = 28;
+
+function hasNavPointerRetargetedTooSoon(
+  pointerDrag: NonNullable<NavPointerDragState>,
+  targetKey: string,
+  clientX: number,
+  clientY: number,
+) {
+  if (!pointerDrag.lastPreviewTargetKey || pointerDrag.lastPreviewTargetKey === targetKey) return false;
+  const distanceFromLastPreview = Math.hypot(clientX - pointerDrag.lastPreviewX, clientY - pointerDrag.lastPreviewY);
+  const retargetDistance = targetKey === `nav:${pointerDrag.sourceIndex}`
+    ? NAV_POINTER_DRAG_RETURN_DISTANCE
+    : NAV_POINTER_DRAG_RETARGET_DISTANCE;
+  return distanceFromLastPreview < retargetDistance;
+}
+
+function rememberNavPointerPreviewTarget(
+  pointerDrag: NonNullable<NavPointerDragState>,
+  targetKey: string,
+  clientX: number,
+  clientY: number,
+) {
+  pointerDrag.lastPreviewTargetKey = targetKey;
+  pointerDrag.lastPreviewX = clientX;
+  pointerDrag.lastPreviewY = clientY;
+}
+
 export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, variant = 'modal' }: NavSettingsModalProps) {
   const isPage = variant === 'page';
   useTopModalEscape(!isPage && isOpen, onClose);
@@ -60,15 +121,25 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
   const [dragSrc, setDragSrc] = useState<number | null>(null);
   const [dividerDragSrc, setDividerDragSrc] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<{ itemIdx: number; pos: 'before' | 'after' } | null>(null);
+  const navDropHandledRef = useRef(false);
+  const navDragSrcRef = useRef<number | null>(null);
+  const navDividerDragSrcRef = useRef<string | null>(null);
+  const navDragOverRef = useRef<{ itemIdx: number; pos: 'before' | 'after' } | null>(null);
+  const navPointerDragRef = useRef<NavPointerDragState>(null);
+  const navPointerSuppressClickRef = useRef(false);
+
+  const clearDragState = useCallback(() => {
+    setNavDragSrc(null);
+    setNavDividerDragSrc(null);
+    setNavDragOver(null);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
     setDraft(normalizeDraft(config));
     setEditingItem(null);
-    setDragSrc(null);
-    setDividerDragSrc(null);
-    setDragOver(null);
-  }, [config, isOpen]);
+    clearDragState();
+  }, [clearDragState, config, isOpen]);
 
   if (!isOpen) return null;
 
@@ -77,6 +148,9 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
     draft[0]?.dividerAfterItemTo ? [draft[0].dividerAfterItemTo] : []
   );
   const visibleDraftItems = draftItems.filter((item) => !item.hidden);
+  const previewDraftItems = dragSrc !== null && dragOver && !dividerDragSrc
+    ? getSwapPreviewItems(draftItems, dragSrc, dragOver.itemIdx)
+    : draftItems;
 
   const normalizeDividerAfterItemTos = (items: NavItemConfig[], dividerAfterItemTos: string[]) => {
     const visibleItemTos = new Set(items.filter((item) => !item.hidden).map((item) => item.to));
@@ -120,46 +194,174 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
     saveItems(draftItems, draftDividerAfterItemTos.filter((dividerItemTo) => dividerItemTo !== itemTo));
   };
 
-  const handleDragOver = (event: React.DragEvent, itemIdx: number) => {
+  const setNavDragOver = (next: { itemIdx: number; pos: 'before' | 'after' } | null) => {
+    navDragOverRef.current = next;
+    setDragOver(next);
+  };
+
+  const setNavDragSrc = (next: number | null) => {
+    navDragSrcRef.current = next;
+    setDragSrc(next);
+  };
+
+  const setNavDividerDragSrc = (next: string | null) => {
+    navDividerDragSrcRef.current = next;
+    setDividerDragSrc(next);
+  };
+
+  const handleDragOver = (event: React.DragEvent, itemIdx: number, previewIndex = itemIdx) => {
     event.preventDefault();
+    if (navDragSrcRef.current !== null && !navDividerDragSrcRef.current) {
+      const pos = navDragSrcRef.current < previewIndex ? 'after' : 'before';
+      setNavDragOver({ itemIdx: previewIndex, pos });
+      return;
+    }
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const pos = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
-    setDragOver({ itemIdx, pos });
+    setNavDragOver({ itemIdx, pos });
   };
 
   const resolveDividerDropTarget = (targetItemIdx: number) => {
     const targetItem = draftItems[targetItemIdx];
     const previousVisibleItem = draftItems.slice(0, targetItemIdx).reverse().find((item) => !item.hidden);
     const nextVisibleItem = draftItems.slice(targetItemIdx + 1).find((item) => !item.hidden);
-    if (dragOver?.pos === 'before') return previousVisibleItem?.to ?? (!targetItem?.hidden ? targetItem?.to : nextVisibleItem?.to) ?? null;
+    if (navDragOverRef.current?.pos === 'before') return previousVisibleItem?.to ?? (!targetItem?.hidden ? targetItem?.to : nextVisibleItem?.to) ?? null;
     return (!targetItem?.hidden ? targetItem?.to : previousVisibleItem?.to ?? nextVisibleItem?.to) ?? null;
   };
 
-  const handleDrop = (targetItemIdx: number) => {
+  const commitDragDrop = (targetItemIdx: number) => {
+    const dividerDragSrc = navDividerDragSrcRef.current;
     if (dividerDragSrc) {
       const nextItemTo = resolveDividerDropTarget(targetItemIdx);
-      if (!nextItemTo) {
-        setDividerDragSrc(null);
-        setDragOver(null);
-        return;
-      }
+      if (!nextItemTo) return;
       saveItems(draftItems, draftDividerAfterItemTos.map((itemTo) => (
         itemTo === dividerDragSrc ? nextItemTo : itemTo
       )));
-      setDividerDragSrc(null);
-      setDragOver(null);
       return;
     }
+    const dragSrc = navDragSrcRef.current;
     if (dragSrc === null) return;
-    const nextItems = [...draftItems];
-    const [moved] = nextItems.splice(dragSrc, 1);
-    let insertIdx = dragOver?.pos === 'after' ? targetItemIdx + 1 : targetItemIdx;
-    if (dragSrc < targetItemIdx) insertIdx -= 1;
-    insertIdx = Math.max(0, Math.min(insertIdx, nextItems.length));
-    nextItems.splice(insertIdx, 0, moved);
+    const nextItems = getSwapPreviewItems(draftItems, dragSrc, targetItemIdx);
     saveItems(nextItems);
-    setDragSrc(null);
-    setDragOver(null);
+  };
+
+  const handleDrop = (targetItemIdx: number, previewIndex = targetItemIdx) => {
+    navDropHandledRef.current = true;
+    commitDragDrop(navDividerDragSrcRef.current ? targetItemIdx : previewIndex);
+    clearDragState();
+  };
+
+  const handleDragEnd = () => {
+    if (!navDropHandledRef.current && navDragOverRef.current) commitDragDrop(navDragOverRef.current.itemIdx);
+    navDropHandledRef.current = false;
+    clearDragState();
+  };
+
+  const beginWindowNavPointerTracking = (pointerId: number) => {
+    const handleWindowPointerMove = (moveEvent: PointerEvent) => {
+      if (moveEvent.pointerId !== pointerId) return;
+      updateNavPointerPreviewAt(moveEvent.clientX, moveEvent.clientY);
+      if (navPointerDragRef.current?.active) moveEvent.preventDefault();
+    };
+    const handleWindowPointerEnd = (endEvent: PointerEvent) => {
+      if (endEvent.pointerId !== pointerId) return;
+      finishNavPointerDragById(pointerId);
+    };
+    window.addEventListener('pointermove', handleWindowPointerMove, { capture: true });
+    window.addEventListener('pointerup', handleWindowPointerEnd, { capture: true });
+    window.addEventListener('pointercancel', handleWindowPointerEnd, { capture: true });
+    return () => {
+      window.removeEventListener('pointermove', handleWindowPointerMove, { capture: true });
+      window.removeEventListener('pointerup', handleWindowPointerEnd, { capture: true });
+      window.removeEventListener('pointercancel', handleWindowPointerEnd, { capture: true });
+    };
+  };
+
+  const beginNavPointerDrag = (event: React.PointerEvent<HTMLElement>, sourceIndex: number) => {
+    if (event.button !== 0) return;
+    const target = event.target as HTMLElement;
+    if (target.closest('button,input')) return;
+    const pointerId = event.pointerId;
+    navPointerDragRef.current?.cleanup();
+    const activationTimer = window.setTimeout(() => {
+      const pointerDrag = navPointerDragRef.current;
+      if (pointerDrag && pointerDrag.sourceIndex === sourceIndex) pointerDrag.armed = true;
+    }, NAV_POINTER_DRAG_ACTIVATION_DELAY_MS);
+    const dragElement = event.currentTarget;
+    const cleanup = beginWindowNavPointerTracking(pointerId);
+    navPointerDragRef.current = {
+      sourceIndex,
+      pointerId,
+      element: dragElement,
+      startX: event.clientX,
+      startY: event.clientY,
+      active: false,
+      armed: false,
+      activationTimer,
+      lastPreviewX: event.clientX,
+      lastPreviewY: event.clientY,
+      lastPreviewTargetKey: null,
+      cleanup: () => {
+        window.clearTimeout(activationTimer);
+        cleanup();
+      },
+    };
+    try {
+      dragElement.setPointerCapture(pointerId);
+    } catch {
+      // Pointer capture is optional; movement still updates from the row while hovered.
+    }
+  };
+
+  const updateNavPointerPreviewAt = (clientX: number, clientY: number) => {
+    const pointerDrag = navPointerDragRef.current;
+    if (!pointerDrag) return;
+    const distance = Math.hypot(clientX - pointerDrag.startX, clientY - pointerDrag.startY);
+    if (!pointerDrag.active && !pointerDrag.armed) return;
+    if (!pointerDrag.active && distance < NAV_POINTER_DRAG_ACTIVATION_DISTANCE) return;
+    if (!pointerDrag.active) {
+      pointerDrag.active = true;
+      navPointerSuppressClickRef.current = true;
+      navDropHandledRef.current = false;
+      setNavDragSrc(pointerDrag.sourceIndex);
+    }
+    const hoverElement = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+    const hoverItem = hoverElement?.closest('[data-nav-item-index]') as HTMLElement | null;
+    const targetIndex = Number(hoverItem?.dataset.navItemPreviewIndex);
+    if (!Number.isInteger(targetIndex)) return;
+    const targetKey = `nav:${targetIndex}`;
+    if (!pointerDrag.lastPreviewTargetKey && targetKey === `nav:${pointerDrag.sourceIndex}`) return;
+    if (hasNavPointerRetargetedTooSoon(pointerDrag, targetKey, clientX, clientY)) return;
+    rememberNavPointerPreviewTarget(pointerDrag, targetKey, clientX, clientY);
+    const pos = pointerDrag.sourceIndex < targetIndex ? 'after' : 'before';
+    setNavDragOver({ itemIdx: targetIndex, pos });
+  };
+
+  const updateNavPointerPreview = (event: React.PointerEvent<HTMLElement>) => {
+    updateNavPointerPreviewAt(event.clientX, event.clientY);
+    if (navPointerDragRef.current?.active) event.preventDefault();
+  };
+
+  const finishNavPointerDragById = (pointerId: number) => {
+    const pointerDrag = navPointerDragRef.current;
+    if (!pointerDrag || pointerDrag.pointerId !== pointerId) return;
+    navPointerDragRef.current = null;
+    pointerDrag.cleanup();
+    try {
+      pointerDrag.element.releasePointerCapture(pointerId);
+    } catch {
+      // Ignore release failures when capture was not established.
+    }
+    if (!pointerDrag?.active) return;
+    if (navDragOverRef.current) commitDragDrop(navDragOverRef.current.itemIdx);
+    clearDragState();
+    window.setTimeout(() => {
+      navPointerSuppressClickRef.current = false;
+    }, 0);
+  };
+
+  const finishNavPointerDrag = (event: React.PointerEvent<HTMLElement>) => {
+    finishNavPointerDragById(event.pointerId);
   };
 
   return (
@@ -208,31 +410,39 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
 
         <div className="flex-1 overflow-y-auto p-5">
           <div className="space-y-1">
-            {draftItems.map((item, itemIndex) => {
+            {previewDraftItems.map((item, previewIndex) => {
+              const itemIndex = draftItems.findIndex((draftItem) => draftItem.to === item.to);
               const ItemIcon = getIconByName(item.iconName);
               const isEditing = editingItem === itemIndex;
               const isHidden = !!item.hidden;
               const hasDividerAfter = draftDividerAfterItemTos.includes(item.to);
+              const isDraggingPreview = dragSrc === itemIndex && dragOver && !dividerDragSrc;
 
               return (
                 <div key={`${item.to}-${itemIndex}`} className="relative">
-                  {dragOver?.itemIdx === itemIndex && dragOver.pos === 'before' && (
+                  {dividerDragSrc && dragOver?.itemIdx === itemIndex && dragOver.pos === 'before' && (
                     <div className="absolute -top-[3px] left-0 right-0 z-10 h-[3px] rounded-full bg-brand" />
                   )}
                   <div
+                    data-nav-item-index={itemIndex}
+                    data-nav-item-preview-index={previewIndex}
                     draggable={!isEditing && !isHidden}
-                    onDragStart={() => setDragSrc(itemIndex)}
-                    onDragOver={(event) => handleDragOver(event, itemIndex)}
-                    onDrop={() => handleDrop(itemIndex)}
-                    onDragEnd={() => {
-                      setDragSrc(null);
-                      setDragOver(null);
+                    onDragStart={() => {
+                      navDropHandledRef.current = false;
+                      setNavDragSrc(itemIndex);
                     }}
+                    onDragOver={(event) => handleDragOver(event, itemIndex, previewIndex)}
+                    onDrop={() => handleDrop(itemIndex, previewIndex)}
+                    onDragEnd={handleDragEnd}
+                    onPointerDown={(event) => beginNavPointerDrag(event, itemIndex)}
+                    onPointerMove={updateNavPointerPreview}
+                    onPointerUp={finishNavPointerDrag}
+                    onPointerCancel={finishNavPointerDrag}
                     className={`flex items-center gap-2 rounded-md border-2 px-3 py-2 transition-all ${
                       isHidden
                         ? 'border-transparent bg-gray-100 opacity-60'
-                        : dragSrc === itemIndex
-                          ? 'scale-[0.98] border-dashed border-brand/40 bg-brand/10 opacity-60'
+                        : isDraggingPreview
+                          ? 'border-dashed border-brand/45 bg-brand/10 text-brand shadow-inner'
                           : 'border-transparent bg-gray-50/50 hover:border-gray-200 hover:bg-gray-50'
                     }`}
                   >
@@ -272,22 +482,25 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
                         >
                           {isHidden ? '恢复' : '隐藏'}
                         </button>
+                        {isDraggingPreview ? (
+                          <span className="rounded-full bg-white/80 px-2 py-0.5 text-xs font-black text-brand">虚影，松手后落实</span>
+                        ) : null}
                       </>
                     )}
                   </div>
-                  {dragOver?.itemIdx === itemIndex && dragOver.pos === 'after' && (
+                  {dividerDragSrc && dragOver?.itemIdx === itemIndex && dragOver.pos === 'after' && (
                     <div className="absolute -bottom-[3px] left-0 right-0 z-10 h-[3px] rounded-full bg-brand" />
                   )}
                   {hasDividerAfter ? (
                     <div
                       draggable={!isHidden}
-                      onDragStart={() => setDividerDragSrc(item.to)}
-                      onDragOver={(event) => handleDragOver(event, itemIndex)}
-                      onDrop={() => handleDrop(itemIndex)}
-                      onDragEnd={() => {
-                        setDividerDragSrc(null);
-                        setDragOver(null);
+                      onDragStart={() => {
+                        navDropHandledRef.current = false;
+                        setNavDividerDragSrc(item.to);
                       }}
+                      onDragOver={(event) => handleDragOver(event, itemIndex, previewIndex)}
+                      onDrop={() => handleDrop(itemIndex, previewIndex)}
+                      onDragEnd={handleDragEnd}
                       className={`group my-1 flex h-7 cursor-grab items-center gap-2 rounded-md px-3 transition-colors active:cursor-grabbing ${
                         dividerDragSrc === item.to ? 'bg-brand/10' : 'hover:bg-[#f2f7fb]'
                       }`}

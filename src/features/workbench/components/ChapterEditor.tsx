@@ -43,7 +43,6 @@ import {
   type FormatOptions,
   type FontSettings,
 } from '@/features/workbench/components/EditorToolModals';
-import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
 import {
   getBackgroundAiTask,
   startBackgroundAiTask,
@@ -58,15 +57,16 @@ import { AiRequestLogGroups } from '@/shared/ui/AiRequestLogGroups';
 import { AiInlineInput } from '@/shared/ui/AiInlineInput';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
 import { WordCountText } from '@/shared/ui/WordCountText';
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 150;
 const SPLIT_BUTTON_OUTLINE_GROUP_CLASS = 'flex h-8 items-stretch overflow-hidden rounded-md border border-brand bg-white shadow-none';
 const SPLIT_BUTTON_OUTLINE_ACTION_CLASS = 'inline-flex flex-1 items-center justify-center whitespace-nowrap px-1.5 text-sm font-medium text-brand transition-colors hover:bg-brand-light';
-const REVIEW_PAGE_LEFT_WIDTH = 220;
+const REVIEW_PAGE_LEFT_WIDTH = 180;
 const REVIEW_PAGE_RIGHT_WIDTH = 300;
-const STATUS_PAGE_LEFT_WIDTH = 230;
+const STATUS_PAGE_LEFT_WIDTH = 190;
 const STATUS_PAGE_RIGHT_WIDTH = 360;
 const REVIEW_PAGE_LEFT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_left_width';
 const REVIEW_PAGE_RIGHT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_right_width';
@@ -82,6 +82,8 @@ const STATUS_PAGE_RIGHT_WIDTH_LIMIT = { min: 300, max: 560 };
 const CHAPTER_EDITOR_RESIZE_HANDLE_CLASS = 'group relative z-10 flex h-full w-3 -translate-x-1/2 cursor-ew-resize items-stretch justify-center bg-transparent';
 const STATUS_PROMPT_CATEGORY = '状态';
 const POLISH_PROMPT_CATEGORY = '润色';
+const REVIEW_PREVIEW_MIN_FONT_SIZE = 12;
+const REVIEW_PREVIEW_MAX_FONT_SIZE = 28;
 type EditorFieldSizeKey = 'reviewActionGroup' | 'reviewModelSelect' | 'reviewAuditPromptSelect' | 'reviewCommentPromptSelect';
 type EditorFieldSizeSpec = { width: number; height: number; fontSize: number };
 type EditorFieldSizeProp = keyof EditorFieldSizeSpec;
@@ -445,6 +447,111 @@ function splitReviewParagraphs(text: string) {
   return text.replace(/\r\n/g, '\n').split('\n');
 }
 
+type ReviewAnnotation = {
+  id: string;
+  severity: string;
+  type: string;
+  paragraphIndex: number;
+  originalText: string;
+  problem: string;
+  suggestion: string;
+  action: string;
+};
+
+function normalizeReviewAnnotation(value: unknown, index: number): ReviewAnnotation | null {
+  if (!value || typeof value !== 'object') return null;
+  const raw = value as Record<string, unknown>;
+  const paragraphIndex = Number(raw.paragraphIndex);
+  const originalText = typeof raw.originalText === 'string' ? raw.originalText.trim() : '';
+  if (!Number.isFinite(paragraphIndex) || !originalText) return null;
+  return {
+    id: typeof raw.id === 'string' && raw.id.trim() ? raw.id.trim() : `A${String(index + 1).padStart(3, '0')}`,
+    severity: typeof raw.severity === 'string' && raw.severity.trim() ? raw.severity.trim() : '提醒',
+    type: typeof raw.type === 'string' && raw.type.trim() ? raw.type.trim() : '问题标注',
+    paragraphIndex,
+    originalText,
+    problem: typeof raw.problem === 'string' ? raw.problem.trim() : '',
+    suggestion: typeof raw.suggestion === 'string' ? raw.suggestion.trim() : '',
+    action: typeof raw.action === 'string' && raw.action.trim() ? raw.action.trim() : '建议处理',
+  };
+}
+
+function extractReviewAnnotations(output: string): ReviewAnnotation[] {
+  const clean = stripReviewThinkingBlock(output);
+  const candidates = [
+    clean.match(/#\s*原文标注[\s\S]*?```(?:json)?\s*(\[[\s\S]*?\])\s*```/i)?.[1],
+    clean.match(/原文标注[\s\S]*?```(?:json)?\s*(\[[\s\S]*?\])\s*```/i)?.[1],
+    clean.match(/```json\s*(\[[\s\S]*?\])\s*```/i)?.[1],
+  ].filter((item): item is string => Boolean(item?.trim()));
+
+  for (const candidate of candidates) {
+    try {
+      const parsed: unknown = JSON.parse(candidate);
+      if (!Array.isArray(parsed)) continue;
+      return parsed
+        .map((item, index) => normalizeReviewAnnotation(item, index))
+        .filter((item): item is ReviewAnnotation => Boolean(item));
+    } catch {
+      // Ignore malformed AI annotation blocks and keep the review page usable.
+    }
+  }
+  return [];
+}
+
+function getReviewAnnotationParagraphIndex(annotation: ReviewAnnotation, paragraphCount: number) {
+  if (annotation.paragraphIndex >= 1 && annotation.paragraphIndex <= paragraphCount) {
+    return annotation.paragraphIndex - 1;
+  }
+  if (annotation.paragraphIndex >= 0 && annotation.paragraphIndex < paragraphCount) {
+    return annotation.paragraphIndex;
+  }
+  return -1;
+}
+
+function getReviewSeverityClass(severity: string) {
+  if (/严重|高|红|不通过/.test(severity)) return 'border-red-200 bg-red-50 text-red-700';
+  if (/中|黄|警告/.test(severity)) return 'border-amber-200 bg-amber-50 text-amber-700';
+  return 'border-cyan-200 bg-cyan-50 text-[#078fb0]';
+}
+
+function getReviewAnnotationNoteSpacingClass(text: string) {
+  return text.length > 80 ? 'mt-3' : 'mt-2';
+}
+
+function renderAnnotatedReviewParagraph(paragraph: string, annotations: ReviewAnnotation[]) {
+  if (!paragraph) return <span className="text-slate-300">空段落</span>;
+  const matchedAnnotations = annotations.filter((annotation) => paragraph.includes(annotation.originalText));
+  if (matchedAnnotations.length === 0) return paragraph;
+
+  const parts: Array<{ text: string; annotation?: ReviewAnnotation }> = [];
+  let cursor = 0;
+  matchedAnnotations
+    .map((annotation) => ({ annotation, index: paragraph.indexOf(annotation.originalText, cursor) }))
+    .filter((item) => item.index >= 0)
+    .sort((a, b) => a.index - b.index)
+    .forEach(({ annotation, index }) => {
+      if (index < cursor) return;
+      if (index > cursor) parts.push({ text: paragraph.slice(cursor, index) });
+      parts.push({ text: paragraph.slice(index, index + annotation.originalText.length), annotation });
+      cursor = index + annotation.originalText.length;
+    });
+  if (cursor < paragraph.length) parts.push({ text: paragraph.slice(cursor) });
+
+  return (
+    <>
+      {parts.map((part, index) => part.annotation ? (
+        <mark
+          key={`${part.annotation.id}-${index}`}
+          className="rounded bg-amber-100 px-0.5 text-amber-900 ring-1 ring-amber-300"
+          title={`${part.annotation.type}：${part.annotation.problem || part.annotation.suggestion}`}
+        >
+          {part.text}
+        </mark>
+      ) : part.text)}
+    </>
+  );
+}
+
 function buildReviewParagraphDiffs(originalText: string, revisedText: string) {
   const original = splitReviewParagraphs(originalText);
   const revised = splitReviewParagraphs(revisedText);
@@ -535,6 +642,9 @@ export function ChapterEditor({
   const [reviewPageRightWidth, setReviewPageRightWidth] = useState(() => readStoredPanelWidth(REVIEW_PAGE_RIGHT_WIDTH_STORAGE_KEY, REVIEW_PAGE_RIGHT_WIDTH, REVIEW_PAGE_RIGHT_WIDTH_LIMIT));
   const [statusPageLeftWidth, setStatusPageLeftWidth] = useState(() => readStoredPanelWidth(STATUS_PAGE_LEFT_WIDTH_STORAGE_KEY, STATUS_PAGE_LEFT_WIDTH, STATUS_PAGE_LEFT_WIDTH_LIMIT));
   const [statusPageRightWidth, setStatusPageRightWidth] = useState(() => readStoredPanelWidth(STATUS_PAGE_RIGHT_WIDTH_STORAGE_KEY, STATUS_PAGE_RIGHT_WIDTH, STATUS_PAGE_RIGHT_WIDTH_LIMIT));
+  const [reviewPreviewFontSize, setReviewPreviewFontSize] = useState(14);
+  const [activeReviewParagraphIndex, setActiveReviewParagraphIndex] = useState(0);
+  const reviewAnnotationRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [reviewChapterId, setReviewChapterId] = useState<number | null>(() => chapter?.id ?? null);
   const [statusChapterId, setStatusChapterId] = useState<number | null>(() => chapter?.id ?? null);
   const [expandedReviewVolumeIds, setExpandedReviewVolumeIds] = useState<Set<number>>(() => new Set());
@@ -836,6 +946,29 @@ export function ChapterEditor({
     () => buildReviewParagraphDiffs(activeReviewContent, reviewRevisedDraft),
     [activeReviewContent, reviewRevisedDraft],
   );
+  const reviewOriginalParagraphs = useMemo(() => splitReviewParagraphs(activeReviewContent), [activeReviewContent]);
+  const reviewAnnotations = useMemo(() => extractReviewAnnotations(reviewAiOutput), [reviewAiOutput]);
+  const reviewAnnotationsByParagraph = useMemo(() => {
+    const result = new Map<number, ReviewAnnotation[]>();
+    reviewAnnotations.forEach((annotation) => {
+      const index = getReviewAnnotationParagraphIndex(annotation, reviewOriginalParagraphs.length);
+      if (index < 0) return;
+      const current = result.get(index) ?? [];
+      current.push(annotation);
+      result.set(index, current);
+    });
+    return result;
+  }, [reviewAnnotations, reviewOriginalParagraphs.length]);
+  useEffect(() => {
+    setActiveReviewParagraphIndex((current) => {
+      if (reviewOriginalParagraphs.length === 0) return 0;
+      return Math.min(current, reviewOriginalParagraphs.length - 1);
+    });
+  }, [reviewOriginalParagraphs.length]);
+  const selectReviewPreviewParagraph = (index: number) => {
+    setActiveReviewParagraphIndex(index);
+    reviewAnnotationRefs.current[index]?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  };
   const reviewChangedParagraphs = reviewParagraphDiffs.filter((item) => item.changed);
   const sortedStatusChapters = sortedReviewChapters;
   const activeStatusChapter = sortedStatusChapters.find((item) => item.id === statusChapterId) ?? chapter ?? sortedStatusChapters[0] ?? null;
@@ -1296,11 +1429,7 @@ export function ChapterEditor({
       associatedSelectionRef.current = nextCount > 0;
       setAssociatedCount(nextCount);
     };
-    if (isRememberAssociationsEnabled() || associatedSelectionRef.current) {
-      syncAssociatedCount();
-    } else {
-      setAssociatedCount(0);
-    }
+    syncAssociatedCount();
     window.addEventListener(CHAPTER_ASSOCIATE_UPDATED_EVENT, syncAssociatedCount);
     return () => window.removeEventListener(CHAPTER_ASSOCIATE_UPDATED_EVENT, syncAssociatedCount);
   }, [allChapters]);
@@ -1844,8 +1973,8 @@ export function ChapterEditor({
               className="grid min-h-0 flex-1 bg-slate-50"
               style={{ gridTemplateColumns: `${statusPageLeftWidth}px 0px minmax(0,1fr) 0px ${statusPageRightWidth}px` }}
             >
-              <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white px-3 py-3">
-                <div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+              <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white px-1 py-2">
+                <div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto">
                   {chapterDirectoryGroups.map((group) => {
                     const expanded = expandedStatusVolumeIds.has(group.id);
                     const GroupFolderIcon = expanded ? FolderOpen : Folder;
@@ -1877,7 +2006,7 @@ export function ChapterEditor({
                                   title={`${updated ? '已更新状态到' : '未更新状态到'}第${item.serialNumber}章 ${item.title || ''}`}
                                   className={`relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
                                     selected
-                                      ? 'border-transparent xy-selected-orange-bg text-slate-900'
+                                      ? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'
                                       : updated
                                       ? 'border-[#08B3D9] bg-[#08B3D9] text-white hover:border-[#067B96] hover:bg-[#067B96]'
                                       : 'border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
@@ -2066,8 +2195,8 @@ export function ChapterEditor({
               className="grid min-h-0 flex-1 bg-slate-50"
               style={{ gridTemplateColumns: `${reviewPageLeftWidth}px 0px minmax(0,1fr) 0px ${reviewPageRightWidth}px` }}
             >
-              <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white px-3 py-3">
-                <div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+              <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white px-1 py-2">
+                <div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto">
                   {chapterDirectoryGroups.map((group) => {
                     const expanded = expandedReviewVolumeIds.has(group.id);
                     const GroupFolderIcon = expanded ? FolderOpen : Folder;
@@ -2098,7 +2227,7 @@ export function ChapterEditor({
                                   title={`第${item.serialNumber}章 ${item.title || '未命名章节'} · ${item.wordCount}字`}
                                   className={`relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
                                     selected
-                                      ? 'border-transparent xy-selected-orange-bg text-slate-900'
+                                      ? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'
                                       : 'border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
                                   }`}
                                 >
@@ -2115,7 +2244,7 @@ export function ChapterEditor({
               </aside>
               {reviewLeftResizeHandle}
               <main className="min-h-0 p-5">
-                <div className="flex h-full min-h-0 flex-col rounded-2xl border border-slate-200 bg-white">
+                <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
                   <div className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4">
                     <div className="min-w-0">
                       <h3 className="truncate text-base font-black text-slate-900">
@@ -2127,30 +2256,133 @@ export function ChapterEditor({
                         {reviewRevisedDraft.trim() ? ` · ${reviewChangedParagraphs.length} 处修改` : ''}
                       </p>
                     </div>
-                    <div className="flex shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-black">
-                      {([
-                        ['preview', '原文'] as const,
-                        ['paragraph', '段落'] as const,
-                        ['full', '全文'] as const,
-                      ]).map(([key, label]) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => setReviewCompareView(key)}
-                          className={`h-8 rounded-lg px-3 transition-colors ${reviewCompareView === key ? 'bg-white text-[#078fb0] shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                        >
-                          {label}
-                        </button>
-                      ))}
+                    <div className="flex shrink-0 items-center gap-2">
+                      <FontSizeStepper
+                        value={reviewPreviewFontSize}
+                        min={REVIEW_PREVIEW_MIN_FONT_SIZE}
+                        max={REVIEW_PREVIEW_MAX_FONT_SIZE}
+                        ariaLabel="审核原文字号"
+                        onChange={setReviewPreviewFontSize}
+                        className="shrink-0"
+                      />
+                      <div className="flex shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-black">
+                        {([
+                          ['preview', '原文'] as const,
+                          ['paragraph', '段落'] as const,
+                          ['full', '全文'] as const,
+                        ]).map(([key, label]) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => setReviewCompareView(key)}
+                            className={`h-8 rounded-lg px-3 transition-colors ${reviewCompareView === key ? 'bg-white text-[#078fb0] shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                   {reviewCompareView === 'preview' ? (
-                    <textarea
-                      readOnly
-                      value={activeReviewContent}
-                      placeholder="这里会显示所选章节正文。"
-                      className="editor-scrollbar min-h-0 flex-1 resize-none border-0 bg-white p-5 text-sm leading-7 text-slate-700 outline-none"
-                    />
+                    <div className="grid min-h-0 flex-1 grid-cols-2 divide-x divide-slate-300">
+                      <section className="flex min-h-0 flex-col bg-white">
+                        <span className="shrink-0 border-b border-slate-100 bg-slate-50 px-4 py-2 text-xs font-black text-slate-500">
+                          原文
+                        </span>
+                        <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto bg-white p-5 text-sm leading-7 text-slate-700" style={{ fontSize: reviewPreviewFontSize }}>
+                          {reviewOriginalParagraphs.length === 0 || !activeReviewContent.trim() ? (
+                            <div className="flex h-full items-center justify-center text-sm font-bold text-slate-300">
+                              这里会显示所选章节正文。
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {reviewOriginalParagraphs.map((paragraph, index) => {
+                                const selected = activeReviewParagraphIndex === index;
+                                return (
+                                  <button
+                                    key={`${index}-${paragraph.slice(0, 18)}`}
+                                    type="button"
+                                    onClick={() => selectReviewPreviewParagraph(index)}
+                                    className={`relative block w-full rounded-xl px-3 py-2 text-left leading-7 outline-none transition-colors ${
+                                      selected ? 'bg-[#EAF9FD] text-slate-900 ring-1 ring-[#9BEFFC]' : 'text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                    style={{ fontSize: reviewPreviewFontSize }}
+                                  >
+                                    {selected ? <span aria-hidden="true" className="absolute left-1 top-3 h-[1.4em] w-[2px] rounded-full bg-[#08AACE]" /> : null}
+                                    <span className="block whitespace-pre-wrap break-words pl-2">{paragraph}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </section>
+                      <section className="flex min-h-0 flex-col bg-white">
+                        <div className="flex h-[33px] shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-[#EAF9FD] px-4">
+                          <span className="text-xs font-black text-[#078fb0]">AI标注</span>
+                          <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-black text-slate-400">
+                            {reviewAnnotations.length} 条
+                          </span>
+                        </div>
+                        <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto bg-white p-5 text-sm leading-7 text-slate-700" style={{ fontSize: reviewPreviewFontSize }}>
+                          {reviewOriginalParagraphs.length === 0 || !activeReviewContent.trim() ? (
+                            <div className="flex h-full items-center justify-center text-sm font-bold text-slate-300">
+                              这里会显示带 AI 标注的正文。
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {reviewOriginalParagraphs.map((paragraph, index) => {
+                                const paragraphAnnotations = reviewAnnotationsByParagraph.get(index) ?? [];
+                                const selected = activeReviewParagraphIndex === index;
+                                return (
+                                  <div
+                                    ref={(node) => {
+                                      reviewAnnotationRefs.current[index] = node;
+                                    }}
+                                    key={`${index}-${paragraph.slice(0, 18)}`}
+                                    className={`rounded-xl border p-3 transition-colors ${
+                                      selected
+                                        ? 'border-[#9BEFFC] bg-[#EAF9FD]'
+                                        : paragraphAnnotations.length > 0
+                                        ? 'border-amber-200 bg-amber-50/35'
+                                        : 'border-transparent bg-white'
+                                    }`}
+                                  >
+                                  <p className="whitespace-pre-wrap break-words" style={{ fontSize: reviewPreviewFontSize }}>
+                                      {renderAnnotatedReviewParagraph(paragraph, paragraphAnnotations)}
+                                    </p>
+                                    {paragraphAnnotations.length > 0 ? (
+                                      <div className={`${getReviewAnnotationNoteSpacingClass(paragraph)} space-y-2`}>
+                                        {paragraphAnnotations.map((annotation) => (
+                                          <div
+                                            key={annotation.id}
+                                            className={`rounded-lg border px-3 py-2 text-xs font-bold leading-5 ${getReviewSeverityClass(annotation.severity)}`}
+                                          >
+                                            <div className="flex flex-wrap items-center gap-2">
+                                              <span className="font-black">{annotation.id}</span>
+                                              <span>{annotation.severity}</span>
+                                              <span>{annotation.type}</span>
+                                              <span>{annotation.action}</span>
+                                            </div>
+                                            {annotation.problem ? <div className="mt-1">问题：{annotation.problem}</div> : null}
+                                            {annotation.suggestion ? <div className="mt-1">建议：{annotation.suggestion}</div> : null}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                );
+                              })}
+                              {reviewAnnotations.length === 0 ? (
+                                <div className="rounded-xl border border-dashed border-cyan-200 bg-cyan-50/50 px-4 py-3 text-xs font-bold leading-5 text-slate-500">
+                                  AI 返回“原文标注”JSON 后，这里会高亮问题片段并显示审核说明。
+                                </div>
+                              ) : null}
+                            </div>
+                          )}
+                        </div>
+                      </section>
+                    </div>
                   ) : !reviewRevisedDraft.trim() ? (
                     <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
                       <div className="text-sm font-bold text-slate-400">还没有可对比的修改稿。</div>
@@ -2208,16 +2440,16 @@ export function ChapterEditor({
                                   {applied ? '已确认' : '确认替换'}
                                 </button>
                               </div>
-                              <div className="grid grid-cols-2 divide-x divide-slate-100">
+                              <div className="grid grid-cols-2 divide-x divide-slate-300">
                                 <div className="min-w-0 bg-red-50/35 p-3">
                                   <div className="mb-2 text-[11px] font-black text-red-500">原文</div>
-                                  <p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-700">
+                                  <p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-700" style={{ fontSize: reviewPreviewFontSize }}>
                                     {renderInlineTextDiff(item.before, item.after, 'before')}
                                   </p>
                                 </div>
                                 <div className="min-w-0 bg-emerald-50/45 p-3">
                                   <div className="mb-2 text-[11px] font-black text-emerald-600">修改后</div>
-                                  <p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-700">
+                                  <p className="whitespace-pre-wrap break-words text-sm leading-7 text-slate-700" style={{ fontSize: reviewPreviewFontSize }}>
                                     {renderInlineTextDiff(item.before, item.after, 'after')}
                                   </p>
                                 </div>
@@ -2228,13 +2460,14 @@ export function ChapterEditor({
                       </div>
                     </div>
                   ) : (
-                    <div className="grid min-h-0 flex-1 grid-cols-2 divide-x divide-slate-100">
+                    <div className="grid min-h-0 flex-1 grid-cols-2 divide-x divide-slate-300">
                       <label className="flex min-h-0 flex-col">
                         <span className="shrink-0 border-b border-slate-100 bg-red-50/60 px-4 py-2 text-xs font-black text-red-500">原文全文</span>
                         <textarea
                           readOnly
                           value={activeReviewContent}
                           className="editor-scrollbar min-h-0 flex-1 resize-none border-0 bg-white p-4 text-sm leading-7 text-slate-700 outline-none"
+                          style={{ fontSize: reviewPreviewFontSize }}
                         />
                       </label>
                       <label className="flex min-h-0 flex-col">
@@ -2246,6 +2479,7 @@ export function ChapterEditor({
                             setReviewAppliedParagraphs(new Set());
                           }}
                           className="editor-scrollbar min-h-0 flex-1 resize-none border-0 bg-white p-4 text-sm leading-7 text-slate-700 outline-none"
+                          style={{ fontSize: reviewPreviewFontSize }}
                         />
                       </label>
                     </div>

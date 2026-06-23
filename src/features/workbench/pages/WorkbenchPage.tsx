@@ -20,15 +20,11 @@ import {
   type WorkbenchCreationFlowPageKey,
 } from '@/features/workbench/model/workbenchCreationFlow';
 import {
-  clearAssociatedChapters,
-  clearWorkbenchAiSessionLinks,
   clearWorkbenchLinkedContextItems,
-  clearWorkbenchLinkedBrainstorm,
   readWorkbenchLinkedContextItems,
   writeWorkbenchLinkedContextItems,
 } from '@/features/workbench/model/workbenchAssociationCleanup';
 import { readWorkbenchLibraryEntries, type WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
-import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
@@ -88,10 +84,10 @@ const AI_PANEL_MIN_WIDTH = 430;
 const AI_PANEL_DEFAULT_WIDTH = 430;
 const CHAPTER_SIDEBAR_MIN_WIDTH = 200;
 const CHAPTER_SIDEBAR_MAX_WIDTH = 420;
-const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 300;
+const CHAPTER_SIDEBAR_DEFAULT_WIDTH = CHAPTER_SIDEBAR_MIN_WIDTH;
 const PUBLISHED_SIDEBAR_MIN_WIDTH = 170;
 const PUBLISHED_SIDEBAR_MAX_WIDTH = 360;
-const PUBLISHED_SIDEBAR_DEFAULT_WIDTH = 190;
+const PUBLISHED_SIDEBAR_DEFAULT_WIDTH = PUBLISHED_SIDEBAR_MIN_WIDTH;
 const FIND_REPLACE_DEFAULT_GEOMETRY = {
   x: 0,
   y: 0,
@@ -112,8 +108,8 @@ const CONTEXT_SETTING_TYPE_ORDER = [
   '危险区域',
   '主线伏笔',
   '人物伏笔',
-  '硬规则',
-  '禁写规则',
+  '写作规范',
+  '写作禁忌',
   '其他设定',
   '未分类',
 ];
@@ -888,7 +884,7 @@ function ContextSelectionColumn({
                             onClick={() => setPreviewItemId(item.id)}
                             className={
                               'flex h-10 w-full items-center gap-2 rounded-lg px-2 text-left text-[15px] font-black ' +
-                              (checked ? 'bg-[#FFF7ED] text-gray-900' : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800')
+                              (checked ? 'xy-selected-content-bg text-gray-900' : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800')
                             }
                           >
                             <span
@@ -931,7 +927,7 @@ function ContextSelectionColumn({
           <article
             className={
               'flex h-full min-h-0 flex-col rounded-2xl border px-5 py-4 ' +
-              (selectedIds.has(previewItem.id) ? 'border-[#08AACE] bg-[#FFF7ED] text-slate-900' : 'border-gray-100 bg-gray-50 text-gray-600')
+              (selectedIds.has(previewItem.id) ? 'border-[#08AACE] xy-selected-content-bg text-slate-900' : 'border-gray-100 bg-gray-50 text-gray-600')
             }
           >
             <div className="mb-3 flex shrink-0 items-start justify-between gap-4">
@@ -1523,33 +1519,9 @@ export function WorkbenchPage() {
 
   useEffect(() => {
     if (!currentNovelId) return;
-    const clearTransientAssociations = () => {
-      if (isRememberAssociationsEnabled()) return;
-      clearAssociatedChapters();
-      clearWorkbenchAiSessionLinks(currentNovelId);
-      clearWorkbenchLinkedBrainstorm(`xinyuexia_workbench_settings_${currentNovelId}`);
-      clearWorkbenchLinkedBrainstorm(`xinyuexia_workbench_outline_${currentNovelId}`);
-      clearWorkbenchLinkedContextItems(currentNovelId);
-    };
-    clearTransientAssociations();
-    window.addEventListener('pagehide', clearTransientAssociations);
-    return () => {
-      window.removeEventListener('pagehide', clearTransientAssociations);
-      clearTransientAssociations();
-    };
-  }, [currentNovelId]);
-
-  useEffect(() => {
-    if (!currentNovelId) return;
-    if (isRememberAssociationsEnabled()) {
-      const storedItems = readWorkbenchLinkedContextItems(currentNovelId);
-      setLinkedContextItems(storedItems);
-      setContextSelectionTouched(storedItems.length > 0);
-    } else {
-      setLinkedContextItems([]);
-      setContextSelectionTouched(false);
-      clearWorkbenchLinkedContextItems(currentNovelId);
-    }
+    const storedItems = readWorkbenchLinkedContextItems(currentNovelId);
+    setLinkedContextItems(storedItems);
+    setContextSelectionTouched(storedItems.length > 0);
     setDraftContextIds(new Set());
     setIsContextLibraryOpen(false);
   }, [currentNovelId]);
@@ -2004,7 +1976,7 @@ export function WorkbenchPage() {
   const updateLinkedContextItems = (items: WorkbenchLinkedContextItem[]) => {
     setLinkedContextItems(items);
     if (!currentNovelId) return;
-    if (isRememberAssociationsEnabled()) {
+    if (items.length > 0) {
       writeWorkbenchLinkedContextItems(currentNovelId, items);
     } else {
       clearWorkbenchLinkedContextItems(currentNovelId);

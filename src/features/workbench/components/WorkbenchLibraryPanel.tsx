@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Folder, FolderOpen, Lock, Pin, Plus, Settings, Square, Trash2, Unlock, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Folder, FolderOpen, Lock, Pin, Plus, Search, Settings, Square, Trash2, Unlock, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type SetStateAction } from 'react';
 import type { CSSProperties } from 'react';
 import type { DragEvent as ReactDragEvent, KeyboardEvent as ReactKeyboardEvent, MouseEvent, PointerEvent as ReactPointerEvent } from 'react';
@@ -11,7 +11,6 @@ import { readPlotLibrarySnapshot } from '@/features/plot-library/hooks/usePlotLi
 import { normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
-import { clearWorkbenchLinkedBrainstorm } from '@/features/workbench/model/workbenchAssociationCleanup';
 import { shouldSyncOutlinePreviewDraft } from '@/features/workbench/model/workbenchOutlineSync';
 import { getPlotPointScoreColorClass, prepareCollapsedPlotPointCard } from '@/features/workbench/model/workbenchPlotPointCard';
 import {
@@ -61,6 +60,10 @@ import {
   writeWorkbenchLibraryEntries,
   type WorkbenchLibraryEntry,
 } from '@/features/workbench/model/workbenchLibraryStorage';
+import {
+  getWorkbenchAssociationRuntimeId,
+  isWorkbenchAssociationRuntimeCurrent,
+} from '@/features/workbench/model/workbenchAssociationCleanup';
 import type { Chapter, Volume } from '@/features/workbench/model/workbenchTypes';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
@@ -71,7 +74,6 @@ import {
   subscribeBackgroundAiTasks,
   type BackgroundAiTask,
 } from '@/shared/ai/backgroundAiTasks';
-import { isRememberAssociationsEnabled } from '@/shared/settings/associationMemory';
 import { AiRequestLogContent, AiRequestLogGroups, type AiRequestLogGroup } from '@/shared/ui/AiRequestLogGroups';
 import { AiInlineInput } from '@/shared/ui/AiInlineInput';
 import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
@@ -85,6 +87,9 @@ import { WordCountText } from '@/shared/ui/WordCountText';
 const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] xy-flow-group-bg px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors';
 const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';
 const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#6f7e90]';
+const WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS = 'min-h-[34px] w-full rounded-lg border border-transparent bg-white px-3 py-1.5 text-left text-sm font-black leading-5';
+const WORKBENCH_LIBRARY_ENTRY_BUTTON_CLASS = `group cursor-default select-none ${WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS} transition-[background-color,border-color,box-shadow,opacity,transform] duration-150`;
+const WORKBENCH_LIBRARY_ENTRY_EMPTY_CLASS = `flex items-center ${WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS} text-gray-400`;
 const DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS = 'flex h-[42px] shrink-0 items-center justify-between border-b border-[#e6e8ec] bg-[#fbfbfc] px-3 py-2.5';
 const DETAIL_OUTLINE_SIDEBAR_TITLE_CLASS = 'whitespace-nowrap text-sm font-bold text-gray-900';
 const DETAIL_OUTLINE_SIDEBAR_COUNT_CLASS = 'flex h-5 w-5 items-center justify-center rounded-full bg-[#E7F8FD] text-xs font-medium text-[#08AACE]';
@@ -93,8 +98,41 @@ const DETAIL_OUTLINE_VOLUME_ROW_CLASS = WORKBENCH_FOLDER_GROUP_BUTTON_CLASS;
 const DETAIL_OUTLINE_VOLUME_ICON_CLASS = WORKBENCH_FOLDER_GROUP_ICON_CLASS;
 const DETAIL_OUTLINE_VOLUME_TITLE_CLASS = 'min-w-0 flex-1 truncate leading-none';
 const DETAIL_OUTLINE_VOLUME_COUNT_CLASS = WORKBENCH_FOLDER_GROUP_COUNT_CLASS;
+const SETTING_SEGMENTED_TAB_GROUP_CLASS = 'flex h-10 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white';
+const SETTING_SEGMENTED_TAB_BUTTON_CLASS = 'min-w-[96px] px-4 text-sm font-black transition-colors';
+const SETTING_SEGMENTED_TAB_ACTIVE_CLASS = 'border-[#08AACE] bg-[#EAF9FD] text-[#078FAE]';
+const SETTING_SEGMENTED_TAB_IDLE_CLASS = 'bg-white text-slate-600 hover:bg-[#EAF9FD] hover:text-[#078FAE]';
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
+
+type SettingSegmentedTabsProps<T extends string> = {
+  tabs: readonly T[];
+  activeTab: T;
+  onChange: (tab: T) => void;
+};
+
+function SettingSegmentedTabs<T extends string>({ tabs, activeTab, onChange }: SettingSegmentedTabsProps<T>) {
+  return (
+    <div className={SETTING_SEGMENTED_TAB_GROUP_CLASS}>
+      {tabs.map((tab, index) => {
+        const active = activeTab === tab;
+        const borderClassName = index === 0 ? '' : 'border-l border-gray-200';
+        return (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => onChange(tab)}
+            className={`${SETTING_SEGMENTED_TAB_BUTTON_CLASS} ${borderClassName} ${
+              active ? SETTING_SEGMENTED_TAB_ACTIVE_CLASS : SETTING_SEGMENTED_TAB_IDLE_CLASS
+            }`}
+          >
+            {tab}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 162;
 
 function resizeFloatingAiTextarea(textarea: HTMLTextAreaElement | null) {
@@ -129,18 +167,21 @@ interface WorkbenchLibraryPanelProps {
 type RoleStateFieldKey =
   | 'currentSituation'
   | 'currentGoal'
-  | 'identityState'
   | 'abilityState'
   | 'resourceState'
-  | 'relationshipState'
-  | 'informationState'
-  | 'plotMarkers'
-  | 'hardConstraints';
+  | 'otherState';
 
 type RoleStateFieldLevel = '每章更新' | '变化时更新' | '按需关联' | '硬性约束';
 
 type RoleStateSettings = Record<RoleStateFieldKey, string>;
-type RoleStateUpdateChapters = Partial<Record<RoleStateFieldKey, number>>;
+type RoleStateUpdateChapterKey = RoleStateFieldKey | 'relationshipState';
+type RoleStateUpdateChapters = Partial<Record<RoleStateUpdateChapterKey, number>>;
+type RoleBaseSettingFieldKey =
+  | 'appearance'
+  | 'aliasName'
+  | 'corePersonality'
+  | 'background'
+  | 'abilityRules';
 
 const ROLE_STATE_FIELD_DEFINITIONS: Array<{
   key: RoleStateFieldKey;
@@ -149,13 +190,21 @@ const ROLE_STATE_FIELD_DEFINITIONS: Array<{
 }> = [
   { key: 'currentSituation', title: '当前处境', level: '每章更新' },
   { key: 'currentGoal', title: '当前目标', level: '每章更新' },
-  { key: 'identityState', title: '身份状态', level: '变化时更新' },
   { key: 'abilityState', title: '能力状态', level: '每章更新' },
   { key: 'resourceState', title: '资源状态', level: '变化时更新' },
-  { key: 'relationshipState', title: '关系状态', level: '变化时更新' },
-  { key: 'informationState', title: '信息状态', level: '每章更新' },
-  { key: 'plotMarkers', title: '剧情标记', level: '按需关联' },
-  { key: 'hardConstraints', title: '硬性约束', level: '硬性约束' },
+  { key: 'otherState', title: '其他', level: '按需关联' },
+];
+
+const ROLE_BASE_SETTING_FIELD_DEFINITIONS: Array<{
+  key: RoleBaseSettingFieldKey;
+  title: string;
+  placeholder: string;
+}> = [
+  { key: 'appearance', title: '外貌', placeholder: '身形、容貌、衣着、气质、标志性细节。' },
+  { key: 'aliasName', title: '称号/外号/别称', placeholder: '江湖称号、常用外号、化名、别称或他人称呼。' },
+  { key: 'corePersonality', title: '核心性格', placeholder: '稳定性格、行事原则、情绪底色和关键弱点。' },
+  { key: 'background', title: '人物背景', placeholder: '出身、经历、秘密、创伤、目标来源。' },
+  { key: 'abilityRules', title: '金手指/能力', placeholder: '能力来源、边界、代价、限制和成长规则。' },
 ];
 
 interface RoleContent {
@@ -170,6 +219,13 @@ interface RoleContent {
   status: string;
   history?: RoleHistoryVersion[];
 }
+
+type SmartImportSettingSegment = { title: string; type: string; body: string };
+type SmartImportRoleSegment = { title: string; body: string };
+type SmartImportTaggedSegments = {
+  settingSegments: SmartImportSettingSegment[];
+  roleSegments: SmartImportRoleSegment[];
+};
 
 interface RoleHistoryVersion {
   title: string;
@@ -188,14 +244,356 @@ interface RoleHistoryVersion {
 interface SettingContent {
   type: string;
   body: string;
+  structuredFieldSetId?: string;
+  lockedDefaultEntryId?: string;
 }
+
+type StructuredSettingFieldDefinition = {
+  key: string;
+  title: string;
+  placeholder?: string;
+};
+
+type StructuredSettingFieldGroup = {
+  title: string;
+  description: string;
+  fieldKeys: readonly string[];
+};
+
+type StructuredSettingFieldSet = {
+  id: string;
+  entryType: string;
+  entryTitle: string;
+  matchAllTitles?: boolean;
+  titleFieldLabel?: string;
+  titleFieldGroupTitle?: string;
+  gridColumnsClassName: string;
+  fields: readonly StructuredSettingFieldDefinition[];
+  groups?: readonly StructuredSettingFieldGroup[];
+};
+
+const STRUCTURED_SETTING_TABS = ['固定设定', '状态设定', '确认'] as const;
+type StructuredSettingTab = (typeof STRUCTURED_SETTING_TABS)[number];
 
 const DEFAULT_ROLE_TYPES = DEFAULT_WORKBENCH_ROLE_TYPES;
 const DEFAULT_MALE_PROTAGONIST_ROLE_TYPE = '男主角';
 const DEFAULT_MALE_PROTAGONIST_ROLE_TITLE = '男主角';
-const DEFAULT_WORK_SETTING_TYPES = ['核心设定', '世界规则', '剧情规划'];
-const DEFAULT_WORK_SETTING_STARTER_VERSION = '2026-06-17-setting-starter-full-title-items-v5';
+
+function isMaleProtagonistRoleTypeChangeLocked(currentType: string, nextType: string) {
+  return isMaleProtagonistRoleType(currentType) && !isMaleProtagonistRoleType(nextType);
+}
+
+const BASIC_SETTING_ENTRY_TYPE = '核心设定';
+const BASIC_SETTING_ENTRY_TITLE = '基础设定';
+const MONSTER_BESTIARY_FIELDS: readonly StructuredSettingFieldDefinition[] = [
+  { key: 'monsterImage', title: '怪物形象', placeholder: '体型、外貌、颜色、标志性器官、压迫感和辨认特征。' },
+  { key: 'monsterAbility', title: '怪物能力', placeholder: '攻击方式、天赋能力、防御特性、特殊感知、族群配合或战斗习惯。' },
+  { key: 'monsterBackground', title: '怪物背景', placeholder: '来源、种族来历、诞生原因、传说、与地图/势力/主线的关联。' },
+  { key: 'monsterWeakness', title: '怪物弱点', placeholder: '弱点部位、克制方式、恐惧物、行动限制、破解条件和禁忌。' },
+  { key: 'habitatTrace', title: '出没位置', placeholder: '栖息地、当前出没区域、最近出现章节、是否正在追踪或伏击角色。' },
+  { key: 'dropResources', title: '掉落/资源', placeholder: '妖丹、兽骨、鳞甲、毒囊、血脉、材料、情报或可获取收益。' },
+];
+const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[] = [
+  {
+    id: 'work-core-basic',
+    entryType: BASIC_SETTING_ENTRY_TYPE,
+    entryTitle: BASIC_SETTING_ENTRY_TITLE,
+    gridColumnsClassName: 'grid-cols-2',
+    fields: [
+      { key: 'storyType', title: '故事类型', placeholder: '题材类型、时代背景、风格方向和读者期待。' },
+      { key: 'coreConcept', title: '核心创意', placeholder: '这本书最核心、最有辨识度的卖点。' },
+      { key: 'oneSentenceSummary', title: '一句话概括', placeholder: '用一句话概括主角、目标、冲突和看点。' },
+    ],
+  },
+  {
+    id: 'work-core-world-view',
+    entryType: BASIC_SETTING_ENTRY_TYPE,
+    entryTitle: '世界观',
+    gridColumnsClassName: 'grid-cols-2',
+    fields: [
+      { key: 'eraBackground', title: '时代背景', placeholder: '故事发生的时代、文明状态、历史阶段和基础环境。' },
+      { key: 'worldPattern', title: '世界格局', placeholder: '国家、宗门、势力范围、区域关系和主要冲突格局。' },
+      { key: 'socialOrder', title: '社会秩序', placeholder: '权力、法律、阶层、交易、宗门或国家规则如何运转。' },
+    ],
+  },
+  {
+    id: 'work-core-cheat-advantage',
+    entryType: BASIC_SETTING_ENTRY_TYPE,
+    entryTitle: '主角金手指/优势',
+    gridColumnsClassName: 'grid-cols-2',
+    fields: [
+      { key: 'abilitySource', title: '能力来源', placeholder: '金手指从哪里来，主角为什么拥有它。' },
+      { key: 'coreFunction', title: '核心功能', placeholder: '最常用、最能制造爽点的主要能力。' },
+      { key: 'upgradeMethod', title: '升级方式', placeholder: '如何解锁、进阶、强化或扩展能力。' },
+      { key: 'useLimit', title: '使用限制', placeholder: '冷却、代价、条件、风险，以及不能做到什么。' },
+      { key: 'hiddenTruth', title: '隐藏真相', placeholder: '金手指背后的来源、阴谋、使命或后期反转。' },
+    ],
+  },
+  {
+    id: 'faction-righteous-no-1',
+    entryType: '正派势力',
+    entryTitle: '1号势力',
+    titleFieldLabel: '势力名',
+    titleFieldGroupTitle: '固定设定',
+    gridColumnsClassName: 'grid-cols-2',
+    groups: [
+      {
+        title: '固定设定',
+        description: '长期档案，智能导入时优先补全，后续除非设定变更通常不覆盖。',
+        fieldKeys: ['basicInfo', 'factionTraits', 'organization', 'mainCharacters'],
+      },
+      {
+        title: '状态设定',
+        description: '章节推进后会变化，智能更新时优先刷新这一侧。',
+        fieldKeys: ['factionRelations', 'protagonistStrategy', 'coreConflict'],
+      },
+    ],
+    fields: [
+      { key: 'basicInfo', title: '基本信息', placeholder: '势力名称、类型、地盘、公开身份、核心资源和当前定位。' },
+      { key: 'factionTraits', title: '势力特点', placeholder: '行事风格、价值观、优势、短板、外界印象。' },
+      { key: 'organization', title: '组织架构', placeholder: '首领、长老、部门、等级、权力来源和决策方式。' },
+      { key: 'mainCharacters', title: '主要人物', placeholder: '首领、代表人物、关键成员，以及他们在势力中的作用。' },
+      { key: 'factionRelations', title: '势力关系', placeholder: '当前盟友、敌人、合作对象、冲突对象和利益绑定。' },
+      { key: 'protagonistStrategy', title: '对主角策略', placeholder: '当前如何拉拢、利用、保护、试探、压制或追杀主角。' },
+      { key: 'coreConflict', title: '核心问题/矛盾', placeholder: '当前内部隐患、外部压力、资源危机、路线冲突或待解决问题。' },
+    ],
+  },
+  {
+    id: 'faction-world-map',
+    entryType: '世界地图',
+    entryTitle: '世界地图',
+    matchAllTitles: true,
+    titleFieldLabel: '地图名',
+    titleFieldGroupTitle: '固定设定',
+    gridColumnsClassName: 'grid-cols-2',
+    groups: [
+      {
+        title: '固定设定',
+        description: '世界地图不是组织，不写组织架构和主要人物，重点记录世界结构、区域边界、势力范围、资源分布和底层规则。',
+        fieldKeys: ['mapOverview', 'regionDivision', 'factionDistribution', 'resourceDistribution', 'geographyRules'],
+      },
+      {
+        title: '状态设定',
+        description: '章节推进后会变化，智能更新时优先刷新地图开放度、封锁情况、主角已知范围和近期局势。',
+        fieldKeys: ['currentSituation', 'accessStatus', 'protagonistKnownRange', 'recentChanges'],
+      },
+    ],
+    fields: [
+      { key: 'mapOverview', title: '世界架构', placeholder: '大陆规模、地理风貌、主要国家/宗门分布和世界层级。' },
+      { key: 'regionDivision', title: '区域划分', placeholder: '国家、城池、宗门地盘、荒域、边境、海域等区域层级。' },
+      { key: 'factionDistribution', title: '势力分布', placeholder: '哪些势力控制哪些地域，边界、缓冲区和争夺区在哪里。' },
+      { key: 'resourceDistribution', title: '资源分布', placeholder: '矿脉、灵药、妖兽材料、遗迹、交易中心和稀缺产地。' },
+      { key: 'geographyRules', title: '世界规则', placeholder: '禁飞、灵气浓度、空间异常、天气灾害等地图底层规则。' },
+      { key: 'currentSituation', title: '当前局势', placeholder: '当前区域冲突、战争、封锁、灾变、秘境开启或势力扩张。' },
+      { key: 'accessStatus', title: '封锁/开放', placeholder: '哪些城市、路线、传送阵、危险区域当前可通行或不可通行。' },
+      { key: 'protagonistKnownRange', title: '主角已知范围', placeholder: '主角亲自到过哪里、听说过哪里、哪些信息还只是传闻。' },
+      { key: 'recentChanges', title: '近期变化', placeholder: '最近章节中地图、路线、资源点、势力边界发生了什么改变。' },
+    ],
+  },
+  {
+    id: 'faction-danger-zone',
+    entryType: '世界地图',
+    entryTitle: '危险区域',
+    matchAllTitles: true,
+    titleFieldLabel: '区域名',
+    titleFieldGroupTitle: '固定设定',
+    gridColumnsClassName: 'grid-cols-2',
+    groups: [
+      {
+        title: '固定设定',
+        description: '危险区域记录可探索风险点，重点是怎么进、危险来自哪、有什么收益、探索到哪了。',
+        fieldKeys: ['zoneOverview', 'dangerSource', 'entryCondition', 'resourceReward', 'historyBackground', 'coreRules'],
+      },
+      {
+        title: '状态设定',
+        description: '章节推进后会变化，智能更新时优先刷新探索进度、风险变化、资源剩余和已触发事件。',
+        fieldKeys: ['currentStatus', 'explorationProgress', 'riskChanges', 'resourceRemaining', 'triggeredEvents', 'externalFactionInvolvement'],
+      },
+    ],
+    fields: [
+      { key: 'zoneOverview', title: '区域概况', placeholder: '危险区类型、范围、环境、入口位置和外界认知。' },
+      { key: 'dangerSource', title: '危险来源', placeholder: '怪物、机关、污染、阵法、诅咒、空间异常或人为伏击。' },
+      { key: 'entryCondition', title: '进入条件', placeholder: '开启时间、令牌、境界限制、路线门槛、代价和禁忌。' },
+      { key: 'resourceReward', title: '资源收益', placeholder: '灵药、矿石、妖丹、传承、情报、地图线索和可获得奖励。' },
+      { key: 'historyBackground', title: '历史背景', placeholder: '禁区形成原因、旧战场、遗迹主人、传说和主线关联。' },
+      { key: 'coreRules', title: '核心规则', placeholder: '危险区内不可违反的底层规则、触发机制和生存限制。' },
+      { key: 'currentStatus', title: '当前状态', placeholder: '危险区当前开放、封锁、暴动、沉寂、崩塌或被势力占据。' },
+      { key: 'explorationProgress', title: '探索进度', placeholder: '主角探索到哪里，哪些区域已确认，哪些区域仍未知。' },
+      { key: 'riskChanges', title: '风险变化', placeholder: '怪物迁移、机关触发、封印松动、污染扩散或追兵介入。' },
+      { key: 'resourceRemaining', title: '资源剩余', placeholder: '资源是否已被取走、被谁占有、还剩什么可争夺。' },
+      { key: 'triggeredEvents', title: '已触发事件', placeholder: '机关、战斗、救援、背叛、封印破坏和关键发现。' },
+      { key: 'externalFactionInvolvement', title: '外部势力介入', placeholder: '宗门、黑市、敌对角色、怪物族群是否正在争夺该区域。' },
+    ],
+  },
+  {
+    id: 'monster-list',
+    entryType: '怪物列表',
+    entryTitle: '怪物图鉴',
+    matchAllTitles: true,
+    titleFieldLabel: '怪物名',
+    gridColumnsClassName: 'grid-cols-2',
+    fields: MONSTER_BESTIARY_FIELDS,
+  },
+  {
+    id: 'item-ability',
+    entryType: '功法能力',
+    entryTitle: '功法能力',
+    matchAllTitles: true,
+    gridColumnsClassName: 'grid-cols-2',
+    groups: [
+      {
+        title: '固定设定',
+        description: '功法能力的长期规则，记录来源、核心效果、成长方式、限制和伏笔。',
+        fieldKeys: ['basicInfo', 'abilitySource', 'coreEffect', 'growthMethod', 'useLimit', 'foreshadowing'],
+      },
+      {
+        title: '状态设定',
+        description: '章节推进后会变化，AI 更新时只刷新熟练度、突破、受损封印、暴露程度、代价和最近使用。',
+        fieldKeys: ['currentMastery', 'breakthroughState', 'damageSeal', 'exposureLevel', 'cooldownCost', 'recentUse'],
+      },
+    ],
+    fields: [
+      { key: 'basicInfo', title: '基本信息', placeholder: '功法/能力名称、类型、等级、首次登场章节。' },
+      { key: 'abilitySource', title: '能力来源', placeholder: '传承、血脉、系统、法宝、师承、禁术或特殊机缘。' },
+      { key: 'coreEffect', title: '核心效果', placeholder: '主要能力、战斗表现、辅助用途、剧情作用和辨识度。' },
+      { key: 'growthMethod', title: '修炼/升级', placeholder: '如何修炼、突破条件、熟练度提升方式、进阶材料或代价。' },
+      { key: 'useLimit', title: '使用限制', placeholder: '冷却、消耗、境界门槛、反噬、禁忌、不能做到什么。' },
+      { key: 'foreshadowing', title: '相关伏笔', placeholder: '隐藏形态、后续解锁、来源秘密、与人物身世或主线的关联。' },
+      { key: 'currentMastery', title: '当前熟练度', placeholder: '当前掌握到什么程度、能稳定使用哪些招式。' },
+      { key: 'breakthroughState', title: '当前突破', placeholder: '是否接近突破、卡在哪一层、缺少什么条件。' },
+      { key: 'damageSeal', title: '受损/封印', placeholder: '是否受损、被封、被污染、被限制或暂时无法使用。' },
+      { key: 'exposureLevel', title: '暴露程度', placeholder: '是否被他人知晓、被谁识破、会引来什么风险。' },
+      { key: 'cooldownCost', title: '冷却/代价', placeholder: '最近使用后的冷却、消耗、反噬、伤势或副作用。' },
+      { key: 'recentUse', title: '最近使用', placeholder: '最近章节中何时使用、造成什么结果、留下什么线索。' },
+    ],
+  },
+  {
+    id: 'item-resource-currency',
+    entryType: '资源货币',
+    entryTitle: '资源货币',
+    matchAllTitles: true,
+    gridColumnsClassName: 'grid-cols-2',
+    fields: [
+      { key: 'basicInfo', title: '基本信息', placeholder: '资源名称、货币类型、主要用途、流通范围。' },
+      { key: 'valueLevel', title: '价值等级', placeholder: '下品、中品、上品等换算比例、购买力和价格边界。' },
+      { key: 'acquireChannel', title: '获取渠道', placeholder: '矿脉、任务、宗门俸禄、交易、掠夺、奖励。' },
+      { key: 'consumeUsage', title: '消耗用途', placeholder: '修炼、炼器、阵法、交通、情报、治疗等消耗场景。' },
+      { key: 'circulationLimit', title: '流通限制', placeholder: '禁区、黑市、势力管制、假币、兑换门槛。' },
+      { key: 'relatedRules', title: '关联规则', placeholder: '与势力税收、资源矿脉、物品价格、人物债务的关系。' },
+    ],
+  },
+  {
+    id: 'item-special-resource',
+    entryType: '特殊资源',
+    entryTitle: '特殊资源',
+    matchAllTitles: true,
+    gridColumnsClassName: 'grid-cols-2',
+    groups: [
+      {
+        title: '固定设定',
+        description: '特殊资源的长期规则，记录为什么珍贵、怎么获得、谁能用、什么时候失效和主线关联。',
+        fieldKeys: ['basicInfo', 'acquireCondition', 'useRules', 'permissionBoundary', 'failureCondition', 'mainlineRelation'],
+      },
+      {
+        title: '状态设定',
+        description: '章节推进后会变化，AI 更新时只刷新归属、可用、次数、竞争、激活和触发状态。',
+        fieldKeys: ['currentOwnership', 'availableStatus', 'remainingUses', 'competitionRisk', 'activationProgress', 'recentTrigger'],
+      },
+    ],
+    fields: [
+      { key: 'basicInfo', title: '基本信息', placeholder: '资源类型、唯一性、等级、首次登场章节。' },
+      { key: 'acquireCondition', title: '获取条件', placeholder: '身份、令牌、任务、地点、境界、代价。' },
+      { key: 'useRules', title: '使用规则', placeholder: '使用次数、有效期、限制、失败代价。' },
+      { key: 'permissionBoundary', title: '权限边界', placeholder: '谁能使用、是否可转让、是否绑定身份或血脉。' },
+      { key: 'failureCondition', title: '失效条件', placeholder: '过期、被夺、违约、地点关闭、次数耗尽等失效规则。' },
+      { key: 'mainlineRelation', title: '主线关联', placeholder: '与人物身世、势力争夺、地图线索或后期反转的关系。' },
+      { key: 'currentOwnership', title: '当前归属', placeholder: '谁拥有资格、资格是否被抢夺、转让或冻结。' },
+      { key: 'availableStatus', title: '可用状态', placeholder: '是否激活、过期、封锁、已使用或待确认。' },
+      { key: 'remainingUses', title: '剩余次数', placeholder: '还能使用几次、是否已有部分消耗或临时锁定。' },
+      { key: 'competitionRisk', title: '竞争风险', placeholder: '哪些人物或势力正在争夺、是否暴露。' },
+      { key: 'activationProgress', title: '激活进度', placeholder: '已满足哪些条件、还缺哪些钥匙、地点或章节触发。' },
+      { key: 'recentTrigger', title: '最近触发', placeholder: '最近章节触发了什么条件、线索或限制。' },
+    ],
+  },
+  {
+    id: 'item-equipment',
+    entryType: '物品装备',
+    entryTitle: '物品装备',
+    matchAllTitles: true,
+    gridColumnsClassName: 'grid-cols-2',
+    fields: [
+      { key: 'basicInfo', title: '基本信息', placeholder: '类型、等级、初次登场章节。' },
+      { key: 'description', title: '物品描述', placeholder: '外观、材质、标志性细节、识别特征。' },
+      { key: 'functionEffect', title: '效果/功能', placeholder: '主要能力、使用条件、副作用、限制和战斗/剧情用途。' },
+      { key: 'origin', title: '来历', placeholder: '物品的来源背景、制造者、历史、被谁发现或带入剧情。' },
+      { key: 'ownershipChange', title: '归属变化', placeholder: '曾经持有者、转手原因、争夺过程、当前归属如何形成。' },
+      { key: 'currentStatus', title: '当前状态', placeholder: '持有者、损坏/封印/激活状态、是否可用、是否暴露。' },
+      { key: 'foreshadowing', title: '相关伏笔', placeholder: '隐藏能力、后续解锁、与人物身世/主线秘密/地图线索的关联。' },
+    ],
+  },
+  {
+    id: 'work-plot-blueprint',
+    entryType: '剧情规划',
+    entryTitle: '剧情蓝图',
+    gridColumnsClassName: 'grid-cols-2',
+    fields: [
+      { key: 'overallPlanning', title: '整体规划', placeholder: '预计总字数、共几卷、故事从哪里开始到哪里结束。' },
+      { key: 'mainGoal', title: '主线目标', placeholder: '主角长期要完成的大目标。' },
+      { key: 'phasePace', title: '阶段节奏', placeholder: '前期、中期、后期分别推进什么内容。' },
+    ],
+  },
+  {
+    id: 'work-plot-volume',
+    entryType: '剧情规划',
+    entryTitle: '分卷剧情',
+    gridColumnsClassName: 'grid-cols-2',
+    fields: [
+      { key: 'volumeOverview', title: '分卷总览', placeholder: '每一卷的卷名、字数、核心阶段和主要任务。' },
+      { key: 'volumeCoreEvent', title: '卷核心事件', placeholder: '这一卷最重要的剧情事件和冲突推进。' },
+      { key: 'volumeClimax', title: '卷末高潮', placeholder: '卷末的大收获、大反转、大决战或阶段性爆点。' },
+      { key: 'nextVolumeHook', title: '下一卷钩子', placeholder: '本卷结尾留下什么问题、危机或新地图。' },
+    ],
+  },
+  {
+    id: 'work-plot-payoff',
+    entryType: '剧情规划',
+    entryTitle: '爽点设计',
+    gridColumnsClassName: 'grid-cols-2',
+    fields: [
+      { key: 'corePayoffTypes', title: '核心爽点类型', placeholder: '升级、反杀、打脸、误解、收获、揭秘等主要爽点。' },
+      { key: 'faceSlapTargets', title: '打脸对象设计', placeholder: '谁看不起主角、为什么被打脸、打脸场景在哪里。' },
+      { key: 'payoffFormula', title: '爽点公式', placeholder: '主角想法、实际行动、结果、配角反应、主角内心反应。' },
+      { key: 'payoffPace', title: '爽点节奏', placeholder: '小爽点、中爽点、大爆点分别多久出现一次。' },
+    ],
+  },
+];
+const DEFAULT_WORK_SETTING_TYPES = ['核心设定', '剧情规划', '书写规则'];
+const DEFAULT_WORK_SETTING_STARTER_VERSION = '2026-06-22-danger-zone-under-world-map-v1';
 const DEFAULT_WORK_SETTING_STARTER_ENTRIES = [
+  { type: BASIC_SETTING_ENTRY_TYPE, title: BASIC_SETTING_ENTRY_TITLE },
+  { type: BASIC_SETTING_ENTRY_TYPE, title: '世界观' },
+  { type: BASIC_SETTING_ENTRY_TYPE, title: '主角金手指/优势' },
+  { type: '剧情规划', title: '剧情蓝图' },
+  { type: '剧情规划', title: '爽点设计' },
+  { type: '剧情规划', title: '分卷剧情' },
+  { type: '主线伏笔', title: '主线伏笔' },
+  { type: '人物伏笔', title: '人物伏笔' },
+  { type: '已回收伏笔', title: '已回收伏笔' },
+  { type: '世界地图', title: '世界架构' },
+  { type: '世界地图', title: '危险区域' },
+  { type: '书写规则', title: '写作规范' },
+  { type: '书写规则', title: '写作禁忌' },
+];
+const getDefaultWorkSettingEntryId = (type: string, title: string) => `${normalizeSettingType(type)}::${title.trim()}`;
+const DEFAULT_WORK_SETTING_STARTER_ENTRY_IDS = new Set(
+  DEFAULT_WORK_SETTING_STARTER_ENTRIES.map((item) => getDefaultWorkSettingEntryId(item.type, item.title)),
+);
+const LEGACY_COMPACT_WORK_SETTING_STARTER_ENTRIES = [
+  { type: '世界规则', title: '世界规则' },
+];
+const LEGACY_DETAILED_DEFAULT_SETTING_STARTER_ENTRIES = [
+  { type: '核心设定', title: '核心设定' },
+  { type: '剧情规划', title: '剧情规划' },
   { type: '核心设定', title: '作品定位' },
   { type: '核心设定', title: '主角初始处境' },
   { type: '核心设定', title: '核心爽点' },
@@ -233,7 +631,6 @@ const DEFAULT_WORK_SETTING_STARTER_ENTRIES = [
   { type: '世界地图', title: '大陆结构' },
   { type: '世界地图', title: '国家城池' },
   { type: '世界地图', title: '宗门位置' },
-  { type: '世界地图', title: '交通路线' },
   { type: '世界地图', title: '重要地点' },
   { type: '危险区域', title: '秘境' },
   { type: '危险区域', title: '禁区' },
@@ -290,7 +687,7 @@ const LEGACY_DEFAULT_WORK_SETTING_INSTRUCTIONS = [
   { type: '物品装备', title: '物品装备', body: '填写说明：记录武器、防具、法宝、载具、关键道具的来源、功能、等级、绑定者和剧情作用。' },
   { type: '资源货币', title: '资源货币', body: '填写说明：记录通用货币、修炼资源、材料资源、交易资源的价值、获取方式、稀缺程度和消耗场景。' },
   { type: '特殊资源', title: '特殊资源', body: '填写说明：记录传承资格、权限令牌、唯一资源、稀缺名额为什么珍贵、谁在争夺、会引发什么冲突。' },
-  { type: '世界地图', title: '世界地图', body: '填写说明：记录大陆结构、国家城池、宗门位置、交通路线、重要地点和势力范围。' },
+  { type: '世界地图', title: '世界地图', body: '填写说明：记录世界架构、区域划分、势力分布、资源分布和世界规则。' },
   { type: '危险区域', title: '危险区域', body: '填写说明：记录秘境、禁区、遗迹、战场、污染灾变区域的进入条件、危险来源、收益和隐藏秘密。' },
   { type: '主线伏笔', title: '主线伏笔', body: '填写说明：记录核心秘密、世界真相、主线线索、后期反转，以及应该在哪些章节铺垫和回收。' },
   { type: '人物伏笔', title: '人物伏笔', body: '填写说明：记录身份秘密、血脉身世、关系伏笔、背叛或转变，让人物反转有提前铺垫。' },
@@ -299,12 +696,19 @@ const LEGACY_DEFAULT_WORK_SETTING_INSTRUCTIONS = [
   { type: '禁写规则', title: '禁写规则', body: '填写说明：记录不能前后矛盾、不能写崩人设、不能跳过铺垫、不能破坏爽点承诺、不能滥加设定。' },
 ];
 const SETTING_WORKSPACE_DOMAIN_GROUPS = {
-  'setting:faction': ['正派势力', '反派势力', '中立势力', '其他势力'],
+  'setting:faction': ['正派势力', '反派势力', '中立势力', '其他势力', '世界地图'],
   'setting:item': ['功法能力', '物品装备', '资源货币', '特殊资源'],
-  'setting:location': ['世界地图', '危险区域'],
+  'setting:monster': ['怪物列表'],
   'setting:foreshadow': ['主线伏笔', '人物伏笔', '已回收伏笔'],
-  'setting:rule': ['硬规则', '禁写规则'],
 } as const;
+const SETTING_IMPORT_TOP_LABEL_DEFAULT_TYPES: Record<string, string> = {
+  作品设定: DEFAULT_WORK_SETTING_TYPES[0],
+  势力地图: SETTING_WORKSPACE_DOMAIN_GROUPS['setting:faction'][0],
+  道具资源: SETTING_WORKSPACE_DOMAIN_GROUPS['setting:item'][0],
+  怪物图鉴: SETTING_WORKSPACE_DOMAIN_GROUPS['setting:monster'][0],
+  伏笔线索: SETTING_WORKSPACE_DOMAIN_GROUPS['setting:foreshadow'][0],
+};
+const SETTING_IMPORT_ROLE_TOP_LABELS = new Set(['人物设定', '角色设定']);
 const DEFAULT_SETTING_TYPES = [
   ...DEFAULT_WORK_SETTING_TYPES,
   ...Object.values(SETTING_WORKSPACE_DOMAIN_GROUPS).flat(),
@@ -314,11 +718,11 @@ const DEFAULT_SETTING_TYPE_DOMAINS = Object.fromEntries(
     groups.map((group) => [group, domain])
   )),
 ) as Record<string, string>;
-const LEGACY_SETTING_TYPE_DOMAINS: Record<string, string> = {
-  势力组织: 'setting:faction',
-  道具资源: 'setting:item',
-  地点地图: 'setting:location',
-  伏笔谜团: 'setting:foreshadow',
+const SETTING_CLEAR_DOMAIN_LABELS: Record<string, string> = {
+  'setting:faction': '势力',
+  'setting:item': '道具资源',
+  'setting:monster': '怪物',
+  'setting:foreshadow': '伏笔',
 };
 const ROLE_TAB = '角色';
 const BRAINSTORM_TAB = '脑洞';
@@ -342,8 +746,8 @@ const CHAPTER_DETAIL_OUTLINE_TAB = '章节细纲';
 const SETTING_LIBRARY_TABS = new Set([ROLE_TAB, BRAINSTORM_TAB, SETTING_TAB, DETAIL_OUTLINE_TAB, OUTLINE_LIBRARY_TAB]);
 const UNCATEGORIZED_TYPE = '未分类';
 const DEFAULT_SETTING_ENTRY_TYPE = DEFAULT_SETTING_TYPES[0] ?? UNCATEGORIZED_TYPE;
-const SETTING_LIBRARY_LEFT_WIDTH = 430;
 const SETTING_LIBRARY_LEFT_MIN_WIDTH = 180;
+const SETTING_LIBRARY_LEFT_WIDTH = SETTING_LIBRARY_LEFT_MIN_WIDTH;
 const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 260;
 const SETTING_LIBRARY_LEFT_MAX_WIDTH = 640;
 const OUTLINE_LEFT_MAX_DISPLAY_WIDTH = 560;
@@ -360,8 +764,8 @@ const BRAINSTORM_LAYOUT_RIGHT_MIN_WIDTH = 340;
 const BRAINSTORM_LAYOUT_RIGHT_MAX_WIDTH = 760;
 const BRAINSTORM_LAYOUT_OUTPUT_MIN_WIDTH = 320;
 const PLOT_POINT_LAYOUT_LEFT_WIDTH = 300;
-const PLOT_POINT_LAYOUT_TREE_WIDTH = 168;
 const PLOT_POINT_LAYOUT_TREE_MIN_WIDTH = 132;
+const PLOT_POINT_LAYOUT_TREE_WIDTH = PLOT_POINT_LAYOUT_TREE_MIN_WIDTH;
 const PLOT_POINT_LAYOUT_TREE_MAX_WIDTH = 260;
 const PLOT_POINT_LAYOUT_LEFT_MIN_WIDTH = 220;
 const PLOT_POINT_LAYOUT_LEFT_MAX_WIDTH = 520;
@@ -389,6 +793,7 @@ type LibraryEntryMenu = {
 } | null;
 
 type ClearSettingsTarget = 'settingCategories' | 'settingEntries' | 'roleCategories' | 'roleEntries';
+type ClearSettingsMeta = { label: string; count: number; description: string };
 
 function clampFixedMenuPosition(x: number, y: number, width: number, height: number) {
   if (typeof window === 'undefined') return { left: x, top: y };
@@ -431,6 +836,37 @@ type LibraryAiRequestLog = {
 };
 
 type DetailOutlineReaderTab = 'settings' | 'roles' | 'outlines' | 'plotChain';
+const OTHER_SETTING_LINK_TABS = [
+  { id: 'work', title: '作品设定' },
+  { id: 'roles', title: '人物设定' },
+  { id: 'factions', title: '势力地图' },
+  { id: 'items', title: '道具资源' },
+  { id: 'monsters', title: '怪物图鉴' },
+  { id: 'foreshadow', title: '伏笔线索' },
+] as const;
+type OtherSettingLinkTabId = (typeof OTHER_SETTING_LINK_TABS)[number]['id'];
+type OtherSettingLinkEntry = {
+  id: string;
+  entryId: string;
+  source: 'setting' | 'role';
+  tabId: OtherSettingLinkTabId;
+  tabTitle: string;
+  groupName: string;
+  title: string;
+  type: string;
+  text: string;
+  wordCount: number;
+};
+type OtherSettingLinkGroup = {
+  name: string;
+  entries: OtherSettingLinkEntry[];
+};
+type OtherSettingLinkTab = {
+  id: OtherSettingLinkTabId;
+  title: string;
+  groups: OtherSettingLinkGroup[];
+};
+type SettingLinkSource = 'current' | 'other' | 'brainstorm' | null;
 
 export function parseGeneratedPlotPointCandidates(text: string): WorkbenchPlotPointCandidate[] {
   const clean = stripAiThinkingBlock(text).trim();
@@ -489,6 +925,76 @@ type LibraryEntryDragState = {
   tab: string;
   type: string;
 } | null;
+
+type LibraryEntryDropPreviewState = {
+  entryId: string;
+  tab: string;
+  type: string;
+  mode: 'target-position' | 'group-end';
+  targetEntryId?: string;
+} | null;
+
+type LibraryEntryPointerDragState = {
+  entryId: string;
+  tab: string;
+  type: string;
+  pointerId: number;
+  element: HTMLElement;
+  startX: number;
+  startY: number;
+  active: boolean;
+  armed: boolean;
+  activationTimer: number;
+  lastPreviewX: number;
+  lastPreviewY: number;
+  lastPreviewTargetKey: string | null;
+  cleanup: () => void;
+} | null;
+
+const LIBRARY_ENTRY_POINTER_DRAG_ACTIVATION_DISTANCE = 14;
+const LIBRARY_ENTRY_POINTER_DRAG_ACTIVATION_DELAY_MS = 160;
+const LIBRARY_ENTRY_POINTER_DRAG_RETARGET_DISTANCE = 28;
+const LIBRARY_ENTRY_POINTER_DRAG_RETURN_DISTANCE = 28;
+
+function hasLibraryEntryPointerRetargetedTooSoon(
+  pointerDrag: NonNullable<LibraryEntryPointerDragState>,
+  targetKey: string,
+  clientX: number,
+  clientY: number,
+) {
+  if (!pointerDrag.lastPreviewTargetKey || pointerDrag.lastPreviewTargetKey === targetKey) return false;
+  const distanceFromLastPreview = Math.hypot(clientX - pointerDrag.lastPreviewX, clientY - pointerDrag.lastPreviewY);
+  const retargetDistance = targetKey === `entry:${pointerDrag.entryId}`
+    ? LIBRARY_ENTRY_POINTER_DRAG_RETURN_DISTANCE
+    : LIBRARY_ENTRY_POINTER_DRAG_RETARGET_DISTANCE;
+  return distanceFromLastPreview < retargetDistance;
+}
+
+function rememberLibraryEntryPointerPreviewTarget(
+  pointerDrag: NonNullable<LibraryEntryPointerDragState>,
+  targetKey: string,
+  clientX: number,
+  clientY: number,
+) {
+  pointerDrag.lastPreviewTargetKey = targetKey;
+  pointerDrag.lastPreviewX = clientX;
+  pointerDrag.lastPreviewY = clientY;
+}
+
+function isLibraryPointerPastGroupEntries(
+  hoverGroup: HTMLElement,
+  pointerDrag: NonNullable<LibraryEntryPointerDragState>,
+  clientY: number,
+) {
+  const visibleEntries = Array.from(hoverGroup.querySelectorAll<HTMLElement>('[data-library-entry-id]'))
+    .filter((element) => (
+      element.dataset.libraryEntryTab === pointerDrag.tab
+      && element.dataset.libraryEntryId !== pointerDrag.entryId
+    ));
+  if (visibleEntries.length === 0) return true;
+  const lastEntryRect = visibleEntries[visibleEntries.length - 1].getBoundingClientRect();
+  return clientY > lastEntryRect.bottom;
+}
 
 function getDetailOutlinePreviewHeight() {
   return DETAIL_OUTLINE_PREVIEW_HEIGHT;
@@ -753,10 +1259,13 @@ type LibraryTabConfig = {
   brainstormPreviewFontSize?: number;
   brainstormOutputFontSize?: number;
   brainstormStreamEnabled?: boolean;
+  associationSessionId?: string | null;
   loadedBrainstormId?: string | null;
   loadedBrainstormTitle?: string;
   loadedBrainstormText?: string;
-  settingLinkSource?: 'current' | 'brainstorm' | null;
+  linkedOtherSettingIds?: string[];
+  settingLinkSource?: 'current' | 'other' | 'brainstorm' | null;
+  detailOutlineReaderSessionId?: string | null;
   smartImportLocked?: boolean;
   settingPreviewFontSize?: number;
   roleTextFontSize?: number;
@@ -844,8 +1353,8 @@ function getBrainstormOutputCount(value: string) {
   return Number.isFinite(count) && count > 0 ? count : 1;
 }
 
-function getTemporaryBrainstormTitle(index: number) {
-  return `${index + 1}号脑洞`;
+function getTemporaryBrainstormTitle(_index: number) {
+  return '脑洞输出';
 }
 
 function getSelectedBrainstormPreviewIndexes(previews: string[], selectedIndexes?: number[]) {
@@ -1163,18 +1672,6 @@ function persistPlotPointLayoutWidth(storageKey: string, side: 'tree' | 'left' |
   localStorage.setItem(getPlotPointLayoutWidthStorageKey(storageKey, side), String(value));
 }
 
-function stripTransientLinkConfig(configs: LibraryTabConfigs): LibraryTabConfigs {
-  return Object.fromEntries(
-    Object.entries(configs).map(([tab, config]) => [tab, {
-      ...config,
-      loadedBrainstormId: null,
-      loadedBrainstormTitle: '',
-      loadedBrainstormText: '',
-      settingLinkSource: null,
-    }]),
-  );
-}
-
 function readTabConfigs(storageKey: string): LibraryTabConfigs {
   try {
     const raw = localStorage.getItem(getTabConfigsStorageKey(storageKey));
@@ -1183,7 +1680,7 @@ function readTabConfigs(storageKey: string): LibraryTabConfigs {
       parsed[SETTING_TAB] = parsed['设定'];
     }
     if (!parsed || typeof parsed !== 'object') return {};
-    return isRememberAssociationsEnabled() ? parsed : stripTransientLinkConfig(parsed);
+    return parsed;
   } catch {
     return {};
   }
@@ -1210,7 +1707,7 @@ function getHiddenRoleTypesStorageKey(storageKey: string) {
 }
 
 const ROLE_TAXONOMY_DEFAULTS_VERSION = '2026-06-16-role-groups-v2';
-const SETTING_TAXONOMY_DEFAULTS_VERSION = '2026-06-16-setting-groups-v2';
+const SETTING_TAXONOMY_DEFAULTS_VERSION = '2026-06-18-setting-tabs-groups-v3';
 
 function getRoleTaxonomyDefaultsVersionStorageKey(storageKey: string) {
   return `${storageKey}_role_taxonomy_defaults_version`;
@@ -1263,6 +1760,11 @@ function readStringList(storageKey: string) {
   } catch {
     return [];
   }
+}
+
+function normalizeLinkedOtherSettingIds(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)));
 }
 
 function readHiddenRoleTypes(storageKey: string) {
@@ -1324,14 +1826,20 @@ function getDefaultWorkSettingStarterVersionStorageKey(storageKey: string) {
 }
 
 function createDefaultWorkSettingStarterEntry(item: typeof DEFAULT_WORK_SETTING_STARTER_ENTRIES[number]) {
+  const structuredFieldSet = getStructuredSettingFieldSetByDefaultTitle(item.type, item.title);
   return {
     ...createWorkbenchLibraryEntry(SETTING_TAB, item.title),
-    content: stringifySettingContent({ type: item.type, body: '' }),
+    content: stringifySettingContent({
+      type: item.type,
+      body: '',
+      lockedDefaultEntryId: getDefaultWorkSettingEntryId(item.type, item.title),
+      ...(structuredFieldSet ? { structuredFieldSetId: structuredFieldSet.id } : {}),
+    }),
   };
 }
 
 function clearLegacyDefaultWorkSettingInstructions(entries: WorkbenchLibraryEntry[]) {
-  const legacyInstructions = new Set(LEGACY_DEFAULT_WORK_SETTING_INSTRUCTIONS.map((item) => `${item.type}::${item.title}::${item.body}`));
+  const legacyInstructions = new Set(LEGACY_DEFAULT_WORK_SETTING_INSTRUCTIONS.map((item) => `${normalizeSettingType(item.type)}::${item.title}::${item.body}`));
   let changed = false;
   const nextEntries = entries.map((entry) => {
     if (entry.tab !== SETTING_TAB) return entry;
@@ -1347,20 +1855,62 @@ function clearLegacyDefaultWorkSettingInstructions(entries: WorkbenchLibraryEntr
 }
 
 function removeLegacyAutoDomainSettingStarterEntries(entries: WorkbenchLibraryEntry[]) {
-  const legacyAutoEntries = new Set(LEGACY_AUTO_DOMAIN_SETTING_STARTER_ENTRIES.map((item) => `${item.type}::${item.title}`));
+  const legacyAutoEntries = new Set([
+    ...LEGACY_AUTO_DOMAIN_SETTING_STARTER_ENTRIES,
+    ...LEGACY_DETAILED_DEFAULT_SETTING_STARTER_ENTRIES,
+    ...LEGACY_COMPACT_WORK_SETTING_STARTER_ENTRIES,
+  ].map((item) => `${normalizeSettingType(item.type)}::${item.title}`));
   let changed = false;
   const nextEntries = entries.filter((entry) => {
     if (entry.tab !== SETTING_TAB) return true;
     const setting = parseSettingContent(entry.content);
-    const shouldRemove = legacyAutoEntries.has(`${setting.type}::${entry.title.trim()}`) && !setting.body.trim();
+    const defaultEntryId = getDefaultWorkSettingEntryId(setting.type, entry.title);
+    const isCurrentDefaultEntry = (
+      (setting.lockedDefaultEntryId && DEFAULT_WORK_SETTING_STARTER_ENTRY_IDS.has(setting.lockedDefaultEntryId))
+      || DEFAULT_WORK_SETTING_STARTER_ENTRY_IDS.has(defaultEntryId)
+    );
+    const shouldRemove = legacyAutoEntries.has(`${setting.type}::${entry.title.trim()}`) && !setting.body.trim() && !isCurrentDefaultEntry;
     if (shouldRemove) changed = true;
     return !shouldRemove;
   });
   return changed ? nextEntries : entries;
 }
 
+function migrateLegacyWritingRuleEntries(entries: WorkbenchLibraryEntry[]) {
+  let changed = false;
+  const nextEntries = entries.map((entry) => {
+    if (entry.tab !== SETTING_TAB) return entry;
+    const setting = parseSettingContent(entry.content);
+    const title = entry.title.trim();
+    if (setting.type === '硬规则' && (title === '硬规则' || title === '写作规范')) {
+      changed = true;
+      return {
+        ...entry,
+        title: '写作规范',
+        content: stringifySettingContent({ ...setting, type: '书写规则' }),
+      };
+    }
+    if (setting.type === '禁写规则' && (title === '禁写规则' || title === '写作禁忌')) {
+      changed = true;
+      return {
+        ...entry,
+        title: '写作禁忌',
+        content: stringifySettingContent({ ...setting, type: '书写规则' }),
+      };
+    }
+    if (setting.type !== '书写规则') return entry;
+    if (title !== '硬规则' && title !== '禁写规则') return entry;
+    changed = true;
+    return {
+      ...entry,
+      title: title === '硬规则' ? '写作规范' : '写作禁忌',
+    };
+  });
+  return changed ? nextEntries : entries;
+}
+
 function withDefaultWorkSettingStarterEntries(entries: WorkbenchLibraryEntry[], storageKey: string) {
-  const clearedEntries = removeLegacyAutoDomainSettingStarterEntries(clearLegacyDefaultWorkSettingInstructions(entries));
+  const clearedEntries = migrateLegacyWritingRuleEntries(removeLegacyAutoDomainSettingStarterEntries(clearLegacyDefaultWorkSettingInstructions(entries)));
   if (localStorage.getItem(getDefaultWorkSettingStarterVersionStorageKey(storageKey)) === DEFAULT_WORK_SETTING_STARTER_VERSION) {
     return clearedEntries;
   }
@@ -1619,14 +2169,7 @@ function appendRoleHistory(history: RoleHistoryVersion[] | undefined, version: R
 }
 
 function normalizeSettingType(value: string | undefined) {
-  const type = value?.trim() || UNCATEGORIZED_TYPE;
-  if (type === '境界体系' || type === '等级体系') return '成长体系';
-  if (type === '主线剧情') return '剧情规划';
-  if (type === '势力设定' || type === '势力组织') return '正派势力';
-  if (type === '道具资源') return '物品装备';
-  if (type === '地点地图') return '世界地图';
-  if (type === '伏笔设定' || type === '伏笔谜团') return '主线伏笔';
-  return type;
+  return value?.trim() || UNCATEGORIZED_TYPE;
 }
 
 function parseSettingContent(content: string): SettingContent {
@@ -1635,6 +2178,8 @@ function parseSettingContent(content: string): SettingContent {
     return {
       type: normalizeSettingType(parsed.type),
       body: parsed.body || '',
+      structuredFieldSetId: typeof parsed.structuredFieldSetId === 'string' ? parsed.structuredFieldSetId : undefined,
+      lockedDefaultEntryId: typeof parsed.lockedDefaultEntryId === 'string' ? parsed.lockedDefaultEntryId : undefined,
     };
   } catch {
     return {
@@ -1648,7 +2193,156 @@ function stringifySettingContent(value: SettingContent) {
   return JSON.stringify({
     ...value,
     type: normalizeSettingType(value.type),
+    structuredFieldSetId: value.structuredFieldSetId || undefined,
+    lockedDefaultEntryId: value.lockedDefaultEntryId || undefined,
   });
+}
+
+function isLockedDefaultSettingEntry(entry: WorkbenchLibraryEntry) {
+  if (entry.tab !== SETTING_TAB) return false;
+  const setting = parseSettingContent(entry.content);
+  const defaultEntryId = getDefaultWorkSettingEntryId(setting.type, entry.title);
+  return Boolean(
+    (setting.lockedDefaultEntryId && DEFAULT_WORK_SETTING_STARTER_ENTRY_IDS.has(setting.lockedDefaultEntryId))
+    || DEFAULT_WORK_SETTING_STARTER_ENTRY_IDS.has(defaultEntryId),
+  );
+}
+
+function createEmptyStructuredSettingFields(fieldSet: StructuredSettingFieldSet) {
+  return fieldSet.fields.reduce((result, field) => {
+    result[field.key] = '';
+    return result;
+  }, {} as Record<string, string>);
+}
+
+function parseSectionedSettingBody(body: string) {
+  const sections: Record<string, string> = {};
+  const pattern = /【([^】]+)】：\n([\s\S]*?)(?=\n\n【[^】]+】：|$)/g;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(body)) !== null) {
+    sections[match[1].trim()] = match[2].trim();
+  }
+  return sections;
+}
+
+function parseStructuredSettingFields(body: string, fieldSet: StructuredSettingFieldSet) {
+  const sections = parseSectionedSettingBody(body);
+  const fields = createEmptyStructuredSettingFields(fieldSet);
+  fieldSet.fields.forEach((field) => {
+    fields[field.key] = sections[field.title] ?? '';
+  });
+  return fields;
+}
+
+function stringifyStructuredSettingFields(fields: Record<string, string>, fieldSet: StructuredSettingFieldSet) {
+  return fieldSet.fields
+    .map((field) => `【${field.title}】：\n${fields[field.key].trim()}`)
+    .join('\n\n');
+}
+
+function createEmptyRoleBaseSettingFields() {
+  return ROLE_BASE_SETTING_FIELD_DEFINITIONS.reduce((result, field) => {
+    result[field.key] = '';
+    return result;
+  }, {} as Record<RoleBaseSettingFieldKey, string>);
+}
+
+function parseRoleBaseSettingFields(body: string) {
+  const sections = parseSectionedSettingBody(body);
+  const fields = createEmptyRoleBaseSettingFields();
+  const hasSectionedContent = ROLE_BASE_SETTING_FIELD_DEFINITIONS.some((field) => sections[field.title] !== undefined);
+  ROLE_BASE_SETTING_FIELD_DEFINITIONS.forEach((field) => {
+    fields[field.key] = sections[field.title] ?? '';
+  });
+  if (!hasSectionedContent && body.trim()) {
+    fields.background = body;
+  }
+  return fields;
+}
+
+function stringifyRoleBaseSettingFields(fields: Record<RoleBaseSettingFieldKey, string>) {
+  return ROLE_BASE_SETTING_FIELD_DEFINITIONS
+    .map((field) => `【${field.title}】：\n${fields[field.key].trim()}`)
+    .join('\n\n');
+}
+
+function getImportedRoleSection(sections: Record<string, string>, names: string[]) {
+  for (const name of names) {
+    const value = sections[name]?.trim();
+    if (value) return value;
+  }
+  return '';
+}
+
+function buildImportedRoleEntryTitle(segment: SmartImportRoleSegment, existingRoleTitle = '') {
+  const sections = parseSectionedSettingBody(segment.body);
+  const explicitName = getImportedRoleSection(sections, ['人物姓名', '姓名', '角色姓名', '名字']);
+  if (explicitName) return explicitName;
+  if (/男主角|主角/.test(segment.title) && existingRoleTitle.trim()) return existingRoleTitle;
+  return segment.title.replace(/设定$/, '').trim() || DEFAULT_MALE_PROTAGONIST_ROLE_TITLE;
+}
+
+function createImportedRoleContent(segment: SmartImportRoleSegment, existingRole?: RoleContent): RoleContent {
+  const sections = parseSectionedSettingBody(segment.body);
+  const importedType = getImportedRoleSection(sections, ['身份定位', '角色定位', '人物定位', '身份', '类型']);
+  const type = importedType || existingRole?.type || (/男主角|主角/.test(segment.title) ? DEFAULT_MALE_PROTAGONIST_ROLE_TYPE : '未分类');
+  const baseFields = createEmptyRoleBaseSettingFields();
+  baseFields.appearance = getImportedRoleSection(sections, ['外貌', '人物外貌', '形象']);
+  baseFields.aliasName = getImportedRoleSection(sections, ['称号/外号/别称', '称号', '外号', '别称', '别名']);
+  baseFields.corePersonality = getImportedRoleSection(sections, ['核心性格', '性格', '人设']);
+  baseFields.background = getImportedRoleSection(sections, ['人物背景', '背景', '经历', '身世']);
+  baseFields.abilityRules = getImportedRoleSection(sections, ['金手指/能力', '金手指', '能力规则', '能力']);
+  const hasBaseFields = Object.values(baseFields).some((value) => value.trim());
+  const stateSettings = createEmptyRoleStateSettings();
+  stateSettings.currentSituation = getImportedRoleSection(sections, ['当前处境', '处境']);
+  stateSettings.currentGoal = getImportedRoleSection(sections, ['当前目标', '目标']);
+  stateSettings.abilityState = getImportedRoleSection(sections, ['能力状态']);
+  stateSettings.resourceState = getImportedRoleSection(sections, ['资源状态']);
+  stateSettings.otherState = getImportedRoleSection(sections, ['其他', '其他状态']);
+  const relationship = getImportedRoleSection(sections, ['人物关系', '关系']);
+  const baseSetting = hasBaseFields ? stringifyRoleBaseSettingFields(baseFields) : segment.body.trim();
+  return {
+    type,
+    lifeStatus: existingRole?.lifeStatus ?? '存活',
+    baseSetting,
+    relationship,
+    stateSettings,
+    stateUpdateChapters: existingRole?.stateUpdateChapters ?? {},
+    personality: baseFields.corePersonality,
+    background: baseFields.background || baseSetting,
+    status: buildRoleStateSettingsText(stateSettings),
+    history: existingRole?.history ?? [],
+  };
+}
+
+function getStructuredSettingFieldSet(entry: WorkbenchLibraryEntry, setting: SettingContent | null) {
+  if (setting?.structuredFieldSetId) {
+    const fieldSet = STRUCTURED_SETTING_FIELD_SETS.find((item) => item.id === setting.structuredFieldSetId);
+    if (fieldSet) return fieldSet;
+  }
+  const titleMatchedFieldSet = STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => (
+    setting?.type === fieldSet.entryType && entry.title.trim() === fieldSet.entryTitle
+  ));
+  if (titleMatchedFieldSet) return titleMatchedFieldSet;
+  const typeMatchedFieldSet = STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => (
+    fieldSet.matchAllTitles && setting?.type === fieldSet.entryType
+  ));
+  if (typeMatchedFieldSet) return typeMatchedFieldSet;
+  if (setting?.body.trim()) {
+    const sections = parseSectionedSettingBody(setting.body);
+    return STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => (
+      setting.type === fieldSet.entryType && fieldSet.fields.some((field) => sections[field.title] !== undefined)
+    )) ?? null;
+  }
+  return null;
+}
+
+function getStructuredSettingFieldSetByDefaultTitle(type: string, title: string) {
+  const normalizedType = normalizeSettingType(type);
+  const normalizedTitle = title.trim();
+  return STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => (
+    normalizeSettingType(fieldSet.entryType) === normalizedType && fieldSet.entryTitle === normalizedTitle
+  )) ?? null;
 }
 
 function normalizeImportedSettingKey(value: string) {
@@ -1667,56 +2361,96 @@ function classifySettingText(text: string) {
   if (/(邪教|魔教|反派组织|敌对|黑暗势力|反派势力)/.test(source)) return '反派势力';
   if (/(中立|商会|协会|交易所|佣兵|旁观势力)/.test(source)) return '中立势力';
   if (/(宗门|家族|王朝|帮派|军队|学院|公司|财团|组织|势力|联盟|官方|阵营)/.test(source)) return '正派势力';
+  if (/(妖兽|怪兽|怪物|魔兽|异兽|凶兽|灵兽|灵宠|邪祟|兽潮|妖丹|兽骨|鳞甲|毒囊)/.test(source)) return '怪物列表';
   if (/(人物关系|关系网|关系规则|家族谱系|阵营关系)/.test(source)) return '人物关系';
   if (/(功法|能力|技能|神通|法术|异能|招式)/.test(source)) return '功法能力';
   if (/(货币|灵石|金币|资源|材料|能源|消耗|储备)/.test(source)) return '资源货币';
   if (/(权限|唯一|稀缺|特殊资源|资格|名额)/.test(source)) return '特殊资源';
   if (/(道具|装备|物品|法宝|武器|载具|机甲)/.test(source)) return '物品装备';
-  if (/(禁区|危险|秘境|遗迹|灾区|战场|污染区)/.test(source)) return '危险区域';
+  if (/(禁区|危险|秘境|遗迹|灾区|战场|污染区)/.test(source)) return '世界地图';
   if (/(地点|地图|交通|地域|地理|重要地点|世界地图)/.test(source)) return '世界地图';
   if (/(主线|剧情|任务|目标|冲突|开局|转折|高潮|结局|章节|卷|事件)/.test(source)) return '剧情规划';
   if (/(人物伏笔|身份秘密|角色秘密|人物线索)/.test(source)) return '人物伏笔';
   if (/(已回收|回收完成|已经揭露)/.test(source)) return '已回收伏笔';
   if (/(伏笔|线索|暗示|秘密|谜团|隐藏|后续|埋下|回收|真相)/.test(source)) return '主线伏笔';
-  if (/(禁写|不能写错|不能越界|硬约束|前后矛盾|规则红线)/.test(source)) return '禁写规则';
-  if (/(世界|规则|背景|科技|修炼|社会秩序|限制条件|天道|能量)/.test(source)) return '世界规则';
+  if (/(禁写|不能写错|不能越界|硬约束|前后矛盾|规则红线)/.test(source)) return '书写规则';
+  if (/(世界|规则|背景|科技|修炼|社会秩序|限制条件|天道|能量)/.test(source)) return '核心设定';
   if (/(核心|定位|承诺|主角处境|底层设定)/.test(source)) return '核心设定';
   return '其他设定';
 }
 
-function createTaggedSettingSegments(text: string) {
+function createImportItemSegments(sectionBody: string, fallbackTitle: string) {
+  const itemPattern = /^\s*(?:\*([^*\n]+)\*|#([^#\n]+)#)\s*[：:]\s*/gm;
+  const itemMatches = [...sectionBody.matchAll(itemPattern)];
+  if (itemMatches.length === 0) return [{
+    title: fallbackTitle,
+    body: sectionBody.trim(),
+  }];
+
+  return itemMatches.map((itemMatch, index) => {
+    const title = (itemMatch[1] ?? itemMatch[2] ?? '').trim();
+    const bodyStart = (itemMatch.index ?? 0) + itemMatch[0].length;
+    const bodyEnd = index + 1 < itemMatches.length
+      ? itemMatches[index + 1].index ?? sectionBody.length
+      : sectionBody.length;
+    return {
+      title,
+      body: sectionBody.slice(bodyStart, bodyEnd).trim(),
+    };
+  }).filter((item) => item.title && item.body);
+}
+
+function collectTaggedSettingSegments(
+  text: string,
+  forcedDefaultType: string | null,
+  result: SmartImportTaggedSegments,
+) {
   const normalized = text.replace(/\r\n/g, '\n').trim();
-  if (!normalized) return [];
-  const segments: Array<{ title: string; type: string; body: string }> = [];
+  if (!normalized) return;
   const sectionPattern = /<([^<>/]+)>\s*([\s\S]*?)\s*<\/\1>/g;
+  let matched = false;
 
   for (const sectionMatch of normalized.matchAll(sectionPattern)) {
+    matched = true;
     const type = (sectionMatch[1] ?? '').trim();
-    const normalizedType = normalizeSettingType(type);
     const sectionBody = (sectionMatch[2] ?? '').trim();
     if (!type || !sectionBody) continue;
 
-    const itemPattern = /^\s*(?:\*([^*\n]+)\*|#([^#\n]+)#)\s*[：:]\s*/gm;
-    const itemMatches = [...sectionBody.matchAll(itemPattern)];
-    if (itemMatches.length === 0) {
-      segments.push({ title: normalizedType, type: normalizedType, body: sectionBody });
+    if (SETTING_IMPORT_ROLE_TOP_LABELS.has(type)) {
+      createImportItemSegments(sectionBody, DEFAULT_MALE_PROTAGONIST_ROLE_TITLE)
+        .forEach((item) => result.roleSegments.push(item));
       continue;
     }
 
-    itemMatches.forEach((itemMatch, index) => {
-      const title = (itemMatch[1] ?? itemMatch[2] ?? '').trim();
-      if (!title) return;
-      const bodyStart = (itemMatch.index ?? 0) + itemMatch[0].length;
-      const bodyEnd = index + 1 < itemMatches.length
-        ? itemMatches[index + 1].index ?? sectionBody.length
-        : sectionBody.length;
-      const body = sectionBody.slice(bodyStart, bodyEnd).trim();
-      if (!body) return;
-      segments.push({ title, type: normalizedType, body });
-    });
+    const topDefaultType = SETTING_IMPORT_TOP_LABEL_DEFAULT_TYPES[type] ?? null;
+    if (topDefaultType) {
+      const beforeCount = result.settingSegments.length + result.roleSegments.length;
+      collectTaggedSettingSegments(sectionBody, topDefaultType, result);
+      if (result.settingSegments.length + result.roleSegments.length === beforeCount) {
+        createImportItemSegments(sectionBody, topDefaultType)
+          .forEach((item) => result.settingSegments.push({ ...item, type: topDefaultType }));
+      }
+      continue;
+    }
+
+    const normalizedType = normalizeSettingType(type);
+    createImportItemSegments(sectionBody, normalizedType)
+      .forEach((item) => result.settingSegments.push({ ...item, type: normalizedType }));
   }
 
-  return segments;
+  if (!matched && forcedDefaultType) {
+    createImportItemSegments(normalized, forcedDefaultType)
+      .forEach((item) => result.settingSegments.push({ ...item, type: forcedDefaultType }));
+  }
+}
+
+function createTaggedSettingSegments(text: string): SmartImportTaggedSegments {
+  const result: SmartImportTaggedSegments = {
+    settingSegments: [],
+    roleSegments: [],
+  };
+  collectTaggedSettingSegments(text, null, result);
+  return result;
 }
 
 function createSmartSettingSegments(text: string) {
@@ -1834,18 +2568,52 @@ function RoleBaseStateEditor({
   onRoleChange,
 }: RoleBaseStateEditorProps) {
   const baseSetting = getRoleBaseSetting(role);
+  const baseSettingFields = parseRoleBaseSettingFields(baseSetting);
   const stateSettings = getRoleStateSettings(role);
   const stateUpdateChapters = getRoleStateUpdateChapters(role);
-  const baseWords = countTextWords(baseSetting);
   const relationshipWords = countTextWords(role.relationship);
-  const stateWords = countTextWords(buildRoleStateSettingsText(stateSettings));
+  const relationshipUpdateLabel = getRoleStateUpdateLabel(stateUpdateChapters.relationshipState);
+  const stateWords = countTextWords(buildRoleStateSettingsText(stateSettings)) + relationshipWords;
   const roleIsMaleProtagonist = isMaleProtagonistRoleType(role.type);
+  const showRoleIdentityControls = !roleIsMaleProtagonist;
   const currentChapterLabel = currentChapterNumber ? `当前编辑：第${currentChapterNumber}章` : '当前编辑：未选择章节';
+  const roleSettingTabs = ['基础设定', '状态设定', '未确认'] as const;
+  const [activeRoleSettingTab, setActiveRoleSettingTab] = useState<(typeof roleSettingTabs)[number]>('基础设定');
+  const [autoConfirmRoleState, setAutoConfirmRoleState] = useState(false);
+  const pendingRoleStateUpdates = [
+    {
+      title: '人物关系',
+      beforeTitle: '人物关系未更新前',
+      afterTitle: '人物关系更新后',
+      beforeValue: role.relationship.trim() || '暂无已确认人物关系。',
+      afterValue: '正文中出现新的关系变化，建议写入人物关系。',
+    },
+    {
+      title: '资源状态',
+      beforeTitle: '资源状态未更新前',
+      afterTitle: '资源状态更新后',
+      beforeValue: stateSettings.resourceState.trim() || '暂无已确认资源状态。',
+      afterValue: '正文中出现资源得失，建议写入资源状态。',
+    },
+    {
+      title: '当前目标',
+      beforeTitle: '当前目标未更新前',
+      afterTitle: '当前目标更新后',
+      beforeValue: stateSettings.currentGoal.trim() || '暂无已确认当前目标。',
+      afterValue: '角色目标可能发生变化，建议写入当前目标。',
+    },
+  ];
+  const contentGridClassName = 'grid min-h-full grid-cols-2 auto-rows-fr gap-3';
 
-  const updateBaseSetting = (value: string) => {
+  const updateRoleBaseSettingField = (key: RoleBaseSettingFieldKey, value: string) => {
+    const nextFields = {
+      ...baseSettingFields,
+      [key]: value,
+    };
+    const nextBaseSetting = stringifyRoleBaseSettingFields(nextFields);
     onRoleChange({
-      baseSetting: value,
-      background: value,
+      baseSetting: nextBaseSetting,
+      background: nextBaseSetting,
       personality: '',
     });
   };
@@ -1868,129 +2636,72 @@ function RoleBaseStateEditor({
     });
   };
 
-  const updateRelationship = (value: string) => {
-    onRoleChange({ relationship: value });
+  const updateRelationshipState = (value: string) => {
+    const nextStateUpdateChapters = currentChapterNumber
+      ? {
+          ...stateUpdateChapters,
+          relationshipState: currentChapterNumber,
+        }
+      : stateUpdateChapters;
+    onRoleChange({
+      relationship: value,
+      stateUpdateChapters: nextStateUpdateChapters,
+    });
   };
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col bg-white">
-      <div className="flex h-[86px] shrink-0 items-center justify-between gap-4 border-b border-slate-100 px-5">
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-setting-name xy-role-name-compact-field min-w-[132px] max-w-[220px] ${entry.title.trim() ? 'xy-has-value' : ''}`}>
-              <input
-                value={entry.title}
-                onChange={(event) => onTitleChange(event.target.value)}
-                placeholder="人物名称"
-                className="text-lg font-black"
-              />
-              <label className="xy-border-embedded-transparent-backplate">人物名称</label>
-            </div>
-            <div className="w-[132px] shrink-0">
-              <CapsuleSelect
-                floatingLabel="分类"
-                className="xy-capsule-fill"
-                value={role.type}
-                onChange={(value) => onRoleChange({ type: value })}
-                options={roleTypeOptions.map((type) => ({
-                  value: type,
-                  label: type,
-                  disabled:
-                    role.type !== '男主角' &&
-                    normalizeWorkbenchRoleType(type) === '男主角' &&
-                    !canCreateWorkbenchRoleInType(
-                      roleEntries
-                        .filter((item) => item.id !== entry.id)
-                        .map((item) => parseRoleContent(item.content).type),
-                      type,
-                    ),
-                }))}
-                buttonClassName="h-9 rounded-xl px-3 text-sm"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(360px,0.9fr)_minmax(380px,1.1fr)] gap-4 p-5">
-        <div className="flex min-h-0 flex-col gap-4">
-          <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-            <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 px-5">
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-slate-950" />
-                <h3 className="text-base font-black text-slate-950">基础设定</h3>
+      <div className="flex min-h-0 flex-1 flex-col gap-3 px-5 py-3">
+        <header className="shrink-0 border-b border-slate-200 pb-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="relative flex h-[48px] w-[148px] shrink-0 items-center rounded-[20px] border-2 border-slate-950 bg-white px-4 py-0">
+                  <span className="xy-border-embedded-transparent-backplate absolute left-5 top-0 z-10 -translate-y-1/2 pr-2 text-sm font-medium leading-5 text-slate-500">人物姓名</span>
+                  <input
+                    value={entry.title}
+                    onChange={(event) => onTitleChange(event.target.value)}
+                    placeholder="填写人物姓名"
+                    className="h-6 w-full bg-transparent text-[17px] font-medium leading-6 text-slate-950 outline-none placeholder:text-slate-400"
+                  />
+                </label>
+                {showRoleIdentityControls ? (
+                  <CapsuleSelect
+                    floatingLabel="身份定位"
+                    className="xy-capsule-fill min-w-[168px]"
+                    value={role.type}
+                    onChange={(value) => onRoleChange({ type: value })}
+                    options={roleTypeOptions.map((type) => ({
+                      value: type,
+                      label: type,
+                      disabled:
+                        role.type !== '男主角' &&
+                        normalizeWorkbenchRoleType(type) === '男主角' &&
+                        !canCreateWorkbenchRoleInType(
+                          roleEntries
+                            .filter((item) => item.id !== entry.id)
+                            .map((item) => parseRoleContent(item.content).type),
+                          type,
+                        ),
+                    }))}
+                    buttonClassName="h-[42px] px-3 text-sm"
+                  />
+                ) : (
+                  <div aria-hidden="true" className="h-[42px] min-w-[168px] shrink-0" />
+                )}
               </div>
-              <span className="text-sm font-black text-slate-400">{baseWords}字</span>
             </div>
-            <div className="min-h-0 flex-1 p-4">
-              <textarea
-                value={baseSetting}
-                onChange={(event) => updateBaseSetting(event.target.value)}
-                placeholder="记录姓名、身份、外貌、角色定位、核心性格、人物背景、能力规则等低频变化内容。"
-                className="editor-scrollbar h-full w-full resize-none rounded-xl border border-slate-200 bg-white p-5 text-sm leading-8 text-slate-700 outline-none transition-colors focus:border-[#08AACE]/50"
-                style={{ fontSize: roleTextFontSize }}
-              />
-            </div>
-            <div className="shrink-0 border-t border-slate-200 px-5 py-3 text-xs font-bold leading-5 text-slate-500">
-              AI 默认只读取，不直接覆盖。发现缺失时进入“基础设定补充建议”，由用户确认后写入。
-            </div>
-          </section>
-
-          <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50/40">
-            <div className="flex h-14 shrink-0 items-center justify-between border-b border-emerald-100 px-5">
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-emerald-500" />
-                <h3 className="text-base font-black text-slate-950">人物关系</h3>
-              </div>
-              <span className="text-sm font-black text-slate-400">{relationshipWords}字</span>
-            </div>
-            <div className="min-h-0 flex-1 p-4">
-              <textarea
-                value={role.relationship}
-                onChange={(event) => updateRelationship(event.target.value)}
-                placeholder="记录与主角、阵营、亲友、敌人、师徒、利益对象的关系。关系绑定人物，不绑定世界。"
-                className="editor-scrollbar h-full w-full resize-none rounded-xl border border-emerald-100 bg-white p-5 text-sm leading-8 text-slate-700 outline-none transition-colors focus:border-emerald-300"
-                style={{ fontSize: roleTextFontSize }}
-              />
-            </div>
-            <div className="shrink-0 border-t border-emerald-100 px-5 py-3 text-xs font-bold leading-5 text-slate-500">
-              只写这个人物自己的关系；全局关系网仍放到作品设定的“人物关系”分类。
-            </div>
-          </section>
-        </div>
-
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-[#08AACE]/25 bg-white">
-          <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 px-5">
-            <div className="flex items-center gap-3">
-              <span className="h-3 w-3 rounded-full bg-[#08AACE]" />
-              <h3 className="text-base font-black text-[#078FAE]">状态设定</h3>
-              <span className="rounded-full bg-[#EAF9FD] px-3 py-1 text-xs font-black text-[#078FAE]">
-                {currentChapterLabel}
-              </span>
-              <div
-                className={`inline-flex h-8 w-[104px] shrink-0 rounded-[16px] p-1 ${
-                  roleIsMaleProtagonist ? 'bg-slate-200 opacity-80' : 'bg-slate-100'
-                }`}
-                title={roleIsMaleProtagonist ? '男主必定是存活状态' : undefined}
-              >
+            {showRoleIdentityControls ? (
+              <div className="inline-flex h-9 w-[112px] shrink-0 rounded-[18px] bg-slate-100 p-1">
                 {(['存活', '死亡'] as const).map((status) => {
                   const active = roleLifeStatus === status;
                   return (
                     <button
                       key={status}
                       type="button"
-                      disabled={roleIsMaleProtagonist}
-                      onClick={() => {
-                        if (!roleIsMaleProtagonist) onRoleChange({ lifeStatus: status });
-                      }}
+                      onClick={() => onRoleChange({ lifeStatus: status })}
                       className={`flex-1 rounded-2xl text-xs font-black transition-colors ${
-                        roleIsMaleProtagonist
-                          ? active
-                            ? 'cursor-not-allowed bg-slate-300 text-slate-600 shadow-none'
-                            : 'cursor-not-allowed text-slate-400'
-                          : active
-                            ? 'bg-white text-[#08AACE] shadow-sm'
-                            : 'text-slate-500 hover:text-slate-700'
+                        active ? 'bg-white text-[#08AACE] shadow-sm' : 'text-slate-500 hover:text-slate-700'
                       }`}
                     >
                       {status}
@@ -1998,33 +2709,128 @@ function RoleBaseStateEditor({
                   );
                 })}
               </div>
-            </div>
-            <span className="text-sm font-black text-slate-400">共 {stateWords} 字</span>
+            ) : (
+              <div aria-hidden="true" className="h-9 w-[112px] shrink-0" />
+            )}
           </div>
-          <div className="editor-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
-            {ROLE_STATE_FIELD_DEFINITIONS.map((field) => {
-              const fieldValue = stateSettings[field.key];
-              const updateLabel = getRoleStateUpdateLabel(stateUpdateChapters[field.key]);
+          <div className="mt-3 flex items-center justify-between gap-4 overflow-x-auto pb-1">
+            <SettingSegmentedTabs
+              tabs={roleSettingTabs}
+              activeTab={activeRoleSettingTab}
+              onChange={setActiveRoleSettingTab}
+            />
+            {activeRoleSettingTab === '未确认' ? (
+              <div className="flex shrink-0 items-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-1.5">
+                <span className="text-xs font-black text-cyan-800">未确认更新</span>
+                <button
+                  type="button"
+                  onClick={() => setAutoConfirmRoleState((current) => !current)}
+                  className={`rounded-full border px-2.5 py-1 text-xs font-black ${
+                    autoConfirmRoleState ? 'border-cyan-500 bg-cyan-600 text-white' : 'border-cyan-200 bg-white text-cyan-700'
+                  }`}
+                >
+                  自动确认 {autoConfirmRoleState ? '开' : '关'}
+                </button>
+                <button type="button" className="rounded-full bg-cyan-600 px-2.5 py-1 text-xs font-black text-white">
+                  一键确认
+                </button>
+              </div>
+            ) : (
+              <p className="shrink-0 text-xs font-black text-slate-400">
+                {currentChapterLabel} / 状态设定共 {stateWords} 字
+              </p>
+            )}
+          </div>
+        </header>
+
+        <section className="editor-scrollbar min-h-0 flex-1 overflow-y-auto px-1 pb-1 pr-2 pt-3">
+          <div className={contentGridClassName}>
+            {activeRoleSettingTab === '基础设定' && ROLE_BASE_SETTING_FIELD_DEFINITIONS.map((field) => {
+              const value = baseSettingFields[field.key];
               return (
-                <article key={field.key} className="relative rounded-[22px] border-2 border-slate-950 bg-white p-4 pt-5">
+                <article
+                  key={field.key}
+                  className="relative flex min-h-[150px] flex-col rounded-[22px] border-2 border-slate-950 bg-white p-4 pt-5"
+                >
                   <div className="xy-border-embedded-transparent-backplate absolute left-5 top-0 z-10 -translate-y-1/2 pr-2 text-base font-black leading-6 text-slate-950">
                     {field.title}
                   </div>
-                  <div className={`xy-border-embedded-transparent-backplate absolute right-5 top-0 z-10 -translate-y-1/2 pl-2 text-xs font-black leading-5 ${
-                    stateUpdateChapters[field.key] ? 'text-[#08AACE]' : 'text-red-500'
-                  }`}>
-                    {updateLabel}
-                  </div>
                   <textarea
-                    value={fieldValue}
-                    onChange={(event) => updateStateField(field.key, event.target.value)}
-                    placeholder={`记录${field.title}`}
-                    className="editor-scrollbar h-28 w-full resize-none bg-transparent text-sm leading-7 text-slate-700 outline-none"
+                    value={value}
+                    onChange={(event) => updateRoleBaseSettingField(field.key, event.target.value)}
+                    placeholder={field.placeholder}
+                    className="editor-scrollbar min-h-0 flex-1 resize-none bg-transparent text-sm leading-7 text-slate-700 outline-none placeholder:text-slate-400"
                     style={{ fontSize: roleTextFontSize }}
                   />
                 </article>
               );
             })}
+
+            {activeRoleSettingTab === '状态设定' && (
+              <>
+                <article className="relative flex min-h-[150px] flex-col rounded-[22px] border-2 border-slate-950 bg-white p-4 pt-5">
+                  <div className="xy-border-embedded-transparent-backplate absolute left-5 top-0 z-10 -translate-y-1/2 pr-2 text-base font-black leading-6 text-slate-950">
+                    人物关系
+                  </div>
+                  <div className={`xy-border-embedded-transparent-backplate absolute right-5 top-0 z-10 -translate-y-1/2 pl-2 text-xs font-black leading-5 ${
+                    stateUpdateChapters.relationshipState ? 'text-[#08AACE]' : 'text-red-500'
+                  }`}>
+                    {relationshipUpdateLabel}
+                  </div>
+                  <textarea
+                    value={role.relationship}
+                    onChange={(event) => updateRelationshipState(event.target.value)}
+                    placeholder="记录与主角、阵营、亲友、敌人、师徒、利益对象的关系。关系绑定人物，不绑定世界。"
+                    className="editor-scrollbar min-h-0 flex-1 resize-none bg-transparent text-sm leading-7 text-slate-700 outline-none placeholder:text-slate-400"
+                    style={{ fontSize: roleTextFontSize }}
+                  />
+                </article>
+                {ROLE_STATE_FIELD_DEFINITIONS.map((field) => {
+                  const fieldValue = stateSettings[field.key];
+                  const updateLabel = getRoleStateUpdateLabel(stateUpdateChapters[field.key]);
+                  return (
+                    <article key={field.key} className="relative flex min-h-[150px] flex-col rounded-[22px] border-2 border-slate-950 bg-white p-4 pt-5">
+                      <div className="xy-border-embedded-transparent-backplate absolute left-5 top-0 z-10 -translate-y-1/2 pr-2 text-base font-black leading-6 text-slate-950">
+                        {field.title}
+                      </div>
+                      <div className={`xy-border-embedded-transparent-backplate absolute right-5 top-0 z-10 -translate-y-1/2 pl-2 text-xs font-black leading-5 ${
+                        stateUpdateChapters[field.key] ? 'text-[#08AACE]' : 'text-red-500'
+                      }`}>
+                        {updateLabel}
+                      </div>
+                      <textarea
+                        value={fieldValue}
+                        onChange={(event) => updateStateField(field.key, event.target.value)}
+                        placeholder={`记录${field.title}`}
+                        className="editor-scrollbar min-h-0 flex-1 resize-none bg-transparent text-sm leading-7 text-slate-700 outline-none"
+                        style={{ fontSize: roleTextFontSize }}
+                      />
+                    </article>
+                  );
+                })}
+              </>
+            )}
+
+            {activeRoleSettingTab === '未确认' && pendingRoleStateUpdates.map((item) => (
+              <article key={item.title} className="relative flex min-h-[150px] flex-col rounded-[22px] border-2 border-slate-950 bg-white p-4 pt-5">
+                <div className="xy-border-embedded-transparent-backplate absolute left-5 top-0 z-10 -translate-y-1/2 pr-2 text-base font-black leading-6 text-slate-950">
+                  {item.title}
+                </div>
+                <button type="button" className="mb-2 rounded-full border border-cyan-200 px-2 py-0.5 text-xs font-black text-cyan-700">
+                  手动确认
+                </button>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <section className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                    <h4 className="text-xs font-black text-slate-500">{item.beforeTitle}</h4>
+                    <p className="mt-1 text-sm font-bold leading-6 text-slate-600">{item.beforeValue}</p>
+                  </section>
+                  <section className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2">
+                    <h4 className="text-xs font-black text-cyan-700">{item.afterTitle}</h4>
+                    <p className="mt-1 text-sm font-bold leading-6 text-slate-700">{item.afterValue}</p>
+                  </section>
+                </div>
+              </article>
+            ))}
           </div>
         </section>
       </div>
@@ -2072,10 +2878,11 @@ function formatBrainstormReferenceForAi(title: string, text: string) {
   ].join('\n');
 }
 
-function formatSettingLinkedContextForAi(context: { source: 'current' | 'brainstorm' | null; title: string; text: string }) {
+function formatSettingLinkedContextForAi(context: { source: 'current' | 'other' | 'brainstorm' | null; title: string; text: string }) {
   const text = context.text.trim();
   if (!context.source || !text) return '';
   if (context.source === 'brainstorm') return formatBrainstormReferenceForAi(context.title, text);
+  if (context.source === 'other') return wrapAiRequestTag('关联其他设定', text, { 标题: context.title.trim() || '其他设定' });
   const tagName = '待处理设定';
   const title = context.title.trim() || '当前设定';
   return wrapAiRequestTag(tagName, text, { 标题: title });
@@ -2340,7 +3147,8 @@ function getBrainstormEntryBody(entry: WorkbenchLibraryEntry | null | undefined)
 function getSettingEntryBody(entry: WorkbenchLibraryEntry | null | undefined) {
   if (!entry) return '';
   const parsed = parseSettingContent(entry.content);
-  return getLatestUsefulAiText(parsed.body || entry.content);
+  const rawContent = entry.content.trim();
+  return getLatestUsefulAiText(parsed.body || (rawContent.startsWith('{') ? '' : entry.content));
 }
 
 function LibraryManagementModal({
@@ -2544,13 +3352,24 @@ export function WorkbenchLibraryPanel({
   const [isClearSettingsConfirmOpen, setIsClearSettingsConfirmOpen] = useState(false);
   const [clearSettingsConfirmTarget, setClearSettingsConfirmTarget] = useState<ClearSettingsTarget>('settingEntries');
   const [clearSettingsConfirmStep, setClearSettingsConfirmStep] = useState<1 | 2>(1);
+  const [activeStructuredSettingTab, setActiveStructuredSettingTab] = useState<StructuredSettingTab>('固定设定');
   const [promptDisableMenu, setPromptDisableMenu] = useState<PromptDisableMenu>(null);
   const [managementModal, setManagementModal] = useState<LibraryManagementModalState>(null);
   const [draggingLibraryEntry, setDraggingLibraryEntry] = useState<LibraryEntryDragState>(null);
   const [libraryDropTarget, setLibraryDropTarget] = useState<{ tab: string; type: string } | null>(null);
+  const [libraryEntryDropPreview, setLibraryEntryDropPreview] = useState<LibraryEntryDropPreviewState>(null);
+  const libraryEntryDropPreviewRef = useRef<LibraryEntryDropPreviewState>(null);
+  const libraryDropHandledRef = useRef(false);
+  const libraryEntryPointerDragRef = useRef<LibraryEntryPointerDragState>(null);
+  const libraryPointerSuppressClickRef = useRef(false);
   const [roleHistoryEntryId, setRoleHistoryEntryId] = useState<string | null>(null);
   const [isBrainstormReaderOpen, setIsBrainstormReaderOpen] = useState(false);
   const [selectedBrainstormReaderId, setSelectedBrainstormReaderId] = useState<string | null>(null);
+  const [isOtherSettingReaderOpen, setIsOtherSettingReaderOpen] = useState(false);
+  const [otherSettingReaderTabId, setOtherSettingReaderTabId] = useState<OtherSettingLinkTabId>('work');
+  const [otherSettingReaderPreviewId, setOtherSettingReaderPreviewId] = useState('');
+  const [draftOtherSettingReaderIds, setDraftOtherSettingReaderIds] = useState<Set<string>>(() => new Set());
+  const [otherSettingReaderQuery, setOtherSettingReaderQuery] = useState('');
   const [isBrainstormRecycleOpen, setIsBrainstormRecycleOpen] = useState(false);
   const [isClearBrainstormRecycleConfirmOpen, setIsClearBrainstormRecycleConfirmOpen] = useState(false);
   const [isBrainstormPromptManagerOpen, setIsBrainstormPromptManagerOpen] = useState(false);
@@ -2615,6 +3434,7 @@ export function WorkbenchLibraryPanel({
   const [expandedPlotPointPreviewIds, setExpandedPlotPointPreviewIds] = useState<string[]>([]);
   const [plotPointChainMenuSlot, setPlotPointChainMenuSlot] = useState<PlotPointChainSlot | null>(null);
   const [activeBrainstormOutputScrollIndex, setActiveBrainstormOutputScrollIndex] = useState<number | null>(null);
+  const [activeSettingSidebarScrollKey, setActiveSettingSidebarScrollKey] = useState<string | null>(null);
   const [plotPointChainRenameDraft, setPlotPointChainRenameDraft] = useState('');
   const [plotPointChainFilterMode, setPlotPointChainFilterMode] = useState<'all' | 'unwritten' | 'written'>('all');
   const [activePlotPointChainItemId, setActivePlotPointChainItemId] = useState<string | null>(null);
@@ -2645,6 +3465,7 @@ export function WorkbenchLibraryPanel({
   const brainstormConfirmScrollTimerRef = useRef<number | null>(null);
   const brainstormOutputScrollTimerRef = useRef<number | null>(null);
   const detailOutlineScrollTimerRef = useRef<number | null>(null);
+  const settingSidebarScrollTimerRef = useRef<number | null>(null);
   const roleExpandedReloadRef = useRef(false);
   const settingExpandedReloadRef = useRef(false);
   const outlineExpandedReloadRef = useRef(false);
@@ -2717,6 +3538,7 @@ export function WorkbenchLibraryPanel({
   useTopModalEscape(isPlotPointModalOpen, () => setIsPlotPointModalOpen(false));
   useTopModalEscape(isBrainstormRecycleOpen && !isClearBrainstormRecycleConfirmOpen, () => setIsBrainstormRecycleOpen(false));
   useTopModalEscape(isBrainstormReaderOpen, closeBrainstormReader);
+  useTopModalEscape(isOtherSettingReaderOpen, closeOtherSettingReader);
 
   useEffect(() => {
     if (fieldSizeOpenSignal <= 0 || fieldSizeOpenSignal === lastFieldSizeOpenSignalRef.current) return;
@@ -2742,11 +3564,13 @@ export function WorkbenchLibraryPanel({
     if (detailOutlineScrollTimerRef.current !== null) {
       window.clearTimeout(detailOutlineScrollTimerRef.current);
     }
+    if (settingSidebarScrollTimerRef.current !== null) {
+      window.clearTimeout(settingSidebarScrollTimerRef.current);
+    }
   }, []);
 
   useEffect(() => {
     return () => {
-      if (!isRememberAssociationsEnabled()) clearWorkbenchLinkedBrainstorm(storageKey);
       clearStoredBrainstormAiSessionPreviews(storageKey);
     };
   }, [storageKey]);
@@ -2861,11 +3685,15 @@ export function WorkbenchLibraryPanel({
   const setRoleNameDraft = (value: string) => updateTabConfig(ROLE_TAB, { roleNameDraft: value, titleDraft: value });
   const setSettingTypeDraft = (value: string) => updateActiveTabConfig({ typeDraft: value });
   const setSettingTitleDraft = (value: string) => updateActiveTabConfig({ titleDraft: value });
-  const getSelectedSettingWorkspaceDomain = useCallback(() => (
-    Object.prototype.hasOwnProperty.call(SETTING_WORKSPACE_DOMAIN_GROUPS, outlineSettingDomain)
+  const setLibraryEntryDropPreviewState = (next: LibraryEntryDropPreviewState) => {
+    libraryEntryDropPreviewRef.current = next;
+    setLibraryEntryDropPreview(next);
+  };
+  const getSelectedSettingWorkspaceDomain = useCallback(() => {
+    return Object.prototype.hasOwnProperty.call(SETTING_WORKSPACE_DOMAIN_GROUPS, outlineSettingDomain)
       ? outlineSettingDomain
-      : null
-  ), [outlineSettingDomain]);
+      : null;
+  }, [outlineSettingDomain]);
   const getSelectedSettingWorkspaceType = useCallback(() => {
     const domain = getSelectedSettingWorkspaceDomain();
     return domain ? SETTING_WORKSPACE_DOMAIN_GROUPS[domain as keyof typeof SETTING_WORKSPACE_DOMAIN_GROUPS][0] : null;
@@ -2873,9 +3701,8 @@ export function WorkbenchLibraryPanel({
   const getSettingTypeWorkspaceDomain = useCallback((type: string) => {
     const customDomain = customSettingTypeDomains[type];
     return DEFAULT_SETTING_TYPE_DOMAINS[type]
-      ?? LEGACY_SETTING_TYPE_DOMAINS[type]
       ?? (customDomain && Object.prototype.hasOwnProperty.call(SETTING_WORKSPACE_DOMAIN_GROUPS, customDomain) ? customDomain : null)
-      ?? (customDomain ? LEGACY_SETTING_TYPE_DOMAINS[customDomain] ?? null : null);
+      ?? null;
   }, [customSettingTypeDomains]);
   const setAiInput = (value: string) => {
     if (activeTab === BRAINSTORM_TAB) {
@@ -3834,6 +4661,15 @@ export function WorkbenchLibraryPanel({
     return options[0] ?? DEFAULT_SETTING_ENTRY_TYPE;
   };
 
+  const getSelectedEntrySettingCreateType = () => {
+    const options = getSettingCreateTypeOptions();
+    const selectedId = tabConfigs[activeTab]?.selectedId;
+    const selectedEntry = selectedId ? entries.find((entry) => entry.id === selectedId) : null;
+    if (!selectedEntry || !isSettingLikeTab(selectedEntry.tab)) return getValidSettingCreateType();
+    const selectedType = parseSettingContent(selectedEntry.content).type;
+    return options.includes(selectedType) ? selectedType : getValidSettingCreateType();
+  };
+
   const addSetting = (tab = SETTING_TAB, titleDraft = settingTitleDraft, typeDraft?: string) => {
     const title = titleDraft.trim() || `新建${tab}`;
     const selectedSettingWorkspaceType = typeDraft ?? getSelectedSettingWorkspaceType();
@@ -3885,25 +4721,30 @@ export function WorkbenchLibraryPanel({
 
   const openSettingCreateDialog = (kind: 'category' | 'setting') => {
     setSettingCreateDraft('');
-    setSettingCreateTypeDraft(kind === 'setting' ? getValidSettingCreateType() : '');
+    setSettingCreateTypeDraft(kind === 'setting' ? getSelectedEntrySettingCreateType() : '');
     setSettingCreateDialog(kind);
   };
 
   const smartImportSettings = () => {
+    if (activeTabConfig.smartImportLocked !== false) return;
     const sourceText = stripAiThinkingBlock(getLatestUsefulAiText(activeTab === SETTING_TAB ? aiOutput : (aiResult || aiOutput)));
     const taggedSegments = createTaggedSettingSegments(sourceText);
     const markdownSegments = createMarkdownSettingSegments(sourceText);
     const resolvedSettingTypes = new Set(settingTypeOptions);
-    const segments = taggedSegments.length > 0
-      ? taggedSegments
+    const hasTaggedSegments = taggedSegments.settingSegments.length > 0 || taggedSegments.roleSegments.length > 0;
+    const segments = hasTaggedSegments
+      ? taggedSegments.settingSegments
       : markdownSegments.length > 0
         ? markdownSegments
         : createSmartSettingSegments(sourceText);
-    if (segments.length === 0) return;
+    const roleSegments = hasTaggedSegments ? taggedSegments.roleSegments : [];
+    if (segments.length === 0 && roleSegments.length === 0) return;
     const remainingEntries = [...entries];
     const importedEntries: WorkbenchLibraryEntry[] = [];
+    const importedRoleEntries: WorkbenchLibraryEntry[] = [];
     const importedCustomTypes = new Set<string>();
     const importedSettingTypes = new Set<string>();
+    const importedRoleTypes = new Set<string>();
     segments.forEach((segment) => {
       const type = normalizeSettingType(segment.type);
       if (type !== UNCATEGORIZED_TYPE && type !== BRAINSTORM_TYPE) {
@@ -3942,7 +4783,42 @@ export function WorkbenchLibraryPanel({
         content: stringifySettingContent({ type, body }),
       });
     });
-    persist([...importedEntries, ...remainingEntries]);
+    roleSegments.forEach((segment) => {
+      const sections = parseSectionedSettingBody(segment.body);
+      const importedType = getImportedRoleSection(sections, ['身份定位', '角色定位', '人物定位', '身份', '类型']);
+      const shouldMatchMaleProtagonist = isMaleProtagonistRoleType(importedType) || /男主角|主角/.test(segment.title);
+      const existingIndex = remainingEntries.findIndex((entry) => {
+        if (entry.tab !== ROLE_TAB) return false;
+        const role = parseRoleContent(entry.content);
+        const importedTitle = buildImportedRoleEntryTitle(segment, shouldMatchMaleProtagonist ? entry.title : '');
+        return normalizeImportedSettingKey(entry.title) === normalizeImportedSettingKey(importedTitle)
+          || (shouldMatchMaleProtagonist && isMaleProtagonistRoleType(role.type));
+      });
+
+      if (existingIndex >= 0) {
+        const [existingEntry] = remainingEntries.splice(existingIndex, 1);
+        const existingRole = parseRoleContent(existingEntry.content);
+        const nextTitle = buildImportedRoleEntryTitle(segment, existingEntry.title);
+        const nextRole = createImportedRoleContent(segment, existingRole);
+        importedRoleTypes.add(nextRole.type);
+        importedRoleEntries.push({
+          ...existingEntry,
+          title: nextTitle,
+          content: stringifyRoleContent(nextRole),
+          updatedAt: new Date().toLocaleString('zh-CN'),
+        });
+        return;
+      }
+
+      const nextTitle = buildImportedRoleEntryTitle(segment);
+      const nextRole = createImportedRoleContent(segment);
+      importedRoleTypes.add(nextRole.type);
+      importedRoleEntries.push({
+        ...createWorkbenchLibraryEntry(ROLE_TAB, nextTitle),
+        content: stringifyRoleContent(nextRole),
+      });
+    });
+    persist([...importedEntries, ...importedRoleEntries, ...remainingEntries]);
     if (importedCustomTypes.size > 0) {
       setCustomSettingTypes((prev) => {
         const next = Array.from(new Set([...prev, ...importedCustomTypes]));
@@ -3960,36 +4836,74 @@ export function WorkbenchLibraryPanel({
       });
     }
     updateActiveTabConfig({ smartImportLocked: true });
-    setRememberedActiveTab(SETTING_TAB);
-    setSelectedIdForTab(SETTING_TAB, importedEntries[0]?.id ?? null);
+    if (importedRoleEntries.length > 0) updateTabConfig(ROLE_TAB, { smartImportLocked: true });
+    setRememberedActiveTab(importedEntries.length > 0 ? SETTING_TAB : ROLE_TAB);
+    if (importedEntries.length > 0) setSelectedIdForTab(SETTING_TAB, importedEntries[0]?.id ?? null);
+    if (importedRoleEntries.length > 0) setSelectedIdForTab(ROLE_TAB, importedRoleEntries[0]?.id ?? null);
     setExpandedSettingTypes((prev) => {
       const next = new Set(prev);
       segments.forEach((segment) => next.add(normalizeSettingType(segment.type)));
       return next;
     });
+    if (importedRoleTypes.size > 0) {
+      setExpandedRoleTypes((prev) => new Set([...prev, ...importedRoleTypes]));
+    }
+  };
+
+  const isSettingTypeInActiveClearDomain = (type: string) => {
+    const domain = getSelectedSettingWorkspaceDomain();
+    const typeDomain = getSettingTypeWorkspaceDomain(type);
+    return domain ? typeDomain === domain : !typeDomain;
   };
 
   const clearSettingCategories = () => {
-    setCustomSettingTypes([]);
-    localStorage.setItem(getSettingTypesStorageKey(storageKey), JSON.stringify([]));
-    setCustomSettingTypeDomains({});
-    localStorage.setItem(getSettingTypeDomainsStorageKey(storageKey), JSON.stringify({}));
-    const nextHiddenTypes = DEFAULT_SETTING_TYPES.filter((type) => type !== UNCATEGORIZED_TYPE);
+    const domain = getSelectedSettingWorkspaceDomain();
+    const shouldClearType = (type: string) => (
+      type !== UNCATEGORIZED_TYPE &&
+      !DEFAULT_SETTING_TYPES.includes(type) &&
+      (domain ? getSettingTypeWorkspaceDomain(type) === domain : !getSettingTypeWorkspaceDomain(type))
+    );
+    const nextCustomTypes = customSettingTypes.filter((type) => !shouldClearType(type));
+    setCustomSettingTypes(nextCustomTypes);
+    localStorage.setItem(getSettingTypesStorageKey(storageKey), JSON.stringify(nextCustomTypes));
+    const nextCustomTypeDomains = Object.fromEntries(
+      Object.entries(customSettingTypeDomains).filter(([type]) => !shouldClearType(type)),
+    );
+    setCustomSettingTypeDomains(nextCustomTypeDomains);
+    localStorage.setItem(getSettingTypeDomainsStorageKey(storageKey), JSON.stringify(nextCustomTypeDomains));
+    const nextHiddenTypes = hiddenSettingTypes.filter((type) => !isSettingTypeInActiveClearDomain(type));
     setHiddenSettingTypes(nextHiddenTypes);
     localStorage.setItem(getHiddenSettingTypesStorageKey(storageKey), JSON.stringify(nextHiddenTypes));
     localStorage.setItem(getSettingTaxonomyDefaultsVersionStorageKey(storageKey), SETTING_TAXONOMY_DEFAULTS_VERSION);
-    setExpandedSettingTypes(new Set([UNCATEGORIZED_TYPE]));
-    persist(entries.filter((entry) => entry.tab !== SETTING_TAB));
-    setSelectedIdForTab(SETTING_TAB, null);
-    if (activeTab === SETTING_TAB && outlineSettingScope !== 'character') {
+    const nextExpandedTypes = domain
+      ? SETTING_WORKSPACE_DOMAIN_GROUPS[domain as keyof typeof SETTING_WORKSPACE_DOMAIN_GROUPS] ?? []
+      : DEFAULT_WORK_SETTING_TYPES;
+    setExpandedSettingTypes(new Set(nextExpandedTypes));
+    const nextEntries = entries.filter((entry) => {
+      if (entry.tab !== SETTING_TAB) return true;
+      if (isLockedDefaultSettingEntry(entry)) return true;
+      return !isSettingTypeInActiveClearDomain(parseSettingContent(entry.content).type);
+    });
+    persist(nextEntries);
+    if (selectedEntry?.tab === SETTING_TAB && !isLockedDefaultSettingEntry(selectedEntry) && isSettingTypeInActiveClearDomain(parseSettingContent(selectedEntry.content).type)) {
+      setSelectedIdForTab(SETTING_TAB, null);
+    }
+    if (activeTab === SETTING_TAB && outlineSettingScope !== 'character' && selectedEntry?.tab === SETTING_TAB && !isLockedDefaultSettingEntry(selectedEntry) && isSettingTypeInActiveClearDomain(parseSettingContent(selectedEntry.content).type)) {
       setSelectedId(null);
     }
   };
 
   const clearSettingEntries = () => {
-    persist(entries.filter((entry) => entry.tab !== SETTING_TAB));
-    setSelectedIdForTab(SETTING_TAB, null);
-    if (activeTab === SETTING_TAB && outlineSettingScope !== 'character') {
+    const nextEntries = entries.filter((entry) => {
+      if (entry.tab !== SETTING_TAB) return true;
+      if (isLockedDefaultSettingEntry(entry)) return true;
+      return !isSettingTypeInActiveClearDomain(parseSettingContent(entry.content).type);
+    });
+    persist(nextEntries);
+    if (selectedEntry?.tab === SETTING_TAB && !isLockedDefaultSettingEntry(selectedEntry) && isSettingTypeInActiveClearDomain(parseSettingContent(selectedEntry.content).type)) {
+      setSelectedIdForTab(SETTING_TAB, null);
+    }
+    if (activeTab === SETTING_TAB && outlineSettingScope !== 'character' && selectedEntry?.tab === SETTING_TAB && !isLockedDefaultSettingEntry(selectedEntry) && isSettingTypeInActiveClearDomain(parseSettingContent(selectedEntry.content).type)) {
       setSelectedId(null);
     }
   };
@@ -4118,20 +5032,96 @@ export function WorkbenchLibraryPanel({
     if (!selectedEntry) return;
     const selectedText = getBrainstormEntryBody(selectedEntry);
     updateActiveTabConfig({
+      associationSessionId: getWorkbenchAssociationRuntimeId(),
       loadedBrainstormId: selectedEntry.id,
       loadedBrainstormTitle: selectedEntry.title,
       loadedBrainstormText: selectedText,
+      linkedOtherSettingIds: [],
       settingLinkSource: 'brainstorm',
       promptDisabled: false,
     });
     closeBrainstormReader();
   }
 
-  function clearActiveLinkedBrainstorm() {
+  function openOtherSettingReader() {
+    const linkedIds = getActiveSettingLinkSource() === 'other'
+      ? normalizeLinkedOtherSettingIds(activeTabConfig.linkedOtherSettingIds)
+      : [];
+    setDraftOtherSettingReaderIds(new Set(linkedIds));
+    setOtherSettingReaderQuery('');
+    const preferredTab = otherSettingLinkTabs.find((tab) => tab.id === otherSettingReaderTabId && tab.groups.some((group) => group.entries.length > 0))
+      ?? otherSettingLinkTabs.find((tab) => tab.groups.some((group) => group.entries.length > 0))
+      ?? otherSettingLinkTabs[0];
+    if (preferredTab) setOtherSettingReaderTabId(preferredTab.id);
+    const firstEntry = preferredTab?.groups.flatMap((group) => group.entries)[0] ?? otherSettingLinkFlatEntries[0];
+    setOtherSettingReaderPreviewId(linkedIds[0] ?? firstEntry?.id ?? '');
+    setIsOtherSettingReaderOpen(true);
+  }
+
+  function closeOtherSettingReader() {
+    setOtherSettingReaderQuery('');
+    setIsOtherSettingReaderOpen(false);
+  }
+
+  function toggleDraftOtherSettingReaderId(id: string) {
+    setDraftOtherSettingReaderIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function selectAllCurrentOtherSettingLinkTab() {
+    const ids = (selectedOtherSettingLinkTab?.groups ?? [])
+      .flatMap((group) => group.entries)
+      .map((entry) => entry.id);
+    setDraftOtherSettingReaderIds(new Set(ids));
+  }
+
+  function toggleVisibleOtherSettingLinkGroupSelection(items: OtherSettingLinkEntry[]) {
+    setDraftOtherSettingReaderIds((current) => {
+      const next = new Set(current);
+      const allSelected = items.every((item) => next.has(item.id));
+      for (const item of items) {
+        if (allSelected) next.delete(item.id);
+        else next.add(item.id);
+      }
+      return next;
+    });
+  }
+
+  function confirmOtherSettingReaderSelection() {
+    const selectedIds = Array.from(draftOtherSettingReaderIds).filter((id) => otherSettingLinkFlatEntries.some((entry) => entry.id === id));
     updateActiveTabConfig({
+      associationSessionId: selectedIds.length > 0 ? getWorkbenchAssociationRuntimeId() : null,
       loadedBrainstormId: null,
       loadedBrainstormTitle: '',
       loadedBrainstormText: '',
+      linkedOtherSettingIds: selectedIds,
+      settingLinkSource: selectedIds.length > 0 ? 'other' : null,
+      promptDisabled: false,
+    });
+    closeOtherSettingReader();
+  }
+
+  function clearActiveLinkedOtherSettings() {
+    updateActiveTabConfig({
+      associationSessionId: null,
+      linkedOtherSettingIds: [],
+      settingLinkSource: null,
+      promptDisabled: false,
+    });
+    setDraftOtherSettingReaderIds(new Set());
+  }
+
+  function clearActiveLinkedBrainstorm() {
+    updateActiveTabConfig({
+      associationSessionId: null,
+      loadedBrainstormId: null,
+      loadedBrainstormTitle: '',
+      loadedBrainstormText: '',
+      linkedOtherSettingIds: [],
       settingLinkSource: null,
       promptDisabled: false,
     });
@@ -4156,15 +5146,21 @@ export function WorkbenchLibraryPanel({
     };
   };
 
-  const getActiveSettingLinkSource = () => {
+  const getActiveSettingLinkSource = (): SettingLinkSource => {
     if (activeTab !== SETTING_TAB) return null;
+    if (!isWorkbenchAssociationRuntimeCurrent(activeTabConfig.associationSessionId)) return null;
+    const linkedOtherSettingIds = normalizeLinkedOtherSettingIds(activeTabConfig.linkedOtherSettingIds);
+    if (activeTabConfig.settingLinkSource === 'other') {
+      return linkedOtherSettingIds.length > 0 ? 'other' : null;
+    }
     if (activeTabConfig.settingLinkSource === 'current' || activeTabConfig.settingLinkSource === 'brainstorm') {
       return activeTabConfig.settingLinkSource;
     }
+    if (linkedOtherSettingIds.length > 0) return 'other';
     return activeTabConfig.loadedBrainstormId || activeTabConfig.loadedBrainstormText?.trim() ? 'brainstorm' : null;
   };
 
-  const getActiveLinkedSettingSnapshot = () => {
+  const getActiveLinkedSettingSnapshot = (): { source: SettingLinkSource; title: string; text: string } => {
     const source = getActiveSettingLinkSource();
     if (source === 'current') {
       if (outlineSettingScope === 'character') {
@@ -4190,6 +5186,17 @@ export function WorkbenchLibraryPanel({
         source,
         title: linkedBrainstorm.title,
         text: linkedBrainstorm.text,
+      };
+    }
+    if (source === 'other') {
+      const linkedEntries = activeOtherSettingLinkEntries;
+      return {
+        source,
+        title: linkedEntries.length > 0 ? `其他设定 ${linkedEntries.length} 项` : '其他设定',
+        text: linkedEntries.map((entry) => [
+          `【${entry.tabTitle} / ${entry.groupName} / ${entry.title}】`,
+          entry.text,
+        ].filter(Boolean).join('\n')).join('\n\n'),
       };
     }
     return {
@@ -4261,6 +5268,17 @@ export function WorkbenchLibraryPanel({
     detailOutlineScrollTimerRef.current = window.setTimeout(() => {
       setActiveDetailOutlineScrollId(null);
       detailOutlineScrollTimerRef.current = null;
+    }, 700);
+  };
+
+  const handleSettingSidebarScroll = (key: string) => {
+    setActiveSettingSidebarScrollKey(key);
+    if (settingSidebarScrollTimerRef.current !== null) {
+      window.clearTimeout(settingSidebarScrollTimerRef.current);
+    }
+    settingSidebarScrollTimerRef.current = window.setTimeout(() => {
+      setActiveSettingSidebarScrollKey(null);
+      settingSidebarScrollTimerRef.current = null;
     }, 700);
   };
 
@@ -4655,7 +5673,29 @@ export function WorkbenchLibraryPanel({
   const updateEntry = (id: string, updates: Partial<Pick<WorkbenchLibraryEntry, 'title' | 'content'>>) => {
     persist(entries.map((entry) => (
       entry.id === id
-        ? { ...entry, ...updates, updatedAt: new Date().toLocaleString('zh-CN') }
+        ? (() => {
+          const nextUpdates = { ...updates };
+          if (nextUpdates.title !== undefined && isLockedDefaultSettingEntry(entry)) {
+            delete nextUpdates.title;
+          }
+          if (nextUpdates.title !== undefined && nextUpdates.content === undefined && isSettingLikeTab(entry.tab)) {
+            const setting = parseSettingContent(entry.content);
+            const fieldSet = getStructuredSettingFieldSet(entry, setting);
+            if (fieldSet && setting.structuredFieldSetId !== fieldSet.id) {
+              nextUpdates.content = stringifySettingContent({ ...setting, structuredFieldSetId: fieldSet.id });
+            }
+          }
+          if (nextUpdates.content !== undefined && isLockedDefaultSettingEntry(entry)) {
+            const currentSetting = parseSettingContent(entry.content);
+            const nextSetting = parseSettingContent(nextUpdates.content);
+            nextUpdates.content = stringifySettingContent({
+              ...nextSetting,
+              type: currentSetting.type,
+              lockedDefaultEntryId: currentSetting.lockedDefaultEntryId ?? getDefaultWorkSettingEntryId(currentSetting.type, entry.title),
+            });
+          }
+          return { ...entry, ...nextUpdates, updatedAt: new Date().toLocaleString('zh-CN') };
+        })()
         : entry
     )));
   };
@@ -4684,6 +5724,7 @@ export function WorkbenchLibraryPanel({
       ...updates,
       ...(updates.type ? { type: normalizeWorkbenchRoleType(updates.type) } : {}),
     };
+    if (normalizedUpdates.type && isMaleProtagonistRoleTypeChangeLocked(selectedRole.type, normalizedUpdates.type)) return;
     const nextType = normalizeWorkbenchRoleType(normalizedUpdates.type ?? selectedRole.type);
     if (isMaleProtagonistRoleType(nextType)) {
       normalizedUpdates.lifeStatus = '存活';
@@ -4715,51 +5756,136 @@ export function WorkbenchLibraryPanel({
 
   const moveLibraryEntryToType = (entryId: string, targetTab: string, targetType: string) => {
     const normalizedTargetTab = normalizeTabName(targetTab);
-    let changed = false;
-    const nextEntries = entries.map((entry) => {
-      if (entry.id !== entryId || entry.tab !== normalizedTargetTab) return entry;
+    const draggedEntry = entries.find((entry) => entry.id === entryId);
+    if (!draggedEntry || draggedEntry.tab !== normalizedTargetTab) return;
 
-      if (normalizedTargetTab === ROLE_TAB) {
-        const role = parseRoleContent(entry.content);
-        if (!canCreateWorkbenchRoleInType(
-          entries
-            .filter((item) => item.id !== entry.id && item.tab === ROLE_TAB)
-            .map((item) => parseRoleContent(item.content).type),
-          targetType,
-        )) return entry;
-        if (role.type === targetType) return entry;
-        changed = true;
-        return {
-          ...entry,
+    let nextDraggedEntry = draggedEntry;
+    if (normalizedTargetTab === ROLE_TAB) {
+      const role = parseRoleContent(draggedEntry.content);
+      if (isMaleProtagonistRoleTypeChangeLocked(role.type, targetType)) return;
+      if (!canCreateWorkbenchRoleInType(
+        entries
+          .filter((item) => item.id !== draggedEntry.id && item.tab === ROLE_TAB)
+          .map((item) => parseRoleContent(item.content).type),
+        targetType,
+      )) return;
+      if (role.type !== targetType) {
+        nextDraggedEntry = {
+          ...draggedEntry,
           content: stringifyRoleContent({
             ...role,
             type: targetType,
-            history: appendRoleHistory(role.history, createRoleHistoryVersion(entry, role)),
+            history: appendRoleHistory(role.history, createRoleHistoryVersion(draggedEntry, role)),
           }),
           updatedAt: new Date().toLocaleString('zh-CN'),
         };
       }
-
-      if (isSettingLikeTab(normalizedTargetTab)) {
-        const setting = parseSettingContent(entry.content);
-        if (setting.type === targetType) return entry;
-        changed = true;
-        return {
-          ...entry,
+    } else if (isSettingLikeTab(normalizedTargetTab)) {
+      const setting = parseSettingContent(draggedEntry.content);
+      if (setting.type !== targetType) {
+        nextDraggedEntry = {
+          ...draggedEntry,
           content: stringifySettingContent({ ...setting, type: targetType }),
           updatedAt: new Date().toLocaleString('zh-CN'),
         };
       }
+    }
 
-      return entry;
-    });
-    if (!changed) return;
+    const nextEntries = entries.filter((entry) => entry.id !== entryId);
+    const targetTypeLastIndex = nextEntries.reduce((lastIndex, entry, index) => {
+      if (entry.tab !== normalizedTargetTab) return lastIndex;
+      if (normalizedTargetTab === ROLE_TAB) {
+        return parseRoleContent(entry.content).type === targetType ? index : lastIndex;
+      }
+      if (isSettingLikeTab(normalizedTargetTab)) {
+        return parseSettingContent(entry.content).type === targetType ? index : lastIndex;
+      }
+      return lastIndex;
+    }, -1);
+    if (targetTypeLastIndex >= 0) {
+      nextEntries.splice(targetTypeLastIndex + 1, 0, nextDraggedEntry);
+    } else {
+      const targetTabLastIndex = nextEntries.reduce((lastIndex, entry, index) => (
+        entry.tab === normalizedTargetTab ? index : lastIndex
+      ), -1);
+      nextEntries.splice(targetTabLastIndex + 1, 0, nextDraggedEntry);
+    }
     persist(nextEntries);
     if (normalizedTargetTab === ROLE_TAB) {
       setExpandedRoleTypes((prev) => new Set(prev).add(targetType));
       return;
     }
     setExpandedSettingTypes((prev) => new Set(prev).add(targetType));
+  };
+
+  const createLibraryEntryPreviewForType = (
+    entry: WorkbenchLibraryEntry,
+    targetTab: string,
+    targetType: string,
+  ) => {
+    const normalizedTargetTab = normalizeTabName(targetTab);
+    if (normalizedTargetTab === ROLE_TAB) {
+      const role = parseRoleContent(entry.content);
+      return {
+        ...entry,
+        content: stringifyRoleContent({ ...role, type: targetType }),
+      };
+    }
+    if (isSettingLikeTab(normalizedTargetTab)) {
+      const setting = parseSettingContent(entry.content);
+      return {
+        ...entry,
+        content: stringifySettingContent({ ...setting, type: targetType }),
+      };
+    }
+    return entry;
+  };
+
+  const getPreviewedLibraryGroupEntries = (
+    groupEntries: WorkbenchLibraryEntry[],
+    tab: string,
+    type: string,
+  ) => {
+    if (!libraryEntryDropPreview || libraryEntryDropPreview.tab !== tab) return groupEntries;
+    const draggedEntry = entries.find((entry) => entry.id === libraryEntryDropPreview.entryId);
+    if (!draggedEntry || draggedEntry.tab !== tab) return groupEntries;
+
+    const groupWithoutDraggedEntry = groupEntries.filter((entry) => entry.id !== draggedEntry.id);
+    if (libraryEntryDropPreview.type !== type) {
+      return groupWithoutDraggedEntry.length === groupEntries.length ? groupEntries : groupWithoutDraggedEntry;
+    }
+
+    const previewEntry = createLibraryEntryPreviewForType(draggedEntry, tab, type);
+    const nextEntries = [...groupWithoutDraggedEntry];
+    if (libraryEntryDropPreview.mode === 'target-position' && libraryEntryDropPreview.targetEntryId) {
+      const targetIndex = groupEntries.findIndex((entry) => entry.id === libraryEntryDropPreview.targetEntryId);
+      const insertIndex = targetIndex >= 0 ? Math.min(targetIndex, nextEntries.length) : nextEntries.length;
+      nextEntries.splice(insertIndex, 0, previewEntry);
+      return nextEntries;
+    }
+    nextEntries.push(previewEntry);
+    return nextEntries;
+  };
+
+  const getLibraryEntriesForType = (tab: string, type: string) => {
+    const normalizedTab = normalizeTabName(tab);
+    return entries.filter((entry) => {
+      if (entry.tab !== normalizedTab) return false;
+      if (normalizedTab === ROLE_TAB) return parseRoleContent(entry.content).type === type;
+      if (isSettingLikeTab(normalizedTab)) return parseSettingContent(entry.content).type === type;
+      return false;
+    });
+  };
+
+  const getLibraryEntryTargetIdAtPreviewIndex = (
+    targetTab: string,
+    targetType: string,
+    previewIndex: number,
+  ) => {
+    const groupEntries = getLibraryEntriesForType(targetTab, targetType);
+    if (!Number.isInteger(previewIndex) || groupEntries.length === 0) return null;
+    const targetIndex = Math.max(0, Math.min(previewIndex, groupEntries.length - 1));
+    return groupEntries[targetIndex]?.id ?? null;
   };
 
   const moveLibraryEntryBefore = (
@@ -4778,6 +5904,7 @@ export function WorkbenchLibraryPanel({
     if (normalizedTargetTab === ROLE_TAB) {
       const role = parseRoleContent(draggedEntry.content);
       if (role.type !== targetType) {
+        if (isMaleProtagonistRoleTypeChangeLocked(role.type, targetType)) return;
         if (!canCreateWorkbenchRoleInType(
           entries
             .filter((entry) => entry.id !== draggedEntry.id && entry.tab === ROLE_TAB)
@@ -4806,9 +5933,9 @@ export function WorkbenchLibraryPanel({
     }
 
     const nextEntries = entries.filter((entry) => entry.id !== entryId);
-    const targetIndex = nextEntries.findIndex((entry) => entry.id === targetEntryId);
+    const targetIndex = entries.findIndex((entry) => entry.id === targetEntryId);
     if (targetIndex < 0) return;
-    nextEntries.splice(targetIndex, 0, nextDraggedEntry);
+    nextEntries.splice(Math.min(targetIndex, nextEntries.length), 0, nextDraggedEntry);
     persist(nextEntries);
     if (normalizedTargetTab === ROLE_TAB) {
       setExpandedRoleTypes((prev) => new Set(prev).add(targetType));
@@ -4817,20 +5944,190 @@ export function WorkbenchLibraryPanel({
     setExpandedSettingTypes((prev) => new Set(prev).add(targetType));
   };
 
+  const commitLibraryEntryDropPreview = (preview: LibraryEntryDropPreviewState) => {
+    if (!preview) return;
+    if (preview.mode === 'group-end') {
+      moveLibraryEntryToType(preview.entryId, preview.tab, preview.type);
+      return;
+    }
+    if (!preview.targetEntryId) return;
+    const targetEntry = entries.find((entry) => entry.id === preview.targetEntryId);
+    if (!targetEntry) return;
+    moveLibraryEntryBefore(preview.entryId, preview.targetEntryId, targetEntry.tab, preview.type);
+  };
+
   const handleLibraryEntryDragStart = (
     event: ReactDragEvent<HTMLElement>,
     entry: WorkbenchLibraryEntry,
     type: string,
   ) => {
+    libraryDropHandledRef.current = false;
+    setLibraryEntryDropPreviewState(null);
     setDraggingLibraryEntry({ entryId: entry.id, tab: entry.tab, type });
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/plain', entry.id);
+  };
+
+  const beginLibraryEntryPointerDrag = (
+    event: ReactPointerEvent<HTMLElement>,
+    entry: WorkbenchLibraryEntry,
+    type: string,
+  ) => {
+    if (event.button !== 0) return;
+    const target = event.target as HTMLElement;
+    const nestedButton = target.closest('button');
+    if (nestedButton && nestedButton !== event.currentTarget) return;
+    libraryEntryPointerDragRef.current?.cleanup();
+    const dragElement = event.currentTarget;
+    const pointerId = event.pointerId;
+    const activationTimer = window.setTimeout(() => {
+      const pointerDrag = libraryEntryPointerDragRef.current;
+      if (pointerDrag?.pointerId === pointerId) pointerDrag.armed = true;
+    }, LIBRARY_ENTRY_POINTER_DRAG_ACTIVATION_DELAY_MS);
+    const handleWindowPointerMove = (moveEvent: PointerEvent) => {
+      if (moveEvent.pointerId !== pointerId) return;
+      updateLibraryEntryPointerPreviewAt(moveEvent.clientX, moveEvent.clientY);
+      if (libraryEntryPointerDragRef.current?.active) moveEvent.preventDefault();
+    };
+    const handleWindowPointerEnd = (endEvent: PointerEvent) => {
+      if (endEvent.pointerId !== pointerId) return;
+      finishLibraryEntryPointerDragById(pointerId);
+    };
+    window.addEventListener('pointermove', handleWindowPointerMove, { capture: true });
+    window.addEventListener('pointerup', handleWindowPointerEnd, { capture: true });
+    window.addEventListener('pointercancel', handleWindowPointerEnd, { capture: true });
+    libraryEntryPointerDragRef.current = {
+      entryId: entry.id,
+      tab: entry.tab,
+      type,
+      pointerId,
+      element: dragElement,
+      startX: event.clientX,
+      startY: event.clientY,
+      active: false,
+      armed: false,
+      activationTimer,
+      lastPreviewX: event.clientX,
+      lastPreviewY: event.clientY,
+      lastPreviewTargetKey: null,
+      cleanup: () => {
+        window.clearTimeout(activationTimer);
+        window.removeEventListener('pointermove', handleWindowPointerMove, { capture: true });
+        window.removeEventListener('pointerup', handleWindowPointerEnd, { capture: true });
+        window.removeEventListener('pointercancel', handleWindowPointerEnd, { capture: true });
+      },
+    };
+    try {
+      dragElement.setPointerCapture(pointerId);
+    } catch {
+      // Pointer capture is a drag nicety; the document fallback below still works.
+    }
+  };
+
+  const updateLibraryEntryPointerPreviewAt = (clientX: number, clientY: number) => {
+    const pointerDrag = libraryEntryPointerDragRef.current;
+    if (!pointerDrag) return;
+    const distance = Math.hypot(clientX - pointerDrag.startX, clientY - pointerDrag.startY);
+    if (!pointerDrag.active && !pointerDrag.armed) return;
+    if (!pointerDrag.active && distance < LIBRARY_ENTRY_POINTER_DRAG_ACTIVATION_DISTANCE) return;
+    if (!pointerDrag.active) {
+      pointerDrag.active = true;
+      libraryPointerSuppressClickRef.current = true;
+      libraryDropHandledRef.current = false;
+      setDraggingLibraryEntry({ entryId: pointerDrag.entryId, tab: pointerDrag.tab, type: pointerDrag.type });
+    }
+
+    const hoverElement = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+    const hoverEntry = hoverElement?.closest('[data-library-entry-id]') as HTMLElement | null;
+    if (hoverEntry?.dataset.libraryEntryId && hoverEntry.dataset.libraryEntryTab === pointerDrag.tab) {
+      const targetType = hoverEntry.dataset.libraryEntryType || pointerDrag.type;
+      const previewIndex = Number(hoverEntry.dataset.libraryEntryPreviewIndex);
+      const targetEntryId = getLibraryEntryTargetIdAtPreviewIndex(pointerDrag.tab, targetType, previewIndex)
+        ?? hoverEntry.dataset.libraryEntryId;
+      const targetKey = `entry:${targetEntryId}`;
+      if (
+        targetEntryId === pointerDrag.entryId
+        && (!pointerDrag.lastPreviewTargetKey || pointerDrag.lastPreviewTargetKey === targetKey)
+      ) return;
+      if (hasLibraryEntryPointerRetargetedTooSoon(pointerDrag, targetKey, clientX, clientY)) return;
+      rememberLibraryEntryPointerPreviewTarget(pointerDrag, targetKey, clientX, clientY);
+      const current = libraryEntryDropPreviewRef.current;
+      setLibraryEntryDropPreviewState(
+        current?.entryId === pointerDrag.entryId
+          && current.tab === pointerDrag.tab
+          && current.type === targetType
+          && current.mode === 'target-position'
+          && current.targetEntryId === targetEntryId
+          ? current
+          : {
+            entryId: pointerDrag.entryId,
+            tab: pointerDrag.tab,
+            type: targetType,
+            mode: 'target-position',
+            targetEntryId,
+          },
+      );
+      return;
+    }
+
+    const hoverGroup = hoverElement?.closest('[data-library-group-type]') as HTMLElement | null;
+    if (hoverGroup?.dataset.libraryGroupTab === pointerDrag.tab) {
+      if (!isLibraryPointerPastGroupEntries(hoverGroup, pointerDrag, clientY)) return;
+      const targetType = hoverGroup.dataset.libraryGroupType || pointerDrag.type;
+      const targetKey = `group:${targetType}`;
+      if (hasLibraryEntryPointerRetargetedTooSoon(pointerDrag, targetKey, clientX, clientY)) return;
+      rememberLibraryEntryPointerPreviewTarget(pointerDrag, targetKey, clientX, clientY);
+      const current = libraryEntryDropPreviewRef.current;
+      setLibraryDropTarget((previous) => (
+        previous?.tab === pointerDrag.tab && previous.type === targetType
+          ? previous
+          : { tab: pointerDrag.tab, type: targetType }
+      ));
+      setLibraryEntryDropPreviewState(
+        current?.entryId === pointerDrag.entryId
+          && current.tab === pointerDrag.tab
+          && current.type === targetType
+          && current.mode === 'group-end'
+          ? current
+          : { entryId: pointerDrag.entryId, tab: pointerDrag.tab, type: targetType, mode: 'group-end' },
+      );
+    }
+  };
+
+  const updateLibraryEntryPointerPreview = (event: ReactPointerEvent<HTMLElement>) => {
+    updateLibraryEntryPointerPreviewAt(event.clientX, event.clientY);
+    if (libraryEntryPointerDragRef.current?.active) event.preventDefault();
+  };
+
+  const finishLibraryEntryPointerDragById = (pointerId: number) => {
+    const pointerDrag = libraryEntryPointerDragRef.current;
+    if (!pointerDrag || pointerDrag.pointerId !== pointerId) return;
+    libraryEntryPointerDragRef.current = null;
+    pointerDrag.cleanup();
+    try {
+      pointerDrag.element.releasePointerCapture(pointerId);
+    } catch {
+      // Ignore release failures when capture was not established.
+    }
+    if (!pointerDrag?.active) return;
+    commitLibraryEntryDropPreview(libraryEntryDropPreviewRef.current);
+    setDraggingLibraryEntry(null);
+    setLibraryDropTarget(null);
+    setLibraryEntryDropPreviewState(null);
+    window.setTimeout(() => {
+      libraryPointerSuppressClickRef.current = false;
+    }, 0);
+  };
+
+  const finishLibraryEntryPointerDrag = (event: ReactPointerEvent<HTMLElement>) => {
+    finishLibraryEntryPointerDragById(event.pointerId);
   };
 
   const handleLibraryCategoryDragOver = (
     event: ReactDragEvent<HTMLElement>,
     tab: string,
     type: string,
+    shouldPreviewGroupEnd = false,
   ) => {
     if (!draggingLibraryEntry || draggingLibraryEntry.tab !== tab) return;
     event.preventDefault();
@@ -4838,12 +6135,23 @@ export function WorkbenchLibraryPanel({
     setLibraryDropTarget((current) => (
       current?.tab === tab && current.type === type ? current : { tab, type }
     ));
+    if (!shouldPreviewGroupEnd) return;
+    const current = libraryEntryDropPreviewRef.current;
+    setLibraryEntryDropPreviewState(
+      current?.entryId === draggingLibraryEntry.entryId
+        && current.tab === tab
+        && current.type === type
+        && current.mode === 'group-end'
+        ? current
+        : { entryId: draggingLibraryEntry.entryId, tab, type, mode: 'group-end' },
+    );
   };
 
   const handleLibraryCategoryDragLeave = (event: ReactDragEvent<HTMLElement>) => {
     const relatedTarget = event.relatedTarget;
     if (relatedTarget instanceof Node && event.currentTarget.contains(relatedTarget)) return;
     setLibraryDropTarget(null);
+    setLibraryEntryDropPreviewState(null);
   };
 
   const handleLibraryCategoryDrop = (
@@ -4853,40 +6161,84 @@ export function WorkbenchLibraryPanel({
   ) => {
     event.preventDefault();
     const entryId = draggingLibraryEntry?.entryId || event.dataTransfer.getData('text/plain');
+    libraryDropHandledRef.current = true;
     setLibraryDropTarget(null);
+    setLibraryEntryDropPreviewState(null);
     setDraggingLibraryEntry(null);
     if (!entryId || draggingLibraryEntry?.tab !== tab) return;
     moveLibraryEntryToType(entryId, tab, type);
   };
 
-  const handleLibraryEntryDragOver = (event: ReactDragEvent<HTMLElement>) => {
+  const handleLibraryEntryDragOver = (
+    event: ReactDragEvent<HTMLElement>,
+    targetEntry: WorkbenchLibraryEntry,
+    targetType: string,
+    previewIndex?: number,
+  ) => {
     if (!draggingLibraryEntry) return;
     event.preventDefault();
     event.stopPropagation();
     event.dataTransfer.dropEffect = 'move';
+    if (draggingLibraryEntry.tab !== targetEntry.tab) return;
+    const targetEntryId = typeof previewIndex === 'number'
+      ? getLibraryEntryTargetIdAtPreviewIndex(targetEntry.tab, targetType, previewIndex) ?? targetEntry.id
+      : targetEntry.id;
+    if (draggingLibraryEntry.entryId === targetEntryId && !libraryEntryDropPreviewRef.current) return;
+    setLibraryDropTarget(null);
+    const current = libraryEntryDropPreviewRef.current;
+    setLibraryEntryDropPreviewState(
+      current?.entryId === draggingLibraryEntry.entryId
+        && current.tab === targetEntry.tab
+        && current.type === targetType
+        && current.mode === 'target-position'
+        && current.targetEntryId === targetEntryId
+        ? current
+        : {
+          entryId: draggingLibraryEntry.entryId,
+          tab: targetEntry.tab,
+          type: targetType,
+          mode: 'target-position',
+          targetEntryId,
+        },
+    );
   };
 
   const handleLibraryEntryDrop = (
     event: ReactDragEvent<HTMLElement>,
     targetEntry: WorkbenchLibraryEntry,
     targetType: string,
+    previewIndex?: number,
   ) => {
     event.preventDefault();
     event.stopPropagation();
     const entryId = draggingLibraryEntry?.entryId || event.dataTransfer.getData('text/plain');
+    const currentPreview = libraryEntryDropPreviewRef.current;
+    libraryDropHandledRef.current = true;
     setLibraryDropTarget(null);
+    setLibraryEntryDropPreviewState(null);
     setDraggingLibraryEntry(null);
     if (!entryId || draggingLibraryEntry?.tab !== targetEntry.tab) return;
-    moveLibraryEntryBefore(entryId, targetEntry.id, targetEntry.tab, targetType);
+    if (currentPreview?.entryId === entryId) {
+      commitLibraryEntryDropPreview(currentPreview);
+      return;
+    }
+    const targetEntryId = typeof previewIndex === 'number'
+      ? getLibraryEntryTargetIdAtPreviewIndex(targetEntry.tab, targetType, previewIndex) ?? targetEntry.id
+      : targetEntry.id;
+    moveLibraryEntryBefore(entryId, targetEntryId, targetEntry.tab, targetType);
   };
 
   const handleLibraryEntryDragEnd = () => {
+    if (!libraryDropHandledRef.current) commitLibraryEntryDropPreview(libraryEntryDropPreviewRef.current);
+    libraryDropHandledRef.current = false;
     setDraggingLibraryEntry(null);
     setLibraryDropTarget(null);
+    setLibraryEntryDropPreviewState(null);
   };
 
   const deleteEntry = (id: string) => {
     const target = entries.find((entry) => entry.id === id);
+    if (target && isLockedDefaultSettingEntry(target)) return;
     if (target?.tab === ROLE_TAB && isMaleProtagonistRoleType(parseRoleContent(target.content).type)) return;
     if (target?.tab === BRAINSTORM_TAB) {
       persist(entries.filter((entry) => entry.id !== id));
@@ -4927,6 +6279,10 @@ export function WorkbenchLibraryPanel({
 
   const confirmDeleteEntry = (entry: Pick<WorkbenchLibraryEntry, 'id' | 'title' | 'tab'>) => {
     const target = entries.find((item) => item.id === entry.id);
+    if (target && isLockedDefaultSettingEntry(target)) {
+      setEntryMenu(null);
+      return;
+    }
     if (target?.tab === ROLE_TAB && isMaleProtagonistRoleType(parseRoleContent(target.content).type)) {
       setEntryMenu(null);
       return;
@@ -4938,6 +6294,10 @@ export function WorkbenchLibraryPanel({
   const handleConfirmDeleteEntry = () => {
     if (!pendingEntryDelete) return;
     const target = entries.find((entry) => entry.id === pendingEntryDelete.id);
+    if (target && isLockedDefaultSettingEntry(target)) {
+      setPendingEntryDelete(null);
+      return;
+    }
     if (target?.tab === ROLE_TAB && isMaleProtagonistRoleType(parseRoleContent(target.content).type)) {
       setPendingEntryDelete(null);
       return;
@@ -4951,7 +6311,6 @@ export function WorkbenchLibraryPanel({
     event.preventDefault();
     event.stopPropagation();
     if (type === UNCATEGORIZED_TYPE) return;
-    if (kind === 'role' && DEFAULT_ROLE_TYPES.includes(type)) return;
     setEntryMenu(null);
     setCategoryMenu({ kind, type, x: event.clientX, y: event.clientY });
   };
@@ -4959,6 +6318,11 @@ export function WorkbenchLibraryPanel({
   const openEntryMenu = (event: MouseEvent<HTMLElement>, entry: WorkbenchLibraryEntry) => {
     event.preventDefault();
     event.stopPropagation();
+    if (isLockedDefaultSettingEntry(entry)) {
+      setCategoryMenu(null);
+      setEntryMenu(null);
+      return;
+    }
     setCategoryMenu(null);
     setEntryMenu({
       entryId: entry.id,
@@ -4999,6 +6363,7 @@ export function WorkbenchLibraryPanel({
 
   const deleteSettingType = (type: string) => {
     if (type === UNCATEGORIZED_TYPE) return;
+    if (DEFAULT_SETTING_TYPES.includes(type)) return;
     const nextCustomTypes = customSettingTypes.filter((item) => item !== type);
     setCustomSettingTypes(nextCustomTypes);
     localStorage.setItem(getSettingTypesStorageKey(storageKey), JSON.stringify(nextCustomTypes));
@@ -5034,6 +6399,11 @@ export function WorkbenchLibraryPanel({
     setCategoryMenu(null);
   };
 
+  const openClearSettingsConfirmFromMenu = (target: ClearSettingsTarget) => {
+    setCategoryMenu(null);
+    openClearSettingsConfirm(target);
+  };
+
   const deleteEntryFromMenu = () => {
     if (!entryMenu) return;
     const target = { id: entryMenu.entryId, title: entryMenu.title, tab: entryMenu.tab };
@@ -5043,6 +6413,11 @@ export function WorkbenchLibraryPanel({
 
   const renameEntryFromMenu = () => {
     if (!entryMenu) return;
+    const target = entries.find((entry) => entry.id === entryMenu.entryId);
+    if (target && isLockedDefaultSettingEntry(target)) {
+      setEntryMenu(null);
+      return;
+    }
     setPendingEntryRename({ id: entryMenu.entryId, title: entryMenu.title, tab: entryMenu.tab });
     setEntryRenameDraft(entryMenu.title);
     setEntryMenu(null);
@@ -5055,6 +6430,11 @@ export function WorkbenchLibraryPanel({
 
   const confirmEntryRename = () => {
     if (!pendingEntryRename) return;
+    const target = entries.find((entry) => entry.id === pendingEntryRename.id);
+    if (target && isLockedDefaultSettingEntry(target)) {
+      closeEntryRenameDialog();
+      return;
+    }
     const nextTitle = entryRenameDraft.trim();
     if (!nextTitle) return;
     persist(entries.map((entry) => (
@@ -5136,31 +6516,127 @@ export function WorkbenchLibraryPanel({
     ]));
     return merged;
   }, [customSettingTypes, hiddenSettingTypes, settingEntries]);
+  const otherSettingLinkTabs = useMemo<OtherSettingLinkTab[]>(() => {
+    const createSettingEntry = (entry: WorkbenchLibraryEntry, tabId: OtherSettingLinkTabId, tabTitle: string): OtherSettingLinkEntry => {
+      const setting = parseSettingContent(entry.content);
+      const text = getSettingEntryBody(entry);
+      return {
+        id: `setting:${entry.id}`,
+        entryId: entry.id,
+        source: 'setting',
+        tabId,
+        tabTitle,
+        groupName: setting.type || UNCATEGORIZED_TYPE,
+        title: entry.title,
+        type: setting.type || UNCATEGORIZED_TYPE,
+        text,
+        wordCount: countTextWords(text),
+      };
+    };
+    const createSettingGroups = (tabId: OtherSettingLinkTabId, tabTitle: string, domain: string | null) => (
+      settingTypeOptions
+        .filter((type) => (domain ? getSettingTypeWorkspaceDomain(type) === domain : !getSettingTypeWorkspaceDomain(type)))
+        .map((type) => ({
+          name: type,
+          entries: settingEntries
+            .filter((entry) => parseSettingContent(entry.content).type === type)
+            .map((entry) => createSettingEntry(entry, tabId, tabTitle)),
+        }))
+        .filter((group) => group.entries.length > 0)
+    );
+    return OTHER_SETTING_LINK_TABS.map((tab): OtherSettingLinkTab => {
+      if (tab.id === 'roles') {
+        return {
+          ...tab,
+          groups: groupedRoles
+            .map((group) => ({
+              name: group.type,
+              entries: group.entries.map((entry): OtherSettingLinkEntry => {
+                const role = parseRoleContent(entry.content);
+                const text = buildRoleReaderContent(entry, role);
+                return {
+                  id: `role:${entry.id}`,
+                  entryId: entry.id,
+                  source: 'role',
+                  tabId: tab.id,
+                  tabTitle: tab.title,
+                  groupName: group.type,
+                  title: entry.title,
+                  type: role.type,
+                  text,
+                  wordCount: countTextWords(text),
+                };
+              }),
+            }))
+            .filter((group) => group.entries.length > 0),
+        };
+      }
+      const domainByTabId: Partial<Record<OtherSettingLinkTabId, string | null>> = {
+        work: null,
+        factions: 'setting:faction',
+        items: 'setting:item',
+        monsters: 'setting:monster',
+        foreshadow: 'setting:foreshadow',
+      };
+      return {
+        ...tab,
+        groups: createSettingGroups(tab.id, tab.title, domainByTabId[tab.id] ?? null),
+      };
+    });
+  }, [getSettingTypeWorkspaceDomain, groupedRoles, settingEntries, settingTypeOptions]);
+  const otherSettingLinkFlatEntries = useMemo(() => (
+    otherSettingLinkTabs.flatMap((tab) => tab.groups.flatMap((group) => group.entries))
+  ), [otherSettingLinkTabs]);
+  const activeOtherSettingLinkEntries = useMemo(() => {
+    if (!isWorkbenchAssociationRuntimeCurrent(activeTabConfig.associationSessionId)) return [];
+    const entryMap = new Map(otherSettingLinkFlatEntries.map((entry) => [entry.id, entry]));
+    return normalizeLinkedOtherSettingIds(activeTabConfig.linkedOtherSettingIds)
+      .map((id) => entryMap.get(id))
+      .filter((entry): entry is OtherSettingLinkEntry => Boolean(entry));
+  }, [activeTabConfig.associationSessionId, activeTabConfig.linkedOtherSettingIds, otherSettingLinkFlatEntries]);
   const deletableRoleEntries = useMemo(() => (
     roleEntries.filter((entry) => !isMaleProtagonistRoleType(parseRoleContent(entry.content).type))
   ), [roleEntries]);
-  const activeClearSettingsCategoryTarget: ClearSettingsTarget = activeTab === SETTING_TAB && outlineSettingScope === 'character' ? 'roleCategories' : 'settingCategories';
-  const activeClearSettingsEntryTarget: ClearSettingsTarget = activeTab === SETTING_TAB && outlineSettingScope === 'character' ? 'roleEntries' : 'settingEntries';
-  const clearSettingsTargetMeta: Record<ClearSettingsTarget, { label: string; count: number; description: string }> = {
+  const deletableSettingEntries = useMemo(() => (
+    settingEntries.filter((entry) => !isLockedDefaultSettingEntry(entry))
+  ), [settingEntries]);
+  const selectedSettingClearDomain = activeTab === SETTING_TAB && outlineSettingScope !== 'character'
+    ? getSelectedSettingWorkspaceDomain()
+    : null;
+  const settingClearItemLabel = selectedSettingClearDomain ? SETTING_CLEAR_DOMAIN_LABELS[selectedSettingClearDomain] ?? '设定' : '设定';
+  const deletableSettingEntriesForClear = useMemo(() => (
+    deletableSettingEntries.filter((entry) => {
+      const typeDomain = getSettingTypeWorkspaceDomain(parseSettingContent(entry.content).type);
+      return selectedSettingClearDomain ? typeDomain === selectedSettingClearDomain : !typeDomain;
+    })
+  ), [deletableSettingEntries, getSettingTypeWorkspaceDomain, selectedSettingClearDomain]);
+  const deletableSettingTypes = useMemo(() => (
+    settingTypeOptions.filter((type) => {
+      if (type === UNCATEGORIZED_TYPE || DEFAULT_SETTING_TYPES.includes(type)) return false;
+      const typeDomain = getSettingTypeWorkspaceDomain(type);
+      return selectedSettingClearDomain ? typeDomain === selectedSettingClearDomain : !typeDomain;
+    })
+  ), [getSettingTypeWorkspaceDomain, selectedSettingClearDomain, settingTypeOptions]);
+  const clearSettingsTargetMeta: Record<ClearSettingsTarget, ClearSettingsMeta> = {
     settingCategories: {
-      label: '分组',
-      count: settingTypeOptions.filter((type) => type !== UNCATEGORIZED_TYPE).length,
-      description: `确定要清空全部设定分组吗？当前会删除全部作品设定，并隐藏核心设定这类分组。`,
+      label: `${settingClearItemLabel}分组`,
+      count: deletableSettingTypes.length,
+      description: `确定要清空全部自建${settingClearItemLabel}分组吗？默认分组和默认${settingClearItemLabel}条目会保留。`,
     },
     settingEntries: {
-      label: '设定',
-      count: settingEntries.length,
-      description: `确定要清空全部设定吗？当前共有 ${settingEntries.length} 条设定会被删除，分类分组会保留。`,
+      label: settingClearItemLabel,
+      count: deletableSettingEntriesForClear.length,
+      description: `确定要清空全部自建${settingClearItemLabel}吗？当前共有 ${deletableSettingEntriesForClear.length} 条可删除${settingClearItemLabel}会被删除，默认${settingClearItemLabel}条目会保留。`,
     },
     roleCategories: {
-      label: '分组',
+      label: '角色分组',
       count: roleTypeOptions.filter((type) => type !== UNCATEGORIZED_TYPE && !isMaleProtagonistRoleType(type)).length,
       description: `确定要清空全部人物分组吗？当前会删除除男主角以外的人物设定，并保留不可删除的男主角设定。`,
     },
     roleEntries: {
-      label: '设定',
+      label: '角色',
       count: deletableRoleEntries.length,
-      description: `确定要清空全部人物设定吗？当前共有 ${deletableRoleEntries.length} 条可删除人物设定会被删除，男主角会保留。`,
+      description: `确定要清空全部角色吗？当前共有 ${deletableRoleEntries.length} 个可删除角色会被删除，男主角会保留。`,
     },
   };
 
@@ -5446,20 +6922,48 @@ export function WorkbenchLibraryPanel({
     document.body,
   ) : null;
 
+  const categoryMenuClearCategoryTarget: ClearSettingsTarget = categoryMenu?.kind === 'role' ? 'roleCategories' : 'settingCategories';
+  const categoryMenuClearEntryTarget: ClearSettingsTarget = categoryMenu?.kind === 'role' ? 'roleEntries' : 'settingEntries';
+  const canDeleteCategoryFromMenu = categoryMenu ? (
+    categoryMenu.kind === 'role'
+      ? !DEFAULT_ROLE_TYPES.includes(categoryMenu.type) && !isMaleProtagonistRoleType(categoryMenu.type)
+      : !DEFAULT_SETTING_TYPES.includes(categoryMenu.type)
+  ) : false;
   const categoryContextMenu = categoryMenu ? createPortal(
     <div
       data-library-context-menu="true"
       onClick={(event) => event.stopPropagation()}
       onContextMenu={(event) => event.preventDefault()}
-      className="fixed z-[10000] min-w-[132px] rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
+      className="fixed z-[10000] min-w-[168px] rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
       style={{ left: categoryMenu.x, top: categoryMenu.y }}
     >
       <button
-        onClick={deleteCategoryFromMenu}
-        className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50"
+        type="button"
+        onClick={() => openClearSettingsConfirmFromMenu(categoryMenuClearEntryTarget)}
+        disabled={clearSettingsTargetMeta[categoryMenuClearEntryTarget].count === 0}
+        className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
       >
-        删除分类
+        清空{clearSettingsTargetMeta[categoryMenuClearEntryTarget].label}
       </button>
+      <button
+        type="button"
+        onClick={() => openClearSettingsConfirmFromMenu(categoryMenuClearCategoryTarget)}
+        disabled={clearSettingsTargetMeta[categoryMenuClearCategoryTarget].count === 0}
+        className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+      >
+        清空{clearSettingsTargetMeta[categoryMenuClearCategoryTarget].label}
+      </button>
+      {canDeleteCategoryFromMenu ? (
+        <>
+          <div className="my-1 border-t border-gray-100" />
+          <button
+            onClick={deleteCategoryFromMenu}
+            className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50"
+          >
+            删除分组
+          </button>
+        </>
+      ) : null}
     </div>,
     document.body,
   ) : null;
@@ -5600,6 +7104,235 @@ export function WorkbenchLibraryPanel({
       >
         {promptDisableMenu.disabled ? '启用' : '禁用'}
       </button>
+    </div>,
+    document.body,
+  ) : null;
+  const selectedOtherSettingLinkTab = otherSettingLinkTabs.find((tab) => tab.id === otherSettingReaderTabId) ?? otherSettingLinkTabs[0];
+  const otherSettingReaderKeyword = otherSettingReaderQuery.trim();
+  const visibleOtherSettingGroups = (selectedOtherSettingLinkTab?.groups ?? [])
+    .map((group) => ({
+      ...group,
+      entries: group.entries.filter((entry) => (
+        !otherSettingReaderKeyword
+        || `${entry.title} ${entry.type} ${entry.groupName} ${entry.text}`.includes(otherSettingReaderKeyword)
+      )),
+    }))
+    .filter((group) => group.entries.length > 0);
+  const selectedOtherSettingLinkEntry = otherSettingLinkFlatEntries.find((entry) => entry.id === otherSettingReaderPreviewId)
+    ?? visibleOtherSettingGroups.flatMap((group) => group.entries)[0]
+    ?? otherSettingLinkFlatEntries[0]
+    ?? null;
+  const draftOtherSettingLinkEntries = Array.from(draftOtherSettingReaderIds)
+    .map((id) => otherSettingLinkFlatEntries.find((entry) => entry.id === id))
+    .filter((entry): entry is OtherSettingLinkEntry => Boolean(entry));
+  const draftOtherSettingLinkWordCount = draftOtherSettingLinkEntries.reduce((sum, entry) => sum + entry.wordCount, 0);
+  const otherSettingReaderModal = isOtherSettingReaderOpen ? createPortal(
+    <div
+      className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/35"
+      onClick={closeOtherSettingReader}
+    >
+      <div
+        className="modal-sharp flex h-[min(760px,90vh)] w-[min(1180px,94vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">关联其他设定</h3>
+            <p className="mt-1 text-xs text-gray-400">读取设定页面下所有设定条目，勾选后作为本次 AI 请求的参考上下文。</p>
+          </div>
+          <button
+            onClick={closeOtherSettingReader}
+            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            title="关闭"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-100 px-5">
+          {otherSettingLinkTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setOtherSettingReaderTabId(tab.id);
+                const firstEntry = tab.groups.flatMap((group) => group.entries)[0];
+                if (firstEntry) setOtherSettingReaderPreviewId(firstEntry.id);
+              }}
+              className={`h-9 rounded-xl border px-3 text-sm font-black transition-colors ${
+                selectedOtherSettingLinkTab?.id === tab.id
+                  ? 'border-[#9BEFFC] bg-[#EAF9FD] text-[#08AACE]'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-[#9BEFFC] hover:text-[#08AACE]'
+              }`}
+            >
+              {tab.title}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={selectAllCurrentOtherSettingLinkTab}
+            disabled={!selectedOtherSettingLinkTab?.groups.some((group) => group.entries.length > 0)}
+            className="ml-auto h-9 shrink-0 rounded-xl border border-[#08AACE] bg-white px-3 text-xs font-black text-[#08AACE] hover:bg-[#EAF9FD] disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300"
+          >
+            关联所有
+          </button>
+          <label className="relative w-[260px]">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
+            <input
+              value={otherSettingReaderQuery}
+              onChange={(event) => setOtherSettingReaderQuery(event.target.value)}
+              placeholder="搜索设定条目"
+              className="h-9 w-full rounded-xl border border-gray-200 bg-slate-50 pl-9 pr-3 text-xs font-bold text-slate-700 outline-none transition-colors focus:border-[#08AACE] focus:bg-white"
+            />
+          </label>
+        </div>
+
+        <div className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)_280px]">
+          <aside className="editor-scrollbar min-h-0 overflow-y-auto border-r border-gray-100 bg-slate-50 px-1 py-2">
+            {visibleOtherSettingGroups.length === 0 ? (
+              <div className="flex h-full min-h-[260px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white text-sm font-bold text-gray-400">
+                暂无匹配设定
+              </div>
+            ) : visibleOtherSettingGroups.map((group) => (
+              <section key={group.name} className="mb-3">
+                <div className="flex h-11 items-center gap-2 rounded-xl border border-cyan-100 bg-cyan-50 px-2 text-sm font-black text-slate-800">
+                  <Folder className="h-4 w-4 text-[#08AACE]" />
+                  <span className="min-w-0 flex-1 truncate">{group.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleVisibleOtherSettingLinkGroupSelection(group.entries)}
+                    className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-black text-[#08AACE] hover:bg-[#EAF9FD]"
+                  >
+                    全选
+                  </button>
+                  <span className="rounded-full bg-white px-2 py-0.5 text-xs text-slate-500">{group.entries.length}</span>
+                </div>
+                <div className="mt-1 space-y-1">
+                  {group.entries.map((entry) => {
+                    const selected = selectedOtherSettingLinkEntry?.id === entry.id;
+                    const linked = draftOtherSettingReaderIds.has(entry.id);
+                    return (
+                      <div
+                        key={entry.id}
+                        className={`flex min-h-[38px] w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm font-black transition-colors ${
+                          selected
+                            ? 'border border-[#08AACE] bg-[#EAF9FD] text-[#078fb0]'
+                            : 'border border-transparent bg-white text-slate-700 hover:bg-[#EAF9FD] hover:text-[#08AACE]'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          aria-label={`${draftOtherSettingReaderIds.has(entry.id) ? '取消选择' : '选择'}${entry.title}`}
+                          onClick={() => toggleDraftOtherSettingReaderId(entry.id)}
+                          className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border text-sm font-black transition-colors ${
+                            linked
+                              ? 'border-[#08AACE] bg-[#08AACE] text-white'
+                              : 'border-slate-300 bg-white text-transparent hover:border-[#08AACE] hover:text-[#08AACE]'
+                          }`}
+                        >
+                          ✓
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOtherSettingReaderPreviewId(entry.id)}
+                          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                        >
+                          <span className="min-w-0 flex-1 truncate">{entry.title}</span>
+                          <span className="shrink-0 text-xs text-[#08AACE]">{entry.wordCount}字</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </aside>
+
+          <main className="editor-scrollbar min-h-0 overflow-y-auto p-6">
+            {selectedOtherSettingLinkEntry ? (
+              <article className="flex min-h-full flex-col">
+                <div className="mb-4 flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <h4 className="truncate text-2xl font-black text-gray-900">{selectedOtherSettingLinkEntry.title}</h4>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-xl px-3 py-2 text-xs font-black ${
+                      draftOtherSettingReaderIds.has(selectedOtherSettingLinkEntry.id)
+                        ? 'border border-[#08AACE] bg-[#EAF9FD] text-[#08AACE]'
+                        : 'border border-slate-200 bg-slate-50 text-slate-400'
+                    }`}
+                  >
+                    {draftOtherSettingReaderIds.has(selectedOtherSettingLinkEntry.id) ? '已勾选' : '未勾选'}
+                  </span>
+                </div>
+                <div className="min-h-[360px] flex-1 whitespace-pre-wrap rounded-2xl border-2 border-slate-900 bg-white p-5 text-sm font-bold leading-8 text-slate-600">
+                  {selectedOtherSettingLinkEntry.text || '暂无内容'}
+                </div>
+              </article>
+            ) : (
+              <div className="flex h-full min-h-[360px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm font-bold text-slate-300">
+                请选择左侧设定后查看完整内容
+              </div>
+            )}
+          </main>
+
+          <aside className="editor-scrollbar min-h-0 overflow-y-auto border-l border-gray-100 bg-cyan-50 p-4">
+            <div className="mb-3 text-sm font-black text-[#08AACE]">本次将关联</div>
+            <div className="space-y-2">
+              {draftOtherSettingLinkEntries.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-cyan-200 bg-white p-4 text-center text-xs font-bold leading-5 text-slate-400">
+                  还没有选择其他设定
+                </div>
+              ) : draftOtherSettingLinkEntries.map((entry) => (
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => {
+                    setOtherSettingReaderTabId(entry.tabId);
+                    setOtherSettingReaderPreviewId(entry.id);
+                  }}
+                  className="w-full rounded-xl bg-white px-3 py-2 text-left shadow-sm transition-colors hover:bg-[#F8FEFF]"
+                >
+                  <div className="truncate text-sm font-black text-slate-800">{entry.title}</div>
+                  <div className="mt-1 truncate text-xs font-bold text-slate-400">{entry.tabTitle} / {entry.groupName}</div>
+                </button>
+              ))}
+            </div>
+            <div className="mt-4 rounded-xl border border-cyan-200 bg-white p-3 text-xs font-bold leading-5 text-slate-500">
+              确认后，这些条目会合并成“关联其他设定”上下文，与当前设定、脑洞来源互斥。
+            </div>
+          </aside>
+        </div>
+
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 bg-white px-5 py-4">
+          <div className="min-w-0 truncate text-sm font-bold text-gray-500">
+            已选 {draftOtherSettingLinkEntries.length} 项 · 共 {draftOtherSettingLinkWordCount} 字
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setDraftOtherSettingReaderIds(new Set())}
+              className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-50"
+            >
+              清空
+            </button>
+            <button
+              type="button"
+              onClick={closeOtherSettingReader}
+              className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-50"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              onClick={confirmOtherSettingReaderSelection}
+              className="rounded-xl bg-[#08AACE] px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-[#0796B8]"
+            >
+              确认关联
+            </button>
+          </div>
+        </div>
+      </div>
     </div>,
     document.body,
   ) : null;
@@ -6247,11 +7980,14 @@ export function WorkbenchLibraryPanel({
               {groupedRoles.map((group) => {
                 const expanded = expandedRoleTypes.has(group.type);
                 const isDropTarget = libraryDropTarget?.tab === ROLE_TAB && libraryDropTarget.type === group.type;
+                const previewEntries = getPreviewedLibraryGroupEntries(group.entries, ROLE_TAB, group.type);
                 const GroupFolderIcon = expanded ? FolderOpen : Folder;
                 return (
                   <div
                     key={group.type}
-                    onDragOver={(event) => handleLibraryCategoryDragOver(event, ROLE_TAB, group.type)}
+                    data-library-group-tab={ROLE_TAB}
+                    data-library-group-type={group.type}
+                    onDragOver={(event) => handleLibraryCategoryDragOver(event, ROLE_TAB, group.type, group.entries.length === 0)}
                     onDragLeave={handleLibraryCategoryDragLeave}
                     onDrop={(event) => handleLibraryCategoryDrop(event, ROLE_TAB, group.type)}
                     className={isDropTarget ? 'rounded-xl ring-2 ring-brand/40' : undefined}
@@ -6272,26 +8008,42 @@ export function WorkbenchLibraryPanel({
                       >
                         <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
                         <span className="min-w-0 flex-1 truncate leading-none">{group.type}</span>
-                        <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{group.entries.length}</span>
+                        <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{previewEntries.length}</span>
                       </button>
                     </div>
                     {expanded && (
                       <div className="editor-scrollbar mt-1 max-h-[464px] space-y-1 overflow-y-auto pr-1">
-                        {group.entries.map((entry) => {
+                        {previewEntries.map((entry, previewIndex) => {
                           const showPinAction = shouldShowRolePinAction(group.type);
                           return (
                             <div
                               key={entry.id}
-                              draggable
+                              data-library-entry-id={entry.id}
+                              data-library-entry-tab={ROLE_TAB}
+                              data-library-entry-type={group.type}
+                              data-library-entry-preview-index={previewIndex}
                               onDragStart={(event) => handleLibraryEntryDragStart(event, entry, group.type)}
+                              onDragOver={(event) => handleLibraryEntryDragOver(event, entry, group.type, previewIndex)}
+                              onDrop={(event) => handleLibraryEntryDrop(event, entry, group.type, previewIndex)}
                               onDragEnd={handleLibraryEntryDragEnd}
+                              onPointerDown={(event) => beginLibraryEntryPointerDrag(event, entry, group.type)}
+                              onPointerMove={updateLibraryEntryPointerPreview}
+                              onPointerUp={finishLibraryEntryPointerDrag}
+                              onPointerCancel={finishLibraryEntryPointerDrag}
                               onContextMenu={(event) => openEntryMenu(event, entry)}
-                              onClick={() => setSelectedId(entry.id)}
-                              className={`flex w-full cursor-pointer items-center gap-2 rounded-xl border px-4 py-2 text-left text-sm font-black transition-colors ${
+                              onClick={(event) => {
+                                if (libraryPointerSuppressClickRef.current) {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  return;
+                                }
+                                setSelectedId(entry.id);
+                              }}
+                              className={`flex w-full cursor-default select-none items-center gap-2 rounded-xl border px-4 py-2 text-left text-sm font-black transition-[background-color,border-color,box-shadow,opacity,transform] duration-150 ${
                                 selectedEntry?.id === entry.id
                                   ? 'border-transparent xy-selected-mint-bg text-gray-900'
                                   : 'border-transparent bg-white text-gray-600 hover:border-gray-200'
-                              } ${draggingLibraryEntry?.entryId === entry.id ? 'opacity-60' : ''}`}
+                              } ${draggingLibraryEntry?.entryId === entry.id ? 'cursor-grabbing scale-[0.99] opacity-80 ring-2 ring-[#08AACE]/35 shadow-sm' : ''}`}
                             >
                               <span className="min-w-0 flex-1 truncate">{entry.title}</span>
                               {showPinAction && (
@@ -6482,6 +8234,31 @@ export function WorkbenchLibraryPanel({
     const activeIsSettingLike = isOutlineCharacterScope || isSettingLikeTab(effectiveLibraryTab);
     const activeIsBrainstorm = activeTab === BRAINSTORM_TAB;
     const currentSelectedSetting = activeIsSettingLike && currentSelectedEntry ? parseSettingContent(currentSelectedEntry.content) : null;
+    const currentSelectedSettingIsLockedDefault = currentSelectedEntry ? isLockedDefaultSettingEntry(currentSelectedEntry) : false;
+    const currentStructuredSettingFieldSet = currentSelectedEntry ? getStructuredSettingFieldSet(currentSelectedEntry, currentSelectedSetting) : null;
+    const currentStructuredSettingFields = currentSelectedSetting && currentStructuredSettingFieldSet
+      ? parseStructuredSettingFields(currentSelectedSetting.body, currentStructuredSettingFieldSet)
+      : {};
+    const currentStructuredTitleFieldLabel = currentStructuredSettingFieldSet?.titleFieldLabel;
+    const currentStructuredTitleFieldGroupTitle = currentStructuredSettingFieldSet?.titleFieldGroupTitle ?? currentStructuredSettingFieldSet?.groups?.[0]?.title;
+    const currentStructuredActiveGroup = currentStructuredSettingFieldSet?.groups?.find((group) => group.title === activeStructuredSettingTab)
+      ?? currentStructuredSettingFieldSet?.groups?.[0];
+    const currentStructuredActiveGroupWordCount = currentStructuredActiveGroup?.fieldKeys.reduce((total, fieldKey) => (
+      total + countTextWords(currentStructuredSettingFields[fieldKey] ?? '')
+    ), 0) ?? 0;
+    const updateStructuredSettingField = (key: string, value: string) => {
+      if (!currentSelectedEntry || !currentSelectedSetting || !currentStructuredSettingFieldSet) return;
+      updateEntry(currentSelectedEntry.id, {
+        content: stringifySettingContent({
+          ...currentSelectedSetting,
+          structuredFieldSetId: currentStructuredSettingFieldSet.id,
+          body: stringifyStructuredSettingFields({
+            ...currentStructuredSettingFields,
+            [key]: value,
+          }, currentStructuredSettingFieldSet),
+        }),
+      });
+    };
     const currentSelectedRole = isOutlineCharacterScope && currentSelectedEntry ? parseRoleContent(currentSelectedEntry.content) : null;
     const currentSelectedRoleIsMaleProtagonist = Boolean(currentSelectedRole && isMaleProtagonistRoleType(currentSelectedRole.type));
     const currentSelectedRoleLifeStatus = currentSelectedRoleIsMaleProtagonist ? '存活' : currentSelectedRole?.lifeStatus;
@@ -6491,6 +8268,7 @@ export function WorkbenchLibraryPanel({
         ...updates,
         ...(updates.type ? { type: normalizeWorkbenchRoleType(updates.type) } : {}),
       };
+      if (normalizedUpdates.type && isMaleProtagonistRoleTypeChangeLocked(currentSelectedRole.type, normalizedUpdates.type)) return;
       const nextType = normalizeWorkbenchRoleType(normalizedUpdates.type ?? currentSelectedRole.type);
       if (isMaleProtagonistRoleType(nextType)) normalizedUpdates.lifeStatus = '存活';
       if (normalizedUpdates.type && !canCreateWorkbenchRoleInType(
@@ -6519,7 +8297,7 @@ export function WorkbenchLibraryPanel({
       ? !isOutlineCharacterScope && activeSettingLinkSource === 'current'
       : Boolean(activeTabConfig.promptDisabled);
     const latestUsefulAiOutput = activeIsBrainstorm ? getLatestUsefulAiText(aiResult || aiOutput) : aiOutput.trim();
-    const smartImportLocked = Boolean(activeTabConfig.smartImportLocked);
+    const smartImportLocked = activeTabConfig.smartImportLocked !== false;
     const activeSettingWorkspaceDomain = selectedSettingWorkspaceDomain;
     const activeSettingWorkspaceType = selectedSettingWorkspaceType;
     const visibleSettingTypeOptions = activeSettingWorkspaceDomain
@@ -6541,11 +8319,10 @@ export function WorkbenchLibraryPanel({
     const settingWorkspaceDomainTabs = [
       { id: 'work', label: '作品设定', count: visibleWorkSettingCount, type: null },
       { id: 'character', label: '人物设定', count: visibleRoleCount, type: null },
-      { id: 'setting:faction', label: '势力设定', type: 'setting:faction' },
+      { id: 'setting:faction', label: '势力地图', type: 'setting:faction' },
       { id: 'setting:item', label: '道具资源', type: 'setting:item' },
-      { id: 'setting:location', label: '地点场景', type: 'setting:location' },
+      { id: 'setting:monster', label: '怪物图鉴', type: 'setting:monster' },
       { id: 'setting:foreshadow', label: '伏笔线索', type: 'setting:foreshadow' },
-      { id: 'setting:rule', label: '书写规则', type: 'setting:rule' },
     ];
     const getSettingWorkspaceTabCount = (type: string | null, fallback?: number) => (
       type
@@ -6732,6 +8509,7 @@ export function WorkbenchLibraryPanel({
         {libraryAiLogModal}
         {clearSettingsConfirmDialog}
         {promptDisableContextMenu}
+        {otherSettingReaderModal}
         {brainstormReaderModal}
         {brainstormRecycleModal}
         {clearBrainstormRecycleConfirmDialog}
@@ -6752,41 +8530,26 @@ export function WorkbenchLibraryPanel({
         >
           {settingWorkspaceTopTabs}
           <aside
-            className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-3 py-3"
+            className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-1 py-2"
             style={activeTab === SETTING_TAB && !activeIsBrainstorm ? { gridColumn: 1, gridRow: 2 } : undefined}
           >
-          {false && activeTab === SETTING_TAB && !activeIsBrainstorm && (
-            <div className="flex h-11 shrink-0 items-center overflow-hidden rounded-[22px] bg-slate-200/80 p-1 shadow-inner">
-              {([
-                { value: 'work', label: '作品设定', count: visibleWorkSettingCount },
-                { value: 'character', label: '人物设定', count: visibleRoleCount },
-              ] as const).map(({ value, label, count }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setOutlineSettingScope(value)}
-                  className={`flex h-full min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[18px] px-2.5 text-sm font-black transition-colors ${
-                    outlineSettingScope === value
-                      ? 'bg-white text-[#08AACE] shadow-sm'
-                      : 'bg-transparent text-slate-950 hover:bg-white/45 hover:text-[#08AACE]'
-                  }`}
-                >
-                  <span className="shrink-0 whitespace-nowrap">{label}</span>
-                  <span className={outlineSettingScope === value ? 'text-[#08AACE]' : 'text-slate-500'}>{count}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className={`${activeIsBrainstorm ? 'mt-0' : 'mt-2'} xy-setting-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto space-y-1`}>
+          <div
+            className={`${activeIsBrainstorm ? 'mt-0' : 'mt-2'} xy-setting-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto space-y-1 ${
+              activeSettingSidebarScrollKey === 'setting-sidebar' ? 'scrollbar-active' : ''
+            }`}
+            onScroll={() => handleSettingSidebarScroll('setting-sidebar')}
+          >
             {(activeIsSettingLike ? groupedSettingEntries : [{ type: UNCATEGORIZED_TYPE, entries: currentEntries }]).map((group) => {
               const expanded = isOutlineCharacterScope ? expandedRoleTypes.has(group.type) : expandedSettingTypes.has(group.type);
               const isDropTarget = libraryDropTarget?.tab === effectiveLibraryTab && libraryDropTarget.type === group.type;
+              const previewEntries = getPreviewedLibraryGroupEntries(group.entries, effectiveLibraryTab, group.type);
               const GroupFolderIcon = expanded ? FolderOpen : Folder;
               return (
                 <div
                   key={group.type}
-                  onDragOver={(event) => handleLibraryCategoryDragOver(event, effectiveLibraryTab, group.type)}
+                  data-library-group-tab={effectiveLibraryTab}
+                  data-library-group-type={group.type}
+                  onDragOver={(event) => handleLibraryCategoryDragOver(event, effectiveLibraryTab, group.type, group.entries.length === 0)}
                   onDragLeave={handleLibraryCategoryDragLeave}
                   onDrop={(event) => handleLibraryCategoryDrop(event, effectiveLibraryTab, group.type)}
                   className={isDropTarget ? 'rounded-xl ring-2 ring-brand/40' : undefined}
@@ -6818,30 +8581,44 @@ export function WorkbenchLibraryPanel({
                     >
                       <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
                       <span className="min-w-0 flex-1 truncate leading-none">{group.type}</span>
-                      <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{group.entries.length}</span>
+                      <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{previewEntries.length}</span>
                     </button>
                   </div>
                   {expanded && (
-                    <div className="editor-scrollbar mt-0.5 max-h-[760px] space-y-0.5 overflow-y-auto pr-1">
-                      {group.entries.length === 0 ? (
-                        <p className="px-3 py-4 text-xs text-gray-400">{isOutlineCharacterScope ? '暂无角色' : activeTab === SETTING_TAB ? '暂无设定' : `该分类下暂无${activeTab}`}</p>
-                      ) : group.entries.map((entry) => {
+                    <div className="mt-0.5 space-y-0.5">
+                      {previewEntries.length === 0 ? (
+                        <div className={WORKBENCH_LIBRARY_ENTRY_EMPTY_CLASS}>
+                          {isOutlineCharacterScope ? '暂无角色' : activeTab === SETTING_TAB ? '暂无设定' : `该分类下暂无${activeTab}`}
+                        </div>
+                      ) : previewEntries.map((entry, previewIndex) => {
                         const parsed = activeIsSettingLike ? parseSettingContent(entry.content) : null;
                         const role = isOutlineCharacterScope ? parseRoleContent(entry.content) : null;
                         const entryWordCount = countTextWords(role ? getRoleReadableContent(role) : parsed ? parsed.body : entry.content);
                         return (
                           <button
                             key={entry.id}
-                            draggable
+                            data-library-entry-id={entry.id}
+                            data-library-entry-tab={effectiveLibraryTab}
+                            data-library-entry-type={role?.type ?? parsed?.type ?? group.type}
+                            data-library-entry-preview-index={previewIndex}
                             onDragStart={(event) => handleLibraryEntryDragStart(event, entry, role?.type ?? parsed?.type ?? group.type)}
-                            onDragOver={handleLibraryEntryDragOver}
-                            onDrop={(event) => handleLibraryEntryDrop(event, entry, role?.type ?? parsed?.type ?? group.type)}
+                            onDragOver={(event) => handleLibraryEntryDragOver(event, entry, role?.type ?? parsed?.type ?? group.type, previewIndex)}
+                            onDrop={(event) => handleLibraryEntryDrop(event, entry, role?.type ?? parsed?.type ?? group.type, previewIndex)}
                             onDragEnd={handleLibraryEntryDragEnd}
+                            onPointerDown={(event) => beginLibraryEntryPointerDrag(event, entry, role?.type ?? parsed?.type ?? group.type)}
+                            onPointerMove={updateLibraryEntryPointerPreview}
+                            onPointerUp={finishLibraryEntryPointerDrag}
+                            onPointerCancel={finishLibraryEntryPointerDrag}
                             onContextMenu={(event) => openEntryMenu(event, entry)}
-                            onClick={() => {
+                            onClick={(event) => {
+                              if (libraryPointerSuppressClickRef.current) {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                return;
+                              }
                               setSelectedIdForTab(effectiveLibraryTab, entry.id);
                             }}
-                            className={`group w-full rounded-lg border px-3 py-1.5 text-left text-sm font-black leading-5 transition-colors ${
+                            className={`${WORKBENCH_LIBRARY_ENTRY_BUTTON_CLASS} ${
                               currentSelectedEntry?.id === entry.id
                                 ? activeIsBrainstorm
                                   ? 'border-transparent xy-selected-mint-bg text-gray-900'
@@ -6849,10 +8626,10 @@ export function WorkbenchLibraryPanel({
                                 : activeIsBrainstorm
                                   ? 'border-transparent bg-white text-gray-700 hover:border-gray-200 hover:bg-gray-50'
                                   : 'border-transparent bg-white text-gray-600 hover:border-gray-200'
-                            } ${draggingLibraryEntry?.entryId === entry.id ? 'opacity-60' : ''}`}
+                            } ${draggingLibraryEntry?.entryId === entry.id ? 'cursor-grabbing scale-[0.99] opacity-80 ring-2 ring-[#08AACE]/35 shadow-sm' : ''}`}
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <span className="truncate text-sm font-black text-gray-700">{entry.title}</span>
+                              <span className="min-w-0 truncate text-sm font-black text-gray-700">{entry.title}</span>
                               <span className="flex shrink-0 items-center gap-2">
                                 <span className={activeIsBrainstorm ? 'text-xs font-black text-gray-400' : 'rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-bold text-[#08AACE]'}>
                                   <WordCountText value={entryWordCount} compact />
@@ -6893,44 +8670,6 @@ export function WorkbenchLibraryPanel({
                   {isOutlineCharacterScope ? '角色' : '设定'}
                 </button>
               </div>
-              {activeTab === SETTING_TAB && (
-                <div className="grid h-11 grid-cols-3 overflow-hidden rounded-[22px] border border-red-100 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.08)]">
-                  <div
-                    className="flex min-w-0 items-center justify-center whitespace-nowrap border-r border-red-100 bg-red-50 px-2 text-sm font-black text-red-500"
-                    aria-disabled="true"
-                  >
-                    清空
-                  </div>
-                  <button
-                    type="button"
-                    aria-label="清空分组"
-                    disabled={clearSettingsTargetMeta[activeClearSettingsCategoryTarget].count === 0}
-                    title="清空所有分组"
-                    onClick={() => openClearSettingsConfirm(activeClearSettingsCategoryTarget)}
-                    className={`min-w-0 whitespace-nowrap border-r border-red-100 px-2 text-sm font-black transition-colors ${
-                      clearSettingsTargetMeta[activeClearSettingsCategoryTarget].count === 0
-                        ? 'cursor-not-allowed bg-white text-slate-300'
-                        : 'bg-white text-slate-700 hover:bg-red-50 hover:text-red-500'
-                    }`}
-                  >
-                    分组
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="清空设定"
-                    disabled={clearSettingsTargetMeta[activeClearSettingsEntryTarget].count === 0}
-                    title={isOutlineCharacterScope ? '清空当前人物设定列表' : '清空当前设定列表'}
-                    onClick={() => openClearSettingsConfirm(activeClearSettingsEntryTarget)}
-                    className={`min-w-0 whitespace-nowrap px-2 text-sm font-black transition-colors ${
-                      clearSettingsTargetMeta[activeClearSettingsEntryTarget].count === 0
-                        ? 'cursor-not-allowed bg-white text-slate-300'
-                        : 'bg-white text-slate-700 hover:bg-red-50 hover:text-red-500'
-                    }`}
-                  >
-                    设定
-                  </button>
-                </div>
-              )}
             </div>
           )}
           {activeIsBrainstorm && (
@@ -7010,49 +8749,185 @@ export function WorkbenchLibraryPanel({
               </div>
             </div>
           ) : currentSelectedEntry ? (
-            <div className="flex min-h-0 flex-1 flex-col p-5">
-              <div className="mb-6 flex shrink-0 items-start justify-between gap-4">
-                <div className="max-w-full" style={{ width: fieldSizeSpecs.settingName.width }}>
-                  <div
-                    className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-setting-name xy-floating-custom-field-size ${currentSelectedEntry.title.trim() ? 'xy-has-value' : ''}`}
-                    style={getFieldSizeStyle('settingName')}
-                  >
-                    <input
-                      data-no-modal-drag="true"
-                      value={currentSelectedEntry.title}
-                      onChange={(event) => updateEntry(currentSelectedEntry.id, { title: event.target.value })}
-                      placeholder="设定名"
-                    />
-                    <label>设定名</label>
+            <div className={`flex min-h-0 flex-1 flex-col ${currentStructuredTitleFieldLabel ? 'px-5 py-3' : 'p-5'}`}>
+              {currentStructuredTitleFieldLabel ? (
+                <header className="shrink-0 border-b border-slate-200 pb-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <label
+                      data-testid="structured-title-field"
+                      className="relative flex h-[48px] w-[168px] shrink-0 items-center rounded-[20px] border-2 border-slate-950 bg-white px-4 py-0"
+                    >
+                      <span className="xy-border-embedded-transparent-backplate absolute left-5 top-0 z-10 -translate-y-1/2 pr-2 text-sm font-medium leading-5 text-slate-500">
+                        {currentStructuredTitleFieldLabel}
+                      </span>
+                      <input
+                        data-no-modal-drag="true"
+                        aria-label={currentStructuredTitleFieldLabel}
+                        value={currentSelectedEntry.title}
+                        disabled={currentSelectedSettingIsLockedDefault}
+                        onChange={(event) => updateEntry(currentSelectedEntry.id, { title: event.target.value })}
+                        placeholder={currentStructuredTitleFieldLabel}
+                        title={currentSelectedSettingIsLockedDefault ? '默认设定条目已锁定，不能改名' : undefined}
+                        className={`h-7 w-full bg-transparent text-lg font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400 ${
+                          currentSelectedSettingIsLockedDefault ? 'cursor-not-allowed text-slate-500' : ''
+                        }`}
+                      />
+                    </label>
+                    {currentStructuredSettingFieldSet?.groups ? (
+                      <div aria-hidden="true" className="h-9 w-[112px] shrink-0" />
+                    ) : null}
+                  </div>
+                  {currentStructuredSettingFieldSet?.groups ? (
+                    <div className="mt-3 flex items-center justify-between gap-4 overflow-x-auto pb-1">
+                      <SettingSegmentedTabs
+                        tabs={STRUCTURED_SETTING_TABS}
+                        activeTab={activeStructuredSettingTab}
+                        onChange={setActiveStructuredSettingTab}
+                      />
+                      {activeStructuredSettingTab !== '确认' && currentStructuredActiveGroup ? (
+                        <p className="shrink-0 text-xs font-black text-slate-400">
+                          {currentStructuredActiveGroup.title}共 {currentStructuredActiveGroupWordCount} 字
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </header>
+              ) : (
+                <div className="mb-6 flex shrink-0 items-start justify-between gap-4">
+                  <div className="max-w-full" style={{ width: fieldSizeSpecs.settingName.width }}>
+                    <div
+                      className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-setting-name xy-floating-custom-field-size ${currentSelectedEntry.title.trim() ? 'xy-has-value' : ''}`}
+                      style={getFieldSizeStyle('settingName')}
+                    >
+                      <input
+                        data-no-modal-drag="true"
+                        value={currentSelectedEntry.title}
+                        disabled={currentSelectedSettingIsLockedDefault}
+                        onChange={(event) => updateEntry(currentSelectedEntry.id, { title: event.target.value })}
+                        placeholder="设定名"
+                        title={currentSelectedSettingIsLockedDefault ? '默认设定条目已锁定，不能改名' : undefined}
+                        className={currentSelectedSettingIsLockedDefault ? 'cursor-not-allowed text-slate-500' : undefined}
+                      />
+                      <label>设定名</label>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
               <div className="relative min-h-0 flex-1">
-                <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${(currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content).trim() ? 'xy-has-value' : ''}`}>
-                  <textarea
-                    data-no-modal-drag="true"
-                    value={currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content}
-                    onFocus={() => setActiveLibraryFontTarget('settingPreview')}
-                    onChange={(event) => updateEntry(currentSelectedEntry.id, {
-                      content: currentSelectedSetting
-                        ? stringifySettingContent({ ...currentSelectedSetting, body: event.target.value })
-                        : event.target.value,
-                    })}
-                    placeholder="这里显示选中的设定内容，也可以直接编辑。"
-                    className="editor-scrollbar text-sm leading-7 text-gray-700"
-                    style={{ fontSize: settingPreviewFontSize }}
-                  />
-                  <label className="xy-floating-title-count">设定预览 <span><WordCountText value={countTextWords(currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content)} /></span></label>
-                </div>
-              </div>
-              <div className="mt-6 flex shrink-0 justify-end">
-                <button
-                  type="button"
-                  onClick={() => confirmDeleteEntry(currentSelectedEntry)}
-                  className="rounded-xl bg-red-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-red-600"
-                >
-                  删除
-                </button>
+                {currentStructuredSettingFieldSet ? (
+                  currentStructuredSettingFieldSet.groups ? (
+                    (() => {
+                      const activeGroup = currentStructuredActiveGroup;
+                      return (
+                    <div className="flex h-full min-h-0 flex-col gap-3">
+                      {!currentStructuredTitleFieldLabel ? (
+                        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 pb-3">
+                          <SettingSegmentedTabs
+                            tabs={STRUCTURED_SETTING_TABS}
+                            activeTab={activeStructuredSettingTab}
+                            onChange={setActiveStructuredSettingTab}
+                          />
+                          {activeStructuredSettingTab !== '确认' && activeGroup ? (
+                            <p className="shrink-0 text-xs font-black text-slate-400">
+                              {activeGroup.title}共 {currentStructuredActiveGroupWordCount} 字
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {activeStructuredSettingTab === '确认' ? (
+                        <section className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3">
+                          <h3 className="text-sm font-black text-cyan-800">确认更新</h3>
+                          <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
+                            AI 反馈进入确认区后，左侧显示未更新前内容，右侧显示更新后内容，确认后才写入状态设定。
+                          </p>
+                        </section>
+                      ) : activeGroup ? (
+                        <section
+                          key={activeGroup.title}
+                          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+                        >
+                          <div data-testid="structured-setting-fields" className="grid min-h-0 flex-1 grid-cols-2 gap-3 px-1 pb-1 pr-2 pt-3">
+                            {activeGroup.fieldKeys.map((fieldKey) => {
+                              const field = currentStructuredSettingFieldSet.fields.find((item) => item.key === fieldKey);
+                              if (!field) return null;
+                              const value = currentStructuredSettingFields[field.key] ?? '';
+                              return (
+                                <div
+                                  key={field.key}
+                                  className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count xy-floating-visible-placeholder xy-structured-setting-field min-h-0 flex-1 ${value.trim() ? 'xy-has-value' : ''}`}
+                                >
+                                  <textarea
+                                    data-no-modal-drag="true"
+                                    aria-label={field.title}
+                                    value={value}
+                                    onFocus={() => setActiveLibraryFontTarget('settingPreview')}
+                                    onChange={(event) => updateStructuredSettingField(field.key, event.target.value)}
+                                    onScroll={() => handleSettingSidebarScroll(`setting-textarea:${currentStructuredSettingFieldSet.id}:${field.key}`)}
+                                    placeholder={field.placeholder ?? `填写${field.title}`}
+                                    className={`scrollbar-scroll-only scrollbar-half-width text-sm leading-7 text-gray-700 ${
+                                      activeSettingSidebarScrollKey === `setting-textarea:${currentStructuredSettingFieldSet.id}:${field.key}` ? 'scrollbar-active' : ''
+                                    }`}
+                                    style={{ fontSize: settingPreviewFontSize }}
+                                  />
+                                  <label className="xy-floating-title-count">{field.title} <span><WordCountText value={countTextWords(value)} /></span></label>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </section>
+                      ) : null}
+                    </div>
+                      );
+                    })()
+                  ) : (
+                    <div className={`grid h-full min-h-0 ${currentStructuredSettingFieldSet.gridColumnsClassName} gap-4`}>
+                      {currentStructuredSettingFieldSet.fields.map((field) => {
+                        const value = currentStructuredSettingFields[field.key] ?? '';
+                        return (
+                          <div
+                            key={field.key}
+                            className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count xy-floating-visible-placeholder xy-structured-setting-field min-h-0 flex-1 ${value.trim() ? 'xy-has-value' : ''}`}
+                          >
+                            <textarea
+                              data-no-modal-drag="true"
+                              aria-label={field.title}
+                              value={value}
+                              onFocus={() => setActiveLibraryFontTarget('settingPreview')}
+                              onChange={(event) => updateStructuredSettingField(field.key, event.target.value)}
+                              onScroll={() => handleSettingSidebarScroll(`setting-textarea:${currentStructuredSettingFieldSet.id}:${field.key}`)}
+                              placeholder={field.placeholder ?? `填写${field.title}`}
+                              className={`scrollbar-scroll-only scrollbar-half-width text-sm leading-7 text-gray-700 ${
+                                activeSettingSidebarScrollKey === `setting-textarea:${currentStructuredSettingFieldSet.id}:${field.key}` ? 'scrollbar-active' : ''
+                              }`}
+                              style={{ fontSize: settingPreviewFontSize }}
+                            />
+                            <label className="xy-floating-title-count">{field.title} <span><WordCountText value={countTextWords(value)} /></span></label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )
+                ) : (
+                  <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${(currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content).trim() ? 'xy-has-value' : ''}`}>
+                    <textarea
+                      data-no-modal-drag="true"
+                      value={currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content}
+                      onFocus={() => setActiveLibraryFontTarget('settingPreview')}
+                      onChange={(event) => updateEntry(currentSelectedEntry.id, {
+                        content: currentSelectedSetting
+                          ? stringifySettingContent({ ...currentSelectedSetting, body: event.target.value })
+                          : event.target.value,
+                      })}
+                      onScroll={() => handleSettingSidebarScroll(`setting-textarea:${currentSelectedEntry.id}`)}
+                      placeholder="这里显示选中的设定内容，也可以直接编辑。"
+                      className={`scrollbar-scroll-only scrollbar-half-width text-sm leading-7 text-gray-700 ${
+                        activeSettingSidebarScrollKey === `setting-textarea:${currentSelectedEntry.id}` ? 'scrollbar-active' : ''
+                      }`}
+                      style={{ fontSize: settingPreviewFontSize }}
+                    />
+                    <label className="xy-floating-title-count">设定预览 <span><WordCountText value={countTextWords(currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content)} /></span></label>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -7430,14 +9305,16 @@ export function WorkbenchLibraryPanel({
                       type="button"
                       onClick={() => {
                         if (activeSettingLinkSource === 'current') {
-                          updateActiveTabConfig({ settingLinkSource: null, promptDisabled: false });
+                          updateActiveTabConfig({ associationSessionId: null, settingLinkSource: null, promptDisabled: false });
                           return;
                         }
                         updateActiveTabConfig({
+                          associationSessionId: getWorkbenchAssociationRuntimeId(),
                           settingLinkSource: 'current',
                           loadedBrainstormId: null,
                           loadedBrainstormTitle: '',
                           loadedBrainstormText: '',
+                          linkedOtherSettingIds: [],
                           promptDisabled: true,
                         });
                       }}
@@ -7451,6 +9328,35 @@ export function WorkbenchLibraryPanel({
                     >
                       当前设定
                     </button>
+                    {activeSettingLinkSource === 'other' ? (
+                      <div className="flex border-l border-[#08B3D9]/30">
+                        <button
+                          type="button"
+                          onClick={openOtherSettingReader}
+                          className="w-[96px] px-1.5 text-sm font-bold text-gray-700 transition-colors hover:bg-[#E9FAFE] hover:text-[#08B3D9]"
+                          title="重新选择关联其他设定"
+                        >
+                          其他设定
+                        </button>
+                        <button
+                          type="button"
+                          onClick={clearActiveLinkedOtherSettings}
+                          className="grid w-9 place-items-center bg-red-500 text-white transition-colors hover:bg-red-600"
+                          title="取消关联其他设定"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={openOtherSettingReader}
+                        className="w-[86px] border-l border-[#08B3D9]/30 bg-white px-2 text-sm font-bold text-gray-600 transition-colors hover:bg-[#E9FAFE] hover:text-[#08B3D9]"
+                        title="关联其他设定"
+                      >
+                        其他设定
+                      </button>
+                    )}
                     {activeSettingLinkSource === 'brainstorm' ? (
                       <div className="flex border-l border-[#08B3D9]/30">
                         <button
@@ -7501,17 +9407,21 @@ export function WorkbenchLibraryPanel({
                       type="button"
                       onClick={smartImportSettings}
                       disabled={smartImportLocked}
-                      className="min-w-0 flex-1 whitespace-nowrap px-3 text-sm font-bold text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-300"
+                      className={`min-w-0 flex-1 whitespace-nowrap px-3 text-sm font-bold transition-colors ${
+                        smartImportLocked
+                          ? 'cursor-not-allowed bg-gray-50 text-gray-300'
+                          : 'bg-[#08AACE] text-white hover:bg-[#0796B8]'
+                      }`}
                     >
                       智能导入设定
                     </button>
                     <button
                       type="button"
                       onClick={() => updateActiveTabConfig({ smartImportLocked: !smartImportLocked })}
-                      className={`flex h-full w-10 shrink-0 items-center justify-center border-l border-gray-200 transition-colors ${
+                      className={`flex h-full w-10 shrink-0 items-center justify-center border-l transition-colors ${
                         smartImportLocked
-                          ? 'bg-white text-amber-500 hover:bg-amber-50'
-                          : 'bg-white text-amber-500 hover:bg-amber-50'
+                          ? 'border-amber-200 bg-amber-50 text-amber-500 hover:bg-amber-100 hover:text-amber-600'
+                          : 'border-[#08AACE]/30 bg-[#EAF9FD] text-[#08AACE] hover:bg-[#DDF5FB] hover:text-[#078fb0]'
                       }`}
                       title={smartImportLocked ? '解锁智能导入设定' : '锁定智能导入设定'}
                     >
@@ -7841,17 +9751,20 @@ export function WorkbenchLibraryPanel({
         };
       })
       .filter((item) => item.content.trim());
-    const inheritedDetailOutlineSettingIds = isDetailOutlineTab && !activeTabConfig.detailOutlineReaderTouched && activeTabConfig.detailOutlineReaderSettingIds === undefined
+    const hasCurrentDetailOutlineReaderSession = isWorkbenchAssociationRuntimeCurrent(activeTabConfig.detailOutlineReaderSessionId);
+    const inheritedDetailOutlineSettingIds = hasCurrentDetailOutlineReaderSession && isDetailOutlineTab && !activeTabConfig.detailOutlineReaderTouched && activeTabConfig.detailOutlineReaderSettingIds === undefined
       ? detailOutlineReaderSettingItems.map((item) => item.id)
-      : activeTabConfig.detailOutlineReaderSettingIds ?? [];
+      : hasCurrentDetailOutlineReaderSession ? activeTabConfig.detailOutlineReaderSettingIds ?? [] : [];
     const selectedDetailOutlineSettingIds = new Set(inheritedDetailOutlineSettingIds);
-    const selectedDetailOutlineRoleIds = new Set(activeTabConfig.detailOutlineReaderTouched
-      ? activeTabConfig.detailOutlineReaderRoleIds ?? []
-      : getInitialPlotChainRoleIds({
+    const selectedDetailOutlineRoleIds = new Set(hasCurrentDetailOutlineReaderSession
+      ? activeTabConfig.detailOutlineReaderTouched
+        ? activeTabConfig.detailOutlineReaderRoleIds ?? []
+        : getInitialPlotChainRoleIds({
         configuredRoleIds: activeTabConfig.detailOutlineReaderRoleIds,
         plotPointStandalone,
         roles: detailOutlineReaderRoleItems,
-      }));
+      })
+      : []);
     const detailOutlineReaderOutlineLimitSerial = selectedOutlineChapter?.chapter.serialNumber ?? Number.POSITIVE_INFINITY;
     const detailOutlineReaderOutlineItems = outlineChapters
       .filter(({ chapter }) => chapter.serialNumber < detailOutlineReaderOutlineLimitSerial)
@@ -7887,8 +9800,8 @@ export function WorkbenchLibraryPanel({
         };
       })
       .filter((item): item is { id: string; title: string; group: string; content: string } => Boolean(item && item.content.trim()));
-    const selectedDetailOutlineOutlineIds = new Set(activeTabConfig.detailOutlineReaderOutlineIds ?? []);
-    const selectedDetailOutlinePlotChainIds = new Set(activeTabConfig.detailOutlineReaderPlotChainIds ?? []);
+    const selectedDetailOutlineOutlineIds = new Set(hasCurrentDetailOutlineReaderSession ? activeTabConfig.detailOutlineReaderOutlineIds ?? [] : []);
+    const selectedDetailOutlinePlotChainIds = new Set(hasCurrentDetailOutlineReaderSession ? activeTabConfig.detailOutlineReaderPlotChainIds ?? [] : []);
     const selectedDetailOutlineSettingItems = detailOutlineReaderSettingItems.filter((item) => selectedDetailOutlineSettingIds.has(item.id));
     const selectedDetailOutlineRoleItems = detailOutlineReaderRoleItems.filter((item) => selectedDetailOutlineRoleIds.has(item.id));
     const selectedDetailOutlineOutlineItems = detailOutlineReaderOutlineItems.filter((item) => selectedDetailOutlineOutlineIds.has(item.id));
@@ -7953,7 +9866,9 @@ export function WorkbenchLibraryPanel({
         .filter((id) => validOutlineIds.includes(id));
       const nextPlotChainIds = Array.from(draftDetailOutlineReaderPlotChainIds)
         .filter((id) => validPlotChainIds.includes(id));
+      const hasSelectedReaderItems = nextSettingIds.length > 0 || nextRoleIds.length > 0 || nextOutlineIds.length > 0 || nextPlotChainIds.length > 0;
       updateActiveTabConfig({
+        detailOutlineReaderSessionId: hasSelectedReaderItems ? getWorkbenchAssociationRuntimeId() : null,
         detailOutlineReaderTouched: true,
         detailOutlineReaderSettingIds: nextSettingIds,
         detailOutlineReaderRoleIds: nextRoleIds,
@@ -7964,6 +9879,7 @@ export function WorkbenchLibraryPanel({
     };
     const clearDetailOutlineReaderSelection = () => {
       updateActiveTabConfig({
+        detailOutlineReaderSessionId: null,
         detailOutlineReaderTouched: true,
         detailOutlineReaderSettingIds: [],
         detailOutlineReaderRoleIds: [],
@@ -8448,35 +10364,13 @@ export function WorkbenchLibraryPanel({
         onClick={() => setIsDetailOutlineReaderOpen(false)}
       >
         <div
-          className="modal-sharp adjustment-crisp flex h-[min(760px,86vh)] w-[min(1040px,92vw)] flex-col overflow-hidden rounded-2xl bg-white text-slate-900 shadow-2xl"
+          className="modal-sharp adjustment-crisp flex h-[min(760px,90vh)] w-[min(1180px,94vw)] flex-col overflow-hidden rounded-2xl bg-white text-slate-900 shadow-2xl"
           onClick={(event) => event.stopPropagation()}
         >
           <div className="flex shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">
-            <div className="flex min-w-0 items-center gap-4">
+            <div className="min-w-0">
               <h3 className="text-xl font-bold text-gray-900">关联资料</h3>
-              <div className="flex overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 text-sm font-black">
-                {([
-                  ['outlines', '章纲'],
-                  ['settings', '设定'],
-                  ['roles', '角色'],
-                ] as const).map(([tab, label]) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => {
-                      setDetailOutlineReaderTab(tab);
-                      setDetailOutlineReaderPreviewId('');
-                    }}
-                    className={`h-10 rounded-xl px-5 transition-colors ${
-                      detailOutlineReaderTab === tab
-                        ? 'bg-[#08AACE] text-white shadow-sm'
-                        : 'text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <p className="mt-1 text-xs text-gray-400">勾选后会作为本次生成章纲的参考资料。</p>
             </div>
             <button
               type="button"
@@ -8487,8 +10381,39 @@ export function WorkbenchLibraryPanel({
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] bg-white">
-            <aside className="min-h-0 border-r border-slate-100 bg-slate-50 p-3">
+          <div className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-100 px-5">
+            {([
+              ['outlines', '章纲'],
+              ['settings', '设定'],
+              ['roles', '角色'],
+            ] as const).map(([tab, label]) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => {
+                  setDetailOutlineReaderTab(tab);
+                  setDetailOutlineReaderPreviewId('');
+                }}
+                className={`h-9 rounded-xl border px-3 text-sm font-black transition-colors ${
+                  detailOutlineReaderTab === tab
+                    ? 'border-[#9BEFFC] bg-[#EAF9FD] text-[#08AACE]'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-[#9BEFFC] hover:text-[#08AACE]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={selectAllActiveDetailOutlineReaderItems}
+              disabled={activeDetailOutlineReaderItems.length === 0}
+              className="ml-auto h-9 shrink-0 rounded-xl border border-[#08AACE] bg-white px-3 text-xs font-black text-[#08AACE] hover:bg-[#EAF9FD] disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300"
+            >
+              关联所有
+            </button>
+          </div>
+          <div className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)_280px] bg-white">
+            <aside className="editor-scrollbar min-h-0 overflow-y-auto border-r border-gray-100 bg-slate-50 px-1 py-2">
               <div className="mb-2 flex items-center justify-between gap-2 px-2">
                 <div className="min-w-0 truncate text-[15px] font-black text-slate-400">
                   {detailOutlineReaderTab === 'settings'
@@ -8499,14 +10424,6 @@ export function WorkbenchLibraryPanel({
                     ? '剧情链'
                     : '前文章纲'}
                 </div>
-                <button
-                  type="button"
-                  onClick={selectAllActiveDetailOutlineReaderItems}
-                  disabled={activeDetailOutlineReaderItems.length === 0}
-                  className="h-8 shrink-0 rounded-xl border border-[#08AACE] bg-white px-3 text-xs font-black text-[#08AACE] hover:bg-[#EAF9FD] disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300"
-                >
-                  关联所有
-                </button>
               </div>
               <div className="editor-scrollbar h-full space-y-1 overflow-y-auto pb-8">
                 {detailOutlineReaderNavGroups.length === 0 ? (
@@ -8533,25 +10450,23 @@ export function WorkbenchLibraryPanel({
                         <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
                         <span className="min-w-0 flex-1 truncate leading-none">{group.group}</span>
                         <span className="flex shrink-0 items-center gap-1">
-                          {(detailOutlineReaderTab === 'settings' || detailOutlineReaderTab === 'roles' || detailOutlineReaderTab === 'plotChain') && (
-                            <span
-                              role="button"
-                              tabIndex={0}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                toggleActiveDetailOutlineReaderGroupSelection(group.items);
-                              }}
-                              onKeyDown={(event) => {
-                                if (event.key !== 'Enter' && event.key !== ' ') return;
-                                event.preventDefault();
-                                event.stopPropagation();
-                                toggleActiveDetailOutlineReaderGroupSelection(group.items);
-                              }}
-                              className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-black text-[#08AACE] hover:bg-[#EAF9FD]"
-                            >
-                              全选
-                            </span>
-                          )}
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              toggleActiveDetailOutlineReaderGroupSelection(group.items);
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key !== 'Enter' && event.key !== ' ') return;
+                              event.preventDefault();
+                              event.stopPropagation();
+                              toggleActiveDetailOutlineReaderGroupSelection(group.items);
+                            }}
+                            className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-black text-[#08AACE] hover:bg-[#EAF9FD]"
+                          >
+                            全选
+                          </span>
                           <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{group.items.length}</span>
                         </span>
                       </button>
@@ -8571,7 +10486,7 @@ export function WorkbenchLibraryPanel({
                                 type="button"
                                 onClick={() => setDetailOutlineReaderPreviewId(item.id)}
                                 className={`flex h-10 w-full items-center gap-2 rounded-lg px-2 text-left text-[15px] font-black ${
-                                  checked ? 'xy-selected-orange-bg text-gray-900' : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                                  checked ? 'xy-selected-content-bg text-gray-900' : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                                 }`}
                               >
                                 <span
@@ -8613,16 +10528,25 @@ export function WorkbenchLibraryPanel({
                 })}
               </div>
             </aside>
-            <div className="min-h-0 p-3">
+            <main className="editor-scrollbar min-h-0 overflow-y-auto p-6">
               {activeDetailOutlineReaderPreviewItem ? (
                 <article
                   className={
-                    'flex h-full min-h-0 flex-col rounded-2xl border px-5 py-4 ' +
-                    (isActiveDetailOutlineReaderPreviewChecked ? 'border-transparent xy-selected-orange-bg text-slate-900' : 'border-gray-100 bg-gray-50 text-gray-600')
+                    'flex min-h-full flex-col ' +
+                    (isActiveDetailOutlineReaderPreviewChecked ? 'xy-selected-content-bg text-slate-900' : 'text-gray-600')
                   }
                 >
-                  <div className="mb-3 flex shrink-0 items-start justify-between gap-4">
+                  <div className="mb-4 flex shrink-0 items-start justify-between gap-4">
                     <div className="min-w-0">
+                      <div className="text-xs font-black text-[#08AACE]">
+                        {detailOutlineReaderTab === 'settings'
+                          ? '设定'
+                          : detailOutlineReaderTab === 'roles'
+                          ? '角色'
+                          : detailOutlineReaderTab === 'plotChain'
+                          ? '剧情链'
+                          : '章纲'} / {activeDetailOutlineReaderPreviewItem.group}
+                      </div>
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
@@ -8639,18 +10563,25 @@ export function WorkbenchLibraryPanel({
                         >
                           ✓
                         </button>
-                        <h4 className="truncate text-lg font-black text-slate-900">{activeDetailOutlineReaderPreviewItem.title}</h4>
-                        <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-black text-[#08AACE]">{activeDetailOutlineReaderPreviewItem.group}</span>
+                        <h4 className="mt-1 truncate text-2xl font-black text-slate-900">{activeDetailOutlineReaderPreviewItem.title}</h4>
                       </div>
                     </div>
-                    <span className="shrink-0 text-sm font-black text-[#08AACE]"><WordCountText value={countTextWords(activeDetailOutlineReaderPreviewItem.content)} /></span>
+                    <span
+                      className={`shrink-0 rounded-xl px-3 py-2 text-xs font-black ${
+                        isActiveDetailOutlineReaderPreviewChecked
+                          ? 'border border-[#08AACE] bg-[#EAF9FD] text-[#08AACE]'
+                          : 'border border-slate-200 bg-slate-50 text-slate-400'
+                      }`}
+                    >
+                      {isActiveDetailOutlineReaderPreviewChecked ? '已勾选' : '未勾选'}
+                    </span>
                   </div>
-                  <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words pr-2 text-sm font-semibold leading-7 text-slate-600">
+                  <div className="min-h-[360px] flex-1 whitespace-pre-wrap break-words rounded-2xl border-2 border-slate-900 bg-white p-5 text-sm font-bold leading-8 text-slate-600">
                     {activeDetailOutlineReaderPreviewItem.content || '暂无内容'}
                   </div>
                 </article>
               ) : (
-                <div className="flex h-full min-h-[260px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 text-sm text-gray-400">
+                <div className="flex h-full min-h-[360px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm font-bold text-slate-300">
                   {detailOutlineReaderTab === 'settings'
                     ? '暂无可关联设定'
                     : detailOutlineReaderTab === 'roles'
@@ -8660,7 +10591,38 @@ export function WorkbenchLibraryPanel({
                     : '暂无可关联章纲'}
                 </div>
               )}
-            </div>
+            </main>
+            <aside className="editor-scrollbar min-h-0 overflow-y-auto border-l border-gray-100 bg-cyan-50 p-4">
+              <div className="mb-3 text-sm font-black text-[#08AACE]">本次将读取</div>
+              <div className="space-y-2">
+                {draftDetailOutlineReaderItems.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-cyan-200 bg-white p-4 text-center text-xs font-bold leading-5 text-slate-400">
+                    还没有选择关联资料
+                  </div>
+                ) : draftDetailOutlineReaderItems.map((entry) => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    onClick={() => {
+                      setDetailOutlineReaderTab(
+                        detailOutlineReaderSettingItems.some((item) => item.id === entry.id)
+                          ? 'settings'
+                          : detailOutlineReaderRoleItems.some((item) => item.id === entry.id)
+                          ? 'roles'
+                          : detailOutlineReaderPlotChainItems.some((item) => item.id === entry.id)
+                          ? 'plotChain'
+                          : 'outlines',
+                      );
+                      setDetailOutlineReaderPreviewId(entry.id);
+                    }}
+                    className="w-full rounded-xl bg-white px-3 py-2 text-left shadow-sm transition-colors hover:bg-[#F8FEFF]"
+                  >
+                    <div className="truncate text-sm font-black text-slate-800">{entry.title}</div>
+                    <div className="mt-1 truncate text-xs font-bold text-slate-400">{entry.group}</div>
+                  </button>
+                ))}
+              </div>
+            </aside>
           </div>
           <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 bg-white px-5 py-4">
             <div className="min-w-0 truncate text-sm font-bold text-gray-500">
@@ -9057,7 +11019,7 @@ export function WorkbenchLibraryPanel({
                       ? `relative grid h-8 w-8 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block ${outlineButtonContentStateClass} ${outlineButtonSelectedClass}`
                       : `relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
                           selected
-                            ? 'border-transparent xy-selected-orange-bg text-slate-900'
+                            ? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'
                             : hasSummary
                             ? 'border-[#08B3D9] bg-[#E1F3F7] text-[#08AACE] hover:border-[#067B96] hover:bg-[#D3EEF5]'
                             : 'border-slate-200 bg-white text-slate-900 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
@@ -9113,8 +11075,8 @@ export function WorkbenchLibraryPanel({
               gridTemplateColumns: `${plotPointLayoutTreeWidth}px 0px ${plotPointLayoutLeftWidth}px 0px minmax(${PLOT_POINT_LAYOUT_CENTER_MIN_WIDTH}px,1fr) 0px ${plotPointLayoutRightWidth}px`,
             }}
           >
-            <aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-white px-3 py-3">
-              <nav className="editor-scrollbar min-h-0 flex-1 overflow-y-auto pr-1" aria-label="剧情链目录树">
+            <aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-white px-1 py-2">
+              <nav className="editor-scrollbar min-h-0 flex-1 overflow-y-auto" aria-label="剧情链目录树">
                 <div className="space-y-3">
                   <section
                     className="relative"
@@ -9190,7 +11152,7 @@ export function WorkbenchLibraryPanel({
                                 title={`未写剧情点${originalIndex + 1} ${item.title}`}
                                 className={`relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
                                   activePoint
-                                    ? 'border-transparent xy-selected-orange-bg text-slate-900'
+                                    ? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'
                                     : 'border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
                                 }`}
                               >
@@ -9686,7 +11648,7 @@ export function WorkbenchLibraryPanel({
               : `${outlineSidebarWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px`,
           }}
         >
-            <aside className={`min-w-0 flex min-h-0 flex-col border-r border-gray-100 ${isDetailOutlineTab ? 'bg-[#F8FAFC]' : 'bg-gray-50 px-3 py-3'}`}>
+            <aside className={`min-w-0 flex min-h-0 flex-col border-r border-gray-100 ${isDetailOutlineTab ? 'bg-[#F8FAFC]' : 'bg-gray-50 px-1 py-2'}`}>
           {isDetailOutlineTab && (
             <div className={isDetailOutlineTab ? DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS : 'mb-3 flex h-9 shrink-0 items-center justify-between gap-2'}>
               <div className="flex min-w-0 items-center gap-2">
@@ -9774,7 +11736,7 @@ export function WorkbenchLibraryPanel({
                               ? `relative grid h-8 w-8 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block ${outlineButtonContentStateClass} ${outlineButtonSelectedClass}`
                               : `relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
                                   selected
-                                    ? 'border-transparent xy-selected-orange-bg text-slate-900'
+                                    ? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'
                                     : hasSummary
                                     ? 'border-[#08B3D9] bg-[#E1F3F7] text-[#08AACE] hover:border-[#067B96] hover:bg-[#D3EEF5]'
                                     : 'border-slate-200 bg-white text-slate-900 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
@@ -9836,7 +11798,7 @@ export function WorkbenchLibraryPanel({
               </div>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
-              {detailOutlinePublishedCount === 0 ? (
+              {volumes.length === 0 ? (
                 <p className="pt-10 text-center text-xs text-gray-400">暂无已发布章纲</p>
               ) : (
                 renderDetailOutlineVolumeTree(detailOutlinePublishedVolumes, true)
@@ -9850,7 +11812,7 @@ export function WorkbenchLibraryPanel({
             {outlineChapters.length === 0 ? (
               <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-gray-200 text-sm text-gray-400">暂无章节可预览</div>
             ) : safeOutlineSelectionType === 'volume' && selectedOutlineVolume ? (
-              <section className="xy-selected-orange-bg rounded-xl border border-transparent p-4">
+              <section className="xy-selected-content-bg rounded-xl border border-[#08AACE] p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <h4 className="min-w-0 truncate text-sm font-bold text-gray-900">{selectedOutlineVolume.name}梗概</h4>
                   <span className="shrink-0 text-lg font-bold text-gray-900">{selectedOutlineVolume.chapters.length}章</span>

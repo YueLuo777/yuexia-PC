@@ -7,9 +7,87 @@ const BACKUP_LOCAL_STORAGE_FILE = 'local-storage.json';
 
 type MigrationBackup = {
   version?: number;
-  localStorage?: Record<string, string>;
-  data?: Record<string, string>;
+  localStorage?: Record<string, unknown>;
+  data?: Record<string, unknown>;
 };
+
+const RESTORABLE_STORAGE_KEY_PREFIXES = [
+  'xinyuexia_',
+  'workbench_',
+  'plot_point_layout_',
+  'materials:',
+  'current_',
+];
+const RESTORABLE_STORAGE_KEYS = new Set([
+  'materials',
+  'materials_data_v1',
+  'plot_library_v1',
+]);
+const BLOCKED_STORAGE_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+const SECRET_VALUE_PATTERN = /\b(?:sk-[A-Za-z0-9_-]{12,}|Bearer\s+[A-Za-z0-9._-]{12,})\b/g;
+
+function isSensitiveFieldName(name: string) {
+  const normalized = name.replace(/[-_\s]/g, '').toLowerCase();
+  return (
+    normalized.includes('secret')
+    || normalized.includes('token')
+    || normalized.includes('password')
+    || normalized.includes('authorization')
+    || normalized === 'apikey'
+    || normalized === 'xapikey'
+    || normalized === 'privatekey'
+    || normalized === 'accesskey'
+    || normalized === 'accesskeyid'
+    || normalized === 'accesskeysecret'
+  );
+}
+
+function redactSensitiveJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map((item) => redactSensitiveJsonValue(item));
+  if (!value || typeof value !== 'object') {
+    return typeof value === 'string' ? value.replace(SECRET_VALUE_PATTERN, '') : value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [
+      key,
+      isSensitiveFieldName(key) ? '' : redactSensitiveJsonValue(item),
+    ]),
+  );
+}
+
+function sanitizeStoredValue(key: string, value: unknown) {
+  const text = String(value ?? '');
+  if (isSensitiveFieldName(key)) return '';
+
+  try {
+    return JSON.stringify(redactSensitiveJsonValue(JSON.parse(text)));
+  } catch {
+    return text.replace(SECRET_VALUE_PATTERN, '');
+  }
+}
+
+export function isRestorableLocalStorageKey(key: string) {
+  if (!key || BLOCKED_STORAGE_KEYS.has(key)) return false;
+  return RESTORABLE_STORAGE_KEYS.has(key) || RESTORABLE_STORAGE_KEY_PREFIXES.some((prefix) => key.startsWith(prefix));
+}
+
+export function filterRestorableLocalStorageData(data: Record<string, unknown>) {
+  const next: Record<string, string> = {};
+  Object.entries(data).forEach(([key, value]) => {
+    if (!isRestorableLocalStorageKey(key)) return;
+    next[key] = String(value ?? '');
+  });
+  return next;
+}
+
+export function sanitizeLocalStorageBackup(data: Record<string, unknown>) {
+  const next: Record<string, string> = {};
+  Object.entries(filterRestorableLocalStorageData(data)).forEach(([key, value]) => {
+    next[key] = sanitizeStoredValue(key, value);
+  });
+  return next;
+}
 
 function readAllLocalStorage() {
   const data: Record<string, string> = {};
@@ -40,7 +118,7 @@ export function DbSettingsPage() {
           localStorage: true,
         },
       }, null, 2));
-      zip.file(BACKUP_LOCAL_STORAGE_FILE, JSON.stringify(readAllLocalStorage(), null, 2));
+      zip.file(BACKUP_LOCAL_STORAGE_FILE, JSON.stringify(sanitizeLocalStorageBackup(readAllLocalStorage()), null, 2));
 
       const blob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(blob);
@@ -70,7 +148,7 @@ export function DbSettingsPage() {
         if (!localStorageText) throw new Error('备份包里没有本地数据文件。');
         backup = {
           version: 3,
-          localStorage: JSON.parse(localStorageText) as Record<string, string>,
+          localStorage: JSON.parse(localStorageText) as Record<string, unknown>,
         };
       } else {
         backup = JSON.parse(await file.text()) as MigrationBackup;
@@ -81,7 +159,7 @@ export function DbSettingsPage() {
         throw new Error('备份文件格式不正确。');
       }
 
-      Object.entries(localStorageData).forEach(([key, value]) => localStorage.setItem(key, String(value)));
+      Object.entries(filterRestorableLocalStorageData(localStorageData)).forEach(([key, value]) => localStorage.setItem(key, value));
       setNotice('本地备份已导入。刷新页面后会使用恢复后的资料。');
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '导入本地备份失败。');
