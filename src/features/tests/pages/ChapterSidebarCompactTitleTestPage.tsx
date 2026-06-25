@@ -12,7 +12,7 @@ const chapters = [
 
 function ChapterSidebarPreview({ compact }: { compact: boolean }) {
   const chapterRowClass = compact
-    ? 'group relative flex w-full cursor-pointer items-center gap-2 rounded-[8px] border border-transparent py-1 pl-1 pr-6 text-left transition-colors'
+    ? 'group relative grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_4ch] items-center gap-2 rounded-[8px] border border-transparent py-1 pl-1 pr-1 text-left transition-colors'
     : 'group relative flex w-full cursor-pointer items-center gap-2 rounded-[8px] border border-transparent px-[24px] py-1 text-left transition-colors';
 
   return (
@@ -48,10 +48,10 @@ function ChapterSidebarPreview({ compact }: { compact: boolean }) {
                 key={chapter.id}
                 className={`${chapterRowClass} ${chapter.selected ? 'xy-selected-mint-bg' : 'hover:bg-gray-50'}`}
               >
-                <span className="flex-1 truncate whitespace-nowrap text-sm font-black text-gray-700">
+                <span className={`${compact ? 'min-w-0' : 'flex-1'} truncate whitespace-nowrap text-sm font-black text-gray-700`}>
                   第{chapter.id}章 {chapter.title}
                 </span>
-                <span className="shrink-0 text-xs font-black text-gray-400">
+                <span className={`${compact ? 'justify-self-end text-right tabular-nums' : 'shrink-0'} text-xs font-black text-gray-400`}>
                   {chapter.words}
                 </span>
               </div>
@@ -103,7 +103,7 @@ export function ChapterSidebarCompactTitleTestPage() {
               <p>4. 卷标题行不变，只调整卷下面的章节行。</p>
             </div>
             <div className="mt-5 rounded-lg border border-[#9BEFFC] bg-[#EAF9FD] p-4 text-sm font-black leading-6 text-[#066D85]">
-              如果这个左移距离合适，后续可以把正式 `ChapterSidebar` 的章节行从 `px-[24px]` 改成 `pl-1 pr-6`。
+              如果这个左移距离合适，后续可以把正式 `ChapterSidebar` 的章节行从 `px-[24px]` 改成 `pl-1 pr-1`，并让右侧字数使用固定列贴齐最右边。
             </div>
           </section>
         </div>

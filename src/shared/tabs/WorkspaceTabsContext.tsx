@@ -32,7 +32,7 @@ const STARTUP_RESET_KEY = 'xinyuexia_workspace_tabs_reset_this_session_v1';
 
 export const HOME_TAB: WorkspaceTab = {
   id: 'home',
-  title: '我的小说',
+  title: '首页',
   path: '/novels',
   fixed: true,
 };

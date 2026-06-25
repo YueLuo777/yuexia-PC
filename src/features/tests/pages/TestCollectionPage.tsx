@@ -20,16 +20,11 @@ const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPage
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
 const ChapterSidebarCompactTitleTestPage = lazy(() => import('@/features/tests/pages/ChapterSidebarCompactTitleTestPage').then((module) => ({ default: module.ChapterSidebarCompactTitleTestPage })));
+const SettingTabPlacementOptionsTestPage = lazy(() => import('@/features/tests/pages/SettingTabPlacementOptionsTestPage').then((module) => ({ default: module.SettingTabPlacementOptionsTestPage })));
+const WorkbenchHeaderFixedFlowPositionTestPage = lazy(() => import('@/features/tests/pages/WorkbenchHeaderFixedFlowPositionTestPage').then((module) => ({ default: module.WorkbenchHeaderFixedFlowPositionTestPage })));
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
-const SettingImportHierarchyTestPage = lazy(() => import('@/features/tests/pages/SettingImportHierarchyTestPage').then((module) => ({ default: module.SettingImportHierarchyTestPage })));
 const SettingEntryMergePlanTestPage = lazy(() => import('@/features/tests/pages/SettingEntryMergePlanTestPage').then((module) => ({ default: module.SettingEntryMergePlanTestPage })));
 const SettingStateStructurePlanTestPage = lazy(() => import('@/features/tests/pages/SettingStateStructurePlanTestPage').then((module) => ({ default: module.SettingStateStructurePlanTestPage })));
-const SettingWorkflowOptimizationTestPage = lazy(() => import('@/features/tests/pages/SettingWorkflowOptimizationTestPage').then((module) => ({ default: module.SettingWorkflowOptimizationTestPage })));
-const SettingMapDangerLayoutTestPage = lazy(() => import('@/features/tests/pages/SettingMapDangerLayoutTestPage').then((module) => ({ default: module.SettingMapDangerLayoutTestPage })));
-const SettingItemResourceStatusLayoutTestPage = lazy(() => import('@/features/tests/pages/SettingItemResourceStatusLayoutTestPage').then((module) => ({ default: module.SettingItemResourceStatusLayoutTestPage })));
-const SettingClearContextMenuTestPage = lazy(() => import('@/features/tests/pages/SettingClearContextMenuTestPage').then((module) => ({ default: module.SettingClearContextMenuTestPage })));
-const SettingOtherLinkPickerTestPage = lazy(() => import('@/features/tests/pages/SettingOtherLinkPickerTestPage').then((module) => ({ default: module.SettingOtherLinkPickerTestPage })));
-const PostWritingWorkflowPlanTestPage = lazy(() => import('@/features/tests/pages/PostWritingWorkflowPlanTestPage').then((module) => ({ default: module.PostWritingWorkflowPlanTestPage })));
 const PromptLibraryStructureTestPage = lazy(() => import('@/features/tests/pages/PromptLibraryStructureTestPage').then((module) => ({ default: module.PromptLibraryStructureTestPage })));
 const PromptWorkflowPreviewTestPage = lazy(() => import('@/features/tests/pages/PromptWorkflowPreviewTestPage').then((module) => ({ default: module.PromptWorkflowPreviewTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
@@ -73,18 +68,25 @@ const testGroups = [
         icon: NotebookText,
         badge: 'Chapter',
       },
+      {
+        title: '设定标签布局方案测试',
+        description: '对比设定页面大类标签放在顶部两行、横向滚动、左侧三行两列和底部贴边等方案。',
+        path: '/setting-tab-placement-options-test',
+        icon: Tags,
+        badge: 'Tabs',
+      },
+      {
+        title: '工作台流程按钮固定位置测试',
+        description: '用 20 字书名作为基准，测试顶部脑洞/设定/章纲/正文等流程按钮是否能保持固定位置。',
+        path: '/workbench-header-fixed-flow-position-test',
+        icon: NotebookText,
+        badge: 'Header',
+      },
     ],
   },
   {
     title: 'AI 链路测试',
     items: [
-      {
-        title: '设定三层智能导入测试',
-        description: '测试智能导入把一级分组、二级设定、三级子设定分层识别，并预览已有则填入、没有则创建和分组重命名。',
-        path: '/setting-import-hierarchy-test',
-        icon: Tags,
-        badge: 'Import 3',
-      },
       {
         title: '设定条目合并方案测试',
         description: '测试作品设定、道具资源、地点场景、伏笔线索和书写规则的条目合并粒度。',
@@ -98,48 +100,6 @@ const testGroups = [
         path: '/setting-state-structure-plan-test',
         icon: Tags,
         badge: 'State',
-      },
-      {
-        title: '设定流程优化建议测试',
-        description: '单独测试整体设定流程优化建议，包括补充分类、状态更新、AI 确认和关联读取规则。',
-        path: '/setting-workflow-optimization-test',
-        icon: Tags,
-        badge: 'Workflow',
-      },
-      {
-        title: '世界地图与危险区域布局测试',
-        description: '测试世界地图和危险区域按人物设定、势力地图格局拆成固定设定、状态设定和确认更新的具体排版。',
-        path: '/setting-map-danger-layout-test',
-        icon: Tags,
-        badge: 'Map / Danger',
-      },
-      {
-        title: '道具资源状态结构测试',
-        description: '测试道具资源按固定设定、状态设定、确认更新拆分后的布局，并标明功法能力、物品装备、资源货币、特殊资源哪些需要状态设定。',
-        path: '/setting-item-resource-status-layout-test',
-        icon: Tags,
-        badge: 'Item State',
-      },
-      {
-        title: '设定清空右键菜单测试',
-        description: '测试清空分组、清空角色、清空势力、清空道具资源等危险操作移动到右键菜单后的文案和两次确认流程。',
-        path: '/setting-clear-context-menu-test',
-        icon: Tags,
-        badge: 'Clear Menu',
-      },
-      {
-        title: '关联其他设定测试',
-        description: '测试设定页在当前设定和脑洞之间新增“其他设定”关联按钮后，弹窗按作品设定、人物设定等标签读取所有设定条目。',
-        path: '/setting-other-link-picker-test',
-        icon: Tags,
-        badge: 'Other Link',
-      },
-      {
-        title: '正文后处理流程方案测试',
-        description: '测试审核、点评、润色、状态和梗概合并成一套章节后处理流程后的布局、操作顺序和写回规则。',
-        path: '/post-writing-workflow-plan-test',
-        icon: Tags,
-        badge: 'Post Flow',
       },
       {
         title: '所有提示词',
@@ -170,7 +130,6 @@ const testGroups = [
     ],
   },
 ];
-
 const testNumberByPath = new Map(
   testGroups
     .flatMap((group) => group.items)
@@ -252,10 +211,6 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
       localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(Array.from(next)));
       return next;
     });
-    if (activePath === path) {
-      setActivePath(null);
-      setCollectionTab(willBeTested ? 'tested' : 'untested');
-    }
   };
 
   const visibleGroups = useMemo(() => {
@@ -286,24 +241,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
 
   const renderActiveTest = () => {
     switch (activePath) {
-      case '/setting-import-hierarchy-test':
-        return <SettingImportHierarchyTestPage />;
       case '/setting-entry-merge-plan-test':
         return <SettingEntryMergePlanTestPage />;
       case '/setting-state-structure-plan-test':
         return <SettingStateStructurePlanTestPage />;
-      case '/setting-workflow-optimization-test':
-        return <SettingWorkflowOptimizationTestPage />;
-      case '/setting-map-danger-layout-test':
-        return <SettingMapDangerLayoutTestPage />;
-      case '/setting-item-resource-status-layout-test':
-        return <SettingItemResourceStatusLayoutTestPage />;
-      case '/setting-clear-context-menu-test':
-        return <SettingClearContextMenuTestPage />;
-      case '/setting-other-link-picker-test':
-        return <SettingOtherLinkPickerTestPage />;
-      case '/post-writing-workflow-plan-test':
-        return <PostWritingWorkflowPlanTestPage />;
       case '/prompt-library-structure-test':
         return <PromptLibraryStructureTestPage />;
       case '/prompt-workflow-preview-test':
@@ -318,6 +259,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
       case '/chapter-sidebar-compact-title-test':
         return <ChapterSidebarCompactTitleTestPage />;
+      case '/setting-tab-placement-options-test':
+        return <SettingTabPlacementOptionsTestPage />;
+      case '/workbench-header-fixed-flow-position-test':
+        return <WorkbenchHeaderFixedFlowPositionTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       default:

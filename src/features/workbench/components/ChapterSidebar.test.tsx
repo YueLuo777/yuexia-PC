@@ -93,8 +93,12 @@ describe('ChapterSidebar', () => {
     expect(chapterSidebarSource).toContain('overflow-y-auto px-1 py-2');
     expect(chapterSidebarSource).toContain('className="mt-0.5 space-y-0.5"');
     expect(chapterSidebarSource).not.toContain('className="ml-1 mt-0.5 space-y-0.5"');
-    expect(chapterSidebarSource).toContain('rounded-[8px] border px-[24px] py-1');
-    expect(publishedSidebarSource).toContain('border-l-[3px] px-[26px] py-1');
+    expect(chapterSidebarSource).toContain('rounded-[8px] border px-1 py-1');
+    expect(publishedSidebarSource).toContain('border-l-[3px] px-1 py-1');
+    expect(chapterSidebarSource).toContain('className="ml-auto shrink-0 text-[11px] font-black text-gray-400 transition-opacity group-hover:opacity-0"');
+    expect(publishedSidebarSource).toContain('className="ml-auto shrink-0 text-[11px] font-black text-gray-400 transition-opacity group-hover:opacity-0"');
+    expect(chapterSidebarSource).not.toContain('rounded-[8px] border px-[24px] py-1');
+    expect(publishedSidebarSource).not.toContain('border-l-[3px] px-[26px] py-1');
     expect(chapterSidebarSource).not.toContain('rounded-[8px] border px-[24px] py-2');
     expect(publishedSidebarSource).not.toContain('border-l-[3px] px-[26px] py-2');
   });
@@ -104,7 +108,7 @@ describe('ChapterSidebar', () => {
 
     expect(chapterSidebarSource).toContain("? 'border-transparent xy-selected-mint-bg'");
     expect(chapterSidebarSource).toContain('className="flex-1 truncate whitespace-nowrap text-sm font-black text-gray-700"');
-    expect(chapterSidebarSource).toContain('className="shrink-0 text-xs font-black text-gray-400 transition-opacity group-hover:opacity-0"');
+    expect(chapterSidebarSource).toContain('className="ml-auto shrink-0 text-[11px] font-black text-gray-400 transition-opacity group-hover:opacity-0"');
     expect(chapterSidebarSource).not.toContain("? 'border-[#FDBA74] bg-[#FFF7ED]'");
     expect(chapterSidebarSource).not.toContain("? 'text-[#F97316]' : 'text-gray-700'");
     expect(chapterSidebarSource).not.toContain("? 'text-[#2563EB]' : 'text-gray-400'");

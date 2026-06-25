@@ -24,7 +24,11 @@ import {
   readWorkbenchLinkedContextItems,
   writeWorkbenchLinkedContextItems,
 } from '@/features/workbench/model/workbenchAssociationCleanup';
-import { readWorkbenchLibraryEntries, type WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
+import {
+  readWorkbenchLibraryEntries,
+  readWorkbenchLibraryEntriesWithGlobalBrainstorm,
+  type WorkbenchLibraryEntry,
+} from '@/features/workbench/model/workbenchLibraryStorage';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
@@ -96,20 +100,20 @@ const FIND_REPLACE_DEFAULT_GEOMETRY = {
 const FIND_REPLACE_MODAL_STORAGE_ID = 'workbench_find_replace_centered_v2';
 const CONTEXT_SETTING_TYPE_ORDER = [
   '核心设定',
-  '世界规则',
   '剧情规划',
-  '成长体系',
+  '世界地图',
+  '资源体系',
+  '书写规则',
   '正派势力',
   '反派势力',
   '中立势力',
+  '其他势力',
   '功法能力',
   '物品装备',
-  '世界地图',
-  '危险区域',
+  '特殊资源',
   '主线伏笔',
   '人物伏笔',
-  '写作规范',
-  '写作禁忌',
+  '已回收伏笔',
   '其他设定',
   '未分类',
 ];
@@ -1774,7 +1778,7 @@ export function WorkbenchPage() {
     : workNotes.find((note) => note.id === selectedMemo?.id) ?? null;
   const settingsStorageKey = `xinyuexia_workbench_settings_${currentNovel.id}`;
   const outlineStorageKey = `xinyuexia_workbench_outline_${currentNovel.id}`;
-  const settingsEntries = readWorkbenchLibraryEntries(settingsStorageKey);
+  const settingsEntries = readWorkbenchLibraryEntriesWithGlobalBrainstorm(settingsStorageKey);
   const outlineEntries = readWorkbenchLibraryEntries(outlineStorageKey);
   const settingContextEntries = orderContextEntriesByType(
     settingsEntries.filter((entry) => entry.tab === '大纲'),

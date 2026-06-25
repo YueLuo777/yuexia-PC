@@ -16,6 +16,13 @@ const removedMarkedTests = [
   ['/workbench-sidebar-bold-navigation-test', 'WorkbenchSidebarBoldNavigationTestPage'],
   ['/workbench-flow-gray-selected-state-test', 'WorkbenchFlowGraySelectedStateTestPage'],
   ['/character-setting-layout-plan-test', 'CharacterSettingLayoutPlanTestPage'],
+  ['/post-writing-workflow-plan-test', 'PostWritingWorkflowPlanTestPage'],
+  ['/setting-workflow-optimization-test', 'SettingWorkflowOptimizationTestPage'],
+  ['/setting-import-hierarchy-test', 'SettingImportHierarchyTestPage'],
+  ['/setting-map-danger-layout-test', 'SettingMapDangerLayoutTestPage'],
+  ['/setting-item-resource-status-layout-test', 'SettingItemResourceStatusLayoutTestPage'],
+  ['/setting-other-link-picker-test', 'SettingOtherLinkPickerTestPage'],
+  ['/setting-clear-context-menu-test', 'SettingClearContextMenuTestPage'],
 ] as const;
 
 describe('TestCollectionPage delete marked cleanup', () => {
@@ -50,5 +57,14 @@ describe('TestCollectionPage delete marked cleanup', () => {
     ].forEach((requiredText) => {
       expect(source).toContain(requiredText);
     });
+  });
+
+  it('keeps the current test page and collection tab when marking a test as completed', async () => {
+    const source = await readFile(collectionPagePath, 'utf8');
+    const toggleBody = source.match(/const toggleTestedTest = \(path: string\) => \{([\s\S]*?)\n  \};/)?.[1] ?? '';
+
+    expect(toggleBody).toContain('setTestedTestPaths');
+    expect(toggleBody).not.toContain('setActivePath(null)');
+    expect(toggleBody).not.toContain('setCollectionTab(');
   });
 });

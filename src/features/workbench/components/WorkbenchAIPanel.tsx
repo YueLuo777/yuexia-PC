@@ -1066,7 +1066,7 @@ export function WorkbenchAIPanel({
           heightClass="h-[min(820px,88vh)]"
           closeOnBackdrop={false}
         >
-            <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)]">
+            <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] overflow-hidden">
               <aside className="border-r border-slate-100 bg-slate-50 p-4 text-sm">
                 <div className="space-y-3">
                   <div className="rounded-xl bg-white p-3">
@@ -1105,13 +1105,14 @@ export function WorkbenchAIPanel({
                   )}
                 </div>
               </aside>
-              <div className="editor-scrollbar min-h-0 overflow-y-auto p-5">
+              <div className="editor-scrollbar flex min-h-0 flex-1 flex-col overflow-hidden p-5">
                 <AiRequestLogGroups
                   groups={[
                     { id: 'prompt', title: '提示词', meta: `${getTextWordCount(visibleRequestLog.systemPrompt)} 字`, content: visibleRequestLog.systemPrompt },
                     { id: 'context', title: '资料', meta: `${visibleRequestLog.contextWordCount} 字`, content: visibleRequestLog.contextText, tone: 'cyan' },
                     { id: 'user', title: '用户要求', meta: `${getTextWordCount(visibleRequestLog.userContent)} 字`, content: visibleRequestLog.userContent, tone: 'amber' },
                   ]}
+                  fillGroupId="context"
                 />
               </div>
             </div>

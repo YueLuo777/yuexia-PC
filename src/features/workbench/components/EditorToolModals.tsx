@@ -880,13 +880,13 @@ export function HighFreqModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
   };
 
   return (
-    <ModalShell title="高频词设置" icon={<BarChart3 className="h-4 w-4 text-brand" />} onClose={onClose} widthClass="w-[480px]">
+    <ModalShell title="词语替换设置" icon={<BarChart3 className="h-4 w-4 text-brand" />} onClose={onClose} widthClass="w-[480px]">
       <div className="max-h-[60vh] space-y-4 overflow-y-auto p-5">
         <div>
-          <p className="mb-2 text-sm text-gray-700">添加需要高亮的高频词</p>
+          <p className="mb-2 text-sm text-gray-700">添加需要替换的词语</p>
           <div className="mb-3 min-h-[60px] rounded-md border border-gray-200 bg-white p-3">
             {words.length === 0 ? (
-              <p className="py-2 text-center text-sm text-gray-400">暂无高频词，请在下方添加</p>
+              <p className="py-2 text-center text-sm text-gray-400">暂无替换词，请在下方添加</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {words.map((word, index) => (
@@ -901,13 +901,13 @@ export function HighFreqModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
             )}
           </div>
           <div className="flex items-center gap-2">
-            <input value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') addWords(); }} placeholder="请输入高频词" className="flex-1 rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand" />
+            <input value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') addWords(); }} placeholder="请输入需要替换的词语" className="flex-1 rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand" />
             <button onClick={addWords} className="rounded-md bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-900">添加</button>
           </div>
           <p className="mt-3 text-xs text-gray-400">用逗号或换行分隔多个词。</p>
         </div>
         <div>
-          <p className="mb-2 text-sm text-gray-700">高频词高亮颜色</p>
+          <p className="mb-2 text-sm text-gray-700">替换词标记颜色</p>
           <div className="grid grid-cols-4 gap-2">
             {highFreqHighlightColorOptions.map((option) => {
               const selected = highlightColor === option.value;

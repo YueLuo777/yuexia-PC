@@ -48,16 +48,20 @@ import {
   canCreateWorkbenchRoleInType,
   getInitialPlotChainRoleIds,
   getPlotPointProtagonistReplacementRule,
+  isDefaultWorkbenchRoleType,
   isMaleProtagonistRoleType,
   normalizeWorkbenchRoleLifeStatus,
   normalizeWorkbenchRoleType,
   shouldShowRolePinAction,
 } from '@/features/workbench/model/workbenchRoleTypes';
 import {
+  GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY,
   WORKBENCH_LIBRARY_UPDATED_EVENT,
   createWorkbenchLibraryEntry,
   readWorkbenchLibraryEntries,
+  readWorkbenchLibraryEntriesWithGlobalBrainstorm,
   writeWorkbenchLibraryEntries,
+  writeWorkbenchLibraryEntriesWithGlobalBrainstorm,
   type WorkbenchLibraryEntry,
 } from '@/features/workbench/model/workbenchLibraryStorage';
 import {
@@ -87,7 +91,7 @@ import { WordCountText } from '@/shared/ui/WordCountText';
 const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] xy-flow-group-bg px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors';
 const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';
 const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#6f7e90]';
-const WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS = 'min-h-[34px] w-full rounded-lg border border-transparent bg-white px-3 py-1.5 text-left text-sm font-black leading-5';
+const WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS = 'min-h-[38px] w-full rounded-xl border border-transparent bg-white px-4 py-2 text-left text-sm font-black leading-5 shadow-sm';
 const WORKBENCH_LIBRARY_ENTRY_BUTTON_CLASS = `group cursor-default select-none ${WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS} transition-[background-color,border-color,box-shadow,opacity,transform] duration-150`;
 const WORKBENCH_LIBRARY_ENTRY_EMPTY_CLASS = `flex items-center ${WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS} text-gray-400`;
 const DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS = 'flex h-[42px] shrink-0 items-center justify-between border-b border-[#e6e8ec] bg-[#fbfbfc] px-3 py-2.5';
@@ -252,6 +256,9 @@ type StructuredSettingFieldDefinition = {
   key: string;
   title: string;
   placeholder?: string;
+  control?: 'input' | 'textarea';
+  maxLength?: number;
+  fieldClassName?: string;
 };
 
 type StructuredSettingFieldGroup = {
@@ -268,6 +275,8 @@ type StructuredSettingFieldSet = {
   titleFieldLabel?: string;
   titleFieldGroupTitle?: string;
   gridColumnsClassName: string;
+  gridContentClassName?: string;
+  headerFieldKeys?: readonly string[];
   fields: readonly StructuredSettingFieldDefinition[];
   groups?: readonly StructuredSettingFieldGroup[];
 };
@@ -292,6 +301,14 @@ const MONSTER_BESTIARY_FIELDS: readonly StructuredSettingFieldDefinition[] = [
   { key: 'monsterWeakness', title: '怪物弱点', placeholder: '弱点部位、克制方式、恐惧物、行动限制、破解条件和禁忌。' },
   { key: 'habitatTrace', title: '出没位置', placeholder: '栖息地、当前出没区域、最近出现章节、是否正在追踪或伏击角色。' },
   { key: 'dropResources', title: '掉落/资源', placeholder: '妖丹、兽骨、鳞甲、毒囊、血脉、材料、情报或可获取收益。' },
+];
+const FORESHADOW_SETTING_FIELDS: readonly StructuredSettingFieldDefinition[] = [
+  { key: 'foreshadowCode', title: '伏笔编号', placeholder: '最多 10 位编号。', control: 'input', maxLength: 10, fieldClassName: 'h-[48px] w-[150px] shrink-0' },
+  { key: 'firstSeenChapter', title: '首次出现章节', placeholder: '第3章', control: 'input', maxLength: 7, fieldClassName: 'h-[48px] w-[170px] shrink-0' },
+  { key: 'recoveredChapter', title: '回收章节', placeholder: '第36章', control: 'input', maxLength: 7, fieldClassName: 'h-[48px] w-[150px] shrink-0' },
+  { key: 'relatedObject', title: '关联对象', placeholder: '关联人物、道具、势力、地图、怪物或剧情事件。', fieldClassName: 'min-h-[150px]' },
+  { key: 'setupMethod', title: '铺垫方式', placeholder: '读者第一次看到它时是什么形式，例如异常反应、对话暗示、物品细节或旁人失态。', fieldClassName: 'min-h-[150px]' },
+  { key: 'foreshadowContent', title: '伏笔内容', placeholder: '详细写明表层信息、隐藏真相、后续反转、回收方式和对剧情的影响。', fieldClassName: 'col-span-2 min-h-[260px]' },
 ];
 const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[] = [
   {
@@ -366,28 +383,12 @@ const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[] = [
     titleFieldLabel: '地图名',
     titleFieldGroupTitle: '固定设定',
     gridColumnsClassName: 'grid-cols-2',
-    groups: [
-      {
-        title: '固定设定',
-        description: '世界地图不是组织，不写组织架构和主要人物，重点记录世界结构、区域边界、势力范围、资源分布和底层规则。',
-        fieldKeys: ['mapOverview', 'regionDivision', 'factionDistribution', 'resourceDistribution', 'geographyRules'],
-      },
-      {
-        title: '状态设定',
-        description: '章节推进后会变化，智能更新时优先刷新地图开放度、封锁情况、主角已知范围和近期局势。',
-        fieldKeys: ['currentSituation', 'accessStatus', 'protagonistKnownRange', 'recentChanges'],
-      },
-    ],
     fields: [
       { key: 'mapOverview', title: '世界架构', placeholder: '大陆规模、地理风貌、主要国家/宗门分布和世界层级。' },
       { key: 'regionDivision', title: '区域划分', placeholder: '国家、城池、宗门地盘、荒域、边境、海域等区域层级。' },
       { key: 'factionDistribution', title: '势力分布', placeholder: '哪些势力控制哪些地域，边界、缓冲区和争夺区在哪里。' },
       { key: 'resourceDistribution', title: '资源分布', placeholder: '矿脉、灵药、妖兽材料、遗迹、交易中心和稀缺产地。' },
       { key: 'geographyRules', title: '世界规则', placeholder: '禁飞、灵气浓度、空间异常、天气灾害等地图底层规则。' },
-      { key: 'currentSituation', title: '当前局势', placeholder: '当前区域冲突、战争、封锁、灾变、秘境开启或势力扩张。' },
-      { key: 'accessStatus', title: '封锁/开放', placeholder: '哪些城市、路线、传送阵、危险区域当前可通行或不可通行。' },
-      { key: 'protagonistKnownRange', title: '主角已知范围', placeholder: '主角亲自到过哪里、听说过哪里、哪些信息还只是传闻。' },
-      { key: 'recentChanges', title: '近期变化', placeholder: '最近章节中地图、路线、资源点、势力边界发生了什么改变。' },
     ],
   },
   {
@@ -398,18 +399,6 @@ const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[] = [
     titleFieldLabel: '区域名',
     titleFieldGroupTitle: '固定设定',
     gridColumnsClassName: 'grid-cols-2',
-    groups: [
-      {
-        title: '固定设定',
-        description: '危险区域记录可探索风险点，重点是怎么进、危险来自哪、有什么收益、探索到哪了。',
-        fieldKeys: ['zoneOverview', 'dangerSource', 'entryCondition', 'resourceReward', 'historyBackground', 'coreRules'],
-      },
-      {
-        title: '状态设定',
-        description: '章节推进后会变化，智能更新时优先刷新探索进度、风险变化、资源剩余和已触发事件。',
-        fieldKeys: ['currentStatus', 'explorationProgress', 'riskChanges', 'resourceRemaining', 'triggeredEvents', 'externalFactionInvolvement'],
-      },
-    ],
     fields: [
       { key: 'zoneOverview', title: '区域概况', placeholder: '危险区类型、范围、环境、入口位置和外界认知。' },
       { key: 'dangerSource', title: '危险来源', placeholder: '怪物、机关、污染、阵法、诅咒、空间异常或人为伏击。' },
@@ -417,12 +406,6 @@ const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[] = [
       { key: 'resourceReward', title: '资源收益', placeholder: '灵药、矿石、妖丹、传承、情报、地图线索和可获得奖励。' },
       { key: 'historyBackground', title: '历史背景', placeholder: '禁区形成原因、旧战场、遗迹主人、传说和主线关联。' },
       { key: 'coreRules', title: '核心规则', placeholder: '危险区内不可违反的底层规则、触发机制和生存限制。' },
-      { key: 'currentStatus', title: '当前状态', placeholder: '危险区当前开放、封锁、暴动、沉寂、崩塌或被势力占据。' },
-      { key: 'explorationProgress', title: '探索进度', placeholder: '主角探索到哪里，哪些区域已确认，哪些区域仍未知。' },
-      { key: 'riskChanges', title: '风险变化', placeholder: '怪物迁移、机关触发、封印松动、污染扩散或追兵介入。' },
-      { key: 'resourceRemaining', title: '资源剩余', placeholder: '资源是否已被取走、被谁占有、还剩什么可争夺。' },
-      { key: 'triggeredEvents', title: '已触发事件', placeholder: '机关、战斗、救援、背叛、封印破坏和关键发现。' },
-      { key: 'externalFactionInvolvement', title: '外部势力介入', placeholder: '宗门、黑市、敌对角色、怪物族群是否正在争夺该区域。' },
     ],
   },
   {
@@ -433,6 +416,28 @@ const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[] = [
     titleFieldLabel: '怪物名',
     gridColumnsClassName: 'grid-cols-2',
     fields: MONSTER_BESTIARY_FIELDS,
+  },
+  {
+    id: 'foreshadow-main',
+    entryType: '主线伏笔',
+    entryTitle: '1号主线伏笔',
+    matchAllTitles: true,
+    titleFieldLabel: '伏笔名称',
+    gridColumnsClassName: 'grid-cols-2',
+    gridContentClassName: 'content-start auto-rows-min',
+    headerFieldKeys: ['foreshadowCode', 'firstSeenChapter', 'recoveredChapter'],
+    fields: FORESHADOW_SETTING_FIELDS,
+  },
+  {
+    id: 'foreshadow-character',
+    entryType: '人物伏笔',
+    entryTitle: '1号人物伏笔',
+    matchAllTitles: true,
+    titleFieldLabel: '伏笔名称',
+    gridColumnsClassName: 'grid-cols-2',
+    gridContentClassName: 'content-start auto-rows-min',
+    headerFieldKeys: ['foreshadowCode', 'firstSeenChapter', 'recoveredChapter'],
+    fields: FORESHADOW_SETTING_FIELDS,
   },
   {
     id: 'item-ability',
@@ -567,8 +572,8 @@ const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[] = [
     ],
   },
 ];
-const DEFAULT_WORK_SETTING_TYPES = ['核心设定', '剧情规划', '书写规则'];
-const DEFAULT_WORK_SETTING_STARTER_VERSION = '2026-06-22-danger-zone-under-world-map-v1';
+const DEFAULT_WORK_SETTING_TYPES = ['核心设定', '剧情规划', '资源货币', '世界地图'];
+const DEFAULT_WORK_SETTING_STARTER_VERSION = '2026-06-25-foreshadow-fields-v1';
 const DEFAULT_WORK_SETTING_STARTER_ENTRIES = [
   { type: BASIC_SETTING_ENTRY_TYPE, title: BASIC_SETTING_ENTRY_TITLE },
   { type: BASIC_SETTING_ENTRY_TYPE, title: '世界观' },
@@ -576,13 +581,11 @@ const DEFAULT_WORK_SETTING_STARTER_ENTRIES = [
   { type: '剧情规划', title: '剧情蓝图' },
   { type: '剧情规划', title: '爽点设计' },
   { type: '剧情规划', title: '分卷剧情' },
-  { type: '主线伏笔', title: '主线伏笔' },
-  { type: '人物伏笔', title: '人物伏笔' },
-  { type: '已回收伏笔', title: '已回收伏笔' },
+  { type: '主线伏笔', title: '1号主线伏笔' },
+  { type: '人物伏笔', title: '1号人物伏笔' },
   { type: '世界地图', title: '世界架构' },
   { type: '世界地图', title: '危险区域' },
-  { type: '书写规则', title: '写作规范' },
-  { type: '书写规则', title: '写作禁忌' },
+  { type: '资源货币', title: '资源货币' },
 ];
 const getDefaultWorkSettingEntryId = (type: string, title: string) => `${normalizeSettingType(type)}::${title.trim()}`;
 const DEFAULT_WORK_SETTING_STARTER_ENTRY_IDS = new Set(
@@ -590,6 +593,9 @@ const DEFAULT_WORK_SETTING_STARTER_ENTRY_IDS = new Set(
 );
 const LEGACY_COMPACT_WORK_SETTING_STARTER_ENTRIES = [
   { type: '世界规则', title: '世界规则' },
+  { type: '主线伏笔', title: '主线伏笔' },
+  { type: '人物伏笔', title: '人物伏笔' },
+  { type: '已回收伏笔', title: '已回收伏笔' },
 ];
 const LEGACY_DETAILED_DEFAULT_SETTING_STARTER_ENTRIES = [
   { type: '核心设定', title: '核心设定' },
@@ -696,14 +702,14 @@ const LEGACY_DEFAULT_WORK_SETTING_INSTRUCTIONS = [
   { type: '禁写规则', title: '禁写规则', body: '填写说明：记录不能前后矛盾、不能写崩人设、不能跳过铺垫、不能破坏爽点承诺、不能滥加设定。' },
 ];
 const SETTING_WORKSPACE_DOMAIN_GROUPS = {
-  'setting:faction': ['正派势力', '反派势力', '中立势力', '其他势力', '世界地图'],
-  'setting:item': ['功法能力', '物品装备', '资源货币', '特殊资源'],
+  'setting:faction': ['正派势力', '反派势力', '中立势力', '其他势力'],
+  'setting:item': ['功法能力', '物品装备', '特殊资源'],
   'setting:monster': ['怪物列表'],
-  'setting:foreshadow': ['主线伏笔', '人物伏笔', '已回收伏笔'],
+  'setting:foreshadow': ['主线伏笔', '人物伏笔'],
 } as const;
 const SETTING_IMPORT_TOP_LABEL_DEFAULT_TYPES: Record<string, string> = {
   作品设定: DEFAULT_WORK_SETTING_TYPES[0],
-  势力地图: SETTING_WORKSPACE_DOMAIN_GROUPS['setting:faction'][0],
+  势力设定: SETTING_WORKSPACE_DOMAIN_GROUPS['setting:faction'][0],
   道具资源: SETTING_WORKSPACE_DOMAIN_GROUPS['setting:item'][0],
   怪物图鉴: SETTING_WORKSPACE_DOMAIN_GROUPS['setting:monster'][0],
   伏笔线索: SETTING_WORKSPACE_DOMAIN_GROUPS['setting:foreshadow'][0],
@@ -718,12 +724,6 @@ const DEFAULT_SETTING_TYPE_DOMAINS = Object.fromEntries(
     groups.map((group) => [group, domain])
   )),
 ) as Record<string, string>;
-const SETTING_CLEAR_DOMAIN_LABELS: Record<string, string> = {
-  'setting:faction': '势力',
-  'setting:item': '道具资源',
-  'setting:monster': '怪物',
-  'setting:foreshadow': '伏笔',
-};
 const ROLE_TAB = '角色';
 const BRAINSTORM_TAB = '脑洞';
 const SETTING_TAB = '大纲';
@@ -792,15 +792,26 @@ type LibraryEntryMenu = {
   y: number;
 } | null;
 
+type PendingCategoryRename = {
+  kind: 'role' | 'setting';
+  type: string;
+} | null;
+
 type ClearSettingsTarget = 'settingCategories' | 'settingEntries' | 'roleCategories' | 'roleEntries';
 type ClearSettingsMeta = { label: string; count: number; description: string };
+type ContextMenuSize = { width: number; height: number };
 
-function clampFixedMenuPosition(x: number, y: number, width: number, height: number) {
+const CONTEXT_MENU_VIEWPORT_PADDING = 8;
+const SETTING_CATEGORY_CONTEXT_MENU_SIZE = { width: 220, height: 300 };
+const SETTING_ENTRY_CONTEXT_MENU_SIZE = { width: 180, height: 280 };
+const PROMPT_DISABLE_CONTEXT_MENU_SIZE = { width: 140, height: 72 };
+const DETAIL_OUTLINE_CHAPTER_CONTEXT_MENU_SIZE = { width: 136, height: 56 };
+
+function clampFixedMenuPosition(x: number, y: number, size: ContextMenuSize) {
   if (typeof window === 'undefined') return { left: x, top: y };
-  const padding = 8;
   return {
-    left: Math.max(padding, Math.min(x, window.innerWidth - width - padding)),
-    top: Math.max(padding, Math.min(y, window.innerHeight - height - padding)),
+    left: Math.max(CONTEXT_MENU_VIEWPORT_PADDING, Math.min(x, window.innerWidth - size.width - CONTEXT_MENU_VIEWPORT_PADDING)),
+    top: Math.max(CONTEXT_MENU_VIEWPORT_PADDING, Math.min(y, window.innerHeight - size.height - CONTEXT_MENU_VIEWPORT_PADDING)),
   };
 }
 
@@ -839,7 +850,7 @@ type DetailOutlineReaderTab = 'settings' | 'roles' | 'outlines' | 'plotChain';
 const OTHER_SETTING_LINK_TABS = [
   { id: 'work', title: '作品设定' },
   { id: 'roles', title: '人物设定' },
-  { id: 'factions', title: '势力地图' },
+  { id: 'factions', title: '势力设定' },
   { id: 'items', title: '道具资源' },
   { id: 'monsters', title: '怪物图鉴' },
   { id: 'foreshadow', title: '伏笔线索' },
@@ -869,6 +880,8 @@ type OtherSettingLinkTab = {
 type SettingLinkSource = 'current' | 'other' | 'brainstorm' | null;
 const LIBRARY_AI_LOG_VIEW_TABS = ['输出日志', '格式'] as const;
 type LibraryAiLogViewTab = (typeof LIBRARY_AI_LOG_VIEW_TABS)[number];
+const SETTING_IMPORT_FORMAT_PREVIEW_SCOPES = ['设定条目', '分组', '标签'] as const;
+type SettingImportFormatPreviewScope = (typeof SETTING_IMPORT_FORMAT_PREVIEW_SCOPES)[number];
 type SettingImportFormatField = {
   title: string;
   placeholder?: string;
@@ -890,6 +903,11 @@ type SettingImportFormatTab = {
   id: OtherSettingLinkTabId;
   title: string;
   groups: SettingImportFormatGroup[];
+};
+type BuildSettingImportFormatTabsOptions = {
+  visibleSettingTypes: string[];
+  settingEntries: WorkbenchLibraryEntry[];
+  getSettingTypeWorkspaceDomain: (type: string) => string | null;
 };
 
 export function parseGeneratedPlotPointCandidates(text: string): WorkbenchPlotPointCandidate[] {
@@ -1730,7 +1748,7 @@ function getHiddenRoleTypesStorageKey(storageKey: string) {
   return `${storageKey}_hidden_role_types`;
 }
 
-const ROLE_TAXONOMY_DEFAULTS_VERSION = '2026-06-16-role-groups-v2';
+const ROLE_TAXONOMY_DEFAULTS_VERSION = '2026-06-24-role-groups-v3';
 const SETTING_TAXONOMY_DEFAULTS_VERSION = '2026-06-18-setting-tabs-groups-v3';
 
 function getRoleTaxonomyDefaultsVersionStorageKey(storageKey: string) {
@@ -1845,6 +1863,10 @@ function readNormalizedEntries(storageKey: string) {
   return normalizeEntries(readWorkbenchLibraryEntries(storageKey));
 }
 
+function readNormalizedEntriesWithGlobalBrainstorm(storageKey: string) {
+  return normalizeEntries(readWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey));
+}
+
 function getDefaultWorkSettingStarterVersionStorageKey(storageKey: string) {
   return `${storageKey}_work_setting_starter_version`;
 }
@@ -1900,41 +1922,8 @@ function removeLegacyAutoDomainSettingStarterEntries(entries: WorkbenchLibraryEn
   return changed ? nextEntries : entries;
 }
 
-function migrateLegacyWritingRuleEntries(entries: WorkbenchLibraryEntry[]) {
-  let changed = false;
-  const nextEntries = entries.map((entry) => {
-    if (entry.tab !== SETTING_TAB) return entry;
-    const setting = parseSettingContent(entry.content);
-    const title = entry.title.trim();
-    if (setting.type === '硬规则' && (title === '硬规则' || title === '写作规范')) {
-      changed = true;
-      return {
-        ...entry,
-        title: '写作规范',
-        content: stringifySettingContent({ ...setting, type: '书写规则' }),
-      };
-    }
-    if (setting.type === '禁写规则' && (title === '禁写规则' || title === '写作禁忌')) {
-      changed = true;
-      return {
-        ...entry,
-        title: '写作禁忌',
-        content: stringifySettingContent({ ...setting, type: '书写规则' }),
-      };
-    }
-    if (setting.type !== '书写规则') return entry;
-    if (title !== '硬规则' && title !== '禁写规则') return entry;
-    changed = true;
-    return {
-      ...entry,
-      title: title === '硬规则' ? '写作规范' : '写作禁忌',
-    };
-  });
-  return changed ? nextEntries : entries;
-}
-
 function withDefaultWorkSettingStarterEntries(entries: WorkbenchLibraryEntry[], storageKey: string) {
-  const clearedEntries = migrateLegacyWritingRuleEntries(removeLegacyAutoDomainSettingStarterEntries(clearLegacyDefaultWorkSettingInstructions(entries)));
+  const clearedEntries = removeLegacyAutoDomainSettingStarterEntries(clearLegacyDefaultWorkSettingInstructions(entries));
   if (localStorage.getItem(getDefaultWorkSettingStarterVersionStorageKey(storageKey)) === DEFAULT_WORK_SETTING_STARTER_VERSION) {
     return clearedEntries;
   }
@@ -1978,20 +1967,23 @@ function withDefaultMaleProtagonistRoleEntry(entries: WorkbenchLibraryEntry[]) {
   return [createDefaultMaleProtagonistRoleEntry(), ...entries];
 }
 
-function readNormalizedEntriesWithDefaultMaleProtagonist(storageKey: string) {
-  const entries = readNormalizedEntries(storageKey);
-  const nextEntries = withDefaultWorkSettingStarterEntries(
-    withDefaultMaleProtagonistRoleEntry(entries),
-    storageKey,
-  );
+function readNormalizedEntriesWithVisibleDefaults(storageKey: string, tabs: string[]) {
+  const entries = readNormalizedEntriesWithGlobalBrainstorm(storageKey);
+  const withSettingDefaults = tabs.includes(SETTING_TAB)
+    ? withDefaultWorkSettingStarterEntries(entries, storageKey)
+    : entries;
+  const nextEntries = tabs.includes(ROLE_TAB)
+    ? withDefaultMaleProtagonistRoleEntry(withSettingDefaults)
+    : withSettingDefaults;
   if (nextEntries !== entries) {
-    localStorage.setItem(storageKey, JSON.stringify(nextEntries));
+    writeWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey, nextEntries);
   }
   return nextEntries;
 }
 
 function getBrainstormRecycleStorageKey(storageKey: string) {
-  return `${storageKey}_brainstorm_recycle_v1`;
+  void storageKey;
+  return `${GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY}_brainstorm_recycle_v1`;
 }
 
 function readBrainstormRecycleEntries(storageKey: string) {
@@ -2241,7 +2233,7 @@ function createEmptyStructuredSettingFields(fieldSet: StructuredSettingFieldSet)
 
 function parseSectionedSettingBody(body: string) {
   const sections: Record<string, string> = {};
-  const pattern = /【([^】]+)】：\n([\s\S]*?)(?=\n\n【[^】]+】：|$)/g;
+  const pattern = /(?:^|\n)\s*【([^】\n]+)】：\s*\n([\s\S]*?)(?=\n\s*【[^】\n]+】：\s*\n|$)/g;
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(body)) !== null) {
     sections[match[1].trim()] = match[2].trim();
@@ -2394,7 +2386,7 @@ function getSettingImportFormatFields(type: string, title: string): SettingImpor
   return [{ title: '内容', placeholder: '直接填写该设定条目的正文内容。' }];
 }
 
-function getSettingImportFormatEntryTitles(type: string) {
+function getSettingImportFormatEntryTitles(type: string, currentSettingEntries: WorkbenchLibraryEntry[] = []) {
   const normalizedType = normalizeSettingType(type);
   if (normalizedType === '正派势力') return ['1号势力'];
   if (normalizedType === '反派势力') return ['反派势力'];
@@ -2402,13 +2394,19 @@ function getSettingImportFormatEntryTitles(type: string) {
   if (normalizedType === '其他势力') return ['其他势力'];
   if (normalizedType === '世界地图') return ['世界架构', '危险区域'];
   if (normalizedType === '怪物列表') return ['怪物图鉴'];
+  const currentTitles = currentSettingEntries
+    .filter((entry) => normalizeSettingType(parseSettingContent(entry.content).type) === normalizedType)
+    .map((entry) => entry.title);
   const starterTitles = DEFAULT_WORK_SETTING_STARTER_ENTRIES
     .filter((entry) => normalizeSettingType(entry.type) === normalizedType)
     .map((entry) => entry.title);
   const structuredTitles = STRUCTURED_SETTING_FIELD_SETS
     .filter((fieldSet) => normalizeSettingType(fieldSet.entryType) === normalizedType && !fieldSet.matchAllTitles)
     .map((fieldSet) => fieldSet.entryTitle);
-  return Array.from(new Set([...starterTitles, ...structuredTitles, normalizedType]));
+  const knownTitles = Array.from(new Set([...currentTitles, ...starterTitles, ...structuredTitles]))
+    .filter((title) => title.trim());
+  const visibleTitles = knownTitles.filter((title) => normalizeSettingType(title) !== normalizedType);
+  return visibleTitles.length > 0 ? visibleTitles : [normalizedType];
 }
 
 function createSettingImportFormatEntry(
@@ -2427,10 +2425,11 @@ function createSettingImportFormatEntry(
   };
 }
 
-function buildSettingImportFormatTabs(): SettingImportFormatTab[] {
-  const workGroups = DEFAULT_WORK_SETTING_TYPES.map((groupName) => ({
+function buildSettingImportFormatTabs(options: BuildSettingImportFormatTabsOptions): SettingImportFormatTab[] {
+  const { visibleSettingTypes, settingEntries, getSettingTypeWorkspaceDomain } = options;
+  const workGroups = visibleSettingTypes.filter((type) => !getSettingTypeWorkspaceDomain(type)).map((groupName) => ({
     name: groupName,
-    entries: getSettingImportFormatEntryTitles(groupName).map((title) => (
+    entries: getSettingImportFormatEntryTitles(groupName, settingEntries).map((title) => (
       createSettingImportFormatEntry('work', '作品设定', groupName, title)
     )),
   }));
@@ -2468,16 +2467,16 @@ function buildSettingImportFormatTabs(): SettingImportFormatTab[] {
       ],
     },
     ...([
-      ['factions', '势力地图', SETTING_WORKSPACE_DOMAIN_GROUPS['setting:faction']],
-      ['items', '道具资源', SETTING_WORKSPACE_DOMAIN_GROUPS['setting:item']],
-      ['monsters', '怪物图鉴', SETTING_WORKSPACE_DOMAIN_GROUPS['setting:monster']],
-      ['foreshadow', '伏笔线索', SETTING_WORKSPACE_DOMAIN_GROUPS['setting:foreshadow']],
-    ] as const).map(([tabId, tabTitle, groupNames]) => ({
+      ['factions', '势力设定', 'setting:faction'],
+      ['items', '道具资源', 'setting:item'],
+      ['monsters', '怪物图鉴', 'setting:monster'],
+      ['foreshadow', '伏笔线索', 'setting:foreshadow'],
+    ] as const).map(([tabId, tabTitle, domain]) => ({
       id: tabId,
       title: tabTitle,
-      groups: groupNames.map((groupName) => ({
+      groups: visibleSettingTypes.filter((type) => getSettingTypeWorkspaceDomain(type) === domain).map((groupName) => ({
         name: groupName,
-        entries: getSettingImportFormatEntryTitles(groupName).map((title) => (
+        entries: getSettingImportFormatEntryTitles(groupName, settingEntries).map((title) => (
           createSettingImportFormatEntry(tabId, tabTitle, groupName, title)
         )),
       })),
@@ -2486,40 +2485,116 @@ function buildSettingImportFormatTabs(): SettingImportFormatTab[] {
   return domainTabs;
 }
 
-const SETTING_IMPORT_FORMAT_GUIDE_TABS = buildSettingImportFormatTabs();
-const DEFAULT_SETTING_IMPORT_FORMAT_TAB_ID = SETTING_IMPORT_FORMAT_GUIDE_TABS[0]?.id ?? 'work';
-const DEFAULT_SETTING_IMPORT_FORMAT_ENTRY_ID = SETTING_IMPORT_FORMAT_GUIDE_TABS[0]?.groups[0]?.entries[0]?.id ?? '';
+const DEFAULT_SETTING_IMPORT_FORMAT_TAB_ID = 'work';
+const DEFAULT_SETTING_IMPORT_FORMAT_ENTRY_ID = '';
 
-function findSettingImportFormatEntry(entryId: string) {
-  return SETTING_IMPORT_FORMAT_GUIDE_TABS
+function findSettingImportFormatEntry(entryId: string, tabs: SettingImportFormatTab[]) {
+  return tabs
     .flatMap((tab) => tab.groups.flatMap((group) => group.entries))
-    .find((entry) => entry.id === entryId) ?? SETTING_IMPORT_FORMAT_GUIDE_TABS[0]?.groups[0]?.entries[0] ?? null;
+    .find((entry) => entry.id === entryId) ?? tabs[0]?.groups[0]?.entries[0] ?? null;
 }
 
-function buildSettingImportFormatPreview(entry: SettingImportFormatEntry) {
+function buildSettingImportFormatEntryBlock(entry: SettingImportFormatEntry) {
   const fieldLines = entry.fields.flatMap((field) => [
     `【${field.title}】：`,
     field.title === '身份定位' ? '男主角' : '内容',
-    '',
   ]);
+  return [
+    `*${entry.title}*：`,
+    ...fieldLines,
+  ].join('\n').trimEnd();
+}
+
+function buildSettingImportFormatPreview(entry: SettingImportFormatEntry) {
+  const entryBlock = buildSettingImportFormatEntryBlock(entry);
   if (entry.tabTitle === '人物设定') {
     return [
       '<人物设定>',
-      `*${entry.title}*：`,
-      '',
-      ...fieldLines,
+      entryBlock,
       '</人物设定>',
     ].join('\n').trimEnd();
   }
   return [
     `<${entry.tabTitle}>`,
     `<${entry.groupName}>`,
-    `*${entry.title}*：`,
-    '',
-    ...fieldLines,
+    entryBlock,
     `</${entry.groupName}>`,
     `</${entry.tabTitle}>`,
   ].join('\n').trimEnd();
+}
+
+function buildSettingImportFormatGroupPreview(tab: SettingImportFormatTab, group: SettingImportFormatGroup) {
+  const entryBlocks = group.entries.map((entry) => buildSettingImportFormatEntryBlock(entry));
+  if (tab.title === '人物设定') {
+    return [
+      '<人物设定>',
+      ...entryBlocks,
+      '</人物设定>',
+    ].join('\n').trimEnd();
+  }
+  return [
+    `<${tab.title}>`,
+    `<${group.name}>`,
+    ...entryBlocks,
+    `</${group.name}>`,
+    `</${tab.title}>`,
+  ].join('\n').trimEnd();
+}
+
+function buildSettingImportFormatTabPreview(tab: SettingImportFormatTab) {
+  if (tab.title === '人物设定') {
+    const entryBlocks = tab.groups.flatMap((group) => group.entries.map((entry) => buildSettingImportFormatEntryBlock(entry)));
+    return [
+      '<人物设定>',
+      ...entryBlocks,
+      '</人物设定>',
+    ].join('\n').trimEnd();
+  }
+  const groupBlocks = tab.groups.map((group) => [
+    `<${group.name}>`,
+    ...group.entries.map((entry) => buildSettingImportFormatEntryBlock(entry)),
+    `</${group.name}>`,
+  ].join('\n').trimEnd());
+  return [
+    `<${tab.title}>`,
+    ...groupBlocks,
+    `</${tab.title}>`,
+  ].join('\n').trimEnd();
+}
+
+function buildSettingImportFormatScopedPreview(
+  scope: SettingImportFormatPreviewScope,
+  tab: SettingImportFormatTab,
+  group: SettingImportFormatGroup,
+  entry: SettingImportFormatEntry,
+) {
+  if (scope === '标签') return buildSettingImportFormatTabPreview(tab);
+  if (scope === '分组') return buildSettingImportFormatGroupPreview(tab, group);
+  return buildSettingImportFormatPreview(entry);
+}
+
+function getSettingImportFormatLineClassName(line: string, lineIndex: number) {
+  const trimmed = line.trim();
+  if (/^<\/?[^<>]+>$/.test(trimmed)) {
+    return lineIndex === 0 ? 'text-amber-600' : 'text-purple-700';
+  }
+  if (/^\*[^*]+\*[:：]$/.test(trimmed)) return 'text-sky-700';
+  return 'text-slate-800';
+}
+
+function SettingImportFormatPreviewText({ content }: { content: string }) {
+  return (
+    <>
+      {content.split('\n').map((line, index) => (
+        <span
+          key={`${index}-${line}`}
+          className={`block min-h-[1.75em] ${getSettingImportFormatLineClassName(line, index)}`}
+        >
+          {line || '\u00A0'}
+        </span>
+      ))}
+    </>
+  );
 }
 
 function normalizeImportedSettingKey(value: string) {
@@ -2541,16 +2616,15 @@ function classifySettingText(text: string) {
   if (/(妖兽|怪兽|怪物|魔兽|异兽|凶兽|灵兽|灵宠|邪祟|兽潮|妖丹|兽骨|鳞甲|毒囊)/.test(source)) return '怪物列表';
   if (/(人物关系|关系网|关系规则|家族谱系|阵营关系)/.test(source)) return '人物关系';
   if (/(功法|能力|技能|神通|法术|异能|招式)/.test(source)) return '功法能力';
-  if (/(货币|灵石|金币|资源|材料|能源|消耗|储备)/.test(source)) return '资源货币';
+  if (/(货币|灵石|金币|资源|材料|能源|消耗|储备)/.test(source)) return '核心设定';
   if (/(权限|唯一|稀缺|特殊资源|资格|名额)/.test(source)) return '特殊资源';
   if (/(道具|装备|物品|法宝|武器|载具|机甲)/.test(source)) return '物品装备';
   if (/(禁区|危险|秘境|遗迹|灾区|战场|污染区)/.test(source)) return '世界地图';
   if (/(地点|地图|交通|地域|地理|重要地点|世界地图)/.test(source)) return '世界地图';
   if (/(主线|剧情|任务|目标|冲突|开局|转折|高潮|结局|章节|卷|事件)/.test(source)) return '剧情规划';
   if (/(人物伏笔|身份秘密|角色秘密|人物线索)/.test(source)) return '人物伏笔';
-  if (/(已回收|回收完成|已经揭露)/.test(source)) return '已回收伏笔';
   if (/(伏笔|线索|暗示|秘密|谜团|隐藏|后续|埋下|回收|真相)/.test(source)) return '主线伏笔';
-  if (/(禁写|不能写错|不能越界|硬约束|前后矛盾|规则红线)/.test(source)) return '书写规则';
+  if (/(禁写|不能写错|不能越界|硬约束|前后矛盾|规则红线)/.test(source)) return '核心设定';
   if (/(世界|规则|背景|科技|修炼|社会秩序|限制条件|天道|能量)/.test(source)) return '核心设定';
   if (/(核心|定位|承诺|主角处境|底层设定)/.test(source)) return '核心设定';
   return '其他设定';
@@ -3454,7 +3528,7 @@ export function WorkbenchLibraryPanel({
     () => normalizedTabs.every((tab) => SETTING_LIBRARY_TABS.has(tab)),
     [normalizedTabs],
   );
-  const [entries, setEntries] = useState<WorkbenchLibraryEntry[]>(() => readNormalizedEntriesWithDefaultMaleProtagonist(storageKey));
+  const [entries, setEntries] = useState<WorkbenchLibraryEntry[]>(() => readNormalizedEntriesWithVisibleDefaults(storageKey, normalizedTabs));
   const [brainstormRecycleEntries, setBrainstormRecycleEntries] = useState<WorkbenchLibraryEntry[]>(() => (
     readBrainstormRecycleEntries(storageKey)
   ));
@@ -3523,9 +3597,12 @@ export function WorkbenchLibraryPanel({
   ));
   const [categoryMenu, setCategoryMenu] = useState<LibraryCategoryMenu>(null);
   const [entryMenu, setEntryMenu] = useState<LibraryEntryMenu>(null);
+  const [entryMoveMenuOpen, setEntryMoveMenuOpen] = useState(false);
   const [pendingEntryDelete, setPendingEntryDelete] = useState<PendingEntryDelete>(null);
   const [pendingEntryRename, setPendingEntryRename] = useState<PendingEntryRename>(null);
   const [entryRenameDraft, setEntryRenameDraft] = useState('');
+  const [pendingCategoryRename, setPendingCategoryRename] = useState<PendingCategoryRename>(null);
+  const [categoryRenameDraft, setCategoryRenameDraft] = useState('');
   const [isClearSettingsConfirmOpen, setIsClearSettingsConfirmOpen] = useState(false);
   const [clearSettingsConfirmTarget, setClearSettingsConfirmTarget] = useState<ClearSettingsTarget>('settingEntries');
   const [clearSettingsConfirmStep, setClearSettingsConfirmStep] = useState<1 | 2>(1);
@@ -3619,6 +3696,7 @@ export function WorkbenchLibraryPanel({
     normalizePlotPointOpeningElements(activeTabConfig.plotPointOpeningElements)
   ));
   const [settingCreateDialog, setSettingCreateDialog] = useState<'category' | 'setting' | null>(null);
+  const [settingCreateContextKind, setSettingCreateContextKind] = useState<'role' | 'setting' | null>(null);
   const [settingCreateDraft, setSettingCreateDraft] = useState('');
   const [settingCreateTypeDraft, setSettingCreateTypeDraft] = useState('');
   const [isLibraryAiLoading, setIsLibraryAiLoading] = useState(false);
@@ -3628,6 +3706,7 @@ export function WorkbenchLibraryPanel({
   const [showLibraryAiLogTitles, setShowLibraryAiLogTitles] = useState(true);
   const [settingImportFormatTabId, setSettingImportFormatTabId] = useState(DEFAULT_SETTING_IMPORT_FORMAT_TAB_ID);
   const [settingImportFormatEntryId, setSettingImportFormatEntryId] = useState(DEFAULT_SETTING_IMPORT_FORMAT_ENTRY_ID);
+  const [settingImportFormatPreviewScope, setSettingImportFormatPreviewScope] = useState<SettingImportFormatPreviewScope>('设定条目');
   const [lastLibraryAiRequestLog, setLastLibraryAiRequestLog] = useState<LibraryAiRequestLog | null>(null);
   const suppressNextOutlinePreviewSyncRef = useRef(false);
   const [activeLibraryFontTarget, setActiveLibraryFontTarget] = useState<LibraryFontTarget>('brainstormOutput');
@@ -3711,7 +3790,10 @@ export function WorkbenchLibraryPanel({
   useTopModalEscape(isBrainstormPromptManagerOpen && !editingBrainstormPrompt && !isCreatingBrainstormPrompt, closeBrainstormPromptManager);
   useTopModalEscape(Boolean(editingBrainstormPrompt || isCreatingBrainstormPrompt), () => closeBrainstormPromptEdit());
   useTopModalEscape(Boolean(brainstormGenerateDraft), () => setBrainstormGenerateDraft(null));
-  useTopModalEscape(Boolean(settingCreateDialog), () => setSettingCreateDialog(null));
+  useTopModalEscape(Boolean(settingCreateDialog), () => {
+    setSettingCreateDialog(null);
+    setSettingCreateContextKind(null);
+  });
   useTopModalEscape(isFieldSizeSettingsOpen, () => setIsFieldSizeSettingsOpen(false));
   useTopModalEscape(isLibraryAiLogOpen, () => setIsLibraryAiLogOpen(false));
   useTopModalEscape(isDetailOutlineReaderOpen, () => setIsDetailOutlineReaderOpen(false));
@@ -4534,7 +4616,7 @@ export function WorkbenchLibraryPanel({
 
   useEffect(() => {
     const nextActiveTab = readActiveTab(storageKey, normalizedTabs, defaultActiveTab);
-    setEntries(readNormalizedEntriesWithDefaultMaleProtagonist(storageKey));
+    setEntries(readNormalizedEntriesWithVisibleDefaults(storageKey, normalizedTabs));
     setBrainstormRecycleEntries(readBrainstormRecycleEntries(storageKey));
     setTabConfigs(readTabConfigs(storageKey));
     setActiveTab(nextActiveTab);
@@ -4550,16 +4632,16 @@ export function WorkbenchLibraryPanel({
     setHiddenSettingTypes(readHiddenSettingTypes(storageKey));
 
     const syncEntries = (event: Event) => {
-      if (event instanceof CustomEvent && event.detail?.storageKey !== storageKey) return;
-      setEntries(readNormalizedEntriesWithDefaultMaleProtagonist(storageKey));
+      if (event instanceof CustomEvent && event.detail?.storageKey !== storageKey && event.detail?.storageKey !== GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY) return;
+      setEntries(readNormalizedEntriesWithVisibleDefaults(storageKey, normalizedTabs));
     };
     const syncBrainstormRecycleEntries = (event: Event) => {
       if (event instanceof CustomEvent && event.detail?.storageKey !== getBrainstormRecycleStorageKey(storageKey)) return;
       setBrainstormRecycleEntries(readBrainstormRecycleEntries(storageKey));
     };
     const syncStorageEntries = (event: StorageEvent) => {
-      if (event.key && event.key !== storageKey) return;
-      setEntries(readNormalizedEntriesWithDefaultMaleProtagonist(storageKey));
+      if (event.key && event.key !== storageKey && event.key !== GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY) return;
+      setEntries(readNormalizedEntriesWithVisibleDefaults(storageKey, normalizedTabs));
     };
     const syncStorageBrainstormRecycleEntries = (event: StorageEvent) => {
       if (event.key && event.key !== getBrainstormRecycleStorageKey(storageKey)) return;
@@ -4766,7 +4848,7 @@ export function WorkbenchLibraryPanel({
   const persist = (next: WorkbenchLibraryEntry[]) => {
     const normalized = normalizeEntries(next);
     setEntries(normalized);
-    writeWorkbenchLibraryEntries(storageKey, normalized);
+    writeWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey, normalized);
   };
 
   const persistBrainstormRecycle = (next: WorkbenchLibraryEntry[]) => {
@@ -4870,19 +4952,21 @@ export function WorkbenchLibraryPanel({
     if (!settingCreateDialog) return;
     const createTitle = settingCreateDraft.trim();
     if (!createTitle) return;
-    const creatingOutlineCharacter = activeTab === SETTING_TAB && outlineSettingScope === 'character';
+    const creatingOutlineCharacter = settingCreateContextKind === 'role' || (activeTab === SETTING_TAB && outlineSettingScope === 'character');
     if (settingCreateDialog === 'category') {
       if (creatingOutlineCharacter) {
         addRoleTypeByName(createTitle);
         setSettingCreateDraft('');
         setSettingCreateTypeDraft('');
         setSettingCreateDialog(null);
+        setSettingCreateContextKind(null);
         return;
       }
       addSettingTypeByName(createTitle);
       setSettingCreateDraft('');
       setSettingCreateTypeDraft('');
       setSettingCreateDialog(null);
+      setSettingCreateContextKind(null);
       return;
     }
     const selectedCreateType = getValidSettingCreateType();
@@ -4891,17 +4975,20 @@ export function WorkbenchLibraryPanel({
       setSettingCreateDraft('');
       setSettingCreateTypeDraft('');
       setSettingCreateDialog(null);
+      setSettingCreateContextKind(null);
       return;
     }
     addSetting(activeTab, createTitle, selectedCreateType);
     setSettingCreateDraft('');
     setSettingCreateTypeDraft('');
     setSettingCreateDialog(null);
+    setSettingCreateContextKind(null);
   };
 
   const openSettingCreateDialog = (kind: 'category' | 'setting') => {
     setSettingCreateDraft('');
     setSettingCreateTypeDraft(kind === 'setting' ? getSelectedEntrySettingCreateType() : '');
+    setSettingCreateContextKind(null);
     setSettingCreateDialog(kind);
   };
 
@@ -5091,14 +5178,16 @@ export function WorkbenchLibraryPanel({
   const clearRoleCategories = () => {
     setCustomRoleTypes([]);
     localStorage.setItem(getRoleTypesStorageKey(storageKey), JSON.stringify([]));
-    const nextHiddenTypes = DEFAULT_ROLE_TYPES.filter((type) => type !== UNCATEGORIZED_TYPE && !isMaleProtagonistRoleType(type));
-    setHiddenRoleTypes(nextHiddenTypes);
-    localStorage.setItem(getHiddenRoleTypesStorageKey(storageKey), JSON.stringify(nextHiddenTypes));
+    setHiddenRoleTypes([]);
+    localStorage.setItem(getHiddenRoleTypesStorageKey(storageKey), JSON.stringify([]));
     localStorage.setItem(getRoleTaxonomyDefaultsVersionStorageKey(storageKey), ROLE_TAXONOMY_DEFAULTS_VERSION);
-    setExpandedRoleTypes(new Set([DEFAULT_MALE_PROTAGONIST_ROLE_TYPE]));
-    persist(entries.filter((entry) => entry.tab !== ROLE_TAB || isMaleProtagonistRoleType(parseRoleContent(entry.content).type)));
-    if (selectedEntry?.tab === ROLE_TAB && !selectedRoleIsMaleProtagonist) setSelectedIdForTab(ROLE_TAB, null);
-    if ((activeTab === ROLE_TAB || (activeTab === SETTING_TAB && outlineSettingScope === 'character')) && selectedEntry?.tab === ROLE_TAB && !selectedRoleIsMaleProtagonist) {
+    setExpandedRoleTypes(new Set(DEFAULT_ROLE_TYPES.filter((type) => type !== UNCATEGORIZED_TYPE)));
+    persist(entries.filter((entry) => {
+      if (entry.tab !== ROLE_TAB) return true;
+      return isDefaultWorkbenchRoleType(parseRoleContent(entry.content).type);
+    }));
+    if (selectedEntry?.tab === ROLE_TAB && !isDefaultWorkbenchRoleType(selectedRole?.type)) setSelectedIdForTab(ROLE_TAB, null);
+    if ((activeTab === ROLE_TAB || (activeTab === SETTING_TAB && outlineSettingScope === 'character')) && selectedEntry?.tab === ROLE_TAB && !isDefaultWorkbenchRoleType(selectedRole?.type)) {
       setSelectedId(null);
     }
   };
@@ -6492,31 +6581,30 @@ export function WorkbenchLibraryPanel({
     event.stopPropagation();
     if (type === UNCATEGORIZED_TYPE) return;
     setEntryMenu(null);
-    setCategoryMenu({ kind, type, x: event.clientX, y: event.clientY });
+    setEntryMoveMenuOpen(false);
+    const { left, top } = clampFixedMenuPosition(event.clientX, event.clientY, SETTING_CATEGORY_CONTEXT_MENU_SIZE);
+    setCategoryMenu({ kind, type, x: left, y: top });
   };
 
   const openEntryMenu = (event: MouseEvent<HTMLElement>, entry: WorkbenchLibraryEntry) => {
     event.preventDefault();
     event.stopPropagation();
-    if (isLockedDefaultSettingEntry(entry)) {
-      setCategoryMenu(null);
-      setEntryMenu(null);
-      return;
-    }
     setCategoryMenu(null);
+    setEntryMoveMenuOpen(false);
+    const { left, top } = clampFixedMenuPosition(event.clientX, event.clientY, SETTING_ENTRY_CONTEXT_MENU_SIZE);
     setEntryMenu({
       entryId: entry.id,
       title: entry.title,
       tab: entry.tab,
       roleType: entry.tab === ROLE_TAB ? parseRoleContent(entry.content).type : undefined,
       pinnedAt: entry.pinnedAt,
-      x: event.clientX,
-      y: event.clientY,
+      x: left,
+      y: top,
     });
   };
 
   const deleteRoleType = (type: string) => {
-    if (type === UNCATEGORIZED_TYPE || isMaleProtagonistRoleType(type)) return;
+    if (type === UNCATEGORIZED_TYPE || isDefaultWorkbenchRoleType(type)) return;
     const nextCustomTypes = customRoleTypes.filter((item) => item !== type);
     setCustomRoleTypes(nextCustomTypes);
     localStorage.setItem(getRoleTypesStorageKey(storageKey), JSON.stringify(nextCustomTypes));
@@ -6584,8 +6672,116 @@ export function WorkbenchLibraryPanel({
     openClearSettingsConfirm(target);
   };
 
+  const createEntryFromCategoryMenu = () => {
+    if (!categoryMenu) return;
+    if (categoryMenu.kind === 'role') {
+      addRole(categoryMenu.type);
+    } else {
+      addSetting(SETTING_TAB, '', categoryMenu.type);
+    }
+    setCategoryMenu(null);
+  };
+
+  const openSiblingCategoryCreateFromMenu = () => {
+    if (!categoryMenu) return;
+    setSettingCreateDraft('');
+    setSettingCreateTypeDraft('');
+    setSettingCreateContextKind(categoryMenu.kind);
+    setSettingCreateDialog('category');
+    setCategoryMenu(null);
+  };
+
+  const openCategoryRenameFromMenu = () => {
+    if (!categoryMenu) return;
+    setPendingCategoryRename({ kind: categoryMenu.kind, type: categoryMenu.type });
+    setCategoryRenameDraft(categoryMenu.type);
+    setCategoryMenu(null);
+  };
+
+  const closeCategoryRenameDialog = () => {
+    setPendingCategoryRename(null);
+    setCategoryRenameDraft('');
+  };
+
+  const confirmCategoryRename = () => {
+    if (!pendingCategoryRename) return;
+    const currentType = pendingCategoryRename.type;
+    const nextType = pendingCategoryRename.kind === 'role'
+      ? normalizeWorkbenchRoleType(categoryRenameDraft)
+      : categoryRenameDraft.trim();
+    if (!nextType || nextType === currentType || nextType === UNCATEGORIZED_TYPE) {
+      closeCategoryRenameDialog();
+      return;
+    }
+    if (pendingCategoryRename.kind === 'role') {
+      if (isDefaultWorkbenchRoleType(currentType)) {
+        closeCategoryRenameDialog();
+        return;
+      }
+      if (roleTypeOptions.includes(nextType)) return;
+      const nextCustomTypes = customRoleTypes.map((type) => (type === currentType ? nextType : type));
+      setCustomRoleTypes(nextCustomTypes);
+      localStorage.setItem(getRoleTypesStorageKey(storageKey), JSON.stringify(nextCustomTypes));
+      setExpandedRoleTypes((prev) => {
+        const next = new Set(prev);
+        if (next.delete(currentType)) next.add(nextType);
+        return next;
+      });
+      persist(entries.map((entry) => {
+        if (entry.tab !== ROLE_TAB) return entry;
+        const role = parseRoleContent(entry.content);
+        if (role.type !== currentType) return entry;
+        return {
+          ...entry,
+          content: stringifyRoleContent({
+            ...role,
+            type: nextType,
+            history: appendRoleHistory(role.history, createRoleHistoryVersion(entry, role)),
+          }),
+          updatedAt: new Date().toLocaleString('zh-CN'),
+        };
+      }));
+      closeCategoryRenameDialog();
+      return;
+    }
+    if (DEFAULT_SETTING_TYPES.includes(currentType)) {
+      closeCategoryRenameDialog();
+      return;
+    }
+    if (settingTypeOptions.includes(nextType)) return;
+    const nextCustomTypes = customSettingTypes.map((type) => (type === currentType ? nextType : type));
+    setCustomSettingTypes(nextCustomTypes);
+    localStorage.setItem(getSettingTypesStorageKey(storageKey), JSON.stringify(nextCustomTypes));
+    const nextCustomTypeDomains = { ...customSettingTypeDomains };
+    if (nextCustomTypeDomains[currentType]) {
+      nextCustomTypeDomains[nextType] = nextCustomTypeDomains[currentType];
+      delete nextCustomTypeDomains[currentType];
+      setCustomSettingTypeDomains(nextCustomTypeDomains);
+      localStorage.setItem(getSettingTypeDomainsStorageKey(storageKey), JSON.stringify(nextCustomTypeDomains));
+    }
+    setExpandedSettingTypes((prev) => {
+      const next = new Set(prev);
+      if (next.delete(currentType)) next.add(nextType);
+      return next;
+    });
+    persist(entries.map((entry) => {
+      if (!isSettingLikeTab(entry.tab)) return entry;
+      const setting = parseSettingContent(entry.content);
+      if (setting.type !== currentType) return entry;
+      return {
+        ...entry,
+        content: stringifySettingContent({ ...setting, type: nextType }),
+        updatedAt: new Date().toLocaleString('zh-CN'),
+      };
+    }));
+    closeCategoryRenameDialog();
+  };
+
   const deleteEntryFromMenu = () => {
     if (!entryMenu) return;
+    const targetEntry = entries.find((entry) => entry.id === entryMenu.entryId);
+    if (targetEntry && isLockedDefaultSettingEntry(targetEntry)) return;
+    if (entryMenu.tab === ROLE_TAB && isMaleProtagonistRoleType(entryMenu.roleType ?? '')) return;
     const target = { id: entryMenu.entryId, title: entryMenu.title, tab: entryMenu.tab };
     setEntryMenu(null);
     confirmDeleteEntry(target);
@@ -6601,6 +6797,52 @@ export function WorkbenchLibraryPanel({
     setPendingEntryRename({ id: entryMenu.entryId, title: entryMenu.title, tab: entryMenu.tab });
     setEntryRenameDraft(entryMenu.title);
     setEntryMenu(null);
+  };
+
+  const createEntryFromEntryMenu = () => {
+    if (!entryMenu) return;
+    const target = entries.find((entry) => entry.id === entryMenu.entryId);
+    if (!target) {
+      setEntryMenu(null);
+      return;
+    }
+    if (target.tab === ROLE_TAB) {
+      const role = parseRoleContent(target.content);
+      addRole(role.type);
+    } else if (isSettingLikeTab(target.tab)) {
+      const setting = parseSettingContent(target.content);
+      addSetting(SETTING_TAB, '', setting.type);
+    } else {
+      addEntryToTab(target.tab, `新建${target.tab}`);
+    }
+    setEntryMenu(null);
+  };
+
+  const copyEntryFromMenu = () => {
+    if (!entryMenu) return;
+    const target = entries.find((entry) => entry.id === entryMenu.entryId);
+    if (!target) return;
+    if (target.tab === ROLE_TAB) {
+      const role = parseRoleContent(target.content);
+      if (!canCreateWorkbenchRoleInType(roleEntries.map((entry) => parseRoleContent(entry.content).type), role.type)) return;
+    }
+    const copy = createWorkbenchLibraryEntry(target.tab, `${target.title} 副本`, target.content);
+    persist([copy, ...entries]);
+    setRememberedActiveTab(target.tab);
+    setSelectedIdForTab(target.tab, copy.id);
+    if (target.tab === ROLE_TAB) {
+      setExpandedRoleTypes((prev) => new Set(prev).add(parseRoleContent(target.content).type));
+    } else if (isSettingLikeTab(target.tab)) {
+      setExpandedSettingTypes((prev) => new Set(prev).add(parseSettingContent(target.content).type));
+    }
+    setEntryMenu(null);
+  };
+
+  const moveEntryFromMenuToType = (targetType: string) => {
+    if (!entryMenu) return;
+    moveLibraryEntryToType(entryMenu.entryId, entryMenu.tab, targetType);
+    setEntryMenu(null);
+    setEntryMoveMenuOpen(false);
   };
 
   const closeEntryRenameDialog = () => {
@@ -6696,6 +6938,11 @@ export function WorkbenchLibraryPanel({
     ]));
     return merged;
   }, [customSettingTypes, hiddenSettingTypes, settingEntries]);
+  const settingImportFormatGuideTabs = useMemo(() => buildSettingImportFormatTabs({
+    visibleSettingTypes: settingTypeOptions,
+    settingEntries,
+    getSettingTypeWorkspaceDomain,
+  }), [getSettingTypeWorkspaceDomain, settingEntries, settingTypeOptions]);
   const otherSettingLinkTabs = useMemo<OtherSettingLinkTab[]>(() => {
     const createSettingEntry = (entry: WorkbenchLibraryEntry, tabId: OtherSettingLinkTabId, tabTitle: string): OtherSettingLinkEntry => {
       const setting = parseSettingContent(entry.content);
@@ -6783,7 +7030,6 @@ export function WorkbenchLibraryPanel({
   const selectedSettingClearDomain = activeTab === SETTING_TAB && outlineSettingScope !== 'character'
     ? getSelectedSettingWorkspaceDomain()
     : null;
-  const settingClearItemLabel = selectedSettingClearDomain ? SETTING_CLEAR_DOMAIN_LABELS[selectedSettingClearDomain] ?? '设定' : '设定';
   const deletableSettingEntriesForClear = useMemo(() => (
     deletableSettingEntries.filter((entry) => {
       const typeDomain = getSettingTypeWorkspaceDomain(parseSettingContent(entry.content).type);
@@ -6799,19 +7045,19 @@ export function WorkbenchLibraryPanel({
   ), [getSettingTypeWorkspaceDomain, selectedSettingClearDomain, settingTypeOptions]);
   const clearSettingsTargetMeta: Record<ClearSettingsTarget, ClearSettingsMeta> = {
     settingCategories: {
-      label: `${settingClearItemLabel}分组`,
+      label: '设定分组',
       count: deletableSettingTypes.length,
-      description: `确定要清空全部自建${settingClearItemLabel}分组吗？默认分组和默认${settingClearItemLabel}条目会保留。`,
+      description: '确定要清空全部自建设定分组吗？默认分组和默认设定条目会保留。',
     },
     settingEntries: {
-      label: settingClearItemLabel,
+      label: '设定',
       count: deletableSettingEntriesForClear.length,
-      description: `确定要清空全部自建${settingClearItemLabel}吗？当前共有 ${deletableSettingEntriesForClear.length} 条可删除${settingClearItemLabel}会被删除，默认${settingClearItemLabel}条目会保留。`,
+      description: `确定要清空全部自建设定吗？当前共有 ${deletableSettingEntriesForClear.length} 条可删除设定会被删除，默认设定条目会保留。`,
     },
     roleCategories: {
       label: '角色分组',
-      count: roleTypeOptions.filter((type) => type !== UNCATEGORIZED_TYPE && !isMaleProtagonistRoleType(type)).length,
-      description: `确定要清空全部人物分组吗？当前会删除除男主角以外的人物设定，并保留不可删除的男主角设定。`,
+      count: roleTypeOptions.filter((type) => type !== UNCATEGORIZED_TYPE && !isDefaultWorkbenchRoleType(type)).length,
+      description: `确定要清空全部自建人物分组吗？女主角、重要正派角色、正派配角、重要反派角色、反派配角、龙套角色等默认分组会保留。`,
     },
     roleEntries: {
       label: '角色',
@@ -7106,22 +7352,46 @@ export function WorkbenchLibraryPanel({
   const categoryMenuClearEntryTarget: ClearSettingsTarget = categoryMenu?.kind === 'role' ? 'roleEntries' : 'settingEntries';
   const canDeleteCategoryFromMenu = categoryMenu ? (
     categoryMenu.kind === 'role'
-      ? !DEFAULT_ROLE_TYPES.includes(categoryMenu.type) && !isMaleProtagonistRoleType(categoryMenu.type)
+      ? !isDefaultWorkbenchRoleType(categoryMenu.type)
       : !DEFAULT_SETTING_TYPES.includes(categoryMenu.type)
   ) : false;
+  const canRenameCategoryFromMenu = canDeleteCategoryFromMenu;
   const categoryContextMenu = categoryMenu ? createPortal(
     <div
       data-library-context-menu="true"
       onClick={(event) => event.stopPropagation()}
       onContextMenu={(event) => event.preventDefault()}
-      className="fixed z-[10000] min-w-[168px] rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
+      className="fixed z-[10000] w-max min-w-[136px] max-w-[220px] rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
       style={{ left: categoryMenu.x, top: categoryMenu.y }}
     >
       <button
         type="button"
+        onClick={createEntryFromCategoryMenu}
+        className="w-full whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-bold text-[#08AACE] hover:bg-[#EAF9FD]"
+      >
+        新建{categoryMenu.kind === 'role' ? '角色' : '设定'}
+      </button>
+      <button
+        type="button"
+        onClick={openSiblingCategoryCreateFromMenu}
+        className="w-full whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-bold text-gray-700 hover:bg-gray-50"
+      >
+        新建分组
+      </button>
+      <button
+        type="button"
+        onClick={openCategoryRenameFromMenu}
+        disabled={!canRenameCategoryFromMenu}
+        className="w-full whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+      >
+        重命名分组
+      </button>
+      <div className="my-1 border-t border-gray-100" />
+      <button
+        type="button"
         onClick={() => openClearSettingsConfirmFromMenu(categoryMenuClearEntryTarget)}
         disabled={clearSettingsTargetMeta[categoryMenuClearEntryTarget].count === 0}
-        className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+        className="w-full whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
       >
         清空{clearSettingsTargetMeta[categoryMenuClearEntryTarget].label}
       </button>
@@ -7129,7 +7399,7 @@ export function WorkbenchLibraryPanel({
         type="button"
         onClick={() => openClearSettingsConfirmFromMenu(categoryMenuClearCategoryTarget)}
         disabled={clearSettingsTargetMeta[categoryMenuClearCategoryTarget].count === 0}
-        className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+        className="w-full whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
       >
         清空{clearSettingsTargetMeta[categoryMenuClearCategoryTarget].label}
       </button>
@@ -7138,7 +7408,7 @@ export function WorkbenchLibraryPanel({
           <div className="my-1 border-t border-gray-100" />
           <button
             onClick={deleteCategoryFromMenu}
-            className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50"
+            className="w-full whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50"
           >
             删除分组
           </button>
@@ -7148,31 +7418,91 @@ export function WorkbenchLibraryPanel({
     document.body,
   ) : null;
 
+  const entryMenuTarget = entryMenu ? entries.find((entry) => entry.id === entryMenu.entryId) : null;
+  const entryMenuIsLockedDefaultSetting = Boolean(entryMenuTarget && isLockedDefaultSettingEntry(entryMenuTarget));
+  const entryMenuIsMaleProtagonist = Boolean(entryMenu?.tab === ROLE_TAB && isMaleProtagonistRoleType(entryMenu.roleType ?? ''));
+  const entryMenuRoleType = entryMenuTarget?.tab === ROLE_TAB ? parseRoleContent(entryMenuTarget.content).type : '';
+  const entryMenuCopyDisabled = Boolean(
+    entryMenuTarget?.tab === ROLE_TAB &&
+    !canCreateWorkbenchRoleInType(roleEntries.map((entry) => parseRoleContent(entry.content).type), entryMenuRoleType),
+  );
+  const entryMenuCreateDisabled = entryMenuCopyDisabled;
+  const entryMenuRenameDisabled = entryMenuIsLockedDefaultSetting;
+  const entryMenuDeleteDisabled = entryMenuIsLockedDefaultSetting || entryMenuIsMaleProtagonist;
+  const entryMenuMoveDisabled = entryMenuIsLockedDefaultSetting || entryMenuIsMaleProtagonist;
+  const entryMenuMoveOptions = entryMenuTarget?.tab === ROLE_TAB
+    ? roleTypeOptions.filter((type) => type !== UNCATEGORIZED_TYPE)
+    : entryMenuTarget && isSettingLikeTab(entryMenuTarget.tab)
+      ? settingTypeOptions.filter((type) => type !== UNCATEGORIZED_TYPE && isSettingTypeInActiveClearDomain(type))
+      : [];
+
   const entryContextMenu = entryMenu ? createPortal(
     <div
       data-library-context-menu="true"
       onClick={(event) => event.stopPropagation()}
       onContextMenu={(event) => event.preventDefault()}
-      className="fixed z-[10000] min-w-[132px] rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
+      className="fixed z-[10000] w-max min-w-[96px] max-w-[180px] rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
       style={{ left: entryMenu.x, top: entryMenu.y }}
     >
       {entryMenu.tab === ROLE_TAB && shouldShowRolePinAction(entryMenu.roleType) && (
         <button
           onClick={toggleEntryPinnedFromMenu}
-          className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-brand hover:bg-brand-light"
+          className="w-full whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-bold text-brand hover:bg-brand-light"
         >
           {entryMenu.pinnedAt ? '取消置顶' : '置顶'}
         </button>
       )}
       <button
+        onClick={createEntryFromEntryMenu}
+        disabled={entryMenuCreateDisabled}
+        className="w-full whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-bold text-brand hover:bg-brand-light disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+      >
+        新建{entryMenu.tab === ROLE_TAB ? '角色' : '设定'}
+      </button>
+      <button
+        onClick={copyEntryFromMenu}
+        disabled={entryMenuCopyDisabled}
+        className="w-full whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+      >
+        复制
+      </button>
+      <button
         onClick={renameEntryFromMenu}
-        className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-gray-700 hover:bg-gray-50"
+        disabled={entryMenuRenameDisabled}
+        className="w-full whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
       >
         重命名
       </button>
+      {entryMenuMoveOptions.length > 0 && (
+        <>
+          <button
+            type="button"
+            onClick={() => setEntryMoveMenuOpen((open) => !open)}
+            disabled={entryMenuMoveDisabled}
+            className="w-full whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+          >
+            移动到分组
+          </button>
+          {entryMoveMenuOpen && !entryMenuMoveDisabled && (
+            <div className="my-1 max-h-44 overflow-y-auto border-y border-gray-100 py-1">
+              {entryMenuMoveOptions.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => moveEntryFromMenuToType(type)}
+                  className="w-full whitespace-nowrap rounded-lg px-3 py-1.5 text-left text-xs font-black text-slate-500 hover:bg-[#EAF9FD] hover:text-[#08AACE]"
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
       <button
         onClick={deleteEntryFromMenu}
-        className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50"
+        disabled={entryMenuDeleteDisabled}
+        className="w-full whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
       >
         删除
       </button>
@@ -7271,7 +7601,7 @@ export function WorkbenchLibraryPanel({
       data-library-context-menu="true"
       onClick={(event) => event.stopPropagation()}
       onContextMenu={(event) => event.preventDefault()}
-      className="fixed z-[10000] min-w-[96px] rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
+      className="fixed z-[10000] w-max min-w-[76px] max-w-[140px] rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"
       style={{ left: promptDisableMenu.x, top: promptDisableMenu.y }}
     >
       <button
@@ -7280,7 +7610,7 @@ export function WorkbenchLibraryPanel({
           updateTabConfig(promptDisableMenu.tab, { promptDisabled: !promptDisableMenu.disabled });
           setPromptDisableMenu(null);
         }}
-        className="w-full rounded-lg px-3 py-2 text-left text-sm font-bold text-gray-700 hover:bg-gray-50"
+        className="w-full whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-bold text-gray-700 hover:bg-gray-50"
       >
         {promptDisableMenu.disabled ? '启用' : '禁用'}
       </button>
@@ -7983,16 +8313,20 @@ export function WorkbenchLibraryPanel({
     </div>,
     document.body,
   ) : null;
-  const settingCreateIsCharacter = activeTab === SETTING_TAB && outlineSettingScope === 'character';
+  const settingCreateIsCharacter = settingCreateContextKind === 'role' || (activeTab === SETTING_TAB && outlineSettingScope === 'character');
   const settingCreateItemLabel = settingCreateIsCharacter ? '角色' : '设定';
   const settingCreateTypeOptions = settingCreateDialog === 'setting' ? getSettingCreateTypeOptions() : [];
   const settingCreateTypeValue = settingCreateTypeOptions.includes(settingCreateTypeDraft)
     ? settingCreateTypeDraft
     : settingCreateTypeOptions[0] ?? '';
+  const closeSettingCreateDialog = () => {
+    setSettingCreateDialog(null);
+    setSettingCreateContextKind(null);
+  };
   const settingCreateModal = settingCreateDialog ? createPortal(
     <div
       className="modal-sharp fixed inset-0 z-[280] flex items-center justify-center bg-black/35"
-      onClick={() => setSettingCreateDialog(null)}
+      onClick={closeSettingCreateDialog}
     >
       <div
         className="modal-sharp flex w-[min(460px,92vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
@@ -8008,7 +8342,7 @@ export function WorkbenchLibraryPanel({
             </p>
           </div>
           <button
-            onClick={() => setSettingCreateDialog(null)}
+            onClick={closeSettingCreateDialog}
             className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
             title="关闭"
           >
@@ -8046,7 +8380,7 @@ export function WorkbenchLibraryPanel({
         </div>
         <div className="flex shrink-0 justify-end gap-3 border-t border-gray-100 px-5 py-4">
           <button
-            onClick={() => setSettingCreateDialog(null)}
+            onClick={closeSettingCreateDialog}
             className="rounded-xl border border-gray-200 bg-white px-5 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50"
           >
             取消
@@ -8054,6 +8388,62 @@ export function WorkbenchLibraryPanel({
           <button
             onClick={confirmSettingCreate}
             disabled={!settingCreateDraft.trim()}
+            className="rounded-xl bg-brand px-5 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
+          >
+            确认
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  ) : null;
+  const categoryRenameModal = pendingCategoryRename ? createPortal(
+    <div
+      className="modal-sharp fixed inset-0 z-[280] flex items-center justify-center bg-black/35"
+      onClick={closeCategoryRenameDialog}
+    >
+      <div
+        className="modal-sharp flex w-[min(420px,92vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">重命名分组</h3>
+            <p className="mt-1 text-xs text-gray-400">默认分组不会进入这里，自建分组改名后，分组下内容会一起移动。</p>
+          </div>
+          <button
+            onClick={closeCategoryRenameDialog}
+            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            title="关闭"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-5">
+          <div className={`xy-floating-field xy-floating-outline-fixed ${categoryRenameDraft.trim() ? 'xy-has-value' : ''}`}>
+            <input
+              autoFocus
+              value={categoryRenameDraft}
+              onChange={(event) => setCategoryRenameDraft(event.target.value)}
+              onKeyDown={(event) => {
+                const isImeComposing = event.nativeEvent.isComposing || event.keyCode === 229;
+                if (event.key === 'Enter' && !isImeComposing) confirmCategoryRename();
+              }}
+              placeholder="输入新的分组名字"
+            />
+            <label>分组名字</label>
+          </div>
+        </div>
+        <div className="flex shrink-0 justify-end gap-3 border-t border-gray-100 px-5 py-4">
+          <button
+            onClick={closeCategoryRenameDialog}
+            className="rounded-xl border border-gray-200 bg-white px-5 py-2 text-sm font-bold text-gray-600 hover:bg-gray-50"
+          >
+            取消
+          </button>
+          <button
+            onClick={confirmCategoryRename}
+            disabled={!categoryRenameDraft.trim()}
             className="rounded-xl bg-brand px-5 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
           >
             确认
@@ -8131,6 +8521,8 @@ export function WorkbenchLibraryPanel({
         {roleHistoryModal}
         {deleteConfirmDialog}
         {fieldSizeSettingsModal}
+        {settingCreateModal}
+        {categoryRenameModal}
         {managementModal && <LibraryManagementModal modal={managementModal} onClose={() => setManagementModal(null)} />}
         <div
           className="grid h-full min-h-0 flex-1 overflow-hidden bg-white"
@@ -8345,11 +8737,12 @@ export function WorkbenchLibraryPanel({
                 promptDisabled={Boolean(activeTabConfig.promptDisabled)}
                 onPromptContextMenu={(event) => {
                   event.preventDefault();
+                  const { left, top } = clampFixedMenuPosition(event.clientX, event.clientY, PROMPT_DISABLE_CONTEXT_MENU_SIZE);
                   setPromptDisableMenu({
                     tab: ROLE_TAB,
                     disabled: Boolean(activeTabConfig.promptDisabled),
-                    x: event.clientX,
-                    y: event.clientY,
+                    x: left,
+                    y: top,
                   });
                 }}
               />
@@ -8423,6 +8816,7 @@ export function WorkbenchLibraryPanel({
     const currentStructuredTitleFieldGroupTitle = currentStructuredSettingFieldSet?.titleFieldGroupTitle ?? currentStructuredSettingFieldSet?.groups?.[0]?.title;
     const currentStructuredActiveGroup = currentStructuredSettingFieldSet?.groups?.find((group) => group.title === activeStructuredSettingTab)
       ?? currentStructuredSettingFieldSet?.groups?.[0];
+    const currentStructuredHeaderFieldKeys = new Set(currentStructuredSettingFieldSet?.headerFieldKeys ?? []);
     const currentStructuredActiveGroupWordCount = currentStructuredActiveGroup?.fieldKeys.reduce((total, fieldKey) => (
       total + countTextWords(currentStructuredSettingFields[fieldKey] ?? '')
     ), 0) ?? 0;
@@ -8499,7 +8893,7 @@ export function WorkbenchLibraryPanel({
     const settingWorkspaceDomainTabs = [
       { id: 'work', label: '作品设定', count: visibleWorkSettingCount, type: null },
       { id: 'character', label: '人物设定', count: visibleRoleCount, type: null },
-      { id: 'setting:faction', label: '势力地图', type: 'setting:faction' },
+      { id: 'setting:faction', label: '势力设定', type: 'setting:faction' },
       { id: 'setting:item', label: '道具资源', type: 'setting:item' },
       { id: 'setting:monster', label: '怪物图鉴', type: 'setting:monster' },
       { id: 'setting:foreshadow', label: '伏笔线索', type: 'setting:foreshadow' },
@@ -8625,13 +9019,24 @@ export function WorkbenchLibraryPanel({
       })
       : [];
     const visibleAiRequestLogPlainPreview = buildRequestLogPlainPreview(visibleAiRequestLogGroups);
-    const activeSettingImportFormatTab = SETTING_IMPORT_FORMAT_GUIDE_TABS.find((tab) => tab.id === settingImportFormatTabId) ?? SETTING_IMPORT_FORMAT_GUIDE_TABS[0];
-    const selectedSettingImportFormatEntry = findSettingImportFormatEntry(settingImportFormatEntryId);
+    const activeSettingImportFormatTab = settingImportFormatGuideTabs.find((tab) => tab.id === settingImportFormatTabId) ?? settingImportFormatGuideTabs[0];
+    const selectedSettingImportFormatEntry = findSettingImportFormatEntry(settingImportFormatEntryId, settingImportFormatGuideTabs);
+    const selectedSettingImportFormatGroup = activeSettingImportFormatTab?.groups.find((group) => (
+      group.entries.some((entry) => entry.id === selectedSettingImportFormatEntry?.id)
+    )) ?? activeSettingImportFormatTab?.groups[0] ?? null;
     const settingImportFormatPreview = selectedSettingImportFormatEntry
-      ? buildSettingImportFormatPreview(selectedSettingImportFormatEntry)
+      && activeSettingImportFormatTab
+      && selectedSettingImportFormatGroup
+      ? buildSettingImportFormatScopedPreview(
+        settingImportFormatPreviewScope,
+        activeSettingImportFormatTab,
+        selectedSettingImportFormatGroup,
+        selectedSettingImportFormatEntry,
+      )
       : '';
     const selectSettingImportFormatTab = (tabId: OtherSettingLinkTabId) => {
-      const nextTab = SETTING_IMPORT_FORMAT_GUIDE_TABS.find((tab) => tab.id === tabId) ?? SETTING_IMPORT_FORMAT_GUIDE_TABS[0];
+      const nextTab = settingImportFormatGuideTabs.find((tab) => tab.id === tabId) ?? settingImportFormatGuideTabs[0];
+      if (!nextTab) return;
       setSettingImportFormatTabId(nextTab.id);
       setSettingImportFormatEntryId(nextTab.groups[0]?.entries[0]?.id ?? DEFAULT_SETTING_IMPORT_FORMAT_ENTRY_ID);
     };
@@ -8642,7 +9047,27 @@ export function WorkbenchLibraryPanel({
         onClose={() => setIsLibraryAiLogOpen(false)}
       >
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex shrink-0 items-center justify-end border-b border-slate-100 bg-white px-5 py-3">
+          <div className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-100 bg-white px-5 py-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pr-4">
+              {libraryAiLogViewTab === '格式' && (
+                <>
+                {settingImportFormatGuideTabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => selectSettingImportFormatTab(tab.id)}
+                    className={`h-9 min-w-[104px] shrink-0 rounded-lg px-4 text-sm font-black transition-colors ${
+                      activeSettingImportFormatTab?.id === tab.id
+                        ? 'border border-[#9FEAF6] bg-[#EAF9FD] text-[#08AACE]'
+                        : 'border border-gray-200 bg-white text-slate-600 hover:border-cyan-100 hover:bg-[#F8FEFF] hover:text-[#08AACE]'
+                    }`}
+                  >
+                    {tab.title}
+                  </button>
+                ))}
+                </>
+              )}
+            </div>
             <div className={SETTING_SEGMENTED_TAB_GROUP_CLASS}>
               {LIBRARY_AI_LOG_VIEW_TABS.map((tab, index) => (
                 <button
@@ -8692,11 +9117,11 @@ export function WorkbenchLibraryPanel({
                     </label>
                   </div>
                 </aside>
-                <div className="min-h-0 overflow-y-auto p-5">
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
                   {showLibraryAiLogTitles ? (
-                    <AiRequestLogGroups groups={visibleAiRequestLogGroups} />
+                    <AiRequestLogGroups groups={visibleAiRequestLogGroups} fillSingleGroup />
                   ) : (
-                    <div className="ai-request-log-text whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-700">
+                    <div className="ai-request-log-text min-h-0 flex-1 whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-700">
                       {visibleAiRequestLogPlainPreview ? <AiRequestLogContent content={visibleAiRequestLogPlainPreview} /> : '暂无可预览内容'}
                     </div>
                   )}
@@ -8710,24 +9135,6 @@ export function WorkbenchLibraryPanel({
           ) : selectedSettingImportFormatEntry ? (
             <div className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)] overflow-hidden">
               <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-slate-50">
-                <div className="shrink-0 border-b border-slate-100 bg-white p-3">
-                  <div className="grid grid-cols-2 gap-1">
-                    {SETTING_IMPORT_FORMAT_GUIDE_TABS.map((tab) => (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => selectSettingImportFormatTab(tab.id)}
-                        className={`h-9 rounded-lg text-xs font-black transition-colors ${
-                          activeSettingImportFormatTab?.id === tab.id
-                            ? 'border border-[#9FEAF6] bg-[#EAF9FD] text-[#08AACE]'
-                            : 'border border-transparent bg-white text-slate-600 hover:border-cyan-100 hover:text-[#08AACE]'
-                        }`}
-                      >
-                        {tab.title}
-                      </button>
-                    ))}
-                  </div>
-                </div>
                 <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
                   {activeSettingImportFormatTab?.groups.map((group) => (
                     <section key={group.name}>
@@ -8757,8 +9164,8 @@ export function WorkbenchLibraryPanel({
                   ))}
                 </div>
               </aside>
-              <section className="min-h-0 overflow-y-auto bg-white p-5">
-                <div className="mb-4 flex items-start justify-between gap-4">
+              <section className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-white p-5">
+                <div className="mb-4 flex shrink-0 items-start justify-between gap-4">
                   <div>
                     <div className="flex flex-wrap items-center gap-2 text-xs font-black text-[#08AACE]">
                       <span>{selectedSettingImportFormatEntry.tabTitle}</span>
@@ -8766,39 +9173,31 @@ export function WorkbenchLibraryPanel({
                       <span>{selectedSettingImportFormatEntry.groupName}</span>
                     </div>
                     <h3 className="mt-1 text-2xl font-black text-slate-950">{selectedSettingImportFormatEntry.title}</h3>
-                    <p className="mt-2 text-sm font-bold text-slate-500">
-                      智能导入会写入到：{selectedSettingImportFormatEntry.tabTitle} / {selectedSettingImportFormatEntry.groupName} / {selectedSettingImportFormatEntry.title}
-                    </p>
                   </div>
                   <span className="rounded-xl border border-cyan-200 bg-[#EAF9FD] px-3 py-2 text-xs font-black text-[#08AACE]">格式预览</span>
                 </div>
-                {selectedSettingImportFormatEntry.note && (
-                  <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-black leading-6 text-amber-800">
-                    {selectedSettingImportFormatEntry.note}
-                  </div>
-                )}
-                <div className="mb-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                  <div className="mb-3 text-sm font-black text-slate-900">条目下的子设定</div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {selectedSettingImportFormatEntry.fields.map((field) => (
-                      <div key={field.title} className="rounded-xl border border-slate-200 bg-white p-3">
-                        <div className="text-sm font-black text-slate-900">【{field.title}】：</div>
-                        <div className="mt-2 min-h-12 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold leading-5 text-slate-400">
-                          {field.placeholder ?? '内容'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-slate-900 bg-white p-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-slate-900 bg-white p-4">
+                  <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
                     <div className="text-sm font-black text-slate-900">可复制格式</div>
-                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700">
-                      按智能导入结构生成
-                    </span>
+                    <div className="flex h-8 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                      {SETTING_IMPORT_FORMAT_PREVIEW_SCOPES.map((scope, index) => (
+                        <button
+                          key={scope}
+                          type="button"
+                          onClick={() => setSettingImportFormatPreviewScope(scope)}
+                          className={`min-w-[76px] px-3 text-xs font-black transition-colors ${index === 0 ? '' : 'border-l border-gray-200'} ${
+                            settingImportFormatPreviewScope === scope
+                              ? 'bg-[#EAF9FD] text-[#08AACE]'
+                              : 'bg-white text-slate-500 hover:bg-[#F8FEFF] hover:text-[#08AACE]'
+                          }`}
+                        >
+                          {scope}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-xl bg-slate-950 p-4 text-sm font-bold leading-7 text-slate-100">
-                    {settingImportFormatPreview}
+                  <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-[#FBFCFE] p-4 text-sm font-semibold leading-7 text-slate-800">
+                    <SettingImportFormatPreviewText content={settingImportFormatPreview} />
                   </pre>
                 </div>
               </section>
@@ -8833,6 +9232,7 @@ export function WorkbenchLibraryPanel({
         {brainstormPromptEditModal}
         {brainstormGenerateConfirmModal}
         {settingCreateModal}
+        {categoryRenameModal}
         <div
           className="grid h-full min-h-0 flex-1 overflow-hidden bg-white"
           style={{
@@ -8944,12 +9344,10 @@ export function WorkbenchLibraryPanel({
                                   : 'border-transparent bg-white text-gray-600 hover:border-gray-200'
                             } ${draggingLibraryEntry?.entryId === entry.id ? 'cursor-grabbing scale-[0.99] opacity-80 ring-2 ring-[#08AACE]/35 shadow-sm' : ''}`}
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="min-w-0 truncate text-sm font-black text-gray-700">{entry.title}</span>
-                              <span className="flex shrink-0 items-center gap-2">
-                                <span className={activeIsBrainstorm ? 'text-xs font-black text-gray-400' : 'rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-bold text-[#08AACE]'}>
-                                  <WordCountText value={entryWordCount} compact />
-                                </span>
+                            <div className="flex w-full items-center gap-2">
+                              <span className="min-w-0 truncate pl-3 text-sm font-black text-gray-700">{entry.title}</span>
+                              <span className="ml-auto shrink-0 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-black text-[#08AACE]">
+                                <WordCountText value={entryWordCount} compact />
                               </span>
                             </div>
                           </button>
@@ -9068,7 +9466,7 @@ export function WorkbenchLibraryPanel({
             <div className={`flex min-h-0 flex-1 flex-col ${currentStructuredTitleFieldLabel ? 'px-5 py-3' : 'p-5'}`}>
               {currentStructuredTitleFieldLabel ? (
                 <header className="shrink-0 border-b border-slate-200 pb-3">
-                  <div className="flex items-start justify-between gap-4">
+                  <div data-testid="structured-title-row" className="flex items-start gap-4 overflow-x-auto pb-1">
                     <label
                       data-testid="structured-title-field"
                       className="relative flex h-[48px] w-[168px] shrink-0 items-center rounded-[20px] border-2 border-slate-950 bg-white px-4 py-0"
@@ -9089,6 +9487,30 @@ export function WorkbenchLibraryPanel({
                         }`}
                       />
                     </label>
+                    {currentStructuredSettingFieldSet?.headerFieldKeys?.map((fieldKey) => {
+                      const field = currentStructuredSettingFieldSet.fields.find((item) => item.key === fieldKey);
+                      if (!field) return null;
+                      const value = currentStructuredSettingFields[field.key] ?? '';
+                      return (
+                        <div
+                          key={field.key}
+                          className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count xy-floating-visible-placeholder xy-structured-setting-field ${field.fieldClassName ?? 'h-[48px] w-[150px] shrink-0'} ${value.trim() ? 'xy-has-value' : ''}`}
+                        >
+                          <input
+                            data-no-modal-drag="true"
+                            aria-label={field.title}
+                            value={value}
+                            maxLength={field.maxLength}
+                            onFocus={() => setActiveLibraryFontTarget('settingPreview')}
+                            onChange={(event) => updateStructuredSettingField(field.key, event.target.value)}
+                            placeholder={field.placeholder ?? `填写${field.title}`}
+                            className="text-sm leading-7 text-gray-700"
+                            style={{ fontSize: settingPreviewFontSize }}
+                          />
+                          <label className="xy-floating-title-count">{field.title} <span><WordCountText value={countTextWords(value)} /></span></label>
+                        </div>
+                      );
+                    })}
                     {currentStructuredSettingFieldSet?.groups ? (
                       <div aria-hidden="true" className="h-9 w-[112px] shrink-0" />
                     ) : null}
@@ -9162,29 +9584,44 @@ export function WorkbenchLibraryPanel({
                           key={activeGroup.title}
                           className="flex min-h-0 flex-1 flex-col overflow-hidden"
                         >
-                          <div data-testid="structured-setting-fields" className="grid min-h-0 flex-1 grid-cols-2 gap-3 px-1 pb-1 pr-2 pt-3">
-                            {activeGroup.fieldKeys.map((fieldKey) => {
+                          <div data-testid="structured-setting-fields" className={`grid min-h-0 flex-1 grid-cols-2 gap-3 px-1 pb-1 pr-2 pt-3 ${currentStructuredSettingFieldSet.gridContentClassName ?? ''}`}>
+                            {activeGroup.fieldKeys.filter((fieldKey) => !currentStructuredHeaderFieldKeys.has(fieldKey)).map((fieldKey) => {
                               const field = currentStructuredSettingFieldSet.fields.find((item) => item.key === fieldKey);
                               if (!field) return null;
                               const value = currentStructuredSettingFields[field.key] ?? '';
+                              const fieldControl = field.control ?? 'textarea';
                               return (
                                 <div
                                   key={field.key}
-                                  className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count xy-floating-visible-placeholder xy-structured-setting-field min-h-0 flex-1 ${value.trim() ? 'xy-has-value' : ''}`}
+                                  className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count xy-floating-visible-placeholder xy-structured-setting-field ${field.fieldClassName ?? 'min-h-0 flex-1'} ${value.trim() ? 'xy-has-value' : ''}`}
                                 >
-                                  <textarea
-                                    data-no-modal-drag="true"
-                                    aria-label={field.title}
-                                    value={value}
-                                    onFocus={() => setActiveLibraryFontTarget('settingPreview')}
-                                    onChange={(event) => updateStructuredSettingField(field.key, event.target.value)}
-                                    onScroll={() => handleSettingSidebarScroll(`setting-textarea:${currentStructuredSettingFieldSet.id}:${field.key}`)}
-                                    placeholder={field.placeholder ?? `填写${field.title}`}
-                                    className={`scrollbar-scroll-only scrollbar-half-width text-sm leading-7 text-gray-700 ${
-                                      activeSettingSidebarScrollKey === `setting-textarea:${currentStructuredSettingFieldSet.id}:${field.key}` ? 'scrollbar-active' : ''
-                                    }`}
-                                    style={{ fontSize: settingPreviewFontSize }}
-                                  />
+                                  {fieldControl === 'input' ? (
+                                    <input
+                                      data-no-modal-drag="true"
+                                      aria-label={field.title}
+                                      value={value}
+                                      maxLength={field.maxLength}
+                                      onFocus={() => setActiveLibraryFontTarget('settingPreview')}
+                                      onChange={(event) => updateStructuredSettingField(field.key, event.target.value)}
+                                      placeholder={field.placeholder ?? `填写${field.title}`}
+                                      className="text-sm leading-7 text-gray-700"
+                                      style={{ fontSize: settingPreviewFontSize }}
+                                    />
+                                  ) : (
+                                    <textarea
+                                      data-no-modal-drag="true"
+                                      aria-label={field.title}
+                                      value={value}
+                                      onFocus={() => setActiveLibraryFontTarget('settingPreview')}
+                                      onChange={(event) => updateStructuredSettingField(field.key, event.target.value)}
+                                      onScroll={() => handleSettingSidebarScroll(`setting-textarea:${currentStructuredSettingFieldSet.id}:${field.key}`)}
+                                      placeholder={field.placeholder ?? `填写${field.title}`}
+                                      className={`scrollbar-scroll-only scrollbar-half-width text-sm leading-7 text-gray-700 ${
+                                        activeSettingSidebarScrollKey === `setting-textarea:${currentStructuredSettingFieldSet.id}:${field.key}` ? 'scrollbar-active' : ''
+                                      }`}
+                                      style={{ fontSize: settingPreviewFontSize }}
+                                    />
+                                  )}
                                   <label className="xy-floating-title-count">{field.title} <span><WordCountText value={countTextWords(value)} /></span></label>
                                 </div>
                               );
@@ -9196,27 +9633,42 @@ export function WorkbenchLibraryPanel({
                       );
                     })()
                   ) : (
-                    <div className={`grid h-full min-h-0 ${currentStructuredSettingFieldSet.gridColumnsClassName} gap-4`}>
-                      {currentStructuredSettingFieldSet.fields.map((field) => {
+                    <div data-testid="structured-setting-fields" className={`grid h-full min-h-0 ${currentStructuredSettingFieldSet.gridColumnsClassName} gap-4 ${currentStructuredSettingFieldSet.gridContentClassName ?? ''}`}>
+                      {currentStructuredSettingFieldSet.fields.filter((field) => !currentStructuredHeaderFieldKeys.has(field.key)).map((field) => {
                         const value = currentStructuredSettingFields[field.key] ?? '';
+                        const fieldControl = field.control ?? 'textarea';
                         return (
                           <div
                             key={field.key}
-                            className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count xy-floating-visible-placeholder xy-structured-setting-field min-h-0 flex-1 ${value.trim() ? 'xy-has-value' : ''}`}
+                            className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count xy-floating-visible-placeholder xy-structured-setting-field ${field.fieldClassName ?? 'min-h-0 flex-1'} ${value.trim() ? 'xy-has-value' : ''}`}
                           >
-                            <textarea
-                              data-no-modal-drag="true"
-                              aria-label={field.title}
-                              value={value}
-                              onFocus={() => setActiveLibraryFontTarget('settingPreview')}
-                              onChange={(event) => updateStructuredSettingField(field.key, event.target.value)}
-                              onScroll={() => handleSettingSidebarScroll(`setting-textarea:${currentStructuredSettingFieldSet.id}:${field.key}`)}
-                              placeholder={field.placeholder ?? `填写${field.title}`}
-                              className={`scrollbar-scroll-only scrollbar-half-width text-sm leading-7 text-gray-700 ${
-                                activeSettingSidebarScrollKey === `setting-textarea:${currentStructuredSettingFieldSet.id}:${field.key}` ? 'scrollbar-active' : ''
-                              }`}
-                              style={{ fontSize: settingPreviewFontSize }}
-                            />
+                            {fieldControl === 'input' ? (
+                              <input
+                                data-no-modal-drag="true"
+                                aria-label={field.title}
+                                value={value}
+                                maxLength={field.maxLength}
+                                onFocus={() => setActiveLibraryFontTarget('settingPreview')}
+                                onChange={(event) => updateStructuredSettingField(field.key, event.target.value)}
+                                placeholder={field.placeholder ?? `填写${field.title}`}
+                                className="text-sm leading-7 text-gray-700"
+                                style={{ fontSize: settingPreviewFontSize }}
+                              />
+                            ) : (
+                              <textarea
+                                data-no-modal-drag="true"
+                                aria-label={field.title}
+                                value={value}
+                                onFocus={() => setActiveLibraryFontTarget('settingPreview')}
+                                onChange={(event) => updateStructuredSettingField(field.key, event.target.value)}
+                                onScroll={() => handleSettingSidebarScroll(`setting-textarea:${currentStructuredSettingFieldSet.id}:${field.key}`)}
+                                placeholder={field.placeholder ?? `填写${field.title}`}
+                                className={`scrollbar-scroll-only scrollbar-half-width text-sm leading-7 text-gray-700 ${
+                                  activeSettingSidebarScrollKey === `setting-textarea:${currentStructuredSettingFieldSet.id}:${field.key}` ? 'scrollbar-active' : ''
+                                }`}
+                                style={{ fontSize: settingPreviewFontSize }}
+                              />
+                            )}
                             <label className="xy-floating-title-count">{field.title} <span><WordCountText value={countTextWords(value)} /></span></label>
                           </div>
                         );
@@ -9461,11 +9913,12 @@ export function WorkbenchLibraryPanel({
                   promptDisabled={effectivePromptDisabled}
                   onPromptContextMenu={showPromptDisableButton ? (event) => {
                     event.preventDefault();
+                    const { left, top } = clampFixedMenuPosition(event.clientX, event.clientY, PROMPT_DISABLE_CONTEXT_MENU_SIZE);
                     setPromptDisableMenu({
                       tab: activeTab,
                       disabled: effectivePromptDisabled,
-                      x: event.clientX,
-                      y: event.clientY,
+                      x: left,
+                      y: top,
                     });
                   } : undefined}
                 />
@@ -10596,7 +11049,7 @@ export function WorkbenchLibraryPanel({
                 )}
               </div>
             </aside>
-            <div className="min-h-0 overflow-y-auto p-5">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
               <AiRequestLogGroups
                 groups={buildLibraryLogGroups(visibleOutlineAiRequestLog, {
                   includeContext: shouldShowOutlineBodyContext,
@@ -10607,6 +11060,7 @@ export function WorkbenchLibraryPanel({
                   expandReaderContextContent: plotPointStandalone,
                   expandAllContent: plotPointStandalone,
                 })}
+                fillSingleGroup
               />
             </div>
           </div>
@@ -11357,10 +11811,11 @@ export function WorkbenchLibraryPanel({
                           if (!isDetailOutlineTab) return;
                           event.preventDefault();
                           event.stopPropagation();
+                          const { left, top } = clampFixedMenuPosition(event.clientX, event.clientY, DETAIL_OUTLINE_CHAPTER_CONTEXT_MENU_SIZE);
                           setDetailOutlineChapterMenu({
                             visible: true,
-                            x: event.clientX,
-                            y: event.clientY,
+                            x: left,
+                            y: top,
                             chapter,
                           });
                         }}
@@ -12074,10 +12529,11 @@ export function WorkbenchLibraryPanel({
                                   if (!isDetailOutlineTab) return;
                                   event.preventDefault();
                                   event.stopPropagation();
+                                  const { left, top } = clampFixedMenuPosition(event.clientX, event.clientY, DETAIL_OUTLINE_CHAPTER_CONTEXT_MENU_SIZE);
                                   setDetailOutlineChapterMenu({
                                     visible: true,
-                                    x: event.clientX,
-                                    y: event.clientY,
+                                    x: left,
+                                    y: top,
                                     chapter,
                                   });
                                 }}

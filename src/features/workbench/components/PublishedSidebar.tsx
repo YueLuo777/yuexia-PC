@@ -148,7 +148,7 @@ export function PublishedSidebar({
                 {volume.chapters.map((chapter) => (
                   <div
                     key={chapter.id}
-                    className={`group relative flex items-center gap-2 rounded-md border-l-[3px] px-[26px] py-1 transition-colors ${
+                    className={`group relative flex items-center gap-2 rounded-md border-l-[3px] px-1 py-1 transition-colors ${
                       chapter.isSelected ? 'border-transparent xy-selected-mint-bg' : 'border-transparent hover:bg-gray-50'
                     }`}
                     onClick={() => onSelectChapter(volume.id, chapter.id)}
@@ -161,7 +161,7 @@ export function PublishedSidebar({
                     <span className={`flex-1 truncate whitespace-nowrap text-sm font-black ${chapter.isSelected ? 'text-[#1f2933]' : 'text-gray-700'}`}>
                       第{chapter.serialNumber}章<span className="hidden">{chapter.title ? ` ${chapter.title}` : ''}</span>
                     </span>
-                    <span className="shrink-0 text-xs font-black text-gray-400 transition-opacity group-hover:opacity-0">
+                    <span className="ml-auto shrink-0 text-[11px] font-black text-gray-400 transition-opacity group-hover:opacity-0">
                       {getChapterWordCount(chapter.id)}
                     </span>
                     <button

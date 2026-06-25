@@ -24,6 +24,10 @@ export function isMaleProtagonistRoleType(value?: string | null) {
   return normalizeWorkbenchRoleType(value) === '男主角';
 }
 
+export function isDefaultWorkbenchRoleType(value?: string | null) {
+  return DEFAULT_WORKBENCH_ROLE_TYPES.includes(normalizeWorkbenchRoleType(value));
+}
+
 export function normalizeWorkbenchRoleLifeStatus(
   roleType?: string | null,
   lifeStatus?: string | null,

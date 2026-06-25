@@ -22,8 +22,17 @@ describe('ChapterSidebarCompactTitleTestPage', () => {
     expect(source).toContain('当前留白版');
     expect(source).toContain('左移优化版');
     expect(source).toContain("px-[24px] py-1");
-    expect(source).toContain("py-1 pl-1 pr-6");
+    expect(source).toContain("py-1 pl-1 pr-1");
     expect(source).toContain('第{chapter.id}章 {chapter.title}');
+  });
+
+  it('keeps the compact preview word count pinned to the right edge', async () => {
+    const source = await readTestPageSource();
+
+    expect(source).toContain('grid-cols-[minmax(0,1fr)_4ch]');
+    expect(source).toContain('justify-self-end');
+    expect(source).toContain('tabular-nums');
+    expect(source).toContain('pl-1 pr-1');
   });
 
   it('adds the compact chapter title test page to the test collection', async () => {

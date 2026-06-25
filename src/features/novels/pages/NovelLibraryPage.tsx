@@ -1,5 +1,5 @@
 import { AlertTriangle, Image as ImageIcon, Plus, RefreshCw, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { ImportModal } from '@/features/novels/components/ImportModal';
@@ -26,6 +26,11 @@ interface FullCardSettings extends NovelCardSettings {
 }
 
 const CARD_SETTINGS_KEY = 'novel_card_settings';
+const NOVEL_LIBRARY_DASHBOARD_WIDTHS_KEY = 'novel_library_dashboard_card_widths_v1';
+const DEFAULT_DASHBOARD_CARD_WIDTHS = [1.25, 1.45, 1.75, 1];
+const DASHBOARD_CARD_MIN_WIDTH = 220;
+const DASHBOARD_CARD_MIN_RATIO = 0.35;
+const DASHBOARD_CARD_RESIZE_HANDLE_WIDTH = 10;
 const defaultBtnOrder = ['重命名', '封面', '导出', '删除'];
 const defaultBtnColors: Record<string, BtnColor> = {
   重命名: 'blue',
@@ -151,6 +156,25 @@ function loadCardSettings(): FullCardSettings {
 
 function saveCardSettings(settings: FullCardSettings) {
   localStorage.setItem(CARD_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function readDashboardCardWidths() {
+  try {
+    const saved = localStorage.getItem(NOVEL_LIBRARY_DASHBOARD_WIDTHS_KEY);
+    if (!saved) return [...DEFAULT_DASHBOARD_CARD_WIDTHS];
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return [...DEFAULT_DASHBOARD_CARD_WIDTHS];
+    return DEFAULT_DASHBOARD_CARD_WIDTHS.map((fallback, index) => {
+      const value = Number(parsed[index]);
+      return Number.isFinite(value) ? Math.max(DASHBOARD_CARD_MIN_RATIO, value) : fallback;
+    });
+  } catch {
+    return [...DEFAULT_DASHBOARD_CARD_WIDTHS];
+  }
+}
+
+function saveDashboardCardWidths(widths: number[]) {
+  localStorage.setItem(NOVEL_LIBRARY_DASHBOARD_WIDTHS_KEY, JSON.stringify(widths));
 }
 
 function CardSettingsModal({
@@ -585,6 +609,73 @@ export function NovelLibraryPage() {
   const [cardSettings, setCardSettings] = useState<FullCardSettings>(loadCardSettings);
   const [notice, setNotice] = useState('');
   const [writingSummary, setWritingSummary] = useState(readWritingSummary);
+  const [dashboardCardWidths, setDashboardCardWidths] = useState(readDashboardCardWidths);
+  const dashboardRowRef = useRef<HTMLDivElement | null>(null);
+  const dashboardResizeRef = useRef<{
+    index: number;
+    startX: number;
+    leftWidth: number;
+    rightWidth: number;
+    ratioUnitWidth: number;
+  } | null>(null);
+  const dashboardGridTemplate = [
+    `minmax(${DASHBOARD_CARD_MIN_WIDTH}px, ${dashboardCardWidths[0]}fr)`,
+    `${DASHBOARD_CARD_RESIZE_HANDLE_WIDTH}px`,
+    `minmax(${DASHBOARD_CARD_MIN_WIDTH}px, ${dashboardCardWidths[1]}fr)`,
+    `${DASHBOARD_CARD_RESIZE_HANDLE_WIDTH}px`,
+    `minmax(${DASHBOARD_CARD_MIN_WIDTH}px, ${dashboardCardWidths[2]}fr)`,
+    `${DASHBOARD_CARD_RESIZE_HANDLE_WIDTH}px`,
+    `minmax(${DASHBOARD_CARD_MIN_WIDTH}px, ${dashboardCardWidths[3]}fr)`,
+  ].join(' ');
+
+  const startDashboardCardResize = (event: ReactPointerEvent<HTMLButtonElement>, index: number) => {
+    event.preventDefault();
+    const leftWidth = dashboardCardWidths[index] ?? DASHBOARD_CARD_MIN_WIDTH;
+    const rightWidth = dashboardCardWidths[index + 1] ?? DASHBOARD_CARD_MIN_WIDTH;
+    const availableWidth = Math.max(
+      DASHBOARD_CARD_MIN_WIDTH * dashboardCardWidths.length,
+      (dashboardRowRef.current?.clientWidth ?? 0) - DASHBOARD_CARD_RESIZE_HANDLE_WIDTH * (dashboardCardWidths.length - 1),
+    );
+    const totalRatio = dashboardCardWidths.reduce((sum, width) => sum + width, 0);
+    const ratioUnitWidth = availableWidth / totalRatio;
+    dashboardResizeRef.current = {
+      index,
+      startX: event.clientX,
+      leftWidth,
+      rightWidth,
+      ratioUnitWidth,
+    };
+
+    const handleMove = (moveEvent: PointerEvent) => {
+      const state = dashboardResizeRef.current;
+      if (!state) return;
+      const delta = moveEvent.clientX - state.startX;
+      const totalWidth = (state.leftWidth + state.rightWidth) * state.ratioUnitWidth;
+      const nextLeftWidth = Math.min(
+        totalWidth - DASHBOARD_CARD_MIN_WIDTH,
+        Math.max(DASHBOARD_CARD_MIN_WIDTH, state.leftWidth * state.ratioUnitWidth + delta),
+      );
+      const nextRightWidth = totalWidth - nextLeftWidth;
+      setDashboardCardWidths((current) => {
+        const next = [...current];
+        next[state.index] = nextLeftWidth / state.ratioUnitWidth;
+        next[state.index + 1] = nextRightWidth / state.ratioUnitWidth;
+        saveDashboardCardWidths(next);
+        return next;
+      });
+    };
+
+    const stopResize = () => {
+      dashboardResizeRef.current = null;
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', stopResize);
+      window.removeEventListener('pointercancel', stopResize);
+    };
+
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', stopResize);
+    window.addEventListener('pointercancel', stopResize);
+  };
 
   useEffect(() => {
     setIsNewOpen(false);
@@ -668,7 +759,8 @@ export function NovelLibraryPage() {
   return (
     <div className="flex h-screen flex-col bg-white">
       <main className="flex-1 overflow-y-auto px-[21px] py-3.5">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="space-y-3 overflow-x-auto pb-1">
+          <div ref={dashboardRowRef} className="grid min-w-[960px]" style={{ gridTemplateColumns: dashboardGridTemplate }}>
           <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-5 py-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -678,24 +770,34 @@ export function NovelLibraryPage() {
             </div>
             <div className="mt-3 grid flex-1 grid-cols-2 grid-rows-2 gap-2">
               {[
-                { label: '作品', value: `${sourceNovels.length} 本`, desc: `当前${typeLabel}库` },
-                { label: '昨日更新', value: `${formatWords(writingSummary.yesterdayWords)} 字`, desc: '昨日新增字数' },
-                { label: '字数', value: `${formatWords(totalWorkWords)} 字`, desc: '累计作品字数' },
-                { label: '平均字数', value: `${formatWords(averageWorkWords)} 字`, desc: '单本平均字数' },
+                { label: '作品', value: `${sourceNovels.length} 本` },
+                { label: '昨日更新', value: `${formatWords(writingSummary.yesterdayWords)} 字` },
+                { label: '字数', value: `${formatWords(totalWorkWords)} 字` },
+                { label: '平均字数', value: `${formatWords(averageWorkWords)} 字` },
               ].map((item) => (
                 <article
                   key={item.label}
-                  className="grid h-full min-h-[40px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[8px] border border-[#e6e8ec] bg-white px-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+                  className="grid h-full min-h-[40px] grid-cols-[max-content_minmax(86px,1fr)] items-center gap-2 rounded-[8px] border border-[#e6e8ec] bg-white px-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
                 >
-                  <span className="min-w-0">
-                    <span className="block truncate text-[12px] font-semibold text-[#1f2933]">{item.label}</span>
-                    <span className="block truncate text-[10px] text-[#9aa3af]">{item.desc}</span>
+                  <span className="min-w-0 shrink-0">
+                    <span className="block whitespace-nowrap text-[12px] font-semibold text-[#1f2933]">{item.label}</span>
                   </span>
-                  <strong className="shrink-0 text-right text-[19px] font-bold leading-none text-[#111827]">{item.value}</strong>
+                  <strong className="min-w-[86px] shrink-0 text-right text-[clamp(15px,1.05vw,18px)] font-bold leading-none text-[#111827] tabular-nums">{item.value}</strong>
                 </article>
               ))}
             </div>
           </section>
+
+          <button
+            type="button"
+            title="拖拽调整卡片宽度"
+            aria-label="拖拽调整卡片宽度"
+            data-dashboard-resize-handle
+            onPointerDown={(event) => startDashboardCardResize(event, 0)}
+            className="group flex h-full cursor-col-resize items-stretch justify-center px-[3px]"
+          >
+            <span className="h-full w-px rounded-full bg-transparent transition-colors group-hover:bg-[#08AACE] group-active:bg-[#08AACE]" />
+          </button>
 
           <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-4 py-3.5">
             <div className="flex items-center justify-between">
@@ -735,6 +837,17 @@ export function NovelLibraryPage() {
             </div>
           </section>
 
+          <button
+            type="button"
+            title="拖拽调整卡片宽度"
+            aria-label="拖拽调整卡片宽度"
+            data-dashboard-resize-handle
+            onPointerDown={(event) => startDashboardCardResize(event, 1)}
+            className="group flex h-full cursor-col-resize items-stretch justify-center px-[3px]"
+          >
+            <span className="h-full w-px rounded-full bg-transparent transition-colors group-hover:bg-[#08AACE] group-active:bg-[#08AACE]" />
+          </button>
+
           <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-white px-4 py-4">
             <h2 className="truncate text-[15px] font-semibold leading-none text-[#1f2933]">最近编辑：</h2>
             {recentWorks.length > 0 ? (
@@ -758,11 +871,24 @@ export function NovelLibraryPage() {
             )}
           </section>
 
+          <button
+            type="button"
+            title="拖拽调整卡片宽度"
+            aria-label="拖拽调整卡片宽度"
+            data-dashboard-resize-handle
+            onPointerDown={(event) => startDashboardCardResize(event, 2)}
+            className="group flex h-full cursor-col-resize items-stretch justify-center px-[3px]"
+          >
+            <span className="h-full w-px rounded-full bg-transparent transition-colors group-hover:bg-[#08AACE] group-active:bg-[#08AACE]" />
+          </button>
+
           <section className="flex min-h-[126px] flex-col rounded-[8px] border border-dashed border-[#d7dce4] bg-[#fbfbfc] px-5 py-4">
             <p className="text-[13px] font-medium text-[#9aa3af]">预留</p>
             <h2 className="mt-1.5 truncate text-[23px] font-bold text-[#68727f]">扩展卡片</h2>
             <p className="mt-3 text-[13px] font-medium leading-5 text-[#9aa3af]">后续可以放灵感、待办、今日目标或资料提醒。</p>
           </section>
+
+          </div>
         </div>
 
         {notice && (

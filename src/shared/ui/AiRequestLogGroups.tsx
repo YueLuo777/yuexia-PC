@@ -74,10 +74,16 @@ export function AiRequestLogContent({ content }: { content: string }) {
 export function AiRequestLogGroups({
   groups,
   defaultCollapsed = true,
+  fillSingleGroup = false,
+  fillGroupId,
+  fillLastGroup = false,
   storageKey = AI_REQUEST_LOG_COLLAPSED_KEY,
 }: {
   groups: AiRequestLogGroup[];
   defaultCollapsed?: boolean;
+  fillSingleGroup?: boolean;
+  fillGroupId?: string;
+  fillLastGroup?: boolean;
   storageKey?: string;
 }) {
   const visibleGroups = useMemo(
@@ -111,15 +117,19 @@ export function AiRequestLogGroups({
       return next;
     });
   };
+  const shouldFillSingleGroup = fillSingleGroup && visibleGroups.length === 1;
+  const fillLastGroupIndex = fillLastGroup ? visibleGroups.length - 1 : -1;
+  const shouldUseFillLayout = shouldFillSingleGroup || Boolean(fillGroupId) || fillLastGroup;
 
   return (
-    <div className="space-y-3">
-      {visibleGroups.map((group) => {
+    <div className={shouldUseFillLayout ? 'flex h-full min-h-0 flex-col gap-3' : 'space-y-3'}>
+      {visibleGroups.map((group, groupIndex) => {
         const groupKey = getGroupStorageKey(group);
         const collapsed = collapsedIds.has(groupKey);
         const content = group.content?.trim() ?? '';
+        const shouldFillGroup = shouldFillSingleGroup || (fillGroupId === group.id && !collapsed) || (fillLastGroupIndex === groupIndex && !collapsed);
         return (
-          <section key={group.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <section key={group.id} className={`overflow-hidden rounded-2xl border border-slate-200 bg-white ${shouldFillGroup ? 'flex min-h-0 flex-1 flex-col' : ''}`}>
             <button
               type="button"
               onClick={() => toggleGroup(groupKey)}
@@ -136,8 +146,8 @@ export function AiRequestLogGroups({
               </span>
             </button>
             {!collapsed && (
-              <div className="border-t border-slate-100 bg-slate-50/60 p-3">
-                <div className={`ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 ${group.contentClassName ?? 'max-h-[360px] overflow-y-auto'}`}>
+              <div className={`border-t border-slate-100 bg-slate-50/60 p-3 ${shouldFillGroup ? 'flex min-h-0 flex-1 flex-col' : ''}`}>
+                <div className={`ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 ${group.contentClassName ?? (shouldFillGroup ? 'min-h-0 flex-1 overflow-y-auto' : 'max-h-[360px] overflow-y-auto')}`}>
                   <AiRequestLogContent content={content} />
                 </div>
               </div>

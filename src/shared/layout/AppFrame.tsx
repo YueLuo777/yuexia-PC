@@ -41,7 +41,6 @@ const APP_SCALE_OPTIONS = [1, 1.1, 1.25, 1.5, 1.75, 2].map((labelScale) => ({
   effectiveScale: Number((APP_SCALE_BASE * labelScale).toFixed(3)),
 }));
 const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
-const HOME_LAST_ROUTE_KEY = 'xinyuexia_home_last_route_this_session_v1';
 const RIGHT_MOUSE_GESTURE_THRESHOLD = 90;
 const RIGHT_MOUSE_GESTURE_VERTICAL_TOLERANCE = 80;
 const RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD = 18;
@@ -81,25 +80,6 @@ function loadDarkTheme() {
   }
 }
 
-function readLastHomeRoute() {
-  try {
-    const saved = sessionStorage.getItem(HOME_LAST_ROUTE_KEY);
-    return saved && saved !== '/dashboard' ? saved : HOME_TAB.path;
-  } catch {
-    return HOME_TAB.path;
-  }
-}
-
-function rememberHomeRoute(pathname: string) {
-  if (pathname === HOME_TAB.path) return;
-  if (pathname === '/dashboard') return;
-  try {
-    sessionStorage.setItem(HOME_LAST_ROUTE_KEY, pathname);
-  } catch {
-    // Session storage may be unavailable in restricted contexts.
-  }
-}
-
 interface AppFrameProps {
   children: ReactNode;
 }
@@ -133,7 +113,7 @@ export function AppFrame({ children }: AppFrameProps) {
 
   const activateHomeTab = useCallback(() => {
     setActiveTabId(HOME_TAB.id);
-    navigate(readLastHomeRoute());
+    navigate(HOME_TAB.path);
   }, [navigate, setActiveTabId]);
 
   useEffect(() => {
@@ -772,7 +752,6 @@ export function AppFrame({ children }: AppFrameProps) {
   useEffect(() => {
     if (location.pathname !== '/workbench' && location.pathname !== '/script-editor-v2') {
       setActiveTabId(HOME_TAB.id);
-      rememberHomeRoute(location.pathname);
       return;
     }
 
@@ -862,9 +841,9 @@ export function AppFrame({ children }: AppFrameProps) {
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') activateTab(tab);
                   }}
-                  className={`workspace-tab group relative flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-t-md border px-3 text-[13px] font-medium text-[#68727f] transition-all hover:text-[#1f2933] ${
+                  className={`workspace-tab group relative flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-t-md border px-3 text-[15px] font-bold text-[#68727f] transition-all hover:text-[#1f2933] ${
                     isActive
-                      ? `workspace-tab-active border-[#cfd6df] border-b-white bg-white font-semibold text-[#1f2933] shadow-[0_-1px_0_rgba(255,255,255,0.6)_inset] ${isHomeTab ? 'workspace-tab-home' : ''}`
+                      ? `workspace-tab-active border-[#cfd6df] border-b-white bg-white font-bold text-[#1f2933] shadow-[0_-1px_0_rgba(255,255,255,0.6)_inset] ${isHomeTab ? 'workspace-tab-home' : ''}`
                       : `workspace-tab-inactive border-transparent bg-transparent ${isHomeTab ? 'workspace-tab-home-inactive' : ''}`
                   } ${isHomeTab ? 'w-[126px] text-center' : 'min-w-[128px] max-w-[230px] text-left'}`}
                   title={tab.title}

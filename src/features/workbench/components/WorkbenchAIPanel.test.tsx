@@ -32,4 +32,13 @@ describe('WorkbenchAIPanel linked context controls', () => {
     expect(source).not.toContain('已关联：<WordCountText value={activeLinkWordCount} compact />');
     expect(source).not.toContain('if (!activeSession?.linkChapter || linkedContextItems.length === 0) return;');
   });
+
+  it('lets the body AI request log material section fill the dialog height', () => {
+    const source = readSource('WorkbenchAIPanel.tsx');
+
+    expect(source).toContain('className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] overflow-hidden"');
+    expect(source).toContain('className="editor-scrollbar flex min-h-0 flex-1 flex-col overflow-hidden p-5"');
+    expect(source).toContain("{ id: 'context', title: '资料'");
+    expect(source).toContain('fillGroupId="context"');
+  });
 });

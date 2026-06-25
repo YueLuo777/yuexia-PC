@@ -58,7 +58,7 @@ function PromptEditorModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/40 p-6">
+    <div className="modal-sharp fixed inset-0 z-[290] flex items-center justify-center bg-transparent p-6">
       <div
         className="modal-sharp flex h-full max-h-[calc(100dvh-48px)] w-[980px] max-w-[94vw] flex-col overflow-hidden rounded-[28px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
         onClick={(event) => event.stopPropagation()}

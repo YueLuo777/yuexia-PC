@@ -6,6 +6,7 @@ import {
   getDefaultPlotChainRoleIds,
   getInitialPlotChainRoleIds,
   getPlotPointProtagonistReplacementRule,
+  isDefaultWorkbenchRoleType,
   normalizeWorkbenchRoleLifeStatus,
   normalizeWorkbenchRoleType,
   shouldShowRolePinAction,
@@ -23,6 +24,19 @@ describe('workbenchRoleTypes', () => {
       '龙套角色',
     ]);
     expect(DEFAULT_WORKBENCH_ROLE_TYPES).not.toContain('未分类');
+  });
+
+  it('treats all approved character groups as undeletable default groups', () => {
+    [
+      '女主角',
+      '重要正派角色',
+      '正派配角',
+      '重要反派角色',
+      '反派配角',
+      '龙套角色',
+    ].forEach((type) => expect(isDefaultWorkbenchRoleType(type)).toBe(true));
+
+    expect(isDefaultWorkbenchRoleType('临时角色')).toBe(false);
   });
 
   it('splits the old combined protagonist category into male and female protagonist categories', () => {

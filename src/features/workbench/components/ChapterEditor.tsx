@@ -75,6 +75,8 @@ const STATUS_PAGE_RIGHT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_status_rig
 const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] xy-flow-group-bg px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors';
 const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';
 const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#6f7e90]';
+const WORKBENCH_CHAPTER_NUMBER_GRID_STYLE = { gridTemplateColumns: 'repeat(auto-fit, minmax(32px, max-content))' };
+const WORKBENCH_CHAPTER_NUMBER_BASE_CLASS = 'relative grid h-8 w-8 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block';
 const REVIEW_PAGE_LEFT_WIDTH_LIMIT = { min: 180, max: 360 };
 const REVIEW_PAGE_RIGHT_WIDTH_LIMIT = { min: 260, max: 520 };
 const STATUS_PAGE_LEFT_WIDTH_LIMIT = { min: 190, max: 360 };
@@ -1786,7 +1788,7 @@ export function ChapterEditor({
         </div>
         <div className="flex items-center overflow-hidden rounded-md border border-brand">
           <button onClick={() => setIsHighFreqOpen(true)} className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
-            高频词
+            自动替换
           </button>
           <div className="h-4 w-px bg-brand/30" />
           <HighFreqToggle />
@@ -1993,24 +1995,22 @@ export function ChapterEditor({
                         {expanded && (
                           <div
                             className="mt-1 grid justify-start gap-2 px-1.5 py-1.5"
-                            style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}
+                            style={WORKBENCH_CHAPTER_NUMBER_GRID_STYLE}
                           >
                             {group.chapters.map((item) => {
                               const selected = activeStatusChapter?.id === item.id;
                               const updated = statusUpdatedChapterIds.has(item.id);
+                              const statusChapterNumberStateClass = updated
+                                ? 'xy-detail-outline-number-used hover:border-[#067B96] hover:bg-[#D3EEF5]'
+                                : 'xy-detail-outline-number-no-outline hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]';
+                              const statusChapterNumberSelectedClass = selected ? 'xy-detail-outline-number-selected' : '';
                               return (
                                 <button
                                   key={item.id}
                                   type="button"
                                   onClick={() => selectStatusChapter(item.id)}
                                   title={`${updated ? '已更新状态到' : '未更新状态到'}第${item.serialNumber}章 ${item.title || ''}`}
-                                  className={`relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
-                                    selected
-                                      ? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'
-                                      : updated
-                                      ? 'border-[#08B3D9] bg-[#08B3D9] text-white hover:border-[#067B96] hover:bg-[#067B96]'
-                                      : 'border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
-                                  }`}
+                                  className={`${WORKBENCH_CHAPTER_NUMBER_BASE_CLASS} ${statusChapterNumberStateClass} ${statusChapterNumberSelectedClass}`}
                                 >
                                   {item.serialNumber}
                                 </button>
@@ -2215,21 +2215,19 @@ export function ChapterEditor({
                         {expanded && (
                           <div
                             className="mt-1 grid justify-start gap-2 px-1.5 py-1.5"
-                            style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(36px, max-content))' }}
+                            style={WORKBENCH_CHAPTER_NUMBER_GRID_STYLE}
                           >
                             {group.chapters.map((item) => {
                               const selected = activeReviewChapter?.id === item.id;
+                              const reviewChapterNumberStateClass = 'xy-detail-outline-number-no-outline hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]';
+                              const reviewChapterNumberSelectedClass = selected ? 'xy-detail-outline-number-selected' : '';
                               return (
                                 <button
                                   key={item.id}
                                   type="button"
                                   onClick={() => selectReviewChapter(item.id)}
                                   title={`第${item.serialNumber}章 ${item.title || '未命名章节'} · ${item.wordCount}字`}
-                                  className={`relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
-                                    selected
-                                      ? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'
-                                      : 'border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
-                                  }`}
+                                  className={`${WORKBENCH_CHAPTER_NUMBER_BASE_CLASS} ${reviewChapterNumberStateClass} ${reviewChapterNumberSelectedClass}`}
                                 >
                                   {item.serialNumber}
                                 </button>
@@ -2586,7 +2584,7 @@ export function ChapterEditor({
                         关闭
                       </button>
                     </div>
-                    <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto p-4">
+                    <div className="editor-scrollbar flex min-h-0 flex-1 flex-col overflow-hidden p-4">
                       {reviewRequestLog ? (
                         <AiRequestLogGroups
                           groups={[
@@ -2594,6 +2592,7 @@ export function ChapterEditor({
                             { id: 'context', title: '关联内容', meta: `${countCompactWords(getReviewLogSection(reviewRequestLog, '发送上下文'))} 字`, content: getReviewLogSection(reviewRequestLog, '发送上下文'), tone: 'cyan' },
                             { id: 'user', title: '用户要求', meta: `${countCompactWords(getReviewLogSection(reviewRequestLog, '用户要求'))} 字`, content: getReviewLogSection(reviewRequestLog, '用户要求'), tone: 'amber' },
                           ]}
+                          fillGroupId="context"
                         />
                       ) : (
                         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-500">

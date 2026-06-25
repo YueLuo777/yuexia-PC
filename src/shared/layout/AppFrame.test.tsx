@@ -46,7 +46,7 @@ describe('writer workspace chrome styling', () => {
     expect(editorRule).not.toContain('repeating-linear-gradient');
   });
 
-  it('makes the fixed novel-library tab easier to find than normal work tabs', async () => {
+  it('uses the same readable title size for home and work tabs', async () => {
     const appFrame = await readSource('AppFrame.tsx');
     const tabs = await readSource('../tabs/WorkspaceTabsContext.tsx');
     const styles = await readSource('../styles/index.css');
@@ -55,11 +55,26 @@ describe('writer workspace chrome styling', () => {
       styles.indexOf('.xy-wa-book-cover-empty {'),
     );
 
-    expect(tabs).toContain("title: '我的小说'");
+    expect(tabs).toContain("title: '首页'");
     expect(tabs).toContain("path: '/novels'");
     expect(appFrame).toContain('workspace-tab-home');
     expect(appFrame).toContain('workspace-tab-home-inactive');
+    expect(appFrame).toContain('px-3 text-[15px] font-bold text-[#68727f]');
+    expect(appFrame).toContain('bg-white font-bold text-[#1f2933]');
+    expect(appFrame).not.toContain('px-3 text-[13px] font-medium text-[#68727f]');
+    expect(appFrame).not.toContain('bg-white font-semibold text-[#1f2933]');
     expect(homeRule).toContain('font-size: 15px;');
     expect(homeRule).toContain('font-weight: 700;');
+  });
+
+  it('always sends the top home tab back to the novel library', async () => {
+    const appFrame = await readSource('AppFrame.tsx');
+
+    expect(appFrame).toContain('const activateHomeTab = useCallback(() => {');
+    expect(appFrame).toContain('navigate(HOME_TAB.path);');
+    expect(appFrame).not.toContain('navigate(readLastHomeRoute());');
+    expect(appFrame).not.toContain('HOME_LAST_ROUTE_KEY');
+    expect(appFrame).not.toContain('function readLastHomeRoute()');
+    expect(appFrame).not.toContain('function rememberHomeRoute(pathname: string)');
   });
 });

@@ -207,7 +207,7 @@ export function ChapterSidebar({
                         event.stopPropagation();
                         setChapterMenu({ visible: true, ...getContextMenuPoint(event), volumeId: volume.id, chapterId: chapter.id });
                       }}
-                      className={`group relative flex w-full cursor-pointer items-center gap-2 rounded-[8px] border px-[24px] py-1 text-left transition-colors ${
+                      className={`group relative flex w-full cursor-pointer items-center gap-2 rounded-[8px] border px-1 py-1 text-left transition-colors ${
                         chapter.isSelected
                           ? 'border-transparent xy-selected-mint-bg'
                           : 'border-transparent hover:bg-gray-50'
@@ -216,7 +216,7 @@ export function ChapterSidebar({
                       <span className="flex-1 truncate whitespace-nowrap text-sm font-black text-gray-700">
                         第{chapter.serialNumber}{chapterUnit}{chapter.title ? ` ${chapter.title}` : ''}
                       </span>
-                      <span className="shrink-0 text-xs font-black text-gray-400 transition-opacity group-hover:opacity-0">
+                      <span className="ml-auto shrink-0 text-[11px] font-black text-gray-400 transition-opacity group-hover:opacity-0">
                         {getChapterWordCount(chapter.id)}
                       </span>
                       <button
