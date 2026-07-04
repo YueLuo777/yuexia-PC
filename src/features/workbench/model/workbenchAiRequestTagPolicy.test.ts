@@ -10,10 +10,10 @@ describe('workbench AI request tag policy', () => {
       '章纲',
       '正文',
       '审核',
-      '点评',
+      '综合点评',
       '润色',
-      '状态',
-      '梗概',
+      '更新状态',
+      '生成梗概',
     ]);
   });
 
@@ -25,7 +25,7 @@ describe('workbench AI request tag policy', () => {
       tags: [],
     });
 
-    ['大纲', '章纲', '正文', '审核', '点评', '润色', '状态', '梗概'].forEach((label) => {
+    ['大纲', '章纲', '正文', '审核', '综合点评', '润色', '更新状态', '生成梗概'].forEach((label) => {
       const policy = policyByLabel.get(label);
       expect(policy?.useXmlTags).toBe(true);
       expect(policy?.tags.length).toBeGreaterThan(0);
@@ -40,10 +40,10 @@ describe('workbench AI request tag policy', () => {
     expect(policyByLabel.get('章纲')?.tags).toEqual(['关联资料', '设定资料', '角色资料', '前文章纲', '剧情链', '本章要求']);
     expect(policyByLabel.get('正文')?.tags).toEqual(['本章章纲', '前文正文', '前文梗概', '关联设定', '写作要求']);
     expect(policyByLabel.get('审核')?.tags).toEqual(['待审核正文', '关联章纲', '审核要求']);
-    expect(policyByLabel.get('点评')?.tags).toEqual(['待点评正文', '关联章纲', '点评要求']);
+    expect(policyByLabel.get('综合点评')?.tags).toEqual(['待点评正文', '关联章纲', '点评要求']);
     expect(policyByLabel.get('润色')?.tags).toEqual(['待润色正文', '关联章纲', '润色要求']);
-    expect(policyByLabel.get('状态')?.tags).toEqual(['待提取正文', '已有状态', '状态更新要求']);
-    expect(policyByLabel.get('梗概')?.tags).toEqual(['待梗概正文', '梗概要求']);
+    expect(policyByLabel.get('更新状态')?.tags).toEqual(['待提取正文', '已有状态', '状态更新要求']);
+    expect(policyByLabel.get('生成梗概')?.tags).toEqual(['待梗概正文', '梗概要求']);
   });
 
   it('wraps sent materials in readable XML-style sections', () => {

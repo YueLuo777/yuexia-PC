@@ -7,7 +7,7 @@ import { createPortal } from 'react-dom';
 import { useModels } from '@/features/models/hooks/useModels';
 import { callModel, callModelStream } from '@/features/models/services/callModel';
 import { readPlotLibrarySnapshot } from '@/features/plot-library/hooks/usePlotLibrary';
-import { normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
+import { SUMMARY_PROMPT_CATEGORY, normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import { shouldSyncOutlinePreviewDraft } from '@/features/workbench/model/workbenchOutlineSync';
 import { getPlotPointScoreColorClass, prepareCollapsedPlotPointCard } from '@/features/workbench/model/workbenchPlotPointCard';
@@ -671,7 +671,7 @@ export function WorkbenchLibraryPanel({
     () => prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === PROMPT_SETTING_CATEGORY),
     [prompts],
   );
-  const outlinePrompts = useMemo(() => prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === '梗概'), [prompts]);
+  const outlinePrompts = useMemo(() => prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === SUMMARY_PROMPT_CATEGORY), [prompts]);
   const scaleStyle = scale === 1 ? undefined : ({ zoom: scale } as CSSProperties);
   const selectedId = activeTabConfig.selectedId ?? null;
   const roleTypeDraft = activeTabConfig.roleTypeDraft ?? activeTabConfig.typeDraft ?? '';
@@ -4957,8 +4957,8 @@ export function WorkbenchLibraryPanel({
 
           {activeIsBrainstorm && (
             <section className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-white">
-              <div className="flex min-h-0 flex-1 flex-col gap-5 p-4">
-                <div className="editor-scrollbar xy-brainstorm-output-preview-list flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
+              <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] gap-2 p-4">
+                <div className="editor-scrollbar xy-brainstorm-output-preview-list flex min-h-0 flex-col gap-3 overflow-y-auto pr-1">
                   {brainstormOutputPreviews.map((previewValue, index) => {
                     const titleValue = brainstormOutputTitles[index] ?? getTemporaryBrainstormTitle(index);
                     const previewWordCount = countTextWords(previewValue);
@@ -5008,7 +5008,7 @@ export function WorkbenchLibraryPanel({
                     );
                   })}
                 </div>
-                <div className="shrink-0 space-y-3">
+                <div className="min-h-0 space-y-3">
                   <AiInlineInput
                     ref={libraryAiInputRef}
                     value={aiInput}
@@ -5665,7 +5665,7 @@ export function WorkbenchLibraryPanel({
     };
     const outlineSidebarWidth = settingLibraryLeftWidth;
     const outlinePreviewTitle = plotPointStandalone ? '剧情点预览' : isDetailOutlineTab ? 'AI输出章纲' : (safeOutlineSelectionType === 'volume' ? '卷梗概预览' : '章节梗概');
-    const outlinePromptCategory = plotPointStandalone ? PLOT_CHAIN_PROMPT_CATEGORY : isDetailOutlineTab ? DETAIL_OUTLINE_PROMPT_CATEGORY : '梗概';
+    const outlinePromptCategory = plotPointStandalone ? PLOT_CHAIN_PROMPT_CATEGORY : isDetailOutlineTab ? DETAIL_OUTLINE_PROMPT_CATEGORY : SUMMARY_PROMPT_CATEGORY;
     const outlinePromptOptions = prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === outlinePromptCategory);
     const configuredOutlinePromptId = plotPointStandalone
       ? activeTabConfig.plotPointPromptId ?? activeTabConfig.promptId
@@ -6575,7 +6575,7 @@ export function WorkbenchLibraryPanel({
                           : 'xy-detail-outline-number-no-outline';
                     const outlineButtonSelectedClass = selected ? 'xy-detail-outline-number-selected' : '';
                     const outlineButtonClass = isDetailOutlineTab
-                      ? `relative grid h-8 w-8 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block ${outlineButtonContentStateClass} ${outlineButtonSelectedClass}`
+                      ? `relative grid h-8 w-8 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block xy-detail-outline-number-white-bg ${outlineButtonContentStateClass} ${outlineButtonSelectedClass}`
                       : `relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
                           selected
                             ? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'
@@ -6848,7 +6848,7 @@ export function WorkbenchLibraryPanel({
                                   className={`h-8 shrink-0 rounded-lg border px-3 text-xs font-black shadow-sm transition-colors ${
                                     written
                                       ? 'border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100'
-                                      : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                      : 'border-emerald-200 bg-white text-emerald-700 hover:border-emerald-300 hover:bg-white hover:text-emerald-800'
                                   }`}
                                 >
                                   {written ? '移回未写' : '标为已写'}
@@ -7293,7 +7293,7 @@ export function WorkbenchLibraryPanel({
                                   : 'xy-detail-outline-number-no-outline';
                             const outlineButtonSelectedClass = selected ? 'xy-detail-outline-number-selected' : '';
                             const outlineButtonClass = isDetailOutlineTab
-                              ? `relative grid h-8 w-8 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block ${outlineButtonContentStateClass} ${outlineButtonSelectedClass}`
+                              ? `relative grid h-8 w-8 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block xy-detail-outline-number-white-bg ${outlineButtonContentStateClass} ${outlineButtonSelectedClass}`
                               : `relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
                                   selected
                                     ? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'

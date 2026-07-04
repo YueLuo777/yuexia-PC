@@ -11,7 +11,6 @@ import { bindWorkbenchTransientAiCleanup } from '@/features/workbench/model/work
 import { areInternalRoutesEnabled } from '@/shared/featureFlags/internalRoutes';
 
 const TestCollectionPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })));
-const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
 const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })));
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
@@ -27,9 +26,7 @@ const WorkbenchPage = lazy(() => import('@/features/workbench/pages/WorkbenchPag
 const TokenUsagePage = lazy(() => import('@/pages/TokenUsagePage'));
 const TextOverridesPage = lazy(() => import('@/features/text-overrides/pages/TextOverridesPage').then((module) => ({ default: module.TextOverridesPage })));
 const DashboardLayout = lazy(() => import('@/shared/layout/DashboardLayout').then((module) => ({ default: module.DashboardLayout })));
-const SystemSettingsPage = lazy(() => import('@/shared/settings/SystemSettingsModal').then((module) => ({ default: module.SystemSettingsPage })));
-const ShortcutSettingsPage = lazy(() => import('@/shared/shortcuts/ShortcutSettingsModal').then((module) => ({ default: module.ShortcutSettingsPage })));
-const NavSettingsPage = lazy(() => import('@/shared/navigation/NavSettingsModal').then((module) => ({ default: module.NavSettingsPage })));
+const SettingsPage = lazy(() => import('@/shared/settings/SettingsPage').then((module) => ({ default: module.SettingsPage })));
 
 function AppFallback() {
   return (
@@ -102,6 +99,7 @@ export default function App() {
                 <Route path="/prompts" element={<PromptsPage />} />
                 <Route path="/model-manage" element={<ModelManagePage />} />
                 <Route path="/db-settings" element={<DbSettingsPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/text-overrides" element={<TextOverridesPage />} />
                 <Route path="/token-usage" element={<TokenUsagePage />} />
                 {showInternalRoutes && (
@@ -111,13 +109,13 @@ export default function App() {
                     <Route path="/hidden-content" element={<HiddenPagesTestPage />} />
                     <Route path="/hidden-pages-test" element={<HiddenPagesTestPage />} />
                     <Route path="/error-log" element={<ErrorLogPage />} />
-                    <Route path="/theme-colors" element={<DarkThemeColorPage />} />
+                    <Route path="/theme-colors" element={<Navigate to="/settings?section=theme" replace />} />
                     <Route path="/test-browser" element={<TestBrowserPage />} />
                   </>
                 )}
-                <Route path="/system-settings" element={<SystemSettingsPage />} />
-                <Route path="/shortcut-settings" element={<ShortcutSettingsPage />} />
-                <Route path="/nav-settings" element={<NavSettingsPage />} />
+                <Route path="/system-settings" element={<Navigate to="/settings?section=system" replace />} />
+                <Route path="/shortcut-settings" element={<Navigate to="/settings?section=shortcuts" replace />} />
+                <Route path="/nav-settings" element={<Navigate to="/settings?section=navigation" replace />} />
               </Route>
               <Route path="/workbench" element={<WorkbenchPage />} />
               <Route path="/script-editor-v2" element={<ScriptEditorPage />} />

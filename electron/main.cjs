@@ -29,6 +29,14 @@ const SHARED_WINDOW_STATE_FILE = path.join(
   SHARED_STATE_DIR_NAME,
   'window-state.json',
 );
+const SHARED_WINDOW_SETTINGS_FILE = path.join(
+  app.getPath('appData'),
+  SHARED_STATE_DIR_NAME,
+  'window-settings.json',
+);
+const DEFAULT_WINDOW_SETTINGS = {
+  rememberSize: true,
+};
 const LEGACY_WINDOW_STATE_FILES = [
   path.join(app.getPath('userData'), 'window-state.json'),
   path.join(app.getPath('appData'), 'xinyuexia-desktop-dev', 'window-state.json'),
@@ -80,6 +88,34 @@ function parseWindowState(filePath) {
   }
 }
 
+function normalizeWindowSettings(input) {
+  const settings = input && typeof input === 'object' ? input : {};
+  return {
+    rememberSize: settings.rememberSize !== false,
+  };
+}
+
+function readWindowSettings() {
+  try {
+    if (!fs.existsSync(SHARED_WINDOW_SETTINGS_FILE)) return { ...DEFAULT_WINDOW_SETTINGS };
+    const parsed = JSON.parse(fs.readFileSync(SHARED_WINDOW_SETTINGS_FILE, 'utf8'));
+    return normalizeWindowSettings(parsed);
+  } catch {
+    return { ...DEFAULT_WINDOW_SETTINGS };
+  }
+}
+
+function persistWindowSettings(settings) {
+  const normalized = normalizeWindowSettings(settings);
+  try {
+    fs.mkdirSync(path.dirname(SHARED_WINDOW_SETTINGS_FILE), { recursive: true });
+    fs.writeFileSync(SHARED_WINDOW_SETTINGS_FILE, JSON.stringify(normalized, null, 2), 'utf8');
+  } catch (error) {
+    console.warn('Failed to persist window settings:', error);
+  }
+  return normalized;
+}
+
 function persistWindowState(state) {
   try {
     fs.mkdirSync(path.dirname(SHARED_WINDOW_STATE_FILE), { recursive: true });
@@ -90,6 +126,7 @@ function persistWindowState(state) {
 }
 
 function readWindowState() {
+  if (!readWindowSettings().rememberSize) return null;
   const candidates = [SHARED_WINDOW_STATE_FILE, ...LEGACY_WINDOW_STATE_FILES];
   for (const filePath of candidates) {
     const state = parseWindowState(filePath);
@@ -315,6 +352,7 @@ function getWindowOptions(savedState) {
 
 function saveWindowState(targetWindow) {
   if (!targetWindow || targetWindow.isDestroyed()) return;
+  if (!readWindowSettings().rememberSize) return;
 
   const bounds = targetWindow.isMaximized()
     ? targetWindow.getNormalBounds()
@@ -327,6 +365,42 @@ function saveWindowState(targetWindow) {
     height: bounds.height,
     isMaximized: targetWindow.isMaximized(),
   });
+}
+
+function readWindowSettingsResult() {
+  return {
+    ...readWindowSettings(),
+    defaultBounds: { ...DEFAULT_WINDOW_BOUNDS },
+    currentBounds: mainWindow && !mainWindow.isDestroyed()
+      ? mainWindow.getBounds()
+      : null,
+  };
+}
+
+function updateWindowSettings(nextSettings) {
+  const previous = readWindowSettings();
+  const next = persistWindowSettings({ ...previous, ...normalizeWindowSettings(nextSettings) });
+  if (next.rememberSize) saveWindowState(mainWindow);
+  return readWindowSettingsResult();
+}
+
+function resetWindowBoundsToDefault() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.unmaximize();
+    mainWindow.setBounds({ ...DEFAULT_WINDOW_BOUNDS });
+    mainWindow.center();
+  }
+
+  if (fs.existsSync(SHARED_WINDOW_STATE_FILE)) {
+    try {
+      fs.unlinkSync(SHARED_WINDOW_STATE_FILE);
+    } catch (error) {
+      console.warn('Failed to reset window state:', error);
+    }
+  }
+
+  if (readWindowSettings().rememberSize) saveWindowState(mainWindow);
+  return readWindowSettingsResult();
 }
 
 function notifyWindowMaximizedState(targetWindow) {
@@ -510,6 +584,9 @@ ipcMain.handle('window:is-maximized', () => mainWindow?.isMaximized() ?? false);
 ipcMain.handle('window:reload', () => {
   mainWindow?.webContents.reloadIgnoringCache();
 });
+ipcMain.handle('window-settings:read', () => readWindowSettingsResult());
+ipcMain.handle('window-settings:update', (_event, nextSettings) => updateWindowSettings(nextSettings));
+ipcMain.handle('window-settings:reset-bounds', () => resetWindowBoundsToDefault());
 
 ipcMain.handle('app-icon:read', async () => readCurrentAppIcon());
 

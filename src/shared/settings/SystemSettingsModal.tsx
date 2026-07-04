@@ -6,9 +6,10 @@ import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 
-type SettingsTab = 'association' | 'appIcon';
+type SettingsTab = 'window' | 'association' | 'appIcon';
 
 const tabs: Array<{ id: SettingsTab; label: string }> = [
+  { id: 'window', label: '窗口' },
   { id: 'association', label: '关联设置' },
   { id: 'appIcon', label: '软件图标' },
 ];
@@ -19,19 +20,35 @@ interface SystemSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   homeAvatar?: string;
-  variant?: 'modal' | 'page';
+  variant?: 'modal' | 'page' | 'embedded';
 }
 
 function readHomeAvatar() {
   return localStorage.getItem(USER_AVATAR_KEY) || '';
 }
 
+const SETTINGS_LIGHT_BUTTON_CLASS =
+  'flex h-8 min-w-[88px] items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-4 text-sm leading-none text-white transition-colors hover:bg-[#0798b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2] disabled:cursor-not-allowed disabled:bg-slate-300';
+const SETTINGS_PAGE_BACK_BUTTON_CLASS =
+  'flex h-9 w-9 items-center justify-center rounded-lg border transition-colors border-brand/20 bg-white text-brand hover:bg-brand-light';
+const SETTINGS_PAGE_SHELL_CLASS =
+  'mx-auto flex h-full w-full max-w-[1040px] flex-col overflow-hidden';
+const SETTINGS_PAGE_BODY_CLASS =
+  'grid min-h-0 flex-1 grid-cols-[180px_minmax(0,1fr)] gap-6 pt-4';
+const SETTINGS_PAGE_NAV_CLASS =
+  'shrink-0 border-r border-slate-100 pr-4';
+const SETTINGS_PAGE_CONTENT_CLASS =
+  'min-w-0 overflow-y-auto px-1 pb-6';
+
 export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant = 'modal' }: SystemSettingsModalProps) {
   const isPage = variant === 'page';
-  useTopModalEscape(!isPage && isOpen, onClose);
+  const isEmbedded = variant === 'embedded';
+  const isRouteSurface = isPage || isEmbedded;
+  useTopModalEscape(!isRouteSurface && isOpen, onClose);
   const draggable = useDraggableModal('dashboard_system_settings', { x: 0, y: 0, width: 936, height: 720 });
-  const [activeTab, setActiveTab] = useState<SettingsTab>('association');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('window');
   const [iconInfo, setIconInfo] = useState<AppIconResult | null>(null);
+  const [windowSettings, setWindowSettings] = useState<WindowSettingsResult | null>(null);
   const [status, setStatus] = useState('');
   const [isBusy, setIsBusy] = useState(false);
   const fallbackIconDir = 'E:\\0yuexia\\0,月下PC\\ruanjianfengmian';
@@ -44,11 +61,17 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
     if (result) setIconInfo(result);
   };
 
+  const refreshWindowSettings = async () => {
+    const result = await window.xinyuexiaWindow?.readSettings();
+    if (result) setWindowSettings(result);
+  };
+
   useEffect(() => {
     if (!isOpen) return;
     setStatus('');
-    setActiveTab('association');
+    setActiveTab('window');
     void refreshIconInfo();
+    void refreshWindowSettings();
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -118,51 +141,79 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
     setStatus(result.message ?? (result.ok ? '已将当前图标设为默认图标。' : '设置默认图标失败。'));
   };
 
+  const updateRememberWindowSize = async (rememberSize: boolean) => {
+    if (!window.xinyuexiaWindow?.updateSettings) {
+      setStatus('当前运行环境不支持窗口大小记忆设置。');
+      return;
+    }
+    const result = await window.xinyuexiaWindow.updateSettings({ rememberSize });
+    setWindowSettings(result);
+    setStatus(rememberSize ? '已开启窗口大小记忆。' : '已关闭窗口大小记忆，下次启动会使用默认大小。');
+  };
+
+  const resetWindowBounds = async () => {
+    if (!window.xinyuexiaWindow?.resetBounds) {
+      setStatus('当前运行环境不支持恢复默认窗口大小。');
+      return;
+    }
+    const result = await window.xinyuexiaWindow.resetBounds();
+    setWindowSettings(result);
+    setStatus('已恢复默认窗口大小。');
+  };
+
   return (
     <div
-      className={isPage ? 'h-full min-h-0 overflow-hidden bg-slate-50 p-5' : 'fixed inset-0 z-[120] flex items-center justify-center bg-black/40 p-4'}
-      onClick={isPage ? undefined : onClose}
+      className={isEmbedded ? 'h-full min-h-0 overflow-hidden' : isPage ? 'h-full min-h-0 overflow-hidden bg-slate-50 px-8 py-6' : 'fixed inset-0 z-[120] flex items-center justify-center bg-black/40 p-4'}
+      onClick={isRouteSurface ? undefined : onClose}
     >
       <div
-        data-draggable-managed={isPage ? undefined : 'true'}
-        data-modal-id={isPage ? undefined : 'dashboard-system-settings'}
-        className={isPage ? 'mx-auto flex h-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm' : 'relative flex h-[min(720px,calc(100vh-32px))] w-[936px] max-w-[96vw] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'}
-        style={isPage ? undefined : ({
+        data-draggable-managed={isRouteSurface ? undefined : 'true'}
+        data-modal-id={isRouteSurface ? undefined : 'dashboard-system-settings'}
+        className={isEmbedded ? 'flex h-full min-h-0 w-full flex-col overflow-hidden' : isPage ? SETTINGS_PAGE_SHELL_CLASS : 'relative flex h-[min(720px,calc(100vh-32px))] w-[936px] max-w-[96vw] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'}
+        style={isRouteSurface ? undefined : ({
           ...draggable.style,
           maxWidth: 'calc((100vw - 32px) / var(--xinyuexia-effective-scale, 1))',
           maxHeight: 'calc((100vh - 112px) / var(--xinyuexia-effective-scale, 1))',
         } as React.CSSProperties)}
         onClick={(event) => event.stopPropagation()}
       >
-        <div {...(isPage ? {} : draggable.dragHandleProps)} className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3">
+        {!isEmbedded && (
+        <div {...(isPage ? {} : draggable.dragHandleProps)} className={isPage ? 'flex shrink-0 items-center justify-between border-b border-slate-100 pb-4' : 'flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3'}>
           <div className="flex items-center gap-3">
             {isPage ? (
               <button
                 onClick={onClose}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border transition-colors border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                className={SETTINGS_PAGE_BACK_BUTTON_CLASS}
                 title="返回我的小说"
                 aria-label="返回我的小说"
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
             ) : null}
-            <h2 className="text-base font-bold text-slate-900">系统设置</h2>
+            <h2 className={isPage ? 'text-2xl font-black text-slate-950' : 'text-base font-bold text-slate-900'}>系统设置</h2>
           </div>
-          {!isPage ? (
+          {!isRouteSurface ? (
             <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
               <X className="h-4 w-4" />
             </button>
           ) : null}
         </div>
+        )}
 
-        <div className="flex min-h-0 flex-1">
-          <div className="w-36 shrink-0 border-r border-slate-100 bg-slate-50 p-3">
+        <div className={isEmbedded ? 'grid min-h-0 flex-1 grid-cols-[160px_minmax(0,1fr)] gap-5' : isPage ? SETTINGS_PAGE_BODY_CLASS : 'flex min-h-0 flex-1'}>
+          <div className={isEmbedded ? 'shrink-0 border-r border-slate-100 pr-4' : isPage ? SETTINGS_PAGE_NAV_CLASS : 'w-36 shrink-0 border-r border-slate-100 bg-slate-50 p-3'}>
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`mb-2 w-full rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-colors ${
-                  activeTab === tab.id ? 'bg-white text-brand shadow-sm' : 'text-slate-500 hover:bg-white hover:text-slate-800'
+                className={`mb-2 w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition-colors ${
+                  activeTab === tab.id
+                    ? isEmbedded
+                      ? 'bg-[#08AACE] text-white shadow-sm'
+                      : 'bg-white text-brand shadow-sm ring-1 ring-slate-100'
+                    : isEmbedded
+                      ? 'text-slate-600 hover:bg-[#E7F8FD] hover:text-[#08AACE]'
+                      : 'text-slate-500 hover:bg-white hover:text-slate-800'
                 }`}
               >
                 {tab.label}
@@ -170,10 +221,54 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
             ))}
           </div>
 
-          <div className="min-w-0 flex-1 overflow-y-auto p-4">
+          <div className={isEmbedded ? 'min-w-0 overflow-y-auto pb-6 pr-1' : isPage ? SETTINGS_PAGE_CONTENT_CLASS : 'min-w-0 flex-1 overflow-y-auto p-4'}>
+            {activeTab === 'window' && (
+              <div className="space-y-4">
+                <section className={isRouteSurface ? 'border-b border-slate-100 pb-4' : 'rounded-2xl border border-slate-100 bg-slate-50 p-4'}>
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-bold text-slate-900">记住窗口大小</h3>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        开启后，软件会用上一次关闭前的窗口宽高和位置启动；关闭后，每次启动使用默认窗口大小。
+                      </p>
+                      <p className="mt-2 text-xs font-bold text-slate-400">
+                        当前默认：{windowSettings?.defaultBounds.width ?? 1366} × {windowSettings?.defaultBounds.height ?? 768}
+                        {windowSettings?.currentBounds
+                          ? `，当前：${windowSettings.currentBounds.width} × ${windowSettings.currentBounds.height}`
+                          : ''}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void updateRememberWindowSize(!(windowSettings?.rememberSize ?? true))}
+                      className={SETTINGS_LIGHT_BUTTON_CLASS}
+                    >
+                      {(windowSettings?.rememberSize ?? true) ? '已开启' : '已关闭'}
+                    </button>
+                  </div>
+                </section>
+
+                <section className={isRouteSurface ? 'pb-2' : 'rounded-2xl border border-slate-100 bg-white p-4'}>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">恢复默认窗口大小</h3>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">把当前窗口恢复到默认宽高，并清掉已保存的窗口尺寸。</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void resetWindowBounds()}
+                      className={SETTINGS_LIGHT_BUTTON_CLASS}
+                    >
+                      恢复默认
+                    </button>
+                  </div>
+                </section>
+              </div>
+            )}
+
             {activeTab === 'association' && (
               <div className="space-y-4">
-                <div className="rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4">
+                <div className={isRouteSurface ? 'border-b border-cyan-100 py-3' : 'rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4'}>
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <h3 className="text-sm font-bold text-slate-900">关联有效期</h3>
@@ -219,7 +314,7 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
                       <button
                         onClick={useHomeAvatarIcon}
                         disabled={isBusy || !homeAvatar}
-                        className="mt-2 rounded-lg border border-brand/30 px-3 py-1.5 text-xs font-bold text-brand hover:bg-brand-light disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300"
+                        className={`mt-2 ${SETTINGS_LIGHT_BUTTON_CLASS}`}
                       >
                         使用首页图标
                       </button>
@@ -232,7 +327,7 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
                     <button
                       onClick={makeDefaultIcon}
                       disabled={isBusy || !iconInfo?.ok}
-                      className="mt-3 rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-slate-300"
+                      className={`mt-3 ${SETTINGS_LIGHT_BUTTON_CLASS}`}
                     >
                       设为默认图标
                     </button>
@@ -250,7 +345,7 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
                     <h3 className="text-sm font-bold text-slate-900">可选图标</h3>
                     <button
                       onClick={() => void refreshIconInfo()}
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                      className={SETTINGS_LIGHT_BUTTON_CLASS}
                     >
                       刷新
                     </button>
@@ -280,11 +375,7 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
                           <button
                             onClick={() => void applyProjectIcon(icon.fileName)}
                             disabled={isBusy || icon.isSelected}
-                            className={`mt-1.5 w-full rounded-lg px-2 py-1.5 text-[11px] font-bold transition-colors ${
-                              icon.isSelected
-                                ? 'cursor-default bg-brand text-white'
-                                : 'border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300'
-                            }`}
+                            className={`mt-1.5 w-full ${SETTINGS_LIGHT_BUTTON_CLASS}`}
                           >
                             {icon.isSelected ? '使用中' : '使用'}
                           </button>
@@ -298,14 +389,14 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
                   <button
                     onClick={resetIcon}
                     disabled={isBusy}
-                    className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300"
+                    className={SETTINGS_LIGHT_BUTTON_CLASS}
                   >
                     恢复默认
                   </button>
                   <button
                     onClick={selectIcon}
                     disabled={isBusy}
-                    className="rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-slate-300"
+                    className={SETTINGS_LIGHT_BUTTON_CLASS}
                   >
                     上传图片
                   </button>
@@ -316,7 +407,7 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
             )}
           </div>
         </div>
-        {!isPage && <ModalResizeHandles draggable={draggable} />}
+        {!isRouteSurface && <ModalResizeHandles draggable={draggable} />}
       </div>
     </div>
   );

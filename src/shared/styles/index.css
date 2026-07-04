@@ -232,6 +232,10 @@
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
 }
 
+.xy-detail-outline-number-white-bg {
+  background: #ffffff;
+}
+
 .xy-detail-outline-number-selected {
   border-color: var(--xy-detail-outline-number-selected);
   box-shadow:
@@ -1191,7 +1195,6 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
   flex-direction: column;
   gap: 0.125rem;
   border: 1px solid #D8E1EC;
-  border-right-color: transparent;
   background: #ffffff;
   padding: 0 0.5rem;
   color: #1f2933;
@@ -1200,7 +1203,6 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 
 .xy-flow-status-group > * + * {
   margin-left: -1px;
-  border-left: 1px solid #D8E1EC;
 }
 
 .xy-flow-status-group .xy-flow-status-button:first-child {
@@ -1230,7 +1232,6 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 .xy-flow-status-button.xy-active {
   z-index: 10;
   border-color: #8FE4F2;
-  border-right-color: transparent;
   background: var(--xy-custom-flow-group-bg);
   color: var(--xy-wa-blue);
   box-shadow: none;

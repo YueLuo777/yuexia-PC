@@ -11,8 +11,8 @@ describe('WORKBENCH_HEADER_FLOW_ITEMS', () => {
       'chapterOutline',
       'writing',
       'audit',
-      'comment',
       'polish',
+      'comment',
       'status',
       'summary',
     ]);

@@ -18,19 +18,6 @@ import { HOME_TAB, useWorkspaceTabs, type WorkspaceTab } from '@/shared/tabs/Wor
 import { TextOverrideLayer } from '@/shared/text-overrides/TextOverrideLayer';
 import { applyCustomThemeColors } from '@/features/theme/model/customThemeColors';
 
-declare global {
-  interface Window {
-    xinyuexiaWindow?: {
-      minimize: () => Promise<void>;
-      maximizeToggle: () => Promise<boolean>;
-      close: () => Promise<void>;
-      isMaximized: () => Promise<boolean>;
-      reload: () => Promise<void>;
-      onMaximizedChange?: (callback: (isMaximized: boolean) => void) => () => void;
-    };
-  }
-}
-
 const APP_SCALE_KEY = 'xinyuexia_app_scale';
 const APP_SCALE_VERSION_KEY = 'xinyuexia_app_scale_version';
 const DARK_THEME_KEY = 'xinyuexia_dark_theme';

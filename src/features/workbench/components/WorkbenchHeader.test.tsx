@@ -33,15 +33,15 @@ describe('WorkbenchHeader', () => {
     expect(capsuleGroups[1]).toContainElement(screen.getByRole('button', { name: '正文' }));
     expect(capsuleGroups[1]).not.toContainElement(screen.getByRole('button', { name: '剧情审核' }));
     expect(capsuleGroups[2]).toContainElement(screen.getByRole('button', { name: '剧情审核' }));
-    expect(capsuleGroups[2]).toContainElement(screen.getByRole('button', { name: '梗概' }));
+    expect(capsuleGroups[2]).toContainElement(screen.getByRole('button', { name: '生成梗概' }));
 
     const creationButtons = Array.from(capsuleGroups[1].querySelectorAll('button')).map((button) => button.textContent);
     expect(creationButtons).toEqual(['脑洞', '设定', '章纲', '正文']);
     expect(creationButtons).not.toContain('剧情链');
     const reviewButtons = Array.from(capsuleGroups[2].querySelectorAll('button')).map((button) => button.textContent);
-    expect(reviewButtons).toEqual(['剧情审核', '文笔润色', '点评', '状态', '梗概']);
+    expect(reviewButtons).toEqual(['剧情审核', '文笔润色', '综合点评', '更新状态', '生成梗概']);
 
-    for (const label of ['作品信息', '设定', '章纲', '正文', '脑洞', '剧情审核', '点评', '文笔润色', '状态', '梗概']) {
+    for (const label of ['作品信息', '设定', '章纲', '正文', '脑洞', '剧情审核', '综合点评', '文笔润色', '更新状态', '生成梗概']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
     }
     expect(screen.queryByRole('button', { name: '剧情链' })).not.toBeInTheDocument();
@@ -98,7 +98,6 @@ describe('WorkbenchHeader', () => {
     expect(styleSource).toContain('min-width: 5.875rem;');
     expect(styleSource).toContain('flex-direction: column;');
     expect(styleSource).toContain('border: 1px solid #D8E1EC;');
-    expect(styleSource).toContain('border-left: 1px solid #D8E1EC;');
     expect(styleSource).toContain('font-size: 0.5625rem;');
     expect(styleSource).not.toContain('border: 1px solid #CBD5E1;');
     expect(styleSource).not.toContain('border-left: 1px solid #E2E8F0;');
@@ -110,15 +109,26 @@ describe('WorkbenchHeader', () => {
     const styleSource = readSource('../../../shared/styles/index.css');
 
     expect(styleSource).toContain('border: 1px solid #D8E1EC;');
-    expect(styleSource).toContain('border-left: 1px solid #D8E1EC;');
     expect(styleSource).toContain('border-color: #8FE4F2;');
     expect(styleSource).toContain('background: var(--xy-custom-flow-group-bg);');
-    expect(styleSource).toContain('border-right-color: transparent;');
+    expect(styleSource).toContain('margin-left: -1px;');
+    expect(styleSource).not.toContain('border-right-color: transparent;');
     expect(styleSource).not.toContain('box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);');
     expect(styleSource).not.toContain('border: 1px solid #111827;');
     expect(styleSource).not.toContain('box-shadow: 0 0 0 1px rgba(17, 24, 39, 0.12);');
     expect(styleSource.indexOf('.xy-flow-status-group > * + *')).toBeGreaterThan(styleSource.indexOf('.xy-flow-status-button {'));
     expect(styleSource.indexOf('.xy-flow-status-button.xy-active')).toBeGreaterThan(styleSource.indexOf('.xy-flow-status-group > * + *'));
+  });
+
+  it('keeps active flow buttons bordered on both sides', () => {
+    const styleSource = readSource('../../../shared/styles/index.css');
+    const flowButtonRule = styleSource.match(/\.xy-flow-status-button \{[\s\S]*?\n\}/)?.[0] ?? '';
+    const activeRule = styleSource.match(/\.xy-flow-status-button\.xy-active \{[\s\S]*?\n\}/)?.[0] ?? '';
+
+    expect(flowButtonRule).toContain('border: 1px solid #D8E1EC;');
+    expect(flowButtonRule).not.toContain('border-right-color: transparent;');
+    expect(activeRule).toContain('border-color: #8FE4F2;');
+    expect(activeRule).not.toContain('border-right-color: transparent;');
   });
 
   it('renders extra tools before field size and log actions', () => {

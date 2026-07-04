@@ -30,9 +30,9 @@ describe('WorkbenchHeaderFixedFlowPositionTestPage registry', () => {
     expect(source).toContain('章纲');
     expect(source).toContain('正文');
     expect(source).toContain('审核');
-    expect(source).toContain('点评');
+    expect(source).toContain('综合点评');
     expect(source).toContain('润色');
-    expect(source).toContain('状态');
-    expect(source).toContain('梗概');
+    expect(source).toContain('更新状态');
+    expect(source).toContain('生成梗概');
   });
 });

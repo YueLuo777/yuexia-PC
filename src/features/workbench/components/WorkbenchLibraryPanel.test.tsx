@@ -931,11 +931,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('const PLOT_CHAIN_PROMPT_CATEGORY = DETAIL_OUTLINE_PROMPT_CATEGORY;');
     expect(panelSource).toContain('activeTab === DETAIL_OUTLINE_TAB');
     expect(panelSource).toContain('? DETAIL_OUTLINE_PROMPT_CATEGORY');
-    expect(panelSource).toContain("const outlinePromptCategory = plotPointStandalone ? PLOT_CHAIN_PROMPT_CATEGORY : isDetailOutlineTab ? DETAIL_OUTLINE_PROMPT_CATEGORY : '梗概';");
+    expect(panelSource).toContain('const outlinePromptCategory = plotPointStandalone ? PLOT_CHAIN_PROMPT_CATEGORY : isDetailOutlineTab ? DETAIL_OUTLINE_PROMPT_CATEGORY : SUMMARY_PROMPT_CATEGORY;');
     expect(panelSource).not.toContain("const PROMPT_SETTING_CATEGORY = '大纲';");
     expect(panelSource).not.toContain("const PLOT_CHAIN_PROMPT_CATEGORY = '剧情链';");
     expect(panelSource).toContain("'暂无设定提示词'");
-    expect(aiPanelSource).toContain("new Set(['脑洞', '设定', '章纲', '审核', '点评', '润色', '状态', '梗概'])");
+    expect(aiPanelSource).toContain("new Set(['脑洞', '设定', '章纲', '审核', COMMENT_PROMPT_CATEGORY, '润色', STATUS_PROMPT_CATEGORY, SUMMARY_PROMPT_CATEGORY])");
   });
   it('renames the chapter word replacement entry away from high-frequency wording', async () => {
     const chapterEditorSource = await readChapterEditorSource();
@@ -1111,7 +1111,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(styleSource).not.toContain('.xy-floating-brainstorm-output-action-tool {');
     expect(styleSource).not.toContain('.xy-floating-edge-tool.xy-floating-brainstorm-session-tool');
     const outputListStart = panelSource.indexOf('xy-brainstorm-output-preview-list');
-    const outputListEnd = panelSource.indexOf('className="shrink-0 space-y-3"', outputListStart);
+    const outputListEnd = panelSource.indexOf('className="min-h-0 space-y-3"', outputListStart);
     const outputListSource = panelSource.slice(outputListStart, outputListEnd);
     const actionGroupStart = panelSource.indexOf('<div className="flex min-w-0 flex-wrap items-center gap-2">', outputListEnd);
     const actionGroupSource = panelSource.slice(actionGroupStart, panelSource.indexOf('{settingLibraryMode ===', actionGroupStart));
@@ -1283,12 +1283,12 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(chapterEditorSource).toContain('function extractReviewAnnotations(output: string)');
     expect(chapterEditorSource).toContain('const reviewAnnotationsByParagraph = useMemo(() => {');
     expect(chapterEditorSource).toContain('const [showReviewOutline, setShowReviewOutline] = useState(true);');
-    expect(chapterEditorSource).toContain('const reviewPreviewGridTemplateColumns = showReviewOutline');
+    expect(chapterEditorSource).toContain('const reviewPreviewGridTemplateColumns = effectiveShowReviewOutline');
     expect(chapterEditorSource).toContain('reviewPreviewOutlineResizeHandle');
     expect(chapterEditorSource).toContain('reviewPreviewAnnotationResizeHandle');
     expect(chapterEditorSource).toContain('第${activeReviewChapter.serialNumber}章 章纲');
-    expect(chapterEditorSource).toContain('第${activeReviewChapter.serialNumber}章 原文');
-    expect(chapterEditorSource).toContain('第${activeReviewChapter.serialNumber}章 AI标注');
+    expect(chapterEditorSource).toContain("第${activeReviewChapter.serialNumber}章 ${reviewMode === 'polish' ? '润色前' : '原文'}");
+    expect(chapterEditorSource).toContain("第${activeReviewChapter.serialNumber}章 ${reviewMode === 'polish' ? '润色后' : reviewMode === 'audit' ? '审核后' : 'AI标注'}");
     expect(chapterEditorSource).toContain('AI标注');
     expect(chapterEditorSource).not.toContain('AI 返回“原文标注”JSON 后，这里会高亮问题片段并显示审核说明。');
     expect(chapterEditorSource).toContain('renderAnnotatedReviewParagraph(paragraph, paragraphAnnotations)');
@@ -1739,7 +1739,9 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(outputAreaStart).toBeGreaterThan(-1);
     expect(actionAreaStart).toBeGreaterThan(outputAreaStart);
     expect(actionAreaEnd).toBeGreaterThan(actionAreaStart);
-    expect(panelSource).toContain('<div className="shrink-0 space-y-3">');
+    expect(panelSource).toContain('grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] gap-2 p-4');
+    expect(panelSource).toContain('<div className="min-h-0 space-y-3">');
+    expect(panelSource).not.toContain('flex min-h-0 flex-1 flex-col gap-5 p-4');
     expect(actionAreaSource).not.toContain('shrink-0 rounded-xl border border-gray-200 bg-white p-3');
     expect(actionAreaSource).not.toContain('mt-3 flex items-center justify-between gap-2');
     expect(actionAreaSource).not.toContain('xy-animated-checkbox');
@@ -2584,6 +2586,19 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(selectedListSource).not.toContain('transition-colors hover:bg-[#EAF9FD]');
   });
 
+  it('keeps plot chain action buttons white instead of emerald tinted on the detail outline page', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const writtenButtonAnchor = panelSource.indexOf("onClick={() => (written ? movePlotPointChainItemToUnwritten(item.id) : markPlotPointChainItemWritten(item.id))}");
+    const writtenButtonStart = panelSource.lastIndexOf('<button', writtenButtonAnchor);
+    const writtenButtonEnd = panelSource.indexOf('</button>', writtenButtonAnchor);
+    const writtenButtonSource = panelSource.slice(writtenButtonStart, writtenButtonEnd);
+
+    expect(writtenButtonAnchor).toBeGreaterThan(-1);
+    expect(writtenButtonSource).toContain("'border-emerald-200 bg-white text-emerald-700 hover:border-emerald-300 hover:bg-white hover:text-emerald-800'");
+    expect(writtenButtonSource).not.toContain('bg-emerald-50');
+    expect(writtenButtonSource).not.toContain('hover:bg-emerald-100');
+  });
+
   it('hides raw reasoning text in the plot chain right output so it matches final candidates', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const renderFunctionStart = panelSource.indexOf('function renderAiChatContent(content: string, options: { hideReasoningBody?: boolean } = {})');
@@ -2714,6 +2729,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain(": 'xy-detail-outline-number-no-outline';");
     expect(panelSource).toContain("const outlineButtonSelectedClass = selected ? 'xy-detail-outline-number-selected' : '';");
     expect(panelSource).toContain('${outlineButtonContentStateClass} ${outlineButtonSelectedClass}');
+    expect(panelSource).toContain('xy-detail-outline-number-block xy-detail-outline-number-white-bg');
     expect(panelSource).not.toContain("const outlineButtonStateClass = selected");
     expect(panelSource).not.toContain("const outlineWordLabel = outlineWordCount > 0 ? `${outlineWordCount}字` : '无章纲';");
     expect(panelSource).toContain("gridTemplateColumns: 'repeat(auto-fit, minmax(32px, max-content))'");
@@ -2729,6 +2745,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(selectedStyle).toContain('border-color: var(--xy-detail-outline-number-selected);');
     expect(selectedStyle).toContain('box-shadow:');
     expect(selectedStyle).not.toContain('background:');
+    const whiteBgStyle = styleSource.match(/\.xy-detail-outline-number-white-bg \{[\s\S]*?\n\}/)?.[0] ?? '';
+    expect(whiteBgStyle).toContain('background: #ffffff;');
+    expect(styleSource.indexOf('.xy-detail-outline-number-white-bg')).toBeGreaterThan(styleSource.indexOf('.xy-detail-outline-number-used'));
+    expect(styleSource.indexOf('.xy-detail-outline-number-white-bg')).toBeGreaterThan(styleSource.indexOf('.xy-detail-outline-number-has-outline'));
+    expect(styleSource.indexOf('.xy-detail-outline-number-white-bg')).toBeGreaterThan(styleSource.indexOf('.xy-detail-outline-number-no-outline'));
     expect(styleSource.indexOf('.xy-detail-outline-number-selected')).toBeGreaterThan(styleSource.indexOf('.xy-detail-outline-number-no-outline'));
   });
 

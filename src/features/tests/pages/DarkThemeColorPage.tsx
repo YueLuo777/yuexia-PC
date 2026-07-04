@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, Copy, Moon, RotateCcw, Sun } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Moon, Sun } from 'lucide-react';
 import { useState, type HTMLAttributes } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -39,7 +39,7 @@ type ThemeSlot = {
 };
 
 type DarkThemeColorPageProps = {
-  variant?: 'page' | 'modal';
+  variant?: 'page' | 'modal' | 'embedded';
   onClose?: () => void;
   dragHandleProps?: HTMLAttributes<HTMLElement>;
 };
@@ -193,6 +193,9 @@ const DETAIL_OUTLINE_NUMBER_SLOT_KEYS: CustomThemeColorSlotKey[] = [
   'detailOutlineHasOutline',
   'detailOutlineNoOutline',
 ];
+
+const SETTINGS_SOLID_BUTTON_CLASS =
+  'flex h-8 min-w-[88px] items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-4 text-sm leading-none text-white transition-colors hover:bg-[#0798b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2] disabled:cursor-not-allowed disabled:bg-slate-300';
 
 const globalCustomThemeSlots = CUSTOM_THEME_COLOR_SLOTS.filter((slot) => GLOBAL_CUSTOM_THEME_SLOT_KEYS.includes(slot.key));
 const detailOutlineNumberSlots = CUSTOM_THEME_COLOR_SLOTS.filter((slot) => DETAIL_OUTLINE_NUMBER_SLOT_KEYS.includes(slot.key));
@@ -388,6 +391,7 @@ function readInitialCustomColors() {
 
 export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps }: DarkThemeColorPageProps = {}) {
   const navigate = useNavigate();
+  const isEmbedded = variant === 'embedded';
   const [activeThemeTab, setActiveThemeTab] = useState<ThemeColorTab>('custom');
   const [mode, setMode] = useState<ThemeMode>(loadThemeMode);
   const [pendingSlotKey, setPendingSlotKey] = useState<string | null>(null);
@@ -447,7 +451,7 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
       onClose?.();
       return;
     }
-    navigate('/test-collection');
+    navigate('/novels');
   };
 
   const selectThemeTab = (tab: ThemeColorTab) => {
@@ -554,10 +558,8 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
           </div>
           <button
             onClick={() => setAssignments((prev) => ({ ...prev, [mode]: defaultAssignments[mode] }))}
-            className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs"
-            style={{ borderColor: page.border, color: page.body }}
+            className={SETTINGS_SOLID_BUTTON_CLASS}
           >
-            <RotateCcw className="h-3.5 w-3.5" />
             恢复当前主题
           </button>
         </div>
@@ -610,8 +612,7 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
             />
             <button
               onClick={addCustomColor}
-              className="h-9 rounded-lg px-3 text-sm font-bold text-white"
-              style={{ backgroundColor: preview.primary }}
+              className={SETTINGS_SOLID_BUTTON_CLASS}
             >
               添加颜色
             </button>
@@ -843,19 +844,19 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
               />
               <button
                 onClick={resetSelectedTarget}
-                className="min-h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-black leading-5 text-slate-600"
+                className={`w-full ${SETTINGS_SOLID_BUTTON_CLASS}`}
               >
                 恢复当前项默认
               </button>
               <button
                 onClick={resetAllTargets}
-                className="min-h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-black leading-5 text-slate-600"
+                className={`w-full ${SETTINGS_SOLID_BUTTON_CLASS}`}
               >
                 全部恢复默认
               </button>
               <button
                 onClick={confirmCustomColors}
-                className="h-9 w-full rounded-lg bg-[#08AACE] px-3 text-sm font-black text-white hover:bg-[#0695B5]"
+                className={`w-full ${SETTINGS_SOLID_BUTTON_CLASS}`}
               >
                 确认替换
               </button>
@@ -869,25 +870,30 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
 
   return (
     <div className="h-full min-h-0 overflow-y-auto" style={{ backgroundColor: page.page, color: page.title }}>
-      <div className={variant === 'modal' ? 'min-h-0 space-y-3 px-4 py-4' : 'space-y-4 px-5 py-4'}>
+      <div className={isEmbedded ? 'flex h-full min-h-0 flex-col space-y-4 overflow-y-auto pr-1' : variant === 'modal' ? 'min-h-0 space-y-3 px-4 py-4' : 'mx-auto max-w-[1180px] space-y-5 px-8 py-6'}>
         <header
           {...dragHandleProps}
-          className="grid min-h-[52px] grid-cols-[minmax(160px,1fr)_auto_minmax(160px,1fr)] items-center gap-3 rounded-xl border px-4 py-2.5"
-          style={{ ...dragHandleProps?.style, backgroundColor: page.header, borderColor: page.border }}
+          className={isEmbedded
+            ? 'flex min-h-[52px] shrink-0 items-center justify-between gap-3 border-b py-2.5'
+            : variant === 'modal'
+              ? 'grid min-h-[52px] grid-cols-[minmax(160px,1fr)_auto_minmax(160px,1fr)] items-center gap-3 rounded-xl border px-4 py-2.5'
+              : 'grid min-h-[52px] grid-cols-[minmax(160px,1fr)_auto_minmax(160px,1fr)] items-center gap-3 border-b px-4 py-2.5'}
+          style={{ ...dragHandleProps?.style, backgroundColor: variant === 'modal' ? page.header : 'transparent', borderColor: page.border }}
         >
-          <div className="flex items-center gap-3 justify-self-start">
-            <button
-              onClick={handleBack}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border transition-colors"
-              style={{ backgroundColor: page.button, borderColor: page.border, color: page.body }}
-              title="返回测试"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <div className="min-w-0">
-              <h1 className="text-lg font-black" style={{ color: page.title }}>主题颜色</h1>
+          {!isEmbedded ? (
+            <div className="flex items-center gap-3 justify-self-start">
+              <button
+                onClick={handleBack}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-brand/20 bg-white text-brand transition-colors hover:bg-brand-light"
+                title="返回测试"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+              <div className="min-w-0">
+                <h1 className="text-lg font-black" style={{ color: page.title }}>主题颜色</h1>
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <div className="inline-flex rounded-lg border bg-white p-0.5" style={{ borderColor: page.border }}>
             {([

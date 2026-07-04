@@ -126,6 +126,13 @@ describe('ChapterSidebar', () => {
     expect(chapterSidebarSource).not.toContain("? 'border-[#BDEEF7] bg-[#E7F8FD]'");
   });
 
+  it('shows chapter titles in the published chapter list after publishing', () => {
+    const publishedSidebarSource = readSource('PublishedSidebar.tsx');
+
+    expect(publishedSidebarSource).toContain("第{chapter.serialNumber}章{chapter.title ? ` ${chapter.title}` : ''}");
+    expect(publishedSidebarSource).not.toContain('<span className="hidden">{chapter.title ? ` ${chapter.title}` : \'\'}');
+  });
+
   it('keeps volume rows in the default folder color while selected chapters use mint green', () => {
     const chapterSidebarSource = readSource('ChapterSidebar.tsx');
     const publishedSidebarSource = readSource('PublishedSidebar.tsx');

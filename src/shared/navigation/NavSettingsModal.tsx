@@ -1,4 +1,4 @@
-import { ArrowLeft, RotateCcw, Settings, X } from 'lucide-react';
+import { ArrowLeft, Settings, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,13 +15,22 @@ import {
 } from '@/shared/navigation/navConfig';
 import type { NavGroupConfig, NavItemConfig } from '@/shared/navigation/navConfig';
 
+const SETTINGS_PAGE_BACK_BUTTON_CLASS =
+  'flex h-9 w-9 items-center justify-center rounded-lg border transition-colors border-brand/20 bg-white text-brand hover:bg-brand-light';
+const SETTINGS_LIGHT_BUTTON_CLASS =
+  'flex h-8 min-w-[88px] items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-4 text-sm leading-none text-white transition-colors hover:bg-[#0798b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2] disabled:cursor-not-allowed disabled:bg-slate-300';
+const SETTINGS_INLINE_BUTTON_CLASS =
+  'flex h-8 min-w-[64px] items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-3 text-sm leading-none text-white transition-colors hover:bg-[#0798b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]';
+const SETTINGS_PAGE_SHELL_CLASS =
+  'mx-auto flex h-full w-full max-w-[1120px] flex-col overflow-hidden';
+
 interface NavSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   config: NavGroupConfig[];
   onSave: (config: NavGroupConfig[]) => void;
   onReset: () => void;
-  variant?: 'modal' | 'page';
+  variant?: 'modal' | 'page' | 'embedded';
 }
 
 const ROOT_NAV_GROUP: NavGroupConfig = {
@@ -113,7 +122,9 @@ function rememberNavPointerPreviewTarget(
 
 export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, variant = 'modal' }: NavSettingsModalProps) {
   const isPage = variant === 'page';
-  useTopModalEscape(!isPage && isOpen, onClose);
+  const isEmbedded = variant === 'embedded';
+  const isRouteSurface = isPage || isEmbedded;
+  useTopModalEscape(!isRouteSurface && isOpen, onClose);
   const draggable = useDraggableModal('dashboard_nav_settings', { x: 0, y: 0, width: 640, height: 520 });
   const [draft, setDraft] = useState<NavGroupConfig[]>([]);
   const [editingItem, setEditingItem] = useState<number | null>(null);
@@ -366,27 +377,28 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
 
   return (
     <div
-      className={isPage ? 'h-full min-h-0 overflow-hidden bg-slate-50 p-5' : 'fixed inset-0 z-50 flex items-center justify-center bg-black/40'}
+      className={isEmbedded ? 'h-full min-h-0 overflow-hidden' : isPage ? 'h-full min-h-0 overflow-hidden bg-slate-50 px-8 py-6' : 'fixed inset-0 z-50 flex items-center justify-center bg-black/40'}
       onMouseDown={(event) => {
-        if (!isPage && event.target === event.currentTarget) onClose();
+        if (!isRouteSurface && event.target === event.currentTarget) onClose();
       }}
     >
       <div
-        data-draggable-managed={isPage ? undefined : 'true'}
-        data-modal-id={isPage ? undefined : 'dashboard-nav-settings'}
-        className={isPage ? 'mx-auto flex h-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm' : 'relative flex max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] w-[640px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'}
-        style={isPage ? undefined : ({
+        data-draggable-managed={isRouteSurface ? undefined : 'true'}
+        data-modal-id={isRouteSurface ? undefined : 'dashboard-nav-settings'}
+        className={isEmbedded ? 'flex h-full min-h-0 w-full flex-col overflow-hidden' : isPage ? SETTINGS_PAGE_SHELL_CLASS : 'relative flex max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] w-[640px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'}
+        style={isRouteSurface ? undefined : ({
           ...draggable.style,
           maxWidth: 'calc((100vw - 32px) / var(--xinyuexia-effective-scale, 1))',
           maxHeight: 'calc((100vh - 112px) / var(--xinyuexia-effective-scale, 1))',
         } as React.CSSProperties)}
       >
-        <div {...(isPage ? {} : draggable.dragHandleProps)} className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+        {!isEmbedded && (
+        <div {...(isPage ? {} : draggable.dragHandleProps)} className={isPage ? 'flex items-center justify-between border-b border-gray-100 pb-4' : 'flex items-center justify-between border-b border-gray-100 px-6 py-4'}>
           <div className="flex items-center gap-3">
             {isPage ? (
               <button
                 onClick={onClose}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border transition-colors border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                className={SETTINGS_PAGE_BACK_BUTTON_CLASS}
                 title="返回我的小说"
                 aria-label="返回我的小说"
               >
@@ -407,8 +419,9 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
             </button>
           ) : null}
         </div>
+        )}
 
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className={isEmbedded ? 'min-h-0 flex-1 overflow-y-auto pb-5 pr-1' : isPage ? 'flex-1 overflow-y-auto py-5' : 'flex-1 overflow-y-auto p-5'}>
           <div className="space-y-1">
             {previewDraftItems.map((item, previewIndex) => {
               const itemIndex = draftItems.findIndex((draftItem) => draftItem.to === item.to);
@@ -438,7 +451,7 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
                     onPointerMove={updateNavPointerPreview}
                     onPointerUp={finishNavPointerDrag}
                     onPointerCancel={finishNavPointerDrag}
-                    className={`flex items-center gap-2 rounded-md border-2 px-3 py-2 transition-all ${
+                    className={`flex min-h-[46px] items-center gap-3 rounded-md border-2 px-3 py-2 transition-all ${
                       isHidden
                         ? 'border-transparent bg-gray-100 opacity-60'
                         : isDraggingPreview
@@ -466,19 +479,19 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
                       />
                     ) : (
                       <>
-                        <span className={`min-w-0 flex-1 truncate text-base ${isHidden ? 'text-gray-400 line-through' : 'text-gray-700'}`}>{item.label}</span>
+                        <span className={`min-w-0 flex-1 truncate text-base font-medium ${isHidden ? 'text-gray-400 line-through' : 'text-gray-700'}`}>{item.label}</span>
                         <button
                           onClick={() => {
                             setEditingItem(itemIndex);
                             setEditingValue(item.label);
                           }}
-                          className="rounded px-1.5 py-0.5 text-base text-brand hover:bg-brand-light"
+                          className={SETTINGS_INLINE_BUTTON_CLASS}
                         >
                           修改
                         </button>
                         <button
                           onClick={() => toggleItemHidden(itemIndex)}
-                          className={`rounded px-2 py-0.5 text-base ${isHidden ? 'text-emerald-500 hover:bg-emerald-50' : 'text-gray-400 hover:bg-red-50 hover:text-red-500'}`}
+                          className={SETTINGS_INLINE_BUTTON_CLASS}
                         >
                           {isHidden ? '恢复' : '隐藏'}
                         </button>
@@ -501,7 +514,7 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
                       onDragOver={(event) => handleDragOver(event, itemIndex, previewIndex)}
                       onDrop={() => handleDrop(itemIndex, previewIndex)}
                       onDragEnd={handleDragEnd}
-                      className={`group my-1 flex h-7 cursor-grab items-center gap-2 rounded-md px-3 transition-colors active:cursor-grabbing ${
+                      className={`group my-1 flex min-h-8 cursor-grab items-center gap-2 rounded-md px-3 transition-colors active:cursor-grabbing ${
                         dividerDragSrc === item.to ? 'bg-brand/10' : 'hover:bg-[#f2f7fb]'
                       }`}
                     >
@@ -511,7 +524,7 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
                       <button
                         type="button"
                         onClick={() => removeDivider(item.to)}
-                        className="rounded px-2 py-0.5 text-xs font-medium text-[#8d98a6] hover:bg-red-50 hover:text-red-500"
+                        className={SETTINGS_INLINE_BUTTON_CLASS}
                       >
                         删除
                       </button>
@@ -523,9 +536,8 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-6 py-3">
-          <button onClick={() => { onReset(); if (!isPage) onClose(); }} className="flex items-center gap-1 px-3 py-2 text-base text-gray-500 hover:text-gray-700">
-            <RotateCcw className="h-3.5 w-3.5" />
+        <div className={isRouteSurface ? 'flex shrink-0 items-center justify-between border-t border-gray-100 py-3' : 'flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-6 py-3'}>
+          <button onClick={() => { onReset(); if (!isRouteSurface) onClose(); }} className={SETTINGS_LIGHT_BUTTON_CLASS}>
             恢复默认
           </button>
           <div className="flex items-center gap-2">
@@ -533,16 +545,16 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
               type="button"
               onClick={addDivider}
               disabled={visibleDraftItems.length <= draftDividerAfterItemTos.length}
-              className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-base text-gray-600 transition-colors hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
+              className={SETTINGS_LIGHT_BUTTON_CLASS}
             >
               新增分割线
             </button>
-            <button hidden={isPage} onClick={onClose} className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-base text-gray-600 hover:bg-gray-50">
+            <button hidden={isRouteSurface} onClick={onClose} className={SETTINGS_LIGHT_BUTTON_CLASS}>
               关闭
             </button>
           </div>
         </div>
-        {!isPage && <ModalResizeHandles draggable={draggable} />}
+        {!isRouteSurface && <ModalResizeHandles draggable={draggable} />}
       </div>
     </div>
   );

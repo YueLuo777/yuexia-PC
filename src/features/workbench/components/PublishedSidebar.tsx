@@ -159,7 +159,7 @@ export function PublishedSidebar({
                     }}
                   >
                     <span className={`flex-1 truncate whitespace-nowrap text-sm font-black ${chapter.isSelected ? 'text-[#1f2933]' : 'text-gray-700'}`}>
-                      第{chapter.serialNumber}章<span className="hidden">{chapter.title ? ` ${chapter.title}` : ''}</span>
+                      第{chapter.serialNumber}章{chapter.title ? ` ${chapter.title}` : ''}
                     </span>
                     <span className="ml-auto shrink-0 text-[11px] font-black text-gray-400 transition-opacity group-hover:opacity-0">
                       {getChapterWordCount(chapter.id)}

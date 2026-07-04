@@ -63,32 +63,33 @@ describe('DashboardLayout sidebar splitter', () => {
 });
 
 describe('DashboardLayout footer settings actions', () => {
-  it('frames each footer settings button separately instead of framing the whole group', async () => {
+  it('uses one footer settings entry instead of four separate settings links', async () => {
     const source = await readDashboardLayoutSource();
     const footerStart = source.indexOf('data-testid="dashboard-footer-settings-group"');
     const asideEnd = source.indexOf('</aside>', footerStart);
     const footerSource = source.slice(footerStart, asideEnd);
 
     expect(footerStart).toBeGreaterThan(-1);
-    expect(footerSource).toContain('className="grid grid-cols-2 gap-1.5"');
-    expect(source).toContain('border border-[#dfe5ee] bg-white/60');
+    expect(footerSource).toContain('className="grid grid-cols-1 gap-1.5"');
     expect(footerSource).not.toContain('rounded-lg border border-[#dfe5ee] bg-white/55 p-1.5 shadow-sm');
-    expect(footerSource).toContain('to="/system-settings"');
-    expect(footerSource).toContain('to="/theme-colors"');
-    expect(footerSource).toContain('to="/shortcut-settings"');
-    expect(footerSource).toContain('to="/nav-settings"');
+    expect(footerSource).toContain('to="/settings"');
+    expect(footerSource).not.toContain('to="/system-settings"');
+    expect(footerSource).not.toContain('to="/theme-colors"');
+    expect(footerSource).not.toContain('to="/shortcut-settings"');
+    expect(footerSource).not.toContain('to="/nav-settings"');
   });
 
-  it('uses readable text buttons instead of icon-only buttons', async () => {
+  it('uses a readable text button instead of icon-only settings buttons', async () => {
     const source = await readDashboardLayoutSource();
     const footerStart = source.indexOf('data-testid="dashboard-footer-settings-group"');
     const asideEnd = source.indexOf('</aside>', footerStart);
     const footerSource = source.slice(footerStart, asideEnd);
 
-    expect(footerSource).toContain('系统设置');
-    expect(footerSource).toContain('主题颜色');
-    expect(footerSource).toContain('快捷键');
-    expect(footerSource).toContain('导航设置');
+    expect(footerSource).toContain('设置');
+    expect(footerSource).not.toContain('系统设置');
+    expect(footerSource).not.toContain('主题颜色');
+    expect(footerSource).not.toContain('快捷键');
+    expect(footerSource).not.toContain('导航设置');
     expect(footerSource).toContain('className={SETTINGS_TEXT_BUTTON_CLASS}');
     expect(footerSource).not.toContain('className={SETTINGS_BUTTON_CLASS}');
     expect(footerSource).not.toContain('<Settings className=');

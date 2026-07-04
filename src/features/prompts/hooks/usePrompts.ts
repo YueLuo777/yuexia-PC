@@ -11,21 +11,26 @@ const UNCATEGORIZED = '未分类';
 export const AUDIT_PROMPT_CATEGORY = '审核';
 export const DEFAULT_AUDIT_PROMPT_SUBCATEGORY = '结构审核';
 export const AUDIT_PROMPT_SUBCATEGORIES = ['结构审核', '文本审核'] as const;
+export const COMMENT_PROMPT_CATEGORY = '综合点评';
+export const STATUS_PROMPT_CATEGORY = '更新状态';
+export const SUMMARY_PROMPT_CATEGORY = '生成梗概';
 const PROMPT_CATEGORY_ALIASES: Record<string, string> = {
   大纲: '设定',
   细纲: '章纲',
   章节细纲: '章纲',
   剧情链: '章纲',
-  更新: '状态',
-  摘要: '梗概',
-  章节摘要: '梗概',
-  卷摘要: '梗概',
-  概要: '梗概',
-  章节概要: '梗概',
-  卷概要: '梗概',
-  梗概: '梗概',
+  点评: COMMENT_PROMPT_CATEGORY,
+  更新: STATUS_PROMPT_CATEGORY,
+  状态: STATUS_PROMPT_CATEGORY,
+  摘要: SUMMARY_PROMPT_CATEGORY,
+  章节摘要: SUMMARY_PROMPT_CATEGORY,
+  卷摘要: SUMMARY_PROMPT_CATEGORY,
+  概要: SUMMARY_PROMPT_CATEGORY,
+  章节概要: SUMMARY_PROMPT_CATEGORY,
+  卷概要: SUMMARY_PROMPT_CATEGORY,
+  梗概: SUMMARY_PROMPT_CATEGORY,
 };
-export const DEFAULT_PROMPT_CATEGORIES = ['脑洞', '设定', '章纲', '正文', '审核', '点评', '润色', '状态', '梗概', UNCATEGORIZED];
+export const DEFAULT_PROMPT_CATEGORIES = ['脑洞', '设定', '章纲', '正文', '审核', COMMENT_PROMPT_CATEGORY, '润色', STATUS_PROMPT_CATEGORY, SUMMARY_PROMPT_CATEGORY, UNCATEGORIZED];
 
 export function normalizePromptCategoryName(category: string) {
   const trimmed = category.trim() || UNCATEGORIZED;

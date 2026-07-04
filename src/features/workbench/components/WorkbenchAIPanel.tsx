@@ -10,7 +10,7 @@ import {
   readMoonfallState,
   writeMoonfallState,
 } from '@/features/moonfall-settings/model/moonfallSettingStore';
-import { readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
+import { COMMENT_PROMPT_CATEGORY, STATUS_PROMPT_CATEGORY, SUMMARY_PROMPT_CATEGORY, readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import { joinAiRequestSections, wrapAiRequestTag } from '@/features/workbench/model/workbenchAiRequestTagPolicy';
 import {
@@ -41,7 +41,7 @@ export interface WorkbenchLinkedContextItem {
   content: string;
 }
 
-const WORKBENCH_AI_EXCLUDED_PROMPT_CATEGORIES = new Set(['脑洞', '设定', '章纲', '审核', '点评', '润色', '状态', '梗概']);
+const WORKBENCH_AI_EXCLUDED_PROMPT_CATEGORIES = new Set(['脑洞', '设定', '章纲', '审核', COMMENT_PROMPT_CATEGORY, '润色', STATUS_PROMPT_CATEGORY, SUMMARY_PROMPT_CATEGORY]);
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 162;

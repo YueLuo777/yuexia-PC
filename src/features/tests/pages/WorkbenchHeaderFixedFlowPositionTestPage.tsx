@@ -9,10 +9,10 @@ const creationFlows = [
 
 const reviewFlows = [
   { title: '审核', meta: '2章未审', warning: true },
-  { title: '点评', meta: '2章未点评', warning: true },
+  { title: '综合点评', meta: '2章未点评', warning: true },
   { title: '润色', meta: '' },
-  { title: '状态', meta: '2章未更新', warning: true },
-  { title: '梗概', meta: '0章', warning: true },
+  { title: '更新状态', meta: '2章未更新', warning: true },
+  { title: '生成梗概', meta: '0章', warning: true },
 ];
 
 const titles = [
@@ -116,7 +116,7 @@ export function WorkbenchHeaderFixedFlowPositionTestPage() {
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-6">
         <div>
           <h1 className="text-lg font-black text-slate-900">工作台流程按钮固定位置测试</h1>
-          <p className="mt-0.5 text-xs font-bold text-slate-400">用 20 字书名作为基准，比较“脑洞/设定/章纲/正文”和“审核/点评/润色/状态/梗概”两组按钮是否还会随书名长短移动。</p>
+          <p className="mt-0.5 text-xs font-bold text-slate-400">用 20 字书名作为基准，比较“脑洞/设定/章纲/正文”和“审核/综合点评/润色/更新状态/生成梗概”两组按钮是否还会随书名长短移动。</p>
         </div>
         <span className="rounded-full border border-[#9BEFFC] bg-[#EAF9FD] px-3 py-1 text-xs font-black text-[#08AACE]">测试页</span>
       </header>

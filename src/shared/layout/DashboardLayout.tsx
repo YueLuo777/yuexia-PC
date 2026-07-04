@@ -23,7 +23,7 @@ const USER_NAME_KEY = 'xinyuexia_sidebar_user_name';
 const USER_AVATAR_KEY = 'xinyuexia_sidebar_user_avatar';
 const USER_NAME_UPDATED_EVENT = 'xinyuexia_user_name_updated';
 const SETTINGS_TEXT_BUTTON_CLASS =
-  'flex h-8 min-w-0 items-center justify-center rounded-md border border-[#dfe5ee] bg-white/60 px-2 text-[12px] font-medium text-[#586574] shadow-sm transition-colors hover:border-[#cfd8e6] hover:bg-white hover:text-[#1f2933] focus-visible:border-[#08B3D9] focus-visible:bg-white focus-visible:outline-none';
+  'flex h-8 min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-1.5 text-sm leading-none text-white transition-colors hover:bg-[#0798b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]';
 const DASHBOARD_SIDEBAR_WIDTH_KEY = 'xinyuexia_dashboard_sidebar_width';
 const DASHBOARD_SIDEBAR_DEFAULT_WIDTH = 224;
 const DASHBOARD_SIDEBAR_MIN_WIDTH = 176;
@@ -328,35 +328,14 @@ export function DashboardLayout() {
         <div className="xy-dashboard-sidebar-footer shrink-0 border-t border-[#e1e5eb] p-3">
           <div
             data-testid="dashboard-footer-settings-group"
-            className="grid grid-cols-2 gap-1.5"
+            className="grid grid-cols-1 gap-1.5"
           >
             <Link
-              to="/system-settings"
+              to="/settings"
               className={SETTINGS_TEXT_BUTTON_CLASS}
-              title="系统设置"
+              title="设置"
             >
-              系统设置
-            </Link>
-            <Link
-              to="/theme-colors"
-              className={SETTINGS_TEXT_BUTTON_CLASS}
-              title="主题颜色"
-            >
-              主题颜色
-            </Link>
-            <Link
-              to="/shortcut-settings"
-              className={SETTINGS_TEXT_BUTTON_CLASS}
-              title="快捷键"
-            >
-              快捷键
-            </Link>
-            <Link
-              to="/nav-settings"
-              className={SETTINGS_TEXT_BUTTON_CLASS}
-              title="导航设置"
-            >
-              导航设置
+              设置
             </Link>
           </div>
         </div>

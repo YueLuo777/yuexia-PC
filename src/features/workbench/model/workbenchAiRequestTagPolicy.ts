@@ -44,7 +44,7 @@ export const WORKBENCH_AI_REQUEST_TAG_POLICIES: WorkbenchAiRequestTagPolicy[] = 
   },
   {
     id: 'comment',
-    label: '点评',
+    label: '综合点评',
     useXmlTags: true,
     reason: '点评需要区分待点评正文、章纲参考和点评维度，标签能让输出更聚焦。',
     tags: ['待点评正文', '关联章纲', '点评要求'],
@@ -58,14 +58,14 @@ export const WORKBENCH_AI_REQUEST_TAG_POLICIES: WorkbenchAiRequestTagPolicy[] = 
   },
   {
     id: 'status',
-    label: '状态',
+    label: '更新状态',
     useXmlTags: true,
     reason: '状态更新会从正文中提取角色变化，并可能参考已有状态，需要明确提取来源和更新目标。',
     tags: ['待提取正文', '已有状态', '状态更新要求'],
   },
   {
     id: 'summary',
-    label: '梗概',
+    label: '生成梗概',
     useXmlTags: true,
     reason: '梗概需要明确待梗概正文和梗概要求，避免把用户要求或前文说明混入梗概正文。',
     tags: ['待梗概正文', '梗概要求'],

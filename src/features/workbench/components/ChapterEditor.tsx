@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
 import { useModels } from '@/features/models/hooks/useModels';
 import { callModelStream } from '@/features/models/services/callModel';
-import { normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
+import { COMMENT_PROMPT_CATEGORY, STATUS_PROMPT_CATEGORY, normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
 import { isChapterContentPolished, markChapterContentPolished } from '@/features/workbench/model/chapterPolishStatus';
 import {
@@ -89,7 +89,6 @@ const REVIEW_PREVIEW_ANNOTATION_WIDTH_LIMIT = { min: 300, max: 640 };
 const STATUS_PAGE_LEFT_WIDTH_LIMIT = { min: 190, max: 360 };
 const STATUS_PAGE_RIGHT_WIDTH_LIMIT = { min: 300, max: 560 };
 const CHAPTER_EDITOR_RESIZE_HANDLE_CLASS = 'group relative z-10 flex h-full w-3 -translate-x-1/2 cursor-ew-resize items-stretch justify-center bg-transparent';
-const STATUS_PROMPT_CATEGORY = '状态';
 const POLISH_PROMPT_CATEGORY = '润色';
 const REVIEW_PREVIEW_MIN_FONT_SIZE = 12;
 const REVIEW_PREVIEW_MAX_FONT_SIZE = 28;
@@ -105,10 +104,10 @@ const EDITOR_FIELD_SIZE_DEFAULTS: Record<EditorFieldSizeKey, EditorFieldSizeSpec
   reviewCommentPromptSelect: { width: 250, height: 44, fontSize: 13 },
 };
 const EDITOR_FIELD_SIZE_LABELS: Record<EditorFieldSizeKey, string> = {
-  reviewActionGroup: '剧情审核点评文笔润色状态按钮',
-  reviewModelSelect: '剧情审核点评文笔润色模型框',
+  reviewActionGroup: '剧情审核综合点评文笔润色更新状态按钮',
+  reviewModelSelect: '剧情审核综合点评文笔润色模型框',
   reviewAuditPromptSelect: '审核提示词框',
-  reviewCommentPromptSelect: '点评提示词框',
+  reviewCommentPromptSelect: '综合点评提示词框',
 };
 const EDITOR_FIELD_SIZE_LIMITS: Record<EditorFieldSizeProp, { min: number; max: number }> = {
   width: { min: 120, max: 520 },
@@ -262,13 +261,13 @@ type ReviewModeState = {
 
 const REVIEW_MODE_TITLES: Record<ReviewMode, string> = {
   audit: '剧情审核',
-  comment: '点评',
+  comment: '综合点评',
   polish: '文笔润色',
 };
 
 const REVIEW_MODE_PROMPT_CATEGORIES: Record<ReviewMode, string> = {
   audit: '审核',
-  comment: '点评',
+  comment: COMMENT_PROMPT_CATEGORY,
   polish: POLISH_PROMPT_CATEGORY,
 };
 
@@ -976,7 +975,7 @@ export function ChapterEditor({
     return reviewPrompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === '审核');
   }, [reviewPrompts]);
   const reviewCommentPrompts = useMemo(() => {
-    return reviewPrompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === '点评');
+    return reviewPrompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === COMMENT_PROMPT_CATEGORY);
   }, [reviewPrompts]);
   const reviewPolishPrompts = useMemo(() => {
     return reviewPrompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === POLISH_PROMPT_CATEGORY);
@@ -1763,7 +1762,7 @@ export function ChapterEditor({
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <div>
             <h3 className="text-base font-black text-slate-900">作品编辑器设置</h3>
-            <p className="mt-1 text-xs font-bold text-slate-400">调整剧情审核、点评和状态相关按钮及选择框尺寸。</p>
+            <p className="mt-1 text-xs font-bold text-slate-400">调整剧情审核、综合点评和更新状态相关按钮及选择框尺寸。</p>
           </div>
           <button
             type="button"
