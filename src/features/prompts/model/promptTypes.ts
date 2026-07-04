@@ -4,6 +4,7 @@ export interface PromptItem {
   description: string;
   content: string;
   category: string;
+  subCategory?: string;
   promptType: 'novel' | 'script' | 'default';
   usageCount: number;
   isFavorite: boolean;
@@ -19,5 +20,6 @@ export interface NewPromptInput {
   description: string;
   content: string;
   category: string;
+  subCategory?: string;
   promptType?: 'novel' | 'script' | 'default';
 }

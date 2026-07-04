@@ -25,10 +25,13 @@ import {
   writeWorkbenchLinkedContextItems,
 } from '@/features/workbench/model/workbenchAssociationCleanup';
 import {
+  GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY,
+  WORKBENCH_LIBRARY_UPDATED_EVENT,
   readWorkbenchLibraryEntries,
   readWorkbenchLibraryEntriesWithGlobalBrainstorm,
   type WorkbenchLibraryEntry,
 } from '@/features/workbench/model/workbenchLibraryStorage';
+import { BRAINSTORM_TAB, SETTING_TAB, normalizeTabName } from '@/features/workbench/components/workbenchLibraryTabs';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
@@ -37,6 +40,7 @@ import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 import { WordCountText } from '@/shared/ui/WordCountText';
 import type { Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
+import { countUnpolishedChapters } from '@/features/workbench/model/chapterPolishStatus';
 
 type ModalKey = 'workInfo' | 'notes' | 'settingLibrary' | 'detailOutlineLibrary';
 type ManagementModalKey = 'models' | 'agents';
@@ -84,6 +88,11 @@ interface ChapterExportItem {
   title: string;
   content: string;
 }
+
+interface WorkbenchLibrarySnapshots {
+  settingsEntries: WorkbenchLibraryEntry[];
+  outlineEntries: WorkbenchLibraryEntry[];
+}
 const AI_PANEL_MIN_WIDTH = 430;
 const AI_PANEL_DEFAULT_WIDTH = 430;
 const CHAPTER_SIDEBAR_MIN_WIDTH = 200;
@@ -129,6 +138,59 @@ const APP_SCALE_VERSION_KEY = 'xinyuexia_app_scale_version';
 const APP_SCALE_BASE = 1.1;
 const APP_SCALE_STORAGE_VERSION = '2';
 const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
+
+function readWorkbenchLibrarySnapshots(settingsStorageKey: string, outlineStorageKey: string): WorkbenchLibrarySnapshots {
+  if (!settingsStorageKey || !outlineStorageKey) {
+    return {
+      settingsEntries: [],
+      outlineEntries: [],
+    };
+  }
+  return {
+    settingsEntries: readWorkbenchLibraryEntriesWithGlobalBrainstorm(settingsStorageKey),
+    outlineEntries: readWorkbenchLibraryEntries(outlineStorageKey),
+  };
+}
+
+function shouldSyncWorkbenchLibrarySnapshot(eventKey: string | null | undefined, settingsStorageKey: string, outlineStorageKey: string) {
+  if (!eventKey) return true;
+  return eventKey === settingsStorageKey
+    || eventKey === outlineStorageKey
+    || eventKey === GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY;
+}
+
+function useWorkbenchLibrarySnapshots(settingsStorageKey: string, outlineStorageKey: string): WorkbenchLibrarySnapshots {
+  const [snapshots, setSnapshots] = useState<WorkbenchLibrarySnapshots>(() => (
+    readWorkbenchLibrarySnapshots(settingsStorageKey, outlineStorageKey)
+  ));
+
+  useEffect(() => {
+    const syncSnapshots = () => {
+      setSnapshots(readWorkbenchLibrarySnapshots(settingsStorageKey, outlineStorageKey));
+    };
+    syncSnapshots();
+    if (!settingsStorageKey || !outlineStorageKey) return undefined;
+
+    const handleLibraryUpdated = (event: Event) => {
+      const storageKey = event instanceof CustomEvent ? event.detail?.storageKey : null;
+      if (!shouldSyncWorkbenchLibrarySnapshot(storageKey, settingsStorageKey, outlineStorageKey)) return;
+      syncSnapshots();
+    };
+    const handleStorage = (event: StorageEvent) => {
+      if (!shouldSyncWorkbenchLibrarySnapshot(event.key, settingsStorageKey, outlineStorageKey)) return;
+      syncSnapshots();
+    };
+
+    window.addEventListener(WORKBENCH_LIBRARY_UPDATED_EVENT, handleLibraryUpdated);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener(WORKBENCH_LIBRARY_UPDATED_EVENT, handleLibraryUpdated);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [outlineStorageKey, settingsStorageKey]);
+
+  return snapshots;
+}
 
 function getEffectiveAppScale() {
   if (typeof window === 'undefined') return APP_SCALE_BASE;
@@ -1509,6 +1571,10 @@ export function WorkbenchPage() {
   } = useWorkbenchData();
 
   const currentNovelType = currentNovel?.type ?? null;
+  const currentWorkbenchId = currentNovel?.id ?? currentNovelId;
+  const settingsStorageKey = currentWorkbenchId ? `xinyuexia_workbench_settings_${currentWorkbenchId}` : '';
+  const outlineStorageKey = currentWorkbenchId ? `xinyuexia_workbench_outline_${currentWorkbenchId}` : '';
+  const { settingsEntries, outlineEntries } = useWorkbenchLibrarySnapshots(settingsStorageKey, outlineStorageKey);
 
   useEffect(() => {
     if (!currentNovelType) return;
@@ -1766,6 +1832,13 @@ export function WorkbenchPage() {
   }
 
   const chapterCount = volumes.reduce((sum, volume) => sum + volume.chapters.length, 0);
+  const unpolishedChapterCount = countUnpolishedChapters(
+    settingsStorageKey,
+    volumes,
+    (chapterId) => (
+      selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
+    ),
+  );
   const selectedVolumeName = selectedChapter
     ? volumes.find((volume) => volume.id === selectedChapter.volumeId)?.name ?? '未选择卷'
     : '未选择卷';
@@ -1776,12 +1849,8 @@ export function WorkbenchPage() {
   const activeMemo = selectedMemo?.scope === 'global'
     ? globalNotes.find((note) => note.id === selectedMemo.id) ?? null
     : workNotes.find((note) => note.id === selectedMemo?.id) ?? null;
-  const settingsStorageKey = `xinyuexia_workbench_settings_${currentNovel.id}`;
-  const outlineStorageKey = `xinyuexia_workbench_outline_${currentNovel.id}`;
-  const settingsEntries = readWorkbenchLibraryEntriesWithGlobalBrainstorm(settingsStorageKey);
-  const outlineEntries = readWorkbenchLibraryEntries(outlineStorageKey);
   const settingContextEntries = orderContextEntriesByType(
-    settingsEntries.filter((entry) => entry.tab === '大纲'),
+    settingsEntries.filter((entry) => normalizeTabName(entry.tab) === SETTING_TAB),
     CONTEXT_SETTING_TYPE_ORDER,
     (entry) => parseContextSettingContent(entry.content).type,
   );
@@ -1863,11 +1932,12 @@ export function WorkbenchPage() {
   const summaryChapterSerials = new Set(summaryContextItems.map((item) => getContextEntrySerial(item.title)).filter(Boolean));
   const summaryChapterCount = summaryChapterSerials.size > 0 ? summaryChapterSerials.size : summaryContextItems.length;
   const flowStats: WorkbenchHeaderFlowStats = {
-    brainstorm: { meta: `${settingsEntries.filter((entry) => entry.tab === '脑洞').length}个脑洞` },
-    outline: { meta: `${settingsEntries.filter((entry) => entry.tab === '大纲').length}个设定` },
+    brainstorm: { meta: `${settingsEntries.filter((entry) => normalizeTabName(entry.tab) === BRAINSTORM_TAB).length}个脑洞` },
+    outline: { meta: `${settingsEntries.filter((entry) => normalizeTabName(entry.tab) === SETTING_TAB).length}个设定` },
     chapterOutline: { meta: `${outlineContextItems.length}章` },
     writing: { meta: `${chapterCount}章` },
     audit: { meta: `${chapterCount}章未审`, tone: 'warning' },
+    polish: { meta: `${unpolishedChapterCount}章未润色`, tone: unpolishedChapterCount > 0 ? 'warning' : 'normal' },
     comment: { meta: `${chapterCount}章未点评`, tone: 'warning' },
     status: { meta: `${chapterCount}章未更新`, tone: 'warning' },
     summary: { meta: `${summaryChapterCount}章`, tone: summaryChapterCount < chapterCount ? 'warning' : 'normal' },

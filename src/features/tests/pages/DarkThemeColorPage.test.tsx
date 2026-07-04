@@ -41,7 +41,7 @@ describe('DarkThemeColorPage custom color tab', () => {
   });
 
   it('records the manual color confirm regression in the in-app error log', () => {
-    const errorLog = readSource('../model/errorLogEntries.ts');
+    const errorLog = readSource('../model/errorLogDefaultEntries.generated.ts');
 
     expect(errorLog).toContain('theme-color-manual-input-confirm-disabled-001');
   });

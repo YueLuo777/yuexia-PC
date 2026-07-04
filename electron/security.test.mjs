@@ -30,4 +30,17 @@ describe('Electron security source guards', () => {
     expect(testBrowserSource).not.toContain('allowpopups');
     expect(scriptBrowserSource).not.toContain('allowpopups');
   });
+
+  it('hardens attached webviews in the main process', () => {
+    const mainSource = readWorkspaceFile('electron/main.cjs');
+
+    expect(mainSource).toContain("app.on('web-contents-created'");
+    expect(mainSource).toContain("contents.on('will-attach-webview'");
+    expect(mainSource).toContain('delete webPreferences.preload');
+    expect(mainSource).toContain('webPreferences.nodeIntegration = false');
+    expect(mainSource).toContain('webPreferences.contextIsolation = true');
+    expect(mainSource).toContain('webPreferences.sandbox = true');
+    expect(mainSource).toContain("['http:', 'https:'].includes(parsed.protocol)");
+    expect(mainSource).toContain('event.preventDefault();');
+  });
 });

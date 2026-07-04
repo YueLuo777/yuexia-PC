@@ -1,14 +1,14 @@
 import { AlertTriangle, Plus, Search, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { defaultEntries, type ErrorLogEntry } from '@/features/tests/model/errorLogEntries';
+import { loadDefaultErrorLogEntries, type ErrorLogEntry } from '@/features/tests/model/errorLogEntries';
 
 
 
 const STORAGE_KEY = 'xinyuexia_test_error_logs';
 
 
-function readSavedEntries() {
+function readSavedEntries(defaultEntries: ErrorLogEntry[]) {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultEntries;
@@ -20,13 +20,15 @@ function readSavedEntries() {
   }
 }
 
-function saveEntries(entries: ErrorLogEntry[]) {
-  const customEntries = entries.filter((entry) => !defaultEntries.some((item) => item.id === entry.id));
+function saveEntries(entries: ErrorLogEntry[], defaultEntryIds: Set<string>) {
+  const customEntries = entries.filter((entry) => !defaultEntryIds.has(entry.id));
   localStorage.setItem(STORAGE_KEY, JSON.stringify(customEntries));
 }
 
 export function ErrorLogPage() {
-  const [entries, setEntries] = useState<ErrorLogEntry[]>(readSavedEntries);
+  const [defaultEntries, setDefaultEntries] = useState<ErrorLogEntry[]>([]);
+  const [entries, setEntries] = useState<ErrorLogEntry[]>([]);
+  const [isLoadingDefaults, setIsLoadingDefaults] = useState(true);
   const [search, setSearch] = useState('');
   const [draft, setDraft] = useState({
     title: '',
@@ -37,6 +39,29 @@ export function ErrorLogPage() {
     prevention: '',
     keywords: '',
   });
+  const defaultEntryIds = useMemo(() => new Set(defaultEntries.map((entry) => entry.id)), [defaultEntries]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoadingDefaults(true);
+    loadDefaultErrorLogEntries()
+      .then((loadedDefaults) => {
+        if (cancelled) return;
+        setDefaultEntries(loadedDefaults);
+        setEntries(readSavedEntries(loadedDefaults));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDefaultEntries([]);
+        setEntries(readSavedEntries([]));
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingDefaults(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredEntries = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -69,17 +94,17 @@ export function ErrorLogPage() {
     };
     setEntries((current) => {
       const next = [nextEntry, ...current];
-      saveEntries(next);
+      saveEntries(next, defaultEntryIds);
       return next;
     });
     setDraft({ title: '', area: '', symptom: '', cause: '', solution: '', prevention: '', keywords: '' });
   };
 
   const deleteEntry = (id: string) => {
-    if (defaultEntries.some((entry) => entry.id === id)) return;
+    if (defaultEntryIds.has(id)) return;
     setEntries((current) => {
       const next = current.filter((entry) => entry.id !== id);
-      saveEntries(next);
+      saveEntries(next, defaultEntryIds);
       return next;
     });
   };
@@ -106,8 +131,18 @@ export function ErrorLogPage() {
       <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_360px] gap-4 p-5">
         <section className="editor-scrollbar min-h-0 overflow-y-auto pr-1">
           <div className="grid gap-4">
+            {isLoadingDefaults && (
+              <div className="rounded-2xl border border-slate-100 bg-white p-6 text-sm font-bold text-slate-400 shadow-sm">
+                正在加载错误日志...
+              </div>
+            )}
+            {!isLoadingDefaults && filteredEntries.length === 0 && (
+              <div className="rounded-2xl border border-slate-100 bg-white p-6 text-sm font-bold text-slate-400 shadow-sm">
+                暂无匹配的错误日志。
+              </div>
+            )}
             {filteredEntries.map((entry) => {
-              const isDefault = defaultEntries.some((item) => item.id === entry.id);
+              const isDefault = defaultEntryIds.has(entry.id);
               return (
                 <article key={entry.id} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
                   <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">

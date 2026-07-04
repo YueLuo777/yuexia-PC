@@ -32,9 +32,9 @@ export const WORKBENCH_MAIN_FLOW_STEPS: WorkbenchCreationFlowStep[] = [
 ];
 
 export const WORKBENCH_REVIEW_FLOW_STEPS: WorkbenchCreationFlowStep[] = [
-  { id: 'audit', number: 5, title: '审核', description: '检查章节问题', group: 'review' },
-  { id: 'comment', number: 6, title: '点评', description: '点评章节质量', group: 'review' },
-  { id: 'polish', number: 7, title: '润色', description: '优化正文表达', group: 'review' },
+  { id: 'audit', number: 5, title: '剧情审核', description: '检查剧情结构', group: 'review' },
+  { id: 'polish', number: 6, title: '文笔润色', description: '优化正文表达', group: 'review' },
+  { id: 'comment', number: 7, title: '点评', description: '点评章节质量', group: 'review' },
   { id: 'status', number: 8, title: '状态', description: '更新设定状态', group: 'review' },
   { id: 'summary', number: 9, title: '梗概', description: '整理章节梗概', group: 'review' },
 ];

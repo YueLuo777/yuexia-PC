@@ -8,6 +8,9 @@ const PROMPTS_KEY = 'xinyuexia_prompts_v1';
 const PROMPT_RECYCLE_KEY = 'xinyuexia_prompt_recycle_v1';
 const PROMPT_CATEGORIES_KEY = 'xinyuexia_prompt_categories_v1';
 const UNCATEGORIZED = '未分类';
+export const AUDIT_PROMPT_CATEGORY = '审核';
+export const DEFAULT_AUDIT_PROMPT_SUBCATEGORY = '结构审核';
+export const AUDIT_PROMPT_SUBCATEGORIES = ['结构审核', '文本审核'] as const;
 const PROMPT_CATEGORY_ALIASES: Record<string, string> = {
   大纲: '设定',
   细纲: '章纲',
@@ -33,6 +36,14 @@ export function isDefaultPromptCategory(category: string) {
   return DEFAULT_PROMPT_CATEGORIES.includes(normalizePromptCategoryName(category));
 }
 
+export function normalizePromptSubcategory(category: string, subCategory?: string) {
+  if (normalizePromptCategoryName(category) !== AUDIT_PROMPT_CATEGORY) return undefined;
+  const trimmed = subCategory?.trim() ?? '';
+  return AUDIT_PROMPT_SUBCATEGORIES.includes(trimmed as typeof AUDIT_PROMPT_SUBCATEGORIES[number])
+    ? trimmed
+    : DEFAULT_AUDIT_PROMPT_SUBCATEGORY;
+}
+
 const PROMPTS_UPDATED_EVENT = APP_EVENTS.promptsUpdated;
 
 const promptsStorage = createJsonStorage<PromptItem[]>(PROMPTS_KEY, [], {
@@ -40,6 +51,7 @@ const promptsStorage = createJsonStorage<PromptItem[]>(PROMPTS_KEY, [], {
     ? (value as PromptItem[]).map((prompt) => ({
         ...prompt,
         category: normalizePromptCategoryName(prompt.category ?? UNCATEGORIZED),
+        subCategory: normalizePromptSubcategory(prompt.category ?? UNCATEGORIZED, prompt.subCategory),
       }))
     : [],
   eventName: PROMPTS_UPDATED_EVENT,
@@ -49,6 +61,7 @@ const promptRecycleStorage = createJsonStorage<PromptItem[]>(PROMPT_RECYCLE_KEY,
     ? (value as PromptItem[]).map((prompt) => ({
         ...prompt,
         category: normalizePromptCategoryName(prompt.category ?? UNCATEGORIZED),
+        subCategory: normalizePromptSubcategory(prompt.category ?? UNCATEGORIZED, prompt.subCategory),
       }))
     : [],
   eventName: PROMPTS_UPDATED_EVENT,
@@ -146,12 +159,14 @@ export function usePrompts() {
   };
 
   const addPrompt = (input: NewPromptInput) => {
+    const category = normalizeCategory(input.category);
     const item: PromptItem = {
       id: createId(),
       name: input.name.trim(),
       description: input.description.trim(),
       content: input.content.trim(),
-      category: normalizeCategory(input.category),
+      category,
+      subCategory: normalizePromptSubcategory(category, input.subCategory),
       promptType: input.promptType ?? 'novel',
       usageCount: 0,
       isFavorite: false,
@@ -164,16 +179,17 @@ export function usePrompts() {
 
   const updatePrompt = (id: string, updates: Partial<NewPromptInput>) => {
     persistPrompts(
-      prompts.map((prompt) =>
-        prompt.id === id
-          ? {
-              ...prompt,
-              ...updates,
-              category: normalizeCategory(updates.category ?? prompt.category),
-              updatedAt: nowText(),
-            }
-          : prompt,
-      ),
+      prompts.map((prompt) => {
+        if (prompt.id !== id) return prompt;
+        const category = normalizeCategory(updates.category ?? prompt.category);
+        return {
+          ...prompt,
+          ...updates,
+          category,
+          subCategory: normalizePromptSubcategory(category, updates.subCategory ?? prompt.subCategory),
+          updatedAt: nowText(),
+        };
+      }),
     );
   };
 

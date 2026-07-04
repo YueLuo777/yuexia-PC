@@ -61,7 +61,7 @@ describe('TestCollectionPage delete marked cleanup', () => {
 
   it('keeps the current test page and collection tab when marking a test as completed', async () => {
     const source = await readFile(collectionPagePath, 'utf8');
-    const toggleBody = source.match(/const toggleTestedTest = \(path: string\) => \{([\s\S]*?)\n  \};/)?.[1] ?? '';
+    const toggleBody = source.match(/const toggleTestedTest = \(path: string\) => \{([\s\S]*?)\n {2}\};/)?.[1] ?? '';
 
     expect(toggleBody).toContain('setTestedTestPaths');
     expect(toggleBody).not.toContain('setActivePath(null)');

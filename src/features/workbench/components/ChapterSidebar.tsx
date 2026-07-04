@@ -144,7 +144,7 @@ export function ChapterSidebar({
 
   return (
     <aside className="flex shrink-0 flex-col border-r border-[#e1e5eb] bg-white" style={{ width }}>
-      <div className="flex h-[42px] shrink-0 items-center justify-between border-b border-[#e6e8ec] bg-[#fbfbfc] px-3 py-2.5">
+      <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#e6e8ec] bg-[#fbfbfc] px-3">
         <div className="flex items-center gap-2">
           <h2 className="whitespace-nowrap text-sm font-bold text-gray-900">未发布</h2>
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E7F8FD] text-xs font-medium text-[#08AACE]">
@@ -155,7 +155,7 @@ export function ChapterSidebar({
           {workType !== 'script' && (
           <button
             onClick={onTogglePublished}
-            className="flex items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-2 py-1 text-sm text-white transition-colors hover:bg-[#0798b8]"
+            className="flex h-8 items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-2 text-sm text-white transition-colors hover:bg-[#0798b8]"
             title="已发布"
           >
             {showPublished ? '收回已发布' : '展开已发布'}

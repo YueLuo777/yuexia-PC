@@ -10,6 +10,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Camera, UserRound } from 'lucide-react';
 
 import { TEST_COLLECTION_SHOW_INDEX_EVENT } from '@/features/tests/model/testCollectionEvents';
+import { filterInternalRouteItems } from '@/shared/featureFlags/internalRoutes';
 import {
   NAV_CONFIG_UPDATED_EVENT,
   getIconByName,
@@ -217,6 +218,7 @@ export function DashboardLayout() {
       hidden: item.hidden || group.hidden,
     }))
   )).filter((item) => !item.hidden);
+  const visiblePublicNavItems = filterInternalRouteItems(visibleNavItems);
   const navDividerAfterItemTos = new Set(navConfig[0]?.dividerAfterItemTos ?? (
     navConfig[0]?.dividerAfterItemTo ? [navConfig[0].dividerAfterItemTo] : []
   ));
@@ -292,7 +294,7 @@ export function DashboardLayout() {
           className={`scrollbar-scroll-only min-h-0 flex-1 overflow-y-auto overflow-x-hidden ${isSidebarScrolling ? 'scrollbar-active' : ''}`}
         >
           <div className="space-y-1 px-1.5 py-1">
-            {visibleNavItems.map((item) => {
+            {visiblePublicNavItems.map((item) => {
               const ItemIcon = getIconByName(item.iconName);
               const isActive = location.pathname === item.to;
 

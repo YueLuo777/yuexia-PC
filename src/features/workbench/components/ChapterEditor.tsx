@@ -5,8 +5,9 @@ import { createPortal } from 'react-dom';
 import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
 import { useModels } from '@/features/models/hooks/useModels';
 import { callModelStream } from '@/features/models/services/callModel';
-import { normalizePromptCategoryName, readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
+import { normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
+import { isChapterContentPolished, markChapterContentPolished } from '@/features/workbench/model/chapterPolishStatus';
 import {
   ASSOCIATED_CHAPTERS_KEY,
   CHAPTER_ASSOCIATE_UPDATED_EVENT,
@@ -66,10 +67,14 @@ const SPLIT_BUTTON_OUTLINE_GROUP_CLASS = 'flex h-8 items-stretch overflow-hidden
 const SPLIT_BUTTON_OUTLINE_ACTION_CLASS = 'inline-flex flex-1 items-center justify-center whitespace-nowrap px-1.5 text-sm font-medium text-brand transition-colors hover:bg-brand-light';
 const REVIEW_PAGE_LEFT_WIDTH = 180;
 const REVIEW_PAGE_RIGHT_WIDTH = 300;
+const REVIEW_PREVIEW_OUTLINE_WIDTH = 360;
+const REVIEW_PREVIEW_ANNOTATION_WIDTH = 420;
 const STATUS_PAGE_LEFT_WIDTH = 190;
 const STATUS_PAGE_RIGHT_WIDTH = 360;
 const REVIEW_PAGE_LEFT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_left_width';
 const REVIEW_PAGE_RIGHT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_right_width';
+const REVIEW_PREVIEW_OUTLINE_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_outline_width';
+const REVIEW_PREVIEW_ANNOTATION_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_annotation_width';
 const STATUS_PAGE_LEFT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_status_left_width';
 const STATUS_PAGE_RIGHT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_status_right_width';
 const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] xy-flow-group-bg px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors';
@@ -79,6 +84,8 @@ const WORKBENCH_CHAPTER_NUMBER_GRID_STYLE = { gridTemplateColumns: 'repeat(auto-
 const WORKBENCH_CHAPTER_NUMBER_BASE_CLASS = 'relative grid h-8 w-8 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block';
 const REVIEW_PAGE_LEFT_WIDTH_LIMIT = { min: 180, max: 360 };
 const REVIEW_PAGE_RIGHT_WIDTH_LIMIT = { min: 260, max: 520 };
+const REVIEW_PREVIEW_OUTLINE_WIDTH_LIMIT = { min: 240, max: 560 };
+const REVIEW_PREVIEW_ANNOTATION_WIDTH_LIMIT = { min: 300, max: 640 };
 const STATUS_PAGE_LEFT_WIDTH_LIMIT = { min: 190, max: 360 };
 const STATUS_PAGE_RIGHT_WIDTH_LIMIT = { min: 300, max: 560 };
 const CHAPTER_EDITOR_RESIZE_HANDLE_CLASS = 'group relative z-10 flex h-full w-3 -translate-x-1/2 cursor-ew-resize items-stretch justify-center bg-transparent';
@@ -98,8 +105,8 @@ const EDITOR_FIELD_SIZE_DEFAULTS: Record<EditorFieldSizeKey, EditorFieldSizeSpec
   reviewCommentPromptSelect: { width: 250, height: 44, fontSize: 13 },
 };
 const EDITOR_FIELD_SIZE_LABELS: Record<EditorFieldSizeKey, string> = {
-  reviewActionGroup: '审核点评润色状态按钮',
-  reviewModelSelect: '审核点评润色模型框',
+  reviewActionGroup: '剧情审核点评文笔润色状态按钮',
+  reviewModelSelect: '剧情审核点评文笔润色模型框',
   reviewAuditPromptSelect: '审核提示词框',
   reviewCommentPromptSelect: '点评提示词框',
 };
@@ -254,15 +261,21 @@ type ReviewModeState = {
 };
 
 const REVIEW_MODE_TITLES: Record<ReviewMode, string> = {
+  audit: '剧情审核',
+  comment: '点评',
+  polish: '文笔润色',
+};
+
+const REVIEW_MODE_PROMPT_CATEGORIES: Record<ReviewMode, string> = {
   audit: '审核',
   comment: '点评',
   polish: POLISH_PROMPT_CATEGORY,
 };
 
 const REVIEW_MODE_DEFAULT_INSTRUCTIONS: Record<ReviewMode, string> = {
-  audit: '请对文章内容进行审核：检查错别字、语病、逻辑问题，以及是否按照章纲来写。输出需要列出问题位置、问题说明和修改建议。',
+  audit: '请对文章内容进行剧情审核：检查剧情逻辑、人物行为、因果关系，以及是否按照章纲来写。输出需要列出问题位置、问题说明和修改建议。',
   comment: '请对文章内容进行点评：判断内容是否吸引人，重点点评开篇钩子、节奏、冲突、情绪张力和读者继续阅读欲望，并给出可执行的优化建议。',
-  polish: '请对文章内容进行润色：只优化语言表达、节奏、句子顺滑度、画面感和情绪力度，不改变剧情事件、人物行动、设定信息和章节结果。输出需要提供可替换的完整润色稿。',
+  polish: '请对文章内容进行文笔润色：先检查错别字、语病、标点和重复表达，再优化语言表达、节奏、句子顺滑度、画面感和情绪力度，不改变剧情事件、人物行动、设定信息和章节结果。输出需要提供可替换的完整润色稿。',
 };
 
 function createReviewModeState(): ReviewModeState {
@@ -642,11 +655,17 @@ export function ChapterEditor({
   const [editorFieldSizeSpecs, setEditorFieldSizeSpecs] = useState<Record<EditorFieldSizeKey, EditorFieldSizeSpec>>(() => readEditorFieldSizeSpecs());
   const [reviewPageLeftWidth, setReviewPageLeftWidth] = useState(() => readStoredPanelWidth(REVIEW_PAGE_LEFT_WIDTH_STORAGE_KEY, REVIEW_PAGE_LEFT_WIDTH, REVIEW_PAGE_LEFT_WIDTH_LIMIT));
   const [reviewPageRightWidth, setReviewPageRightWidth] = useState(() => readStoredPanelWidth(REVIEW_PAGE_RIGHT_WIDTH_STORAGE_KEY, REVIEW_PAGE_RIGHT_WIDTH, REVIEW_PAGE_RIGHT_WIDTH_LIMIT));
+  const [reviewPreviewOutlineWidth, setReviewPreviewOutlineWidth] = useState(() => readStoredPanelWidth(REVIEW_PREVIEW_OUTLINE_WIDTH_STORAGE_KEY, REVIEW_PREVIEW_OUTLINE_WIDTH, REVIEW_PREVIEW_OUTLINE_WIDTH_LIMIT));
+  const [reviewPreviewAnnotationWidth, setReviewPreviewAnnotationWidth] = useState(() => readStoredPanelWidth(REVIEW_PREVIEW_ANNOTATION_WIDTH_STORAGE_KEY, REVIEW_PREVIEW_ANNOTATION_WIDTH, REVIEW_PREVIEW_ANNOTATION_WIDTH_LIMIT));
   const [statusPageLeftWidth, setStatusPageLeftWidth] = useState(() => readStoredPanelWidth(STATUS_PAGE_LEFT_WIDTH_STORAGE_KEY, STATUS_PAGE_LEFT_WIDTH, STATUS_PAGE_LEFT_WIDTH_LIMIT));
   const [statusPageRightWidth, setStatusPageRightWidth] = useState(() => readStoredPanelWidth(STATUS_PAGE_RIGHT_WIDTH_STORAGE_KEY, STATUS_PAGE_RIGHT_WIDTH, STATUS_PAGE_RIGHT_WIDTH_LIMIT));
   const [reviewPreviewFontSize, setReviewPreviewFontSize] = useState(14);
+  const [showReviewOutline, setShowReviewOutline] = useState(true);
+  const [activeReviewPreviewScrollPane, setActiveReviewPreviewScrollPane] = useState<'outline' | 'original' | 'annotation' | null>(null);
   const [activeReviewParagraphIndex, setActiveReviewParagraphIndex] = useState(0);
   const reviewAnnotationRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const reviewPreviewGridRef = useRef<HTMLDivElement | null>(null);
+  const reviewPreviewScrollTimerRef = useRef<number | null>(null);
   const [reviewChapterId, setReviewChapterId] = useState<number | null>(() => chapter?.id ?? null);
   const [statusChapterId, setStatusChapterId] = useState<number | null>(() => chapter?.id ?? null);
   const [expandedReviewVolumeIds, setExpandedReviewVolumeIds] = useState<Set<number>>(() => new Set());
@@ -754,6 +773,12 @@ export function ChapterEditor({
     setIsReviewLogOpen(true);
   }, [openLogSignal]);
 
+  useEffect(() => () => {
+    if (reviewPreviewScrollTimerRef.current !== null) {
+      window.clearTimeout(reviewPreviewScrollTimerRef.current);
+    }
+  }, []);
+
   const titleCount = chapter?.title.length ?? 0;
   const serialValue = chapter?.serialNumber ?? 1;
   const safeVolumeName = volumeName ?? '第一卷';
@@ -792,6 +817,60 @@ export function ChapterEditor({
     };
     writeEditorFieldSizeSpecs(next);
     setEditorFieldSizeSpecs(next);
+  };
+  const handleReviewPreviewScroll = (pane: 'outline' | 'original' | 'annotation') => {
+    setActiveReviewPreviewScrollPane(pane);
+    if (reviewPreviewScrollTimerRef.current !== null) {
+      window.clearTimeout(reviewPreviewScrollTimerRef.current);
+    }
+    reviewPreviewScrollTimerRef.current = window.setTimeout(() => {
+      setActiveReviewPreviewScrollPane(null);
+      reviewPreviewScrollTimerRef.current = null;
+    }, 650);
+  };
+  const syncReviewPreviewTextColumnsWidth = () => {
+    const gridWidth = reviewPreviewGridRef.current?.clientWidth ?? 0;
+    const resizeHandleWidth = 7;
+    const fixedWidth = showReviewOutline
+      ? reviewPreviewOutlineWidth + resizeHandleWidth * 2
+      : resizeHandleWidth;
+    const dynamicAnnotationLimit = {
+      ...REVIEW_PREVIEW_ANNOTATION_WIDTH_LIMIT,
+      max: Math.max(REVIEW_PREVIEW_ANNOTATION_WIDTH_LIMIT.max, (gridWidth - fixedWidth) / 2),
+    };
+    const sharedWidth = gridWidth > fixedWidth
+      ? clampPanelWidth((gridWidth - fixedWidth) / 2, dynamicAnnotationLimit)
+      : REVIEW_PREVIEW_ANNOTATION_WIDTH;
+    setReviewPreviewAnnotationWidth(sharedWidth);
+    localStorage.setItem(REVIEW_PREVIEW_ANNOTATION_WIDTH_STORAGE_KEY, String(sharedWidth));
+  };
+  const setReviewOutlineVisibilityWithBalancedColumns = (nextShowReviewOutline: boolean) => {
+    const gridWidth = reviewPreviewGridRef.current?.clientWidth ?? 0;
+    const resizeHandleWidth = 7;
+    setShowReviewOutline(nextShowReviewOutline);
+    if (nextShowReviewOutline) {
+      const availableWidth = Math.max(0, gridWidth - resizeHandleWidth * 2);
+      const outlineWidth = availableWidth > 0
+        ? clampPanelWidth(availableWidth * 0.26, REVIEW_PREVIEW_OUTLINE_WIDTH_LIMIT)
+        : REVIEW_PREVIEW_OUTLINE_WIDTH;
+      const annotationWidth = availableWidth > outlineWidth
+        ? clampPanelWidth((availableWidth - outlineWidth) / 2, REVIEW_PREVIEW_ANNOTATION_WIDTH_LIMIT)
+        : REVIEW_PREVIEW_ANNOTATION_WIDTH;
+      setReviewPreviewOutlineWidth(outlineWidth);
+      setReviewPreviewAnnotationWidth(annotationWidth);
+      localStorage.setItem(REVIEW_PREVIEW_OUTLINE_WIDTH_STORAGE_KEY, String(outlineWidth));
+      localStorage.setItem(REVIEW_PREVIEW_ANNOTATION_WIDTH_STORAGE_KEY, String(annotationWidth));
+      return;
+    }
+    const dynamicAnnotationLimit = {
+      ...REVIEW_PREVIEW_ANNOTATION_WIDTH_LIMIT,
+      max: Math.max(REVIEW_PREVIEW_ANNOTATION_WIDTH_LIMIT.max, (gridWidth - resizeHandleWidth) / 2),
+    };
+    const sharedWidth = gridWidth > resizeHandleWidth
+      ? clampPanelWidth((gridWidth - resizeHandleWidth) / 2, dynamicAnnotationLimit)
+      : REVIEW_PREVIEW_ANNOTATION_WIDTH;
+    setReviewPreviewAnnotationWidth(sharedWidth);
+    localStorage.setItem(REVIEW_PREVIEW_ANNOTATION_WIDTH_STORAGE_KEY, String(sharedWidth));
   };
   const startPanelWidthResize = (
     event: ReactPointerEvent<HTMLDivElement>,
@@ -836,6 +915,18 @@ export function ChapterEditor({
       <div className="h-full w-px bg-[#08AACE] opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   );
+  const renderReviewPreviewResizeHandle = (
+    onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void,
+  ) => (
+    <div
+      data-no-modal-drag="true"
+      onPointerDown={onPointerDown}
+      className="group flex h-full cursor-ew-resize items-stretch justify-center bg-white"
+      title="拖拽调整宽度"
+    >
+      <div className="h-full w-px bg-slate-300 transition-colors group-hover:bg-[#08AACE]" />
+    </div>
+  );
   const statusLeftResizeHandle = renderPanelResizeHandle((event) => startPanelWidthResize(event, {
     initialWidth: statusPageLeftWidth,
     storageKey: STATUS_PAGE_LEFT_WIDTH_STORAGE_KEY,
@@ -864,9 +955,23 @@ export function ChapterEditor({
     direction: -1,
     onChange: setReviewPageRightWidth,
   }));
+  const reviewPreviewOutlineResizeHandle = renderReviewPreviewResizeHandle((event) => startPanelWidthResize(event, {
+    initialWidth: reviewPreviewOutlineWidth,
+    storageKey: REVIEW_PREVIEW_OUTLINE_WIDTH_STORAGE_KEY,
+    limit: REVIEW_PREVIEW_OUTLINE_WIDTH_LIMIT,
+    direction: 1,
+    onChange: setReviewPreviewOutlineWidth,
+  }));
+  const reviewPreviewAnnotationResizeHandle = renderReviewPreviewResizeHandle((event) => startPanelWidthResize(event, {
+    initialWidth: reviewPreviewAnnotationWidth,
+    storageKey: REVIEW_PREVIEW_ANNOTATION_WIDTH_STORAGE_KEY,
+    limit: REVIEW_PREVIEW_ANNOTATION_WIDTH_LIMIT,
+    direction: -1,
+    onChange: setReviewPreviewAnnotationWidth,
+  }));
   const { models: modelSnapshot } = useModels();
   const reviewModels = useMemo(() => modelSnapshot.filter((model) => model.enabled), [modelSnapshot]);
-  const reviewPrompts = useMemo(() => readPromptSnapshot().prompts, []);
+  const { prompts: reviewPrompts } = usePrompts();
   const reviewAuditPrompts = useMemo(() => {
     return reviewPrompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === '审核');
   }, [reviewPrompts]);
@@ -934,6 +1039,14 @@ export function ChapterEditor({
     () => findReviewDetailOutline(reviewDetailOutlineEntries, activeReviewChapter),
     [activeReviewChapter, reviewDetailOutlineEntries],
   );
+  const activeReviewDetailOutlineText = activeReviewDetailOutline?.content.trim() ?? '';
+  const canShowReviewOutline = reviewMode !== 'polish';
+  const effectiveShowReviewOutline = canShowReviewOutline && showReviewOutline;
+  const polishPreviewText = reviewRevisedDraft.trim() || extractReviewRevisedText(reviewAiOutput);
+  const polishPreviewParagraphs = useMemo(() => splitReviewParagraphs(polishPreviewText), [polishPreviewText]);
+  const reviewPreviewGridTemplateColumns = effectiveShowReviewOutline
+    ? `${reviewPreviewOutlineWidth}px 7px minmax(0,1fr) 7px ${reviewPreviewAnnotationWidth}px`
+    : `minmax(0,1fr) 7px ${reviewPreviewAnnotationWidth}px`;
   const activeReviewModel = reviewModels.find((model) => model.id === reviewModelId) ?? reviewModels[0] ?? null;
   const activeAuditPrompt = reviewAuditPrompts.find((prompt) => prompt.id === reviewAuditPromptId) ?? reviewAuditPrompts[0] ?? null;
   const activeCommentPrompt = reviewCommentPrompts.find((prompt) => prompt.id === reviewCommentPromptId) ?? reviewCommentPrompts[0] ?? null;
@@ -942,7 +1055,7 @@ export function ChapterEditor({
   const activeReviewPromptOptions = reviewMode === 'audit' ? reviewAuditPrompts : reviewMode === 'comment' ? reviewCommentPrompts : reviewPolishPrompts;
   const activeReviewPromptId = reviewMode === 'audit' ? reviewAuditPromptId : reviewMode === 'comment' ? reviewCommentPromptId : reviewPolishPromptId;
   const setActiveReviewPromptId = reviewMode === 'audit' ? setReviewAuditPromptId : reviewMode === 'comment' ? setReviewCommentPromptId : setReviewPolishPromptId;
-  const activeReviewPromptCategory = REVIEW_MODE_TITLES[reviewMode];
+  const activeReviewPromptCategory = REVIEW_MODE_PROMPT_CATEGORIES[reviewMode];
   const activeStatusPromptId = statusPrompts.some((prompt) => prompt.id === statusPromptId) ? statusPromptId : statusPrompts[0]?.id ?? '';
   const reviewParagraphDiffs = useMemo(
     () => buildReviewParagraphDiffs(activeReviewContent, reviewRevisedDraft),
@@ -1033,7 +1146,13 @@ export function ChapterEditor({
   }, [reviewModelId, reviewModels]);
 
   useEffect(() => {
-    if (!reviewAuditPromptId && reviewAuditPrompts[0]) setReviewAuditPromptId(reviewAuditPrompts[0].id);
+    if (reviewAuditPrompts.length === 0) {
+      if (reviewAuditPromptId) setReviewAuditPromptId('');
+      return;
+    }
+    if (!reviewAuditPrompts.some((prompt) => prompt.id === reviewAuditPromptId)) {
+      setReviewAuditPromptId(reviewAuditPrompts[0].id);
+    }
   }, [reviewAuditPromptId, reviewAuditPrompts]);
 
   useEffect(() => {
@@ -1196,22 +1315,22 @@ export function ChapterEditor({
     const modeInstruction = REVIEW_MODE_DEFAULT_INSTRUCTIONS[reviewMode];
     const promptText = activeReviewPrompt?.content?.trim() || modeInstruction;
     const bodyTag = reviewMode === 'audit'
-      ? '待审核正文'
+      ? '待剧情审核正文'
       : reviewMode === 'comment'
       ? '待点评正文'
-      : '待润色正文';
+      : '待文笔润色正文';
     const requirementTag = reviewMode === 'audit'
-      ? '审核要求'
+      ? '剧情审核要求'
       : reviewMode === 'comment'
       ? '点评要求'
-      : '润色要求';
+      : '文笔润色要求';
     const compareInstruction = [
       '如果你需要修改正文，请务必额外输出一个独立区块：',
       '【修改后全文】',
       '这里放完整修改后的正文，只放正文，不要夹杂点评说明。',
       '【修改说明】',
       '这里再说明具体修改原因。',
-      reviewMode === 'polish' ? '润色只能优化表达，不要改变剧情事件、人物行动、设定信息和章节结果。' : '',
+      reviewMode === 'polish' ? '文笔润色只能优化表达，不要改变剧情事件、人物行动、设定信息和章节结果。' : '',
       '这样用户可以在软件中按段落对比并逐段确认替换。',
     ].filter(Boolean).join('\n');
     const rawUserText = [reviewAiInput.trim() || modeInstruction, compareInstruction].join('\n\n');
@@ -1343,17 +1462,23 @@ export function ChapterEditor({
     const replacement = splitReviewParagraphs(reviewRevisedDraft)[paragraphIndex] ?? '';
     nextParagraphs[paragraphIndex] = replacement;
     const nextContent = nextParagraphs.join('\n');
+    const nextAppliedParagraphs = new Set([...reviewAppliedParagraphs, paragraphIndex]);
+    const changedParagraphIndexes = reviewParagraphDiffs.filter((item) => item.changed).map((item) => item.index);
+    if (reviewMode === 'polish' && changedParagraphIndexes.every((index) => nextAppliedParagraphs.has(index))) {
+      markChapterContentPolished(settingsStorageKey, activeReviewChapter.id, nextContent);
+    }
     if (activeReviewChapter.id === chapter?.id) {
       commitContent(nextContent);
     } else {
       onUpdateChapterContent(activeReviewChapter.id, nextContent);
     }
-    setReviewAppliedParagraphs((current) => new Set([...current, paragraphIndex]));
+    setReviewAppliedParagraphs(nextAppliedParagraphs);
     showToast(`已替换第 ${paragraphIndex + 1} 段`);
   };
 
   const applyAllReviewParagraphs = () => {
     if (!activeReviewChapter || !reviewRevisedDraft.trim()) return;
+    if (reviewMode === 'polish') markChapterContentPolished(settingsStorageKey, activeReviewChapter.id, reviewRevisedDraft);
     if (activeReviewChapter.id === chapter?.id) {
       commitContent(reviewRevisedDraft);
     } else {
@@ -1638,7 +1763,7 @@ export function ChapterEditor({
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <div>
             <h3 className="text-base font-black text-slate-900">作品编辑器设置</h3>
-            <p className="mt-1 text-xs font-bold text-slate-400">调整审核、点评和状态相关按钮及选择框尺寸。</p>
+            <p className="mt-1 text-xs font-bold text-slate-400">调整剧情审核、点评和状态相关按钮及选择框尺寸。</p>
           </div>
           <button
             type="button"
@@ -1719,7 +1844,7 @@ export function ChapterEditor({
       )}
       {!embeddedMode && (
         <>
-      <div className="flex items-center gap-2 border-b border-[#e6e8ec] bg-white px-4 py-2">
+      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-[#e6e8ec] bg-white px-4">
         <div className="flex items-center rounded-md border border-[#dce1e8] bg-[#f5f6f8] px-2 py-1 text-sm">
           <span className="font-medium text-gray-700">{safeVolumeName}</span>
         </div>
@@ -2221,15 +2346,25 @@ export function ChapterEditor({
                               const selected = activeReviewChapter?.id === item.id;
                               const reviewChapterNumberStateClass = 'xy-detail-outline-number-no-outline hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]';
                               const reviewChapterNumberSelectedClass = selected ? 'xy-detail-outline-number-selected' : '';
+                              const polished = reviewMode === 'polish'
+                                ? isChapterContentPolished(settingsStorageKey, item.id, getChapterContent(item.id))
+                                : false;
                               return (
                                 <button
                                   key={item.id}
                                   type="button"
                                   onClick={() => selectReviewChapter(item.id)}
-                                  title={`第${item.serialNumber}章 ${item.title || '未命名章节'} · ${item.wordCount}字`}
+                                  title={`第${item.serialNumber}章 ${item.title || '未命名章节'} · ${item.wordCount}字${reviewMode === 'polish' ? ` · ${polished ? '已润色' : '未润色'}` : ''}`}
                                   className={`${WORKBENCH_CHAPTER_NUMBER_BASE_CLASS} ${reviewChapterNumberStateClass} ${reviewChapterNumberSelectedClass}`}
                                 >
                                   {item.serialNumber}
+                                  {reviewMode === 'polish' ? (
+                                    <span className={`pointer-events-none absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-1 text-[8px] font-black leading-3 ${
+                                      polished ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
+                                    }`}>
+                                      {polished ? '已润' : '未润'}
+                                    </span>
+                                  ) : null}
                                 </button>
                               );
                             })}
@@ -2241,8 +2376,8 @@ export function ChapterEditor({
                 </div>
               </aside>
               {reviewLeftResizeHandle}
-              <main className="min-h-0 p-5">
-                <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <main className="min-h-0 bg-white">
+                <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
                   <div className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4">
                     <div className="min-w-0">
                       <h3 className="truncate text-base font-black text-slate-900">
@@ -2255,6 +2390,28 @@ export function ChapterEditor({
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
+                      {reviewCompareView === 'preview' && canShowReviewOutline ? (
+                        <button
+                          type="button"
+                          onClick={() => setReviewOutlineVisibilityWithBalancedColumns(!showReviewOutline)}
+                          className={`h-8 rounded-lg border px-3 text-xs font-black transition-colors ${
+                            showReviewOutline
+                              ? 'border-[#9BEFFC] bg-[#EAF9FD] text-[#078fb0]'
+                              : 'border-slate-200 bg-white text-slate-500 hover:border-[#9BEFFC] hover:text-[#078fb0]'
+                          }`}
+                        >
+                          {showReviewOutline ? '隐藏章纲' : '显示章纲'}
+                        </button>
+                      ) : null}
+                      {reviewCompareView === 'preview' ? (
+                        <button
+                          type="button"
+                          onClick={syncReviewPreviewTextColumnsWidth}
+                          className="h-8 rounded-lg border border-[#9BEFFC] bg-white px-3 text-xs font-black text-[#078fb0] transition-colors hover:bg-[#EAF9FD]"
+                        >
+                          原文/AI同宽
+                        </button>
+                      ) : null}
                       <FontSizeStepper
                         value={reviewPreviewFontSize}
                         min={REVIEW_PREVIEW_MIN_FONT_SIZE}
@@ -2282,12 +2439,41 @@ export function ChapterEditor({
                     </div>
                   </div>
                   {reviewCompareView === 'preview' ? (
-                    <div className="grid min-h-0 flex-1 grid-cols-2 divide-x divide-slate-300">
+                    <div
+                      ref={reviewPreviewGridRef}
+                      className="grid min-h-0 flex-1"
+                      style={{ gridTemplateColumns: reviewPreviewGridTemplateColumns }}
+                    >
+                      {effectiveShowReviewOutline ? (
+                        <section className="flex min-h-0 flex-col bg-white">
+                          <span className="shrink-0 border-b border-slate-100 bg-slate-50 px-4 py-2 text-xs font-black text-slate-500">
+                            {activeReviewChapter ? `第${activeReviewChapter.serialNumber}章 章纲` : '章纲'}
+                          </span>
+                          <div
+                            className={`scrollbar-scroll-only min-h-0 flex-1 overflow-y-auto bg-white p-5 text-sm leading-7 text-slate-700 ${activeReviewPreviewScrollPane === 'outline' ? 'scrollbar-active' : ''}`}
+                            onScroll={() => handleReviewPreviewScroll('outline')}
+                            style={{ fontSize: reviewPreviewFontSize }}
+                          >
+                            {activeReviewDetailOutlineText ? (
+                              <pre className="whitespace-pre-wrap break-words font-sans">{activeReviewDetailOutlineText}</pre>
+                            ) : (
+                              <div className="flex h-full items-center justify-center px-6 text-center text-sm font-bold leading-6 text-slate-300">
+                                {activeReviewChapter ? `未找到第${activeReviewChapter.serialNumber}章章纲。` : '未选择章节，无法读取章纲。'}
+                              </div>
+                            )}
+                          </div>
+                        </section>
+                      ) : null}
+                      {effectiveShowReviewOutline ? reviewPreviewOutlineResizeHandle : null}
                       <section className="flex min-h-0 flex-col bg-white">
                         <span className="shrink-0 border-b border-slate-100 bg-slate-50 px-4 py-2 text-xs font-black text-slate-500">
-                          原文
+                          {activeReviewChapter ? `第${activeReviewChapter.serialNumber}章 ${reviewMode === 'polish' ? '润色前' : '原文'}` : reviewMode === 'polish' ? '润色前' : '原文'}
                         </span>
-                        <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto bg-white p-5 text-sm leading-7 text-slate-700" style={{ fontSize: reviewPreviewFontSize }}>
+                        <div
+                          className={`scrollbar-scroll-only min-h-0 flex-1 overflow-y-auto bg-white p-5 text-sm leading-7 text-slate-700 ${activeReviewPreviewScrollPane === 'original' ? 'scrollbar-active' : ''}`}
+                          onScroll={() => handleReviewPreviewScroll('original')}
+                          style={{ fontSize: reviewPreviewFontSize }}
+                        >
                           {reviewOriginalParagraphs.length === 0 || !activeReviewContent.trim() ? (
                             <div className="flex h-full items-center justify-center text-sm font-bold text-slate-300">
                               这里会显示所选章节正文。
@@ -2301,13 +2487,12 @@ export function ChapterEditor({
                                     key={`${index}-${paragraph.slice(0, 18)}`}
                                     type="button"
                                     onClick={() => selectReviewPreviewParagraph(index)}
-                                    className={`relative block w-full rounded-xl px-3 py-2 text-left leading-7 outline-none transition-colors ${
-                                      selected ? 'bg-[#EAF9FD] text-slate-900 ring-1 ring-[#9BEFFC]' : 'text-slate-700 hover:bg-slate-50'
+                                    className={`relative block w-full border-l-2 px-3 py-1.5 text-left leading-7 outline-none transition-colors ${
+                                      selected ? 'border-[#08AACE] bg-[#EAF9FD] text-slate-900' : 'border-transparent text-slate-700 hover:bg-slate-50'
                                     }`}
                                     style={{ fontSize: reviewPreviewFontSize }}
                                   >
-                                    {selected ? <span aria-hidden="true" className="absolute left-1 top-3 h-[1.4em] w-[2px] rounded-full bg-[#08AACE]" /> : null}
-                                    <span className="block whitespace-pre-wrap break-words pl-2">{paragraph}</span>
+                                    <span className="block whitespace-pre-wrap break-words">{paragraph}</span>
                                   </button>
                                 );
                               })}
@@ -2315,15 +2500,38 @@ export function ChapterEditor({
                           )}
                         </div>
                       </section>
+                      {reviewPreviewAnnotationResizeHandle}
                       <section className="flex min-h-0 flex-col bg-white">
                         <div className="flex h-[33px] shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-[#EAF9FD] px-4">
-                          <span className="text-xs font-black text-[#078fb0]">AI标注</span>
+                          <span className="text-xs font-black text-[#078fb0]">{activeReviewChapter ? `第${activeReviewChapter.serialNumber}章 ${reviewMode === 'polish' ? '润色后' : reviewMode === 'audit' ? '审核后' : 'AI标注'}` : reviewMode === 'polish' ? '润色后' : reviewMode === 'audit' ? '审核后' : 'AI标注'}</span>
                           <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-black text-slate-400">
-                            {reviewAnnotations.length} 条
+                            {reviewMode === 'polish' ? `${polishPreviewText.trim() ? countCompactWords(polishPreviewText) : 0} 字` : `${reviewAnnotations.length} 条`}
                           </span>
                         </div>
-                        <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto bg-white p-5 text-sm leading-7 text-slate-700" style={{ fontSize: reviewPreviewFontSize }}>
-                          {reviewOriginalParagraphs.length === 0 || !activeReviewContent.trim() ? (
+                        <div
+                          className={`scrollbar-scroll-only min-h-0 flex-1 overflow-y-auto bg-white p-5 text-sm leading-7 text-slate-700 ${activeReviewPreviewScrollPane === 'annotation' ? 'scrollbar-active' : ''}`}
+                          onScroll={() => handleReviewPreviewScroll('annotation')}
+                          style={{ fontSize: reviewPreviewFontSize }}
+                        >
+                          {reviewMode === 'polish' ? (
+                            !polishPreviewText.trim() ? (
+                              <div className="flex h-full items-center justify-center px-6 text-center text-sm font-bold leading-6 text-slate-300">
+                                文笔润色后内容会显示在这里。
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                {polishPreviewParagraphs.map((paragraph, index) => (
+                                  <p
+                                    key={`${index}-${paragraph.slice(0, 18)}`}
+                                    className="whitespace-pre-wrap break-words border-l-2 border-emerald-300 bg-emerald-50/35 px-3 py-1.5"
+                                    style={{ fontSize: reviewPreviewFontSize }}
+                                  >
+                                    {paragraph}
+                                  </p>
+                                ))}
+                              </div>
+                            )
+                          ) : reviewOriginalParagraphs.length === 0 || !activeReviewContent.trim() ? (
                             <div className="flex h-full items-center justify-center text-sm font-bold text-slate-300">
                               这里会显示带 AI 标注的正文。
                             </div>
@@ -2338,11 +2546,11 @@ export function ChapterEditor({
                                       reviewAnnotationRefs.current[index] = node;
                                     }}
                                     key={`${index}-${paragraph.slice(0, 18)}`}
-                                    className={`rounded-xl border p-3 transition-colors ${
+                                    className={`border-l-2 px-3 py-1.5 transition-colors ${
                                       selected
-                                        ? 'border-[#9BEFFC] bg-[#EAF9FD]'
+                                        ? 'border-[#08AACE] bg-[#EAF9FD]'
                                         : paragraphAnnotations.length > 0
-                                        ? 'border-amber-200 bg-amber-50/35'
+                                        ? 'border-amber-300 bg-amber-50/30'
                                         : 'border-transparent bg-white'
                                     }`}
                                   >
@@ -2371,11 +2579,6 @@ export function ChapterEditor({
                                   </div>
                                 );
                               })}
-                              {reviewAnnotations.length === 0 ? (
-                                <div className="rounded-xl border border-dashed border-cyan-200 bg-cyan-50/50 px-4 py-3 text-xs font-bold leading-5 text-slate-500">
-                                  AI 返回“原文标注”JSON 后，这里会高亮问题片段并显示审核说明。
-                                </div>
-                              ) : null}
                             </div>
                           )}
                         </div>
@@ -2514,7 +2717,7 @@ export function ChapterEditor({
                     modelValue={reviewModelId}
                     promptValue={activeReviewPromptId}
                     modelOptions={reviewModels.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : reviewModels.map((model) => ({ value: model.id, label: model.name }))}
-                    promptOptions={activeReviewPromptOptions.length === 0 ? [{ value: '', label: `暂无${activeReviewPromptCategory}提示词`, disabled: true }] : activeReviewPromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                    promptOptions={activeReviewPromptOptions.length === 0 ? [{ value: '', label: '无', disabled: true }] : activeReviewPromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
                     onModelChange={setReviewModelId}
                     onPromptChange={setActiveReviewPromptId}
                     onModelManage={() => setReviewManagementModal('models')}
@@ -2613,7 +2816,7 @@ export function ChapterEditor({
                     >
                       <header className="flex h-11 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
                         <h2 className="text-sm font-bold text-slate-900">
-                          {reviewManagementModal === 'models' ? '模型管理' : `${activeReviewPromptCategory}提示词管理`}
+                          {reviewManagementModal === 'models' ? '模型管理' : `${activeReviewModeTitle}提示词管理`}
                         </h2>
                         <button
                           type="button"

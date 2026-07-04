@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  AUDIT_PROMPT_SUBCATEGORIES,
   DEFAULT_PROMPT_CATEGORIES,
+  DEFAULT_AUDIT_PROMPT_SUBCATEGORY,
   isDefaultPromptCategory,
   normalizePromptCategoryName,
+  normalizePromptSubcategory,
 } from './usePrompts';
 
 describe('usePrompts categories', () => {
@@ -24,5 +27,13 @@ describe('usePrompts categories', () => {
     expect(normalizePromptCategoryName('细纲')).toBe('章纲');
     expect(normalizePromptCategoryName('剧情链')).toBe('章纲');
     expect(normalizePromptCategoryName('更新')).toBe('状态');
+  });
+
+  it('keeps audit prompt subcategories normalized under audit only', () => {
+    expect(AUDIT_PROMPT_SUBCATEGORIES).toEqual(['结构审核', '文本审核']);
+    expect(DEFAULT_AUDIT_PROMPT_SUBCATEGORY).toBe('结构审核');
+    expect(normalizePromptSubcategory('审核', '文本审核')).toBe('文本审核');
+    expect(normalizePromptSubcategory('审核', '')).toBe('结构审核');
+    expect(normalizePromptSubcategory('点评', '文本审核')).toBeUndefined();
   });
 });

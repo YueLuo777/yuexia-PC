@@ -20,4 +20,16 @@ describe('PromptsPage modal layering', () => {
     expect(editorSource).not.toContain('bg-black/40 p-6');
     expect(recycleSource).toContain('bg-black/40');
   });
+
+  it('places audit secondary categories inside prompt management instead of the review panel', () => {
+    const source = readPromptsPageSource();
+
+    expect(source).toContain('AUDIT_PROMPT_SUBCATEGORIES');
+    expect(source).toContain('const [activeAuditSubcategory, setActiveAuditSubcategory] = useState(DEFAULT_AUDIT_PROMPT_SUBCATEGORY);');
+    expect(source).toContain('activeCategory === AUDIT_PROMPT_CATEGORY');
+    expect(source).toContain('审核二级分类');
+    expect(source).toContain('normalizePromptSubcategory(item.category, item.subCategory) === activeAuditSubcategory');
+    expect(source).toContain('subCategory: normalizePromptSubcategory(category, prev.subCategory)');
+    expect(source).toContain('normalizePromptSubcategory(prompt.category, prompt.subCategory)');
+  });
 });

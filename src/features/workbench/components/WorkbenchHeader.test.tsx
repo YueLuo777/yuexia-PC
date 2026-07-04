@@ -31,15 +31,17 @@ describe('WorkbenchHeader', () => {
     expect(capsuleGroups[0]).not.toContainElement(screen.getByRole('button', { name: '脑洞' }));
     expect(capsuleGroups[1]).toContainElement(screen.getByRole('button', { name: '脑洞' }));
     expect(capsuleGroups[1]).toContainElement(screen.getByRole('button', { name: '正文' }));
-    expect(capsuleGroups[1]).not.toContainElement(screen.getByRole('button', { name: '审核' }));
-    expect(capsuleGroups[2]).toContainElement(screen.getByRole('button', { name: '审核' }));
+    expect(capsuleGroups[1]).not.toContainElement(screen.getByRole('button', { name: '剧情审核' }));
+    expect(capsuleGroups[2]).toContainElement(screen.getByRole('button', { name: '剧情审核' }));
     expect(capsuleGroups[2]).toContainElement(screen.getByRole('button', { name: '梗概' }));
 
     const creationButtons = Array.from(capsuleGroups[1].querySelectorAll('button')).map((button) => button.textContent);
     expect(creationButtons).toEqual(['脑洞', '设定', '章纲', '正文']);
     expect(creationButtons).not.toContain('剧情链');
+    const reviewButtons = Array.from(capsuleGroups[2].querySelectorAll('button')).map((button) => button.textContent);
+    expect(reviewButtons).toEqual(['剧情审核', '文笔润色', '点评', '状态', '梗概']);
 
-    for (const label of ['作品信息', '设定', '章纲', '正文', '脑洞', '审核', '点评', '润色', '状态', '梗概']) {
+    for (const label of ['作品信息', '设定', '章纲', '正文', '脑洞', '剧情审核', '点评', '文笔润色', '状态', '梗概']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
     }
     expect(screen.queryByRole('button', { name: '剧情链' })).not.toBeInTheDocument();
@@ -85,7 +87,7 @@ describe('WorkbenchHeader', () => {
 
     expect(screen.getByRole('button', { name: /脑洞.*12个脑洞/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /正文.*46章/ })).toHaveClass('xy-active');
-    expect(screen.getByRole('button', { name: /审核.*11章未审/ })).toHaveClass('xy-flow-warning');
+    expect(screen.getByRole('button', { name: /剧情审核.*11章未审/ })).toHaveClass('xy-flow-warning');
     expect(container.querySelectorAll('.xy-flow-status-group')).toHaveLength(2);
     expect(container.querySelectorAll('.xy-flow-status-meta-warning')).toHaveLength(4);
     const flowGroups = container.querySelector('.xy-workbench-flow-groups');
@@ -93,7 +95,7 @@ describe('WorkbenchHeader', () => {
     expect(flowGroups).toHaveClass('ml-8');
     const styleSource = readSource('../../../shared/styles/index.css');
     expect(styleSource).toContain('min-height: 2.5rem;');
-    expect(styleSource).toContain('min-width: 4.875rem;');
+    expect(styleSource).toContain('min-width: 5.875rem;');
     expect(styleSource).toContain('flex-direction: column;');
     expect(styleSource).toContain('border: 1px solid #D8E1EC;');
     expect(styleSource).toContain('border-left: 1px solid #D8E1EC;');

@@ -16,8 +16,121 @@ const readWorkbenchLibraryPanelSource = async () => {
   const { readFileSync } = await import('node:fs');
   const { fileURLToPath } = await import('node:url');
   const { dirname, join } = await import('node:path');
+  const baseDir = dirname(fileURLToPath(import.meta.url));
+  const files = [
+    'WorkbenchLibraryPanel.tsx',
+    'workbenchBrainstormModals.tsx',
+    'workbenchBrainstormState.ts',
+    'workbenchDetailOutlineReaderModal.tsx',
+    'workbenchDetailOutlineState.ts',
+    'workbenchLibraryAiText.ts',
+    'workbenchLibraryAiLogModal.tsx',
+    'workbenchLibraryContextMenus.tsx',
+    'workbenchLibraryDataState.ts',
+    'workbenchLibraryDialogs.tsx',
+    'workbenchLibraryDrag.ts',
+    'workbenchLibraryHeaderTools.tsx',
+    'workbenchLibrarySidebar.tsx',
+    'workbenchOutlineAiLogModal.tsx',
+    'workbenchFieldSizeSettingsModal.tsx',
+    'workbenchLibraryMenuPosition.ts',
+    'workbenchLibraryRequestLog.tsx',
+    'workbenchLibraryResizeHandles.tsx',
+    'workbenchLibraryStorageState.ts',
+    'workbenchLibraryTabs.ts',
+    'workbenchOtherSettingReaderModal.tsx',
+    'workbenchPlotPointCandidates.ts',
+    'workbenchPlotPointGenerationModal.tsx',
+    'workbenchRoleContent.ts',
+    'workbenchRoleEditor.tsx',
+    'workbenchRoleHistoryModal.tsx',
+    'workbenchRoleSidebar.tsx',
+    'workbenchSmartImport.ts',
+  ];
 
-  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchLibraryPanel.tsx'), 'utf8');
+  return files
+    .map((file) => readFileSync(join(baseDir, file), 'utf8'))
+    .join('\n\n');
+};
+
+const readWorkbenchSettingTaxonomySource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../model/workbenchSettingTaxonomy.ts'), 'utf8');
+};
+
+const readWorkbenchSettingImportFormatPreviewSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchSettingImportFormatPreview.tsx'), 'utf8');
+};
+
+const readWorkbenchStructuredSettingsSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchStructuredSettings.ts'), 'utf8');
+};
+
+const readWorkbenchRoleSettingFieldsSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchRoleSettingFields.ts'), 'utf8');
+};
+
+const readWorkbenchRoleEditorSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchRoleEditor.tsx'), 'utf8');
+};
+
+const readWorkbenchLibraryPanelConstantsSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchLibraryPanelConstants.ts'), 'utf8');
+};
+
+const readWorkbenchLibrarySidebarSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchLibrarySidebar.tsx'), 'utf8');
+};
+
+const readWorkbenchDetailOutlineReaderModalSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchDetailOutlineReaderModal.tsx'), 'utf8');
+};
+
+const readWorkbenchFieldSizeSettingsSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchFieldSizeSettings.tsx'), 'utf8');
+};
+
+const readWorkbenchSettingSegmentedTabsSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchSettingSegmentedTabs.tsx'), 'utf8');
 };
 
 const readSharedStylesSource = async () => {
@@ -129,27 +242,48 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     localStorage.clear();
   });
 
-  it('keeps the empty setting row the same height as a normal setting item', async () => {
+  it('keeps workbench library panel split into focused helper modules', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
 
-    expect(panelSource).toContain("const WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS = 'min-h-[38px] w-full rounded-xl border border-transparent bg-white px-4 py-2 text-left text-sm font-black leading-5 shadow-sm';");
-    expect(panelSource).toContain('const WORKBENCH_LIBRARY_ENTRY_BUTTON_CLASS = `group cursor-default select-none ${WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS}');
-    expect(panelSource).toContain('const WORKBENCH_LIBRARY_ENTRY_EMPTY_CLASS = `flex items-center ${WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS} text-gray-400`;');
+    expect(panelSource).toContain("import { LibraryAiLogShell } from './workbenchLibraryAiLogShell';");
+    expect(panelSource).toContain("import { SettingImportFormatPreviewText } from './workbenchSettingImportFormatPreview';");
+    expect(panelSource).toContain("import { resizeFloatingAiTextarea } from './workbenchFloatingAiTextarea';");
+    expect(panelSource).toContain("import { LibraryManagementModal, type LibraryManagementModalState } from './workbenchLibraryManagementModal';");
+    expect(panelSource).toContain("from './workbenchLibraryPanelConstants';");
+    expect(panelSource).toContain("import { SettingSegmentedTabs } from './workbenchSettingSegmentedTabs';");
+    expect(panelSource).toContain("from './workbenchFieldSizeSettings';");
+    expect(panelSource).not.toContain('function LibraryAiLogShell({');
+    expect(panelSource).not.toContain('function LibraryManagementModal({');
+    expect(panelSource).not.toContain('function SettingSegmentedTabs<T extends string>');
+    expect(panelSource).not.toContain('function SettingImportFormatPreviewText({ content }');
+    expect(panelSource).not.toContain('function resizeFloatingAiTextarea(textarea: HTMLTextAreaElement | null)');
+    expect(panelSource).not.toContain('function FieldSizeNumberInput({');
+  });
+
+  it('keeps the empty setting row the same height as a normal setting item', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const constantsSource = await readWorkbenchLibraryPanelConstantsSource();
+
+    expect(constantsSource).toContain("export const WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS = 'min-h-[38px] w-full rounded-xl border border-transparent bg-white px-4 py-2 text-left text-sm font-black leading-5 shadow-sm';");
+    expect(constantsSource).toContain('export const WORKBENCH_LIBRARY_ENTRY_BUTTON_CLASS = `group cursor-default select-none ${WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS}');
+    expect(constantsSource).toContain('export const WORKBENCH_LIBRARY_ENTRY_EMPTY_CLASS = `flex items-center ${WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS} text-gray-400`;');
     expect(panelSource).toContain('className={WORKBENCH_LIBRARY_ENTRY_EMPTY_CLASS}');
     expect(panelSource).toContain('className={`${WORKBENCH_LIBRARY_ENTRY_BUTTON_CLASS} ${');
     expect(panelSource).not.toContain('text-xs font-bold leading-5 text-gray-400');
     expect(panelSource).not.toContain('<p className="px-3 py-4 text-xs text-gray-400">{isOutlineCharacterScope ?');
-    expect(panelSource).not.toContain("const WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS = 'min-h-[34px] w-full rounded-lg border border-transparent bg-white px-1 py-1.5");
+    expect(constantsSource).not.toContain("const WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS = 'min-h-[34px] w-full rounded-lg border border-transparent bg-white px-1 py-1.5");
   });
 
   it('restores only setting and brainstorm sidebar rows to the original white card style', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
+    const sidebarSource = await readWorkbenchLibrarySidebarSource();
+    const constantsSource = await readWorkbenchLibraryPanelConstantsSource();
     const { readFileSync } = await import('node:fs');
     const { fileURLToPath } = await import('node:url');
     const { dirname, join } = await import('node:path');
     const chapterSidebarSource = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'ChapterSidebar.tsx'), 'utf8');
-    const settingSidebarStart = panelSource.indexOf('gridTemplateRows: activeTab === SETTING_TAB && !activeIsBrainstorm');
-    const settingSidebarSource = panelSource.slice(settingSidebarStart, settingSidebarStart + 12000);
+    const settingSidebarStart = sidebarSource.indexOf('className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-1 py-2"');
+    const settingSidebarSource = sidebarSource.slice(settingSidebarStart);
 
     expect(settingSidebarStart).toBeGreaterThan(-1);
     expect(settingSidebarSource).toContain('className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-1 py-2"');
@@ -157,8 +291,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(settingSidebarSource).toContain('className="mt-0.5 space-y-0.5"');
     expect(chapterSidebarSource).toContain('className="editor-scrollbar flex-1 overflow-y-auto px-1 py-2"');
     expect(chapterSidebarSource).toContain('className={`group relative flex w-full cursor-pointer items-center gap-2 rounded-[8px] border px-1 py-1 text-left transition-colors');
-    expect(panelSource).toContain("const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full");
-    expect(panelSource).toContain("const WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS = 'min-h-[38px] w-full rounded-xl");
+    expect(constantsSource).toContain("export const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full");
+    expect(constantsSource).toContain("export const WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS = 'min-h-[38px] w-full rounded-xl");
     expect(panelSource).toContain('className="flex w-full items-center gap-2"');
     expect(panelSource).toContain('className="min-w-0 truncate pl-3 text-sm font-black text-gray-700"');
     expect(panelSource).toContain('className="ml-auto shrink-0 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-black text-[#08AACE]"');
@@ -172,14 +306,16 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('uses minimum left navigation widths as setting library defaults for new works', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
+    const constantsSource = await readWorkbenchLibraryPanelConstantsSource();
 
-    expect(panelSource).toContain('const SETTING_LIBRARY_LEFT_MIN_WIDTH = 180;');
-    expect(panelSource).toContain('const SETTING_LIBRARY_LEFT_WIDTH = SETTING_LIBRARY_LEFT_MIN_WIDTH;');
-    expect(panelSource).toContain('const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 260;');
-    expect(panelSource).toContain('const PLOT_POINT_LAYOUT_TREE_MIN_WIDTH = 132;');
-    expect(panelSource).toContain('const PLOT_POINT_LAYOUT_TREE_WIDTH = PLOT_POINT_LAYOUT_TREE_MIN_WIDTH;');
-    expect(panelSource).not.toContain('const SETTING_LIBRARY_LEFT_WIDTH = 430;');
-    expect(panelSource).not.toContain('const PLOT_POINT_LAYOUT_TREE_WIDTH = 168;');
+    expect(constantsSource).toContain('export const SETTING_LIBRARY_LEFT_MIN_WIDTH = 180;');
+    expect(constantsSource).toContain('export const SETTING_LIBRARY_LEFT_WIDTH = SETTING_LIBRARY_LEFT_MIN_WIDTH;');
+    expect(constantsSource).toContain('export const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 260;');
+    expect(constantsSource).toContain('export const PLOT_POINT_LAYOUT_TREE_MIN_WIDTH = 132;');
+    expect(constantsSource).toContain('export const PLOT_POINT_LAYOUT_TREE_WIDTH = PLOT_POINT_LAYOUT_TREE_MIN_WIDTH;');
+    expect(constantsSource).not.toContain('const SETTING_LIBRARY_LEFT_WIDTH = 430;');
+    expect(constantsSource).not.toContain('const PLOT_POINT_LAYOUT_TREE_WIDTH = 168;');
+    expect(panelSource).toContain('readSettingLibraryLeftWidth(storageKey, activeTab, scale)');
   });
 
   it('auto-creates an editable outline setting when typing into the empty setting name field', async () => {
@@ -621,16 +757,17 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(linkControlSource).not.toContain('linkedLabel="已关联脑洞"');
     expect(panelSource).toContain('const OTHER_SETTING_LINK_TABS');
     expect(panelSource).toContain('关联其他设定');
-    const otherSettingModalStart = panelSource.indexOf('const otherSettingReaderModal = isOtherSettingReaderOpen ? createPortal(');
+    const otherSettingModalStart = panelSource.indexOf('const otherSettingReaderModal = (');
     const otherSettingModalSource = panelSource.slice(otherSettingModalStart, panelSource.indexOf('const brainstormEntries = entries.filter', otherSettingModalStart));
     expect(otherSettingModalStart).toBeGreaterThan(-1);
+    expect(otherSettingModalSource).toContain('<OtherSettingReaderModal');
     expect(otherSettingModalSource).toContain('selectAllCurrentOtherSettingLinkTab');
-    expect(otherSettingModalSource).toContain('toggleVisibleOtherSettingLinkGroupSelection(group.entries)');
-    expect(otherSettingModalSource).toContain('关联所有');
-    expect(otherSettingModalSource).toContain('全选');
-    expect(otherSettingModalSource).toContain('aria-label={`${draftOtherSettingReaderIds.has(entry.id) ? \'取消选择\' : \'选择\'}${entry.title}`}');
-    expect(otherSettingModalSource).toContain('toggleDraftOtherSettingReaderId(entry.id)');
-    expect(otherSettingModalSource).toContain("draftOtherSettingReaderIds.has(selectedOtherSettingLinkEntry.id) ? '已勾选' : '未勾选'");
+    expect(otherSettingModalSource).toContain('toggleVisibleOtherSettingLinkGroupSelection');
+    expect(panelSource).toContain('关联所有');
+    expect(panelSource).toContain('全选');
+    expect(panelSource).toContain("aria-label={`${draftIds.has(entry.id) ? '取消选择' : '选择'}${entry.title}`}");
+    expect(panelSource).toContain('onToggleEntry(entry.id)');
+    expect(panelSource).toContain("draftIds.has(selectedEntry.id) ? '已勾选' : '未勾选'");
     expect(otherSettingModalSource).not.toContain('关联此项');
     expect(otherSettingModalSource).not.toContain('selectedOtherSettingLinkEntry.tabTitle');
     expect(otherSettingModalSource).not.toContain('selectedOtherSettingLinkEntry.type} ·');
@@ -734,7 +871,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('className="xy-stream-toggle-text">流式输出</span>');
     expect(panelSource).toContain('className="xy-stream-toggle-track"');
     expect(panelSource).toContain('className="xy-stream-toggle-thumb"');
-    expect(panelSource).toContain('updateActiveTabConfig({ brainstormStreamEnabled: event.target.checked })');
+    expect(panelSource).toContain('onBrainstormStreamEnabledChange(event.target.checked)');
+    expect(panelSource).toContain('updateActiveTabConfig({ brainstormStreamEnabled: enabled })');
     expect(panelSource).not.toContain('xy-floating-brainstorm-output-font-tool');
     expect(panelSource).not.toContain('<span>流式输出</span>');
     expect(styleSource).toContain('.xy-floating-border-stream-tool {');
@@ -1138,14 +1276,21 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain("isDetailOutlineTab ? 'grid-cols-1' : 'grid-cols-2'");
   });
 
-  it('splits the review preview area into original text and AI annotation panes', async () => {
+  it('splits the review preview area into outline, original text, and AI annotation panes', async () => {
     const chapterEditorSource = await readChapterEditorSource();
 
     expect(chapterEditorSource).toContain('type ReviewAnnotation = {');
     expect(chapterEditorSource).toContain('function extractReviewAnnotations(output: string)');
     expect(chapterEditorSource).toContain('const reviewAnnotationsByParagraph = useMemo(() => {');
+    expect(chapterEditorSource).toContain('const [showReviewOutline, setShowReviewOutline] = useState(true);');
+    expect(chapterEditorSource).toContain('const reviewPreviewGridTemplateColumns = showReviewOutline');
+    expect(chapterEditorSource).toContain('reviewPreviewOutlineResizeHandle');
+    expect(chapterEditorSource).toContain('reviewPreviewAnnotationResizeHandle');
+    expect(chapterEditorSource).toContain('第${activeReviewChapter.serialNumber}章 章纲');
+    expect(chapterEditorSource).toContain('第${activeReviewChapter.serialNumber}章 原文');
+    expect(chapterEditorSource).toContain('第${activeReviewChapter.serialNumber}章 AI标注');
     expect(chapterEditorSource).toContain('AI标注');
-    expect(chapterEditorSource).toContain('AI 返回“原文标注”JSON 后，这里会高亮问题片段并显示审核说明。');
+    expect(chapterEditorSource).not.toContain('AI 返回“原文标注”JSON 后，这里会高亮问题片段并显示审核说明。');
     expect(chapterEditorSource).toContain('renderAnnotatedReviewParagraph(paragraph, paragraphAnnotations)');
   });
 
@@ -1154,19 +1299,20 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const publishedSidebarSource = await readPublishedSidebarSource();
     const panelSource = await readWorkbenchLibraryPanelSource();
     const chapterEditorSource = await readChapterEditorSource();
+    const constantsSource = await readWorkbenchLibraryPanelConstantsSource();
     const testCollectionSource = await readTestCollectionSource();
 
     for (const source of [chapterSidebarSource, publishedSidebarSource, panelSource, chapterEditorSource]) {
       expect(source).toContain('WORKBENCH_FOLDER_GROUP');
       expect(source).toContain('WORKBENCH_FOLDER_GROUP_ICON_CLASS');
       expect(source).toContain('WORKBENCH_FOLDER_GROUP_COUNT_CLASS');
-      expect(source).toContain('border-[#BDEEF7] xy-flow-group-bg');
-      expect(source).toContain("const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';");
-      expect(source).toContain('font-black text-[#1f2933]');
-      expect(source).toContain("const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#6f7e90]';");
       expect(source).toContain('FolderOpen');
       expect(source).toContain('Folder');
     }
+    expect(constantsSource).toContain('border-[#BDEEF7] xy-flow-group-bg');
+    expect(constantsSource).toContain("export const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';");
+    expect(constantsSource).toContain('font-black text-[#1f2933]');
+    expect(constantsSource).toContain("export const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#6f7e90]';");
 
     expect(chapterSidebarSource).toContain('const VolumeFolderIcon = volume.isExpanded ? FolderOpen : Folder;');
     expect(chapterSidebarSource).toContain('<VolumeFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />');
@@ -1382,7 +1528,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const settingRequestSource = panelSource.slice(settingRequestStart, settingRequestEnd);
 
     expect(panelSource).toContain('import { AiRequestLogContent, AiRequestLogGroups, type AiRequestLogGroup }');
-    expect(panelSource).toContain('function buildRequestLogPlainPreview(groups: AiRequestLogGroup[])');
+    expect(panelSource).toContain('export function buildRequestLogPlainPreview(groups: AiRequestLogGroup[])');
     expect(panelSource).toContain(".join('\\n\\n');");
     expect(panelSource).toContain('const [showLibraryAiLogTitles, setShowLibraryAiLogTitles] = useState(true);');
     expect(panelSource).toContain('const visibleAiRequestLogGroups = visibleAiRequestLog');
@@ -1405,10 +1551,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(settingRequestSource).not.toContain("'【用户要求】'");
     expect(panelSource).toContain('userContent: activeTab === SETTING_TAB ? settingUserRequirementForAi : requestText');
     expect(panelSource).toContain("userTitle: activeTab === SETTING_TAB ? '修改要求' : activeIsBrainstorm ? '其他要求' : undefined");
-    expect(panelSource).toContain("{activeTab === SETTING_TAB ? '修改要求' : '其他要求'}");
+    expect(panelSource).toContain("userTextTitle={activeTab === SETTING_TAB ? '修改要求' : '其他要求'}");
     expect(panelSource).toContain('const visibleAiRequestLogPlainPreview = buildRequestLogPlainPreview(visibleAiRequestLogGroups);');
     expect(panelSource).toContain('checked={showLibraryAiLogTitles}');
-    expect(panelSource).toContain('onChange={(event) => setShowLibraryAiLogTitles(event.target.checked)}');
+    expect(panelSource).toContain('onShowLibraryAiLogTitlesChange={setShowLibraryAiLogTitles}');
+    expect(panelSource).toContain('onChange={(event) => onShowLibraryAiLogTitlesChange(event.target.checked)}');
     expect(panelSource).toContain('<span>显示标题内容</span>');
     expect(panelSource).toContain('{showLibraryAiLogTitles ? (');
     expect(panelSource).toContain('<AiRequestLogGroups groups={visibleAiRequestLogGroups} fillSingleGroup />');
@@ -1438,26 +1585,31 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('adds a format tab to the library AI log using the current setting import structure', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
-    const buildFormatTabsStart = panelSource.indexOf('function buildSettingImportFormatTabs(');
-    const buildFormatTabsEnd = panelSource.indexOf('const DEFAULT_SETTING_IMPORT_FORMAT_TAB_ID', buildFormatTabsStart);
-    const buildFormatTabsSource = panelSource.slice(buildFormatTabsStart, buildFormatTabsEnd);
+    const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
+    const taxonomySource = await readWorkbenchSettingTaxonomySource();
+    const roleSettingFieldsSource = await readWorkbenchRoleSettingFieldsSource();
+    const formatPreviewSource = await readWorkbenchSettingImportFormatPreviewSource();
+    const buildFormatTabsStart = structuredSettingsSource.indexOf('function buildSettingImportFormatTabs(');
+    const buildFormatTabsEnd = structuredSettingsSource.indexOf('export const DEFAULT_SETTING_IMPORT_FORMAT_TAB_ID', buildFormatTabsStart);
+    const buildFormatTabsSource = structuredSettingsSource.slice(buildFormatTabsStart, buildFormatTabsEnd);
 
     expect(panelSource).toContain("const LIBRARY_AI_LOG_VIEW_TABS = ['输出日志', '格式'] as const;");
-    expect(panelSource).toContain('type SettingImportFormatEntry');
-    expect(panelSource).toContain('function buildSettingImportFormatTabs(options: BuildSettingImportFormatTabsOptions)');
-    expect(panelSource).toContain('type BuildSettingImportFormatTabsOptions = {');
-    expect(panelSource).toContain('visibleSettingTypes: string[];');
-    expect(panelSource).toContain('settingEntries: WorkbenchLibraryEntry[];');
-    expect(panelSource).toContain('getSettingTypeWorkspaceDomain: (type: string) => string | null;');
-    expect(panelSource).toContain('function buildSettingImportFormatPreview(entry: SettingImportFormatEntry)');
-    expect(panelSource).toContain("const SETTING_IMPORT_FORMAT_PREVIEW_SCOPES = ['设定条目', '分组', '标签'] as const;");
-    expect(panelSource).toContain('function buildSettingImportFormatGroupPreview(tab: SettingImportFormatTab, group: SettingImportFormatGroup)');
-    expect(panelSource).toContain('function buildSettingImportFormatTabPreview(tab: SettingImportFormatTab)');
-    expect(panelSource).toContain('function buildSettingImportFormatScopedPreview');
-    expect(panelSource).toContain('function getSettingImportFormatLineClassName(line: string, lineIndex: number)');
-    expect(panelSource).toContain("return lineIndex === 0 ? 'text-amber-600' : 'text-purple-700';");
-    expect(panelSource).toContain("if (/^\\*[^*]+\\*[:：]$/.test(trimmed)) return 'text-sky-700';");
-    expect(panelSource).toContain('function SettingImportFormatPreviewText({ content }: { content: string })');
+    expect(structuredSettingsSource).toContain('type SettingImportFormatEntry');
+    expect(structuredSettingsSource).toContain('function buildSettingImportFormatTabs(options: BuildSettingImportFormatTabsOptions)');
+    expect(structuredSettingsSource).toContain('type BuildSettingImportFormatTabsOptions = {');
+    expect(structuredSettingsSource).toContain('visibleSettingTypes: string[];');
+    expect(structuredSettingsSource).toContain('settingEntries: WorkbenchLibraryEntry[];');
+    expect(structuredSettingsSource).toContain('getSettingTypeWorkspaceDomain: (type: string) => string | null;');
+    expect(structuredSettingsSource).toContain('function buildSettingImportFormatPreview(entry: SettingImportFormatEntry)');
+    expect(structuredSettingsSource).toContain("const SETTING_IMPORT_FORMAT_PREVIEW_SCOPES = ['设定条目', '分组', '标签'] as const;");
+    expect(structuredSettingsSource).toContain('function buildSettingImportFormatGroupPreview(tab: SettingImportFormatTab, group: SettingImportFormatGroup)');
+    expect(structuredSettingsSource).toContain('function buildSettingImportFormatTabPreview(tab: SettingImportFormatTab)');
+    expect(structuredSettingsSource).toContain('function buildSettingImportFormatScopedPreview');
+    expect(panelSource).toContain("import { SettingImportFormatPreviewText } from './workbenchSettingImportFormatPreview';");
+    expect(formatPreviewSource).toContain('function getSettingImportFormatLineClassName(line: string, lineIndex: number)');
+    expect(formatPreviewSource).toContain("return lineIndex === 0 ? 'text-amber-600' : 'text-purple-700';");
+    expect(formatPreviewSource).toContain("if (/^\\*[^*]+\\*[:：]$/.test(trimmed)) return 'text-sky-700';");
+    expect(formatPreviewSource).toContain('function SettingImportFormatPreviewText({ content }: { content: string })');
     expect(panelSource).toContain('const [libraryAiLogViewTab, setLibraryAiLogViewTab] = useState<LibraryAiLogViewTab>(\'输出日志\');');
     expect(panelSource).toContain('const [settingImportFormatTabId, setSettingImportFormatTabId] = useState(DEFAULT_SETTING_IMPORT_FORMAT_TAB_ID);');
     expect(panelSource).toContain('const [settingImportFormatEntryId, setSettingImportFormatEntryId] = useState(DEFAULT_SETTING_IMPORT_FORMAT_ENTRY_ID);');
@@ -1466,19 +1618,20 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain('条目下的子设定');
     expect(panelSource).not.toContain('selectedSettingImportFormatEntry.fields.map((field)');
     expect(panelSource).toContain('className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-100 bg-white px-5 py-3"');
-    expect(panelSource).toContain("libraryAiLogViewTab === '格式' && (");
+    expect(panelSource).toContain("activeViewTab === '格式' && (");
     expect(panelSource).toContain('className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pr-4"');
     expect(panelSource).toContain('className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-white p-5"');
     expect(panelSource).toContain('className="flex min-h-0 flex-1 flex-col rounded-2xl border border-slate-900 bg-white p-4"');
     expect(panelSource).toContain('className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-[#FBFCFE] p-4 text-sm font-semibold leading-7 text-slate-800"');
     expect(panelSource).toContain('<SettingImportFormatPreviewText content={settingImportFormatPreview} />');
-    expect(panelSource).toContain('entry.fields.flatMap((field) => [');
+    expect(structuredSettingsSource).toContain('entry.fields.flatMap((field) => [');
     expect(panelSource).not.toContain("field.title === '身份定位' ? '男主角' : '内容',\\n    '',");
     expect(panelSource).not.toContain('className="shrink-0 border-b border-slate-100 bg-white p-3"');
     expect(panelSource).not.toContain('className="grid grid-cols-2 gap-1"');
     expect(panelSource).toContain('可复制格式');
     expect(panelSource).toContain('SETTING_IMPORT_FORMAT_PREVIEW_SCOPES.map((scope, index)');
-    expect(panelSource).toContain('setSettingImportFormatPreviewScope(scope)');
+    expect(panelSource).toContain('onFormatPreviewScopeChange={setSettingImportFormatPreviewScope}');
+    expect(panelSource).toContain('onClick={() => onFormatPreviewScopeChange(scope)}');
     expect(panelSource).toContain('设定条目');
     expect(panelSource).toContain('分组');
     expect(panelSource).toContain('标签');
@@ -1494,20 +1647,27 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(buildFormatTabsSource).toContain('visibleSettingTypes.filter((type) => getSettingTypeWorkspaceDomain(type) === domain)');
     expect(buildFormatTabsSource).not.toContain('DEFAULT_WORK_SETTING_TYPES.map((groupName) => ({');
     expect(buildFormatTabsSource).not.toContain("['factions', '势力设定', SETTING_WORKSPACE_DOMAIN_GROUPS['setting:faction']]");
-    expect(panelSource).toContain('DEFAULT_WORK_SETTING_STARTER_ENTRIES');
-    expect(panelSource).toContain('SETTING_WORKSPACE_DOMAIN_GROUPS');
-    expect(panelSource).toContain('ROLE_BASE_SETTING_FIELD_DEFINITIONS');
-    expect(panelSource).toContain('ROLE_STATE_FIELD_DEFINITIONS');
-    expect(panelSource).toContain('世界架构');
-    expect(panelSource).toContain('危险区域');
-    expect(panelSource).toContain('特殊资源');
+    expect(taxonomySource).toContain('DEFAULT_WORK_SETTING_STARTER_ENTRIES');
+    expect(taxonomySource).toContain('SETTING_WORKSPACE_DOMAIN_GROUPS');
+    expect(panelSource).toContain("from '@/features/workbench/model/workbenchSettingTaxonomy'");
+    expect(panelSource).not.toContain('LEGACY_COMPACT_WORK_SETTING_STARTER_ENTRIES');
+    expect(panelSource).not.toContain('LEGACY_DETAILED_DEFAULT_SETTING_STARTER_ENTRIES');
+    expect(panelSource).not.toContain('LEGACY_AUTO_DOMAIN_SETTING_STARTER_ENTRIES');
+    expect(panelSource).not.toContain('LEGACY_DEFAULT_WORK_SETTING_INSTRUCTIONS');
+    expect(panelSource).not.toContain('clearLegacyDefaultWorkSettingInstructions');
+    expect(panelSource).not.toContain('removeLegacyAutoDomainSettingStarterEntries');
+    expect(roleSettingFieldsSource).toContain('ROLE_BASE_SETTING_FIELD_DEFINITIONS');
+    expect(roleSettingFieldsSource).toContain('ROLE_STATE_FIELD_DEFINITIONS');
+    expect(structuredSettingsSource).toContain('世界架构');
+    expect(structuredSettingsSource).toContain('危险区域');
+    expect(structuredSettingsSource).toContain('特殊资源');
   });
 
   it('does not add a group-name fallback entry when the format group already has concrete entries', async () => {
-    const panelSource = await readWorkbenchLibraryPanelSource();
-    const entryTitlesStart = panelSource.indexOf('function getSettingImportFormatEntryTitles(');
-    const entryTitlesEnd = panelSource.indexOf('function createSettingImportFormatEntry(', entryTitlesStart);
-    const entryTitlesSource = panelSource.slice(entryTitlesStart, entryTitlesEnd);
+    const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
+    const entryTitlesStart = structuredSettingsSource.indexOf('function getSettingImportFormatEntryTitles(');
+    const entryTitlesEnd = structuredSettingsSource.indexOf('function createSettingImportFormatEntry(', entryTitlesStart);
+    const entryTitlesSource = structuredSettingsSource.slice(entryTitlesStart, entryTitlesEnd);
 
     expect(entryTitlesSource).not.toContain('...structuredTitles, normalizedType');
     expect(entryTitlesSource).toContain('const knownTitles = Array.from(new Set([...currentTitles, ...starterTitles, ...structuredTitles]))');
@@ -1631,12 +1791,13 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('allows the brainstorm preview and output splitter to drag in both directions', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
+    const constantsSource = await readWorkbenchLibraryPanelConstantsSource();
 
-    expect(panelSource).toContain('const BRAINSTORM_LAYOUT_PREVIEW_MAX_WIDTH = 480;');
+    expect(constantsSource).toContain('export const BRAINSTORM_LAYOUT_PREVIEW_MAX_WIDTH = 480;');
     expect(panelSource).toContain('const deltaX = (moveEvent.clientX - startX) / eventScale;');
     expect(panelSource).toContain('Math.max(BRAINSTORM_PREVIEW_MIN_WIDTH, startWidth + deltaX)');
     expect(panelSource).toContain('const brainstormLayoutPreviewWidth = Math.min(brainstormPreviewWidth, BRAINSTORM_LAYOUT_PREVIEW_MAX_WIDTH);');
-    expect(panelSource).not.toContain('const BRAINSTORM_LAYOUT_PREVIEW_MAX_WIDTH = 420;');
+    expect(constantsSource).not.toContain('const BRAINSTORM_LAYOUT_PREVIEW_MAX_WIDTH = 420;');
   });
 
   it('uses the writing page cursor for official horizontal resize splitters', async () => {
@@ -1655,9 +1816,10 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('keeps setting and outline action sidebars wide enough to drag', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
+    const constantsSource = await readWorkbenchLibraryPanelConstantsSource();
 
-    expect(panelSource).toContain('const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 260;');
-    expect(panelSource).toContain('const OUTLINE_LEFT_MAX_DISPLAY_WIDTH = 560;');
+    expect(constantsSource).toContain('export const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 260;');
+    expect(constantsSource).toContain('export const OUTLINE_LEFT_MAX_DISPLAY_WIDTH = 560;');
     expect(panelSource).toContain('function getSettingLibraryLeftMaxWidth(tab: string, scaleValue = 1)');
     expect(panelSource).toContain('const isSettingTab = tab === SETTING_TAB;');
     expect(panelSource).toContain('const minWidth = isSettingTab ? SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH : SETTING_LIBRARY_LEFT_MIN_WIDTH;');
@@ -1699,6 +1861,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('migrates the number 13 detail outline sidebar replica into production and retires the test route', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
+    const constantsSource = await readWorkbenchLibraryPanelConstantsSource();
     const testCollectionSource = await readTestCollectionSource();
     const outlineDirectoryStart = panelSource.indexOf('gridTemplateColumns: isDetailOutlineTab && showDetailOutlinePublished');
     const outlineDirectoryEnd = panelSource.indexOf('{leftResizeHandle}', outlineDirectoryStart);
@@ -1706,16 +1869,16 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
     expect(outlineDirectoryStart).toBeGreaterThan(-1);
     expect(outlineDirectoryEnd).toBeGreaterThan(outlineDirectoryStart);
-    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS = 'flex h-[42px] shrink-0 items-center justify-between border-b border-[#e6e8ec] bg-[#fbfbfc] px-3 py-2.5';");
-    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_TITLE_CLASS = 'whitespace-nowrap text-sm font-bold text-gray-900';");
-    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_COUNT_CLASS = 'flex h-5 w-5 items-center justify-center rounded-full bg-[#E7F8FD] text-xs font-medium text-[#08AACE]';");
-    expect(panelSource).toContain("const DETAIL_OUTLINE_SIDEBAR_TOGGLE_CLASS = 'flex items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-2 py-1 text-sm text-white transition-colors hover:bg-[#0798b8]';");
-    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_ROW_CLASS = WORKBENCH_FOLDER_GROUP_BUTTON_CLASS;");
-    expect(panelSource).not.toContain("const DETAIL_OUTLINE_VOLUME_ROW_CLASS = 'flex h-[54px]");
-    expect(panelSource).not.toContain("const DETAIL_OUTLINE_VOLUME_ROW_CLASS = 'grid h-[54px]");
-    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_ICON_CLASS = WORKBENCH_FOLDER_GROUP_ICON_CLASS;");
-    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_TITLE_CLASS = 'min-w-0 flex-1 truncate leading-none';");
-    expect(panelSource).toContain("const DETAIL_OUTLINE_VOLUME_COUNT_CLASS = WORKBENCH_FOLDER_GROUP_COUNT_CLASS;");
+    expect(constantsSource).toContain("export const DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS = 'flex h-[42px] shrink-0 items-center justify-between border-b border-[#e6e8ec] bg-[#fbfbfc] px-3 py-2.5';");
+    expect(constantsSource).toContain("export const DETAIL_OUTLINE_SIDEBAR_TITLE_CLASS = 'whitespace-nowrap text-sm font-bold text-gray-900';");
+    expect(constantsSource).toContain("export const DETAIL_OUTLINE_SIDEBAR_COUNT_CLASS = 'flex h-5 w-5 items-center justify-center rounded-full bg-[#E7F8FD] text-xs font-medium text-[#08AACE]';");
+    expect(constantsSource).toContain("export const DETAIL_OUTLINE_SIDEBAR_TOGGLE_CLASS = 'flex items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-2 py-1 text-sm text-white transition-colors hover:bg-[#0798b8]';");
+    expect(constantsSource).toContain("export const DETAIL_OUTLINE_VOLUME_ROW_CLASS = WORKBENCH_FOLDER_GROUP_BUTTON_CLASS;");
+    expect(constantsSource).not.toContain("const DETAIL_OUTLINE_VOLUME_ROW_CLASS = 'flex h-[54px]");
+    expect(constantsSource).not.toContain("const DETAIL_OUTLINE_VOLUME_ROW_CLASS = 'grid h-[54px]");
+    expect(constantsSource).toContain("export const DETAIL_OUTLINE_VOLUME_ICON_CLASS = WORKBENCH_FOLDER_GROUP_ICON_CLASS;");
+    expect(constantsSource).toContain("export const DETAIL_OUTLINE_VOLUME_TITLE_CLASS = 'min-w-0 flex-1 truncate leading-none';");
+    expect(constantsSource).toContain("export const DETAIL_OUTLINE_VOLUME_COUNT_CLASS = WORKBENCH_FOLDER_GROUP_COUNT_CLASS;");
     expect(outlineDirectorySource).toContain('className={isDetailOutlineTab ? DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS :');
     expect(outlineDirectorySource).toContain('className={isDetailOutlineTab ? DETAIL_OUTLINE_SIDEBAR_TOGGLE_CLASS :');
     expect(outlineDirectorySource).toContain('className={isDetailOutlineTab ? DETAIL_OUTLINE_VOLUME_ROW_CLASS : WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}');
@@ -1868,7 +2031,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(outlineRightPanelSource).toContain('disabled={!lastDetailOutlineReplacement}');
     expect(outlineRightPanelSource).toContain('撤销替换');
     expect(outlineRightPanelSource).toContain("isDetailOutlineTab ? '复制章纲' : '复制梗概'");
-    expect(panelSource).toContain('const OUTLINE_ACTION_RIGHT_MIN_WIDTH = 420;');
+    const constantsSource = await readWorkbenchLibraryPanelConstantsSource();
+    expect(constantsSource).toContain('export const OUTLINE_ACTION_RIGHT_MIN_WIDTH = 420;');
     expect(panelSource).toContain('? OUTLINE_ACTION_RIGHT_MIN_WIDTH');
     expect(outlineRightPanelSource).toContain('min-w-[92px] flex-1 whitespace-nowrap bg-brand');
     expect(outlineRightPanelSource).toContain('min-w-[92px] flex-1 whitespace-nowrap border-l border-blue-200');
@@ -1998,7 +2162,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('fontSize: detailOutlineFontSize');
     expect(panelSource).toContain('const renderDetailOutlineFontSizeTool = () => {');
     expect(panelSource).toContain('if (activeTab !== DETAIL_OUTLINE_TAB || plotPointStandalone) return null;');
-    expect(panelSource).toContain('const getActiveLibraryFontConfig = () => {');
+    expect(panelSource).toContain('const getActiveLibraryFontConfig = () => getWorkbenchLibraryActiveFontConfig({');
+    expect(panelSource).toContain('function getWorkbenchLibraryActiveFontConfig');
     expect(panelSource).toContain('const renderActiveLibraryFontSizeTool = () => {');
     expect(panelSource).toContain('const renderLibraryHeaderFontSizeTool = () => {');
     expect(panelSource).toContain('const [headerToolPortalTarget, setHeaderToolPortalTarget]');
@@ -2154,15 +2319,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('keeps detail outline reader aligned with the setting link picker layout', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
-    const modalHeaderStart = panelSource.indexOf('const detailOutlineReaderModal = isDetailOutlineReaderOpen && isDetailOutlineTab ? createPortal(');
-    const modalHeaderEnd = panelSource.indexOf('const sendPlotPointAiMessage = async () => {', modalHeaderStart);
-    const modalHeaderSource = panelSource.slice(modalHeaderStart, modalHeaderEnd);
+    const modalHeaderSource = await readWorkbenchDetailOutlineReaderModalSource();
     const readerAsideStart = modalHeaderSource.indexOf('<aside className="editor-scrollbar min-h-0 overflow-y-auto border-r border-gray-100 bg-slate-50 px-1 py-2">');
     const readerAsideEnd = modalHeaderSource.indexOf('<main className="editor-scrollbar min-h-0 overflow-y-auto p-6">', readerAsideStart);
     const readerAsideHeaderSource = modalHeaderSource.slice(readerAsideStart, readerAsideEnd);
 
-    expect(modalHeaderStart).toBeGreaterThan(-1);
-    expect(modalHeaderEnd).toBeGreaterThan(modalHeaderStart);
     expect(readerAsideStart).toBeGreaterThan(-1);
     expect(readerAsideEnd).toBeGreaterThan(readerAsideStart);
     expect(modalHeaderSource).toContain('<h3 className="text-xl font-bold text-gray-900">关联资料</h3>');
@@ -2212,7 +2373,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(styleSource).toContain('.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral.xy-floating-with-inline-actions textarea');
     expect(styleSource).toContain('border-color: #d7dee8;');
     expect(styleSource).toContain('.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral .xy-ai-inline-send');
-    expect(styleSource).toContain('color: #334155;');
+    expect(styleSource).toContain('color: #21B8DA;');
+    expect(styleSource).toContain('.xy-ai-inline-send {\n  flex: 1.12 1 0;\n  background: #ffffff;\n  color: #21B8DA;');
+    expect(styleSource).toContain('.writer-assistant-theme .xy-ai-inline-send {\n  color: #21B8DA;');
+    expect(styleSource).toContain('.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral .xy-ai-inline-stop {\n  border-left-color: #d7dee8;');
+    expect(styleSource).not.toContain('.writer-assistant-theme .xy-ai-inline-stop {\n  border-left-color: var(--xy-wa-blue);');
     expect(styleSource).not.toContain('.xy-floating-field input,\n.xy-floating-field textarea {\n  position: relative;\n  z-index: 1;');
     expect(styleSource).toContain('.xy-floating-field label.xy-border-embedded-transparent-backplate,');
     expect(styleSource).toContain('.xy-floating-field label.xy-border-embedded-transparent-backplate {\n  position: absolute;');
@@ -2273,7 +2438,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(navStart).toBeGreaterThan(-1);
     expect(navEnd).toBeGreaterThan(navStart);
     expect(panelSource).toContain('const [plotPointLayoutTreeWidth, setPlotPointLayoutTreeWidth] = useState(() => readPlotPointLayoutTreeWidth(storageKey));');
-    expect(panelSource).toContain('const plotPointTreeResizeHandle = (');
+    expect(panelSource).toContain('plotPointTreeResizeHandle,');
+    expect(panelSource).toContain('plotPointTreeResizeHandle: (');
     expect(panelSource).toContain('onPointerDown={startPlotPointTreeWidthResize}');
     expect(panelSource).toContain('title="拖拽调整剧情链目录宽度"');
     expect(panelSource).toContain('{plotPointTreeResizeHandle}');
@@ -2412,7 +2578,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(selectedListSource).not.toContain('text-center shadow-sm');
     expect(selectedListSource).not.toContain('潜力 {metrics.potential}');
     expect(panelSource).toContain('title="拖拽调整剧情链左侧宽度"');
-    expect(panelSource).toContain('w-3 -translate-x-1/2 shrink-0 cursor-ew-resize');
+    expect(panelSource).toContain('widthClass="w-3"');
+    expect(panelSource).toContain('h-full ${widthClass} -translate-x-1/2 shrink-0 cursor-ew-resize');
     expect(panelSource).toContain('h-full w-px bg-[#08AACE] opacity-0 transition-opacity group-hover:opacity-100');
     expect(selectedListSource).not.toContain('transition-colors hover:bg-[#EAF9FD]');
   });
@@ -2420,7 +2587,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   it('hides raw reasoning text in the plot chain right output so it matches final candidates', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const renderFunctionStart = panelSource.indexOf('function renderAiChatContent(content: string, options: { hideReasoningBody?: boolean } = {})');
-    const renderFunctionEnd = panelSource.indexOf('function getLatestUsefulAiText', renderFunctionStart);
+    const renderFunctionEnd = panelSource.indexOf('\n\nimport ', renderFunctionStart);
     const renderFunctionSource = panelSource.slice(renderFunctionStart, renderFunctionEnd);
 
     expect(renderFunctionStart).toBeGreaterThan(-1);
@@ -2443,11 +2610,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   });
 
   it('uses the selected danger recycle button style for the brainstorm recycle entry', async () => {
-    const panelSource = await readWorkbenchLibraryPanelSource();
-    const recycleButtonAnchor = panelSource.indexOf('setIsBrainstormRecycleOpen(true)');
-    const recycleButtonStart = panelSource.lastIndexOf('<button', recycleButtonAnchor);
-    const recycleButtonEnd = panelSource.indexOf('</button>', recycleButtonAnchor);
-    const recycleButtonSource = panelSource.slice(recycleButtonStart, recycleButtonEnd);
+    const sidebarSource = await readWorkbenchLibrarySidebarSource();
+    const recycleButtonAnchor = sidebarSource.indexOf('setIsBrainstormRecycleOpen(true)');
+    const recycleButtonStart = sidebarSource.lastIndexOf('<button', recycleButtonAnchor);
+    const recycleButtonEnd = sidebarSource.indexOf('</button>', recycleButtonAnchor);
+    const recycleButtonSource = sidebarSource.slice(recycleButtonStart, recycleButtonEnd);
 
     expect(recycleButtonAnchor).toBeGreaterThan(-1);
     expect(recycleButtonStart).toBeGreaterThan(-1);
@@ -2456,21 +2623,22 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(recycleButtonSource).toContain('hover:border-red-200 hover:bg-red-100');
     expect(recycleButtonSource).toContain('<Trash2 className="h-4 w-4" />');
     expect(recycleButtonSource).toContain('bg-white text-red-500');
-    expect(recycleButtonSource).toContain('{brainstormRecycleEntries.length}');
+    expect(recycleButtonSource).toContain('{brainstormRecycleCount}');
     expect(recycleButtonSource).not.toContain('打开');
     expect(recycleButtonSource).not.toContain('个已删除脑洞');
   });
 
   it('uses the chapter-style black text selected state for brainstorm entries', async () => {
-    const panelSource = await readWorkbenchLibraryPanelSource();
-    const entryListStart = panelSource.indexOf('previewEntries.map((entry, previewIndex) => {');
-    const entryListEnd = panelSource.indexOf('{!activeIsBrainstorm && (', entryListStart);
-    const entryListSource = panelSource.slice(entryListStart, entryListEnd);
+    const sidebarSource = await readWorkbenchLibrarySidebarSource();
+    const entryListStart = sidebarSource.indexOf('previewEntries.map((entry, previewIndex) => {');
+    const entryListEnd = sidebarSource.indexOf('</button>', entryListStart);
+    const entryListSource = sidebarSource.slice(entryListStart, entryListEnd);
 
     expect(entryListStart).toBeGreaterThan(-1);
     expect(entryListEnd).toBeGreaterThan(entryListStart);
-    expect(entryListSource).toContain("activeIsBrainstorm\n                                  ? 'border-transparent xy-selected-mint-bg text-gray-900'");
-    expect(entryListSource).toContain("activeIsBrainstorm\n                                  ? 'border-transparent bg-white text-gray-700 hover:border-gray-200 hover:bg-gray-50'");
+    expect(entryListSource).toContain('currentSelectedEntryId === entry.id');
+    expect(entryListSource).toContain("'border-transparent xy-selected-mint-bg text-gray-900'");
+    expect(entryListSource).toContain("activeIsBrainstorm\n                              ? 'border-transparent bg-white text-gray-700 hover:border-gray-200 hover:bg-gray-50'");
     expect(entryListSource).toContain('className="min-w-0 truncate pl-3 text-sm font-black text-gray-700"');
     expect(entryListSource).toContain('className="ml-auto shrink-0 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-black text-[#08AACE]"');
     expect(entryListSource).not.toContain("activeIsBrainstorm ? 'text-xs font-black text-gray-400'");
@@ -2659,18 +2827,22 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('clearSettingCategories();');
     expect(panelSource).toContain('clearSettingEntries();');
     expect(panelSource).toContain('aria-disabled="true"');
-    expect(panelSource).toContain("settingCreateDialog === 'category' ? '新建分组'");
-    expect(panelSource).toContain("settingCreateDialog === 'category' ? '输入分组名字'");
-    expect(panelSource).toContain('清空{clearSettingsTargetMeta[categoryMenuClearEntryTarget].label}');
-    expect(panelSource).toContain('清空{clearSettingsTargetMeta[categoryMenuClearCategoryTarget].label}');
-    expect(panelSource).toContain("新建{categoryMenu.kind === 'role' ? '角色' : '设定'}");
-    expect(panelSource).toContain("新建{entryMenu.tab === ROLE_TAB ? '角色' : '设定'}");
+    expect(panelSource).toContain("mode === 'category' ? '新建分组'");
+    expect(panelSource).toContain("mode === 'category' ? '输入分组名字'");
+    expect(panelSource).toContain('clearEntryLabel={clearSettingsTargetMeta[categoryMenuClearEntryTarget].label}');
+    expect(panelSource).toContain('clearCategoryLabel={clearSettingsTargetMeta[categoryMenuClearCategoryTarget].label}');
+    expect(panelSource).toContain('清空{clearEntryLabel}');
+    expect(panelSource).toContain('清空{clearCategoryLabel}');
+    expect(panelSource).toContain("新建{menu.kind === 'role' ? '角色' : '设定'}");
+    expect(panelSource).toContain("entryKindLabel={entryMenu?.tab === ROLE_TAB ? '角色' : '设定'}");
+    expect(panelSource).toContain('新建{entryKindLabel}');
     expect(panelSource).toContain('新建分组');
     expect(panelSource).not.toContain('新建同级分组');
     expect(panelSource).toContain('重命名分组');
     expect(panelSource).toContain('复制');
     expect(panelSource).toContain('移动到分组');
-    expect(panelSource).toContain('{entryMenuMoveOptions.map((type) => (');
+    expect(panelSource).toContain('moveOptions={entryMenuMoveOptions}');
+    expect(panelSource).toContain('{moveOptions.map((type) => (');
     expect(panelSource).toContain('setSettingCreateContextKind(categoryMenu.kind);');
     expect(panelSource).toContain("label: '设定分组'");
     expect(panelSource).toContain("settingEntries: {\n      label: '设定'");
@@ -2685,8 +2857,10 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('确定要清空全部自建设定吗？当前共有 ${deletableSettingEntriesForClear.length} 条可删除设定会被删除，默认设定条目会保留。');
     expect(panelSource).toContain('确定要清空全部角色吗？');
     expect(panelSource).toContain('确认清空${currentClearSettingsMeta.label}');
-    expect(panelSource).toContain('onClick={() => openClearSettingsConfirmFromMenu(categoryMenuClearCategoryTarget)}');
-    expect(panelSource).toContain('onClick={() => openClearSettingsConfirmFromMenu(categoryMenuClearEntryTarget)}');
+    expect(panelSource).toContain('onClearEntries={() => openClearSettingsConfirmFromMenu(categoryMenuClearEntryTarget)}');
+    expect(panelSource).toContain('onClearCategories={() => openClearSettingsConfirmFromMenu(categoryMenuClearCategoryTarget)}');
+    expect(panelSource).toContain('onClick={onClearEntries}');
+    expect(panelSource).toContain('onClick={onClearCategories}');
     expect(panelSource).toContain('w-max min-w-[136px] max-w-[220px]');
     expect(panelSource).toContain('w-full whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-bold text-red-500');
     expect(panelSource).not.toContain('className="fixed z-[10000] min-w-[168px] rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl"');
@@ -2767,8 +2941,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('does not confirm the setting create dialog while Chinese IME composition is active', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
-    const modalStart = panelSource.indexOf('const settingCreateModal = settingCreateDialog ? createPortal(');
-    const modalEnd = panelSource.indexOf(') : null;', modalStart);
+    const modalStart = panelSource.indexOf('export function SettingCreateDialog(');
+    const modalEnd = panelSource.indexOf('type CategoryRenameDialogProps', modalStart);
     const modalSource = panelSource.slice(modalStart, modalEnd);
     const confirmStart = panelSource.indexOf('const confirmSettingCreate = () => {');
     const confirmEnd = panelSource.indexOf('const openSettingCreateDialog', confirmStart);
@@ -2785,12 +2959,13 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(modalSource).toContain('event.nativeEvent.isComposing');
     expect(modalSource).toContain('event.keyCode === 229');
     expect(modalSource).toContain('!isImeComposing');
-    expect(modalSource).toContain('value={settingCreateDraft}');
-    expect(modalSource).toContain('onChange={(event) => setSettingCreateDraft(event.target.value)}');
+    expect(modalSource).toContain('value={draft}');
+    expect(modalSource).toContain('onChange={(event) => onDraftChange(event.target.value)}');
     expect(modalSource).toContain('所属分组');
-    expect(modalSource).toContain('value={settingCreateTypeValue}');
-    expect(modalSource).toContain('onChange={(event) => setSettingCreateTypeDraft(event.target.value)}');
-    expect(modalSource).toContain('confirmSettingCreate();');
+    expect(modalSource).toContain('value={typeValue}');
+    expect(modalSource).toContain('onChange={(event) => onTypeChange(event.target.value)}');
+    expect(modalSource).toContain('onConfirm();');
+    expect(panelSource).toContain('onConfirm={confirmSettingCreate}');
   });
 
   it('shows a newly created setting group in the current setting workspace tab', async () => {
@@ -3924,10 +4099,10 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   });
 
   it('does not render the setting entry grip dot icon', async () => {
-    const panelSource = await readWorkbenchLibraryPanelSource();
-    const entryListStart = panelSource.indexOf('previewEntries.map((entry, previewIndex) => {');
-    const entryListEnd = panelSource.indexOf('{!activeIsBrainstorm && (', entryListStart);
-    const entryListSource = panelSource.slice(entryListStart, entryListEnd);
+    const sidebarSource = await readWorkbenchLibrarySidebarSource();
+    const entryListStart = sidebarSource.indexOf('previewEntries.map((entry, previewIndex) => {');
+    const entryListEnd = sidebarSource.indexOf('</button>', entryListStart);
+    const entryListSource = sidebarSource.slice(entryListStart, entryListEnd);
 
     expect(entryListStart).toBeGreaterThan(-1);
     expect(entryListEnd).toBeGreaterThan(entryListStart);
@@ -3935,27 +4110,29 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   });
 
   it('keeps the normal arrow cursor on setting entry rows', async () => {
-    const panelSource = await readWorkbenchLibraryPanelSource();
-    const entryListStart = panelSource.indexOf('previewEntries.map((entry, previewIndex) => {');
-    const entryListEnd = panelSource.indexOf('{!activeIsBrainstorm && (', entryListStart);
-    const entryListSource = panelSource.slice(entryListStart, entryListEnd);
+    const sidebarSource = await readWorkbenchLibrarySidebarSource();
+    const constantsSource = await readWorkbenchLibraryPanelConstantsSource();
+    const entryListStart = sidebarSource.indexOf('previewEntries.map((entry, previewIndex) => {');
+    const entryListEnd = sidebarSource.indexOf('</button>', entryListStart);
+    const entryListSource = sidebarSource.slice(entryListStart, entryListEnd);
 
     expect(entryListStart).toBeGreaterThan(-1);
     expect(entryListEnd).toBeGreaterThan(entryListStart);
-    expect(entryListSource).toContain('cursor-default select-none');
+    expect(constantsSource).toContain('cursor-default select-none');
     expect(entryListSource).not.toContain('cursor-grab select-none');
     expect(entryListSource).not.toContain('active:cursor-grabbing');
   });
 
   it('shows the grabbing cursor only after a setting entry enters drag mode', async () => {
-    const panelSource = await readWorkbenchLibraryPanelSource();
-    const entryListStart = panelSource.indexOf('previewEntries.map((entry, previewIndex) => {');
-    const entryListEnd = panelSource.indexOf('{!activeIsBrainstorm && (', entryListStart);
-    const entryListSource = panelSource.slice(entryListStart, entryListEnd);
+    const sidebarSource = await readWorkbenchLibrarySidebarSource();
+    const constantsSource = await readWorkbenchLibraryPanelConstantsSource();
+    const entryListStart = sidebarSource.indexOf('previewEntries.map((entry, previewIndex) => {');
+    const entryListEnd = sidebarSource.indexOf('</button>', entryListStart);
+    const entryListSource = sidebarSource.slice(entryListStart, entryListEnd);
 
     expect(entryListStart).toBeGreaterThan(-1);
     expect(entryListEnd).toBeGreaterThan(entryListStart);
-    expect(entryListSource).toContain('cursor-default select-none');
+    expect(constantsSource).toContain('cursor-default select-none');
     expect(entryListSource).toContain("draggingLibraryEntry?.entryId === entry.id ? 'cursor-grabbing");
     expect(entryListSource).not.toContain('cursor-grab select-none');
     expect(entryListSource).not.toContain('active:cursor-grabbing');
@@ -4105,7 +4282,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('if (isMaleProtagonistRoleTypeChangeLocked(role.type, targetType)) return;');
     expect(panelSource).toContain("if (entryMenu.tab === ROLE_TAB && isMaleProtagonistRoleType(entryMenu.roleType ?? '')) return;");
     expect(panelSource).toContain("const entryMenuIsMaleProtagonist = Boolean(entryMenu?.tab === ROLE_TAB && isMaleProtagonistRoleType(entryMenu.roleType ?? ''));");
-    expect(panelSource).toContain('disabled={entryMenuDeleteDisabled}');
+    expect(panelSource).toContain('deleteDisabled={entryMenuDeleteDisabled}');
+    expect(panelSource).toContain('disabled={deleteDisabled}');
     expect(panelSource).toContain('disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent');
     expect(panelSource).toContain('const showRoleIdentityControls = !roleIsMaleProtagonist;');
     expect(panelSource).toContain('{showRoleIdentityControls ? (');
@@ -4359,10 +4537,25 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(within(structuredFields).queryByLabelText('首次出现章节')).not.toBeInTheDocument();
     expect(within(structuredFields).queryByLabelText('回收章节')).not.toBeInTheDocument();
 
-    expect(panelSource).toContain("id: 'foreshadow-main'");
-    expect(panelSource).toContain("id: 'foreshadow-character'");
-    expect(panelSource).toContain("title: '首次出现章节'");
-    expect(panelSource).toContain("title: '回收章节'");
+    const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
+
+    expect(structuredSettingsSource).toContain("id: 'foreshadow-main'");
+    expect(structuredSettingsSource).toContain("id: 'foreshadow-character'");
+    expect(panelSource).toContain('<header className="shrink-0 pb-3">');
+    expect(panelSource).toContain("grid grid-cols-[4fr_2fr_2fr_2fr] gap-4 overflow-visible pb-1 pt-3");
+    expect(panelSource).toContain('usesForeshadowHeaderLayout');
+    expect(panelSource).toContain('left-5 top-0 z-10 -translate-y-1/2 text-base font-medium leading-5 text-slate-950');
+    expect(structuredSettingsSource).toContain("fieldClassName: 'xy-structured-header-field h-[48px] min-w-0'");
+    expect(panelSource).not.toContain('headerWidth');
+    const styleSource = await readSharedStylesSource();
+    expect(styleSource).toContain('.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed input');
+    expect(styleSource).toContain('height: 48px;');
+    expect(styleSource).toContain('.xy-floating-field.xy-structured-header-field input::placeholder');
+    expect(styleSource).toContain('font-size: 0.8125rem;');
+    expect(structuredSettingsSource).toContain("gridContentClassName: 'grid-rows-[150px_minmax(0,1fr)]'");
+    expect(structuredSettingsSource).toContain("fieldClassName: 'col-span-2 min-h-0'");
+    expect(structuredSettingsSource).toContain("title: '首次出现章节'");
+    expect(structuredSettingsSource).toContain("title: '回收章节'");
     expect(panelSource).not.toContain("'setting:foreshadow': ['主线伏笔', '人物伏笔', '已回收伏笔']");
   });
 
@@ -4377,10 +4570,10 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('splits basic setting preview into story type, core concept, and one sentence summary fields', async () => {
     const storageKey = 'workbench-basic-setting-structured-preview-test';
-    const panelSource = await readWorkbenchLibraryPanelSource();
-    const basicSetStart = panelSource.indexOf("id: 'work-core-basic'");
-    const basicSetEnd = panelSource.indexOf("id: 'work-core-world-view'", basicSetStart);
-    const basicSetSource = panelSource.slice(basicSetStart, basicSetEnd);
+    const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
+    const basicSetStart = structuredSettingsSource.indexOf("id: 'work-core-basic'");
+    const basicSetEnd = structuredSettingsSource.indexOf("id: 'work-core-world-view'", basicSetStart);
+    const basicSetSource = structuredSettingsSource.slice(basicSetStart, basicSetEnd);
 
     render(
       <WorkbenchLibraryPanel
@@ -4415,10 +4608,10 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('splits world view preview into era background, world pattern, and social order fields', async () => {
     const storageKey = 'workbench-world-view-structured-preview-test';
-    const panelSource = await readWorkbenchLibraryPanelSource();
-    const worldViewSetStart = panelSource.indexOf("id: 'work-core-world-view'");
-    const worldViewSetEnd = panelSource.indexOf("id: 'work-core-cheat-advantage'", worldViewSetStart);
-    const worldViewSetSource = panelSource.slice(worldViewSetStart, worldViewSetEnd);
+    const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
+    const worldViewSetStart = structuredSettingsSource.indexOf("id: 'work-core-world-view'");
+    const worldViewSetEnd = structuredSettingsSource.indexOf("id: 'work-core-cheat-advantage'", worldViewSetStart);
+    const worldViewSetSource = structuredSettingsSource.slice(worldViewSetStart, worldViewSetEnd);
     localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
     localStorage.setItem(storageKey, JSON.stringify([
       {
@@ -4463,10 +4656,10 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('splits protagonist cheat advantage preview into the approved five fields', async () => {
     const storageKey = 'workbench-cheat-advantage-structured-preview-test';
-    const panelSource = await readWorkbenchLibraryPanelSource();
-    const cheatSetStart = panelSource.indexOf("id: 'work-core-cheat-advantage'");
-    const cheatSetEnd = panelSource.indexOf("id: 'faction-righteous-no-1'", cheatSetStart);
-    const cheatSetSource = panelSource.slice(cheatSetStart, cheatSetEnd);
+    const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
+    const cheatSetStart = structuredSettingsSource.indexOf("id: 'work-core-cheat-advantage'");
+    const cheatSetEnd = structuredSettingsSource.indexOf("id: 'faction-righteous-no-1'", cheatSetStart);
+    const cheatSetSource = structuredSettingsSource.slice(cheatSetStart, cheatSetEnd);
 
     render(
       <WorkbenchLibraryPanel
@@ -4542,7 +4735,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(screen.getByTestId('structured-setting-fields')).not.toContainElement(screen.getByLabelText('势力名'));
     expect(screen.queryByText('设定名')).not.toBeInTheDocument();
     expect(panelSource).toContain("currentStructuredTitleFieldLabel ? 'px-5 py-3' : 'p-5'");
-    expect(panelSource).toContain('className="relative flex h-[48px] w-[168px] shrink-0 items-center rounded-[20px] border-2 border-slate-950 bg-white px-4 py-0"');
+    expect(panelSource).toContain("'relative flex h-[48px] w-[168px] shrink-0 items-center rounded-[20px] border-2 border-slate-950 bg-white px-4 py-0'");
     expect(panelSource).toContain('className={`h-7 w-full bg-transparent text-lg font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400');
     expect(panelSource).toContain('<div aria-hidden="true" className="h-9 w-[112px] shrink-0" />');
     expect(panelSource).toContain('{currentStructuredActiveGroup.title}共 {currentStructuredActiveGroupWordCount} 字');
@@ -4585,6 +4778,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   it('uses dedicated structured templates for world maps and danger zones', async () => {
     const storageKey = 'workbench-world-map-danger-zone-structured-template-test';
     const panelSource = await readWorkbenchLibraryPanelSource();
+    const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
+    const taxonomySource = await readWorkbenchSettingTaxonomySource();
     localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
     localStorage.setItem(storageKey, JSON.stringify([
       {
@@ -4612,29 +4807,29 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
       />,
     );
 
-    expect(panelSource).toContain("id: 'faction-world-map'");
-    expect(panelSource).toContain("const DEFAULT_WORK_SETTING_STARTER_VERSION = '2026-06-25-foreshadow-fields-v1';");
-    expect(panelSource).toContain("{ type: '世界地图', title: '世界架构' }");
-    expect(panelSource).toContain("{ type: '世界地图', title: '危险区域' }");
+    expect(structuredSettingsSource).toContain("id: 'faction-world-map'");
+    expect(taxonomySource).toContain("const DEFAULT_WORK_SETTING_STARTER_VERSION = '2026-06-25-foreshadow-fields-v1';");
+    expect(taxonomySource).toContain("{ type: '世界地图', title: '世界架构' }");
+    expect(taxonomySource).toContain("{ type: '世界地图', title: '危险区域' }");
     expect(panelSource).toContain('lockedDefaultEntryId: getDefaultWorkSettingEntryId(item.type, item.title)');
-    expect(panelSource).toContain("entryType: '世界地图'");
-    expect(panelSource).toContain("titleFieldLabel: '地图名'");
-    expect(panelSource).toContain("title: '世界架构'");
-    expect(panelSource).toContain("title: '区域划分'");
-    expect(panelSource).toContain("title: '势力分布'");
-    expect(panelSource).toContain("title: '资源分布'");
-    expect(panelSource).toContain("title: '世界规则'");
-    expect(panelSource).not.toContain("key: 'trafficRoutes'");
+    expect(structuredSettingsSource).toContain("entryType: '世界地图'");
+    expect(structuredSettingsSource).toContain("titleFieldLabel: '地图名'");
+    expect(structuredSettingsSource).toContain("title: '世界架构'");
+    expect(structuredSettingsSource).toContain("title: '区域划分'");
+    expect(structuredSettingsSource).toContain("title: '势力分布'");
+    expect(structuredSettingsSource).toContain("title: '资源分布'");
+    expect(structuredSettingsSource).toContain("title: '世界规则'");
+    expect(structuredSettingsSource).not.toContain("key: 'trafficRoutes'");
     expect(panelSource).not.toContain("title: '交通路线'");
     expect(panelSource).not.toContain("title: '主角已知范围'");
-    expect(panelSource).toContain("id: 'faction-danger-zone'");
-    expect(panelSource).toContain("entryType: '世界地图'");
-    expect(panelSource).toContain("titleFieldLabel: '区域名'");
-    expect(panelSource).toContain("title: '区域概况'");
-    expect(panelSource).toContain("title: '危险来源'");
-    expect(panelSource).toContain("title: '进入条件'");
-    expect(panelSource).toContain("title: '资源收益'");
-    expect(panelSource).toContain("title: '核心规则'");
+    expect(structuredSettingsSource).toContain("id: 'faction-danger-zone'");
+    expect(structuredSettingsSource).toContain("entryType: '世界地图'");
+    expect(structuredSettingsSource).toContain("titleFieldLabel: '区域名'");
+    expect(structuredSettingsSource).toContain("title: '区域概况'");
+    expect(structuredSettingsSource).toContain("title: '危险来源'");
+    expect(structuredSettingsSource).toContain("title: '进入条件'");
+    expect(structuredSettingsSource).toContain("title: '资源收益'");
+    expect(structuredSettingsSource).toContain("title: '核心规则'");
     expect(panelSource).not.toContain("title: '探索进度'");
     expect(panelSource).not.toContain("title: '外部势力介入'");
 
@@ -4984,18 +5179,21 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('keeps structured setting group tabs aligned with role editor styling and smaller placeholders', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
+    const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
+    const segmentedTabsSource = await readWorkbenchSettingSegmentedTabsSource();
     const styleSource = await readSharedStylesSource();
 
-    expect(panelSource).toContain("const STRUCTURED_SETTING_TABS = ['固定设定', '状态设定', '确认'] as const;");
+    expect(structuredSettingsSource).toContain("const STRUCTURED_SETTING_TABS = ['固定设定', '状态设定', '确认'] as const;");
     expect(panelSource).toContain('activeStructuredSettingTab');
-    expect(panelSource).toContain('function SettingSegmentedTabs<T extends string>');
-    expect(panelSource).toContain("const SETTING_SEGMENTED_TAB_GROUP_CLASS = 'flex h-10 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white';");
-    expect(panelSource).toContain("const SETTING_SEGMENTED_TAB_ACTIVE_CLASS = 'border-[#08AACE] bg-[#EAF9FD] text-[#078FAE]';");
-    expect(panelSource).toContain("const SETTING_SEGMENTED_TAB_IDLE_CLASS = 'bg-white text-slate-600 hover:bg-[#EAF9FD] hover:text-[#078FAE]';");
+    expect(panelSource).toContain("import { SettingSegmentedTabs } from './workbenchSettingSegmentedTabs';");
+    expect(segmentedTabsSource).toContain('function SettingSegmentedTabs<T extends string>');
+    expect(segmentedTabsSource).toContain("const SETTING_SEGMENTED_TAB_GROUP_CLASS = 'flex h-10 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white';");
+    expect(segmentedTabsSource).toContain("const SETTING_SEGMENTED_TAB_ACTIVE_CLASS = 'border-[#08AACE] bg-[#EAF9FD] text-[#078FAE]';");
+    expect(segmentedTabsSource).toContain("const SETTING_SEGMENTED_TAB_IDLE_CLASS = 'bg-white text-slate-600 hover:bg-[#EAF9FD] hover:text-[#078FAE]';");
     expect(panelSource).toContain('onChange={setActiveStructuredSettingTab}');
     expect(panelSource).toContain("activeStructuredSettingTab === '确认'");
     expect(panelSource).not.toContain('{activeGroup.description}');
-    expect(panelSource).not.toContain('currentStructuredSettingFieldSet.groups.map((group)');
+    expect(structuredSettingsSource).not.toContain('currentStructuredSettingFieldSet.groups.map((group)');
     expect(panelSource).not.toContain("'border-slate-950 bg-slate-950 text-white'");
     expect(panelSource).not.toContain("'border-slate-200 bg-white text-slate-500 hover:border-cyan-200 hover:text-cyan-700'");
     expect(panelSource).toContain('xy-structured-setting-field');
@@ -5005,10 +5203,10 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('splits plot planning previews into blueprint, volume, and payoff fields', async () => {
     const storageKey = 'workbench-plot-planning-structured-preview-test';
-    const panelSource = await readWorkbenchLibraryPanelSource();
-    const blueprintSetStart = panelSource.indexOf("id: 'work-plot-blueprint'");
-    const blueprintSetEnd = panelSource.indexOf("id: 'work-plot-volume'", blueprintSetStart);
-    const blueprintSetSource = panelSource.slice(blueprintSetStart, blueprintSetEnd);
+    const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
+    const blueprintSetStart = structuredSettingsSource.indexOf("id: 'work-plot-blueprint'");
+    const blueprintSetEnd = structuredSettingsSource.indexOf("id: 'work-plot-volume'", blueprintSetStart);
+    const blueprintSetSource = structuredSettingsSource.slice(blueprintSetStart, blueprintSetEnd);
 
     render(
       <WorkbenchLibraryPanel
@@ -5303,7 +5501,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('settingWorkspaceTopTabs');
     expect(panelSource).toContain("const effectiveLibraryTab = isOutlineCharacterScope ? ROLE_TAB : activeTab");
     expect(panelSource).toContain("const activeSettingTypeOptions = activeIsBrainstorm ? [BRAINSTORM_TYPE] : isOutlineCharacterScope ? roleTypeOptions : settingTypeOptions");
-    expect(panelSource).toContain("{isOutlineCharacterScope ? '角色' : '设定'}");
+    expect(panelSource).toContain('openSettingCreateDialog');
     expect(panelSource).toContain("addRole(selectedCreateType, { switchToRoleTab: false, title: createTitle })");
     expect(panelSource).toContain('<RoleBaseStateEditor');
     expect(panelSource).toContain('baseSetting: string;');
@@ -5337,21 +5535,23 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('migrates the approved setting taxonomy into the production setting library', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
+    const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
+    const taxonomySource = await readWorkbenchSettingTaxonomySource();
     const settingTypeOptionsStart = panelSource.indexOf('const settingTypeOptions = useMemo(() => {');
     const settingTypeOptionsEnd = panelSource.indexOf('const clearSettingsTargetMeta', settingTypeOptionsStart);
     const settingTypeOptionsSource = panelSource.slice(settingTypeOptionsStart, settingTypeOptionsEnd);
 
-    expect(panelSource).toContain("const DEFAULT_WORK_SETTING_TYPES = ['核心设定', '剧情规划', '资源货币', '世界地图'];");
-    expect(panelSource).not.toContain("{ type: '资源体系', title: '资源货币' }");
-    expect(panelSource).toContain("{ type: '资源货币', title: '资源货币' }");
-    expect(panelSource).not.toContain("{ type: '书写规则', title: '写作规范' }");
-    expect(panelSource).not.toContain("{ type: '书写规则', title: '写作禁忌' }");
-    expect(panelSource).toContain("'setting:faction': ['正派势力', '反派势力', '中立势力', '其他势力']");
-    expect(panelSource).toContain("'setting:item': ['功法能力', '物品装备', '特殊资源']");
-    expect(panelSource).toContain("'setting:monster': ['怪物列表']");
-    expect(panelSource).not.toContain("'setting:location': ['世界地图', '危险区域']");
-    expect(panelSource).toContain("'setting:foreshadow': ['主线伏笔', '人物伏笔']");
-    expect(panelSource).not.toContain("'setting:rule': ['硬规则', '禁写规则']");
+    expect(taxonomySource).toContain("const DEFAULT_WORK_SETTING_TYPES = ['核心设定', '剧情规划', '资源货币', '世界地图'];");
+    expect(taxonomySource).not.toContain("{ type: '资源体系', title: '资源货币' }");
+    expect(taxonomySource).toContain("{ type: '资源货币', title: '资源货币' }");
+    expect(taxonomySource).not.toContain("{ type: '书写规则', title: '写作规范' }");
+    expect(taxonomySource).not.toContain("{ type: '书写规则', title: '写作禁忌' }");
+    expect(taxonomySource).toContain("'setting:faction': ['正派势力', '反派势力', '中立势力', '其他势力']");
+    expect(taxonomySource).toContain("'setting:item': ['功法能力', '物品装备', '特殊资源']");
+    expect(taxonomySource).toContain("'setting:monster': ['怪物列表']");
+    expect(taxonomySource).not.toContain("'setting:location': ['世界地图', '危险区域']");
+    expect(taxonomySource).toContain("'setting:foreshadow': ['主线伏笔', '人物伏笔']");
+    expect(taxonomySource).not.toContain("'setting:rule': ['硬规则', '禁写规则']");
     expect(panelSource).toContain('const DEFAULT_SETTING_ENTRY_TYPE = DEFAULT_SETTING_TYPES[0] ?? UNCATEGORIZED_TYPE;');
     expect(settingTypeOptionsSource).toContain('return merged;');
     expect(settingTypeOptionsSource).not.toContain('return [...merged, UNCATEGORIZED_TYPE];');
@@ -5371,15 +5571,14 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('adds character relationship as a first-class role field before status settings', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
-    const roleEditorStart = panelSource.indexOf('function RoleBaseStateEditor');
-    const roleEditorEnd = panelSource.indexOf('function WorkbenchLibraryPanel', roleEditorStart);
-    const roleEditorSource = panelSource.slice(roleEditorStart, roleEditorEnd);
+    const roleSettingFieldsSource = await readWorkbenchRoleSettingFieldsSource();
+    const roleEditorSource = await readWorkbenchRoleEditorSource();
 
     expect(panelSource).toContain('relationship: string;');
     expect(panelSource).toContain("relationship: parsed.relationship || '',");
     expect(panelSource).toContain("relationship: value.relationship || '',");
     expect(panelSource).toContain('const relationshipWords = countTextWords(role.relationship);');
-    expect(panelSource).toContain("type RoleStateUpdateChapterKey = RoleStateFieldKey | 'relationshipState';");
+    expect(roleSettingFieldsSource).toContain("type RoleStateUpdateChapterKey = RoleStateFieldKey | 'relationshipState';");
     expect(panelSource).toContain("const relationshipUpdateLabel = getRoleStateUpdateLabel(stateUpdateChapters.relationshipState);");
     expect(panelSource).toContain("relationshipState: currentChapterNumber,");
     expect(panelSource).toContain('const updateRelationshipState = (value: string) => {');
@@ -5387,7 +5586,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain('AI 默认只读取，不直接覆盖。发现缺失时进入“基础设定补充建议”，由用户确认后写入。');
     expect(panelSource).not.toContain('只写这个人物自己的关系；全局关系网仍放到作品设定的“人物关系”分类。');
     expect(panelSource).not.toContain('placeholder="记录姓名、身份、外貌、角色定位、核心性格、人物背景、能力规则等低频变化内容。"');
-    expect(panelSource).toContain("placeholder: '身形、容貌、衣着、气质、标志性细节。'");
+    expect(roleSettingFieldsSource).toContain("placeholder: '身形、容貌、衣着、气质、标志性细节。'");
     expect(panelSource).toContain('placeholder="记录与主角、阵营、亲友、敌人、师徒、利益对象的关系。关系绑定人物，不绑定世界。"');
     expect(panelSource).toContain("wrapAiRequestTag('人物关系', truncateTextForAi(role.relationship, 700))");
     expect(roleEditorSource).toContain("const roleSettingTabs = ['基础设定', '状态设定', '未确认'] as const;");
@@ -5395,9 +5594,10 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(roleEditorSource).toContain('<SettingSegmentedTabs');
     expect(roleEditorSource).toContain('tabs={roleSettingTabs}');
     expect(roleEditorSource).toContain('onChange={setActiveRoleSettingTab}');
-    expect(panelSource).toContain("const SETTING_SEGMENTED_TAB_GROUP_CLASS = 'flex h-10 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white';");
-    expect(panelSource).toContain("const SETTING_SEGMENTED_TAB_ACTIVE_CLASS = 'border-[#08AACE] bg-[#EAF9FD] text-[#078FAE]';");
-    expect(panelSource).toContain("const SETTING_SEGMENTED_TAB_IDLE_CLASS = 'bg-white text-slate-600 hover:bg-[#EAF9FD] hover:text-[#078FAE]';");
+    const segmentedTabsSource = await readWorkbenchSettingSegmentedTabsSource();
+    expect(segmentedTabsSource).toContain("const SETTING_SEGMENTED_TAB_GROUP_CLASS = 'flex h-10 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white';");
+    expect(segmentedTabsSource).toContain("const SETTING_SEGMENTED_TAB_ACTIVE_CLASS = 'border-[#08AACE] bg-[#EAF9FD] text-[#078FAE]';");
+    expect(segmentedTabsSource).toContain("const SETTING_SEGMENTED_TAB_IDLE_CLASS = 'bg-white text-slate-600 hover:bg-[#EAF9FD] hover:text-[#078FAE]';");
     expect(roleEditorSource).toContain("activeRoleSettingTab === '状态设定'");
     expect(roleEditorSource).toContain('updateRelationshipState(event.target.value)');
     expect(roleEditorSource).toContain('{relationshipUpdateLabel}');
@@ -5431,14 +5631,14 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
   it('moves character editor scheme seven into production and retires the layout test page', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
+    const roleSettingFieldsSource = await readWorkbenchRoleSettingFieldsSource();
+    const fieldSizeSource = await readWorkbenchFieldSizeSettingsSource();
     const testCollectionSource = await readTestCollectionSource();
-    const roleEditorStart = panelSource.indexOf('function RoleBaseStateEditor');
-    const roleEditorEnd = panelSource.indexOf('function WorkbenchLibraryPanel', roleEditorStart);
-    const roleEditorSource = panelSource.slice(roleEditorStart, roleEditorEnd);
+    const roleEditorSource = await readWorkbenchRoleEditorSource();
 
-    expect(panelSource).toContain('const ROLE_BASE_SETTING_FIELD_DEFINITIONS');
+    expect(roleSettingFieldsSource).toContain('const ROLE_BASE_SETTING_FIELD_DEFINITIONS');
     expect(roleEditorSource).toContain('人物姓名');
-    expect(panelSource).toContain('settingName: { width: 220, height: 56, fontSize: 18 }');
+    expect(fieldSizeSource).toContain('settingName: { width: 220, height: 56, fontSize: 18 }');
     expect(roleEditorSource).toContain('className="relative flex h-[48px] w-[148px] shrink-0 items-center rounded-[20px] border-2 border-slate-950 bg-white px-4 py-0"');
     expect(roleEditorSource).not.toContain('className="relative h-[54px] w-[148px] shrink-0 rounded-[22px] border-2 border-slate-950 bg-white px-4 pb-2 pt-4"');
     expect(roleEditorSource).not.toContain('className="relative h-[58px] w-[148px]');
@@ -5449,19 +5649,19 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(roleEditorSource).not.toContain('className="min-w-0 bg-transparent text-2xl font-black leading-8 text-slate-950 outline-none placeholder:text-slate-400"');
     expect(roleEditorSource).not.toContain('className="h-full w-full bg-transparent text-xl font-black leading-7 text-slate-950 outline-none placeholder:text-slate-400"');
     expect(roleEditorSource).toContain('floatingLabel="身份定位"');
-    expect(panelSource).toContain("title: '外貌'");
-    expect(panelSource).toContain("title: '称号/外号/别称'");
-    expect(panelSource).not.toContain("title: '角色定位'");
-    expect(panelSource).toContain("title: '核心性格'");
-    expect(panelSource).toContain("title: '人物背景'");
-    expect(panelSource).toContain("title: '金手指/能力'");
+    expect(roleSettingFieldsSource).toContain("title: '外貌'");
+    expect(roleSettingFieldsSource).toContain("title: '称号/外号/别称'");
+    expect(roleSettingFieldsSource).not.toContain("title: '角色定位'");
+    expect(roleSettingFieldsSource).toContain("title: '核心性格'");
+    expect(roleSettingFieldsSource).toContain("title: '人物背景'");
+    expect(roleSettingFieldsSource).toContain("title: '金手指/能力'");
     expect(roleEditorSource).toContain('{field.title}');
-    expect(panelSource).toContain("key: 'appearance'");
-    expect(panelSource).toContain("key: 'aliasName'");
-    expect(panelSource).not.toContain("key: 'rolePosition'");
-    expect(panelSource).toContain("key: 'corePersonality'");
-    expect(panelSource).toContain("key: 'background'");
-    expect(panelSource).toContain("key: 'abilityRules'");
+    expect(roleSettingFieldsSource).toContain("key: 'appearance'");
+    expect(roleSettingFieldsSource).toContain("key: 'aliasName'");
+    expect(roleSettingFieldsSource).not.toContain("key: 'rolePosition'");
+    expect(roleSettingFieldsSource).toContain("key: 'corePersonality'");
+    expect(roleSettingFieldsSource).toContain("key: 'background'");
+    expect(roleSettingFieldsSource).toContain("key: 'abilityRules'");
     expect(roleEditorSource).toContain('updateRoleBaseSettingField(field.key, event.target.value)');
     expect(roleEditorSource).toContain('onTitleChange(event.target.value)');
     expect(roleEditorSource).not.toContain('floatingLabel="分类"');
@@ -5490,10 +5690,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   });
 
   it('stretches character setting cards to the available editor height like structured setting pages', async () => {
-    const panelSource = await readWorkbenchLibraryPanelSource();
-    const roleEditorStart = panelSource.indexOf('function RoleBaseStateEditor');
-    const roleEditorEnd = panelSource.indexOf('function getWorkbenchLibraryEntryUpdatedAt', roleEditorStart);
-    const roleEditorSource = panelSource.slice(roleEditorStart, roleEditorEnd);
+    const roleEditorSource = await readWorkbenchRoleEditorSource();
 
     expect(roleEditorSource).toContain("const contentGridClassName = 'grid min-h-full grid-cols-2 auto-rows-fr gap-3';");
     expect(roleEditorSource).toContain('className="editor-scrollbar min-h-0 flex-1 overflow-y-auto px-1 pb-1 pr-2 pt-3"');

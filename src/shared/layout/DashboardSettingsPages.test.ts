@@ -63,7 +63,7 @@ describe('dashboard footer settings pages', () => {
   });
 
   it('records the footer settings migration in the in-app error log', () => {
-    const errorLog = readSource('src/features/tests/model/errorLogEntries.ts');
+    const errorLog = readSource('src/features/tests/model/errorLogDefaultEntries.generated.ts');
 
     expect(errorLog).toContain('dashboard-footer-settings-pages-not-modals-001');
   });

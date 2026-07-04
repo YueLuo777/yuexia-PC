@@ -8,6 +8,7 @@ import {
   resetWorkbenchAssociationsForNewAppSession,
 } from '@/features/workbench/model/workbenchAssociationCleanup';
 import { bindWorkbenchTransientAiCleanup } from '@/features/workbench/model/workbenchTransientAiCleanup';
+import { areInternalRoutesEnabled } from '@/shared/featureFlags/internalRoutes';
 
 const TestCollectionPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })));
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
@@ -77,6 +78,8 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error
 }
 
 export default function App() {
+  const showInternalRoutes = areInternalRoutesEnabled();
+
   useEffect(() => {
     resetWorkbenchAssociationsForNewAppSession();
     const disposeAssociationCleanup = bindWorkbenchAssociationCloseCleanup();
@@ -101,16 +104,20 @@ export default function App() {
                 <Route path="/db-settings" element={<DbSettingsPage />} />
                 <Route path="/text-overrides" element={<TextOverridesPage />} />
                 <Route path="/token-usage" element={<TokenUsagePage />} />
-                <Route path="/test-collection" element={<TestCollectionPage />} />
-                <Route path="/software-ui-catalog" element={<SoftwareUiCatalogPage />} />
-                <Route path="/hidden-content" element={<HiddenPagesTestPage />} />
-                <Route path="/hidden-pages-test" element={<HiddenPagesTestPage />} />
-                <Route path="/error-log" element={<ErrorLogPage />} />
-                <Route path="/theme-colors" element={<DarkThemeColorPage />} />
+                {showInternalRoutes && (
+                  <>
+                    <Route path="/test-collection" element={<TestCollectionPage />} />
+                    <Route path="/software-ui-catalog" element={<SoftwareUiCatalogPage />} />
+                    <Route path="/hidden-content" element={<HiddenPagesTestPage />} />
+                    <Route path="/hidden-pages-test" element={<HiddenPagesTestPage />} />
+                    <Route path="/error-log" element={<ErrorLogPage />} />
+                    <Route path="/theme-colors" element={<DarkThemeColorPage />} />
+                    <Route path="/test-browser" element={<TestBrowserPage />} />
+                  </>
+                )}
                 <Route path="/system-settings" element={<SystemSettingsPage />} />
                 <Route path="/shortcut-settings" element={<ShortcutSettingsPage />} />
                 <Route path="/nav-settings" element={<NavSettingsPage />} />
-                <Route path="/test-browser" element={<TestBrowserPage />} />
               </Route>
               <Route path="/workbench" element={<WorkbenchPage />} />
               <Route path="/script-editor-v2" element={<ScriptEditorPage />} />

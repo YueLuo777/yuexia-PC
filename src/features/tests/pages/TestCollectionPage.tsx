@@ -4,10 +4,12 @@ import {
   EyeOff,
   FolderTree,
   Globe,
+  Link2,
   NotebookText,
   Moon,
   Palette,
   Search,
+  Send,
   Tags,
   X,
 } from 'lucide-react';
@@ -22,11 +24,14 @@ const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeCo
 const ChapterSidebarCompactTitleTestPage = lazy(() => import('@/features/tests/pages/ChapterSidebarCompactTitleTestPage').then((module) => ({ default: module.ChapterSidebarCompactTitleTestPage })));
 const SettingTabPlacementOptionsTestPage = lazy(() => import('@/features/tests/pages/SettingTabPlacementOptionsTestPage').then((module) => ({ default: module.SettingTabPlacementOptionsTestPage })));
 const WorkbenchHeaderFixedFlowPositionTestPage = lazy(() => import('@/features/tests/pages/WorkbenchHeaderFixedFlowPositionTestPage').then((module) => ({ default: module.WorkbenchHeaderFixedFlowPositionTestPage })));
+const SendIconStrokeColorTestPage = lazy(() => import('@/features/tests/pages/SendIconStrokeColorTestPage').then((module) => ({ default: module.SendIconStrokeColorTestPage })));
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
 const SettingEntryMergePlanTestPage = lazy(() => import('@/features/tests/pages/SettingEntryMergePlanTestPage').then((module) => ({ default: module.SettingEntryMergePlanTestPage })));
 const SettingStateStructurePlanTestPage = lazy(() => import('@/features/tests/pages/SettingStateStructurePlanTestPage').then((module) => ({ default: module.SettingStateStructurePlanTestPage })));
 const PromptLibraryStructureTestPage = lazy(() => import('@/features/tests/pages/PromptLibraryStructureTestPage').then((module) => ({ default: module.PromptLibraryStructureTestPage })));
 const PromptWorkflowPreviewTestPage = lazy(() => import('@/features/tests/pages/PromptWorkflowPreviewTestPage').then((module) => ({ default: module.PromptWorkflowPreviewTestPage })));
+const WorkbenchCreationChainTestPage = lazy(() => import('@/features/tests/pages/WorkbenchCreationChainTestPage').then((module) => ({ default: module.WorkbenchCreationChainTestPage })));
+const StructureAuditResultPreviewTestPage = lazy(() => import('@/features/tests/pages/StructureAuditResultPreviewTestPage').then((module) => ({ default: module.StructureAuditResultPreviewTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -82,6 +87,13 @@ const testGroups = [
         icon: NotebookText,
         badge: 'Header',
       },
+      {
+        title: '发送箭头线条颜色测试',
+        description: '测试纸飞机发送箭头在白底下使用 #21B8DA 等多档线条颜色的显示效果。',
+        path: '/send-icon-stroke-color-test',
+        icon: Send,
+        badge: 'Icon',
+      },
     ],
   },
   {
@@ -114,6 +126,20 @@ const testGroups = [
         path: '/prompt-workflow-preview-test',
         icon: FolderTree,
         badge: 'Prompt View',
+      },
+      {
+        title: '脑洞设定章纲正文链路自检',
+        description: '生成临时作品并检查全局脑洞、作品设定、章纲、梗概、正文和 AI 关联资料是否能按真实存储链路读通。',
+        path: '/workbench-creation-chain-test',
+        icon: Link2,
+        badge: 'Chain',
+      },
+      {
+        title: '结构审核结果展示测试',
+        description: '模拟结构审核通过和不通过时，右侧审核结果、绿色/红色结论和 AI 标注列的呈现方式。',
+        path: '/structure-audit-result-preview-test',
+        icon: NotebookText,
+        badge: 'Audit',
       },
     ],
   },
@@ -249,6 +275,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <PromptLibraryStructureTestPage />;
       case '/prompt-workflow-preview-test':
         return <PromptWorkflowPreviewTestPage />;
+      case '/workbench-creation-chain-test':
+        return <WorkbenchCreationChainTestPage />;
+      case '/structure-audit-result-preview-test':
+        return <StructureAuditResultPreviewTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':
@@ -263,6 +293,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <SettingTabPlacementOptionsTestPage />;
       case '/workbench-header-fixed-flow-position-test':
         return <WorkbenchHeaderFixedFlowPositionTestPage />;
+      case '/send-icon-stroke-color-test':
+        return <SendIconStrokeColorTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       default:

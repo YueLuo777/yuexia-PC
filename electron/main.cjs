@@ -414,6 +414,32 @@ function attachRendererDiagnostics(targetWindow) {
   });
 }
 
+function isSafeWebviewUrl(url) {
+  try {
+    const parsed = new URL(String(url ?? ''));
+    return ['http:', 'https:'].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
+function attachWebviewSecurityGuards() {
+  app.on('web-contents-created', (_event, contents) => {
+    contents.on('will-attach-webview', (event, webPreferences, params) => {
+      delete webPreferences.preload;
+      webPreferences.nodeIntegration = false;
+      webPreferences.contextIsolation = true;
+      webPreferences.sandbox = true;
+      webPreferences.allowRunningInsecureContent = false;
+      webPreferences.experimentalFeatures = false;
+
+      if (!isSafeWebviewUrl(params?.src)) {
+        event.preventDefault();
+      }
+    });
+  });
+}
+
 function createWindow() {
   if (mainWindow && !mainWindow.isDestroyed()) {
     focusMainWindow();
@@ -871,6 +897,8 @@ app.on('before-quit', () => {
 app.on('second-instance', () => {
   focusMainWindow();
 });
+
+attachWebviewSecurityGuards();
 
 app.whenReady().then(() => {
   createWindow();

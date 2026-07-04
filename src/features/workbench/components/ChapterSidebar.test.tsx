@@ -103,6 +103,17 @@ describe('ChapterSidebar', () => {
     expect(publishedSidebarSource).not.toContain('border-l-[3px] px-[26px] py-2');
   });
 
+  it('aligns the unpublished header height with the body editor chapter toolbar', () => {
+    const chapterSidebarSource = readSource('ChapterSidebar.tsx');
+    const chapterEditorSource = readSource('ChapterEditor.tsx');
+
+    expect(chapterSidebarSource).toContain('className="flex h-12 shrink-0 items-center justify-between border-b border-[#e6e8ec] bg-[#fbfbfc] px-3"');
+    expect(chapterEditorSource).toContain('className="flex h-12 shrink-0 items-center gap-2 border-b border-[#e6e8ec] bg-white px-4"');
+    expect(chapterSidebarSource).toContain('className="flex h-8 items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-2 text-sm text-white transition-colors hover:bg-[#0798b8]"');
+    expect(chapterSidebarSource).not.toContain('className="flex h-[42px] shrink-0 items-center justify-between border-b border-[#e6e8ec] bg-[#fbfbfc] px-3 py-2.5"');
+    expect(chapterEditorSource).not.toContain('className="flex items-center gap-2 border-b border-[#e6e8ec] bg-white px-4 py-2"');
+  });
+
   it('only changes the selected chapter background in the body chapter list', () => {
     const chapterSidebarSource = readSource('ChapterSidebar.tsx');
 

@@ -13,7 +13,7 @@ const readErrorLogSource = async () => {
   const { dirname, join } = await import('node:path');
   const { fileURLToPath } = await import('node:url');
 
-  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../features/tests/model/errorLogEntries.ts'), 'utf8');
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../features/tests/model/errorLogDefaultEntries.generated.ts'), 'utf8');
 };
 
 const readSharedStylesSource = async () => {
@@ -108,7 +108,7 @@ describe('DashboardLayout navigation items', () => {
   it('uses custom theme variables for the sidebar shell, footer, and active navigation item', async () => {
     const source = await readDashboardLayoutSource();
     const styles = await readSharedStylesSource();
-    const navStart = source.indexOf('{visibleNavItems.map((item) => {');
+    const navStart = source.indexOf('{visiblePublicNavItems.map((item) => {');
     const navEnd = source.indexOf('{navDividerAfterItemTos.has(item.to)', navStart);
     const navSource = source.slice(navStart, navEnd);
 
@@ -126,14 +126,15 @@ describe('DashboardLayout navigation items', () => {
 
   it('renders the sidebar as a flat list without zone group rows', async () => {
     const source = await readDashboardLayoutSource();
-    const navStart = source.indexOf('{visibleNavItems.map((item) => {');
+    const navStart = source.indexOf('{visiblePublicNavItems.map((item) => {');
     const footerStart = source.indexOf('<div className="grid shrink-0 grid-cols-2 gap-2 border-t', navStart);
     const navSource = source.slice(navStart, footerStart);
 
     expect(source).toContain("import { Camera, UserRound } from 'lucide-react'");
     expect(source).toContain('const visibleNavItems = navConfig.flatMap((group) => (');
+    expect(source).toContain('const visiblePublicNavItems = filterInternalRouteItems(visibleNavItems);');
     expect(source).toContain('const navDividerAfterItemTos = new Set(navConfig[0]?.dividerAfterItemTos ?? (');
-    expect(navSource).toContain('visibleNavItems.map((item) => {');
+    expect(navSource).toContain('visiblePublicNavItems.map((item) => {');
     expect(navSource).toContain('const ItemIcon = getIconByName(item.iconName)');
     expect(navSource).toContain('navDividerAfterItemTos.has(item.to)');
     expect(navSource).toContain('className="mx-3 my-2 border-t border-[#e1e5eb]"');

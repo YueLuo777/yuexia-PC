@@ -87,6 +87,14 @@ describe('Workbench splitters', () => {
 });
 
 describe('Workbench flow stats', () => {
+  it('tracks unpolished chapter count from content fingerprints', async () => {
+    const source = await readSource('WorkbenchPage.tsx');
+
+    expect(source).toContain("import { countUnpolishedChapters } from '@/features/workbench/model/chapterPolishStatus';");
+    expect(source).toContain('const unpolishedChapterCount = countUnpolishedChapters(');
+    expect(source).toContain("polish: { meta: `${unpolishedChapterCount}章未润色`, tone: unpolishedChapterCount > 0 ? 'warning' : 'normal' },");
+  });
+
   it('marks summary flow as warning when summary chapters are fewer than writing chapters', async () => {
     const source = await readSource('WorkbenchPage.tsx');
 
@@ -94,6 +102,33 @@ describe('Workbench flow stats', () => {
     expect(source).toContain('const summaryChapterCount = summaryChapterSerials.size > 0 ? summaryChapterSerials.size : summaryContextItems.length;');
     expect(source).toContain("summary: { meta: `${summaryChapterCount}章`, tone: summaryChapterCount < chapterCount ? 'warning' : 'normal' },");
     expect(source).not.toContain("summary: { meta: `${summaryContextItems.length}章` },");
+  });
+});
+
+describe('Workbench library snapshots', () => {
+  it('keeps parent flow stats and linked AI context synchronized with library writes', async () => {
+    const source = await readSource('WorkbenchPage.tsx');
+
+    expect(source).toContain('function useWorkbenchLibrarySnapshots(settingsStorageKey: string, outlineStorageKey: string)');
+    expect(source).toContain('WORKBENCH_LIBRARY_UPDATED_EVENT');
+    expect(source).toContain('GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY');
+    expect(source).toContain('window.addEventListener(WORKBENCH_LIBRARY_UPDATED_EVENT, handleLibraryUpdated);');
+    expect(source).toContain("window.addEventListener('storage', handleStorage);");
+    expect(source).toContain('shouldSyncWorkbenchLibrarySnapshot(storageKey, settingsStorageKey, outlineStorageKey)');
+    expect(source).toContain('shouldSyncWorkbenchLibrarySnapshot(event.key, settingsStorageKey, outlineStorageKey)');
+    expect(source).toContain('const { settingsEntries, outlineEntries } = useWorkbenchLibrarySnapshots(settingsStorageKey, outlineStorageKey);');
+    expect(source).not.toContain('const settingsEntries = readWorkbenchLibraryEntriesWithGlobalBrainstorm(settingsStorageKey);');
+    expect(source).not.toContain('const outlineEntries = readWorkbenchLibraryEntries(outlineStorageKey);');
+  });
+
+  it('normalizes legacy setting and brainstorm tabs before building parent context stats', async () => {
+    const source = await readSource('WorkbenchPage.tsx');
+
+    expect(source).toContain("import { BRAINSTORM_TAB, SETTING_TAB, normalizeTabName } from '@/features/workbench/components/workbenchLibraryTabs';");
+    expect(source).toContain('settingsEntries.filter((entry) => normalizeTabName(entry.tab) === SETTING_TAB)');
+    expect(source).toContain('settingsEntries.filter((entry) => normalizeTabName(entry.tab) === BRAINSTORM_TAB).length');
+    expect(source).not.toContain("settingsEntries.filter((entry) => entry.tab === '大纲')");
+    expect(source).not.toContain("settingsEntries.filter((entry) => entry.tab === '脑洞')");
   });
 });
 
@@ -131,5 +166,16 @@ describe('Workbench linked context clearing', () => {
     expect(source).not.toContain('if (!selected) {\n        if (hasContextContent(row.outlineItem)) next.add(row.outlineItem.id);');
     expect(source).toContain('if (item.id === row.outlineItem.id) return;');
     expect(source).toContain('const confirmedSelectedItems = mergeContextItems([...requiredContextItems, ...optionalSelectedItems]);');
+  });
+});
+
+describe('ChapterEditor prompt snapshots', () => {
+  it('subscribes to prompt library updates for review and status prompt selects', async () => {
+    const source = await readSource('../components/ChapterEditor.tsx');
+
+    expect(source).toContain("import { normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';");
+    expect(source).toContain('const { prompts: reviewPrompts } = usePrompts();');
+    expect(source).not.toContain('readPromptSnapshot().prompts');
+    expect(source).not.toContain('import { normalizePromptCategoryName, readPromptSnapshot }');
   });
 });

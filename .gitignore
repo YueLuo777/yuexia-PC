@@ -12,8 +12,11 @@ dev-server.log
 electron-dev.log
 electron-dev.old.log
 launcher.log
+vite-test-preview*.log
 *.pid
 runtime/postgres/**
 !runtime/postgres/
 !runtime/postgres/README.md
 shujuku/postgres-data/**
+shujuku/data/*.json
+recovered-localstorage/
