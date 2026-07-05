@@ -17,17 +17,66 @@ import { useNavigate } from 'react-router-dom';
 
 import { TEST_COLLECTION_SHOW_INDEX_EVENT } from '@/features/tests/model/testCollectionEvents';
 
-const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })));
-const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
-const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
-const EditorPaperBaselineGridTestPage = lazy(() => import('@/features/tests/pages/EditorPaperBaselineGridTestPage').then((module) => ({ default: module.EditorPaperBaselineGridTestPage })));
-const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
-const SettingEntryMergePlanTestPage = lazy(() => import('@/features/tests/pages/SettingEntryMergePlanTestPage').then((module) => ({ default: module.SettingEntryMergePlanTestPage })));
-const SettingStateStructurePlanTestPage = lazy(() => import('@/features/tests/pages/SettingStateStructurePlanTestPage').then((module) => ({ default: module.SettingStateStructurePlanTestPage })));
-const PromptLibraryStructureTestPage = lazy(() => import('@/features/tests/pages/PromptLibraryStructureTestPage').then((module) => ({ default: module.PromptLibraryStructureTestPage })));
-const PromptWorkflowPreviewTestPage = lazy(() => import('@/features/tests/pages/PromptWorkflowPreviewTestPage').then((module) => ({ default: module.PromptWorkflowPreviewTestPage })));
-const WorkbenchCreationChainTestPage = lazy(() => import('@/features/tests/pages/WorkbenchCreationChainTestPage').then((module) => ({ default: module.WorkbenchCreationChainTestPage })));
-const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
+const HiddenPagesTestPage = lazy(() =>
+  import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })),
+);
+const SoftwareUiCatalogPage = lazy(() =>
+  import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })),
+);
+const DarkThemeColorPage = lazy(() =>
+  import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })),
+);
+const EditorPaperBaselineGridTestPage = lazy(() =>
+  import('@/features/tests/pages/EditorPaperBaselineGridTestPage').then((module) => ({
+    default: module.EditorPaperBaselineGridTestPage,
+  })),
+);
+const PaperWorkbenchStylePreviewTestPage = lazy(() =>
+  import('@/features/tests/pages/PaperWorkbenchStylePreviewTestPage').then((module) => ({
+    default: module.PaperWorkbenchStylePreviewTestPage,
+  })),
+);
+const CleanWriterStylePreviewTestPage = lazy(() =>
+  import('@/features/tests/pages/CleanWriterStylePreviewTestPage').then((module) => ({
+    default: module.CleanWriterStylePreviewTestPage,
+  })),
+);
+const DarkConsoleStylePreviewTestPage = lazy(() =>
+  import('@/features/tests/pages/DarkConsoleStylePreviewTestPage').then((module) => ({
+    default: module.DarkConsoleStylePreviewTestPage,
+  })),
+);
+const ErrorLogPage = lazy(() =>
+  import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
+);
+const SettingEntryMergePlanTestPage = lazy(() =>
+  import('@/features/tests/pages/SettingEntryMergePlanTestPage').then((module) => ({
+    default: module.SettingEntryMergePlanTestPage,
+  })),
+);
+const SettingStateStructurePlanTestPage = lazy(() =>
+  import('@/features/tests/pages/SettingStateStructurePlanTestPage').then((module) => ({
+    default: module.SettingStateStructurePlanTestPage,
+  })),
+);
+const PromptLibraryStructureTestPage = lazy(() =>
+  import('@/features/tests/pages/PromptLibraryStructureTestPage').then((module) => ({
+    default: module.PromptLibraryStructureTestPage,
+  })),
+);
+const PromptWorkflowPreviewTestPage = lazy(() =>
+  import('@/features/tests/pages/PromptWorkflowPreviewTestPage').then((module) => ({
+    default: module.PromptWorkflowPreviewTestPage,
+  })),
+);
+const WorkbenchCreationChainTestPage = lazy(() =>
+  import('@/features/tests/pages/WorkbenchCreationChainTestPage').then((module) => ({
+    default: module.WorkbenchCreationChainTestPage,
+  })),
+);
+const TestBrowserPage = lazy(() =>
+  import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })),
+);
 
 const testGroups = [
   {
@@ -67,6 +116,27 @@ const testGroups = [
         path: '/editor-paper-baseline-grid-test',
         icon: NotebookText,
         badge: 'Paper',
+      },
+      {
+        title: '纸墨工作台风格预览',
+        description: '把浅纸色、墨色正文和三栏工作台组合成一张可对照的视觉样张。',
+        path: '/paper-workbench-style-preview-test',
+        icon: Palette,
+        badge: 'Style',
+      },
+      {
+        title: '清爽编辑器风格预览',
+        description: '用明亮留白、轻边框和低干扰编辑区做一张可对照的写作样张。',
+        path: '/clean-writer-style-preview-test',
+        icon: Palette,
+        badge: 'Clean',
+      },
+      {
+        title: '深色控制台风格预览',
+        description: '用深色底、状态信号和控制台密度做一张可对照的专业样张。',
+        path: '/dark-console-style-preview-test',
+        icon: Moon,
+        badge: 'Dark',
       },
     ],
   },
@@ -124,9 +194,7 @@ const testGroups = [
   },
 ];
 const testNumberByPath = new Map(
-  testGroups
-    .flatMap((group) => group.items)
-    .map((item, index) => [item.path, index + 1] as const),
+  testGroups.flatMap((group) => group.items).map((item, index) => [item.path, index + 1] as const),
 );
 const validTestPaths = new Set(testNumberByPath.keys());
 
@@ -181,9 +249,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
     });
   }, []);
 
-  const activeItem = useMemo(() => (
-    testGroups.flatMap((group) => group.items).find((item) => item.path === activePath) ?? null
-  ), [activePath]);
+  const activeItem = useMemo(
+    () => testGroups.flatMap((group) => group.items).find((item) => item.path === activePath) ?? null,
+    [activePath],
+  );
   const activeNumber = activePath ? formatTestNumber(activePath) : null;
 
   const handleBack = () => {
@@ -268,6 +337,12 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
       case '/editor-paper-baseline-grid-test':
         return <EditorPaperBaselineGridTestPage />;
+      case '/paper-workbench-style-preview-test':
+        return <PaperWorkbenchStylePreviewTestPage />;
+      case '/clean-writer-style-preview-test':
+        return <CleanWriterStylePreviewTestPage />;
+      case '/dark-console-style-preview-test':
+        return <DarkConsoleStylePreviewTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       default:
@@ -286,36 +361,46 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
             <ArrowLeft className="h-4 w-4" />
             返回测试
           </button>
-           <div className="flex min-w-0 flex-1 items-center justify-center gap-3 px-4 text-sm font-black text-slate-700">
-             <span className="min-w-0 truncate">{activeItem ? `${activeNumber}号测试：${activeItem.title}` : '测试内容'}</span>
-           </div>
-           {activePath && (
-             <button
-               type="button"
-               onClick={() => toggleTestedTest(activePath)}
-               className="mr-2 flex h-8 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
-             >
-               <span
-                 className={[
-                   'flex h-4 w-4 items-center justify-center rounded border',
-                   testedTestPaths.has(activePath) ? 'border-brand bg-brand text-white' : 'border-slate-300 bg-white text-transparent',
-                 ].join(' ')}
-               >
-                 <Check className="h-3 w-3" />
-               </span>
-               {testedTestPaths.has(activePath) ? '取消已测试' : '标记已测试'}
-             </button>
-           )}
-           <button
-             onClick={() => setActivePath(null)}
-             className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-3 px-4 text-sm font-black text-slate-700">
+            <span className="min-w-0 truncate">
+              {activeItem ? `${activeNumber}号测试：${activeItem.title}` : '测试内容'}
+            </span>
+          </div>
+          {activePath && (
+            <button
+              type="button"
+              onClick={() => toggleTestedTest(activePath)}
+              className="mr-2 flex h-8 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
+            >
+              <span
+                className={[
+                  'flex h-4 w-4 items-center justify-center rounded border',
+                  testedTestPaths.has(activePath)
+                    ? 'border-brand bg-brand text-white'
+                    : 'border-slate-300 bg-white text-transparent',
+                ].join(' ')}
+              >
+                <Check className="h-3 w-3" />
+              </span>
+              {testedTestPaths.has(activePath) ? '取消已测试' : '标记已测试'}
+            </button>
+          )}
+          <button
+            onClick={() => setActivePath(null)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
             title="关闭"
           >
             <X className="h-4 w-4" />
           </button>
         </header>
         <div className="min-h-0 flex-1 overflow-hidden">
-          <Suspense fallback={<div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">正在打开测试内容...</div>}>
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">
+                正在打开测试内容...
+              </div>
+            }
+          >
             {renderActiveTest()}
           </Suspense>
         </div>
@@ -327,36 +412,38 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
     <div className="flex h-full flex-col bg-slate-50">
       <header className="flex h-16 shrink-0 items-center border-b border-slate-100 bg-white px-6">
         <div className="flex w-full items-center justify-between gap-4">
-           <div className="min-w-0">
-             <h1 className="text-xl font-bold text-slate-900">测试</h1>
-             <p className="mt-0.5 text-xs text-slate-400">共 {totalCount} 个测试 · 待测试 {untestedCount} 个 · 已测试 {testedCount} 个</p>
-           </div>
-           <div className="flex items-center gap-2">
-             <div className="grid h-8 grid-cols-2 overflow-hidden rounded-lg border border-slate-200 bg-white text-xs font-bold">
-               <button
-                 type="button"
-                 onClick={() => setCollectionTab('untested')}
-                 className={[
-                   'px-3 transition-colors',
-                   collectionTab === 'untested' ? 'bg-brand-light text-brand' : 'text-slate-500 hover:bg-slate-50',
-                 ].join(' ')}
-               >
-                 待测试 {untestedCount}
-               </button>
-               <button
-                 type="button"
-                 onClick={() => setCollectionTab('tested')}
-                 className={[
-                   'border-l border-slate-200 px-3 transition-colors',
-                   collectionTab === 'tested' ? 'bg-brand-light text-brand' : 'text-slate-500 hover:bg-slate-50',
-                 ].join(' ')}
-               >
-                 已测试 {testedCount}
-               </button>
-             </div>
-             <button
-               onClick={handleBack}
-               className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-slate-900">测试</h1>
+            <p className="mt-0.5 text-xs text-slate-400">
+              共 {totalCount} 个测试 · 待测试 {untestedCount} 个 · 已测试 {testedCount} 个
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="grid h-8 grid-cols-2 overflow-hidden rounded-lg border border-slate-200 bg-white text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setCollectionTab('untested')}
+                className={[
+                  'px-3 transition-colors',
+                  collectionTab === 'untested' ? 'bg-brand-light text-brand' : 'text-slate-500 hover:bg-slate-50',
+                ].join(' ')}
+              >
+                待测试 {untestedCount}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCollectionTab('tested')}
+                className={[
+                  'border-l border-slate-200 px-3 transition-colors',
+                  collectionTab === 'tested' ? 'bg-brand-light text-brand' : 'text-slate-500 hover:bg-slate-50',
+                ].join(' ')}
+              >
+                已测试 {testedCount}
+              </button>
+            </div>
+            <button
+              onClick={handleBack}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
               title={embedded ? '关闭' : '返回'}
             >
               {embedded ? <X className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
@@ -380,15 +467,17 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
             <section key={group.title}>
               <div className="mb-3 flex items-center gap-2">
                 <h2 className="text-sm font-bold text-slate-700">{group.title}</h2>
-                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-500">{group.items.length}</span>
+                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                  {group.items.length}
+                </span>
               </div>
-               <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
-                 {group.items.map((item) => {
-                   const Icon = item.icon;
-                   const isTested = testedTestPaths.has(item.path);
-                   return (
-                     <button
-                       key={item.path}
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isTested = testedTestPaths.has(item.path);
+                  return (
+                    <button
+                      key={item.path}
                       onClick={() => openTestPage(item.path)}
                       className="group flex min-h-[128px] flex-col rounded-2xl border border-slate-100 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
                     >
@@ -400,36 +489,36 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
                           <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[11px] font-black text-white">
                             {formatTestNumber(item.path)}
                           </span>
-                         </div>
-                         <div className="flex items-center gap-2">
-                           <span
-                             role="checkbox"
-                             aria-checked={isTested}
-                             tabIndex={0}
-                             title={isTested ? '取消已测试' : '标记已测试'}
-                             onClick={(event) => {
-                               event.stopPropagation();
-                               toggleTestedTest(item.path);
-                             }}
-                             onKeyDown={(event) => {
-                               if (event.key === 'Enter' || event.key === ' ') {
-                                 event.preventDefault();
-                                 event.stopPropagation();
-                                 toggleTestedTest(item.path);
-                               }
-                             }}
-                             className={[
-                               'flex h-7 w-7 items-center justify-center rounded-full border transition-colors',
-                               isTested
-                                 ? 'border-brand bg-brand text-white'
-                                 : 'border-slate-200 bg-white text-transparent hover:border-brand/50 hover:text-brand',
-                             ].join(' ')}
-                           >
-                             <Check className="h-4 w-4" />
-                           </span>
-                           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-400 transition-colors group-hover:bg-brand-light group-hover:text-brand">
-                             {item.badge}
-                           </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            role="checkbox"
+                            aria-checked={isTested}
+                            tabIndex={0}
+                            title={isTested ? '取消已测试' : '标记已测试'}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              toggleTestedTest(item.path);
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                toggleTestedTest(item.path);
+                              }
+                            }}
+                            className={[
+                              'flex h-7 w-7 items-center justify-center rounded-full border transition-colors',
+                              isTested
+                                ? 'border-brand bg-brand text-white'
+                                : 'border-slate-200 bg-white text-transparent hover:border-brand/50 hover:text-brand',
+                            ].join(' ')}
+                          >
+                            <Check className="h-4 w-4" />
+                          </span>
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-400 transition-colors group-hover:bg-brand-light group-hover:text-brand">
+                            {item.badge}
+                          </span>
                         </div>
                       </div>
                       <div className="text-base font-bold text-slate-900">{item.title}</div>
@@ -440,11 +529,11 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
               </div>
             </section>
           ))}
-           {visibleGroups.length === 0 && (
-             <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white text-sm text-slate-400">
-               {collectionTab === 'tested' ? '暂无已测试内容' : '没有找到匹配的测试内容'}
-             </div>
-           )}
+          {visibleGroups.length === 0 && (
+            <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white text-sm text-slate-400">
+              {collectionTab === 'tested' ? '暂无已测试内容' : '没有找到匹配的测试内容'}
+            </div>
+          )}
         </div>
       </main>
     </div>

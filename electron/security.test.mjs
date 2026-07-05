@@ -27,6 +27,8 @@ describe('Electron security source guards', () => {
 
     expect(testBrowserSource).toContain("React.createElement('webview'");
     expect(scriptBrowserSource).toContain("React.createElement('webview'");
+    expect(testBrowserSource).toContain('isEmbeddedBrowserEnabled()');
+    expect(scriptBrowserSource).toContain('isEmbeddedBrowserEnabled()');
     expect(testBrowserSource).not.toContain('allowpopups');
     expect(scriptBrowserSource).not.toContain('allowpopups');
   });
@@ -36,6 +38,9 @@ describe('Electron security source guards', () => {
 
     expect(mainSource).toContain("app.on('web-contents-created'");
     expect(mainSource).toContain("contents.on('will-attach-webview'");
+    expect(mainSource).toContain('function isWebviewTagEnabled()');
+    expect(mainSource).toContain("process.env.XINYUEXIA_ENABLE_WEBVIEW === '1'");
+    expect(mainSource).toContain('webviewTag: isWebviewTagEnabled()');
     expect(mainSource).toContain('delete webPreferences.preload');
     expect(mainSource).toContain('webPreferences.nodeIntegration = false');
     expect(mainSource).toContain('webPreferences.contextIsolation = true');

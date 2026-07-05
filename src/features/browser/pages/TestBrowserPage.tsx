@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Globe, Home, Maximize2, Minimize2, Plus, RefreshCw, Star, Trash2, X } from 'lucide-react';
 
-import { getBrowserHostLabel, isMobileOptimizedBrowserUrl, normalizeBrowserUrl } from '@/shared/browser/browserUrl';
+import {
+  getBrowserHostLabel,
+  isEmbeddedBrowserEnabled,
+  isMobileOptimizedBrowserUrl,
+  normalizeBrowserUrl,
+} from '@/shared/browser/browserUrl';
 
 const BROWSER_URL_KEY = 'xinyuexia_test_browser_url';
 const BROWSER_BOOKMARKS_KEY = 'xinyuexia_test_browser_bookmarks';
@@ -92,6 +97,7 @@ export function TestBrowserPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const usesMobileViewport = useMemo(() => isMobileOptimizedBrowserUrl(currentUrl), [currentUrl]);
+  const embeddedBrowserEnabled = isEmbeddedBrowserEnabled();
 
   useEffect(() => {
     localStorage.setItem(BROWSER_URL_KEY, currentUrl);
@@ -416,7 +422,7 @@ export function TestBrowserPage() {
           </div>
 
           <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden bg-white [scrollbar-gutter:stable] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#9a9a9a] [&::-webkit-scrollbar-track]:bg-transparent">
-            {React.createElement('webview', {
+            {embeddedBrowserEnabled ? React.createElement('webview', {
               ref: webviewRef,
               src: currentUrl,
               partition: BROWSER_PARTITION,
@@ -426,7 +432,11 @@ export function TestBrowserPage() {
                 minWidth: usesMobileViewport ? `${MOBILE_VIEWPORT_WIDTH}px` : `${DESKTOP_VIEWPORT_MIN_WIDTH}px`,
                 height: '100%',
               },
-            })}
+            }) : (
+              <div className="flex h-full items-center justify-center bg-slate-50 px-6 text-center text-sm text-slate-500">
+                内置浏览器仅在开发模式或显式启用的内部包中开放。
+              </div>
+            )}
           </div>
         </main>
       </div>

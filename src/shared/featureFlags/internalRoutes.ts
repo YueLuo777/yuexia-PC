@@ -12,6 +12,7 @@ export const INTERNAL_ROUTE_PATHS = [
 
 type InternalRouteEnv = {
   DEV?: boolean;
+  VITE_INCLUDE_INTERNAL_ROUTES?: string;
 };
 
 type InternalRouteStorage = {
@@ -29,15 +30,27 @@ function isDefaultDevMode() {
   return import.meta.env.DEV === true;
 }
 
+function getDefaultEnv(): InternalRouteEnv {
+  return {
+    DEV: import.meta.env.DEV,
+    VITE_INCLUDE_INTERNAL_ROUTES: import.meta.env.VITE_INCLUDE_INTERNAL_ROUTES,
+  };
+}
+
 export function isInternalRoutePath(path: string) {
   return INTERNAL_ROUTE_PATH_SET.has(path);
 }
 
+export function areInternalRouteModulesBundled(env: InternalRouteEnv = getDefaultEnv()) {
+  return env.DEV === true || env.VITE_INCLUDE_INTERNAL_ROUTES === '1';
+}
+
 export function areInternalRoutesEnabled(
-  env?: InternalRouteEnv,
+  env: InternalRouteEnv = getDefaultEnv(),
   storage: InternalRouteStorage | null = getDefaultStorage(),
 ) {
-  if (env?.DEV ?? isDefaultDevMode()) return true;
+  if (!areInternalRouteModulesBundled(env)) return false;
+  if (env.DEV ?? isDefaultDevMode()) return true;
   try {
     return storage?.getItem(INTERNAL_ROUTE_STORAGE_KEY) === '1';
   } catch {

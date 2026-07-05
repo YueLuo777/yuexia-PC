@@ -38,6 +38,7 @@ import {
   getStoredFormatSettings,
   getStoredFontSettings,
   getEditorGridLineStyle,
+  getEditorTextLineHeight,
   getStoredSymbolReplaceSettings,
   isSymbolReplaceEnabled,
   saveSnapshot,
@@ -728,6 +729,7 @@ export function ChapterEditor({
   const [fontSettings, setFontSettings] = useState<FontSettings>(getStoredFontSettings);
   const [formatSettings, setFormatSettings] = useState<FormatOptions>(getStoredFormatSettings);
   const editorGridLineStyle = useMemo(() => getEditorGridLineStyle(fontSettings, editorScrollTop), [editorScrollTop, fontSettings]);
+  const editorTextLineHeight = useMemo(() => getEditorTextLineHeight(fontSettings), [fontSettings]);
   const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;
   const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;
   const [copyToast, setCopyToast] = useState('');
@@ -2072,7 +2074,7 @@ export function ChapterEditor({
             color: fontSettings.fontColor,
             caretColor: fontSettings.fontColor,
             fontSize: `${fontSettings.fontSize}px`,
-            lineHeight: fontSettings.lineHeight,
+            lineHeight: editorTextLineHeight,
             backgroundColor: 'transparent',
             paddingLeft: editorTextPaddingLeft,
             paddingRight: editorTextPaddingRight,

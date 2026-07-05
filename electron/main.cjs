@@ -345,9 +345,13 @@ function getWindowOptions(savedState) {
       nodeIntegration: false,
       sandbox: true,
       preload: PRELOAD_ENTRY,
-      webviewTag: true,
+      webviewTag: isWebviewTagEnabled(),
     },
   };
+}
+
+function isWebviewTagEnabled() {
+  return !app.isPackaged || process.env.XINYUEXIA_ENABLE_WEBVIEW === '1';
 }
 
 function saveWindowState(targetWindow) {

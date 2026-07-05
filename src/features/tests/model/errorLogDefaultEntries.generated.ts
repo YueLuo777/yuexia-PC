@@ -2,6 +2,17 @@ import type { ErrorLogEntry } from './errorLogEntryTypes';
 
 export const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'editor-paper-baseline-low-line-migrated-to-production-001',
+    title: '正文稿纸线正式迁入贴脚低线方案',
+    area: '作品编辑器 / 正文 / 稿纸线',
+    symptom: '测试页确认“贴脚低线”最接近字站在线上的效果后，正式正文仍使用旧的字号倍率和 underlineGapPx 公式会让虚线位置与测试结果不一致。',
+    cause: '旧实现用 fontSize * lineHeight 计算虚线间距，并额外用 underlineGapPx 推导线位；测试确认的方案改为 rowHeight=max(字号+20, 字号*1.75)、lineOffset=rowHeight-1。',
+    solution: '新增 getEditorGridLineMetrics 和 getEditorTextLineHeight；正式稿纸线、正文 textarea、字体设置预览和高频词覆盖层共用同一套 20px 行距补偿与 1px 贴脚线位。',
+    prevention: '以后调整正文稿纸线时必须同步修改背景线、正文输入层和覆盖层行高，并用 ChapterEditorGridLine.test 锁住公式，避免只改虚线不改文字行盒。',
+    keywords: ['正文', '稿纸线', '贴脚低线', 'getEditorGridLineMetrics', 'getEditorTextLineHeight', 'lineHeight'],
+    updatedAt: '2026-07-06',
+  },
+  {
     id: 'editor-paper-baseline-test-needs-side-by-side-presets-001',
     title: '稿纸线测试页需要并排对照而不是单一预览',
     area: '测试集合 / 正文稿纸线基准对齐测试',

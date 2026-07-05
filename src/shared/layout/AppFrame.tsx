@@ -17,6 +17,7 @@ import { hasTopModalEscapeHandler, useTopModalEscape } from '@/shared/hooks/useT
 import { HOME_TAB, useWorkspaceTabs, type WorkspaceTab } from '@/shared/tabs/WorkspaceTabsContext';
 import { TextOverrideLayer } from '@/shared/text-overrides/TextOverrideLayer';
 import { applyCustomThemeColors } from '@/features/theme/model/customThemeColors';
+import { areInternalRoutesEnabled } from '@/shared/featureFlags/internalRoutes';
 
 const APP_SCALE_KEY = 'xinyuexia_app_scale';
 const APP_SCALE_VERSION_KEY = 'xinyuexia_app_scale_version';
@@ -71,8 +72,13 @@ interface AppFrameProps {
   children: ReactNode;
 }
 
-const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
-const TestCollectionPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })));
+const INTERNAL_ROUTE_MODULES_BUNDLED = import.meta.env.DEV || import.meta.env.VITE_INCLUDE_INTERNAL_ROUTES === '1';
+const SoftwareUiCatalogPage = INTERNAL_ROUTE_MODULES_BUNDLED
+  ? lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })))
+  : null;
+const TestCollectionPage = INTERNAL_ROUTE_MODULES_BUNDLED
+  ? lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })))
+  : null;
 
 export function AppFrame({ children }: AppFrameProps) {
   const navigate = useNavigate();
@@ -88,11 +94,12 @@ export function AppFrame({ children }: AppFrameProps) {
   const [shortcutBindings, setShortcutBindings] = useState(loadShortcutBindings);
   const [mouseGestureSettings, setMouseGestureSettings] = useState(loadMouseGestureSettings);
   const [mouseGesturePreview, setMouseGesturePreview] = useState<MouseGesturePreview | null>(null);
+  const showInternalTools = areInternalRoutesEnabled();
 
   const effectiveScale = useMemo(() => Number(appScale.toFixed(3)), [appScale]);
 
-  useTopModalEscape(showTestCollection, () => setShowTestCollection(false));
-  useTopModalEscape(showSoftwareUiCatalog, () => setShowSoftwareUiCatalog(false));
+  useTopModalEscape(showInternalTools && showTestCollection, () => setShowTestCollection(false));
+  useTopModalEscape(showInternalTools && showSoftwareUiCatalog, () => setShowSoftwareUiCatalog(false));
 
   useEffect(() => {
     applyCustomThemeColors();
@@ -859,6 +866,8 @@ export function AppFrame({ children }: AppFrameProps) {
           data-titlebar-no-drag="true"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
         >
+          {showInternalTools && (
+            <>
           <button
             onClick={() => {
               setShowSoftwareUiCatalog(false);
@@ -879,6 +888,8 @@ export function AppFrame({ children }: AppFrameProps) {
           >
             <BookOpen className="h-4 w-4" />
           </button>
+            </>
+          )}
           <button
             onClick={() => setIsDarkTheme((prev) => !prev)}
             className={`xy-dark-theme-switch mr-2 ${isDarkTheme ? 'xy-dark-active' : ''}`}
@@ -1007,7 +1018,7 @@ export function AppFrame({ children }: AppFrameProps) {
           </div>
         </div>
       )}
-      {showTestCollection && (
+      {showInternalTools && showTestCollection && TestCollectionPage && (
         <div
           className="fixed inset-0 z-[335] flex items-center justify-center bg-slate-950/45 p-5"
           data-titlebar-no-drag="true"
@@ -1025,7 +1036,7 @@ export function AppFrame({ children }: AppFrameProps) {
           </div>
         </div>
       )}
-      {showSoftwareUiCatalog && (
+      {showInternalTools && showSoftwareUiCatalog && SoftwareUiCatalogPage && (
         <div
           className="fixed inset-0 z-[340] flex items-center justify-center bg-slate-950/45 p-5"
           data-titlebar-no-drag="true"

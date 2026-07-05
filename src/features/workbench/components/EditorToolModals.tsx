@@ -94,6 +94,8 @@ export const EDITOR_GRID_LINE_LEFT_OFFSET_PX = 64;
 export const EDITOR_GRID_LINE_RIGHT_OFFSET_PX = 64;
 const EDITOR_GRID_LINE_CANVAS_WIDTH_PX = 3200;
 const EDITOR_GRID_LINE_MASK_COLOR = '#FFFFFF';
+const EDITOR_GRID_LINE_ROW_EXTRA_PX = 20;
+const EDITOR_GRID_LINE_FOOT_GAP_PX = 1;
 
 const editorGridLineModeOptions: Array<{ value: EditorGridLineMode; label: string }> = [
   { value: 'none', label: '无' },
@@ -123,12 +125,22 @@ function buildEditorGridLineBackground(lineHeightPx: number, lineOffsetPx: numbe
   return `url("data:image/svg+xml,${svg}")`;
 }
 
+export function getEditorGridLineMetrics(fontSizePx: number) {
+  const lineHeightPx = Math.max(fontSizePx + EDITOR_GRID_LINE_ROW_EXTRA_PX, Math.round(fontSizePx * 1.75));
+  const lineOffsetPx = lineHeightPx - EDITOR_GRID_LINE_FOOT_GAP_PX;
+  return { lineHeightPx, lineOffsetPx };
+}
+
+export function getEditorTextLineHeight(fontSettings: FontSettings) {
+  const gridLineMode = normalizeEditorGridLineMode(fontSettings.gridLineMode, fontSettings.gridLineEnabled);
+  if (gridLineMode === 'none') return fontSettings.lineHeight;
+  return `${getEditorGridLineMetrics(fontSettings.fontSize).lineHeightPx}px`;
+}
+
 export function getEditorGridLineStyle(fontSettings: FontSettings, scrollTop = 0): CSSProperties {
   const gridLineMode = normalizeEditorGridLineMode(fontSettings.gridLineMode, fontSettings.gridLineEnabled);
   if (gridLineMode === 'none') return {};
-  const lineHeightPx = Math.round(fontSettings.fontSize * fontSettings.lineHeight);
-  const underlineGapPx = Math.max(8, Math.round(fontSettings.fontSize * 0.22));
-  const lineOffsetPx = Math.min(lineHeightPx - 2, Math.round((lineHeightPx + fontSettings.fontSize) / 2 + underlineGapPx));
+  const { lineHeightPx, lineOffsetPx } = getEditorGridLineMetrics(fontSettings.fontSize);
   const repeatedTopLineMaskHeightPx = Math.max(0, EDITOR_GRID_LINE_TOP_OFFSET_PX + lineOffsetPx - lineHeightPx + 4);
   return {
     backgroundImage: `linear-gradient(${EDITOR_GRID_LINE_MASK_COLOR}, ${EDITOR_GRID_LINE_MASK_COLOR}), linear-gradient(${EDITOR_GRID_LINE_MASK_COLOR}, ${EDITOR_GRID_LINE_MASK_COLOR}), ${buildEditorGridLineBackground(lineHeightPx, lineOffsetPx, gridLineMode)}`,
@@ -770,7 +782,7 @@ export function FontSettingsModal({ isOpen, onClose, settings, onChange }: {
         </section>
         <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
           <p className="mb-2 text-xs text-gray-400">预览</p>
-          <div className="rounded border border-gray-200 bg-white p-3" style={{ ...getEditorGridLineStyle(local), fontFamily: local.fontFamily, color: local.fontColor, fontSize: Math.min(local.fontSize, 16), lineHeight: local.lineHeight }}>
+          <div className="rounded border border-gray-200 bg-white p-3" style={{ ...getEditorGridLineStyle(local), fontFamily: local.fontFamily, color: local.fontColor, fontSize: Math.min(local.fontSize, 16), lineHeight: getEditorTextLineHeight(local) }}>
             这是一段预览文字，用于查看字体设置效果。
           </div>
         </div>
@@ -1103,6 +1115,7 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0 }: {
   const [enabled, setEnabled] = useState(isHighFreqEnabled);
   const [highlightColor, setHighlightColor] = useState(getStoredHighFreqHighlightColor);
   const editorGridLineStyle = getEditorGridLineStyle(fontSettings);
+  const editorTextLineHeight = getEditorTextLineHeight(fontSettings);
 
   useEffect(() => {
     const sync = () => {
@@ -1138,7 +1151,7 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0 }: {
         fontFamily: fontSettings.fontFamily,
         color: 'transparent',
         fontSize: `${fontSettings.fontSize}px`,
-        lineHeight: fontSettings.lineHeight,
+        lineHeight: editorTextLineHeight,
         paddingLeft: editorTextPaddingLeft,
         paddingRight: editorTextPaddingRight,
         transform: `translateY(-${scrollTop}px)`,

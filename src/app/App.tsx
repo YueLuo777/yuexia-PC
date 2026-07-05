@@ -10,11 +10,6 @@ import {
 import { bindWorkbenchTransientAiCleanup } from '@/features/workbench/model/workbenchTransientAiCleanup';
 import { areInternalRoutesEnabled } from '@/shared/featureFlags/internalRoutes';
 
-const TestCollectionPage = lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })));
-const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
-const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })));
-const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
-const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 const ConceptLibraryPage = lazy(() => import('@/features/concept-library/pages/ConceptLibraryPage').then((module) => ({ default: module.ConceptLibraryPage })));
 const LibraryHubPage = lazy(() => import('@/features/library-hub/pages/LibraryHubPage').then((module) => ({ default: module.LibraryHubPage })));
 const DbSettingsPage = lazy(() => import('@/features/settings/pages/DbSettingsPage').then((module) => ({ default: module.DbSettingsPage })));
@@ -27,6 +22,10 @@ const TokenUsagePage = lazy(() => import('@/pages/TokenUsagePage'));
 const TextOverridesPage = lazy(() => import('@/features/text-overrides/pages/TextOverridesPage').then((module) => ({ default: module.TextOverridesPage })));
 const DashboardLayout = lazy(() => import('@/shared/layout/DashboardLayout').then((module) => ({ default: module.DashboardLayout })));
 const SettingsPage = lazy(() => import('@/shared/settings/SettingsPage').then((module) => ({ default: module.SettingsPage })));
+const INTERNAL_ROUTE_MODULES_BUNDLED = import.meta.env.DEV || import.meta.env.VITE_INCLUDE_INTERNAL_ROUTES === '1';
+const InternalRoutesPage = INTERNAL_ROUTE_MODULES_BUNDLED
+  ? lazy(() => import('@/app/InternalRoutesPage').then((module) => ({ default: module.InternalRoutesPage })))
+  : null;
 
 function AppFallback() {
   return (
@@ -102,16 +101,8 @@ export default function App() {
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/text-overrides" element={<TextOverridesPage />} />
                 <Route path="/token-usage" element={<TokenUsagePage />} />
-                {showInternalRoutes && (
-                  <>
-                    <Route path="/test-collection" element={<TestCollectionPage />} />
-                    <Route path="/software-ui-catalog" element={<SoftwareUiCatalogPage />} />
-                    <Route path="/hidden-content" element={<HiddenPagesTestPage />} />
-                    <Route path="/hidden-pages-test" element={<HiddenPagesTestPage />} />
-                    <Route path="/error-log" element={<ErrorLogPage />} />
-                    <Route path="/theme-colors" element={<Navigate to="/settings?section=theme" replace />} />
-                    <Route path="/test-browser" element={<TestBrowserPage />} />
-                  </>
+                {showInternalRoutes && InternalRoutesPage && (
+                  <Route path="*" element={<InternalRoutesPage />} />
                 )}
                 <Route path="/system-settings" element={<Navigate to="/settings?section=system" replace />} />
                 <Route path="/shortcut-settings" element={<Navigate to="/settings?section=shortcuts" replace />} />

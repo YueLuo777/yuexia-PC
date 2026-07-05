@@ -250,10 +250,19 @@ describe('ChapterEditor grid line font setting', () => {
     expect(modalSource).toContain('export const EDITOR_GRID_LINE_LEFT_OFFSET_PX = 64;');
     expect(modalSource).toContain('export const EDITOR_GRID_LINE_RIGHT_OFFSET_PX = 64;');
     expect(modalSource).toContain("const EDITOR_GRID_LINE_MASK_COLOR = '#FFFFFF';");
+    expect(modalSource).toContain('const EDITOR_GRID_LINE_ROW_EXTRA_PX = 20;');
+    expect(modalSource).toContain('const EDITOR_GRID_LINE_FOOT_GAP_PX = 1;');
     expect(modalSource).toContain("const dash = mode === 'dashed' ? \" stroke-dasharray='7 7'\" : '';");
     expect(modalSource).toContain("x1='${EDITOR_GRID_LINE_LEFT_OFFSET_PX}'");
+    expect(modalSource).toContain('export function getEditorGridLineMetrics(fontSizePx: number)');
+    expect(modalSource).toContain('const lineHeightPx = Math.max(fontSizePx + EDITOR_GRID_LINE_ROW_EXTRA_PX, Math.round(fontSizePx * 1.75));');
+    expect(modalSource).toContain('const lineOffsetPx = lineHeightPx - EDITOR_GRID_LINE_FOOT_GAP_PX;');
+    expect(modalSource).toContain('export function getEditorTextLineHeight(fontSettings: FontSettings)');
+    expect(modalSource).toContain("if (gridLineMode === 'none') return fontSettings.lineHeight;");
+    expect(modalSource).toContain('return `${getEditorGridLineMetrics(fontSettings.fontSize).lineHeightPx}px`;');
     expect(modalSource).toContain('export function getEditorGridLineStyle(fontSettings: FontSettings, scrollTop = 0): CSSProperties');
-    expect(modalSource).toContain('const underlineGapPx = Math.max(8, Math.round(fontSettings.fontSize * 0.22));');
+    expect(modalSource).toContain('const { lineHeightPx, lineOffsetPx } = getEditorGridLineMetrics(fontSettings.fontSize);');
+    expect(modalSource).not.toContain('const underlineGapPx = Math.max(8, Math.round(fontSettings.fontSize * 0.22));');
     expect(modalSource).not.toContain('firstLineCoverHeightPx');
     expect(modalSource).not.toContain('EDITOR_GRID_LINE_TOP_MASK_EXTRA_PX');
     expect(modalSource).toContain('const repeatedTopLineMaskHeightPx = Math.max(0, EDITOR_GRID_LINE_TOP_OFFSET_PX + lineOffsetPx - lineHeightPx + 4);');
@@ -264,7 +273,9 @@ describe('ChapterEditor grid line font setting', () => {
     expect(modalSource).toContain('local.gridLineMode === option.value');
     expect(modalSource).not.toContain('checked={local.gridLineEnabled}');
     expect(modalSource).toContain('...getEditorGridLineStyle(local)');
+    expect(modalSource).toContain('lineHeight: getEditorTextLineHeight(local)');
     expect(modalSource).toContain('const editorGridLineStyle = getEditorGridLineStyle(fontSettings);');
+    expect(modalSource).toContain('const editorTextLineHeight = getEditorTextLineHeight(fontSettings);');
     expect(modalSource).toContain('const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;');
     expect(modalSource).toContain("paddingLeft: editorTextPaddingLeft");
     expect(modalSource).toContain('const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;');
@@ -278,7 +289,9 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterEditorSource).toContain('EDITOR_GRID_LINE_LEFT_OFFSET_PX,');
     expect(chapterEditorSource).toContain('EDITOR_GRID_LINE_RIGHT_OFFSET_PX,');
     expect(chapterEditorSource).toContain('getEditorGridLineStyle,');
+    expect(chapterEditorSource).toContain('getEditorTextLineHeight,');
     expect(chapterEditorSource).toContain('const editorGridLineStyle = useMemo(() => getEditorGridLineStyle(fontSettings, editorScrollTop), [editorScrollTop, fontSettings]);');
+    expect(chapterEditorSource).toContain('const editorTextLineHeight = useMemo(() => getEditorTextLineHeight(fontSettings), [fontSettings]);');
     expect(chapterEditorSource).toContain('const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;');
     expect(chapterEditorSource).toContain('const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;');
     expect(chapterEditorSource).not.toContain("const editorTextIndent = formatSettings.paragraphIndent ? '2em' : undefined;");
@@ -286,6 +299,7 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterEditorSource).toContain("backgroundColor: 'transparent'");
     expect(chapterEditorSource).toContain("paddingLeft: editorTextPaddingLeft");
     expect(chapterEditorSource).toContain("paddingRight: editorTextPaddingRight");
+    expect(chapterEditorSource).toContain('lineHeight: editorTextLineHeight');
     expect(chapterEditorSource).toContain('const normalizeEditorText = (value: string) => applyParagraphIndentToText(value, formatSettings.paragraphIndent);');
     expect(chapterEditorSource).toContain('color: fontSettings.fontColor');
     expect(chapterEditorSource).not.toContain("color: formatSettings.paragraphIndent ? 'transparent' : fontSettings.fontColor");

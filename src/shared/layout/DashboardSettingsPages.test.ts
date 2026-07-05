@@ -36,12 +36,13 @@ describe('dashboard unified settings page', () => {
 
   it('registers the unified settings route and redirects old settings URLs to sections', () => {
     const app = readSource('src/app/App.tsx');
+    const internalRoutes = readSource('src/app/InternalRoutesPage.tsx');
 
     expect(app).toContain('SettingsPage');
     expect(app).toContain('path="/settings"');
     expect(app).toContain('to="/settings?section=system"');
     expect(app).toContain('to="/settings?section=shortcuts"');
-    expect(app).toContain('to="/settings?section=theme"');
+    expect(internalRoutes).toContain('to="/settings?section=theme"');
     expect(app).toContain('to="/settings?section=navigation"');
   });
 

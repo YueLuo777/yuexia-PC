@@ -1,3 +1,19 @@
+interface EmbeddedBrowserEnv {
+  DEV?: boolean;
+  VITE_ENABLE_EMBEDDED_BROWSER?: string;
+}
+
+function getDefaultBrowserEnv(): EmbeddedBrowserEnv {
+  return {
+    DEV: import.meta.env.DEV,
+    VITE_ENABLE_EMBEDDED_BROWSER: import.meta.env.VITE_ENABLE_EMBEDDED_BROWSER,
+  };
+}
+
+export function isEmbeddedBrowserEnabled(env: EmbeddedBrowserEnv = getDefaultBrowserEnv()) {
+  return env.DEV === true || env.VITE_ENABLE_EMBEDDED_BROWSER === '1';
+}
+
 export function normalizeBrowserUrl(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return '';

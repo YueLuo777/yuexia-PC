@@ -1,5 +1,10 @@
 /// <reference types="vite/client" />
 
+interface ImportMetaEnv {
+  readonly VITE_ENABLE_EMBEDDED_BROWSER?: string;
+  readonly VITE_INCLUDE_INTERNAL_ROUTES?: string;
+}
+
 interface ModelRequestInput {
   endpoint: string;
   headers: Record<string, string>;

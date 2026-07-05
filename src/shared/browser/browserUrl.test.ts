@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import { getBrowserHostLabel, isMobileOptimizedBrowserUrl, normalizeBrowserUrl } from './browserUrl';
+import {
+  readFileSync,
+} from 'node:fs';
+import { join } from 'node:path';
+
+import {
+  getBrowserHostLabel,
+  isEmbeddedBrowserEnabled,
+  isMobileOptimizedBrowserUrl,
+  normalizeBrowserUrl,
+} from './browserUrl';
+
+const readSource = (relativePath: string) => readFileSync(join(process.cwd(), relativePath), 'utf8');
 
 describe('browserUrl', () => {
   it('normalizes user-entered urls for the embedded browser', () => {
@@ -19,5 +31,19 @@ describe('browserUrl', () => {
     expect(isMobileOptimizedBrowserUrl('https://m.qidian.com/book')).toBe(true);
     expect(isMobileOptimizedBrowserUrl('https://www.qidian.com/book?force_mobile=1')).toBe(true);
     expect(isMobileOptimizedBrowserUrl('https://www.qidian.com/book')).toBe(false);
+  });
+
+  it('disables embedded webviews in normal production bundles', () => {
+    expect(isEmbeddedBrowserEnabled({ DEV: true })).toBe(true);
+    expect(isEmbeddedBrowserEnabled({ DEV: false })).toBe(false);
+    expect(isEmbeddedBrowserEnabled({ DEV: false, VITE_ENABLE_EMBEDDED_BROWSER: '1' })).toBe(true);
+  });
+
+  it('does not expose the full Vite env object to production bundles', () => {
+    const source = readSource('src/shared/browser/browserUrl.ts');
+
+    expect(source).not.toContain('return import.meta.env;');
+    expect(source).toContain('DEV: import.meta.env.DEV');
+    expect(source).toContain('VITE_ENABLE_EMBEDDED_BROWSER: import.meta.env.VITE_ENABLE_EMBEDDED_BROWSER');
   });
 });

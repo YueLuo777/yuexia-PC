@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import {
   INTERNAL_ROUTE_PATHS,
   areInternalRoutesEnabled,
+  areInternalRouteModulesBundled,
   filterInternalRouteItems,
   isInternalRoutePath,
 } from './internalRoutes';
@@ -23,9 +24,19 @@ describe('internal route feature gate', () => {
     expect(areInternalRoutesEnabled({ DEV: true }, createStorage(false))).toBe(true);
   });
 
-  it('hides internal pages in production unless explicitly enabled', () => {
+  it('hides internal pages in production unless the bundle explicitly includes them', () => {
     expect(areInternalRoutesEnabled({ DEV: false }, createStorage(false))).toBe(false);
-    expect(areInternalRoutesEnabled({ DEV: false }, createStorage(true))).toBe(true);
+    expect(areInternalRoutesEnabled({ DEV: false }, createStorage(true))).toBe(false);
+    expect(areInternalRoutesEnabled({ DEV: false, VITE_INCLUDE_INTERNAL_ROUTES: '1' }, createStorage(true))).toBe(true);
+  });
+
+  it('keeps internal route modules out of normal production bundles', () => {
+    expect(areInternalRouteModulesBundled({ DEV: true })).toBe(true);
+    expect(areInternalRouteModulesBundled({ DEV: false })).toBe(false);
+    expect(areInternalRouteModulesBundled({ DEV: false, VITE_INCLUDE_INTERNAL_ROUTES: '1' })).toBe(true);
+
+    expect(areInternalRoutesEnabled({ DEV: false }, createStorage(true))).toBe(false);
+    expect(areInternalRoutesEnabled({ DEV: false, VITE_INCLUDE_INTERNAL_ROUTES: '1' }, createStorage(true))).toBe(true);
   });
 
   it('filters test and diagnostics navigation items behind the same gate', () => {
@@ -42,11 +53,16 @@ describe('internal route feature gate', () => {
     const appSource = readSource('../../app/App.tsx');
     const layoutSource = readSource('../layout/DashboardLayout.tsx');
 
-    expect(gateSource).toContain('return import.meta.env.DEV === true;');
+    expect(gateSource).toContain("env.DEV === true || env.VITE_INCLUDE_INTERNAL_ROUTES === '1'");
+    expect(gateSource).not.toContain('return import.meta.env;');
     expect(gateSource).not.toContain('= import.meta.env');
     expect(appSource).toContain("import { areInternalRoutesEnabled } from '@/shared/featureFlags/internalRoutes';");
     expect(appSource).toContain('const showInternalRoutes = areInternalRoutesEnabled();');
-    expect(appSource).toContain('{showInternalRoutes && (');
+    expect(appSource).not.toContain("@/features/tests/pages/TestCollectionPage");
+    expect(appSource).not.toContain("@/features/tests/pages/SoftwareUiCatalogPage");
+    expect(appSource).not.toContain("@/features/tests/pages/ErrorLogPage");
+    expect(appSource).toContain("import('@/app/InternalRoutesPage')");
+    expect(appSource).toContain('{showInternalRoutes && InternalRoutesPage && (');
     expect(layoutSource).toContain("import { filterInternalRouteItems } from '@/shared/featureFlags/internalRoutes';");
     expect(layoutSource).toContain('const visiblePublicNavItems = filterInternalRouteItems(visibleNavItems);');
   });

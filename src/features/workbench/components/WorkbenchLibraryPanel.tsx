@@ -115,6 +115,7 @@ import {
   WorkbenchLibraryTopTabs,
   getWorkbenchLibraryActiveFontConfig,
 } from './workbenchLibraryHeaderTools';
+import { useWorkbenchLibraryAiLogTriggers } from './workbenchLibraryAiLogTriggers';
 import { useWorkbenchLibraryResizeHandles } from './workbenchLibraryResizeHandles';
 import {
   BrainstormGenerateConfirmModal,
@@ -745,12 +746,6 @@ export function WorkbenchLibraryPanel({
     lastFieldSizeOpenSignalRef.current = fieldSizeOpenSignal;
     setIsFieldSizeSettingsOpen(true);
   }, [fieldSizeOpenSignal]);
-
-  useEffect(() => {
-    if (openLogSignal <= 0 || openLogSignal === lastOpenLogSignalRef.current) return;
-    lastOpenLogSignalRef.current = openLogSignal;
-    openLibraryAiLog(activeTab === SETTING_TAB || activeTab === ROLE_TAB || activeTab === BRAINSTORM_TAB ? 'library' : 'outline');
-  }, [activeTab, openLogSignal]);
 
   useEffect(() => {
     if (openPlotPointSignal <= 0 || activeTab !== DETAIL_OUTLINE_TAB || plotPointStandalone) return;
@@ -3743,12 +3738,13 @@ export function WorkbenchLibraryPanel({
     setLibraryAiLogScope(scope);
     setIsLibraryAiLogOpen(true);
   }, []);
-  useEffect(() => {
-    if (!onRegisterHeaderLog) return;
-    const scope = activeTab === SETTING_TAB || activeTab === ROLE_TAB || activeTab === BRAINSTORM_TAB ? 'library' : 'outline';
-    onRegisterHeaderLog(() => openLibraryAiLog(scope));
-    return () => onRegisterHeaderLog(null);
-  }, [activeTab, onRegisterHeaderLog, openLibraryAiLog]);
+  useWorkbenchLibraryAiLogTriggers({
+    activeTab,
+    openLogSignal,
+    lastOpenLogSignalRef,
+    onRegisterHeaderLog,
+    openLibraryAiLog,
+  });
   const renderLibraryAiLogButton = (
     scope: 'library' | 'outline',
     className = 'h-9 shrink-0 rounded-xl border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 shadow-sm hover:border-brand hover:text-brand',
