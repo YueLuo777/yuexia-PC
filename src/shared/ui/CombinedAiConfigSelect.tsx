@@ -25,8 +25,12 @@ type CombinedAiConfigSelectProps = {
 type OpenSegment = 'model' | 'prompt' | null;
 type HoverTooltip = { text: string; x: number; y: number } | null;
 
+function getDisplayOption(value: string, options: CapsuleSelectOption[]) {
+  return options.find((option) => option.value === value) ?? options[0] ?? null;
+}
+
 function getDisplayLabel(value: string, options: CapsuleSelectOption[], placeholder: string) {
-  return options.find((option) => option.value === value)?.label || options[0]?.label || placeholder;
+  return getDisplayOption(value, options)?.label || placeholder;
 }
 
 export function CombinedAiConfigSelect({
@@ -52,8 +56,11 @@ export function CombinedAiConfigSelect({
   const [hoverTooltip, setHoverTooltip] = useState<HoverTooltip>(null);
   const activeOptions = openSegment === 'model' ? modelOptions : promptOptions;
   const activeValue = openSegment === 'model' ? modelValue : promptValue;
+  const activeDisplayValue = getDisplayOption(activeValue, activeOptions)?.value ?? '';
   const modelDisplay = getDisplayLabel(modelValue, modelOptions, '暂无可用模型');
   const promptDisplay = promptDisabled ? promptDisabledLabel : getDisplayLabel(promptValue, promptOptions, `暂无${promptLabel}`);
+  const isModelOpen = openSegment === 'model';
+  const isPromptOpen = openSegment === 'prompt' && !promptDisabled;
 
   useEffect(() => {
     if (!openSegment) return;
@@ -99,12 +106,12 @@ export function CombinedAiConfigSelect({
     if (!openSegment || (openSegment === 'prompt' && promptDisabled)) return null;
     return (
       <div
-        className={`absolute top-full z-[10050] max-h-[240px] overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-2xl ${
-          openSegment === 'model' ? 'left-0 w-1/2' : 'right-0 w-1/2'
+        className={`absolute top-[calc(100%-2px)] z-[10050] max-h-[240px] overflow-y-auto border-2 border-t-0 border-[#08AACE] bg-white py-1 shadow-[0_18px_34px_rgba(8,170,206,0.14)] ${
+          openSegment === 'model' ? 'left-0 w-1/2 rounded-bl-xl rounded-br-none' : 'right-0 w-1/2 rounded-bl-none rounded-br-xl'
         }`}
       >
         {activeOptions.map((option) => {
-          const selected = option.value === activeValue;
+          const selected = !option.disabled && option.value === activeDisplayValue;
           return (
             <button
               key={option.value}
@@ -149,7 +156,9 @@ export function CombinedAiConfigSelect({
               hideHoverTooltip();
               setOpenSegment((current) => (current === 'model' ? null : 'model'));
             }}
-            className="grid h-full w-full min-w-0 grid-cols-[minmax(0,1fr)_24px] items-center rounded-l-[10px] text-left transition-colors hover:bg-[#EAF9FD]"
+            className={`grid h-full w-full min-w-0 grid-cols-[minmax(0,1fr)_24px] items-center text-left transition-colors hover:bg-[#EAF9FD] ${
+              isModelOpen ? 'rounded-tl-[10px] rounded-bl-none' : 'rounded-l-[10px]'
+            }`}
           >
             <span className="min-w-0 truncate pl-4 pr-1 text-sm font-black text-slate-800">{modelDisplay}</span>
             <ChevronDown className={`h-4 w-4 text-[#08AACE] transition-transform ${openSegment === 'model' ? 'rotate-180' : ''}`} />
@@ -185,7 +194,9 @@ export function CombinedAiConfigSelect({
               if (promptDisabled) return;
               setOpenSegment((current) => (current === 'prompt' ? null : 'prompt'));
             }}
-            className={`grid h-full w-full min-w-0 grid-cols-[minmax(0,1fr)_24px] items-center rounded-r-[10px] text-left transition-colors ${
+            className={`grid h-full w-full min-w-0 grid-cols-[minmax(0,1fr)_24px] items-center text-left transition-colors ${
+              isPromptOpen ? 'rounded-tr-[10px] rounded-br-none' : 'rounded-r-[10px]'
+            } ${
               promptDisabled ? 'cursor-default bg-slate-50 text-slate-400' : 'hover:bg-[#EAF9FD]'
             }`}
           >

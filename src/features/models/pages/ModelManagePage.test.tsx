@@ -36,4 +36,52 @@ describe('ModelManagePage drag sorting', () => {
     expect(source).not.toContain('targetIndex === pointerDrag.sourceIndex');
     expect(source).not.toContain('setDragOverIndex(index);');
   });
+
+  it('keeps the embedded management modal header compact and hides failure logs there', () => {
+    const source = readSource('ModelManagePage.tsx');
+    const workbenchPageSource = readSource('../../workbench/pages/WorkbenchPage.tsx');
+    const libraryModalSource = readSource('../../workbench/components/workbenchLibraryManagementModal.tsx');
+    const chapterEditorSource = readSource('../../workbench/components/ChapterEditor.tsx');
+
+    expect(source).toContain('type ModelManagePageProps');
+    expect(source).toContain('embedded = false');
+    expect(source).toContain('模型 {enabledCount} 个');
+    expect(source).toContain('{onClose ? (');
+    expect(source).toContain('data-no-modal-drag="true"');
+    expect(source).toContain('{!embedded && (');
+    expect(source).toContain('className={`model-failure-panel');
+
+    expect(workbenchPageSource).toContain('<ModelManagePage embedded onClose={onClose} headerDragHandleProps={draggable.dragHandleProps} />');
+    expect(libraryModalSource).toContain('<ModelManagePage embedded onClose={onClose} headerDragHandleProps={draggable.dragHandleProps} />');
+    expect(chapterEditorSource).toContain('<ModelManagePage embedded onClose={() => setReviewManagementModal(null)} />');
+  });
+
+  it('uses a four-column and three-visible-row friendly model card grid', () => {
+    const source = readSource('ModelManagePage.tsx');
+
+    expect(source).toContain('const MODEL_MANAGE_COLUMNS: ModelCardsPerRow = 4;');
+    expect(source).toContain("const MODEL_CARD_HEIGHT_CLASS = 'h-[250px]';");
+    expect(source).toContain('return MODEL_MANAGE_COLUMNS;');
+    expect(source).toContain('style={{ gridTemplateColumns: `repeat(${cardsPerRow}, minmax(0, 1fr))` }}');
+    expect(source).toContain('每行 {value} 个');
+    expect(source).toContain('一列约 3 个');
+    expect(source).toContain('top-[80px] w-10');
+    expect(source).not.toContain("return parsed.cardsPerRow === 4 ? 4 : 3;");
+    expect(source).not.toContain("min-h-[296px]");
+    expect(source).not.toContain("([3, 4] as const)");
+  });
+
+  it('uses the large shared workbench management modal size for model and prompt managers', () => {
+    const workbenchPageSource = readSource('../../workbench/pages/WorkbenchPage.tsx');
+    const libraryModalSource = readSource('../../workbench/components/workbenchLibraryManagementModal.tsx');
+    const chapterEditorSource = readSource('../../workbench/components/ChapterEditor.tsx');
+    const sizeSource = readSource('../../workbench/components/workbenchManagementModalSize.ts');
+
+    expect(sizeSource).toContain("WORKBENCH_MANAGEMENT_MODAL_SIZE_CLASS = 'h-[min(1040px,88vh)] w-[min(1500px,94vw)]'");
+    expect(workbenchPageSource).toContain('WORKBENCH_MANAGEMENT_MODAL_SIZE_CLASS');
+    expect(libraryModalSource).toContain('WORKBENCH_MANAGEMENT_MODAL_SIZE_CLASS');
+    expect(chapterEditorSource).toContain('WORKBENCH_MANAGEMENT_MODAL_SIZE_CLASS');
+    expect(libraryModalSource).not.toContain('w-[min(1200px,94vw)]');
+    expect(`${workbenchPageSource}\n${libraryModalSource}\n${chapterEditorSource}`).not.toContain('h-[min(820px,88vh)] w-[min(1500px,94vw)]');
+  });
 });

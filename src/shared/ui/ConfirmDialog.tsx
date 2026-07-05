@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
+import { ActionButton } from '@/shared/ui/ActionButton';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 
 interface ConfirmDialogProps {
@@ -41,12 +42,7 @@ export function ConfirmDialog({
         ? 'bg-amber-50 text-amber-500'
         : 'bg-red-50 text-red-500';
 
-  const confirmClass =
-    confirmVariant === 'primary'
-      ? 'bg-brand text-white hover:bg-brand-dark'
-      : confirmVariant === 'warning'
-        ? 'bg-amber-500 text-white hover:bg-amber-600'
-        : 'bg-red-500 text-white hover:bg-red-600';
+  const confirmButtonVariant = confirmVariant === 'primary' ? 'primary' : 'danger';
 
   const Icon = confirmVariant === 'danger' ? Trash2 : AlertTriangle;
 
@@ -57,7 +53,7 @@ export function ConfirmDialog({
       onClick={onClose}
     >
       <div
-        className="modal-sharp relative w-[460px] max-w-[92vw] rounded-[24px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
+        className="modal-sharp relative w-[460px] max-w-[92vw] rounded-xl bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
         data-draggable-managed="true"
         style={{ ...draggable.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
         onClick={(event) => event.stopPropagation()}
@@ -79,23 +75,20 @@ export function ConfirmDialog({
           <button
             onClick={onClose}
             data-no-modal-drag="true"
-            className="rounded-lg p-1.5 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-500"
+            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
         <div className="flex items-center justify-end gap-3 px-7 pb-7">
           {showCancel ? (
-            <button
-              onClick={onClose}
-              className="rounded-2xl border border-slate-200 bg-white px-6 py-3 text-base text-slate-600 transition-colors hover:bg-slate-50"
-            >
+            <ActionButton onClick={onClose} variant="secondary">
               {cancelText}
-            </button>
+            </ActionButton>
           ) : null}
-          <button onClick={onConfirm} className={`rounded-2xl px-6 py-3 text-base transition-colors ${confirmClass}`}>
+          <ActionButton onClick={onConfirm} variant={confirmButtonVariant}>
             {confirmText}
-          </button>
+          </ActionButton>
         </div>
         <ModalResizeHandles draggable={draggable} />
       </div>

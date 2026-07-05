@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState, type CSSProperties } from 'react';
 
 import { WordCountText } from '@/shared/ui/WordCountText';
 
@@ -77,6 +77,7 @@ export function AiRequestLogGroups({
   fillSingleGroup = false,
   fillGroupId,
   fillLastGroup = false,
+  fillGroupWeights,
   storageKey = AI_REQUEST_LOG_COLLAPSED_KEY,
 }: {
   groups: AiRequestLogGroup[];
@@ -84,6 +85,7 @@ export function AiRequestLogGroups({
   fillSingleGroup?: boolean;
   fillGroupId?: string;
   fillLastGroup?: boolean;
+  fillGroupWeights?: Record<string, number>;
   storageKey?: string;
 }) {
   const visibleGroups = useMemo(
@@ -119,7 +121,8 @@ export function AiRequestLogGroups({
   };
   const shouldFillSingleGroup = fillSingleGroup && visibleGroups.length === 1;
   const fillLastGroupIndex = fillLastGroup ? visibleGroups.length - 1 : -1;
-  const shouldUseFillLayout = shouldFillSingleGroup || Boolean(fillGroupId) || fillLastGroup;
+  const hasFillGroupWeights = Boolean(fillGroupWeights && Object.keys(fillGroupWeights).length > 0);
+  const shouldUseFillLayout = shouldFillSingleGroup || Boolean(fillGroupId) || fillLastGroup || hasFillGroupWeights;
 
   return (
     <div className={shouldUseFillLayout ? 'flex h-full min-h-0 flex-col gap-3' : 'space-y-3'}>
@@ -127,9 +130,18 @@ export function AiRequestLogGroups({
         const groupKey = getGroupStorageKey(group);
         const collapsed = collapsedIds.has(groupKey);
         const content = group.content?.trim() ?? '';
-        const shouldFillGroup = shouldFillSingleGroup || (fillGroupId === group.id && !collapsed) || (fillLastGroupIndex === groupIndex && !collapsed);
+        const fillGroupWeight = fillGroupWeights?.[group.id];
+        const shouldFillWeightedGroup = typeof fillGroupWeight === 'number' && fillGroupWeight > 0 && !collapsed;
+        const shouldFillGroup = shouldFillSingleGroup || (fillGroupId === group.id && !collapsed) || (fillLastGroupIndex === groupIndex && !collapsed) || shouldFillWeightedGroup;
+        const fillGroupStyle: CSSProperties | undefined = shouldFillWeightedGroup
+          ? { flexGrow: fillGroupWeight, flexBasis: 0, minHeight: 0 }
+          : undefined;
         return (
-          <section key={group.id} className={`overflow-hidden rounded-2xl border border-slate-200 bg-white ${shouldFillGroup ? 'flex min-h-0 flex-1 flex-col' : ''}`}>
+          <section
+            key={group.id}
+            style={fillGroupStyle}
+            className={`overflow-hidden rounded-2xl border border-slate-200 bg-white ${shouldFillGroup ? 'flex min-h-0 flex-1 flex-col' : ''}`}
+          >
             <button
               type="button"
               onClick={() => toggleGroup(groupKey)}

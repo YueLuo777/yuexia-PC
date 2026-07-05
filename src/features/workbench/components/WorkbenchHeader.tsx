@@ -1,5 +1,5 @@
 import { Settings } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 import type { WorkbenchCreationFlowPageKey, WorkbenchHeaderFlowItem } from '@/features/workbench/model/workbenchCreationFlow';
 
@@ -104,12 +104,18 @@ export function WorkbenchHeader({
         </div>
       </div>
       {hasRightTools ? (
-        <div className="absolute right-5 top-6 inline-flex -translate-y-1/2 items-center gap-2">
+        <div
+          data-no-modal-drag="true"
+          className="absolute right-5 top-6 z-30 inline-flex -translate-y-1/2 items-center gap-2"
+          style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
+        >
           {extraTools}
           {fieldSizeVisible ? (
             <button
               type="button"
+              data-no-modal-drag="true"
               onClick={onOpenFieldSize}
+              style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
               className="inline-flex h-8 items-center gap-2 rounded-md border border-[#dce1e8] bg-white px-3 text-sm font-medium text-[#586574] transition-colors hover:border-[#08AACE] hover:text-[#08AACE]"
               aria-label="设置"
             >
@@ -120,7 +126,9 @@ export function WorkbenchHeader({
           {logVisible ? (
             <button
               type="button"
+              data-no-modal-drag="true"
               onClick={onOpenLog}
+              style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
               className="h-8 rounded-md border border-[#dce1e8] bg-white px-3 text-sm font-medium text-[#586574] transition-colors hover:border-[#08AACE] hover:text-[#08AACE]"
             >
               日志

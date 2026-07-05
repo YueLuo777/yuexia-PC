@@ -1,8 +1,9 @@
-import { RefreshCw, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { RefreshCw, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
 import type { RecycledNovel, WorkType } from '@/features/novels/model/novelTypes';
-import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
+import { ActionButton } from '@/shared/ui/ActionButton';
+import { AppModalShell } from '@/shared/ui/AppModalShell';
 
 interface RecycleBinModalProps {
   isOpen: boolean;
@@ -15,7 +16,6 @@ interface RecycleBinModalProps {
 
 export function RecycleBinModal({ isOpen, type, items, onClose, onRestore, onPermanentDelete }: RecycleBinModalProps) {
   const [, forceRefresh] = useState(0);
-  useTopModalEscape(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -23,15 +23,15 @@ export function RecycleBinModal({ isOpen, type, items, onClose, onRestore, onPer
   const filtered = items.filter((item) => item.type === type);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="flex h-[520px] max-h-[80vh] w-[640px] max-w-[90vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
-          <div>
-            <h3 className="text-base font-bold text-gray-900">{typeLabel}回收站</h3>
-            <p className="mt-0.5 text-sm text-gray-400">删除后的作品会暂存在这里，确认无用后再彻底删除。</p>
-            <p className="mt-0.5 text-xs text-gray-400">总数：{filtered.length}</p>
-          </div>
-          <div className="flex items-center gap-2">
+    <AppModalShell
+      title={`${typeLabel}回收站`}
+      subtitle={`总数：${filtered.length}`}
+      isOpen={isOpen}
+      onClose={onClose}
+      widthClass="w-[640px]"
+      heightClass="h-[520px] max-h-[80vh]"
+      zIndexClass="z-50"
+      headerExtra={(
             <button
               onClick={() => forceRefresh((value) => value + 1)}
               className="flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-500 transition-colors hover:bg-gray-50"
@@ -39,10 +39,10 @@ export function RecycleBinModal({ isOpen, type, items, onClose, onRestore, onPer
               <RefreshCw className="h-3.5 w-3.5" />
               <span>刷新</span>
             </button>
-            <button onClick={onClose} className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+      )}
+    >
+        <div className="border-b border-gray-100 px-5 py-3 text-sm text-gray-400">
+          删除后的作品会暂存在这里，确认无用后再彻底删除。
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
@@ -63,10 +63,10 @@ export function RecycleBinModal({ isOpen, type, items, onClose, onRestore, onPer
                   <p className="mb-2 text-xs text-gray-400">{novel.synopsis || '暂无简介'}</p>
                   <p className="mb-3 text-xs text-gray-400">删除于 {novel.deletedAt}，到期 {novel.expireAt}</p>
                   <div className="flex items-center justify-end gap-3">
-                    <button onClick={() => onRestore(novel.id)} className="rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 transition-colors hover:bg-gray-50">
+                    <ActionButton onClick={() => onRestore(novel.id)} variant="secondary" size="sm">
                       恢复
-                    </button>
-                    <button onClick={() => onPermanentDelete(novel.id)} className="flex items-center gap-1 rounded-md border border-red-200 px-3 py-1.5 text-xs text-red-500 transition-colors hover:bg-red-50">
+                    </ActionButton>
+                    <button onClick={() => onPermanentDelete(novel.id)} className="flex h-8 min-w-[88px] items-center justify-center gap-1 rounded-md border border-red-200 px-3 text-sm leading-none text-red-500 transition-colors hover:bg-red-50">
                       <Trash2 className="h-3 w-3" />
                       <span>彻底删除</span>
                     </button>
@@ -76,7 +76,6 @@ export function RecycleBinModal({ isOpen, type, items, onClose, onRestore, onPer
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </AppModalShell>
   );
 }

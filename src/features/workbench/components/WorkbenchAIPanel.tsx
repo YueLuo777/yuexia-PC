@@ -22,8 +22,8 @@ import {
 } from '@/shared/ai/backgroundAiTasks';
 import { APP_EVENTS } from '@/shared/events/appEvents';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
-import { AiRequestLogGroups } from '@/shared/ui/AiRequestLogGroups';
 import { AiInlineInput } from '@/shared/ui/AiInlineInput';
+import { AiRequestLogModalLayout } from '@/shared/ui/AiRequestLogModalLayout';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
@@ -103,6 +103,7 @@ interface WorkbenchAIPanelProps {
   onOpenContextLibrary?: () => void;
   onClearLinkedContext?: () => void;
   openLogSignal?: number;
+  onRegisterHeaderLog?: (handler: (() => void) | null) => void;
 }
 
 function readConfig() {
@@ -228,6 +229,15 @@ function buildAiRequestLog({
   };
 }
 
+function getBodyAiLogFillGroupWeights(log: WorkbenchAiRequestLog): Record<string, number> {
+  const hasContext = Boolean(log.contextText.trim());
+  const hasUser = Boolean(log.visibleUserContent.trim());
+  if (hasContext && hasUser) return { prompt: 1, context: 2, user: 1 };
+  if (hasContext) return { prompt: 1, context: 2 };
+  if (hasUser) return { prompt: 2, user: 1 };
+  return { prompt: 1 };
+}
+
 async function buildAutoRagContext(userInput: string, chapterContext: string) {
   const state = readMoonfallState();
   if (!state.config.autoRag) return '';
@@ -351,6 +361,7 @@ export function WorkbenchAIPanel({
   onOpenContextLibrary,
   onClearLinkedContext,
   openLogSignal = 0,
+  onRegisterHeaderLog,
 }: WorkbenchAIPanelProps) {
   const storageKey = `xinyuexia_workbench_ai_sessions_${workId}`;
   const initialAiState = useMemo(() => readStoredAiState(storageKey), [storageKey]);
@@ -416,6 +427,12 @@ export function WorkbenchAIPanel({
     lastOpenLogSignalRef.current = openLogSignal;
     setIsRequestLogOpen(true);
   }, [openLogSignal]);
+
+  useEffect(() => {
+    if (!onRegisterHeaderLog) return;
+    onRegisterHeaderLog(() => setIsRequestLogOpen(true));
+    return () => onRegisterHeaderLog(null);
+  }, [onRegisterHeaderLog]);
 
   useEffect(() => {
     const updateTarget = () => setHeaderToolPortalTarget(document.getElementById('workbench-header-extra-tools'));
@@ -1066,56 +1083,42 @@ export function WorkbenchAIPanel({
           heightClass="h-[min(820px,88vh)]"
           closeOnBackdrop={false}
         >
-            <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] overflow-hidden">
-              <aside className="border-r border-slate-100 bg-slate-50 p-4 text-sm">
-                <div className="space-y-3">
-                  <div className="rounded-xl bg-white p-3">
-                    <div className="text-xs text-slate-400">链路</div>
-                    <div className="mt-1 font-bold text-slate-800">作品编辑器 AI</div>
-                  </div>
-                  <div className="rounded-xl bg-white p-3">
-                    <div className="text-xs text-slate-400">模型</div>
-                    <div className="mt-1 font-bold text-slate-800">{visibleRequestLog.modelName}</div>
-                  </div>
-                  <div className="rounded-xl bg-white p-3">
-                    <div className="text-xs text-slate-400">提示词</div>
-                    <div className="mt-1 font-bold text-slate-800">{visibleRequestLog.promptName}</div>
-                  </div>
-                  {visibleRequestLog.contextText.trim() && (
-                    <>
-                      <div className="rounded-xl bg-white p-3">
-                        <div className="text-xs text-slate-400">资料来源</div>
-                        <div className="mt-1 font-bold text-brand">
-                          {visibleRequestLog.linkedItems.length > 0
-                            ? `关联资料 · ${visibleRequestLog.linkedItems.length}项`
-                            : `${chapterContextLabel}内容`}
-                        </div>
-                      </div>
-                      <div className="rounded-xl bg-white p-3">
-                        <div className="text-xs text-slate-400">资料字数</div>
-                        <div className="mt-1 font-bold"><WordCountText value={visibleRequestLog.contextWordCount} /></div>
-                      </div>
-                    </>
-                  )}
-                  {visibleRequestLog.visibleUserContent.trim() && (
-                    <div className="rounded-xl bg-white p-3">
-                      <div className="text-xs text-slate-400">用户可见输入</div>
-                      <div className="mt-1 break-words font-bold text-slate-800">{visibleRequestLog.visibleUserContent}</div>
-                    </div>
-                  )}
-                </div>
-              </aside>
-              <div className="editor-scrollbar flex min-h-0 flex-1 flex-col overflow-hidden p-5">
-                <AiRequestLogGroups
-                  groups={[
-                    { id: 'prompt', title: '提示词', meta: `${getTextWordCount(visibleRequestLog.systemPrompt)} 字`, content: visibleRequestLog.systemPrompt },
-                    { id: 'context', title: '资料', meta: `${visibleRequestLog.contextWordCount} 字`, content: visibleRequestLog.contextText, tone: 'cyan' },
-                    { id: 'user', title: '用户要求', meta: `${getTextWordCount(visibleRequestLog.userContent)} 字`, content: visibleRequestLog.userContent, tone: 'amber' },
-                  ]}
-                  fillGroupId="context"
-                />
-              </div>
-            </div>
+          <AiRequestLogModalLayout
+            metaItems={[
+              { id: 'chain', label: '链路', value: '作品编辑器 AI' },
+              { id: 'model', label: '模型', value: visibleRequestLog.modelName },
+              { id: 'prompt', label: '提示词', value: visibleRequestLog.promptName },
+              {
+                id: 'context-source',
+                label: '资料来源',
+                value: visibleRequestLog.linkedItems.length > 0
+                  ? `关联资料 · ${visibleRequestLog.linkedItems.length}项`
+                  : `${chapterContextLabel}内容`,
+                valueClassName: 'text-brand',
+                hidden: !visibleRequestLog.contextText.trim(),
+              },
+              {
+                id: 'context-words',
+                label: '资料字数',
+                value: <WordCountText value={visibleRequestLog.contextWordCount} />,
+                hidden: !visibleRequestLog.contextText.trim(),
+              },
+              {
+                id: 'user',
+                label: '用户可见输入',
+                value: visibleRequestLog.visibleUserContent,
+                hidden: !visibleRequestLog.visibleUserContent.trim(),
+              },
+            ]}
+            groups={[
+              { id: 'prompt', title: '提示词', meta: `${getTextWordCount(visibleRequestLog.systemPrompt)} 字`, content: visibleRequestLog.systemPrompt },
+              { id: 'context', title: '资料', meta: `${visibleRequestLog.contextWordCount} 字`, content: visibleRequestLog.contextText, tone: 'cyan' },
+              { id: 'user', title: '用户要求', meta: `${getTextWordCount(visibleRequestLog.userContent)} 字`, content: visibleRequestLog.visibleUserContent.trim() ? visibleRequestLog.userContent : '', tone: 'amber' },
+            ]}
+            fillSingleGroup
+            fillGroupWeights={getBodyAiLogFillGroupWeights(visibleRequestLog)}
+            storageKey="workbench_ai_request_log_groups"
+          />
         </WorkbenchModal>
       )}
       <ConfirmDialog

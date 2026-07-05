@@ -37,6 +37,8 @@ function getInlineActionShape(buttonClassName: string) {
       arrowWidth: 'w-6',
       actionWidth: 'w-10',
       actionPadding: 'pr-10',
+      connectedControlRadius: 'rounded-t-[22px] rounded-b-none',
+      connectedDropdownRadius: 'rounded-b-[22px]',
     };
   }
   if (/\bh-\[42px\]\b/.test(buttonClassName)) {
@@ -48,6 +50,8 @@ function getInlineActionShape(buttonClassName: string) {
       arrowWidth: 'w-6',
       actionWidth: 'w-10',
       actionPadding: 'pr-10',
+      connectedControlRadius: 'rounded-t-[23px] rounded-b-none',
+      connectedDropdownRadius: 'rounded-b-[23px]',
     };
   }
   if (/\bh-11\b/.test(buttonClassName)) {
@@ -59,6 +63,8 @@ function getInlineActionShape(buttonClassName: string) {
       arrowWidth: 'w-6',
       actionWidth: 'w-11',
       actionPadding: 'pr-11',
+      connectedControlRadius: 'rounded-t-[26px] rounded-b-none',
+      connectedDropdownRadius: 'rounded-b-[26px]',
     };
   }
   if (/\bh-12\b/.test(buttonClassName)) {
@@ -70,6 +76,8 @@ function getInlineActionShape(buttonClassName: string) {
       arrowWidth: 'w-7',
       actionWidth: 'w-11',
       actionPadding: 'pr-11',
+      connectedControlRadius: 'rounded-t-[28px] rounded-b-none',
+      connectedDropdownRadius: 'rounded-b-[28px]',
     };
   }
   return {
@@ -80,6 +88,8 @@ function getInlineActionShape(buttonClassName: string) {
     arrowWidth: 'w-6',
     actionWidth: 'w-10',
     actionPadding: 'pr-10',
+    connectedControlRadius: 'rounded-t-[24px] rounded-b-none',
+    connectedDropdownRadius: 'rounded-b-[24px]',
   };
 }
 
@@ -109,12 +119,15 @@ export function CapsuleSelect({
   const [open, setOpen] = useState(false);
   const [dropdownRect, setDropdownRect] = useState({ left: 0, top: 0, width: 240, fixed: true });
   const current = options.find((option) => option.value === value);
-  const displayLabel = disabled && disabledLabel ? disabledLabel : current?.label || options[0]?.label || placeholder;
-  const visibleOptions = current ? [current, ...options.filter((option) => option.value !== current.value)] : options;
+  const displayedOption = current ?? options[0] ?? null;
+  const displayedValue = displayedOption?.value ?? '';
+  const displayLabel = disabled && disabledLabel ? disabledLabel : displayedOption?.label || placeholder;
+  const visibleOptions = displayedOption ? [displayedOption, ...options.filter((option) => option.value !== displayedOption.value)] : options;
   const hasInlineActions = Boolean(actionLabel);
   const hasDisableToggle = Boolean(onDisableToggle);
   const shouldRenderLocalDropdown = hasInlineActions || Boolean(floatingLabel);
   const inlineActionShape = getInlineActionShape(buttonClassName);
+  const connectedDropdownOpen = open && !disabled && shouldRenderLocalDropdown;
   const disableToggleTitle = disableToggleLabel ?? (disableToggleActive ? '启用提示词' : '禁用提示词');
 
   const updateDropdownRect = () => {
@@ -173,7 +186,7 @@ export function CapsuleSelect({
   const dropdownMenu = open && !disabled ? (
     <div
       ref={dropdownRef}
-      className={`${shouldRenderLocalDropdown ? 'absolute left-0 right-0 top-full' : dropdownRect.fixed ? 'fixed' : 'absolute'} z-[10050] max-h-[240px] overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-2xl`}
+      className={`${shouldRenderLocalDropdown ? `absolute left-0 right-0 top-[calc(100%-2px)] ${inlineActionShape.connectedDropdownRadius} border-2 border-t-0 border-[#08AACE] shadow-[0_18px_34px_rgba(8,170,206,0.14)]` : `${dropdownRect.fixed ? 'fixed' : 'absolute'} rounded-xl border border-slate-200 shadow-2xl`} z-[10050] max-h-[240px] overflow-y-auto bg-white py-1`}
       style={shouldRenderLocalDropdown ? undefined : {
         left: dropdownRect.left,
         top: dropdownRect.top,
@@ -181,7 +194,7 @@ export function CapsuleSelect({
       }}
     >
       {visibleOptions.map((option) => {
-        const selected = value === option.value;
+        const selected = !option.disabled && displayedValue === option.value;
         return (
           <button
             key={option.value}
@@ -218,7 +231,7 @@ export function CapsuleSelect({
           }}
           className={`relative min-w-0 border-2 bg-white p-0 shadow-[0_8px_18px_rgba(8,170,206,0.08)] ${inlineActionShape.controlHeight} ${inlineActionShape.controlRadius} ${
             disabled ? 'border-slate-200 bg-slate-100 text-slate-400' : 'border-[#08AACE] text-slate-900'
-          }`}
+          } ${connectedDropdownOpen ? `${inlineActionShape.connectedControlRadius} border-b-transparent` : ''}`}
         >
           {floatingLabel && (
             <span className={`pointer-events-none absolute left-5 top-0 z-20 max-w-[128px] -translate-y-1/2 px-1 text-[12px] font-black leading-none text-slate-800 ${disabled ? 'bg-slate-100' : 'bg-white'}`}>
@@ -291,7 +304,7 @@ export function CapsuleSelect({
           data-capsule-control="true"
           className={`relative min-w-0 border-2 bg-white p-0 text-slate-900 shadow-[0_8px_18px_rgba(8,170,206,0.08)] ${inlineActionShape.controlHeight} ${inlineActionShape.controlRadius} ${
             disabled ? 'border-slate-200 bg-white text-slate-400' : 'border-[#08AACE]'
-          }`}
+          } ${connectedDropdownOpen ? `${inlineActionShape.connectedControlRadius} border-b-transparent` : ''}`}
         >
           <span className={`pointer-events-none absolute left-5 top-0 z-20 max-w-[128px] -translate-y-1/2 px-1 text-[12px] font-black leading-none text-slate-800 ${disabled ? 'bg-white' : 'bg-white'}`}>
             {floatingLabel}

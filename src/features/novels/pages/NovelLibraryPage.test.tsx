@@ -106,6 +106,19 @@ describe('NovelLibraryPage summary cards', () => {
 });
 
 describe('NovelLibraryPage import flow', () => {
+  it('uses the shared modal shell for create, import, and recycle dialogs', () => {
+    const newNovelModalSource = readSource('../components/NewNovelModal.tsx');
+    const importModalSource = readSource('../components/ImportModal.tsx');
+    const recycleModalSource = readSource('../components/RecycleBinModal.tsx');
+    const combinedSource = `${newNovelModalSource}\n${importModalSource}\n${recycleModalSource}`;
+
+    expect(newNovelModalSource).toContain("import { AppModalShell } from '@/shared/ui/AppModalShell';");
+    expect(importModalSource).toContain("import { AppModalShell } from '@/shared/ui/AppModalShell';");
+    expect(recycleModalSource).toContain("import { AppModalShell } from '@/shared/ui/AppModalShell';");
+    expect(combinedSource).toContain("import { ActionButton } from '@/shared/ui/ActionButton';");
+    expect(combinedSource).not.toContain('fixed inset-0 z-50 flex items-center justify-center');
+  });
+
   it('uses the page library state when importing so the new work appears immediately', () => {
     const pageSource = readSource('NovelLibraryPage.tsx');
     const modalSource = readSource('../components/ImportModal.tsx');

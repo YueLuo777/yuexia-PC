@@ -1,9 +1,10 @@
 import { useRef, useState, type ChangeEvent } from 'react';
-import { BookOpen, CheckCircle, Loader2, RotateCcw, Sparkles, Upload, X } from 'lucide-react';
+import { BookOpen, CheckCircle, Loader2, RotateCcw, Sparkles, Upload } from 'lucide-react';
 
 import type { ImportedChapterInput } from '@/features/novels/hooks/useNovelLibrary';
 import type { NewNovelInput, WorkType } from '@/features/novels/model/novelTypes';
-import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
+import { ActionButton } from '@/shared/ui/ActionButton';
+import { AppModalShell } from '@/shared/ui/AppModalShell';
 
 type ImportMode = 'smart' | 'local';
 
@@ -123,7 +124,6 @@ function convertToImportedChapters(result: SmartImportResult, mode: ImportMode, 
 }
 
 export function ImportModal({ isOpen, onClose, onImport, defaultType = 'novel' }: ImportModalProps) {
-  useTopModalEscape(isOpen, onClose);
   const [importMode, setImportMode] = useState<ImportMode>('smart');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -213,14 +213,15 @@ export function ImportModal({ isOpen, onClose, onImport, defaultType = 'novel' }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="flex w-[720px] max-w-[92vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-          <h2 className="text-base font-bold text-gray-900">导入作品</h2>
-          <button onClick={resetAndClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+    <AppModalShell
+      title="导入作品"
+      isOpen={isOpen}
+      onClose={resetAndClose}
+      widthClass="w-[720px]"
+      heightClass=""
+      zIndexClass="z-50"
+      contentClassName="flex min-h-0 flex-col overflow-hidden"
+    >
 
         <div className="flex border-b border-gray-100">
           <button
@@ -370,18 +371,18 @@ export function ImportModal({ isOpen, onClose, onImport, defaultType = 'novel' }
         </div>
 
         <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50/50 px-5 py-3">
-          <button onClick={resetAndClose} className="rounded-md border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-white">
+          <ActionButton onClick={resetAndClose} variant="secondary" size="sm" className="hover:bg-white">
             取消
-          </button>
-          <button
+          </ActionButton>
+          <ActionButton
             onClick={handleImport}
             disabled={!selectedFile || !parsedResult || isParsing}
-            className="rounded-md bg-brand px-5 py-2 text-sm text-white hover:bg-brand-dark disabled:bg-gray-300"
+            size="sm"
+            className="px-5"
           >
             {importMode === 'smart' ? '智能导入并创建作品' : '开始导入'}
-          </button>
+          </ActionButton>
         </div>
-      </div>
-    </div>
+    </AppModalShell>
   );
 }

@@ -17,13 +17,14 @@ import {
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
+import { PRIMARY_TEXT_BUTTON_CLASS, SHORTCUT_KEY_TEXT_BUTTON_CLASS } from '@/shared/ui/actionButtonClasses';
 
 const SETTINGS_PAGE_BACK_BUTTON_CLASS =
   'flex h-9 w-9 items-center justify-center rounded-lg border transition-colors border-brand/20 bg-white text-brand hover:bg-brand-light';
 const SETTINGS_LIGHT_BUTTON_CLASS =
-  'flex h-8 min-w-[88px] items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-4 text-sm leading-none text-white transition-colors hover:bg-[#0798b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2] disabled:cursor-not-allowed disabled:bg-slate-300';
+  PRIMARY_TEXT_BUTTON_CLASS;
 const SHORTCUT_KEY_BUTTON_CLASS =
-  'flex h-8 min-w-[106px] items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-3 font-mono text-sm font-bold leading-none text-white transition-colors hover:bg-[#0798b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]';
+  SHORTCUT_KEY_TEXT_BUTTON_CLASS;
 const SETTINGS_PAGE_SHELL_CLASS =
   'mx-auto flex h-full w-full max-w-[1180px] flex-col overflow-hidden';
 

@@ -64,11 +64,14 @@ describe('dashboard unified settings page', () => {
     const navSettings = readSource('src/shared/navigation/NavSettingsModal.tsx');
     const themeSettings = readSource('src/features/tests/pages/DarkThemeColorPage.tsx');
     const electronMain = readSource('electron/main.cjs');
+    const sharedButtonClasses = readSource('src/shared/ui/actionButtonClasses.ts');
 
     expect(systemSettings).toContain("type SettingsTab = 'window' | 'association' | 'appIcon'");
     expect(systemSettings).toContain('window.xinyuexiaWindow.updateSettings');
-    expect(systemSettings).toContain("'bg-[#08AACE] text-white shadow-sm'");
-    expect(systemSettings).toContain("hover:bg-[#E7F8FD] hover:text-[#08AACE]");
+    expect(systemSettings).toContain("import { PRIMARY_TEXT_BUTTON_CLASS } from '@/shared/ui/actionButtonClasses';");
+    expect(systemSettings).toContain('PRIMARY_TEXT_BUTTON_CLASS');
+    expect(sharedButtonClasses).toContain('bg-[#08AACE]');
+    expect(sharedButtonClasses).toContain('hover:bg-[#0798b8]');
     expect(electronMain).toContain("ipcMain.handle('window-settings:update'");
     expect(electronMain).toContain('if (!readWindowSettings().rememberSize) return null;');
 
@@ -84,10 +87,13 @@ describe('dashboard unified settings page', () => {
       readSource('src/shared/navigation/NavSettingsModal.tsx'),
       readSource('src/features/tests/pages/DarkThemeColorPage.tsx'),
     ].join('\n');
+    const sharedButtonClasses = readSource('src/shared/ui/actionButtonClasses.ts');
 
-    expect(sources).toContain('rounded-md bg-[#08AACE]');
-    expect(sources).toContain('hover:bg-[#0798b8]');
-    expect(sources).toContain('text-white');
+    expect(sources).toContain("import { PRIMARY_TEXT_BUTTON_CLASS } from '@/shared/ui/actionButtonClasses';");
+    expect(sources).toContain('PRIMARY_TEXT_BUTTON_CLASS');
+    expect(sharedButtonClasses).toContain('rounded-md bg-[#08AACE]');
+    expect(sharedButtonClasses).toContain('hover:bg-[#0798b8]');
+    expect(sharedButtonClasses).toContain('text-white');
     expect(sources).toContain('SETTINGS_INLINE_BUTTON_CLASS');
     expect(sources).toContain('添加颜色');
     expect(sources).toContain('使用中');
@@ -100,6 +106,7 @@ describe('dashboard unified settings page', () => {
   it('keeps shortcut settings dense with header reset and solid cyan shortcut keys', () => {
     const settingsPage = readSource('src/shared/settings/SettingsPage.tsx');
     const shortcutSettings = readSource('src/shared/shortcuts/ShortcutSettingsModal.tsx');
+    const sharedButtonClasses = readSource('src/shared/ui/actionButtonClasses.ts');
 
     expect(settingsPage).toContain('SHORTCUT_SETTINGS_RESET_EVENT');
     expect(settingsPage).toContain('SETTINGS_HEADER_ACTION_BUTTON_CLASS');
@@ -112,7 +119,9 @@ describe('dashboard unified settings page', () => {
     expect(shortcutSettings).toContain('window.addEventListener(SHORTCUT_SETTINGS_RESET_EVENT, handleResetRequest)');
     expect(shortcutSettings).toContain('grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4');
     expect(shortcutSettings).toContain('SHORTCUT_KEY_BUTTON_CLASS');
-    expect(shortcutSettings).toContain('rounded-md bg-[#08AACE]');
+    expect(shortcutSettings).toContain('SHORTCUT_KEY_TEXT_BUTTON_CLASS');
+    expect(sharedButtonClasses).toContain('export const SHORTCUT_KEY_TEXT_BUTTON_CLASS');
+    expect(sharedButtonClasses).toContain('rounded-md bg-[#08AACE]');
     expect(shortcutSettings).not.toContain('bg-white text-slate-800 hover:bg-slate-100');
     expect(shortcutSettings).not.toContain('className="flex justify-end"');
     expect(shortcutSettings).not.toContain('className="hidden"');

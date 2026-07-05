@@ -87,6 +87,21 @@ describe('Workbench splitters', () => {
 });
 
 describe('Workbench flow stats', () => {
+  it('routes the header log button through the active page handler before falling back to signal broadcast', async () => {
+    const source = await readSource('WorkbenchPage.tsx');
+
+    expect(source).toContain('type HeaderLogOpenHandler = () => void;');
+    expect(source).toContain('const headerLogOpenHandlerRef = useRef<HeaderLogOpenHandler | null>(null);');
+    expect(source).toContain('const registerHeaderLogOpenHandler = useCallback((handler: HeaderLogOpenHandler | null) => {');
+    expect(source).toContain('headerLogOpenHandlerRef.current = handler;');
+    expect(source).toContain('const openHeaderLog = useCallback(() => {');
+    expect(source).toContain('const handler = headerLogOpenHandlerRef.current;');
+    expect(source).toContain('handler();');
+    expect(source).toContain('setAiLogOpenSignal((value) => value + 1);');
+    expect(source).toContain('onOpenLog={openHeaderLog}');
+    expect(source).toContain('onRegisterHeaderLog={registerHeaderLogOpenHandler}');
+  });
+
   it('tracks unpolished chapter count from content fingerprints', async () => {
     const source = await readSource('WorkbenchPage.tsx');
 
@@ -173,7 +188,9 @@ describe('ChapterEditor prompt snapshots', () => {
   it('subscribes to prompt library updates for review and status prompt selects', async () => {
     const source = await readSource('../components/ChapterEditor.tsx');
 
-    expect(source).toContain("import { normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';");
+    expect(source).toContain("from '@/features/prompts/hooks/usePrompts';");
+    expect(source).toContain('normalizePromptCategoryName');
+    expect(source).toContain('usePrompts');
     expect(source).toContain('const { prompts: reviewPrompts } = usePrompts();');
     expect(source).not.toContain('readPromptSnapshot().prompts');
     expect(source).not.toContain('import { normalizePromptCategoryName, readPromptSnapshot }');

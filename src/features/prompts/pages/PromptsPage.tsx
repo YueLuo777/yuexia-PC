@@ -1,4 +1,4 @@
-import { BookOpen, Lock, RefreshCw, Search, Sparkles, Trash2, Unlock, X } from 'lucide-react';
+import { BookOpen, Lock, Search, Sparkles, Trash2, Unlock, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -13,6 +13,7 @@ import {
 } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
+import { ActionButton } from '@/shared/ui/ActionButton';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { RadialCreateButton } from '@/shared/ui/RadialCreateButton';
 
@@ -75,7 +76,7 @@ function PromptEditorModal({
       >
         <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-8 py-6">
           <h2 className="text-[18px] font-bold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-500">
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -156,17 +157,16 @@ function PromptEditorModal({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-4 border-t border-slate-100 bg-slate-50/60 px-8 py-5">
-          <button onClick={onClose} className="rounded-2xl border border-slate-200 px-6 py-3 text-base text-slate-600 hover:bg-white">
+        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-8 py-5">
+          <ActionButton onClick={onClose} variant="secondary">
             取消
-          </button>
-          <button
+          </ActionButton>
+          <ActionButton
             onClick={() => onSave(draft)}
             disabled={!draft.name.trim() || !draft.content.trim()}
-            className="rounded-2xl bg-brand px-7 py-3 text-base text-white transition-colors hover:bg-brand-dark disabled:bg-slate-300"
           >
             {initial ? '保存修改' : '创建提示词'}
-          </button>
+          </ActionButton>
         </div>
       </div>
     </div>
@@ -198,7 +198,7 @@ function PromptRecycleModal({
             <h2 className="text-base font-bold text-slate-900">回收站</h2>
             <p className="mt-1 text-xs text-slate-400">可恢复误删提示词，彻底删除后无法找回。</p>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-500">
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -224,7 +224,6 @@ function PromptRecycleModal({
                     </div>
                     <div className="xy-capsule-group shrink-0">
                       <button onClick={() => onRestore(item.id)} className="xy-capsule-button">
-                        <RefreshCw className="h-3 w-3" />
                         恢复
                       </button>
                       <button
@@ -349,12 +348,12 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
           </div>
 
           <div className="flex shrink-0 items-center gap-3">
-            <button
+            <ActionButton
               onClick={() => setShowRecycle(true)}
-              className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-2xl border border-brand/30 bg-white px-5 text-base font-bold text-brand transition-colors hover:bg-brand-light"
+              variant="secondary"
             >
               回收站{recycleBin.length > 0 ? `(${recycleBin.length})` : ''}
-            </button>
+            </ActionButton>
             <div className="xy-ui132-search">
               <Search />
               <input
@@ -402,7 +401,7 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
               value={newCategory}
               onChange={(event) => setNewCategory(event.target.value)}
               placeholder="新增分类"
-              className="w-[120px] rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-brand"
+              className="h-8 w-[120px] rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none transition-colors focus:border-[#08AACE] focus:ring-2 focus:ring-[#8FE4F2]/70"
             />
             <div className="xy-capsule-group">
               <button
@@ -448,7 +447,7 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
 
         <div className="flex flex-wrap gap-4">
           {filteredPrompts.length === 0 && (
-            <div className="flex h-[247px] w-[255px] flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-white">
+              <div className="flex h-[247px] w-[255px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white">
               <Sparkles className="mb-3 h-10 w-10 text-slate-300" />
               <p className="text-sm text-slate-400">暂无提示词</p>
             </div>
@@ -456,7 +455,7 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
           {filteredPrompts.map((prompt) => (
               <article
                 key={prompt.id}
-                className="flex h-[247px] w-[255px] flex-col rounded-[24px] border border-slate-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                className="flex h-[247px] w-[255px] flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -472,10 +471,10 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
                   </div>
                   <button
                     onClick={() => toggleLock(prompt.id)}
-                    className={`rounded-lg p-1.5 transition-colors ${
+                    className={`grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2] ${
                       prompt.isLocked
-                        ? 'text-orange-500 hover:bg-orange-50 hover:text-orange-600'
-                        : 'text-slate-300 hover:bg-slate-50 hover:text-slate-500'
+                        ? 'text-orange-500'
+                        : 'text-slate-400'
                     }`}
                   >
                     {prompt.isLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
@@ -486,11 +485,11 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
 
                 <div className="mt-auto">
                   <p className="mb-2 text-left text-[13px] font-medium text-blue-500">{prompt.content.length} 字</p>
-                  <div className="grid grid-cols-3 gap-1">
+                  <div className="xy-capsule-group w-full">
                     <button
                       onClick={() => togglePin(prompt.id)}
-                      className={`rounded-lg py-1.5 text-xs font-medium text-white transition-colors ${
-                        prompt.isFavorite ? 'bg-orange-500 hover:bg-orange-600' : 'bg-brand hover:bg-brand-dark'
+                      className={`xy-capsule-button flex-1 ${
+                        prompt.isFavorite ? 'xy-active' : ''
                       }`}
                     >
                       置顶
@@ -498,7 +497,7 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
                     <button
                       onClick={() => openEdit(prompt)}
                       disabled={prompt.isLocked}
-                      className="rounded-lg bg-brand py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-dark disabled:bg-gray-100 disabled:text-gray-400"
+                      className="xy-capsule-button flex-1"
                     >
                       编辑
                     </button>
@@ -507,10 +506,10 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
                         if (!prompt.isLocked) setDeleteTarget(prompt);
                       }}
                       disabled={prompt.isLocked}
-                      className={`rounded-lg py-1.5 text-xs font-medium transition-colors ${
+                      className={`xy-capsule-button flex-1 ${
                         prompt.isLocked
-                          ? 'cursor-not-allowed bg-gray-100 text-gray-400'
-                          : 'bg-red-500 text-white hover:bg-red-600'
+                          ? ''
+                          : 'xy-danger'
                       }`}
                     >
                       删除
@@ -521,7 +520,7 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
           ))}
           <button
             onClick={openCreate}
-            className="xy-radial-create-card flex h-[247px] w-[255px] flex-col items-center justify-center rounded-[24px] border border-dashed border-blue-400 bg-white text-blue-600 transition-colors hover:border-blue-500 hover:bg-blue-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+            className="xy-radial-create-card flex h-[247px] w-[255px] flex-col items-center justify-center rounded-lg border border-dashed border-blue-400 bg-white text-blue-600 transition-colors hover:border-blue-500 hover:bg-blue-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
           >
             <RadialCreateButton label="创建提示词" />
           </button>

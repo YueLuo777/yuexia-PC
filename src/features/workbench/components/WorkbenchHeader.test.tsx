@@ -132,6 +132,7 @@ describe('WorkbenchHeader', () => {
   });
 
   it('renders extra tools before field size and log actions', () => {
+    const onOpenLog = vi.fn();
     const { container } = render(
       <WorkbenchHeader
         workTitle="榛樿灏忚1"
@@ -142,15 +143,22 @@ describe('WorkbenchHeader', () => {
         extraTools={<span data-testid="extra-tool">14</span>}
         onOpenWorkInfo={vi.fn()}
         onOpenFieldSize={vi.fn()}
-        onOpenLog={vi.fn()}
+        onOpenLog={onOpenLog}
         onSelectFlow={vi.fn()}
       />,
     );
 
     const rightTools = container.querySelector('.absolute.right-5');
     expect(rightTools).not.toBeNull();
+    expect(rightTools).toHaveClass('z-30');
+    expect(rightTools).toHaveAttribute('data-no-modal-drag', 'true');
     expect(rightTools?.children[0]).toBe(screen.getByTestId('extra-tool'));
     expect(rightTools?.children[1]?.tagName).toBe('BUTTON');
     expect(rightTools?.children[2]?.tagName).toBe('BUTTON');
+    expect(rightTools?.children[2]).toHaveAttribute('data-no-modal-drag', 'true');
+
+    fireEvent.click(rightTools?.children[2] as HTMLElement);
+
+    expect(onOpenLog).toHaveBeenCalledTimes(1);
   });
 });

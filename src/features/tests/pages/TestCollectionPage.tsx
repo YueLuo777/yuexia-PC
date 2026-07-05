@@ -10,6 +10,7 @@ import {
   Palette,
   Search,
   Send,
+  SlidersHorizontal,
   Tags,
   X,
 } from 'lucide-react';
@@ -32,6 +33,8 @@ const PromptLibraryStructureTestPage = lazy(() => import('@/features/tests/pages
 const PromptWorkflowPreviewTestPage = lazy(() => import('@/features/tests/pages/PromptWorkflowPreviewTestPage').then((module) => ({ default: module.PromptWorkflowPreviewTestPage })));
 const WorkbenchCreationChainTestPage = lazy(() => import('@/features/tests/pages/WorkbenchCreationChainTestPage').then((module) => ({ default: module.WorkbenchCreationChainTestPage })));
 const StructureAuditResultPreviewTestPage = lazy(() => import('@/features/tests/pages/StructureAuditResultPreviewTestPage').then((module) => ({ default: module.StructureAuditResultPreviewTestPage })));
+const ReviewPreviewWidthModeTestPage = lazy(() => import('@/features/tests/pages/ReviewPreviewWidthModeTestPage').then((module) => ({ default: module.ReviewPreviewWidthModeTestPage })));
+const WorkbenchAiWidthUnifiedPreviewTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiWidthUnifiedPreviewTestPage').then((module) => ({ default: module.WorkbenchAiWidthUnifiedPreviewTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -141,6 +144,20 @@ const testGroups = [
         icon: NotebookText,
         badge: 'Audit',
       },
+      {
+        title: '审核润色预览宽度模式测试',
+        description: '测试剧情审核和文笔润色预览里的等宽锁定、自由调节、显示章纲和隐藏章纲布局。',
+        path: '/review-preview-width-mode-test',
+        icon: SlidersHorizontal,
+        badge: 'Width',
+      },
+      {
+        title: '右侧 AI 区统一宽度切换测试',
+        description: '测试脑洞、设定、章纲、正文、审核、润色、点评、状态和梗概切换时，420px 右侧 AI 区是否稳定。',
+        path: '/workbench-ai-width-unified-preview-test',
+        icon: SlidersHorizontal,
+        badge: '420px',
+      },
     ],
   },
   {
@@ -161,6 +178,7 @@ const testNumberByPath = new Map(
     .flatMap((group) => group.items)
     .map((item, index) => [item.path, index + 1] as const),
 );
+const validTestPaths = new Set(testNumberByPath.keys());
 
 const TEST_COLLECTION_TESTED_PATHS_KEY = 'xinyuexia_test_collection_tested_paths_v1';
 
@@ -172,7 +190,11 @@ function readTestedTestPaths() {
     if (!Array.isArray(parsed)) {
       return [];
     }
-    return parsed.filter((item): item is string => typeof item === 'string' && testNumberByPath.has(item));
+    const validPaths = parsed.filter((item): item is string => typeof item === 'string' && validTestPaths.has(item));
+    if (validPaths.length !== parsed.length) {
+      localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(validPaths));
+    }
+    return validPaths;
   } catch {
     return [];
   }
@@ -198,6 +220,15 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
     const showIndex = () => setActivePath(null);
     window.addEventListener(TEST_COLLECTION_SHOW_INDEX_EVENT, showIndex);
     return () => window.removeEventListener(TEST_COLLECTION_SHOW_INDEX_EVENT, showIndex);
+  }, []);
+
+  useEffect(() => {
+    setTestedTestPaths((current) => {
+      const next = new Set(Array.from(current).filter((path) => validTestPaths.has(path)));
+      if (next.size === current.size) return current;
+      localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(Array.from(next)));
+      return next;
+    });
   }, []);
 
   const activeItem = useMemo(() => (
@@ -279,6 +310,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <WorkbenchCreationChainTestPage />;
       case '/structure-audit-result-preview-test':
         return <StructureAuditResultPreviewTestPage />;
+      case '/review-preview-width-mode-test':
+        return <ReviewPreviewWidthModeTestPage />;
+      case '/workbench-ai-width-unified-preview-test':
+        return <WorkbenchAiWidthUnifiedPreviewTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':

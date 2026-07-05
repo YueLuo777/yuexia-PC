@@ -23,6 +23,7 @@ const removedMarkedTests = [
   ['/setting-item-resource-status-layout-test', 'SettingItemResourceStatusLayoutTestPage'],
   ['/setting-other-link-picker-test', 'SettingOtherLinkPickerTestPage'],
   ['/setting-clear-context-menu-test', 'SettingClearContextMenuTestPage'],
+  ['/prompt-dropdown-connected-style-test', 'PromptDropdownConnectedStyleTestPage'],
 ] as const;
 
 describe('TestCollectionPage delete marked cleanup', () => {
@@ -66,5 +67,15 @@ describe('TestCollectionPage delete marked cleanup', () => {
     expect(toggleBody).toContain('setTestedTestPaths');
     expect(toggleBody).not.toContain('setActivePath(null)');
     expect(toggleBody).not.toContain('setCollectionTab(');
+  });
+
+  it('prunes deleted test paths from the completed-test bucket', async () => {
+    const source = await readFile(collectionPagePath, 'utf8');
+
+    expect(source).toContain('const validTestPaths = new Set(testNumberByPath.keys());');
+    expect(source).toContain("validTestPaths.has(item)");
+    expect(source).toContain('localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(validPaths));');
+    expect(source).toContain('Array.from(current).filter((path) => validTestPaths.has(path))');
+    expect(source).toContain('localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(Array.from(next)));');
   });
 });

@@ -1,6 +1,7 @@
 import { Folder } from 'lucide-react';
 
-import { AiRequestLogContent, AiRequestLogGroups, type AiRequestLogGroup } from '@/shared/ui/AiRequestLogGroups';
+import type { AiRequestLogGroup } from '@/shared/ui/AiRequestLogGroups';
+import { AiRequestLogModalLayout } from '@/shared/ui/AiRequestLogModalLayout';
 import type {
   SettingImportFormatEntry,
   SettingImportFormatPreviewScope,
@@ -61,85 +62,65 @@ export function LibraryAiLogModal({
     <LibraryAiLogShell
       id={id}
       subtitle={activeViewTab === '格式' ? '查看智能导入能识别的标签、分组、条目和子设定格式' : '当前预览：点击发送后会按这里的内容发给 AI'}
+      headerTools={(
+        <SettingSegmentedTabs
+          tabs={LIBRARY_AI_LOG_VIEW_TABS}
+          activeTab={activeViewTab}
+          onChange={onViewTabChange}
+        />
+      )}
       onClose={onClose}
     >
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-100 bg-white px-5 py-3">
-          <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pr-4">
-            {activeViewTab === '格式' && (
-              <>
-                {formatTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => onFormatTabChange(tab.id)}
-                    className={`h-9 min-w-[104px] shrink-0 rounded-lg px-4 text-sm font-black transition-colors ${
-                      activeFormatTab?.id === tab.id
-                        ? 'border border-[#9FEAF6] bg-[#EAF9FD] text-[#08AACE]'
-                        : 'border border-gray-200 bg-white text-slate-600 hover:border-cyan-100 hover:bg-[#F8FEFF] hover:text-[#08AACE]'
-                    }`}
-                  >
-                    {tab.title}
-                  </button>
-                ))}
-              </>
-            )}
+        {activeViewTab === '格式' ? (
+          <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-slate-100 bg-white px-5 py-3">
+            {formatTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onFormatTabChange(tab.id)}
+                className={`h-9 min-w-[104px] shrink-0 rounded-lg px-4 text-sm font-black transition-colors ${
+                  activeFormatTab?.id === tab.id
+                    ? 'border border-[#9FEAF6] bg-[#EAF9FD] text-[#08AACE]'
+                    : 'border border-gray-200 bg-white text-slate-600 hover:border-cyan-100 hover:bg-[#F8FEFF] hover:text-[#08AACE]'
+                }`}
+              >
+                {tab.title}
+              </button>
+            ))}
           </div>
-          <SettingSegmentedTabs
-            tabs={LIBRARY_AI_LOG_VIEW_TABS}
-            activeTab={activeViewTab}
-            onChange={onViewTabChange}
-          />
-        </div>
+        ) : null}
         {activeViewTab === '输出日志' ? (
-          visibleAiRequestLog ? (
-            <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)]">
-              <aside className="border-r border-slate-100 bg-slate-50 p-4 text-sm">
-                <div className="space-y-3">
-                  <div className="rounded-xl bg-white p-3">
-                    <div className="text-xs text-slate-400">链路</div>
-                    <div className="mt-1 font-bold text-slate-800">{visibleAiRequestLog.tab}生成</div>
-                  </div>
-                  <div className="rounded-xl bg-white p-3">
-                    <div className="text-xs text-slate-400">模型</div>
-                    <div className="mt-1 font-bold text-slate-800">{visibleAiRequestLog.modelName}</div>
-                  </div>
-                  <div className="rounded-xl bg-white p-3">
-                    <div className="text-xs text-slate-400">提示词</div>
-                    <div className="mt-1 font-bold text-slate-800">{visibleAiRequestLog.promptName}</div>
-                  </div>
-                  {visibleAiRequestLog.visibleUserText.trim() && (
-                    <div className="rounded-xl bg-white p-3">
-                      <div className="text-xs text-slate-400">{userTextTitle}</div>
-                      <div className="mt-1 break-words font-bold text-slate-800">{visibleAiRequestLog.visibleUserText}</div>
-                    </div>
-                  )}
-                  <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-white p-3 text-sm font-bold text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={showLibraryAiLogTitles}
-                      onChange={(event) => onShowLibraryAiLogTitlesChange(event.target.checked)}
-                      className="h-4 w-4 rounded border-slate-300 text-[#08AACE] focus:ring-[#08AACE]/20"
-                    />
-                    <span>显示标题内容</span>
-                  </label>
-                </div>
-              </aside>
-              <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-5">
-                {showLibraryAiLogTitles ? (
-                  <AiRequestLogGroups groups={visibleAiRequestLogGroups} fillSingleGroup />
-                ) : (
-                  <div className="ai-request-log-text min-h-0 flex-1 whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-700">
-                    {visibleAiRequestLogPlainPreview ? <AiRequestLogContent content={visibleAiRequestLogPlainPreview} /> : '暂无可预览内容'}
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 text-sm font-bold text-slate-400">
-              暂无输出日志
-            </div>
-          )
+          <AiRequestLogModalLayout
+            metaItems={visibleAiRequestLog ? [
+              { id: 'chain', label: '链路', value: `${visibleAiRequestLog.tab}生成` },
+              { id: 'model', label: '模型', value: visibleAiRequestLog.modelName },
+              { id: 'prompt', label: '提示词', value: visibleAiRequestLog.promptName },
+              {
+                id: 'user',
+                label: userTextTitle,
+                value: visibleAiRequestLog.visibleUserText,
+                hidden: !visibleAiRequestLog.visibleUserText.trim(),
+              },
+            ] : []}
+            groups={visibleAiRequestLog ? visibleAiRequestLogGroups : []}
+            fillSingleGroup
+            showGroupedContent={showLibraryAiLogTitles}
+            plainPreview={visibleAiRequestLogPlainPreview}
+            emptyText="暂无输出日志"
+            storageKey={`${id}_groups`}
+            asideExtra={visibleAiRequestLog ? (
+              <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-white p-3 text-sm font-bold text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={showLibraryAiLogTitles}
+                  onChange={(event) => onShowLibraryAiLogTitlesChange(event.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-[#08AACE] focus:ring-[#08AACE]/20"
+                />
+                <span>显示标题内容</span>
+              </label>
+            ) : null}
+          />
         ) : selectedFormatEntry ? (
           <div className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)] overflow-hidden">
             <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-slate-50">

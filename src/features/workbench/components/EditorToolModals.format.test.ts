@@ -1,6 +1,12 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, it } from 'vitest';
 
-import { applyFormat, removeParagraphInnerFullWidthSpaces } from './EditorToolModals';
+import { applyFormat, applyParagraphIndentToText, removeParagraphInnerFullWidthSpaces } from './EditorToolModals';
+
+const readSource = () => readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'EditorToolModals.tsx'), 'utf8');
 
 describe('EditorToolModals smart format', () => {
   it('always removes full-width spaces inside paragraphs without a visible option', () => {
@@ -17,10 +23,22 @@ describe('EditorToolModals smart format', () => {
     );
   });
 
-  it('keeps paragraph indent as visual state instead of writing full-width spaces', () => {
+  it('writes paragraph indent as real textarea text without stacking spaces', () => {
     const formatted = applyFormat('  first\n\u3000\u3000second', { paragraphIndent: true, mergeParagraphs: true });
 
-    expect(formatted).toBe('first\nsecond');
-    expect(formatted).not.toContain('\u3000\u3000');
+    expect(formatted).toBe('\u3000\u3000first\n\u3000\u3000second');
+    expect(applyParagraphIndentToText(formatted, true)).toBe('\u3000\u3000first\n\u3000\u3000second');
+    expect(applyParagraphIndentToText(formatted, false)).toBe('first\nsecond');
+  });
+
+  it('keeps the smart format modal compact without large empty gutters', () => {
+    const modalSource = readSource();
+
+    expect(modalSource).toContain('className="px-5 py-3"');
+    expect(modalSource).toContain('className="flex items-start justify-between border-b border-gray-100 py-2.5 last:border-0"');
+    expect(modalSource).toContain('className="flex items-center justify-between border-t border-gray-100 px-5 py-2.5"');
+    expect(modalSource).toContain('className="mt-3 rounded-lg border border-gray-100 bg-gray-50 p-3"');
+    expect(modalSource).not.toContain('className="space-y-1 p-5"');
+    expect(modalSource).not.toContain('border-b border-gray-100 py-3 last:border-0');
   });
 });

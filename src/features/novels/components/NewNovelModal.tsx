@@ -1,8 +1,9 @@
-import { Image, X } from 'lucide-react';
+import { Image } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import type { NewNovelInput, WorkType } from '@/features/novels/model/novelTypes';
-import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
+import { AppModalShell } from '@/shared/ui/AppModalShell';
+import { ActionButton } from '@/shared/ui/ActionButton';
 
 interface NewNovelModalProps {
   isOpen: boolean;
@@ -13,7 +14,6 @@ interface NewNovelModalProps {
 }
 
 export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: NewNovelModalProps) {
-  useTopModalEscape(isOpen, onClose);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState(categories[0] ?? '未分类');
   const [synopsis, setSynopsis] = useState('');
@@ -46,15 +46,15 @@ export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: N
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="w-[420px] rounded-xl bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-bold text-gray-900">新建{typeLabel}</h3>
-          <button onClick={onClose} className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
+    <AppModalShell
+      title={`新建${typeLabel}`}
+      isOpen={isOpen}
+      onClose={onClose}
+      widthClass="w-[420px]"
+      heightClass=""
+      zIndexClass="z-50"
+      contentClassName="p-5"
+    >
         <label className="mb-1.5 block text-xs font-medium text-gray-600">作品名称</label>
         <input
           value={title}
@@ -104,14 +104,13 @@ export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: N
         </div>
 
         <div className="flex items-center justify-end gap-3">
-          <button onClick={onClose} className="rounded-md border border-gray-200 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50">
+          <ActionButton onClick={onClose} variant="secondary" size="sm">
             取消
-          </button>
-          <button onClick={handleSubmit} className="rounded-md bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark">
+          </ActionButton>
+          <ActionButton onClick={handleSubmit} size="sm">
             确认
-          </button>
+          </ActionButton>
         </div>
-      </div>
-    </div>
+    </AppModalShell>
   );
 }

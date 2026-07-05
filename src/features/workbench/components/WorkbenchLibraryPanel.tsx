@@ -89,6 +89,7 @@ import {
   type BackgroundAiTask,
 } from '@/shared/ai/backgroundAiTasks';
 import { AiInlineInput } from '@/shared/ui/AiInlineInput';
+import { ChapterNumberButton } from '@/shared/ui/ChapterNumberButton';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { LinkedSourceControl } from '@/shared/ui/LinkedSourceControl';
@@ -403,6 +404,7 @@ interface WorkbenchLibraryPanelProps {
   fieldSizeOpenSignal?: number;
   showInlineFieldSizeButton?: boolean;
   openLogSignal?: number;
+  onRegisterHeaderLog?: (handler: (() => void) | null) => void;
   openPlotPointSignal?: number;
   plotPointStandalone?: boolean;
   onOpenDetailOutlineFromPlotChain?: () => void;
@@ -452,6 +454,7 @@ export function WorkbenchLibraryPanel({
   fieldSizeOpenSignal = 0,
   showInlineFieldSizeButton = true,
   openLogSignal = 0,
+  onRegisterHeaderLog,
   openPlotPointSignal = 0,
   plotPointStandalone = false,
   onOpenDetailOutlineFromPlotChain,
@@ -3736,10 +3739,16 @@ export function WorkbenchLibraryPanel({
       onClick={() => setIsFieldSizeSettingsOpen(true)}
     />
   );
-  const openLibraryAiLog = (scope: 'library' | 'outline') => {
+  const openLibraryAiLog = useCallback((scope: 'library' | 'outline') => {
     setLibraryAiLogScope(scope);
     setIsLibraryAiLogOpen(true);
-  };
+  }, []);
+  useEffect(() => {
+    if (!onRegisterHeaderLog) return;
+    const scope = activeTab === SETTING_TAB || activeTab === ROLE_TAB || activeTab === BRAINSTORM_TAB ? 'library' : 'outline';
+    onRegisterHeaderLog(() => openLibraryAiLog(scope));
+    return () => onRegisterHeaderLog(null);
+  }, [activeTab, onRegisterHeaderLog, openLibraryAiLog]);
   const renderLibraryAiLogButton = (
     scope: 'library' | 'outline',
     className = 'h-9 shrink-0 rounded-xl border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 shadow-sm hover:border-brand hover:text-brand',
@@ -6568,21 +6577,47 @@ export function WorkbenchLibraryPanel({
                     const outlineWordCount = countTextWords(entry?.content ?? '');
                     const chapterContentWordCount = countTextWords(getChapterContent?.(chapter.id) ?? '');
                     const hasSummary = outlineWordCount > 0;
-                    const outlineButtonContentStateClass = chapterContentWordCount > 0
-                        ? 'xy-detail-outline-number-used'
-                        : hasSummary
-                          ? 'xy-detail-outline-number-has-outline'
-                          : 'xy-detail-outline-number-no-outline';
-                    const outlineButtonSelectedClass = selected ? 'xy-detail-outline-number-selected' : '';
-                    const outlineButtonClass = isDetailOutlineTab
-                      ? `relative grid h-8 w-8 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block xy-detail-outline-number-white-bg ${outlineButtonContentStateClass} ${outlineButtonSelectedClass}`
-                      : `relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
+                    const outlineButtonState = chapterContentWordCount > 0 ? 'used' : hasSummary ? 'hasOutline' : 'empty';
+                    const outlineButtonClass = `relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
                           selected
                             ? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'
                             : hasSummary
                             ? 'border-[#08B3D9] bg-[#E1F3F7] text-[#08AACE] hover:border-[#067B96] hover:bg-[#D3EEF5]'
                             : 'border-slate-200 bg-white text-slate-900 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
                         }`;
+                    if (isDetailOutlineTab) {
+                      return (
+                        <ChapterNumberButton
+                          key={chapter.id}
+                          onMouseDown={(event) => {
+                            if (event.button !== 0) return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            selectOutlineChapter(chapter.id, chapter.serialNumber);
+                          }}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                          }}
+                          onContextMenu={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            const { left, top } = clampFixedMenuPosition(event.clientX, event.clientY, DETAIL_OUTLINE_CHAPTER_CONTEXT_MENU_SIZE);
+                            setDetailOutlineChapterMenu({
+                              visible: true,
+                              x: left,
+                              y: top,
+                              chapter,
+                            });
+                          }}
+                          selected={selected}
+                          state={outlineButtonState}
+                          title={publishedLane ? '移回未发布' : '移动到已发布'}
+                        >
+                          {chapter.serialNumber}
+                        </ChapterNumberButton>
+                      );
+                    }
                     return (
                       <button
                         key={chapter.id}
@@ -7286,21 +7321,47 @@ export function WorkbenchLibraryPanel({
                             const outlineWordCount = countTextWords(entry?.content ?? '');
                             const chapterContentWordCount = countTextWords(getChapterContent?.(chapter.id) ?? '');
                             const hasSummary = outlineWordCount > 0;
-                            const outlineButtonContentStateClass = chapterContentWordCount > 0
-                                ? 'xy-detail-outline-number-used'
-                                : hasSummary
-                                  ? 'xy-detail-outline-number-has-outline'
-                                  : 'xy-detail-outline-number-no-outline';
-                            const outlineButtonSelectedClass = selected ? 'xy-detail-outline-number-selected' : '';
-                            const outlineButtonClass = isDetailOutlineTab
-                              ? `relative grid h-8 w-8 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block xy-detail-outline-number-white-bg ${outlineButtonContentStateClass} ${outlineButtonSelectedClass}`
-                              : `relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
+                            const outlineButtonState = chapterContentWordCount > 0 ? 'used' : hasSummary ? 'hasOutline' : 'empty';
+                            const outlineButtonClass = `relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
                                   selected
                                     ? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'
                                     : hasSummary
                                     ? 'border-[#08B3D9] bg-[#E1F3F7] text-[#08AACE] hover:border-[#067B96] hover:bg-[#D3EEF5]'
                                     : 'border-slate-200 bg-white text-slate-900 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
                                 }`;
+                            if (isDetailOutlineTab) {
+                              return (
+                                <ChapterNumberButton
+                                  key={chapter.id}
+                                  onMouseDown={(event) => {
+                                    if (event.button !== 0) return;
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    selectOutlineChapter(chapter.id, chapter.serialNumber);
+                                  }}
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                  }}
+                                  onContextMenu={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    const { left, top } = clampFixedMenuPosition(event.clientX, event.clientY, DETAIL_OUTLINE_CHAPTER_CONTEXT_MENU_SIZE);
+                                    setDetailOutlineChapterMenu({
+                                      visible: true,
+                                      x: left,
+                                      y: top,
+                                      chapter,
+                                    });
+                                  }}
+                                  selected={selected}
+                                  state={outlineButtonState}
+                                  title="移动到已发布"
+                                >
+                                  {chapter.serialNumber}
+                                </ChapterNumberButton>
+                              );
+                            }
                             return (
                               <button
                                 key={chapter.id}

@@ -112,9 +112,13 @@ describe('DarkThemeColorPage custom color tab', () => {
   it('uses a compact header and tab strip for fewer clicks and less scanning', () => {
     const source = readSource('DarkThemeColorPage.tsx');
 
-    expect(source).toContain("variant === 'modal' ? 'min-h-0 space-y-3 px-4 py-4' : 'space-y-4 px-5 py-4'");
-    expect(source).toContain('className="grid min-h-[52px] grid-cols-[minmax(160px,1fr)_auto_minmax(160px,1fr)] items-center gap-3 rounded-xl border px-4 py-2.5"');
-    expect(source).toContain('className="flex h-8 w-8 items-center justify-center rounded-lg border transition-colors"');
+    expect(source).toContain("isEmbedded ? 'flex h-full min-h-0 flex-col space-y-4 overflow-y-auto pr-1'");
+    expect(source).toContain("variant === 'modal' ? 'min-h-0 space-y-3 px-4 py-4'");
+    expect(source).toContain("'mx-auto max-w-[1180px] space-y-5 px-8 py-6'");
+    expect(source).toContain("variant === 'modal'");
+    expect(source).toContain("'grid min-h-[52px] grid-cols-[minmax(160px,1fr)_auto_minmax(160px,1fr)] items-center gap-3 rounded-xl border px-4 py-2.5'");
+    expect(source).toContain("'grid min-h-[52px] grid-cols-[minmax(160px,1fr)_auto_minmax(160px,1fr)] items-center gap-3 border-b px-4 py-2.5'");
+    expect(source).toContain('className="flex h-8 w-8 items-center justify-center rounded-lg border border-brand/20 bg-white text-brand transition-colors hover:bg-brand-light"');
     expect(source).toContain('<h1 className="text-lg font-black"');
     expect(source).toContain("{ key: 'light' as const, label: '白色', icon: Sun }");
     expect(source).toContain("{ key: 'dark' as const, label: '黑色', icon: Moon }");

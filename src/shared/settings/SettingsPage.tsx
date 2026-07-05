@@ -7,11 +7,13 @@ import { NavSettingsModal } from '@/shared/navigation/NavSettingsModal';
 import { NAV_CONFIG_UPDATED_EVENT, loadNavConfig, normalizeNavConfig, resetNavConfig, saveNavConfig, type NavGroupConfig } from '@/shared/navigation/navConfig';
 import { SHORTCUT_SETTINGS_RESET_EVENT, ShortcutSettingsModal } from '@/shared/shortcuts/ShortcutSettingsModal';
 import { SystemSettingsModal } from '@/shared/settings/SystemSettingsModal';
+import { PRIMARY_TEXT_BUTTON_CLASS } from '@/shared/ui/actionButtonClasses';
+import { SettingsSurface } from '@/shared/ui/SettingsSurface';
 
 type SettingsSection = 'system' | 'shortcuts' | 'theme' | 'navigation';
 
 const SETTINGS_HEADER_ACTION_BUTTON_CLASS =
-  'flex h-8 min-w-[88px] items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-4 text-sm leading-none text-white transition-colors hover:bg-[#0798b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]';
+  PRIMARY_TEXT_BUTTON_CLASS;
 
 const SETTINGS_NAV_ITEMS: Array<{
   id: SettingsSection;
@@ -76,7 +78,7 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="flex h-full min-h-0 bg-white">
+    <SettingsSurface mode="embedded" className="flex bg-white">
       <aside className="w-[236px] shrink-0 border-r border-slate-200 bg-white px-3 py-3">
         <div className="mb-4 px-1">
           <h1 className="text-2xl font-black text-slate-950">设置</h1>
@@ -155,6 +157,6 @@ export function SettingsPage() {
           </section>
         </div>
       </main>
-    </div>
+    </SettingsSurface>
   );
 }

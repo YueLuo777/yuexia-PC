@@ -4,17 +4,14 @@
   ChevronDown,
   Cloud,
   Copy,
-  Download,
   Folder,
   FileText,
   RefreshCw,
-  Save,
   Search,
   Settings,
   Sparkles,
   Tags,
   Trash2,
-  X,
 } from 'lucide-react';
 import { useMemo, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
@@ -42,7 +39,10 @@ import type {
 } from '@/features/concept-library/model/conceptLibraryTypes';
 import { useModels } from '@/features/models/hooks/useModels';
 import { callModel } from '@/features/models/services/callModel';
-import { AiRequestLogGroups, type AiRequestLogGroup } from '@/shared/ui/AiRequestLogGroups';
+import type { AiRequestLogGroup } from '@/shared/ui/AiRequestLogGroups';
+import { ActionButton } from '@/shared/ui/ActionButton';
+import { AiRequestLogModalLayout } from '@/shared/ui/AiRequestLogModalLayout';
+import { AppModalShell } from '@/shared/ui/AppModalShell';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 import { WordCountText } from '@/shared/ui/WordCountText';
 
@@ -631,33 +631,16 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
       </header>
       )}
 
-      {showCloudSettings && (
-        <div
-          className="fixed inset-0 z-[360] flex items-center justify-center bg-slate-950/35 p-5"
-          data-titlebar-no-drag="true"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setShowCloudSettings(false);
-          }}
-        >
-          <section
-            className="w-[min(560px,94vw)] rounded-xl border border-slate-200 bg-white p-5 shadow-2xl"
-            data-no-modal-drag="true"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <Cloud className="h-5 w-5 text-cyan-600" />
-                <h2 className="text-base font-black text-slate-950">COS 云同步</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowCloudSettings(false)}
-                className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:border-red-200 hover:text-red-500"
-                title="关闭"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+      <AppModalShell
+        title="COS 云同步"
+        isOpen={showCloudSettings}
+        onClose={() => setShowCloudSettings(false)}
+        widthClass="w-[min(560px,94vw)]"
+        heightClass=""
+        zIndexClass="z-[360]"
+        backdropClassName="bg-slate-950/35 p-5"
+        contentClassName="p-5"
+      >
             <div className="mt-4 grid gap-3">
               <input data-no-modal-drag="true" value={cloudConfig.bucket} onChange={(event) => setCloudConfig({ ...cloudConfig, bucket: event.target.value })} placeholder="Bucket，例如 writer-1250000000" className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white" />
               <input data-no-modal-drag="true" value={cloudConfig.region} onChange={(event) => setCloudConfig({ ...cloudConfig, region: event.target.value })} placeholder="Region，例如 ap-guangzhou" className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white" />
@@ -666,92 +649,48 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
               <input data-no-modal-drag="true" value={cloudConfig.prefix} onChange={(event) => setCloudConfig({ ...cloudConfig, prefix: event.target.value })} placeholder="云端目录，例如 xinyuexia" className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white" />
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2">
-              <button type="button" onClick={saveCloudConfig} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-sm font-black text-slate-600 hover:border-cyan-200 hover:text-cyan-700">
-                <Save className="h-4 w-4" />保存
-              </button>
-              <button type="button" onClick={() => void uploadCloudSnapshot()} disabled={isCloudBusy} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-sm font-black text-slate-600 hover:border-cyan-200 hover:text-cyan-700 disabled:cursor-not-allowed disabled:text-slate-300">
-                <Cloud className="h-4 w-4" />上传
-              </button>
-              <button type="button" onClick={() => void restoreCloudSnapshot()} disabled={isCloudBusy} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white text-sm font-black text-slate-600 hover:border-cyan-200 hover:text-cyan-700 disabled:cursor-not-allowed disabled:text-slate-300">
-                <Download className="h-4 w-4" />恢复
-              </button>
+              <ActionButton type="button" onClick={saveCloudConfig} variant="secondary">保存</ActionButton>
+              <ActionButton type="button" onClick={() => void uploadCloudSnapshot()} disabled={isCloudBusy} variant="secondary">上传</ActionButton>
+              <ActionButton type="button" onClick={() => void restoreCloudSnapshot()} disabled={isCloudBusy} variant="secondary">恢复</ActionButton>
             </div>
             <p className="mt-4 break-all text-xs font-bold leading-5 text-slate-400">云端文件：{cloudObjectKey}</p>
-          </section>
-        </div>
-      )}
+      </AppModalShell>
 
-      {isAiLogOpen && (
-        <div
-          className="fixed inset-0 z-[365] flex items-center justify-center bg-slate-950/35 p-5"
-          data-titlebar-no-drag="true"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setIsAiLogOpen(false);
-          }}
-        >
-          <section
-            className="flex h-[min(760px,88vh)] w-[min(860px,94vw)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
-            data-no-modal-drag="true"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 text-sm font-black text-cyan-700">
-                  <FileText className="h-4 w-4" />
-                  输出日志
-                </div>
-                <div className="mt-1 flex flex-wrap gap-3 text-xs font-bold text-slate-400">
-                  <span>{visibleAiRequestLog.action}</span>
-                  <span>{visibleAiRequestLog.modelName}</span>
-                  <span>{visibleAiRequestLog.createdAt}</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAiLogOpen(false)}
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:border-red-200 hover:text-red-500"
-                title="关闭"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 p-5">
-              <AiRequestLogGroups groups={buildConceptLogGroups(visibleAiRequestLog)} defaultCollapsed={false} />
-            </div>
-          </section>
-        </div>
-      )}
+      <AppModalShell
+        title="输出日志"
+        isOpen={isAiLogOpen}
+        onClose={() => setIsAiLogOpen(false)}
+        widthClass="w-[min(960px,94vw)]"
+        heightClass="h-[min(760px,88vh)]"
+        zIndexClass="z-[365]"
+        backdropClassName="bg-slate-950/35 p-5"
+        contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden"
+      >
+        <AiRequestLogModalLayout
+          metaItems={[
+            { id: 'action', label: '动作', value: visibleAiRequestLog.action },
+            { id: 'model', label: '模型', value: visibleAiRequestLog.modelName },
+            { id: 'time', label: '时间', value: visibleAiRequestLog.createdAt },
+          ]}
+          groups={buildConceptLogGroups(visibleAiRequestLog)}
+          storageKey="concept_library_ai_request_log_groups"
+        />
+      </AppModalShell>
 
-      {pendingAssociationItem && (
-        <div
-          className="fixed inset-0 z-[370] flex items-center justify-center bg-slate-950/35 p-5"
-          data-titlebar-no-drag="true"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setPendingAssociationItem(null);
-          }}
-        >
-          <section
-            className="flex max-h-[86vh] w-[min(680px,94vw)] flex-col overflow-hidden rounded-xl border border-cyan-100 bg-white shadow-2xl"
-            data-no-modal-drag="true"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 text-sm font-black text-cyan-700">
-                  <Sparkles className="h-4 w-4" />
-                  AI 联想预览
-                </div>
-                <h2 className="mt-1 truncate text-base font-black text-slate-950">{pendingAssociationItem.title}</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPendingAssociationItem(null)}
-                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:border-red-200 hover:text-red-500"
-                title="关闭"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+      <AppModalShell
+        title="AI 联想预览"
+        subtitle={pendingAssociationItem?.title}
+        isOpen={Boolean(pendingAssociationItem)}
+        onClose={() => setPendingAssociationItem(null)}
+        widthClass="w-[min(680px,94vw)]"
+        heightClass="max-h-[86vh]"
+        zIndexClass="z-[370]"
+        backdropClassName="bg-slate-950/35 p-5"
+        contentClassName="flex min-h-0 flex-col overflow-hidden"
+        panelClassName="border border-cyan-100"
+      >
+        {pendingAssociationItem ? (
+          <>
             <div className="min-h-0 flex-1 overflow-y-auto p-5">
               {pendingAssociationItem.summary && (
                 <p className="rounded-lg bg-cyan-50 px-3 py-2 text-sm font-bold leading-6 text-cyan-800">{pendingAssociationItem.summary}</p>
@@ -768,24 +707,16 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
               )}
             </div>
             <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-slate-100 p-4">
-              <button
-                type="button"
-                onClick={() => setPendingAssociationItem(null)}
-                className="h-10 rounded-lg border border-slate-200 bg-white text-sm font-black text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50"
-              >
+              <ActionButton type="button" onClick={() => setPendingAssociationItem(null)} variant="secondary" className="w-full">
                 取消
-              </button>
-              <button
-                type="button"
-                onClick={confirmAssociationSave}
-                className="h-10 rounded-lg bg-cyan-600 text-sm font-black text-white transition-colors hover:bg-cyan-700"
-              >
+              </ActionButton>
+              <ActionButton type="button" onClick={confirmAssociationSave} className="w-full">
                 确认保存
-              </button>
+              </ActionButton>
             </div>
-          </section>
-        </div>
-      )}
+          </>
+        ) : null}
+      </AppModalShell>
 
       <main className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)_minmax(340px,420px)] overflow-hidden">
         <aside className="min-h-0 overflow-y-auto border-r border-slate-200 bg-white p-4">

@@ -1,5 +1,5 @@
 ﻿import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -13,6 +13,7 @@ import { WorkbenchAIPanel, type WorkbenchLinkedContextItem, type WorkbenchLinked
 import { WorkbenchHeader, type WorkbenchHeaderFlowStats } from '@/features/workbench/components/WorkbenchHeader';
 import { WorkbenchLibraryPanel } from '@/features/workbench/components/WorkbenchLibraryPanel';
 import { WorkbenchModal } from '@/features/workbench/components/WorkbenchModal';
+import { WORKBENCH_MANAGEMENT_MODAL_SIZE_CLASS } from '@/features/workbench/components/workbenchManagementModalSize';
 import { readChapterContent, useWorkbenchData } from '@/features/workbench/hooks/useWorkbenchData';
 import {
   WORKBENCH_HEADER_FLOW_ITEMS,
@@ -48,6 +49,7 @@ type FindScope = 'chapter' | 'book';
 type ChapterExportFormat = 'txt' | 'doc';
 type PendingPublish = { type: 'single'; volumeId: number; chapterId: number; title: string };
 type MemoScope = 'global' | 'work';
+type HeaderLogOpenHandler = () => void;
 type MemoItem = { id: string; title: string; content: string; updatedAt: string };
 type ContextLibraryTab = 'outlineChapter' | 'setting' | 'role' | 'status';
 
@@ -1232,25 +1234,29 @@ function ManagementModal({
     }}>
       <section
         data-draggable-managed="true"
-        className="relative flex h-[min(820px,88vh)] w-[min(1500px,94vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]"
+        className={`relative flex ${WORKBENCH_MANAGEMENT_MODAL_SIZE_CLASS} flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]`}
         style={draggable.style}
       >
-        <header
-          {...draggable.dragHandleProps}
-          className="flex h-11 shrink-0 cursor-move items-center justify-between border-b border-slate-200 bg-white px-4"
-        >
-          <h2 className="text-sm font-bold text-slate-900">{title}</h2>
-          <button
-            data-no-modal-drag="true"
-            onClick={onClose}
-            className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
-            title="关闭"
+        {type === 'agents' ? (
+          <header
+            {...draggable.dragHandleProps}
+            className="flex h-11 shrink-0 cursor-move items-center justify-between border-b border-slate-200 bg-white px-4"
           >
-            关闭
-          </button>
-        </header>
+            <h2 className="text-sm font-bold text-slate-900">{title}</h2>
+            <button
+              data-no-modal-drag="true"
+              onClick={onClose}
+              className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              title="关闭"
+            >
+              关闭
+            </button>
+          </header>
+        ) : null}
         <div className="min-h-0 flex-1 overflow-hidden">
-          {type === 'models' ? <ModelManagePage /> : <PromptsPage />}
+          {type === 'models'
+            ? <ModelManagePage embedded onClose={onClose} headerDragHandleProps={draggable.dragHandleProps} />
+            : <PromptsPage />}
         </div>
         <ModalResizeHandles draggable={draggable} />
       </section>
@@ -1507,6 +1513,18 @@ export function WorkbenchPage() {
   const [managementModal, setManagementModal] = useState<ManagementModalKey | null>(null);
   const [fieldSizeOpenSignal, setFieldSizeOpenSignal] = useState(0);
   const [aiLogOpenSignal, setAiLogOpenSignal] = useState(0);
+  const headerLogOpenHandlerRef = useRef<HeaderLogOpenHandler | null>(null);
+  const registerHeaderLogOpenHandler = useCallback((handler: HeaderLogOpenHandler | null) => {
+    headerLogOpenHandlerRef.current = handler;
+  }, []);
+  const openHeaderLog = useCallback(() => {
+    const handler = headerLogOpenHandlerRef.current;
+    if (handler) {
+      handler();
+      return;
+    }
+    setAiLogOpenSignal((value) => value + 1);
+  }, []);
   const [settingLibraryInitialTab, setSettingLibraryInitialTab] = useState<'脑洞' | '大纲'>('大纲');
   const [isContextLibraryOpen, setIsContextLibraryOpen] = useState(false);
   const [contextLibraryTab, setContextLibraryTab] = useState<ContextLibraryTab>('outlineChapter');
@@ -2343,6 +2361,7 @@ export function WorkbenchPage() {
           defaultActiveTab={activeCreationFlow === 'brainstorm' ? '脑洞' : '大纲'}
           fieldSizeOpenSignal={fieldSizeOpenSignal}
           openLogSignal={aiLogOpenSignal}
+          onRegisterHeaderLog={registerHeaderLogOpenHandler}
           showInlineFieldSizeButton={false}
         />
       );
@@ -2354,6 +2373,7 @@ export function WorkbenchPage() {
           key="chapterOutline"
           fieldSizeOpenSignal={fieldSizeOpenSignal}
           openLogSignal={aiLogOpenSignal}
+          onRegisterHeaderLog={registerHeaderLogOpenHandler}
           showInlineFieldSizeButton={false}
           storageKey={settingsStorageKey}
           outlineStorageKey={outlineStorageKey}
@@ -2374,6 +2394,7 @@ export function WorkbenchPage() {
           key="summary"
           fieldSizeOpenSignal={fieldSizeOpenSignal}
           openLogSignal={aiLogOpenSignal}
+          onRegisterHeaderLog={registerHeaderLogOpenHandler}
           showInlineFieldSizeButton={false}
           storageKey={outlineStorageKey}
           outlineStorageKey={outlineStorageKey}
@@ -2394,6 +2415,7 @@ export function WorkbenchPage() {
           embeddedMode={activeCreationFlow}
           fieldSizeOpenSignal={fieldSizeOpenSignal}
           openLogSignal={aiLogOpenSignal}
+          onRegisterHeaderLog={registerHeaderLogOpenHandler}
           showInlineFieldSizeButton={false}
           chapter={selectedChapter?.chapter ?? null}
           volumeName={selectedVolumeName}
@@ -2458,7 +2480,7 @@ export function WorkbenchPage() {
         logVisible={showHeaderLogButton}
         extraTools={<div id="workbench-header-extra-tools" className="inline-flex items-center gap-2" />}
         onOpenFieldSize={() => setFieldSizeOpenSignal((value) => value + 1)}
-        onOpenLog={() => setAiLogOpenSignal((value) => value + 1)}
+        onOpenLog={openHeaderLog}
         onSelectFlow={switchCreationFlow}
         onOpenWorkInfo={() => setActiveModal('workInfo')}
       />
@@ -2558,6 +2580,7 @@ export function WorkbenchPage() {
                   updateLinkedContextItems([]);
                 }}
                 openLogSignal={aiLogOpenSignal}
+                onRegisterHeaderLog={registerHeaderLogOpenHandler}
               />
             </aside>
           </>

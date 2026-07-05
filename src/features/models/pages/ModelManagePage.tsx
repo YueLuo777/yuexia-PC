@@ -1,11 +1,13 @@
-import { AlertCircle, Eye, EyeOff, Server, Settings, X } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Settings, X } from 'lucide-react';
+import type { HTMLAttributes } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useModels } from '@/features/models/hooks/useModels';
 import type { ModelItem, ModelProvider } from '@/features/models/model/modelTypes';
 import { callModel } from '@/features/models/services/callModel';
 import { addRecord, useCallRecords } from '@/hooks/useCallRecords';
-import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
+import { ActionButton } from '@/shared/ui/ActionButton';
+import { AppModalShell } from '@/shared/ui/AppModalShell';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 import { RadialCreateButton } from '@/shared/ui/RadialCreateButton';
@@ -21,7 +23,15 @@ type ModelDraft = {
 
 type ModelCardsPerRow = 3 | 4;
 
+type ModelManagePageProps = {
+  embedded?: boolean;
+  onClose?: () => void;
+  headerDragHandleProps?: HTMLAttributes<HTMLDivElement>;
+};
+
 const MODEL_MANAGE_SETTINGS_KEY = 'xinyuexia_model_manage_settings_v1';
+const MODEL_MANAGE_COLUMNS: ModelCardsPerRow = 4;
+const MODEL_CARD_HEIGHT_CLASS = 'h-[250px]';
 
 const temperaturePresets = [
   { label: '精准', value: 0.3, desc: '提炼、总结、校对' },
@@ -30,12 +40,7 @@ const temperaturePresets = [
 ] as const;
 
 function loadCardsPerRow(): ModelCardsPerRow {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(MODEL_MANAGE_SETTINGS_KEY) ?? '{}') as { cardsPerRow?: unknown };
-    return parsed.cardsPerRow === 4 ? 4 : 3;
-  } catch {
-    return 3;
-  }
+  return MODEL_MANAGE_COLUMNS;
 }
 
 function saveCardsPerRow(cardsPerRow: ModelCardsPerRow) {
@@ -158,7 +163,6 @@ function ModelEditorModal({
   onClose: () => void;
   onSave: (draft: ModelDraft) => void;
 }) {
-  useTopModalEscape(isOpen, onClose);
   const [draft, setDraft] = useState<ModelDraft>(initial);
   const [showKey, setShowKey] = useState(false);
   const currentProvider = providerMeta[draft.provider];
@@ -170,18 +174,16 @@ function ModelEditorModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/40">
-      <div
-        className="modal-sharp w-[620px] max-w-[92vw] rounded-[28px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
-      >
-        <div className="flex items-center justify-between border-b border-slate-100 px-8 py-6">
-          <h2 className="text-[18px] font-bold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-300 transition-colors hover:bg-slate-100 hover:text-slate-500">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="space-y-5 px-8 py-7">
+    <AppModalShell
+      title={title}
+      isOpen={isOpen}
+      onClose={onClose}
+      widthClass="w-[620px]"
+      heightClass="max-h-[calc(100vh-48px)]"
+      zIndexClass="z-[260]"
+      storageId="model-editor-modal"
+    >
+        <div className="min-h-0 space-y-5 overflow-y-auto px-8 py-7">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className={`xy-floating-field ${draft.name.trim() ? 'xy-has-value' : ''}`}>
               <input
@@ -276,20 +278,18 @@ function ModelEditorModal({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-4 border-t border-slate-100 bg-slate-50/60 px-8 py-5">
-          <button onClick={onClose} className="rounded-2xl border border-slate-200 px-6 py-3 text-base text-slate-600 hover:bg-white">
+        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-8 py-5">
+          <ActionButton onClick={onClose} variant="secondary">
             取消
-          </button>
-          <button
+          </ActionButton>
+          <ActionButton
             onClick={() => onSave(draft)}
             disabled={!draft.name.trim() || !draft.id.trim()}
-            className="rounded-2xl bg-brand px-7 py-3 text-base text-white transition-colors hover:bg-brand-dark disabled:bg-slate-300"
           >
             保存修改
-          </button>
+          </ActionButton>
         </div>
-      </div>
-    </div>
+    </AppModalShell>
   );
 }
 
@@ -304,7 +304,6 @@ function ModelManageSettingsModal({
   onChange: (value: ModelCardsPerRow) => void;
   onClose: () => void;
 }) {
-  useTopModalEscape(isOpen, onClose);
   if (!isOpen) return null;
 
   return (
@@ -320,28 +319,28 @@ function ModelManageSettingsModal({
             </div>
             <h2 className="text-base font-bold text-slate-900">模型管理设置</h2>
           </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <div className="px-6 py-5">
-          <div className="mb-3 text-sm font-bold text-slate-700">每行模型卡片</div>
-          <div className="grid grid-cols-2 gap-3">
-            {([3, 4] as const).map((value) => {
+          <div className="mb-3 text-sm font-bold text-slate-700">模型卡片布局</div>
+          <div className="grid grid-cols-1 gap-3">
+            {([MODEL_MANAGE_COLUMNS] as const).map((value) => {
               const isActive = cardsPerRow === value;
               return (
                 <button
                   key={value}
                   onClick={() => onChange(value)}
-                  className={`rounded-xl border px-4 py-3 text-left transition-colors ${
+                  className={`rounded-lg border px-4 py-3 text-left transition-colors ${
                     isActive
-                      ? 'border-brand bg-brand-light text-brand'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                      ? 'border-[#08AACE] bg-[#EAF9FD] text-[#078fb0]'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-[#F8FEFF]'
                   }`}
                 >
-                  <div className="text-base font-bold">{value} 个</div>
-                  <div className="mt-1 text-xs opacity-75">{value === 3 ? '默认，更宽松' : '更紧凑'}</div>
+                  <div className="text-base font-bold">每行 {value} 个</div>
+                  <div className="mt-1 text-xs opacity-75">一列约 3 个，适合大弹窗快速浏览。</div>
                 </button>
               );
             })}
@@ -352,7 +351,11 @@ function ModelManageSettingsModal({
   );
 }
 
-export function ModelManagePage() {
+export function ModelManagePage({
+  embedded = false,
+  onClose,
+  headerDragHandleProps,
+}: ModelManagePageProps = {}) {
   const { models, addModel, updateModel, deleteModel, reorderModels } = useModels();
   const { records, clearApiTestFailures } = useCallRecords();
   const [showAdd, setShowAdd] = useState(false);
@@ -562,22 +565,42 @@ export function ModelManagePage() {
     if (model.connectionStatus === 'testing') return '测试中';
     return '未测试';
   };
+  const {
+    className: headerDragHandleClassName,
+    ...resolvedHeaderDragHandleProps
+  } = headerDragHandleProps ?? {};
+  const headerClassName = embedded
+    ? `flex h-11 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 ${headerDragHandleProps ? 'cursor-move' : ''} ${headerDragHandleClassName ?? ''}`
+    : `flex h-16 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-6 ${headerDragHandleClassName ?? ''}`;
 
   return (
     <div className="flex h-full flex-col bg-slate-50">
-      <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-6">
+      <div {...resolvedHeaderDragHandleProps} className={headerClassName}>
         <div className="flex min-w-0 items-center gap-3">
-          <h1 className="text-xl font-bold text-slate-900">模型管理</h1>
+          <h1 className={embedded ? 'text-sm font-bold text-slate-900' : 'text-xl font-bold text-slate-900'}>模型管理</h1>
           <span className="flex h-7 items-center rounded-lg bg-orange-500 px-3 text-xs text-white">模型 {enabledCount} 个</span>
         </div>
-        <button
-          onClick={() => setShowSettings(true)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-brand/40 hover:bg-brand-light hover:text-brand"
-          title="模型管理设置"
-          aria-label="模型管理设置"
-        >
-          <Settings className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            data-no-modal-drag="true"
+            onClick={() => setShowSettings(true)}
+            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]"
+            title="模型管理设置"
+            aria-label="模型管理设置"
+          >
+            <Settings className="h-4 w-4" />
+          </button>
+          {onClose ? (
+            <button
+              data-no-modal-drag="true"
+              onClick={onClose}
+              className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              title="关闭"
+            >
+              关闭
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className={`flex min-h-0 flex-1 overflow-hidden px-7 py-6 ${cardsPerRow === 4 ? 'gap-4' : 'gap-5'}`}>
@@ -628,8 +651,8 @@ export function ModelManagePage() {
                   onPointerMove={updateModelPointerPreview}
                   onPointerUp={finishModelPointerDrag}
                   onPointerCancel={finishModelPointerDrag}
-                  className={`model-card relative flex h-full min-h-[296px] flex-col overflow-hidden rounded-[20px] border bg-white transition-colors ${
-                    cardsPerRow === 4 ? 'p-4 pr-[66px]' : 'p-5 pr-[78px]'
+                  className={`model-card relative flex ${MODEL_CARD_HEIGHT_CLASS} flex-col overflow-hidden rounded-[20px] border bg-white transition-colors ${
+                    cardsPerRow === 4 ? 'p-4 pr-[58px]' : 'p-5 pr-[78px]'
                   } ${isDraggingPreview ? 'border-dashed border-brand/45 bg-brand/10 shadow-inner' : 'border-slate-200'}`}
                 >
                 {isDraggingPreview ? (
@@ -637,7 +660,7 @@ export function ModelManagePage() {
                 ) : null}
                 <div
                   className={`model-temp-slider absolute z-10 flex flex-col items-center rounded-full border border-slate-200 bg-slate-50 px-1.5 py-3 ${
-                    cardsPerRow === 4 ? 'bottom-4 right-3 top-[92px] w-12' : 'bottom-5 right-4 top-[96px] w-14'
+                    cardsPerRow === 4 ? 'bottom-4 right-3 top-[80px] w-10' : 'bottom-5 right-4 top-[96px] w-14'
                   }`}
                   title={`温度 ${formatTemperature(model.temperature ?? 0.7)}`}
                   draggable={false}
@@ -676,20 +699,20 @@ export function ModelManagePage() {
                     onPointerUp={() => setTemperatureDragId(null)}
                     onPointerCancel={() => setTemperatureDragId(null)}
                     onDragStart={(event) => event.preventDefault()}
-                    className={`${cardsPerRow === 4 ? 'w-7' : 'w-8'} h-full cursor-pointer accent-brand`}
+                    className={`${cardsPerRow === 4 ? 'w-6' : 'w-8'} h-full cursor-pointer accent-brand`}
                     style={{ writingMode: 'vertical-lr', direction: 'rtl' }}
                   />
                   <span className="mt-1 text-xs font-bold text-brand">{formatTemperature(model.temperature ?? 0.7)}</span>
                 </div>
 
-                <div className="mb-4 min-w-0">
+                <div className="mb-3 min-w-0">
                   <div className="text-base font-bold leading-snug text-slate-900 [overflow-wrap:anywhere]" title={model.name}>{model.name}</div>
                 </div>
 
-                <div className="mt-auto space-y-2.5 border-t border-slate-100 pt-4">
-                  <div className="model-card-meta mb-3 space-y-2 rounded-xl bg-slate-50 px-3 py-3">
-                    <div className="truncate text-[13px] text-slate-500" title={model.model}>模型ID: {model.model}</div>
-                    <div className="truncate text-[13px] text-slate-500">状态：<span className={model.enabled ? 'text-emerald-600' : 'text-slate-400'}>{statusText(model)}</span></div>
+                <div className="mt-auto space-y-2 border-t border-slate-100 pt-3">
+                  <div className="model-card-meta mb-2 space-y-1.5 rounded-xl bg-slate-50 px-3 py-2.5">
+                    <div className="truncate text-xs text-slate-500" title={model.model}>模型ID: {model.model}</div>
+                    <div className="truncate text-xs text-slate-500">状态：<span className={model.enabled ? 'text-emerald-600' : 'text-slate-400'}>{statusText(model)}</span></div>
                   </div>
                   <div className="xy-capsule-group w-full">
                     <button onClick={() => openEdit(model)} className="xy-capsule-button model-action-button model-action-primary flex-1">编辑模型</button>
@@ -718,59 +741,61 @@ export function ModelManagePage() {
             })}
             <button
               onClick={openAdd}
-              className="xy-radial-create-card model-card model-add-card flex h-full min-h-[296px] flex-col items-center justify-center rounded-[20px] border border-dashed border-blue-400 bg-white text-blue-600 transition-colors hover:border-blue-500 hover:bg-blue-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+              className={`xy-radial-create-card model-card model-add-card flex ${MODEL_CARD_HEIGHT_CLASS} flex-col items-center justify-center rounded-[20px] border border-dashed border-blue-400 bg-white text-blue-600 transition-colors hover:border-blue-500 hover:bg-blue-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200`}
             >
               <RadialCreateButton label="新增模型" />
             </button>
           </div>
         </div>
 
-        <aside className={`model-failure-panel flex shrink-0 flex-col overflow-hidden rounded-[20px] border border-slate-200 bg-white ${cardsPerRow === 4 ? 'w-[280px]' : 'w-[300px]'}`}>
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-50">
-                <AlertCircle className="h-4 w-4 text-red-500" />
+        {!embedded && (
+          <aside className={`model-failure-panel flex shrink-0 flex-col overflow-hidden rounded-[20px] border border-slate-200 bg-white ${cardsPerRow === 4 ? 'w-[280px]' : 'w-[300px]'}`}>
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-50">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900">失败日志</h2>
+                  <p className="mt-0.5 text-[11px] text-slate-400">API 测试错误内容</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">失败日志</h2>
-                <p className="mt-0.5 text-[11px] text-slate-400">API 测试错误内容</p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={clearApiTestFailures}
+                  disabled={failureLogs.length === 0}
+                  className="model-clear-failures rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300 disabled:hover:bg-transparent"
+                >
+                  清空记录
+                </button>
+                <span className="rounded-lg bg-red-50 px-2 py-1 text-xs font-medium text-red-500">{failureLogs.length}</span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={clearApiTestFailures}
-                disabled={failureLogs.length === 0}
-                className="model-clear-failures rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300 disabled:hover:bg-transparent"
-              >
-                清空记录
-              </button>
-              <span className="rounded-lg bg-red-50 px-2 py-1 text-xs font-medium text-red-500">{failureLogs.length}</span>
-            </div>
-          </div>
 
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
-            {failureLogs.length === 0 ? (
-              <div className="flex h-full min-h-[220px] flex-col items-center justify-center px-6 text-center text-slate-400">
-                <AlertCircle className="mb-3 h-8 w-8 text-slate-300" />
-                <div className="text-sm font-medium">暂无失败日志</div>
-                <div className="mt-1 text-xs leading-5">点击模型卡片里的 API 测试后，失败原因会显示在这里。</div>
-              </div>
-            ) : (
-              failureLogs.map((log) => (
-                <article key={log.id} className="model-failure-log rounded-2xl border border-red-100 bg-red-50/50 p-3">
-                  <div className="mb-2 flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-bold text-slate-900" title={log.modelName}>{log.modelName}</div>
-                      <div className="mt-0.5 truncate text-[11px] text-slate-400" title={log.endpoint}>{log.endpoint || '未记录接口地址'}</div>
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+              {failureLogs.length === 0 ? (
+                <div className="flex h-full min-h-[220px] flex-col items-center justify-center px-6 text-center text-slate-400">
+                  <AlertCircle className="mb-3 h-8 w-8 text-slate-300" />
+                  <div className="text-sm font-medium">暂无失败日志</div>
+                  <div className="mt-1 text-xs leading-5">点击模型卡片里的 API 测试后，失败原因会显示在这里。</div>
+                </div>
+              ) : (
+                failureLogs.map((log) => (
+                  <article key={log.id} className="model-failure-log rounded-2xl border border-red-100 bg-red-50/50 p-3">
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-bold text-slate-900" title={log.modelName}>{log.modelName}</div>
+                        <div className="mt-0.5 truncate text-[11px] text-slate-400" title={log.endpoint}>{log.endpoint || '未记录接口地址'}</div>
+                      </div>
+                      <span className="shrink-0 text-[11px] text-slate-400">{formatLogTime(log.timestamp)}</span>
                     </div>
-                    <span className="shrink-0 text-[11px] text-slate-400">{formatLogTime(log.timestamp)}</span>
-                  </div>
-                  <pre className="model-failure-error max-h-36 overflow-y-auto whitespace-pre-wrap rounded-xl bg-white p-3 text-xs leading-5 text-red-700">{log.error || '未返回错误内容'}</pre>
-                </article>
-              ))
-            )}
-          </div>
-        </aside>
+                    <pre className="model-failure-error max-h-36 overflow-y-auto whitespace-pre-wrap rounded-xl bg-white p-3 text-xs leading-5 text-red-700">{log.error || '未返回错误内容'}</pre>
+                  </article>
+                ))
+              )}
+            </div>
+          </aside>
+        )}
       </div>
 
       <ModelEditorModal

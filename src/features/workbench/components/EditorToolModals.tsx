@@ -260,6 +260,15 @@ export function stripLineIndents(text: string) {
     .join('\n');
 }
 
+export function applyParagraphIndentToText(text: string, enabled: boolean) {
+  const stripped = stripLineIndents(text);
+  if (!enabled) return stripped;
+  return stripped
+    .split('\n')
+    .map((line) => (line.trim() ? `\u3000\u3000${line}` : line))
+    .join('\n');
+}
+
 export function removeParagraphInnerFullWidthSpaces(text: string) {
   return text
     .split('\n')
@@ -308,6 +317,7 @@ export function applyFormat(text: string, options: FormatOptions) {
       .filter(Boolean)
       .join('\n');
   }
+  result = applyParagraphIndentToText(result, options.paragraphIndent);
   return result;
 }
 
@@ -807,7 +817,7 @@ export function SmartFormatModal({ isOpen, onClose, currentText, settings, onApp
 
   return (
     <ModalShell title="智能排版" icon={<Wand2 className="h-5 w-5 text-brand" />} onClose={onClose} widthClass="w-[560px]">
-      <div className="space-y-1 p-5">
+      <div className="px-5 py-3">
         <ToggleRow
           label="段落缩进"
           desc="视觉缩进，不写入正文空格"
@@ -816,13 +826,13 @@ export function SmartFormatModal({ isOpen, onClose, currentText, settings, onApp
         />
         <ToggleRow label="合并空段落" desc="合并空行并整理成连续正文段落" checked={options.mergeParagraphs} onChange={(value) => setOptions((prev) => ({ ...prev, mergeParagraphs: value }))} />
         {preview && (
-          <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 p-3">
+          <div className="mt-3 rounded-lg border border-gray-100 bg-gray-50 p-3">
             <p className="mb-2 text-xs text-gray-400">预览</p>
             <pre className="max-h-[120px] overflow-y-auto whitespace-pre-wrap text-xs text-gray-600">{preview}</pre>
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between border-t border-gray-100 px-5 py-3">
+      <div className="flex items-center justify-between border-t border-gray-100 px-5 py-2.5">
         <button onClick={() => { setOptions(defaultFormatOptions); setPreview(''); }} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
           <RotateCcw className="h-4 w-4" />恢复默认
         </button>
@@ -839,7 +849,7 @@ export function SmartFormatModal({ isOpen, onClose, currentText, settings, onApp
 
 function ToggleRow({ label, desc, checked, onChange }: { label: string; desc?: string; checked: boolean; onChange: (value: boolean) => void }) {
   return (
-    <div className="flex items-start justify-between border-b border-gray-100 py-3 last:border-0">
+    <div className="flex items-start justify-between border-b border-gray-100 py-2.5 last:border-0">
       <div>
         <p className="text-sm font-medium text-gray-700">{label}</p>
         {desc && <p className="mt-0.5 text-xs text-gray-400">{desc}</p>}
@@ -1084,11 +1094,10 @@ export function SymbolReplaceModal({ isOpen, onClose }: {
   );
 }
 
-export function HighlightOverlay({ content, fontSettings, scrollTop = 0, paragraphIndent = false }: {
+export function HighlightOverlay({ content, fontSettings, scrollTop = 0 }: {
   content: string;
   fontSettings: FontSettings;
   scrollTop?: number;
-  paragraphIndent?: boolean;
 }) {
   const [words, setWords] = useState<string[]>(getStoredHighFreqWords);
   const [enabled, setEnabled] = useState(isHighFreqEnabled);
@@ -1109,14 +1118,14 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0, paragra
     };
   }, []);
 
-  if (!enabled || words.length === 0 || !content) return null;
+  if (!content || !enabled || words.length === 0) return null;
   const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;
   const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;
-  const editorTextIndent = paragraphIndent ? '2em' : undefined;
-  const escaped = [...words]
+  const shouldHighlightWords = enabled && words.length > 0;
+  const escaped = shouldHighlightWords ? [...words]
     .sort((a, b) => b.length - a.length)
-    .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  const regex = new RegExp(`(${escaped.join('|')})`, 'g');
+    .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) : [];
+  const regex = escaped.length > 0 ? new RegExp(`(${escaped.join('|')})`, 'g') : null;
   const wordSet = new Set(words);
   const highlightOption = highFreqHighlightColorOptions.find((option) => option.value === highlightColor) ?? highFreqHighlightColorOptions[0];
   const lines = content.split('\n');
@@ -1127,16 +1136,16 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0, paragra
       style={{
         ...editorGridLineStyle,
         fontFamily: fontSettings.fontFamily,
+        color: 'transparent',
         fontSize: `${fontSettings.fontSize}px`,
         lineHeight: fontSettings.lineHeight,
         paddingLeft: editorTextPaddingLeft,
         paddingRight: editorTextPaddingRight,
-        textIndent: editorTextIndent,
         transform: `translateY(-${scrollTop}px)`,
       }}
     >
       {lines.map((line, lineIndex) => {
-        const parts = line.split(regex);
+        const parts = regex ? line.split(regex) : [line || '\u00A0'];
         return (
           <span key={lineIndex}>
             {parts.map((part, partIndex) => wordSet.has(part)
@@ -1153,7 +1162,6 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0, paragra
                 </span>
               )
               : <span key={partIndex}>{part}</span>)}
-            {lineIndex < lines.length - 1 ? '\n' : null}
           </span>
         );
       })}

@@ -133,6 +133,30 @@ const readWorkbenchSettingSegmentedTabsSource = async () => {
   return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchSettingSegmentedTabs.tsx'), 'utf8');
 };
 
+const readSharedSegmentedTabsSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../shared/ui/SegmentedTabs.tsx'), 'utf8');
+};
+
+const readWorkbenchLibraryAiLogShellSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchLibraryAiLogShell.tsx'), 'utf8');
+};
+
+const readSharedAppModalShellSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../shared/ui/AppModalShell.tsx'), 'utf8');
+};
+
 const readSharedStylesSource = async () => {
   const { readFileSync } = await import('node:fs');
   const { fileURLToPath } = await import('node:url');
@@ -155,6 +179,22 @@ const readAiRequestLogGroupsSource = async () => {
   const { dirname, join } = await import('node:path');
 
   return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../shared/ui/AiRequestLogGroups.tsx'), 'utf8');
+};
+
+const readAiRequestLogModalLayoutSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../shared/ui/AiRequestLogModalLayout.tsx'), 'utf8');
+};
+
+const readChapterNumberButtonSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../shared/ui/ChapterNumberButton.tsx'), 'utf8');
 };
 
 const readCapsuleSelectSource = async () => {
@@ -908,11 +948,19 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const combinedSource = await readCombinedAiConfigSelectSource();
 
     expect(capsuleSource).toContain('top: rect.bottom,');
-    expect(capsuleSource).toContain("'absolute left-0 right-0 top-full'");
+    expect(capsuleSource).toContain('top-[calc(100%-2px)]');
+    expect(capsuleSource).toContain('border-2 border-t-0 border-[#08AACE]');
+    expect(capsuleSource).toContain('connectedDropdownOpen');
+    expect(capsuleSource).toContain('border-b-transparent');
+    expect(capsuleSource).toContain('shadow-[0_18px_34px_rgba(8,170,206,0.14)]');
     expect(capsuleSource).not.toContain('rect.bottom + 6');
     expect(capsuleSource).not.toContain('top-[calc(100%+6px)]');
-    expect(combinedSource).toContain('absolute top-full z-[10050]');
+    expect(combinedSource).toContain('absolute top-[calc(100%-2px)] z-[10050]');
+    expect(combinedSource).toContain('border-2 border-t-0 border-[#08AACE]');
+    expect(combinedSource).toContain('shadow-[0_18px_34px_rgba(8,170,206,0.14)]');
+    expect(combinedSource).toContain("openSegment === 'model' ? 'left-0 w-1/2 rounded-bl-xl rounded-br-none' : 'right-0 w-1/2 rounded-bl-none rounded-br-xl'");
     expect(combinedSource).not.toContain('top-[calc(100%+6px)]');
+    expect(combinedSource).not.toContain('rounded-xl border border-slate-200 bg-white py-1 shadow-2xl');
   });
   it('keeps disabled floating capsule selects outlined instead of filled', async () => {
     const capsuleSource = await readCapsuleSelectSource();
@@ -1165,10 +1213,12 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   it('uses the tested white empty state for chapter outline directories and removes the temporary test page route', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const chapterEditorSource = await readChapterEditorSource();
+    const chapterNumberButtonSource = await readChapterNumberButtonSource();
     const testCollectionSource = await readTestCollectionSource();
 
     expect(panelSource).toContain("border-slate-200 bg-white text-slate-500 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]");
-    expect(chapterEditorSource).toContain("'xy-detail-outline-number-no-outline hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'");
+    expect(chapterEditorSource).toContain("} from '@/shared/ui/ChapterNumberButton';");
+    expect(chapterNumberButtonSource).toContain("return 'xy-detail-outline-number-no-outline hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]';");
     expect(panelSource).not.toContain('repeating-linear-gradient(135deg, #f8fafc 0');
     expect(chapterEditorSource).not.toContain('repeating-linear-gradient(135deg, #f8fafc 0');
     expect(testCollectionSource).not.toContain('OutlineDirectoryStateTestPage');
@@ -1183,39 +1233,46 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(styleSource).toContain('.xy-wa-editor-root {\n  background: var(--xy-wa-editor-bg);\n}');
     expect(styleSource).toContain('.xy-wa-editor-surface {\n  background: var(--xy-wa-editor-bg);\n}');
     expect(styleSource).toContain('.xy-wa-editor-surface .xy-wa-editor-text-layer {\n  background: var(--xy-wa-editor-bg);\n}');
+    expect(styleSource).not.toContain('.xy-wa-editor-paragraph-overlay > span {');
+    expect(styleSource).not.toContain('text-indent: 2em;');
     expect(chapterEditorSource).toContain('className="xy-wa-editor-root flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"');
     expect(chapterEditorSource).toContain('className="xy-wa-editor-surface relative min-h-0 flex-1 overflow-hidden"');
     expect(chapterEditorSource).toContain('className="xy-wa-editor-text-layer editor-scrollbar relative z-10 h-full min-h-0 w-full resize-none border-0 bg-transparent pb-6 pt-3 outline-none"');
     expect(chapterEditorSource).toContain('paddingLeft: editorTextPaddingLeft');
     expect(chapterEditorSource).toContain('paddingRight: editorTextPaddingRight');
-    expect(chapterEditorSource).toContain('textIndent: editorTextIndent');
+    expect(chapterEditorSource).toContain('color: fontSettings.fontColor');
+    expect(chapterEditorSource).not.toContain("color: formatSettings.paragraphIndent ? 'transparent' : fontSettings.fontColor");
+    expect(chapterEditorSource).not.toContain('textIndent: editorTextIndent');
     expect(chapterEditorSource).not.toContain('overflow-hidden bg-[#f5f5f7]');
     expect(chapterEditorSource).not.toContain('px-6 pb-6 pt-10 outline-none');
   });
 
-  it('keeps paragraph indentation visual instead of selectable editor blanks', async () => {
+  it('keeps paragraph indentation as real textarea text instead of overlay text', async () => {
     const chapterEditorSource = await readChapterEditorSource();
     const modalSource = await readEditorToolModalsSource();
 
-    expect(chapterEditorSource).toContain('const normalizeEditorText = (value: string) => stripLineIndents(value);');
+    expect(chapterEditorSource).toContain('const normalizeEditorText = (value: string) => applyParagraphIndentToText(value, formatSettings.paragraphIndent);');
     expect(chapterEditorSource).toContain('const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;');
     expect(chapterEditorSource).toContain('const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;');
-    expect(chapterEditorSource).toContain("const editorTextIndent = formatSettings.paragraphIndent ? '2em' : undefined;");
+    expect(chapterEditorSource).not.toContain("const editorTextIndent = formatSettings.paragraphIndent ? '2em' : undefined;");
     expect(chapterEditorSource).toContain("const cleanedPaste = stripLineIndents(pasted);");
-    expect(chapterEditorSource).toContain("const next = content.slice(0, start) + '\\n' + content.slice(end);");
-    expect(chapterEditorSource).toContain('paragraphIndent={formatSettings.paragraphIndent}');
+    expect(chapterEditorSource).toContain("const insertText = formatSettings.paragraphIndent ? '\\n\\u3000\\u3000' : '\\n';");
+    expect(chapterEditorSource).not.toContain('paragraphIndent={formatSettings.paragraphIndent}');
     expect(chapterEditorSource).not.toContain('keepSelectionOutOfParagraphIndent');
     expect(chapterEditorSource).not.toContain('normalizeParagraphIndents');
     expect(modalSource).toContain('const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;');
     expect(modalSource).toContain('const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;');
-    expect(modalSource).toContain("const editorTextIndent = paragraphIndent ? '2em' : undefined;");
-    expect(modalSource).toContain('whitespace-pre-wrap break-words pb-6 pt-3 text-transparent');
+    expect(modalSource).not.toContain("const editorTextIndent = paragraphIndent ? '2em' : undefined;");
+    expect(modalSource).toContain('export function applyParagraphIndentToText(text: string, enabled: boolean)');
+    expect(modalSource).not.toContain('xy-wa-editor-paragraph-overlay');
+    expect(modalSource).not.toContain("color: paragraphIndent ? fontSettings.fontColor : 'transparent'");
     expect(modalSource).not.toContain('normalizeParagraphIndents');
   });
 
   it('matches audit comment and status chapter directories to the detail outline volume style without losing summary actions', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const chapterEditorSource = await readChapterEditorSource();
+    const chapterNumberButtonSource = await readChapterNumberButtonSource();
 
     expect(chapterEditorSource).toContain('volumes?: Volume[]');
     expect(chapterEditorSource).toContain('const chapterDirectoryGroups = useMemo(() => {');
@@ -1242,16 +1299,16 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(chapterEditorSource).not.toContain('className="group flex h-[36px] w-full cursor-pointer items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 text-left transition-colors hover:bg-brand/10"');
     expect(chapterEditorSource).not.toContain('<span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-brand-dark">');
     expect(chapterEditorSource).toContain('<span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{group.chapters.length}章</span>');
-    expect(chapterEditorSource).toContain("const WORKBENCH_CHAPTER_NUMBER_GRID_STYLE = { gridTemplateColumns: 'repeat(auto-fit, minmax(32px, max-content))' };");
+    expect(chapterEditorSource).toContain('CHAPTER_NUMBER_GRID_STYLE as WORKBENCH_CHAPTER_NUMBER_GRID_STYLE');
     expect(chapterEditorSource).toContain('style={WORKBENCH_CHAPTER_NUMBER_GRID_STYLE}');
-    expect(chapterEditorSource).toContain('relative grid h-8 w-8 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block');
-    expect(chapterEditorSource).toContain("const reviewChapterNumberSelectedClass = selected ? 'xy-detail-outline-number-selected' : '';");
-    expect(chapterEditorSource).toContain("const statusChapterNumberSelectedClass = selected ? 'xy-detail-outline-number-selected' : '';");
-    expect(chapterEditorSource).toContain("'xy-detail-outline-number-no-outline hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'");
+    expect(chapterEditorSource).toContain('<ChapterNumberButton');
+    expect(chapterNumberButtonSource).toContain('relative grid h-8 w-8 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block');
+    expect(chapterNumberButtonSource).toContain("selected ? 'xy-detail-outline-number-selected' : ''");
+    expect(chapterNumberButtonSource).toContain("'xy-detail-outline-number-no-outline hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'");
     expect(chapterEditorSource).not.toContain("'border-transparent xy-detail-outline-number-selected xy-selected-orange-bg text-slate-900'");
     expect(chapterEditorSource).not.toContain("groupHasSelectedChapter ? 'xy-selected-orange-bg' : ''");
     expect(chapterEditorSource).toContain('statusUpdatedChapterIds.has(item.id)');
-    expect(chapterEditorSource).toContain("'xy-detail-outline-number-used hover:border-[#067B96] hover:bg-[#D3EEF5]'");
+    expect(chapterNumberButtonSource).toContain("'xy-detail-outline-number-used hover:border-[#067B96] hover:bg-[#D3EEF5]'");
     expect(chapterEditorSource).not.toContain('<span className="text-sm font-black text-slate-900">章节位置</span>');
     expect(chapterEditorSource).not.toContain('<span className="inline-flex items-center gap-1"><i className="h-3 w-3 rounded bg-[#08B3D9]" />已更新</span>');
     expect(chapterEditorSource).not.toContain('<span className="inline-flex items-center gap-1"><i className="h-3 w-3 rounded border border-slate-200 bg-slate-50" />未更新</span>');
@@ -1260,7 +1317,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain("const volumeIsSelected = safeOutlineSelectionType === 'volume' && selectedOutlineVolume?.id === volume.id;");
     expect(panelSource).toContain('selectOutlineVolume(volume);');
     const summaryChapterButtonSources = Array.from(
-      panelSource.matchAll(/const outlineButtonClass = isDetailOutlineTab[\s\S]*?\}\`;/g),
+      panelSource.matchAll(/const outlineButtonClass = `relative h-9 min-w-9[\s\S]*?\}\`;/g),
       (match) => match[0],
     );
     expect(summaryChapterButtonSources.length).toBeGreaterThanOrEqual(2);
@@ -1268,6 +1325,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
       expect(buttonSource).toContain("? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'");
       expect(buttonSource).not.toContain("? 'border-transparent xy-selected-orange-bg text-slate-900'");
     });
+    expect(panelSource).toContain('if (isDetailOutlineTab) {');
+    expect(panelSource).toContain('<ChapterNumberButton');
     expect(panelSource).toContain('<nav className="editor-scrollbar min-h-0 flex-1 overflow-y-auto" aria-label="剧情链目录树">');
     expect(panelSource).toContain("isDetailOutlineTab ? 'bg-[#F8FAFC]' : 'bg-gray-50 px-1 py-2'");
     expect(panelSource).not.toContain('<nav className="editor-scrollbar min-h-0 flex-1 overflow-y-auto pr-1" aria-label="剧情链目录树">');
@@ -1282,13 +1341,70 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(chapterEditorSource).toContain('type ReviewAnnotation = {');
     expect(chapterEditorSource).toContain('function extractReviewAnnotations(output: string)');
     expect(chapterEditorSource).toContain('const reviewAnnotationsByParagraph = useMemo(() => {');
-    expect(chapterEditorSource).toContain('const [showReviewOutline, setShowReviewOutline] = useState(true);');
-    expect(chapterEditorSource).toContain('const reviewPreviewGridTemplateColumns = effectiveShowReviewOutline');
+    expect(chapterEditorSource).toContain("const REVIEW_PREVIEW_OUTLINE_VISIBLE_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_outline_visible';");
+    expect(chapterEditorSource).toContain('function readReviewPreviewOutlineVisible() {');
+    expect(chapterEditorSource).toContain("return localStorage.getItem(REVIEW_PREVIEW_OUTLINE_VISIBLE_STORAGE_KEY) !== 'false';");
+    expect(chapterEditorSource).toContain('const [showReviewOutline, setShowReviewOutline] = useState(() => readReviewPreviewOutlineVisible());');
+    expect(chapterEditorSource).toContain('localStorage.setItem(REVIEW_PREVIEW_OUTLINE_VISIBLE_STORAGE_KEY, String(nextShowReviewOutline));');
+    expect(chapterEditorSource).toContain("const REVIEW_PREVIEW_FONT_SIZE_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_font_size';");
+    expect(chapterEditorSource).toContain('function readReviewPreviewFontSize() {');
+    expect(chapterEditorSource).toContain('const [reviewPreviewFontSize, setReviewPreviewFontSize] = useState(() => readReviewPreviewFontSize());');
+    expect(chapterEditorSource).toContain('const setReviewPreviewFontSizeWithStorage = (nextFontSize: number) => {');
+    expect(chapterEditorSource).toContain('localStorage.setItem(REVIEW_PREVIEW_FONT_SIZE_STORAGE_KEY, String(fontSize));');
+    expect(chapterEditorSource).toContain('onChange={setReviewPreviewFontSizeWithStorage}');
+    expect(chapterEditorSource).toContain("const REVIEW_MODEL_ID_STORAGE_KEY = 'xinyuexia_chapter_editor_review_model_id';");
+    expect(chapterEditorSource).toContain('function readReviewModelId() {');
+    expect(chapterEditorSource).toContain("return localStorage.getItem(REVIEW_MODEL_ID_STORAGE_KEY) ?? '';");
+    expect(chapterEditorSource).toContain('const [reviewModelId, setReviewModelId] = useState(() => readReviewModelId());');
+    expect(chapterEditorSource).toContain('const setReviewModelIdWithStorage = (nextModelId: string) => {');
+    expect(chapterEditorSource).toContain('localStorage.setItem(REVIEW_MODEL_ID_STORAGE_KEY, nextModelId);');
+    expect(chapterEditorSource).toContain('onModelChange={setReviewModelIdWithStorage}');
+    expect(chapterEditorSource).not.toContain('onModelChange={setReviewModelId}');
+    expect(chapterEditorSource).toContain("type ReviewPreviewWidthMode = 'locked' | 'free';");
+    expect(chapterEditorSource).toContain("const REVIEW_PREVIEW_WIDTH_MODE_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_width_mode';");
+    expect(chapterEditorSource).toContain("const REVIEW_PREVIEW_TEXT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_text_width';");
+    expect(chapterEditorSource).toContain('const REVIEW_PREVIEW_TEXT_WIDTH = 420;');
+    expect(chapterEditorSource).toContain('const REVIEW_PREVIEW_TEXT_WIDTH_LIMIT = { min: 240, max: 760 };');
+    expect(chapterEditorSource).toContain('const REVIEW_PREVIEW_SEPARATOR_WIDTH = 7;');
+    expect(chapterEditorSource).toContain('function readReviewPreviewWidthMode(): ReviewPreviewWidthMode {');
+    expect(chapterEditorSource).toContain('const [reviewPreviewTextWidth, setReviewPreviewTextWidth] = useState(() => readStoredPanelWidth(REVIEW_PREVIEW_TEXT_WIDTH_STORAGE_KEY, REVIEW_PREVIEW_TEXT_WIDTH, REVIEW_PREVIEW_TEXT_WIDTH_LIMIT));');
+    expect(chapterEditorSource).toContain('const [reviewPreviewWidthMode, setReviewPreviewWidthMode] = useState<ReviewPreviewWidthMode>(() => readReviewPreviewWidthMode());');
+    expect(chapterEditorSource).toContain('const [reviewPreviewUsesCustomTextWidth, setReviewPreviewUsesCustomTextWidth] = useState(false);');
+    expect(chapterEditorSource).toContain('const getBalancedReviewPreviewTextWidth = (nextOutlineWidth = reviewPreviewOutlineWidth, nextShowOutline = effectiveShowReviewOutline) => {');
+    expect(chapterEditorSource).toContain('const syncReviewPreviewTextColumnsWidth = (nextOutlineWidth = reviewPreviewOutlineWidth, nextShowOutline = effectiveShowReviewOutline) => {');
+    expect(chapterEditorSource).toContain('const setReviewPreviewWidthModeWithStorage = (nextMode: ReviewPreviewWidthMode) => {');
+    expect(chapterEditorSource).toContain("if (nextMode === 'free') {");
+    expect(chapterEditorSource).toContain('setReviewPreviewUsesCustomTextWidth(false);');
+    expect(chapterEditorSource).not.toContain('const REVIEW_PREVIEW_ANNOTATION_WIDTH_LIMIT = { min: 300, max: 640 };');
+    expect(chapterEditorSource).not.toContain('const REVIEW_PREVIEW_ANNOTATION_WIDTH_LIMIT = { min: 360, max: 640 };');
+    expect(chapterEditorSource).not.toContain('const reviewPreviewGridTemplateColumns = effectiveShowReviewOutline');
+    expect(chapterEditorSource).toContain('const reviewPreviewHiddenTextColumnMinWidth = `calc((100% - ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px) / 3)`;');
+    expect(chapterEditorSource).toContain('const reviewPreviewFreeTextColumnMinWidth = effectiveShowReviewOutline');
+    expect(chapterEditorSource).toContain("const reviewPreviewUseFreeCustomWidth = reviewPreviewWidthMode === 'free' && reviewPreviewUsesCustomTextWidth;");
+    expect(chapterEditorSource).toContain('const reviewPreviewGridTemplateColumns = !reviewPreviewUseFreeCustomWidth');
+    expect(chapterEditorSource).toContain('`${reviewPreviewOutlineWidth}px ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(0, 1fr) ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(0, 1fr)`');
+    expect(chapterEditorSource).toContain('`minmax(${reviewPreviewHiddenTextColumnMinWidth}, 1fr) ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(${reviewPreviewHiddenTextColumnMinWidth}, 1fr)`');
+    expect(chapterEditorSource).toContain('`${reviewPreviewOutlineWidth}px ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(${reviewPreviewFreeTextColumnMinWidth}, ${reviewPreviewTextWidth}px) ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(${reviewPreviewFreeTextColumnMinWidth}, 1fr)`');
+    expect(chapterEditorSource).toContain('`minmax(${reviewPreviewHiddenTextColumnMinWidth}, ${reviewPreviewTextWidth}px) ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(${reviewPreviewHiddenTextColumnMinWidth}, 1fr)`');
+    expect(chapterEditorSource).not.toContain('`${reviewPreviewOutlineWidth}px 7px ${reviewPreviewAnnotationWidth}px 7px ${reviewPreviewAnnotationWidth}px`');
+    expect(chapterEditorSource).not.toContain('`minmax(${reviewPreviewHiddenTextColumnMinWidth}, 1fr) 7px minmax(${reviewPreviewHiddenTextColumnMinWidth}, ${reviewPreviewAnnotationWidth}px)`');
+    expect(chapterEditorSource).not.toContain('`${reviewPreviewOutlineWidth}px 7px minmax(0,1fr) 7px ${reviewPreviewAnnotationWidth}px`');
+    expect(chapterEditorSource).not.toContain('`minmax(0,1fr) 7px ${reviewPreviewAnnotationWidth}px`');
     expect(chapterEditorSource).toContain('reviewPreviewOutlineResizeHandle');
-    expect(chapterEditorSource).toContain('reviewPreviewAnnotationResizeHandle');
+    expect(chapterEditorSource).toContain('reviewPreviewTextResizeHandle');
+    expect(chapterEditorSource).toContain('renderReviewPreviewColumnSeparator()');
+    expect(chapterEditorSource).toContain('reviewPreviewTextColumnSeparator');
+    expect(chapterEditorSource).not.toContain('reviewPreviewAnnotationResizeHandle');
     expect(chapterEditorSource).toContain('第${activeReviewChapter.serialNumber}章 章纲');
-    expect(chapterEditorSource).toContain("第${activeReviewChapter.serialNumber}章 ${reviewMode === 'polish' ? '润色前' : '原文'}");
-    expect(chapterEditorSource).toContain("第${activeReviewChapter.serialNumber}章 ${reviewMode === 'polish' ? '润色后' : reviewMode === 'audit' ? '审核后' : 'AI标注'}");
+    expect(chapterEditorSource).toContain("['locked', '等宽锁定'] as const");
+    expect(chapterEditorSource).toContain("['free', '自由调节'] as const");
+    expect(chapterEditorSource).toContain('onClick={() => setReviewPreviewWidthModeWithStorage(mode)}');
+    expect(chapterEditorSource).not.toContain('const reviewPreviewTextColumnsWidthLabel');
+    expect(chapterEditorSource).not.toContain('原文/审核同宽');
+    expect(chapterEditorSource).not.toContain('原文/润色后同宽');
+    expect(chapterEditorSource).toContain("const reviewPreviewOriginalTitle = activeReviewChapter ? `第${activeReviewChapter.serialNumber}章 原文` : '原文';");
+    expect(chapterEditorSource).toContain('const reviewPreviewAnnotationTitle = activeReviewChapter');
+    expect(chapterEditorSource).not.toContain('润色前');
     expect(chapterEditorSource).toContain('AI标注');
     expect(chapterEditorSource).not.toContain('AI 返回“原文标注”JSON 后，这里会高亮问题片段并显示审核说明。');
     expect(chapterEditorSource).toContain('renderAnnotatedReviewParagraph(paragraph, paragraphAnnotations)');
@@ -1523,11 +1639,13 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   it('can switch the library AI request log between titled sections and plain concatenated content', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const logGroupsSource = await readAiRequestLogGroupsSource();
+    const logLayoutSource = await readAiRequestLogModalLayoutSource();
     const settingRequestStart = panelSource.indexOf('const buildSettingLibraryRequestText = (promptText: string, userText: string) => {');
     const settingRequestEnd = panelSource.indexOf('const buildLibraryAiRequestPayload = (text: string, overrideText?: string) => {', settingRequestStart);
     const settingRequestSource = panelSource.slice(settingRequestStart, settingRequestEnd);
 
-    expect(panelSource).toContain('import { AiRequestLogContent, AiRequestLogGroups, type AiRequestLogGroup }');
+    expect(panelSource).toContain("import type { AiRequestLogGroup } from '@/shared/ui/AiRequestLogGroups';");
+    expect(panelSource).toContain("import { AiRequestLogModalLayout } from '@/shared/ui/AiRequestLogModalLayout';");
     expect(panelSource).toContain('export function buildRequestLogPlainPreview(groups: AiRequestLogGroup[])');
     expect(panelSource).toContain(".join('\\n\\n');");
     expect(panelSource).toContain('const [showLibraryAiLogTitles, setShowLibraryAiLogTitles] = useState(true);');
@@ -1557,9 +1675,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('onShowLibraryAiLogTitlesChange={setShowLibraryAiLogTitles}');
     expect(panelSource).toContain('onChange={(event) => onShowLibraryAiLogTitlesChange(event.target.checked)}');
     expect(panelSource).toContain('<span>显示标题内容</span>');
-    expect(panelSource).toContain('{showLibraryAiLogTitles ? (');
-    expect(panelSource).toContain('<AiRequestLogGroups groups={visibleAiRequestLogGroups} fillSingleGroup />');
-    expect(panelSource).toContain("visibleAiRequestLogPlainPreview ? <AiRequestLogContent content={visibleAiRequestLogPlainPreview} /> : '暂无可预览内容'");
+    expect(panelSource).toContain('<AiRequestLogModalLayout');
+    expect(panelSource).toContain('showGroupedContent={showLibraryAiLogTitles}');
+    expect(panelSource).toContain('plainPreview={visibleAiRequestLogPlainPreview}');
+    expect(logLayoutSource).toContain('<AiRequestLogGroups');
+    expect(logLayoutSource).toContain('plainPreview.trim() ? <AiRequestLogContent content={plainPreview} /> : emptyText');
     expect(logGroupsSource).toContain('function isSoftwareLogMarkerLine(line: string)');
     expect(logGroupsSource).toContain('export function AiRequestLogContent');
     expect(logGroupsSource).toContain('font-black text-red-500');
@@ -1567,24 +1687,72 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(logGroupsSource).toContain('fillSingleGroup = false');
     expect(logGroupsSource).toContain('fillGroupId,');
     expect(logGroupsSource).toContain('fillLastGroup = false');
+    expect(logGroupsSource).toContain('fillGroupWeights,');
+    expect(logGroupsSource).toContain('fillGroupWeights?: Record<string, number>;');
     expect(logGroupsSource).toContain('const shouldFillSingleGroup = fillSingleGroup && visibleGroups.length === 1;');
     expect(logGroupsSource).toContain('const fillLastGroupIndex = fillLastGroup ? visibleGroups.length - 1 : -1;');
-    expect(logGroupsSource).toContain('const shouldUseFillLayout = shouldFillSingleGroup || Boolean(fillGroupId) || fillLastGroup;');
+    expect(logGroupsSource).toContain('const hasFillGroupWeights = Boolean(fillGroupWeights && Object.keys(fillGroupWeights).length > 0);');
+    expect(logGroupsSource).toContain('const shouldUseFillLayout = shouldFillSingleGroup || Boolean(fillGroupId) || fillLastGroup || hasFillGroupWeights;');
     expect(logGroupsSource).toContain("className={shouldUseFillLayout ? 'flex h-full min-h-0 flex-col gap-3' : 'space-y-3'}");
-    expect(logGroupsSource).toContain('const shouldFillGroup = shouldFillSingleGroup || (fillGroupId === group.id && !collapsed) || (fillLastGroupIndex === groupIndex && !collapsed);');
+    expect(logGroupsSource).toContain('const fillGroupWeight = fillGroupWeights?.[group.id];');
+    expect(logGroupsSource).toContain('const shouldFillWeightedGroup = typeof fillGroupWeight === \'number\' && fillGroupWeight > 0 && !collapsed;');
+    expect(logGroupsSource).toContain('const shouldFillGroup = shouldFillSingleGroup || (fillGroupId === group.id && !collapsed) || (fillLastGroupIndex === groupIndex && !collapsed) || shouldFillWeightedGroup;');
+    expect(logGroupsSource).toContain('style={fillGroupStyle}');
     expect(logGroupsSource).toContain('ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4');
     expect(logGroupsSource).not.toContain('ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 text-xs leading-5');
   });
 
   it('lets the chapter editor output log fill the last expanded log group to the bottom', async () => {
     const chapterEditorSource = await readChapterEditorSource();
+    const logLayoutSource = await readAiRequestLogModalLayoutSource();
 
-    expect(chapterEditorSource).toContain('className="editor-scrollbar flex min-h-0 flex-1 flex-col overflow-hidden p-4"');
-    expect(chapterEditorSource).toContain('fillGroupId="context"');
+    expect(chapterEditorSource).toContain("import { AiRequestLogModalLayout } from '@/shared/ui/AiRequestLogModalLayout';");
+    expect(chapterEditorSource).toContain('<AiRequestLogModalLayout');
+    expect(logLayoutSource).toContain('className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] overflow-hidden"');
+    expect(logLayoutSource).toContain('className="border-r border-slate-100 bg-slate-50 p-4 text-sm"');
+    expect(chapterEditorSource).toContain('value: `作品编辑器 ${activeReviewModeTitle}`');
+    expect(chapterEditorSource).toContain("value: activeReviewModel?.name ?? '未选择模型'");
+    expect(chapterEditorSource).toContain("value: activeReviewPrompt?.name ?? '默认提示词'");
+    expect(logLayoutSource).toContain('className="editor-scrollbar flex min-h-0 flex-1 flex-col overflow-hidden p-5"');
+    expect(chapterEditorSource).toContain('if (openLogSignal <= 0 || openLogSignal === lastOpenLogSignalRef.current) return;');
+    expect(chapterEditorSource).toContain("if (embeddedMode !== 'audit' && embeddedMode !== 'comment' && embeddedMode !== 'polish') return;");
+    expect(chapterEditorSource).toContain('setIsReviewLogOpen(true);');
+    expect(chapterEditorSource).toContain('onRegisterHeaderLog?: (handler: (() => void) | null) => void;');
+    expect(chapterEditorSource).toContain('onRegisterHeaderLog(() => setIsReviewLogOpen(true));');
+    expect(chapterEditorSource).toContain("import { WorkbenchModal } from './WorkbenchModal';");
+    expect(chapterEditorSource).toContain('const reviewLogModal = isReviewLogOpen ? (');
+    expect(chapterEditorSource).toContain('storageId="chapter_editor_review_request_log"');
+    expect(chapterEditorSource).toContain('closeOnBackdrop={false}');
+    expect(chapterEditorSource).toContain('const basePromptText = activeReviewPrompt?.content?.trim() || modeInstruction;');
+    expect(chapterEditorSource).toContain("const promptText = [basePromptText, compareInstruction].filter(Boolean).join('\\n\\n');");
+    expect(chapterEditorSource).toContain('const userRequirementText = reviewAiInput.trim();');
+    expect(chapterEditorSource).toContain('const userText = userRequirementText ? wrapAiRequestTag(requirementTag, userRequirementText) : \'\';');
+    expect(chapterEditorSource).not.toContain('reviewAiInput.trim() || modeInstruction');
+    expect(chapterEditorSource).toContain("const REVIEW_LOG_SECTION_PREFIX = '[[YUEXIA_REVIEW_LOG_SECTION:';");
+    expect(chapterEditorSource).toContain("createReviewLogSection('系统提示词', promptText)");
+    expect(chapterEditorSource).toContain("...(userText ? [createReviewLogSection('其他要求', userText)] : [])");
+    expect(chapterEditorSource).toContain("log.lastIndexOf('\\n【关联章纲】', originalStart)");
+    expect(chapterEditorSource).not.toContain("['其他要求', '用户要求']");
+    expect(chapterEditorSource).toContain("getReviewLogSection(reviewRequestLog, '其他要求').trim()");
+    expect(chapterEditorSource).toContain("title: '其他要求'");
+    expect(chapterEditorSource).toContain("title: '关联章纲'");
+    expect(chapterEditorSource).toContain("content: getReviewLogSection(reviewRequestLog, '关联章纲')");
+    expect(chapterEditorSource).toContain("title: '原文'");
+    expect(chapterEditorSource).toContain("content: getReviewLogSection(reviewRequestLog, '原文')");
+    expect(chapterEditorSource).toContain('function getReviewLogFillGroupWeights(options: { hasOutline: boolean; hasUser: boolean })');
+    expect(chapterEditorSource).toContain('original: 2,');
+    expect(chapterEditorSource).toContain('fillSingleGroup');
+    expect(chapterEditorSource).toContain('fillGroupWeights={reviewLogFillGroupWeights}');
+    expect(chapterEditorSource).not.toContain('absolute inset-4 z-10 flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl');
+    expect(chapterEditorSource).not.toContain('fillGroupId="context"');
+    expect(chapterEditorSource).not.toContain('fillGroupId="original"');
+    expect(chapterEditorSource).not.toContain("title: '用户要求'");
   });
 
   it('adds a format tab to the library AI log using the current setting import structure', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
+    const libraryAiLogShellSource = await readWorkbenchLibraryAiLogShellSource();
+    const appModalShellSource = await readSharedAppModalShellSource();
     const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
     const taxonomySource = await readWorkbenchSettingTaxonomySource();
     const roleSettingFieldsSource = await readWorkbenchRoleSettingFieldsSource();
@@ -1617,9 +1785,19 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain('智能导入会写入到');
     expect(panelSource).not.toContain('条目下的子设定');
     expect(panelSource).not.toContain('selectedSettingImportFormatEntry.fields.map((field)');
-    expect(panelSource).toContain('className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-100 bg-white px-5 py-3"');
-    expect(panelSource).toContain("activeViewTab === '格式' && (");
-    expect(panelSource).toContain('className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pr-4"');
+    expect(libraryAiLogShellSource).toContain('headerTools?: ReactNode;');
+    expect(libraryAiLogShellSource).toContain('<AppModalShell');
+    expect(libraryAiLogShellSource).toContain('headerExtra={headerTools ? <div className="flex min-w-0 items-center gap-2">{headerTools}</div> : null}');
+    expect(appModalShellSource).toContain('data-no-modal-drag="true"');
+    expect(appModalShellSource).toContain('<ModalResizeHandles draggable={draggable} />');
+    expect(panelSource).toContain('headerTools={(');
+    expect(panelSource).toContain('tabs={LIBRARY_AI_LOG_VIEW_TABS}');
+    expect(panelSource).toContain('activeTab={activeViewTab}');
+    expect(panelSource).toContain('onChange={onViewTabChange}');
+    expect(panelSource).toContain('className="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-slate-100 bg-white px-5 py-3"');
+    expect(panelSource).toContain("activeViewTab === '格式' ? (");
+    expect(panelSource).not.toContain('className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-100 bg-white px-5 py-3"');
+    expect(panelSource).not.toContain('className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pr-4"');
     expect(panelSource).toContain('className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-white p-5"');
     expect(panelSource).toContain('className="flex min-h-0 flex-1 flex-col rounded-2xl border border-slate-900 bg-white p-4"');
     expect(panelSource).toContain('className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-[#FBFCFE] p-4 text-sm font-semibold leading-7 text-slate-800"');
@@ -1960,6 +2138,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   it('uses the body page format for the outline right-side output card', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const styleSource = await readSharedStylesSource();
+    const logLayoutSource = await readAiRequestLogModalLayoutSource();
     const outlineRightPanelAnchor = panelSource.lastIndexOf('promptValue={activeOutlinePromptId');
     const outlineRightPanelStart = panelSource.lastIndexOf('<aside className="min-w-0 flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 px-4 pb-4 pt-2">', outlineRightPanelAnchor);
     const outlineRightPanelEnd = panelSource.indexOf('</aside>', outlineRightPanelStart);
@@ -2009,7 +2188,13 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain("return wrapAiRequestTag('梗概要求', userText);");
     expect(panelSource).toContain("const outlineUserLogTitle = isDetailOutlineTab && !plotPointStandalone ? '其他要求' : '输入内容';");
     expect(panelSource).toContain('userTitle: outlineUserLogTitle');
-    expect(panelSource).toContain('<div className="text-xs text-slate-400">{outlineUserLogTitle}</div>');
+    expect(panelSource).toContain('function getOutlineAiLogFillGroupWeights(options: { hasReaderContext: boolean; hasContext: boolean; hasUser: boolean })');
+    expect(panelSource).toContain('if (hasReference) {');
+    expect(panelSource).toContain("...(options.hasReaderContext ? { 'reader-context': 1 } : {})");
+    expect(panelSource).toContain('if (options.hasUser) return { prompt: 2, user: 1 };');
+    expect(panelSource).toContain('fillGroupWeights={fillGroupWeights}');
+    expect(panelSource).toContain('label: outlineUserLogTitle');
+    expect(logLayoutSource).toContain('<div className="text-xs text-slate-400">{item.label}</div>');
     expect(panelSource).not.toContain("userTitle: '输入内容'");
     expect(outlineRightPanelSource).not.toContain('label="关联设定"');
     expect(outlineRightPanelSource).not.toContain('linkedButtonClassName="h-9 shrink-0 rounded-xl bg-[#08AACE] px-3 text-sm font-black text-white transition-colors hover:bg-[#0798b8]"');
@@ -2720,20 +2905,24 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
   it('uses compact detail outline chapter number blocks without word count badges', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const styleSource = await readSharedStylesSource();
+    const chapterNumberButtonSource = await readChapterNumberButtonSource();
 
+    expect(panelSource).toContain("import { ChapterNumberButton } from '@/shared/ui/ChapterNumberButton';");
     expect(panelSource).toContain("const outlineWordCount = countTextWords(entry?.content ?? '');");
     expect(panelSource).toContain("const chapterContentWordCount = countTextWords(getChapterContent?.(chapter.id) ?? '');");
-    expect(panelSource).toContain("const outlineButtonContentStateClass = chapterContentWordCount > 0");
-    expect(panelSource).toContain("? 'xy-detail-outline-number-used'");
-    expect(panelSource).toContain("? 'xy-detail-outline-number-has-outline'");
-    expect(panelSource).toContain(": 'xy-detail-outline-number-no-outline';");
-    expect(panelSource).toContain("const outlineButtonSelectedClass = selected ? 'xy-detail-outline-number-selected' : '';");
-    expect(panelSource).toContain('${outlineButtonContentStateClass} ${outlineButtonSelectedClass}');
-    expect(panelSource).toContain('xy-detail-outline-number-block xy-detail-outline-number-white-bg');
+    expect(panelSource).toContain("const outlineButtonState = chapterContentWordCount > 0 ? 'used' : hasSummary ? 'hasOutline' : 'empty';");
+    expect(panelSource).toContain('<ChapterNumberButton');
+    expect(panelSource).toContain('state={outlineButtonState}');
+    expect(chapterNumberButtonSource).toContain("if (state === 'used') return 'xy-detail-outline-number-used");
+    expect(chapterNumberButtonSource).toContain("if (state === 'hasOutline') return 'xy-detail-outline-number-has-outline");
+    expect(chapterNumberButtonSource).toContain("return 'xy-detail-outline-number-no-outline");
+    expect(chapterNumberButtonSource).toContain("selected ? 'xy-detail-outline-number-selected' : ''");
+    expect(chapterNumberButtonSource).toContain('xy-detail-outline-number-block');
+    expect(chapterNumberButtonSource).toContain('xy-detail-outline-number-white-bg');
     expect(panelSource).not.toContain("const outlineButtonStateClass = selected");
     expect(panelSource).not.toContain("const outlineWordLabel = outlineWordCount > 0 ? `${outlineWordCount}字` : '无章纲';");
     expect(panelSource).toContain("gridTemplateColumns: 'repeat(auto-fit, minmax(32px, max-content))'");
-    expect(panelSource).toContain("relative grid h-8 w-8 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block");
+    expect(chapterNumberButtonSource).toContain("relative grid h-8 w-8 place-items-center rounded-lg border text-center text-sm font-black leading-none transition-colors xy-detail-outline-number-block");
     expect(panelSource).not.toContain("relative grid h-[50px] w-[50px] place-items-center rounded-[13px] border text-center text-2xl font-black leading-none transition-colors");
     expect(panelSource).not.toContain("'border-[#8CEBC0] bg-[#EAFBF3] text-slate-950 shadow-[0_0_0_1px_rgba(16,185,129,0.16)]'");
     expect(panelSource).not.toContain(": 'border-[#FED7AA] bg-[#FFF7ED] text-slate-950 shadow-[0_0_0_1px_rgba(249,115,22,0.12)]'");
@@ -5202,15 +5391,19 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
     const segmentedTabsSource = await readWorkbenchSettingSegmentedTabsSource();
+    const sharedSegmentedTabsSource = await readSharedSegmentedTabsSource();
     const styleSource = await readSharedStylesSource();
 
     expect(structuredSettingsSource).toContain("const STRUCTURED_SETTING_TABS = ['固定设定', '状态设定', '确认'] as const;");
     expect(panelSource).toContain('activeStructuredSettingTab');
     expect(panelSource).toContain("import { SettingSegmentedTabs } from './workbenchSettingSegmentedTabs';");
     expect(segmentedTabsSource).toContain('function SettingSegmentedTabs<T extends string>');
-    expect(segmentedTabsSource).toContain("const SETTING_SEGMENTED_TAB_GROUP_CLASS = 'flex h-10 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white';");
-    expect(segmentedTabsSource).toContain("const SETTING_SEGMENTED_TAB_ACTIVE_CLASS = 'border-[#08AACE] bg-[#EAF9FD] text-[#078FAE]';");
-    expect(segmentedTabsSource).toContain("const SETTING_SEGMENTED_TAB_IDLE_CLASS = 'bg-white text-slate-600 hover:bg-[#EAF9FD] hover:text-[#078FAE]';");
+    expect(segmentedTabsSource).toContain("import { SegmentedTabs } from '@/shared/ui/SegmentedTabs';");
+    expect(segmentedTabsSource).toContain('return <SegmentedTabs {...props} />;');
+    expect(sharedSegmentedTabsSource).toContain("className = 'flex h-10 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white'");
+    expect(sharedSegmentedTabsSource).toContain("active");
+    expect(sharedSegmentedTabsSource).toContain("'border-[#08AACE] bg-[#EAF9FD] text-[#078FAE]'");
+    expect(sharedSegmentedTabsSource).toContain("'bg-white text-slate-600 hover:bg-[#EAF9FD] hover:text-[#078FAE]'");
     expect(panelSource).toContain('onChange={setActiveStructuredSettingTab}');
     expect(panelSource).toContain("activeStructuredSettingTab === '确认'");
     expect(panelSource).not.toContain('{activeGroup.description}');
@@ -5616,9 +5809,11 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(roleEditorSource).toContain('tabs={roleSettingTabs}');
     expect(roleEditorSource).toContain('onChange={setActiveRoleSettingTab}');
     const segmentedTabsSource = await readWorkbenchSettingSegmentedTabsSource();
-    expect(segmentedTabsSource).toContain("const SETTING_SEGMENTED_TAB_GROUP_CLASS = 'flex h-10 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white';");
-    expect(segmentedTabsSource).toContain("const SETTING_SEGMENTED_TAB_ACTIVE_CLASS = 'border-[#08AACE] bg-[#EAF9FD] text-[#078FAE]';");
-    expect(segmentedTabsSource).toContain("const SETTING_SEGMENTED_TAB_IDLE_CLASS = 'bg-white text-slate-600 hover:bg-[#EAF9FD] hover:text-[#078FAE]';");
+    const sharedSegmentedTabsSource = await readSharedSegmentedTabsSource();
+    expect(segmentedTabsSource).toContain("import { SegmentedTabs } from '@/shared/ui/SegmentedTabs';");
+    expect(sharedSegmentedTabsSource).toContain("className = 'flex h-10 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white'");
+    expect(sharedSegmentedTabsSource).toContain("'border-[#08AACE] bg-[#EAF9FD] text-[#078FAE]'");
+    expect(sharedSegmentedTabsSource).toContain("'bg-white text-slate-600 hover:bg-[#EAF9FD] hover:text-[#078FAE]'");
     expect(roleEditorSource).toContain("activeRoleSettingTab === '状态设定'");
     expect(roleEditorSource).toContain('updateRelationshipState(event.target.value)');
     expect(roleEditorSource).toContain('{relationshipUpdateLabel}');
