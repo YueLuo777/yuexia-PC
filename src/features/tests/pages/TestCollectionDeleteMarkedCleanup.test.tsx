@@ -24,6 +24,13 @@ const removedMarkedTests = [
   ['/setting-other-link-picker-test', 'SettingOtherLinkPickerTestPage'],
   ['/setting-clear-context-menu-test', 'SettingClearContextMenuTestPage'],
   ['/prompt-dropdown-connected-style-test', 'PromptDropdownConnectedStyleTestPage'],
+  ['/chapter-sidebar-compact-title-test', 'ChapterSidebarCompactTitleTestPage'],
+  ['/setting-tab-placement-options-test', 'SettingTabPlacementOptionsTestPage'],
+  ['/workbench-header-fixed-flow-position-test', 'WorkbenchHeaderFixedFlowPositionTestPage'],
+  ['/send-icon-stroke-color-test', 'SendIconStrokeColorTestPage'],
+  ['/structure-audit-result-preview-test', 'StructureAuditResultPreviewTestPage'],
+  ['/review-preview-width-mode-test', 'ReviewPreviewWidthModeTestPage'],
+  ['/workbench-ai-width-unified-preview-test', 'WorkbenchAiWidthUnifiedPreviewTestPage'],
 ] as const;
 
 describe('TestCollectionPage delete marked cleanup', () => {

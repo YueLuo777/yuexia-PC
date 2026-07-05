@@ -9,8 +9,6 @@ import {
   Moon,
   Palette,
   Search,
-  Send,
-  SlidersHorizontal,
   Tags,
   X,
 } from 'lucide-react';
@@ -22,19 +20,13 @@ import { TEST_COLLECTION_SHOW_INDEX_EVENT } from '@/features/tests/model/testCol
 const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })));
 const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })));
 const DarkThemeColorPage = lazy(() => import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })));
-const ChapterSidebarCompactTitleTestPage = lazy(() => import('@/features/tests/pages/ChapterSidebarCompactTitleTestPage').then((module) => ({ default: module.ChapterSidebarCompactTitleTestPage })));
-const SettingTabPlacementOptionsTestPage = lazy(() => import('@/features/tests/pages/SettingTabPlacementOptionsTestPage').then((module) => ({ default: module.SettingTabPlacementOptionsTestPage })));
-const WorkbenchHeaderFixedFlowPositionTestPage = lazy(() => import('@/features/tests/pages/WorkbenchHeaderFixedFlowPositionTestPage').then((module) => ({ default: module.WorkbenchHeaderFixedFlowPositionTestPage })));
-const SendIconStrokeColorTestPage = lazy(() => import('@/features/tests/pages/SendIconStrokeColorTestPage').then((module) => ({ default: module.SendIconStrokeColorTestPage })));
+const EditorPaperBaselineGridTestPage = lazy(() => import('@/features/tests/pages/EditorPaperBaselineGridTestPage').then((module) => ({ default: module.EditorPaperBaselineGridTestPage })));
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
 const SettingEntryMergePlanTestPage = lazy(() => import('@/features/tests/pages/SettingEntryMergePlanTestPage').then((module) => ({ default: module.SettingEntryMergePlanTestPage })));
 const SettingStateStructurePlanTestPage = lazy(() => import('@/features/tests/pages/SettingStateStructurePlanTestPage').then((module) => ({ default: module.SettingStateStructurePlanTestPage })));
 const PromptLibraryStructureTestPage = lazy(() => import('@/features/tests/pages/PromptLibraryStructureTestPage').then((module) => ({ default: module.PromptLibraryStructureTestPage })));
 const PromptWorkflowPreviewTestPage = lazy(() => import('@/features/tests/pages/PromptWorkflowPreviewTestPage').then((module) => ({ default: module.PromptWorkflowPreviewTestPage })));
 const WorkbenchCreationChainTestPage = lazy(() => import('@/features/tests/pages/WorkbenchCreationChainTestPage').then((module) => ({ default: module.WorkbenchCreationChainTestPage })));
-const StructureAuditResultPreviewTestPage = lazy(() => import('@/features/tests/pages/StructureAuditResultPreviewTestPage').then((module) => ({ default: module.StructureAuditResultPreviewTestPage })));
-const ReviewPreviewWidthModeTestPage = lazy(() => import('@/features/tests/pages/ReviewPreviewWidthModeTestPage').then((module) => ({ default: module.ReviewPreviewWidthModeTestPage })));
-const WorkbenchAiWidthUnifiedPreviewTestPage = lazy(() => import('@/features/tests/pages/WorkbenchAiWidthUnifiedPreviewTestPage').then((module) => ({ default: module.WorkbenchAiWidthUnifiedPreviewTestPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
 
 const testGroups = [
@@ -70,32 +62,11 @@ const testGroups = [
         badge: 'Theme',
       },
       {
-        title: '正文目录左移测试',
-        description: '测试正文区域左侧目录的章节标题整体左移后，能否把“第X章”的第字移动到更靠左的位置并扩大标题展示空间。',
-        path: '/chapter-sidebar-compact-title-test',
+        title: '正文稿纸线基准对齐测试',
+        description: '测试正文稿纸虚线、字号和 px 行高使用同一套基准后，改字号时文字是否仍能稳定坐在虚线上。',
+        path: '/editor-paper-baseline-grid-test',
         icon: NotebookText,
-        badge: 'Chapter',
-      },
-      {
-        title: '设定标签布局方案测试',
-        description: '对比设定页面大类标签放在顶部两行、横向滚动、左侧三行两列和底部贴边等方案。',
-        path: '/setting-tab-placement-options-test',
-        icon: Tags,
-        badge: 'Tabs',
-      },
-      {
-        title: '工作台流程按钮固定位置测试',
-        description: '用 20 字书名作为基准，测试顶部脑洞/设定/章纲/正文等流程按钮是否能保持固定位置。',
-        path: '/workbench-header-fixed-flow-position-test',
-        icon: NotebookText,
-        badge: 'Header',
-      },
-      {
-        title: '发送箭头线条颜色测试',
-        description: '测试纸飞机发送箭头在白底下使用 #21B8DA 等多档线条颜色的显示效果。',
-        path: '/send-icon-stroke-color-test',
-        icon: Send,
-        badge: 'Icon',
+        badge: 'Paper',
       },
     ],
   },
@@ -136,27 +107,6 @@ const testGroups = [
         path: '/workbench-creation-chain-test',
         icon: Link2,
         badge: 'Chain',
-      },
-      {
-        title: '结构审核结果展示测试',
-        description: '模拟结构审核通过和不通过时，右侧审核结果、绿色/红色结论和 AI 标注列的呈现方式。',
-        path: '/structure-audit-result-preview-test',
-        icon: NotebookText,
-        badge: 'Audit',
-      },
-      {
-        title: '审核润色预览宽度模式测试',
-        description: '测试剧情审核和文笔润色预览里的等宽锁定、自由调节、显示章纲和隐藏章纲布局。',
-        path: '/review-preview-width-mode-test',
-        icon: SlidersHorizontal,
-        badge: 'Width',
-      },
-      {
-        title: '右侧 AI 区统一宽度切换测试',
-        description: '测试脑洞、设定、章纲、正文、审核、润色、点评、状态和梗概切换时，420px 右侧 AI 区是否稳定。',
-        path: '/workbench-ai-width-unified-preview-test',
-        icon: SlidersHorizontal,
-        badge: '420px',
       },
     ],
   },
@@ -308,12 +258,6 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <PromptWorkflowPreviewTestPage />;
       case '/workbench-creation-chain-test':
         return <WorkbenchCreationChainTestPage />;
-      case '/structure-audit-result-preview-test':
-        return <StructureAuditResultPreviewTestPage />;
-      case '/review-preview-width-mode-test':
-        return <ReviewPreviewWidthModeTestPage />;
-      case '/workbench-ai-width-unified-preview-test':
-        return <WorkbenchAiWidthUnifiedPreviewTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':
@@ -322,14 +266,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <SoftwareUiCatalogPage embedded onClose={() => setActivePath(null)} />;
       case '/theme-colors':
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
-      case '/chapter-sidebar-compact-title-test':
-        return <ChapterSidebarCompactTitleTestPage />;
-      case '/setting-tab-placement-options-test':
-        return <SettingTabPlacementOptionsTestPage />;
-      case '/workbench-header-fixed-flow-position-test':
-        return <WorkbenchHeaderFixedFlowPositionTestPage />;
-      case '/send-icon-stroke-color-test':
-        return <SendIconStrokeColorTestPage />;
+      case '/editor-paper-baseline-grid-test':
+        return <EditorPaperBaselineGridTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       default:
