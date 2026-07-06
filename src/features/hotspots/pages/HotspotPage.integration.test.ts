@@ -25,4 +25,11 @@ describe('hotspot page integration', () => {
     expect(main).toContain("ipcMain.handle('hotspots:fetch-all'");
     expect(main).toContain('createHotspotService');
   });
+
+  it('shows the fetch status inside the empty hotspot list instead of hiding it at the bottom', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain('status || \'暂无热点，点击刷新重试。\'');
+    expect(page).toContain('filteredItems.length === 0');
+  });
 });

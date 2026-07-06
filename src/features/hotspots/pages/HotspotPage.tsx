@@ -263,7 +263,9 @@ export function HotspotPage() {
                 />
               ))}
               {filteredItems.length === 0 && (
-                <div className="flex h-full items-center justify-center text-sm text-slate-400">暂无热点，点击刷新重试。</div>
+                <div className="flex h-full items-center justify-center px-6 text-center text-sm leading-6 text-slate-400">
+                  {status || '暂无热点，点击刷新重试。'}
+                </div>
               )}
             </div>
           </div>
