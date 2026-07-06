@@ -6,6 +6,7 @@ import { useModels } from '@/features/models/hooks/useModels';
 import { callModelStream } from '@/features/models/services/callModel';
 import { HOTSPOT_ANALYSIS_PROMPT_CATEGORY, normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { HOTSPOT_ANALYSIS_SYSTEM_PROMPT, buildHotspotSuitabilityPrompt, saveHotspotBrainstorm } from '@/features/hotspots/model/hotspotAi';
+import { fetchHotspotDetail, hasHotspotDetailContent } from '@/features/hotspots/model/hotspotDetail';
 import {
   HOTSPOT_DEFAULT_MIN_DISPLAY_SCORE,
   HOTSPOT_DISPLAY_LIMIT,
@@ -492,18 +493,27 @@ export function HotspotPage() {
     setAnalysisReasoning('');
     setAnalysisThinkingSeconds(0);
     setIsAnalyzing(true);
-    setStatus('');
-    const startedAt = performance.now();
-    const thinkingTimer = window.setInterval(() => {
-      setAnalysisThinkingSeconds(Math.max(1, Math.round((performance.now() - startedAt) / 1000)));
-    }, 500);
+    setStatus('正在抓取热点详情...');
+    let thinkingTimer: number | undefined;
+    let startedAt = performance.now();
     try {
+      const detail = await fetchHotspotDetail(item).catch((error) => ({
+        ok: false,
+        url: getHotspotExternalUrl(item),
+        error: error instanceof Error ? error.message : '热点详情抓取失败',
+      }));
+      const hasDetail = hasHotspotDetailContent(detail);
+      setStatus(hasDetail ? '已获取热点详情，正在交给 AI 分析。' : '未获取到热点详情，仅基于标题分析。');
+      startedAt = performance.now();
+      thinkingTimer = window.setInterval(() => {
+        setAnalysisThinkingSeconds(Math.max(1, Math.round((performance.now() - startedAt) / 1000)));
+      }, 500);
       let streamedContent = '';
       let reasoningContent = '';
       const content = await callModelStream({
         model: hotspotModel,
         prompt: activeHotspotPrompt?.content.trim() || HOTSPOT_ANALYSIS_SYSTEM_PROMPT,
-        userContent: buildHotspotSuitabilityPrompt(item),
+        userContent: buildHotspotSuitabilityPrompt(item, detail),
         recordType: 'stream',
         timeoutMs: 120000,
         onChunk: (chunk) => {
@@ -519,7 +529,7 @@ export function HotspotPage() {
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'AI分析失败');
     } finally {
-      window.clearInterval(thinkingTimer);
+      if (thinkingTimer !== undefined) window.clearInterval(thinkingTimer);
       setAnalysisThinkingSeconds(Math.max(1, Math.round((performance.now() - startedAt) / 1000)));
       setIsAnalyzing(false);
     }

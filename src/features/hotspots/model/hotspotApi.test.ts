@@ -75,6 +75,7 @@ describe('hotspot API normalization', () => {
           sources: {},
         };
       },
+      fetchDetail: async () => ({ ok: false, url: '', error: 'not used' }),
     };
 
     try {

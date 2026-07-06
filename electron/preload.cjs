@@ -53,4 +53,5 @@ contextBridge.exposeInMainWorld('xinyuexiaCos', {
 
 contextBridge.exposeInMainWorld('xinyuexiaHotspots', {
   fetchAll: (input) => ipcRenderer.invoke('hotspots:fetch-all', input),
+  fetchDetail: (input) => ipcRenderer.invoke('hotspots:fetch-detail', input),
 });

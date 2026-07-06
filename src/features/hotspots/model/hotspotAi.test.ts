@@ -44,6 +44,36 @@ describe('hotspot AI prompts', () => {
     expect(prompt).toContain('世界观');
   });
 
+  it('adds fetched hotspot page details into the analysis prompt', () => {
+    const prompt = buildHotspotSuitabilityPrompt(baiduItem, {
+      ok: true,
+      url: 'https://example.test/a',
+      finalUrl: 'https://example.test/final',
+      title: '网页里的完整标题',
+      description: '网页摘要内容',
+      keywords: ['情绪', '冲突'],
+      textSnippet: '这里是网页正文片段，提供更多背景。',
+    });
+
+    expect(prompt).toContain('已获取热点链接内容');
+    expect(prompt).toContain('网页里的完整标题');
+    expect(prompt).toContain('网页摘要内容');
+    expect(prompt).toContain('情绪、冲突');
+    expect(prompt).toContain('这里是网页正文片段');
+  });
+
+  it('marks fallback analysis when detail fetching fails', () => {
+    const prompt = buildHotspotSuitabilityPrompt(baiduItem, {
+      ok: false,
+      url: 'https://example.test/a',
+      error: 'HTTP 403',
+    });
+
+    expect(prompt).toContain('未获取到热点详情');
+    expect(prompt).toContain('仅基于标题推断');
+    expect(prompt).toContain('HTTP 403');
+  });
+
   it('provides a default hotspot analysis system prompt for adapting trends into web fiction genres', () => {
     expect(HOTSPOT_ANALYSIS_SYSTEM_PROMPT).toContain('网络小说选题策划');
     expect(HOTSPOT_ANALYSIS_SYSTEM_PROMPT).toContain('都市、玄幻、科幻、仙侠、灵异');

@@ -22,8 +22,11 @@ describe('hotspot page integration', () => {
 
     expect(preload).toContain("contextBridge.exposeInMainWorld('xinyuexiaHotspots'");
     expect(preload).toContain("ipcRenderer.invoke('hotspots:fetch-all'");
+    expect(preload).toContain("ipcRenderer.invoke('hotspots:fetch-detail'");
     expect(main).toContain("ipcMain.handle('hotspots:fetch-all'");
+    expect(main).toContain("ipcMain.handle('hotspots:fetch-detail'");
     expect(main).toContain('createHotspotService');
+    expect(main).toContain('createHotspotDetailService');
   });
 
   it('shows the fetch status inside the empty hotspot list instead of hiding it at the bottom', () => {
@@ -129,6 +132,17 @@ describe('hotspot page integration', () => {
     expect(page).toContain('onOpenExternal={() => window.open(getHotspotExternalUrl(item), \'_blank\', \'noopener,noreferrer\')}');
     expect(rowSource).toContain('跳转');
     expect(rowSource.indexOf('跳转')).toBeLessThan(rowSource.indexOf('开始分析'));
+  });
+
+  it('fetches hotspot page details before sending the item to AI analysis', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain("import { fetchHotspotDetail, hasHotspotDetailContent } from '@/features/hotspots/model/hotspotDetail';");
+    expect(page).toContain("setStatus('正在抓取热点详情...')");
+    expect(page).toContain('const detail = await fetchHotspotDetail(item).catch');
+    expect(page).toContain('hasHotspotDetailContent(detail)');
+    expect(page).toContain("setStatus(hasDetail ? '已获取热点详情，正在交给 AI 分析。' : '未获取到热点详情，仅基于标题分析。')");
+    expect(page).toContain('userContent: buildHotspotSuitabilityPrompt(item, detail)');
   });
 
   it('uses editor-style font settings for hotspot analysis output', () => {

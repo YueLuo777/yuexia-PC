@@ -91,6 +91,18 @@ interface HotspotBridgeFetchResult {
   errors?: Partial<Record<'baidu' | 'douyin' | 'weibo' | 'zhihu' | 'bilibili', string>>;
 }
 
+interface HotspotDetailResult {
+  ok: boolean;
+  url: string;
+  finalUrl?: string;
+  title?: string;
+  description?: string;
+  keywords?: string[];
+  textSnippet?: string;
+  error?: string;
+  fromCache?: boolean;
+}
+
 interface WindowSettingsResult {
   rememberSize: boolean;
   defaultBounds: {
@@ -139,5 +151,6 @@ interface Window {
   };
   xinyuexiaHotspots?: {
     fetchAll(input?: HotspotBridgeFetchInput): Promise<HotspotBridgeFetchResult>;
+    fetchDetail(input?: { item?: HotspotBridgeItem; url?: string }): Promise<HotspotDetailResult>;
   };
 }

@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { normalizeModelRequestInput } = require('./ipcValidation.cjs');
+const { createHotspotDetailService } = require('./hotspots/hotspotDetailService.cjs');
 const { createHotspotService } = require('./hotspots/hotspotService.cjs');
 
 const DEV_URL = process.env.XINYUEXIA_URL || 'http://127.0.0.1:18328/#/novels';
@@ -45,6 +46,7 @@ const LEGACY_WINDOW_STATE_FILES = [
 const HOTSPOT_CACHE_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'hotspots', 'dailyhot-cache.json');
 
 let mainWindow = null;
+const hotspotDetailService = createHotspotDetailService();
 const hotspotService = createHotspotService({ cacheFile: HOTSPOT_CACHE_FILE });
 
 const gotLock = app.requestSingleInstanceLock();
@@ -595,6 +597,7 @@ ipcMain.handle('window-settings:read', () => readWindowSettingsResult());
 ipcMain.handle('window-settings:update', (_event, nextSettings) => updateWindowSettings(nextSettings));
 ipcMain.handle('window-settings:reset-bounds', () => resetWindowBoundsToDefault());
 ipcMain.handle('hotspots:fetch-all', async (_event, input) => hotspotService.fetchAll(input));
+ipcMain.handle('hotspots:fetch-detail', async (_event, input) => hotspotDetailService.fetchDetail(input));
 
 ipcMain.handle('app-icon:read', async () => readCurrentAppIcon());
 

@@ -4,7 +4,7 @@ import {
   addWorkbenchLibraryEntry,
 } from '@/features/workbench/model/workbenchLibraryStorage';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
-import type { HotspotItem } from '@/features/hotspots/model/hotspotTypes';
+import type { HotspotDetailResult, HotspotItem } from '@/features/hotspots/model/hotspotTypes';
 
 export const HOTSPOT_ANALYSIS_SYSTEM_PROMPT = `你是专业网络小说选题策划编辑，擅长把现实热点转译成虚构网文题材。
 
@@ -31,17 +31,38 @@ function formatHotspotLine(item: HotspotItem) {
   return `${item.sourceName} #${item.rank} ${item.title}${item.heat ? `（热度：${item.heat}）` : ''}`;
 }
 
-export function buildHotspotSuitabilityPrompt(item: HotspotItem) {
+function formatHotspotDetail(detail: HotspotDetailResult | null | undefined) {
+  if (!detail?.ok) {
+    return `详情获取情况：未获取到热点详情${detail?.error ? `（${detail.error}）` : ''}，只能基于标题推断。输出时必须明确写出“仅基于标题推断”，不要把猜测当事实。`;
+  }
+
+  const lines = [
+    `详情获取情况：已获取热点链接内容，请优先依据下列网页信息分析。`,
+    detail.finalUrl || detail.url ? `热点链接：${detail.finalUrl || detail.url}` : '',
+    detail.title ? `网页标题：${detail.title}` : '',
+    detail.description ? `网页摘要：${detail.description}` : '',
+    detail.keywords?.length ? `关键词：${detail.keywords.join('、')}` : '',
+    detail.textSnippet ? `正文片段：\n${detail.textSnippet}` : '',
+  ].filter(Boolean);
+
+  return lines.join('\n');
+}
+
+export function buildHotspotSuitabilityPrompt(item: HotspotItem, detail?: HotspotDetailResult | null) {
   return `你是网文策划编辑。请分析这个热点是否适合改编成虚构小说题材。
 
 热点：
 ${formatHotspotLine(item)}
+
+热点详情：
+${formatHotspotDetail(detail)}
 
 要求：
 1. 不要复述新闻，不要影射真实人物，不要照搬真实事件。
 2. 只提炼背后的情绪、冲突、人群关系和商业爽点。
 3. 给出小说适合度，分数范围 0-100。
 4. 判断适合写成长篇网文、短篇脑洞，还是只适合借情绪。
+5. 如果热点详情不足或抓取失败，先声明“仅基于标题推断”，并降低对事实细节的确定语气。
 
 请按下面格式输出：
 小说适合度：

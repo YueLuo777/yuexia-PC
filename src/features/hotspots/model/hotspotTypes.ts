@@ -33,3 +33,15 @@ export interface HotspotFetchResult {
   sourceStates: Record<HotspotSourceId, HotspotSourceState>;
   stale: boolean;
 }
+
+export interface HotspotDetailResult {
+  ok: boolean;
+  url: string;
+  finalUrl?: string;
+  title?: string;
+  description?: string;
+  keywords?: string[];
+  textSnippet?: string;
+  error?: string;
+  fromCache?: boolean;
+}
