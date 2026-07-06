@@ -7,9 +7,11 @@ import { callModelStream } from '@/features/models/services/callModel';
 import { HOTSPOT_ANALYSIS_PROMPT_CATEGORY, normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { HOTSPOT_ANALYSIS_SYSTEM_PROMPT, buildHotspotSuitabilityPrompt, saveHotspotBrainstorm } from '@/features/hotspots/model/hotspotAi';
 import { HOTSPOT_SOURCE_LABELS, HOTSPOT_SOURCES, fetchHotspots } from '@/features/hotspots/model/hotspotApi';
+import { HOTSPOT_RULE_BASE_SCORE, HOTSPOT_RULE_GROUPS, evaluateHotspotByRules, rankHotspotsByRuleEvaluation } from '@/features/hotspots/model/hotspotRules';
 import type { HotspotFetchResult, HotspotItem, HotspotSourceId } from '@/features/hotspots/model/hotspotTypes';
 import { getEditorTextLineHeight, getStoredFontSettings, type FontSettings } from '@/features/workbench/components/EditorToolModals';
 import { ActionButton } from '@/shared/ui/ActionButton';
+import { AppModalShell } from '@/shared/ui/AppModalShell';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
 
@@ -109,6 +111,55 @@ function HotspotAnalysisOutput({
   );
 }
 
+function HotspotRulePreviewModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const bonusRules = HOTSPOT_RULE_GROUPS.filter((group) => group.polarity === 'bonus');
+  const penaltyRules = HOTSPOT_RULE_GROUPS.filter((group) => group.polarity === 'penalty');
+  const riskRules = HOTSPOT_RULE_GROUPS.filter((group) => group.polarity === 'risk');
+  const renderRuleGroup = (title: string, rules: typeof HOTSPOT_RULE_GROUPS, accentClass: string) => (
+    <section>
+      <h3 className="text-sm font-black text-slate-900">{title}</h3>
+      <div className="mt-2 space-y-2">
+        {rules.map((rule) => (
+          <div key={rule.id} className="rounded-md border border-slate-100 bg-slate-50 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm font-black text-slate-800">{rule.name}</div>
+              <div className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-black ${accentClass}`}>{rule.score > 0 ? `+${rule.score}` : rule.score}</div>
+            </div>
+            <p className="mt-1 text-xs leading-5 text-slate-500">{rule.description}</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {rule.keywords.map((keyword) => (
+                <span key={keyword} className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500">{keyword}</span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+
+  return (
+    <AppModalShell
+      title="热点筛选规则"
+      subtitle={`基础分 ${HOTSPOT_RULE_BASE_SCORE}，规则命中后自动加减分，不消耗 token`}
+      isOpen={isOpen}
+      onClose={onClose}
+      widthClass="w-[760px]"
+      heightClass="h-[76vh] max-h-[86vh]"
+      storageId="hotspot_rule_preview_modal"
+      contentClassName="min-h-0 flex-1 overflow-auto bg-slate-50 p-5"
+    >
+      <div className="space-y-5">
+        <div className="rounded-md border border-cyan-100 bg-cyan-50 p-4 text-sm leading-6 text-slate-600">
+          规则会先给热点打适配分并排序：高适配优先显示，低适配和高风险会被标注。AI 只在你点击“开始分析”后才消耗 token。
+        </div>
+        {renderRuleGroup('加分规则：优先保留小说化潜力', bonusRules, 'bg-emerald-50 text-emerald-700')}
+        {renderRuleGroup('扣分规则：降低直接改编优先级', penaltyRules, 'bg-amber-50 text-amber-700')}
+        {renderRuleGroup('高风险规则：尽量只借情绪，不直接改写', riskRules, 'bg-rose-50 text-rose-700')}
+      </div>
+    </AppModalShell>
+  );
+}
+
 function formatCapturedTime(value: string) {
   const time = new Date(value);
   if (Number.isNaN(time.getTime())) return value;
@@ -182,12 +233,14 @@ function SourceRadar({
 
 function HotspotRow({
   item,
+  evaluation,
   active,
   onOpen,
   onAnalyze,
   disabled,
 }: {
   item: HotspotItem;
+  evaluation: ReturnType<typeof evaluateHotspotByRules>;
   active: boolean;
   onOpen: () => void;
   onAnalyze: () => void;
@@ -204,6 +257,18 @@ function HotspotRow({
         <div className="mt-1 flex min-w-0 items-center gap-2 text-xs text-slate-400">
           <span>{item.sourceName}</span>
           {item.heat && <span className="truncate">{item.heat}</span>}
+          <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+            evaluation.level === 'high'
+              ? 'bg-emerald-50 text-emerald-600'
+              : evaluation.level === 'medium'
+                ? 'bg-cyan-50 text-cyan-600'
+                : evaluation.level === 'risk'
+                  ? 'bg-rose-50 text-rose-600'
+                  : 'bg-slate-100 text-slate-400'
+          }`}
+          >
+            {evaluation.levelLabel} {evaluation.score}
+          </span>
         </div>
       </button>
       <button
@@ -248,11 +313,12 @@ export function HotspotPage() {
   const [analysisFontSize, setAnalysisFontSize] = useState(readHotspotAnalysisFontSize);
   const [isFetching, setIsFetching] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isRulePreviewOpen, setIsRulePreviewOpen] = useState(false);
   const [status, setStatus] = useState('');
   const analysisScrollRef = useRef<HTMLDivElement | null>(null);
 
   const filteredItems = useMemo(() => (
-    activeSource === 'all' ? result.items : result.items.filter((item) => item.source === activeSource)
+    rankHotspotsByRuleEvaluation(activeSource === 'all' ? result.items : result.items.filter((item) => item.source === activeSource))
   ), [activeSource, result.items]);
   const activeItem = useMemo(() => result.items.find((item) => item.id === activeItemId) ?? filteredItems[0] ?? null, [activeItemId, filteredItems, result.items]);
   const hotspotModel = useMemo(() => models.find((model) => model.id === hotspotModelId) ?? models[0] ?? null, [hotspotModelId, models]);
@@ -391,6 +457,15 @@ export function HotspotPage() {
           <div className="xy-capsule-group overflow-hidden">
             <button
               type="button"
+              onClick={() => setIsRulePreviewOpen(true)}
+              className="xy-capsule-button"
+            >
+              筛选规则
+            </button>
+          </div>
+          <div className="xy-capsule-group overflow-hidden">
+            <button
+              type="button"
               onClick={() => void refresh(true)}
               disabled={isFetching}
               className="xy-capsule-button"
@@ -423,6 +498,7 @@ export function HotspotPage() {
                 <HotspotRow
                   key={item.id}
                   item={item}
+                  evaluation={evaluateHotspotByRules(item)}
                   active={activeItem?.id === item.id}
                   onOpen={() => setActiveItemId(item.id)}
                   onAnalyze={() => void runSingleAnalysis(item)}
@@ -498,6 +574,7 @@ export function HotspotPage() {
             </div>
         </section>
       </main>
+      <HotspotRulePreviewModal isOpen={isRulePreviewOpen} onClose={() => setIsRulePreviewOpen(false)} />
     </div>
   );
 }

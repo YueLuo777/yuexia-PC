@@ -77,11 +77,30 @@ describe('hotspot page integration', () => {
     const aiPanelHeaderEnd = page.indexOf('<div ref={analysisScrollRef}', aiPanelHeaderStart);
     const aiPanelHeader = page.slice(aiPanelHeaderStart, aiPanelHeaderEnd);
 
+    expect(pageHeader).toContain('筛选规则');
     expect(pageHeader).toContain("{isFetching ? '刷新中' : '刷新'}");
+    expect(pageHeader.indexOf('筛选规则')).toBeLessThan(pageHeader.indexOf("{isFetching ? '刷新中' : '刷新'}"));
     expect(pageHeader).toContain('<CombinedAiConfigSelect');
     expect(pageHeader.indexOf("{isFetching ? '刷新中' : '刷新'}")).toBeLessThan(pageHeader.indexOf('<CombinedAiConfigSelect'));
     expect(aiPanelHeader).toContain('FontSizeStepper');
     expect(aiPanelHeader).not.toContain('<CombinedAiConfigSelect');
+  });
+
+  it('applies local hotspot filtering rules before AI analysis', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+    const rules = readSource('src/features/hotspots/model/hotspotRules.ts');
+
+    expect(page).toContain("import { HOTSPOT_RULE_BASE_SCORE, HOTSPOT_RULE_GROUPS, evaluateHotspotByRules, rankHotspotsByRuleEvaluation } from '@/features/hotspots/model/hotspotRules';");
+    expect(page).toContain('rankHotspotsByRuleEvaluation(activeSource ===');
+    expect(page).toContain('evaluation={evaluateHotspotByRules(item)}');
+    expect(page).toContain('evaluation.levelLabel');
+    expect(page).toContain('HotspotRulePreviewModal');
+    expect(page).toContain('setIsRulePreviewOpen(true)');
+    expect(page).toContain('<HotspotRulePreviewModal isOpen={isRulePreviewOpen}');
+    expect(rules).toContain('HOTSPOT_RULE_GROUPS');
+    expect(rules).toContain('强情绪/强反转');
+    expect(rules).toContain('真实刑案/伤亡高风险');
+    expect(rules).toContain('政治/外交/军事敏感');
   });
 
   it('uses editor-style font settings for hotspot analysis output', () => {
