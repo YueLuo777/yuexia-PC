@@ -41,4 +41,14 @@ describe('hotspot page integration', () => {
     expect(page).toContain('AI 小说适合度');
     expect(page).not.toContain('<SourceFilter');
   });
+
+  it('uses a dedicated hotspot model selector instead of the global active model', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain('HOTSPOT_MODEL_ID_STORAGE_KEY');
+    expect(page).toContain('HotspotModelSelect');
+    expect(page).toContain('const hotspotModel =');
+    expect(page).toContain('model: hotspotModel');
+    expect(page).not.toContain('model: activeModel');
+  });
 });
