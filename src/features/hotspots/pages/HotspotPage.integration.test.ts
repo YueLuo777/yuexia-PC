@@ -70,6 +70,20 @@ describe('hotspot page integration', () => {
     expect(page).not.toContain('callModel({');
   });
 
+  it('places refresh and hotspot AI selectors in the page header', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+    const pageHeader = page.slice(page.indexOf('<header'), page.indexOf('</header>'));
+    const aiPanelHeaderStart = page.indexOf('AI 小说适合度');
+    const aiPanelHeaderEnd = page.indexOf('<div ref={analysisScrollRef}', aiPanelHeaderStart);
+    const aiPanelHeader = page.slice(aiPanelHeaderStart, aiPanelHeaderEnd);
+
+    expect(pageHeader).toContain("{isFetching ? '刷新中' : '刷新'}");
+    expect(pageHeader).toContain('<CombinedAiConfigSelect');
+    expect(pageHeader.indexOf("{isFetching ? '刷新中' : '刷新'}")).toBeLessThan(pageHeader.indexOf('<CombinedAiConfigSelect'));
+    expect(aiPanelHeader).toContain('FontSizeStepper');
+    expect(aiPanelHeader).not.toContain('<CombinedAiConfigSelect');
+  });
+
   it('uses editor-style font settings for hotspot analysis output', () => {
     const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
 

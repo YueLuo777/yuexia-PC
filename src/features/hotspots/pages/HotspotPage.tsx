@@ -398,6 +398,17 @@ export function HotspotPage() {
               {isFetching ? '刷新中' : '刷新'}
             </button>
           </div>
+          <CombinedAiConfigSelect
+            className="w-[312px]"
+            modelValue={hotspotModel?.id ?? ''}
+            promptValue={activeHotspotPromptId}
+            modelOptions={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
+            promptOptions={hotspotPrompts.length === 0 ? [{ value: '', label: '无可用提示词', disabled: true }] : hotspotPrompts.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+            onModelChange={setHotspotModelIdWithStorage}
+            onPromptChange={setHotspotPromptIdWithStorage}
+            onModelManage={() => navigate('/model-manage')}
+            onPromptManage={() => navigate(`/prompts?category=${encodeURIComponent(HOTSPOT_PROMPT_CATEGORY)}`)}
+          />
         </div>
       </header>
       <SourceRadar activeSource={activeSource} onChange={setActiveSource} result={result} />
@@ -438,17 +449,6 @@ export function HotspotPage() {
                   max={HOTSPOT_ANALYSIS_MAX_FONT_SIZE}
                   onChange={setAnalysisFontSizeWithStorage}
                   ariaLabel="热点分析结果字号"
-                />
-                <CombinedAiConfigSelect
-                  className="w-[312px]"
-                  modelValue={hotspotModel?.id ?? ''}
-                  promptValue={activeHotspotPromptId}
-                  modelOptions={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
-                  promptOptions={hotspotPrompts.length === 0 ? [{ value: '', label: '无可用提示词', disabled: true }] : hotspotPrompts.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
-                  onModelChange={setHotspotModelIdWithStorage}
-                  onPromptChange={setHotspotPromptIdWithStorage}
-                  onModelManage={() => navigate('/model-manage')}
-                  onPromptManage={() => navigate(`/prompts?category=${encodeURIComponent(HOTSPOT_PROMPT_CATEGORY)}`)}
                 />
               </div>
             </div>
