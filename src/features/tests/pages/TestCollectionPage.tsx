@@ -70,6 +70,11 @@ const PromptWorkflowPreviewTestPage = lazy(() =>
 const TestBrowserPage = lazy(() =>
   import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })),
 );
+const TomatoGenreIterationTestPage = lazy(() =>
+  import('@/features/tests/pages/TomatoGenreIterationTestPage').then((module) => ({
+    default: module.TomatoGenreIterationTestPage,
+  })),
+);
 
 const testGroups = [
   {
@@ -175,6 +180,13 @@ const testGroups = [
         path: '/test-browser',
         icon: Globe,
         badge: 'Browser',
+      },
+      {
+        title: '番茄题材迭代原型',
+        description: '用内置浏览器打开番茄小说排行榜，读取当前小说公开信息后做爽点提炼和题材迁移。',
+        path: '/tomato-genre-iteration-test',
+        icon: Globe,
+        badge: 'Tomato',
       },
     ],
   },
@@ -329,6 +341,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <WorkbenchAiRightWidthPreviewTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
+      case '/tomato-genre-iteration-test':
+        return <TomatoGenreIterationTestPage />;
       default:
         return null;
     }
