@@ -58,6 +58,7 @@ describe('hotspot page integration', () => {
 
     expect(page).toContain('保存到脑洞库');
     expect(page).toContain('className="xy-capsule-button"');
+    expect(page).toContain('items-center justify-between gap-4 border-t border-slate-100 bg-white px-4');
     expect(page).not.toContain('IconButton label="保存到脑洞库"');
     expect(page).not.toContain('<Save className=');
   });

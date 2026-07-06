@@ -361,16 +361,6 @@ export function HotspotPage() {
                   onChange={setHotspotModelIdWithStorage}
                   onManage={() => navigate('/model-manage')}
                 />
-                <div className="xy-capsule-group overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={saveAnalysis}
-                    disabled={!analysis.trim()}
-                    className="xy-capsule-button"
-                  >
-                    保存到脑洞库
-                  </button>
-                </div>
               </div>
             </div>
             <div className="min-h-0 flex-1 overflow-auto bg-slate-50 p-5">
@@ -396,12 +386,26 @@ export function HotspotPage() {
                 </div>
               )}
             </div>
-            {status && (
-              <div className="flex h-10 shrink-0 items-center gap-2 border-t border-slate-100 bg-white px-4 text-xs text-slate-500">
-                {status.includes('已') ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <AlertCircle className="h-4 w-4 text-amber-500" />}
-                <span className="truncate">{status}</span>
+            <div className="flex h-12 shrink-0 items-center justify-between gap-4 border-t border-slate-100 bg-white px-4">
+              <div className="flex min-w-0 items-center gap-2 text-xs text-slate-500">
+                {status && (
+                  <>
+                    {status.includes('已') ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" /> : <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />}
+                    <span className="truncate">{status}</span>
+                  </>
+                )}
               </div>
-            )}
+              <div className="xy-capsule-group shrink-0 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={saveAnalysis}
+                  disabled={!analysis.trim()}
+                  className="xy-capsule-button"
+                >
+                  保存到脑洞库
+                </button>
+              </div>
+            </div>
         </section>
       </main>
     </div>
