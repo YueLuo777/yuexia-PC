@@ -32,4 +32,18 @@ describe('PromptsPage modal layering', () => {
     expect(source).toContain('subCategory: normalizePromptSubcategory(category, prev.subCategory)');
     expect(source).toContain('normalizePromptSubcategory(prompt.category, prompt.subCategory)');
   });
+
+  it('moves prompt category badges below the title so they do not squeeze names', () => {
+    const source = readPromptsPageSource();
+    const cardStart = source.indexOf('{filteredPrompts.map((prompt) => (');
+    const cardEnd = source.indexOf('<button\n            onClick={openCreate}', cardStart);
+    const cardSource = source.slice(cardStart, cardEnd);
+
+    expect(cardSource).toContain('<h2 className="truncate text-[17px] font-bold text-slate-900">{prompt.name}</h2>');
+    expect(cardSource).toContain('<div className="mt-2 flex flex-col items-start gap-1">');
+    expect(cardSource).toContain('<span className="rounded-xl border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-500">{prompt.category}</span>');
+    expect(cardSource).toContain('line-clamp-3 text-[13px] leading-6 text-slate-500');
+    expect(cardSource).not.toContain('<div className="flex items-center gap-2">');
+    expect(cardSource).not.toContain('line-clamp-4 text-[13px] leading-6 text-slate-500');
+  });
 });

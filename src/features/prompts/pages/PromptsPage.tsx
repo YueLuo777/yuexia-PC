@@ -458,9 +458,9 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
                 className="flex h-[247px] w-[255px] flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h2 className="truncate text-[17px] font-bold text-slate-900">{prompt.name}</h2>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="truncate text-[17px] font-bold text-slate-900">{prompt.name}</h2>
+                    <div className="mt-2 flex flex-col items-start gap-1">
                       <span className="rounded-xl border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-500">{prompt.category}</span>
                       {prompt.category === AUDIT_PROMPT_CATEGORY ? (
                         <span className="rounded-xl border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-xs text-cyan-600">
@@ -481,7 +481,7 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
                   </button>
                 </div>
 
-                <div className="mt-2 line-clamp-4 text-[13px] leading-6 text-slate-500">{prompt.description || '暂无说明'}</div>
+                <div className="mt-2 line-clamp-3 text-[13px] leading-6 text-slate-500">{prompt.description || '暂无说明'}</div>
 
                 <div className="mt-auto">
                   <p className="mb-2 text-left text-[13px] font-medium text-blue-500">{prompt.content.length} 字</p>
