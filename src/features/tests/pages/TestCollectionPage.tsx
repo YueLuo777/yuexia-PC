@@ -54,6 +54,11 @@ const WorkbenchAiRightWidthPreviewTestPage = lazy(() =>
     default: module.WorkbenchAiRightWidthPreviewTestPage,
   })),
 );
+const HotspotLayoutPreviewTestPage = lazy(() =>
+  import('@/features/tests/pages/HotspotLayoutPreviewTestPage').then((module) => ({
+    default: module.HotspotLayoutPreviewTestPage,
+  })),
+);
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
 );
@@ -144,6 +149,13 @@ const testGroups = [
         path: '/workbench-ai-right-width-preview-test',
         icon: Palette,
         badge: 'AI Width',
+      },
+      {
+        title: '热点布局方案测试',
+        description: '并排预览热点灵感页的三栏指挥台、热点雷达、编辑台和卡片墙布局。',
+        path: '/hotspot-layout-preview-test',
+        icon: Palette,
+        badge: 'Hotspot',
       },
     ],
   },
@@ -327,6 +339,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <Shuimo2DeepPalettePreviewTestPage />;
       case '/workbench-ai-right-width-preview-test':
         return <WorkbenchAiRightWidthPreviewTestPage />;
+      case '/hotspot-layout-preview-test':
+        return <HotspotLayoutPreviewTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       default:

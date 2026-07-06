@@ -79,7 +79,7 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
       { iconName: 'Tag', label: '提示词管理', to: '/prompts' },
       { iconName: 'Settings', label: '模型管理', to: '/model-manage' },
       { iconName: 'BarChart3', label: 'Token用量', to: '/token-usage' },
-      { iconName: 'FlaskConical', label: '测试', to: '/test-collection' },
+      { iconName: 'FlaskConical', label: '测试板块', to: '/test-collection' },
     ],
   },
 ];
@@ -118,7 +118,7 @@ const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
   '/text-overrides': '文案修改',
   '/software-ui-catalog': 'UI库',
   '/theme-colors': '主题颜色',
-  '/test-collection': '测试',
+  '/test-collection': '测试板块',
 };
 
 function cloneDefaultConfig() {
