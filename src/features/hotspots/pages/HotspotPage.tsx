@@ -1,4 +1,4 @@
-import { type CSSProperties, useCallback, useEffect, useMemo, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 
@@ -229,6 +229,7 @@ export function HotspotPage() {
   const [isFetching, setIsFetching] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [status, setStatus] = useState('');
+  const analysisScrollRef = useRef<HTMLDivElement | null>(null);
 
   const filteredItems = useMemo(() => (
     activeSource === 'all' ? result.items : result.items.filter((item) => item.source === activeSource)
@@ -292,6 +293,18 @@ export function HotspotPage() {
       setHotspotModelIdWithStorage(models[0].id);
     }
   }, [hotspotModelId, models, setHotspotModelIdWithStorage]);
+
+  useEffect(() => {
+    if (!isAnalyzing) return;
+    const scrollContainer = analysisScrollRef.current;
+    if (!scrollContainer) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      scrollContainer.scrollTop = scrollContainer.scrollHeight;
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [analysis, analysisReasoning, isAnalyzing]);
 
   const runSingleAnalysis = async (item: HotspotItem) => {
     if (!hotspotModel) {
@@ -419,7 +432,7 @@ export function HotspotPage() {
                 />
               </div>
             </div>
-            <div className="min-h-0 flex-1 overflow-auto bg-slate-50 p-5">
+            <div ref={analysisScrollRef} className="min-h-0 flex-1 overflow-auto bg-slate-50 p-5">
               {isAnalyzing || analysis || analysisReasoning ? (
                 <HotspotAnalysisOutput
                   analysis={analysis}

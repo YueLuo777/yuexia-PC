@@ -83,6 +83,18 @@ describe('hotspot page integration', () => {
     expect(page).toContain('<pre className="whitespace-pre-wrap break-words" style={analysisTextStyle}>');
   });
 
+  it('auto-scrolls the hotspot analysis panel while streaming output', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain('const analysisScrollRef = useRef<HTMLDivElement | null>(null);');
+    expect(page).toContain('if (!isAnalyzing) return;');
+    expect(page).toContain('const scrollContainer = analysisScrollRef.current;');
+    expect(page).toContain('window.requestAnimationFrame(() => {');
+    expect(page).toContain('scrollContainer.scrollTop = scrollContainer.scrollHeight;');
+    expect(page).toContain('}, [analysis, analysisReasoning, isAnalyzing]);');
+    expect(page).toContain('ref={analysisScrollRef}');
+  });
+
   it('uses a text save button for saving hotspot analysis to the brainstorm library', () => {
     const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
 
