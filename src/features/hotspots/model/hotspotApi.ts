@@ -16,6 +16,14 @@ export const HOTSPOT_SOURCE_LABELS: Record<HotspotSourceId, string> = {
   bilibili: 'B站',
 };
 
+const HOTSPOT_SOURCE_SEARCH_URLS: Record<HotspotSourceId, (keyword: string) => string> = {
+  baidu: (keyword) => `https://www.baidu.com/s?wd=${keyword}`,
+  douyin: (keyword) => `https://www.douyin.com/search/${keyword}`,
+  weibo: (keyword) => `https://s.weibo.com/weibo?q=${keyword}`,
+  zhihu: (keyword) => `https://www.zhihu.com/search?type=content&q=${keyword}`,
+  bilibili: (keyword) => `https://search.bilibili.com/all?keyword=${keyword}`,
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
@@ -81,6 +89,13 @@ export function normalizeHotspotFetchResult(raw: RawHotspotFetchResult): Hotspot
     sourceStates,
     stale: freshItems.length === 0 && (raw.staleItems?.length ?? 0) > 0,
   };
+}
+
+export function getHotspotExternalUrl(item: HotspotItem) {
+  const directUrl = asText(item.url);
+  if (/^https?:\/\//i.test(directUrl)) return directUrl;
+  const keyword = encodeURIComponent(item.title.trim());
+  return HOTSPOT_SOURCE_SEARCH_URLS[item.source](keyword);
 }
 
 export async function fetchHotspots(force = false): Promise<HotspotFetchResult> {

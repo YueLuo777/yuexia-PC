@@ -103,6 +103,18 @@ describe('hotspot page integration', () => {
     expect(rules).toContain('政治/外交/军事敏感');
   });
 
+  it('adds an external jump button before hotspot analysis', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+    const rowSource = page.slice(page.indexOf('function HotspotRow'), page.indexOf('function readHotspotModelId'));
+
+    expect(page).toContain("import { HOTSPOT_SOURCE_LABELS, HOTSPOT_SOURCES, fetchHotspots, getHotspotExternalUrl } from '@/features/hotspots/model/hotspotApi';");
+    expect(page).toContain('grid-cols-[34px_minmax(0,1fr)_58px_82px]');
+    expect(page).toContain('onOpenExternal: () => void;');
+    expect(page).toContain('onOpenExternal={() => window.open(getHotspotExternalUrl(item), \'_blank\', \'noopener,noreferrer\')}');
+    expect(rowSource).toContain('跳转');
+    expect(rowSource.indexOf('跳转')).toBeLessThan(rowSource.indexOf('开始分析'));
+  });
+
   it('uses editor-style font settings for hotspot analysis output', () => {
     const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
 
@@ -166,7 +178,7 @@ describe('hotspot page integration', () => {
   it('requires explicit start analysis actions instead of auto-analyzing on hotspot selection', () => {
     const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
 
-    expect(page).toContain('grid-cols-[34px_minmax(0,1fr)_82px]');
+    expect(page).toContain('grid-cols-[34px_minmax(0,1fr)_58px_82px]');
     expect(page).toContain('onOpen={() => setActiveItemId(item.id)}');
     expect(page).toContain('onAnalyze={() => void runSingleAnalysis(item)}');
     expect(page).toContain('点击标题只选中');

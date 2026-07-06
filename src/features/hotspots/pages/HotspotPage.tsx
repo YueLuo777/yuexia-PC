@@ -6,7 +6,7 @@ import { useModels } from '@/features/models/hooks/useModels';
 import { callModelStream } from '@/features/models/services/callModel';
 import { HOTSPOT_ANALYSIS_PROMPT_CATEGORY, normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { HOTSPOT_ANALYSIS_SYSTEM_PROMPT, buildHotspotSuitabilityPrompt, saveHotspotBrainstorm } from '@/features/hotspots/model/hotspotAi';
-import { HOTSPOT_SOURCE_LABELS, HOTSPOT_SOURCES, fetchHotspots } from '@/features/hotspots/model/hotspotApi';
+import { HOTSPOT_SOURCE_LABELS, HOTSPOT_SOURCES, fetchHotspots, getHotspotExternalUrl } from '@/features/hotspots/model/hotspotApi';
 import { HOTSPOT_RULE_BASE_SCORE, HOTSPOT_RULE_GROUPS, evaluateHotspotByRules, rankHotspotsByRuleEvaluation } from '@/features/hotspots/model/hotspotRules';
 import type { HotspotFetchResult, HotspotItem, HotspotSourceId } from '@/features/hotspots/model/hotspotTypes';
 import { getEditorTextLineHeight, getStoredFontSettings, type FontSettings } from '@/features/workbench/components/EditorToolModals';
@@ -237,6 +237,7 @@ function HotspotRow({
   active,
   onOpen,
   onAnalyze,
+  onOpenExternal,
   disabled,
 }: {
   item: HotspotItem;
@@ -244,10 +245,11 @@ function HotspotRow({
   active: boolean;
   onOpen: () => void;
   onAnalyze: () => void;
+  onOpenExternal: () => void;
   disabled: boolean;
 }) {
   return (
-    <div className={`grid min-h-[62px] grid-cols-[34px_minmax(0,1fr)_82px] items-center gap-2 border-b border-slate-100 px-3 py-2 transition-colors ${
+    <div className={`grid min-h-[62px] grid-cols-[34px_minmax(0,1fr)_58px_82px] items-center gap-2 border-b border-slate-100 px-3 py-2 transition-colors ${
       active ? 'bg-cyan-50/80' : 'bg-white hover:bg-slate-50'
     }`}
     >
@@ -270,6 +272,13 @@ function HotspotRow({
             {evaluation.levelLabel} {evaluation.score}
           </span>
         </div>
+      </button>
+      <button
+        type="button"
+        onClick={onOpenExternal}
+        className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-500 transition-colors hover:border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700"
+      >
+        跳转
       </button>
       <button
         type="button"
@@ -502,6 +511,7 @@ export function HotspotPage() {
                   active={activeItem?.id === item.id}
                   onOpen={() => setActiveItemId(item.id)}
                   onAnalyze={() => void runSingleAnalysis(item)}
+                  onOpenExternal={() => window.open(getHotspotExternalUrl(item), '_blank', 'noopener,noreferrer')}
                   disabled={isAnalyzing}
                 />
               ))}
