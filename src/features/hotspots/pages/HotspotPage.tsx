@@ -138,17 +138,25 @@ function HotspotAnalysisOutput({
 function HotspotRulePreviewModal({
   isOpen,
   minDisplayScore,
-  onMinDisplayScoreChange,
+  onApplyMinDisplayScore,
   onClose,
 }: {
   isOpen: boolean;
   minDisplayScore: number;
-  onMinDisplayScoreChange: (value: number) => void;
+  onApplyMinDisplayScore: (value: number) => void;
   onClose: () => void;
 }) {
+  const [draftMinDisplayScore, setDraftMinDisplayScore] = useState(minDisplayScore);
   const bonusRules = HOTSPOT_RULE_GROUPS.filter((group) => group.polarity === 'bonus');
   const penaltyRules = HOTSPOT_RULE_GROUPS.filter((group) => group.polarity === 'penalty');
   const riskRules = HOTSPOT_RULE_GROUPS.filter((group) => group.polarity === 'risk');
+  useEffect(() => {
+    if (isOpen) setDraftMinDisplayScore(minDisplayScore);
+  }, [isOpen, minDisplayScore]);
+  const closeWithApply = () => {
+    onApplyMinDisplayScore(draftMinDisplayScore);
+    onClose();
+  };
   const renderRuleGroup = (title: string, rules: typeof HOTSPOT_RULE_GROUPS, accentClass: string) => (
     <section>
       <h3 className="text-sm font-black text-slate-900">{title}</h3>
@@ -176,7 +184,7 @@ function HotspotRulePreviewModal({
       title="热点筛选规则"
       subtitle={`基础分 ${HOTSPOT_RULE_BASE_SCORE}，规则命中后自动加减分，不消耗 token`}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={closeWithApply}
       widthClass="w-[760px]"
       heightClass="h-[76vh] max-h-[86vh]"
       storageId="hotspot_rule_preview_modal"
@@ -193,10 +201,10 @@ function HotspotRulePreviewModal({
               <p className="mt-1 text-xs leading-5 text-slate-500">只显示分数大于等于这个值的热点。默认 {HOTSPOT_DEFAULT_MIN_DISPLAY_SCORE} 分，调低会显示更多候选，调高会更严格。</p>
             </div>
             <FontSizeStepper
-              value={minDisplayScore}
+              value={draftMinDisplayScore}
               min={HOTSPOT_MIN_SCORE_FILTER}
               max={HOTSPOT_MAX_SCORE_FILTER}
-              onChange={onMinDisplayScoreChange}
+              onChange={(value) => setDraftMinDisplayScore(clampHotspotMinDisplayScore(value))}
               ariaLabel="热点筛选最低分"
             />
           </div>
@@ -426,7 +434,7 @@ export function HotspotPage() {
     localStorage.setItem(HOTSPOT_ANALYSIS_FONT_SIZE_STORAGE_KEY, String(fontSize));
   }, []);
 
-  const setMinDisplayScoreWithStorage = useCallback((nextScore: number) => {
+  const applyMinDisplayScoreWithStorage = useCallback((nextScore: number) => {
     const score = clampHotspotMinDisplayScore(nextScore);
     setMinDisplayScore(score);
     localStorage.setItem(HOTSPOT_MIN_DISPLAY_SCORE_STORAGE_KEY, String(score));
@@ -439,17 +447,13 @@ export function HotspotPage() {
       const next = await fetchHotspots(force);
       setResult(next);
       setActiveItemId((current) => current ?? next.items[0]?.id ?? null);
-      const visibleCount = rankHotspotsByRuleEvaluation(next.items)
-        .filter((item) => evaluateHotspotByRules(item).score >= minDisplayScore)
-        .slice(0, HOTSPOT_DISPLAY_LIMIT)
-        .length;
-      setStatus(next.stale ? '抓取失败，已显示上次缓存。' : `已抓取 ${next.items.length} 条候选，筛出 ${visibleCount} 条高分热点。`);
+      setStatus(next.stale ? '抓取失败，已显示上次缓存。' : `已抓取 ${next.items.length} 条候选。`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : '热点刷新失败');
     } finally {
       setIsFetching(false);
     }
-  }, [minDisplayScore]);
+  }, []);
 
   useEffect(() => {
     void refresh(false);
@@ -663,7 +667,7 @@ export function HotspotPage() {
       <HotspotRulePreviewModal
         isOpen={isRulePreviewOpen}
         minDisplayScore={minDisplayScore}
-        onMinDisplayScoreChange={setMinDisplayScoreWithStorage}
+        onApplyMinDisplayScore={applyMinDisplayScoreWithStorage}
         onClose={() => setIsRulePreviewOpen(false)}
       />
     </div>
