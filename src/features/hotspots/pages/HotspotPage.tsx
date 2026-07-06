@@ -152,7 +152,7 @@ function HotspotModelSelect({
   }, [open]);
 
   return (
-    <div ref={rootRef} className="relative w-[252px] shrink-0 pt-3">
+    <div ref={rootRef} className="relative w-[152px] shrink-0 pt-3">
       <button
         type="button"
         aria-label={`热点模型：${displayName}`}

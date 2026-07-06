@@ -47,6 +47,7 @@ describe('hotspot page integration', () => {
 
     expect(page).toContain('HOTSPOT_MODEL_ID_STORAGE_KEY');
     expect(page).toContain('HotspotModelSelect');
+    expect(page).toContain('w-[152px]');
     expect(page).toContain('const hotspotModel =');
     expect(page).toContain('model: hotspotModel');
     expect(page).not.toContain('model: activeModel');
