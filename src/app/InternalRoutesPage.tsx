@@ -6,7 +6,6 @@ const SoftwareUiCatalogPage = lazy(() => import('@/features/tests/pages/Software
 const HiddenPagesTestPage = lazy(() => import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })));
 const ErrorLogPage = lazy(() => import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })));
 const TestBrowserPage = lazy(() => import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })));
-const PromptAuditBadgeLayoutTestPage = lazy(() => import('@/features/tests/pages/PromptAuditBadgeLayoutTestPage').then((module) => ({ default: module.PromptAuditBadgeLayoutTestPage })));
 
 export function InternalRoutesPage() {
   return (
@@ -18,7 +17,6 @@ export function InternalRoutesPage() {
       <Route path="/error-log" element={<ErrorLogPage />} />
       <Route path="/theme-colors" element={<Navigate to="/settings?section=theme" replace />} />
       <Route path="/test-browser" element={<TestBrowserPage />} />
-      <Route path="/prompt-audit-badge-layout-test" element={<PromptAuditBadgeLayoutTestPage />} />
       <Route path="*" element={<Navigate to="/novels" replace />} />
     </Routes>
   );

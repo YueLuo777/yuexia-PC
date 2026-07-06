@@ -38,6 +38,8 @@ const removedMarkedTests = [
   ['/editor-paper-baseline-grid-test', 'EditorPaperBaselineGridTestPage'],
   ['/setting-state-structure-plan-test', 'SettingStateStructurePlanTestPage'],
   ['/review-comparison-centering-test', 'ReviewComparisonCenteringTestPage'],
+  ['/hotspot-layout-preview-test', 'HotspotLayoutPreviewTestPage'],
+  ['/prompt-audit-badge-layout-test', 'PromptAuditBadgeLayoutTestPage'],
 ] as const;
 
 describe('TestCollectionPage delete marked cleanup', () => {
