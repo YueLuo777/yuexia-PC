@@ -124,7 +124,7 @@ export function OtherSettingReaderModal({
           </label>
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)_280px]">
+        <div className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)]">
           <aside className="editor-scrollbar min-h-0 overflow-y-auto border-r border-gray-100 bg-slate-50 px-1 py-2">
             {visibleGroups.length === 0 ? (
               <div className="flex h-full min-h-[260px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white text-sm font-bold text-gray-400">
@@ -213,29 +213,6 @@ export function OtherSettingReaderModal({
             )}
           </main>
 
-          <aside className="editor-scrollbar min-h-0 overflow-y-auto border-l border-gray-100 bg-cyan-50 p-4">
-            <div className="mb-3 text-sm font-black text-[#08AACE]">本次将关联</div>
-            <div className="space-y-2">
-              {draftEntries.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-cyan-200 bg-white p-4 text-center text-xs font-bold leading-5 text-slate-400">
-                  还没有选择其他设定
-                </div>
-              ) : draftEntries.map((entry) => (
-                <button
-                  key={entry.id}
-                  type="button"
-                  onClick={() => onPreviewEntry(entry.id)}
-                  className="w-full rounded-xl bg-white px-3 py-2 text-left shadow-sm transition-colors hover:bg-[#F8FEFF]"
-                >
-                  <div className="truncate text-sm font-black text-slate-800">{entry.title}</div>
-                  <div className="mt-1 truncate text-xs font-bold text-slate-400">{entry.tabTitle} / {entry.groupName}</div>
-                </button>
-              ))}
-            </div>
-            <div className="mt-4 rounded-xl border border-cyan-200 bg-white p-3 text-xs font-bold leading-5 text-slate-500">
-              确认后，这些条目会合并成“关联其他设定”上下文，与当前设定、脑洞来源互斥。
-            </div>
-          </aside>
         </div>
 
         <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 bg-white px-5 py-4">

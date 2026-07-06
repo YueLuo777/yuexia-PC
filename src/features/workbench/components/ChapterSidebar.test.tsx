@@ -114,10 +114,21 @@ describe('ChapterSidebar', () => {
     expect(chapterEditorSource).not.toContain('className="flex items-center gap-2 border-b border-[#e6e8ec] bg-white px-4 py-2"');
   });
 
-  it('only changes the selected chapter background in the body chapter list', () => {
+  it('uses the brainstorm library gray background for the body left navigation area', () => {
     const chapterSidebarSource = readSource('ChapterSidebar.tsx');
 
+    expect(chapterSidebarSource).toContain('className="flex shrink-0 flex-col border-r border-[#e1e5eb] bg-gray-50"');
+    expect(chapterSidebarSource).not.toContain('className="flex shrink-0 flex-col border-r border-[#e1e5eb] bg-white"');
+  });
+
+  it('only changes the selected chapter background in the body chapter list', () => {
+    const chapterSidebarSource = readSource('ChapterSidebar.tsx');
+    const sharedStylesSource = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../shared/styles/index.css'), 'utf8');
+
     expect(chapterSidebarSource).toContain("? 'border-transparent xy-selected-mint-bg'");
+    expect(chapterSidebarSource).toContain('xy-chapter-sidebar-row');
+    expect(sharedStylesSource).toContain('.theme-shuimo .xy-chapter-sidebar-row.xy-selected-mint-bg::before');
+    expect(sharedStylesSource).toContain('content: none;');
     expect(chapterSidebarSource).toContain('className="flex-1 truncate whitespace-nowrap text-sm font-black text-gray-700"');
     expect(chapterSidebarSource).toContain('className="ml-auto shrink-0 text-[11px] font-black text-gray-400 transition-opacity group-hover:opacity-0"');
     expect(chapterSidebarSource).not.toContain("? 'border-[#FDBA74] bg-[#FFF7ED]'");

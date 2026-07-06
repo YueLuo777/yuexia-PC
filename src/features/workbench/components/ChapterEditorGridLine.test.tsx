@@ -144,6 +144,18 @@ describe('ChapterEditor grid line font setting', () => {
     expect(reviewPanelSource).toContain("onScroll={() => handleReviewPreviewScroll('original')}");
     expect(reviewPanelSource).toContain("activeReviewPreviewScrollPane === 'annotation' ? 'scrollbar-active' : ''");
     expect(reviewPanelSource).toContain("onScroll={() => handleReviewPreviewScroll('annotation')}");
+    expect(chapterEditorSource).toContain('const reviewOriginalParagraphRefs = useRef<Array<HTMLButtonElement | null>>([]);');
+    expect(chapterEditorSource).toContain('export function getCenteredReviewComparisonScrollTop({');
+    expect(chapterEditorSource).toContain('function scrollReviewComparisonTargetIntoCenter(container: HTMLElement | null, target: HTMLElement | null) {');
+    expect(chapterEditorSource).toContain('const reviewOriginalPreviewPaneRef = useRef<HTMLDivElement | null>(null);');
+    expect(chapterEditorSource).toContain('const reviewAnnotationPreviewPaneRef = useRef<HTMLDivElement | null>(null);');
+    expect(chapterEditorSource).toContain('scrollReviewComparisonTargetIntoCenter(reviewOriginalPreviewPaneRef.current, reviewOriginalParagraphRefs.current[index]);');
+    expect(chapterEditorSource).toContain('scrollReviewComparisonTargetIntoCenter(reviewAnnotationPreviewPaneRef.current, reviewAnnotationRefs.current[index]);');
+    expect(chapterEditorSource).not.toContain("scrollIntoView({ block: 'center', behavior: 'smooth' })");
+    expect(reviewPanelSource).toContain('reviewOriginalParagraphRefs.current[index] = node;');
+    expect(reviewPanelSource).toContain('ref={reviewOriginalPreviewPaneRef}');
+    expect(reviewPanelSource).toContain('ref={reviewAnnotationPreviewPaneRef}');
+    expect(reviewPanelSource).not.toContain('快速定位');
     expect(reviewPanelSource).toContain('第${activeReviewChapter.serialNumber}章 章纲');
     expect(reviewPanelSource).toContain('{reviewPreviewOriginalTitle}');
     expect(reviewPanelSource).toContain('{reviewPreviewAnnotationTitle}');
@@ -161,8 +173,8 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterEditorSource).not.toContain('markChapterContentPolished');
     expect(chapterNumberButtonSource).toContain("selected ? 'xy-detail-outline-number-selected' : ''");
     expect(chapterNumberButtonSource).toContain("if (state === 'hasOutline') return 'xy-detail-outline-number-has-outline hover:border-[#08B3D9]';");
-    expect(reviewPanelSource).toContain('className={`relative block w-full border-l-2 px-3 py-1.5 text-left leading-7 outline-none transition-colors ${');
-    expect(reviewPanelSource).toContain('className={`border-l-2 px-3 py-1.5 transition-colors ${');
+    expect(reviewPanelSource).toContain('className={`relative block w-full text-left outline-none ${');
+    expect(reviewPanelSource).toContain('className={`${REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS} ${');
     expect(reviewPanelSource).not.toContain("selected ? 'bg-[#EAF9FD] text-slate-900 ring-1 ring-[#9BEFFC]'");
     expect(reviewPanelSource).not.toContain("className={`rounded-xl border p-3 transition-colors ${");
     expect(reviewPanelSource).not.toContain('AI 返回“原文标注”JSON 后，这里会高亮问题片段并显示审核说明。');
@@ -227,6 +239,19 @@ describe('ChapterEditor grid line font setting', () => {
     expect(reviewPanelSource).toContain('style={{ fontSize: reviewPreviewFontSize }}');
     expect(reviewPanelSource).not.toContain('xy-selected-orange-bg');
     expect(reviewPanelSource).not.toContain('grid min-h-0 flex-1 grid-cols-2 divide-x divide-slate-100');
+    expect(chapterEditorSource).toContain("const REVIEW_PREVIEW_PARAGRAPH_LIST_CLASS = 'space-y-3';");
+    expect(chapterEditorSource).toContain("const REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS = 'border-l-2 px-3 py-1.5 leading-7 transition-colors';");
+    expect(chapterEditorSource).toContain("const REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS = 'border-[#08AACE] bg-[#EAF9FD] text-slate-900';");
+    expect(reviewPanelSource).toContain('className={REVIEW_PREVIEW_PARAGRAPH_LIST_CLASS}');
+    expect(reviewPanelSource).toContain('REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS');
+    expect(reviewPanelSource).toContain('REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS');
+    expect(reviewPanelSource).toContain('REVIEW_PREVIEW_PARAGRAPH_EMPTY_CLASS');
+    expect(reviewPanelSource).not.toContain('border-l-2 border-emerald-300 bg-emerald-50/35 px-3 py-1.5');
+    expect(reviewPanelSource).not.toContain('<span className="font-black text-slate-800">当前章节：</span>');
+    expect(reviewPanelSource).not.toContain('<span className="font-black text-slate-800">正文字数：</span>');
+    expect(reviewPanelSource).not.toContain('<span className="font-black text-slate-800">关联章纲：</span>');
+    expect(reviewPanelSource).not.toContain('<div className="relative mt-5 min-h-0 flex-1">');
+    expect(reviewPanelSource).toContain('<div className="relative mt-3 min-h-0 flex-1">');
   });
 
   it('uses minimum left panel widths as review and status defaults for new works', () => {

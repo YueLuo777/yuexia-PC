@@ -143,7 +143,7 @@ export function ChapterSidebar({
   };
 
   return (
-    <aside className="flex shrink-0 flex-col border-r border-[#e1e5eb] bg-white" style={{ width }}>
+    <aside className="flex shrink-0 flex-col border-r border-[#e1e5eb] bg-gray-50" style={{ width }}>
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-[#e6e8ec] bg-[#fbfbfc] px-3">
         <div className="flex items-center gap-2">
           <h2 className="whitespace-nowrap text-sm font-bold text-gray-900">未发布</h2>
@@ -207,7 +207,7 @@ export function ChapterSidebar({
                         event.stopPropagation();
                         setChapterMenu({ visible: true, ...getContextMenuPoint(event), volumeId: volume.id, chapterId: chapter.id });
                       }}
-                      className={`group relative flex w-full cursor-pointer items-center gap-2 rounded-[8px] border px-1 py-1 text-left transition-colors ${
+                      className={`xy-chapter-sidebar-row group relative flex w-full cursor-pointer items-center gap-2 rounded-[8px] border px-1 py-1 text-left transition-colors ${
                         chapter.isSelected
                           ? 'border-transparent xy-selected-mint-bg'
                           : 'border-transparent hover:bg-gray-50'

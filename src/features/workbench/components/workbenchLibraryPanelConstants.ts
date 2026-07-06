@@ -1,3 +1,8 @@
+import {
+  WORKBENCH_SHARED_AI_RIGHT_WIDTH_DEFAULT,
+  WORKBENCH_SHARED_AI_RIGHT_WIDTH_MIN,
+} from '@/features/workbench/model/workbenchSharedAiRightWidth';
+
 export const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] xy-flow-group-bg px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors';
 export const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';
 export const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#6f7e90]';
@@ -18,9 +23,9 @@ export const SETTING_LIBRARY_LEFT_WIDTH = SETTING_LIBRARY_LEFT_MIN_WIDTH;
 export const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 260;
 export const SETTING_LIBRARY_LEFT_MAX_WIDTH = 640;
 export const OUTLINE_LEFT_MAX_DISPLAY_WIDTH = 560;
-export const SETTING_LIBRARY_RIGHT_WIDTH = 350;
-export const SETTING_LIBRARY_RIGHT_MIN_WIDTH = 280;
-export const OUTLINE_ACTION_RIGHT_MIN_WIDTH = 420;
+export const SETTING_LIBRARY_RIGHT_WIDTH = WORKBENCH_SHARED_AI_RIGHT_WIDTH_DEFAULT;
+export const SETTING_LIBRARY_RIGHT_MIN_WIDTH = WORKBENCH_SHARED_AI_RIGHT_WIDTH_MIN;
+export const OUTLINE_ACTION_RIGHT_MIN_WIDTH = WORKBENCH_SHARED_AI_RIGHT_WIDTH_MIN;
 export const SETTING_LIBRARY_RIGHT_MAX_WIDTH = 620;
 export const BRAINSTORM_PREVIEW_WIDTH = 520;
 export const BRAINSTORM_PREVIEW_MIN_WIDTH = 320;

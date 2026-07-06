@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { BookOpen, FlaskConical, Minus, Plus, Square, X } from 'lucide-react';
 
@@ -22,6 +22,7 @@ import { areInternalRoutesEnabled } from '@/shared/featureFlags/internalRoutes';
 const APP_SCALE_KEY = 'xinyuexia_app_scale';
 const APP_SCALE_VERSION_KEY = 'xinyuexia_app_scale_version';
 const DARK_THEME_KEY = 'xinyuexia_dark_theme';
+const APP_THEME_KEY = 'xinyuexia_app_theme_mode_v1';
 const APP_SCALE_BASE = 1.1;
 const APP_SCALE_STORAGE_VERSION = '2';
 const APP_SCALE_OPTIONS = [1, 1.1, 1.25, 1.5, 1.75, 2].map((labelScale) => ({
@@ -32,6 +33,15 @@ const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
 const RIGHT_MOUSE_GESTURE_THRESHOLD = 90;
 const RIGHT_MOUSE_GESTURE_VERTICAL_TOLERANCE = 80;
 const RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD = 18;
+
+type AppThemeMode = 'light' | 'shuimo' | 'shuimo2' | 'test07';
+
+const THEME_OPTIONS: Array<{ key: AppThemeMode; label: string }> = [
+  { key: 'light', label: '默认主题' },
+  { key: 'shuimo', label: '水墨' },
+  { key: 'shuimo2', label: '水墨2' },
+  { key: 'test07', label: '清爽主题' },
+];
 
 type MouseGesturePreview = {
   startX: number;
@@ -60,11 +70,17 @@ function getScaleLabel(scale: number) {
   return Math.round((scale / APP_SCALE_BASE) * 100);
 }
 
-function loadDarkTheme() {
+function isAppThemeMode(value: string | null): value is AppThemeMode {
+  return value === 'light' || value === 'shuimo' || value === 'shuimo2' || value === 'test07';
+}
+
+function loadThemeMode(): AppThemeMode {
   try {
-    return localStorage.getItem(DARK_THEME_KEY) === '1';
+    const savedTheme = localStorage.getItem(APP_THEME_KEY);
+    if (isAppThemeMode(savedTheme)) return savedTheme;
+    return 'light';
   } catch {
-    return false;
+    return 'light';
   }
 }
 
@@ -88,7 +104,9 @@ export function AppFrame({ children }: AppFrameProps) {
   const [isMaximized, setIsMaximized] = useState(false);
   const [appScale, setAppScale] = useState(loadScale);
   const [isScaleMenuOpen, setIsScaleMenuOpen] = useState(false);
-  const [isDarkTheme, setIsDarkTheme] = useState(loadDarkTheme);
+  const [themeMode, setThemeMode] = useState<AppThemeMode>(loadThemeMode);
+  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+  const themeMenuRef = useRef<HTMLDivElement | null>(null);
   const [showTestCollection, setShowTestCollection] = useState(false);
   const [showSoftwareUiCatalog, setShowSoftwareUiCatalog] = useState(false);
   const [shortcutBindings, setShortcutBindings] = useState(loadShortcutBindings);
@@ -97,6 +115,8 @@ export function AppFrame({ children }: AppFrameProps) {
   const showInternalTools = areInternalRoutesEnabled();
 
   const effectiveScale = useMemo(() => Number(appScale.toFixed(3)), [appScale]);
+  const activeTheme = THEME_OPTIONS.find((option) => option.key === themeMode) ?? THEME_OPTIONS[0];
+  const themeClassName = themeMode === 'light' ? '' : `theme-${themeMode}`;
 
   useTopModalEscape(showInternalTools && showTestCollection, () => setShowTestCollection(false));
   useTopModalEscape(showInternalTools && showSoftwareUiCatalog, () => setShowSoftwareUiCatalog(false));
@@ -104,6 +124,16 @@ export function AppFrame({ children }: AppFrameProps) {
   useEffect(() => {
     applyCustomThemeColors();
   }, []);
+
+  useEffect(() => {
+    if (!isThemeMenuOpen) return;
+    const handleThemeMenuOutsidePointerDown = (event: PointerEvent) => {
+      if (themeMenuRef.current?.contains(event.target as Node)) return;
+      setIsThemeMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', handleThemeMenuOutsidePointerDown);
+    return () => document.removeEventListener('pointerdown', handleThemeMenuOutsidePointerDown);
+  }, [isThemeMenuOpen]);
 
   const activateHomeTab = useCallback(() => {
     setActiveTabId(HOME_TAB.id);
@@ -123,9 +153,17 @@ export function AppFrame({ children }: AppFrameProps) {
   }, [effectiveScale]);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('theme-dark', isDarkTheme);
-    localStorage.setItem(DARK_THEME_KEY, isDarkTheme ? '1' : '0');
-  }, [isDarkTheme]);
+    document.documentElement.classList.remove('theme-dark');
+    document.documentElement.classList.toggle('theme-shuimo', themeMode === 'shuimo');
+    document.documentElement.classList.toggle('theme-shuimo2', themeMode === 'shuimo2');
+    document.documentElement.classList.toggle('theme-test07', themeMode === 'test07');
+    localStorage.setItem(APP_THEME_KEY, themeMode);
+    localStorage.setItem(DARK_THEME_KEY, '0');
+    return () => {
+      document.documentElement.classList.remove('theme-shuimo2');
+      document.documentElement.classList.remove('theme-test07');
+    };
+  }, [themeMode]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -806,9 +844,27 @@ export function AppFrame({ children }: AppFrameProps) {
     : '返回我的小说';
   const mouseGestureContinueLabel = mouseGesturePreview?.direction === 'right' ? '继续右滑' : '继续左滑';
   const mouseGestureArrow = mouseGesturePreview?.direction === 'right' ? '→' : '←';
+  const renderThemeOption = (option: (typeof THEME_OPTIONS)[number]) => {
+    const isSelected = option.key === activeTheme.key;
+    return (
+      <button
+        type="button"
+        role="menuitemradio"
+        aria-checked={isSelected}
+        onClick={() => {
+          setThemeMode(option.key);
+          setIsThemeMenuOpen(false);
+        }}
+        className={`xy-theme-option ${isSelected ? 'xy-theme-option-active' : ''}`}
+      >
+        <span className="xy-theme-option-mark" aria-hidden="true">{isSelected ? '✓' : ''}</span>
+        <span className="xy-theme-option-label">{option.label}</span>
+      </button>
+    );
+  };
 
   return (
-    <div className={`writer-assistant-theme flex h-screen w-screen flex-col overflow-hidden bg-[var(--xy-wa-app-bg)] ${isDarkTheme ? 'theme-dark' : ''}`}>
+    <div className={`writer-assistant-theme flex h-screen w-screen flex-col overflow-hidden bg-[var(--xy-wa-app-bg)] ${themeClassName}`}>
       <header
         className="app-titlebar xy-wa-titlebar flex h-12 shrink-0 items-center border-b px-2"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
@@ -874,7 +930,7 @@ export function AppFrame({ children }: AppFrameProps) {
               setShowTestCollection(true);
             }}
             className="xy-wa-icon-button"
-            title="测试"
+            title="测试板块"
           >
             <FlaskConical className="h-4 w-4" />
           </button>
@@ -890,18 +946,32 @@ export function AppFrame({ children }: AppFrameProps) {
           </button>
             </>
           )}
-          <button
-            onClick={() => setIsDarkTheme((prev) => !prev)}
-            className={`xy-dark-theme-switch mr-2 ${isDarkTheme ? 'xy-dark-active' : ''}`}
-            title="主题"
-            aria-pressed={isDarkTheme}
-          >
-            <span className="xy-dark-theme-switch-track" aria-hidden="true" />
-            <span className="xy-dark-theme-switch-text">主题</span>
-          </button>
+          <div ref={themeMenuRef} className="relative mr-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIsScaleMenuOpen(false);
+                setIsThemeMenuOpen((prev) => !prev);
+              }}
+              className={`xy-theme-trigger-button xy-${themeMode}-active`}
+              title="主题"
+              aria-haspopup="menu"
+              aria-expanded={isThemeMenuOpen}
+            >
+              <span className="xy-theme-trigger-label">主题</span>
+            </button>
+            {isThemeMenuOpen && (
+              <div className="xy-theme-menu absolute right-0 top-10 z-[90] w-52 p-1.5" role="menu" aria-label="主题">
+                {THEME_OPTIONS.map(renderThemeOption)}
+              </div>
+            )}
+          </div>
           <div className="relative ml-1">
             <button
-              onClick={() => setIsScaleMenuOpen((prev) => !prev)}
+              onClick={() => {
+                setIsThemeMenuOpen(false);
+                setIsScaleMenuOpen((prev) => !prev);
+              }}
               className="h-8 min-w-[70px] rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800"
               title="界面比例"
             >

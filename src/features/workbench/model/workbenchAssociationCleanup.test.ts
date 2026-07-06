@@ -34,6 +34,9 @@ describe('workbench association session cleanup', () => {
         {
           id: 1,
           input: '保留输入',
+          contextTitle: '关联资料',
+          contextText: '关联资料内容',
+          linkedItems: [{ id: 'ctx-1', source: 'setting', group: '作品设定', title: '基础设定', content: '资料' }],
           linkChapter: true,
           hasSentChapterContext: true,
         },
@@ -68,6 +71,9 @@ describe('workbench association session cleanup', () => {
     const aiSessions = JSON.parse(localStorage.getItem('xinyuexia_workbench_ai_sessions_1') ?? '{}');
     expect(aiSessions.sessions[0]).toMatchObject({
       input: '保留输入',
+      contextTitle: '',
+      contextText: '',
+      linkedItems: [],
       linkChapter: false,
       hasSentChapterContext: false,
     });

@@ -4,12 +4,10 @@ import {
   EyeOff,
   FolderTree,
   Globe,
-  Link2,
   NotebookText,
   Moon,
   Palette,
   Search,
-  Tags,
   X,
 } from 'lucide-react';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
@@ -26,38 +24,38 @@ const SoftwareUiCatalogPage = lazy(() =>
 const DarkThemeColorPage = lazy(() =>
   import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })),
 );
-const EditorPaperBaselineGridTestPage = lazy(() =>
-  import('@/features/tests/pages/EditorPaperBaselineGridTestPage').then((module) => ({
-    default: module.EditorPaperBaselineGridTestPage,
-  })),
-);
-const PaperWorkbenchStylePreviewTestPage = lazy(() =>
-  import('@/features/tests/pages/PaperWorkbenchStylePreviewTestPage').then((module) => ({
-    default: module.PaperWorkbenchStylePreviewTestPage,
-  })),
-);
 const CleanWriterStylePreviewTestPage = lazy(() =>
   import('@/features/tests/pages/CleanWriterStylePreviewTestPage').then((module) => ({
     default: module.CleanWriterStylePreviewTestPage,
   })),
 );
-const DarkConsoleStylePreviewTestPage = lazy(() =>
-  import('@/features/tests/pages/DarkConsoleStylePreviewTestPage').then((module) => ({
-    default: module.DarkConsoleStylePreviewTestPage,
+const ShuimoSidebarSchemePreviewTestPage = lazy(() =>
+  import('@/features/tests/pages/ShuimoSidebarSchemePreviewTestPage').then((module) => ({
+    default: module.ShuimoSidebarSchemePreviewTestPage,
+  })),
+);
+const ShuimoSelectionStatePreviewTestPage = lazy(() =>
+  import('@/features/tests/pages/ShuimoSelectionStatePreviewTestPage').then((module) => ({
+    default: module.ShuimoSelectionStatePreviewTestPage,
+  })),
+);
+const ShuimoSemanticPalettePreviewTestPage = lazy(() =>
+  import('@/features/tests/pages/ShuimoSemanticPalettePreviewTestPage').then((module) => ({
+    default: module.ShuimoSemanticPalettePreviewTestPage,
+  })),
+);
+const Shuimo2DeepPalettePreviewTestPage = lazy(() =>
+  import('@/features/tests/pages/Shuimo2DeepPalettePreviewTestPage').then((module) => ({
+    default: module.Shuimo2DeepPalettePreviewTestPage,
+  })),
+);
+const WorkbenchAiRightWidthPreviewTestPage = lazy(() =>
+  import('@/features/tests/pages/WorkbenchAiRightWidthPreviewTestPage').then((module) => ({
+    default: module.WorkbenchAiRightWidthPreviewTestPage,
   })),
 );
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
-);
-const SettingEntryMergePlanTestPage = lazy(() =>
-  import('@/features/tests/pages/SettingEntryMergePlanTestPage').then((module) => ({
-    default: module.SettingEntryMergePlanTestPage,
-  })),
-);
-const SettingStateStructurePlanTestPage = lazy(() =>
-  import('@/features/tests/pages/SettingStateStructurePlanTestPage').then((module) => ({
-    default: module.SettingStateStructurePlanTestPage,
-  })),
 );
 const PromptLibraryStructureTestPage = lazy(() =>
   import('@/features/tests/pages/PromptLibraryStructureTestPage').then((module) => ({
@@ -67,11 +65,6 @@ const PromptLibraryStructureTestPage = lazy(() =>
 const PromptWorkflowPreviewTestPage = lazy(() =>
   import('@/features/tests/pages/PromptWorkflowPreviewTestPage').then((module) => ({
     default: module.PromptWorkflowPreviewTestPage,
-  })),
-);
-const WorkbenchCreationChainTestPage = lazy(() =>
-  import('@/features/tests/pages/WorkbenchCreationChainTestPage').then((module) => ({
-    default: module.WorkbenchCreationChainTestPage,
   })),
 );
 const TestBrowserPage = lazy(() =>
@@ -111,20 +104,6 @@ const testGroups = [
         badge: 'Theme',
       },
       {
-        title: '正文稿纸线基准对齐测试',
-        description: '测试正文稿纸虚线、字号和 px 行高使用同一套基准后，改字号时文字是否仍能稳定坐在虚线上。',
-        path: '/editor-paper-baseline-grid-test',
-        icon: NotebookText,
-        badge: 'Paper',
-      },
-      {
-        title: '纸墨工作台风格预览',
-        description: '把浅纸色、墨色正文和三栏工作台组合成一张可对照的视觉样张。',
-        path: '/paper-workbench-style-preview-test',
-        icon: Palette,
-        badge: 'Style',
-      },
-      {
         title: '清爽编辑器风格预览',
         description: '用明亮留白、轻边框和低干扰编辑区做一张可对照的写作样张。',
         path: '/clean-writer-style-preview-test',
@@ -132,31 +111,45 @@ const testGroups = [
         badge: 'Clean',
       },
       {
-        title: '深色控制台风格预览',
-        description: '用深色底、状态信号和控制台密度做一张可对照的专业样张。',
-        path: '/dark-console-style-preview-test',
-        icon: Moon,
-        badge: 'Dark',
+        title: '水墨层级配色方案预览',
+        description: '并排比较水墨主题的分组、设定名、选中设定、背景和内容卡片配色。',
+        path: '/shuimo-sidebar-scheme-preview-test',
+        icon: Palette,
+        badge: 'Shuimo',
+      },
+      {
+        title: '水墨设定条目选中态预览',
+        description: '并排比较水墨主题里设定条目的墨线、青色描边、纸卡浮起和圆点标记选中态。',
+        path: '/shuimo-selection-state-preview-test',
+        icon: Palette,
+        badge: 'Select',
+      },
+      {
+        title: '水墨语义配色预览',
+        description: '全面比较水墨主题里主操作、浅底面板、危险操作、AI 输出框、正文选中和状态提示应该使用的颜色。',
+        path: '/shuimo-semantic-palette-preview-test',
+        icon: Palette,
+        badge: 'Palette',
+      },
+      {
+        title: '水墨2 深度配色预览',
+        description: '对照软件标题栏、正文选中、分组、AI 输入区、发送图标、字号控件和首页侧栏的水墨2候选配色。',
+        path: '/shuimo2-deep-palette-preview-test',
+        icon: Palette,
+        badge: 'Shuimo2',
+      },
+      {
+        title: '右侧 AI 区宽度预览',
+        description: '并排查看脑洞、设定、章纲、生成梗概右侧 AI 区在 420px 和 460px 下的真实按钮与输入框效果。',
+        path: '/workbench-ai-right-width-preview-test',
+        icon: Palette,
+        badge: 'AI Width',
       },
     ],
   },
   {
     title: 'AI 链路测试',
     items: [
-      {
-        title: '设定条目合并方案测试',
-        description: '测试作品设定、道具资源、地点场景、伏笔线索和书写规则的条目合并粒度。',
-        path: '/setting-entry-merge-plan-test',
-        icon: Tags,
-        badge: 'Merge',
-      },
-      {
-        title: '设定状态结构方案测试',
-        description: '测试主角金手指、势力分组、世界地图、危险区域、道具资源、伏笔线索的固定档案和状态设定拆分方案。',
-        path: '/setting-state-structure-plan-test',
-        icon: Tags,
-        badge: 'State',
-      },
       {
         title: '所有提示词',
         description: '整理旧提示词会创建的资料库、模板字段、读取链路和章节发布更新方式。',
@@ -170,13 +163,6 @@ const testGroups = [
         path: '/prompt-workflow-preview-test',
         icon: FolderTree,
         badge: 'Prompt View',
-      },
-      {
-        title: '脑洞设定章纲正文链路自检',
-        description: '生成临时作品并检查全局脑洞、作品设定、章纲、梗概、正文和 AI 关联资料是否能按真实存储链路读通。',
-        path: '/workbench-creation-chain-test',
-        icon: Link2,
-        badge: 'Chain',
       },
     ],
   },
@@ -317,16 +303,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
 
   const renderActiveTest = () => {
     switch (activePath) {
-      case '/setting-entry-merge-plan-test':
-        return <SettingEntryMergePlanTestPage />;
-      case '/setting-state-structure-plan-test':
-        return <SettingStateStructurePlanTestPage />;
       case '/prompt-library-structure-test':
         return <PromptLibraryStructureTestPage />;
       case '/prompt-workflow-preview-test':
         return <PromptWorkflowPreviewTestPage />;
-      case '/workbench-creation-chain-test':
-        return <WorkbenchCreationChainTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':
@@ -335,14 +315,18 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <SoftwareUiCatalogPage embedded onClose={() => setActivePath(null)} />;
       case '/theme-colors':
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
-      case '/editor-paper-baseline-grid-test':
-        return <EditorPaperBaselineGridTestPage />;
-      case '/paper-workbench-style-preview-test':
-        return <PaperWorkbenchStylePreviewTestPage />;
       case '/clean-writer-style-preview-test':
         return <CleanWriterStylePreviewTestPage />;
-      case '/dark-console-style-preview-test':
-        return <DarkConsoleStylePreviewTestPage />;
+      case '/shuimo-sidebar-scheme-preview-test':
+        return <ShuimoSidebarSchemePreviewTestPage />;
+      case '/shuimo-selection-state-preview-test':
+        return <ShuimoSelectionStatePreviewTestPage />;
+      case '/shuimo-semantic-palette-preview-test':
+        return <ShuimoSemanticPalettePreviewTestPage />;
+      case '/shuimo2-deep-palette-preview-test':
+        return <Shuimo2DeepPalettePreviewTestPage />;
+      case '/workbench-ai-right-width-preview-test':
+        return <WorkbenchAiRightWidthPreviewTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       default:
@@ -377,10 +361,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
                   'flex h-4 w-4 items-center justify-center rounded border',
                   testedTestPaths.has(activePath)
                     ? 'border-brand bg-brand text-white'
-                    : 'border-slate-300 bg-white text-transparent',
+                    : 'border-slate-300 bg-white',
                 ].join(' ')}
               >
-                <Check className="h-3 w-3" />
+                {testedTestPaths.has(activePath) ? <Check className="h-3 w-3" /> : null}
               </span>
               {testedTestPaths.has(activePath) ? '取消已测试' : '标记已测试'}
             </button>
@@ -511,10 +495,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
                               'flex h-7 w-7 items-center justify-center rounded-full border transition-colors',
                               isTested
                                 ? 'border-brand bg-brand text-white'
-                                : 'border-slate-200 bg-white text-transparent hover:border-brand/50 hover:text-brand',
+                                : 'border-slate-200 bg-white hover:border-brand/50',
                             ].join(' ')}
                           >
-                            <Check className="h-4 w-4" />
+                            {isTested ? <Check className="h-4 w-4" /> : null}
                           </span>
                           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-400 transition-colors group-hover:bg-brand-light group-hover:text-brand">
                             {item.badge}

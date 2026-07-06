@@ -31,6 +31,13 @@ const removedMarkedTests = [
   ['/structure-audit-result-preview-test', 'StructureAuditResultPreviewTestPage'],
   ['/review-preview-width-mode-test', 'ReviewPreviewWidthModeTestPage'],
   ['/workbench-ai-width-unified-preview-test', 'WorkbenchAiWidthUnifiedPreviewTestPage'],
+  ['/setting-entry-merge-plan-test', 'SettingEntryMergePlanTestPage'],
+  ['/workbench-creation-chain-test', 'WorkbenchCreationChainTestPage'],
+  ['/dark-console-style-preview-test', 'DarkConsoleStylePreviewTestPage'],
+  ['/paper-workbench-style-preview-test', 'PaperWorkbenchStylePreviewTestPage'],
+  ['/editor-paper-baseline-grid-test', 'EditorPaperBaselineGridTestPage'],
+  ['/setting-state-structure-plan-test', 'SettingStateStructurePlanTestPage'],
+  ['/review-comparison-centering-test', 'ReviewComparisonCenteringTestPage'],
 ] as const;
 
 describe('TestCollectionPage delete marked cleanup', () => {
@@ -74,6 +81,14 @@ describe('TestCollectionPage delete marked cleanup', () => {
     expect(toggleBody).toContain('setTestedTestPaths');
     expect(toggleBody).not.toContain('setActivePath(null)');
     expect(toggleBody).not.toContain('setCollectionTab(');
+  });
+
+  it('does not show check icons for untested items through theme text color overrides', async () => {
+    const source = await readFile(collectionPagePath, 'utf8');
+
+    expect(source).not.toContain('text-transparent');
+    expect(source).toContain('testedTestPaths.has(activePath) ? <Check className="h-3 w-3" /> : null');
+    expect(source).toContain('isTested ? <Check className="h-4 w-4" /> : null');
   });
 
   it('prunes deleted test paths from the completed-test bucket', async () => {

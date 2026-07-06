@@ -8152,4 +8152,15 @@ export const defaultEntries: ErrorLogEntry[] = [
     keywords: ['AI输入框', '发射按钮', '纸飞机', '#21B8DA', '竖线', 'AiInlineInput'],
     updatedAt: '2026-06-26',
   },
+  {
+    id: 'workbench-close-linked-context-session-cleanup-001',
+    title: '关闭软件后右侧 AI 关联资料不应继续保留',
+    area: '工作台 / 正文右侧 AI / 关联资料 / 软件关闭清理',
+    symptom: '关闭软件再打开后，右侧 AI 区仍可能保留上一轮的关联资料标题、关联正文和已关联条目，用户需要手动取消关联。',
+    cause: '关闭和新会话清理只清除了章节关联开关 linkChapter 和 hasSentChapterContext，没有同步清理 AI 会话里保存的 contextTitle、contextText 和 linkedItems。',
+    solution: 'clearWorkbenchAiSessionLinksByStorageKey 在清理关联时同时重置 contextTitle、contextText、linkedItems、linkChapter 和 hasSentChapterContext；关闭、页面隐藏和启动清理都会走同一套逻辑。',
+    prevention: '以后新增临时关联字段时，要加入 workbenchAssociationCleanup 的关闭清理测试，确保关闭软件只保留资料本体，不保留本次运行的关联状态。',
+    keywords: ['关闭软件', '关联资料', '右侧AI', 'linkedItems', 'contextText', 'WorkbenchAIPanel', 'workbenchAssociationCleanup'],
+    updatedAt: '2026-07-06',
+  },
 ];

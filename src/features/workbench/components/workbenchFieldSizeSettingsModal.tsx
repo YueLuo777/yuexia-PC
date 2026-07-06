@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import type { useDraggableModal } from '@/shared/hooks/useDraggableModal';
+import { WorkbenchNavigationWidthToggle } from './WorkbenchNavigationWidthToggle';
 import {
   FieldSizeNumberInput,
   WORKBENCH_FIELD_SIZE_DEFAULTS,
@@ -60,6 +61,9 @@ export function FieldSizeSettingsModal({
           </button>
         </header>
         <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto p-5">
+          <div className="mb-3">
+            <WorkbenchNavigationWidthToggle />
+          </div>
           <div className="grid gap-3">
             {visibleKeys.map((key) => {
               const spec = specs[key] ?? WORKBENCH_FIELD_SIZE_DEFAULTS[key];

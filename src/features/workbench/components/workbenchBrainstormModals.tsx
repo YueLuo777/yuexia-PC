@@ -132,16 +132,6 @@ export function BrainstormReaderModal({
                     关联此项
                   </button>
                 </div>
-                <div className="mb-4 grid shrink-0 grid-cols-2 gap-3">
-                  <div className="rounded-xl bg-white p-3 text-xs font-bold leading-5 text-slate-600">
-                    <div className="mb-1 text-[11px] font-black text-[#08AACE]">项目类型</div>
-                    {selectedContent?.type || BRAINSTORM_TYPE}
-                  </div>
-                  <div className="rounded-xl bg-white p-3 text-xs font-bold leading-5 text-slate-600">
-                    <div className="mb-1 text-[11px] font-black text-amber-600">关联方式</div>
-                    关联后会作为完整脑洞项目随本次请求发送给 AI。
-                  </div>
-                </div>
                 <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap rounded-xl bg-white p-4 text-sm font-semibold leading-7 text-slate-600">
                   {selectedText || '暂无内容'}
                 </div>

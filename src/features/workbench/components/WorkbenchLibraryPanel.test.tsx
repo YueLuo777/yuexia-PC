@@ -117,6 +117,14 @@ const readWorkbenchDetailOutlineReaderModalSource = async () => {
   return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchDetailOutlineReaderModal.tsx'), 'utf8');
 };
 
+const readWorkbenchOtherSettingReaderModalSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchOtherSettingReaderModal.tsx'), 'utf8');
+};
+
 const readWorkbenchFieldSizeSettingsSource = async () => {
   const { readFileSync } = await import('node:fs');
   const { fileURLToPath } = await import('node:url');
@@ -330,7 +338,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(settingSidebarSource).toContain("xy-setting-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto space-y-1");
     expect(settingSidebarSource).toContain('className="mt-0.5 space-y-0.5"');
     expect(chapterSidebarSource).toContain('className="editor-scrollbar flex-1 overflow-y-auto px-1 py-2"');
-    expect(chapterSidebarSource).toContain('className={`group relative flex w-full cursor-pointer items-center gap-2 rounded-[8px] border px-1 py-1 text-left transition-colors');
+    expect(chapterSidebarSource).toContain('className={`xy-chapter-sidebar-row group relative flex w-full cursor-pointer items-center gap-2 rounded-[8px] border px-1 py-1 text-left transition-colors');
     expect(constantsSource).toContain("export const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full");
     expect(constantsSource).toContain("export const WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS = 'min-h-[38px] w-full rounded-xl");
     expect(panelSource).toContain('className="flex w-full items-center gap-2"');
@@ -941,7 +949,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(styleSource).toContain('.xy-combined-ai-config-label::before,');
     expect(styleSource).toContain('display: none !important;');
     expect(styleSource).toContain('.xy-combined-ai-config-manage svg');
-    expect(styleSource).toContain('drop-shadow(0 0 1px #ffffff)');
+    expect(styleSource).toContain('drop-shadow(0 0 1px var(--xy-floating-backplate-bg, #ffffff))');
   });
   it('keeps model and prompt dropdowns flush with their selectors', async () => {
     const capsuleSource = await readCapsuleSelectSource();
@@ -1187,7 +1195,8 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(styleSource).toContain('.xy-floating-outline-clear-button,');
     expect(styleSource).toContain('.xy-floating-inline-title-tool');
     expect(styleSource).toContain('text-shadow: none;');
-    expect(styleSource).toContain('-webkit-text-stroke: 3px #ffffff;');
+    expect(styleSource).toContain('--xy-floating-backplate-bg: #F8FAFC;');
+    expect(styleSource).toContain('-webkit-text-stroke: 3px var(--xy-floating-backplate-bg, #ffffff);');
     expect(styleSource).toContain('paint-order: stroke fill;');
     expect(styleSource).toContain('.xy-border-embedded-transparent-backplate::before,');
     expect(styleSource).toContain('.xy-floating-field.xy-floating-outline-preview label::before,');
@@ -1196,7 +1205,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(styleSource).toContain('.xy-border-embedded-transparent-backplate:not(.absolute)');
     expect(styleSource).toContain('background-image: linear-gradient(');
     expect(styleSource).toContain('transparent calc(50% - 0.24em)');
-    expect(styleSource).toContain('#ffffff calc(50% + 0.24em)');
+    expect(styleSource).toContain('var(--xy-floating-backplate-bg, #ffffff) calc(50% + 0.24em)');
     expect(styleSource).toContain('background-size: 100% 100%');
     expect(panelSource).toContain('xy-floating-outline-clear-button xy-border-embedded-transparent-backplate xy-floating-outline-inner-clear-tool absolute z-40 px-1');
     expect(styleSource).toContain('.xy-floating-outline-inner-clear-tool {');
@@ -1285,7 +1294,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(chapterEditorSource).toContain('chapterDirectoryGroups.forEach((group) => next.add(group.id));');
     expect(chapterEditorSource).toContain('onClick={() => toggleReviewDirectoryVolume(group.id)}');
     expect(chapterEditorSource).toContain('onClick={() => toggleStatusDirectoryVolume(group.id)}');
-    expect(chapterEditorSource).toContain('<aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white px-1 py-2">');
+    expect(chapterEditorSource).toContain('<aside className="flex min-h-0 flex-col border-r border-slate-100 bg-gray-50 px-1 py-2">');
     expect(chapterEditorSource).toContain('<div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto">');
     expect(chapterEditorSource).not.toContain('<aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white px-3 py-3">');
     expect(chapterEditorSource).not.toContain('<div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">');
@@ -1328,7 +1337,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('if (isDetailOutlineTab) {');
     expect(panelSource).toContain('<ChapterNumberButton');
     expect(panelSource).toContain('<nav className="editor-scrollbar min-h-0 flex-1 overflow-y-auto" aria-label="剧情链目录树">');
-    expect(panelSource).toContain("isDetailOutlineTab ? 'bg-[#F8FAFC]' : 'bg-gray-50 px-1 py-2'");
+    expect(panelSource).toContain("isDetailOutlineTab ? 'bg-gray-50' : 'bg-gray-50 px-1 py-2'");
     expect(panelSource).not.toContain('<nav className="editor-scrollbar min-h-0 flex-1 overflow-y-auto pr-1" aria-label="剧情链目录树">');
     expect(panelSource).not.toContain("isDetailOutlineTab ? 'bg-[#F8FAFC]' : 'bg-gray-50 px-3 py-3'");
     expect(panelSource).toContain('<div className="grid grid-cols-1 gap-3">');
@@ -1702,6 +1711,14 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(logGroupsSource).not.toContain('ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 text-xs leading-5');
   });
 
+  it('keeps linked brainstorm preview focused on the item content without redundant metadata cards', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+
+    expect(panelSource).not.toContain('项目类型');
+    expect(panelSource).not.toContain('关联方式');
+    expect(panelSource).not.toContain('关联后会作为完整脑洞项目随本次请求发送给 AI。');
+  });
+
   it('lets the chapter editor output log fill the last expanded log group to the bottom', async () => {
     const chapterEditorSource = await readChapterEditorSource();
     const logLayoutSource = await readAiRequestLogModalLayoutSource();
@@ -2006,7 +2023,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('function getDetailOutlineLeftMinWidth(scaleValue = 1)');
     expect(panelSource).toContain('const viewportEighthWidth = Math.floor(window.innerWidth / normalizedScale / 8);');
     expect(panelSource).toContain('return Math.max(SETTING_LIBRARY_LEFT_MIN_WIDTH, viewportEighthWidth);');
-    expect(panelSource).toContain('if (tab === SETTING_TAB) return SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH;');
+    expect(panelSource).toContain('if (tab === SETTING_TAB) return sharedNavigationWidth ? SETTING_LIBRARY_LEFT_MIN_WIDTH : SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH;');
     expect(panelSource).toContain('return tab === DETAIL_OUTLINE_TAB || tab === OUTLINE_LIBRARY_TAB');
     expect(panelSource).toContain('const isOutlineActionTab = tab === DETAIL_OUTLINE_TAB || tab === OUTLINE_LIBRARY_TAB;');
     expect(panelSource).toContain('const viewportDivider = isSettingTab ? 2 : isOutlineActionTab ? 2.5 : 5;');
@@ -2015,7 +2032,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('const fixedMaxWidth = isSettingTab');
     expect(panelSource).toContain('isOutlineActionTab');
     expect(panelSource).toContain('Math.min(fixedMaxWidth, viewportLimitWidth)');
-    expect(panelSource).toContain('const minWidth = getSettingLibraryLeftMinWidth(activeTab, eventScale);');
+    expect(panelSource).toContain('const minWidth = getSettingLibraryLeftMinWidth(activeTab, eventScale, readSharedWorkbenchLeftNavWidthEnabled());');
     expect(panelSource).toContain('const maxWidth = Math.max(minWidth, getSettingLibraryLeftMaxWidth(tab, scaleValue));');
     expect(panelSource).toContain('readSettingLibraryLeftWidth(storageKey, activeTab, scale)');
     expect(panelSource).toContain('isBrainstormTab ? BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH : getSettingLibraryLeftMaxWidth(activeTab, eventScale),');
@@ -2109,7 +2126,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
 
       const restoredSplitter = screen.getByTitle('拖拽调整左侧宽度');
       expect(restoredSplitter.parentElement).toHaveStyle({
-        gridTemplateColumns: `${savedWidth}px 0px minmax(0,1fr) 0px 350px`,
+        gridTemplateColumns: `${savedWidth}px 0px minmax(0,1fr) 0px 430px`,
       });
     } finally {
       Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalInnerWidth });
@@ -2131,6 +2148,20 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).toContain('onScroll={() => handleSettingSidebarScroll(`setting-textarea:');
     expect(styleSource).toContain('.xy-setting-sidebar-scrollbar::-webkit-scrollbar');
     expect(styleSource).toContain('.scrollbar-scroll-only.scrollbar-half-width::-webkit-scrollbar');
+    expect(styleSource).toContain('.editor-scrollbar::-webkit-scrollbar-button');
+    expect(styleSource).toContain('.editor-scrollbar::-webkit-scrollbar-button:vertical:start:decrement');
+    expect(styleSource).toContain('.editor-scrollbar::-webkit-scrollbar-button:vertical:end:increment');
+    expect(styleSource).toContain('.editor-scrollbar::-webkit-scrollbar-button:single-button:vertical:decrement');
+    expect(styleSource).toContain('.editor-scrollbar::-webkit-scrollbar-button:single-button:vertical:increment');
+    expect(styleSource).toContain('.scrollbar-scroll-only::-webkit-scrollbar-button:single-button:vertical:decrement');
+    expect(styleSource).toContain('.scrollbar-scroll-only::-webkit-scrollbar-button:single-button:vertical:increment');
+    expect(styleSource).toContain('.editor-scrollbar::-webkit-scrollbar-corner');
+    expect(styleSource).toContain('.scrollbar-scroll-only::-webkit-scrollbar-corner');
+    expect(styleSource).toContain('.editor-scrollbar::-webkit-resizer');
+    expect(styleSource).toContain('.scrollbar-scroll-only::-webkit-resizer');
+    expect(styleSource).toContain('background-image: none !important;');
+    expect(styleSource).toContain('-webkit-appearance: none !important;');
+    expect(styleSource).toContain('display: none !important;');
     expect(styleSource).toContain('width: 4px;');
     expect(styleSource).toContain('height: 4px;');
   });
@@ -2219,7 +2250,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(outlineRightPanelSource).toContain('撤销替换');
     expect(outlineRightPanelSource).toContain("isDetailOutlineTab ? '复制章纲' : '复制梗概'");
     const constantsSource = await readWorkbenchLibraryPanelConstantsSource();
-    expect(constantsSource).toContain('export const OUTLINE_ACTION_RIGHT_MIN_WIDTH = 420;');
+    expect(constantsSource).toContain('export const OUTLINE_ACTION_RIGHT_MIN_WIDTH = WORKBENCH_SHARED_AI_RIGHT_WIDTH_MIN;');
     expect(panelSource).toContain('? OUTLINE_ACTION_RIGHT_MIN_WIDTH');
     expect(outlineRightPanelSource).toContain('min-w-[92px] flex-1 whitespace-nowrap bg-brand');
     expect(outlineRightPanelSource).toContain('min-w-[92px] flex-1 whitespace-nowrap border-l border-blue-200');
@@ -2409,14 +2440,16 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(styleSource).toContain('padding: 0;');
     expect(transparentBackplateSource).toContain('background-color: transparent;');
     expect(transparentBackplateSource).toContain('text-shadow: none;');
-    expect(transparentBackplateSource).toContain('-webkit-text-stroke: 3px #ffffff;');
+    expect(transparentBackplateSource).toContain('-webkit-text-stroke: 3px var(--xy-floating-backplate-bg, #ffffff);');
     expect(transparentBackplateSource).toContain('paint-order: stroke fill;');
     expect(transparentBackplateSource).toContain('isolation: isolate;');
     expect(transparentBackplateSource).toContain('background-image: linear-gradient(');
     expect(countRuleSource).toContain('.xy-floating-field.xy-floating-outline-preview .xy-floating-count *');
     expect(countRuleSource).toContain('.xy-floating-field.xy-floating-outline-preview .xy-floating-outline-chapter-meta *');
+    expect(countRuleSource).toContain('-webkit-text-stroke: 3px var(--xy-floating-backplate-bg, #ffffff);');
     expect(clearRuleSource).toContain('.xy-floating-outline-clear-button *');
     expect(clearRuleSource).toContain('background-color: transparent !important;');
+    expect(clearRuleSource).toContain('-webkit-text-stroke: 3px var(--xy-floating-backplate-bg, #ffffff);');
     expect(clearRuleSource).not.toContain('background: transparent !important;');
     expect(clearRuleSource).not.toContain('1px 0 0 #ffffff');
     expect(clearRuleSource).not.toContain('-1px 0 0 #ffffff');
@@ -2491,6 +2524,17 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(chapterSource).not.toContain('flex min-h-[240px] flex-col rounded-2xl border border-[#08AACE] bg-white');
   });
 
+  it('uses the brainstorm library gray background for chapter directory sidebars', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const chapterSource = await readChapterEditorSource();
+
+    expect(panelSource).toContain("isDetailOutlineTab ? 'bg-gray-50' : 'bg-gray-50 px-1 py-2'");
+    expect(panelSource).toContain('<aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50">');
+    expect(panelSource).toContain('<aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-gray-50 px-1 py-2">');
+    expect(chapterSource).toContain('<aside className="flex min-h-0 flex-col border-r border-slate-100 bg-gray-50 px-1 py-2">');
+    expect(chapterSource).not.toContain('<aside className="flex min-h-0 flex-col border-r border-slate-100 bg-white px-1 py-2">');
+  });
+
   it('does not show the plot chain generation rules heading in the right panel', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const plotPointControlsStart = panelSource.indexOf('<span className="w-[96px] shrink-0 text-sm font-black text-slate-950">长度：</span>');
@@ -2529,6 +2573,17 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(readerAsideHeaderSource).toContain('WORKBENCH_FOLDER_GROUP_BUTTON_CLASS');
     expect(modalHeaderSource).toContain('onClick={selectAllActiveDetailOutlineReaderItems}');
     expect(modalHeaderSource).toContain('关联所有');
+  });
+
+  it('keeps the other-setting link picker focused on the list and preview only', async () => {
+    const modalSource = await readWorkbenchOtherSettingReaderModalSource();
+
+    expect(modalSource).toContain('grid-cols-[300px_minmax(0,1fr)]');
+    expect(modalSource).toContain('已选 {draftEntries.length} 项');
+    expect(modalSource).not.toContain('grid-cols-[300px_minmax(0,1fr)_280px]');
+    expect(modalSource).not.toContain('本次将关联');
+    expect(modalSource).not.toContain('还没有选择其他设定');
+    expect(modalSource).not.toContain('确认后，这些条目会合并成“关联其他设定”上下文');
   });
 
   it('keeps outline page text inputs protected from draggable overlays and decorative hit targets', async () => {
@@ -2637,7 +2692,7 @@ describe('WorkbenchLibraryPanel embedded flow navigation', () => {
     expect(panelSource).not.toContain('onChange={(event) => renamePlotPointChain(event.target.value)}');
     expect(panelSource).toContain('const [expandedPlotPointChainTreeSlots, setExpandedPlotPointChainTreeSlots] = useState<Record<PlotPointChainSlot, boolean>>({');
     expect(panelSource).not.toContain('<h2 className="whitespace-nowrap text-sm font-bold text-gray-900">剧情链</h2>');
-    expect(panelSource).toContain('<aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-white px-1 py-2">');
+    expect(panelSource).toContain('<aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-gray-50 px-1 py-2">');
     expect(navSource).toContain('aria-label="当前主链未写序号导航"');
     expect(navSource).toContain('onContextMenu={(event) => {');
     expect(navSource).toContain('setPlotPointChainMenuSlot(plotPointActiveChainSlot)');

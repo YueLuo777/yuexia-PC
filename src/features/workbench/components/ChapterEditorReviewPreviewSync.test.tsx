@@ -13,7 +13,9 @@ describe('ChapterEditor review preview annotation sync', () => {
     expect(source).toContain('const reviewAnnotationRefs = useRef<Array<HTMLDivElement | null>>([]);');
     expect(source).toContain('const selectReviewPreviewParagraph = (index: number) => {');
     expect(source).toContain('setActiveReviewParagraphIndex(index);');
-    expect(source).toContain("reviewAnnotationRefs.current[index]?.scrollIntoView({ block: 'center', behavior: 'smooth' });");
+    expect(source).toContain('scrollReviewComparisonTargetIntoCenter(reviewOriginalPreviewPaneRef.current, reviewOriginalParagraphRefs.current[index]);');
+    expect(source).toContain('scrollReviewComparisonTargetIntoCenter(reviewAnnotationPreviewPaneRef.current, reviewAnnotationRefs.current[index]);');
+    expect(source).not.toContain("scrollIntoView({ block: 'center', behavior: 'smooth' })");
     expect(source).toContain('onClick={() => selectReviewPreviewParagraph(index)}');
     expect(source).toContain('activeReviewParagraphIndex === index');
     expect(source).toContain('getReviewAnnotationNoteSpacingClass');

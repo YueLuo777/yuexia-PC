@@ -1,5 +1,14 @@
 import { DETAIL_OUTLINE_PUBLISHED_GROUP_NAME } from './workbenchDetailOutlineState';
 import {
+  readSharedWorkbenchAiRightWidth,
+  writeSharedWorkbenchAiRightWidth,
+} from '@/features/workbench/model/workbenchSharedAiRightWidth';
+import {
+  readSharedWorkbenchLeftNavWidth,
+  readSharedWorkbenchLeftNavWidthEnabled,
+  writeSharedWorkbenchLeftNavWidth,
+} from '@/features/workbench/model/workbenchSharedLeftNavWidth';
+import {
   BRAINSTORM_PREVIEW_MAX_WIDTH,
   BRAINSTORM_PREVIEW_MIN_WIDTH,
   BRAINSTORM_PREVIEW_WIDTH,
@@ -143,21 +152,26 @@ export function getDetailOutlineLeftMinWidth(scaleValue = 1) {
   return Math.max(SETTING_LIBRARY_LEFT_MIN_WIDTH, viewportEighthWidth);
 }
 
-export function getSettingLibraryLeftMinWidth(tab: string, scaleValue = 1) {
-  if (tab === SETTING_TAB) return SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH;
+export function getSettingLibraryLeftMinWidth(tab: string, scaleValue = 1, sharedNavigationWidth = false) {
+  if (tab === SETTING_TAB) return sharedNavigationWidth ? SETTING_LIBRARY_LEFT_MIN_WIDTH : SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH;
   return tab === DETAIL_OUTLINE_TAB || tab === OUTLINE_LIBRARY_TAB
     ? getDetailOutlineLeftMinWidth(scaleValue)
     : SETTING_LIBRARY_LEFT_MIN_WIDTH;
 }
 
-export function clampSettingLibraryLeftWidth(value: number, tab: string, scaleValue = 1) {
-  const minWidth = getSettingLibraryLeftMinWidth(tab, scaleValue);
+export function clampSettingLibraryLeftWidth(value: number, tab: string, scaleValue = 1, sharedNavigationWidth = false) {
+  const minWidth = getSettingLibraryLeftMinWidth(tab, scaleValue, sharedNavigationWidth);
   const maxWidth = Math.max(minWidth, getSettingLibraryLeftMaxWidth(tab, scaleValue));
   return Math.min(maxWidth, Math.max(minWidth, value));
 }
 
 export function readSettingLibraryLeftWidth(storageKey: string, tab: string, scaleValue = 1) {
   const fallbackWidth = clampSettingLibraryLeftWidth(SETTING_LIBRARY_LEFT_WIDTH, tab, scaleValue);
+  if (readSharedWorkbenchLeftNavWidthEnabled()) {
+    const minWidth = getSettingLibraryLeftMinWidth(tab, scaleValue, true);
+    const maxWidth = getSettingLibraryLeftMaxWidth(tab, scaleValue);
+    return clampSettingLibraryLeftWidth(readSharedWorkbenchLeftNavWidth(maxWidth, minWidth), tab, scaleValue, true);
+  }
   try {
     const value = Number(localStorage.getItem(getSettingLibraryWidthStorageKey(storageKey, tab, 'left')) ?? SETTING_LIBRARY_LEFT_WIDTH);
     if (!Number.isFinite(value)) return fallbackWidth;
@@ -169,12 +183,10 @@ export function readSettingLibraryLeftWidth(storageKey: string, tab: string, sca
 
 export function readSettingLibraryRightWidth(storageKey: string, tab: string) {
   try {
-    const value = Number(localStorage.getItem(getSettingLibraryWidthStorageKey(storageKey, tab, 'right')) ?? SETTING_LIBRARY_RIGHT_WIDTH);
     const minWidth = tab === DETAIL_OUTLINE_TAB || tab === OUTLINE_LIBRARY_TAB
       ? OUTLINE_ACTION_RIGHT_MIN_WIDTH
       : SETTING_LIBRARY_RIGHT_MIN_WIDTH;
-    if (!Number.isFinite(value)) return minWidth;
-    return Math.min(SETTING_LIBRARY_RIGHT_MAX_WIDTH, Math.max(minWidth, value));
+    return Math.max(minWidth, readSharedWorkbenchAiRightWidth(SETTING_LIBRARY_RIGHT_MAX_WIDTH));
   } catch {
     return tab === DETAIL_OUTLINE_TAB || tab === OUTLINE_LIBRARY_TAB
       ? OUTLINE_ACTION_RIGHT_MIN_WIDTH
@@ -193,6 +205,18 @@ export function readBrainstormPreviewWidth(storageKey: string, tab: string) {
 }
 
 export function persistSettingLibraryWidth(storageKey: string, tab: string, side: 'left' | 'right' | 'brainstormPreview', value: number) {
+  if (side === 'right') {
+    writeSharedWorkbenchAiRightWidth(value);
+    return;
+  }
+  if (side === 'left' && readSharedWorkbenchLeftNavWidthEnabled()) {
+    writeSharedWorkbenchLeftNavWidth(
+      value,
+      getSettingLibraryLeftMaxWidth(tab),
+      getSettingLibraryLeftMinWidth(tab, 1, true),
+    );
+    return;
+  }
   localStorage.setItem(getSettingLibraryWidthStorageKey(storageKey, tab, side), String(value));
 }
 

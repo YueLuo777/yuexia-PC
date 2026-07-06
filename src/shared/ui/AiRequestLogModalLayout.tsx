@@ -60,6 +60,7 @@ export function AiRequestLogModalLayout({
           hasGroupContent ? (
             <AiRequestLogGroups
               groups={groups}
+              defaultCollapsed={false}
               fillSingleGroup={fillSingleGroup}
               fillGroupWeights={fillGroupWeights}
               storageKey={storageKey}

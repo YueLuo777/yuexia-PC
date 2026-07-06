@@ -78,6 +78,11 @@ import {
   getWorkbenchAssociationRuntimeId,
   isWorkbenchAssociationRuntimeCurrent,
 } from '@/features/workbench/model/workbenchAssociationCleanup';
+import { WORKBENCH_SHARED_AI_RIGHT_WIDTH_EVENT } from '@/features/workbench/model/workbenchSharedAiRightWidth';
+import {
+  WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT,
+  readSharedWorkbenchLeftNavWidthEnabled,
+} from '@/features/workbench/model/workbenchSharedLeftNavWidth';
 import type { Chapter, Volume } from '@/features/workbench/model/workbenchTypes';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
@@ -1239,6 +1244,25 @@ export function WorkbenchLibraryPanel({
     setSettingLibraryLeftWidth(readSettingLibraryLeftWidth(storageKey, activeTab, scale));
     setSettingLibraryRightWidth(readSettingLibraryRightWidth(storageKey, activeTab));
     setBrainstormPreviewWidth(readBrainstormPreviewWidth(storageKey, activeTab));
+  }, [activeTab, scale, storageKey]);
+
+  useEffect(() => {
+    const syncSharedAiRightWidth = () => {
+      if (!SETTING_LIBRARY_TABS.has(activeTab)) return;
+      setSettingLibraryRightWidth(readSettingLibraryRightWidth(storageKey, activeTab));
+    };
+    window.addEventListener(WORKBENCH_SHARED_AI_RIGHT_WIDTH_EVENT, syncSharedAiRightWidth);
+    return () => window.removeEventListener(WORKBENCH_SHARED_AI_RIGHT_WIDTH_EVENT, syncSharedAiRightWidth);
+  }, [activeTab, storageKey]);
+
+  useEffect(() => {
+    const syncSharedLeftNavWidth = () => {
+      if (!SETTING_LIBRARY_TABS.has(activeTab)) return;
+      if (!readSharedWorkbenchLeftNavWidthEnabled()) return;
+      setSettingLibraryLeftWidth(readSettingLibraryLeftWidth(storageKey, activeTab, scale));
+    };
+    window.addEventListener(WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT, syncSharedLeftNavWidth);
+    return () => window.removeEventListener(WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT, syncSharedLeftNavWidth);
   }, [activeTab, scale, storageKey]);
 
   useEffect(() => {
@@ -6666,7 +6690,7 @@ export function WorkbenchLibraryPanel({
               gridTemplateColumns: `${plotPointLayoutTreeWidth}px 0px ${plotPointLayoutLeftWidth}px 0px minmax(${PLOT_POINT_LAYOUT_CENTER_MIN_WIDTH}px,1fr) 0px ${plotPointLayoutRightWidth}px`,
             }}
           >
-            <aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-white px-1 py-2">
+            <aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-gray-50 px-1 py-2">
               <nav className="editor-scrollbar min-h-0 flex-1 overflow-y-auto" aria-label="剧情链目录树">
                 <div className="space-y-3">
                   <section
@@ -7239,7 +7263,7 @@ export function WorkbenchLibraryPanel({
               : `${outlineSidebarWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px`,
           }}
         >
-            <aside className={`min-w-0 flex min-h-0 flex-col border-r border-gray-100 ${isDetailOutlineTab ? 'bg-[#F8FAFC]' : 'bg-gray-50 px-1 py-2'}`}>
+            <aside className={`min-w-0 flex min-h-0 flex-col border-r border-gray-100 ${isDetailOutlineTab ? 'bg-gray-50' : 'bg-gray-50 px-1 py-2'}`}>
           {isDetailOutlineTab && (
             <div className={isDetailOutlineTab ? DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS : 'mb-3 flex h-9 shrink-0 items-center justify-between gap-2'}>
               <div className="flex min-w-0 items-center gap-2">
@@ -7406,7 +7430,7 @@ export function WorkbenchLibraryPanel({
         </aside>
         {leftResizeHandle}
         {isDetailOutlineTab && showDetailOutlinePublished && (
-          <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-white">
+          <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50">
             <div className={DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS}>
               <div className="flex min-w-0 items-center gap-2">
                 <span className={DETAIL_OUTLINE_SIDEBAR_TITLE_CLASS}>已发布</span>

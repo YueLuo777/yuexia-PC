@@ -1,5 +1,6 @@
 import type { CSSProperties, PointerEvent as ReactPointerEvent, PointerEventHandler } from 'react';
 
+import { readSharedWorkbenchLeftNavWidthEnabled } from '@/features/workbench/model/workbenchSharedLeftNavWidth';
 import {
   BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH,
   BRAINSTORM_LAYOUT_PREVIEW_MAX_WIDTH,
@@ -129,7 +130,7 @@ export function useWorkbenchLibraryResizeHandles({
   const startLeftWidthResize = (event: ReactPointerEvent<HTMLDivElement>) => {
     const { eventScale, startX } = prepareResize(event, scale);
     const isBrainstormTab = activeTab === BRAINSTORM_TAB;
-    const minWidth = getSettingLibraryLeftMinWidth(activeTab, eventScale);
+    const minWidth = getSettingLibraryLeftMinWidth(activeTab, eventScale, readSharedWorkbenchLeftNavWidthEnabled());
     const maxWidth = Math.max(
       minWidth,
       isBrainstormTab ? BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH : getSettingLibraryLeftMaxWidth(activeTab, eventScale),

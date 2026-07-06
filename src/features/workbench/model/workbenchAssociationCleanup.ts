@@ -85,11 +85,21 @@ export function clearWorkbenchAiSessionLinksByStorageKey(storageKey: string) {
   let changed = false;
   const sessions = stored.sessions.map((item) => {
     if (!item || typeof item !== 'object') return item;
-    const session = item as { linkChapter?: unknown; hasSentChapterContext?: unknown };
-    if (!session.linkChapter && !session.hasSentChapterContext) return item;
+    const session = item as {
+      contextTitle?: unknown;
+      contextText?: unknown;
+      linkedItems?: unknown;
+      linkChapter?: unknown;
+      hasSentChapterContext?: unknown;
+    };
+    const hasLinkedItems = Array.isArray(session.linkedItems) && session.linkedItems.length > 0;
+    if (!session.contextTitle && !session.contextText && !hasLinkedItems && !session.linkChapter && !session.hasSentChapterContext) return item;
     changed = true;
     return {
       ...item,
+      contextTitle: '',
+      contextText: '',
+      linkedItems: [],
       linkChapter: false,
       hasSentChapterContext: false,
     };

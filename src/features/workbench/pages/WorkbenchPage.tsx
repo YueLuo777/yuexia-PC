@@ -13,6 +13,7 @@ import { WorkbenchAIPanel, type WorkbenchLinkedContextItem, type WorkbenchLinked
 import { WorkbenchHeader, type WorkbenchHeaderFlowStats } from '@/features/workbench/components/WorkbenchHeader';
 import { WorkbenchLibraryPanel } from '@/features/workbench/components/WorkbenchLibraryPanel';
 import { WorkbenchModal } from '@/features/workbench/components/WorkbenchModal';
+import { WorkbenchNavigationWidthToggle } from '@/features/workbench/components/WorkbenchNavigationWidthToggle';
 import { WORKBENCH_MANAGEMENT_MODAL_SIZE_CLASS } from '@/features/workbench/components/workbenchManagementModalSize';
 import { readChapterContent, useWorkbenchData } from '@/features/workbench/hooks/useWorkbenchData';
 import {
@@ -20,6 +21,19 @@ import {
   isWorkbenchCreationFlowPageKey,
   type WorkbenchCreationFlowPageKey,
 } from '@/features/workbench/model/workbenchCreationFlow';
+import {
+  WORKBENCH_SHARED_AI_RIGHT_WIDTH_EVENT,
+  WORKBENCH_SHARED_AI_RIGHT_WIDTH_DEFAULT,
+  WORKBENCH_SHARED_AI_RIGHT_WIDTH_MIN,
+  readSharedWorkbenchAiRightWidth,
+  writeSharedWorkbenchAiRightWidth,
+} from '@/features/workbench/model/workbenchSharedAiRightWidth';
+import {
+  WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT,
+  readSharedWorkbenchLeftNavWidth,
+  readSharedWorkbenchLeftNavWidthEnabled,
+  writeSharedWorkbenchLeftNavWidth,
+} from '@/features/workbench/model/workbenchSharedLeftNavWidth';
 import {
   clearWorkbenchLinkedContextItems,
   readWorkbenchLinkedContextItems,
@@ -95,8 +109,8 @@ interface WorkbenchLibrarySnapshots {
   settingsEntries: WorkbenchLibraryEntry[];
   outlineEntries: WorkbenchLibraryEntry[];
 }
-const AI_PANEL_MIN_WIDTH = 430;
-const AI_PANEL_DEFAULT_WIDTH = 430;
+const AI_PANEL_MIN_WIDTH = WORKBENCH_SHARED_AI_RIGHT_WIDTH_MIN;
+const AI_PANEL_DEFAULT_WIDTH = WORKBENCH_SHARED_AI_RIGHT_WIDTH_DEFAULT;
 const CHAPTER_SIDEBAR_MIN_WIDTH = 200;
 const CHAPTER_SIDEBAR_MAX_WIDTH = 420;
 const CHAPTER_SIDEBAR_DEFAULT_WIDTH = CHAPTER_SIDEBAR_MIN_WIDTH;
@@ -230,6 +244,14 @@ function normalizeChapterSidebarWidth(value: number) {
   const minWidth = Math.min(CHAPTER_SIDEBAR_MIN_WIDTH, maxWidth);
   if (!Number.isFinite(value)) return Math.min(CHAPTER_SIDEBAR_DEFAULT_WIDTH, maxWidth);
   return Math.max(minWidth, Math.min(maxWidth, value));
+}
+
+function readWorkbenchChapterSidebarWidth() {
+  if (readSharedWorkbenchLeftNavWidthEnabled()) {
+    return normalizeChapterSidebarWidth(readSharedWorkbenchLeftNavWidth(getChapterSidebarMaxWidth(), CHAPTER_SIDEBAR_MIN_WIDTH));
+  }
+  const saved = Number.parseInt(localStorage.getItem('xinyuexia_chapter_sidebar_width') ?? String(CHAPTER_SIDEBAR_DEFAULT_WIDTH), 10);
+  return normalizeChapterSidebarWidth(saved);
 }
 
 function normalizePublishedSidebarWidth(value: number) {
@@ -1295,7 +1317,7 @@ function EditorSettingsModal({
           </button>
         </header>
 
-        <div className="p-5">
+        <div className="space-y-3 p-5">
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 transition-colors hover:border-brand/60">
             <input
               type="checkbox"
@@ -1308,6 +1330,7 @@ function EditorSettingsModal({
               <span className="mt-1 block text-sm leading-6 text-gray-500">勾选后，点击发布章节时，会先弹出确认窗口，避免误点发布。</span>
             </span>
           </label>
+          <WorkbenchNavigationWidthToggle />
         </div>
         <ModalResizeHandles draggable={draggable} />
       </section>
@@ -1533,6 +1556,7 @@ export function WorkbenchPage() {
   const [linkedContextItems, setLinkedContextItems] = useState<WorkbenchLinkedContextItem[]>([]);
   const [contextSelectionTouched, setContextSelectionTouched] = useState(false);
   const [publishConfirm, setPublishConfirm] = useState(() => localStorage.getItem(PUBLISH_CONFIRM_KEY) === 'true');
+  const [navigationWidthUnified, setNavigationWidthUnified] = useState(() => readSharedWorkbenchLeftNavWidthEnabled());
   const [pendingPublish, setPendingPublish] = useState<PendingPublish | null>(null);
   const [globalNotes, setGlobalNotes] = useState<MemoItem[]>(() => readMemoItems(GLOBAL_NOTES_LIST_KEY, GLOBAL_NOTES_KEY, 'global'));
   const [workNotes, setWorkNotes] = useState<MemoItem[]>([]);
@@ -1542,13 +1566,9 @@ export function WorkbenchPage() {
   const [showPublished, setShowPublished] = useState(false);
   const [replaceUndoSnapshot, setReplaceUndoSnapshot] = useState<{ chapterId: number; content: string } | null>(null);
   const [aiPanelWidth, setAiPanelWidth] = useState(() => {
-    const saved = Number.parseInt(localStorage.getItem('xinyuexia_ai_panel_width') ?? String(AI_PANEL_DEFAULT_WIDTH), 10);
-    return normalizeAiPanelWidth(saved);
+    return readSharedWorkbenchAiRightWidth(getAiPanelMaxWidth());
   });
-  const [chapterSidebarWidth, setChapterSidebarWidth] = useState(() => {
-    const saved = Number.parseInt(localStorage.getItem('xinyuexia_chapter_sidebar_width') ?? String(CHAPTER_SIDEBAR_DEFAULT_WIDTH), 10);
-    return normalizeChapterSidebarWidth(saved);
-  });
+  const [chapterSidebarWidth, setChapterSidebarWidth] = useState(readWorkbenchChapterSidebarWidth);
   const [publishedSidebarWidth, setPublishedSidebarWidth] = useState(() => {
     const saved = Number.parseInt(localStorage.getItem('xinyuexia_published_sidebar_width') ?? String(PUBLISHED_SIDEBAR_DEFAULT_WIDTH), 10);
     return normalizePublishedSidebarWidth(saved);
@@ -1627,12 +1647,35 @@ export function WorkbenchPage() {
   }, [currentNovel, showPublished]);
 
   useEffect(() => {
-    localStorage.setItem('xinyuexia_ai_panel_width', String(aiPanelWidth));
+    writeSharedWorkbenchAiRightWidth(aiPanelWidth);
   }, [aiPanelWidth]);
 
   useEffect(() => {
+    const syncSharedAiRightWidth = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return;
+      setAiPanelWidth(normalizeAiPanelWidth(Number(event.detail?.width)));
+    };
+    window.addEventListener(WORKBENCH_SHARED_AI_RIGHT_WIDTH_EVENT, syncSharedAiRightWidth);
+    return () => window.removeEventListener(WORKBENCH_SHARED_AI_RIGHT_WIDTH_EVENT, syncSharedAiRightWidth);
+  }, []);
+
+  useEffect(() => {
+    const syncSharedLeftNavWidth = () => {
+      const enabled = readSharedWorkbenchLeftNavWidthEnabled();
+      setNavigationWidthUnified(enabled);
+      if (enabled) setChapterSidebarWidth(readWorkbenchChapterSidebarWidth());
+    };
+    window.addEventListener(WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT, syncSharedLeftNavWidth);
+    return () => window.removeEventListener(WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT, syncSharedLeftNavWidth);
+  }, []);
+
+  useEffect(() => {
+    if (navigationWidthUnified) {
+      writeSharedWorkbenchLeftNavWidth(chapterSidebarWidth, getChapterSidebarMaxWidth(), CHAPTER_SIDEBAR_MIN_WIDTH);
+      return;
+    }
     localStorage.setItem('xinyuexia_chapter_sidebar_width', String(chapterSidebarWidth));
-  }, [chapterSidebarWidth]);
+  }, [chapterSidebarWidth, navigationWidthUnified]);
 
   useEffect(() => {
     localStorage.setItem('xinyuexia_published_sidebar_width', String(publishedSidebarWidth));
@@ -2344,7 +2387,7 @@ export function WorkbenchPage() {
     setActiveCreationFlow(flow);
   };
 
-  const showFieldSizeButton = FIELD_SIZE_FLOW_IDS.has(activeCreationFlow);
+  const showFieldSizeButton = activeCreationFlow === 'writing' || FIELD_SIZE_FLOW_IDS.has(activeCreationFlow);
   const showHeaderLogButton = true;
 
   const renderCreationFlowContent = () => {
@@ -2479,7 +2522,13 @@ export function WorkbenchPage() {
         fieldSizeVisible={showFieldSizeButton}
         logVisible={showHeaderLogButton}
         extraTools={<div id="workbench-header-extra-tools" className="inline-flex items-center gap-2" />}
-        onOpenFieldSize={() => setFieldSizeOpenSignal((value) => value + 1)}
+        onOpenFieldSize={() => {
+          if (activeCreationFlow === 'writing') {
+            setIsEditorSettingsOpen(true);
+            return;
+          }
+          setFieldSizeOpenSignal((value) => value + 1);
+        }}
         onOpenLog={openHeaderLog}
         onSelectFlow={switchCreationFlow}
         onOpenWorkInfo={() => setActiveModal('workInfo')}

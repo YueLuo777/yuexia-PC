@@ -3,8 +3,6 @@ import { Fragment, useEffect, useMemo, useState, type CSSProperties } from 'reac
 
 import { WordCountText } from '@/shared/ui/WordCountText';
 
-const AI_REQUEST_LOG_COLLAPSED_KEY = 'xinyuexia_ai_request_log_collapsed_groups_v1';
-
 export type AiRequestLogGroup = {
   id: string;
   title: string;
@@ -36,25 +34,6 @@ function getGroupStorageKey(group: Pick<AiRequestLogGroup, 'id' | 'title'>) {
   return `${group.id}:${group.title}`;
 }
 
-function readCollapsedLogGroupKeys(storageKey: string) {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(storageKey) ?? 'null') as unknown;
-    return Array.isArray(parsed)
-      ? new Set(parsed.filter((item): item is string => typeof item === 'string'))
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeCollapsedLogGroupKeys(storageKey: string, keys: Set<string>) {
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(Array.from(keys)));
-  } catch {
-    // Log folding memory is only a convenience; the log should still render.
-  }
-}
-
 export function AiRequestLogContent({ content }: { content: string }) {
   return (
     <>
@@ -73,12 +52,11 @@ export function AiRequestLogContent({ content }: { content: string }) {
 
 export function AiRequestLogGroups({
   groups,
-  defaultCollapsed = true,
+  defaultCollapsed = false,
   fillSingleGroup = false,
   fillGroupId,
   fillLastGroup = false,
   fillGroupWeights,
-  storageKey = AI_REQUEST_LOG_COLLAPSED_KEY,
 }: {
   groups: AiRequestLogGroup[];
   defaultCollapsed?: boolean;
@@ -86,6 +64,7 @@ export function AiRequestLogGroups({
   fillGroupId?: string;
   fillLastGroup?: boolean;
   fillGroupWeights?: Record<string, number>;
+  /** Kept for backward compatibility; log section folding is no longer persisted. */
   storageKey?: string;
 }) {
   const visibleGroups = useMemo(
@@ -95,27 +74,18 @@ export function AiRequestLogGroups({
   const visibleGroupKeys = useMemo(() => visibleGroups.map(getGroupStorageKey), [visibleGroups]);
   const visibleGroupKeysSignature = visibleGroupKeys.join('\u0000');
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
-    () => {
-      const storedKeys = readCollapsedLogGroupKeys(storageKey);
-      if (storedKeys) {
-        return new Set(visibleGroupKeys.filter((key) => storedKeys.has(key)));
-      }
-      return new Set(defaultCollapsed ? visibleGroupKeys : []);
-    },
+    () => new Set(defaultCollapsed ? visibleGroupKeys : []),
   );
 
   useEffect(() => {
-    const storedKeys = readCollapsedLogGroupKeys(storageKey);
-    if (!storedKeys) return;
-    setCollapsedIds(new Set(visibleGroupKeys.filter((key) => storedKeys.has(key))));
-  }, [storageKey, visibleGroupKeys, visibleGroupKeysSignature]);
+    setCollapsedIds(new Set(defaultCollapsed ? visibleGroupKeys : []));
+  }, [defaultCollapsed, visibleGroupKeys, visibleGroupKeysSignature]);
 
   const toggleGroup = (key: string) => {
     setCollapsedIds((current) => {
       const next = new Set(current);
       if (next.has(key)) next.delete(key);
       else next.add(key);
-      writeCollapsedLogGroupKeys(storageKey, next);
       return next;
     });
   };
