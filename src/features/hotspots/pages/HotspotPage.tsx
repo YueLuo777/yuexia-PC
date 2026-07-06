@@ -31,7 +31,7 @@ function createEmptyResult(): HotspotFetchResult {
   };
 }
 
-function SourceFilter({
+function SourceRadar({
   activeSource,
   onChange,
   result,
@@ -41,43 +41,45 @@ function SourceFilter({
   result: HotspotFetchResult;
 }) {
   return (
-    <aside className="flex w-[218px] shrink-0 flex-col border-r border-slate-100 bg-white">
-      <div className="border-b border-slate-100 px-4 py-4">
-        <div className="text-lg font-bold text-slate-900">热点灵感</div>
-        <div className="mt-1 text-xs text-slate-400">
+    <div className="grid shrink-0 grid-cols-[1.15fr_repeat(5,minmax(112px,1fr))] gap-3 border-b border-slate-100 bg-slate-50 px-5 py-4">
+      <button
+        type="button"
+        onClick={() => onChange('all')}
+        className={`rounded-md border px-4 py-3 text-left transition-colors ${
+          activeSource === 'all'
+            ? 'border-cyan-200 bg-cyan-50 text-cyan-700'
+            : 'border-slate-200 bg-white text-slate-600 hover:border-cyan-200 hover:bg-cyan-50/40'
+        }`}
+      >
+        <div className="text-xs font-bold text-slate-400">全部平台</div>
+        <div className="mt-1 text-2xl font-black text-slate-900">{result.items.length}</div>
+        <div className="mt-1 truncate text-xs text-slate-400">
           {result.items.length > 0 ? `更新于 ${formatCapturedTime(result.capturedAt)}` : '打开后自动抓取'}
         </div>
-      </div>
-      <div className="min-h-0 flex-1 space-y-1 overflow-auto p-3">
-        <button
-          type="button"
-          onClick={() => onChange('all')}
-          className={`flex h-10 w-full items-center justify-between rounded-lg px-3 text-sm font-semibold transition-colors ${
-            activeSource === 'all' ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 hover:bg-slate-50'
-          }`}
-        >
-          <span>全部平台</span>
-          <span>{result.items.length}</span>
-        </button>
-        {HOTSPOT_SOURCES.map((source) => {
-          const state = result.sourceStates[source];
-          return (
-            <button
-              key={source}
-              type="button"
-              onClick={() => onChange(source)}
-              className={`flex h-10 w-full items-center justify-between rounded-lg px-3 text-sm font-semibold transition-colors ${
-                activeSource === source ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 hover:bg-slate-50'
-              }`}
-              title={state.message}
-            >
-              <span>{HOTSPOT_SOURCE_LABELS[source]}</span>
-              <span className={state.ok ? 'text-cyan-600' : 'text-slate-400'}>{state.count}</span>
-            </button>
-          );
-        })}
-      </div>
-    </aside>
+      </button>
+      {HOTSPOT_SOURCES.map((source) => {
+        const state = result.sourceStates[source];
+        return (
+          <button
+            key={source}
+            type="button"
+            onClick={() => onChange(source)}
+            className={`rounded-md border px-4 py-3 text-left transition-colors ${
+              activeSource === source
+                ? 'border-cyan-200 bg-cyan-50 text-cyan-700'
+                : 'border-slate-200 bg-white text-slate-600 hover:border-cyan-200 hover:bg-cyan-50/40'
+            }`}
+            title={state.message}
+          >
+            <div className="text-xs font-bold text-slate-400">{HOTSPOT_SOURCE_LABELS[source]}</div>
+            <div className="mt-1 text-2xl font-black text-slate-900">{state.count}</div>
+            <div className={state.ok ? 'mt-1 truncate text-xs text-cyan-600' : 'mt-1 truncate text-xs text-slate-400'}>
+              {state.ok ? '已抓取' : state.message}
+            </div>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -95,20 +97,17 @@ function HotspotRow({
   onToggle: () => void;
 }) {
   return (
-    <div className={`grid h-[58px] grid-cols-[42px_minmax(0,1fr)_96px_36px] items-center gap-2 border-b border-slate-100 px-3 transition-colors ${
+    <div className={`grid min-h-[62px] grid-cols-[34px_minmax(0,1fr)_28px] items-center gap-2 border-b border-slate-100 px-3 py-2 transition-colors ${
       active ? 'bg-cyan-50/80' : 'bg-white hover:bg-slate-50'
     }`}
     >
-      <button type="button" onClick={onOpen} className="text-left text-sm font-bold text-slate-500">#{item.rank}</button>
+      <button type="button" onClick={onOpen} className="text-left text-sm font-black text-slate-400">#{item.rank}</button>
       <button type="button" onClick={onOpen} className="min-w-0 text-left">
-        <div className="truncate text-sm font-semibold text-slate-900">{item.title}</div>
+        <div className="line-clamp-2 text-sm font-semibold leading-5 text-slate-900">{item.title}</div>
         <div className="mt-1 flex min-w-0 items-center gap-2 text-xs text-slate-400">
           <span>{item.sourceName}</span>
           {item.heat && <span className="truncate">{item.heat}</span>}
         </div>
-      </button>
-      <button type="button" onClick={onOpen} className="h-7 rounded-md bg-slate-100 text-xs font-semibold text-slate-500 hover:bg-cyan-100 hover:text-cyan-700">
-        AI评估
       </button>
       <input aria-label={`选择 ${item.title}`} type="checkbox" checked={selected} onChange={onToggle} className="h-4 w-4 accent-cyan-500" />
     </div>
@@ -230,27 +229,26 @@ export function HotspotPage() {
   };
 
   return (
-    <div className="flex h-full min-h-0 bg-slate-50 text-slate-900">
-      <SourceFilter activeSource={activeSource} onChange={setActiveSource} result={result} />
-      <section className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-5">
-          <div className="min-w-0">
-            <div className="text-base font-bold">全平台前 50 热点</div>
-            <div className="mt-0.5 text-xs text-slate-400">DailyHotApi：百度、抖音、微博、知乎、B站</div>
+    <div className="flex h-full min-h-0 flex-col bg-slate-50 text-slate-900">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-5">
+        <div className="min-w-0">
+          <div className="text-lg font-bold">热点灵感</div>
+          <div className="mt-0.5 text-xs text-slate-400">DailyHotApi：百度、抖音、微博、知乎、B站</div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <IconButton label="刷新热点" onClick={() => void refresh(true)} disabled={isFetching}>
+            {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          </IconButton>
+          <ActionButton size="sm" variant="secondary" onClick={runCombination} disabled={isAnalyzing || selectedItems.length < 2}>组合题材</ActionButton>
+        </div>
+      </header>
+      <SourceRadar activeSource={activeSource} onChange={setActiveSource} result={result} />
+      <main className="grid min-h-0 flex-1 grid-cols-[minmax(260px,1fr)_minmax(520px,2fr)] gap-4 overflow-hidden p-4">
+        <section className="min-h-0 overflow-hidden rounded-md border border-slate-200 bg-white">
+          <div className="flex h-11 items-center justify-between border-b border-slate-100 px-3 text-xs font-semibold text-slate-400">
+            <span>{activeSource === 'all' ? '全部平台' : HOTSPOT_SOURCE_LABELS[activeSource]}：{filteredItems.length} 条</span>
+            <span>已选 {selectedItems.length}</span>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <IconButton label="刷新热点" onClick={() => void refresh(true)} disabled={isFetching}>
-              {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            </IconButton>
-            <ActionButton size="sm" variant="secondary" onClick={runCombination} disabled={isAnalyzing || selectedItems.length < 2}>组合题材</ActionButton>
-          </div>
-        </header>
-        <main className="grid min-h-0 flex-1 grid-cols-[minmax(360px,0.92fr)_minmax(420px,1.08fr)] overflow-hidden">
-          <div className="min-h-0 border-r border-slate-100 bg-white">
-            <div className="flex h-10 items-center justify-between border-b border-slate-100 px-3 text-xs font-semibold text-slate-400">
-              <span>{activeSource === 'all' ? '全部平台' : HOTSPOT_SOURCE_LABELS[activeSource]}：{filteredItems.length} 条</span>
-              <span>已选 {selectedItems.length}</span>
-            </div>
             <div className="h-[calc(100%-40px)] overflow-auto">
               {filteredItems.map((item) => (
                 <HotspotRow
@@ -268,32 +266,32 @@ export function HotspotPage() {
                 </div>
               )}
             </div>
-          </div>
-          <div className="flex min-h-0 flex-col bg-slate-50">
-            <div className="flex h-14 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-4">
+        </section>
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-md border border-slate-200 bg-white">
+            <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-5">
               <div className="min-w-0">
-                <div className="truncate text-sm font-bold text-slate-900">{analysisTitle}</div>
-                <div className="mt-0.5 text-xs text-slate-400">{analysisMode === 'single' ? '点击热点后自动判断是否适合写小说' : '多条热点组合成新题材'}</div>
+                <div className="truncate text-base font-black text-slate-900">AI 小说适合度</div>
+                <div className="mt-0.5 truncate text-xs text-slate-400">{analysisTitle}</div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <IconButton label="保存到脑洞库" onClick={saveAnalysis} disabled={!analysis.trim()}><Save className="h-4 w-4" /></IconButton>
                 <IconButton label="送入工作台" onClick={sendToWorkbench} disabled={!analysis.trim()}><Send className="h-4 w-4" /></IconButton>
               </div>
             </div>
-            <div className="min-h-0 flex-1 overflow-auto p-4">
+            <div className="min-h-0 flex-1 overflow-auto bg-slate-50 p-5">
               {isAnalyzing ? (
                 <div className="flex h-full items-center justify-center gap-2 text-sm font-semibold text-cyan-600">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   AI 正在分析热点
                 </div>
               ) : analysis ? (
-                <pre className="min-h-full whitespace-pre-wrap rounded-lg border border-slate-100 bg-white p-4 text-sm leading-7 text-slate-700 shadow-sm">{analysis}</pre>
+                <pre className="min-h-full whitespace-pre-wrap rounded-md border border-slate-100 bg-white p-5 text-sm leading-7 text-slate-700 shadow-sm">{analysis}</pre>
               ) : (
                 <div className="grid h-full place-items-center">
-                  <div className="max-w-sm rounded-lg border border-slate-100 bg-white p-5 text-center shadow-sm">
+                  <div className="max-w-lg rounded-md border border-slate-100 bg-white p-8 text-center shadow-sm">
                     <Sparkles className="mx-auto h-8 w-8 text-cyan-500" />
-                    <div className="mt-3 text-sm font-bold text-slate-900">选择一个热点开始评估</div>
-                    <div className="mt-2 text-xs leading-5 text-slate-400">AI 会判断小说适合度、题材方向、冲突、风险和改编方式。</div>
+                    <div className="mt-4 text-base font-black text-slate-900">选择一个热点开始评估</div>
+                    <div className="mt-2 text-sm leading-6 text-slate-400">AI 会判断小说适合度、题材方向、核心冲突、改写风险和具体改编方式。这里保留更大的阅读空间，方便直接看分析结果。</div>
                     {activeItem && <ActionButton className="mt-4" size="sm" onClick={() => void runSingleAnalysis(activeItem)}>分析当前热点</ActionButton>}
                   </div>
                 </div>
@@ -305,9 +303,8 @@ export function HotspotPage() {
                 <span className="truncate">{status}</span>
               </div>
             )}
-          </div>
-        </main>
-      </section>
+        </section>
+      </main>
     </div>
   );
 }

@@ -32,4 +32,13 @@ describe('hotspot page integration', () => {
     expect(page).toContain('status || \'暂无热点，点击刷新重试。\'');
     expect(page).toContain('filteredItems.length === 0');
   });
+
+  it('uses the radar layout with one third hotspot list and two thirds AI suitability panel', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain('SourceRadar');
+    expect(page).toContain('grid-cols-[minmax(260px,1fr)_minmax(520px,2fr)]');
+    expect(page).toContain('AI 小说适合度');
+    expect(page).not.toContain('<SourceFilter');
+  });
 });
