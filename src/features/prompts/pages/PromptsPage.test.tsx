@@ -46,4 +46,27 @@ describe('PromptsPage modal layering', () => {
     expect(cardSource).not.toContain('<div className="flex items-center gap-2">');
     expect(cardSource).not.toContain('line-clamp-4 text-[13px] leading-6 text-slate-500');
   });
+
+  it('uses attached add-category control and right-click deletion with confirmation', () => {
+    const source = readPromptsPageSource();
+    const categoryBarStart = source.indexOf('<div className="xy-category-capsules min-w-0">');
+    const categoryBarEnd = source.indexOf('{activeCategory === AUDIT_PROMPT_CATEGORY', categoryBarStart);
+    const categoryBarSource = source.slice(categoryBarStart, categoryBarEnd);
+
+    expect(source).toContain('const [categoryContextMenu, setCategoryContextMenu]');
+    expect(source).toContain('const [categoryDeleteTarget, setCategoryDeleteTarget]');
+    expect(source).toContain('const openCategoryContextMenu = (event: ReactMouseEvent<HTMLButtonElement>, category: string)');
+    expect(source).toContain('if (isDefaultPromptCategory(category))');
+    expect(source).toContain('const confirmCategoryDelete = () =>');
+    expect(source).toContain('isDefaultPromptCategory(categoryDeleteTarget)');
+    expect(source).toContain('title="确认删除分类"');
+    expect(source).toContain('confirmText="删除该分类"');
+    expect(categoryBarSource).toContain('onContextMenu={(event) => openCategoryContextMenu(event, category)}');
+    expect(categoryBarSource).toContain('className="flex h-8 items-stretch overflow-hidden rounded-md border border-slate-200 bg-white');
+    expect(categoryBarSource).toContain('className="flex h-full min-w-[96px] items-center justify-center whitespace-nowrap bg-[#08AACE]');
+    expect(categoryBarSource).toContain('删除该分类');
+    expect(categoryBarSource).not.toContain('categoryDeleteMode');
+    expect(categoryBarSource).not.toContain('xy-category-capsule-delete');
+    expect(categoryBarSource).not.toContain('删除分类');
+  });
 });

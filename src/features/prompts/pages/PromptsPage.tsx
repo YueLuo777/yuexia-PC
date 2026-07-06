@@ -1,5 +1,5 @@
 import { BookOpen, Lock, Search, Sparkles, Trash2, Unlock, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { type MouseEvent as ReactMouseEvent, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import {
@@ -276,7 +276,8 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
   const [newCategory, setNewCategory] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<PromptItem | null>(null);
   const [showRecycle, setShowRecycle] = useState(false);
-  const [categoryDeleteMode, setCategoryDeleteMode] = useState(false);
+  const [categoryContextMenu, setCategoryContextMenu] = useState<{ category: string; x: number; y: number } | null>(null);
+  const [categoryDeleteTarget, setCategoryDeleteTarget] = useState<string | null>(null);
 
   useEffect(() => {
     const rawCategory = initialCategory ?? searchParams.get('category');
@@ -285,6 +286,17 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
       setActiveCategory(category);
     }
   }, [categories, initialCategory, searchParams]);
+
+  useEffect(() => {
+    if (!categoryContextMenu) return undefined;
+    const closeCategoryContextMenu = () => setCategoryContextMenu(null);
+    window.addEventListener('click', closeCategoryContextMenu);
+    window.addEventListener('scroll', closeCategoryContextMenu, true);
+    return () => {
+      window.removeEventListener('click', closeCategoryContextMenu);
+      window.removeEventListener('scroll', closeCategoryContextMenu, true);
+    };
+  }, [categoryContextMenu]);
 
   const filteredPrompts = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();
@@ -329,6 +341,35 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
     setSearchQuery('');
     setShowForm(false);
     setEditingItem(null);
+  };
+
+  const createCategory = () => {
+    const category = normalizePromptCategoryName(newCategory);
+    if (!category) return;
+    addCategory(category);
+    setActiveCategory(category);
+    setNewCategory('');
+  };
+
+  const openCategoryContextMenu = (event: ReactMouseEvent<HTMLButtonElement>, category: string) => {
+    event.preventDefault();
+    if (isDefaultPromptCategory(category)) {
+      setCategoryContextMenu(null);
+      return;
+    }
+    setCategoryContextMenu({ category, x: event.clientX, y: event.clientY });
+  };
+
+  const confirmCategoryDelete = () => {
+    if (!categoryDeleteTarget || isDefaultPromptCategory(categoryDeleteTarget)) {
+      setCategoryDeleteTarget(null);
+      return;
+    }
+    removeCategory(categoryDeleteTarget);
+    if (activeCategory === categoryDeleteTarget) {
+      setActiveCategory(null);
+    }
+    setCategoryDeleteTarget(null);
   };
 
   return (
@@ -378,50 +419,51 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
             <button
               key={category}
               onClick={() => setActiveCategory(category)}
+              onContextMenu={(event) => openCategoryContextMenu(event, category)}
               className={`xy-category-capsule ${activeCategory === category ? 'xy-active' : ''}`}
             >
               {category}
-              {categoryDeleteMode && !isDefaultPromptCategory(category) && (
-                <span
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    removeCategory(category);
-                    setActiveCategory(null);
-                  }}
-                  className="xy-category-capsule-delete"
-                >
-                  ×
-                </span>
-              )}
             </button>
           ))}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex h-8 items-stretch overflow-hidden rounded-md border border-slate-200 bg-white transition-colors focus-within:border-[#08AACE] focus-within:ring-2 focus-within:ring-[#8FE4F2]/70">
             <input
               value={newCategory}
               onChange={(event) => setNewCategory(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') createCategory();
+              }}
               placeholder="新增分类"
-              className="h-8 w-[120px] rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none transition-colors focus:border-[#08AACE] focus:ring-2 focus:ring-[#8FE4F2]/70"
+              className="h-full w-[140px] border-0 bg-white px-3 text-xs outline-none"
             />
-            <div className="xy-capsule-group">
-              <button
-                onClick={() => {
-                  addCategory(newCategory);
-                  setNewCategory('');
-                }}
-                className="xy-capsule-button"
-              >
-                新增分类
-              </button>
-              <button
-                onClick={() => setCategoryDeleteMode((prev) => !prev)}
-                className={`xy-capsule-button xy-danger ${categoryDeleteMode ? 'xy-active' : ''}`}
-              >
-                {categoryDeleteMode ? '退出删除' : '删除分类'}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={createCategory}
+              className="flex h-full min-w-[96px] items-center justify-center whitespace-nowrap bg-[#08AACE] px-3 text-sm leading-none text-white transition-colors hover:bg-[#0798b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]"
+            >
+              新增分类
+            </button>
           </div>
         </div>
+
+        {categoryContextMenu ? (
+          <div
+            className="fixed z-[260] min-w-[136px] rounded-lg border border-slate-200 bg-white p-1 shadow-[0_12px_32px_rgba(15,23,42,0.16)]"
+            style={{ left: categoryContextMenu.x, top: categoryContextMenu.y }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setCategoryDeleteTarget(categoryContextMenu.category);
+                setCategoryContextMenu(null);
+              }}
+              className="flex h-9 w-full items-center rounded-md px-3 text-left text-sm font-bold text-red-500 transition-colors hover:bg-red-50"
+            >
+              删除该分类
+            </button>
+          </div>
+        ) : null}
 
         {activeCategory === AUDIT_PROMPT_CATEGORY ? (
           <div className="mb-7 flex items-center gap-3">
@@ -559,6 +601,16 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
           if (deleteTarget) deletePrompt(deleteTarget.id);
           setDeleteTarget(null);
         }}
+      />
+
+      <ConfirmDialog
+        isOpen={!!categoryDeleteTarget}
+        title="确认删除分类"
+        description={`确定要删除分类“${categoryDeleteTarget ?? ''}”吗？\n删除后，该分类下的提示词会移动到“未分类”。默认分类无法删除。`}
+        confirmText="删除该分类"
+        confirmVariant="danger"
+        onClose={() => setCategoryDeleteTarget(null)}
+        onConfirm={confirmCategoryDelete}
       />
     </div>
   );
