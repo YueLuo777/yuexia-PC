@@ -95,6 +95,18 @@ describe('hotspot page integration', () => {
     expect(page).toContain('ref={analysisScrollRef}');
   });
 
+  it('collapses completed reasoning to preserve analysis reading space', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain('const [isReasoningOpen, setIsReasoningOpen] = useState(isAnalyzing);');
+    expect(page).toContain('const showReasoningBody = isAnalyzing || isReasoningOpen;');
+    expect(page).toContain('setIsReasoningOpen(isAnalyzing);');
+    expect(page).toContain('if (!isAnalyzing) setIsReasoningOpen((current) => !current);');
+    expect(page).toContain('disabled={isAnalyzing}');
+    expect(page).toContain("{isReasoningOpen ? '收起' : '展开'}");
+    expect(page).toContain('{showReasoningBody && (');
+  });
+
   it('uses a text save button for saving hotspot analysis to the brainstorm library', () => {
     const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
 

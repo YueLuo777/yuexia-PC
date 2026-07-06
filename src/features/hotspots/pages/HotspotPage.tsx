@@ -52,6 +52,8 @@ function HotspotAnalysisOutput({
 }) {
   const hasReasoning = reasoning.trim().length > 0;
   const hasAnalysis = analysis.trim().length > 0;
+  const [isReasoningOpen, setIsReasoningOpen] = useState(isAnalyzing);
+  const showReasoningBody = isAnalyzing || isReasoningOpen;
   const analysisTextStyle: CSSProperties = {
     color: fontSettings.fontColor,
     fontFamily: fontSettings.fontFamily,
@@ -59,20 +61,38 @@ function HotspotAnalysisOutput({
     lineHeight: getEditorTextLineHeight(fontSettings),
   };
 
+  useEffect(() => {
+    setIsReasoningOpen(isAnalyzing);
+  }, [isAnalyzing]);
+
   return (
     <div className="min-h-full rounded-md border border-slate-100 bg-white p-5 text-sm leading-7 text-slate-700 shadow-sm">
       {(isAnalyzing || hasReasoning) && (
         <div className="mb-4 rounded-xl border border-[#08AACE]/25 bg-[#EAF9FD] p-3 text-xs leading-6 text-slate-600">
-          <div className="mb-1 flex items-center gap-2 font-black text-[#078fb0]">
-            {isAnalyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-            <span>{isAnalyzing ? `正在思考（${Math.max(1, thinkingSeconds)} 秒）` : `已思考（用时 ${Math.max(1, thinkingSeconds)} 秒）`}</span>
-          </div>
-          {hasReasoning ? (
-            <div className="max-h-44 overflow-y-auto whitespace-pre-wrap break-words">
-              {reasoning}
-            </div>
-          ) : (
-            <div className="text-slate-400">等待模型返回思考过程...</div>
+          <button
+            type="button"
+            onClick={() => {
+              if (!isAnalyzing) setIsReasoningOpen((current) => !current);
+            }}
+            disabled={isAnalyzing}
+            className="flex w-full items-center justify-between gap-3 text-left font-black text-[#078fb0] disabled:cursor-default"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              {isAnalyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+              <span>{isAnalyzing ? `正在思考（${Math.max(1, thinkingSeconds)} 秒）` : `已思考（用时 ${Math.max(1, thinkingSeconds)} 秒）`}</span>
+            </span>
+            {!isAnalyzing && hasReasoning && (
+              <span className="shrink-0 text-[11px] font-semibold text-[#078fb0]/70">{isReasoningOpen ? '收起' : '展开'}</span>
+            )}
+          </button>
+          {showReasoningBody && (
+            hasReasoning ? (
+              <div className="mt-2 max-h-44 overflow-y-auto whitespace-pre-wrap break-words">
+                {reasoning}
+              </div>
+            ) : (
+              <div className="mt-2 text-slate-400">等待模型返回思考过程...</div>
+            )
           )}
         </div>
       )}
