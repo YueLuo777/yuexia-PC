@@ -1,19 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  HOTSPOT_FETCH_LIMIT,
   HOTSPOT_SOURCE_LABELS,
   HOTSPOT_SOURCES,
+  fetchHotspots,
   getHotspotExternalUrl,
   normalizeHotspotFetchResult,
 } from '@/features/hotspots/model/hotspotApi';
 
 describe('hotspot API normalization', () => {
-  it('keeps the first 50 normalized items for supported DailyHotApi sources', () => {
+  it('keeps up to 100 candidates for supported DailyHotApi sources', () => {
     const result = normalizeHotspotFetchResult({
       ok: true,
       capturedAt: '2026-07-06T10:00:00.000Z',
       sources: {
-        baidu: Array.from({ length: 55 }, (_, index) => ({
+        baidu: Array.from({ length: 120 }, (_, index) => ({
           rank: index + 1,
           title: `百度热点 ${index + 1}`,
           heat: `${index + 1}万`,
@@ -22,7 +24,7 @@ describe('hotspot API normalization', () => {
       },
     });
 
-    expect(result.items).toHaveLength(50);
+    expect(result.items).toHaveLength(HOTSPOT_FETCH_LIMIT);
     expect(result.items[0]).toMatchObject({
       id: 'baidu-1-百度热点 1',
       source: 'baidu',
@@ -31,7 +33,7 @@ describe('hotspot API normalization', () => {
       title: '百度热点 1',
       heat: '1万',
     });
-    expect(result.sourceStates.baidu).toMatchObject({ ok: true, count: 50 });
+    expect(result.sourceStates.baidu).toMatchObject({ ok: true, count: HOTSPOT_FETCH_LIMIT });
   });
 
   it('creates failed source states while preserving stale cached items', () => {
@@ -59,6 +61,29 @@ describe('hotspot API normalization', () => {
 
   it('uses the first release sources requested for the feature', () => {
     expect(HOTSPOT_SOURCES).toEqual(['baidu', 'douyin', 'weibo', 'zhihu', 'bilibili']);
+  });
+
+  it('requests 100 candidates so rule filtering can still display 50 high-score items', async () => {
+    let requestedLimit = 0;
+    const previous = window.xinyuexiaHotspots;
+    window.xinyuexiaHotspots = {
+      fetchAll: async (input) => {
+        requestedLimit = Number(input?.limit);
+        return {
+          ok: true,
+          capturedAt: '2026-07-07T00:00:00.000Z',
+          sources: {},
+        };
+      },
+    };
+
+    try {
+      await fetchHotspots(true);
+    } finally {
+      window.xinyuexiaHotspots = previous;
+    }
+
+    expect(requestedLimit).toBe(HOTSPOT_FETCH_LIMIT);
   });
 
   it('opens direct hotspot links or falls back to platform search pages', () => {

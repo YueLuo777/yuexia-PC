@@ -82,4 +82,20 @@ describe('hotspotService', () => {
 
     expect(requestedUrls).toEqual(['http://127.0.0.1:36688/baidu']);
   });
+
+  it('allows collecting up to 100 candidates before UI filtering', async () => {
+    const service = createHotspotService({
+      now: () => '2026-07-06T10:00:00.000Z',
+      readCache: async () => null,
+      writeCache: async () => undefined,
+      fetchJson: async () => ({
+        code: 200,
+        data: Array.from({ length: 120 }, (_, index) => ({ title: `候选热点 ${index + 1}` })),
+      }),
+    });
+
+    const result = await service.fetchAll({ sources: ['baidu'], limit: 100, force: true });
+
+    expect(result.sources.baidu).toHaveLength(100);
+  });
 });

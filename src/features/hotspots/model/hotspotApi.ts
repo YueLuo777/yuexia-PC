@@ -7,6 +7,9 @@ import type {
 } from '@/features/hotspots/model/hotspotTypes';
 
 export const HOTSPOT_SOURCES: HotspotSourceId[] = ['baidu', 'douyin', 'weibo', 'zhihu', 'bilibili'];
+export const HOTSPOT_FETCH_LIMIT = 100;
+export const HOTSPOT_DISPLAY_LIMIT = 50;
+export const HOTSPOT_MIN_DISPLAY_SCORE = 51;
 
 export const HOTSPOT_SOURCE_LABELS: Record<HotspotSourceId, string> = {
   baidu: '百度',
@@ -59,7 +62,7 @@ function normalizeSourceItems(source: HotspotSourceId, values: unknown[] | undef
   return (values ?? [])
     .map((value, index) => normalizeItem(source, value, index, capturedAt))
     .filter((item): item is HotspotItem => Boolean(item))
-    .slice(0, 50);
+    .slice(0, HOTSPOT_FETCH_LIMIT);
 }
 
 export function normalizeHotspotFetchResult(raw: RawHotspotFetchResult): HotspotFetchResult {
@@ -101,7 +104,7 @@ export function getHotspotExternalUrl(item: HotspotItem) {
 export async function fetchHotspots(force = false): Promise<HotspotFetchResult> {
   const raw = await window.xinyuexiaHotspots?.fetchAll({
     sources: HOTSPOT_SOURCES,
-    limit: 50,
+    limit: HOTSPOT_FETCH_LIMIT,
     force,
   });
   if (!raw) {

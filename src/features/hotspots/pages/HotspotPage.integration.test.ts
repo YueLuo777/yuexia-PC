@@ -29,7 +29,7 @@ describe('hotspot page integration', () => {
   it('shows the fetch status inside the empty hotspot list instead of hiding it at the bottom', () => {
     const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
 
-    expect(page).toContain('status || \'暂无热点，点击刷新重试。\'');
+    expect(page).toContain('暂无分数高于 ${HOTSPOT_MIN_DISPLAY_SCORE - 1} 的热点');
     expect(page).toContain('filteredItems.length === 0');
   });
 
@@ -97,6 +97,11 @@ describe('hotspot page integration', () => {
     expect(page).toContain('HotspotRulePreviewModal');
     expect(page).toContain('setIsRulePreviewOpen(true)');
     expect(page).toContain('<HotspotRulePreviewModal isOpen={isRulePreviewOpen}');
+    expect(page).toContain('HOTSPOT_MIN_DISPLAY_SCORE');
+    expect(page).toContain('HOTSPOT_DISPLAY_LIMIT');
+    expect(page).toContain('.filter((item) => evaluateHotspotByRules(item).score >= HOTSPOT_MIN_DISPLAY_SCORE)');
+    expect(page).toContain('.slice(0, HOTSPOT_DISPLAY_LIMIT)');
+    expect(page).toContain('条高分 /');
     expect(rules).toContain('HOTSPOT_RULE_GROUPS');
     expect(rules).toContain('强情绪/强反转');
     expect(rules).toContain('真实刑案/伤亡高风险');
@@ -107,7 +112,7 @@ describe('hotspot page integration', () => {
     const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
     const rowSource = page.slice(page.indexOf('function HotspotRow'), page.indexOf('function readHotspotModelId'));
 
-    expect(page).toContain("import { HOTSPOT_SOURCE_LABELS, HOTSPOT_SOURCES, fetchHotspots, getHotspotExternalUrl } from '@/features/hotspots/model/hotspotApi';");
+    expect(page).toContain('getHotspotExternalUrl');
     expect(page).toContain('grid-cols-[34px_minmax(0,1fr)_58px_82px]');
     expect(page).toContain('onOpenExternal: () => void;');
     expect(page).toContain('onOpenExternal={() => window.open(getHotspotExternalUrl(item), \'_blank\', \'noopener,noreferrer\')}');

@@ -5,6 +5,7 @@ const PUBLIC_BASE_URL = 'https://api-hot.imsyy.top';
 const LOCAL_DAILYHOT_PORT = 36688;
 const LOCAL_BASE_URL = `http://127.0.0.1:${LOCAL_DAILYHOT_PORT}`;
 const DEFAULT_CACHE_TTL_MS = 10 * 60 * 1000;
+const MAX_FETCH_LIMIT = 100;
 const SOURCE_LABELS = {
   baidu: '百度',
   douyin: '抖音',
@@ -109,7 +110,7 @@ function createHotspotService(options = {}) {
 
   async function fetchAll(input = {}) {
     const sources = Array.isArray(input.sources) && input.sources.length > 0 ? input.sources : DEFAULT_SOURCES;
-    const limit = Number.isFinite(Number(input.limit)) ? Math.max(1, Math.min(50, Number(input.limit))) : 50;
+    const limit = Number.isFinite(Number(input.limit)) ? Math.max(1, Math.min(MAX_FETCH_LIMIT, Number(input.limit))) : 50;
     const force = Boolean(input.force);
     const cached = await cacheStore.read();
     const capturedAt = now();

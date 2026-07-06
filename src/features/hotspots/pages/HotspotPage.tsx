@@ -6,7 +6,14 @@ import { useModels } from '@/features/models/hooks/useModels';
 import { callModelStream } from '@/features/models/services/callModel';
 import { HOTSPOT_ANALYSIS_PROMPT_CATEGORY, normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { HOTSPOT_ANALYSIS_SYSTEM_PROMPT, buildHotspotSuitabilityPrompt, saveHotspotBrainstorm } from '@/features/hotspots/model/hotspotAi';
-import { HOTSPOT_SOURCE_LABELS, HOTSPOT_SOURCES, fetchHotspots, getHotspotExternalUrl } from '@/features/hotspots/model/hotspotApi';
+import {
+  HOTSPOT_DISPLAY_LIMIT,
+  HOTSPOT_MIN_DISPLAY_SCORE,
+  HOTSPOT_SOURCE_LABELS,
+  HOTSPOT_SOURCES,
+  fetchHotspots,
+  getHotspotExternalUrl,
+} from '@/features/hotspots/model/hotspotApi';
 import { HOTSPOT_RULE_BASE_SCORE, HOTSPOT_RULE_GROUPS, evaluateHotspotByRules, rankHotspotsByRuleEvaluation } from '@/features/hotspots/model/hotspotRules';
 import type { HotspotFetchResult, HotspotItem, HotspotSourceId } from '@/features/hotspots/model/hotspotTypes';
 import { getEditorTextLineHeight, getStoredFontSettings, type FontSettings } from '@/features/workbench/components/EditorToolModals';
@@ -188,6 +195,13 @@ function SourceRadar({
   onChange: (source: HotspotSourceId | 'all') => void;
   result: HotspotFetchResult;
 }) {
+  const getDisplayCount = (items: HotspotItem[]) => (
+    rankHotspotsByRuleEvaluation(items)
+      .filter((item) => evaluateHotspotByRules(item).score >= HOTSPOT_MIN_DISPLAY_SCORE)
+      .slice(0, HOTSPOT_DISPLAY_LIMIT)
+      .length
+  );
+  const allDisplayCount = getDisplayCount(result.items);
   return (
     <div className="grid shrink-0 grid-cols-[1.15fr_repeat(5,minmax(112px,1fr))] gap-3 border-b border-slate-100 bg-slate-50 px-5 py-4">
       <button
@@ -200,13 +214,15 @@ function SourceRadar({
         }`}
       >
         <div className="text-xs font-bold text-slate-400">全部平台</div>
-        <div className="mt-1 text-2xl font-black text-slate-900">{result.items.length}</div>
+        <div className="mt-1 text-2xl font-black text-slate-900">{allDisplayCount}</div>
         <div className="mt-1 truncate text-xs text-slate-400">
-          {result.items.length > 0 ? `更新于 ${formatCapturedTime(result.capturedAt)}` : '打开后自动抓取'}
+          {result.items.length > 0 ? `${result.items.length} 条候选` : '打开后自动抓取'}
         </div>
       </button>
       {HOTSPOT_SOURCES.map((source) => {
         const state = result.sourceStates[source];
+        const sourceItems = result.items.filter((item) => item.source === source);
+        const displayCount = getDisplayCount(sourceItems);
         return (
           <button
             key={source}
@@ -220,9 +236,9 @@ function SourceRadar({
             title={state.message}
           >
             <div className="text-xs font-bold text-slate-400">{HOTSPOT_SOURCE_LABELS[source]}</div>
-            <div className="mt-1 text-2xl font-black text-slate-900">{state.count}</div>
+            <div className="mt-1 text-2xl font-black text-slate-900">{displayCount}</div>
             <div className={state.ok ? 'mt-1 truncate text-xs text-cyan-600' : 'mt-1 truncate text-xs text-slate-400'}>
-              {state.ok ? '已抓取' : state.message}
+              {state.ok ? `${state.count} 条候选` : state.message}
             </div>
           </button>
         );
@@ -328,6 +344,11 @@ export function HotspotPage() {
 
   const filteredItems = useMemo(() => (
     rankHotspotsByRuleEvaluation(activeSource === 'all' ? result.items : result.items.filter((item) => item.source === activeSource))
+      .filter((item) => evaluateHotspotByRules(item).score >= HOTSPOT_MIN_DISPLAY_SCORE)
+      .slice(0, HOTSPOT_DISPLAY_LIMIT)
+  ), [activeSource, result.items]);
+  const candidateItems = useMemo(() => (
+    activeSource === 'all' ? result.items : result.items.filter((item) => item.source === activeSource)
   ), [activeSource, result.items]);
   const activeItem = useMemo(() => result.items.find((item) => item.id === activeItemId) ?? filteredItems[0] ?? null, [activeItemId, filteredItems, result.items]);
   const hotspotModel = useMemo(() => models.find((model) => model.id === hotspotModelId) ?? models[0] ?? null, [hotspotModelId, models]);
@@ -367,7 +388,11 @@ export function HotspotPage() {
       const next = await fetchHotspots(force);
       setResult(next);
       setActiveItemId((current) => current ?? next.items[0]?.id ?? null);
-      setStatus(next.stale ? '抓取失败，已显示上次缓存。' : `已更新 ${next.items.length} 条热点。`);
+      const visibleCount = rankHotspotsByRuleEvaluation(next.items)
+        .filter((item) => evaluateHotspotByRules(item).score >= HOTSPOT_MIN_DISPLAY_SCORE)
+        .slice(0, HOTSPOT_DISPLAY_LIMIT)
+        .length;
+      setStatus(next.stale ? '抓取失败，已显示上次缓存。' : `已抓取 ${next.items.length} 条候选，筛出 ${visibleCount} 条高分热点。`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : '热点刷新失败');
     } finally {
@@ -499,7 +524,7 @@ export function HotspotPage() {
       <main className="grid min-h-0 flex-1 grid-cols-[minmax(260px,1fr)_minmax(520px,2fr)] gap-4 overflow-hidden p-4">
         <section className="min-h-0 overflow-hidden rounded-md border border-slate-200 bg-white">
           <div className="flex h-11 items-center justify-between border-b border-slate-100 px-3 text-xs font-semibold text-slate-400">
-            <span>{activeSource === 'all' ? '全部平台' : HOTSPOT_SOURCE_LABELS[activeSource]}：{filteredItems.length} 条</span>
+            <span>{activeSource === 'all' ? '全部平台' : HOTSPOT_SOURCE_LABELS[activeSource]}：{filteredItems.length} 条高分 / {candidateItems.length} 条候选</span>
             <span>{activeItem ? '点击标题只选中' : '选择热点'}</span>
           </div>
             <div className="h-[calc(100%-40px)] overflow-auto">
@@ -517,7 +542,7 @@ export function HotspotPage() {
               ))}
               {filteredItems.length === 0 && (
                 <div className="flex h-full items-center justify-center px-6 text-center text-sm leading-6 text-slate-400">
-                  {status || '暂无热点，点击刷新重试。'}
+                  {status || `暂无分数高于 ${HOTSPOT_MIN_DISPLAY_SCORE - 1} 的热点，可点击刷新重试。`}
                 </div>
               )}
             </div>
