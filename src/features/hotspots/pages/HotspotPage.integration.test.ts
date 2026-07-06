@@ -46,10 +46,13 @@ describe('hotspot page integration', () => {
     const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
 
     expect(page).toContain('HOTSPOT_MODEL_ID_STORAGE_KEY');
-    expect(page).toContain('HotspotModelSelect');
-    expect(page).toContain('w-[152px]');
+    expect(page).toContain('HOTSPOT_PROMPT_ID_STORAGE_KEY');
+    expect(page).toContain('CombinedAiConfigSelect');
+    expect(page).toContain('usePrompts');
+    expect(page).toContain('w-[390px]');
     expect(page).toContain('const hotspotModel =');
     expect(page).toContain('model: hotspotModel');
+    expect(page).toContain('prompt: activeHotspotPrompt?.content.trim() || HOTSPOT_DEFAULT_SYSTEM_PROMPT');
     expect(page).not.toContain('model: activeModel');
   });
 
@@ -68,11 +71,24 @@ describe('hotspot page integration', () => {
 
     expect(page).toContain("{isFetching ? '刷新中' : '刷新'}");
     expect(page).toContain('mt-6 flex justify-center');
-    expect(page).toContain('分析当前热点');
+    expect(page).toContain('开始分析');
     expect(page).not.toContain('组合题材');
     expect(page).not.toContain('sendToWorkbench');
     expect(page).not.toContain('IconButton label="送入工作台"');
     expect(page).not.toContain('<Send className=');
     expect(page).not.toContain('buildHotspotCombinationPrompt');
+  });
+
+  it('requires explicit start analysis actions instead of auto-analyzing on hotspot selection', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain('grid-cols-[34px_minmax(0,1fr)_82px]');
+    expect(page).toContain('onOpen={() => setActiveItemId(item.id)}');
+    expect(page).toContain('onAnalyze={() => void runSingleAnalysis(item)}');
+    expect(page).toContain('点击标题只选中');
+    expect(page).not.toContain('type="checkbox"');
+    expect(page).not.toContain('selectedIds');
+    expect(page).not.toContain('toggleSelected');
+    expect(page).not.toContain('分析当前热点');
   });
 });

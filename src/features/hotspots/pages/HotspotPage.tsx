@@ -1,15 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Check, CheckCircle2, ChevronDown, Loader2, Settings, Sparkles } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 
 import { useModels } from '@/features/models/hooks/useModels';
 import { callModel } from '@/features/models/services/callModel';
+import { normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { buildHotspotSuitabilityPrompt, saveHotspotBrainstorm } from '@/features/hotspots/model/hotspotAi';
 import { HOTSPOT_SOURCE_LABELS, HOTSPOT_SOURCES, fetchHotspots } from '@/features/hotspots/model/hotspotApi';
 import type { HotspotFetchResult, HotspotItem, HotspotSourceId } from '@/features/hotspots/model/hotspotTypes';
 import { ActionButton } from '@/shared/ui/ActionButton';
+import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 
 const HOTSPOT_MODEL_ID_STORAGE_KEY = 'xinyuexia_hotspot_model_id';
+const HOTSPOT_PROMPT_ID_STORAGE_KEY = 'xinyuexia_hotspot_prompt_id';
+const HOTSPOT_PROMPT_CATEGORY = '脑洞';
+const HOTSPOT_DEFAULT_SYSTEM_PROMPT = '你是专业网文策划编辑，擅长把热点转译成虚构小说题材。';
 
 function formatCapturedTime(value: string) {
   const time = new Date(value);
@@ -85,18 +90,18 @@ function SourceRadar({
 function HotspotRow({
   item,
   active,
-  selected,
   onOpen,
-  onToggle,
+  onAnalyze,
+  disabled,
 }: {
   item: HotspotItem;
   active: boolean;
-  selected: boolean;
   onOpen: () => void;
-  onToggle: () => void;
+  onAnalyze: () => void;
+  disabled: boolean;
 }) {
   return (
-    <div className={`grid min-h-[62px] grid-cols-[34px_minmax(0,1fr)_28px] items-center gap-2 border-b border-slate-100 px-3 py-2 transition-colors ${
+    <div className={`grid min-h-[62px] grid-cols-[34px_minmax(0,1fr)_82px] items-center gap-2 border-b border-slate-100 px-3 py-2 transition-colors ${
       active ? 'bg-cyan-50/80' : 'bg-white hover:bg-slate-50'
     }`}
     >
@@ -108,7 +113,14 @@ function HotspotRow({
           {item.heat && <span className="truncate">{item.heat}</span>}
         </div>
       </button>
-      <input aria-label={`选择 ${item.title}`} type="checkbox" checked={selected} onChange={onToggle} className="h-4 w-4 accent-cyan-500" />
+      <button
+        type="button"
+        onClick={onAnalyze}
+        disabled={disabled}
+        className="h-8 rounded-lg border border-cyan-100 bg-cyan-50 px-2 text-xs font-black text-cyan-700 transition-colors hover:border-cyan-200 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
+      >
+        开始分析
+      </button>
     </div>
   );
 }
@@ -121,100 +133,21 @@ function readHotspotModelId() {
   }
 }
 
-function HotspotModelSelect({
-  value,
-  models,
-  onChange,
-  onManage,
-}: {
-  value: string;
-  models: Array<{ id: string; name: string }>;
-  onChange: (value: string) => void;
-  onManage: () => void;
-}) {
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  const [open, setOpen] = useState(false);
-  const selectedModel = models.find((model) => model.id === value) ?? models[0] ?? null;
-  const displayName = selectedModel?.name ?? '暂无可用模型';
-
-  useEffect(() => {
-    if (!open) return;
-    const close = (event: MouseEvent) => {
-      const target = event.target;
-      if (target instanceof Node && rootRef.current?.contains(target)) return;
-      setOpen(false);
-    };
-    window.addEventListener('mousedown', close);
-    return () => window.removeEventListener('mousedown', close);
-  }, [open]);
-
-  return (
-    <div ref={rootRef} className="relative w-[152px] shrink-0 pt-3">
-      <button
-        type="button"
-        aria-label={`热点模型：${displayName}`}
-        disabled={models.length === 0}
-        onClick={() => setOpen((current) => !current)}
-        className={`grid h-11 w-full grid-cols-[minmax(0,1fr)_26px] items-center rounded-xl border-2 border-[#08AACE] bg-white text-left shadow-[0_8px_18px_rgba(8,170,206,0.08)] transition-colors ${
-          models.length === 0 ? 'cursor-not-allowed text-slate-300' : 'hover:bg-[#EAF9FD]'
-        }`}
-      >
-        <span className="min-w-0 truncate pl-4 pr-1 text-sm font-black text-slate-900">{displayName}</span>
-        <ChevronDown className={`h-4 w-4 text-[#08AACE] transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-      <span className="xy-border-embedded-transparent-backplate absolute left-4 top-3 z-10 -translate-y-1/2 text-sm font-black leading-none text-[#08AACE]">
-        模型
-      </span>
-      <button
-        type="button"
-        aria-label="模型管理"
-        title="模型管理"
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          onManage();
-        }}
-        className="xy-border-embedded-transparent-backplate absolute right-9 top-3 z-10 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full text-[#08AACE] hover:text-[#057F9B]"
-      >
-        <Settings className="h-3.5 w-3.5" />
-      </button>
-      {open && models.length > 0 && (
-        <div className="absolute left-0 top-[calc(100%-2px)] z-30 max-h-[240px] w-full overflow-y-auto rounded-b-xl border-2 border-t-0 border-[#08AACE] bg-white py-1 shadow-[0_18px_34px_rgba(8,170,206,0.14)]">
-          {models.map((model) => {
-            const selected = model.id === selectedModel?.id;
-            return (
-              <button
-                key={model.id}
-                type="button"
-                onClick={() => {
-                  onChange(model.id);
-                  setOpen(false);
-                }}
-                className={`flex h-9 w-full items-center justify-between gap-3 px-4 text-left text-sm transition-colors ${
-                  selected
-                    ? 'bg-[#EAF9FD] font-black text-slate-900'
-                    : 'bg-white font-bold text-slate-800 hover:bg-sky-50 hover:text-[#08AACE]'
-                }`}
-              >
-                <span className="min-w-0 truncate">{model.name}</span>
-                {selected && <Check className="h-4 w-4 shrink-0 text-[#08AACE]" />}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function HotspotPage() {
   const navigate = useNavigate();
   const { models } = useModels();
+  const { prompts } = usePrompts();
   const [result, setResult] = useState<HotspotFetchResult>(createEmptyResult);
   const [activeSource, setActiveSource] = useState<HotspotSourceId | 'all'>('all');
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [hotspotModelId, setHotspotModelId] = useState(readHotspotModelId);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [hotspotPromptId, setHotspotPromptId] = useState(() => {
+    try {
+      return localStorage.getItem(HOTSPOT_PROMPT_ID_STORAGE_KEY) ?? '';
+    } catch {
+      return '';
+    }
+  });
   const [analysis, setAnalysis] = useState('');
   const [analysisTitle, setAnalysisTitle] = useState('热点小说评估');
   const [isFetching, setIsFetching] = useState(false);
@@ -226,11 +159,22 @@ export function HotspotPage() {
   ), [activeSource, result.items]);
   const activeItem = useMemo(() => result.items.find((item) => item.id === activeItemId) ?? filteredItems[0] ?? null, [activeItemId, filteredItems, result.items]);
   const hotspotModel = useMemo(() => models.find((model) => model.id === hotspotModelId) ?? models[0] ?? null, [hotspotModelId, models]);
+  const hotspotPrompts = useMemo(() => prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === HOTSPOT_PROMPT_CATEGORY), [prompts]);
+  const activeHotspotPromptId = useMemo(() => (
+    hotspotPrompts.some((prompt) => prompt.id === hotspotPromptId) ? hotspotPromptId : hotspotPrompts[0]?.id ?? ''
+  ), [hotspotPromptId, hotspotPrompts]);
+  const activeHotspotPrompt = useMemo(() => hotspotPrompts.find((prompt) => prompt.id === activeHotspotPromptId) ?? null, [activeHotspotPromptId, hotspotPrompts]);
 
   const setHotspotModelIdWithStorage = useCallback((nextModelId: string) => {
     setHotspotModelId(nextModelId);
     if (nextModelId) localStorage.setItem(HOTSPOT_MODEL_ID_STORAGE_KEY, nextModelId);
     else localStorage.removeItem(HOTSPOT_MODEL_ID_STORAGE_KEY);
+  }, []);
+
+  const setHotspotPromptIdWithStorage = useCallback((nextPromptId: string) => {
+    setHotspotPromptId(nextPromptId);
+    if (nextPromptId) localStorage.setItem(HOTSPOT_PROMPT_ID_STORAGE_KEY, nextPromptId);
+    else localStorage.removeItem(HOTSPOT_PROMPT_ID_STORAGE_KEY);
   }, []);
 
   const refresh = useCallback(async (force = false) => {
@@ -274,7 +218,7 @@ export function HotspotPage() {
     try {
       const content = await callModel({
         model: hotspotModel,
-        prompt: '你是专业网文策划编辑，擅长把热点转译成虚构小说题材。',
+        prompt: activeHotspotPrompt?.content.trim() || HOTSPOT_DEFAULT_SYSTEM_PROMPT,
         userContent: buildHotspotSuitabilityPrompt(item),
         recordType: 'generate',
         timeoutMs: 120000,
@@ -285,12 +229,6 @@ export function HotspotPage() {
     } finally {
       setIsAnalyzing(false);
     }
-  };
-
-  const toggleSelected = (item: HotspotItem) => {
-    setSelectedIds((current) => (
-      current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id]
-    ));
   };
 
   const saveAnalysis = () => {
@@ -328,7 +266,7 @@ export function HotspotPage() {
         <section className="min-h-0 overflow-hidden rounded-md border border-slate-200 bg-white">
           <div className="flex h-11 items-center justify-between border-b border-slate-100 px-3 text-xs font-semibold text-slate-400">
             <span>{activeSource === 'all' ? '全部平台' : HOTSPOT_SOURCE_LABELS[activeSource]}：{filteredItems.length} 条</span>
-            <span>已选 {selectedIds.length}</span>
+            <span>{activeItem ? '点击标题只选中' : '选择热点'}</span>
           </div>
             <div className="h-[calc(100%-40px)] overflow-auto">
               {filteredItems.map((item) => (
@@ -336,9 +274,9 @@ export function HotspotPage() {
                   key={item.id}
                   item={item}
                   active={activeItem?.id === item.id}
-                  selected={selectedIds.includes(item.id)}
-                  onOpen={() => void runSingleAnalysis(item)}
-                  onToggle={() => toggleSelected(item)}
+                  onOpen={() => setActiveItemId(item.id)}
+                  onAnalyze={() => void runSingleAnalysis(item)}
+                  disabled={isAnalyzing}
                 />
               ))}
               {filteredItems.length === 0 && (
@@ -355,11 +293,16 @@ export function HotspotPage() {
                 <div className="mt-0.5 truncate text-xs text-slate-400">{analysisTitle}</div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <HotspotModelSelect
-                  value={hotspotModel?.id ?? ''}
-                  models={models}
-                  onChange={setHotspotModelIdWithStorage}
-                  onManage={() => navigate('/model-manage')}
+                <CombinedAiConfigSelect
+                  className="w-[390px]"
+                  modelValue={hotspotModel?.id ?? ''}
+                  promptValue={activeHotspotPromptId}
+                  modelOptions={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
+                  promptOptions={hotspotPrompts.length === 0 ? [{ value: '', label: '无可用提示词', disabled: true }] : hotspotPrompts.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+                  onModelChange={setHotspotModelIdWithStorage}
+                  onPromptChange={setHotspotPromptIdWithStorage}
+                  onModelManage={() => navigate('/model-manage')}
+                  onPromptManage={() => navigate('/prompts')}
                 />
               </div>
             </div>
@@ -379,7 +322,7 @@ export function HotspotPage() {
                     <div className="mt-2 text-sm leading-6 text-slate-400">AI 会判断小说适合度、题材方向、核心冲突、改写风险和具体改编方式。这里保留更大的阅读空间，方便直接看分析结果。</div>
                     {activeItem && (
                       <div className="mt-6 flex justify-center">
-                        <ActionButton size="sm" onClick={() => void runSingleAnalysis(activeItem)}>分析当前热点</ActionButton>
+                        <ActionButton size="sm" onClick={() => void runSingleAnalysis(activeItem)} disabled={isAnalyzing}>开始分析</ActionButton>
                       </div>
                     )}
                   </div>
