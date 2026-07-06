@@ -434,7 +434,7 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
                 if (event.key === 'Enter') createCategory();
               }}
               placeholder="新增分类"
-              className="h-full w-[140px] border-0 bg-white px-3 text-xs outline-none"
+              className="h-full w-[84px] border-0 bg-white px-3 text-xs outline-none"
             />
             <button
               type="button"
