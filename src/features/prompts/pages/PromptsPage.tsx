@@ -24,6 +24,38 @@ const TAB_LABELS: Record<PromptTab, string> = {
   script: '剧本提示词',
 };
 
+const PROMPT_CATEGORY_CONTEXT_MENU_SIZE = { width: 136, height: 48 };
+const PROMPT_CATEGORY_CONTEXT_MENU_PADDING = 8;
+
+function clampPromptCategoryContextMenu(left: number, top: number, width: number, height: number) {
+  return {
+    x: Math.max(
+      PROMPT_CATEGORY_CONTEXT_MENU_PADDING,
+      Math.min(left, width - PROMPT_CATEGORY_CONTEXT_MENU_SIZE.width - PROMPT_CATEGORY_CONTEXT_MENU_PADDING),
+    ),
+    y: Math.max(
+      PROMPT_CATEGORY_CONTEXT_MENU_PADDING,
+      Math.min(top, height - PROMPT_CATEGORY_CONTEXT_MENU_SIZE.height - PROMPT_CATEGORY_CONTEXT_MENU_PADDING),
+    ),
+  };
+}
+
+function getPromptCategoryContextMenuPosition(event: ReactMouseEvent<HTMLButtonElement>) {
+  const scaledRoot = document.querySelector('[data-capsule-select-portal-root="true"]') as HTMLElement | null;
+  if (!scaledRoot) {
+    return clampPromptCategoryContextMenu(event.clientX, event.clientY, window.innerWidth, window.innerHeight);
+  }
+  const rect = scaledRoot.getBoundingClientRect();
+  const scaleX = rect.width / scaledRoot.offsetWidth || 1;
+  const scaleY = rect.height / scaledRoot.offsetHeight || 1;
+  return clampPromptCategoryContextMenu(
+    (event.clientX - rect.left) / scaleX,
+    (event.clientY - rect.top) / scaleY,
+    scaledRoot.offsetWidth,
+    scaledRoot.offsetHeight,
+  );
+}
+
 function normalizePromptTypeForTab(promptType?: PromptItem['promptType']): PromptTab {
   return promptType === 'script' ? 'script' : 'novel';
 }
@@ -357,7 +389,7 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
       setCategoryContextMenu(null);
       return;
     }
-    setCategoryContextMenu({ category, x: event.clientX, y: event.clientY });
+    setCategoryContextMenu({ category, ...getPromptCategoryContextMenuPosition(event) });
   };
 
   const confirmCategoryDelete = () => {

@@ -55,6 +55,11 @@ describe('PromptsPage modal layering', () => {
 
     expect(source).toContain('const [categoryContextMenu, setCategoryContextMenu]');
     expect(source).toContain('const [categoryDeleteTarget, setCategoryDeleteTarget]');
+    expect(source).toContain('function getPromptCategoryContextMenuPosition(event: ReactMouseEvent<HTMLButtonElement>)');
+    expect(source).toContain("document.querySelector('[data-capsule-select-portal-root=\"true\"]')");
+    expect(source).toContain('(event.clientX - rect.left) / scaleX');
+    expect(source).toContain('(event.clientY - rect.top) / scaleY');
+    expect(source).toContain('setCategoryContextMenu({ category, ...getPromptCategoryContextMenuPosition(event) });');
     expect(source).toContain('const openCategoryContextMenu = (event: ReactMouseEvent<HTMLButtonElement>, category: string)');
     expect(source).toContain('if (isDefaultPromptCategory(category))');
     expect(source).toContain('const confirmCategoryDelete = () =>');
@@ -68,5 +73,6 @@ describe('PromptsPage modal layering', () => {
     expect(categoryBarSource).not.toContain('categoryDeleteMode');
     expect(categoryBarSource).not.toContain('xy-category-capsule-delete');
     expect(categoryBarSource).not.toContain('删除分类');
+    expect(source).not.toContain('setCategoryContextMenu({ category, x: event.clientX, y: event.clientY });');
   });
 });
