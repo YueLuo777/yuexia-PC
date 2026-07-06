@@ -12,12 +12,14 @@ describe('navigation config without zones', () => {
       '/novels',
       '/scripts',
       '/library',
+      '/hotspots',
       '/prompts',
       '/model-manage',
       '/token-usage',
       '/test-collection',
     ]);
     expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/library')?.label).toBe('资料库');
+    expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/hotspots')?.label).toBe('热点灵感');
     expect(JSON.stringify(DEFAULT_NAV_CONFIG)).not.toContain('专区');
   });
 

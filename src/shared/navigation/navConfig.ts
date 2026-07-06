@@ -75,6 +75,7 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
       { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
       { iconName: 'Film', label: '我的剧本', to: '/scripts' },
       { iconName: 'Library', label: '资料库', to: '/library' },
+      { iconName: 'Activity', label: '热点灵感', to: '/hotspots' },
       { iconName: 'Tag', label: '提示词管理', to: '/prompts' },
       { iconName: 'Settings', label: '模型管理', to: '/model-manage' },
       { iconName: 'BarChart3', label: 'Token用量', to: '/token-usage' },

@@ -12,6 +12,7 @@ import { areInternalRoutesEnabled } from '@/shared/featureFlags/internalRoutes';
 
 const ConceptLibraryPage = lazy(() => import('@/features/concept-library/pages/ConceptLibraryPage').then((module) => ({ default: module.ConceptLibraryPage })));
 const LibraryHubPage = lazy(() => import('@/features/library-hub/pages/LibraryHubPage').then((module) => ({ default: module.LibraryHubPage })));
+const HotspotPage = lazy(() => import('@/features/hotspots/pages/HotspotPage').then((module) => ({ default: module.HotspotPage })));
 const DbSettingsPage = lazy(() => import('@/features/settings/pages/DbSettingsPage').then((module) => ({ default: module.DbSettingsPage })));
 const ModelManagePage = lazy(() => import('@/features/models/pages/ModelManagePage').then((module) => ({ default: module.ModelManagePage })));
 const NovelLibraryPage = lazy(() => import('@/features/novels/pages/NovelLibraryPage').then((module) => ({ default: module.NovelLibraryPage })));
@@ -94,6 +95,7 @@ export default function App() {
                 <Route path="/novels" element={<NovelLibraryPage />} />
                 <Route path="/scripts" element={<NovelLibraryPage />} />
                 <Route path="/library" element={<LibraryHubPage />} />
+                <Route path="/hotspots" element={<HotspotPage />} />
                 <Route path="/concept-library" element={<ConceptLibraryPage />} />
                 <Route path="/prompts" element={<PromptsPage />} />
                 <Route path="/model-manage" element={<ModelManagePage />} />
