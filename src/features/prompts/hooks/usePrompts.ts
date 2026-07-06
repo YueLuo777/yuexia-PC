@@ -14,6 +14,7 @@ export const AUDIT_PROMPT_SUBCATEGORIES = ['结构审核', '文本审核'] as co
 export const COMMENT_PROMPT_CATEGORY = '综合点评';
 export const STATUS_PROMPT_CATEGORY = '更新状态';
 export const SUMMARY_PROMPT_CATEGORY = '生成梗概';
+export const HOTSPOT_ANALYSIS_PROMPT_CATEGORY = '热点分析';
 const PROMPT_CATEGORY_ALIASES: Record<string, string> = {
   大纲: '设定',
   细纲: '章纲',
@@ -30,7 +31,7 @@ const PROMPT_CATEGORY_ALIASES: Record<string, string> = {
   卷概要: SUMMARY_PROMPT_CATEGORY,
   梗概: SUMMARY_PROMPT_CATEGORY,
 };
-export const DEFAULT_PROMPT_CATEGORIES = ['脑洞', '设定', '章纲', '正文', '审核', COMMENT_PROMPT_CATEGORY, '润色', STATUS_PROMPT_CATEGORY, SUMMARY_PROMPT_CATEGORY, UNCATEGORIZED];
+export const DEFAULT_PROMPT_CATEGORIES = ['脑洞', HOTSPOT_ANALYSIS_PROMPT_CATEGORY, '设定', '章纲', '正文', '审核', COMMENT_PROMPT_CATEGORY, '润色', STATUS_PROMPT_CATEGORY, SUMMARY_PROMPT_CATEGORY, UNCATEGORIZED];
 
 export function normalizePromptCategoryName(category: string) {
   const trimmed = category.trim() || UNCATEGORIZED;

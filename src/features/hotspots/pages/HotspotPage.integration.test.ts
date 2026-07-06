@@ -47,6 +47,7 @@ describe('hotspot page integration', () => {
 
     expect(page).toContain('HOTSPOT_MODEL_ID_STORAGE_KEY');
     expect(page).toContain('HOTSPOT_PROMPT_ID_STORAGE_KEY');
+    expect(page).toContain('HOTSPOT_ANALYSIS_PROMPT_CATEGORY');
     expect(page).toContain('CombinedAiConfigSelect');
     expect(page).toContain('usePrompts');
     expect(page).toContain('w-[390px]');
