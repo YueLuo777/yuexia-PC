@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  HOTSPOT_ANALYSIS_SYSTEM_PROMPT,
   buildHotspotCombinationPrompt,
   buildHotspotSuitabilityPrompt,
   createHotspotBrainstormEntry,
@@ -38,6 +39,18 @@ describe('hotspot AI prompts', () => {
     expect(prompt).toContain('不要复述新闻');
     expect(prompt).toContain('不要影射真实人物');
     expect(prompt).toContain('0-100');
+    expect(prompt).toContain('核心卖点');
+    expect(prompt).toContain('金手指');
+    expect(prompt).toContain('世界观');
+  });
+
+  it('provides a default hotspot analysis system prompt for adapting trends into web fiction genres', () => {
+    expect(HOTSPOT_ANALYSIS_SYSTEM_PROMPT).toContain('网络小说选题策划');
+    expect(HOTSPOT_ANALYSIS_SYSTEM_PROMPT).toContain('都市、玄幻、科幻、仙侠、灵异');
+    expect(HOTSPOT_ANALYSIS_SYSTEM_PROMPT).toContain('核心卖点');
+    expect(HOTSPOT_ANALYSIS_SYSTEM_PROMPT).toContain('金手指');
+    expect(HOTSPOT_ANALYSIS_SYSTEM_PROMPT).toContain('世界观');
+    expect(HOTSPOT_ANALYSIS_SYSTEM_PROMPT).toContain('风险规避');
   });
 
   it('builds a multi-hotspot prompt for combining selected trends into a new fiction premise', () => {

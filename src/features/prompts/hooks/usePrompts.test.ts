@@ -19,6 +19,12 @@ describe('usePrompts categories', () => {
     expect(DEFAULT_PROMPT_CATEGORIES).toContain('润色');
     expect(DEFAULT_PROMPT_CATEGORIES).toContain('更新状态');
     expect(DEFAULT_PROMPT_CATEGORIES).toContain('生成梗概');
+    expect(DEFAULT_PROMPT_CATEGORIES.indexOf('生成梗概')).toBeLessThan(
+      DEFAULT_PROMPT_CATEGORIES.indexOf(HOTSPOT_ANALYSIS_PROMPT_CATEGORY),
+    );
+    expect(DEFAULT_PROMPT_CATEGORIES.indexOf(HOTSPOT_ANALYSIS_PROMPT_CATEGORY)).toBeLessThan(
+      DEFAULT_PROMPT_CATEGORIES.indexOf('未分类'),
+    );
     expect(DEFAULT_PROMPT_CATEGORIES).not.toContain('大纲');
     expect(DEFAULT_PROMPT_CATEGORIES).not.toContain('细纲');
     expect(DEFAULT_PROMPT_CATEGORIES).not.toContain('剧情链');

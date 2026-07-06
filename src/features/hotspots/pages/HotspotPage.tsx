@@ -5,7 +5,7 @@ import { AlertCircle, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { useModels } from '@/features/models/hooks/useModels';
 import { callModel } from '@/features/models/services/callModel';
 import { HOTSPOT_ANALYSIS_PROMPT_CATEGORY, normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
-import { buildHotspotSuitabilityPrompt, saveHotspotBrainstorm } from '@/features/hotspots/model/hotspotAi';
+import { HOTSPOT_ANALYSIS_SYSTEM_PROMPT, buildHotspotSuitabilityPrompt, saveHotspotBrainstorm } from '@/features/hotspots/model/hotspotAi';
 import { HOTSPOT_SOURCE_LABELS, HOTSPOT_SOURCES, fetchHotspots } from '@/features/hotspots/model/hotspotApi';
 import type { HotspotFetchResult, HotspotItem, HotspotSourceId } from '@/features/hotspots/model/hotspotTypes';
 import { ActionButton } from '@/shared/ui/ActionButton';
@@ -14,7 +14,6 @@ import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 const HOTSPOT_MODEL_ID_STORAGE_KEY = 'xinyuexia_hotspot_model_id';
 const HOTSPOT_PROMPT_ID_STORAGE_KEY = 'xinyuexia_hotspot_prompt_id';
 const HOTSPOT_PROMPT_CATEGORY = HOTSPOT_ANALYSIS_PROMPT_CATEGORY;
-const HOTSPOT_DEFAULT_SYSTEM_PROMPT = '你是专业网文策划编辑，擅长把热点转译成虚构小说题材。';
 
 function formatCapturedTime(value: string) {
   const time = new Date(value);
@@ -218,7 +217,7 @@ export function HotspotPage() {
     try {
       const content = await callModel({
         model: hotspotModel,
-        prompt: activeHotspotPrompt?.content.trim() || HOTSPOT_DEFAULT_SYSTEM_PROMPT,
+        prompt: activeHotspotPrompt?.content.trim() || HOTSPOT_ANALYSIS_SYSTEM_PROMPT,
         userContent: buildHotspotSuitabilityPrompt(item),
         recordType: 'generate',
         timeoutMs: 120000,
