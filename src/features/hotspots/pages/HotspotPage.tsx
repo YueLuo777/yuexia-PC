@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Check, CheckCircle2, ChevronDown, Loader2, RefreshCw, Save, Send, Settings, Sparkles } from 'lucide-react';
+import { AlertCircle, Check, CheckCircle2, ChevronDown, Loader2, RefreshCw, Send, Settings, Sparkles } from 'lucide-react';
 
 import { useModels } from '@/features/models/hooks/useModels';
 import { callModel } from '@/features/models/services/callModel';
@@ -394,7 +394,16 @@ export function HotspotPage() {
                   onChange={setHotspotModelIdWithStorage}
                   onManage={() => navigate('/model-manage')}
                 />
-                <IconButton label="保存到脑洞库" onClick={saveAnalysis} disabled={!analysis.trim()}><Save className="h-4 w-4" /></IconButton>
+                <div className="xy-capsule-group overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={saveAnalysis}
+                    disabled={!analysis.trim()}
+                    className="xy-capsule-button"
+                  >
+                    保存到脑洞库
+                  </button>
+                </div>
                 <IconButton label="送入工作台" onClick={sendToWorkbench} disabled={!analysis.trim()}><Send className="h-4 w-4" /></IconButton>
               </div>
             </div>

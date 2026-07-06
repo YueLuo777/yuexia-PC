@@ -52,4 +52,13 @@ describe('hotspot page integration', () => {
     expect(page).toContain('model: hotspotModel');
     expect(page).not.toContain('model: activeModel');
   });
+
+  it('uses a text save button for saving hotspot analysis to the brainstorm library', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain('保存到脑洞库');
+    expect(page).toContain('className="xy-capsule-button"');
+    expect(page).not.toContain('IconButton label="保存到脑洞库"');
+    expect(page).not.toContain('<Save className=');
+  });
 });
