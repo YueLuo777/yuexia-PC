@@ -72,6 +72,11 @@ const PromptWorkflowPreviewTestPage = lazy(() =>
     default: module.PromptWorkflowPreviewTestPage,
   })),
 );
+const PromptAuditBadgeLayoutTestPage = lazy(() =>
+  import('@/features/tests/pages/PromptAuditBadgeLayoutTestPage').then((module) => ({
+    default: module.PromptAuditBadgeLayoutTestPage,
+  })),
+);
 const TestBrowserPage = lazy(() =>
   import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })),
 );
@@ -175,6 +180,13 @@ const testGroups = [
         path: '/prompt-workflow-preview-test',
         icon: FolderTree,
         badge: 'Prompt View',
+      },
+      {
+        title: '审核提示词标签布局测试',
+        description: '对比审核提示词卡片中横排标签和两行标签，避免分类标签挤压提示词名称。',
+        path: '/prompt-audit-badge-layout-test',
+        icon: FolderTree,
+        badge: 'Audit Tags',
       },
     ],
   },
@@ -319,6 +331,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <PromptLibraryStructureTestPage />;
       case '/prompt-workflow-preview-test':
         return <PromptWorkflowPreviewTestPage />;
+      case '/prompt-audit-badge-layout-test':
+        return <PromptAuditBadgeLayoutTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':
