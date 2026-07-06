@@ -13,7 +13,7 @@ describe('hotspot page integration', () => {
     expect(app).toContain("HotspotPage");
     expect(app).toContain('path="/hotspots"');
     expect(nav).toContain("to: '/hotspots'");
-    expect(nav).toContain("label: '热点灵感'");
+    expect(nav).toContain("label: '热点分析'");
   });
 
   it('exposes hotspot fetching through the Electron preload bridge', () => {
@@ -48,6 +48,9 @@ describe('hotspot page integration', () => {
     expect(page).toContain('HOTSPOT_MODEL_ID_STORAGE_KEY');
     expect(page).toContain('HOTSPOT_PROMPT_ID_STORAGE_KEY');
     expect(page).toContain('HOTSPOT_ANALYSIS_PROMPT_CATEGORY');
+    expect(page).toContain('const HOTSPOT_PROMPT_CATEGORY = HOTSPOT_ANALYSIS_PROMPT_CATEGORY;');
+    expect(page).toContain('normalizePromptCategoryName(prompt.category) === HOTSPOT_PROMPT_CATEGORY');
+    expect(page).toContain('navigate(`/prompts?category=${encodeURIComponent(HOTSPOT_PROMPT_CATEGORY)}`)');
     expect(page).toContain('CombinedAiConfigSelect');
     expect(page).toContain('usePrompts');
     expect(page).toContain('w-[390px]');

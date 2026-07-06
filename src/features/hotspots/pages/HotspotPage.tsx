@@ -207,7 +207,7 @@ export function HotspotPage() {
 
   const runSingleAnalysis = async (item: HotspotItem) => {
     if (!hotspotModel) {
-      setStatus('请先在热点灵感的模型框里选择可用模型，或到模型管理里新增模型。');
+      setStatus('请先在热点分析的模型框里选择可用模型，或到模型管理里新增模型。');
       return;
     }
     setActiveItemId(item.id);
@@ -244,7 +244,7 @@ export function HotspotPage() {
     <div className="flex h-full min-h-0 flex-col bg-slate-50 text-slate-900">
       <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-5">
         <div className="min-w-0">
-          <div className="text-lg font-bold">热点灵感</div>
+          <div className="text-lg font-bold">热点分析</div>
           <div className="mt-0.5 text-xs text-slate-400">DailyHotApi：百度、抖音、微博、知乎、B站</div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -301,7 +301,7 @@ export function HotspotPage() {
                   onModelChange={setHotspotModelIdWithStorage}
                   onPromptChange={setHotspotPromptIdWithStorage}
                   onModelManage={() => navigate('/model-manage')}
-                  onPromptManage={() => navigate('/prompts')}
+                  onPromptManage={() => navigate(`/prompts?category=${encodeURIComponent(HOTSPOT_PROMPT_CATEGORY)}`)}
                 />
               </div>
             </div>

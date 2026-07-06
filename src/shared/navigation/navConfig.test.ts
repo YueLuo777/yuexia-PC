@@ -19,7 +19,7 @@ describe('navigation config without zones', () => {
       '/test-collection',
     ]);
     expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/library')?.label).toBe('资料库');
-    expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/hotspots')?.label).toBe('热点灵感');
+    expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/hotspots')?.label).toBe('热点分析');
     expect(JSON.stringify(DEFAULT_NAV_CONFIG)).not.toContain('专区');
   });
 
