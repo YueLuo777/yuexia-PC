@@ -61,4 +61,17 @@ describe('hotspot page integration', () => {
     expect(page).not.toContain('IconButton label="保存到脑洞库"');
     expect(page).not.toContain('<Save className=');
   });
+
+  it('keeps hotspot actions focused on refresh, save, and centered current-hotspot analysis', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain("{isFetching ? '刷新中' : '刷新'}");
+    expect(page).toContain('mt-6 flex justify-center');
+    expect(page).toContain('分析当前热点');
+    expect(page).not.toContain('组合题材');
+    expect(page).not.toContain('sendToWorkbench');
+    expect(page).not.toContain('IconButton label="送入工作台"');
+    expect(page).not.toContain('<Send className=');
+    expect(page).not.toContain('buildHotspotCombinationPrompt');
+  });
 });

@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Check, CheckCircle2, ChevronDown, Loader2, RefreshCw, Send, Settings, Sparkles } from 'lucide-react';
+import { AlertCircle, Check, CheckCircle2, ChevronDown, Loader2, Settings, Sparkles } from 'lucide-react';
 
 import { useModels } from '@/features/models/hooks/useModels';
 import { callModel } from '@/features/models/services/callModel';
-import { buildHotspotCombinationPrompt, buildHotspotSuitabilityPrompt, saveHotspotBrainstorm } from '@/features/hotspots/model/hotspotAi';
+import { buildHotspotSuitabilityPrompt, saveHotspotBrainstorm } from '@/features/hotspots/model/hotspotAi';
 import { HOTSPOT_SOURCE_LABELS, HOTSPOT_SOURCES, fetchHotspots } from '@/features/hotspots/model/hotspotApi';
 import type { HotspotFetchResult, HotspotItem, HotspotSourceId } from '@/features/hotspots/model/hotspotTypes';
 import { ActionButton } from '@/shared/ui/ActionButton';
-import { IconButton } from '@/shared/ui/IconButton';
-
-type AnalysisMode = 'single' | 'combine';
 
 const HOTSPOT_MODEL_ID_STORAGE_KEY = 'xinyuexia_hotspot_model_id';
 
@@ -220,7 +217,6 @@ export function HotspotPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [analysis, setAnalysis] = useState('');
   const [analysisTitle, setAnalysisTitle] = useState('热点小说评估');
-  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('single');
   const [isFetching, setIsFetching] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [status, setStatus] = useState('');
@@ -229,7 +225,6 @@ export function HotspotPage() {
     activeSource === 'all' ? result.items : result.items.filter((item) => item.source === activeSource)
   ), [activeSource, result.items]);
   const activeItem = useMemo(() => result.items.find((item) => item.id === activeItemId) ?? filteredItems[0] ?? null, [activeItemId, filteredItems, result.items]);
-  const selectedItems = useMemo(() => selectedIds.map((id) => result.items.find((item) => item.id === id)).filter((item): item is HotspotItem => Boolean(item)), [result.items, selectedIds]);
   const hotspotModel = useMemo(() => models.find((model) => model.id === hotspotModelId) ?? models[0] ?? null, [hotspotModelId, models]);
 
   const setHotspotModelIdWithStorage = useCallback((nextModelId: string) => {
@@ -273,7 +268,6 @@ export function HotspotPage() {
       return;
     }
     setActiveItemId(item.id);
-    setAnalysisMode('single');
     setAnalysisTitle(`热点评估：${item.title}`);
     setIsAnalyzing(true);
     setStatus('');
@@ -288,35 +282,6 @@ export function HotspotPage() {
       setAnalysis(content);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'AI分析失败');
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const runCombination = async () => {
-    if (!hotspotModel) {
-      setStatus('请先在热点灵感的模型框里选择可用模型，或到模型管理里新增模型。');
-      return;
-    }
-    if (selectedItems.length < 2) {
-      setStatus('至少选择 2 条热点后再组合题材。');
-      return;
-    }
-    setAnalysisMode('combine');
-    setAnalysisTitle(`热点组合题材（${selectedItems.length}条）`);
-    setIsAnalyzing(true);
-    setStatus('');
-    try {
-      const content = await callModel({
-        model: hotspotModel,
-        prompt: '你是专业网文选题策划，输出可直接进入创作流程的虚构小说方案。',
-        userContent: buildHotspotCombinationPrompt(selectedItems),
-        recordType: 'generate',
-        timeoutMs: 180000,
-      });
-      setAnalysis(content);
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'AI组合失败');
     } finally {
       setIsAnalyzing(false);
     }
@@ -338,10 +303,6 @@ export function HotspotPage() {
     return true;
   };
 
-  const sendToWorkbench = () => {
-    if (saveAnalysis()) navigate('/workbench');
-  };
-
   return (
     <div className="flex h-full min-h-0 flex-col bg-slate-50 text-slate-900">
       <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-5">
@@ -350,10 +311,16 @@ export function HotspotPage() {
           <div className="mt-0.5 text-xs text-slate-400">DailyHotApi：百度、抖音、微博、知乎、B站</div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <IconButton label="刷新热点" onClick={() => void refresh(true)} disabled={isFetching}>
-            {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          </IconButton>
-          <ActionButton size="sm" variant="secondary" onClick={runCombination} disabled={isAnalyzing || selectedItems.length < 2}>组合题材</ActionButton>
+          <div className="xy-capsule-group overflow-hidden">
+            <button
+              type="button"
+              onClick={() => void refresh(true)}
+              disabled={isFetching}
+              className="xy-capsule-button"
+            >
+              {isFetching ? '刷新中' : '刷新'}
+            </button>
+          </div>
         </div>
       </header>
       <SourceRadar activeSource={activeSource} onChange={setActiveSource} result={result} />
@@ -361,7 +328,7 @@ export function HotspotPage() {
         <section className="min-h-0 overflow-hidden rounded-md border border-slate-200 bg-white">
           <div className="flex h-11 items-center justify-between border-b border-slate-100 px-3 text-xs font-semibold text-slate-400">
             <span>{activeSource === 'all' ? '全部平台' : HOTSPOT_SOURCE_LABELS[activeSource]}：{filteredItems.length} 条</span>
-            <span>已选 {selectedItems.length}</span>
+            <span>已选 {selectedIds.length}</span>
           </div>
             <div className="h-[calc(100%-40px)] overflow-auto">
               {filteredItems.map((item) => (
@@ -404,7 +371,6 @@ export function HotspotPage() {
                     保存到脑洞库
                   </button>
                 </div>
-                <IconButton label="送入工作台" onClick={sendToWorkbench} disabled={!analysis.trim()}><Send className="h-4 w-4" /></IconButton>
               </div>
             </div>
             <div className="min-h-0 flex-1 overflow-auto bg-slate-50 p-5">
@@ -421,7 +387,11 @@ export function HotspotPage() {
                     <Sparkles className="mx-auto h-8 w-8 text-cyan-500" />
                     <div className="mt-4 text-base font-black text-slate-900">选择一个热点开始评估</div>
                     <div className="mt-2 text-sm leading-6 text-slate-400">AI 会判断小说适合度、题材方向、核心冲突、改写风险和具体改编方式。这里保留更大的阅读空间，方便直接看分析结果。</div>
-                    {activeItem && <ActionButton className="mt-4" size="sm" onClick={() => void runSingleAnalysis(activeItem)}>分析当前热点</ActionButton>}
+                    {activeItem && (
+                      <div className="mt-6 flex justify-center">
+                        <ActionButton size="sm" onClick={() => void runSingleAnalysis(activeItem)}>分析当前热点</ActionButton>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
