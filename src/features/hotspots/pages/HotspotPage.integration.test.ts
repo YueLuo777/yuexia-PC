@@ -47,6 +47,7 @@ describe('hotspot page integration', () => {
 
     expect(page).toContain('HOTSPOT_MODEL_ID_STORAGE_KEY');
     expect(page).toContain('HOTSPOT_PROMPT_ID_STORAGE_KEY');
+    expect(page).toContain('HOTSPOT_ANALYSIS_FONT_SIZE_STORAGE_KEY');
     expect(page).toContain('HOTSPOT_ANALYSIS_PROMPT_CATEGORY');
     expect(page).toContain('const HOTSPOT_PROMPT_CATEGORY = HOTSPOT_ANALYSIS_PROMPT_CATEGORY;');
     expect(page).toContain('normalizePromptCategoryName(prompt.category) === HOTSPOT_PROMPT_CATEGORY');
@@ -54,6 +55,8 @@ describe('hotspot page integration', () => {
     expect(page).toContain('CombinedAiConfigSelect');
     expect(page).toContain('usePrompts');
     expect(page).toContain('w-[312px]');
+    expect(page).toContain('FontSizeStepper');
+    expect(page).toContain('ariaLabel="热点分析结果字号"');
     expect(page).toContain('const hotspotModel =');
     expect(page).toContain('model: hotspotModel');
     expect(page).toContain('callModelStream');
@@ -61,9 +64,23 @@ describe('hotspot page integration', () => {
     expect(page).toContain('onReasoning: (chunk) =>');
     expect(page).toContain('setAnalysisReasoning(reasoningContent)');
     expect(page).toContain('<HotspotAnalysisOutput');
+    expect(page).toContain('fontSettings={analysisFontSettings}');
     expect(page).toContain('prompt: activeHotspotPrompt?.content.trim() || HOTSPOT_ANALYSIS_SYSTEM_PROMPT');
     expect(page).not.toContain('model: activeModel');
     expect(page).not.toContain('callModel({');
+  });
+
+  it('uses editor-style font settings for hotspot analysis output', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain("import { getEditorTextLineHeight, getStoredFontSettings, type FontSettings } from '@/features/workbench/components/EditorToolModals';");
+    expect(page).toContain('const [analysisFontSize, setAnalysisFontSize] = useState(readHotspotAnalysisFontSize);');
+    expect(page).toContain('const analysisFontSettings = useMemo(() => ({');
+    expect(page).toContain('fontSize: analysisFontSize');
+    expect(page).toContain('const setAnalysisFontSizeWithStorage = useCallback((nextFontSize: number) => {');
+    expect(page).toContain('localStorage.setItem(HOTSPOT_ANALYSIS_FONT_SIZE_STORAGE_KEY, String(fontSize));');
+    expect(page).toContain('lineHeight: getEditorTextLineHeight(fontSettings)');
+    expect(page).toContain('<pre className="whitespace-pre-wrap break-words" style={analysisTextStyle}>');
   });
 
   it('uses a text save button for saving hotspot analysis to the brainstorm library', () => {

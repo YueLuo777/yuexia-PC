@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 
@@ -8,26 +8,56 @@ import { HOTSPOT_ANALYSIS_PROMPT_CATEGORY, normalizePromptCategoryName, usePromp
 import { HOTSPOT_ANALYSIS_SYSTEM_PROMPT, buildHotspotSuitabilityPrompt, saveHotspotBrainstorm } from '@/features/hotspots/model/hotspotAi';
 import { HOTSPOT_SOURCE_LABELS, HOTSPOT_SOURCES, fetchHotspots } from '@/features/hotspots/model/hotspotApi';
 import type { HotspotFetchResult, HotspotItem, HotspotSourceId } from '@/features/hotspots/model/hotspotTypes';
+import { getEditorTextLineHeight, getStoredFontSettings, type FontSettings } from '@/features/workbench/components/EditorToolModals';
 import { ActionButton } from '@/shared/ui/ActionButton';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
+import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
 
 const HOTSPOT_MODEL_ID_STORAGE_KEY = 'xinyuexia_hotspot_model_id';
 const HOTSPOT_PROMPT_ID_STORAGE_KEY = 'xinyuexia_hotspot_prompt_id';
+const HOTSPOT_ANALYSIS_FONT_SIZE_STORAGE_KEY = 'xinyuexia_hotspot_analysis_font_size';
 const HOTSPOT_PROMPT_CATEGORY = HOTSPOT_ANALYSIS_PROMPT_CATEGORY;
+const HOTSPOT_ANALYSIS_MIN_FONT_SIZE = 12;
+const HOTSPOT_ANALYSIS_MAX_FONT_SIZE = 30;
+
+function clampHotspotAnalysisFontSize(value: number) {
+  if (!Number.isFinite(value)) {
+    const fallback = getStoredFontSettings().fontSize;
+    return Math.min(HOTSPOT_ANALYSIS_MAX_FONT_SIZE, Math.max(HOTSPOT_ANALYSIS_MIN_FONT_SIZE, Math.round(fallback)));
+  }
+  return Math.min(HOTSPOT_ANALYSIS_MAX_FONT_SIZE, Math.max(HOTSPOT_ANALYSIS_MIN_FONT_SIZE, Math.round(value)));
+}
+
+function readHotspotAnalysisFontSize() {
+  try {
+    const stored = localStorage.getItem(HOTSPOT_ANALYSIS_FONT_SIZE_STORAGE_KEY);
+    return stored === null ? clampHotspotAnalysisFontSize(getStoredFontSettings().fontSize) : clampHotspotAnalysisFontSize(Number(stored));
+  } catch {
+    return clampHotspotAnalysisFontSize(getStoredFontSettings().fontSize);
+  }
+}
 
 function HotspotAnalysisOutput({
   analysis,
   reasoning,
   thinkingSeconds,
   isAnalyzing,
+  fontSettings,
 }: {
   analysis: string;
   reasoning: string;
   thinkingSeconds: number;
   isAnalyzing: boolean;
+  fontSettings: FontSettings;
 }) {
   const hasReasoning = reasoning.trim().length > 0;
   const hasAnalysis = analysis.trim().length > 0;
+  const analysisTextStyle: CSSProperties = {
+    color: fontSettings.fontColor,
+    fontFamily: fontSettings.fontFamily,
+    fontSize: `${fontSettings.fontSize}px`,
+    lineHeight: getEditorTextLineHeight(fontSettings),
+  };
 
   return (
     <div className="min-h-full rounded-md border border-slate-100 bg-white p-5 text-sm leading-7 text-slate-700 shadow-sm">
@@ -48,7 +78,7 @@ function HotspotAnalysisOutput({
       )}
 
       {hasAnalysis ? (
-        <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7 text-slate-700">{analysis}</pre>
+        <pre className="whitespace-pre-wrap break-words" style={analysisTextStyle}>{analysis}</pre>
       ) : (
         <div className="flex min-h-[220px] items-center justify-center gap-2 text-sm font-semibold text-cyan-600">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -195,6 +225,7 @@ export function HotspotPage() {
   const [analysisReasoning, setAnalysisReasoning] = useState('');
   const [analysisThinkingSeconds, setAnalysisThinkingSeconds] = useState(0);
   const [analysisTitle, setAnalysisTitle] = useState('热点小说评估');
+  const [analysisFontSize, setAnalysisFontSize] = useState(readHotspotAnalysisFontSize);
   const [isFetching, setIsFetching] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [status, setStatus] = useState('');
@@ -210,6 +241,11 @@ export function HotspotPage() {
   ), [hotspotPromptId, hotspotPrompts]);
   const activeHotspotPrompt = useMemo(() => hotspotPrompts.find((prompt) => prompt.id === activeHotspotPromptId) ?? null, [activeHotspotPromptId, hotspotPrompts]);
 
+  const analysisFontSettings = useMemo(() => ({
+    ...getStoredFontSettings(),
+    fontSize: analysisFontSize,
+  }), [analysisFontSize]);
+
   const setHotspotModelIdWithStorage = useCallback((nextModelId: string) => {
     setHotspotModelId(nextModelId);
     if (nextModelId) localStorage.setItem(HOTSPOT_MODEL_ID_STORAGE_KEY, nextModelId);
@@ -220,6 +256,12 @@ export function HotspotPage() {
     setHotspotPromptId(nextPromptId);
     if (nextPromptId) localStorage.setItem(HOTSPOT_PROMPT_ID_STORAGE_KEY, nextPromptId);
     else localStorage.removeItem(HOTSPOT_PROMPT_ID_STORAGE_KEY);
+  }, []);
+
+  const setAnalysisFontSizeWithStorage = useCallback((nextFontSize: number) => {
+    const fontSize = clampHotspotAnalysisFontSize(nextFontSize);
+    setAnalysisFontSize(fontSize);
+    localStorage.setItem(HOTSPOT_ANALYSIS_FONT_SIZE_STORAGE_KEY, String(fontSize));
   }, []);
 
   const refresh = useCallback(async (force = false) => {
@@ -357,6 +399,13 @@ export function HotspotPage() {
                 <div className="mt-0.5 truncate text-xs text-slate-400">{analysisTitle}</div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
+                <FontSizeStepper
+                  value={analysisFontSize}
+                  min={HOTSPOT_ANALYSIS_MIN_FONT_SIZE}
+                  max={HOTSPOT_ANALYSIS_MAX_FONT_SIZE}
+                  onChange={setAnalysisFontSizeWithStorage}
+                  ariaLabel="热点分析结果字号"
+                />
                 <CombinedAiConfigSelect
                   className="w-[312px]"
                   modelValue={hotspotModel?.id ?? ''}
@@ -377,6 +426,7 @@ export function HotspotPage() {
                   reasoning={analysisReasoning}
                   thinkingSeconds={analysisThinkingSeconds}
                   isAnalyzing={isAnalyzing}
+                  fontSettings={analysisFontSettings}
                 />
               ) : (
                 <div className="grid h-full place-items-center">
