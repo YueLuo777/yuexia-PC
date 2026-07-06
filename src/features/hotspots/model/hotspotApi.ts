@@ -9,7 +9,7 @@ import type {
 export const HOTSPOT_SOURCES: HotspotSourceId[] = ['baidu', 'douyin', 'weibo', 'zhihu', 'bilibili'];
 export const HOTSPOT_FETCH_LIMIT = 100;
 export const HOTSPOT_DISPLAY_LIMIT = 50;
-export const HOTSPOT_MIN_DISPLAY_SCORE = 51;
+export const HOTSPOT_DEFAULT_MIN_DISPLAY_SCORE = 51;
 
 export const HOTSPOT_SOURCE_LABELS: Record<HotspotSourceId, string> = {
   baidu: '百度',

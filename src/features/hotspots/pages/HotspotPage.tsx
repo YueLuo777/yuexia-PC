@@ -7,8 +7,8 @@ import { callModelStream } from '@/features/models/services/callModel';
 import { HOTSPOT_ANALYSIS_PROMPT_CATEGORY, normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { HOTSPOT_ANALYSIS_SYSTEM_PROMPT, buildHotspotSuitabilityPrompt, saveHotspotBrainstorm } from '@/features/hotspots/model/hotspotAi';
 import {
+  HOTSPOT_DEFAULT_MIN_DISPLAY_SCORE,
   HOTSPOT_DISPLAY_LIMIT,
-  HOTSPOT_MIN_DISPLAY_SCORE,
   HOTSPOT_SOURCE_LABELS,
   HOTSPOT_SOURCES,
   fetchHotspots,
@@ -25,9 +25,12 @@ import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
 const HOTSPOT_MODEL_ID_STORAGE_KEY = 'xinyuexia_hotspot_model_id';
 const HOTSPOT_PROMPT_ID_STORAGE_KEY = 'xinyuexia_hotspot_prompt_id';
 const HOTSPOT_ANALYSIS_FONT_SIZE_STORAGE_KEY = 'xinyuexia_hotspot_analysis_font_size';
+const HOTSPOT_MIN_DISPLAY_SCORE_STORAGE_KEY = 'xinyuexia_hotspot_min_display_score';
 const HOTSPOT_PROMPT_CATEGORY = HOTSPOT_ANALYSIS_PROMPT_CATEGORY;
 const HOTSPOT_ANALYSIS_MIN_FONT_SIZE = 12;
 const HOTSPOT_ANALYSIS_MAX_FONT_SIZE = 30;
+const HOTSPOT_MIN_SCORE_FILTER = 0;
+const HOTSPOT_MAX_SCORE_FILTER = 100;
 
 function clampHotspotAnalysisFontSize(value: number) {
   if (!Number.isFinite(value)) {
@@ -43,6 +46,20 @@ function readHotspotAnalysisFontSize() {
     return stored === null ? clampHotspotAnalysisFontSize(getStoredFontSettings().fontSize) : clampHotspotAnalysisFontSize(Number(stored));
   } catch {
     return clampHotspotAnalysisFontSize(getStoredFontSettings().fontSize);
+  }
+}
+
+function clampHotspotMinDisplayScore(value: number) {
+  if (!Number.isFinite(value)) return HOTSPOT_DEFAULT_MIN_DISPLAY_SCORE;
+  return Math.min(HOTSPOT_MAX_SCORE_FILTER, Math.max(HOTSPOT_MIN_SCORE_FILTER, Math.round(value)));
+}
+
+function readHotspotMinDisplayScore() {
+  try {
+    const stored = localStorage.getItem(HOTSPOT_MIN_DISPLAY_SCORE_STORAGE_KEY);
+    return stored === null ? HOTSPOT_DEFAULT_MIN_DISPLAY_SCORE : clampHotspotMinDisplayScore(Number(stored));
+  } catch {
+    return HOTSPOT_DEFAULT_MIN_DISPLAY_SCORE;
   }
 }
 
@@ -118,7 +135,17 @@ function HotspotAnalysisOutput({
   );
 }
 
-function HotspotRulePreviewModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function HotspotRulePreviewModal({
+  isOpen,
+  minDisplayScore,
+  onMinDisplayScoreChange,
+  onClose,
+}: {
+  isOpen: boolean;
+  minDisplayScore: number;
+  onMinDisplayScoreChange: (value: number) => void;
+  onClose: () => void;
+}) {
   const bonusRules = HOTSPOT_RULE_GROUPS.filter((group) => group.polarity === 'bonus');
   const penaltyRules = HOTSPOT_RULE_GROUPS.filter((group) => group.polarity === 'penalty');
   const riskRules = HOTSPOT_RULE_GROUPS.filter((group) => group.polarity === 'risk');
@@ -159,6 +186,21 @@ function HotspotRulePreviewModal({ isOpen, onClose }: { isOpen: boolean; onClose
         <div className="rounded-md border border-cyan-100 bg-cyan-50 p-4 text-sm leading-6 text-slate-600">
           规则会先给热点打适配分并排序：高适配优先显示，低适配和高风险会被标注。AI 只在你点击“开始分析”后才消耗 token。
         </div>
+        <section className="rounded-md border border-slate-100 bg-white p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-black text-slate-900">分数筛选</h3>
+              <p className="mt-1 text-xs leading-5 text-slate-500">只显示分数大于等于这个值的热点。默认 {HOTSPOT_DEFAULT_MIN_DISPLAY_SCORE} 分，调低会显示更多候选，调高会更严格。</p>
+            </div>
+            <FontSizeStepper
+              value={minDisplayScore}
+              min={HOTSPOT_MIN_SCORE_FILTER}
+              max={HOTSPOT_MAX_SCORE_FILTER}
+              onChange={onMinDisplayScoreChange}
+              ariaLabel="热点筛选最低分"
+            />
+          </div>
+        </section>
         {renderRuleGroup('加分规则：优先保留小说化潜力', bonusRules, 'bg-emerald-50 text-emerald-700')}
         {renderRuleGroup('扣分规则：降低直接改编优先级', penaltyRules, 'bg-amber-50 text-amber-700')}
         {renderRuleGroup('高风险规则：尽量只借情绪，不直接改写', riskRules, 'bg-rose-50 text-rose-700')}
@@ -190,14 +232,16 @@ function SourceRadar({
   activeSource,
   onChange,
   result,
+  minDisplayScore,
 }: {
   activeSource: HotspotSourceId | 'all';
   onChange: (source: HotspotSourceId | 'all') => void;
   result: HotspotFetchResult;
+  minDisplayScore: number;
 }) {
   const getDisplayCount = (items: HotspotItem[]) => (
     rankHotspotsByRuleEvaluation(items)
-      .filter((item) => evaluateHotspotByRules(item).score >= HOTSPOT_MIN_DISPLAY_SCORE)
+      .filter((item) => evaluateHotspotByRules(item).score >= minDisplayScore)
       .slice(0, HOTSPOT_DISPLAY_LIMIT)
       .length
   );
@@ -336,6 +380,7 @@ export function HotspotPage() {
   const [analysisThinkingSeconds, setAnalysisThinkingSeconds] = useState(0);
   const [analysisTitle, setAnalysisTitle] = useState('热点小说评估');
   const [analysisFontSize, setAnalysisFontSize] = useState(readHotspotAnalysisFontSize);
+  const [minDisplayScore, setMinDisplayScore] = useState(readHotspotMinDisplayScore);
   const [isFetching, setIsFetching] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isRulePreviewOpen, setIsRulePreviewOpen] = useState(false);
@@ -344,9 +389,9 @@ export function HotspotPage() {
 
   const filteredItems = useMemo(() => (
     rankHotspotsByRuleEvaluation(activeSource === 'all' ? result.items : result.items.filter((item) => item.source === activeSource))
-      .filter((item) => evaluateHotspotByRules(item).score >= HOTSPOT_MIN_DISPLAY_SCORE)
+      .filter((item) => evaluateHotspotByRules(item).score >= minDisplayScore)
       .slice(0, HOTSPOT_DISPLAY_LIMIT)
-  ), [activeSource, result.items]);
+  ), [activeSource, minDisplayScore, result.items]);
   const candidateItems = useMemo(() => (
     activeSource === 'all' ? result.items : result.items.filter((item) => item.source === activeSource)
   ), [activeSource, result.items]);
@@ -381,6 +426,12 @@ export function HotspotPage() {
     localStorage.setItem(HOTSPOT_ANALYSIS_FONT_SIZE_STORAGE_KEY, String(fontSize));
   }, []);
 
+  const setMinDisplayScoreWithStorage = useCallback((nextScore: number) => {
+    const score = clampHotspotMinDisplayScore(nextScore);
+    setMinDisplayScore(score);
+    localStorage.setItem(HOTSPOT_MIN_DISPLAY_SCORE_STORAGE_KEY, String(score));
+  }, []);
+
   const refresh = useCallback(async (force = false) => {
     setIsFetching(true);
     setStatus('');
@@ -389,7 +440,7 @@ export function HotspotPage() {
       setResult(next);
       setActiveItemId((current) => current ?? next.items[0]?.id ?? null);
       const visibleCount = rankHotspotsByRuleEvaluation(next.items)
-        .filter((item) => evaluateHotspotByRules(item).score >= HOTSPOT_MIN_DISPLAY_SCORE)
+        .filter((item) => evaluateHotspotByRules(item).score >= minDisplayScore)
         .slice(0, HOTSPOT_DISPLAY_LIMIT)
         .length;
       setStatus(next.stale ? '抓取失败，已显示上次缓存。' : `已抓取 ${next.items.length} 条候选，筛出 ${visibleCount} 条高分热点。`);
@@ -398,7 +449,7 @@ export function HotspotPage() {
     } finally {
       setIsFetching(false);
     }
-  }, []);
+  }, [minDisplayScore]);
 
   useEffect(() => {
     void refresh(false);
@@ -520,7 +571,7 @@ export function HotspotPage() {
           />
         </div>
       </header>
-      <SourceRadar activeSource={activeSource} onChange={setActiveSource} result={result} />
+      <SourceRadar activeSource={activeSource} onChange={setActiveSource} result={result} minDisplayScore={minDisplayScore} />
       <main className="grid min-h-0 flex-1 grid-cols-[minmax(260px,1fr)_minmax(520px,2fr)] gap-4 overflow-hidden p-4">
         <section className="min-h-0 overflow-hidden rounded-md border border-slate-200 bg-white">
           <div className="flex h-11 items-center justify-between border-b border-slate-100 px-3 text-xs font-semibold text-slate-400">
@@ -542,7 +593,7 @@ export function HotspotPage() {
               ))}
               {filteredItems.length === 0 && (
                 <div className="flex h-full items-center justify-center px-6 text-center text-sm leading-6 text-slate-400">
-                  {status || `暂无分数高于 ${HOTSPOT_MIN_DISPLAY_SCORE - 1} 的热点，可点击刷新重试。`}
+                  {status || `暂无分数达到 ${minDisplayScore} 的热点，可点击刷新重试。`}
                 </div>
               )}
             </div>
@@ -609,7 +660,12 @@ export function HotspotPage() {
             </div>
         </section>
       </main>
-      <HotspotRulePreviewModal isOpen={isRulePreviewOpen} onClose={() => setIsRulePreviewOpen(false)} />
+      <HotspotRulePreviewModal
+        isOpen={isRulePreviewOpen}
+        minDisplayScore={minDisplayScore}
+        onMinDisplayScoreChange={setMinDisplayScoreWithStorage}
+        onClose={() => setIsRulePreviewOpen(false)}
+      />
     </div>
   );
 }

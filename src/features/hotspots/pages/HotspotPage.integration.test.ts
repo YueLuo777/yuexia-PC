@@ -29,7 +29,7 @@ describe('hotspot page integration', () => {
   it('shows the fetch status inside the empty hotspot list instead of hiding it at the bottom', () => {
     const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
 
-    expect(page).toContain('暂无分数高于 ${HOTSPOT_MIN_DISPLAY_SCORE - 1} 的热点');
+    expect(page).toContain('暂无分数达到 ${minDisplayScore} 的热点');
     expect(page).toContain('filteredItems.length === 0');
   });
 
@@ -96,12 +96,18 @@ describe('hotspot page integration', () => {
     expect(page).toContain('evaluation.levelLabel');
     expect(page).toContain('HotspotRulePreviewModal');
     expect(page).toContain('setIsRulePreviewOpen(true)');
-    expect(page).toContain('<HotspotRulePreviewModal isOpen={isRulePreviewOpen}');
-    expect(page).toContain('HOTSPOT_MIN_DISPLAY_SCORE');
+    expect(page).toContain('<HotspotRulePreviewModal');
+    expect(page).toContain('HOTSPOT_MIN_DISPLAY_SCORE_STORAGE_KEY');
+    expect(page).toContain('const [minDisplayScore, setMinDisplayScore] = useState(readHotspotMinDisplayScore);');
+    expect(page).toContain('const setMinDisplayScoreWithStorage = useCallback((nextScore: number) => {');
+    expect(page).toContain('localStorage.setItem(HOTSPOT_MIN_DISPLAY_SCORE_STORAGE_KEY, String(score));');
     expect(page).toContain('HOTSPOT_DISPLAY_LIMIT');
-    expect(page).toContain('.filter((item) => evaluateHotspotByRules(item).score >= HOTSPOT_MIN_DISPLAY_SCORE)');
+    expect(page).toContain('.filter((item) => evaluateHotspotByRules(item).score >= minDisplayScore)');
     expect(page).toContain('.slice(0, HOTSPOT_DISPLAY_LIMIT)');
     expect(page).toContain('条高分 /');
+    expect(page).toContain('ariaLabel="热点筛选最低分"');
+    expect(page).toContain('minDisplayScore={minDisplayScore}');
+    expect(page).toContain('onMinDisplayScoreChange={setMinDisplayScoreWithStorage}');
     expect(rules).toContain('HOTSPOT_RULE_GROUPS');
     expect(rules).toContain('强情绪/强反转');
     expect(rules).toContain('真实刑案/伤亡高风险');
