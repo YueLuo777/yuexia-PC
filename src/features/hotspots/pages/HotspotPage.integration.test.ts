@@ -53,11 +53,17 @@ describe('hotspot page integration', () => {
     expect(page).toContain('navigate(`/prompts?category=${encodeURIComponent(HOTSPOT_PROMPT_CATEGORY)}`)');
     expect(page).toContain('CombinedAiConfigSelect');
     expect(page).toContain('usePrompts');
-    expect(page).toContain('w-[390px]');
+    expect(page).toContain('w-[312px]');
     expect(page).toContain('const hotspotModel =');
     expect(page).toContain('model: hotspotModel');
+    expect(page).toContain('callModelStream');
+    expect(page).toContain("recordType: 'stream'");
+    expect(page).toContain('onReasoning: (chunk) =>');
+    expect(page).toContain('setAnalysisReasoning(reasoningContent)');
+    expect(page).toContain('<HotspotAnalysisOutput');
     expect(page).toContain('prompt: activeHotspotPrompt?.content.trim() || HOTSPOT_ANALYSIS_SYSTEM_PROMPT');
     expect(page).not.toContain('model: activeModel');
+    expect(page).not.toContain('callModel({');
   });
 
   it('uses a text save button for saving hotspot analysis to the brainstorm library', () => {

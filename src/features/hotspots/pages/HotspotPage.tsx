@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 
 import { useModels } from '@/features/models/hooks/useModels';
-import { callModel } from '@/features/models/services/callModel';
+import { callModelStream } from '@/features/models/services/callModel';
 import { HOTSPOT_ANALYSIS_PROMPT_CATEGORY, normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { HOTSPOT_ANALYSIS_SYSTEM_PROMPT, buildHotspotSuitabilityPrompt, saveHotspotBrainstorm } from '@/features/hotspots/model/hotspotAi';
 import { HOTSPOT_SOURCE_LABELS, HOTSPOT_SOURCES, fetchHotspots } from '@/features/hotspots/model/hotspotApi';
@@ -14,6 +14,50 @@ import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 const HOTSPOT_MODEL_ID_STORAGE_KEY = 'xinyuexia_hotspot_model_id';
 const HOTSPOT_PROMPT_ID_STORAGE_KEY = 'xinyuexia_hotspot_prompt_id';
 const HOTSPOT_PROMPT_CATEGORY = HOTSPOT_ANALYSIS_PROMPT_CATEGORY;
+
+function HotspotAnalysisOutput({
+  analysis,
+  reasoning,
+  thinkingSeconds,
+  isAnalyzing,
+}: {
+  analysis: string;
+  reasoning: string;
+  thinkingSeconds: number;
+  isAnalyzing: boolean;
+}) {
+  const hasReasoning = reasoning.trim().length > 0;
+  const hasAnalysis = analysis.trim().length > 0;
+
+  return (
+    <div className="min-h-full rounded-md border border-slate-100 bg-white p-5 text-sm leading-7 text-slate-700 shadow-sm">
+      {(isAnalyzing || hasReasoning) && (
+        <div className="mb-4 rounded-xl border border-[#08AACE]/25 bg-[#EAF9FD] p-3 text-xs leading-6 text-slate-600">
+          <div className="mb-1 flex items-center gap-2 font-black text-[#078fb0]">
+            {isAnalyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+            <span>{isAnalyzing ? `正在思考（${Math.max(1, thinkingSeconds)} 秒）` : `已思考（用时 ${Math.max(1, thinkingSeconds)} 秒）`}</span>
+          </div>
+          {hasReasoning ? (
+            <div className="max-h-44 overflow-y-auto whitespace-pre-wrap break-words">
+              {reasoning}
+            </div>
+          ) : (
+            <div className="text-slate-400">等待模型返回思考过程...</div>
+          )}
+        </div>
+      )}
+
+      {hasAnalysis ? (
+        <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7 text-slate-700">{analysis}</pre>
+      ) : (
+        <div className="flex min-h-[220px] items-center justify-center gap-2 text-sm font-semibold text-cyan-600">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          AI 正在分析热点
+        </div>
+      )}
+    </div>
+  );
+}
 
 function formatCapturedTime(value: string) {
   const time = new Date(value);
@@ -148,6 +192,8 @@ export function HotspotPage() {
     }
   });
   const [analysis, setAnalysis] = useState('');
+  const [analysisReasoning, setAnalysisReasoning] = useState('');
+  const [analysisThinkingSeconds, setAnalysisThinkingSeconds] = useState(0);
   const [analysisTitle, setAnalysisTitle] = useState('热点小说评估');
   const [isFetching, setIsFetching] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -212,20 +258,39 @@ export function HotspotPage() {
     }
     setActiveItemId(item.id);
     setAnalysisTitle(`热点评估：${item.title}`);
+    setAnalysis('');
+    setAnalysisReasoning('');
+    setAnalysisThinkingSeconds(0);
     setIsAnalyzing(true);
     setStatus('');
+    const startedAt = performance.now();
+    const thinkingTimer = window.setInterval(() => {
+      setAnalysisThinkingSeconds(Math.max(1, Math.round((performance.now() - startedAt) / 1000)));
+    }, 500);
     try {
-      const content = await callModel({
+      let streamedContent = '';
+      let reasoningContent = '';
+      const content = await callModelStream({
         model: hotspotModel,
         prompt: activeHotspotPrompt?.content.trim() || HOTSPOT_ANALYSIS_SYSTEM_PROMPT,
         userContent: buildHotspotSuitabilityPrompt(item),
-        recordType: 'generate',
+        recordType: 'stream',
         timeoutMs: 120000,
+        onChunk: (chunk) => {
+          streamedContent += chunk;
+          setAnalysis(streamedContent);
+        },
+        onReasoning: (chunk) => {
+          reasoningContent += chunk;
+          setAnalysisReasoning(reasoningContent);
+        },
       });
       setAnalysis(content);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'AI分析失败');
     } finally {
+      window.clearInterval(thinkingTimer);
+      setAnalysisThinkingSeconds(Math.max(1, Math.round((performance.now() - startedAt) / 1000)));
       setIsAnalyzing(false);
     }
   };
@@ -293,7 +358,7 @@ export function HotspotPage() {
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <CombinedAiConfigSelect
-                  className="w-[390px]"
+                  className="w-[312px]"
                   modelValue={hotspotModel?.id ?? ''}
                   promptValue={activeHotspotPromptId}
                   modelOptions={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
@@ -306,13 +371,13 @@ export function HotspotPage() {
               </div>
             </div>
             <div className="min-h-0 flex-1 overflow-auto bg-slate-50 p-5">
-              {isAnalyzing ? (
-                <div className="flex h-full items-center justify-center gap-2 text-sm font-semibold text-cyan-600">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  AI 正在分析热点
-                </div>
-              ) : analysis ? (
-                <pre className="min-h-full whitespace-pre-wrap rounded-md border border-slate-100 bg-white p-5 text-sm leading-7 text-slate-700 shadow-sm">{analysis}</pre>
+              {isAnalyzing || analysis || analysisReasoning ? (
+                <HotspotAnalysisOutput
+                  analysis={analysis}
+                  reasoning={analysisReasoning}
+                  thinkingSeconds={analysisThinkingSeconds}
+                  isAnalyzing={isAnalyzing}
+                />
               ) : (
                 <div className="grid h-full place-items-center">
                   <div className="max-w-lg rounded-md border border-slate-100 bg-white p-8 text-center shadow-sm">
