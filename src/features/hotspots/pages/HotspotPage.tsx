@@ -27,6 +27,7 @@ const HOTSPOT_MODEL_ID_STORAGE_KEY = 'xinyuexia_hotspot_model_id';
 const HOTSPOT_PROMPT_ID_STORAGE_KEY = 'xinyuexia_hotspot_prompt_id';
 const HOTSPOT_ANALYSIS_FONT_SIZE_STORAGE_KEY = 'xinyuexia_hotspot_analysis_font_size';
 const HOTSPOT_MIN_DISPLAY_SCORE_STORAGE_KEY = 'xinyuexia_hotspot_min_display_score';
+const HOTSPOT_ANALYSIS_AUTO_SCROLL_STORAGE_KEY = 'xinyuexia_hotspot_analysis_auto_scroll';
 const HOTSPOT_PROMPT_CATEGORY = HOTSPOT_ANALYSIS_PROMPT_CATEGORY;
 const HOTSPOT_ANALYSIS_MIN_FONT_SIZE = 12;
 const HOTSPOT_ANALYSIS_MAX_FONT_SIZE = 30;
@@ -61,6 +62,14 @@ function readHotspotMinDisplayScore() {
     return stored === null ? HOTSPOT_DEFAULT_MIN_DISPLAY_SCORE : clampHotspotMinDisplayScore(Number(stored));
   } catch {
     return HOTSPOT_DEFAULT_MIN_DISPLAY_SCORE;
+  }
+}
+
+function readHotspotAnalysisAutoScroll() {
+  try {
+    return localStorage.getItem(HOTSPOT_ANALYSIS_AUTO_SCROLL_STORAGE_KEY) !== 'false';
+  } catch {
+    return true;
   }
 }
 
@@ -136,26 +145,34 @@ function HotspotAnalysisOutput({
   );
 }
 
-function HotspotRulePreviewModal({
+function HotspotSettingsModal({
   isOpen,
   minDisplayScore,
+  autoScrollAnalysis,
   onApplyMinDisplayScore,
+  onApplyAutoScrollAnalysis,
   onClose,
 }: {
   isOpen: boolean;
   minDisplayScore: number;
+  autoScrollAnalysis: boolean;
   onApplyMinDisplayScore: (value: number) => void;
+  onApplyAutoScrollAnalysis: (value: boolean) => void;
   onClose: () => void;
 }) {
   const [draftMinDisplayScore, setDraftMinDisplayScore] = useState(minDisplayScore);
+  const [draftAutoScrollAnalysis, setDraftAutoScrollAnalysis] = useState(autoScrollAnalysis);
   const bonusRules = HOTSPOT_RULE_GROUPS.filter((group) => group.polarity === 'bonus');
   const penaltyRules = HOTSPOT_RULE_GROUPS.filter((group) => group.polarity === 'penalty');
   const riskRules = HOTSPOT_RULE_GROUPS.filter((group) => group.polarity === 'risk');
   useEffect(() => {
-    if (isOpen) setDraftMinDisplayScore(minDisplayScore);
-  }, [isOpen, minDisplayScore]);
+    if (!isOpen) return;
+    setDraftMinDisplayScore(minDisplayScore);
+    setDraftAutoScrollAnalysis(autoScrollAnalysis);
+  }, [autoScrollAnalysis, isOpen, minDisplayScore]);
   const closeWithApply = () => {
     onApplyMinDisplayScore(draftMinDisplayScore);
+    onApplyAutoScrollAnalysis(draftAutoScrollAnalysis);
     onClose();
   };
   const renderRuleGroup = (title: string, rules: typeof HOTSPOT_RULE_GROUPS, accentClass: string) => (
@@ -182,7 +199,7 @@ function HotspotRulePreviewModal({
 
   return (
     <AppModalShell
-      title="热点筛选规则"
+      title="热点分析设置"
       subtitle={`基础分 ${HOTSPOT_RULE_BASE_SCORE}，规则命中后自动加减分，不消耗 token`}
       isOpen={isOpen}
       onClose={closeWithApply}
@@ -208,6 +225,25 @@ function HotspotRulePreviewModal({
               onChange={(value) => setDraftMinDisplayScore(clampHotspotMinDisplayScore(value))}
               ariaLabel="热点筛选最低分"
             />
+          </div>
+        </section>
+        <section className="rounded-md border border-slate-100 bg-white p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-black text-slate-900">输出滚动</h3>
+              <p className="mt-1 text-xs leading-5 text-slate-500">开启后，AI 小说适合度会在流式输出时自动滚到最新内容；关闭后，滚动条保持在你当前阅读的位置。</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDraftAutoScrollAnalysis((current) => !current)}
+              className={`h-10 rounded-md border px-4 text-sm font-black transition ${
+                draftAutoScrollAnalysis
+                  ? 'border-cyan-200 bg-cyan-50 text-cyan-700'
+                  : 'border-slate-200 bg-white text-slate-500'
+              }`}
+            >
+              {draftAutoScrollAnalysis ? '跟随输出滚动' : '不跟随输出'}
+            </button>
           </div>
         </section>
         {renderRuleGroup('加分规则：优先保留小说化潜力', bonusRules, 'bg-emerald-50 text-emerald-700')}
@@ -390,9 +426,10 @@ export function HotspotPage() {
   const [analysisTitle, setAnalysisTitle] = useState('热点小说评估');
   const [analysisFontSize, setAnalysisFontSize] = useState(readHotspotAnalysisFontSize);
   const [minDisplayScore, setMinDisplayScore] = useState(readHotspotMinDisplayScore);
+  const [autoScrollAnalysis, setAutoScrollAnalysis] = useState(readHotspotAnalysisAutoScroll);
   const [isFetching, setIsFetching] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isRulePreviewOpen, setIsRulePreviewOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [status, setStatus] = useState('');
   const analysisScrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -441,6 +478,11 @@ export function HotspotPage() {
     localStorage.setItem(HOTSPOT_MIN_DISPLAY_SCORE_STORAGE_KEY, String(score));
   }, []);
 
+  const applyAutoScrollAnalysisWithStorage = useCallback((nextValue: boolean) => {
+    setAutoScrollAnalysis(nextValue);
+    localStorage.setItem(HOTSPOT_ANALYSIS_AUTO_SCROLL_STORAGE_KEY, String(nextValue));
+  }, []);
+
   const refresh = useCallback(async (force = false) => {
     setIsFetching(true);
     setStatus('');
@@ -472,6 +514,7 @@ export function HotspotPage() {
 
   useEffect(() => {
     if (!isAnalyzing) return;
+    if (!autoScrollAnalysis) return;
     const scrollContainer = analysisScrollRef.current;
     if (!scrollContainer) return;
 
@@ -480,7 +523,7 @@ export function HotspotPage() {
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [analysis, analysisReasoning, isAnalyzing]);
+  }, [analysis, analysisReasoning, autoScrollAnalysis, isAnalyzing]);
 
   const runSingleAnalysis = async (item: HotspotItem) => {
     if (!hotspotModel) {
@@ -556,10 +599,10 @@ export function HotspotPage() {
           <div className="xy-capsule-group overflow-hidden">
             <button
               type="button"
-              onClick={() => setIsRulePreviewOpen(true)}
+              onClick={() => setIsSettingsOpen(true)}
               className="xy-capsule-button"
             >
-              筛选规则
+              设置
             </button>
           </div>
           <div className="xy-capsule-group overflow-hidden">
@@ -674,11 +717,13 @@ export function HotspotPage() {
             </div>
         </section>
       </main>
-      <HotspotRulePreviewModal
-        isOpen={isRulePreviewOpen}
+      <HotspotSettingsModal
+        isOpen={isSettingsOpen}
         minDisplayScore={minDisplayScore}
+        autoScrollAnalysis={autoScrollAnalysis}
         onApplyMinDisplayScore={applyMinDisplayScoreWithStorage}
-        onClose={() => setIsRulePreviewOpen(false)}
+        onApplyAutoScrollAnalysis={applyAutoScrollAnalysisWithStorage}
+        onClose={() => setIsSettingsOpen(false)}
       />
     </div>
   );

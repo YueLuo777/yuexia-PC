@@ -76,13 +76,13 @@ describe('hotspot page integration', () => {
   it('places refresh and hotspot AI selectors in the page header', () => {
     const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
     const pageHeader = page.slice(page.indexOf('<header'), page.indexOf('</header>'));
-    const aiPanelHeaderStart = page.indexOf('AI 小说适合度');
+    const aiPanelHeaderStart = page.indexOf('truncate text-base font-black text-slate-900">AI 小说适合度');
     const aiPanelHeaderEnd = page.indexOf('<div ref={analysisScrollRef}', aiPanelHeaderStart);
     const aiPanelHeader = page.slice(aiPanelHeaderStart, aiPanelHeaderEnd);
 
-    expect(pageHeader).toContain('筛选规则');
+    expect(pageHeader).toContain('设置');
     expect(pageHeader).toContain("{isFetching ? '刷新中' : '刷新'}");
-    expect(pageHeader.indexOf('筛选规则')).toBeLessThan(pageHeader.indexOf("{isFetching ? '刷新中' : '刷新'}"));
+    expect(pageHeader.indexOf('设置')).toBeLessThan(pageHeader.indexOf("{isFetching ? '刷新中' : '刷新'}"));
     expect(pageHeader).toContain('<CombinedAiConfigSelect');
     expect(pageHeader.indexOf("{isFetching ? '刷新中' : '刷新'}")).toBeLessThan(pageHeader.indexOf('<CombinedAiConfigSelect'));
     expect(aiPanelHeader).toContain('FontSizeStepper');
@@ -97,13 +97,13 @@ describe('hotspot page integration', () => {
     expect(page).toContain('rankHotspotsByRuleEvaluation(activeSource ===');
     expect(page).toContain('evaluation={evaluateHotspotByRules(item)}');
     expect(page).toContain('evaluation.levelLabel');
-    expect(page).toContain('HotspotRulePreviewModal');
-    expect(page).toContain('setIsRulePreviewOpen(true)');
-    expect(page).toContain('<HotspotRulePreviewModal');
+    expect(page).toContain('HotspotSettingsModal');
+    expect(page).toContain('setIsSettingsOpen(true)');
+    expect(page).toContain('<HotspotSettingsModal');
     expect(page).toContain('HOTSPOT_MIN_DISPLAY_SCORE_STORAGE_KEY');
     expect(page).toContain('const [minDisplayScore, setMinDisplayScore] = useState(readHotspotMinDisplayScore);');
     expect(page).toContain('const [draftMinDisplayScore, setDraftMinDisplayScore] = useState(minDisplayScore);');
-    expect(page).toContain('if (isOpen) setDraftMinDisplayScore(minDisplayScore);');
+    expect(page).toContain('setDraftMinDisplayScore(minDisplayScore);');
     expect(page).toContain('const closeWithApply = () => {');
     expect(page).toContain('onApplyMinDisplayScore(draftMinDisplayScore);');
     expect(page).toContain('const applyMinDisplayScoreWithStorage = useCallback((nextScore: number) => {');
@@ -158,15 +158,24 @@ describe('hotspot page integration', () => {
     expect(page).toContain('<pre className="whitespace-pre-wrap break-words" style={analysisTextStyle}>');
   });
 
-  it('auto-scrolls the hotspot analysis panel while streaming output', () => {
+  it('lets hotspot settings control whether the analysis panel auto-scrolls while streaming output', () => {
     const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
 
+    expect(page).toContain('HOTSPOT_ANALYSIS_AUTO_SCROLL_STORAGE_KEY');
+    expect(page).toContain('const [autoScrollAnalysis, setAutoScrollAnalysis] = useState(readHotspotAnalysisAutoScroll);');
+    expect(page).toContain('const [draftAutoScrollAnalysis, setDraftAutoScrollAnalysis] = useState(autoScrollAnalysis);');
+    expect(page).toContain('onApplyAutoScrollAnalysis(draftAutoScrollAnalysis);');
+    expect(page).toContain('localStorage.setItem(HOTSPOT_ANALYSIS_AUTO_SCROLL_STORAGE_KEY, String(nextValue));');
+    expect(page).toContain('输出滚动');
+    expect(page).toContain('跟随输出滚动');
+    expect(page).toContain('不跟随输出');
     expect(page).toContain('const analysisScrollRef = useRef<HTMLDivElement | null>(null);');
     expect(page).toContain('if (!isAnalyzing) return;');
+    expect(page).toContain('if (!autoScrollAnalysis) return;');
     expect(page).toContain('const scrollContainer = analysisScrollRef.current;');
     expect(page).toContain('window.requestAnimationFrame(() => {');
     expect(page).toContain('scrollContainer.scrollTop = scrollContainer.scrollHeight;');
-    expect(page).toContain('}, [analysis, analysisReasoning, isAnalyzing]);');
+    expect(page).toContain('}, [analysis, analysisReasoning, autoScrollAnalysis, isAnalyzing]);');
     expect(page).toContain('ref={analysisScrollRef}');
   });
 
