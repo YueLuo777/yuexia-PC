@@ -1,29 +1,70 @@
 Option Explicit
 
-Dim shell, fso, root, launcher, nodeExe, command, packagedExe
+Dim shell, fso, root, launcher, nodeExe, command
 Set shell = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
 
-Function ResolveNodeExe(projectRoot)
-  Dim candidates, i
-  candidates = Array( _
-    projectRoot & "\nodew.exe", _
-    "C:\Program Files\nodejs\nodew.exe", _
-    "C:\Program Files (x86)\nodejs\nodew.exe", _
-    "C:\Program Files\nodejs\node.exe", _
-    "C:\Program Files (x86)\nodejs\node.exe", _
-    projectRoot & "\node.exe" _
-  )
-
+Function FirstExistingFile(candidates)
+  Dim i
   For i = 0 To UBound(candidates)
     If fso.FileExists(candidates(i)) Then
-      ResolveNodeExe = candidates(i)
+      FirstExistingFile = candidates(i)
       Exit Function
     End If
   Next
-
-  ResolveNodeExe = "node.exe"
+  FirstExistingFile = ""
 End Function
+
+Function ResolveNodeFromPath(fileName)
+  Dim pathValue, parts, i, candidate
+  pathValue = shell.Environment("Process")("PATH")
+  If Len(pathValue) = 0 Then
+    ResolveNodeFromPath = ""
+    Exit Function
+  End If
+
+  parts = Split(pathValue, ";")
+  For i = 0 To UBound(parts)
+    If Len(Trim(parts(i))) > 0 Then
+      candidate = fso.BuildPath(Trim(parts(i)), fileName)
+      If fso.FileExists(candidate) Then
+        ResolveNodeFromPath = candidate
+        Exit Function
+      End If
+    End If
+  Next
+
+  ResolveNodeFromPath = ""
+End Function
+
+Function ResolveNodeExe(projectRoot)
+  Dim candidates, fromPath
+  candidates = Array( _
+    projectRoot & "\runtime\node\nodew.exe", _
+    projectRoot & "\runtime\node\node.exe", _
+    projectRoot & "\nodew.exe", _
+    projectRoot & "\node.exe", _
+    shell.ExpandEnvironmentStrings("%USERPROFILE%") & "\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\nodew.exe", _
+    shell.ExpandEnvironmentStrings("%USERPROFILE%") & "\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe", _
+    "C:\Program Files\nodejs\nodew.exe", _
+    "C:\Program Files (x86)\nodejs\nodew.exe", _
+    "C:\Program Files\nodejs\node.exe", _
+    "C:\Program Files (x86)\nodejs\node.exe" _
+  )
+
+  ResolveNodeExe = FirstExistingFile(candidates)
+  If Len(ResolveNodeExe) > 0 Then Exit Function
+
+  fromPath = ResolveNodeFromPath("nodew.exe")
+  If Len(fromPath) = 0 Then fromPath = ResolveNodeFromPath("node.exe")
+  ResolveNodeExe = fromPath
+End Function
+
+Sub ShowNodeMissingMessage()
+  MsgBox "Node.js was not found, so Yuexia PC cannot start." & vbCrLf & _
+    "Install Node.js, or run the project setup/start flow in Codex first.", _
+    vbCritical, "Yuexia PC"
+End Sub
 
 Sub RunNodeLauncherHidden(nodePath, launcherPath, launcherMode)
   Dim wmi, startup, process, processId, result
@@ -40,20 +81,20 @@ End Sub
 
 root = fso.GetParentFolderName(WScript.ScriptFullName)
 launcher = root & "\launch-xinyuexia.mjs"
-packagedExe = root & "\release\月下写作 0.1.0.exe"
 nodeExe = ResolveNodeExe(root)
 
 shell.CurrentDirectory = root
 shell.Environment("Process")("XINYUEXIA_START_HASH") = "#/dashboard"
 shell.Environment("Process")("XINYUEXIA_DISABLE_ADJUSTMENT_MODE") = "1"
-If fso.FileExists(packagedExe) Then
-  command = """" & packagedExe & """"
-  shell.Run command, 1, False
+
+If Len(nodeExe) = 0 Then
+  ShowNodeMissingMessage
+  WScript.Quit 1
+End If
+
+If LCase(fso.GetFileName(nodeExe)) = "nodew.exe" Then
+  command = """" & nodeExe & """ """ & launcher & """ desktop"
+  shell.Run command, 0, False
 Else
-  If LCase(fso.GetFileName(nodeExe)) = "nodew.exe" Then
-    command = """" & nodeExe & """ """ & launcher & """ desktop"
-    shell.Run command, 0, False
-  Else
-    RunNodeLauncherHidden nodeExe, launcher, "desktop"
-  End If
+  RunNodeLauncherHidden nodeExe, launcher, "desktop"
 End If

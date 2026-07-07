@@ -17,6 +17,9 @@ vite-test-preview*.log
 runtime/postgres/**
 !runtime/postgres/
 !runtime/postgres/README.md
+runtime/node/**
+!runtime/node/
+!runtime/node/README.md
 shujuku/postgres-data/**
 shujuku/data/*.json
 recovered-localstorage/

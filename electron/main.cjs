@@ -44,6 +44,7 @@ const LEGACY_WINDOW_STATE_FILES = [
   path.join(app.getPath('appData'), 'xinyuexia-desktop-dev', 'window-state.json'),
 ];
 const HOTSPOT_CACHE_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'hotspots', 'dailyhot-cache.json');
+const MAIN_LOG_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'electron-main.log');
 
 let mainWindow = null;
 const hotspotDetailService = createHotspotDetailService();
@@ -56,6 +57,23 @@ if (process.platform === 'win32') app.setAppUserModelId(APP_ID);
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+function writeMainLog(message) {
+  try {
+    fs.mkdirSync(path.dirname(MAIN_LOG_FILE), { recursive: true });
+    fs.appendFileSync(MAIN_LOG_FILE, `[${new Date().toISOString()}] ${message}\n`, 'utf8');
+  } catch {
+    // Logging must not block app startup.
+  }
+}
+
+process.on('uncaughtException', (error) => {
+  writeMainLog(`uncaughtException: ${error?.stack || error}`);
+});
+
+process.on('unhandledRejection', (reason) => {
+  writeMainLog(`unhandledRejection: ${reason?.stack || reason}`);
+});
 
 function resolveStartUrl() {
   if (process.env.XINYUEXIA_URL) {
@@ -429,6 +447,7 @@ function focusMainWindow() {
   mainWindow.show();
   mainWindow.focus();
   mainWindow.moveTop();
+  writeMainLog('main window show/focus requested');
   setTimeout(() => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
     mainWindow.setAlwaysOnTop(false);
@@ -525,23 +544,41 @@ function attachWebviewSecurityGuards() {
 
 function createWindow() {
   if (mainWindow && !mainWindow.isDestroyed()) {
+    writeMainLog('createWindow reused existing main window');
     focusMainWindow();
     return mainWindow;
   }
 
   const savedState = readWindowState();
   mainWindow = new BrowserWindow(getWindowOptions(savedState));
+  const createdWindow = mainWindow;
+  writeMainLog(`main window created startUrl=${resolveStartUrl()}`);
 
   attachWindowStateTracking(mainWindow);
   attachRendererDiagnostics(mainWindow);
   applySavedWindowState(mainWindow, savedState);
 
-  mainWindow.once('ready-to-show', () => {
-    applySavedWindowState(mainWindow, savedState);
+  const revealCreatedWindow = (reason) => {
+    if (mainWindow !== createdWindow || createdWindow.isDestroyed()) return;
+    writeMainLog(`main window reveal fallback reason=${reason}`);
+    applySavedWindowState(createdWindow, savedState);
     focusMainWindow();
+  };
+
+  mainWindow.once('ready-to-show', () => {
+    revealCreatedWindow('ready-to-show');
   });
 
+  mainWindow.webContents.once('did-finish-load', () => {
+    revealCreatedWindow('did-finish-load');
+  });
+
+  setTimeout(() => {
+    revealCreatedWindow('startup-timeout');
+  }, 2500);
+
   mainWindow.on('closed', () => {
+    writeMainLog('main window closed');
     mainWindow = null;
   });
 
@@ -983,12 +1020,14 @@ app.on('before-quit', () => {
 });
 
 app.on('second-instance', () => {
+  writeMainLog('second-instance received');
   focusMainWindow();
 });
 
 attachWebviewSecurityGuards();
 
 app.whenReady().then(() => {
+  writeMainLog(`app ready packaged=${app.isPackaged ? '1' : '0'} argv=${process.argv.join(' ')}`);
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

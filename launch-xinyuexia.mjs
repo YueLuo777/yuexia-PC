@@ -17,7 +17,7 @@ const pidFile = path.join(root, 'dev-server.pid');
 const viteEntry = path.join(root, 'node_modules', 'vite', 'bin', 'vite.js');
 const electronExe = path.join(root, 'node_modules', 'electron', 'dist', 'electron.exe');
 const electronMain = path.join(root, 'electron', 'main.cjs');
-const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const nodeDir = path.dirname(process.execPath);
 
 rotateLogFile(launcherLogFile);
 const logStream = createWriteStream(launcherLogFile, { flags: 'a' });
@@ -47,6 +47,44 @@ function ensureFileExists(filePath, label) {
   if (!existsSync(filePath)) {
     throw new Error(`${label} 不存在: ${filePath}`);
   }
+}
+
+function findExecutableInPath(fileName) {
+  const pathValue = process.env.PATH || '';
+  const parts = pathValue.split(path.delimiter).filter(Boolean);
+  return parts
+    .map((entry) => path.join(entry, fileName))
+    .find((candidate) => existsSync(candidate)) ?? null;
+}
+
+function resolveNpmCommand() {
+  if (process.platform !== 'win32') {
+    return { command: 'npm', args: [] };
+  }
+
+  const candidates = [
+    path.join(root, 'runtime', 'node', 'npm.cmd'),
+    path.join(root, 'npm.cmd'),
+    path.join(nodeDir, 'npm.cmd'),
+    path.join(process.env.USERPROFILE || '', '.cache', 'codex-runtimes', 'codex-primary-runtime', 'dependencies', 'node', 'bin', 'npm.cmd'),
+    'C:\\Program Files\\nodejs\\npm.cmd',
+    'C:\\Program Files (x86)\\nodejs\\npm.cmd',
+    findExecutableInPath('npm.cmd'),
+  ].filter(Boolean);
+
+  const npmCmd = candidates.find((candidate) => existsSync(candidate));
+  if (npmCmd) return { command: npmCmd, args: [] };
+
+  const npmCli = [
+    path.join(root, 'runtime', 'node', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+    path.join(root, 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+    path.join(nodeDir, 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+    path.join(process.env.USERPROFILE || '', '.cache', 'codex-runtimes', 'codex-primary-runtime', 'dependencies', 'node', 'bin', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+  ].find((candidate) => existsSync(candidate));
+
+  if (npmCli) return { command: process.execPath, args: [npmCli] };
+
+  throw new Error('npm was not found. Install Node.js with npm, or place a portable Node runtime at runtime\\node before starting Yuexia.');
 }
 
 function removeIfExists(targetPath) {
@@ -82,7 +120,9 @@ function ensureDependencies() {
 
   log('dependencies missing; running npm install');
   removeIfExists(path.join(root, 'node_modules', '.vite-temp'));
-  const result = spawnSync(npmCmd, ['install'], {
+  const npmCommand = resolveNpmCommand();
+  log(`npm command=${npmCommand.command} args=${npmCommand.args.join(' ')}`);
+  const result = spawnSync(npmCommand.command, [...npmCommand.args, 'install'], {
     cwd: root,
     encoding: 'utf8',
     windowsHide: true,
