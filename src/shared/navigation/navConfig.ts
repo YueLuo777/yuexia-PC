@@ -1,5 +1,4 @@
 import {
-  Activity,
   BarChart3,
   BookOpen,
   Cloud,
@@ -38,7 +37,6 @@ export interface NavGroupConfig {
 }
 
 const iconMap: Record<string, LucideIcon> = {
-  Activity,
   BarChart3,
   BookOpen,
   Cloud,
@@ -74,11 +72,12 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
     items: [
       { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
       { iconName: 'Film', label: '我的剧本', to: '/scripts' },
+      { iconName: 'Sparkles', label: '题材迭代', to: '/genre-iteration' },
       { iconName: 'Library', label: '资料库', to: '/library' },
       { iconName: 'Tag', label: '提示词管理', to: '/prompts' },
       { iconName: 'Settings', label: '模型管理', to: '/model-manage' },
       { iconName: 'BarChart3', label: 'Token用量', to: '/token-usage' },
-      { iconName: 'FlaskConical', label: '测试', to: '/test-collection' },
+      { iconName: 'FlaskConical', label: '测试板块', to: '/test-collection' },
     ],
   },
 ];
@@ -97,6 +96,7 @@ const REMOVED_ROUTES = new Set([
   '/extract-1',
   '/extract',
   '/moonfall-settings',
+  '/hotspots',
   '/adjustment-mode',
   '/idea-generator',
   '/outline-generator',
@@ -117,11 +117,22 @@ const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
   '/text-overrides': '文案修改',
   '/software-ui-catalog': 'UI库',
   '/theme-colors': '主题颜色',
-  '/test-collection': '测试',
+  '/test-collection': '测试板块',
+  '/genre-iteration': '题材迭代',
 };
 
 function cloneDefaultConfig() {
   return JSON.parse(JSON.stringify(DEFAULT_NAV_CONFIG)) as NavGroupConfig[];
+}
+
+function moveRouteAfter(items: NavItemConfig[], route: string, afterRoute: string) {
+  const itemIndex = items.findIndex((item) => item.to === route);
+  const afterIndex = items.findIndex((item) => item.to === afterRoute);
+  if (itemIndex === -1 || afterIndex === -1 || itemIndex === afterIndex + 1) return;
+
+  const [item] = items.splice(itemIndex, 1);
+  const nextAfterIndex = items.findIndex((candidate) => candidate.to === afterRoute);
+  items.splice(nextAfterIndex + 1, 0, item);
 }
 
 function flattenNavConfig(config: NavGroupConfig[]) {
@@ -144,6 +155,7 @@ function flattenNavConfig(config: NavGroupConfig[]) {
       });
     }
   }
+  moveRouteAfter(items, '/genre-iteration', '/scripts');
 
   const visibleItemRoutes = new Set(items.filter((item) => !item.hidden).map((item) => item.to));
   const fallbackDividerAfterItemTos = DEFAULT_NAV_CONFIG[0].dividerAfterItemTos ?? (

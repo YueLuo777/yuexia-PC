@@ -11,6 +11,7 @@ import { bindWorkbenchTransientAiCleanup } from '@/features/workbench/model/work
 import { areInternalRoutesEnabled } from '@/shared/featureFlags/internalRoutes';
 
 const ConceptLibraryPage = lazy(() => import('@/features/concept-library/pages/ConceptLibraryPage').then((module) => ({ default: module.ConceptLibraryPage })));
+const GenreIterationPage = lazy(() => import('@/features/genre-iteration/pages/GenreIterationPage').then((module) => ({ default: module.GenreIterationPage })));
 const LibraryHubPage = lazy(() => import('@/features/library-hub/pages/LibraryHubPage').then((module) => ({ default: module.LibraryHubPage })));
 const DbSettingsPage = lazy(() => import('@/features/settings/pages/DbSettingsPage').then((module) => ({ default: module.DbSettingsPage })));
 const ModelManagePage = lazy(() => import('@/features/models/pages/ModelManagePage').then((module) => ({ default: module.ModelManagePage })));
@@ -94,6 +95,7 @@ export default function App() {
                 <Route path="/novels" element={<NovelLibraryPage />} />
                 <Route path="/scripts" element={<NovelLibraryPage />} />
                 <Route path="/library" element={<LibraryHubPage />} />
+                <Route path="/genre-iteration" element={<GenreIterationPage />} />
                 <Route path="/concept-library" element={<ConceptLibraryPage />} />
                 <Route path="/prompts" element={<PromptsPage />} />
                 <Route path="/model-manage" element={<ModelManagePage />} />

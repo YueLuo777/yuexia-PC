@@ -1,0 +1,230 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
+
+const root = process.cwd();
+const readSource = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
+
+describe('hotspot page integration', () => {
+  it('retires the hotspot page from app routes and default navigation', () => {
+    const app = readSource('src/app/App.tsx');
+    const nav = readSource('src/shared/navigation/navConfig.ts');
+
+    expect(app).not.toContain("HotspotPage");
+    expect(app).not.toContain('path="/hotspots"');
+    expect(nav).not.toContain("to: '/hotspots'");
+    expect(nav).toContain("'/hotspots'");
+    expect(nav).toContain('REMOVED_ROUTES');
+  });
+
+  it('exposes hotspot fetching through the Electron preload bridge', () => {
+    const preload = readSource('electron/preload.cjs');
+    const main = readSource('electron/main.cjs');
+
+    expect(preload).toContain("contextBridge.exposeInMainWorld('xinyuexiaHotspots'");
+    expect(preload).toContain("ipcRenderer.invoke('hotspots:fetch-all'");
+    expect(preload).toContain("ipcRenderer.invoke('hotspots:fetch-detail'");
+    expect(main).toContain("ipcMain.handle('hotspots:fetch-all'");
+    expect(main).toContain("ipcMain.handle('hotspots:fetch-detail'");
+    expect(main).toContain('createHotspotService');
+    expect(main).toContain('createHotspotDetailService');
+  });
+
+  it('shows the fetch status inside the empty hotspot list instead of hiding it at the bottom', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain('暂无分数达到 ${minDisplayScore} 的热点');
+    expect(page).toContain('filteredItems.length === 0');
+  });
+
+  it('uses the radar layout with one third hotspot list and two thirds AI suitability panel', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain('SourceRadar');
+    expect(page).toContain('grid-cols-[minmax(260px,1fr)_minmax(520px,2fr)]');
+    expect(page).toContain('AI 小说适合度');
+    expect(page).not.toContain('<SourceFilter');
+  });
+
+  it('uses a dedicated hotspot model selector instead of the global active model', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain('HOTSPOT_MODEL_ID_STORAGE_KEY');
+    expect(page).toContain('HOTSPOT_PROMPT_ID_STORAGE_KEY');
+    expect(page).toContain('HOTSPOT_ANALYSIS_FONT_SIZE_STORAGE_KEY');
+    expect(page).toContain('HOTSPOT_ANALYSIS_PROMPT_CATEGORY');
+    expect(page).toContain('const HOTSPOT_PROMPT_CATEGORY = HOTSPOT_ANALYSIS_PROMPT_CATEGORY;');
+    expect(page).toContain('normalizePromptCategoryName(prompt.category) === HOTSPOT_PROMPT_CATEGORY');
+    expect(page).toContain('navigate(`/prompts?category=${encodeURIComponent(HOTSPOT_PROMPT_CATEGORY)}`)');
+    expect(page).toContain('CombinedAiConfigSelect');
+    expect(page).toContain('usePrompts');
+    expect(page).toContain('w-[312px]');
+    expect(page).toContain('FontSizeStepper');
+    expect(page).toContain('ariaLabel="热点分析结果字号"');
+    expect(page).toContain('const hotspotModel =');
+    expect(page).toContain('model: hotspotModel');
+    expect(page).toContain('callModelStream');
+    expect(page).toContain("recordType: 'stream'");
+    expect(page).toContain('onReasoning: (chunk) =>');
+    expect(page).toContain('setAnalysisReasoning(reasoningContent)');
+    expect(page).toContain('<HotspotAnalysisOutput');
+    expect(page).toContain('fontSettings={analysisFontSettings}');
+    expect(page).toContain('prompt: activeHotspotPrompt?.content.trim() || HOTSPOT_ANALYSIS_SYSTEM_PROMPT');
+    expect(page).not.toContain('model: activeModel');
+    expect(page).not.toContain('callModel({');
+  });
+
+  it('places refresh and hotspot AI selectors in the page header', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+    const pageHeader = page.slice(page.indexOf('<header'), page.indexOf('</header>'));
+    const aiPanelHeaderStart = page.indexOf('truncate text-base font-black text-slate-900">AI 小说适合度');
+    const aiPanelHeaderEnd = page.indexOf('<div ref={analysisScrollRef}', aiPanelHeaderStart);
+    const aiPanelHeader = page.slice(aiPanelHeaderStart, aiPanelHeaderEnd);
+
+    expect(pageHeader).toContain('设置');
+    expect(pageHeader).toContain("{isFetching ? '刷新中' : '刷新'}");
+    expect(pageHeader.indexOf('设置')).toBeLessThan(pageHeader.indexOf("{isFetching ? '刷新中' : '刷新'}"));
+    expect(pageHeader).toContain('<CombinedAiConfigSelect');
+    expect(pageHeader.indexOf("{isFetching ? '刷新中' : '刷新'}")).toBeLessThan(pageHeader.indexOf('<CombinedAiConfigSelect'));
+    expect(aiPanelHeader).toContain('FontSizeStepper');
+    expect(aiPanelHeader).not.toContain('<CombinedAiConfigSelect');
+  });
+
+  it('applies local hotspot filtering rules before AI analysis', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+    const rules = readSource('src/features/hotspots/model/hotspotRules.ts');
+
+    expect(page).toContain("import { HOTSPOT_RULE_BASE_SCORE, HOTSPOT_RULE_GROUPS, evaluateHotspotByRules, rankHotspotsByRuleEvaluation } from '@/features/hotspots/model/hotspotRules';");
+    expect(page).toContain('rankHotspotsByRuleEvaluation(activeSource ===');
+    expect(page).toContain('evaluation={evaluateHotspotByRules(item)}');
+    expect(page).toContain('evaluation.levelLabel');
+    expect(page).toContain('HotspotSettingsModal');
+    expect(page).toContain('setIsSettingsOpen(true)');
+    expect(page).toContain('<HotspotSettingsModal');
+    expect(page).toContain('HOTSPOT_MIN_DISPLAY_SCORE_STORAGE_KEY');
+    expect(page).toContain('const [minDisplayScore, setMinDisplayScore] = useState(readHotspotMinDisplayScore);');
+    expect(page).toContain('const [draftMinDisplayScore, setDraftMinDisplayScore] = useState(minDisplayScore);');
+    expect(page).toContain('setDraftMinDisplayScore(minDisplayScore);');
+    expect(page).toContain('const closeWithApply = () => {');
+    expect(page).toContain('onApplyMinDisplayScore(draftMinDisplayScore);');
+    expect(page).toContain('const applyMinDisplayScoreWithStorage = useCallback((nextScore: number) => {');
+    expect(page).toContain('localStorage.setItem(HOTSPOT_MIN_DISPLAY_SCORE_STORAGE_KEY, String(score));');
+    expect(page).toContain('HOTSPOT_DISPLAY_LIMIT');
+    expect(page).toContain('.filter((item) => evaluateHotspotByRules(item).score >= minDisplayScore)');
+    expect(page).toContain('.slice(0, HOTSPOT_DISPLAY_LIMIT)');
+    expect(page).toContain('条高分 /');
+    expect(page).toContain('ariaLabel="热点筛选最低分"');
+    expect(page).toContain('minDisplayScore={minDisplayScore}');
+    expect(page).toContain('onApplyMinDisplayScore={applyMinDisplayScoreWithStorage}');
+    expect(page).not.toContain('}, [minDisplayScore]);');
+    expect(rules).toContain('HOTSPOT_RULE_GROUPS');
+    expect(rules).toContain('强情绪/强反转');
+    expect(rules).toContain('真实刑案/伤亡高风险');
+    expect(rules).toContain('政治/外交/军事敏感');
+  });
+
+  it('adds an external jump button before hotspot analysis', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+    const rowSource = page.slice(page.indexOf('function HotspotRow'), page.indexOf('function readHotspotModelId'));
+
+    expect(page).toContain('getHotspotExternalUrl');
+    expect(page).toContain('grid-cols-[34px_minmax(0,1fr)_58px_82px]');
+    expect(page).toContain('onOpenExternal: () => void;');
+    expect(page).toContain('onOpenExternal={() => window.open(getHotspotExternalUrl(item), \'_blank\', \'noopener,noreferrer\')}');
+    expect(rowSource).toContain('跳转');
+    expect(rowSource.indexOf('跳转')).toBeLessThan(rowSource.indexOf('开始分析'));
+  });
+
+  it('fetches hotspot page details before sending the item to AI analysis', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain("import { fetchHotspotDetail, hasHotspotDetailContent } from '@/features/hotspots/model/hotspotDetail';");
+    expect(page).toContain("setStatus('正在抓取热点详情...')");
+    expect(page).toContain('const detail = await fetchHotspotDetail(item).catch');
+    expect(page).toContain('hasHotspotDetailContent(detail)');
+    expect(page).toContain("setStatus(hasDetail ? '已获取热点详情，正在交给 AI 分析。' : '未获取到热点详情，仅基于标题分析。')");
+    expect(page).toContain('userContent: buildHotspotSuitabilityPrompt(item, detail)');
+  });
+
+  it('uses editor-style font settings for hotspot analysis output', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain("import { getEditorTextLineHeight, getStoredFontSettings, type FontSettings } from '@/features/workbench/components/EditorToolModals';");
+    expect(page).toContain('const [analysisFontSize, setAnalysisFontSize] = useState(readHotspotAnalysisFontSize);');
+    expect(page).toContain('const analysisFontSettings = useMemo(() => ({');
+    expect(page).toContain('fontSize: analysisFontSize');
+    expect(page).toContain('const setAnalysisFontSizeWithStorage = useCallback((nextFontSize: number) => {');
+    expect(page).toContain('localStorage.setItem(HOTSPOT_ANALYSIS_FONT_SIZE_STORAGE_KEY, String(fontSize));');
+    expect(page).toContain('lineHeight: getEditorTextLineHeight(fontSettings)');
+    expect(page).toContain('<pre className="whitespace-pre-wrap break-words" style={analysisTextStyle}>');
+  });
+
+  it('lets hotspot settings control whether the analysis panel auto-scrolls while streaming output', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain('HOTSPOT_ANALYSIS_AUTO_SCROLL_STORAGE_KEY');
+    expect(page).toContain('const [autoScrollAnalysis, setAutoScrollAnalysis] = useState(readHotspotAnalysisAutoScroll);');
+    expect(page).toContain('const [draftAutoScrollAnalysis, setDraftAutoScrollAnalysis] = useState(autoScrollAnalysis);');
+    expect(page).toContain('onApplyAutoScrollAnalysis(draftAutoScrollAnalysis);');
+    expect(page).toContain('localStorage.setItem(HOTSPOT_ANALYSIS_AUTO_SCROLL_STORAGE_KEY, String(nextValue));');
+    expect(page).toContain('输出滚动');
+    expect(page).toContain('跟随输出滚动');
+    expect(page).toContain('不跟随输出');
+    expect(page).toContain('const analysisScrollRef = useRef<HTMLDivElement | null>(null);');
+    expect(page).toContain('if (!isAnalyzing) return;');
+    expect(page).toContain('if (!autoScrollAnalysis) return;');
+    expect(page).toContain('const scrollContainer = analysisScrollRef.current;');
+    expect(page).toContain('window.requestAnimationFrame(() => {');
+    expect(page).toContain('scrollContainer.scrollTop = scrollContainer.scrollHeight;');
+    expect(page).toContain('}, [analysis, analysisReasoning, autoScrollAnalysis, isAnalyzing]);');
+    expect(page).toContain('ref={analysisScrollRef}');
+  });
+
+  it('collapses completed reasoning to preserve analysis reading space', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain('const [isReasoningOpen, setIsReasoningOpen] = useState(isAnalyzing);');
+    expect(page).toContain('const showReasoningBody = isAnalyzing || isReasoningOpen;');
+    expect(page).toContain('setIsReasoningOpen(isAnalyzing);');
+    expect(page).toContain('if (!isAnalyzing) setIsReasoningOpen((current) => !current);');
+    expect(page).toContain('disabled={isAnalyzing}');
+    expect(page).toContain("{isReasoningOpen ? '收起' : '展开'}");
+    expect(page).toContain('{showReasoningBody && (');
+  });
+
+  it('uses a text save button for saving hotspot analysis to the brainstorm library', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain('保存到脑洞库');
+    expect(page).toContain('className="xy-capsule-button"');
+    expect(page).toContain('items-center justify-between gap-4 border-t border-slate-100 bg-white px-4');
+    expect(page).not.toContain('IconButton label="保存到脑洞库"');
+    expect(page).not.toContain('<Save className=');
+  });
+
+  it('keeps hotspot actions focused on refresh, save, and centered current-hotspot analysis', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain("{isFetching ? '刷新中' : '刷新'}");
+    expect(page).toContain('mt-6 flex justify-center');
+    expect(page).toContain('开始分析');
+    expect(page).not.toContain('组合题材');
+    expect(page).not.toContain('sendToWorkbench');
+    expect(page).not.toContain('IconButton label="送入工作台"');
+    expect(page).not.toContain('<Send className=');
+    expect(page).not.toContain('buildHotspotCombinationPrompt');
+  });
+
+  it('requires explicit start analysis actions instead of auto-analyzing on hotspot selection', () => {
+    const page = readSource('src/features/hotspots/pages/HotspotPage.tsx');
+
+    expect(page).toContain('grid-cols-[34px_minmax(0,1fr)_58px_82px]');
+    expect(page).toContain('onOpen={() => setActiveItemId(item.id)}');
+    expect(page).toContain('onAnalyze={() => void runSingleAnalysis(item)}');
+    expect(page).toContain('点击标题只选中');
+    expect(page).not.toContain('type="checkbox"');
+    expect(page).not.toContain('selectedIds');
+    expect(page).not.toContain('toggleSelected');
+    expect(page).not.toContain('分析当前热点');
+  });
+});

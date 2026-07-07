@@ -11,6 +11,7 @@ describe('navigation config without zones', () => {
     expect(DEFAULT_NAV_CONFIG[0].items.map((item) => item.to)).toEqual([
       '/novels',
       '/scripts',
+      '/genre-iteration',
       '/library',
       '/prompts',
       '/model-manage',
@@ -18,6 +19,7 @@ describe('navigation config without zones', () => {
       '/test-collection',
     ]);
     expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/library')?.label).toBe('资料库');
+    expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/genre-iteration')?.label).toBe('题材迭代');
     expect(JSON.stringify(DEFAULT_NAV_CONFIG)).not.toContain('专区');
   });
 
@@ -63,6 +65,40 @@ describe('navigation config without zones', () => {
     expect(normalized[0].items.find((item) => item.to === '/prompts')?.hidden).toBe(true);
     expect(JSON.stringify(normalized)).not.toContain('创作专区');
     expect(JSON.stringify(normalized)).not.toContain('数据专区');
+  });
+
+  it('removes the retired hotspot route from saved navigation configs', () => {
+    const normalized = normalizeNavConfig([{
+      title: '导航',
+      iconName: 'LayoutGrid',
+      items: [
+        { iconName: 'Activity', label: '热点分析', to: '/hotspots' },
+        { iconName: 'Sparkles', label: '题材迭代', to: '/genre-iteration' },
+      ],
+    }]);
+
+    expect(normalized[0].items.some((item) => item.to === '/hotspots')).toBe(false);
+    expect(normalized[0].items.some((item) => item.to === '/genre-iteration')).toBe(true);
+  });
+
+  it('moves genre iteration directly below scripts for saved old navigation order', () => {
+    const normalized = normalizeNavConfig([{
+      title: '导航',
+      iconName: 'LayoutGrid',
+      items: [
+        { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
+        { iconName: 'Film', label: '我的剧本', to: '/scripts' },
+        { iconName: 'Library', label: '资料库', to: '/library' },
+        { iconName: 'Sparkles', label: '题材迭代', to: '/genre-iteration' },
+      ],
+    }]);
+
+    expect(normalized[0].items.map((item) => item.to).slice(0, 4)).toEqual([
+      '/novels',
+      '/scripts',
+      '/genre-iteration',
+      '/library',
+    ]);
   });
 
   it('preserves a custom navigation divider and allows hiding it', () => {

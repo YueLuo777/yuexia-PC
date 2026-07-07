@@ -65,6 +65,44 @@ interface CosObjectResult {
   message?: string;
 }
 
+interface HotspotBridgeFetchInput {
+  sources?: Array<'baidu' | 'douyin' | 'weibo' | 'zhihu' | 'bilibili'>;
+  limit?: number;
+  force?: boolean;
+}
+
+interface HotspotBridgeItem {
+  id: string;
+  source: 'baidu' | 'douyin' | 'weibo' | 'zhihu' | 'bilibili';
+  sourceName: string;
+  rank: number;
+  title: string;
+  heat?: string;
+  url?: string;
+  category?: string;
+  capturedAt: string;
+}
+
+interface HotspotBridgeFetchResult {
+  ok: boolean;
+  capturedAt: string;
+  sources: Partial<Record<'baidu' | 'douyin' | 'weibo' | 'zhihu' | 'bilibili', unknown[]>>;
+  staleItems?: HotspotBridgeItem[];
+  errors?: Partial<Record<'baidu' | 'douyin' | 'weibo' | 'zhihu' | 'bilibili', string>>;
+}
+
+interface HotspotDetailResult {
+  ok: boolean;
+  url: string;
+  finalUrl?: string;
+  title?: string;
+  description?: string;
+  keywords?: string[];
+  textSnippet?: string;
+  error?: string;
+  fromCache?: boolean;
+}
+
 interface WindowSettingsResult {
   rememberSize: boolean;
   defaultBounds: {
@@ -110,5 +148,9 @@ interface Window {
   xinyuexiaCos?: {
     putObject(input: CosPutObjectInput): Promise<CosObjectResult>;
     getObject(input: CosGetObjectInput): Promise<CosObjectResult>;
+  };
+  xinyuexiaHotspots?: {
+    fetchAll(input?: HotspotBridgeFetchInput): Promise<HotspotBridgeFetchResult>;
+    fetchDetail(input?: { item?: HotspotBridgeItem; url?: string }): Promise<HotspotDetailResult>;
   };
 }

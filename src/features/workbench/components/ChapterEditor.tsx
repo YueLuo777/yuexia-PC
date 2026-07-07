@@ -831,6 +831,19 @@ export function ChapterEditor({
       revisedDraft: typeof value === 'function' ? value(state.revisedDraft) : value,
     }));
   };
+  const clearReviewAiOutput = () => {
+    const taskId = reviewModeStates[reviewMode]?.backgroundTaskId;
+    if (taskId) stopBackgroundAiTask(taskId);
+    writeReviewBackgroundTaskId(settingsStorageKey, reviewMode, undefined);
+    updateActiveReviewState((state) => ({
+      ...state,
+      output: '',
+      revisedDraft: '',
+      requestLog: '',
+      backgroundTaskId: undefined,
+    }));
+    setIsReviewAiLoading(false);
+  };
   useTopModalEscape(isReviewLogOpen, () => setIsReviewLogOpen(false));
   useTopModalEscape(Boolean(reviewManagementModal), () => setReviewManagementModal(null));
   useTopModalEscape(isEditorFieldSizeOpen, () => setIsEditorFieldSizeOpen(false));
@@ -2773,11 +2786,11 @@ export function ChapterEditor({
                     onPromptManage={() => setReviewManagementModal('prompts')}
                   />
                   <div className="relative mt-3 min-h-0 flex-1">
-                    <div className="xy-floating-outline-clear-button xy-border-embedded-transparent-backplate absolute -top-2 right-4 z-10 flex items-center gap-2 px-1">
+                    <div className="xy-floating-outline-clear-button xy-border-embedded-transparent-backplate absolute -top-2 right-4 z-40 flex items-center gap-2 px-1">
 
                         <button
                           type="button"
-                          onClick={() => setReviewAiOutput('')}
+                          onClick={clearReviewAiOutput}
                           className="text-xs font-black text-red-500 hover:text-red-600"
                         >
                           清空

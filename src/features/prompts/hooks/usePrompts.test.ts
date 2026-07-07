@@ -4,6 +4,7 @@ import {
   AUDIT_PROMPT_SUBCATEGORIES,
   DEFAULT_PROMPT_CATEGORIES,
   DEFAULT_AUDIT_PROMPT_SUBCATEGORY,
+  HOTSPOT_ANALYSIS_PROMPT_CATEGORY,
   isDefaultPromptCategory,
   normalizePromptCategoryName,
   normalizePromptSubcategory,
@@ -13,16 +14,25 @@ describe('usePrompts categories', () => {
   it('uses setting and chapter-outline prompt categories without plot chain', () => {
     expect(DEFAULT_PROMPT_CATEGORIES).toContain('设定');
     expect(DEFAULT_PROMPT_CATEGORIES).toContain('章纲');
+    expect(DEFAULT_PROMPT_CATEGORIES).toContain(HOTSPOT_ANALYSIS_PROMPT_CATEGORY);
     expect(DEFAULT_PROMPT_CATEGORIES).toContain('综合点评');
     expect(DEFAULT_PROMPT_CATEGORIES).toContain('润色');
     expect(DEFAULT_PROMPT_CATEGORIES).toContain('更新状态');
     expect(DEFAULT_PROMPT_CATEGORIES).toContain('生成梗概');
+    expect(DEFAULT_PROMPT_CATEGORIES.indexOf('生成梗概')).toBeLessThan(
+      DEFAULT_PROMPT_CATEGORIES.indexOf(HOTSPOT_ANALYSIS_PROMPT_CATEGORY),
+    );
+    expect(DEFAULT_PROMPT_CATEGORIES.indexOf(HOTSPOT_ANALYSIS_PROMPT_CATEGORY)).toBeLessThan(
+      DEFAULT_PROMPT_CATEGORIES.indexOf('未分类'),
+    );
     expect(DEFAULT_PROMPT_CATEGORIES).not.toContain('大纲');
     expect(DEFAULT_PROMPT_CATEGORIES).not.toContain('细纲');
     expect(DEFAULT_PROMPT_CATEGORIES).not.toContain('剧情链');
     expect(DEFAULT_PROMPT_CATEGORIES).not.toContain('更新');
     expect(isDefaultPromptCategory('设定')).toBe(true);
     expect(isDefaultPromptCategory('章纲')).toBe(true);
+    expect(isDefaultPromptCategory('题材迭代')).toBe(true);
+    expect(normalizePromptCategoryName('热点分析')).toBe('题材迭代');
     expect(isDefaultPromptCategory('更新状态')).toBe(true);
     expect(normalizePromptCategoryName('大纲')).toBe('设定');
     expect(normalizePromptCategoryName('细纲')).toBe('章纲');
