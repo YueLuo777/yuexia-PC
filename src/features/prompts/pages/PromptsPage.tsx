@@ -1,5 +1,5 @@
-import { BookOpen, Lock, Search, Sparkles, Trash2, Unlock, X } from 'lucide-react';
-import { type MouseEvent as ReactMouseEvent, useEffect, useMemo, useState } from 'react';
+import { Lock, Search, Sparkles, Trash2, Unlock, X } from 'lucide-react';
+import { type ChangeEvent, type MouseEvent as ReactMouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import {
@@ -11,7 +11,7 @@ import {
   normalizePromptSubcategory,
   usePrompts,
 } from '@/features/prompts/hooks/usePrompts';
-import type { PromptItem } from '@/features/prompts/model/promptTypes';
+import type { NewPromptInput, PromptItem } from '@/features/prompts/model/promptTypes';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { ActionButton } from '@/shared/ui/ActionButton';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
@@ -26,6 +26,8 @@ const TAB_LABELS: Record<PromptTab, string> = {
 
 const PROMPT_CATEGORY_CONTEXT_MENU_SIZE = { width: 136, height: 48 };
 const PROMPT_CATEGORY_CONTEXT_MENU_PADDING = 8;
+const PROMPT_EXPORT_HEADER = '月下提示词导出 v1';
+const PROMPT_EXPORT_BLOCK_SEPARATOR = '--- 提示词 ---';
 
 function clampPromptCategoryContextMenu(left: number, top: number, width: number, height: number) {
   return {
@@ -58,6 +60,89 @@ function getPromptCategoryContextMenuPosition(event: ReactMouseEvent<HTMLButtonE
 
 function normalizePromptTypeForTab(promptType?: PromptItem['promptType']): PromptTab {
   return promptType === 'script' ? 'script' : 'novel';
+}
+
+function sanitizePromptExportFileName(fileName: string) {
+  return fileName.replace(/[\\/:*?"<>|]/g, '_').trim() || '提示词导出';
+}
+
+function downloadPromptTextFile(fileName: string, content: string) {
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function buildPromptExportText(items: PromptItem[]) {
+  const lines = [
+    PROMPT_EXPORT_HEADER,
+    `导出时间: ${new Date().toLocaleString('zh-CN')}`,
+    `数量: ${items.length}`,
+    '',
+  ];
+  items.forEach((item, index) => {
+    lines.push(
+      PROMPT_EXPORT_BLOCK_SEPARATOR,
+      `序号: ${index + 1}`,
+      `名称: ${item.name}`,
+      `类型: ${normalizePromptTypeForTab(item.promptType)}`,
+      `分类: ${item.category}`,
+      `二级分类: ${item.subCategory ?? ''}`,
+      '说明:',
+      item.description,
+      '内容:',
+      item.content,
+      '',
+    );
+  });
+  return lines.join('\n');
+}
+
+function getPromptExportField(block: string, label: string) {
+  const match = block.match(new RegExp(`^${label}:\\s*(.*)$`, 'm'));
+  return match?.[1]?.trim() ?? '';
+}
+
+function getPromptExportSection(block: string, label: string, nextLabel?: string) {
+  const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedNextLabel = nextLabel?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = escapedNextLabel
+    ? new RegExp(`^${escapedLabel}:\\s*\\n([\\s\\S]*?)(?=^${escapedNextLabel}:\\s*$)`, 'm')
+    : new RegExp(`^${escapedLabel}:\\s*\\n([\\s\\S]*)`, 'm');
+  return pattern.exec(block)?.[1]?.trim() ?? '';
+}
+
+function parsePromptExportText(rawText: string, fallbackName: string, fallbackCategory: string, fallbackType: PromptTab): NewPromptInput[] {
+  const text = rawText.replace(/\r\n/g, '\n').trim();
+  if (!text) return [];
+  if (!text.includes(PROMPT_EXPORT_BLOCK_SEPARATOR)) {
+    const firstLine = text.split('\n').find((line) => line.trim())?.trim();
+    return [{
+      name: firstLine?.slice(0, 36) || fallbackName.replace(/\.[^.]+$/, '') || '导入提示词',
+      description: `从 ${fallbackName} 导入`,
+      content: text,
+      category: fallbackCategory,
+      promptType: fallbackType,
+    }];
+  }
+  return text
+    .split(PROMPT_EXPORT_BLOCK_SEPARATOR)
+    .slice(1)
+    .map((block) => {
+      const promptType = getPromptExportField(block, '类型');
+      return {
+        name: getPromptExportField(block, '名称'),
+        description: getPromptExportSection(block, '说明', '内容'),
+        content: getPromptExportSection(block, '内容'),
+        category: getPromptExportField(block, '分类') || fallbackCategory,
+        subCategory: getPromptExportField(block, '二级分类') || undefined,
+        promptType: promptType === 'script' ? 'script' : 'novel',
+      } satisfies NewPromptInput;
+    })
+    .filter((item) => item.name.trim() && item.content.trim());
 }
 
 function PromptEditorModal({
@@ -297,8 +382,10 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
     togglePin,
     toggleLock,
     addCategory,
+    addPrompts,
     removeCategory,
   } = usePrompts();
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const [activeTab, setActiveTab] = useState<PromptTab>('novel');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeAuditSubcategory, setActiveAuditSubcategory] = useState(DEFAULT_AUDIT_PROMPT_SUBCATEGORY);
@@ -404,6 +491,40 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
     setCategoryDeleteTarget(null);
   };
 
+  const exportPrompts = () => {
+    if (prompts.length === 0) {
+      window.alert('暂无可导出的提示词。');
+      return;
+    }
+    const fileName = sanitizePromptExportFileName(`提示词导出-${new Date().toISOString().slice(0, 10)}.txt`);
+    downloadPromptTextFile(fileName, buildPromptExportText(prompts));
+  };
+
+  const importPrompts = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    try {
+      const imported = parsePromptExportText(
+        await file.text(),
+        file.name,
+        activeCategory ?? categories[0] ?? '未分类',
+        activeTab,
+      );
+      const created = addPrompts(imported);
+      if (created.length === 0) {
+        window.alert('没有识别到可导入的提示词。');
+        return;
+      }
+      setActiveCategory(created[0]?.category ?? activeCategory);
+      setSearchQuery('');
+      window.alert(`已导入 ${created.length} 个提示词。`);
+    } catch (error) {
+      console.error('Import prompts failed:', error);
+      window.alert('导入提示词失败，请确认文件为 txt 文本。');
+    }
+  };
+
   return (
     <div className="flex h-full flex-col bg-slate-50">
       <div className="flex-1 overflow-y-auto px-7 py-7">
@@ -421,6 +542,25 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
           </div>
 
           <div className="flex shrink-0 items-center gap-3">
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".txt,text/plain"
+              className="hidden"
+              onChange={importPrompts}
+            />
+            <ActionButton
+              onClick={() => importInputRef.current?.click()}
+              variant="secondary"
+            >
+              导入提示词
+            </ActionButton>
+            <ActionButton
+              onClick={exportPrompts}
+              variant="secondary"
+            >
+              导出提示词
+            </ActionButton>
             <ActionButton
               onClick={() => setShowRecycle(true)}
               variant="secondary"

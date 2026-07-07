@@ -75,4 +75,25 @@ describe('PromptsPage modal layering', () => {
     expect(categoryBarSource).not.toContain('删除分类');
     expect(source).not.toContain('setCategoryContextMenu({ category, x: event.clientX, y: event.clientY });');
   });
+
+  it('adds txt import and export controls beside the recycle bin action', () => {
+    const source = readPromptsPageSource();
+    const headerStart = source.indexOf('<div className="flex shrink-0 items-center gap-3">');
+    const headerEnd = source.indexOf('<div className="xy-ui132-search">', headerStart);
+    const headerSource = source.slice(headerStart, headerEnd);
+
+    expect(source).toContain("const PROMPT_EXPORT_HEADER = '月下提示词导出 v1';");
+    expect(source).toContain("const PROMPT_EXPORT_BLOCK_SEPARATOR = '--- 提示词 ---';");
+    expect(source).toContain("downloadPromptTextFile(fileName, buildPromptExportText(prompts));");
+    expect(source).toContain('parsePromptExportText(');
+    expect(source).toContain('const created = addPrompts(imported);');
+    expect(headerSource).toContain('accept=".txt,text/plain"');
+    expect(headerSource).toContain('onChange={importPrompts}');
+    expect(headerSource).toContain('导入提示词');
+    expect(headerSource).toContain('导出提示词');
+    expect(headerSource.indexOf('导入提示词')).toBeLessThan(headerSource.indexOf('导出提示词'));
+    expect(headerSource.indexOf('导出提示词')).toBeLessThan(headerSource.indexOf('setShowRecycle(true)'));
+    expect(headerSource).not.toContain('<Upload');
+    expect(headerSource).not.toContain('<Download');
+  });
 });

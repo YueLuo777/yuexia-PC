@@ -184,6 +184,32 @@ export function usePrompts() {
     persistPrompts([item, ...prompts]);
   };
 
+  const addPrompts = (inputs: NewPromptInput[]) => {
+    const items = inputs
+      .map((input) => {
+        const category = normalizeCategory(input.category);
+        return {
+          id: createId(),
+          name: input.name.trim(),
+          description: input.description.trim(),
+          content: input.content.trim(),
+          category,
+          subCategory: normalizePromptSubcategory(category, input.subCategory),
+          promptType: input.promptType ?? 'novel',
+          usageCount: 0,
+          isFavorite: false,
+          isLocked: false,
+          createdAt: nowText(),
+          updatedAt: nowText(),
+        } satisfies PromptItem;
+      })
+      .filter((item) => item.name && item.content);
+    if (items.length === 0) return [];
+    persistCategories([...categories, ...items.map((item) => item.category)]);
+    persistPrompts([...items, ...prompts]);
+    return items;
+  };
+
   const updatePrompt = (id: string, updates: Partial<NewPromptInput>) => {
     persistPrompts(
       prompts.map((prompt) => {
@@ -261,6 +287,7 @@ export function usePrompts() {
     categories,
     categoryStats,
     addPrompt,
+    addPrompts,
     updatePrompt,
     deletePrompt,
     restorePrompt,

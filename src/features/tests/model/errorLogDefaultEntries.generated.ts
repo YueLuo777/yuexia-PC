@@ -8163,4 +8163,15 @@ export const defaultEntries: ErrorLogEntry[] = [
     keywords: ['关闭软件', '关联资料', '右侧AI', 'linkedItems', 'contextText', 'WorkbenchAIPanel', 'workbenchAssociationCleanup'],
     updatedAt: '2026-07-06',
   },
+  {
+    id: 'prompt-management-txt-import-export-001',
+    title: '提示词管理需要 TXT 导入导出入口',
+    area: '提示词管理 / 顶部工具栏 / TXT 导入导出',
+    symptom: '提示词管理右上角只有回收站入口，无法直接把提示词库导出为 TXT，也无法从 TXT 文件导入提示词。',
+    cause: '页面此前只覆盖创建、编辑、删除、回收站和分类管理，缺少导入导出的显式入口；usePrompts 也只有单条新增，连续导入多条容易依赖旧 prompts 状态。',
+    solution: '在回收站旁新增“导入提示词”和“导出提示词”按钮；导出生成月下提示词导出 v1 纯 TXT；导入优先识别同格式，多条一次性批量写入并同步新增分类，普通 TXT 会按单条提示词导入。',
+    prevention: '提示词库新增迁移或备份入口时，页面按钮、TXT/JSON 格式解析、批量写入 hook 和源码断言测试要一起补，避免只有 UI 入口没有可靠数据写入。',
+    keywords: ['提示词管理', '导入提示词', '导出提示词', 'TXT', 'PromptsPage', 'usePrompts', 'addPrompts'],
+    updatedAt: '2026-07-07',
+  },
 ];

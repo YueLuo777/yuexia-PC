@@ -1,3 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -9,6 +13,10 @@ import {
   normalizePromptCategoryName,
   normalizePromptSubcategory,
 } from './usePrompts';
+
+const readUsePromptsSource = () => (
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'usePrompts.ts'), 'utf8')
+);
 
 describe('usePrompts categories', () => {
   it('uses setting and chapter-outline prompt categories without plot chain', () => {
@@ -49,5 +57,16 @@ describe('usePrompts categories', () => {
     expect(normalizePromptSubcategory('审核', '文本审核')).toBe('文本审核');
     expect(normalizePromptSubcategory('审核', '')).toBe('结构审核');
     expect(normalizePromptSubcategory('综合点评', '文本审核')).toBeUndefined();
+  });
+  it('supports batch prompt imports without repeatedly writing from stale prompt state', () => {
+    const source = readUsePromptsSource();
+    const addPromptsStart = source.indexOf('const addPrompts = (inputs: NewPromptInput[]) =>');
+    const addPromptsEnd = source.indexOf('const updatePrompt =', addPromptsStart);
+    const addPromptsSource = source.slice(addPromptsStart, addPromptsEnd);
+
+    expect(addPromptsSource).toContain('persistPrompts([...items, ...prompts]);');
+    expect(addPromptsSource).toContain('persistCategories([...categories, ...items.map((item) => item.category)]);');
+    expect(addPromptsSource).toContain('return items;');
+    expect(source).toContain('addPrompts,');
   });
 });
