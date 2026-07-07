@@ -6,14 +6,15 @@ const root = process.cwd();
 const readSource = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
 
 describe('hotspot page integration', () => {
-  it('registers the hotspot page in app routes and default navigation', () => {
+  it('retires the hotspot page from app routes and default navigation', () => {
     const app = readSource('src/app/App.tsx');
     const nav = readSource('src/shared/navigation/navConfig.ts');
 
-    expect(app).toContain("HotspotPage");
-    expect(app).toContain('path="/hotspots"');
-    expect(nav).toContain("to: '/hotspots'");
-    expect(nav).toContain("label: '热点分析'");
+    expect(app).not.toContain("HotspotPage");
+    expect(app).not.toContain('path="/hotspots"');
+    expect(nav).not.toContain("to: '/hotspots'");
+    expect(nav).toContain("'/hotspots'");
+    expect(nav).toContain('REMOVED_ROUTES');
   });
 
   it('exposes hotspot fetching through the Electron preload bridge', () => {

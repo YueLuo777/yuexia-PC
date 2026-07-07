@@ -14,12 +14,13 @@ export const AUDIT_PROMPT_SUBCATEGORIES = ['结构审核', '文本审核'] as co
 export const COMMENT_PROMPT_CATEGORY = '综合点评';
 export const STATUS_PROMPT_CATEGORY = '更新状态';
 export const SUMMARY_PROMPT_CATEGORY = '生成梗概';
-export const HOTSPOT_ANALYSIS_PROMPT_CATEGORY = '热点分析';
+export const HOTSPOT_ANALYSIS_PROMPT_CATEGORY = '题材迭代';
 const PROMPT_CATEGORY_ALIASES: Record<string, string> = {
   大纲: '设定',
   细纲: '章纲',
   章节细纲: '章纲',
   剧情链: '章纲',
+  热点分析: HOTSPOT_ANALYSIS_PROMPT_CATEGORY,
   点评: COMMENT_PROMPT_CATEGORY,
   更新: STATUS_PROMPT_CATEGORY,
   状态: STATUS_PROMPT_CATEGORY,

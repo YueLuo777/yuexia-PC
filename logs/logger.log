@@ -1,0 +1,35 @@
+{"level":"info","message":"🔥 DailyHot API successfully runs on port 36689","timestamp":"2026-07-06 23:46:21"}
+{"level":"info","message":"🔗 Local: 👉 http://localhost:36689","timestamp":"2026-07-06 23:46:21"}
+{"level":"info","message":"🌐 [GET] https://top.baidu.com/board?tab=realtime","timestamp":"2026-07-06 23:46:22"}
+{"level":"error","message":"📦 [Redis] connection failed: connect ECONNREFUSED 127.0.0.1:6379","timestamp":"2026-07-06 23:46:22"}
+{"level":"error","message":"📦 [Redis] connection failed: Connection is closed.","timestamp":"2026-07-06 23:46:22"}
+{"level":"info","message":"💾 [NodeCache] https://top.baidu.com/board?tab=realtime has been cached","timestamp":"2026-07-06 23:46:22"}
+{"level":"info","message":"✅ [200] request was successful","timestamp":"2026-07-06 23:46:22"}
+{"level":"info","message":"🌐 [GET] https://www.douyin.com/passport/general/login_guiding_strategy/?aid=6383","timestamp":"2026-07-06 23:46:22"}
+{"level":"info","message":"💾 [NodeCache] https://www.douyin.com/passport/general/login_guiding_strategy/?aid=6383 has been cached","timestamp":"2026-07-06 23:46:22"}
+{"level":"info","message":"✅ [200] request was successful","timestamp":"2026-07-06 23:46:22"}
+{"level":"info","message":"🌐 [GET] https://www.douyin.com/aweme/v1/web/hot/search/list/?device_platform=webapp&aid=6383&channel=channel_pc_web&detail_list=1","timestamp":"2026-07-06 23:46:22"}
+{"level":"info","message":"💾 [NodeCache] https://www.douyin.com/aweme/v1/web/hot/search/list/?device_platform=webapp&aid=6383&channel=channel_pc_web&detail_list=1 has been cached","timestamp":"2026-07-06 23:46:22"}
+{"level":"info","message":"✅ [200] request was successful","timestamp":"2026-07-06 23:46:22"}
+{"level":"info","message":"🌐 [GET] https://m.weibo.cn/api/container/getIndex?containerid=106003type%3D25%26t%3D3%26disable_hot%3D1%26filter_type%3Drealtimehot&title=%E5%BE%AE%E5%8D%9A%E7%83%AD%E6%90%9C&extparam=filter_type%3Drealtimehot%26mi_cid%3D100103%26pos%3D0_0%26c_type%3D30%26display_time%3D1540538388&luicode=10000011&lfid=231583","timestamp":"2026-07-06 23:46:22"}
+{"level":"info","message":"💾 [NodeCache] https://m.weibo.cn/api/container/getIndex?containerid=106003type%3D25%26t%3D3%26disable_hot%3D1%26filter_type%3Drealtimehot&title=%E5%BE%AE%E5%8D%9A%E7%83%AD%E6%90%9C&extparam=filter_type%3Drealtimehot%26mi_cid%3D100103%26pos%3D0_0%26c_type%3D30%26display_time%3D1540538388&luicode=10000011&lfid=231583 has been cached","timestamp":"2026-07-06 23:46:22"}
+{"level":"info","message":"✅ [200] request was successful","timestamp":"2026-07-06 23:46:22"}
+{"level":"error","message":"❌ [ERROR] Cannot read properties of undefined (reading 'cards')","timestamp":"2026-07-06 23:46:22"}
+{"level":"info","message":"🌐 [GET] https://api.zhihu.com/topstory/hot-lists/total?limit=50","timestamp":"2026-07-06 23:46:22"}
+{"level":"info","message":"💾 [NodeCache] https://api.zhihu.com/topstory/hot-lists/total?limit=50 has been cached","timestamp":"2026-07-06 23:46:23"}
+{"level":"info","message":"✅ [200] request was successful","timestamp":"2026-07-06 23:46:23"}
+{"level":"info","message":"🌐 [GET] https://api.bilibili.com/x/web-interface/nav","timestamp":"2026-07-06 23:46:23"}
+{"level":"info","message":"💾 [NodeCache] https://api.bilibili.com/x/web-interface/nav has been cached","timestamp":"2026-07-06 23:46:23"}
+{"level":"info","message":"✅ [200] request was successful","timestamp":"2026-07-06 23:46:23"}
+{"level":"info","message":"💾 [NodeCache] bilibili-wbi has been cached","timestamp":"2026-07-06 23:46:23"}
+{"level":"info","message":"🌐 [GET] https://api.bilibili.com/x/web-interface/ranking/v2?rid=0&type=all&bar=514&baz=1919810&foo=114&wts=1783352783&w_rid=85d284b5f22253993af90537797cb5b5","timestamp":"2026-07-06 23:46:23"}
+{"level":"info","message":"💾 [NodeCache] https://api.bilibili.com/x/web-interface/ranking/v2?rid=0&type=all&bar=514&baz=1919810&foo=114&wts=1783352783&w_rid=85d284b5f22253993af90537797cb5b5 has been cached","timestamp":"2026-07-06 23:46:23"}
+{"level":"info","message":"✅ [200] request was successful","timestamp":"2026-07-06 23:46:23"}
+{"level":"info","message":"bilibili 新接口","timestamp":"2026-07-06 23:46:23"}
+{"level":"info","message":"🔥 DailyHot API successfully runs on port 36690","timestamp":"2026-07-06 23:46:40"}
+{"level":"info","message":"🔗 Local: 👉 http://localhost:36690","timestamp":"2026-07-06 23:46:40"}
+{"level":"info","message":"🌐 [GET] https://top.baidu.com/board?tab=realtime","timestamp":"2026-07-06 23:46:41"}
+{"level":"error","message":"📦 [Redis] connection failed: connect ECONNREFUSED 127.0.0.1:6379","timestamp":"2026-07-06 23:46:41"}
+{"level":"error","message":"📦 [Redis] connection failed: Connection is closed.","timestamp":"2026-07-06 23:46:41"}
+{"level":"info","message":"💾 [NodeCache] https://top.baidu.com/board?tab=realtime has been cached","timestamp":"2026-07-06 23:46:41"}
+{"level":"info","message":"✅ [200] request was successful","timestamp":"2026-07-06 23:46:41"}

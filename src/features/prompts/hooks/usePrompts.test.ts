@@ -31,7 +31,8 @@ describe('usePrompts categories', () => {
     expect(DEFAULT_PROMPT_CATEGORIES).not.toContain('更新');
     expect(isDefaultPromptCategory('设定')).toBe(true);
     expect(isDefaultPromptCategory('章纲')).toBe(true);
-    expect(isDefaultPromptCategory('热点分析')).toBe(true);
+    expect(isDefaultPromptCategory('题材迭代')).toBe(true);
+    expect(normalizePromptCategoryName('热点分析')).toBe('题材迭代');
     expect(isDefaultPromptCategory('更新状态')).toBe(true);
     expect(normalizePromptCategoryName('大纲')).toBe('设定');
     expect(normalizePromptCategoryName('细纲')).toBe('章纲');

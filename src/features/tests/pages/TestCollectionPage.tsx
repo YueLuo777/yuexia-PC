@@ -8,6 +8,7 @@ import {
   Moon,
   Palette,
   Search,
+  Sparkles,
   X,
 } from 'lucide-react';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
@@ -73,6 +74,11 @@ const TestBrowserPage = lazy(() =>
 const TomatoGenreIterationTestPage = lazy(() =>
   import('@/features/tests/pages/TomatoGenreIterationTestPage').then((module) => ({
     default: module.TomatoGenreIterationTestPage,
+  })),
+);
+const GenreIterationMoonfallStyleTestPage = lazy(() =>
+  import('@/features/tests/pages/GenreIterationMoonfallStyleTestPage').then((module) => ({
+    default: module.GenreIterationMoonfallStyleTestPage,
   })),
 );
 
@@ -187,6 +193,13 @@ const testGroups = [
         path: '/tomato-genre-iteration-test',
         icon: Globe,
         badge: 'Tomato',
+      },
+      {
+        title: '题材迭代月下风格预览',
+        description: '用月下软件的浅色面板、青色强调和三栏工作台重新布局题材迭代板块，先在测试区确认视觉。',
+        path: '/genre-iteration-moonfall-style-test',
+        icon: Sparkles,
+        badge: 'Genre UI',
       },
     ],
   },
@@ -343,6 +356,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':
         return <TomatoGenreIterationTestPage />;
+      case '/genre-iteration-moonfall-style-test':
+        return <GenreIterationMoonfallStyleTestPage />;
       default:
         return null;
     }
