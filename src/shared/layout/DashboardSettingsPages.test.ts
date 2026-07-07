@@ -49,8 +49,11 @@ describe('dashboard unified settings page', () => {
   it('keeps the four settings areas inside the unified settings shell', () => {
     const settingsPage = readSource('src/shared/settings/SettingsPage.tsx');
 
-    expect(settingsPage).toContain("type SettingsSection = 'system' | 'shortcuts' | 'theme' | 'navigation'");
+    expect(settingsPage).toContain("type SettingsSection = 'system' | 'backup' | 'shortcuts' | 'theme' | 'navigation'");
     expect(settingsPage).toContain("id: 'system'");
+    expect(settingsPage).toContain("id: 'backup'");
+    expect(settingsPage).toContain('数据迁移');
+    expect(settingsPage).toContain('DbSettingsPage');
     expect(settingsPage).toContain("id: 'shortcuts'");
     expect(settingsPage).toContain("id: 'theme'");
     expect(settingsPage).toContain("id: 'navigation'");

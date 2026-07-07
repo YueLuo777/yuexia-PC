@@ -8174,4 +8174,15 @@ export const defaultEntries: ErrorLogEntry[] = [
     keywords: ['提示词管理', '导入提示词', '导出提示词', 'TXT', 'PromptsPage', 'usePrompts', 'addPrompts'],
     updatedAt: '2026-07-07',
   },
+  {
+    id: 'global-data-migration-replace-import-001',
+    title: '两台电脑之间需要可见的全局数据迁移入口',
+    area: '设置 / 数据迁移 / 全局备份导入导出',
+    symptom: '家里电脑和公司电脑安装同一项目后，提示词、新建小说和页面设置不一致；旧的本地备份页面入口隐藏，导入也只是叠加写入，不能保证公司电脑变成家里电脑状态。',
+    cause: '备份能力停留在数据库设置隐藏页面，导航和设置页没有明确入口；导入逻辑只写入备份中的 key，没有先清除本软件已有的可恢复 key，旧数据可能残留。',
+    solution: '设置页新增“数据迁移”分区，复用并升级全局备份页面；导出生成 yuexia-global-backup zip；导入前确认覆盖，先清除本软件可恢复 localStorage key，再写入备份内容，并兼容旧 JSON key 映射格式。',
+    prevention: '全局迁移必须同时覆盖入口可见性、项目 key 白名单、安全脱敏、替换式恢复和导入确认；新增本地存储 key 时要确认 isRestorableLocalStorageKey 能覆盖。',
+    keywords: ['全局数据迁移', '导出全局备份', '导入全局备份', 'DbSettingsPage', 'SettingsPage', 'replaceRestorableLocalStorageData'],
+    updatedAt: '2026-07-07',
+  },
 ];

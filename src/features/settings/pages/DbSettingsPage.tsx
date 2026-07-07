@@ -17,11 +17,16 @@ const RESTORABLE_STORAGE_KEY_PREFIXES = [
   'plot_point_layout_',
   'materials:',
   'current_',
+  'concept_',
+  'novel_',
+  'script_editor_',
+  'sev2_',
 ];
 const RESTORABLE_STORAGE_KEYS = new Set([
   'materials',
   'materials_data_v1',
   'plot_library_v1',
+  'concept_library_ai_request_log_groups',
 ]);
 const BLOCKED_STORAGE_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 const SECRET_VALUE_PATTERN = /\b(?:sk-[A-Za-z0-9_-]{12,}|Bearer\s+[A-Za-z0-9._-]{12,})\b/g;
@@ -89,6 +94,15 @@ export function sanitizeLocalStorageBackup(data: Record<string, unknown>) {
   return next;
 }
 
+export function replaceRestorableLocalStorageData(data: Record<string, unknown>) {
+  const next = filterRestorableLocalStorageData(data);
+  Object.keys(readAllLocalStorage()).forEach((key) => {
+    if (isRestorableLocalStorageKey(key)) localStorage.removeItem(key);
+  });
+  Object.entries(next).forEach(([key, value]) => localStorage.setItem(key, value));
+  return next;
+}
+
 function readAllLocalStorage() {
   const data: Record<string, string> = {};
   for (let index = 0; index < localStorage.length; index += 1) {
@@ -109,27 +123,29 @@ export function DbSettingsPage() {
     try {
       const zip = new JSZip();
       const exportedAt = new Date().toISOString();
+      const localStorageBackup = sanitizeLocalStorageBackup(readAllLocalStorage());
       zip.file(BACKUP_MANIFEST_FILE, JSON.stringify({
-        version: 3,
+        version: 4,
         exportedAt,
         app: '月下写作',
-        note: '这个迁移包只包含浏览器本地缓存数据，不包含已归档的旧数据库运行时。',
+        note: '这个全局迁移包用于把一台电脑上的作品、提示词、页面设置和本地资料恢复到另一台电脑；出于安全原因，API Key、Secret、Token、Password 等密钥字段会被清空。',
         includes: {
           localStorage: true,
+          localStorageKeys: Object.keys(localStorageBackup).length,
         },
       }, null, 2));
-      zip.file(BACKUP_LOCAL_STORAGE_FILE, JSON.stringify(sanitizeLocalStorageBackup(readAllLocalStorage()), null, 2));
+      zip.file(BACKUP_LOCAL_STORAGE_FILE, JSON.stringify(localStorageBackup, null, 2));
 
       const blob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `yuexia-local-backup-${exportedAt.slice(0, 10)}.zip`;
+      link.download = `yuexia-global-backup-${exportedAt.slice(0, 10)}.zip`;
       link.click();
       URL.revokeObjectURL(url);
-      setNotice('本地数据备份已导出。');
+      setNotice('全局数据迁移包已导出。把这个 zip 带到另一台电脑，在同一页面导入即可。');
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : '导出本地备份失败。');
+      setNotice(error instanceof Error ? error.message : '导出全局迁移包失败。');
     } finally {
       setIsBusy(false);
     }
@@ -137,6 +153,7 @@ export function DbSettingsPage() {
 
   const importMigrationBackup = async (file?: File) => {
     if (!file) return;
+    if (!window.confirm('导入后会先清除当前电脑里本软件的数据，再恢复备份内容。确认继续？')) return;
     setIsBusy(true);
     try {
       const isZip = file.name.toLowerCase().endsWith('.zip');
@@ -145,24 +162,24 @@ export function DbSettingsPage() {
       if (isZip) {
         const zip = await JSZip.loadAsync(await file.arrayBuffer());
         const localStorageText = await zip.file(BACKUP_LOCAL_STORAGE_FILE)?.async('string');
-        if (!localStorageText) throw new Error('备份包里没有本地数据文件。');
+        if (!localStorageText) throw new Error('备份包里没有全局数据文件。');
         backup = {
-          version: 3,
+          version: 4,
           localStorage: JSON.parse(localStorageText) as Record<string, unknown>,
         };
       } else {
         backup = JSON.parse(await file.text()) as MigrationBackup;
       }
 
-      const localStorageData = backup.localStorage ?? backup.data;
+      const localStorageData = backup.localStorage ?? backup.data ?? backup;
       if (!localStorageData || typeof localStorageData !== 'object') {
         throw new Error('备份文件格式不正确。');
       }
 
-      Object.entries(filterRestorableLocalStorageData(localStorageData)).forEach(([key, value]) => localStorage.setItem(key, value));
-      setNotice('本地备份已导入。刷新页面后会使用恢复后的资料。');
+      const restored = replaceRestorableLocalStorageData(localStorageData);
+      setNotice(`全局数据已导入 ${Object.keys(restored).length} 项。刷新页面后会使用恢复后的资料。`);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : '导入本地备份失败。');
+      setNotice(error instanceof Error ? error.message : '导入全局迁移包失败。');
     } finally {
       setIsBusy(false);
     }
@@ -172,9 +189,9 @@ export function DbSettingsPage() {
     <div className="flex h-full flex-col bg-gray-50">
       <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-gray-200 bg-white px-6">
         <div className="min-w-0">
-          <h1 className="text-xl font-bold text-gray-900">本地数据备份</h1>
+          <h1 className="text-xl font-bold text-gray-900">全局数据迁移</h1>
           <p className="mt-0.5 truncate text-xs text-gray-400">
-            向量数据库已停用；这里仅用于导出和恢复当前软件的本地缓存数据。
+            用于把家里电脑的软件数据迁移到公司电脑：作品、提示词、设定、资料、布局和常用设置会一起导出。
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -194,7 +211,7 @@ export function DbSettingsPage() {
             className="inline-flex h-8 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
           >
             <DatabaseBackup className="h-4 w-4" />
-            导出备份
+            导出全局备份
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -202,26 +219,26 @@ export function DbSettingsPage() {
             className="inline-flex h-8 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
           >
             <ArchiveRestore className="h-4 w-4" />
-            导入备份
+            导入全局备份
           </button>
         </div>
       </header>
 
       <main className="min-h-0 flex-1 overflow-y-auto p-6">
         <section className="rounded-xl border border-gray-200 bg-white p-5">
-          <div className="text-sm font-bold text-gray-900">当前保存方式</div>
+          <div className="text-sm font-bold text-gray-900">迁移范围</div>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
             <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
-              <p className="text-xs font-bold text-gray-500">存储位置</p>
-              <p className="mt-2 text-sm text-gray-800">浏览器本地缓存 localStorage</p>
+              <p className="text-xs font-bold text-gray-500">导出内容</p>
+              <p className="mt-2 text-sm text-gray-800">小说、剧本、章节、提示词、资料库、模型列表和页面配置</p>
             </div>
             <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
-              <p className="text-xs font-bold text-gray-500">备份内容</p>
-              <p className="mt-2 text-sm text-gray-800">作品、素材、剧情、设定、模型与页面配置</p>
+              <p className="text-xs font-bold text-gray-500">导入方式</p>
+              <p className="mt-2 text-sm text-gray-800">先清除当前电脑的软件本地数据，再恢复备份，确保两边状态一致</p>
             </div>
             <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
-              <p className="text-xs font-bold text-gray-500">向量数据库</p>
-              <p className="mt-2 text-sm text-gray-800">已从当前运行路径剥离</p>
+              <p className="text-xs font-bold text-gray-500">安全边界</p>
+              <p className="mt-2 text-sm text-gray-800">API Key、Secret、Token、Password 等密钥字段会被清空</p>
             </div>
           </div>
           {notice && (
@@ -235,20 +252,22 @@ export function DbSettingsPage() {
           <div className="flex items-start gap-3">
             <Trash2 className="mt-0.5 h-5 w-5 text-red-500" />
             <div>
-              <div className="text-sm font-bold text-gray-900">清空本地缓存</div>
+              <div className="text-sm font-bold text-gray-900">清空本软件本地数据</div>
               <p className="mt-1 text-xs leading-5 text-gray-500">
-                这会清除当前浏览器缓存里的所有软件数据。操作前请先导出备份。
+                这会清除当前浏览器缓存里属于本软件的数据。操作前请先导出全局备份。
               </p>
               <button
                 onClick={() => {
-                  if (!window.confirm('确认清空本地缓存？清空后需要导入备份才能恢复。')) return;
-                  localStorage.clear();
-                  setNotice('本地缓存已清空。刷新页面后生效。');
+                  if (!window.confirm('确认清空本软件本地数据？清空后需要导入备份才能恢复。')) return;
+                  Object.keys(readAllLocalStorage()).forEach((key) => {
+                    if (isRestorableLocalStorageKey(key)) localStorage.removeItem(key);
+                  });
+                  setNotice('本软件本地数据已清空。刷新页面后生效。');
                 }}
                 disabled={isBusy}
                 className="mt-3 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 disabled:opacity-50"
               >
-                清空本地缓存
+                清空本软件数据
               </button>
             </div>
           </div>

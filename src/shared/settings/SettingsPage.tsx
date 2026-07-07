@@ -1,8 +1,9 @@
-import { Keyboard, Palette, Route, Settings } from 'lucide-react';
+import { DatabaseBackup, Keyboard, Palette, Route, Settings } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { DarkThemeColorPage } from '@/features/tests/pages/DarkThemeColorPage';
+import { DbSettingsPage } from '@/features/settings/pages/DbSettingsPage';
 import { NavSettingsModal } from '@/shared/navigation/NavSettingsModal';
 import { NAV_CONFIG_UPDATED_EVENT, loadNavConfig, normalizeNavConfig, resetNavConfig, saveNavConfig, type NavGroupConfig } from '@/shared/navigation/navConfig';
 import { SHORTCUT_SETTINGS_RESET_EVENT, ShortcutSettingsModal } from '@/shared/shortcuts/ShortcutSettingsModal';
@@ -10,7 +11,7 @@ import { SystemSettingsModal } from '@/shared/settings/SystemSettingsModal';
 import { PRIMARY_TEXT_BUTTON_CLASS } from '@/shared/ui/actionButtonClasses';
 import { SettingsSurface } from '@/shared/ui/SettingsSurface';
 
-type SettingsSection = 'system' | 'shortcuts' | 'theme' | 'navigation';
+type SettingsSection = 'system' | 'backup' | 'shortcuts' | 'theme' | 'navigation';
 
 const SETTINGS_HEADER_ACTION_BUTTON_CLASS =
   PRIMARY_TEXT_BUTTON_CLASS;
@@ -22,13 +23,14 @@ const SETTINGS_NAV_ITEMS: Array<{
   icon: typeof Settings;
 }> = [
   { id: 'system', label: '系统设置', description: '窗口、关联、软件图标', icon: Settings },
+  { id: 'backup', label: '数据迁移', description: '全局导出、导入和恢复', icon: DatabaseBackup },
   { id: 'shortcuts', label: '快捷键设置', description: '键盘快捷键和鼠标手势', icon: Keyboard },
   { id: 'theme', label: '主题颜色', description: '软件配色和主题色板', icon: Palette },
   { id: 'navigation', label: '导航设置', description: '左侧导航显示和排序', icon: Route },
 ];
 
 function normalizeSettingsSection(value: string | null): SettingsSection {
-  if (value === 'shortcuts' || value === 'theme' || value === 'navigation') return value;
+  if (value === 'backup' || value === 'shortcuts' || value === 'theme' || value === 'navigation') return value;
   return 'system';
 }
 
@@ -137,6 +139,9 @@ export function SettingsPage() {
           <section className="min-h-0 flex-1 overflow-hidden bg-white px-5 py-4">
             {activeSection === 'system' && (
               <SystemSettingsModal isOpen onClose={() => undefined} homeAvatar={homeAvatar} variant="embedded" />
+            )}
+            {activeSection === 'backup' && (
+              <DbSettingsPage />
             )}
             {activeSection === 'shortcuts' && (
               <ShortcutSettingsModal isOpen onClose={() => undefined} variant="embedded" />
