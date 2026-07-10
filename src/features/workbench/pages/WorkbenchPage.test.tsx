@@ -68,13 +68,10 @@ describe('Workbench page component boundaries', () => {
 describe('Workbench find replace modal placement', () => {
   it('opens from a body portal with centered default geometry', async () => {
     const source = await readSource('WorkbenchPage.tsx');
-    const defaultGeometry = source.slice(
-      source.indexOf('const FIND_REPLACE_DEFAULT_GEOMETRY'),
-      source.indexOf('const FIND_REPLACE_MODAL_STORAGE_ID'),
-    );
-    const modalSource = source.slice(
-      source.indexOf('function WorkbenchFindReplaceModal'),
-      source.indexOf('function ManagementModal'),
+    const modalSource = await readSource('../components/WorkbenchFindReplaceModal.tsx');
+    const defaultGeometry = modalSource.slice(
+      modalSource.indexOf('const FIND_REPLACE_DEFAULT_GEOMETRY'),
+      modalSource.indexOf('const FIND_REPLACE_MODAL_STORAGE_ID'),
     );
 
     expect(defaultGeometry).toContainSource('x: 0');
@@ -82,7 +79,10 @@ describe('Workbench find replace modal placement', () => {
     expect(defaultGeometry).toContainSource('width: 592');
     expect(defaultGeometry).not.toContainSource('left:');
     expect(defaultGeometry).not.toContainSource('top:');
-    expect(source).toContainSource("const FIND_REPLACE_MODAL_STORAGE_ID = 'workbench_find_replace_centered_v2';");
+    expect(source).toContainSource(
+      "import { WorkbenchFindReplaceModal } from '@/features/workbench/components/WorkbenchFindReplaceModal';",
+    );
+    expect(modalSource).toContainSource("const FIND_REPLACE_MODAL_STORAGE_ID = 'workbench_find_replace_centered_v2';");
     expect(modalSource).toContainSource('return createPortal(');
     expect(modalSource).toContainSource('document.body');
     expect(modalSource).toContainSource('WebkitAppRegion');
