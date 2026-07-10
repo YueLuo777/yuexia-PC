@@ -11,11 +11,12 @@ const readSource = async (relativePath: string) => {
 describe('Workbench library loading', () => {
   it('loads the large library panel only when a library flow is opened', async () => {
     const source = await readSource('WorkbenchPage.tsx');
+    const managementModalSource = await readSource('../components/WorkbenchManagementModal.tsx');
 
     expect(source).toContainSource('const LazyWorkbenchLibraryPanel = lazy(() =>');
     expect(source).toContainSource("import('@/features/workbench/components/WorkbenchLibraryPanel')");
-    expect(source).toContainSource("import('@/features/models/pages/ModelManagePage')");
-    expect(source).toContainSource("import('@/features/prompts/pages/PromptsPage')");
+    expect(managementModalSource).toContainSource("import('@/features/models/pages/ModelManagePage')");
+    expect(managementModalSource).toContainSource("import('@/features/prompts/pages/PromptsPage')");
     expect(source).not.toContainSource(
       "import { WorkbenchLibraryPanel } from '@/features/workbench/components/WorkbenchLibraryPanel';",
     );
@@ -42,6 +43,15 @@ describe('Workbench page component boundaries', () => {
     );
     expect(source).not.toContainSource('function EditorSettingsModal({');
     expect(modalSource).toContainSource('export function WorkbenchEditorSettingsModal({');
+  });
+
+  it('keeps model and prompt management in its own portal component', async () => {
+    const source = await readSource('WorkbenchPage.tsx');
+    const modalSource = await readSource('../components/WorkbenchManagementModal.tsx');
+
+    expect(source).toContainSource("from '@/features/workbench/components/WorkbenchManagementModal';");
+    expect(source).not.toContainSource('function ManagementModal({');
+    expect(modalSource).toContainSource('export function WorkbenchManagementModal({');
   });
 });
 
@@ -102,11 +112,7 @@ describe('Workbench find replace modal placement', () => {
   });
 
   it('renders top-level prompt and model management modals fixed in the body portal', async () => {
-    const source = await readSource('WorkbenchPage.tsx');
-    const modalSource = source.slice(
-      source.indexOf('function ManagementModal'),
-      source.indexOf('function EditorSettingsModal'),
-    );
+    const modalSource = await readSource('../components/WorkbenchManagementModal.tsx');
 
     expect(modalSource).toContainSource('return createPortal(');
     expect(modalSource).toContainSource('WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS');

@@ -39,6 +39,7 @@ describe('ModelManagePage drag sorting', () => {
   it('keeps the embedded management modal header compact and hides failure logs there', () => {
     const source = readSource('ModelManagePage.tsx');
     const workbenchPageSource = readSource('../../workbench/pages/WorkbenchPage.tsx');
+    const workbenchManagementModalSource = readSource('../../workbench/components/WorkbenchManagementModal.tsx');
     const libraryModalSource = readSource('../../workbench/components/workbenchLibraryManagementModal.tsx');
     const chapterEditorSource = readSource('../../workbench/components/ChapterEditor.tsx');
 
@@ -50,7 +51,7 @@ describe('ModelManagePage drag sorting', () => {
     expect(source).toContainSource('{!embedded && (');
     expect(source).toContainSource('className={`model-failure-panel');
 
-    expect(workbenchPageSource).toContainSource('<LazyModelManagePage embedded onClose={onClose} />');
+    expect(workbenchManagementModalSource).toContainSource('<LazyModelManagePage embedded onClose={onClose} />');
     expect(libraryModalSource).toContainSource('<ModelManagePage embedded onClose={onClose} />');
     expect(chapterEditorSource).toContainSource(
       '<ModelManagePage embedded onClose={() => setReviewManagementModal(null)} />',
@@ -81,6 +82,7 @@ describe('ModelManagePage drag sorting', () => {
 
   it('caps workbench management modal size at 80 percent of the app viewport', () => {
     const workbenchPageSource = readSource('../../workbench/pages/WorkbenchPage.tsx');
+    const workbenchManagementModalSource = readSource('../../workbench/components/WorkbenchManagementModal.tsx');
     const libraryModalSource = readSource('../../workbench/components/workbenchLibraryManagementModal.tsx');
     const chapterEditorSource = readSource('../../workbench/components/ChapterEditor.tsx');
     const sizeSource = readSource('../../workbench/components/workbenchManagementModalSize.ts');
@@ -89,10 +91,11 @@ describe('ModelManagePage drag sorting', () => {
       "WORKBENCH_MANAGEMENT_MODAL_SIZE_CLASS = 'h-[min(calc(1040px/var(--xinyuexia-effective-scale,1)),calc(80vh/var(--xinyuexia-effective-scale,1)))] w-[min(calc(1500px/var(--xinyuexia-effective-scale,1)),calc(80vw/var(--xinyuexia-effective-scale,1)))]'",
     );
     expect(sizeSource).toContainSource("WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS = 'h-[80vh] w-[80vw]'");
-    expect(workbenchPageSource).toContainSource('WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS');
-    expect(workbenchPageSource).toContainSource('return createPortal(');
-    expect(workbenchPageSource).toContainSource('document.body');
-    expect(workbenchPageSource).toContainSource('data-global-modal-static="true"');
+    expect(workbenchPageSource).toContainSource('WorkbenchManagementModal');
+    expect(workbenchManagementModalSource).toContainSource('WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS');
+    expect(workbenchManagementModalSource).toContainSource('return createPortal(');
+    expect(workbenchManagementModalSource).toContainSource('document.body');
+    expect(workbenchManagementModalSource).toContainSource('data-global-modal-static="true"');
     expect(libraryModalSource).toContainSource('WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS');
     expect(libraryModalSource).toContainSource('data-global-modal-static="true"');
     expect(chapterEditorSource).toContainSource(
@@ -106,10 +109,10 @@ describe('ModelManagePage drag sorting', () => {
     expect(libraryModalSource).not.toContainSource('w-[min(1200px,94vw)]');
     expect(`${libraryModalSource}\n${sizeSource}`).not.toContainSource('94vw');
     expect(`${libraryModalSource}\n${sizeSource}`).not.toContainSource('88vh');
-    expect(`${workbenchPageSource}\n${libraryModalSource}\n${chapterEditorSource}`).not.toContainSource(
-      'h-[min(820px,88vh)] w-[min(1500px,94vw)]',
-    );
-    expect(workbenchPageSource).not.toContainSource('useDraggableModal(`workbench_${type}_management`)');
+    expect(
+      `${workbenchPageSource}\n${workbenchManagementModalSource}\n${libraryModalSource}\n${chapterEditorSource}`,
+    ).not.toContainSource('h-[min(820px,88vh)] w-[min(1500px,94vw)]');
+    expect(workbenchManagementModalSource).not.toContainSource('useDraggableModal(`workbench_${type}_management`)');
     expect(libraryModalSource).not.toContainSource('useDraggableModal');
     expect(libraryModalSource).not.toContainSource('ModalResizeHandles');
   });

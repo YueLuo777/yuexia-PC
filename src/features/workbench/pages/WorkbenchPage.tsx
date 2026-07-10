@@ -27,7 +27,10 @@ import {
 import { WorkbenchHeader, type WorkbenchHeaderFlowStats } from '@/features/workbench/components/WorkbenchHeader';
 import { WorkbenchEditorSettingsModal } from '@/features/workbench/components/WorkbenchEditorSettingsModal';
 import { WorkbenchModal } from '@/features/workbench/components/WorkbenchModal';
-import { WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS } from '@/features/workbench/components/workbenchManagementModalSize';
+import {
+  WorkbenchManagementModal,
+  type WorkbenchManagementModalKey,
+} from '@/features/workbench/components/WorkbenchManagementModal';
 import { readChapterContent, useWorkbenchData } from '@/features/workbench/hooks/useWorkbenchData';
 import { useWorkbenchLibrarySnapshots } from '@/features/workbench/hooks/useWorkbenchLibrarySnapshots';
 import {
@@ -66,7 +69,6 @@ import type { Volume, WorkbenchNovel } from '@/features/workbench/model/workbenc
 import { countUnpolishedChapters } from '@/features/workbench/model/chapterPolishStatus';
 
 type ModalKey = 'workInfo' | 'notes' | 'settingLibrary' | 'detailOutlineLibrary';
-type ManagementModalKey = 'models' | 'agents';
 type FindScope = 'chapter' | 'book';
 type PendingPublish = { type: 'single'; volumeId: number; chapterId: number; title: string };
 type MemoScope = 'global' | 'work';
@@ -78,12 +80,6 @@ const LazyWorkbenchLibraryPanel = lazy(() =>
   import('@/features/workbench/components/WorkbenchLibraryPanel').then((module) => ({
     default: module.WorkbenchLibraryPanel,
   })),
-);
-const LazyModelManagePage = lazy(() =>
-  import('@/features/models/pages/ModelManagePage').then((module) => ({ default: module.ModelManagePage })),
-);
-const LazyPromptsPage = lazy(() =>
-  import('@/features/prompts/pages/PromptsPage').then((module) => ({ default: module.PromptsPage })),
 );
 
 function WorkbenchLibraryPanel(props: ComponentProps<typeof LazyWorkbenchLibraryPanel>) {
@@ -1337,50 +1333,6 @@ function WorkbenchFindReplaceModal({
   );
 }
 
-function ManagementModal({ type, onClose }: { type: ManagementModalKey; onClose: () => void }) {
-  useTopModalEscape(true, onClose);
-  const title = type === 'models' ? '模型管理' : '提示词管理';
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[220] flex items-center justify-center bg-black/35 px-8 py-8"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <section
-        data-global-modal-static="true"
-        className={`relative flex ${WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS} flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]`}
-      >
-        {type === 'agents' ? (
-          <header className="flex h-11 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
-            <h2 className="text-sm font-bold text-slate-900">{title}</h2>
-            <button
-              onClick={onClose}
-              className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
-              title="关闭"
-            >
-              关闭
-            </button>
-          </header>
-        ) : null}
-        <div className="min-h-0 flex-1 overflow-hidden">
-          <Suspense
-            fallback={
-              <div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">
-                正在加载管理页面…
-              </div>
-            }
-          >
-            {type === 'models' ? <LazyModelManagePage embedded onClose={onClose} /> : <LazyPromptsPage />}
-          </Suspense>
-        </div>
-      </section>
-    </div>,
-    document.body,
-  );
-}
-
 export function WorkbenchPage() {
   const navigate = useNavigate();
   const [isRecycleOpen, setIsRecycleOpen] = useState(false);
@@ -1389,7 +1341,7 @@ export function WorkbenchPage() {
   const [isEditorSettingsOpen, setIsEditorSettingsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalKey | null>(null);
   const [activeCreationFlow, setActiveCreationFlow] = useState<WorkbenchCreationFlowPageKey>('writing');
-  const [managementModal, setManagementModal] = useState<ManagementModalKey | null>(null);
+  const [managementModal, setManagementModal] = useState<WorkbenchManagementModalKey | null>(null);
   const [fieldSizeOpenSignal, setFieldSizeOpenSignal] = useState(0);
   const [aiLogOpenSignal, setAiLogOpenSignal] = useState(0);
   const headerLogOpenHandlerRef = useRef<HeaderLogOpenHandler | null>(null);
@@ -2586,7 +2538,7 @@ export function WorkbenchPage() {
         onPermanentDelete={permanentDeleteChapter}
       />
 
-      {managementModal && <ManagementModal type={managementModal} onClose={() => setManagementModal(null)} />}
+      {managementModal && <WorkbenchManagementModal type={managementModal} onClose={() => setManagementModal(null)} />}
 
       {isContextLibraryOpen && (
         <WorkbenchModal
