@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildChapterExportText } from './WorkbenchPage';
+import { buildChapterExportText } from '../model/chapterExport';
 
 const readWorkbenchPageSource = async () => {
   const fs = await import('node:fs/promises');

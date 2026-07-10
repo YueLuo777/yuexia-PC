@@ -34,6 +34,16 @@ describe('Workbench page component boundaries', () => {
     expect(exportPanelSource).toContainSource('export function ChapterExportPanel({');
   });
 
+  it('keeps chapter export formatting in a pure model module', async () => {
+    const source = await readSource('WorkbenchPage.tsx');
+    const exportSource = await readSource('../model/chapterExport.ts');
+
+    expect(source).toContainSource("from '@/features/workbench/model/chapterExport';");
+    expect(source).not.toContainSource('export function buildChapterExportText(');
+    expect(exportSource).toContainSource('export function buildChapterExportText(');
+    expect(exportSource).toContainSource('export function buildChapterExportDoc(');
+  });
+
   it('keeps editor settings in its own component', async () => {
     const source = await readSource('WorkbenchPage.tsx');
     const modalSource = await readSource('../components/WorkbenchEditorSettingsModal.tsx');
