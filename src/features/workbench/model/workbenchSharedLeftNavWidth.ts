@@ -5,14 +5,23 @@ export const WORKBENCH_SHARED_LEFT_NAV_WIDTH_DEFAULT = 200;
 export const WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN = 180;
 export const WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX = 640;
 
-export function normalizeSharedWorkbenchLeftNavWidth(value: number, maxWidth = WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX, minWidth = WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN) {
-  const effectiveMax = Number.isFinite(maxWidth) && maxWidth > 0 ? Math.round(maxWidth) : WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX;
+export function normalizeSharedWorkbenchLeftNavWidth(
+  value: number,
+  maxWidth = WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX,
+  minWidth = WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN,
+) {
+  const effectiveMax =
+    Number.isFinite(maxWidth) && maxWidth > 0 ? Math.round(maxWidth) : WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX;
   const effectiveMin = Math.min(Math.max(WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN, Math.round(minWidth)), effectiveMax);
-  if (!Number.isFinite(value)) return Math.min(Math.max(WORKBENCH_SHARED_LEFT_NAV_WIDTH_DEFAULT, effectiveMin), effectiveMax);
+  if (!Number.isFinite(value))
+    return Math.min(Math.max(WORKBENCH_SHARED_LEFT_NAV_WIDTH_DEFAULT, effectiveMin), effectiveMax);
   return Math.max(effectiveMin, Math.min(effectiveMax, Math.round(value)));
 }
 
-export function readSharedWorkbenchLeftNavWidth(maxWidth = WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX, minWidth = WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN) {
+export function readSharedWorkbenchLeftNavWidth(
+  maxWidth = WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX,
+  minWidth = WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN,
+) {
   try {
     const stored = Number(localStorage.getItem(WORKBENCH_SHARED_LEFT_NAV_WIDTH_STORAGE_KEY));
     return normalizeSharedWorkbenchLeftNavWidth(
@@ -25,7 +34,11 @@ export function readSharedWorkbenchLeftNavWidth(maxWidth = WORKBENCH_SHARED_LEFT
   }
 }
 
-export function writeSharedWorkbenchLeftNavWidth(value: number, maxWidth = WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX, minWidth = WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN) {
+export function writeSharedWorkbenchLeftNavWidth(
+  value: number,
+  maxWidth = WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX,
+  minWidth = WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN,
+) {
   const normalized = normalizeSharedWorkbenchLeftNavWidth(value, maxWidth, minWidth);
   localStorage.setItem(WORKBENCH_SHARED_LEFT_NAV_WIDTH_STORAGE_KEY, String(normalized));
   if (typeof window !== 'undefined') {

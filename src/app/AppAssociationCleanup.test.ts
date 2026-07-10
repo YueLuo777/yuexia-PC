@@ -7,7 +7,7 @@ describe('App association cleanup lifecycle', () => {
   it('resets stale associations on startup and binds close cleanup', () => {
     const source = readFileSync(resolve(process.cwd(), 'src/app/App.tsx'), 'utf8');
 
-    expect(source).toContain('resetWorkbenchAssociationsForNewAppSession');
-    expect(source).toContain('bindWorkbenchAssociationCloseCleanup');
+    expect(source).toContainSource('resetWorkbenchAssociationsForNewAppSession');
+    expect(source).toContainSource('bindWorkbenchAssociationCloseCleanup');
   });
 });

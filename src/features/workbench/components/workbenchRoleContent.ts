@@ -1,5 +1,8 @@
 import { wrapAiRequestTag } from '@/features/workbench/model/workbenchAiRequestTagPolicy';
-import { normalizeWorkbenchRoleLifeStatus, normalizeWorkbenchRoleType } from '@/features/workbench/model/workbenchRoleTypes';
+import {
+  normalizeWorkbenchRoleLifeStatus,
+  normalizeWorkbenchRoleType,
+} from '@/features/workbench/model/workbenchRoleTypes';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 import { parseSectionedSettingBody } from './workbenchStructuredSettings';
 import {
@@ -24,7 +27,6 @@ export interface RoleContent {
   history?: RoleHistoryVersion[];
 }
 
-
 export interface RoleHistoryVersion {
   title: string;
   type: string;
@@ -39,9 +41,7 @@ export interface RoleHistoryVersion {
   savedAt: string;
 }
 
-
 export const ROLE_HISTORY_LIMIT = 20;
-
 
 function truncateTextForAi(content: string, maxLength: number) {
   const text = content.trim();
@@ -49,13 +49,14 @@ function truncateTextForAi(content: string, maxLength: number) {
   return `${text.slice(0, maxLength).trim()}……`;
 }
 
-
-
 export function createEmptyRoleStateSettings(): RoleStateSettings {
-  return ROLE_STATE_FIELD_DEFINITIONS.reduce((result, field) => ({
-    ...result,
-    [field.key]: '',
-  }), {} as RoleStateSettings);
+  return ROLE_STATE_FIELD_DEFINITIONS.reduce(
+    (result, field) => ({
+      ...result,
+      [field.key]: '',
+    }),
+    {} as RoleStateSettings,
+  );
 }
 
 export function normalizeRoleStateSettings(value: unknown, legacyStatus = ''): RoleStateSettings {
@@ -90,13 +91,13 @@ function buildLegacyRoleBaseSetting(parsed: Partial<RoleContent>) {
   return [
     parsed.personality?.trim() ? `人物设定：${parsed.personality.trim()}` : '',
     parsed.background?.trim() ? parsed.background.trim() : '',
-  ].filter(Boolean).join('\n\n');
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 export function getRoleBaseSetting(role: RoleContent) {
-  return role.baseSetting?.trim()
-    ? role.baseSetting
-    : buildLegacyRoleBaseSetting(role);
+  return role.baseSetting?.trim() ? role.baseSetting : buildLegacyRoleBaseSetting(role);
 }
 
 export function getRoleStateSettings(role: RoleContent) {
@@ -112,11 +113,10 @@ export function getRoleStateUpdateLabel(chapter: number | undefined) {
 }
 
 export function buildRoleStateSettingsText(settings: RoleStateSettings) {
-  return ROLE_STATE_FIELD_DEFINITIONS
-    .map((field) => {
-      const content = settings[field.key].trim();
-      return content ? `${field.title}：${content}` : '';
-    })
+  return ROLE_STATE_FIELD_DEFINITIONS.map((field) => {
+    const content = settings[field.key].trim();
+    return content ? `${field.title}：${content}` : '';
+  })
     .filter(Boolean)
     .join('\n\n');
 }
@@ -126,7 +126,9 @@ export function getRoleReadableContent(role: RoleContent) {
     getRoleBaseSetting(role),
     role.relationship?.trim() ? `人物关系：${role.relationship.trim()}` : '',
     buildRoleStateSettingsText(getRoleStateSettings(role)),
-  ].filter((part) => part.trim()).join('\n\n');
+  ]
+    .filter((part) => part.trim())
+    .join('\n\n');
 }
 
 export function parseRoleContent(content: string): RoleContent {
@@ -134,9 +136,8 @@ export function parseRoleContent(content: string): RoleContent {
     const parsed = JSON.parse(content) as Partial<RoleContent>;
     const type = normalizeWorkbenchRoleType(parsed.type);
     const lifeStatus = normalizeWorkbenchRoleLifeStatus(type, parsed.lifeStatus);
-    const baseSetting = typeof parsed.baseSetting === 'string'
-      ? parsed.baseSetting
-      : buildLegacyRoleBaseSetting(parsed);
+    const baseSetting =
+      typeof parsed.baseSetting === 'string' ? parsed.baseSetting : buildLegacyRoleBaseSetting(parsed);
     const stateSettings = normalizeRoleStateSettings(parsed.stateSettings, parsed.status);
     const stateUpdateChapters = normalizeRoleStateUpdateChapters(parsed.stateUpdateChapters);
     return {
@@ -193,16 +194,17 @@ export function buildRoleReaderContent(entry: WorkbenchLibraryEntry, role: RoleC
     `角色名：${entry.title || '未命名角色'}`,
     `角色分类：${normalizeWorkbenchRoleType(role.type) || '未分类'}`,
     truncateTextForAi(baseSetting, 900),
-  ].filter(Boolean).join('\n\n');
-  const stateContent = [
-    `生存状态：${role.lifeStatus}`,
-    truncateTextForAi(stateText, 900),
-  ].filter(Boolean).join('\n\n');
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+  const stateContent = [`生存状态：${role.lifeStatus}`, truncateTextForAi(stateText, 900)].filter(Boolean).join('\n\n');
   return [
     wrapAiRequestTag('基础设定', baseContent),
     role.relationship.trim() ? wrapAiRequestTag('人物关系', truncateTextForAi(role.relationship, 700)) : '',
     wrapAiRequestTag('状态设定', stateContent),
-  ].filter(Boolean).join('\n\n');
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 export function createRoleHistoryVersion(entry: WorkbenchLibraryEntry, role: RoleContent): RoleHistoryVersion {
@@ -222,7 +224,8 @@ export function createRoleHistoryVersion(entry: WorkbenchLibraryEntry, role: Rol
 }
 
 function isSameRoleVersion(left: RoleHistoryVersion, right: RoleHistoryVersion) {
-  return left.title === right.title &&
+  return (
+    left.title === right.title &&
     left.type === right.type &&
     left.lifeStatus === right.lifeStatus &&
     left.baseSetting === right.baseSetting &&
@@ -231,7 +234,8 @@ function isSameRoleVersion(left: RoleHistoryVersion, right: RoleHistoryVersion) 
     JSON.stringify(left.stateUpdateChapters ?? {}) === JSON.stringify(right.stateUpdateChapters ?? {}) &&
     left.personality === right.personality &&
     left.background === right.background &&
-    left.status === right.status;
+    left.status === right.status
+  );
 }
 
 export function appendRoleHistory(history: RoleHistoryVersion[] | undefined, version: RoleHistoryVersion) {
@@ -240,14 +244,14 @@ export function appendRoleHistory(history: RoleHistoryVersion[] | undefined, ver
   return [version, ...current].slice(0, ROLE_HISTORY_LIMIT);
 }
 
-
-
-
 export function createEmptyRoleBaseSettingFields() {
-  return ROLE_BASE_SETTING_FIELD_DEFINITIONS.reduce((result, field) => {
-    result[field.key] = '';
-    return result;
-  }, {} as Record<RoleBaseSettingFieldKey, string>);
+  return ROLE_BASE_SETTING_FIELD_DEFINITIONS.reduce(
+    (result, field) => {
+      result[field.key] = '';
+      return result;
+    },
+    {} as Record<RoleBaseSettingFieldKey, string>,
+  );
 }
 
 export function parseRoleBaseSettingFields(body: string) {
@@ -264,7 +268,7 @@ export function parseRoleBaseSettingFields(body: string) {
 }
 
 export function stringifyRoleBaseSettingFields(fields: Record<RoleBaseSettingFieldKey, string>) {
-  return ROLE_BASE_SETTING_FIELD_DEFINITIONS
-    .map((field) => `【${field.title}】：\n${fields[field.key].trim()}`)
-    .join('\n\n');
+  return ROLE_BASE_SETTING_FIELD_DEFINITIONS.map((field) => `【${field.title}】：\n${fields[field.key].trim()}`).join(
+    '\n\n',
+  );
 }

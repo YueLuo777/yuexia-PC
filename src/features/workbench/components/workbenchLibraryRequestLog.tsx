@@ -36,11 +36,7 @@ function getRequestLogMeta(content?: string, unit = '字') {
 }
 
 export function escapeXmlAttribute(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 export function formatBrainstormReferenceForAi(title: string, text: string) {
@@ -59,11 +55,16 @@ export function formatBrainstormReferenceForAi(title: string, text: string) {
   ].join('\n');
 }
 
-export function formatSettingLinkedContextForAi(context: { source: 'current' | 'other' | 'brainstorm' | null; title: string; text: string }) {
+export function formatSettingLinkedContextForAi(context: {
+  source: 'current' | 'other' | 'brainstorm' | null;
+  title: string;
+  text: string;
+}) {
   const text = context.text.trim();
   if (!context.source || !text) return '';
   if (context.source === 'brainstorm') return formatBrainstormReferenceForAi(context.title, text);
-  if (context.source === 'other') return wrapAiRequestTag('关联其他设定', text, { 标题: context.title.trim() || '其他设定' });
+  if (context.source === 'other')
+    return wrapAiRequestTag('关联其他设定', text, { 标题: context.title.trim() || '其他设定' });
   const tagName = '待处理设定';
   const title = context.title.trim() || '当前设定';
   return wrapAiRequestTag(tagName, text, { 标题: title });
@@ -74,17 +75,20 @@ export function formatSettingUserRequirementForAi(userText: string) {
   return wrapAiRequestTag('修改要求', text);
 }
 
-export function buildLibraryLogGroups(log: LibraryAiRequestLog, options?: {
-  includeContext?: boolean;
-  includeReaderContext?: boolean;
-  contextFallback?: string;
-  userTitle?: string;
-  readerTitle?: string;
-  readerEmptyText?: string;
-  omitEmptyUser?: boolean;
-  expandReaderContextContent?: boolean;
-  expandAllContent?: boolean;
-}): AiRequestLogGroup[] {
+export function buildLibraryLogGroups(
+  log: LibraryAiRequestLog,
+  options?: {
+    includeContext?: boolean;
+    includeReaderContext?: boolean;
+    contextFallback?: string;
+    userTitle?: string;
+    readerTitle?: string;
+    readerEmptyText?: string;
+    omitEmptyUser?: boolean;
+    expandReaderContextContent?: boolean;
+    expandAllContent?: boolean;
+  },
+): AiRequestLogGroup[] {
   const expandedContentClassName = 'overflow-visible';
   const groups: AiRequestLogGroup[] = [
     {
@@ -107,15 +111,16 @@ export function buildLibraryLogGroups(log: LibraryAiRequestLog, options?: {
       contentClassName: options.expandAllContent
         ? expandedContentClassName
         : options.expandReaderContextContent
-        ? 'min-h-[360px] overflow-visible'
-        : undefined,
+          ? 'min-h-[360px] overflow-visible'
+          : undefined,
     });
   }
   if (options?.includeContext !== false) {
     groups.push({
       id: 'context',
       title: '关联内容',
-      meta: log.contextTitle || (log.hasLinkedBrainstorm ? log.linkedBrainstormTitle : getRequestLogMeta(log.contextText)),
+      meta:
+        log.contextTitle || (log.hasLinkedBrainstorm ? log.linkedBrainstormTitle : getRequestLogMeta(log.contextText)),
       content: log.contextText || (log.hasLinkedBrainstorm ? log.userContent : ''),
       emptyText: options?.contextFallback || '未关联内容',
       tone: 'cyan',
@@ -151,7 +156,9 @@ export function getBrainstormQuestionRows(value: string) {
 }
 
 export function renderAiChatContent(content: string, options: { hideReasoningBody?: boolean } = {}) {
-  const thinkingMatch = content.match(/^\[\[THINKING seconds=(\d+) status=(thinking|done)\]\]\n([\s\S]*?)\n\[\[\/THINKING\]\]\n?\n?([\s\S]*)$/);
+  const thinkingMatch = content.match(
+    /^\[\[THINKING seconds=(\d+) status=(thinking|done)\]\]\n([\s\S]*?)\n\[\[\/THINKING\]\]\n?\n?([\s\S]*)$/,
+  );
   if (thinkingMatch) {
     const seconds = thinkingMatch[1] ?? '0';
     const done = thinkingMatch[2] === 'done';
@@ -172,9 +179,7 @@ export function renderAiChatContent(content: string, options: { hideReasoningBod
               <span>{thinkingLabel}</span>
             </summary>
             {reasoning && (
-              <div className="mt-2 border-l-2 border-gray-200 pl-3 text-sm leading-7 text-gray-500">
-                {reasoning}
-              </div>
+              <div className="mt-2 border-l-2 border-gray-200 pl-3 text-sm leading-7 text-gray-500">{reasoning}</div>
             )}
           </details>
         )}

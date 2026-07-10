@@ -1,39 +1,41 @@
 # xinyuexia 对 yuexia 复刻对比清单
 
 说明：
+
 - `✓`：主结构和主流程已接通，可以进入验收阶段
 - `△`：已经可用，但和旧项目仍有明显差异
 - `×`：还没有真正补齐
 
 本清单同时关注：
+
 - 页面结构
 - 按钮与弹窗
 - 交互逻辑
 - 状态记忆
 - 业务链路
 
-| 模块 | 旧项目入口 | 新项目位置 | UI结构 | 按钮/弹窗 | 交互/数据 | 当前状态 |
-| --- | --- | --- | --- | --- | --- | --- |
-| 首页 | `/dashboard` | `src/pages/DashboardPage.tsx` | ✓ | △ | △ | △ |
-| 导航布局 | `DashboardLayout` | `src/shared/layout/DashboardLayout.tsx` | ✓ | ✓ | ✓ | ✓ |
-| 导航设置 | `NavSettingsModal` | `src/shared/navigation/NavSettingsModal.tsx` | △ | △ | △ | △ |
-| 我的小说 | `作品库` | `src/features/novels/pages/NovelLibraryPage.tsx` | △ | △ | △ | △ |
-| 我的剧本 | `作品库` | `src/features/novels/pages/NovelLibraryPage.tsx` | △ | △ | △ | △ |
-| 小说编辑器 / 工作台 | `WorkbenchLayout` | `src/features/workbench/pages/WorkbenchPage.tsx` | △ | △ | △ | △ |
-| 剧本编辑器 | `ScriptEditorV2` | `src/features/script-editor/pages/ScriptEditorPage.tsx` | △ | △ | △ | △ |
-| 提炼剧情 | `ExtractPage` | `src/features/extract/pages/ExtractPage.tsx` | △ | △ | △ | △ |
-| 剧情库 | `PlotLibrary` | `src/features/plot-library/pages/PlotLibraryPage.tsx` | △ | △ | △ | △ |
-| 提示词管理 | `PromptZone` | `src/features/prompts/pages/PromptsPage.tsx` | △ | △ | △ | △ |
-| 模型管理 | `ApiSettings` | `src/features/models/pages/ModelManagePage.tsx` | △ | △ | △ | △ |
-| 资料库 | `MaterialsPage` | `src/features/materials/pages/MaterialsPage.tsx` | △ | △ | △ | △ |
-| 云端设置 / 数据库 | `DbSettings` | `src/features/settings/pages/DbSettingsPage.tsx` | △ | △ | △ | △ |
-| 脑洞生成器 | `IdeaGenerator` | `src/features/ideas/pages/IdeaGeneratorPage.tsx` | △ | △ | △ | △ |
-| 大纲生成器 | `OutlineGenerator` | `src/features/ideas/pages/OutlineGeneratorPage.tsx` | △ | △ | △ | △ |
-| 脑洞库 | `IdeaLibrary` | `src/features/ideas/pages/IdeaLibraryPage.tsx` | △ | △ | △ | △ |
-| 调用数据 | `CallDataPage` | `src/pages/CallDataPage.tsx` | △ | ✓ | △ | △ |
-| 标签专区 | `TagZone` | `src/pages/TagZonePage.tsx` | △ | ✓ | △ | △ |
-| 按钮测试 | `ButtonTestPage` | `src/pages/ButtonTestPage.tsx` | △ | △ | △ | △ |
-| 启动器 / Electron | Electron + 启动脚本 | `launch-xinyuexia.mjs` / `electron` | ✓ | ✓ | △ | △ |
+| 模块                | 旧项目入口          | 新项目位置                                              | UI结构 | 按钮/弹窗 | 交互/数据 | 当前状态 |
+| ------------------- | ------------------- | ------------------------------------------------------- | ------ | --------- | --------- | -------- |
+| 首页                | `/dashboard`        | `src/pages/DashboardPage.tsx`                           | ✓      | △         | △         | △        |
+| 导航布局            | `DashboardLayout`   | `src/shared/layout/DashboardLayout.tsx`                 | ✓      | ✓         | ✓         | ✓        |
+| 导航设置            | `NavSettingsModal`  | `src/shared/navigation/NavSettingsModal.tsx`            | △      | △         | △         | △        |
+| 我的小说            | `作品库`            | `src/features/novels/pages/NovelLibraryPage.tsx`        | △      | △         | △         | △        |
+| 我的剧本            | `作品库`            | `src/features/novels/pages/NovelLibraryPage.tsx`        | △      | △         | △         | △        |
+| 小说编辑器 / 工作台 | `WorkbenchLayout`   | `src/features/workbench/pages/WorkbenchPage.tsx`        | △      | △         | △         | △        |
+| 剧本编辑器          | `ScriptEditorV2`    | `src/features/script-editor/pages/ScriptEditorPage.tsx` | △      | △         | △         | △        |
+| 提炼剧情            | `ExtractPage`       | `src/features/extract/pages/ExtractPage.tsx`            | △      | △         | △         | △        |
+| 剧情库              | `PlotLibrary`       | `src/features/plot-library/pages/PlotLibraryPage.tsx`   | △      | △         | △         | △        |
+| 提示词管理          | `PromptZone`        | `src/features/prompts/pages/PromptsPage.tsx`            | △      | △         | △         | △        |
+| 模型管理            | `ApiSettings`       | `src/features/models/pages/ModelManagePage.tsx`         | △      | △         | △         | △        |
+| 资料库              | `MaterialsPage`     | `src/features/materials/pages/MaterialsPage.tsx`        | △      | △         | △         | △        |
+| 云端设置 / 数据库   | `DbSettings`        | `src/features/settings/pages/DbSettingsPage.tsx`        | △      | △         | △         | △        |
+| 脑洞生成器          | `IdeaGenerator`     | `src/features/ideas/pages/IdeaGeneratorPage.tsx`        | △      | △         | △         | △        |
+| 大纲生成器          | `OutlineGenerator`  | `src/features/ideas/pages/OutlineGeneratorPage.tsx`     | △      | △         | △         | △        |
+| 脑洞库              | `IdeaLibrary`       | `src/features/ideas/pages/IdeaLibraryPage.tsx`          | △      | △         | △         | △        |
+| 调用数据            | `CallDataPage`      | `src/pages/CallDataPage.tsx`                            | △      | ✓         | △         | △        |
+| 标签专区            | `TagZone`           | `src/pages/TagZonePage.tsx`                             | △      | ✓         | △         | △        |
+| 按钮测试            | `ButtonTestPage`    | `src/pages/ButtonTestPage.tsx`                          | △      | △         | △         | △        |
+| 启动器 / Electron   | Electron + 启动脚本 | `launch-xinyuexia.mjs` / `electron`                     | ✓      | ✓         | △         | △        |
 
 ## 已补出的关键能力
 

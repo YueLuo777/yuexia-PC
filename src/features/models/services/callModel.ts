@@ -75,24 +75,40 @@ function normalizeTemperature(value: number | undefined) {
   return Math.max(0.1, Math.min(1, Number(stepped.toFixed(2))));
 }
 
-function createModelRequestPayload(model: ModelItem, prompt: string, userContent: string, chapterContext?: string, stream = false) {
+function getSecureModelSecretId(model: ModelItem) {
+  if (typeof window === 'undefined' || !window.xinyuexiaModelSecrets) return undefined;
+  return model.instanceId ?? model.id;
+}
+
+function hasUsableModelSecret(model: ModelItem) {
+  return Boolean(model.apiKey.trim() || getSecureModelSecretId(model));
+}
+
+function createModelRequestPayload(
+  model: ModelItem,
+  prompt: string,
+  userContent: string,
+  chapterContext?: string,
+  stream = false,
+) {
   const provider = model.provider ?? 'openai-compatible';
-  const endpoint = provider === 'anthropic' ? normalizeAnthropicBaseUrl(model.baseUrl) : normalizeBaseUrl(model.baseUrl);
+  const modelSecretId = getSecureModelSecretId(model);
+  const endpoint =
+    provider === 'anthropic' ? normalizeAnthropicBaseUrl(model.baseUrl) : normalizeBaseUrl(model.baseUrl);
   const temperature = normalizeTemperature(model.temperature);
   const systemPrompt = prompt.trim();
-  const userMessage = chapterContext
-    ? `Context:\n${chapterContext}\n\nRequest:\n${userContent}`
-    : userContent;
+  const userMessage = chapterContext ? `Context:\n${chapterContext}\n\nRequest:\n${userContent}` : userContent;
 
   if (provider === 'anthropic') {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'x-api-key': model.apiKey,
       'anthropic-version': '2023-06-01',
+      ...(modelSecretId ? {} : { 'x-api-key': model.apiKey }),
     };
     return {
       provider,
       endpoint,
+      modelSecretId,
       headers,
       body: JSON.stringify({
         model: model.model || model.id,
@@ -107,11 +123,12 @@ function createModelRequestPayload(model: ModelItem, prompt: string, userContent
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${model.apiKey}`,
+    ...(modelSecretId ? {} : { Authorization: `Bearer ${model.apiKey}` }),
   };
   return {
     provider,
     endpoint,
+    modelSecretId,
     headers,
     body: JSON.stringify({
       model: model.model || model.id,
@@ -128,10 +145,18 @@ function createModelRequestPayload(model: ModelItem, prompt: string, userContent
   };
 }
 
-async function postModelRequest(endpoint: string, headers: Record<string, string>, body: string, signal?: AbortSignal, timeoutMs = 60000) {
+async function postModelRequest(
+  endpoint: string,
+  headers: Record<string, string>,
+  body: string,
+  provider: ModelItem['provider'],
+  modelSecretId?: string,
+  signal?: AbortSignal,
+  timeoutMs = 60000,
+) {
   throwIfAborted(signal);
   if (window.xinyuexiaModel) {
-    const request = window.xinyuexiaModel.request({ endpoint, headers, body, timeoutMs });
+    const request = window.xinyuexiaModel.request({ endpoint, headers, body, timeoutMs, provider, modelSecretId });
     if (!signal) return request;
     return Promise.race([
       request,
@@ -173,28 +198,23 @@ export async function callModel({
   timeoutMs = 60000,
 }: CallModelInput) {
   if (!model.baseUrl.trim()) throw new Error('Model is missing Base URL');
-  if (!model.apiKey.trim()) throw new Error('Model is missing API Key');
+  if (!hasUsableModelSecret(model)) throw new Error('Model is missing API Key');
   throwIfAborted(signal);
 
-  const { provider, endpoint, headers, body } = createModelRequestPayload(model, prompt, userContent, chapterContext, false);
+  const { provider, endpoint, headers, body, modelSecretId } = createModelRequestPayload(
+    model,
+    prompt,
+    userContent,
+    chapterContext,
+    false,
+  );
   const startedAt = performance.now();
   const modelApiId = model.model || model.id;
 
-  const response = provider === 'anthropic'
-    ? await postModelRequest(
-        endpoint,
-        headers,
-        body,
-        signal,
-        timeoutMs,
-      )
-    : await postModelRequest(
-        endpoint,
-        headers,
-        body,
-        signal,
-        timeoutMs,
-      );
+  const response =
+    provider === 'anthropic'
+      ? await postModelRequest(endpoint, headers, body, provider, modelSecretId, signal, timeoutMs)
+      : await postModelRequest(endpoint, headers, body, provider, modelSecretId, signal, timeoutMs);
 
   throwIfAborted(signal);
 
@@ -214,9 +234,12 @@ export async function callModel({
   }
 
   const data = JSON.parse(response.text);
-  const content = provider === 'anthropic'
-    ? data?.content?.map((item: { type?: string; text?: string }) => (item.type === 'text' ? item.text ?? '' : '')).join('')
-    : data?.choices?.[0]?.message?.content;
+  const content =
+    provider === 'anthropic'
+      ? data?.content
+          ?.map((item: { type?: string; text?: string }) => (item.type === 'text' ? (item.text ?? '') : ''))
+          .join('')
+      : data?.choices?.[0]?.message?.content;
   if (!content) throw new Error('Model returned empty content');
 
   const usage = data?.usage ?? {};
@@ -231,11 +254,11 @@ export async function callModel({
     endpoint,
     inputTokens: usage.prompt_tokens ?? usage.input_tokens,
     outputTokens: usage.completion_tokens ?? usage.output_tokens,
-    totalTokens: usage.total_tokens ?? (
-      typeof usage.input_tokens === 'number' && typeof usage.output_tokens === 'number'
+    totalTokens:
+      usage.total_tokens ??
+      (typeof usage.input_tokens === 'number' && typeof usage.output_tokens === 'number'
         ? usage.input_tokens + usage.output_tokens
-        : undefined
-    ),
+        : undefined),
   });
 
   return String(content);
@@ -253,10 +276,16 @@ export async function callModelStream({
   onReasoning,
 }: CallModelStreamInput) {
   if (!model.baseUrl.trim()) throw new Error('Model is missing Base URL');
-  if (!model.apiKey.trim()) throw new Error('Model is missing API Key');
+  if (!hasUsableModelSecret(model)) throw new Error('Model is missing API Key');
   throwIfAborted(signal);
 
-  const { endpoint, headers, body } = createModelRequestPayload(model, prompt, userContent, chapterContext, true);
+  const { provider, endpoint, headers, body, modelSecretId } = createModelRequestPayload(
+    model,
+    prompt,
+    userContent,
+    chapterContext,
+    true,
+  );
   const startedAt = performance.now();
   const modelApiId = model.model || model.id;
   const requestId = `model-stream-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -268,17 +297,20 @@ export async function callModelStream({
     };
     signal?.addEventListener('abort', abortHandler, { once: true });
     try {
-      response = await window.xinyuexiaModel.stream({ endpoint, headers, body, timeoutMs, requestId }, (payload) => {
-        if (typeof payload === 'string') {
-          onChunk(payload);
-          return;
-        }
-        if (payload.type === 'reasoning') {
-          onReasoning?.(payload.text);
-          return;
-        }
-        onChunk(payload.text);
-      });
+      response = await window.xinyuexiaModel.stream(
+        { endpoint, headers, body, timeoutMs, requestId, provider, modelSecretId },
+        (payload) => {
+          if (typeof payload === 'string') {
+            onChunk(payload);
+            return;
+          }
+          if (payload.type === 'reasoning') {
+            onReasoning?.(payload.text);
+            return;
+          }
+          onChunk(payload.text);
+        },
+      );
     } finally {
       signal?.removeEventListener('abort', abortHandler);
     }

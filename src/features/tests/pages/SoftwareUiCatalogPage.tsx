@@ -159,35 +159,53 @@ const uiSamples: UiSample[] = [
     group: '按钮',
     name: '标准蓝色主按钮',
     usage: '发送、生成、确认、保存这类主操作。',
-    preview: <button className="rounded-xl bg-brand px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-dark">发送</button>,
+    preview: (
+      <button className="rounded-xl bg-brand px-6 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-dark">
+        发送
+      </button>
+    ),
   },
   {
     id: 'UI-02',
     group: '按钮',
     name: '白底普通按钮',
     usage: '取消、返回、次要操作、不会改变核心数据的按钮。',
-    preview: <button className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">取消</button>,
+    preview: (
+      <button className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">
+        取消
+      </button>
+    ),
   },
   {
     id: 'UI-03',
     group: '按钮',
     name: '红色危险按钮',
     usage: '删除、清空、取消导入等需要谨慎点击的操作。',
-    preview: <button className="rounded-xl bg-red-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-red-600">删除</button>,
+    preview: (
+      <button className="rounded-xl bg-red-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-red-600">删除</button>
+    ),
   },
   {
     id: 'UI-04',
     group: '按钮',
     name: '橙色状态按钮',
     usage: '置顶、覆盖、重新整理、重新生成等警告型操作。',
-    preview: <button className="rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-orange-600">置顶</button>,
+    preview: (
+      <button className="rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-orange-600">
+        置顶
+      </button>
+    ),
   },
   {
     id: 'UI-05',
     group: '按钮',
     name: '导航设置同款按钮',
     usage: '左下角设置区、弹窗里的稳定设置入口。',
-    preview: <button className="flex h-11 w-[148px] items-center justify-center rounded-lg bg-brand px-3 text-[13px] font-medium text-white hover:bg-brand-dark">导航设置</button>,
+    preview: (
+      <button className="flex h-11 w-[148px] items-center justify-center rounded-lg bg-brand px-3 text-[13px] font-medium text-white hover:bg-brand-dark">
+        导航设置
+      </button>
+    ),
   },
   {
     id: 'UI-06',
@@ -302,7 +320,12 @@ const uiSamples: UiSample[] = [
     group: '输入',
     name: '单行输入框',
     usage: '角色名、分类名、模型名、短字段。',
-    preview: <input className="h-11 w-[220px] rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-brand" placeholder="角色名" />,
+    preview: (
+      <input
+        className="h-11 w-[220px] rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-brand"
+        placeholder="角色名"
+      />
+    ),
   },
   {
     id: 'UI-15',
@@ -321,7 +344,12 @@ const uiSamples: UiSample[] = [
     group: '输入',
     name: '正文输入框',
     usage: '设定预览、角色背景、角色状态、AI 输出文本。',
-    preview: <textarea className="editor-scrollbar h-24 w-[260px] resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm leading-7 text-slate-700 outline-none focus:border-brand" placeholder="这里输入正文内容..." />,
+    preview: (
+      <textarea
+        className="editor-scrollbar h-24 w-[260px] resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm leading-7 text-slate-700 outline-none focus:border-brand"
+        placeholder="这里输入正文内容..."
+      />
+    ),
   },
   {
     id: 'UI-17',
@@ -357,7 +385,12 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="grid h-24 w-full grid-cols-[0.9fr_1fr_1.2fr_1fr] gap-2">
         {['1 库', '2 预览', '3 输出', '4 配置'].map((item) => (
-          <div key={item} className="flex items-center justify-center rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-500">{item}</div>
+          <div
+            key={item}
+            className="flex items-center justify-center rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-500"
+          >
+            {item}
+          </div>
         ))}
       </div>
     ),
@@ -370,7 +403,12 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="grid h-24 w-full grid-cols-[0.8fr_1.2fr_1fr] gap-2">
         {['分类', '列表', '详情'].map((item) => (
-          <div key={item} className="flex items-center justify-center rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-500">{item}</div>
+          <div
+            key={item}
+            className="flex items-center justify-center rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-500"
+          >
+            {item}
+          </div>
         ))}
       </div>
     ),
@@ -407,14 +445,18 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="w-[300px] rounded-[24px] bg-white p-5 shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-500"><X className="h-5 w-5" /></div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-500">
+            <X className="h-5 w-5" />
+          </div>
           <div>
             <div className="text-sm font-bold text-slate-900">确认删除</div>
             <div className="mt-1 text-xs text-slate-400">删除后不可恢复。</div>
           </div>
         </div>
         <div className="mt-4 flex justify-end gap-2">
-          <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600">取消</button>
+          <button className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600">
+            取消
+          </button>
           <button className="rounded-xl bg-red-500 px-4 py-2 text-xs font-bold text-white">删除</button>
         </div>
       </div>
@@ -454,8 +496,12 @@ const uiSamples: UiSample[] = [
     usage: '首页标签、作品标签、可关闭的工作区标签。',
     preview: (
       <div className="flex h-11 items-end">
-        <div className="workspace-tab workspace-tab-active flex h-10 items-center rounded-t-lg border border-slate-300 border-b-white bg-white px-3 text-[15px] font-semibold text-slate-950 shadow-[0_-1px_0_rgba(255,255,255,0.7)]">首页</div>
-        <div className="workspace-tab flex h-10 items-center border border-transparent px-3 text-[15px] font-semibold text-slate-700">小说作品</div>
+        <div className="workspace-tab workspace-tab-active flex h-10 items-center rounded-t-lg border border-slate-300 border-b-white bg-white px-3 text-[15px] font-semibold text-slate-950 shadow-[0_-1px_0_rgba(255,255,255,0.7)]">
+          首页
+        </div>
+        <div className="workspace-tab flex h-10 items-center border border-transparent px-3 text-[15px] font-semibold text-slate-700">
+          小说作品
+        </div>
       </div>
     ),
   },
@@ -503,8 +549,16 @@ const uiSamples: UiSample[] = [
     usage: '右侧为用户输入，左侧为 AI 输出，不显示“用户：/AI：”。',
     preview: (
       <div className="w-[280px] space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
-        <div className="flex justify-end"><div className="max-w-[80%] rounded-2xl bg-brand px-4 py-2 text-xs leading-5 text-white">生成都市高武脑洞</div></div>
-        <div className="flex justify-start"><div className="max-w-[80%] rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs leading-5 text-slate-700">可以，从灵气复苏切入...</div></div>
+        <div className="flex justify-end">
+          <div className="max-w-[80%] rounded-2xl bg-brand px-4 py-2 text-xs leading-5 text-white">
+            生成都市高武脑洞
+          </div>
+        </div>
+        <div className="flex justify-start">
+          <div className="max-w-[80%] rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs leading-5 text-slate-700">
+            可以，从灵气复苏切入...
+          </div>
+        </div>
       </div>
     ),
   },
@@ -513,7 +567,11 @@ const uiSamples: UiSample[] = [
     group: 'AI',
     name: '正在生成省略号',
     usage: 'AI 生成时固定宽度显示，不让页面随着点数变化抖动。',
-    preview: <div className="w-[120px] rounded-xl bg-slate-50 px-3 py-2 text-sm font-bold text-slate-500">正在生成<span className="inline-block w-6">...</span></div>,
+    preview: (
+      <div className="w-[120px] rounded-xl bg-slate-50 px-3 py-2 text-sm font-bold text-slate-500">
+        正在生成<span className="inline-block w-6">...</span>
+      </div>
+    ),
   },
   {
     id: 'UI-32',
@@ -522,7 +580,17 @@ const uiSamples: UiSample[] = [
     usage: '默认隐藏轨道，只在滚动或 hover 时露出 #08AACE 滑块。',
     preview: (
       <div className="editor-scrollbar h-24 w-[260px] overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 text-xs leading-6 text-slate-500">
-        滚动内容一<br />滚动内容二<br />滚动内容三<br />滚动内容四<br />滚动内容五<br />滚动内容六
+        滚动内容一
+        <br />
+        滚动内容二
+        <br />
+        滚动内容三
+        <br />
+        滚动内容四
+        <br />
+        滚动内容五
+        <br />
+        滚动内容六
       </div>
     ),
   },
@@ -533,8 +601,12 @@ const uiSamples: UiSample[] = [
     usage: '会话数字、分类内容、角色卡片右键操作。',
     preview: (
       <div className="w-[132px] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
-        <button className="block w-full px-3 py-2 text-left text-xs font-bold text-slate-600 hover:bg-brand-light hover:text-brand">置顶</button>
-        <button className="block w-full border-t border-slate-100 px-3 py-2 text-left text-xs font-bold text-red-500 hover:bg-red-50">删除</button>
+        <button className="block w-full px-3 py-2 text-left text-xs font-bold text-slate-600 hover:bg-brand-light hover:text-brand">
+          置顶
+        </button>
+        <button className="block w-full border-t border-slate-100 px-3 py-2 text-left text-xs font-bold text-red-500 hover:bg-red-50">
+          删除
+        </button>
       </div>
     ),
   },
@@ -547,11 +619,17 @@ const uiSamples: UiSample[] = [
       <div className="w-[280px] space-y-2 rounded-xl border border-slate-200 bg-white p-3">
         <label className="block text-xs font-bold text-slate-600">
           1.题材
-          <input className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-brand" placeholder="如都市高武" />
+          <input
+            className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-brand"
+            placeholder="如都市高武"
+          />
         </label>
         <label className="block text-xs font-bold text-slate-600">
           2.故事主题
-          <input className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-brand" placeholder="升级流、系统流" />
+          <input
+            className="mt-1 h-9 w-full rounded-xl border border-slate-200 px-3 text-xs outline-none focus:border-brand"
+            placeholder="升级流、系统流"
+          />
         </label>
       </div>
     ),
@@ -576,7 +654,10 @@ const uiSamples: UiSample[] = [
     usage: '本地数据库、内置 PostgreSQL、备份恢复入口。',
     preview: (
       <div className="w-[280px] rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-2 text-sm font-bold text-slate-900"><Database className="h-4 w-4 text-brand" />内置 PostgreSQL</div>
+        <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+          <Database className="h-4 w-4 text-brand" />
+          内置 PostgreSQL
+        </div>
         <div className="mt-2 text-xs leading-5 text-slate-500">随软件启动，适合开箱即用。</div>
       </div>
     ),
@@ -588,9 +669,15 @@ const uiSamples: UiSample[] = [
     usage: '空间很窄的标题栏或预览栏右侧，适合只放 -、数值、+。',
     preview: (
       <div className="inline-flex h-9 items-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <button className="flex h-full w-9 items-center justify-center text-lg font-black text-slate-500 hover:bg-brand-light hover:text-brand">-</button>
-        <span className="flex h-full min-w-10 items-center justify-center border-x border-slate-100 text-xs font-black text-[#08AACE]">18</span>
-        <button className="flex h-full w-9 items-center justify-center text-lg font-black text-slate-500 hover:bg-brand-light hover:text-brand">+</button>
+        <button className="flex h-full w-9 items-center justify-center text-lg font-black text-slate-500 hover:bg-brand-light hover:text-brand">
+          -
+        </button>
+        <span className="flex h-full min-w-10 items-center justify-center border-x border-slate-100 text-xs font-black text-[#08AACE]">
+          18
+        </span>
+        <button className="flex h-full w-9 items-center justify-center text-lg font-black text-slate-500 hover:bg-brand-light hover:text-brand">
+          +
+        </button>
       </div>
     ),
   },
@@ -602,7 +689,10 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="inline-flex rounded-xl bg-slate-100 p-1">
         {['小', '中', '大', '超大'].map((item) => (
-          <button key={item} className={`h-8 min-w-10 rounded-lg px-2 text-xs font-black ${item === '大' ? 'bg-white text-brand shadow-sm' : 'text-slate-500'}`}>
+          <button
+            key={item}
+            className={`h-8 min-w-10 rounded-lg px-2 text-xs font-black ${item === '大' ? 'bg-white text-brand shadow-sm' : 'text-slate-500'}`}
+          >
             {item}
           </button>
         ))}
@@ -634,9 +724,13 @@ const uiSamples: UiSample[] = [
     usage: '编辑器工具栏里使用，按钮更像工具按钮，不占主操作位置。',
     preview: (
       <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-        <button className="flex h-9 w-10 items-center justify-center rounded-lg text-sm font-black text-slate-500 hover:bg-slate-50">A-</button>
+        <button className="flex h-9 w-10 items-center justify-center rounded-lg text-sm font-black text-slate-500 hover:bg-slate-50">
+          A-
+        </button>
         <div className="h-5 w-px bg-slate-100" />
-        <button className="flex h-9 w-10 items-center justify-center rounded-lg text-base font-black text-slate-700 hover:bg-brand-light hover:text-brand">A+</button>
+        <button className="flex h-9 w-10 items-center justify-center rounded-lg text-base font-black text-slate-700 hover:bg-brand-light hover:text-brand">
+          A+
+        </button>
       </div>
     ),
   },
@@ -647,9 +741,13 @@ const uiSamples: UiSample[] = [
     usage: '适合放在文本框右侧边缘，横向空间少但高度足够的地方。',
     preview: (
       <div className="inline-flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
-        <button className="flex h-8 w-9 items-center justify-center rounded-xl bg-[#08AACE] text-lg font-black text-white">+</button>
+        <button className="flex h-8 w-9 items-center justify-center rounded-xl bg-[#08AACE] text-lg font-black text-white">
+          +
+        </button>
         <span className="py-1 text-xs font-black text-slate-600">18</span>
-        <button className="flex h-8 w-9 items-center justify-center rounded-xl bg-slate-100 text-lg font-black text-slate-600">-</button>
+        <button className="flex h-8 w-9 items-center justify-center rounded-xl bg-slate-100 text-lg font-black text-slate-600">
+          -
+        </button>
       </div>
     ),
   },
@@ -698,9 +796,13 @@ const uiSamples: UiSample[] = [
     usage: '适合整块页面缩放，比如设定库页面放大 10% 这类需求。',
     preview: (
       <div className="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-2 shadow-sm">
-        <button className="flex h-7 w-7 items-center justify-center rounded-lg text-lg font-black text-slate-500 hover:bg-slate-50">-</button>
+        <button className="flex h-7 w-7 items-center justify-center rounded-lg text-lg font-black text-slate-500 hover:bg-slate-50">
+          -
+        </button>
         <span className="mx-2 min-w-14 text-center text-sm font-black text-[#08AACE]">110%</span>
-        <button className="flex h-7 w-7 items-center justify-center rounded-lg text-lg font-black text-slate-500 hover:bg-slate-50">+</button>
+        <button className="flex h-7 w-7 items-center justify-center rounded-lg text-lg font-black text-slate-500 hover:bg-slate-50">
+          +
+        </button>
       </div>
     ),
   },
@@ -717,7 +819,12 @@ const uiSamples: UiSample[] = [
         </div>
         <div className="grid grid-cols-4 gap-1.5">
           {['14', '16', '18', '20'].map((item) => (
-            <button key={item} className={`h-8 rounded-lg text-xs font-black ${item === '18' ? 'bg-[#08AACE] text-white' : 'bg-slate-50 text-slate-500'}`}>{item}</button>
+            <button
+              key={item}
+              className={`h-8 rounded-lg text-xs font-black ${item === '18' ? 'bg-[#08AACE] text-white' : 'bg-slate-50 text-slate-500'}`}
+            >
+              {item}
+            </button>
           ))}
         </div>
       </div>
@@ -731,7 +838,10 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3">
         <span className="text-xs font-black text-slate-500">字号</span>
-        <input className="h-7 w-12 rounded-lg border border-slate-200 text-center text-xs font-black text-[#08AACE] outline-none" defaultValue="18" />
+        <input
+          className="h-7 w-12 rounded-lg border border-slate-200 text-center text-xs font-black text-[#08AACE] outline-none"
+          defaultValue="18"
+        />
         <span className="text-xs font-bold text-slate-400">px</span>
       </div>
     ),
@@ -744,7 +854,10 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
         {['紧凑', '标准', '宽松'].map((item) => (
-          <button key={item} className={`h-8 rounded-lg px-3 text-xs font-black ${item === '标准' ? 'bg-[#08AACE] text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
+          <button
+            key={item}
+            className={`h-8 rounded-lg px-3 text-xs font-black ${item === '标准' ? 'bg-[#08AACE] text-white' : 'text-slate-500 hover:bg-slate-50'}`}
+          >
             {item}
           </button>
         ))}
@@ -774,14 +887,22 @@ const uiSamples: UiSample[] = [
     group: '按钮',
     name: '蓝色描边按钮',
     usage: '比白底按钮更醒目，但比实心蓝按钮更轻，适合读取、预览、打开设置。',
-    preview: <button className="h-10 rounded-xl border border-[#08AACE] bg-white px-5 text-sm font-black text-[#08AACE] hover:bg-brand-light">读取脑洞</button>,
+    preview: (
+      <button className="h-10 rounded-xl border border-[#08AACE] bg-white px-5 text-sm font-black text-[#08AACE] hover:bg-brand-light">
+        读取脑洞
+      </button>
+    ),
   },
   {
     id: 'UI-50',
     group: '按钮',
     name: '轻量文字按钮',
     usage: '页面内不重要但常用的操作，比如展开、更多、查看日志。',
-    preview: <button className="h-9 rounded-lg px-3 text-xs font-black text-slate-500 hover:bg-slate-100 hover:text-slate-700">查看日志</button>,
+    preview: (
+      <button className="h-9 rounded-lg px-3 text-xs font-black text-slate-500 hover:bg-slate-100 hover:text-slate-700">
+        查看日志
+      </button>
+    ),
   },
   {
     id: 'UI-51',
@@ -802,9 +923,15 @@ const uiSamples: UiSample[] = [
     usage: '只能输入几个字的场景，比如替换规则的小输入框、短分类名。',
     preview: (
       <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-2">
-        <input className="h-9 w-16 rounded-lg border border-slate-200 px-2 text-center text-sm font-bold outline-none focus:border-brand" placeholder="原文" />
+        <input
+          className="h-9 w-16 rounded-lg border border-slate-200 px-2 text-center text-sm font-bold outline-none focus:border-brand"
+          placeholder="原文"
+        />
         <span className="text-xs font-black text-slate-300">→</span>
-        <input className="h-9 w-16 rounded-lg border border-slate-200 px-2 text-center text-sm font-bold outline-none focus:border-brand" placeholder="替换" />
+        <input
+          className="h-9 w-16 rounded-lg border border-slate-200 px-2 text-center text-sm font-bold outline-none focus:border-brand"
+          placeholder="替换"
+        />
       </div>
     ),
   },
@@ -868,9 +995,15 @@ const uiSamples: UiSample[] = [
       <div className="relative h-28 w-[300px] rounded-xl border border-slate-200 bg-white">
         <div className="absolute left-5 right-5 top-12 h-px bg-[#08AACE]" />
         <div className="absolute left-24 top-2 bottom-2 w-px bg-[#08AACE]" />
-        <button className="absolute left-8 top-8 h-8 rounded-lg bg-[#08AACE] px-3 text-xs font-black text-white">按钮A</button>
-        <button className="absolute left-40 top-8 h-8 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600">按钮B</button>
-        <span className="absolute left-[118px] top-14 rounded bg-[#08AACE] px-1.5 py-0.5 text-[10px] font-black text-white">对齐</span>
+        <button className="absolute left-8 top-8 h-8 rounded-lg bg-[#08AACE] px-3 text-xs font-black text-white">
+          按钮A
+        </button>
+        <button className="absolute left-40 top-8 h-8 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-600">
+          按钮B
+        </button>
+        <span className="absolute left-[118px] top-14 rounded bg-[#08AACE] px-1.5 py-0.5 text-[10px] font-black text-white">
+          对齐
+        </span>
       </div>
     ),
   },
@@ -883,11 +1016,14 @@ const uiSamples: UiSample[] = [
       <div
         className="h-28 w-[300px] rounded-xl border border-slate-200 bg-white"
         style={{
-          backgroundImage: 'linear-gradient(#E5E7EB 1px, transparent 1px), linear-gradient(90deg, #E5E7EB 1px, transparent 1px)',
+          backgroundImage:
+            'linear-gradient(#E5E7EB 1px, transparent 1px), linear-gradient(90deg, #E5E7EB 1px, transparent 1px)',
           backgroundSize: '16px 16px',
         }}
       >
-        <div className="ml-8 mt-8 inline-flex rounded-lg bg-[#08AACE] px-4 py-2 text-xs font-black text-white shadow-sm">可拖动按钮</div>
+        <div className="ml-8 mt-8 inline-flex rounded-lg bg-[#08AACE] px-4 py-2 text-xs font-black text-white shadow-sm">
+          可拖动按钮
+        </div>
       </div>
     ),
   },
@@ -916,10 +1052,22 @@ const uiSamples: UiSample[] = [
       <div className="w-[260px] rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
         <div className="mb-2 text-sm font-black text-slate-900">按钮属性</div>
         <div className="grid grid-cols-2 gap-2 text-xs font-bold text-slate-500">
-          <label>宽度<input className="mt-1 h-8 w-full rounded-lg border border-slate-200 px-2 outline-none" defaultValue="96" /></label>
-          <label>高度<input className="mt-1 h-8 w-full rounded-lg border border-slate-200 px-2 outline-none" defaultValue="40" /></label>
-          <label>字号<input className="mt-1 h-8 w-full rounded-lg border border-slate-200 px-2 outline-none" defaultValue="14" /></label>
-          <label>圆角<input className="mt-1 h-8 w-full rounded-lg border border-slate-200 px-2 outline-none" defaultValue="8" /></label>
+          <label>
+            宽度
+            <input className="mt-1 h-8 w-full rounded-lg border border-slate-200 px-2 outline-none" defaultValue="96" />
+          </label>
+          <label>
+            高度
+            <input className="mt-1 h-8 w-full rounded-lg border border-slate-200 px-2 outline-none" defaultValue="40" />
+          </label>
+          <label>
+            字号
+            <input className="mt-1 h-8 w-full rounded-lg border border-slate-200 px-2 outline-none" defaultValue="14" />
+          </label>
+          <label>
+            圆角
+            <input className="mt-1 h-8 w-full rounded-lg border border-slate-200 px-2 outline-none" defaultValue="8" />
+          </label>
         </div>
       </div>
     ),
@@ -933,12 +1081,21 @@ const uiSamples: UiSample[] = [
       <div className="grid h-28 w-[300px] grid-cols-[86px_1fr] overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div className="space-y-1 border-r border-slate-100 bg-slate-50 p-2">
           {['脑洞', '续写', '梗概'].map((item) => (
-            <div key={item} className={`rounded-lg px-2 py-1.5 text-xs font-black ${item === '脑洞' ? 'bg-[#08AACE] text-white' : 'text-slate-500'}`}>{item}</div>
+            <div
+              key={item}
+              className={`rounded-lg px-2 py-1.5 text-xs font-black ${item === '脑洞' ? 'bg-[#08AACE] text-white' : 'text-slate-500'}`}
+            >
+              {item}
+            </div>
           ))}
         </div>
         <div className="flex flex-col p-2">
-          <div className="flex-1 rounded-lg bg-slate-50 p-2 text-xs leading-5 text-slate-500">选择模型和提示词后发送测试。</div>
-          <button className="mt-2 h-8 self-end rounded-lg bg-[#08AACE] px-3 text-xs font-black text-white">发送测试</button>
+          <div className="flex-1 rounded-lg bg-slate-50 p-2 text-xs leading-5 text-slate-500">
+            选择模型和提示词后发送测试。
+          </div>
+          <button className="mt-2 h-8 self-end rounded-lg bg-[#08AACE] px-3 text-xs font-black text-white">
+            发送测试
+          </button>
         </div>
       </div>
     ),
@@ -951,7 +1108,10 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="flex w-[320px] items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
         {['智能排版', '一键替换', '章节梗概'].map((item) => (
-          <button key={item} className="h-8 rounded-lg bg-slate-50 px-3 text-xs font-black text-slate-600 hover:bg-brand-light hover:text-brand">
+          <button
+            key={item}
+            className="h-8 rounded-lg bg-slate-50 px-3 text-xs font-black text-slate-600 hover:bg-brand-light hover:text-brand"
+          >
             {item}
           </button>
         ))}
@@ -967,7 +1127,9 @@ const uiSamples: UiSample[] = [
       <div className="flex w-[320px] items-center justify-between rounded-xl border border-slate-200 bg-white p-2">
         <div className="flex gap-1.5">
           <button className="h-9 rounded-lg bg-[#08AACE] px-4 text-xs font-black text-white">生成</button>
-          <button className="h-9 rounded-lg border border-slate-200 px-4 text-xs font-black text-slate-600">停止</button>
+          <button className="h-9 rounded-lg border border-slate-200 px-4 text-xs font-black text-slate-600">
+            停止
+          </button>
         </div>
         <button className="h-9 rounded-lg bg-slate-100 px-3 text-xs font-black text-slate-500">设置</button>
       </div>
@@ -980,7 +1142,10 @@ const uiSamples: UiSample[] = [
     usage: '设定库、剧情库、脑洞库顶部搜索栏。',
     preview: (
       <div className="flex w-[320px] items-center gap-2 rounded-xl border border-slate-200 bg-white p-2">
-        <input className="h-9 min-w-0 flex-1 rounded-lg border border-slate-200 px-3 text-xs font-bold outline-none focus:border-brand" placeholder="搜索关键词..." />
+        <input
+          className="h-9 min-w-0 flex-1 rounded-lg border border-slate-200 px-3 text-xs font-bold outline-none focus:border-brand"
+          placeholder="搜索关键词..."
+        />
         <button className="h-9 rounded-lg bg-[#08AACE] px-4 text-xs font-black text-white">搜索</button>
         <button className="h-9 rounded-lg bg-slate-100 px-3 text-xs font-black text-slate-500">筛选</button>
       </div>
@@ -1009,7 +1174,12 @@ const uiSamples: UiSample[] = [
         <div className="mb-2 text-sm font-black text-slate-900">筛选</div>
         <div className="grid grid-cols-2 gap-2">
           {['分类', '状态', '标签', '来源'].map((item) => (
-            <button key={item} className="h-9 rounded-lg bg-slate-50 text-xs font-black text-slate-500 hover:bg-brand-light hover:text-brand">{item}</button>
+            <button
+              key={item}
+              className="h-9 rounded-lg bg-slate-50 text-xs font-black text-slate-500 hover:bg-brand-light hover:text-brand"
+            >
+              {item}
+            </button>
           ))}
         </div>
       </div>
@@ -1058,7 +1228,10 @@ const uiSamples: UiSample[] = [
           ['文本切片', '处理中', 'text-[#08AACE]'],
           ['AI 提取', '等待中', 'text-slate-400'],
         ].map(([name, state, color]) => (
-          <div key={name} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-black">
+          <div
+            key={name}
+            className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-black"
+          >
             <span className="text-slate-600">{name}</span>
             <span className={color}>{state}</span>
           </div>
@@ -1113,11 +1286,15 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="h-28 w-[300px] overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div className="grid grid-cols-3 border-b border-slate-100 bg-slate-50 px-3 py-2 text-xs font-black text-slate-500">
-          <span>原文</span><span>替换为</span><span>状态</span>
+          <span>原文</span>
+          <span>替换为</span>
+          <span>状态</span>
         </div>
         {['—— / …… / 自动', '错字 / 正字 / 手动'].map((row) => (
           <div key={row} className="grid grid-cols-3 px-3 py-2 text-xs font-bold text-slate-600">
-            {row.split(' / ').map((cell) => <span key={cell}>{cell}</span>)}
+            {row.split(' / ').map((cell) => (
+              <span key={cell}>{cell}</span>
+            ))}
           </div>
         ))}
       </div>
@@ -1131,7 +1308,9 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="w-[300px] space-y-1.5 rounded-xl border border-slate-200 bg-white p-2">
         <div className="rounded-lg px-3 py-2 text-xs font-bold text-slate-500">第21章 雨夜来客</div>
-        <div className="rounded-lg border border-[#08AACE] bg-[#FFF7ED] px-3 py-2 text-xs font-black text-slate-900">第22章 慌什么，完全不关你的事</div>
+        <div className="rounded-lg border border-[#08AACE] bg-[#FFF7ED] px-3 py-2 text-xs font-black text-slate-900">
+          第22章 慌什么，完全不关你的事
+        </div>
       </div>
     ),
   },
@@ -1165,7 +1344,9 @@ const uiSamples: UiSample[] = [
           <div className="h-4 w-1 rounded-full bg-[#08AACE]" />
           <div className="text-sm font-black text-slate-900">AI 模型配置</div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-500">这里放模型、提示词、温度等设置。</div>
+        <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-500">
+          这里放模型、提示词、温度等设置。
+        </div>
       </div>
     ),
   },
@@ -1195,7 +1376,12 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="flex w-[300px] flex-wrap gap-2">
         {['人物', '世界观', '功法', '剧情'].map((item, index) => (
-          <button key={item} className={`rounded-full px-3 py-1.5 text-xs font-black ${index < 2 ? 'bg-[#08AACE] text-white' : 'bg-slate-100 text-slate-500'}`}>{item}</button>
+          <button
+            key={item}
+            className={`rounded-full px-3 py-1.5 text-xs font-black ${index < 2 ? 'bg-[#08AACE] text-white' : 'bg-slate-100 text-slate-500'}`}
+          >
+            {item}
+          </button>
         ))}
       </div>
     ),
@@ -1272,7 +1458,9 @@ const uiSamples: UiSample[] = [
     group: '加载',
     name: '按钮加载态',
     usage: '点击发送、生成、保存后，按钮显示处理中且固定宽度不抖。',
-    preview: <button className="h-10 w-[108px] rounded-xl bg-[#08AACE] text-sm font-black text-white">生成中...</button>,
+    preview: (
+      <button className="h-10 w-[108px] rounded-xl bg-[#08AACE] text-sm font-black text-white">生成中...</button>
+    ),
   },
   {
     id: 'UI-83',
@@ -1300,7 +1488,12 @@ const uiSamples: UiSample[] = [
       <div className="w-[300px] rounded-xl border border-slate-200 bg-white p-2">
         <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
           {['整理', '原文', '关联', '向量'].map((item) => (
-            <button key={item} className={`h-8 flex-1 rounded-md text-xs font-black ${item === '整理' ? 'bg-white text-[#08AACE] shadow-sm' : 'text-slate-500'}`}>{item}</button>
+            <button
+              key={item}
+              className={`h-8 flex-1 rounded-md text-xs font-black ${item === '整理' ? 'bg-white text-[#08AACE] shadow-sm' : 'text-slate-500'}`}
+            >
+              {item}
+            </button>
           ))}
         </div>
       </div>
@@ -1314,7 +1507,10 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="w-[300px] space-y-1.5 rounded-xl border border-slate-200 bg-white p-3">
         {['阴阳阙', '邪龙内丹', '太阴星君'].map((item) => (
-          <div key={item} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs font-black">
+          <div
+            key={item}
+            className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs font-black"
+          >
             <span className="text-slate-700">{item}</span>
             <span className="text-[#08AACE]">related</span>
           </div>
@@ -1331,8 +1527,10 @@ const uiSamples: UiSample[] = [
       <div className="w-[300px] rounded-xl border border-slate-200 bg-white p-3">
         <div className="text-sm font-black text-slate-900">向量信息</div>
         <div className="mt-2 grid grid-cols-2 gap-2 text-xs font-bold">
-          <span className="text-slate-400">模型</span><span className="text-slate-700">text-embedding</span>
-          <span className="text-slate-400">状态</span><span className="text-[#08AACE]">已生成</span>
+          <span className="text-slate-400">模型</span>
+          <span className="text-slate-700">text-embedding</span>
+          <span className="text-slate-400">状态</span>
+          <span className="text-[#08AACE]">已生成</span>
         </div>
       </div>
     ),
@@ -1369,9 +1567,16 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="w-[112px] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
         {['置顶', '重命名'].map((item) => (
-          <button key={item} className="block h-8 w-full px-3 text-left text-xs font-black text-slate-600 hover:bg-brand-light hover:text-brand">{item}</button>
+          <button
+            key={item}
+            className="block h-8 w-full px-3 text-left text-xs font-black text-slate-600 hover:bg-brand-light hover:text-brand"
+          >
+            {item}
+          </button>
         ))}
-        <button className="block h-8 w-full px-3 text-left text-xs font-black text-red-500 hover:bg-red-50">删除</button>
+        <button className="block h-8 w-full px-3 text-left text-xs font-black text-red-500 hover:bg-red-50">
+          删除
+        </button>
       </div>
     ),
   },
@@ -1395,9 +1600,17 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="relative h-28 w-[300px] rounded-xl border border-slate-200 bg-white">
         <svg className="absolute inset-0 h-full w-full" viewBox="0 0 300 112">
-          <path d="M230 54 C190 48 155 55 118 45 C88 37 65 44 42 34" fill="none" stroke="#08AACE" strokeWidth="4" strokeLinecap="round" />
+          <path
+            d="M230 54 C190 48 155 55 118 45 C88 37 65 44 42 34"
+            fill="none"
+            stroke="#08AACE"
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
         </svg>
-        <span className="absolute left-10 top-14 rounded-full bg-[#08AACE] px-3 py-1 text-xs font-black text-white">回到首页</span>
+        <span className="absolute left-10 top-14 rounded-full bg-[#08AACE] px-3 py-1 text-xs font-black text-white">
+          回到首页
+        </span>
       </div>
     ),
   },
@@ -1409,7 +1622,10 @@ const uiSamples: UiSample[] = [
     preview: (
       <div className="w-[300px] rounded-2xl border border-slate-200 bg-white p-3 shadow-lg">
         <div className="mb-2 text-sm font-black text-slate-900">修改文案</div>
-        <input className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold outline-none focus:border-brand" defaultValue="生成梗概" />
+        <input
+          className="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm font-bold outline-none focus:border-brand"
+          defaultValue="生成梗概"
+        />
         <div className="mt-2 flex justify-end gap-2">
           <button className="h-8 rounded-lg bg-slate-100 px-3 text-xs font-black text-slate-500">取消</button>
           <button className="h-8 rounded-lg bg-[#08AACE] px-3 text-xs font-black text-white">应用</button>
@@ -1437,8 +1653,25 @@ const uiSamples: UiSample[] = [
     usage: '主题颜色页面里选择颜色，按颜色本身排列。',
     preview: (
       <div className="grid w-[240px] grid-cols-8 gap-1.5 rounded-xl border border-slate-200 bg-white p-3">
-        {['#08AACE', '#22C55E', '#F97316', '#EF4444', '#8B5CF6', '#111827', '#EAB308', '#14B8A6', '#0EA5E9', '#F43F5E', '#84CC16', '#64748B'].map((color) => (
-          <span key={color} className="h-6 w-6 rounded-lg border border-white shadow-sm" style={{ backgroundColor: color }} />
+        {[
+          '#08AACE',
+          '#22C55E',
+          '#F97316',
+          '#EF4444',
+          '#8B5CF6',
+          '#111827',
+          '#EAB308',
+          '#14B8A6',
+          '#0EA5E9',
+          '#F43F5E',
+          '#84CC16',
+          '#64748B',
+        ].map((color) => (
+          <span
+            key={color}
+            className="h-6 w-6 rounded-lg border border-white shadow-sm"
+            style={{ backgroundColor: color }}
+          />
         ))}
       </div>
     ),
@@ -1450,7 +1683,9 @@ const uiSamples: UiSample[] = [
     usage: '先选填色位置，再选颜色，橙色框表示当前正在绑定。',
     preview: (
       <div className="flex w-[300px] items-center gap-2 rounded-xl border border-slate-200 bg-white p-3">
-        <div className="rounded-xl border-2 border-orange-500 px-3 py-2 text-xs font-black text-slate-700">按钮背景</div>
+        <div className="rounded-xl border-2 border-orange-500 px-3 py-2 text-xs font-black text-slate-700">
+          按钮背景
+        </div>
         <span className="text-xs font-black text-slate-300">→</span>
         <div className="h-9 w-9 rounded-xl bg-[#08AACE] shadow-sm" />
       </div>
@@ -1508,7 +1743,10 @@ const uiSamples: UiSample[] = [
     usage: 'AI 对话输入，回车发送，内容变多时框自动变高。',
     preview: (
       <div className="w-[300px] rounded-2xl border border-slate-200 bg-white p-2">
-        <textarea className="h-14 w-full resize-none rounded-xl border border-slate-200 p-3 text-sm leading-6 outline-none focus:border-brand" placeholder="输入内容，回车发送..." />
+        <textarea
+          className="h-14 w-full resize-none rounded-xl border border-slate-200 p-3 text-sm leading-6 outline-none focus:border-brand"
+          placeholder="输入内容，回车发送..."
+        />
         <div className="mt-2 flex justify-end gap-2">
           <button className="h-8 rounded-lg bg-slate-100 px-3 text-xs font-black text-slate-500">清空</button>
           <button className="h-8 rounded-lg bg-[#08AACE] px-3 text-xs font-black text-white">发送</button>
@@ -1543,8 +1781,12 @@ const uiSamples: UiSample[] = [
       <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-2">
         <span className="text-sm font-black text-slate-900">大纲生成</span>
         <div className="flex h-8 overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm">
-          <button className="h-full px-3 text-xs font-black text-slate-600 hover:bg-[#08AACE] hover:text-white">模型管理</button>
-          <button className="h-full border-l border-slate-200 px-3 text-xs font-black text-slate-600 hover:bg-[#08AACE] hover:text-white">提示词管理</button>
+          <button className="h-full px-3 text-xs font-black text-slate-600 hover:bg-[#08AACE] hover:text-white">
+            模型管理
+          </button>
+          <button className="h-full border-l border-slate-200 px-3 text-xs font-black text-slate-600 hover:bg-[#08AACE] hover:text-white">
+            提示词管理
+          </button>
         </div>
       </div>
     ),
@@ -1553,7 +1795,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-102',
     group: '标签',
     name: '内嵌分段选择器',
-    usage: '来自用户提供的 radio-inputs 代码。用于卡片宽度、封面高度、字号、小中大、多选一配置项；外层浅灰底，选中项白底浮起。',
+    usage:
+      '来自用户提供的 radio-inputs 代码。用于卡片宽度、封面高度、字号、小中大、多选一配置项；外层浅灰底，选中项白底浮起。',
     preview: (
       <div className="space-y-3">
         <div className="inline-flex w-[300px] flex-wrap rounded-lg bg-[#EEE] p-1 text-sm shadow-[0_0_0_1px_rgba(0,0,0,0.06)]">
@@ -1571,7 +1814,8 @@ const uiSamples: UiSample[] = [
         </code>
         <div className="rounded-lg bg-sky-50 px-3 py-2 text-xs leading-6 text-slate-600">
           <b className="text-sky-600">大白话：</b>
-          HTML 是骨架，CSS 是皮肤，React 代码就是把骨架和皮肤打包成一个可复用的小零件。以后从 UI 网站拿这种组件，优先拿 React 版本。
+          HTML 是骨架，CSS 是皮肤，React 代码就是把骨架和皮肤打包成一个可复用的小零件。以后从 UI 网站拿这种组件，优先拿
+          React 版本。
         </div>
       </div>
     ),
@@ -1580,7 +1824,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-103',
     group: '手动上传',
     name: '心形收藏 Checkbox',
-    usage: '来自用户上传的 React + styled-components 代码。适合收藏、喜欢、常用、置顶这类轻量状态；点击后心形填充并播放庆祝线条动画。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合收藏、喜欢、常用、置顶这类轻量状态；点击后心形填充并播放庆祝线条动画。',
     preview: (
       <div className="flex flex-col items-center gap-4">
         <style>{`
@@ -1668,7 +1913,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-104',
     group: '手动上传',
     name: '弹性滑动开关 Switch',
-    usage: '来自用户上传的 React + styled-components 代码。适合启用/禁用、自动/手动、开关设置这类二选一状态；选中后变蓝，按住时滑块会被拉长。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合启用/禁用、自动/手动、开关设置这类二选一状态；选中后变蓝，按住时滑块会被拉长。',
     preview: (
       <div className="flex flex-col items-center gap-4">
         <style>{`
@@ -1737,7 +1983,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-105',
     group: '手动上传',
     name: '波浪上浮输入框 Input',
-    usage: '来自用户上传的 React + styled-components 代码。适合登录名、标题、短文本输入；聚焦或输入后，label 里的每个字母会按延迟依次上浮。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合登录名、标题、短文本输入；聚焦或输入后，label 里的每个字母会按延迟依次上浮。',
     preview: (
       <div className="flex flex-col items-center gap-4 rounded-xl bg-slate-900 px-6 py-7">
         <style>{`
@@ -1800,7 +2047,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-106',
     group: '手动上传',
     name: '书签收藏 Checkbox',
-    usage: '来自用户上传的 React + styled-components 代码。适合收藏、加入书架、标记常用等状态；点击后书签变金色，并播放圆圈扩散和小点爆开动画。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合收藏、加入书架、标记常用等状态；点击后书签变金色，并播放圆圈扩散和小点爆开动画。',
     preview: (
       <div className="flex flex-col items-center gap-4">
         <style>{`
@@ -1917,7 +2165,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-107',
     group: '手动上传',
     name: '滑入填充复选框 Checkbox',
-    usage: '来自用户上传的 React + styled-components 代码。适合开关确认、批量选择、完成状态；点击后白色斜块从左上角滑入填满方框。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合开关确认、批量选择、完成状态；点击后白色斜块从左上角滑入填满方框。',
     preview: (
       <div className="flex flex-col items-center gap-4 rounded-xl bg-slate-900 px-6 py-7">
         <style>{`
@@ -1969,7 +2218,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-108',
     group: '手动上传',
     name: '滑块胶囊标签 Radio',
-    usage: '来自用户上传的 React + styled-components 代码。适合顶部标签、分类切换、状态筛选；选中项文字变蓝，浅蓝滑块会跟随移动，首个标签可带数字角标。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合顶部标签、分类切换、状态筛选；选中项文字变蓝，浅蓝滑块会跟随移动，首个标签可带数字角标。',
     preview: (
       <div className="flex flex-col items-center gap-4">
         <style>{`
@@ -2052,9 +2302,13 @@ const uiSamples: UiSample[] = [
               <span className="ui-108-notification">2</span>
             </label>
             <input type="radio" id="ui-108-radio-2" name="ui-108-tabs" />
-            <label className="ui-108-tab" htmlFor="ui-108-radio-2">UI</label>
+            <label className="ui-108-tab" htmlFor="ui-108-radio-2">
+              UI
+            </label>
             <input type="radio" id="ui-108-radio-3" name="ui-108-tabs" />
-            <label className="ui-108-tab" htmlFor="ui-108-radio-3">World</label>
+            <label className="ui-108-tab" htmlFor="ui-108-radio-3">
+              World
+            </label>
             <span className="ui-108-glider" />
           </div>
         </div>
@@ -2068,7 +2322,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-109',
     group: '手动上传',
     name: '彩色 SVG 加载动画 Loader',
-    usage: '来自用户上传的 React + styled-components 代码。适合 AI 思考、生成中、导入中等等待状态；三段 SVG 线条循环描边，中间圆形会旋转并切换渐变。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合 AI 思考、生成中、导入中等等待状态；三段 SVG 线条循环描边，中间圆形会旋转并切换渐变。',
     preview: (
       <div className="flex flex-col items-center gap-4">
         <style>{`
@@ -2143,7 +2398,14 @@ const uiSamples: UiSample[] = [
               </linearGradient>
             </defs>
           </svg>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height={64} width={64} className="ui-109-inline-block">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 64 64"
+            height={64}
+            width={64}
+            className="ui-109-inline-block"
+          >
             <path
               strokeLinejoin="round"
               strokeLinecap="round"
@@ -2154,7 +2416,14 @@ const uiSamples: UiSample[] = [
               pathLength={360}
             />
           </svg>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height={64} width={64} className="ui-109-inline-block">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 64 64"
+            height={64}
+            width={64}
+            className="ui-109-inline-block"
+          >
             <path
               strokeLinejoin="round"
               strokeLinecap="round"
@@ -2166,7 +2435,14 @@ const uiSamples: UiSample[] = [
             />
           </svg>
           <div className="ui-109-w-2" />
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" height={64} width={64} className="ui-109-inline-block">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 64 64"
+            height={64}
+            width={64}
+            className="ui-109-inline-block"
+          >
             <path
               strokeLinejoin="round"
               strokeLinecap="round"
@@ -2188,7 +2464,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-110',
     group: '手动上传',
     name: '浮动标签输入框 Input',
-    usage: '来自用户上传的 React + styled-components 代码。适合姓名、标题、搜索词等短文本输入；聚焦或已有内容时，标签缩小并浮到边框上方。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合姓名、标题、搜索词等短文本输入；聚焦或已有内容时，标签缩小并浮到边框上方。',
     preview: (
       <div className="flex flex-col items-center gap-4 rounded-xl bg-white px-6 py-8">
         <style>{`
@@ -2226,7 +2503,14 @@ const uiSamples: UiSample[] = [
           }
         `}</style>
         <div className="ui-110-input-group">
-          <input required type="text" name="ui-110-text" autoComplete="off" className="ui-110-input" aria-label="First Name" />
+          <input
+            required
+            type="text"
+            name="ui-110-text"
+            autoComplete="off"
+            className="ui-110-input"
+            aria-label="First Name"
+          />
           <label className="ui-110-user-label">First Name</label>
         </div>
         <code className="block rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-5 text-slate-500">
@@ -2239,7 +2523,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-111',
     group: '手动上传',
     name: '立体拨动开关 Switch',
-    usage: '来自用户上传的 React + styled-components 代码。适合黑白主题、开关设置、启用状态；hover 时开关会有 3D 倾斜，选中后圆形拨片滑到右侧。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合黑白主题、开关设置、启用状态；hover 时开关会有 3D 倾斜，选中后圆形拨片滑到右侧。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-3">
         <style>{`
@@ -2301,7 +2586,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-112',
     group: '手动上传',
     name: '展开箭头按钮 Button',
-    usage: '来自用户上传的 React + styled-components 代码。适合“了解更多”“下一步”“查看详情”这类强调操作；hover 时左侧圆形背景展开为整条按钮，箭头右移，文字变白。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合“了解更多”“下一步”“查看详情”这类强调操作；hover 时左侧圆形背景展开为整条按钮，箭头右移，文字变白。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-3">
         <style>{`
@@ -2414,7 +2700,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-113',
     group: '手动上传',
     name: '星标收藏 Checkbox',
-    usage: '来自用户上传的 React + styled-components 代码。适合收藏、评分、标记重点、常用项目；hover 时星星放大，选中后变成黄色。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合收藏、评分、标记重点、常用项目；hover 时星星放大，选中后变成黄色。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-3">
         <style>{`
@@ -2449,7 +2736,14 @@ const uiSamples: UiSample[] = [
         `}</style>
         <label className="ui-113-star">
           <input type="checkbox" aria-label="Star" />
-          <svg height="24px" viewBox="0 0 24 24" width="24px" xmlSpace="preserve" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <svg
+            height="24px"
+            viewBox="0 0 24 24"
+            width="24px"
+            xmlSpace="preserve"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
             <g>
               <g>
                 <path d="M9.362,9.158c0,0-3.16,0.35-5.268,0.584c-0.19,0.023-0.358,0.15-0.421,0.343s0,0.394,0.14,0.521 c1.566,1.429,3.919,3.569,3.919,3.569c-0.002,0-0.646,3.113-1.074,5.19c-0.036,0.188,0.032,0.387,0.196,0.506 c0.163,0.119,0.373,0.121,0.538,0.028c1.844-1.048,4.606-2.624,4.606-2.624s2.763,1.576,4.604,2.625 c0.168,0.092,0.378,0.09,0.541-0.029c0.164-0.119,0.232-0.318,0.195-0.505c-0.428-2.078-1.071-5.191-1.071-5.191 s2.353-2.14,3.919-3.566c0.14-0.131,0.202-0.332,0.14-0.524s-0.23-0.319-0.42-0.341c-2.108-0.236-5.269-0.586-5.269-0.586 s-1.31-2.898-2.183-4.83c-0.082-0.173-0.254-0.294-0.456-0.294s-0.375,0.122-0.453,0.294C10.671,6.26,9.362,9.158,9.362,9.158z" />
@@ -2467,7 +2761,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-114',
     group: '手动上传',
     name: '深色指示灯开关 Switch',
-    usage: '来自用户上传的 React + styled-components 代码。适合启用状态、电源状态、自动化开关；深色外壳带内阴影，选中后拨片右移，指示环由红色变绿色。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合启用状态、电源状态、自动化开关；深色外壳带内阴影，选中后拨片右移，指示环由红色变绿色。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-3">
         <style>{`
@@ -2563,7 +2858,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-115',
     group: '手动上传',
     name: '月亮主题切换 Switch',
-    usage: '来自用户上传的 React + styled-components 代码。现在落到软件顶部的“黑色主题”按钮；打开黑色主题时显示深色轨道和月亮圆点。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。现在落到软件顶部的“黑色主题”按钮；打开黑色主题时显示深色轨道和月亮圆点。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-3">
         <style>{`
@@ -2633,7 +2929,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-116',
     group: '手动上传',
     name: '星光能量开关 Switch',
-    usage: '来自用户上传的 React + styled-components 代码。适合高级模式、AI 增强、启动引擎等强调型开关；深色胶囊轨道内有星光粒子，选中后按钮滑到右侧并变成蓝色能量态。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合高级模式、AI 增强、启动引擎等强调型开关；深色胶囊轨道内有星光粒子，选中后按钮滑到右侧并变成蓝色能量态。',
     preview: (
       <div className="flex flex-col items-center gap-5 py-5">
         <style>{`
@@ -2786,7 +3083,13 @@ const uiSamples: UiSample[] = [
               {Array.from({ length: 24 }, (_, index) => (
                 <span key={index} className={`ui-116-sparkle ui-116-s${index + 1}`} />
               ))}
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 30 30" className="ui-116-icon" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 30 30"
+                className="ui-116-icon"
+                aria-hidden="true"
+              >
                 <path d="M0.96233 28.61C1.36043 29.0081 1.96007 29.1255 2.47555 28.8971L10.4256 25.3552C13.2236 24.11 16.4254 24.1425 19.2107 25.4401L27.4152 29.2747C27.476 29.3044 27.5418 29.3023 27.6047 29.32C27.6563 29.3348 27.7079 29.3497 27.761 29.3574C27.843 29.3687 27.9194 29.3758 28 29.3688C28.1273 29.3617 28.2531 29.3405 28.3726 29.2945C28.4447 29.262 28.5162 29.2287 28.5749 29.1842C28.6399 29.1446 28.6993 29.0994 28.7509 29.0477L28.9008 28.8582C28.9468 28.7995 28.9793 28.7274 29.0112 28.656C29.0599 28.5322 29.0811 28.4036 29.0882 28.2734C29.0939 28.1957 29.0868 28.1207 29.0769 28.0415C29.0705 27.9955 29.0585 27.9524 29.0472 27.9072C29.0295 27.8343 29.0302 27.7601 28.9984 27.6901L25.1638 19.4855C23.8592 16.7073 23.8273 13.5048 25.0726 10.7068L28.6145 2.75679C28.8429 2.24131 28.7318 1.63531 28.3337 1.2372C27.9165 0.820011 27.271 0.721743 26.7491 0.9961L19.8357 4.59596C16.8418 6.15442 13.2879 6.18696 10.2615 4.70062L1.80308 0.520214C1.7055 0.474959 1.60722 0.441742 1.50964 0.421943C1.44459 0.409215 1.37882 0.395769 1.3074 0.402133C1.14406 0.395769 0.981436 0.428275 0.818095 0.499692C0.77284 0.519491 0.719805 0.545671 0.67455 0.578198C0.596061 0.617088 0.524653 0.675786 0.4596 0.74084C0.394546 0.805894 0.335843 0.877306 0.296245 0.956502C0.263718 1.00176 0.237561 1.05477 0.217762 1.10003C0.152708 1.24286 0.126545 1.40058 0.120181 1.54978C0.120181 1.61483 0.126527 1.6735 0.132891 1.73219C0.15269 1.85664 0.178881 1.97332 0.237571 2.08434L4.41798 10.5427C5.91139 13.5621 5.8725 17.1238 4.3204 20.1099L0.720514 27.0233C0.440499 27.5536 0.545137 28.1928 0.96233 28.61Z" />
               </svg>
             </div>
@@ -2802,7 +3105,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-117',
     group: '手动上传',
     name: '左滑填充按钮 Button',
-    usage: '来自用户上传的 React + styled-components 代码。适合普通确认、提交、继续等按钮；hover 时黑色背景从左向右填满，文字从深色变浅色。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合普通确认、提交、继续等按钮；hover 时黑色背景从左向右填满，文字从深色变浅色。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-3">
         <style>{`
@@ -2841,7 +3145,9 @@ const uiSamples: UiSample[] = [
             width: 100%;
           }
         `}</style>
-        <button className="ui-117-button" type="button">Click me!</button>
+        <button className="ui-117-button" type="button">
+          Click me!
+        </button>
         <code className="block rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-5 text-slate-500">
           button:hover expands ::before from width 0 to 100% and flips the text color
         </code>
@@ -2852,7 +3158,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-118',
     group: '手动上传',
     name: '社交图标九宫格 Button',
-    usage: '来自用户上传的 React + styled-components 代码。适合社交分享、外链入口、平台选择；初始显示渐变背景和 HOVER 文案，hover 后九宫格卡片散开并显示各平台图标。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合社交分享、外链入口、平台选择；初始显示渐变背景和 HOVER 文案，hover 后九宫格卡片散开并显示各平台图标。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-4">
         <style>{`
@@ -2936,9 +3243,19 @@ const uiSamples: UiSample[] = [
         `}</style>
         <div className="ui-118-main">
           {['IG', 'X', 'DR', 'CP', 'UI', 'DC', 'GH', 'TG', 'RD'].map((item) => (
-            <div key={item} className="ui-118-card">{item}</div>
+            <div key={item} className="ui-118-card">
+              {item}
+            </div>
           ))}
-          <p className="ui-118-text">HOVER<br /><br />FOR<br /><br />SOCIAL</p>
+          <p className="ui-118-text">
+            HOVER
+            <br />
+            <br />
+            FOR
+            <br />
+            <br />
+            SOCIAL
+          </p>
           <div className="ui-118-main-back" />
         </div>
         <code className="block rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-5 text-slate-500">
@@ -2951,7 +3268,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-119',
     group: '手动上传',
     name: '纸飞机发送按钮 Button',
-    usage: '来自用户上传的 React + styled-components 代码。适合发送、提交、发布等操作；hover 时纸飞机向右飞并轻微上下浮动，文字滑出，按下时按钮缩小。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合发送、提交、发布等操作；hover 时纸飞机向右飞并轻微上下浮动，文字滑出，按下时按钮缩小。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-3">
         <style>{`
@@ -3002,7 +3320,10 @@ const uiSamples: UiSample[] = [
             <div className="ui-119-svg-wrapper">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={24} height={24} aria-hidden="true">
                 <path fill="none" d="M0 0h24v24H0z" />
-                <path fill="currentColor" d="M1.946 9.315c-.522-.174-.527-.455.01-.634l19.087-6.362c.529-.176.832.12.684.638l-5.454 19.086c-.15.529-.455.547-.679.045L12 14l6-8-8 6-8.054-2.685z" />
+                <path
+                  fill="currentColor"
+                  d="M1.946 9.315c-.522-.174-.527-.455.01-.634l19.087-6.362c.529-.176.832.12.684.638l-5.454 19.086c-.15.529-.455.547-.679.045L12 14l6-8-8 6-8.054-2.685z"
+                />
               </svg>
             </div>
           </div>
@@ -3018,7 +3339,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-120',
     group: '手动上传',
     name: '四宫格社交按钮 Button',
-    usage: '来自用户上传的 React + styled-components 代码。适合社交入口、平台跳转、快捷外链；四个卡片组成异形圆角四宫格，hover 时单个卡片放大并切换品牌底色。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合社交入口、平台跳转、快捷外链；四个卡片组成异形圆角四宫格，hover 时单个卡片放大并切换品牌底色。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-3">
         <style>{`
@@ -3082,12 +3404,20 @@ const uiSamples: UiSample[] = [
         `}</style>
         <div className="ui-120-main">
           <div className="ui-120-row">
-            <button className="ui-120-card ui-120-card1" type="button">IG</button>
-            <button className="ui-120-card ui-120-card2" type="button">X</button>
+            <button className="ui-120-card ui-120-card1" type="button">
+              IG
+            </button>
+            <button className="ui-120-card ui-120-card2" type="button">
+              X
+            </button>
           </div>
           <div className="ui-120-row">
-            <button className="ui-120-card ui-120-card3" type="button">GH</button>
-            <button className="ui-120-card ui-120-card4" type="button">DC</button>
+            <button className="ui-120-card ui-120-card3" type="button">
+              GH
+            </button>
+            <button className="ui-120-card ui-120-card4" type="button">
+              DC
+            </button>
           </div>
         </div>
         <code className="block rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-5 text-slate-500">
@@ -3100,7 +3430,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-121',
     group: '手动上传',
     name: '展开删除按钮 Button',
-    usage: '来自用户上传的 React + styled-components 代码。适合删除、移除、清空等危险操作；hover 时文字变透明，右侧 X 图标区域展开成整颗按钮，按下时图标缩小。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合删除、移除、清空等危险操作；hover 时文字变透明，右侧 X 图标区域展开成整颗按钮，按下时图标缩小。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-3">
         <style>{`
@@ -3175,7 +3506,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-122',
     group: '手动上传',
     name: '展开导航菜单 Radio',
-    usage: '来自用户上传的 React + styled-components 代码。适合底部导航、顶部工具菜单、模块切换；默认只显示图标，hover 或 focus 时菜单项变宽，标题从右侧滑入。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合底部导航、顶部工具菜单、模块切换；默认只显示图标，hover 或 focus 时菜单项变宽，标题从右侧滑入。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-3">
         <style>{`
@@ -3267,7 +3599,13 @@ const uiSamples: UiSample[] = [
             <button key={item.title} className="ui-122-link" type="button">
               <span className="ui-122-link-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d={item.path} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+                  <path
+                    d={item.path}
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                  />
                 </svg>
               </span>
               <span className="ui-122-link-title">{item.title}</span>
@@ -3284,7 +3622,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-123',
     group: '手动上传',
     name: '霓虹描边文字按钮 Button',
-    usage: '来自用户上传的 React + styled-components 代码。适合品牌标题、强调入口、炫酷操作按钮；默认是透明描边文字，hover 时绿色文字从左到右展开并产生发光效果。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合品牌标题、强调入口、炫酷操作按钮；默认是透明描边文字，hover 时绿色文字从左到右展开并产生发光效果。',
     preview: (
       <div className="flex flex-col items-center gap-4 rounded-xl bg-slate-950 px-6 py-7">
         <style>{`
@@ -3326,7 +3665,9 @@ const uiSamples: UiSample[] = [
         `}</style>
         <button className="ui-123-button" data-text="Awesome" type="button">
           <span className="ui-123-actual-text">&nbsp;uiverse&nbsp;</span>
-          <span aria-hidden="true" className="ui-123-hover-text">&nbsp;uiverse&nbsp;</span>
+          <span aria-hidden="true" className="ui-123-hover-text">
+            &nbsp;uiverse&nbsp;
+          </span>
         </button>
         <code className="block rounded-lg bg-slate-900 px-3 py-2 text-[11px] leading-5 text-slate-300">
           hover text starts at width 0, then expands to 100% with a neon drop-shadow
@@ -3338,7 +3679,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-124',
     group: '手动上传',
     name: '图标状态切换 Switch',
-    usage: '来自用户上传的 React + styled-components 代码。适合启用/禁用、通过/不通过、开启/关闭状态；拨片内置叉号和勾号，选中后轨道变绿、拨片右移、勾号放大显示。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合启用/禁用、通过/不通过、开启/关闭状态；拨片内置叉号和勾号，选中后轨道变绿、拨片右移、勾号放大显示。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-3">
         <style>{`
@@ -3440,14 +3782,36 @@ const uiSamples: UiSample[] = [
           <input defaultChecked type="checkbox" aria-label="Icon switch" />
           <div className="ui-124-slider">
             <div className="ui-124-circle">
-              <svg className="ui-124-cross" xmlSpace="preserve" viewBox="0 0 365.696 365.696" height={6} width={6} xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <svg
+                className="ui-124-cross"
+                xmlSpace="preserve"
+                viewBox="0 0 365.696 365.696"
+                height={6}
+                width={6}
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
                 <g>
-                  <path fill="currentColor" d="M243.188 182.86 356.32 69.726c12.5-12.5 12.5-32.766 0-45.247L341.238 9.398c-12.504-12.503-32.77-12.503-45.25 0L182.86 122.528 69.727 9.374c-12.5-12.5-32.766-12.5-45.247 0L9.375 24.457c-12.5 12.504-12.5 32.77 0 45.25l113.152 113.152L9.398 295.99c-12.503 12.503-12.503 32.769 0 45.25L24.48 356.32c12.5 12.5 32.766 12.5 45.247 0l113.132-113.132L295.99 356.32c12.503 12.5 32.769 12.5 45.25 0l15.081-15.082c12.5-12.504 12.5-32.77 0-45.25zm0 0" />
+                  <path
+                    fill="currentColor"
+                    d="M243.188 182.86 356.32 69.726c12.5-12.5 12.5-32.766 0-45.247L341.238 9.398c-12.504-12.503-32.77-12.503-45.25 0L182.86 122.528 69.727 9.374c-12.5-12.5-32.766-12.5-45.247 0L9.375 24.457c-12.5 12.504-12.5 32.77 0 45.25l113.152 113.152L9.398 295.99c-12.503 12.503-12.503 32.769 0 45.25L24.48 356.32c12.5 12.5 32.766 12.5 45.247 0l113.132-113.132L295.99 356.32c12.503 12.5 32.769 12.5 45.25 0l15.081-15.082c12.5-12.504 12.5-32.77 0-45.25zm0 0"
+                  />
                 </g>
               </svg>
-              <svg className="ui-124-checkmark" xmlSpace="preserve" viewBox="0 0 24 24" height={10} width={10} xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <svg
+                className="ui-124-checkmark"
+                xmlSpace="preserve"
+                viewBox="0 0 24 24"
+                height={10}
+                width={10}
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
                 <g>
-                  <path fill="currentColor" d="M9.707 19.121a.997.997 0 0 1-1.414 0l-5.646-5.647a1.5 1.5 0 0 1 0-2.121l.707-.707a1.5 1.5 0 0 1 2.121 0L9 14.171l9.525-9.525a1.5 1.5 0 0 1 2.121 0l.707.707a1.5 1.5 0 0 1 0 2.121z" />
+                  <path
+                    fill="currentColor"
+                    d="M9.707 19.121a.997.997 0 0 1-1.414 0l-5.646-5.647a1.5 1.5 0 0 1 0-2.121l.707-.707a1.5 1.5 0 0 1 2.121 0L9 14.171l9.525-9.525a1.5 1.5 0 0 1 2.121 0l.707.707a1.5 1.5 0 0 1 0 2.121z"
+                  />
                 </g>
               </svg>
             </div>
@@ -3463,7 +3827,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-125',
     group: '手动上传',
     name: '旋转加号按钮 Button',
-    usage: '来自用户上传的 React + Tailwind class 代码。适合新增、创建、添加按钮；hover 时整颗圆形加号旋转 90 度并填充深色，active 时描边和填充进一步变浅/变深。',
+    usage:
+      '来自用户上传的 React + Tailwind class 代码。适合新增、创建、添加按钮；hover 时整颗圆形加号旋转 90 度并填充深色，active 时描边和填充进一步变浅/变深。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-3">
         <style>{`
@@ -3496,7 +3861,10 @@ const uiSamples: UiSample[] = [
         `}</style>
         <button title="Add New" className="ui-125-button" type="button" aria-label="Add New">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="ui-125-icon" aria-hidden="true">
-            <path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" strokeWidth="1.5" />
+            <path
+              d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z"
+              strokeWidth="1.5"
+            />
             <path d="M8 12H16" strokeWidth="1.5" />
             <path d="M12 16V8" strokeWidth="1.5" />
           </svg>
@@ -3511,7 +3879,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-126',
     group: '手动上传',
     name: '渐变纸飞机发送按钮 Button',
-    usage: '来自用户上传的 React + styled-components 代码。适合发送、提交、发布等主操作；蓝色渐变胶囊按钮，hover 时整体上浮、阴影加深，纸飞机图标旋转。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合发送、提交、发布等主操作；蓝色渐变胶囊按钮，hover 时整体上浮、阴影加深，纸飞机图标旋转。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-3">
         <style>{`
@@ -3572,7 +3941,10 @@ const uiSamples: UiSample[] = [
             <div className="ui-126-svg-wrapper">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={24} height={24} aria-hidden="true">
                 <path fill="none" d="M0 0h24v24H0z" />
-                <path fill="currentColor" d="M1.946 9.315c-.522-.174-.527-.455.01-.634l19.087-6.362c.529-.176.832.12.684.638l-5.454 19.086c-.15.529-.455.547-.679.045L12 14l6-8-8 6-8.054-2.685z" />
+                <path
+                  fill="currentColor"
+                  d="M1.946 9.315c-.522-.174-.527-.455.01-.634l19.087-6.362c.529-.176.832.12.684.638l-5.454 19.086c-.15.529-.455.547-.679.045L12 14l6-8-8 6-8.054-2.685z"
+                />
               </svg>
             </div>
           </div>
@@ -3588,7 +3960,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-127',
     group: '手动上传',
     name: '交互色板卡片 Card',
-    usage: '来自用户上传的 React + styled-components 代码。适合配色方案展示、主题色收藏、色卡预览；hover 某个色块时该色块变宽并显示色号。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合配色方案展示、主题色收藏、色卡预览；hover 某个色块时该色块变宽并显示色号。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-3">
         <style>{`
@@ -3661,7 +4034,9 @@ const uiSamples: UiSample[] = [
         <div className="ui-127-container">
           <div className="ui-127-palette">
             {['264653', '2A9D8F', 'E9C46A', 'F4A261', 'E76F51'].map((color) => (
-              <div key={color} className="ui-127-color"><span>{color}</span></div>
+              <div key={color} className="ui-127-color">
+                <span>{color}</span>
+              </div>
             ))}
           </div>
           <div className="ui-127-stats">
@@ -3681,7 +4056,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-128',
     group: '手动上传',
     name: '圆形展开删除按钮 Button',
-    usage: '来自用户上传的 React + styled-components 代码。适合删除、清空、移除等危险操作；默认是黑色圆形垃圾桶，hover 后展开为红色胶囊并显示 Delete 文案。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合删除、清空、移除等危险操作；默认是黑色圆形垃圾桶，hover 后展开为红色胶囊并显示 Delete 文案。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-3">
         <style>{`
@@ -3750,7 +4126,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-129',
     group: '手动上传',
     name: '波浪标签输入框 Input',
-    usage: '来自用户上传的 React + styled-components 代码。适合名称、标题、短文本输入；聚焦或输入后标签逐字上浮，底部蓝色线条从中间向两侧展开。',
+    usage:
+      '来自用户上传的 React + styled-components 代码。适合名称、标题、短文本输入；聚焦或输入后标签逐字上浮，底部蓝色线条从中间向两侧展开。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-5">
         <style>{`
@@ -3840,7 +4217,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-130',
     group: '手动上传',
     name: '深色浮动标签输入框 Input',
-    usage: '来自用户本次上传的 React + styled-components 代码。用于作品编辑器 AI 输入框、大纲设定 AI 输入框、脑洞字段、剧本编辑器 AI 输入框、新增模型和创建提示词表单。',
+    usage:
+      '来自用户本次上传的 React + styled-components 代码。用于作品编辑器 AI 输入框、大纲设定 AI 输入框、脑洞字段、剧本编辑器 AI 输入框、新增模型和创建提示词表单。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-5">
         <style>{`
@@ -3883,7 +4261,14 @@ const uiSamples: UiSample[] = [
           }
         `}</style>
         <div className="ui-130-input-group">
-          <input required type="text" name="ui-130-text" autoComplete="off" className="ui-130-input" aria-label="AI 输入内容" />
+          <input
+            required
+            type="text"
+            name="ui-130-text"
+            autoComplete="off"
+            className="ui-130-input"
+            aria-label="AI 输入内容"
+          />
           <label className="ui-130-user-label">AI 输入内容</label>
         </div>
         <code className="block rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-5 text-slate-500">
@@ -3896,7 +4281,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-131',
     group: '手动上传',
     name: '消息发送输入框 Input',
-    usage: '来自用户本次上传的 React + styled-components 代码。适合 AI 对话输入区、作品编辑器右下角助手输入栏、需要图片或附件入口的消息发送栏。',
+    usage:
+      '来自用户本次上传的 React + styled-components 代码。适合 AI 对话输入区、作品编辑器右下角助手输入栏、需要图片或附件入口的消息发送栏。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-5">
         <style>{`
@@ -3981,8 +4367,17 @@ const uiSamples: UiSample[] = [
           <input required placeholder="Message..." type="text" className="ui-131-message-input" aria-label="Message" />
           <button className="ui-131-send" type="button" aria-label="Send">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 664 663">
-              <path fill="none" d="M646.293 331.888L17.7538 17.6187L155.245 331.888M646.293 331.888L17.753 646.157L155.245 331.888M646.293 331.888L318.735 330.228L155.245 331.888" />
-              <path strokeLinejoin="round" strokeLinecap="round" strokeWidth="33.67" stroke="currentColor" d="M646.293 331.888L17.7538 17.6187L155.245 331.888M646.293 331.888L17.753 646.157L155.245 331.888M646.293 331.888L318.735 330.228L155.245 331.888" />
+              <path
+                fill="none"
+                d="M646.293 331.888L17.7538 17.6187L155.245 331.888M646.293 331.888L17.753 646.157L155.245 331.888M646.293 331.888L318.735 330.228L155.245 331.888"
+              />
+              <path
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                strokeWidth="33.67"
+                stroke="currentColor"
+                d="M646.293 331.888L17.7538 17.6187L155.245 331.888M646.293 331.888L17.753 646.157L155.245 331.888M646.293 331.888L318.735 330.228L155.245 331.888"
+              />
             </svg>
           </button>
         </div>
@@ -3996,7 +4391,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-132',
     group: '鎵嬪姩涓婁紶',
     name: '搜索输入框 Input',
-    usage: '来自用户本次上传的 React + styled-components 代码。适合作品库、剧本库、提示词管理、UI 记录等列表页顶部搜索入口。',
+    usage:
+      '来自用户本次上传的 React + styled-components 代码。适合作品库、剧本库、提示词管理、UI 记录等列表页顶部搜索入口。',
     preview: (
       <div className="flex flex-col items-center gap-4 py-5">
         <style>{`
@@ -4200,9 +4596,18 @@ const uiSamples: UiSample[] = [
             ['脑洞预览字号', 14],
             ['剧本编辑器字号', 16],
           ].map(([label, value]) => (
-            <div key={label} className="flex items-center justify-between gap-4 rounded-xl bg-white px-4 py-3 shadow-sm">
+            <div
+              key={label}
+              className="flex items-center justify-between gap-4 rounded-xl bg-white px-4 py-3 shadow-sm"
+            >
               <span className="text-sm font-black text-slate-700">{label}</span>
-              <FontSizeStepper value={Number(value)} min={12} max={32} onChange={() => undefined} ariaLabel={String(label)} />
+              <FontSizeStepper
+                value={Number(value)}
+                min={12}
+                max={32}
+                onChange={() => undefined}
+                ariaLabel={String(label)}
+              />
             </div>
           ))}
         </div>
@@ -4512,7 +4917,9 @@ const uiSamples: UiSample[] = [
           <input type="radio" name="ui-137-actions" id="ui-137-export" />
           <label htmlFor="ui-137-export">导出</label>
           <input type="radio" name="ui-137-actions" id="ui-137-delete" />
-          <label htmlFor="ui-137-delete" className="ui-137-danger">删除</label>
+          <label htmlFor="ui-137-delete" className="ui-137-danger">
+            删除
+          </label>
           <div className="ui-137-glider" />
         </div>
         <code className="block rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-5 text-slate-500">
@@ -4639,7 +5046,8 @@ const uiSamples: UiSample[] = [
     id: 'UI-139',
     group: '作品',
     name: '作品卡片按钮方案 B',
-    usage: '作品卡片底部 3 列 x 2 行固定按钮，最多显示 6 个常用入口；剩余操作集中到“更多”白底弹层，适合以后扩展到 9 个按钮。',
+    usage:
+      '作品卡片底部 3 列 x 2 行固定按钮，最多显示 6 个常用入口；剩余操作集中到“更多”白底弹层，适合以后扩展到 9 个按钮。',
     preview: (
       <div className="w-[320px] rounded-[28px] border border-slate-100 bg-white p-4 shadow-xl">
         <div className="flex h-[190px] items-center justify-center rounded-[22px] bg-gradient-to-br from-sky-50 via-white to-cyan-50">
@@ -4674,11 +5082,18 @@ const uiSamples: UiSample[] = [
             </div>
             <div className="absolute right-1.5 top-[calc(100%+8px)] z-20 w-[150px] overflow-hidden rounded-2xl border border-slate-100 bg-white p-1.5 shadow-2xl">
               {['导出 txt', '关联小说', '复制书名'].map((action) => (
-                <button key={action} type="button" className="flex h-9 w-full items-center rounded-xl px-3 text-left text-xs font-black text-slate-600 hover:bg-sky-50 hover:text-[#08AACE]">
+                <button
+                  key={action}
+                  type="button"
+                  className="flex h-9 w-full items-center rounded-xl px-3 text-left text-xs font-black text-slate-600 hover:bg-sky-50 hover:text-[#08AACE]"
+                >
                   {action}
                 </button>
               ))}
-              <button type="button" className="flex h-9 w-full items-center rounded-xl px-3 text-left text-xs font-black text-red-500 hover:bg-red-50">
+              <button
+                type="button"
+                className="flex h-9 w-full items-center rounded-xl px-3 text-left text-xs font-black text-red-500 hover:bg-red-50"
+              >
                 删除
               </button>
             </div>
@@ -4805,7 +5220,10 @@ const uiSamples: UiSample[] = [
         `}</style>
         <div className="ui-141-field-wrap">
           <div className="ui-141-field">
-            <textarea readOnly value="这里是带边框工具槽的长文本区域。字号放在左下角，字数统计放在右下角，主内容区域保持干净。" />
+            <textarea
+              readOnly
+              value="这里是带边框工具槽的长文本区域。字号放在左下角，字数统计放在右下角，主内容区域保持干净。"
+            />
             <label>设定预览</label>
             <span className="ui-141-count">46 字</span>
           </div>
@@ -4825,13 +5243,22 @@ const uiSamples: UiSample[] = [
       <div className="flex justify-center py-6">
         <div className="w-[320px]">
           <div className="relative pt-2">
-            <span className="xy-border-embedded-transparent-backplate absolute left-6 top-0 z-10 text-sm font-black leading-none text-slate-700">模型</span>
+            <span className="xy-border-embedded-transparent-backplate absolute left-6 top-0 z-10 text-sm font-black leading-none text-slate-700">
+              模型
+            </span>
             <div className="flex h-14 overflow-hidden rounded-[24px] border-2 border-[#08AACE] bg-white shadow-[0_8px_18px_rgba(8,170,206,0.08)]">
               <button type="button" className="min-w-0 flex-1 px-5 pt-1 text-left text-lg font-black text-slate-950">
                 <span className="block truncate">DS-v4-flash</span>
               </button>
-              <button type="button" className="grid w-11 shrink-0 place-items-center text-slate-700">⌄</button>
-              <button type="button" className="w-14 shrink-0 border-l border-[#08AACE]/40 bg-[#EAF9FD] text-sm font-black text-[#078fb0]">管理</button>
+              <button type="button" className="grid w-11 shrink-0 place-items-center text-slate-700">
+                ⌄
+              </button>
+              <button
+                type="button"
+                className="w-14 shrink-0 border-l border-[#08AACE]/40 bg-[#EAF9FD] text-sm font-black text-[#078fb0]"
+              >
+                管理
+              </button>
             </div>
           </div>
         </div>
@@ -4842,22 +5269,28 @@ const uiSamples: UiSample[] = [
     id: 'UI-143',
     group: '输入框',
     name: 'AI 输入框右侧图标按钮',
-    usage: 'AI 用户输入框的发送、停止等贴边动作按钮。图标按钮并入输入框右侧，按钮之间用细分割线区分，避免输入框右边另起一组按钮。',
+    usage:
+      'AI 用户输入框的发送、停止等贴边动作按钮。图标按钮并入输入框右侧，按钮之间用细分割线区分，避免输入框右边另起一组按钮。',
     preview: (
       <div className="flex justify-center py-6">
         <div className="flex h-14 w-[420px] max-w-full overflow-hidden rounded-2xl border-2 border-[#08AACE] bg-white shadow-[0_8px_18px_rgba(8,170,206,0.08)]">
           <div className="flex min-w-0 flex-1 items-center px-4 text-sm font-bold text-slate-400">请输入要求</div>
-          <button type="button" className="grid w-12 shrink-0 place-items-center border-l border-[#08AACE]/40 text-[#08AACE]">
+          <button
+            type="button"
+            className="grid w-12 shrink-0 place-items-center border-l border-[#08AACE]/40 text-[#08AACE]"
+          >
             <span className="text-lg leading-none">↑</span>
           </button>
-          <button type="button" className="grid w-12 shrink-0 place-items-center border-l border-red-200 bg-red-500 text-white">
+          <button
+            type="button"
+            className="grid w-12 shrink-0 place-items-center border-l border-red-200 bg-red-500 text-white"
+          >
             <span className="h-3 w-3 rounded-sm bg-current" />
           </button>
         </div>
       </div>
     ),
   },
-
 ];
 
 const techItems: TechItem[] = [
@@ -5017,7 +5450,9 @@ function TechPreview({ item }: { item: TechItem }) {
             style={{ left: 18 + index * 18, top: 18 + index * 10, zIndex: index }}
           />
         ))}
-        <span className="absolute bottom-3 right-3 rounded-full bg-slate-900 px-2 py-1 text-[10px] font-black text-white">Esc</span>
+        <span className="absolute bottom-3 right-3 rounded-full bg-slate-900 px-2 py-1 text-[10px] font-black text-white">
+          Esc
+        </span>
       </div>
     );
   }
@@ -5025,7 +5460,9 @@ function TechPreview({ item }: { item: TechItem }) {
   if (item.id === 'T-04') {
     return (
       <div className={`${previewShell} flex items-center justify-center bg-slate-900/10`}>
-        <div className="h-12 w-28 rounded-xl bg-white p-2 text-center text-xs font-black text-slate-700 shadow-sm">弹窗</div>
+        <div className="h-12 w-28 rounded-xl bg-white p-2 text-center text-xs font-black text-slate-700 shadow-sm">
+          弹窗
+        </div>
       </div>
     );
   }
@@ -5034,9 +5471,14 @@ function TechPreview({ item }: { item: TechItem }) {
     return (
       <div className={`${previewShell} overflow-hidden bg-slate-50 p-0`}>
         <div className="grid grid-cols-2 bg-[#E6F7FB] px-3 py-2 text-[11px] font-black text-[#078fb0]">
-          <span>原文</span><span>替换为</span>
+          <span>原文</span>
+          <span>替换为</span>
         </div>
-        {[1, 2, 3].map((row) => <div key={row} className="mx-3 border-b border-slate-100 py-1.5 text-xs text-slate-400">滚动内容 {row}</div>)}
+        {[1, 2, 3].map((row) => (
+          <div key={row} className="mx-3 border-b border-slate-100 py-1.5 text-xs text-slate-400">
+            滚动内容 {row}
+          </div>
+        ))}
       </div>
     );
   }
@@ -5044,8 +5486,12 @@ function TechPreview({ item }: { item: TechItem }) {
   if (item.id === 'T-06') {
     return (
       <div className={`${previewShell} bg-slate-50`}>
-        <div className="h-9 rounded-xl border border-[#08AACE] bg-white px-3 py-2 text-xs font-bold text-slate-500">输入一行</div>
-        <div className="mt-2 h-12 rounded-xl border border-[#08AACE] bg-white px-3 py-2 text-xs font-bold text-slate-500">内容变多后自动变高</div>
+        <div className="h-9 rounded-xl border border-[#08AACE] bg-white px-3 py-2 text-xs font-bold text-slate-500">
+          输入一行
+        </div>
+        <div className="mt-2 h-12 rounded-xl border border-[#08AACE] bg-white px-3 py-2 text-xs font-bold text-slate-500">
+          内容变多后自动变高
+        </div>
       </div>
     );
   }
@@ -5074,7 +5520,12 @@ function TechPreview({ item }: { item: TechItem }) {
       <div className={`${previewShell} flex items-center justify-center bg-slate-50`}>
         <div className="inline-flex rounded-xl bg-slate-100 p-1">
           {['设定', '角色', '脑洞'].map((tab) => (
-            <span key={tab} className={`rounded-lg px-3 py-1.5 text-xs font-black ${tab === '角色' ? 'bg-white text-[#08AACE] shadow-sm' : 'text-slate-400'}`}>{tab}</span>
+            <span
+              key={tab}
+              className={`rounded-lg px-3 py-1.5 text-xs font-black ${tab === '角色' ? 'bg-white text-[#08AACE] shadow-sm' : 'text-slate-400'}`}
+            >
+              {tab}
+            </span>
           ))}
         </div>
       </div>
@@ -5086,7 +5537,9 @@ function TechPreview({ item }: { item: TechItem }) {
       <div className={`${previewShell} flex items-center gap-2 bg-slate-50`}>
         <div className="rounded-xl bg-white px-3 py-2 text-xs font-black text-slate-600 shadow-sm">角色A</div>
         <span className="text-[#08AACE]">→</span>
-        <div className="rounded-xl border border-dashed border-[#08AACE] px-3 py-2 text-xs font-black text-[#08AACE]">新分类</div>
+        <div className="rounded-xl border border-dashed border-[#08AACE] px-3 py-2 text-xs font-black text-[#08AACE]">
+          新分类
+        </div>
       </div>
     );
   }
@@ -5117,7 +5570,9 @@ function TechPreview({ item }: { item: TechItem }) {
 
   if (item.id === 'T-13') {
     return (
-      <div className={`${previewShell} grid grid-cols-3 items-center gap-2 bg-slate-50 text-center text-[11px] font-black text-slate-600`}>
+      <div
+        className={`${previewShell} grid grid-cols-3 items-center gap-2 bg-slate-50 text-center text-[11px] font-black text-slate-600`}
+      >
         <div className="rounded-xl bg-white py-2 shadow-sm">输入</div>
         <div className="rounded-xl bg-[#E6F7FB] py-2 text-[#08AACE]">AI</div>
         <div className="rounded-xl bg-white py-2 shadow-sm">结果</div>
@@ -5127,7 +5582,9 @@ function TechPreview({ item }: { item: TechItem }) {
 
   if (item.id === 'T-14') {
     return (
-      <div className={`${previewShell} grid grid-cols-[1fr_auto_1fr] items-center gap-2 bg-slate-50 text-[11px] font-black`}>
+      <div
+        className={`${previewShell} grid grid-cols-[1fr_auto_1fr] items-center gap-2 bg-slate-50 text-[11px] font-black`}
+      >
         <div className="rounded-xl bg-white p-2 text-slate-500 shadow-sm">设定库</div>
         <Search className="h-4 w-4 text-[#08AACE]" />
         <div className="rounded-xl bg-[#E6F7FB] p-2 text-[#078fb0]">相关上下文</div>
@@ -5146,7 +5603,9 @@ function TechPreview({ item }: { item: TechItem }) {
 
   if (item.id === 'T-16') {
     return (
-      <div className={`${previewShell} flex items-center justify-center gap-2 bg-slate-50 text-xs font-black text-slate-600`}>
+      <div
+        className={`${previewShell} flex items-center justify-center gap-2 bg-slate-50 text-xs font-black text-slate-600`}
+      >
         <div className="rounded-xl bg-white px-3 py-2 shadow-sm">App</div>
         <span>+</span>
         <div className="rounded-xl bg-white px-3 py-2 shadow-sm">资源</div>
@@ -5178,7 +5637,8 @@ function TechPreview({ item }: { item: TechItem }) {
       <div className={`${previewShell} flex items-center justify-center bg-slate-50 px-5`}>
         <div className="relative h-20 w-full rounded-[22px] border-2 border-slate-900 bg-white">
           <span className="xy-border-embedded-transparent-backplate absolute left-6 top-0 -translate-y-1/2 text-xs font-black leading-5 text-slate-950">
-            第1章 我只是想修个水管 正文：<span className="text-[#08AACE]">3056</span><span className="text-slate-400"> 字</span>
+            第1章 我只是想修个水管 正文：<span className="text-[#08AACE]">3056</span>
+            <span className="text-slate-400"> 字</span>
           </span>
           <span className="xy-border-embedded-transparent-backplate absolute bottom-0 right-5 translate-y-1/2 text-[11px] font-black text-[#08AACE]">
             89 字
@@ -5198,7 +5658,15 @@ function TechPreview({ item }: { item: TechItem }) {
   );
 }
 
-function TechDictionaryCard({ item, action, tone = 'soft' }: { item: TechItem; action: ReactNode; tone?: 'soft' | 'white' }) {
+function TechDictionaryCard({
+  item,
+  action,
+  tone = 'soft',
+}: {
+  item: TechItem;
+  action: ReactNode;
+  tone?: 'soft' | 'white';
+}) {
   const articleBg = tone === 'white' ? 'bg-white' : 'bg-slate-50';
   const codeBg = tone === 'white' ? 'bg-slate-50' : 'bg-white';
 
@@ -5208,7 +5676,11 @@ function TechDictionaryCard({ item, action, tone = 'soft' }: { item: TechItem; a
         <NumberPill id={item.id} />
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-2 text-sm font-bold text-slate-900">
-            {item.id === 'T-01' ? <GripVertical className="h-4 w-4 shrink-0 text-slate-400" /> : <BookOpen className="h-4 w-4 shrink-0 text-slate-400" />}
+            {item.id === 'T-01' ? (
+              <GripVertical className="h-4 w-4 shrink-0 text-slate-400" />
+            ) : (
+              <BookOpen className="h-4 w-4 shrink-0 text-slate-400" />
+            )}
             <span className="truncate">{item.name}</span>
           </div>
           <div className="mt-2 text-sm leading-6 text-slate-500">{item.plain}</div>
@@ -5218,7 +5690,9 @@ function TechDictionaryCard({ item, action, tone = 'soft' }: { item: TechItem; a
         </div>
         <div className="flex justify-end xl:pt-0.5">{action}</div>
       </div>
-      <code className={`mt-3 block rounded-lg ${codeBg} px-3 py-2 text-xs font-bold leading-5 text-slate-500`}>{item.tech}</code>
+      <code className={`mt-3 block rounded-lg ${codeBg} px-3 py-2 text-xs font-bold leading-5 text-slate-500`}>
+        {item.tech}
+      </code>
     </article>
   );
 }
@@ -5257,7 +5731,7 @@ const UI_SPEC_DEFAULTS_STORAGE_KEY = 'xinyuexia_software_ui_catalog_spec_default
 function readUiSpecDefaults() {
   try {
     const raw = localStorage.getItem(UI_SPEC_DEFAULTS_STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) as Record<string, Partial<UiSpecs>> : {};
+    const parsed = raw ? (JSON.parse(raw) as Record<string, Partial<UiSpecs>>) : {};
     return parsed && typeof parsed === 'object' ? parsed : {};
   } catch {
     return {};
@@ -5272,10 +5746,13 @@ function readCatalogMarks() {
   try {
     const parsed = JSON.parse(localStorage.getItem(CATALOG_MARKS_STORAGE_KEY) ?? '{}') as unknown;
     if (!parsed || typeof parsed !== 'object') return {};
-    return Object.entries(parsed as Record<string, unknown>).reduce<Record<string, CatalogMark>>((acc, [key, value]) => {
-      if (value === 'rare') acc[key] = value;
-      return acc;
-    }, {});
+    return Object.entries(parsed as Record<string, unknown>).reduce<Record<string, CatalogMark>>(
+      (acc, [key, value]) => {
+        if (value === 'rare') acc[key] = value;
+        return acc;
+      },
+      {},
+    );
   } catch {
     return {};
   }
@@ -5293,10 +5770,13 @@ function readCatalogCollection() {
   try {
     const parsed = JSON.parse(localStorage.getItem(CATALOG_COLLECTION_STORAGE_KEY) ?? '{}') as unknown;
     if (!parsed || typeof parsed !== 'object') return defaults;
-    return Object.entries(parsed as Record<string, unknown>).reduce<Record<string, boolean>>((acc, [key, value]) => {
-      if (typeof value === 'boolean') acc[key] = value;
-      return acc;
-    }, { ...defaults });
+    return Object.entries(parsed as Record<string, unknown>).reduce<Record<string, boolean>>(
+      (acc, [key, value]) => {
+        if (typeof value === 'boolean') acc[key] = value;
+        return acc;
+      },
+      { ...defaults },
+    );
   } catch {
     return defaults;
   }
@@ -5310,10 +5790,13 @@ function readCollapsedRecord(storageKey: string, fallback: Record<string, boolea
   try {
     const parsed = JSON.parse(localStorage.getItem(storageKey) ?? '{}') as unknown;
     if (!parsed || typeof parsed !== 'object') return fallback;
-    return Object.entries(parsed as Record<string, unknown>).reduce<Record<string, boolean>>((acc, [key, value]) => {
-      if (typeof value === 'boolean') acc[key] = value;
-      return acc;
-    }, { ...fallback });
+    return Object.entries(parsed as Record<string, unknown>).reduce<Record<string, boolean>>(
+      (acc, [key, value]) => {
+        if (typeof value === 'boolean') acc[key] = value;
+        return acc;
+      },
+      { ...fallback },
+    );
   } catch {
     return fallback;
   }
@@ -5399,7 +5882,8 @@ function SpecPill({ label, value }: { label: string; value: string }) {
   const helpText = SPEC_HELP_TEXT[label] ?? '这个数值会影响当前 UI 样式预览和以后复用时的规格。';
   return (
     <span className="rounded-lg bg-slate-50 px-2 py-1 text-[11px] font-bold text-slate-500" title={helpText}>
-      <span className="cursor-help border-b border-dotted border-slate-300">{label}</span> <b className="text-[#08AACE]">{value}</b>
+      <span className="cursor-help border-b border-dotted border-slate-300">{label}</span>{' '}
+      <b className="text-[#08AACE]">{value}</b>
     </span>
   );
 }
@@ -5423,7 +5907,9 @@ function RenderSpecPreview({ item, specs }: { item: UiSample; specs: UiSpecs }) 
         style={commonStyle}
       >
         <span style={{ fontSize: specs.plusMinusSize, lineHeight: 1, fontWeight: 900 }}>-</span>
-        <span className="min-w-8 text-center font-black text-[#08AACE]" style={{ fontSize: specs.fontSize }}>17</span>
+        <span className="min-w-8 text-center font-black text-[#08AACE]" style={{ fontSize: specs.fontSize }}>
+          17
+        </span>
         <span style={{ fontSize: specs.plusMinusSize, lineHeight: 1, fontWeight: 900 }}>+</span>
       </div>
     );
@@ -5434,7 +5920,11 @@ function RenderSpecPreview({ item, specs }: { item: UiSample; specs: UiSpecs }) 
       className="inline-flex items-center justify-center bg-[#08AACE] font-bold text-white shadow-sm"
       style={commonStyle}
     >
-      {item.group === '按钮' && item.id.includes('06') ? <Settings style={{ width: specs.iconSize, height: specs.iconSize }} /> : item.name.slice(0, 4)}
+      {item.group === '按钮' && item.id.includes('06') ? (
+        <Settings style={{ width: specs.iconSize, height: specs.iconSize }} />
+      ) : (
+        item.name.slice(0, 4)
+      )}
     </button>
   );
 }
@@ -5455,10 +5945,12 @@ type SoftwareUiCatalogPageProps = {
 export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiCatalogPageProps = {}) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<CatalogTab>('ui');
-  const [collapsedCatalogNavGroups, setCollapsedCatalogNavGroups] = useState<Record<string, boolean>>(() => readCollapsedRecord(CATALOG_NAV_COLLAPSED_STORAGE_KEY));
-  const [collapsedCatalogContentGroups, setCollapsedCatalogContentGroups] = useState<Record<string, boolean>>(() => (
-    readCollapsedRecord(CATALOG_CONTENT_COLLAPSED_STORAGE_KEY, { manual: true })
-  ));
+  const [collapsedCatalogNavGroups, setCollapsedCatalogNavGroups] = useState<Record<string, boolean>>(() =>
+    readCollapsedRecord(CATALOG_NAV_COLLAPSED_STORAGE_KEY),
+  );
+  const [collapsedCatalogContentGroups, setCollapsedCatalogContentGroups] = useState<Record<string, boolean>>(() =>
+    readCollapsedRecord(CATALOG_CONTENT_COLLAPSED_STORAGE_KEY, { manual: true }),
+  );
   const [catalogSearch, setCatalogSearch] = useState('');
   const [uiSpecDefaults, setUiSpecDefaults] = useState<Record<string, Partial<UiSpecs>>>(() => readUiSpecDefaults());
   const [uiSpecOverrides, setUiSpecOverrides] = useState<Record<string, Partial<UiSpecs>>>({});
@@ -5470,53 +5962,95 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
     if (!normalizedSearch) return true;
     return parts.some((part) => part?.toLowerCase().includes(normalizedSearch));
   };
-  const filteredFontSamples = fontSamples.filter((item) => matchesCatalogSearch([item.id, item.name, item.usage, item.sample]));
-  const filteredColorSamples = colorSamples.filter((item) => matchesCatalogSearch([item.id, item.name, item.usage, item.value]));
+  const filteredFontSamples = fontSamples.filter((item) =>
+    matchesCatalogSearch([item.id, item.name, item.usage, item.sample]),
+  );
+  const filteredColorSamples = colorSamples.filter((item) =>
+    matchesCatalogSearch([item.id, item.name, item.usage, item.value]),
+  );
   const manualUiSamples = uiSamples.filter((item) => item.id === 'UI-102' || item.group === '手动上传');
-  const landingPreviewSamples = LANDING_PREVIEW_SELECTED_IDS
-    .map((id) => manualUiSamples.find((item) => item.id === id))
-    .filter((item): item is UiSample => Boolean(item));
-  const filteredManualUiSamples = manualUiSamples.filter((item) => matchesCatalogSearch([item.id, item.name, item.group, item.usage]));
-  const filteredLandingPreviewSamples = landingPreviewSamples.filter((item) => matchesCatalogSearch([item.id, item.name, item.group, item.usage, 'UI 落地预览 已勾选']));
-  const manualUiGroups = MANUAL_UI_TYPE_ORDER
-    .map((type) => ({
-      type,
-      items: filteredManualUiSamples.filter((item) => getManualUiType(item) === type),
-    }))
-    .filter((group) => group.items.length > 0);
+  const landingPreviewSamples = LANDING_PREVIEW_SELECTED_IDS.map((id) =>
+    manualUiSamples.find((item) => item.id === id),
+  ).filter((item): item is UiSample => Boolean(item));
+  const filteredManualUiSamples = manualUiSamples.filter((item) =>
+    matchesCatalogSearch([item.id, item.name, item.group, item.usage]),
+  );
+  const filteredLandingPreviewSamples = landingPreviewSamples.filter((item) =>
+    matchesCatalogSearch([item.id, item.name, item.group, item.usage, 'UI 落地预览 已勾选']),
+  );
+  const manualUiGroups = MANUAL_UI_TYPE_ORDER.map((type) => ({
+    type,
+    items: filteredManualUiSamples.filter((item) => getManualUiType(item) === type),
+  })).filter((group) => group.items.length > 0);
   const standardUiSamples = uiSamples.filter((item) => item.id !== 'UI-102' && item.group !== '手动上传');
-  const filteredStandardUiSamples = standardUiSamples.filter((item) => matchesCatalogSearch([item.id, item.name, item.group, item.usage]));
-  const filteredTechItems = techItems.filter((item) => matchesCatalogSearch([item.id, item.name, item.plain, item.tech]));
-  const collectedFontSamples = fontSamples.filter((item) => catalogCollection[item.id] && matchesCatalogSearch([item.id, item.name, item.usage, item.sample]));
-  const collectedColorSamples = colorSamples.filter((item) => catalogCollection[item.id] && matchesCatalogSearch([item.id, item.name, item.usage, item.value]));
-  const collectedStandardUiSamples = standardUiSamples.filter((item) => catalogCollection[item.id] && matchesCatalogSearch([item.id, item.name, item.group, item.usage]));
-  const collectedManualUiSamples = manualUiSamples.filter((item) => catalogCollection[item.id] && matchesCatalogSearch([item.id, item.name, item.group, item.usage]));
-  const collectedTechItems = techItems.filter((item) => catalogCollection[item.id] && matchesCatalogSearch([item.id, item.name, item.plain, item.tech]));
+  const filteredStandardUiSamples = standardUiSamples.filter((item) =>
+    matchesCatalogSearch([item.id, item.name, item.group, item.usage]),
+  );
+  const filteredTechItems = techItems.filter((item) =>
+    matchesCatalogSearch([item.id, item.name, item.plain, item.tech]),
+  );
+  const collectedFontSamples = fontSamples.filter(
+    (item) => catalogCollection[item.id] && matchesCatalogSearch([item.id, item.name, item.usage, item.sample]),
+  );
+  const collectedColorSamples = colorSamples.filter(
+    (item) => catalogCollection[item.id] && matchesCatalogSearch([item.id, item.name, item.usage, item.value]),
+  );
+  const collectedStandardUiSamples = standardUiSamples.filter(
+    (item) => catalogCollection[item.id] && matchesCatalogSearch([item.id, item.name, item.group, item.usage]),
+  );
+  const collectedManualUiSamples = manualUiSamples.filter(
+    (item) => catalogCollection[item.id] && matchesCatalogSearch([item.id, item.name, item.group, item.usage]),
+  );
+  const collectedTechItems = techItems.filter(
+    (item) => catalogCollection[item.id] && matchesCatalogSearch([item.id, item.name, item.plain, item.tech]),
+  );
   const collectedCatalogItems = useMemo(() => {
     const matchesCollectionSearch = (parts: Array<string | undefined>) => {
       if (!normalizedSearch) return true;
       return parts.some((part) => part?.toLowerCase().includes(normalizedSearch));
     };
-    const collectedStandardSamples = uiSamples.filter((item) => (
-      item.id !== 'UI-102' &&
-      item.group !== '手动上传' &&
-      catalogCollection[item.id] &&
-      matchesCollectionSearch([item.id, item.name, item.group, item.usage])
-    ));
-    const collectedManualSamples = uiSamples.filter((item) => (
-      (item.id === 'UI-102' || item.group === '手动上传') &&
-      catalogCollection[item.id] &&
-      matchesCollectionSearch([item.id, item.name, item.group, item.usage])
-    ));
+    const collectedStandardSamples = uiSamples.filter(
+      (item) =>
+        item.id !== 'UI-102' &&
+        item.group !== '手动上传' &&
+        catalogCollection[item.id] &&
+        matchesCollectionSearch([item.id, item.name, item.group, item.usage]),
+    );
+    const collectedManualSamples = uiSamples.filter(
+      (item) =>
+        (item.id === 'UI-102' || item.group === '手动上传') &&
+        catalogCollection[item.id] &&
+        matchesCollectionSearch([item.id, item.name, item.group, item.usage]),
+    );
 
     return [
-      ...fontSamples.filter((item) => catalogCollection[item.id] && matchesCollectionSearch([item.id, item.name, item.usage, item.sample]))
+      ...fontSamples
+        .filter(
+          (item) =>
+            catalogCollection[item.id] && matchesCollectionSearch([item.id, item.name, item.usage, item.sample]),
+        )
         .map((item) => ({ id: item.id, label: item.name, group: '字体设置', tab: 'collection' as CatalogTab })),
-      ...colorSamples.filter((item) => catalogCollection[item.id] && matchesCollectionSearch([item.id, item.name, item.usage, item.value]))
+      ...colorSamples
+        .filter(
+          (item) => catalogCollection[item.id] && matchesCollectionSearch([item.id, item.name, item.usage, item.value]),
+        )
         .map((item) => ({ id: item.id, label: item.name, group: '颜色记录', tab: 'collection' as CatalogTab })),
-      ...collectedStandardSamples.map((item) => ({ id: item.id, label: item.name, group: item.group, tab: 'collection' as CatalogTab })),
-      ...collectedManualSamples.map((item) => ({ id: item.id, label: item.name, group: getManualUiType(item), tab: 'collection' as CatalogTab })),
-      ...techItems.filter((item) => catalogCollection[item.id] && matchesCollectionSearch([item.id, item.name, item.plain, item.tech]))
+      ...collectedStandardSamples.map((item) => ({
+        id: item.id,
+        label: item.name,
+        group: item.group,
+        tab: 'collection' as CatalogTab,
+      })),
+      ...collectedManualSamples.map((item) => ({
+        id: item.id,
+        label: item.name,
+        group: getManualUiType(item),
+        tab: 'collection' as CatalogTab,
+      })),
+      ...techItems
+        .filter(
+          (item) => catalogCollection[item.id] && matchesCollectionSearch([item.id, item.name, item.plain, item.tech]),
+        )
         .map((item) => ({ id: item.id, label: item.name, group: '技术词典', tab: 'collection' as CatalogTab })),
     ];
   }, [catalogCollection, normalizedSearch]);
@@ -5525,26 +6059,85 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
   const catalogNavItems = useMemo(() => {
     if (normalizedSearch) {
       return [
-        ...filteredFontSamples.map((item) => ({ id: item.id, label: item.name, group: '字体设置', tab: 'ui' as CatalogTab })),
-        ...filteredColorSamples.map((item) => ({ id: item.id, label: item.name, group: '颜色记录', tab: 'ui' as CatalogTab })),
-        ...filteredStandardUiSamples.map((item) => ({ id: item.id, label: item.name, group: item.group, tab: 'ui' as CatalogTab })),
-        ...filteredManualUiSamples.map((item) => ({ id: item.id, label: item.name, group: getManualUiType(item), tab: 'ui' as CatalogTab })),
-        ...filteredTechItems.map((item) => ({ id: item.id, label: item.name, group: '技术词典', tab: 'tech' as CatalogTab })),
+        ...filteredFontSamples.map((item) => ({
+          id: item.id,
+          label: item.name,
+          group: '字体设置',
+          tab: 'ui' as CatalogTab,
+        })),
+        ...filteredColorSamples.map((item) => ({
+          id: item.id,
+          label: item.name,
+          group: '颜色记录',
+          tab: 'ui' as CatalogTab,
+        })),
+        ...filteredStandardUiSamples.map((item) => ({
+          id: item.id,
+          label: item.name,
+          group: item.group,
+          tab: 'ui' as CatalogTab,
+        })),
+        ...filteredManualUiSamples.map((item) => ({
+          id: item.id,
+          label: item.name,
+          group: getManualUiType(item),
+          tab: 'ui' as CatalogTab,
+        })),
+        ...filteredTechItems.map((item) => ({
+          id: item.id,
+          label: item.name,
+          group: '技术词典',
+          tab: 'tech' as CatalogTab,
+        })),
       ];
     }
     if (activeTab === 'tech') {
-      return filteredTechItems.map((item) => ({ id: item.id, label: item.name, group: '技术词典', tab: 'tech' as CatalogTab }));
+      return filteredTechItems.map((item) => ({
+        id: item.id,
+        label: item.name,
+        group: '技术词典',
+        tab: 'tech' as CatalogTab,
+      }));
     }
     if (activeTab === 'collection') {
       return collectedCatalogItems;
     }
     return [
-      ...filteredFontSamples.map((item) => ({ id: item.id, label: item.name, group: '字体设置', tab: 'ui' as CatalogTab })),
-      ...filteredColorSamples.map((item) => ({ id: item.id, label: item.name, group: '颜色记录', tab: 'ui' as CatalogTab })),
-      ...filteredStandardUiSamples.map((item) => ({ id: item.id, label: item.name, group: item.group, tab: 'ui' as CatalogTab })),
-      ...filteredManualUiSamples.map((item) => ({ id: item.id, label: item.name, group: getManualUiType(item), tab: 'ui' as CatalogTab })),
+      ...filteredFontSamples.map((item) => ({
+        id: item.id,
+        label: item.name,
+        group: '字体设置',
+        tab: 'ui' as CatalogTab,
+      })),
+      ...filteredColorSamples.map((item) => ({
+        id: item.id,
+        label: item.name,
+        group: '颜色记录',
+        tab: 'ui' as CatalogTab,
+      })),
+      ...filteredStandardUiSamples.map((item) => ({
+        id: item.id,
+        label: item.name,
+        group: item.group,
+        tab: 'ui' as CatalogTab,
+      })),
+      ...filteredManualUiSamples.map((item) => ({
+        id: item.id,
+        label: item.name,
+        group: getManualUiType(item),
+        tab: 'ui' as CatalogTab,
+      })),
     ];
-  }, [activeTab, collectedCatalogItems, filteredColorSamples, filteredFontSamples, filteredManualUiSamples, filteredStandardUiSamples, filteredTechItems, normalizedSearch]);
+  }, [
+    activeTab,
+    collectedCatalogItems,
+    filteredColorSamples,
+    filteredFontSamples,
+    filteredManualUiSamples,
+    filteredStandardUiSamples,
+    filteredTechItems,
+    normalizedSearch,
+  ]);
 
   const catalogNavGroups = useMemo(() => {
     const groupMap = new Map<string, typeof catalogNavItems>();
@@ -5591,7 +6184,8 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
         return next;
       });
     }
-    const scroll = () => document.getElementById(`catalog-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const scroll = () =>
+      document.getElementById(`catalog-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (activeTab !== tab) {
       setActiveTab(tab);
       window.setTimeout(scroll, 0);
@@ -5645,8 +6239,7 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
       if (next[id]) {
         if (DEFAULT_CATALOG_COLLECTION_IDS.includes(id)) next[id] = false;
         else delete next[id];
-      }
-      else next[id] = true;
+      } else next[id] = true;
       writeCatalogCollection(next);
       return next;
     });
@@ -5659,7 +6252,9 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
         type="button"
         onClick={() => toggleCatalogCollection(id)}
         className={`inline-flex h-7 items-center gap-1 rounded-full border px-2 text-[11px] font-black transition-colors ${
-          isCollected ? 'border-rose-200 bg-rose-50 text-rose-500' : 'border-slate-200 bg-white text-slate-400 hover:text-rose-500'
+          isCollected
+            ? 'border-rose-200 bg-rose-50 text-rose-500'
+            : 'border-slate-200 bg-white text-slate-400 hover:text-rose-500'
         }`}
         title={isCollected ? '取消收藏' : '收藏'}
       >
@@ -5678,7 +6273,9 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
           type="button"
           onClick={() => setCatalogMark(id, 'rare')}
           className={`h-7 rounded-full border px-2 text-[11px] font-black transition-colors ${
-            mark === 'rare' ? 'border-slate-300 bg-slate-100 text-slate-600' : 'border-slate-200 bg-white text-slate-400 hover:text-slate-600'
+            mark === 'rare'
+              ? 'border-slate-300 bg-slate-100 text-slate-600'
+              : 'border-slate-200 bg-white text-slate-400 hover:text-slate-600'
           }`}
           title="标记为不常用"
         >
@@ -5690,7 +6287,11 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
 
   const activeSpecItem = activeSpecItemId ? standardUiSamples.find((item) => item.id === activeSpecItemId) : undefined;
   const activeSpecs = activeSpecItem
-    ? { ...getBaseSpecs(activeSpecItem), ...(uiSpecDefaults[activeSpecItem.id] ?? {}), ...(uiSpecOverrides[activeSpecItem.id] ?? {}) }
+    ? {
+        ...getBaseSpecs(activeSpecItem),
+        ...(uiSpecDefaults[activeSpecItem.id] ?? {}),
+        ...(uiSpecOverrides[activeSpecItem.id] ?? {}),
+      }
     : null;
 
   return (
@@ -5698,7 +6299,9 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
       <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-6">
         <div className="min-w-0">
           <h1 className="text-xl font-bold text-slate-900">UI库</h1>
-          <p className="mt-0.5 text-xs text-slate-400">以后可以直接说编号，例如“用 UI-18 的分割线”或“用 T-01 那个技术”。</p>
+          <p className="mt-0.5 text-xs text-slate-400">
+            以后可以直接说编号，例如“用 UI-18 的分割线”或“用 T-01 那个技术”。
+          </p>
         </div>
         <div className="flex min-w-0 flex-1 items-center justify-end gap-3 pl-6">
           <label className="xy-ui132-search w-[min(560px,52vw)] max-w-[560px]">
@@ -5761,11 +6364,15 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
             </div>
             <div className="mb-2 flex items-center justify-between gap-2 px-1">
               <div className="text-sm font-black text-slate-900">编号导航</div>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-400">{catalogNavItems.length}</span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-400">
+                {catalogNavItems.length}
+              </span>
             </div>
             <div className="editor-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto pb-8 pr-1">
               {catalogNavItems.length === 0 ? (
-                <div className="rounded-xl bg-slate-50 px-3 py-4 text-xs font-bold leading-5 text-slate-400">没有匹配的编号。</div>
+                <div className="rounded-xl bg-slate-50 px-3 py-4 text-xs font-bold leading-5 text-slate-400">
+                  没有匹配的编号。
+                </div>
               ) : (
                 catalogNavGroups.map((group) => {
                   const isCollapsed = collapsedCatalogNavGroups[group.title] ?? false;
@@ -5777,10 +6384,16 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
                         className="flex h-8 w-full items-center justify-between rounded-lg px-2 text-left text-xs font-black text-slate-700 transition-colors hover:bg-white hover:text-[#08AACE]"
                       >
                         <span className="flex min-w-0 items-center gap-1.5">
-                          {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 shrink-0" />}
+                          {isCollapsed ? (
+                            <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                          )}
                           <span className="truncate">{group.title}</span>
                         </span>
-                        <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-black text-slate-400">{group.items.length}</span>
+                        <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-black text-slate-400">
+                          {group.items.length}
+                        </span>
                       </button>
                       {!isCollapsed && (
                         <div className="mt-1 space-y-0.5">
@@ -5792,7 +6405,9 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
                               className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-sky-50 hover:text-[#08AACE]"
                             >
                               <span className="w-12 shrink-0 text-xs font-black text-[#08AACE]">{item.id}</span>
-                              <span className="min-w-0 flex-1 truncate text-xs font-bold text-slate-600">{item.label}</span>
+                              <span className="min-w-0 flex-1 truncate text-xs font-bold text-slate-600">
+                                {item.label}
+                              </span>
                             </button>
                           ))}
                         </div>
@@ -5805,369 +6420,483 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
           </aside>
 
           <div className="editor-scrollbar min-w-0 overflow-y-auto pr-1">
-        {activeTab === 'ui' ? (
-          <div className="space-y-5">
-            <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-              <SectionTitle icon={<Type className="h-5 w-5 text-brand" />} title="字体设置" desc="全软件常用字号和字重，之后按 F 编号复用。" />
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2.5">
-                {filteredFontSamples.map((item) => (
-                  <div id={`catalog-${item.id}`} key={item.id} className="scroll-mt-7 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <NumberPill id={item.id} />
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-slate-400">{item.name}</span>
-                        {renderCollectionButton(item.id)}
-                      </div>
-                    </div>
-                    <div className={item.className}>{item.sample}</div>
-                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{item.usage}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-              <SectionTitle icon={<Palette className="h-5 w-5 text-brand" />} title="颜色记录" desc="全软件主要颜色，包含用户指定色和品牌色。" />
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-2.5">
-                {filteredColorSamples.map((item) => (
-                  <div id={`catalog-${item.id}`} key={item.id} className="scroll-mt-7 overflow-hidden rounded-xl border border-slate-100 bg-slate-50">
-                    <div className={`flex h-16 items-center justify-center ${item.textClass ?? 'text-white'}`} style={{ backgroundColor: item.value }}>
-                      <span className="text-xl font-black drop-shadow-sm">{item.id}</span>
-                    </div>
-                    <div className="p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="text-sm font-bold text-slate-900">{item.name}</div>
-                        <div className="flex items-center gap-1.5">
-                          <code className="text-[11px] font-bold text-slate-400">{item.value}</code>
-                          {renderCollectionButton(item.id)}
-                        </div>
-                      </div>
-                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{item.usage}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {groups.map((group) => {
-              const isContentCollapsed = collapsedCatalogContentGroups[group] ?? false;
-              return (
-              <section key={group} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                <div className="mb-3 flex items-start justify-between gap-3">
+            {activeTab === 'ui' ? (
+              <div className="space-y-5">
+                <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
                   <SectionTitle
-                    icon={group === 'AI' ? <MessageSquare className="h-5 w-5 text-brand" /> : <Sparkles className="h-5 w-5 text-brand" />}
-                    title={`${group}样式`}
-                    desc={`全软件${group}相关的常用 UI 编号。`}
+                    icon={<Type className="h-5 w-5 text-brand" />}
+                    title="字体设置"
+                    desc="全软件常用字号和字重，之后按 F 编号复用。"
                   />
-                  <button
-                    type="button"
-                    onClick={() => toggleCatalogContentGroup(group)}
-                    className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-500 hover:border-brand/40 hover:text-brand"
-                  >
-                    {isContentCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                    {filteredStandardUiSamples.filter((item) => item.group === group).length}
-                  </button>
-                </div>
-                {!isContentCollapsed && (
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
-                  {filteredStandardUiSamples.filter((item) => item.group === group).map((item) => {
-                    const specs = { ...getBaseSpecs(item), ...(uiSpecDefaults[item.id] ?? {}), ...(uiSpecOverrides[item.id] ?? {}) };
-                    return (
-                      <article id={`catalog-${item.id}`} key={item.id} className="scroll-mt-7 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                        <div className="mb-3 flex items-start justify-between gap-3">
-                          <div>
-                            <NumberPill id={item.id} />
-                            <h3 className="mt-1 text-sm font-bold text-slate-900">{item.name}</h3>
-                          </div>
-                          <div className="flex flex-col items-end gap-1.5">
-                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-400">{item.group}</span>
-                            {renderMarkControls(item.id)}
-                          </div>
-                        </div>
-                        <div className="flex min-h-[112px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
-                          {item.preview}
-                        </div>
-                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{item.usage}</p>
-
-                        <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-                          <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
-                            <SpecPill label="宽" value={`${specs.width}px`} />
-                            <SpecPill label="高" value={`${specs.height}px`} />
-                            <SpecPill label="字号" value={`${specs.fontSize}px`} />
-                            <SpecPill label="圆角" value={`${specs.radius}px`} />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setActiveSpecItemId(item.id)}
-                            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-[#08AACE] px-3 text-xs font-black text-white shadow-sm hover:bg-brand-dark"
-                          >
-                            <Settings className="h-3.5 w-3.5" />
-                            展开规格
-                          </button>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-                )}
-              </section>
-              );
-            })}
-
-            {(() => {
-              const isManualCollapsed = collapsedCatalogContentGroups.manual ?? true;
-              return (
-            <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <SectionTitle icon={<Sparkles className="h-5 w-5 text-brand" />} title="手动上传" desc="收纳你手动发来的 UI 网站代码、样式片段和可复用组件，已合并到 UI 分类里。" />
-                <button
-                  type="button"
-                  onClick={() => toggleCatalogContentGroup('manual')}
-                  className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-500 hover:border-brand/40 hover:text-brand"
-                >
-                  {isManualCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                  {filteredManualUiSamples.length}
-                </button>
-              </div>
-              {!isManualCollapsed && (
-              <div className="space-y-5">
-                {filteredLandingPreviewSamples.length > 0 && (
-                  <section className="rounded-2xl border border-sky-100 bg-sky-50/60 p-4">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <div>
-                        <h3 className="text-sm font-black text-slate-900">UI 落地预览已勾选</h3>
-                        <p className="mt-1 text-xs font-bold text-slate-400">从落地预览勾选同步过来的 UI，后续优先核对是否已实际落地。</p>
-                      </div>
-                      <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-sky-500 shadow-sm">
-                        {filteredLandingPreviewSamples.length} 个
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3">
-                      {filteredLandingPreviewSamples.map((item) => (
-                        <article id={`catalog-${item.id}`} key={`landing-${item.id}`} className="scroll-mt-7 rounded-2xl border border-sky-100 bg-white p-4 shadow-sm">
-                          <div className="mb-3 flex items-start justify-between gap-3">
-                            <div>
-                              <NumberPill id={item.id} />
-                              <h4 className="mt-1 text-sm font-bold text-slate-900">{item.name}</h4>
-                              <p className="mt-1 text-[11px] font-black text-sky-500">落地预览勾选项 / {getManualUiType(item)}</p>
-                            </div>
-                            {renderMarkControls(item.id)}
-                          </div>
-                          <div className="flex min-h-[150px] items-center justify-center rounded-xl border border-dashed border-sky-200 bg-sky-50/50 p-3">
-                            {item.preview}
-                          </div>
-                          <p className="mt-3 text-xs leading-5 text-slate-500">{item.usage}</p>
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-                )}
-                {manualUiGroups.map((group) => (
-                  <section key={group.type} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <h3 className="text-sm font-black text-slate-900">{group.type}</h3>
-                      <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-slate-400 shadow-sm">
-                        {group.items.length} 个
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3">
-                      {group.items.map((item) => (
-                        <article id={`catalog-${item.id}`} key={item.id} className="scroll-mt-7 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                          <div className="mb-3 flex items-start justify-between gap-3">
-                            <div>
-                              <NumberPill id={item.id} />
-                              <h4 className="mt-1 text-sm font-bold text-slate-900">{item.name}</h4>
-                            </div>
-                            <div className="flex flex-col items-end gap-1.5">
-                              <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold text-sky-500">{group.type}</span>
-                              {renderMarkControls(item.id)}
-                            </div>
-                          </div>
-                          <div className="flex min-h-[150px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
-                            {item.preview}
-                          </div>
-                          <p className="mt-3 text-xs leading-5 text-slate-500">{item.usage}</p>
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
-              )}
-            </section>
-              );
-            })()}
-          </div>
-        ) : activeTab === 'manual' ? (
-          <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-            <SectionTitle icon={<Sparkles className="h-5 w-5 text-brand" />} title="手动上传" desc="收纳你手动发来的 UI 网站代码、样式片段和可复用组件。" />
-            <div className="space-y-5">
-              {filteredLandingPreviewSamples.length > 0 && (
-                <section className="rounded-2xl border border-sky-100 bg-sky-50/60 p-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-black text-slate-900">UI 落地预览已勾选</h3>
-                      <p className="mt-1 text-xs font-bold text-slate-400">从落地预览勾选同步过来的 UI，后续优先核对是否已实际落地。</p>
-                    </div>
-                    <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-sky-500 shadow-sm">
-                      {filteredLandingPreviewSamples.length} 个
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3">
-                    {filteredLandingPreviewSamples.map((item) => (
-                      <article id={`catalog-${item.id}`} key={`landing-${item.id}`} className="scroll-mt-7 rounded-2xl border border-sky-100 bg-white p-4 shadow-sm">
-                        <div className="mb-3 flex items-start justify-between gap-3">
-                          <div>
-                            <NumberPill id={item.id} />
-                            <h4 className="mt-1 text-sm font-bold text-slate-900">{item.name}</h4>
-                            <p className="mt-1 text-[11px] font-black text-sky-500">落地预览勾选项 / {getManualUiType(item)}</p>
-                          </div>
-                          {renderMarkControls(item.id)}
-                        </div>
-                        <div className="flex min-h-[150px] items-center justify-center rounded-xl border border-dashed border-sky-200 bg-sky-50/50 p-3">
-                          {item.preview}
-                        </div>
-                        <p className="mt-3 text-xs leading-5 text-slate-500">{item.usage}</p>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-              )}
-              {manualUiGroups.map((group) => (
-                <section key={group.type} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-black text-slate-900">{group.type}</h3>
-                    <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-slate-400 shadow-sm">
-                      {group.items.length} 个
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3">
-                    {group.items.map((item) => (
-                      <article id={`catalog-${item.id}`} key={item.id} className="scroll-mt-7 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                        <div className="mb-3 flex items-start justify-between gap-3">
-                          <div>
-                            <NumberPill id={item.id} />
-                            <h4 className="mt-1 text-sm font-bold text-slate-900">{item.name}</h4>
-                          </div>
-                          <div className="flex flex-col items-end gap-1.5">
-                            <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold text-sky-500">{group.type}</span>
-                            {renderMarkControls(item.id)}
-                          </div>
-                        </div>
-                        <div className="flex min-h-[150px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
-                          {item.preview}
-                        </div>
-                        <p className="mt-3 text-xs leading-5 text-slate-500">{item.usage}</p>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-          </section>
-        ) : activeTab === 'collection' ? (
-          <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-            <SectionTitle icon={<Heart className="h-5 w-5 text-rose-500" />} title="收藏" desc="你收藏过的 UI、字体、颜色和技术词典会集中显示在这里。" />
-            {collectedTotalCount === 0 ? (
-              <div className="flex min-h-[280px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm font-bold text-slate-400">
-                还没有收藏内容。点击任意卡片右上角的“收藏”即可加入这里。
-              </div>
-            ) : (
-              <div className="space-y-5">
-                {collectedFontSamples.length > 0 && (
-                  <section className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
-                    <div className="mb-3 text-sm font-black text-slate-900">字体</div>
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2.5">
-                      {collectedFontSamples.map((item) => (
-                        <article id={`catalog-${item.id}`} key={item.id} className="scroll-mt-7 rounded-xl border border-slate-100 bg-white p-3">
-                          <div className="mb-2 flex items-center justify-between gap-2">
-                            <NumberPill id={item.id} />
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2.5">
+                    {filteredFontSamples.map((item) => (
+                      <div
+                        id={`catalog-${item.id}`}
+                        key={item.id}
+                        className="scroll-mt-7 rounded-xl border border-slate-100 bg-slate-50 p-3"
+                      >
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <NumberPill id={item.id} />
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-slate-400">{item.name}</span>
                             {renderCollectionButton(item.id)}
                           </div>
-                          <div className={item.className}>{item.sample}</div>
-                          <p className="mt-2 text-xs leading-5 text-slate-500">{item.usage}</p>
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-                )}
+                        </div>
+                        <div className={item.className}>{item.sample}</div>
+                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{item.usage}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
 
-                {collectedColorSamples.length > 0 && (
-                  <section className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
-                    <div className="mb-3 text-sm font-black text-slate-900">颜色</div>
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-2.5">
-                      {collectedColorSamples.map((item) => (
-                        <article id={`catalog-${item.id}`} key={item.id} className="scroll-mt-7 overflow-hidden rounded-xl border border-slate-100 bg-white">
-                          <div className={`flex h-16 items-center justify-center ${item.textClass ?? 'text-white'}`} style={{ backgroundColor: item.value }}>
-                            <span className="text-xl font-black drop-shadow-sm">{item.id}</span>
-                          </div>
-                          <div className="p-3">
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="text-sm font-bold text-slate-900">{item.name}</div>
+                <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                  <SectionTitle
+                    icon={<Palette className="h-5 w-5 text-brand" />}
+                    title="颜色记录"
+                    desc="全软件主要颜色，包含用户指定色和品牌色。"
+                  />
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-2.5">
+                    {filteredColorSamples.map((item) => (
+                      <div
+                        id={`catalog-${item.id}`}
+                        key={item.id}
+                        className="scroll-mt-7 overflow-hidden rounded-xl border border-slate-100 bg-slate-50"
+                      >
+                        <div
+                          className={`flex h-16 items-center justify-center ${item.textClass ?? 'text-white'}`}
+                          style={{ backgroundColor: item.value }}
+                        >
+                          <span className="text-xl font-black drop-shadow-sm">{item.id}</span>
+                        </div>
+                        <div className="p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="text-sm font-bold text-slate-900">{item.name}</div>
+                            <div className="flex items-center gap-1.5">
+                              <code className="text-[11px] font-bold text-slate-400">{item.value}</code>
                               {renderCollectionButton(item.id)}
                             </div>
-                            <code className="mt-1 block text-[11px] font-bold text-slate-400">{item.value}</code>
-                            <p className="mt-1 text-xs leading-5 text-slate-500">{item.usage}</p>
                           </div>
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-                )}
+                          <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{item.usage}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
 
-                {(collectedStandardUiSamples.length > 0 || collectedManualUiSamples.length > 0) && (
-                  <section className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
-                    <div className="mb-3 text-sm font-black text-slate-900">UI</div>
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3">
-                      {[...collectedStandardUiSamples, ...collectedManualUiSamples].map((item) => (
-                        <article id={`catalog-${item.id}`} key={item.id} className="scroll-mt-7 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                          <div className="mb-3 flex items-start justify-between gap-3">
-                            <div>
-                              <NumberPill id={item.id} />
-                              <h4 className="mt-1 text-sm font-bold text-slate-900">{item.name}</h4>
-                            </div>
-                            <div className="flex flex-col items-end gap-1.5">
-                              <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold text-sky-500">{item.group}</span>
+                {groups.map((group) => {
+                  const isContentCollapsed = collapsedCatalogContentGroups[group] ?? false;
+                  return (
+                    <section key={group} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <SectionTitle
+                          icon={
+                            group === 'AI' ? (
+                              <MessageSquare className="h-5 w-5 text-brand" />
+                            ) : (
+                              <Sparkles className="h-5 w-5 text-brand" />
+                            )
+                          }
+                          title={`${group}样式`}
+                          desc={`全软件${group}相关的常用 UI 编号。`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => toggleCatalogContentGroup(group)}
+                          className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-500 hover:border-brand/40 hover:text-brand"
+                        >
+                          {isContentCollapsed ? (
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          )}
+                          {filteredStandardUiSamples.filter((item) => item.group === group).length}
+                        </button>
+                      </div>
+                      {!isContentCollapsed && (
+                        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
+                          {filteredStandardUiSamples
+                            .filter((item) => item.group === group)
+                            .map((item) => {
+                              const specs = {
+                                ...getBaseSpecs(item),
+                                ...(uiSpecDefaults[item.id] ?? {}),
+                                ...(uiSpecOverrides[item.id] ?? {}),
+                              };
+                              return (
+                                <article
+                                  id={`catalog-${item.id}`}
+                                  key={item.id}
+                                  className="scroll-mt-7 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
+                                >
+                                  <div className="mb-3 flex items-start justify-between gap-3">
+                                    <div>
+                                      <NumberPill id={item.id} />
+                                      <h3 className="mt-1 text-sm font-bold text-slate-900">{item.name}</h3>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1.5">
+                                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-400">
+                                        {item.group}
+                                      </span>
+                                      {renderMarkControls(item.id)}
+                                    </div>
+                                  </div>
+                                  <div className="flex min-h-[112px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
+                                    {item.preview}
+                                  </div>
+                                  <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{item.usage}</p>
+
+                                  <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                                    <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+                                      <SpecPill label="宽" value={`${specs.width}px`} />
+                                      <SpecPill label="高" value={`${specs.height}px`} />
+                                      <SpecPill label="字号" value={`${specs.fontSize}px`} />
+                                      <SpecPill label="圆角" value={`${specs.radius}px`} />
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveSpecItemId(item.id)}
+                                      className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-[#08AACE] px-3 text-xs font-black text-white shadow-sm hover:bg-brand-dark"
+                                    >
+                                      <Settings className="h-3.5 w-3.5" />
+                                      展开规格
+                                    </button>
+                                  </div>
+                                </article>
+                              );
+                            })}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
+
+                {(() => {
+                  const isManualCollapsed = collapsedCatalogContentGroups.manual ?? true;
+                  return (
+                    <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <SectionTitle
+                          icon={<Sparkles className="h-5 w-5 text-brand" />}
+                          title="手动上传"
+                          desc="收纳你手动发来的 UI 网站代码、样式片段和可复用组件，已合并到 UI 分类里。"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => toggleCatalogContentGroup('manual')}
+                          className="flex h-8 shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-black text-slate-500 hover:border-brand/40 hover:text-brand"
+                        >
+                          {isManualCollapsed ? (
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          )}
+                          {filteredManualUiSamples.length}
+                        </button>
+                      </div>
+                      {!isManualCollapsed && (
+                        <div className="space-y-5">
+                          {filteredLandingPreviewSamples.length > 0 && (
+                            <section className="rounded-2xl border border-sky-100 bg-sky-50/60 p-4">
+                              <div className="mb-3 flex items-center justify-between gap-3">
+                                <div>
+                                  <h3 className="text-sm font-black text-slate-900">UI 落地预览已勾选</h3>
+                                  <p className="mt-1 text-xs font-bold text-slate-400">
+                                    从落地预览勾选同步过来的 UI，后续优先核对是否已实际落地。
+                                  </p>
+                                </div>
+                                <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-sky-500 shadow-sm">
+                                  {filteredLandingPreviewSamples.length} 个
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3">
+                                {filteredLandingPreviewSamples.map((item) => (
+                                  <article
+                                    id={`catalog-${item.id}`}
+                                    key={`landing-${item.id}`}
+                                    className="scroll-mt-7 rounded-2xl border border-sky-100 bg-white p-4 shadow-sm"
+                                  >
+                                    <div className="mb-3 flex items-start justify-between gap-3">
+                                      <div>
+                                        <NumberPill id={item.id} />
+                                        <h4 className="mt-1 text-sm font-bold text-slate-900">{item.name}</h4>
+                                        <p className="mt-1 text-[11px] font-black text-sky-500">
+                                          落地预览勾选项 / {getManualUiType(item)}
+                                        </p>
+                                      </div>
+                                      {renderMarkControls(item.id)}
+                                    </div>
+                                    <div className="flex min-h-[150px] items-center justify-center rounded-xl border border-dashed border-sky-200 bg-sky-50/50 p-3">
+                                      {item.preview}
+                                    </div>
+                                    <p className="mt-3 text-xs leading-5 text-slate-500">{item.usage}</p>
+                                  </article>
+                                ))}
+                              </div>
+                            </section>
+                          )}
+                          {manualUiGroups.map((group) => (
+                            <section
+                              key={group.type}
+                              className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4"
+                            >
+                              <div className="mb-3 flex items-center justify-between gap-3">
+                                <h3 className="text-sm font-black text-slate-900">{group.type}</h3>
+                                <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-slate-400 shadow-sm">
+                                  {group.items.length} 个
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3">
+                                {group.items.map((item) => (
+                                  <article
+                                    id={`catalog-${item.id}`}
+                                    key={item.id}
+                                    className="scroll-mt-7 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
+                                  >
+                                    <div className="mb-3 flex items-start justify-between gap-3">
+                                      <div>
+                                        <NumberPill id={item.id} />
+                                        <h4 className="mt-1 text-sm font-bold text-slate-900">{item.name}</h4>
+                                      </div>
+                                      <div className="flex flex-col items-end gap-1.5">
+                                        <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold text-sky-500">
+                                          {group.type}
+                                        </span>
+                                        {renderMarkControls(item.id)}
+                                      </div>
+                                    </div>
+                                    <div className="flex min-h-[150px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
+                                      {item.preview}
+                                    </div>
+                                    <p className="mt-3 text-xs leading-5 text-slate-500">{item.usage}</p>
+                                  </article>
+                                ))}
+                              </div>
+                            </section>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })()}
+              </div>
+            ) : activeTab === 'manual' ? (
+              <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                <SectionTitle
+                  icon={<Sparkles className="h-5 w-5 text-brand" />}
+                  title="手动上传"
+                  desc="收纳你手动发来的 UI 网站代码、样式片段和可复用组件。"
+                />
+                <div className="space-y-5">
+                  {filteredLandingPreviewSamples.length > 0 && (
+                    <section className="rounded-2xl border border-sky-100 bg-sky-50/60 p-4">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <div>
+                          <h3 className="text-sm font-black text-slate-900">UI 落地预览已勾选</h3>
+                          <p className="mt-1 text-xs font-bold text-slate-400">
+                            从落地预览勾选同步过来的 UI，后续优先核对是否已实际落地。
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-sky-500 shadow-sm">
+                          {filteredLandingPreviewSamples.length} 个
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3">
+                        {filteredLandingPreviewSamples.map((item) => (
+                          <article
+                            id={`catalog-${item.id}`}
+                            key={`landing-${item.id}`}
+                            className="scroll-mt-7 rounded-2xl border border-sky-100 bg-white p-4 shadow-sm"
+                          >
+                            <div className="mb-3 flex items-start justify-between gap-3">
+                              <div>
+                                <NumberPill id={item.id} />
+                                <h4 className="mt-1 text-sm font-bold text-slate-900">{item.name}</h4>
+                                <p className="mt-1 text-[11px] font-black text-sky-500">
+                                  落地预览勾选项 / {getManualUiType(item)}
+                                </p>
+                              </div>
                               {renderMarkControls(item.id)}
                             </div>
-                          </div>
-                          <div className="flex min-h-[150px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
-                            {item.preview}
-                          </div>
-                          <p className="mt-3 text-xs leading-5 text-slate-500">{item.usage}</p>
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-                )}
+                            <div className="flex min-h-[150px] items-center justify-center rounded-xl border border-dashed border-sky-200 bg-sky-50/50 p-3">
+                              {item.preview}
+                            </div>
+                            <p className="mt-3 text-xs leading-5 text-slate-500">{item.usage}</p>
+                          </article>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                  {manualUiGroups.map((group) => (
+                    <section key={group.type} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <h3 className="text-sm font-black text-slate-900">{group.type}</h3>
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-slate-400 shadow-sm">
+                          {group.items.length} 个
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3">
+                        {group.items.map((item) => (
+                          <article
+                            id={`catalog-${item.id}`}
+                            key={item.id}
+                            className="scroll-mt-7 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
+                          >
+                            <div className="mb-3 flex items-start justify-between gap-3">
+                              <div>
+                                <NumberPill id={item.id} />
+                                <h4 className="mt-1 text-sm font-bold text-slate-900">{item.name}</h4>
+                              </div>
+                              <div className="flex flex-col items-end gap-1.5">
+                                <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold text-sky-500">
+                                  {group.type}
+                                </span>
+                                {renderMarkControls(item.id)}
+                              </div>
+                            </div>
+                            <div className="flex min-h-[150px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
+                              {item.preview}
+                            </div>
+                            <p className="mt-3 text-xs leading-5 text-slate-500">{item.usage}</p>
+                          </article>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              </section>
+            ) : activeTab === 'collection' ? (
+              <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                <SectionTitle
+                  icon={<Heart className="h-5 w-5 text-rose-500" />}
+                  title="收藏"
+                  desc="你收藏过的 UI、字体、颜色和技术词典会集中显示在这里。"
+                />
+                {collectedTotalCount === 0 ? (
+                  <div className="flex min-h-[280px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm font-bold text-slate-400">
+                    还没有收藏内容。点击任意卡片右上角的“收藏”即可加入这里。
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {collectedFontSamples.length > 0 && (
+                      <section className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                        <div className="mb-3 text-sm font-black text-slate-900">字体</div>
+                        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2.5">
+                          {collectedFontSamples.map((item) => (
+                            <article
+                              id={`catalog-${item.id}`}
+                              key={item.id}
+                              className="scroll-mt-7 rounded-xl border border-slate-100 bg-white p-3"
+                            >
+                              <div className="mb-2 flex items-center justify-between gap-2">
+                                <NumberPill id={item.id} />
+                                {renderCollectionButton(item.id)}
+                              </div>
+                              <div className={item.className}>{item.sample}</div>
+                              <p className="mt-2 text-xs leading-5 text-slate-500">{item.usage}</p>
+                            </article>
+                          ))}
+                        </div>
+                      </section>
+                    )}
 
-                {collectedTechItems.length > 0 && (
-                  <section className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
-                    <div className="mb-3 text-sm font-black text-slate-900">技术词典</div>
-                    <div className="space-y-3">
-                      {collectedTechItems.map((item) => (
-                        <TechDictionaryCard key={item.id} item={item} action={renderCollectionButton(item.id)} tone="white" />
-                      ))}
-                    </div>
-                  </section>
+                    {collectedColorSamples.length > 0 && (
+                      <section className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                        <div className="mb-3 text-sm font-black text-slate-900">颜色</div>
+                        <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-2.5">
+                          {collectedColorSamples.map((item) => (
+                            <article
+                              id={`catalog-${item.id}`}
+                              key={item.id}
+                              className="scroll-mt-7 overflow-hidden rounded-xl border border-slate-100 bg-white"
+                            >
+                              <div
+                                className={`flex h-16 items-center justify-center ${item.textClass ?? 'text-white'}`}
+                                style={{ backgroundColor: item.value }}
+                              >
+                                <span className="text-xl font-black drop-shadow-sm">{item.id}</span>
+                              </div>
+                              <div className="p-3">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="text-sm font-bold text-slate-900">{item.name}</div>
+                                  {renderCollectionButton(item.id)}
+                                </div>
+                                <code className="mt-1 block text-[11px] font-bold text-slate-400">{item.value}</code>
+                                <p className="mt-1 text-xs leading-5 text-slate-500">{item.usage}</p>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    {(collectedStandardUiSamples.length > 0 || collectedManualUiSamples.length > 0) && (
+                      <section className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                        <div className="mb-3 text-sm font-black text-slate-900">UI</div>
+                        <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3">
+                          {[...collectedStandardUiSamples, ...collectedManualUiSamples].map((item) => (
+                            <article
+                              id={`catalog-${item.id}`}
+                              key={item.id}
+                              className="scroll-mt-7 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
+                            >
+                              <div className="mb-3 flex items-start justify-between gap-3">
+                                <div>
+                                  <NumberPill id={item.id} />
+                                  <h4 className="mt-1 text-sm font-bold text-slate-900">{item.name}</h4>
+                                </div>
+                                <div className="flex flex-col items-end gap-1.5">
+                                  <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold text-sky-500">
+                                    {item.group}
+                                  </span>
+                                  {renderMarkControls(item.id)}
+                                </div>
+                              </div>
+                              <div className="flex min-h-[150px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
+                                {item.preview}
+                              </div>
+                              <p className="mt-3 text-xs leading-5 text-slate-500">{item.usage}</p>
+                            </article>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    {collectedTechItems.length > 0 && (
+                      <section className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                        <div className="mb-3 text-sm font-black text-slate-900">技术词典</div>
+                        <div className="space-y-3">
+                          {collectedTechItems.map((item) => (
+                            <TechDictionaryCard
+                              key={item.id}
+                              item={item}
+                              action={renderCollectionButton(item.id)}
+                              tone="white"
+                            />
+                          ))}
+                        </div>
+                      </section>
+                    )}
+                  </div>
                 )}
-              </div>
+              </section>
+            ) : (
+              <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                <SectionTitle
+                  icon={<Code2 className="h-5 w-5 text-brand" />}
+                  title="技术词典"
+                  desc="把你常用的大白话说法，翻译成我后续能直接定位的技术名称。"
+                />
+                <div className="space-y-3">
+                  {filteredTechItems.map((item) => (
+                    <TechDictionaryCard key={item.id} item={item} action={renderCollectionButton(item.id)} />
+                  ))}
+                </div>
+                <div className="mt-5 flex items-center gap-2 rounded-xl border border-green-100 bg-green-50 p-4 text-sm font-bold text-green-700">
+                  <Check className="h-5 w-5" />
+                  以后你可以直接说“按 UI-13 做角色卡片”或“这里加 T-03 弹窗栈规则”，我会按这个页面的记录去实现。
+                </div>
+              </section>
             )}
-          </section>
-        ) : (
-          <section className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-            <SectionTitle icon={<Code2 className="h-5 w-5 text-brand" />} title="技术词典" desc="把你常用的大白话说法，翻译成我后续能直接定位的技术名称。" />
-            <div className="space-y-3">
-              {filteredTechItems.map((item) => (
-                <TechDictionaryCard key={item.id} item={item} action={renderCollectionButton(item.id)} />
-              ))}
-            </div>
-            <div className="mt-5 flex items-center gap-2 rounded-xl border border-green-100 bg-green-50 p-4 text-sm font-bold text-green-700">
-              <Check className="h-5 w-5" />
-              以后你可以直接说“按 UI-13 做角色卡片”或“这里加 T-03 弹窗栈规则”，我会按这个页面的记录去实现。
-            </div>
-          </section>
-        )}
           </div>
         </div>
       </main>
@@ -6212,14 +6941,62 @@ export function SoftwareUiCatalogPage({ embedded = false, onClose }: SoftwareUiC
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 rounded-2xl border border-slate-100 bg-white p-4 sm:grid-cols-4">
-                    <NumberSpecInput label="宽" value={activeSpecs.width} min={24} max={520} onChange={(value) => updateUiSpec(activeSpecItem.id, 'width', value)} />
-                    <NumberSpecInput label="高" value={activeSpecs.height} min={20} max={160} onChange={(value) => updateUiSpec(activeSpecItem.id, 'height', value)} />
-                    <NumberSpecInput label="字号" value={activeSpecs.fontSize} min={8} max={48} onChange={(value) => updateUiSpec(activeSpecItem.id, 'fontSize', value)} />
-                    <NumberSpecInput label="圆角" value={activeSpecs.radius} min={0} max={48} onChange={(value) => updateUiSpec(activeSpecItem.id, 'radius', value)} />
-                    <NumberSpecInput label="左右距" value={activeSpecs.paddingX} min={0} max={80} onChange={(value) => updateUiSpec(activeSpecItem.id, 'paddingX', value)} />
-                    <NumberSpecInput label="间隔" value={activeSpecs.gap} min={0} max={48} onChange={(value) => updateUiSpec(activeSpecItem.id, 'gap', value)} />
-                    <NumberSpecInput label="图标" value={activeSpecs.iconSize} min={8} max={64} onChange={(value) => updateUiSpec(activeSpecItem.id, 'iconSize', value)} />
-                    <NumberSpecInput label="+/-" value={activeSpecs.plusMinusSize} min={8} max={72} onChange={(value) => updateUiSpec(activeSpecItem.id, 'plusMinusSize', value)} />
+                    <NumberSpecInput
+                      label="宽"
+                      value={activeSpecs.width}
+                      min={24}
+                      max={520}
+                      onChange={(value) => updateUiSpec(activeSpecItem.id, 'width', value)}
+                    />
+                    <NumberSpecInput
+                      label="高"
+                      value={activeSpecs.height}
+                      min={20}
+                      max={160}
+                      onChange={(value) => updateUiSpec(activeSpecItem.id, 'height', value)}
+                    />
+                    <NumberSpecInput
+                      label="字号"
+                      value={activeSpecs.fontSize}
+                      min={8}
+                      max={48}
+                      onChange={(value) => updateUiSpec(activeSpecItem.id, 'fontSize', value)}
+                    />
+                    <NumberSpecInput
+                      label="圆角"
+                      value={activeSpecs.radius}
+                      min={0}
+                      max={48}
+                      onChange={(value) => updateUiSpec(activeSpecItem.id, 'radius', value)}
+                    />
+                    <NumberSpecInput
+                      label="左右距"
+                      value={activeSpecs.paddingX}
+                      min={0}
+                      max={80}
+                      onChange={(value) => updateUiSpec(activeSpecItem.id, 'paddingX', value)}
+                    />
+                    <NumberSpecInput
+                      label="间隔"
+                      value={activeSpecs.gap}
+                      min={0}
+                      max={48}
+                      onChange={(value) => updateUiSpec(activeSpecItem.id, 'gap', value)}
+                    />
+                    <NumberSpecInput
+                      label="图标"
+                      value={activeSpecs.iconSize}
+                      min={8}
+                      max={64}
+                      onChange={(value) => updateUiSpec(activeSpecItem.id, 'iconSize', value)}
+                    />
+                    <NumberSpecInput
+                      label="+/-"
+                      value={activeSpecs.plusMinusSize}
+                      min={8}
+                      max={72}
+                      onChange={(value) => updateUiSpec(activeSpecItem.id, 'plusMinusSize', value)}
+                    />
                   </div>
                 </div>
 

@@ -48,13 +48,20 @@ export function CoverLibraryPage({ embedded = false }: CoverLibraryPageProps = {
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-5">
             {items.map((item) => (
-              <article key={item.id} className="overflow-hidden rounded-[22px] border border-slate-100 bg-white shadow-sm">
+              <article
+                key={item.id}
+                className="overflow-hidden rounded-[22px] border border-slate-100 bg-white shadow-sm"
+              >
                 <div className="aspect-[3/4] bg-slate-100">
                   <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
                 </div>
                 <div className="p-4">
-                  <div className="truncate text-sm font-bold text-slate-900" title={item.title}>{item.title}</div>
-                  <div className="mt-1 text-xs text-slate-400">{item.workType === 'script' ? '剧本封面' : '小说封面'} · {item.createdAt}</div>
+                  <div className="truncate text-sm font-bold text-slate-900" title={item.title}>
+                    {item.title}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-400">
+                    {item.workType === 'script' ? '剧本封面' : '小说封面'} · {item.createdAt}
+                  </div>
                   {item.modelName && <div className="mt-1 truncate text-xs text-slate-400">模型：{item.modelName}</div>}
                   {item.prompt && <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{item.prompt}</p>}
                   <button

@@ -18,10 +18,7 @@ export function RoleHistoryModal({ entryTitle, role, onClose }: RoleHistoryModal
   const history = role.history ?? [];
 
   return createPortal(
-    <div
-      className="modal-sharp fixed inset-0 z-[10020] flex items-center justify-center bg-black/30"
-      onClick={onClose}
-    >
+    <div className="modal-sharp fixed inset-0 z-[10020] flex items-center justify-center bg-black/30" onClick={onClose}>
       <div
         className="modal-sharp flex h-[72vh] w-[860px] max-w-[92vw] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
@@ -29,7 +26,9 @@ export function RoleHistoryModal({ entryTitle, role, onClose }: RoleHistoryModal
         <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4">
           <div>
             <h3 className="text-base font-bold text-gray-900">历史版本</h3>
-            <p className="mt-1 text-xs text-gray-400">{entryTitle} · {history.length} / {ROLE_HISTORY_LIMIT}</p>
+            <p className="mt-1 text-xs text-gray-400">
+              {entryTitle} · {history.length} / {ROLE_HISTORY_LIMIT}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -62,7 +61,11 @@ export function RoleHistoryModal({ entryTitle, role, onClose }: RoleHistoryModal
                     </div>
                     <div className="min-h-32 rounded-lg bg-gray-50 p-3">
                       <div className="mb-1 font-bold text-gray-700">状态设定</div>
-                      <p className="whitespace-pre-wrap">{buildRoleStateSettingsText(normalizeRoleStateSettings(version.stateSettings, version.status)) || '暂无内容'}</p>
+                      <p className="whitespace-pre-wrap">
+                        {buildRoleStateSettingsText(
+                          normalizeRoleStateSettings(version.stateSettings, version.status),
+                        ) || '暂无内容'}
+                      </p>
                     </div>
                   </div>
                 </article>

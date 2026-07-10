@@ -38,7 +38,7 @@ interface FullCardSettings extends NovelCardSettings {
 const CARD_SETTINGS_KEY = 'novel_card_settings';
 const NOVEL_LIBRARY_DASHBOARD_WIDTHS_KEY = 'novel_library_dashboard_card_widths_v1';
 const DEFAULT_DASHBOARD_CARD_WIDTHS = [464, 434, 428, 424];
-const DASHBOARD_CARD_MIN_WIDTH = 360;
+const DASHBOARD_CARD_MIN_WEIGHT = 240;
 const DASHBOARD_CARD_RESIZE_HANDLE_WIDTH = 10;
 const defaultBtnOrder = ['重命名', '封面', '导出', '删除'];
 const defaultBtnColors: Record<string, BtnColor> = {
@@ -190,7 +190,7 @@ function readDashboardCardWidths() {
     if (looksLikeLegacyRatio) return [...DEFAULT_DASHBOARD_CARD_WIDTHS];
     return DEFAULT_DASHBOARD_CARD_WIDTHS.map((fallback, index) => {
       const value = Number(parsed[index]);
-      return Number.isFinite(value) ? Math.max(DASHBOARD_CARD_MIN_WIDTH, value) : fallback;
+      return Number.isFinite(value) ? Math.max(DASHBOARD_CARD_MIN_WEIGHT, value) : fallback;
     });
   } catch {
     return [...DEFAULT_DASHBOARD_CARD_WIDTHS];
@@ -721,42 +721,50 @@ export function NovelLibraryPage() {
     startX: number;
     leftWidth: number;
     rightWidth: number;
+    weightPerPixel: number;
   } | null>(null);
   const dashboardGridTemplate = [
-    `${Math.max(DASHBOARD_CARD_MIN_WIDTH, dashboardCardWidths[0])}px`,
+    `minmax(0, ${Math.max(DASHBOARD_CARD_MIN_WEIGHT, dashboardCardWidths[0])}fr)`,
     `${DASHBOARD_CARD_RESIZE_HANDLE_WIDTH}px`,
-    `${Math.max(DASHBOARD_CARD_MIN_WIDTH, dashboardCardWidths[1])}px`,
+    `minmax(0, ${Math.max(DASHBOARD_CARD_MIN_WEIGHT, dashboardCardWidths[1])}fr)`,
     `${DASHBOARD_CARD_RESIZE_HANDLE_WIDTH}px`,
-    `${Math.max(DASHBOARD_CARD_MIN_WIDTH, dashboardCardWidths[2])}px`,
+    `minmax(0, ${Math.max(DASHBOARD_CARD_MIN_WEIGHT, dashboardCardWidths[2])}fr)`,
     `${DASHBOARD_CARD_RESIZE_HANDLE_WIDTH}px`,
-    `${Math.max(DASHBOARD_CARD_MIN_WIDTH, dashboardCardWidths[3])}px`,
+    `minmax(0, ${Math.max(DASHBOARD_CARD_MIN_WEIGHT, dashboardCardWidths[3])}fr)`,
   ].join(' ');
 
   const startDashboardCardResize = (event: ReactPointerEvent<HTMLButtonElement>, index: number) => {
     event.preventDefault();
-    const leftWidth = dashboardCardWidths[index] ?? DASHBOARD_CARD_MIN_WIDTH;
-    const rightWidth = dashboardCardWidths[index + 1] ?? DASHBOARD_CARD_MIN_WIDTH;
+    const leftWidth = dashboardCardWidths[index] ?? DASHBOARD_CARD_MIN_WEIGHT;
+    const rightWidth = dashboardCardWidths[index + 1] ?? DASHBOARD_CARD_MIN_WEIGHT;
+    const totalWeight = dashboardCardWidths.reduce((total, weight) => total + weight, 0);
+    const rowWidth = dashboardRowRef.current?.getBoundingClientRect().width ?? totalWeight;
+    const availableCardWidth = Math.max(
+      1,
+      rowWidth - DASHBOARD_CARD_RESIZE_HANDLE_WIDTH * (dashboardCardWidths.length - 1),
+    );
     dashboardResizeRef.current = {
       index,
       startX: event.clientX,
       leftWidth,
       rightWidth,
+      weightPerPixel: totalWeight / availableCardWidth,
     };
 
     const handleMove = (moveEvent: PointerEvent) => {
       const state = dashboardResizeRef.current;
       if (!state) return;
-      const delta = moveEvent.clientX - state.startX;
+      const delta = (moveEvent.clientX - state.startX) * state.weightPerPixel;
       const totalWidth = state.leftWidth + state.rightWidth;
       const nextLeftWidth = Math.min(
-        totalWidth - DASHBOARD_CARD_MIN_WIDTH,
-        Math.max(DASHBOARD_CARD_MIN_WIDTH, state.leftWidth + delta),
+        totalWidth - DASHBOARD_CARD_MIN_WEIGHT,
+        Math.max(DASHBOARD_CARD_MIN_WEIGHT, state.leftWidth + delta),
       );
       const nextRightWidth = totalWidth - nextLeftWidth;
       setDashboardCardWidths((current) => {
         const next = [...current];
-        next[state.index] = nextLeftWidth;
-        next[state.index + 1] = nextRightWidth;
+        next[state.index] = Number(nextLeftWidth.toFixed(2));
+        next[state.index + 1] = Number(nextRightWidth.toFixed(2));
         saveDashboardCardWidths(next);
         return next;
       });
@@ -863,13 +871,13 @@ export function NovelLibraryPage() {
   return (
     <div className="flex h-screen flex-col bg-white">
       <main className="flex-1 overflow-y-auto px-[21px] py-3.5">
-        <div className="space-y-3 overflow-x-auto pb-1">
+        <div className="min-w-0 space-y-3 overflow-x-hidden">
           <div
             ref={dashboardRowRef}
-            className="grid min-w-[1780px]"
+            className="grid w-full min-w-0"
             style={{ gridTemplateColumns: dashboardGridTemplate }}
           >
-            <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-5 py-4">
+            <section className="flex min-h-[126px] min-w-0 flex-col rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-5 py-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[15px] font-bold text-[#1f2933]">作品概览</p>
@@ -913,7 +921,7 @@ export function NovelLibraryPage() {
               <span className="h-full w-px rounded-full bg-transparent transition-colors group-hover:bg-[#08AACE] group-active:bg-[#08AACE]" />
             </button>
 
-            <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-4 py-3.5">
+            <section className="flex min-h-[126px] min-w-0 flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-4 py-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <h2 className="text-[15px] font-semibold text-[#1f2933]">作品整理</h2>
@@ -996,7 +1004,7 @@ export function NovelLibraryPage() {
               <span className="h-full w-px rounded-full bg-transparent transition-colors group-hover:bg-[#08AACE] group-active:bg-[#08AACE]" />
             </button>
 
-            <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-white px-4 py-4">
+            <section className="flex min-h-[126px] min-w-0 flex-col rounded-[8px] border border-[#e6e8ec] bg-white px-4 py-4">
               <h2 className="truncate text-[15px] font-semibold leading-none text-[#1f2933]">最近编辑：</h2>
               {recentWorks.length > 0 ? (
                 <div className="mt-4 grid gap-2">
@@ -1032,7 +1040,7 @@ export function NovelLibraryPage() {
               <span className="h-full w-px rounded-full bg-transparent transition-colors group-hover:bg-[#08AACE] group-active:bg-[#08AACE]" />
             </button>
 
-            <section className="flex min-h-[126px] flex-col rounded-[8px] border border-dashed border-[#d7dce4] bg-[#fbfbfc] px-5 py-4">
+            <section className="flex min-h-[126px] min-w-0 flex-col rounded-[8px] border border-dashed border-[#d7dce4] bg-[#fbfbfc] px-5 py-4">
               <p className="text-[13px] font-medium text-[#9aa3af]">预留</p>
               <h2 className="mt-1.5 truncate text-[23px] font-bold text-[#68727f]">扩展卡片</h2>
               <p className="mt-3 text-[13px] font-medium leading-5 text-[#9aa3af]">

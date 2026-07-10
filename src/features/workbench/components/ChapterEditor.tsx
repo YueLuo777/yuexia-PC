@@ -27,6 +27,16 @@ import {
 import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
 import { isChapterContentPolished } from '@/features/workbench/model/chapterPolishStatus';
 import {
+  REVIEW_MODE_TITLES,
+  clearAllReviewModeResults,
+  createReviewModeState,
+  isReviewBackgroundTaskForChapter,
+  readRestorableReviewBackgroundTaskIds,
+  writeReviewBackgroundTaskId,
+  type ReviewMode,
+  type ReviewModeState,
+} from '@/features/workbench/model/chapterReviewTaskState';
+import {
   WORKBENCH_SHARED_AI_RIGHT_WIDTH_EVENT,
   WORKBENCH_SHARED_AI_RIGHT_WIDTH_DEFAULT,
   WORKBENCH_SHARED_AI_RIGHT_WIDTH_LIMIT,
@@ -390,20 +400,6 @@ function readAssociatedChapterCount(chapters: Pick<Chapter, 'id'>[]) {
 }
 
 type ChapterEditorEmbeddedMode = 'audit' | 'comment' | 'polish' | 'status';
-type ReviewMode = 'audit' | 'comment' | 'polish';
-type ReviewModeState = {
-  input: string;
-  output: string;
-  revisedDraft: string;
-  requestLog: string;
-  backgroundTaskId?: string;
-};
-
-const REVIEW_MODE_TITLES: Record<ReviewMode, string> = {
-  audit: '剧情审核',
-  comment: '综合点评',
-  polish: '文笔润色',
-};
 
 const POLISH_PROMPT_CATEGORY = '润色';
 const REVIEW_MODE_PROMPT_CATEGORIES: Record<ReviewMode, string> = {
@@ -477,60 +473,6 @@ const REVIEW_MODE_DEFAULT_INSTRUCTIONS: Record<ReviewMode, string> = {
     '请对文章内容进行文笔润色：先检查错别字、语病、标点和重复表达，再优化语言表达、节奏、句子顺滑度、画面感和情绪力度，不改变剧情事件、人物行动、设定信息和章节结果。输出需要提供可替换的完整润色稿。',
 };
 
-function createReviewModeState(): ReviewModeState {
-  return {
-    input: '',
-    output: '',
-    revisedDraft: '',
-    requestLog: '',
-  };
-}
-
-function getReviewBackgroundTaskStorageKey(settingsStorageKey: string) {
-  return `${settingsStorageKey}_review_background_tasks_v1`;
-}
-
-function readReviewBackgroundTaskIds(settingsStorageKey: string): Partial<Record<ReviewMode, string>> {
-  try {
-    const parsed = JSON.parse(
-      localStorage.getItem(getReviewBackgroundTaskStorageKey(settingsStorageKey)) ?? '{}',
-    ) as Record<string, unknown>;
-    return {
-      audit: typeof parsed.audit === 'string' ? parsed.audit : undefined,
-      comment: typeof parsed.comment === 'string' ? parsed.comment : undefined,
-      polish: typeof parsed.polish === 'string' ? parsed.polish : undefined,
-    };
-  } catch {
-    return {};
-  }
-}
-
-function writeReviewBackgroundTaskId(settingsStorageKey: string, mode: ReviewMode, taskId?: string) {
-  const current = readReviewBackgroundTaskIds(settingsStorageKey);
-  const next = { ...current, [mode]: taskId };
-  if (!taskId) delete next[mode];
-  localStorage.setItem(getReviewBackgroundTaskStorageKey(settingsStorageKey), JSON.stringify(next));
-}
-
-function getRestorableReviewBackgroundTaskId(settingsStorageKey: string, taskId?: string) {
-  if (!taskId) return undefined;
-  const task = getBackgroundAiTask(taskId);
-  if (!task || task.status !== 'running') return undefined;
-  if (task.meta?.target !== 'chapterReview' || task.meta.settingsStorageKey !== settingsStorageKey) return undefined;
-  return task.id;
-}
-
-function readRestorableReviewBackgroundTaskIds(settingsStorageKey: string) {
-  const storedTaskIds = readReviewBackgroundTaskIds(settingsStorageKey);
-  const restorableTaskIds: Partial<Record<ReviewMode, string>> = {};
-  (Object.keys(REVIEW_MODE_TITLES) as ReviewMode[]).forEach((mode) => {
-    const taskId = getRestorableReviewBackgroundTaskId(settingsStorageKey, storedTaskIds[mode]);
-    if (taskId) restorableTaskIds[mode] = taskId;
-    else if (storedTaskIds[mode]) writeReviewBackgroundTaskId(settingsStorageKey, mode, undefined);
-  });
-  return restorableTaskIds;
-}
-
 interface ChapterEditorProps {
   embeddedMode?: ChapterEditorEmbeddedMode;
   fieldSizeOpenSignal?: number;
@@ -545,6 +487,7 @@ interface ChapterEditorProps {
   volumes?: Volume[];
   settingsStorageKey: string;
   outlineStorageKey?: string;
+  reviewLibraryEntries?: WorkbenchLibraryEntry[];
   getChapterContent: (chapterId: number) => string;
   onUpdateChapterContent: (chapterId: number, content: string) => void;
   onRenameChapter: (chapterId: number, title: string) => void;
@@ -1159,6 +1102,7 @@ export function ChapterEditor({
   volumes = [],
   settingsStorageKey,
   outlineStorageKey,
+  reviewLibraryEntries,
   getChapterContent,
   onUpdateChapterContent,
   onRenameChapter,
@@ -1317,7 +1261,7 @@ export function ChapterEditor({
   const clearReviewAiOutput = () => {
     const taskId = reviewModeStates[reviewMode]?.backgroundTaskId;
     if (taskId) stopBackgroundAiTask(taskId);
-    writeReviewBackgroundTaskId(settingsStorageKey, reviewMode, undefined);
+    writeReviewBackgroundTaskId(settingsStorageKey, reviewChapterId ?? activeChapterId, reviewMode, undefined);
     updateActiveReviewState((state) => ({
       ...state,
       output: '',
@@ -1722,10 +1666,12 @@ export function ChapterEditor({
     : '';
   const activeReviewWordCount = activeReviewContent.replace(/\s/g, '').length;
   const reviewDetailOutlineEntries = useMemo(() => {
-    const entries = readWorkbenchLibraryEntries(settingsStorageKey);
-    const outlineEntries = outlineStorageKey ? readWorkbenchLibraryEntries(outlineStorageKey) : [];
-    return [...entries, ...outlineEntries].filter(isReviewDetailOutlineEntry);
-  }, [outlineStorageKey, settingsStorageKey]);
+    const entries = reviewLibraryEntries ?? [
+      ...readWorkbenchLibraryEntries(settingsStorageKey),
+      ...(outlineStorageKey ? readWorkbenchLibraryEntries(outlineStorageKey) : []),
+    ];
+    return entries.filter(isReviewDetailOutlineEntry);
+  }, [outlineStorageKey, reviewLibraryEntries, settingsStorageKey]);
   const activeReviewDetailOutline = useMemo(
     () => findReviewDetailOutline(reviewDetailOutlineEntries, activeReviewChapter),
     [activeReviewChapter, reviewDetailOutlineEntries],
@@ -1869,26 +1815,7 @@ export function ChapterEditor({
   useEffect(() => {
     if (activeChapterId !== null) {
       setReviewChapterId(activeChapterId);
-      setReviewModeStates((prev) => ({
-        audit: {
-          ...prev.audit,
-          output: '',
-          revisedDraft: '',
-          requestLog: '',
-        },
-        comment: {
-          ...prev.comment,
-          output: '',
-          revisedDraft: '',
-          requestLog: '',
-        },
-        polish: {
-          ...prev.polish,
-          output: '',
-          revisedDraft: '',
-          requestLog: '',
-        },
-      }));
+      setReviewModeStates(clearAllReviewModeResults);
     }
   }, [activeChapterId]);
 
@@ -1941,17 +1868,19 @@ export function ChapterEditor({
   }, [statusPromptId, statusPrompts]);
 
   useEffect(() => {
-    const storedTaskIds = readRestorableReviewBackgroundTaskIds(settingsStorageKey);
+    const activeReviewChapterId = activeReviewChapter?.id ?? null;
+    const storedTaskIds = readRestorableReviewBackgroundTaskIds(settingsStorageKey, activeReviewChapterId);
     setReviewModeStates((prev) => ({
-      audit: { ...prev.audit, backgroundTaskId: storedTaskIds.audit ?? prev.audit.backgroundTaskId },
-      comment: { ...prev.comment, backgroundTaskId: storedTaskIds.comment ?? prev.comment.backgroundTaskId },
-      polish: { ...prev.polish, backgroundTaskId: storedTaskIds.polish ?? prev.polish.backgroundTaskId },
+      audit: { ...prev.audit, backgroundTaskId: storedTaskIds.audit },
+      comment: { ...prev.comment, backgroundTaskId: storedTaskIds.comment },
+      polish: { ...prev.polish, backgroundTaskId: storedTaskIds.polish },
     }));
-  }, [settingsStorageKey]);
+  }, [activeReviewChapter?.id, settingsStorageKey]);
 
   useEffect(() => {
+    const activeReviewChapterId = activeReviewChapter?.id ?? null;
     const syncBackgroundTasks = () => {
-      const storedTaskIds = readRestorableReviewBackgroundTaskIds(settingsStorageKey);
+      const storedTaskIds = readRestorableReviewBackgroundTaskIds(settingsStorageKey, activeReviewChapterId);
       setReviewModeStates((prev) => {
         let changed = false;
         const next = { ...prev };
@@ -1959,8 +1888,7 @@ export function ChapterEditor({
           const taskId = prev[mode].backgroundTaskId ?? storedTaskIds[mode];
           if (!taskId) return;
           const task = getBackgroundAiTask(taskId);
-          if (!task || task.meta?.target !== 'chapterReview' || task.meta.settingsStorageKey !== settingsStorageKey)
-            return;
+          if (!isReviewBackgroundTaskForChapter(task, settingsStorageKey, activeReviewChapterId, mode)) return;
           const nextOutput = getReviewBackgroundTaskOutput(task, mode);
           const nextRequestLog =
             typeof task.meta?.requestLog === 'string' ? task.meta.requestLog : prev[mode].requestLog;
@@ -1990,14 +1918,17 @@ export function ChapterEditor({
 
       const activeTaskId =
         reviewModeStates[reviewMode]?.backgroundTaskId ??
-        readRestorableReviewBackgroundTaskIds(settingsStorageKey)[reviewMode];
+        readRestorableReviewBackgroundTaskIds(settingsStorageKey, activeReviewChapterId)[reviewMode];
       const activeTask = activeTaskId ? getBackgroundAiTask(activeTaskId) : null;
-      setIsReviewAiLoading(activeTask?.status === 'running');
+      setIsReviewAiLoading(
+        isReviewBackgroundTaskForChapter(activeTask, settingsStorageKey, activeReviewChapterId, reviewMode) &&
+          activeTask?.status === 'running',
+      );
     };
 
     syncBackgroundTasks();
     return subscribeBackgroundAiTasks(syncBackgroundTasks);
-  }, [reviewMode, reviewModeStates, settingsStorageKey]);
+  }, [activeReviewChapter?.id, reviewMode, reviewModeStates, settingsStorageKey]);
 
   const openReviewPanel = (mode: ReviewMode) => {
     setReviewMode(mode);
@@ -2009,12 +1940,7 @@ export function ChapterEditor({
   const selectReviewChapter = (nextChapterId: number) => {
     setReviewChapterId(nextChapterId);
     setIsReviewLogOpen(false);
-    updateActiveReviewState((state) => ({
-      ...state,
-      output: '',
-      revisedDraft: '',
-      requestLog: '',
-    }));
+    setReviewModeStates(clearAllReviewModeResults);
   };
 
   const openStatusUpdate = useCallback(() => {
@@ -2225,7 +2151,7 @@ export function ChapterEditor({
         }
       },
     });
-    writeReviewBackgroundTaskId(settingsStorageKey, requestMode, task.id);
+    writeReviewBackgroundTaskId(settingsStorageKey, activeReviewChapter.id, requestMode, task.id);
     setIsReviewAiLoading(true);
     updateRequestReviewState((state) => ({
       ...state,

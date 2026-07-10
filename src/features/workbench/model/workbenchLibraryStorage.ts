@@ -16,7 +16,7 @@ export const GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY = 'xinyuexia_global_brainstor
 export function readWorkbenchLibraryEntries(storageKey: string): WorkbenchLibraryEntry[] {
   try {
     const raw = localStorage.getItem(storageKey);
-    return raw ? JSON.parse(raw) as WorkbenchLibraryEntry[] : [];
+    return raw ? (JSON.parse(raw) as WorkbenchLibraryEntry[]) : [];
   } catch {
     return [];
   }
@@ -42,7 +42,9 @@ function mergeEntriesById(primary: WorkbenchLibraryEntry[], fallback: WorkbenchL
 
 export function readWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey: string): WorkbenchLibraryEntry[] {
   const localEntries = readWorkbenchLibraryEntries(storageKey);
-  const globalBrainstormEntries = readWorkbenchLibraryEntries(GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY).filter(isBrainstormEntry);
+  const globalBrainstormEntries = readWorkbenchLibraryEntries(GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY).filter(
+    isBrainstormEntry,
+  );
   const localBrainstormEntries = localEntries.filter(isBrainstormEntry);
   const localNonBrainstormEntries = localEntries.filter((entry) => !isBrainstormEntry(entry));
 

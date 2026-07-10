@@ -1,5 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Globe, Home, Maximize2, Minimize2, Plus, RefreshCw, Star, Trash2, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Globe,
+  Home,
+  Maximize2,
+  Minimize2,
+  Plus,
+  RefreshCw,
+  Star,
+  Trash2,
+  X,
+} from 'lucide-react';
 
 import {
   getBrowserHostLabel,
@@ -91,7 +103,9 @@ export function TestBrowserPage() {
   const [bookmarkTitle, setBookmarkTitle] = useState('');
   const [currentUrl, setCurrentUrl] = useState(() => activeTab.url);
   const [pageTitle, setPageTitle] = useState(activeTab.title || '内置浏览器');
-  const [bookmarks, setBookmarks] = useState<BrowserBookmark[]>(() => readStoredJson<BrowserBookmark[]>(BROWSER_BOOKMARKS_KEY, []));
+  const [bookmarks, setBookmarks] = useState<BrowserBookmark[]>(() =>
+    readStoredJson<BrowserBookmark[]>(BROWSER_BOOKMARKS_KEY, []),
+  );
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -139,9 +153,9 @@ export function TestBrowserPage() {
         setCurrentUrl(latestUrl);
         setInputUrl(latestUrl);
         setPageTitle(latestTitle);
-        setBrowserTabs((prev) => prev.map((tab) => (
-          tab.id === activeTabId ? { ...tab, url: latestUrl, title: latestTitle } : tab
-        )));
+        setBrowserTabs((prev) =>
+          prev.map((tab) => (tab.id === activeTabId ? { ...tab, url: latestUrl, title: latestTitle } : tab)),
+        );
         setCanGoBack(view.canGoBack());
         setCanGoForward(view.canGoForward());
       } catch {
@@ -206,10 +220,14 @@ export function TestBrowserPage() {
   const addBookmark = () => {
     const next = normalizeBrowserUrl(inputUrl || currentUrl);
     if (!next) return;
-    const title = bookmarkTitle.trim() || (pageTitle && pageTitle !== '内置浏览器' ? pageTitle : getBrowserHostLabel(next));
+    const title =
+      bookmarkTitle.trim() || (pageTitle && pageTitle !== '内置浏览器' ? pageTitle : getBrowserHostLabel(next));
     setBookmarks((prev) => {
       const rest = prev.filter((item) => item.url !== next);
-      return [{ id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, url: next, title, createdAt: Date.now() }, ...rest].slice(0, 30);
+      return [
+        { id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, url: next, title, createdAt: Date.now() },
+        ...rest,
+      ].slice(0, 30);
     });
     setBookmarkTitle('');
     setCurrentUrl(next);
@@ -222,7 +240,9 @@ export function TestBrowserPage() {
   const FullscreenIcon = isFullscreen ? Minimize2 : Maximize2;
 
   return (
-    <div className={`flex h-full min-h-0 flex-col bg-slate-50 ${isFullscreen ? 'fixed inset-x-0 bottom-0 top-12 z-[180]' : ''}`}>
+    <div
+      className={`flex h-full min-h-0 flex-col bg-slate-50 ${isFullscreen ? 'fixed inset-x-0 bottom-0 top-12 z-[180]' : ''}`}
+    >
       <header className="flex h-16 shrink-0 items-center border-b border-slate-100 bg-white px-6">
         <div className="flex w-full items-center justify-between gap-3">
           <div className="min-w-0">
@@ -316,13 +336,14 @@ export function TestBrowserPage() {
               </div>
             ) : (
               bookmarks.map((bookmark) => (
-                <div key={bookmark.id} className="group rounded-xl border border-slate-100 bg-slate-50 p-2.5 transition-colors hover:border-brand/30 hover:bg-white">
-                  <button
-                    onClick={() => openUrl(bookmark.url)}
-                    className="block w-full text-left"
-                    title={bookmark.url}
-                  >
-                    <div className="truncate text-sm font-semibold text-slate-700">{bookmark.title || getBrowserHostLabel(bookmark.url)}</div>
+                <div
+                  key={bookmark.id}
+                  className="group rounded-xl border border-slate-100 bg-slate-50 p-2.5 transition-colors hover:border-brand/30 hover:bg-white"
+                >
+                  <button onClick={() => openUrl(bookmark.url)} className="block w-full text-left" title={bookmark.url}>
+                    <div className="truncate text-sm font-semibold text-slate-700">
+                      {bookmark.title || getBrowserHostLabel(bookmark.url)}
+                    </div>
                     <div className="mt-1 truncate text-xs text-slate-400">{bookmark.url}</div>
                   </button>
                   <div className="mt-2 flex justify-end gap-1">
@@ -422,17 +443,19 @@ export function TestBrowserPage() {
           </div>
 
           <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden bg-white [scrollbar-gutter:stable] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#9a9a9a] [&::-webkit-scrollbar-track]:bg-transparent">
-            {embeddedBrowserEnabled ? React.createElement('webview', {
-              ref: webviewRef,
-              src: currentUrl,
-              partition: BROWSER_PARTITION,
-              style: {
-                display: 'flex',
-                width: '100%',
-                minWidth: usesMobileViewport ? `${MOBILE_VIEWPORT_WIDTH}px` : `${DESKTOP_VIEWPORT_MIN_WIDTH}px`,
-                height: '100%',
-              },
-            }) : (
+            {embeddedBrowserEnabled ? (
+              React.createElement('webview', {
+                ref: webviewRef,
+                src: currentUrl,
+                partition: BROWSER_PARTITION,
+                style: {
+                  display: 'flex',
+                  width: '100%',
+                  minWidth: usesMobileViewport ? `${MOBILE_VIEWPORT_WIDTH}px` : `${DESKTOP_VIEWPORT_MIN_WIDTH}px`,
+                  height: '100%',
+                },
+              })
+            ) : (
               <div className="flex h-full items-center justify-center bg-slate-50 px-6 text-center text-sm text-slate-500">
                 内置浏览器仅在开发模式或显式启用的内部包中开放。
               </div>

@@ -57,7 +57,9 @@ function setPixel(buffer, size, x, y, color, alpha = 1) {
   if (outAlpha <= 0) return;
 
   for (let i = 0; i < 3; i += 1) {
-    buffer[offset + i] = Math.round((color[i] * sourceAlpha + buffer[offset + i] * targetAlpha * (1 - sourceAlpha)) / outAlpha);
+    buffer[offset + i] = Math.round(
+      (color[i] * sourceAlpha + buffer[offset + i] * targetAlpha * (1 - sourceAlpha)) / outAlpha,
+    );
   }
   buffer[offset + 3] = Math.round(outAlpha * 255);
 }

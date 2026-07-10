@@ -42,9 +42,10 @@ export function hasLibraryEntryPointerRetargetedTooSoon(
 ) {
   if (!pointerDrag.lastPreviewTargetKey || pointerDrag.lastPreviewTargetKey === targetKey) return false;
   const distanceFromLastPreview = Math.hypot(clientX - pointerDrag.lastPreviewX, clientY - pointerDrag.lastPreviewY);
-  const retargetDistance = targetKey === `entry:${pointerDrag.entryId}`
-    ? LIBRARY_ENTRY_POINTER_DRAG_RETURN_DISTANCE
-    : LIBRARY_ENTRY_POINTER_DRAG_RETARGET_DISTANCE;
+  const retargetDistance =
+    targetKey === `entry:${pointerDrag.entryId}`
+      ? LIBRARY_ENTRY_POINTER_DRAG_RETURN_DISTANCE
+      : LIBRARY_ENTRY_POINTER_DRAG_RETARGET_DISTANCE;
   return distanceFromLastPreview < retargetDistance;
 }
 
@@ -64,13 +65,11 @@ export function isLibraryPointerPastGroupEntries(
   pointerDrag: NonNullable<LibraryEntryPointerDragState>,
   clientY: number,
 ) {
-  const visibleEntries = Array.from(hoverGroup.querySelectorAll<HTMLElement>('[data-library-entry-id]'))
-    .filter((element) => (
-      element.dataset.libraryEntryTab === pointerDrag.tab
-      && element.dataset.libraryEntryId !== pointerDrag.entryId
-    ));
+  const visibleEntries = Array.from(hoverGroup.querySelectorAll<HTMLElement>('[data-library-entry-id]')).filter(
+    (element) =>
+      element.dataset.libraryEntryTab === pointerDrag.tab && element.dataset.libraryEntryId !== pointerDrag.entryId,
+  );
   if (visibleEntries.length === 0) return true;
   const lastEntryRect = visibleEntries[visibleEntries.length - 1].getBoundingClientRect();
   return clientY > lastEntryRect.bottom;
 }
-

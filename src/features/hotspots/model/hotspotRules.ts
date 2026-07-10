@@ -49,7 +49,21 @@ export const HOTSPOT_RULE_GROUPS: HotspotRuleGroup[] = [
     polarity: 'bonus',
     score: 13,
     description: '行业规则、资本、平台和流量冲突容易抽象成虚构世界的势力与规则。',
-    keywords: ['资本', '平台', '公司', '品牌', '直播', '短视频', '带货', '流量', '商业', '行业', '老板', '职场', '机构'],
+    keywords: [
+      '资本',
+      '平台',
+      '公司',
+      '品牌',
+      '直播',
+      '短视频',
+      '带货',
+      '流量',
+      '商业',
+      '行业',
+      '老板',
+      '职场',
+      '机构',
+    ],
   },
   {
     id: 'tech-imagination',
@@ -73,7 +87,21 @@ export const HOTSPOT_RULE_GROUPS: HotspotRuleGroup[] = [
     polarity: 'bonus',
     score: 10,
     description: '能抽象成群体压力和时代焦虑，适合都市现实向、职场、校园或系统爽文。',
-    keywords: ['就业', '失业', '买房', '房贷', '彩礼', '加班', '内卷', '焦虑', '年轻人', '毕业', '学历', '收入', '消费'],
+    keywords: [
+      '就业',
+      '失业',
+      '买房',
+      '房贷',
+      '彩礼',
+      '加班',
+      '内卷',
+      '焦虑',
+      '年轻人',
+      '毕业',
+      '学历',
+      '收入',
+      '消费',
+    ],
   },
   {
     id: 'sports-result',
@@ -142,24 +170,23 @@ function getEvaluationLevel(score: number, hasRisk: boolean): HotspotRuleEvaluat
 
 export function evaluateHotspotByRules(item: HotspotItem): HotspotRuleEvaluation {
   const target = normalizeText([item.title, item.category, item.sourceName].filter(Boolean).join(' '));
-  const matchedRules = HOTSPOT_RULE_GROUPS
-    .map((group) => {
-      const matchedKeywords = group.keywords.filter((keyword) => target.includes(normalizeText(keyword)));
-      if (matchedKeywords.length === 0) return null;
-      return {
-        id: group.id,
-        name: group.name,
-        score: group.score,
-        polarity: group.polarity,
-        matchedKeywords,
-      };
-    })
-    .filter((rule): rule is NonNullable<typeof rule> => Boolean(rule));
+  const matchedRules = HOTSPOT_RULE_GROUPS.map((group) => {
+    const matchedKeywords = group.keywords.filter((keyword) => target.includes(normalizeText(keyword)));
+    if (matchedKeywords.length === 0) return null;
+    return {
+      id: group.id,
+      name: group.name,
+      score: group.score,
+      polarity: group.polarity,
+      matchedKeywords,
+    };
+  }).filter((rule): rule is NonNullable<typeof rule> => Boolean(rule));
 
   const score = clampScore(HOTSPOT_RULE_BASE_SCORE + matchedRules.reduce((total, rule) => total + rule.score, 0));
   const hasRisk = matchedRules.some((rule) => rule.polarity === 'risk');
   const level = getEvaluationLevel(score, hasRisk);
-  const levelLabel = level === 'high' ? '高适配' : level === 'medium' ? '可借情绪' : level === 'risk' ? '风险较高' : '低适配';
+  const levelLabel =
+    level === 'high' ? '高适配' : level === 'medium' ? '可借情绪' : level === 'risk' ? '风险较高' : '低适配';
   return { score, level, levelLabel, matchedRules };
 }
 

@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  BRAINSTORM_TAB,
-  DETAIL_OUTLINE_TAB,
-  ROLE_TAB,
-  SETTING_TAB,
-} from './workbenchLibraryTabs';
+import { BRAINSTORM_TAB, DETAIL_OUTLINE_TAB, ROLE_TAB, SETTING_TAB } from './workbenchLibraryTabs';
 import { getWorkbenchLibraryAiLogScope } from './workbenchLibraryAiLogTriggers';
 
 describe('workbenchLibraryAiLogTriggers', () => {

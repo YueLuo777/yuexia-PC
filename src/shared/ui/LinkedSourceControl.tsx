@@ -40,12 +40,7 @@ export function LinkedSourceControl({
     <div className={className}>
       {linked ? (
         <div className={groupClassName}>
-          <button
-            type="button"
-            onClick={handleLinkedClick}
-            className={linkedButtonClassName}
-            title={title}
-          >
+          <button type="button" onClick={handleLinkedClick} className={linkedButtonClassName} title={title}>
             {linkedLabel}
           </button>
           {onClear && !clearOnLinkedClick && (
@@ -61,12 +56,7 @@ export function LinkedSourceControl({
           )}
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={onOpen}
-          className={buttonClassName}
-          title={title}
-        >
+        <button type="button" onClick={onOpen} className={buttonClassName} title={title}>
           {label}
         </button>
       )}

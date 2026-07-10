@@ -15,4 +15,3 @@ export type AppEventName = (typeof APP_EVENTS)[keyof typeof APP_EVENTS];
 export function emitAppEvent(eventName: AppEventName) {
   window.dispatchEvent(new CustomEvent(eventName));
 }
-

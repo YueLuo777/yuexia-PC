@@ -48,28 +48,34 @@ export function createBrainstormAiSession(id = '1', config?: BrainstormAiConfigS
   };
 }
 
-export function normalizeBrainstormAiSessions(value: unknown, fallbackConfig: BrainstormAiConfigSnapshot): BrainstormAiSession[] {
+export function normalizeBrainstormAiSessions(
+  value: unknown,
+  fallbackConfig: BrainstormAiConfigSnapshot,
+): BrainstormAiSession[] {
   if (!Array.isArray(value)) return [createBrainstormAiSession('1', fallbackConfig)];
   const sessions = value
     .map((item, index): BrainstormAiSession | null => {
       if (!item || typeof item !== 'object') return null;
       const session = item as Partial<BrainstormAiSession>;
-      const id = typeof session.id === 'string' && session.id.trim()
-        ? session.id.trim()
-        : String(index + 1);
+      const id = typeof session.id === 'string' && session.id.trim() ? session.id.trim() : String(index + 1);
       return {
         id,
         input: typeof session.input === 'string' ? session.input : '',
         output: typeof session.output === 'string' ? session.output : '',
         result: typeof session.result === 'string' ? session.result : '',
-        previewTitles: Array.isArray(session.previewTitles) ? session.previewTitles.filter((item): item is string => typeof item === 'string') : undefined,
-        previewDrafts: Array.isArray(session.previewDrafts) ? session.previewDrafts.filter((item): item is string => typeof item === 'string') : undefined,
+        previewTitles: Array.isArray(session.previewTitles)
+          ? session.previewTitles.filter((item): item is string => typeof item === 'string')
+          : undefined,
+        previewDrafts: Array.isArray(session.previewDrafts)
+          ? session.previewDrafts.filter((item): item is string => typeof item === 'string')
+          : undefined,
         previewSelectedIndexes: Array.isArray(session.previewSelectedIndexes)
           ? session.previewSelectedIndexes.filter((item): item is number => Number.isInteger(item) && item >= 0)
           : undefined,
-        previewCount: Number.isFinite(session.previewCount) && Number(session.previewCount) > 0
-          ? Number(session.previewCount)
-          : undefined,
+        previewCount:
+          Number.isFinite(session.previewCount) && Number(session.previewCount) > 0
+            ? Number(session.previewCount)
+            : undefined,
         backgroundAiTaskId: typeof session.backgroundAiTaskId === 'string' ? session.backgroundAiTaskId : undefined,
       };
     })
@@ -79,7 +85,7 @@ export function normalizeBrainstormAiSessions(value: unknown, fallbackConfig: Br
 
 export function getActiveBrainstormAiSessionId(value: unknown, sessions: BrainstormAiSession[]) {
   const activeId = typeof value === 'string' ? value : '';
-  return sessions.some((session) => session.id === activeId) ? activeId : sessions[0]?.id ?? '1';
+  return sessions.some((session) => session.id === activeId) ? activeId : (sessions[0]?.id ?? '1');
 }
 
 export function getBrainstormOutputCount(value: string) {
@@ -95,9 +101,7 @@ export function getSelectedBrainstormPreviewIndexes(previews: string[], selected
   if (Array.isArray(selectedIndexes)) {
     return selectedIndexes.filter((index) => index >= 0 && index < previews.length);
   }
-  return previews
-    .map((preview, index) => (preview.trim() ? index : -1))
-    .filter((index) => index >= 0);
+  return previews.map((preview, index) => (preview.trim() ? index : -1)).filter((index) => index >= 0);
 }
 
 export function getFloatingTitleInputStyle(value: string, minCh: number, maxCh: number): CSSProperties {
@@ -118,11 +122,20 @@ export function splitBrainstormGeneratedText(text: string, count: number) {
   if (!clean) return Array.from({ length: count }, () => '');
   const numberedParts = clean
     .split(/\n(?=\s*(?:[-*]\s*)?(?:脑洞\s*)?\d+[.、）)]\s*)/)
-    .map((part) => part.trim().replace(/^(?:[-*]\s*)?(?:脑洞\s*)?\d+[.、）)]\s*/, '').trim())
+    .map((part) =>
+      part
+        .trim()
+        .replace(/^(?:[-*]\s*)?(?:脑洞\s*)?\d+[.、）)]\s*/, '')
+        .trim(),
+    )
     .filter(Boolean);
-  const parts = numberedParts.length >= 2
-    ? numberedParts
-    : clean.split(/\n{2,}/).map((part) => part.trim()).filter(Boolean);
+  const parts =
+    numberedParts.length >= 2
+      ? numberedParts
+      : clean
+          .split(/\n{2,}/)
+          .map((part) => part.trim())
+          .filter(Boolean);
   if (parts.length >= count) return parts.slice(0, count);
   return Array.from({ length: count }, (_, index) => parts[index] ?? (index === 0 ? clean : ''));
 }
@@ -139,9 +152,11 @@ export const BRAINSTORM_QUESTION_FIELDS: Array<{
   { key: 'brainstormCount', label: '逐个生成几个脑洞', placeholder: '' },
   { key: 'brainstormRequirement', label: '补充内容', placeholder: '主角名字、性格、女主设定等' },
 ];
-export const BRAINSTORM_OUTPUT_ONLY_INSTRUCTION = '请直接输出实际脑洞内容，不要复述提示词、其他要求、题材、故事主题等标签。';
+export const BRAINSTORM_OUTPUT_ONLY_INSTRUCTION =
+  '请直接输出实际脑洞内容，不要复述提示词、其他要求、题材、故事主题等标签。';
 export const BRAINSTORM_GENERATE_TASK_TEXT = '请根据以下信息，生成一个可以保存进脑洞库的小说脑洞设定。';
-export const BRAINSTORM_GENERATE_RULE_TEXT = '要求：内容要具体、可继续扩展，避免只复述问题；如果信息不足，请合理补全但不要偏离用户要求。';
+export const BRAINSTORM_GENERATE_RULE_TEXT =
+  '要求：内容要具体、可继续扩展，避免只复述问题；如果信息不足，请合理补全但不要偏离用户要求。';
 
 export function normalizeBrainstormCountValue(value: string) {
   const trimmed = value.trim();

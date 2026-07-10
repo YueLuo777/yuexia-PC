@@ -5,6 +5,7 @@ const WORKBENCH_LINKED_CONTEXT_KEY_PREFIX = 'xinyuexia_workbench_linked_context_
 const WORKBENCH_AI_SESSIONS_KEY_PREFIX = 'xinyuexia_workbench_ai_sessions_';
 const WORKBENCH_TAB_CONFIG_KEY_PREFIX = 'xinyuexia_workbench_';
 const WORKBENCH_TAB_CONFIG_KEY_SUFFIX = '_tab_configs_v1';
+const SCRIPT_EDITOR_LINKED_NOVEL_KEY_PREFIX = 'xinyuexia_script_editor_linked_novel_v2_';
 const WORKBENCH_ASSOCIATION_RUNTIME_ID = `runtime-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const SCRIPT_EDITOR_LINKED_NOVEL_KEYS = [
   'xinyuexia_script_editor_linked_novel',
@@ -93,7 +94,14 @@ export function clearWorkbenchAiSessionLinksByStorageKey(storageKey: string) {
       hasSentChapterContext?: unknown;
     };
     const hasLinkedItems = Array.isArray(session.linkedItems) && session.linkedItems.length > 0;
-    if (!session.contextTitle && !session.contextText && !hasLinkedItems && !session.linkChapter && !session.hasSentChapterContext) return item;
+    if (
+      !session.contextTitle &&
+      !session.contextText &&
+      !hasLinkedItems &&
+      !session.linkChapter &&
+      !session.hasSentChapterContext
+    )
+      return item;
     changed = true;
     return {
       ...item,
@@ -128,14 +136,21 @@ function clearWorkbenchTabConfigAssociationsByStorageKey(tabConfigStorageKey: st
   const next = Object.fromEntries(
     Object.entries(stored).map(([tab, config]) => {
       if (!config || typeof config !== 'object') return [tab, config];
-      const associationKeys = Object.keys(TAB_CONFIG_ASSOCIATION_DEFAULTS)
-        .filter((key) => Object.prototype.hasOwnProperty.call(config, key));
+      const associationKeys = Object.keys(TAB_CONFIG_ASSOCIATION_DEFAULTS).filter((key) =>
+        Object.prototype.hasOwnProperty.call(config, key),
+      );
       if (associationKeys.length === 0) return [tab, config];
       changed = true;
-      return [tab, Object.keys(TAB_CONFIG_ASSOCIATION_DEFAULTS).reduce<Record<string, unknown>>((nextConfig, key) => ({
-        ...nextConfig,
-        [key]: TAB_CONFIG_ASSOCIATION_DEFAULTS[key],
-      }), { ...config })];
+      return [
+        tab,
+        Object.keys(TAB_CONFIG_ASSOCIATION_DEFAULTS).reduce<Record<string, unknown>>(
+          (nextConfig, key) => ({
+            ...nextConfig,
+            [key]: TAB_CONFIG_ASSOCIATION_DEFAULTS[key],
+          }),
+          { ...config },
+        ),
+      ];
     }),
   );
 
@@ -205,6 +220,15 @@ export function clearAllWorkbenchAssociations() {
   clearAssociatedChapters();
 
   getLocalStorageKeys().forEach((key) => {
+    if (key.startsWith(SCRIPT_EDITOR_LINKED_NOVEL_KEY_PREFIX)) {
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        // Ignore storage failures.
+      }
+      return;
+    }
+
     if (key.startsWith(WORKBENCH_LINKED_CONTEXT_KEY_PREFIX)) {
       try {
         localStorage.removeItem(key);

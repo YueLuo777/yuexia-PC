@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, screen } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, nativeImage, safeStorage, shell, screen } = require('electron');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -6,8 +6,9 @@ const { pathToFileURL } = require('node:url');
 const { normalizeModelRequestInput } = require('./ipcValidation.cjs');
 const { createHotspotDetailService } = require('./hotspots/hotspotDetailService.cjs');
 const { createHotspotService } = require('./hotspots/hotspotService.cjs');
+const { createModelSecretStore } = require('./modelSecretStore.cjs');
 
-const DEV_URL = process.env.XINYUEXIA_URL || 'http://127.0.0.1:18328/#/novels';
+const DEV_URL = 'http://127.0.0.1:18328/#/novels';
 const DIST_ENTRY = path.join(__dirname, '..', 'dist', 'index.html');
 const PRELOAD_ENTRY = path.join(__dirname, 'preload.cjs');
 const APP_ICON = path.join(__dirname, '..', 'build', 'app-icon.ico');
@@ -26,16 +27,8 @@ const DEFAULT_APP_ICON_FILE_NAME = 'default-app-icon.png';
 const PROJECT_APP_ICON_DIR = path.join(path.resolve(__dirname, '..'), 'ruanjianfengmian');
 const PROJECT_APP_ICON_FILE_NAMES = ['fengmian.png', 'fengmian.jpg', 'fengmian.jpeg', 'fengmian.webp', 'fengmian.ico'];
 const PROJECT_APP_ICON_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.ico']);
-const SHARED_WINDOW_STATE_FILE = path.join(
-  app.getPath('appData'),
-  SHARED_STATE_DIR_NAME,
-  'window-state.json',
-);
-const SHARED_WINDOW_SETTINGS_FILE = path.join(
-  app.getPath('appData'),
-  SHARED_STATE_DIR_NAME,
-  'window-settings.json',
-);
+const SHARED_WINDOW_STATE_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'window-state.json');
+const SHARED_WINDOW_SETTINGS_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'window-settings.json');
 const DEFAULT_WINDOW_SETTINGS = {
   rememberSize: true,
 };
@@ -45,10 +38,12 @@ const LEGACY_WINDOW_STATE_FILES = [
 ];
 const HOTSPOT_CACHE_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'hotspots', 'dailyhot-cache.json');
 const MAIN_LOG_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'electron-main.log');
+const MODEL_SECRETS_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'model-secrets.json');
 
 let mainWindow = null;
 const hotspotDetailService = createHotspotDetailService();
 const hotspotService = createHotspotService({ cacheFile: HOTSPOT_CACHE_FILE });
+const modelSecretStore = createModelSecretStore({ safeStorage, filePath: MODEL_SECRETS_FILE });
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
@@ -75,15 +70,50 @@ process.on('unhandledRejection', (reason) => {
   writeMainLog(`unhandledRejection: ${reason?.stack || reason}`);
 });
 
+function isLoopbackHostname(hostname) {
+  const normalized = String(hostname ?? '')
+    .toLowerCase()
+    .replace(/^\[|\]$/g, '');
+  return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1';
+}
+
+function normalizeDevServerUrl(input) {
+  try {
+    const parsed = new URL(String(input ?? ''));
+    if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+    if (!isLoopbackHostname(parsed.hostname)) return null;
+    if (parsed.username || parsed.password) return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
 function resolveStartUrl() {
   if (process.env.XINYUEXIA_URL) {
-    return process.env.XINYUEXIA_URL;
+    const safeDevUrl = normalizeDevServerUrl(process.env.XINYUEXIA_URL);
+    if (safeDevUrl) return safeDevUrl;
+    writeMainLog(`ignored unsafe XINYUEXIA_URL=${process.env.XINYUEXIA_URL}`);
   }
-  const startHash = process.env.XINYUEXIA_START_HASH || '#/novels';
+  const requestedHash = process.env.XINYUEXIA_START_HASH;
+  const startHash = typeof requestedHash === 'string' && requestedHash.startsWith('#') ? requestedHash : '#/novels';
   if (process.env.XINYUEXIA_LOAD_DIST === '1' || app.isPackaged) {
     return new URL(startHash, pathToFileURL(DIST_ENTRY).href).href;
   }
   return new URL(startHash, DEV_URL).href;
+}
+
+function isTrustedRendererUrl(url) {
+  try {
+    const candidate = new URL(String(url ?? ''));
+    const trusted = new URL(resolveStartUrl());
+    if (trusted.protocol === 'file:') {
+      return candidate.protocol === 'file:' && candidate.pathname === trusted.pathname;
+    }
+    return candidate.origin === trusted.origin;
+  } catch {
+    return false;
+  }
 }
 
 function parseWindowState(filePath) {
@@ -166,10 +196,8 @@ function isVisibleOnSomeDisplay(bounds) {
   if (typeof bounds?.x !== 'number' || typeof bounds?.y !== 'number') return true;
 
   return screen.getAllDisplays().some(({ workArea }) => {
-    const horizontalOverlap =
-      bounds.x < workArea.x + workArea.width && bounds.x + bounds.width > workArea.x;
-    const verticalOverlap =
-      bounds.y < workArea.y + workArea.height && bounds.y + bounds.height > workArea.y;
+    const horizontalOverlap = bounds.x < workArea.x + workArea.width && bounds.x + bounds.width > workArea.x;
+    const verticalOverlap = bounds.y < workArea.y + workArea.height && bounds.y + bounds.height > workArea.y;
     return horizontalOverlap && verticalOverlap;
   });
 }
@@ -208,15 +236,18 @@ function clearSelectedProjectIconFileName() {
 }
 
 function getProjectAppIconPath() {
-  return PROJECT_APP_ICON_FILE_NAMES
-    .map((fileName) => path.join(PROJECT_APP_ICON_DIR, fileName))
-    .find((filePath) => fs.existsSync(filePath)) ?? null;
+  return (
+    PROJECT_APP_ICON_FILE_NAMES.map((fileName) => path.join(PROJECT_APP_ICON_DIR, fileName)).find((filePath) =>
+      fs.existsSync(filePath),
+    ) ?? null
+  );
 }
 
 function readProjectAppIcons() {
   if (!fs.existsSync(PROJECT_APP_ICON_DIR)) return [];
   const selectedFileName = readSelectedProjectIconFileName();
-  return fs.readdirSync(PROJECT_APP_ICON_DIR, { withFileTypes: true })
+  return fs
+    .readdirSync(PROJECT_APP_ICON_DIR, { withFileTypes: true })
     .filter((entry) => entry.isFile() && PROJECT_APP_ICON_EXTENSIONS.has(path.extname(entry.name).toLowerCase()))
     .map((entry) => {
       const filePath = path.join(PROJECT_APP_ICON_DIR, entry.name);
@@ -262,7 +293,9 @@ function roundAppIconImage(sourceImage) {
   for (let y = 0; y < size.height; y += 1) {
     for (let x = 0; x < size.width; x += 1) {
       const offset = (y * size.width + x) * 4;
-      bitmap[offset + 3] = Math.round(bitmap[offset + 3] * getRoundedRectCoverage(x, y, size.width, size.height, radius));
+      bitmap[offset + 3] = Math.round(
+        bitmap[offset + 3] * getRoundedRectCoverage(x, y, size.width, size.height, radius),
+      );
     }
   }
 
@@ -381,9 +414,7 @@ function saveWindowState(targetWindow) {
   if (!targetWindow || targetWindow.isDestroyed()) return;
   if (!readWindowSettings().rememberSize) return;
 
-  const bounds = targetWindow.isMaximized()
-    ? targetWindow.getNormalBounds()
-    : targetWindow.getBounds();
+  const bounds = targetWindow.isMaximized() ? targetWindow.getNormalBounds() : targetWindow.getBounds();
 
   persistWindowState({
     x: bounds.x,
@@ -398,9 +429,7 @@ function readWindowSettingsResult() {
   return {
     ...readWindowSettings(),
     defaultBounds: { ...DEFAULT_WINDOW_BOUNDS },
-    currentBounds: mainWindow && !mainWindow.isDestroyed()
-      ? mainWindow.getBounds()
-      : null,
+    currentBounds: mainWindow && !mainWindow.isDestroyed() ? mainWindow.getBounds() : null,
   };
 }
 
@@ -510,9 +539,11 @@ function attachRendererDiagnostics(targetWindow) {
   targetWindow.webContents.on('render-process-gone', (_event, details) => {
     console.warn('Renderer process gone:', details);
   });
-  targetWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
-    if (level < 2) return;
-    console.warn(`Renderer console level=${level} ${sourceId}:${line} ${message}`);
+  targetWindow.webContents.on('console-message', (details) => {
+    if (!['warning', 'error'].includes(details.level)) return;
+    console.warn(
+      `Renderer console level=${details.level} ${details.sourceId}:${details.lineNumber} ${details.message}`,
+    );
   });
 }
 
@@ -527,6 +558,13 @@ function isSafeWebviewUrl(url) {
 
 function attachWebviewSecurityGuards() {
   app.on('web-contents-created', (_event, contents) => {
+    contents.session.setPermissionCheckHandler(() => false);
+    contents.session.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
+    contents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    contents.on('will-navigate', (event, url) => {
+      if (contents.getType() !== 'webview' || isSafeWebviewUrl(url)) return;
+      event.preventDefault();
+    });
     contents.on('will-attach-webview', (event, webPreferences, params) => {
       delete webPreferences.preload;
       webPreferences.nodeIntegration = false;
@@ -594,6 +632,19 @@ function createWindow() {
     return { action: 'deny' };
   });
 
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (isTrustedRendererUrl(url)) return;
+    event.preventDefault();
+    try {
+      const parsed = new URL(url);
+      if (['http:', 'https:', 'mailto:'].includes(parsed.protocol)) {
+        void shell.openExternal(parsed.toString());
+      }
+    } catch {
+      // Deny malformed navigation URLs.
+    }
+  });
+
   mainWindow.webContents.on('before-input-event', (event, input) => {
     if (input.key === 'F5' && input.type === 'keyDown') {
       event.preventDefault();
@@ -611,34 +662,52 @@ function createWindow() {
   return mainWindow;
 }
 
-ipcMain.handle('window:minimize', () => {
+function isTrustedIpcSender(event) {
+  if (!mainWindow || mainWindow.isDestroyed()) return false;
+  if (event.sender !== mainWindow.webContents) return false;
+  const senderUrl = event.senderFrame?.url || event.sender.getURL();
+  return isTrustedRendererUrl(senderUrl);
+}
+
+function registerTrustedIpcHandler(channel, listener) {
+  ipcMain.handle(channel, (event, ...args) => {
+    if (!isTrustedIpcSender(event)) throw new Error(`Blocked untrusted IPC sender for ${channel}.`);
+    return listener(event, ...args);
+  });
+}
+
+registerTrustedIpcHandler('window:minimize', () => {
   mainWindow?.minimize();
 });
 
-ipcMain.handle('window:maximize-toggle', () => {
+registerTrustedIpcHandler('window:maximize-toggle', () => {
   if (!mainWindow) return false;
   if (mainWindow.isMaximized()) mainWindow.unmaximize();
   else mainWindow.maximize();
   return mainWindow.isMaximized();
 });
 
-ipcMain.handle('window:close', () => {
+registerTrustedIpcHandler('window:close', () => {
   mainWindow?.close();
 });
 
-ipcMain.handle('window:is-maximized', () => mainWindow?.isMaximized() ?? false);
-ipcMain.handle('window:reload', () => {
+registerTrustedIpcHandler('window:is-maximized', () => mainWindow?.isMaximized() ?? false);
+registerTrustedIpcHandler('window:reload', () => {
   mainWindow?.webContents.reloadIgnoringCache();
 });
-ipcMain.handle('window-settings:read', () => readWindowSettingsResult());
-ipcMain.handle('window-settings:update', (_event, nextSettings) => updateWindowSettings(nextSettings));
-ipcMain.handle('window-settings:reset-bounds', () => resetWindowBoundsToDefault());
-ipcMain.handle('hotspots:fetch-all', async (_event, input) => hotspotService.fetchAll(input));
-ipcMain.handle('hotspots:fetch-detail', async (_event, input) => hotspotDetailService.fetchDetail(input));
+registerTrustedIpcHandler('window-settings:read', () => readWindowSettingsResult());
+registerTrustedIpcHandler('window-settings:update', (_event, nextSettings) => updateWindowSettings(nextSettings));
+registerTrustedIpcHandler('window-settings:reset-bounds', () => resetWindowBoundsToDefault());
+registerTrustedIpcHandler('hotspots:fetch-all', async (_event, input) => hotspotService.fetchAll(input));
+registerTrustedIpcHandler('hotspots:fetch-detail', async (_event, input) => hotspotDetailService.fetchDetail(input));
+registerTrustedIpcHandler('model-secrets:status', () => modelSecretStore.status());
+registerTrustedIpcHandler('model-secrets:get', (_event, secretId) => modelSecretStore.get(secretId));
+registerTrustedIpcHandler('model-secrets:set', (_event, secretId, apiKey) => modelSecretStore.set(secretId, apiKey));
+registerTrustedIpcHandler('model-secrets:remove', (_event, secretId) => modelSecretStore.remove(secretId));
 
-ipcMain.handle('app-icon:read', async () => readCurrentAppIcon());
+registerTrustedIpcHandler('app-icon:read', async () => readCurrentAppIcon());
 
-ipcMain.handle('app-icon:select', async () => {
+registerTrustedIpcHandler('app-icon:select', async () => {
   if (!mainWindow || mainWindow.isDestroyed()) return { ok: false, message: '窗口未就绪。' };
   const result = await dialog.showOpenDialog(mainWindow, {
     title: '选择软件图标图片',
@@ -662,7 +731,7 @@ ipcMain.handle('app-icon:select', async () => {
   }
 });
 
-ipcMain.handle('app-icon:use-project-icon', async (_event, fileName) => {
+registerTrustedIpcHandler('app-icon:use-project-icon', async (_event, fileName) => {
   if (typeof fileName !== 'string' || path.basename(fileName) !== fileName) {
     return { ...readCurrentAppIcon(), ok: false, message: '图标文件名无效。' };
   }
@@ -688,7 +757,7 @@ ipcMain.handle('app-icon:use-project-icon', async (_event, fileName) => {
   }
 });
 
-ipcMain.handle('app-icon:use-data-url', async (_event, dataUrl, sourceFileName = 'home-icon.png') => {
+registerTrustedIpcHandler('app-icon:use-data-url', async (_event, dataUrl, sourceFileName = 'home-icon.png') => {
   try {
     const saved = saveCustomAppIconFromDataUrl(dataUrl, sourceFileName);
     if (!saved.ok) return { ...readCurrentAppIcon(), ...saved };
@@ -702,7 +771,7 @@ ipcMain.handle('app-icon:use-data-url', async (_event, dataUrl, sourceFileName =
   }
 });
 
-ipcMain.handle('app-icon:make-default', async () => {
+registerTrustedIpcHandler('app-icon:make-default', async () => {
   try {
     const saved = saveCurrentIconAsDefault();
     if (!saved.ok) return { ...readCurrentAppIcon(), ...saved };
@@ -716,7 +785,7 @@ ipcMain.handle('app-icon:make-default', async () => {
   }
 });
 
-ipcMain.handle('app-icon:reset', async () => {
+registerTrustedIpcHandler('app-icon:reset', async () => {
   try {
     const customIcon = getCustomAppIconPath();
     if (fs.existsSync(customIcon)) fs.unlinkSync(customIcon);
@@ -757,7 +826,11 @@ function normalizeCosObjectKey(value) {
 }
 
 function encodeCosObjectPath(key) {
-  return `/${key.split('/').filter(Boolean).map((part) => encodeURIComponent(part)).join('/')}`;
+  return `/${key
+    .split('/')
+    .filter(Boolean)
+    .map((part) => encodeURIComponent(part))
+    .join('/')}`;
 }
 
 function sha1Hex(value) {
@@ -774,13 +847,7 @@ function createCosAuthorization({ method, pathname, host, secretId, secretKey })
   const headerList = 'host';
   const urlParamList = '';
   const headerString = `host=${encodeURIComponent(host).toLowerCase()}`;
-  const httpString = [
-    method.toLowerCase(),
-    pathname,
-    '',
-    headerString,
-    '',
-  ].join('\n');
+  const httpString = [method.toLowerCase(), pathname, '', headerString, ''].join('\n');
   const signKey = hmacSha1Hex(secretKey, keyTime);
   const stringToSign = ['sha1', keyTime, sha1Hex(httpString), ''].join('\n');
   const signature = hmacSha1Hex(signKey, stringToSign);
@@ -835,25 +902,52 @@ async function requestCosObject({ method, config, key, body, contentType }) {
   }
 }
 
-ipcMain.handle('cos:put-object', async (_event, input) => requestCosObject({
-  method: 'PUT',
-  config: input?.config,
-  key: input?.key,
-  body: input?.body,
-  contentType: input?.contentType,
-}));
+registerTrustedIpcHandler('cos:put-object', async (_event, input) =>
+  requestCosObject({
+    method: 'PUT',
+    config: input?.config,
+    key: input?.key,
+    body: input?.body,
+    contentType: input?.contentType,
+  }),
+);
 
-ipcMain.handle('cos:get-object', async (_event, input) => requestCosObject({
-  method: 'GET',
-  config: input?.config,
-  key: input?.key,
-}));
+registerTrustedIpcHandler('cos:get-object', async (_event, input) =>
+  requestCosObject({
+    method: 'GET',
+    config: input?.config,
+    key: input?.key,
+  }),
+);
 
-ipcMain.handle('model:request', async (_event, input) => {
-  const request = normalizeModelRequestInput(input);
-  if (!request.ok) {
-    return { ok: false, status: 400, text: request.message };
+function applyStoredModelSecret(input, request) {
+  const secretId = typeof input?.modelSecretId === 'string' ? input.modelSecretId.trim() : '';
+  if (!secretId) return { ok: true, request };
+  const secret = modelSecretStore.get(secretId);
+  if (!secret.ok || !secret.apiKey) {
+    return { ok: false, message: secret.message || '模型 API Key 尚未保存。' };
   }
+  const headers = { ...request.headers };
+  if (input?.provider === 'anthropic') {
+    headers['x-api-key'] = secret.apiKey;
+    delete headers.Authorization;
+  } else {
+    headers.Authorization = `Bearer ${secret.apiKey}`;
+    delete headers['x-api-key'];
+  }
+  return { ok: true, request: { ...request, headers } };
+}
+
+registerTrustedIpcHandler('model:request', async (_event, input) => {
+  const normalizedRequest = normalizeModelRequestInput(input);
+  if (!normalizedRequest.ok) {
+    return { ok: false, status: 400, text: normalizedRequest.message };
+  }
+  const authenticatedRequest = applyStoredModelSecret(input, normalizedRequest);
+  if (!authenticatedRequest.ok) {
+    return { ok: false, status: 400, text: authenticatedRequest.message };
+  }
+  const request = authenticatedRequest.request;
 
   const timeoutMs = Number.isFinite(Number(input?.timeoutMs)) ? Math.max(1000, Number(input.timeoutMs)) : 60000;
   const controller = new AbortController();
@@ -874,9 +968,12 @@ ipcMain.handle('model:request', async (_event, input) => {
     return {
       ok: false,
       status: error instanceof Error && error.name === 'AbortError' ? 408 : 0,
-      text: error instanceof Error && error.name === 'AbortError'
-        ? `Model request timed out after ${timeoutMs}ms.`
-        : error instanceof Error ? error.message : 'Model request failed.',
+      text:
+        error instanceof Error && error.name === 'AbortError'
+          ? `Model request timed out after ${timeoutMs}ms.`
+          : error instanceof Error
+            ? error.message
+            : 'Model request failed.',
     };
   } finally {
     clearTimeout(timeout);
@@ -891,13 +988,14 @@ function extractModelStreamParts(payload) {
     .map((choice) => choice?.delta?.content ?? choice?.message?.content ?? choice?.text ?? '')
     .join('');
   const openAiReasoning = choices
-    .map((choice) => (
-      choice?.delta?.reasoning_content
-      ?? choice?.delta?.reasoning
-      ?? choice?.delta?.reasoning_text
-      ?? choice?.delta?.thinking
-      ?? ''
-    ))
+    .map(
+      (choice) =>
+        choice?.delta?.reasoning_content ??
+        choice?.delta?.reasoning ??
+        choice?.delta?.reasoning_text ??
+        choice?.delta?.thinking ??
+        '',
+    )
     .join('');
   if (openAiText || openAiReasoning) {
     return { content: openAiText, reasoning: openAiReasoning };
@@ -907,8 +1005,8 @@ function extractModelStreamParts(payload) {
     return { content: payload.delta.text, reasoning: '' };
   }
   if (
-    payload?.type === 'content_block_delta'
-    && (payload?.delta?.type === 'thinking_delta' || typeof payload?.delta?.thinking === 'string')
+    payload?.type === 'content_block_delta' &&
+    (payload?.delta?.type === 'thinking_delta' || typeof payload?.delta?.thinking === 'string')
   ) {
     return { content: '', reasoning: payload.delta.thinking ?? '' };
   }
@@ -941,13 +1039,19 @@ function consumeModelStreamBuffer(buffer, sendChunk) {
   return rest;
 }
 
-ipcMain.handle('model:stream', async (event, input) => {
-  const request = normalizeModelRequestInput(input);
-  if (!request.ok) {
-    return { ok: false, status: 400, text: request.message };
+registerTrustedIpcHandler('model:stream', async (event, input) => {
+  const normalizedRequest = normalizeModelRequestInput(input);
+  if (!normalizedRequest.ok) {
+    return { ok: false, status: 400, text: normalizedRequest.message };
   }
+  const authenticatedRequest = applyStoredModelSecret(input, normalizedRequest);
+  if (!authenticatedRequest.ok) {
+    return { ok: false, status: 400, text: authenticatedRequest.message };
+  }
+  const request = authenticatedRequest.request;
 
-  const requestId = typeof input?.requestId === 'string' && input.requestId ? input.requestId : `model-stream-${Date.now()}`;
+  const requestId =
+    typeof input?.requestId === 'string' && input.requestId ? input.requestId : `model-stream-${Date.now()}`;
   const channel = `model:stream:${requestId}`;
   const timeoutMs = Number.isFinite(Number(input?.timeoutMs)) ? Math.max(1000, Number(input.timeoutMs)) : 180000;
   const controller = new AbortController();
@@ -997,9 +1101,12 @@ ipcMain.handle('model:stream', async (event, input) => {
     return {
       ok: false,
       status: error instanceof Error && error.name === 'AbortError' ? 408 : 0,
-      text: error instanceof Error && error.name === 'AbortError'
-        ? `Model request timed out after ${timeoutMs}ms.`
-        : error instanceof Error ? error.message : 'Model stream request failed.',
+      text:
+        error instanceof Error && error.name === 'AbortError'
+          ? `Model request timed out after ${timeoutMs}ms.`
+          : error instanceof Error
+            ? error.message
+            : 'Model stream request failed.',
     };
   } finally {
     clearTimeout(timeout);
@@ -1007,7 +1114,7 @@ ipcMain.handle('model:stream', async (event, input) => {
   }
 });
 
-ipcMain.handle('model:cancel-stream', async (_event, requestId) => {
+registerTrustedIpcHandler('model:cancel-stream', async (_event, requestId) => {
   const controller = modelStreamControllers.get(requestId);
   if (!controller) return false;
   controller.abort();

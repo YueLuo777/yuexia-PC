@@ -38,7 +38,10 @@ function normalizeStringArray(value: unknown) {
     return value.map((item) => asString(item)).filter(Boolean);
   }
   if (typeof value === 'string') {
-    return value.split(/[,\s，、]+/).map((item) => item.trim()).filter(Boolean);
+    return value
+      .split(/[,\s，、]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
   }
   return [];
 }
@@ -57,7 +60,7 @@ function normalizeConceptItem(value: unknown): ConceptLibraryItem | null {
     summary: asString(item.summary),
     content: asString(item.content),
     rawInput: asString(item.rawInput),
-    status: item.status === 'organized' ? 'organized' as const : 'pending' as const,
+    status: item.status === 'organized' ? ('organized' as const) : ('pending' as const),
     createdAt: asString(item.createdAt, now),
     updatedAt: asString(item.updatedAt, now),
     cloudSyncedAt: asString(item.cloudSyncedAt) || undefined,
@@ -75,7 +78,9 @@ function normalizeConceptItem(value: unknown): ConceptLibraryItem | null {
   return {
     ...base,
     kind: 'genreConcept',
-    platform: ['起点', '番茄', '通用'].includes(String(genreItem.platform)) ? genreItem.platform as ConceptPlatform : '通用',
+    platform: ['起点', '番茄', '通用'].includes(String(genreItem.platform))
+      ? (genreItem.platform as ConceptPlatform)
+      : '通用',
     genre: asString(genreItem.genre, '玄幻'),
     elements: normalizeStringArray(genreItem.elements),
     sellingPoints: normalizeStringArray(genreItem.sellingPoints),
@@ -104,7 +109,9 @@ function normalizeInspirationAssociation(value: unknown): InspirationAssociation
 function readItems() {
   try {
     const parsed = JSON.parse(localStorage.getItem(CONCEPT_LIBRARY_KEY) ?? '[]') as unknown;
-    return Array.isArray(parsed) ? parsed.map(normalizeConceptItem).filter((item): item is ConceptLibraryItem => Boolean(item)) : [];
+    return Array.isArray(parsed)
+      ? parsed.map(normalizeConceptItem).filter((item): item is ConceptLibraryItem => Boolean(item))
+      : [];
   } catch {
     return [];
   }
@@ -174,7 +181,7 @@ export function parseConceptAiJson(text: string): ConceptAiResult | null {
   for (const candidate of candidates) {
     try {
       const parsed = JSON.parse(candidate) as unknown;
-      return parsed && typeof parsed === 'object' ? parsed as ConceptAiResult : null;
+      return parsed && typeof parsed === 'object' ? (parsed as ConceptAiResult) : null;
     } catch {
       // Try the next likely JSON fragment.
     }
@@ -230,7 +237,7 @@ export function createInspirationConcept(
   options: { includeAssociation?: boolean; useAssociationAsMain?: boolean } = {},
 ): InspirationConceptItem {
   const now = new Date().toISOString();
-  const normal = options.useAssociationAsMain ? result?.association : result?.normal ?? result;
+  const normal = options.useAssociationAsMain ? result?.association : (result?.normal ?? result);
   const association = normalizeInspirationAssociation(result?.association);
   return {
     id: createId('inspiration'),
@@ -296,28 +303,52 @@ export function useConceptLibrary() {
     writeItems(next);
   }, []);
 
-  const addItem = useCallback((item: ConceptLibraryItem) => {
-    persist([item, ...readItems()]);
-  }, [persist]);
+  const addItem = useCallback(
+    (item: ConceptLibraryItem) => {
+      persist([item, ...readItems()]);
+    },
+    [persist],
+  );
 
-  const updateItem = useCallback((id: string, updates: Partial<Pick<ConceptLibraryItem, 'title' | 'category' | 'summary' | 'content' | 'tags' | 'cloudSyncedAt'>>) => {
-    persist(readItems().map((item) => item.id === id ? { ...item, ...updates, updatedAt: new Date().toISOString() } : item));
-  }, [persist]);
+  const updateItem = useCallback(
+    (
+      id: string,
+      updates: Partial<
+        Pick<ConceptLibraryItem, 'title' | 'category' | 'summary' | 'content' | 'tags' | 'cloudSyncedAt'>
+      >,
+    ) => {
+      persist(
+        readItems().map((item) =>
+          item.id === id ? { ...item, ...updates, updatedAt: new Date().toISOString() } : item,
+        ),
+      );
+    },
+    [persist],
+  );
 
-  const deleteItem = useCallback((id: string) => {
-    persist(readItems().filter((item) => item.id !== id));
-  }, [persist]);
+  const deleteItem = useCallback(
+    (id: string) => {
+      persist(readItems().filter((item) => item.id !== id));
+    },
+    [persist],
+  );
 
-  const replaceAll = useCallback((next: ConceptLibraryItem[]) => {
-    persist(next);
-  }, [persist]);
+  const replaceAll = useCallback(
+    (next: ConceptLibraryItem[]) => {
+      persist(next);
+    },
+    [persist],
+  );
 
-  const stats = useMemo(() => ({
-    total: items.length,
-    inspirations: items.filter((item) => item.kind === 'inspiration').length,
-    genreConcepts: items.filter((item) => item.kind === 'genreConcept').length,
-    pending: items.filter((item) => item.status === 'pending').length,
-  }), [items]);
+  const stats = useMemo(
+    () => ({
+      total: items.length,
+      inspirations: items.filter((item) => item.kind === 'inspiration').length,
+      genreConcepts: items.filter((item) => item.kind === 'genreConcept').length,
+      pending: items.filter((item) => item.status === 'pending').length,
+    }),
+    [items],
+  );
 
   return {
     items,

@@ -56,11 +56,7 @@ type WorkbenchRoleSidebarProps = {
   ) => void;
   handleLibraryCategoryDragLeave: (event: ReactDragEvent<HTMLElement>) => void;
   handleLibraryCategoryDrop: (event: ReactDragEvent<HTMLElement>, tab: string, type: string) => void;
-  handleLibraryEntryDragStart: (
-    event: ReactDragEvent<HTMLElement>,
-    entry: WorkbenchLibraryEntry,
-    type: string,
-  ) => void;
+  handleLibraryEntryDragStart: (event: ReactDragEvent<HTMLElement>, entry: WorkbenchLibraryEntry, type: string) => void;
   handleLibraryEntryDragOver: (
     event: ReactDragEvent<HTMLElement>,
     entry: WorkbenchLibraryEntry,
@@ -139,7 +135,9 @@ export function WorkbenchRoleSidebar({
           />
           <label>鎼滅储瑙掕壊</label>
         </div>
-        <button className="h-11 min-w-[64px] shrink-0 whitespace-nowrap rounded-2xl bg-brand px-4 text-sm font-bold text-white">鎼滅储</button>
+        <button className="h-11 min-w-[64px] shrink-0 whitespace-nowrap rounded-2xl bg-brand px-4 text-sm font-bold text-white">
+          鎼滅储
+        </button>
       </div>
 
       <div className="mt-5 min-h-0 flex-1 space-y-2 overflow-y-auto">
@@ -153,7 +151,9 @@ export function WorkbenchRoleSidebar({
               key={group.type}
               data-library-group-tab={roleTab}
               data-library-group-type={group.type}
-              onDragOver={(event) => handleLibraryCategoryDragOver(event, roleTab, group.type, group.entries.length === 0)}
+              onDragOver={(event) =>
+                handleLibraryCategoryDragOver(event, roleTab, group.type, group.entries.length === 0)
+              }
               onDragLeave={handleLibraryCategoryDragLeave}
               onDrop={(event) => handleLibraryCategoryDrop(event, roleTab, group.type)}
               className={isDropTarget ? 'rounded-xl ring-2 ring-brand/40' : undefined}
@@ -278,7 +278,10 @@ export function WorkbenchRoleSidebar({
             />
             <label>瑙掕壊鍚嶅瓧</label>
           </div>
-          <button onClick={() => addRole(getDefaultRoleCreateType())} className="h-11 shrink-0 rounded-2xl bg-brand px-3 text-sm font-bold text-white hover:bg-brand-dark">
+          <button
+            onClick={() => addRole(getDefaultRoleCreateType())}
+            className="h-11 shrink-0 rounded-2xl bg-brand px-3 text-sm font-bold text-white hover:bg-brand-dark"
+          >
             鏂板缓瑙掕壊
           </button>
         </div>

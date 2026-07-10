@@ -21,12 +21,9 @@ import { PRIMARY_TEXT_BUTTON_CLASS, SHORTCUT_KEY_TEXT_BUTTON_CLASS } from '@/sha
 
 const SETTINGS_PAGE_BACK_BUTTON_CLASS =
   'flex h-9 w-9 items-center justify-center rounded-lg border transition-colors border-brand/20 bg-white text-brand hover:bg-brand-light';
-const SETTINGS_LIGHT_BUTTON_CLASS =
-  PRIMARY_TEXT_BUTTON_CLASS;
-const SHORTCUT_KEY_BUTTON_CLASS =
-  SHORTCUT_KEY_TEXT_BUTTON_CLASS;
-const SETTINGS_PAGE_SHELL_CLASS =
-  'mx-auto flex h-full w-full max-w-[1180px] flex-col overflow-hidden';
+const SETTINGS_LIGHT_BUTTON_CLASS = PRIMARY_TEXT_BUTTON_CLASS;
+const SHORTCUT_KEY_BUTTON_CLASS = SHORTCUT_KEY_TEXT_BUTTON_CLASS;
+const SETTINGS_PAGE_SHELL_CLASS = 'mx-auto flex h-full w-full max-w-[1180px] flex-col overflow-hidden';
 
 export const SHORTCUT_SETTINGS_RESET_EVENT = 'xinyuexia_shortcut_settings_reset_requested';
 
@@ -104,22 +101,45 @@ export function ShortcutSettingsModal({ isOpen, onClose, variant = 'modal' }: Sh
 
   return (
     <div
-      className={isEmbedded ? 'h-full min-h-0 overflow-hidden' : isPage ? 'h-full min-h-0 overflow-hidden bg-slate-50 px-8 py-6' : 'fixed inset-0 z-[220] flex items-center justify-center bg-black/45 p-4'}
+      className={
+        isEmbedded
+          ? 'h-full min-h-0 overflow-hidden'
+          : isPage
+            ? 'h-full min-h-0 overflow-hidden bg-slate-50 px-8 py-6'
+            : 'fixed inset-0 z-[220] flex items-center justify-center bg-black/45 p-4'
+      }
       onClick={isRouteSurface ? undefined : onClose}
     >
       <div
         data-draggable-managed={isRouteSurface ? undefined : 'true'}
         data-modal-id={isRouteSurface ? undefined : 'dashboard-shortcut-settings'}
-        className={isEmbedded ? 'flex h-full min-h-0 w-full flex-col overflow-hidden' : isPage ? SETTINGS_PAGE_SHELL_CLASS : 'relative flex max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] w-[900px] max-w-[96vw] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl'}
-        style={isRouteSurface ? undefined : ({
-          ...draggable.style,
-          maxWidth: 'calc((100vw - 32px) / var(--xinyuexia-effective-scale, 1))',
-          maxHeight: 'calc((100vh - 112px) / var(--xinyuexia-effective-scale, 1))',
-        } as React.CSSProperties)}
+        className={
+          isEmbedded
+            ? 'flex h-full min-h-0 w-full flex-col overflow-hidden'
+            : isPage
+              ? SETTINGS_PAGE_SHELL_CLASS
+              : 'relative flex max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] w-[900px] max-w-[96vw] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl'
+        }
+        style={
+          isRouteSurface
+            ? undefined
+            : ({
+                ...draggable.style,
+                maxWidth: 'calc((100vw - 32px) / var(--xinyuexia-effective-scale, 1))',
+                maxHeight: 'calc((100vh - 112px) / var(--xinyuexia-effective-scale, 1))',
+              } as React.CSSProperties)
+        }
         onClick={(event) => event.stopPropagation()}
       >
         {!isEmbedded && (
-          <div {...(isPage ? {} : draggable.dragHandleProps)} className={isPage ? 'flex shrink-0 items-center justify-between border-b border-slate-100 pb-4' : 'flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3'}>
+          <div
+            {...(isPage ? {} : draggable.dragHandleProps)}
+            className={
+              isPage
+                ? 'flex shrink-0 items-center justify-between border-b border-slate-100 pb-4'
+                : 'flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3'
+            }
+          >
             <div className="flex items-center gap-2.5">
               {isPage ? (
                 <button
@@ -140,21 +160,29 @@ export function ShortcutSettingsModal({ isOpen, onClose, variant = 'modal' }: Sh
               </div>
             </div>
             {isPage ? (
-              <button
-                onClick={resetDefaults}
-                className={SETTINGS_LIGHT_BUTTON_CLASS}
-              >
+              <button onClick={resetDefaults} className={SETTINGS_LIGHT_BUTTON_CLASS}>
                 恢复默认
               </button>
             ) : (
-              <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">
+              <button
+                onClick={onClose}
+                className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+              >
                 <X className="h-4 w-4" />
               </button>
             )}
           </div>
         )}
 
-        <div className={isEmbedded ? 'min-h-0 flex-1 overflow-y-auto pb-6 pr-1' : isPage ? 'min-h-0 flex-1 overflow-y-auto py-5' : 'min-h-0 flex-1 overflow-y-auto px-5 py-4'}>
+        <div
+          className={
+            isEmbedded
+              ? 'min-h-0 flex-1 overflow-y-auto pb-6 pr-1'
+              : isPage
+                ? 'min-h-0 flex-1 overflow-y-auto py-5'
+                : 'min-h-0 flex-1 overflow-y-auto px-5 py-4'
+          }
+        >
           <div className={isEmbedded ? 'space-y-6' : isPage ? 'space-y-8 pb-6' : 'space-y-5'}>
             {groups.map(([group, actions]) => (
               <section key={group}>
@@ -169,10 +197,7 @@ export function ShortcutSettingsModal({ isOpen, onClose, variant = 'modal' }: Sh
                             <div className="truncate text-sm font-bold text-slate-900">{action.title}</div>
                             <div className="mt-0.5 text-xs text-slate-400">{action.desc}</div>
                           </div>
-                          <button
-                            onClick={() => setEditingId(action.id)}
-                            className={SHORTCUT_KEY_BUTTON_CLASS}
-                          >
+                          <button onClick={() => setEditingId(action.id)} className={SHORTCUT_KEY_BUTTON_CLASS}>
                             {isEditing ? '按下快捷键' : formatShortcut(bindings[action.id])}
                           </button>
                         </div>
@@ -224,14 +249,19 @@ export function ShortcutSettingsModal({ isOpen, onClose, variant = 'modal' }: Sh
           </div>
         </div>
 
-        <div className={isRouteSurface ? 'hidden' : 'flex shrink-0 justify-end gap-2.5 border-t border-slate-100 px-5 py-3'}>
-          <button
-            onClick={resetDefaults}
-            className={SETTINGS_LIGHT_BUTTON_CLASS}
-          >
+        <div
+          className={
+            isRouteSurface ? 'hidden' : 'flex shrink-0 justify-end gap-2.5 border-t border-slate-100 px-5 py-3'
+          }
+        >
+          <button onClick={resetDefaults} className={SETTINGS_LIGHT_BUTTON_CLASS}>
             恢复默认
           </button>
-          <button hidden={isPage} onClick={onClose} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-700">
+          <button
+            hidden={isPage}
+            onClick={onClose}
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-700"
+          >
             关闭
           </button>
         </div>

@@ -64,11 +64,7 @@ type WorkbenchLibrarySidebarProps = {
   ) => void;
   handleLibraryCategoryDragLeave: (event: ReactDragEvent<HTMLElement>) => void;
   handleLibraryCategoryDrop: (event: ReactDragEvent<HTMLElement>, tab: string, type: string) => void;
-  handleLibraryEntryDragStart: (
-    event: ReactDragEvent<HTMLElement>,
-    entry: WorkbenchLibraryEntry,
-    type: string,
-  ) => void;
+  handleLibraryEntryDragStart: (event: ReactDragEvent<HTMLElement>, entry: WorkbenchLibraryEntry, type: string) => void;
   handleLibraryEntryDragOver: (
     event: ReactDragEvent<HTMLElement>,
     entry: WorkbenchLibraryEntry,
@@ -132,15 +128,10 @@ export function WorkbenchLibrarySidebar({
   openSettingCreateDialog,
   setIsBrainstormRecycleOpen,
 }: WorkbenchLibrarySidebarProps) {
-  const groups = activeIsSettingLike
-    ? groupedSettingEntries
-    : [{ type: UNCATEGORIZED_TYPE, entries: currentEntries }];
+  const groups = activeIsSettingLike ? groupedSettingEntries : [{ type: UNCATEGORIZED_TYPE, entries: currentEntries }];
 
   return (
-    <aside
-      className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-1 py-2"
-      style={style}
-    >
+    <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-1 py-2" style={style}>
       <div
         className={`${activeIsBrainstorm ? 'mt-0' : 'mt-2'} xy-setting-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto space-y-1 ${
           activeSettingSidebarScrollKey === 'setting-sidebar' ? 'scrollbar-active' : ''
@@ -148,7 +139,9 @@ export function WorkbenchLibrarySidebar({
         onScroll={() => handleSettingSidebarScroll('setting-sidebar')}
       >
         {groups.map((group) => {
-          const expanded = isOutlineCharacterScope ? expandedRoleTypes.has(group.type) : expandedSettingTypes.has(group.type);
+          const expanded = isOutlineCharacterScope
+            ? expandedRoleTypes.has(group.type)
+            : expandedSettingTypes.has(group.type);
           const isDropTarget = libraryDropTarget?.tab === effectiveLibraryTab && libraryDropTarget.type === group.type;
           const previewEntries = getPreviewedLibraryGroupEntries(group.entries, effectiveLibraryTab, group.type);
           const GroupFolderIcon = expanded ? FolderOpen : Folder;
@@ -157,7 +150,9 @@ export function WorkbenchLibrarySidebar({
               key={group.type}
               data-library-group-tab={effectiveLibraryTab}
               data-library-group-type={group.type}
-              onDragOver={(event) => handleLibraryCategoryDragOver(event, effectiveLibraryTab, group.type, group.entries.length === 0)}
+              onDragOver={(event) =>
+                handleLibraryCategoryDragOver(event, effectiveLibraryTab, group.type, group.entries.length === 0)
+              }
               onDragLeave={handleLibraryCategoryDragLeave}
               onDrop={(event) => handleLibraryCategoryDrop(event, effectiveLibraryTab, group.type)}
               className={isDropTarget ? 'rounded-xl ring-2 ring-brand/40' : undefined}
@@ -165,7 +160,8 @@ export function WorkbenchLibrarySidebar({
               <div className={WORKBENCH_FOLDER_GROUP_BUTTON_CLASS}>
                 <button
                   onContextMenu={(event) => {
-                    if (activeIsSettingLike && !activeIsBrainstorm) openCategoryMenu(event, isOutlineCharacterScope ? 'role' : 'setting', group.type);
+                    if (activeIsSettingLike && !activeIsBrainstorm)
+                      openCategoryMenu(event, isOutlineCharacterScope ? 'role' : 'setting', group.type);
                   }}
                   onClick={() => {
                     setExpandedSettingTypes((prev) => {
@@ -196,52 +192,60 @@ export function WorkbenchLibrarySidebar({
                 <div className="mt-0.5 space-y-0.5">
                   {previewEntries.length === 0 ? (
                     <div className={WORKBENCH_LIBRARY_ENTRY_EMPTY_CLASS}>
-                      {isOutlineCharacterScope ? '暂无角色' : activeTab === SETTING_TAB ? '暂无设定' : `该分类下暂无${activeTab}`}
+                      {isOutlineCharacterScope
+                        ? '暂无角色'
+                        : activeTab === SETTING_TAB
+                          ? '暂无设定'
+                          : `该分类下暂无${activeTab}`}
                     </div>
-                  ) : previewEntries.map((entry, previewIndex) => {
-                    const entryWordCount = getEntryWordCount(entry);
-                    const entryType = getEntryType(entry, group.type);
-                    return (
-                      <button
-                        key={entry.id}
-                        data-library-entry-id={entry.id}
-                        data-library-entry-tab={effectiveLibraryTab}
-                        data-library-entry-type={entryType}
-                        data-library-entry-preview-index={previewIndex}
-                        onDragStart={(event) => handleLibraryEntryDragStart(event, entry, entryType)}
-                        onDragOver={(event) => handleLibraryEntryDragOver(event, entry, entryType, previewIndex)}
-                        onDrop={(event) => handleLibraryEntryDrop(event, entry, entryType, previewIndex)}
-                        onDragEnd={handleLibraryEntryDragEnd}
-                        onPointerDown={(event) => beginLibraryEntryPointerDrag(event, entry, entryType)}
-                        onPointerMove={updateLibraryEntryPointerPreview}
-                        onPointerUp={finishLibraryEntryPointerDrag}
-                        onPointerCancel={finishLibraryEntryPointerDrag}
-                        onContextMenu={(event) => openEntryMenu(event, entry)}
-                        onClick={(event) => {
-                          if (libraryPointerSuppressClickRef.current) {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            return;
-                          }
-                          setSelectedIdForTab(effectiveLibraryTab, entry.id);
-                        }}
-                        className={`${WORKBENCH_LIBRARY_ENTRY_BUTTON_CLASS} ${
-                          currentSelectedEntryId === entry.id
-                            ? 'border-transparent xy-selected-mint-bg text-gray-900'
-                            : activeIsBrainstorm
-                              ? 'border-transparent bg-white text-gray-700 hover:border-gray-200 hover:bg-gray-50'
-                              : 'border-transparent bg-white text-gray-600 hover:border-gray-200'
-                        } ${draggingLibraryEntry?.entryId === entry.id ? 'cursor-grabbing scale-[0.99] opacity-80 ring-2 ring-[#08AACE]/35 shadow-sm' : ''}`}
-                      >
-                        <div className="flex w-full items-center gap-2">
-                          <span className="min-w-0 truncate pl-3 text-sm font-black text-gray-700">{entry.title}</span>
-                          <span className="ml-auto shrink-0 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-black text-[#08AACE]">
-                            <WordCountText value={entryWordCount} compact />
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
+                  ) : (
+                    previewEntries.map((entry, previewIndex) => {
+                      const entryWordCount = getEntryWordCount(entry);
+                      const entryType = getEntryType(entry, group.type);
+                      return (
+                        <button
+                          key={entry.id}
+                          data-library-entry-id={entry.id}
+                          data-library-entry-tab={effectiveLibraryTab}
+                          data-library-entry-type={entryType}
+                          data-library-entry-preview-index={previewIndex}
+                          onDragStart={(event) => handleLibraryEntryDragStart(event, entry, entryType)}
+                          onDragOver={(event) => handleLibraryEntryDragOver(event, entry, entryType, previewIndex)}
+                          onDrop={(event) => handleLibraryEntryDrop(event, entry, entryType, previewIndex)}
+                          onDragEnd={handleLibraryEntryDragEnd}
+                          onPointerDown={(event) => beginLibraryEntryPointerDrag(event, entry, entryType)}
+                          onPointerMove={updateLibraryEntryPointerPreview}
+                          onPointerUp={finishLibraryEntryPointerDrag}
+                          onPointerCancel={finishLibraryEntryPointerDrag}
+                          onContextMenu={(event) => openEntryMenu(event, entry)}
+                          onClick={(event) => {
+                            if (libraryPointerSuppressClickRef.current) {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              return;
+                            }
+                            setSelectedIdForTab(effectiveLibraryTab, entry.id);
+                          }}
+                          className={`${WORKBENCH_LIBRARY_ENTRY_BUTTON_CLASS} ${
+                            currentSelectedEntryId === entry.id
+                              ? 'border-transparent xy-selected-mint-bg text-gray-900'
+                              : activeIsBrainstorm
+                                ? 'border-transparent bg-white text-gray-700 hover:border-gray-200 hover:bg-gray-50'
+                                : 'border-transparent bg-white text-gray-600 hover:border-gray-200'
+                          } ${draggingLibraryEntry?.entryId === entry.id ? 'cursor-grabbing scale-[0.99] opacity-80 ring-2 ring-[#08AACE]/35 shadow-sm' : ''}`}
+                        >
+                          <div className="flex w-full items-center gap-2">
+                            <span className="min-w-0 truncate pl-3 text-sm font-black text-gray-700">
+                              {entry.title}
+                            </span>
+                            <span className="ml-auto shrink-0 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-black text-[#08AACE]">
+                              <WordCountText value={entryWordCount} compact />
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
               )}
             </div>

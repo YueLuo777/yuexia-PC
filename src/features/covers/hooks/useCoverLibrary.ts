@@ -7,7 +7,7 @@ import { createJsonStorage } from '@/shared/storage/jsonStorage';
 const COVER_LIBRARY_KEY = 'xinyuexia_cover_library_v1';
 const COVER_LIBRARY_UPDATED_EVENT = APP_EVENTS.coversUpdated;
 const coverLibraryStorage = createJsonStorage<CoverLibraryItem[]>(COVER_LIBRARY_KEY, [], {
-  normalize: (value) => Array.isArray(value) ? (value as CoverLibraryItem[]) : [],
+  normalize: (value) => (Array.isArray(value) ? (value as CoverLibraryItem[]) : []),
   eventName: COVER_LIBRARY_UPDATED_EVENT,
 });
 

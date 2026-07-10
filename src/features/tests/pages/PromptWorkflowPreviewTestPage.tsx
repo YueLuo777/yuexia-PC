@@ -258,22 +258,25 @@ export function PromptWorkflowPreviewTestPage() {
   const filteredDirectory = useMemo(() => {
     const search = keyword.trim().toLowerCase();
     if (!search) return promptDirectory;
-    return promptDirectory.filter((prompt) => (
-      prompt.fileName.toLowerCase().includes(search) ||
-      prompt.phase.toLowerCase().includes(search) ||
-      prompt.role.toLowerCase().includes(search) ||
-      prompt.content.toLowerCase().includes(search)
-    ));
+    return promptDirectory.filter(
+      (prompt) =>
+        prompt.fileName.toLowerCase().includes(search) ||
+        prompt.phase.toLowerCase().includes(search) ||
+        prompt.role.toLowerCase().includes(search) ||
+        prompt.content.toLowerCase().includes(search),
+    );
   }, [keyword]);
 
-  const groupedDirectory = useMemo(() => (
-    phaseOrder
-      .map((phase) => ({
-        phase,
-        prompts: filteredDirectory.filter((prompt) => prompt.phase === phase),
-      }))
-      .filter((group) => group.prompts.length > 0)
-  ), [filteredDirectory]);
+  const groupedDirectory = useMemo(
+    () =>
+      phaseOrder
+        .map((phase) => ({
+          phase,
+          prompts: filteredDirectory.filter((prompt) => prompt.phase === phase),
+        }))
+        .filter((group) => group.prompts.length > 0),
+    [filteredDirectory],
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-[#F6F8FB] text-slate-900">
@@ -325,7 +328,9 @@ export function PromptWorkflowPreviewTestPage() {
                 <section key={group.phase}>
                   <div className="mb-2 flex items-center justify-between px-1">
                     <h2 className="text-xs font-black text-slate-500">{group.phase}</h2>
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-400">{group.prompts.length}</span>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-400">
+                      {group.prompts.length}
+                    </span>
                   </div>
                   <div className="space-y-2">
                     {group.prompts.map((prompt) => {
@@ -337,19 +342,28 @@ export function PromptWorkflowPreviewTestPage() {
                           type="button"
                           onClick={() => setActivePromptId(prompt.id)}
                           className={`w-full rounded-lg border px-3 py-3 text-left transition-colors ${
-                            active ? 'border-cyan-300 bg-cyan-50 shadow-sm' : 'border-slate-100 bg-white hover:border-cyan-200 hover:bg-cyan-50/50'
+                            active
+                              ? 'border-cyan-300 bg-cyan-50 shadow-sm'
+                              : 'border-slate-100 bg-white hover:border-cyan-200 hover:bg-cyan-50/50'
                           }`}
                         >
                           <div className="flex items-center gap-3">
-                            <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg border ${
-                              active ? 'border-cyan-200 bg-white text-cyan-700' : 'border-slate-200 bg-slate-50 text-slate-400'
-                            }`}
+                            <span
+                              className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg border ${
+                                active
+                                  ? 'border-cyan-200 bg-white text-cyan-700'
+                                  : 'border-slate-200 bg-slate-50 text-slate-400'
+                              }`}
                             >
                               <Icon className="h-5 w-5" />
                             </span>
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate text-sm font-black text-slate-900">{prompt.fileName}</span>
-                              <span className="mt-0.5 block line-clamp-2 text-xs leading-4 text-slate-500">{prompt.role}</span>
+                              <span className="block truncate text-sm font-black text-slate-900">
+                                {prompt.fileName}
+                              </span>
+                              <span className="mt-0.5 block line-clamp-2 text-xs leading-4 text-slate-500">
+                                {prompt.role}
+                              </span>
                             </span>
                           </div>
                         </button>
@@ -372,9 +386,15 @@ export function PromptWorkflowPreviewTestPage() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-black text-cyan-700">{activePrompt.phase}</span>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">{getPromptKindLabel(activePrompt.kind)}</span>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">{getPromptLineCount(activePrompt.content)} 行</span>
+                  <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-black text-cyan-700">
+                    {activePrompt.phase}
+                  </span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">
+                    {getPromptKindLabel(activePrompt.kind)}
+                  </span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">
+                    {getPromptLineCount(activePrompt.content)} 行
+                  </span>
                 </div>
                 <h2 className="truncate text-xl font-black tracking-normal text-slate-950">{activePrompt.fileName}</h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">{activePrompt.role}</p>

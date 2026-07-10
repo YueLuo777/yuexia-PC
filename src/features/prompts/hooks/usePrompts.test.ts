@@ -19,24 +19,24 @@ const readUsePromptsSource = () => readFileSync(join(dirname(fileURLToPath(impor
 
 describe('usePrompts categories', () => {
   it('uses setting and chapter-outline prompt categories without plot chain', () => {
-    expect(DEFAULT_PROMPT_CATEGORIES).toContain('设定');
-    expect(DEFAULT_PROMPT_CATEGORIES).toContain('章纲');
-    expect(DEFAULT_PROMPT_CATEGORIES).toContain(BODY_PROMPT_CATEGORY);
-    expect(DEFAULT_PROMPT_CATEGORIES).toContain(HOTSPOT_ANALYSIS_PROMPT_CATEGORY);
-    expect(DEFAULT_PROMPT_CATEGORIES).toContain('综合点评');
-    expect(DEFAULT_PROMPT_CATEGORIES).toContain('润色');
-    expect(DEFAULT_PROMPT_CATEGORIES).toContain('更新状态');
-    expect(DEFAULT_PROMPT_CATEGORIES).toContain('生成梗概');
+    expect(DEFAULT_PROMPT_CATEGORIES).toContainSource('设定');
+    expect(DEFAULT_PROMPT_CATEGORIES).toContainSource('章纲');
+    expect(DEFAULT_PROMPT_CATEGORIES).toContainSource(BODY_PROMPT_CATEGORY);
+    expect(DEFAULT_PROMPT_CATEGORIES).toContainSource(HOTSPOT_ANALYSIS_PROMPT_CATEGORY);
+    expect(DEFAULT_PROMPT_CATEGORIES).toContainSource('综合点评');
+    expect(DEFAULT_PROMPT_CATEGORIES).toContainSource('润色');
+    expect(DEFAULT_PROMPT_CATEGORIES).toContainSource('更新状态');
+    expect(DEFAULT_PROMPT_CATEGORIES).toContainSource('生成梗概');
     expect(DEFAULT_PROMPT_CATEGORIES.indexOf('生成梗概')).toBeLessThan(
       DEFAULT_PROMPT_CATEGORIES.indexOf(HOTSPOT_ANALYSIS_PROMPT_CATEGORY),
     );
     expect(DEFAULT_PROMPT_CATEGORIES.indexOf(HOTSPOT_ANALYSIS_PROMPT_CATEGORY)).toBeLessThan(
       DEFAULT_PROMPT_CATEGORIES.indexOf('未分类'),
     );
-    expect(DEFAULT_PROMPT_CATEGORIES).not.toContain('大纲');
-    expect(DEFAULT_PROMPT_CATEGORIES).not.toContain('细纲');
-    expect(DEFAULT_PROMPT_CATEGORIES).not.toContain('剧情链');
-    expect(DEFAULT_PROMPT_CATEGORIES).not.toContain('更新');
+    expect(DEFAULT_PROMPT_CATEGORIES).not.toContainSource('大纲');
+    expect(DEFAULT_PROMPT_CATEGORIES).not.toContainSource('细纲');
+    expect(DEFAULT_PROMPT_CATEGORIES).not.toContainSource('剧情链');
+    expect(DEFAULT_PROMPT_CATEGORIES).not.toContainSource('更新');
     expect(isDefaultPromptCategory('设定')).toBe(true);
     expect(isDefaultPromptCategory('章纲')).toBe(true);
     expect(isDefaultPromptCategory('题材迭代')).toBe(true);
@@ -65,9 +65,11 @@ describe('usePrompts categories', () => {
     const addPromptsEnd = source.indexOf('const updatePrompt =', addPromptsStart);
     const addPromptsSource = source.slice(addPromptsStart, addPromptsEnd);
 
-    expect(addPromptsSource).toContain('persistPrompts([...items, ...prompts]);');
-    expect(addPromptsSource).toContain('persistCategories([...categories, ...items.map((item) => item.category)]);');
-    expect(addPromptsSource).toContain('return items;');
-    expect(source).toContain('addPrompts,');
+    expect(addPromptsSource).toContainSource('persistPrompts([...items, ...prompts]);');
+    expect(addPromptsSource).toContainSource(
+      'persistCategories([...categories, ...items.map((item) => item.category)]);',
+    );
+    expect(addPromptsSource).toContainSource('return items;');
+    expect(source).toContainSource('addPrompts,');
   });
 });

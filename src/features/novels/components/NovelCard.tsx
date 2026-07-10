@@ -12,7 +12,10 @@ export interface NovelCardSettings {
   btnPerRow?: 2 | 3;
   btnRows?: 1 | 2 | 3;
   btnOrder?: string[];
-  btnColors?: Record<string, 'green' | 'orange' | 'blue' | 'red' | 'purple' | 'amber' | 'pink' | 'teal' | 'indigo' | 'gray'>;
+  btnColors?: Record<
+    string,
+    'green' | 'orange' | 'blue' | 'red' | 'purple' | 'amber' | 'pink' | 'teal' | 'indigo' | 'gray'
+  >;
 }
 
 interface NovelCardProps {
@@ -45,7 +48,17 @@ const statFontMap = {
   large: 'text-[15px]',
 } as const;
 
-export function NovelCard({ novel, isSelected, settings, onPrepareOpen, onOpen, onRename, onCover, onExport, onDelete }: NovelCardProps) {
+export function NovelCard({
+  novel,
+  isSelected,
+  settings,
+  onPrepareOpen,
+  onOpen,
+  onRename,
+  onCover,
+  onExport,
+  onDelete,
+}: NovelCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const cardRef = useRef<HTMLElement | null>(null);
   const btnOrder = settings.btnOrder?.length ? settings.btnOrder : ['重命名', '封面', '导出', '删除'];
@@ -125,13 +138,18 @@ export function NovelCard({ novel, isSelected, settings, onPrepareOpen, onOpen, 
         {novel.cover ? (
           <img src={novel.cover} alt="封面" className="h-full w-full object-cover" />
         ) : (
-          <Feather className="pointer-events-none absolute bottom-7 right-4 h-14 w-14 -rotate-12 text-[#4b8fe8]/35" strokeWidth={1.7} />
+          <Feather
+            className="pointer-events-none absolute bottom-7 right-4 h-14 w-14 -rotate-12 text-[#4b8fe8]/35"
+            strokeWidth={1.7}
+          />
         )}
       </div>
 
       <div className="flex flex-col px-0.5 pb-1 pt-3">
         <div className="flex min-w-0 items-center gap-2">
-          <h3 className="min-w-0 flex-1 truncate text-[15px] font-medium leading-5 text-[#1f2933]" title={novel.title}>{novel.title}</h3>
+          <h3 className="min-w-0 flex-1 truncate text-[15px] font-medium leading-5 text-[#1f2933]" title={novel.title}>
+            {novel.title}
+          </h3>
           <button
             type="button"
             onClick={(event) => {
@@ -146,9 +164,7 @@ export function NovelCard({ novel, isSelected, settings, onPrepareOpen, onOpen, 
             <MoreHorizontal className="h-4 w-4" />
           </button>
         </div>
-        <div className={`mt-1 truncate text-[#9aa3af] ${statFont}`}>
-          {novel.wordCount} 字
-        </div>
+        <div className={`mt-1 truncate text-[#9aa3af] ${statFont}`}>{novel.wordCount} 字</div>
       </div>
 
       {isMenuOpen ? (
@@ -166,7 +182,9 @@ export function NovelCard({ novel, isSelected, settings, onPrepareOpen, onOpen, 
                 setIsMenuOpen(false);
               }}
               className={`block h-8 w-full px-3 text-left text-[13px] transition-colors ${
-                label === '删除' ? 'text-red-500 hover:bg-red-50' : 'text-[#586574] hover:bg-[#f2f6ff] hover:text-[#1e71ef]'
+                label === '删除'
+                  ? 'text-red-500 hover:bg-red-50'
+                  : 'text-[#586574] hover:bg-[#f2f6ff] hover:text-[#1e71ef]'
               }`}
             >
               {label}

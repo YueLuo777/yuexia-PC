@@ -15,15 +15,7 @@ export const MOONFALL_CATEGORIES = [
   '待定/冲突',
 ] as const;
 
-export const MOONFALL_STATUSES = [
-  '待确认',
-  '已整理',
-  '待完善',
-  '有冲突',
-  '废案',
-  '未分类',
-  '未生成向量',
-] as const;
+export const MOONFALL_STATUSES = ['待确认', '已整理', '待完善', '有冲突', '废案', '未分类', '未生成向量'] as const;
 
 export const MOONFALL_IMPORT_SCOPES = [
   '世界观',

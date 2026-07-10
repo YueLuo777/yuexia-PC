@@ -64,7 +64,11 @@ export function saveTextOverrides(items: TextOverrideItem[], detail?: TextOverri
   window.dispatchEvent(new CustomEvent(TEXT_OVERRIDE_UPDATED_EVENT, { detail }));
 }
 
-export function upsertTextOverride(original: string, replacement: string, path = window.location.hash || window.location.pathname) {
+export function upsertTextOverride(
+  original: string,
+  replacement: string,
+  path = window.location.hash || window.location.pathname,
+) {
   const normalizedOriginal = normalizeTextValue(original);
   const now = new Date().toLocaleString('zh-CN');
   const id = createTextOverrideId(normalizedOriginal);
@@ -72,23 +76,23 @@ export function upsertTextOverride(original: string, replacement: string, path =
   const previous = items.find((item) => item.id === id);
   const exists = items.some((item) => item.id === id);
   const next = exists
-    ? items.map((item) => (
-      item.id === id
-        ? { ...item, original: normalizedOriginal, replacement, path, enabled: true, updatedAt: now }
-        : item
-    ))
+    ? items.map((item) =>
+        item.id === id
+          ? { ...item, original: normalizedOriginal, replacement, path, enabled: true, updatedAt: now }
+          : item,
+      )
     : [
-      {
-        id,
-        original: normalizedOriginal,
-        replacement,
-        path,
-        enabled: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-      ...items,
-    ];
+        {
+          id,
+          original: normalizedOriginal,
+          replacement,
+          path,
+          enabled: true,
+          createdAt: now,
+          updatedAt: now,
+        },
+        ...items,
+      ];
   saveTextOverrides(next, {
     changed: {
       original: normalizedOriginal,
@@ -104,17 +108,18 @@ export function removeTextOverride(id: string) {
 }
 
 export function setTextOverrideEnabled(id: string, enabled: boolean) {
-  saveTextOverrides(readTextOverrides().map((item) => (
-    item.id === id ? { ...item, enabled, updatedAt: new Date().toLocaleString('zh-CN') } : item
-  )));
+  saveTextOverrides(
+    readTextOverrides().map((item) =>
+      item.id === id ? { ...item, enabled, updatedAt: new Date().toLocaleString('zh-CN') } : item,
+    ),
+  );
 }
 
 export function findTextOverrideByVisibleText(text: string) {
   const normalized = normalizeTextValue(text);
-  return readTextOverrides().find((item) => (
-    normalizeTextValue(item.original) === normalized ||
-    normalizeTextValue(item.replacement) === normalized
-  ));
+  return readTextOverrides().find(
+    (item) => normalizeTextValue(item.original) === normalized || normalizeTextValue(item.replacement) === normalized,
+  );
 }
 
 export function setTextEditMode(enabled: boolean) {

@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  readFileSync,
-} from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
@@ -42,8 +40,8 @@ describe('browserUrl', () => {
   it('does not expose the full Vite env object to production bundles', () => {
     const source = readSource('src/shared/browser/browserUrl.ts');
 
-    expect(source).not.toContain('return import.meta.env;');
-    expect(source).toContain('DEV: import.meta.env.DEV');
-    expect(source).toContain('VITE_ENABLE_EMBEDDED_BROWSER: import.meta.env.VITE_ENABLE_EMBEDDED_BROWSER');
+    expect(source).not.toContainSource('return import.meta.env;');
+    expect(source).toContainSource('DEV: import.meta.env.DEV');
+    expect(source).toContainSource('VITE_ENABLE_EMBEDDED_BROWSER: import.meta.env.VITE_ENABLE_EMBEDDED_BROWSER');
   });
 });

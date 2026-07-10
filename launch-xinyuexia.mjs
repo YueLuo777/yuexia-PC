@@ -1,4 +1,5 @@
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { createWriteStream, existsSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,8 +15,10 @@ const launcherLogFile = path.join(root, 'launcher.log');
 const viteLogFile = path.join(root, 'dev-server.log');
 const electronLogFile = path.join(root, 'electron-dev.log');
 const pidFile = path.join(root, 'dev-server.pid');
+const devServerFingerprintFile = path.join(root, '.dev-server-fingerprint');
 const viteEntry = path.join(root, 'node_modules', 'vite', 'bin', 'vite.js');
 const electronExe = path.join(root, 'node_modules', 'electron', 'dist', 'electron.exe');
+const electronInstaller = path.join(root, 'node_modules', 'electron', 'install.js');
 const electronMain = path.join(root, 'electron', 'main.cjs');
 const nodeDir = path.dirname(process.execPath);
 
@@ -52,9 +55,7 @@ function ensureFileExists(filePath, label) {
 function findExecutableInPath(fileName) {
   const pathValue = process.env.PATH || '';
   const parts = pathValue.split(path.delimiter).filter(Boolean);
-  return parts
-    .map((entry) => path.join(entry, fileName))
-    .find((candidate) => existsSync(candidate)) ?? null;
+  return parts.map((entry) => path.join(entry, fileName)).find((candidate) => existsSync(candidate)) ?? null;
 }
 
 function resolveNpmCommand() {
@@ -66,7 +67,16 @@ function resolveNpmCommand() {
     path.join(root, 'runtime', 'node', 'npm.cmd'),
     path.join(root, 'npm.cmd'),
     path.join(nodeDir, 'npm.cmd'),
-    path.join(process.env.USERPROFILE || '', '.cache', 'codex-runtimes', 'codex-primary-runtime', 'dependencies', 'node', 'bin', 'npm.cmd'),
+    path.join(
+      process.env.USERPROFILE || '',
+      '.cache',
+      'codex-runtimes',
+      'codex-primary-runtime',
+      'dependencies',
+      'node',
+      'bin',
+      'npm.cmd',
+    ),
     'C:\\Program Files\\nodejs\\npm.cmd',
     'C:\\Program Files (x86)\\nodejs\\npm.cmd',
     findExecutableInPath('npm.cmd'),
@@ -79,12 +89,26 @@ function resolveNpmCommand() {
     path.join(root, 'runtime', 'node', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
     path.join(root, 'node_modules', 'npm', 'bin', 'npm-cli.js'),
     path.join(nodeDir, 'node_modules', 'npm', 'bin', 'npm-cli.js'),
-    path.join(process.env.USERPROFILE || '', '.cache', 'codex-runtimes', 'codex-primary-runtime', 'dependencies', 'node', 'bin', 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+    path.join(
+      process.env.USERPROFILE || '',
+      '.cache',
+      'codex-runtimes',
+      'codex-primary-runtime',
+      'dependencies',
+      'node',
+      'bin',
+      'node_modules',
+      'npm',
+      'bin',
+      'npm-cli.js',
+    ),
   ].find((candidate) => existsSync(candidate));
 
   if (npmCli) return { command: process.execPath, args: [npmCli] };
 
-  throw new Error('npm was not found. Install Node.js with npm, or place a portable Node runtime at runtime\\node before starting Yuexia.');
+  throw new Error(
+    'npm was not found. Install Node.js with npm, or place a portable Node runtime at runtime\\node before starting Yuexia.',
+  );
 }
 
 function removeIfExists(targetPath) {
@@ -93,17 +117,19 @@ function removeIfExists(targetPath) {
     rmSync(targetPath, { recursive: true, force: true });
     log(`removed stale dependency path ${targetPath}`);
   } catch (error) {
-    log(`could not remove stale dependency path ${targetPath}: ${error instanceof Error ? error.message : String(error)}`);
+    log(
+      `could not remove stale dependency path ${targetPath}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
 function getProcessCommandLine(pid) {
   try {
-    return execFileSync('powershell.exe', [
-      '-NoProfile',
-      '-Command',
-      `(Get-CimInstance Win32_Process -Filter "ProcessId=${pid}").CommandLine`,
-    ], { encoding: 'utf8', windowsHide: true }).trim();
+    return execFileSync(
+      'powershell.exe',
+      ['-NoProfile', '-Command', `(Get-CimInstance Win32_Process -Filter "ProcessId=${pid}").CommandLine`],
+      { encoding: 'utf8', windowsHide: true },
+    ).trim();
   } catch {
     return '';
   }
@@ -118,22 +144,48 @@ function isViteDevServerProcess(pid) {
 function ensureDependencies() {
   if (existsSync(viteEntry) && existsSync(electronExe)) return;
 
-  log('dependencies missing; running npm install');
-  removeIfExists(path.join(root, 'node_modules', '.vite-temp'));
-  const npmCommand = resolveNpmCommand();
-  log(`npm command=${npmCommand.command} args=${npmCommand.args.join(' ')}`);
-  const result = spawnSync(npmCommand.command, [...npmCommand.args, 'install'], {
-    cwd: root,
-    encoding: 'utf8',
-    windowsHide: true,
-  });
+  if (!existsSync(viteEntry) || !existsSync(electronInstaller)) {
+    log('dependencies missing; running npm install');
+    removeIfExists(path.join(root, 'node_modules', '.vite-temp'));
+    const npmCommand = resolveNpmCommand();
+    log(`npm command=${npmCommand.command} args=${npmCommand.args.join(' ')}`);
+    const result = spawnSync(npmCommand.command, [...npmCommand.args, 'install'], {
+      cwd: root,
+      encoding: 'utf8',
+      windowsHide: true,
+    });
 
-  if (result.stdout) log(`npm install stdout:\n${result.stdout}`);
-  if (result.stderr) log(`npm install stderr:\n${result.stderr}`);
+    if (result.stdout) log(`npm install stdout:\n${result.stdout}`);
+    if (result.stderr) log(`npm install stderr:\n${result.stderr}`);
 
-  if (result.status !== 0) {
-    throw new Error(`npm install failed with exit code ${result.status}. Close any running Electron or Yuexia windows and try again.`);
+    if (result.status !== 0) {
+      throw new Error(
+        `npm install failed with exit code ${result.status}. Close any running Electron or Yuexia windows and try again.`,
+      );
+    }
   }
+
+  if (!existsSync(electronExe)) {
+    ensureFileExists(electronInstaller, 'Electron 运行时安装器');
+    const electronMirror =
+      process.env.ELECTRON_MIRROR || process.env.XINYUEXIA_ELECTRON_MIRROR || 'https://npmmirror.com/mirrors/electron/';
+    log(`Electron runtime missing; running installer mirror=${electronMirror}`);
+    const installResult = spawnSync(process.execPath, [electronInstaller], {
+      cwd: root,
+      encoding: 'utf8',
+      windowsHide: true,
+      timeout: 5 * 60 * 1000,
+      env: { ...process.env, ELECTRON_MIRROR: electronMirror },
+    });
+    if (installResult.stdout) log(`Electron install stdout:\n${installResult.stdout}`);
+    if (installResult.stderr) log(`Electron install stderr:\n${installResult.stderr}`);
+    if (installResult.status !== 0 || !existsSync(electronExe)) {
+      throw new Error(`Electron runtime install failed with exit code ${installResult.status ?? 'timeout'}.`);
+    }
+  }
+
+  ensureFileExists(viteEntry, 'Vite 入口文件');
+  ensureFileExists(electronExe, 'Electron 可执行文件');
 }
 
 function cleanupPidFile() {
@@ -148,6 +200,29 @@ function cleanupPidFile() {
   } catch (error) {
     log(`pid file cleanup failed: ${error instanceof Error ? error.message : String(error)}`);
   }
+}
+
+function getDevServerFingerprint() {
+  const fingerprintFiles = ['package.json', 'package-lock.json', 'vite.config.ts'];
+  const hash = createHash('sha256');
+  fingerprintFiles.forEach((fileName) => {
+    const filePath = path.join(root, fileName);
+    hash.update(fileName);
+    hash.update(existsSync(filePath) ? readFileSync(filePath) : 'missing');
+  });
+  return hash.digest('hex');
+}
+
+function isDevServerFingerprintCurrent() {
+  try {
+    return readFileSync(devServerFingerprintFile, 'utf8').trim() === getDevServerFingerprint();
+  } catch {
+    return false;
+  }
+}
+
+function writeDevServerFingerprint() {
+  writeFileSync(devServerFingerprintFile, getDevServerFingerprint());
 }
 
 async function isReady(url) {
@@ -180,12 +255,44 @@ async function waitForStableDevServer() {
 function cleanupElectronMainProcesses() {
   try {
     const escapedElectronMain = electronMain.replace(/'/g, "''");
-    execFileSync('powershell.exe', [
-      '-NoProfile',
-      '-Command',
-      `Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'electron.exe' -and $_.CommandLine -like '*${escapedElectronMain}*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }`,
-    ], { stdio: 'ignore' });
+    execFileSync(
+      'powershell.exe',
+      [
+        '-NoProfile',
+        '-Command',
+        `Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'electron.exe' -and $_.CommandLine -like '*${escapedElectronMain}*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }`,
+      ],
+      { stdio: 'ignore' },
+    );
     log('stale electron main processes cleaned');
+  } catch {
+    // ignore when there is nothing to stop
+  }
+}
+
+function cleanupProjectViteProcesses() {
+  if (process.platform !== 'win32') {
+    try {
+      const pid = Number.parseInt(readFileSync(pidFile, 'utf8').trim(), 10);
+      if (isViteDevServerProcess(pid)) process.kill(pid, 'SIGTERM');
+    } catch {
+      // ignore when there is nothing to stop
+    }
+    return;
+  }
+
+  try {
+    const escapedViteEntry = viteEntry.replace(/'/g, "''");
+    execFileSync(
+      'powershell.exe',
+      [
+        '-NoProfile',
+        '-Command',
+        `Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'node.exe' -and $_.CommandLine -like '*${escapedViteEntry}*' -and $_.CommandLine -like '*--port ${port}*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }`,
+      ],
+      { stdio: 'ignore' },
+    );
+    log('stale project vite processes cleaned');
   } catch {
     // ignore when there is nothing to stop
   }
@@ -202,6 +309,7 @@ function startVite() {
     windowsHide: true,
   });
   writeFileSync(pidFile, String(child.pid));
+  writeDevServerFingerprint();
   child.unref();
   log(`vite started pid=${child.pid}`);
 }
@@ -232,8 +340,16 @@ async function ensureDevServer() {
   cleanupPidFile();
 
   if (await isReady(baseUrl)) {
-    log('dev server already ready');
-    return;
+    if (isDevServerFingerprintCurrent()) {
+      log('dev server already ready');
+      return;
+    }
+    log('dev server dependency fingerprint changed; restarting');
+    cleanupProjectViteProcesses();
+    for (let attempt = 0; attempt < 30 && (await isReady(baseUrl)); attempt += 1) {
+      await wait(100);
+    }
+    startVite();
   }
 
   try {
@@ -306,6 +422,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  log(`launcher error: ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
+  log(`launcher error: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`);
   process.exitCode = 1;
 });

@@ -9,7 +9,7 @@ function readJsonObject(key: string): JsonObject | null {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as JsonObject : null;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as JsonObject) : null;
   } catch {
     return null;
   }
@@ -68,9 +68,10 @@ function clearWorkbenchAiSession(value: unknown) {
 function clearTabConfigStorage(key: string) {
   const stored = readJsonObject(key);
   if (!stored) return;
-  writeJsonObject(key, Object.fromEntries(
-    Object.entries(stored).map(([tab, config]) => [tab, clearTabConfig(config)]),
-  ));
+  writeJsonObject(
+    key,
+    Object.fromEntries(Object.entries(stored).map(([tab, config]) => [tab, clearTabConfig(config)])),
+  );
 }
 
 function clearWorkbenchAiSessionStorage(key: string) {

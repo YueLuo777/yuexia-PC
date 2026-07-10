@@ -30,7 +30,9 @@ export function WorkbenchNavigationWidthToggle() {
       />
       <span>
         <span className="block text-base font-bold text-gray-900">导航宽度统一</span>
-        <span className="mt-1 block text-sm leading-6 text-gray-500">勾选后，各页面左侧导航宽度跟随正文目录；取消后，各页面可单独拖拽保存。</span>
+        <span className="mt-1 block text-sm leading-6 text-gray-500">
+          勾选后，各页面左侧导航宽度跟随正文目录；取消后，各页面可单独拖拽保存。
+        </span>
       </span>
     </label>
   );

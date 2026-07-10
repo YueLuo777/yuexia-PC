@@ -14,17 +14,34 @@ describe('startup routing', () => {
     const electronMain = readSource('electron/main.cjs');
     const launcher = readSource('launch-xinyuexia.mjs');
 
-    expect(app).toContain('<Route path="/" element={<Navigate to="/novels" replace />} />');
-    expect(app).toContain('<Route path="*" element={<Navigate to="/novels" replace />} />');
-    expect(app).not.toContain('@/pages/DashboardPage');
-    expect(app).not.toContain('path="/dashboard"');
+    expect(app).toContainSource('<Route path="/" element={<Navigate to="/novels" replace />} />');
+    expect(app).toContainSource('<Route path="*" element={<Navigate to="/novels" replace />} />');
+    expect(app).not.toContainSource('@/pages/DashboardPage');
+    expect(app).not.toContainSource('path="/dashboard"');
 
-    expect(tabs).toContain("path: '/novels'");
-    expect(tabs).not.toContain("path: '/dashboard'");
+    expect(tabs).toContainSource("path: '/novels'");
+    expect(tabs).not.toContainSource("path: '/dashboard'");
 
-    expect(electronMain).toContain('#/novels');
-    expect(electronMain).not.toContain('#/dashboard');
-    expect(launcher).toContain('#/novels');
-    expect(launcher).not.toContain('#/dashboard');
+    expect(electronMain).toContainSource('#/novels');
+    expect(electronMain).not.toContainSource('#/dashboard');
+    expect(launcher).toContainSource('#/novels');
+    expect(launcher).not.toContainSource('#/dashboard');
+  });
+
+  it('restarts the project Vite process when dependency inputs change', () => {
+    const launcher = readSource('launch-xinyuexia.mjs');
+
+    expect(launcher).toContainSource("import { createHash } from 'node:crypto'");
+    expect(launcher).toContainSource("const devServerFingerprintFile = path.join(root, '.dev-server-fingerprint')");
+    expect(launcher).toContainSource('getDevServerFingerprint');
+    expect(launcher).toContainSource('isDevServerFingerprintCurrent');
+    expect(launcher).toContainSource('dev server dependency fingerprint changed; restarting');
+    expect(launcher).toContainSource('cleanupProjectViteProcesses');
+    expect(launcher).toContainSource('writeDevServerFingerprint');
+    expect(launcher).toContainSource(
+      "const electronInstaller = path.join(root, 'node_modules', 'electron', 'install.js')",
+    );
+    expect(launcher).toContainSource('Electron runtime missing; running installer');
+    expect(launcher).toContainSource('ELECTRON_MIRROR: electronMirror');
   });
 });

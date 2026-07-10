@@ -26,37 +26,44 @@ describe('workbench association session cleanup', () => {
     localStorage.setItem('xinyuexia_script_editor_linked_novel', '12');
     localStorage.setItem('sev2_linked_novel', '12');
     localStorage.setItem('script_editor_linked_novel', '12');
-    localStorage.setItem('xinyuexia_workbench_ai_sessions_1', JSON.stringify({
-      activeSessionId: 1,
-      nextSessionId: 2,
-      nextMessageId: 3,
-      sessions: [
-        {
-          id: 1,
-          input: '保留输入',
-          contextTitle: '关联资料',
-          contextText: '关联资料内容',
-          linkedItems: [{ id: 'ctx-1', source: 'setting', group: '作品设定', title: '基础设定', content: '资料' }],
-          linkChapter: true,
-          hasSentChapterContext: true,
+    localStorage.setItem('xinyuexia_script_editor_linked_novel_v2_3', '12');
+    localStorage.setItem(
+      'xinyuexia_workbench_ai_sessions_1',
+      JSON.stringify({
+        activeSessionId: 1,
+        nextSessionId: 2,
+        nextMessageId: 3,
+        sessions: [
+          {
+            id: 1,
+            input: '保留输入',
+            contextTitle: '关联资料',
+            contextText: '关联资料内容',
+            linkedItems: [{ id: 'ctx-1', source: 'setting', group: '作品设定', title: '基础设定', content: '资料' }],
+            linkChapter: true,
+            hasSentChapterContext: true,
+          },
+        ],
+      }),
+    );
+    localStorage.setItem(
+      'xinyuexia_workbench_settings_1_tab_configs_v1',
+      JSON.stringify({
+        setting: {
+          loadedBrainstormId: 'brainstorm-1',
+          loadedBrainstormTitle: '脑洞',
+          loadedBrainstormText: '脑洞内容',
+          linkedOtherSettingIds: ['setting-1'],
+          settingLinkSource: 'other',
+          detailOutlineReaderTouched: true,
+          detailOutlineReaderSettingIds: ['setting-1'],
+          detailOutlineReaderRoleIds: ['role-1'],
+          detailOutlineReaderOutlineIds: ['outline-1'],
+          detailOutlineReaderPlotChainIds: ['plot-1'],
+          unrelated: 'keep',
         },
-      ],
-    }));
-    localStorage.setItem('xinyuexia_workbench_settings_1_tab_configs_v1', JSON.stringify({
-      setting: {
-        loadedBrainstormId: 'brainstorm-1',
-        loadedBrainstormTitle: '脑洞',
-        loadedBrainstormText: '脑洞内容',
-        linkedOtherSettingIds: ['setting-1'],
-        settingLinkSource: 'other',
-        detailOutlineReaderTouched: true,
-        detailOutlineReaderSettingIds: ['setting-1'],
-        detailOutlineReaderRoleIds: ['role-1'],
-        detailOutlineReaderOutlineIds: ['outline-1'],
-        detailOutlineReaderPlotChainIds: ['plot-1'],
-        unrelated: 'keep',
-      },
-    }));
+      }),
+    );
     localStorage.setItem('xinyuexia_unrelated_key', 'keep');
 
     resetWorkbenchAssociationsForNewAppSession();
@@ -66,6 +73,7 @@ describe('workbench association session cleanup', () => {
     expect(localStorage.getItem('xinyuexia_script_editor_linked_novel')).toBeNull();
     expect(localStorage.getItem('sev2_linked_novel')).toBeNull();
     expect(localStorage.getItem('script_editor_linked_novel')).toBeNull();
+    expect(localStorage.getItem('xinyuexia_script_editor_linked_novel_v2_3')).toBeNull();
     expect(localStorage.getItem('xinyuexia_unrelated_key')).toBe('keep');
 
     const aiSessions = JSON.parse(localStorage.getItem('xinyuexia_workbench_ai_sessions_1') ?? '{}');
@@ -109,35 +117,44 @@ describe('workbench association session cleanup', () => {
   });
 
   it('ignores linked context saved by an older app runtime', () => {
-    localStorage.setItem('xinyuexia_workbench_linked_context_1', JSON.stringify([{
-      id: 'ctx-1',
-      source: 'setting',
-      group: '作品设定',
-      title: '核心设定',
-      content: '旧关联',
-    }]));
+    localStorage.setItem(
+      'xinyuexia_workbench_linked_context_1',
+      JSON.stringify([
+        {
+          id: 'ctx-1',
+          source: 'setting',
+          group: '作品设定',
+          title: '核心设定',
+          content: '旧关联',
+        },
+      ]),
+    );
 
     expect(readWorkbenchLinkedContextItems(1)).toEqual([]);
   });
 
   it('reads linked context written during the current runtime', () => {
-    writeWorkbenchLinkedContextItems(1, [{
-      id: 'ctx-1',
-      source: 'setting',
-      group: '作品设定',
-      title: '核心设定',
-      content: '当前关联',
-    }]);
+    writeWorkbenchLinkedContextItems(1, [
+      {
+        id: 'ctx-1',
+        source: 'setting',
+        group: '作品设定',
+        title: '核心设定',
+        content: '当前关联',
+      },
+    ]);
 
     const stored = JSON.parse(localStorage.getItem('xinyuexia_workbench_linked_context_1') ?? '{}');
     expect(stored.associationSessionId).toBe(getWorkbenchAssociationRuntimeId());
-    expect(readWorkbenchLinkedContextItems(1)).toEqual([{
-      id: 'ctx-1',
-      source: 'setting',
-      group: '作品设定',
-      title: '核心设定',
-      content: '当前关联',
-    }]);
+    expect(readWorkbenchLinkedContextItems(1)).toEqual([
+      {
+        id: 'ctx-1',
+        source: 'setting',
+        group: '作品设定',
+        title: '核心设定',
+        content: '当前关联',
+      },
+    ]);
   });
 
   it('clears associations when the page is closed', () => {

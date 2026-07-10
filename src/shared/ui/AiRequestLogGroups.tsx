@@ -67,10 +67,7 @@ export function AiRequestLogGroups({
   /** Kept for backward compatibility; log section folding is no longer persisted. */
   storageKey?: string;
 }) {
-  const visibleGroups = useMemo(
-    () => groups.filter((group) => group.content?.trim()),
-    [groups],
-  );
+  const visibleGroups = useMemo(() => groups.filter((group) => group.content?.trim()), [groups]);
   const visibleGroupKeys = useMemo(() => visibleGroups.map(getGroupStorageKey), [visibleGroups]);
   const visibleGroupKeysSignature = visibleGroupKeys.join('\u0000');
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
@@ -102,7 +99,11 @@ export function AiRequestLogGroups({
         const content = group.content?.trim() ?? '';
         const fillGroupWeight = fillGroupWeights?.[group.id];
         const shouldFillWeightedGroup = typeof fillGroupWeight === 'number' && fillGroupWeight > 0 && !collapsed;
-        const shouldFillGroup = shouldFillSingleGroup || (fillGroupId === group.id && !collapsed) || (fillLastGroupIndex === groupIndex && !collapsed) || shouldFillWeightedGroup;
+        const shouldFillGroup =
+          shouldFillSingleGroup ||
+          (fillGroupId === group.id && !collapsed) ||
+          (fillLastGroupIndex === groupIndex && !collapsed) ||
+          shouldFillWeightedGroup;
         const fillGroupStyle: CSSProperties | undefined = shouldFillWeightedGroup
           ? { flexGrow: fillGroupWeight, flexBasis: 0, minHeight: 0 }
           : undefined;
@@ -118,18 +119,28 @@ export function AiRequestLogGroups({
               className="flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors hover:bg-slate-50"
             >
               <span className="flex min-w-0 items-center gap-2">
-                {collapsed ? <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" /> : <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />}
+                {collapsed ? (
+                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
+                )}
                 <span className="truncate text-sm font-black text-slate-950">{group.title}</span>
                 {group.meta && (
-                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-black ${getToneClass(group.tone)}`}>
+                  <span
+                    className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-black ${getToneClass(group.tone)}`}
+                  >
                     {renderMeta(group.meta)}
                   </span>
                 )}
               </span>
             </button>
             {!collapsed && (
-              <div className={`border-t border-slate-100 bg-slate-50/60 p-3 ${shouldFillGroup ? 'flex min-h-0 flex-1 flex-col' : ''}`}>
-                <div className={`ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 ${group.contentClassName ?? (shouldFillGroup ? 'min-h-0 flex-1 overflow-y-auto' : 'max-h-[360px] overflow-y-auto')}`}>
+              <div
+                className={`border-t border-slate-100 bg-slate-50/60 p-3 ${shouldFillGroup ? 'flex min-h-0 flex-1 flex-col' : ''}`}
+              >
+                <div
+                  className={`ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 ${group.contentClassName ?? (shouldFillGroup ? 'min-h-0 flex-1 overflow-y-auto' : 'max-h-[360px] overflow-y-auto')}`}
+                >
                   <AiRequestLogContent content={content} />
                 </div>
               </div>

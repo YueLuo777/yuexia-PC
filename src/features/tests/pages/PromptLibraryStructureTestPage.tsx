@@ -76,7 +76,16 @@ const promptLibraries: PromptLibrary[] = [
     tone: 'border-amber-200 bg-amber-50 text-amber-700',
     purpose: '记录宗门、家族、组织、公司、敌对阵营等群体资料，防止势力关系和立场写乱。',
     files: ['势力名.md', '宗门_XXX.md', '反派组织_XXX.md'],
-    sections: ['基本信息', '势力特点', '政治/组织结构', '主要人物', '势力关系', '对主角策略', '核心问题/矛盾', '状态更新记录'],
+    sections: [
+      '基本信息',
+      '势力特点',
+      '政治/组织结构',
+      '主要人物',
+      '势力关系',
+      '对主角策略',
+      '核心问题/矛盾',
+      '状态更新记录',
+    ],
     sample: ['# 势力档案', '## 基本信息', '## 组织结构', '## 势力关系', '## 状态更新记录'],
     readBy: ['一键生成细纲', '一键AI续写章节', '势力冲突剧情'],
     updatedBy: ['一键章节发布', '导入已有小说后的势力归档'],
@@ -167,7 +176,15 @@ const promptWorkflows: PromptWorkflow[] = [
     title: '项目初始化',
     trigger: '根据创意白皮书建立小说资料库骨架。',
     reads: ['创意白皮书模板.md', '全局创作规范.md'],
-    writes: ['00_核心设定', '01_人物列表库', '02_势力设定库', '03_地图库', '05_重要物品库', '07_伏笔库', '09_剧情摘要库'],
+    writes: [
+      '00_核心设定',
+      '01_人物列表库',
+      '02_势力设定库',
+      '03_地图库',
+      '05_重要物品库',
+      '07_伏笔库',
+      '09_剧情摘要库',
+    ],
     result: '先搭好库，后续所有提示词都围绕这些库读写。',
   },
   {
@@ -182,7 +199,15 @@ const promptWorkflows: PromptWorkflow[] = [
     id: 'draft',
     title: '一键AI续写章节',
     trigger: '有细纲后生成正文。',
-    reads: ['时间线发展记录.md', '当前细纲', '剧情摘要库', '前1章正文', '写作风格指南.md', '相关人物档案', '审核规则.md'],
+    reads: [
+      '时间线发展记录.md',
+      '当前细纲',
+      '剧情摘要库',
+      '前1章正文',
+      '写作风格指南.md',
+      '相关人物档案',
+      '审核规则.md',
+    ],
     writes: ['正文', '正文_修改版'],
     result: '生成新章节正文，并尽量贴合既有设定和风格。',
   },
@@ -191,7 +216,16 @@ const promptWorkflows: PromptWorkflow[] = [
     title: '一键章节发布',
     trigger: '确认章节可进入正式正文后调用。',
     reads: ['最新章节正文', '当前细纲', '人物/势力/地点/物品档案', '伏笔库'],
-    writes: ['人物状态', '势力状态', '地点状态', '物品状态', '伏笔库', '时间线发展记录.md', '08_更新记录', '09_剧情摘要库'],
+    writes: [
+      '人物状态',
+      '势力状态',
+      '地点状态',
+      '物品状态',
+      '伏笔库',
+      '时间线发展记录.md',
+      '08_更新记录',
+      '09_剧情摘要库',
+    ],
     result: '把章节造成的变化回写到各个资料库。',
   },
   {
@@ -224,7 +258,8 @@ export function PromptLibraryStructureTestPage() {
               </div>
               <h1 className="text-2xl font-black tracking-normal text-slate-950">旧提示词会创建什么库，库里怎么写</h1>
               <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-500">
-                整理路径 E:\0yuexia\0,月下PC\提示词 下的工作流：左侧是会创建的资料库，中间是模板字段和写法，右侧是会被谁读取、会被谁更新。
+                整理路径 E:\0yuexia\0,月下PC\提示词
+                下的工作流：左侧是会创建的资料库，中间是模板字段和写法，右侧是会被谁读取、会被谁更新。
               </p>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
@@ -257,7 +292,9 @@ export function PromptLibraryStructureTestPage() {
                   <ArrowRight className="h-4 w-4 shrink-0 text-cyan-600" />
                 </div>
                 <p className="mt-2 text-xs leading-5 text-slate-500">{workflow.trigger}</p>
-                <div className="mt-3 rounded-md bg-white px-3 py-2 text-xs font-bold leading-5 text-slate-600">{workflow.result}</div>
+                <div className="mt-3 rounded-md bg-white px-3 py-2 text-xs font-bold leading-5 text-slate-600">
+                  {workflow.result}
+                </div>
               </div>
             ))}
           </div>
@@ -279,10 +316,14 @@ export function PromptLibraryStructureTestPage() {
                     type="button"
                     onClick={() => setActiveLibraryId(library.id)}
                     className={`flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-left transition-colors ${
-                      active ? 'border-cyan-300 bg-cyan-50 shadow-sm' : 'border-slate-100 bg-white hover:border-cyan-200 hover:bg-cyan-50/50'
+                      active
+                        ? 'border-cyan-300 bg-cyan-50 shadow-sm'
+                        : 'border-slate-100 bg-white hover:border-cyan-200 hover:bg-cyan-50/50'
                     }`}
                   >
-                    <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg border ${active ? library.tone : 'border-slate-200 bg-slate-50 text-slate-400'}`}>
+                    <span
+                      className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg border ${active ? library.tone : 'border-slate-200 bg-slate-50 text-slate-400'}`}
+                    >
                       <Icon className="h-5 w-5" />
                     </span>
                     <span className="min-w-0">
@@ -317,7 +358,10 @@ export function PromptLibraryStructureTestPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {activeLibrary.files.map((file) => (
-                    <span key={file} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black text-slate-700">
+                    <span
+                      key={file}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black text-slate-700"
+                    >
                       {file}
                     </span>
                   ))}
@@ -331,7 +375,10 @@ export function PromptLibraryStructureTestPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {activeLibrary.sections.map((section) => (
-                    <span key={section} className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black text-slate-700">
+                    <span
+                      key={section}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black text-slate-700"
+                    >
                       {section}
                     </span>
                   ))}
@@ -360,7 +407,10 @@ export function PromptLibraryStructureTestPage() {
               </div>
               <div className="space-y-2">
                 {activeLibrary.readBy.map((item) => (
-                  <div key={item} className="rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2 text-sm font-bold text-cyan-800">
+                  <div
+                    key={item}
+                    className="rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2 text-sm font-bold text-cyan-800"
+                  >
                     {item}
                   </div>
                 ))}
@@ -374,7 +424,10 @@ export function PromptLibraryStructureTestPage() {
               </div>
               <div className="space-y-2">
                 {activeLibrary.updatedBy.map((item) => (
-                  <div key={item} className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-800">
+                  <div
+                    key={item}
+                    className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-800"
+                  >
                     {item}
                   </div>
                 ))}

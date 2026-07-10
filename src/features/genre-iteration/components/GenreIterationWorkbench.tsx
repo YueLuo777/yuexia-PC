@@ -166,25 +166,15 @@ function bookMatchesQuery(book: SourceBook, rawQuery: string) {
   if (!query) return true;
   const directId = query.match(/\d{8,}/)?.[0];
   if (directId && book.id.includes(directId)) return true;
-  const haystack = normalizeSearchText([
-    book.id,
-    book.title,
-    book.author,
-    book.direction,
-    book.intro,
-    ...book.tags,
-    ...book.hooks,
-  ].join(' '));
+  const haystack = normalizeSearchText(
+    [book.id, book.title, book.author, book.direction, book.intro, ...book.tags, ...book.hooks].join(' '),
+  );
   const tokens = getSearchTokens(query.replace(/^https?:\/\/\S+/i, directId ?? query));
   return tokens.length > 0 && tokens.every((token) => haystack.includes(token));
 }
 
 function Panel({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return (
-    <section className={`rounded-xl border border-slate-100 bg-white shadow-sm ${className}`}>
-      {children}
-    </section>
-  );
+  return <section className={`rounded-xl border border-slate-100 bg-white shadow-sm ${className}`}>{children}</section>;
 }
 
 function SectionTitle({ icon: Icon, title, extra }: { icon: LucideIcon; title: string; extra?: string }) {
@@ -196,7 +186,9 @@ function SectionTitle({ icon: Icon, title, extra }: { icon: LucideIcon; title: s
         </span>
         <h2 className="truncate text-base font-black text-slate-900">{title}</h2>
       </div>
-      {extra && <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500">{extra}</span>}
+      {extra && (
+        <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500">{extra}</span>
+      )}
     </div>
   );
 }
@@ -217,7 +209,9 @@ function FormatButton({ value, active, onClick }: { value: ExportFormat; active:
       onClick={onClick}
       className={[
         'h-8 rounded-lg border px-4 text-xs font-black',
-        active ? 'border-[#BDEEF7] bg-[#E7F8FD] text-brand' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50',
+        active
+          ? 'border-[#BDEEF7] bg-[#E7F8FD] text-brand'
+          : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50',
       ].join(' ')}
     >
       {value}
@@ -231,7 +225,9 @@ function outputPath(book: SourceBook, format: ExportFormat) {
 
 function BookCover({ book, compact = false }: { book: SourceBook; compact?: boolean }) {
   return (
-    <div className={`relative shrink-0 overflow-hidden rounded-xl bg-gradient-to-br ${book.coverAccent} shadow-sm ${compact ? 'h-20 w-14' : 'h-44 w-32'}`}>
+    <div
+      className={`relative shrink-0 overflow-hidden rounded-xl bg-gradient-to-br ${book.coverAccent} shadow-sm ${compact ? 'h-20 w-14' : 'h-44 w-32'}`}
+    >
       <div className="absolute inset-x-2 top-2 h-12 rounded-full bg-white/50 blur-xl" />
       <div className="absolute left-2 top-2 grid h-8 w-8 place-items-center rounded-lg bg-white/65 text-brand shadow-sm">
         <BookOpen className="h-4 w-4" />
@@ -240,7 +236,11 @@ function BookCover({ book, compact = false }: { book: SourceBook; compact?: bool
         <div className="line-clamp-2 text-[10px] font-black leading-3 text-slate-900">{book.author}</div>
       </div>
       <div className={`absolute bottom-0 left-0 right-0 bg-slate-950/75 ${compact ? 'p-1.5' : 'p-3'}`}>
-        <div className={`${compact ? 'text-[10px] leading-3' : 'text-sm leading-5'} line-clamp-2 font-black text-white`}>{book.title}</div>
+        <div
+          className={`${compact ? 'text-[10px] leading-3' : 'text-sm leading-5'} line-clamp-2 font-black text-white`}
+        >
+          {book.title}
+        </div>
         {!compact && <div className="mt-1 truncate text-[11px] font-bold text-cyan-100">{book.direction}</div>}
       </div>
     </div>
@@ -258,23 +258,31 @@ export function GenreIterationWorkbench() {
   const [hasSearched, setHasSearched] = useState(false);
   const [format, setFormat] = useState<ExportFormat>('TXT');
   const [shelfIds, setShelfIds] = useState<string[]>([]);
-  const [historyItems, setHistoryItems] = useState<Array<{ id: string; title: string; path: string; status: string }>>([]);
+  const [historyItems, setHistoryItems] = useState<Array<{ id: string; title: string; path: string; status: string }>>(
+    [],
+  );
   const [iterationText, setIterationText] = useState('');
   const [status, setStatus] = useState('输入关键词、链接或书籍编号后开始检索');
-  const [genreIterationModelId, setGenreIterationModelId] = useState(() => readStoredValue(GENRE_ITERATION_MODEL_ID_STORAGE_KEY));
-  const [genreIterationPromptId, setGenreIterationPromptId] = useState(() => readStoredValue(GENRE_ITERATION_PROMPT_ID_STORAGE_KEY));
+  const [genreIterationModelId, setGenreIterationModelId] = useState(() =>
+    readStoredValue(GENRE_ITERATION_MODEL_ID_STORAGE_KEY),
+  );
+  const [genreIterationPromptId, setGenreIterationPromptId] = useState(() =>
+    readStoredValue(GENRE_ITERATION_PROMPT_ID_STORAGE_KEY),
+  );
 
   const genreIterationPrompts = useMemo(
     () => prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === GENRE_ITERATION_PROMPT_CATEGORY),
     [prompts],
   );
-  const genreIterationModel = useMemo(() => models.find((model) => model.id === genreIterationModelId) ?? models[0] ?? null, [genreIterationModelId, models]);
+  const genreIterationModel = useMemo(
+    () => models.find((model) => model.id === genreIterationModelId) ?? models[0] ?? null,
+    [genreIterationModelId, models],
+  );
   const activeGenreIterationPromptId = useMemo(
-    () => (
+    () =>
       genreIterationPrompts.some((prompt) => prompt.id === genreIterationPromptId)
         ? genreIterationPromptId
-        : genreIterationPrompts[0]?.id ?? ''
-    ),
+        : (genreIterationPrompts[0]?.id ?? ''),
     [genreIterationPromptId, genreIterationPrompts],
   );
 
@@ -287,7 +295,8 @@ export function GenreIterationWorkbench() {
     () => sourceBooks.find((book) => book.id === activeBookId) ?? filteredBooks[0] ?? sourceBooks[0],
     [activeBookId, filteredBooks],
   );
-  const activeChapter = activeBook.chapterList.find((chapter) => chapter.id === activeChapterId) ?? activeBook.chapterList[0];
+  const activeChapter =
+    activeBook.chapterList.find((chapter) => chapter.id === activeChapterId) ?? activeBook.chapterList[0];
   const shelfBooks = sourceBooks.filter((book) => shelfIds.includes(book.id));
 
   const setGenreIterationModelIdWithStorage = (nextModelId: string) => {
@@ -322,7 +331,7 @@ export function GenreIterationWorkbench() {
   };
 
   const addToShelf = (book: SourceBook) => {
-    setShelfIds((current) => current.includes(book.id) ? current : [...current, book.id]);
+    setShelfIds((current) => (current.includes(book.id) ? current : [...current, book.id]));
     setStatus(`已加入书架：${book.title}`);
   };
 
@@ -370,8 +379,16 @@ export function GenreIterationWorkbench() {
           />
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <button type="button" onClick={runSearch} className="xy-wa-primary h-9 rounded-lg px-4 text-sm font-black">搜索</button>
-          <button type="button" onClick={loadSample} className="xy-capsule-button justify-center bg-white text-slate-600">载入</button>
+          <button type="button" onClick={runSearch} className="xy-wa-primary h-9 rounded-lg px-4 text-sm font-black">
+            搜索
+          </button>
+          <button
+            type="button"
+            onClick={loadSample}
+            className="xy-capsule-button justify-center bg-white text-slate-600"
+          >
+            载入
+          </button>
         </div>
       </div>
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
@@ -379,29 +396,35 @@ export function GenreIterationWorkbench() {
           <div className="flex h-28 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-sm font-semibold text-slate-400">
             {hasSearched ? '暂无结果。' : '输入后开始检索'}
           </div>
-        ) : filteredBooks.map((book) => {
-          const active = book.id === activeBook.id;
-          return (
-            <button
-              key={book.id}
-              type="button"
-              onClick={() => selectBook(book)}
-              className={[
-                'w-full rounded-lg border p-3 text-left transition-colors',
-                active ? 'border-[#BDEEF7] bg-[#E7F8FD] text-slate-900' : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50',
-              ].join(' ')}
-            >
-              <div className="flex items-start gap-3">
-                <BookCover book={book} compact />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-black">{book.title}</div>
-                  <div className="mt-1 min-w-0 truncate text-xs font-semibold text-slate-400" title={`ID ${book.id}`}>{book.author} · ID {book.id}</div>
-                  <div className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{book.intro}</div>
+        ) : (
+          filteredBooks.map((book) => {
+            const active = book.id === activeBook.id;
+            return (
+              <button
+                key={book.id}
+                type="button"
+                onClick={() => selectBook(book)}
+                className={[
+                  'w-full rounded-lg border p-3 text-left transition-colors',
+                  active
+                    ? 'border-[#BDEEF7] bg-[#E7F8FD] text-slate-900'
+                    : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50',
+                ].join(' ')}
+              >
+                <div className="flex items-start gap-3">
+                  <BookCover book={book} compact />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-black">{book.title}</div>
+                    <div className="mt-1 min-w-0 truncate text-xs font-semibold text-slate-400" title={`ID ${book.id}`}>
+                      {book.author} · ID {book.id}
+                    </div>
+                    <div className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{book.intro}</div>
+                  </div>
                 </div>
-              </div>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })
+        )}
       </div>
     </Panel>
   );
@@ -414,7 +437,9 @@ export function GenreIterationWorkbench() {
             <FolderOpen className="h-5 w-5 shrink-0 text-brand" />
             <span className="truncate text-base font-black text-slate-900">第一卷</span>
           </div>
-          <span className="rounded-full bg-white px-3 py-1 text-sm font-black text-slate-500">{activeBook.chapterList.length}章</span>
+          <span className="rounded-full bg-white px-3 py-1 text-sm font-black text-slate-500">
+            {activeBook.chapterList.length}章
+          </span>
         </div>
         <div className="grid gap-3" style={CHAPTER_NUMBER_GRID_STYLE}>
           {activeBook.chapterList.map((chapter) => (
@@ -450,7 +475,9 @@ export function GenreIterationWorkbench() {
               <h2 className="truncate text-2xl font-black text-slate-900">{activeBook.title}</h2>
               <p className="mt-2 text-sm font-semibold text-slate-500">作者：{activeBook.author}</p>
             </div>
-            <span className="rounded-full bg-[#E7F8FD] px-3 py-1 text-xs font-black text-brand">{activeBook.status}</span>
+            <span className="rounded-full bg-[#E7F8FD] px-3 py-1 text-xs font-black text-brand">
+              {activeBook.status}
+            </span>
           </div>
           <div className="mt-4 grid grid-cols-3 gap-3">
             <StatCard label="字数" value={activeBook.words} />
@@ -459,7 +486,9 @@ export function GenreIterationWorkbench() {
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             {activeBook.tags.map((tag) => (
-              <span key={tag} className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-500 shadow-sm">{tag}</span>
+              <span key={tag} className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-500 shadow-sm">
+                {tag}
+              </span>
             ))}
           </div>
           <div className="mt-5 rounded-xl border border-slate-100 bg-white p-4">
@@ -477,12 +506,18 @@ export function GenreIterationWorkbench() {
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
           <div className="min-w-0">
             <div className="text-xs font-black text-brand">在线预览</div>
-            <h2 className="mt-1 truncate text-2xl font-black text-slate-900">第{activeChapter.serialNumber}章 {activeChapter.title}</h2>
-            <p className="mt-2 text-xs font-semibold text-slate-400">{activeBook.title} · {activeChapter.wordCount} 字</p>
+            <h2 className="mt-1 truncate text-2xl font-black text-slate-900">
+              第{activeChapter.serialNumber}章 {activeChapter.title}
+            </h2>
+            <p className="mt-2 text-xs font-semibold text-slate-400">
+              {activeBook.title} · {activeChapter.wordCount} 字
+            </p>
           </div>
           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">预览</span>
         </div>
-        <pre className="mt-5 whitespace-pre-wrap text-base font-medium leading-9 text-slate-700">{activeChapter.content}</pre>
+        <pre className="mt-5 whitespace-pre-wrap text-base font-medium leading-9 text-slate-700">
+          {activeChapter.content}
+        </pre>
       </article>
     </div>
   );
@@ -512,7 +547,9 @@ export function GenreIterationWorkbench() {
             );
           })}
         </div>
-        <div className="truncate text-xs font-semibold text-slate-400">{centerTab === 'reader' ? '左侧已切换为目录' : '左侧为搜索区域'}</div>
+        <div className="truncate text-xs font-semibold text-slate-400">
+          {centerTab === 'reader' ? '左侧已切换为目录' : '左侧为搜索区域'}
+        </div>
       </div>
       {centerTab === 'detail' ? renderDetail() : renderReader()}
     </Panel>
@@ -526,16 +563,42 @@ export function GenreIterationWorkbench() {
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
           <div className="text-sm font-black text-slate-900">下载与保存</div>
-          <div className="mt-3 rounded-lg bg-white px-3 py-2 text-xs font-bold leading-5 text-slate-500">{GENRE_ITERATION_SAVE_DIRECTORY}</div>
+          <div className="mt-3 rounded-lg bg-white px-3 py-2 text-xs font-bold leading-5 text-slate-500">
+            {GENRE_ITERATION_SAVE_DIRECTORY}
+          </div>
           <div className="mt-3 flex gap-2">
             <FormatButton value="TXT" active={format === 'TXT'} onClick={() => setFormat('TXT')} />
             <FormatButton value="EPUB" active={format === 'EPUB'} onClick={() => setFormat('EPUB')} />
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => startDownload(activeBook)} className="xy-wa-primary h-9 rounded-lg px-4 text-sm font-black">开始下载</button>
-            <button type="button" onClick={() => addToShelf(activeBook)} className="xy-capsule-button justify-center bg-white text-slate-600">加入书架</button>
-            <button type="button" onClick={() => copyBookId(activeBook)} className="xy-capsule-button justify-center bg-white text-slate-600">复制 ID</button>
-            <button type="button" onClick={() => clearCache(activeBook)} className="xy-capsule-button justify-center bg-white text-slate-600">清除缓存</button>
+            <button
+              type="button"
+              onClick={() => startDownload(activeBook)}
+              className="xy-wa-primary h-9 rounded-lg px-4 text-sm font-black"
+            >
+              开始下载
+            </button>
+            <button
+              type="button"
+              onClick={() => addToShelf(activeBook)}
+              className="xy-capsule-button justify-center bg-white text-slate-600"
+            >
+              加入书架
+            </button>
+            <button
+              type="button"
+              onClick={() => copyBookId(activeBook)}
+              className="xy-capsule-button justify-center bg-white text-slate-600"
+            >
+              复制 ID
+            </button>
+            <button
+              type="button"
+              onClick={() => clearCache(activeBook)}
+              className="xy-capsule-button justify-center bg-white text-slate-600"
+            >
+              清除缓存
+            </button>
           </div>
         </div>
 
@@ -543,7 +606,10 @@ export function GenreIterationWorkbench() {
           <SectionTitle icon={ListChecks} title="可迁移爽点" />
           <div className="mt-3 space-y-2">
             {activeBook.hooks.map((hook) => (
-              <div key={hook} className="flex items-center gap-2 rounded-lg bg-[#EAF9FD] px-3 py-2 text-sm font-bold text-slate-700">
+              <div
+                key={hook}
+                className="flex items-center gap-2 rounded-lg bg-[#EAF9FD] px-3 py-2 text-sm font-bold text-slate-700"
+              >
                 <CheckCircle2 className="h-4 w-4 text-brand" />
                 {hook}
               </div>
@@ -553,16 +619,26 @@ export function GenreIterationWorkbench() {
 
         <div className="mt-4 rounded-xl border border-slate-100 bg-white p-4">
           <div className="text-sm font-black text-slate-900">规避提醒</div>
-          <p className="mt-3 rounded-lg bg-amber-50 px-3 py-3 text-sm font-semibold leading-6 text-amber-800">{activeBook.risk}</p>
+          <p className="mt-3 rounded-lg bg-amber-50 px-3 py-3 text-sm font-semibold leading-6 text-amber-800">
+            {activeBook.risk}
+          </p>
         </div>
 
         <div className="mt-4 rounded-xl border border-slate-100 bg-white p-4">
           <div className="flex items-center justify-between gap-3">
             <div className="text-sm font-black text-slate-900">迭代方案</div>
-            <button type="button" onClick={() => generateIteration(activeBook)} className="xy-wa-primary h-8 rounded-lg px-3 text-xs font-black">生成迭代</button>
+            <button
+              type="button"
+              onClick={() => generateIteration(activeBook)}
+              className="xy-wa-primary h-8 rounded-lg px-3 text-xs font-black"
+            >
+              生成迭代
+            </button>
           </div>
           {iterationText ? (
-            <pre className="mt-3 whitespace-pre-wrap rounded-lg border border-[#BDEEF7] bg-[#F8FDFF] p-3 text-sm font-semibold leading-7 text-slate-700">{iterationText}</pre>
+            <pre className="mt-3 whitespace-pre-wrap rounded-lg border border-[#BDEEF7] bg-[#F8FDFF] p-3 text-sm font-semibold leading-7 text-slate-700">
+              {iterationText}
+            </pre>
           ) : (
             <div className="mt-3 space-y-2">
               {iterationOutline.map(([title, body]) => (
@@ -613,15 +689,25 @@ export function GenreIterationWorkbench() {
           </span>
           <div className="min-w-0">
             <h1 className="truncate text-lg font-black text-slate-900">题材迭代</h1>
-            <p className="mt-0.5 truncate text-xs font-medium text-slate-400">搜索番茄小说，查看详情或按目录在线预览章节</p>
+            <p className="mt-0.5 truncate text-xs font-medium text-slate-400">
+              搜索番茄小说，查看详情或按目录在线预览章节
+            </p>
           </div>
         </div>
         <CombinedAiConfigSelect
           className="w-[312px] shrink-0"
           modelValue={genreIterationModel?.id ?? ''}
           promptValue={activeGenreIterationPromptId}
-          modelOptions={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
-          promptOptions={genreIterationPrompts.length === 0 ? [{ value: '', label: '无可用提示词', disabled: true }] : genreIterationPrompts.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+          modelOptions={
+            models.length === 0
+              ? [{ value: '', label: '暂无可用模型', disabled: true }]
+              : models.map((model) => ({ value: model.id, label: model.name }))
+          }
+          promptOptions={
+            genreIterationPrompts.length === 0
+              ? [{ value: '', label: '无可用提示词', disabled: true }]
+              : genreIterationPrompts.map((prompt) => ({ value: prompt.id, label: prompt.name }))
+          }
           onModelChange={setGenreIterationModelIdWithStorage}
           onPromptChange={setGenreIterationPromptIdWithStorage}
           onModelManage={() => navigate('/model-manage')}

@@ -2,20 +2,24 @@ import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const {
-  createHotspotService,
-  normalizeDailyHotItems,
-} = require('./hotspotService.cjs') as typeof import('./hotspotService.cjs');
+const { createHotspotService, normalizeDailyHotItems } =
+  require('./hotspotService.cjs') as typeof import('./hotspotService.cjs');
 
 describe('hotspotService', () => {
   it('normalizes DailyHotApi response items into ranked hotspot rows', () => {
-    expect(normalizeDailyHotItems('baidu', {
-      code: 200,
-      data: [
-        { title: '热点 A', hot: '100万', url: 'https://example.test/a' },
-        { name: '热点 B', desc: '说明', mobileUrl: 'https://example.test/b' },
-      ],
-    }, '2026-07-06T10:00:00.000Z')).toEqual([
+    expect(
+      normalizeDailyHotItems(
+        'baidu',
+        {
+          code: 200,
+          data: [
+            { title: '热点 A', hot: '100万', url: 'https://example.test/a' },
+            { name: '热点 B', desc: '说明', mobileUrl: 'https://example.test/b' },
+          ],
+        },
+        '2026-07-06T10:00:00.000Z',
+      ),
+    ).toEqual([
       {
         id: 'baidu-1-热点 A',
         source: 'baidu',
@@ -44,14 +48,16 @@ describe('hotspotService', () => {
       now: () => '2026-07-06T10:00:00.000Z',
       readCache: async () => ({
         capturedAt: '2026-07-06T09:00:00.000Z',
-        items: [{
-          id: 'baidu-1-cache',
-          source: 'baidu',
-          sourceName: '百度',
-          rank: 1,
-          title: '缓存热点',
-          capturedAt: '2026-07-06T09:00:00.000Z',
-        }],
+        items: [
+          {
+            id: 'baidu-1-cache',
+            source: 'baidu',
+            sourceName: '百度',
+            rank: 1,
+            title: '缓存热点',
+            capturedAt: '2026-07-06T09:00:00.000Z',
+          },
+        ],
       }),
       writeCache: async () => undefined,
       fetchJson: async () => {
@@ -66,7 +72,7 @@ describe('hotspotService', () => {
     expect(result.errors.baidu).toBe('network down');
   });
 
-  it('uses the embedded local DailyHotApi base URL by default', async () => {
+  it('uses the public DailyHot API without starting an embedded dependency server', async () => {
     const requestedUrls: string[] = [];
     const service = createHotspotService({
       now: () => '2026-07-06T10:00:00.000Z',
@@ -80,7 +86,7 @@ describe('hotspotService', () => {
 
     await service.fetchAll({ sources: ['baidu'], limit: 50, force: true });
 
-    expect(requestedUrls).toEqual(['http://127.0.0.1:36688/baidu']);
+    expect(requestedUrls).toEqual(['https://api-hot.imsyy.top/baidu']);
   });
 
   it('allows collecting up to 100 candidates before UI filtering', async () => {

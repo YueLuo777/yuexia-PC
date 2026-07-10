@@ -10,6 +10,22 @@ interface ModelRequestInput {
   headers: Record<string, string>;
   body: string;
   timeoutMs?: number;
+  modelSecretId?: string;
+  provider?: 'openai-compatible' | 'anthropic';
+}
+
+interface ModelSecretStatusResult {
+  ok: boolean;
+  encryptionAvailable: boolean;
+  secrets: Record<string, boolean>;
+  message?: string;
+}
+
+interface ModelSecretResult {
+  ok: boolean;
+  apiKey?: string;
+  hasSecret?: boolean;
+  message?: string;
 }
 
 interface ModelRequestResult {
@@ -136,6 +152,12 @@ interface Window {
       onChunk: (payload: string | { type: 'content' | 'reasoning'; text: string }) => void,
     ): Promise<ModelRequestResult>;
     cancelStream(requestId: string): Promise<boolean>;
+  };
+  xinyuexiaModelSecrets?: {
+    status(): Promise<ModelSecretStatusResult>;
+    get(secretId: string): Promise<ModelSecretResult>;
+    set(secretId: string, apiKey: string): Promise<ModelSecretResult>;
+    remove(secretId: string): Promise<ModelSecretResult>;
   };
   xinyuexiaAppIcon?: {
     read(): Promise<AppIconResult>;

@@ -1,6 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { readModelSnapshot } from './useModels';
+import { readModelSnapshot, useModels } from './useModels';
 
 const ORIGINAL_PINAI_ENV = {
   apiKey: import.meta.env.VITE_PINAI_API_KEY,
@@ -31,10 +32,47 @@ describe('useModels storage', () => {
 
   afterEach(() => {
     localStorage.clear();
+    window.xinyuexiaModelSecrets = undefined;
     restorePinaiEnv();
   });
 
   it('does not auto-create a model from Vite frontend environment secrets', () => {
     expect(readModelSnapshot()).toEqual([]);
+  });
+
+  it('migrates legacy plaintext API keys into Electron secure storage', async () => {
+    localStorage.setItem(
+      'xinyuexia_api_settings_v1',
+      JSON.stringify({
+        models: [
+          {
+            id: 'model-1',
+            instanceId: 'model-instance-1',
+            name: '模型一',
+            enabled: true,
+            baseUrl: 'https://example.test/v1',
+            apiKey: 'sk-legacy-plaintext',
+            model: 'model-1',
+          },
+        ],
+      }),
+    );
+    const setSecret = vi.fn().mockResolvedValue({ ok: true, hasSecret: true });
+    window.xinyuexiaModelSecrets = {
+      status: vi.fn().mockResolvedValue({
+        ok: true,
+        encryptionAvailable: true,
+        secrets: { 'model-instance-1': true },
+      }),
+      get: vi.fn(),
+      set: setSecret,
+      remove: vi.fn(),
+    };
+
+    const { result } = renderHook(() => useModels());
+
+    await waitFor(() => expect(result.current.models[0]).toMatchObject({ apiKey: '', hasApiKey: true }));
+    expect(setSecret).toHaveBeenCalledWith('model-instance-1', 'sk-legacy-plaintext');
+    expect(localStorage.getItem('xinyuexia_api_settings_v1')).not.toContain('sk-legacy-plaintext');
   });
 });

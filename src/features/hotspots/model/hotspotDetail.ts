@@ -3,12 +3,11 @@ import type { HotspotDetailResult, HotspotItem } from '@/features/hotspots/model
 
 export function hasHotspotDetailContent(detail: HotspotDetailResult | null | undefined) {
   return Boolean(
-    detail?.ok && (
-      detail.title?.trim()
-      || detail.description?.trim()
-      || detail.textSnippet?.trim()
-      || (detail.keywords?.length ?? 0) > 0
-    ),
+    detail?.ok &&
+    (detail.title?.trim() ||
+      detail.description?.trim() ||
+      detail.textSnippet?.trim() ||
+      (detail.keywords?.length ?? 0) > 0),
   );
 }
 

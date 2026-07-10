@@ -2,6 +2,178 @@ import type { ErrorLogEntry } from './errorLogEntryTypes';
 
 export const defaultEntries: ErrorLogEntry[] = [
   {
+    id: 'novel-library-dashboard-four-card-width-lock-001',
+    title: '小说库顶部四张概览卡片必须始终限制在可视区域内',
+    area: '小说库 / 顶部概览 / 响应式布局',
+    symptom: '软件缩放到 110% 后，第四张扩展卡片超出窗口，顶部概览区域出现横向滚动条。',
+    cause: '四张卡片使用固定像素宽度，网格还设置了大于窗口的固定最小宽度并允许横向滚动。',
+    solution:
+      '将卡片宽度改为相对权重，用 minmax(0, weight fr) 在可用宽度内分配四列；拖动分隔条改为按当前网格宽度换算权重，整行始终保持 100% 宽度。',
+    prevention:
+      '多卡片概览行不得设置大于视口的固定最小宽度；调宽交互应保持总宽度不变，并覆盖 100%、110% 和窄窗口回归。',
+    keywords: ['小说库', '扩展卡片', '横向滚动条', '响应式网格', '110%缩放', '卡片调宽'],
+    updatedAt: '2026-07-11',
+  },
+  {
+    id: 'desktop-runtime-audit-and-electron-e2e-001',
+    title: '桌面运行时与构建工具链必须保持无已知审计漏洞并具备自动桌面冒烟',
+    area: 'Electron / Vite / electron-builder / CI',
+    symptom: '旧运行时完整审计包含高危漏洞，而且既有测试无法确认主进程、预加载桥和真实桌面页面能否共同启动。',
+    cause: 'Electron 虽位于 devDependencies 却实际进入便携版；项目缺少真正启动 Electron 窗口的自动化门禁。',
+    solution:
+      '升级 Electron 43.1.0、electron-builder 26.15.3 和 Vite 7.3.6，吸收全部审计补丁；新增 Playwright Electron 冒烟、Windows CI 和新版运行时显式安装支持。',
+    prevention: '桌面发布前运行完整审计；运行时大版本升级必须经过类型检查、构建、Electron E2E 和 VBS 实际启动。',
+    keywords: ['Electron43', 'Vite7', 'electron-builder', 'Playwright', 'Windows CI', 'npm audit'],
+    updatedAt: '2026-07-10',
+  },
+  {
+    id: 'model-api-key-electron-safe-storage-001',
+    title: '模型 API Key 不应以明文留在 localStorage 或渲染层请求头',
+    area: '模型管理 / Electron safeStorage / IPC',
+    symptom: '模型 API Key 与普通模型元数据一起写入 localStorage，并由渲染层直接放入鉴权请求头。',
+    cause: '主进程仅转发完整模型请求，没有独立的密钥仓库和鉴权头注入职责。',
+    solution:
+      '新增 safeStorage 加密仓库和受信 IPC；渲染层只发送模型实例密钥标识，主进程解密并注入鉴权头；旧明文加密成功后才清除。',
+    prevention: '长期密钥不得进入可导出的页面存储、调用日志或渲染层请求快照；迁移必须先安全落盘再清除旧值。',
+    keywords: ['API Key', 'safeStorage', 'localStorage', '模型管理', '密钥迁移', '受信IPC'],
+    updatedAt: '2026-07-10',
+  },
+  {
+    id: 'backup-import-transaction-rollback-001',
+    title: '全局备份导入失败时必须恢复导入前的数据',
+    area: '数据迁移 / 全局备份 / localStorage',
+    symptom: '覆盖式导入在清空旧数据后如果中途写入失败，会同时失去旧数据并只留下半份新数据。',
+    cause: '导入流程缺少旧快照、体积预检和失败回滚。',
+    solution: '恢复前保存当前快照并检查体积；写入失败时清理半成品并恢复旧快照，同时限制文件和解压后数据大小。',
+    prevention: '覆盖式导入必须遵守先验证、再快照、后替换，并为失败路径加入自动回滚测试。',
+    keywords: ['全局备份', '事务导入', '自动回滚', 'QuotaExceededError', '数据迁移'],
+    updatedAt: '2026-07-10',
+  },
+  {
+    id: 'workbench-library-interaction-lazy-load-001',
+    title: '大型工作台资料库应按需加载而不是阻塞普通章节编辑',
+    area: '工作台 / 代码分割 / 首次加载性能',
+    symptom: '约 302KB 的资料库面板以及管理页面在普通章节编辑入口也会被静态依赖加载。',
+    cause: '工作台页面静态导入所有子工作流和管理弹窗，没有按真实交互入口拆分。',
+    solution: '资料库面板、模型管理和提示词管理改为 React.lazy 动态导入，并提供统一加载状态。',
+    prevention: '超过 100KB 且只在特定弹窗或工作流出现的模块默认使用交互级动态导入，并锁定不得恢复静态导入。',
+    keywords: ['WorkbenchLibraryPanel', 'React.lazy', '代码分割', '工作台性能', '按需加载'],
+    updatedAt: '2026-07-10',
+  },
+  {
+    id: 'desktop-launcher-vite-dependency-fingerprint-001',
+    title: '桌面启动器不应复用依赖变更前的 Vite 预构建进程',
+    area: '桌面启动器 / Vite / Electron 开发环境',
+    symptom:
+      '依赖或锁文件变化后，启动器仍复用返回 HTTP 200 的旧 Vite 进程，Electron 可能出现 Invalid hook call 并导致页面无法渲染。',
+    cause: '启动器只检查服务器可访问性，没有判断长驻进程的依赖预构建是否与磁盘上的依赖输入一致。',
+    solution:
+      '为 package.json、package-lock.json 和 vite.config.ts 生成依赖指纹；指纹缺失或过期时，仅清理同时匹配本项目 Vite 入口和端口的进程，再启动服务器并写入最新指纹。',
+    prevention: '复用长驻开发服务器前必须校验依赖输入；清理进程必须同时校验项目路径和端口，不能按进程名批量结束。',
+    keywords: ['桌面启动器', 'Vite', '依赖指纹', 'Invalid hook call', 'launch-xinyuexia'],
+    updatedAt: '2026-07-10',
+  },
+  {
+    id: 'save-and-ai-stream-persistence-coalescing-001',
+    title: '正文自动保存和 AI 流式输出不应高频重写整份索引',
+    area: '作品编辑器 / 自动保存 / 后台 AI 任务',
+    symptom: '连续输入或接收较长 AI 流式输出时，作品、卷目录和全部后台任务会被短时间反复序列化写入。',
+    cause: '正文变更同步重写大对象元数据，AI 每个分片都立即持久化全部任务，没有合并窗口。',
+    solution:
+      '正文保持即时保存；作品与卷目录元数据使用 350ms 可取消合并队列；AI 分片使用 250ms 合并持久化，关键生命周期和离开页面时立即刷新。',
+    prevention: '高频路径只立即写最小必要数据；大对象索引与流式快照必须使用可刷新、可取消的合并队列并测试写入次数。',
+    keywords: ['自动保存', '写入合并', 'AI流式输出', 'localStorage', 'workbenchPersistenceQueue'],
+    updatedAt: '2026-07-10',
+  },
+  {
+    id: 'hotspot-production-dependency-audit-001',
+    title: '生产依赖不应为热点聚合引入高危间接依赖',
+    area: 'Electron 热点服务 / 生产依赖 / 安全审计',
+    symptom: '生产依赖审计包含由 dailyhot-api 本地服务链带入的高危漏洞，而桌面端实际只使用公开热点接口。',
+    cause: '热点服务同时保留第三方包的本地服务启动模式和公开接口回退，扩大了生产依赖面。',
+    solution: '移除 dailyhot-api，统一通过既有公开 HTTPS 基址和 Electron 主进程代理获取热点，生产依赖审计归零。',
+    prevention: '小型网络适配器能够完成的功能不引入整套服务端运行时；新增生产依赖必须检查实际调用路径和生产审计。',
+    keywords: ['dailyhot-api', '生产依赖', 'npm audit', '热点服务', '供应链安全'],
+    updatedAt: '2026-07-10',
+  },
+  {
+    id: 'source-contract-tests-format-stability-001',
+    title: '源码契约测试不应因统一格式化产生大面积误报',
+    area: '测试门禁 / Prettier / 工作台资料库',
+    symptom: '统一格式化后，大量功能未变的源码断言因换行、尾逗号、颜色大小写或模块拆分而失败。',
+    cause: '测试绑定原始源码排版和模块位置，资料库夹具还会把默认已展开分类再次点击为折叠。',
+    solution:
+      '源码守卫改用规范化匹配并指向真实拆分模块；分类夹具使用幂等展开；保留拖拽、右键和结构化字段的真实 DOM 测试。',
+    prevention: '行为优先使用函数或 DOM 测试；源码守卫只断言稳定语义片段，不绑定格式化结果或旧模块位置。',
+    keywords: ['源码契约', 'Prettier', 'toContainSource', '测试门禁', 'WorkbenchLibraryPanel'],
+    updatedAt: '2026-07-10',
+  },
+  {
+    id: 'electron-trust-boundary-and-hotspot-ssrf-001',
+    title: 'Electron 主页面、IPC、网页权限和热点抓取需要统一安全边界',
+    area: 'Electron 主进程 / IPC / webview / 热点详情',
+    symptom:
+      '开发启动地址可指向任意远程网页并加载预加载桥，IPC 未核验调用页面，嵌入网页权限默认开放，热点详情可请求或跳转到本机及内网。',
+    cause: '启动 URL、IPC sender、session 权限和主进程代发网络请求分别缺少完整的可信来源与公网地址校验。',
+    solution:
+      '启动地址仅允许回环 HTTP/HTTPS；主窗口阻止离开可信来源；特权 IPC 统一验证 sender；session 拒绝权限和新窗口；热点请求逐次验证 DNS、IP、跳转及最终 URL。',
+    prevention:
+      '新增 preload 能力必须接入可信 sender 包装；webview 默认拒绝权限；渲染层提交并由主进程代发的 URL 必须按 SSRF 规则验证重定向链。',
+    keywords: ['Electron安全', 'IPC sender', 'webview权限', 'SSRF', '热点详情'],
+    updatedAt: '2026-07-10',
+  },
+  {
+    id: 'novel-id-reuse-and-scoped-residue-001',
+    title: '永久删除作品后不应复用作品 ID 或残留作品数据',
+    area: '作品管理 / 永久删除 / 本地持久化',
+    symptom:
+      '永久删除当前最大编号作品后，新建作品可能复用相同 ID，并重新读到旧作品的设定、章纲、AI 会话、备忘录或剧本关联。',
+    cause:
+      '作品 ID 仅按当前作品和回收站中的最大值加一生成；永久删除只移除章节正文和卷目录，没有清除按作品 ID 命名的工作台存储。',
+    solution:
+      '新增单调递增的作品 ID 游标；永久删除成功写入索引后，精确清理该作品的正文、设定、章纲、AI 会话、备忘录、审核任务、润色状态和剧本关联。',
+    prevention: '持久化实体 ID 不得从当前剩余数据反推复用；新增作品分区存储键时同步加入删除清单和邻近 ID 防误删测试。',
+    keywords: ['作品ID', '永久删除', '数据残留', 'localStorage', 'novelPersistence'],
+    updatedAt: '2026-07-10',
+  },
+  {
+    id: 'chapter-delete-recycle-transaction-001',
+    title: '删除章节必须先可靠写入回收站再移除正文',
+    area: '作品编辑器 / 章节删除 / 回收站',
+    symptom: '章节删除依赖 React 状态更新函数同步执行时，章节可能从目录消失但没有进入回收站。',
+    cause: '代码在状态 updater 内给局部变量赋值后立即在外部判断，并在目录更新后才保存回收站和删除正文。',
+    solution:
+      '从当前快照同步生成回收章节和新目录，先写回收站、再写卷目录，失败时回滚；两份索引成功后才删除正文并更新界面。',
+    prevention:
+      '多份本地存储的数据移动应先写可恢复副本、再更新索引、最后删除原数据，不通过状态 updater 向外传递事务结果。',
+    keywords: ['章节删除', '回收站', '事务顺序', '数据安全', 'useWorkbenchData'],
+    updatedAt: '2026-07-10',
+  },
+  {
+    id: 'chapter-review-task-scope-and-outline-sync-001',
+    title: '审核后台任务和章纲预览必须跟随当前章节',
+    area: '作品编辑器 / 审核 / 后台任务与章纲',
+    symptom: '第一章开始审核后切到第二章，后台结果可能显示到第二章；同一作品修改章纲后审核预览仍可能显示旧内容。',
+    cause: '任务 ID 只按作品和审核模式保存且恢复时未校验章节；章纲列表只依赖存储键做一次 memo。',
+    solution:
+      '任务索引按作品、章节和模式分区并校验元数据；切章恢复目标章节自己的任务。章纲预览改用父页面订阅到的实时资料快照。',
+    prevention: '异步任务恢复必须校验完整业务作用域；localStorage 派生界面数据必须订阅写入事件或由响应式快照下发。',
+    keywords: ['审核任务', '章节隔离', '章纲刷新', '后台AI', 'ChapterEditor'],
+    updatedAt: '2026-07-10',
+  },
+  {
+    id: 'script-linked-novel-scoped-storage-001',
+    title: '剧本关联小说必须按剧本独立保存',
+    area: '剧本编辑器 / 关联小说 / 本地存储',
+    symptom: '在剧本 A 关联小说后切换到剧本 B，剧本 B 会继承同一个关联小说。',
+    cause: '所有剧本共用单一关联存储键，并在切换剧本时重复读取该全局值。',
+    solution:
+      '关联键升级为带剧本 ID 的 v2 键；旧值只迁移给首次打开的当前剧本一次，取消关联、会话清理和永久删除同步处理新键。',
+    prevention: '作品级或剧本级状态必须把实体 ID 放入键或数据结构，并测试至少两个实体互不串值。',
+    keywords: ['剧本编辑器', '关联小说', '数据隔离', 'scriptId', 'ScriptEditorPage'],
+    updatedAt: '2026-07-10',
+  },
+  {
     id: 'text-audit-paragraph-number-left-gutter-001',
     title: '文本审核段落编号应放在正文左侧并只显示数字',
     area: '作品编辑器 / 文本审核 / 审核后段落',

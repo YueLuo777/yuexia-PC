@@ -31,51 +31,56 @@ export function RecycleBinModal({ isOpen, type, items, onClose, onRestore, onPer
       widthClass="w-[640px]"
       heightClass="h-[520px] max-h-[80vh]"
       zIndexClass="z-50"
-      headerExtra={(
-            <button
-              onClick={() => forceRefresh((value) => value + 1)}
-              className="flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-500 transition-colors hover:bg-gray-50"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              <span>刷新</span>
-            </button>
-      )}
+      headerExtra={
+        <button
+          onClick={() => forceRefresh((value) => value + 1)}
+          className="flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-500 transition-colors hover:bg-gray-50"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          <span>刷新</span>
+        </button>
+      }
     >
-        <div className="border-b border-gray-100 px-5 py-3 text-sm text-gray-400">
-          删除后的作品会暂存在这里，确认无用后再彻底删除。
-        </div>
+      <div className="border-b border-gray-100 px-5 py-3 text-sm text-gray-400">
+        删除后的作品会暂存在这里，确认无用后再彻底删除。
+      </div>
 
-        <div className="flex-1 overflow-y-auto p-5">
-          {filtered.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-gray-200">
-              <Trash2 className="mb-3 h-10 w-10 text-gray-300" />
-              <p className="mb-1 text-sm text-gray-500">回收站为空</p>
-              <p className="text-xs text-gray-400">删除后的{typeLabel}会显示在这里。</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filtered.map((novel) => (
-                <div key={novel.id} className="rounded-lg border border-gray-100 p-4">
-                  <div className="mb-1 flex items-start justify-between">
-                    <h4 className="text-sm font-medium text-gray-900">{novel.title}</h4>
-                    <span className="text-xs text-gray-400">{typeLabel}</span>
-                  </div>
-                  <p className="mb-2 text-xs text-gray-400">{novel.synopsis || '暂无简介'}</p>
-                  <p className="mb-3 text-xs text-gray-400">删除于 {novel.deletedAt}，到期 {novel.expireAt}</p>
-                  <div className="flex items-center justify-end gap-3">
-                    <ActionButton onClick={() => onRestore(novel.id)} variant="secondary" size="sm">
-                      恢复
-                    </ActionButton>
-                    <button onClick={() => onPermanentDelete(novel.id)} className="flex h-8 min-w-[88px] items-center justify-center gap-1 rounded-md border border-red-200 px-3 text-sm leading-none text-red-500 transition-colors hover:bg-red-50">
-                      <Trash2 className="h-3 w-3" />
-                      <span>彻底删除</span>
-                    </button>
-                  </div>
+      <div className="flex-1 overflow-y-auto p-5">
+        {filtered.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-gray-200">
+            <Trash2 className="mb-3 h-10 w-10 text-gray-300" />
+            <p className="mb-1 text-sm text-gray-500">回收站为空</p>
+            <p className="text-xs text-gray-400">删除后的{typeLabel}会显示在这里。</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((novel) => (
+              <div key={novel.id} className="rounded-lg border border-gray-100 p-4">
+                <div className="mb-1 flex items-start justify-between">
+                  <h4 className="text-sm font-medium text-gray-900">{novel.title}</h4>
+                  <span className="text-xs text-gray-400">{typeLabel}</span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                <p className="mb-2 text-xs text-gray-400">{novel.synopsis || '暂无简介'}</p>
+                <p className="mb-3 text-xs text-gray-400">
+                  删除于 {novel.deletedAt}，到期 {novel.expireAt}
+                </p>
+                <div className="flex items-center justify-end gap-3">
+                  <ActionButton onClick={() => onRestore(novel.id)} variant="secondary" size="sm">
+                    恢复
+                  </ActionButton>
+                  <button
+                    onClick={() => onPermanentDelete(novel.id)}
+                    className="flex h-8 min-w-[88px] items-center justify-center gap-1 rounded-md border border-red-200 px-3 text-sm leading-none text-red-500 transition-colors hover:bg-red-50"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    <span>彻底删除</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </AppModalShell>
   );
 }

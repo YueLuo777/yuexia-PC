@@ -67,13 +67,14 @@ function migrateNovels() {
     writeJson('xinyuexia_volumes_v1', { ...oldVolumes, ...currentVolumes });
     for (const [novelId, volumes] of Object.entries(oldVolumes)) {
       for (const volume of volumes) {
-        const chapters = Array.isArray(volume.chapters) ? volume.chapters as Array<Record<string, JsonValue>> : [];
+        const chapters = Array.isArray(volume.chapters) ? (volume.chapters as Array<Record<string, JsonValue>>) : [];
         for (const chapter of chapters) {
           const chapterId = Number(chapter.id);
           const legacyKey = `novel_${novelId}_chapter_${chapterId}`;
           const nextKey = `xinyuexia_novel_${novelId}_chapter_${chapterId}`;
           if (!hasKey(nextKey)) {
-            const content = localStorage.getItem(legacyKey) ?? (typeof chapter.content === 'string' ? chapter.content : '');
+            const content =
+              localStorage.getItem(legacyKey) ?? (typeof chapter.content === 'string' ? chapter.content : '');
             if (content) localStorage.setItem(nextKey, content);
           }
         }
@@ -96,7 +97,7 @@ function migrateModels() {
   const legacy = readJson<{ models?: Array<Record<string, JsonValue>> }>('api_settings_v2', { models: [] });
   const models = (legacy.models ?? []).map((model) => ({
     ...model,
-    connectionStatus: model.connectionStatus === 'connected' ? 'success' : model.connectionStatus ?? 'unknown',
+    connectionStatus: model.connectionStatus === 'connected' ? 'success' : (model.connectionStatus ?? 'unknown'),
   }));
   if (models.length > 0) writeJson('xinyuexia_api_settings_v1', { models });
 }
@@ -144,13 +145,30 @@ function migratePrompts() {
     deletedAt: recycled ? String(item.deletedAt ?? new Date().toISOString()) : undefined,
   });
 
-  if (legacyPrompts.length > 0) writeJson('xinyuexia_prompts_v1', mergeById(currentPrompts as ReturnType<typeof normalize>[], legacyPrompts.map((item) => normalize(item))));
-  if (legacyRecycle.length > 0) writeJson('xinyuexia_prompt_recycle_v1', mergeById(currentRecycle as ReturnType<typeof normalize>[], legacyRecycle.map((item) => normalize(item, true))));
+  if (legacyPrompts.length > 0)
+    writeJson(
+      'xinyuexia_prompts_v1',
+      mergeById(
+        currentPrompts as ReturnType<typeof normalize>[],
+        legacyPrompts.map((item) => normalize(item)),
+      ),
+    );
+  if (legacyRecycle.length > 0)
+    writeJson(
+      'xinyuexia_prompt_recycle_v1',
+      mergeById(
+        currentRecycle as ReturnType<typeof normalize>[],
+        legacyRecycle.map((item) => normalize(item, true)),
+      ),
+    );
 
   const legacyCategories = readJson<string[]>('prompt_categories', []);
   if (legacyCategories.length > 0) {
     const currentCategories = readJson<string[]>('xinyuexia_prompt_categories_v1', []);
-    writeJson('xinyuexia_prompt_categories_v1', Array.from(new Set([...currentCategories, ...legacyCategories, '未分类'])));
+    writeJson(
+      'xinyuexia_prompt_categories_v1',
+      Array.from(new Set([...currentCategories, ...legacyCategories, '未分类'])),
+    );
   }
 }
 

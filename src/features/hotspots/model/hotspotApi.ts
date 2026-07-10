@@ -84,7 +84,7 @@ export function normalizeHotspotFetchResult(raw: RawHotspotFetchResult): Hotspot
     };
   }
 
-  const items = freshItems.length > 0 ? freshItems : raw.staleItems ?? [];
+  const items = freshItems.length > 0 ? freshItems : (raw.staleItems ?? []);
   return {
     ok: raw.ok,
     capturedAt: raw.capturedAt,
@@ -112,7 +112,9 @@ export async function fetchHotspots(force = false): Promise<HotspotFetchResult> 
       ok: false,
       capturedAt: new Date().toISOString(),
       sources: {},
-      errors: Object.fromEntries(HOTSPOT_SOURCES.map((source) => [source, '当前环境没有热点采集服务'])) as Partial<Record<HotspotSourceId, string>>,
+      errors: Object.fromEntries(HOTSPOT_SOURCES.map((source) => [source, '当前环境没有热点采集服务'])) as Partial<
+        Record<HotspotSourceId, string>
+      >,
     });
   }
   return normalizeHotspotFetchResult(raw);

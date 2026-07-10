@@ -7,6 +7,7 @@ export interface ModelItem {
   enabled: boolean;
   baseUrl: string;
   apiKey: string;
+  hasApiKey?: boolean;
   model: string;
   provider?: ModelProvider;
   locked?: boolean;

@@ -55,62 +55,68 @@ export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: N
       zIndexClass="z-50"
       contentClassName="p-5"
     >
-        <label className="mb-1.5 block text-xs font-medium text-gray-600">作品名称</label>
-        <input
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          onKeyDown={(event) => { if (event.key === 'Enter') handleSubmit(); }}
-          className="mb-4 w-full rounded-md border border-gray-200 px-3 py-2 text-sm transition-colors focus:border-brand"
-          autoFocus
-        />
+      <label className="mb-1.5 block text-xs font-medium text-gray-600">作品名称</label>
+      <input
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') handleSubmit();
+        }}
+        className="mb-4 w-full rounded-md border border-gray-200 px-3 py-2 text-sm transition-colors focus:border-brand"
+        autoFocus
+      />
 
-        <label className="mb-1.5 block text-xs font-medium text-gray-600">分类</label>
-        <select
-          value={category}
-          onChange={(event) => setCategory(event.target.value)}
-          className="mb-4 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm transition-colors focus:border-brand"
-        >
-          {categories.map((item) => (
-            <option key={item} value={item}>{item}</option>
-          ))}
-        </select>
+      <label className="mb-1.5 block text-xs font-medium text-gray-600">分类</label>
+      <select
+        value={category}
+        onChange={(event) => setCategory(event.target.value)}
+        className="mb-4 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm transition-colors focus:border-brand"
+      >
+        {categories.map((item) => (
+          <option key={item} value={item}>
+            {item}
+          </option>
+        ))}
+      </select>
 
-        <label className="mb-1.5 block text-xs font-medium text-gray-600">简介</label>
-        <textarea
-          value={synopsis}
-          onChange={(event) => setSynopsis(event.target.value)}
-          className="mb-5 h-24 w-full resize-none rounded-md border border-gray-200 px-3 py-2 text-sm transition-colors focus:border-brand"
-          placeholder="可以先留空"
-        />
+      <label className="mb-1.5 block text-xs font-medium text-gray-600">简介</label>
+      <textarea
+        value={synopsis}
+        onChange={(event) => setSynopsis(event.target.value)}
+        className="mb-5 h-24 w-full resize-none rounded-md border border-gray-200 px-3 py-2 text-sm transition-colors focus:border-brand"
+        placeholder="可以先留空"
+      />
 
-        <label className="mb-1.5 block text-xs font-medium text-gray-600">封面</label>
-        <div className="mb-5 flex items-center gap-3">
-          <label className="flex cursor-pointer items-center gap-1.5 rounded-md border border-gray-200 px-3 py-2 text-xs text-gray-600 transition-colors hover:bg-gray-50">
-            <Image className="h-3.5 w-3.5" />
-            上传图片
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              className="hidden"
-              onChange={(event) => handleCoverFile(event.target.files?.[0])}
-            />
-          </label>
-          {cover && (
-            <>
-              <img src={cover} alt="封面预览" className="h-12 w-9 rounded object-cover" />
-              <button onClick={() => setCover(undefined)} className="text-xs text-red-500 hover:underline">移除</button>
-            </>
-          )}
-        </div>
+      <label className="mb-1.5 block text-xs font-medium text-gray-600">封面</label>
+      <div className="mb-5 flex items-center gap-3">
+        <label className="flex cursor-pointer items-center gap-1.5 rounded-md border border-gray-200 px-3 py-2 text-xs text-gray-600 transition-colors hover:bg-gray-50">
+          <Image className="h-3.5 w-3.5" />
+          上传图片
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="hidden"
+            onChange={(event) => handleCoverFile(event.target.files?.[0])}
+          />
+        </label>
+        {cover && (
+          <>
+            <img src={cover} alt="封面预览" className="h-12 w-9 rounded object-cover" />
+            <button onClick={() => setCover(undefined)} className="text-xs text-red-500 hover:underline">
+              移除
+            </button>
+          </>
+        )}
+      </div>
 
-        <div className="flex items-center justify-end gap-3">
-          <ActionButton onClick={onClose} variant="secondary" size="sm">
-            取消
-          </ActionButton>
-          <ActionButton onClick={handleSubmit} size="sm">
-            确认
-          </ActionButton>
-        </div>
+      <div className="flex items-center justify-end gap-3">
+        <ActionButton onClick={onClose} variant="secondary" size="sm">
+          取消
+        </ActionButton>
+        <ActionButton onClick={handleSubmit} size="sm">
+          确认
+        </ActionButton>
+      </div>
     </AppModalShell>
   );
 }

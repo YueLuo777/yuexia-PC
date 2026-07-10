@@ -81,13 +81,18 @@ function createDefaultProject(): MoonfallProject {
 
 function normalizeStringArray(value: unknown) {
   if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
-  if (typeof value === 'string') return value.split(/[、，,\n]/).map((item) => item.trim()).filter(Boolean);
+  if (typeof value === 'string')
+    return value
+      .split(/[、，,\n]/)
+      .map((item) => item.trim())
+      .filter(Boolean);
   return [];
 }
 
 function normalizeStatus(value: unknown): MoonfallStatus {
   const text = String(value ?? '').trim();
-  if (['待确认', '已整理', '待完善', '有冲突', '废案', '未分类', '未生成向量'].includes(text)) return text as MoonfallStatus;
+  if (['待确认', '已整理', '待完善', '有冲突', '废案', '未分类', '未生成向量'].includes(text))
+    return text as MoonfallStatus;
   if (text.includes('冲突')) return '有冲突';
   if (text.includes('废')) return '废案';
   if (text.includes('确认')) return '待确认';
@@ -154,16 +159,18 @@ function normalizeSetting(raw: unknown, activeProjectId: string): MoonfallSettin
     evidenceLocation: String(item.evidenceLocation ?? '').trim(),
     worldline: String(item.worldline ?? '主线').trim(),
     relatedItems: normalizeStringArray(item.relatedItems),
-    metadata: item.metadata && typeof item.metadata === 'object' ? item.metadata as Record<string, unknown> : {},
+    metadata: item.metadata && typeof item.metadata === 'object' ? (item.metadata as Record<string, unknown>) : {},
     vectorStatus: normalizeVectorStatus(item.vectorStatus),
     embeddingModel: typeof item.embeddingModel === 'string' ? item.embeddingModel : undefined,
     embeddingDimension: Number(item.embeddingDimension) || undefined,
     embeddingText: typeof item.embeddingText === 'string' ? item.embeddingText : undefined,
-    embeddingVector: Array.isArray(item.embeddingVector) ? item.embeddingVector.map(Number).filter(Number.isFinite) : undefined,
+    embeddingVector: Array.isArray(item.embeddingVector)
+      ? item.embeddingVector.map(Number).filter(Number.isFinite)
+      : undefined,
     embeddingCreatedAt: typeof item.embeddingCreatedAt === 'string' ? item.embeddingCreatedAt : undefined,
     createdAt: String(item.createdAt ?? now),
     updatedAt: String(item.updatedAt ?? now),
-    changeLogs: Array.isArray(item.changeLogs) ? item.changeLogs as MoonfallSettingItem['changeLogs'] : [],
+    changeLogs: Array.isArray(item.changeLogs) ? (item.changeLogs as MoonfallSettingItem['changeLogs']) : [],
   };
   if (!base.embeddingText) base.embeddingText = buildEmbeddingText(base);
   return base;
@@ -187,14 +194,21 @@ export function createDefaultMoonfallState(): MoonfallState {
 export function normalizeMoonfallState(value: unknown): MoonfallState {
   if (!value || typeof value !== 'object') return createDefaultMoonfallState();
   const parsed = value as Partial<MoonfallState>;
-  const projects = Array.isArray(parsed.projects) && parsed.projects.length > 0 ? parsed.projects : [createDefaultProject()];
-  const activeProjectId = projects.some((project) => project.id === parsed.activeProjectId) ? String(parsed.activeProjectId) : projects[0].id;
+  const projects =
+    Array.isArray(parsed.projects) && parsed.projects.length > 0 ? parsed.projects : [createDefaultProject()];
+  const activeProjectId = projects.some((project) => project.id === parsed.activeProjectId)
+    ? String(parsed.activeProjectId)
+    : projects[0].id;
   return {
     projects,
     activeProjectId,
     sources: Array.isArray(parsed.sources) ? parsed.sources : [],
     sourceChunks: Array.isArray(parsed.sourceChunks) ? parsed.sourceChunks : [],
-    settings: Array.isArray(parsed.settings) ? parsed.settings.map((item) => normalizeSetting(item, activeProjectId)).filter((item): item is MoonfallSettingItem => Boolean(item)) : [],
+    settings: Array.isArray(parsed.settings)
+      ? parsed.settings
+          .map((item) => normalizeSetting(item, activeProjectId))
+          .filter((item): item is MoonfallSettingItem => Boolean(item))
+      : [],
     relations: Array.isArray(parsed.relations) ? parsed.relations : [],
     retrievalLogs: Array.isArray(parsed.retrievalLogs) ? parsed.retrievalLogs : [],
     importTasks: Array.isArray(parsed.importTasks) ? parsed.importTasks : [],
@@ -217,7 +231,13 @@ export function writeMoonfallState(state: MoonfallState) {
   localStorage.setItem(MOONFALL_STATE_KEY, JSON.stringify(next));
 }
 
-export function createSource(input: { projectId: string; title: string; sourceType: MoonfallSourceType; originalFilename?: string; description?: string }): MoonfallSource {
+export function createSource(input: {
+  projectId: string;
+  title: string;
+  sourceType: MoonfallSourceType;
+  originalFilename?: string;
+  description?: string;
+}): MoonfallSource {
   const now = nowText();
   return {
     id: createMoonfallId('source'),
@@ -234,7 +254,9 @@ export function createSource(input: { projectId: string; title: string; sourceTy
 }
 
 function isChapterHeading(line: string) {
-  return /^\s*(第[一二三四五六七八九十百千万零\d]+[章节回卷]|Chapter\s*\d+|CHAPTER\s*\d+|\d+[.、]\s*)/.test(line.trim());
+  return /^\s*(第[一二三四五六七八九十百千万零\d]+[章节回卷]|Chapter\s*\d+|CHAPTER\s*\d+|\d+[.、]\s*)/.test(
+    line.trim(),
+  );
 }
 
 function splitByChapter(text: string) {
@@ -259,7 +281,12 @@ function splitByChapter(text: string) {
   return chapters.length > 0 ? chapters : [{ title: '正文', content: text.trim() }];
 }
 
-export function createChunks(projectId: string, sourceId: string, text: string, maxChars = 4200): MoonfallSourceChunk[] {
+export function createChunks(
+  projectId: string,
+  sourceId: string,
+  text: string,
+  maxChars = 4200,
+): MoonfallSourceChunk[] {
   const chunks: MoonfallSourceChunk[] = [];
   splitByChapter(text).forEach((chapter) => {
     const content = chapter.content.trim();
@@ -282,7 +309,12 @@ export function createChunks(projectId: string, sourceId: string, text: string, 
   return chunks;
 }
 
-export function buildEmbeddingText(item: Pick<MoonfallSettingItem, 'title' | 'category' | 'subcategory' | 'tags' | 'keywords' | 'summary' | 'organizedText' | 'relatedItems'>) {
+export function buildEmbeddingText(
+  item: Pick<
+    MoonfallSettingItem,
+    'title' | 'category' | 'subcategory' | 'tags' | 'keywords' | 'summary' | 'organizedText' | 'relatedItems'
+  >,
+) {
   return [
     `标题：${item.title}`,
     `分类：${item.category}`,
@@ -374,35 +406,45 @@ export function createManualSetting(projectId: string): MoonfallSettingItem {
   return { ...base, embeddingText: buildEmbeddingText(base) };
 }
 
-export function normalizeAiReviewItems(value: unknown, sourceId?: string, sourceChunkId?: string): MoonfallReviewItem[] {
+export function normalizeAiReviewItems(
+  value: unknown,
+  sourceId?: string,
+  sourceChunkId?: string,
+): MoonfallReviewItem[] {
   if (!Array.isArray(value)) return [];
-  return value.map((raw, index) => {
-    const item = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
-    const category = normalizeCategory(item.category);
-    const rawCategory = String(item.category ?? '');
-    const status: MoonfallStatus = category === '待定/冲突' && rawCategory.includes('冲突') ? '有冲突' : '已整理';
-    return {
-      id: createMoonfallId(`review-${index}`),
-      selected: true,
-      sourceId,
-      sourceChunkId,
-      title: String(item.title ?? `待命名设定${index + 1}`).trim(),
-      category,
-      subcategory: String(item.subcategory ?? '').trim(),
-      tags: normalizeStringArray(item.tags),
-      keywords: normalizeStringArray(item.keywords),
-      summary: String(item.summary ?? '').trim(),
-      originalText: String(item.originalText ?? item.original_text ?? '').trim(),
-      organizedText: String(item.organizedText ?? item.organized_text ?? '').trim(),
-      relatedItems: normalizeStringArray(item.relatedItems ?? item.related_items),
-      status,
-      confidence: Math.max(0, Math.min(1, Number(item.confidence) || 0.65)),
-    };
-  }).filter((item) => item.title || item.summary || item.organizedText);
+  return value
+    .map((raw, index) => {
+      const item = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+      const category = normalizeCategory(item.category);
+      const rawCategory = String(item.category ?? '');
+      const status: MoonfallStatus = category === '待定/冲突' && rawCategory.includes('冲突') ? '有冲突' : '已整理';
+      return {
+        id: createMoonfallId(`review-${index}`),
+        selected: true,
+        sourceId,
+        sourceChunkId,
+        title: String(item.title ?? `待命名设定${index + 1}`).trim(),
+        category,
+        subcategory: String(item.subcategory ?? '').trim(),
+        tags: normalizeStringArray(item.tags),
+        keywords: normalizeStringArray(item.keywords),
+        summary: String(item.summary ?? '').trim(),
+        originalText: String(item.originalText ?? item.original_text ?? '').trim(),
+        organizedText: String(item.organizedText ?? item.organized_text ?? '').trim(),
+        relatedItems: normalizeStringArray(item.relatedItems ?? item.related_items),
+        status,
+        confidence: Math.max(0, Math.min(1, Number(item.confidence) || 0.65)),
+      };
+    })
+    .filter((item) => item.title || item.summary || item.organizedText);
 }
 
 export function parseAiJsonCards(text: string) {
-  const cleaned = text.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+  const cleaned = text
+    .trim()
+    .replace(/^```(?:json)?/i, '')
+    .replace(/```$/i, '')
+    .trim();
   const candidates = [
     cleaned,
     cleaned.slice(cleaned.indexOf('['), cleaned.lastIndexOf(']') + 1),
@@ -440,13 +482,28 @@ export function makeImportLog(level: MoonfallImportLog['level'], message: string
 }
 
 function tokenSet(text: string) {
-  return new Set(text.toLowerCase().split(/[\s,，、。！？；;:："'“”‘’（）()【】\[\]<>《》\n\r]+/).filter((item) => item.length >= 2));
+  return new Set(
+    text
+      .toLowerCase()
+      .split(/[\s,，、。！？；;:："'“”‘’（）()【】\[\]<>《》\n\r]+/)
+      .filter((item) => item.length >= 2),
+  );
 }
 
 function keywordScore(query: string, item: MoonfallSettingItem) {
   const q = tokenSet(query);
   if (q.size === 0) return 0;
-  const haystack = [item.title, item.canonicalName, item.aliases.join(' '), item.tags.join(' '), item.keywords.join(' '), item.summary, item.organizedText].join(' ').toLowerCase();
+  const haystack = [
+    item.title,
+    item.canonicalName,
+    item.aliases.join(' '),
+    item.tags.join(' '),
+    item.keywords.join(' '),
+    item.summary,
+    item.organizedText,
+  ]
+    .join(' ')
+    .toLowerCase();
   let score = 0;
   q.forEach((word) => {
     if (haystack.includes(word)) score += 1;
@@ -491,7 +548,17 @@ function importanceBoost(importance: MoonfallSettingItem['importance']) {
 
 export function retrieveRelevantMoonfallSettings(
   state: MoonfallState,
-  input: { projectId: string; userId?: string; query: string; categories?: string[]; tags?: string[]; limit?: number; purpose?: MoonfallPurpose; includeUnverified?: boolean; similarityThreshold?: number },
+  input: {
+    projectId: string;
+    userId?: string;
+    query: string;
+    categories?: string[];
+    tags?: string[];
+    limit?: number;
+    purpose?: MoonfallPurpose;
+    includeUnverified?: boolean;
+    similarityThreshold?: number;
+  },
 ) {
   const limit = input.limit ?? 10;
   const categorySet = new Set(input.categories?.filter(Boolean).map(normalizeCategory) ?? []);
@@ -506,30 +573,37 @@ export function retrieveRelevantMoonfallSettings(
     if (tagSet.size > 0 && !item.tags.some((tag) => tagSet.has(tag))) return false;
     return true;
   });
-  return candidates.map((item): RetrievedMoonfallSetting => {
-    const vector = item.embeddingVector && item.embeddingVector.length > 0 ? item.embeddingVector : hashEmbedding(item.embeddingText || buildEmbeddingText(item));
-    const queryVector = hashEmbedding(input.query, vector.length);
-    const similarity = dot(queryVector, vector) / (norm(queryVector) * norm(vector));
-    const keyword = keywordScore(input.query, item);
-    const priority = importanceBoost(item.importance) * Math.max(0.2, item.ragWeight || 1);
-    const score = ((similarity + 1) / 2 * 0.58 + keyword * 0.42) * priority + (item.isFavorite ? 0.08 : 0);
-    return {
-      item,
-      distance: Number((1 - similarity).toFixed(4)),
-      score: Number(score.toFixed(4)),
-      reason: keyword > 0 ? '混合检索：语义+关键词' : '语义相似',
-    };
-  })
-    .filter((result) => (
-      typeof input.similarityThreshold === 'number'
-        ? 1 - result.distance >= input.similarityThreshold
-        : true
-    ))
+  return candidates
+    .map((item): RetrievedMoonfallSetting => {
+      const vector =
+        item.embeddingVector && item.embeddingVector.length > 0
+          ? item.embeddingVector
+          : hashEmbedding(item.embeddingText || buildEmbeddingText(item));
+      const queryVector = hashEmbedding(input.query, vector.length);
+      const similarity = dot(queryVector, vector) / (norm(queryVector) * norm(vector));
+      const keyword = keywordScore(input.query, item);
+      const priority = importanceBoost(item.importance) * Math.max(0.2, item.ragWeight || 1);
+      const score = (((similarity + 1) / 2) * 0.58 + keyword * 0.42) * priority + (item.isFavorite ? 0.08 : 0);
+      return {
+        item,
+        distance: Number((1 - similarity).toFixed(4)),
+        score: Number(score.toFixed(4)),
+        reason: keyword > 0 ? '混合检索：语义+关键词' : '语义相似',
+      };
+    })
+    .filter((result) =>
+      typeof input.similarityThreshold === 'number' ? 1 - result.distance >= input.similarityThreshold : true,
+    )
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 }
 
-export function createRetrievalLog(projectId: string, query: string, results: RetrievedMoonfallSetting[], purpose: MoonfallPurpose) {
+export function createRetrievalLog(
+  projectId: string,
+  query: string,
+  results: RetrievedMoonfallSetting[],
+  purpose: MoonfallPurpose,
+) {
   return {
     id: createMoonfallId('retrieval'),
     projectId,
@@ -538,7 +612,9 @@ export function createRetrievalLog(projectId: string, query: string, results: Re
     retrievedSettingIds: results.map((result) => result.item.id),
     retrievedChunkIds: results.map((result) => result.item.sourceChunkId).filter((id): id is string => Boolean(id)),
     purpose,
-    metadata: { scores: results.map((result) => ({ id: result.item.id, score: result.score, distance: result.distance })) },
+    metadata: {
+      scores: results.map((result) => ({ id: result.item.id, score: result.score, distance: result.distance })),
+    },
     createdAt: nowText(),
   };
 }
@@ -569,7 +645,17 @@ export function buildMoonfallRagContext(results: RetrievedMoonfallSetting[]) {
 
 export function buildMoonfallRagBundle(
   state: MoonfallState,
-  input: { projectId: string; userId?: string; query: string; categories?: string[]; tags?: string[]; limit?: number; purpose?: MoonfallPurpose; includeUnverified?: boolean; similarityThreshold?: number },
+  input: {
+    projectId: string;
+    userId?: string;
+    query: string;
+    categories?: string[];
+    tags?: string[];
+    limit?: number;
+    purpose?: MoonfallPurpose;
+    includeUnverified?: boolean;
+    similarityThreshold?: number;
+  },
 ): MoonfallRagBundle {
   const purpose = input.purpose ?? 'writing';
   const results = retrieveRelevantMoonfallSettings(state, { ...input, purpose });

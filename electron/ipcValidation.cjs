@@ -11,9 +11,7 @@ const MODEL_REQUEST_HEADER_NAMES = new Set([
 ]);
 
 function normalizeCollectionName(collection) {
-  return typeof collection === 'string' && DATABASE_COLLECTION_NAMES.has(collection)
-    ? collection
-    : null;
+  return typeof collection === 'string' && DATABASE_COLLECTION_NAMES.has(collection) ? collection : null;
 }
 
 function normalizeItemsArray(items) {
@@ -48,15 +46,15 @@ function normalizeModelRequestInput(input) {
     return { ok: false, message: 'Model endpoint must not include credentials.' };
   }
 
-  const rawHeaders = input?.headers && typeof input.headers === 'object' && !Array.isArray(input.headers)
-    ? input.headers
-    : {};
+  const rawHeaders =
+    input?.headers && typeof input.headers === 'object' && !Array.isArray(input.headers) ? input.headers : {};
   const headers = Object.fromEntries(
     Object.entries(rawHeaders)
-      .filter(([name, value]) => (
-        MODEL_REQUEST_HEADER_NAMES.has(String(name).toLowerCase()) &&
-        (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
-      ))
+      .filter(
+        ([name, value]) =>
+          MODEL_REQUEST_HEADER_NAMES.has(String(name).toLowerCase()) &&
+          (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'),
+      )
       .map(([name, value]) => [name, String(value)]),
   );
   const body = typeof input?.body === 'string' ? input.body : JSON.stringify(input?.body ?? {});
@@ -78,4 +76,3 @@ module.exports = {
   normalizeItemsArray,
   normalizeModelRequestInput,
 };
-

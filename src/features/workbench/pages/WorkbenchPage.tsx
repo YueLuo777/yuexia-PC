@@ -1,10 +1,13 @@
 ﻿import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
+  type ComponentProps,
   type CSSProperties,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
@@ -14,20 +17,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ChapterEditor } from '@/features/workbench/components/ChapterEditor';
 import { ChapterRecycleModal } from '@/features/workbench/components/ChapterRecycleModal';
 import { ChapterSidebar } from '@/features/workbench/components/ChapterSidebar';
-import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
 import { PublishedSidebar } from '@/features/workbench/components/PublishedSidebar';
-import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
 import {
   WorkbenchAIPanel,
   type WorkbenchLinkedContextItem,
   type WorkbenchLinkedContextSource,
 } from '@/features/workbench/components/WorkbenchAIPanel';
 import { WorkbenchHeader, type WorkbenchHeaderFlowStats } from '@/features/workbench/components/WorkbenchHeader';
-import { WorkbenchLibraryPanel } from '@/features/workbench/components/WorkbenchLibraryPanel';
 import { WorkbenchModal } from '@/features/workbench/components/WorkbenchModal';
 import { WorkbenchNavigationWidthToggle } from '@/features/workbench/components/WorkbenchNavigationWidthToggle';
 import { WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS } from '@/features/workbench/components/workbenchManagementModalSize';
 import { readChapterContent, useWorkbenchData } from '@/features/workbench/hooks/useWorkbenchData';
+import { useWorkbenchLibrarySnapshots } from '@/features/workbench/hooks/useWorkbenchLibrarySnapshots';
 import {
   WORKBENCH_HEADER_FLOW_ITEMS,
   isWorkbenchCreationFlowPageKey,
@@ -51,13 +52,7 @@ import {
   readWorkbenchLinkedContextItems,
   writeWorkbenchLinkedContextItems,
 } from '@/features/workbench/model/workbenchAssociationCleanup';
-import {
-  GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY,
-  WORKBENCH_LIBRARY_UPDATED_EVENT,
-  readWorkbenchLibraryEntries,
-  readWorkbenchLibraryEntriesWithGlobalBrainstorm,
-  type WorkbenchLibraryEntry,
-} from '@/features/workbench/model/workbenchLibraryStorage';
+import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 import { BRAINSTORM_TAB, SETTING_TAB, normalizeTabName } from '@/features/workbench/components/workbenchLibraryTabs';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
@@ -78,6 +73,32 @@ type MemoScope = 'global' | 'work';
 type HeaderLogOpenHandler = () => void;
 type MemoItem = { id: string; title: string; content: string; updatedAt: string };
 type ContextLibraryTab = 'outlineChapter' | 'setting' | 'role' | 'status';
+
+const LazyWorkbenchLibraryPanel = lazy(() =>
+  import('@/features/workbench/components/WorkbenchLibraryPanel').then((module) => ({
+    default: module.WorkbenchLibraryPanel,
+  })),
+);
+const LazyModelManagePage = lazy(() =>
+  import('@/features/models/pages/ModelManagePage').then((module) => ({ default: module.ModelManagePage })),
+);
+const LazyPromptsPage = lazy(() =>
+  import('@/features/prompts/pages/PromptsPage').then((module) => ({ default: module.PromptsPage })),
+);
+
+function WorkbenchLibraryPanel(props: ComponentProps<typeof LazyWorkbenchLibraryPanel>) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-full min-h-[240px] items-center justify-center bg-white text-sm font-bold text-slate-400">
+          正在加载资料库…
+        </div>
+      }
+    >
+      <LazyWorkbenchLibraryPanel {...props} />
+    </Suspense>
+  );
+}
 
 const FIELD_SIZE_FLOW_IDS = new Set<WorkbenchCreationFlowPageKey>([
   'brainstorm',
@@ -117,10 +138,6 @@ interface ChapterExportItem {
   content: string;
 }
 
-interface WorkbenchLibrarySnapshots {
-  settingsEntries: WorkbenchLibraryEntry[];
-  outlineEntries: WorkbenchLibraryEntry[];
-}
 const AI_PANEL_MIN_WIDTH = WORKBENCH_SHARED_AI_RIGHT_WIDTH_MIN;
 const AI_PANEL_DEFAULT_WIDTH = WORKBENCH_SHARED_AI_RIGHT_WIDTH_DEFAULT;
 const CHAPTER_SIDEBAR_MIN_WIDTH = 200;
@@ -175,71 +192,6 @@ const APP_SCALE_VERSION_KEY = 'xinyuexia_app_scale_version';
 const APP_SCALE_BASE = 1.1;
 const APP_SCALE_STORAGE_VERSION = '2';
 const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
-
-function readWorkbenchLibrarySnapshots(
-  settingsStorageKey: string,
-  outlineStorageKey: string,
-): WorkbenchLibrarySnapshots {
-  if (!settingsStorageKey || !outlineStorageKey) {
-    return {
-      settingsEntries: [],
-      outlineEntries: [],
-    };
-  }
-  return {
-    settingsEntries: readWorkbenchLibraryEntriesWithGlobalBrainstorm(settingsStorageKey),
-    outlineEntries: readWorkbenchLibraryEntries(outlineStorageKey),
-  };
-}
-
-function shouldSyncWorkbenchLibrarySnapshot(
-  eventKey: string | null | undefined,
-  settingsStorageKey: string,
-  outlineStorageKey: string,
-) {
-  if (!eventKey) return true;
-  return (
-    eventKey === settingsStorageKey ||
-    eventKey === outlineStorageKey ||
-    eventKey === GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY
-  );
-}
-
-function useWorkbenchLibrarySnapshots(
-  settingsStorageKey: string,
-  outlineStorageKey: string,
-): WorkbenchLibrarySnapshots {
-  const [snapshots, setSnapshots] = useState<WorkbenchLibrarySnapshots>(() =>
-    readWorkbenchLibrarySnapshots(settingsStorageKey, outlineStorageKey),
-  );
-
-  useEffect(() => {
-    const syncSnapshots = () => {
-      setSnapshots(readWorkbenchLibrarySnapshots(settingsStorageKey, outlineStorageKey));
-    };
-    syncSnapshots();
-    if (!settingsStorageKey || !outlineStorageKey) return undefined;
-
-    const handleLibraryUpdated = (event: Event) => {
-      const storageKey = event instanceof CustomEvent ? event.detail?.storageKey : null;
-      if (!shouldSyncWorkbenchLibrarySnapshot(storageKey, settingsStorageKey, outlineStorageKey)) return;
-      syncSnapshots();
-    };
-    const handleStorage = (event: StorageEvent) => {
-      if (!shouldSyncWorkbenchLibrarySnapshot(event.key, settingsStorageKey, outlineStorageKey)) return;
-      syncSnapshots();
-    };
-
-    window.addEventListener(WORKBENCH_LIBRARY_UPDATED_EVENT, handleLibraryUpdated);
-    window.addEventListener('storage', handleStorage);
-    return () => {
-      window.removeEventListener(WORKBENCH_LIBRARY_UPDATED_EVENT, handleLibraryUpdated);
-      window.removeEventListener('storage', handleStorage);
-    };
-  }, [outlineStorageKey, settingsStorageKey]);
-
-  return snapshots;
-}
 
 function getEffectiveAppScale() {
   if (typeof window === 'undefined') return APP_SCALE_BASE;
@@ -1413,7 +1365,15 @@ function ManagementModal({ type, onClose }: { type: ManagementModalKey; onClose:
           </header>
         ) : null}
         <div className="min-h-0 flex-1 overflow-hidden">
-          {type === 'models' ? <ModelManagePage embedded onClose={onClose} /> : <PromptsPage />}
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">
+                正在加载管理页面…
+              </div>
+            }
+          >
+            {type === 'models' ? <LazyModelManagePage embedded onClose={onClose} /> : <LazyPromptsPage />}
+          </Suspense>
         </div>
       </section>
     </div>,
@@ -1785,6 +1745,10 @@ export function WorkbenchPage() {
   const settingsStorageKey = currentWorkbenchId ? `xinyuexia_workbench_settings_${currentWorkbenchId}` : '';
   const outlineStorageKey = currentWorkbenchId ? `xinyuexia_workbench_outline_${currentWorkbenchId}` : '';
   const { settingsEntries, outlineEntries } = useWorkbenchLibrarySnapshots(settingsStorageKey, outlineStorageKey);
+  const reviewLibraryEntries = useMemo(
+    () => [...settingsEntries, ...outlineEntries],
+    [outlineEntries, settingsEntries],
+  );
 
   useEffect(() => {
     if (!currentNovelType) return;
@@ -2686,6 +2650,7 @@ export function WorkbenchPage() {
           volumes={volumes}
           settingsStorageKey={settingsStorageKey}
           outlineStorageKey={outlineStorageKey}
+          reviewLibraryEntries={reviewLibraryEntries}
           getChapterContent={(chapterId) =>
             selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
           }
@@ -2715,6 +2680,7 @@ export function WorkbenchPage() {
         volumes={volumes}
         settingsStorageKey={settingsStorageKey}
         outlineStorageKey={outlineStorageKey}
+        reviewLibraryEntries={reviewLibraryEntries}
         getChapterContent={(chapterId) =>
           selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
         }

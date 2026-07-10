@@ -20,7 +20,13 @@ export const VOLUME_SUMMARY_TAB = '卷梗概';
 export const LEGACY_VOLUME_SUMMARY_TAB = '卷摘要';
 export const LEGACY_VOLUME_SUMMARY_TAB_OLD = '卷概要';
 export const CHAPTER_DETAIL_OUTLINE_TAB = '章节细纲';
-export const SETTING_LIBRARY_TABS = new Set([ROLE_TAB, BRAINSTORM_TAB, SETTING_TAB, DETAIL_OUTLINE_TAB, OUTLINE_LIBRARY_TAB]);
+export const SETTING_LIBRARY_TABS = new Set([
+  ROLE_TAB,
+  BRAINSTORM_TAB,
+  SETTING_TAB,
+  DETAIL_OUTLINE_TAB,
+  OUTLINE_LIBRARY_TAB,
+]);
 export const UNCATEGORIZED_TYPE = '未分类';
 export const DEFAULT_SETTING_ENTRY_TYPE = DEFAULT_SETTING_TYPES[0] ?? UNCATEGORIZED_TYPE;
 
@@ -46,12 +52,17 @@ export function getWorkbenchTabDisplayLabel(tab: string) {
   return tab;
 }
 
-
 export function normalizeTabName(tab: string) {
   if (tab === '角色库') return ROLE_TAB;
   if (tab === '设定') return SETTING_TAB;
   if (tab === '设定库') return SETTING_TAB;
-  if (tab === '摘要库' || tab === '概要库' || tab === LEGACY_OUTLINE_LIBRARY_TAB || tab === LEGACY_OUTLINE_LIBRARY_TAB_OLD) return OUTLINE_LIBRARY_TAB;
+  if (
+    tab === '摘要库' ||
+    tab === '概要库' ||
+    tab === LEGACY_OUTLINE_LIBRARY_TAB ||
+    tab === LEGACY_OUTLINE_LIBRARY_TAB_OLD
+  )
+    return OUTLINE_LIBRARY_TAB;
   if (tab === LEGACY_CHAPTER_SUMMARY_TAB || tab === LEGACY_CHAPTER_SUMMARY_TAB_OLD) return CHAPTER_SUMMARY_TAB;
   if (tab === LEGACY_VOLUME_SUMMARY_TAB || tab === LEGACY_VOLUME_SUMMARY_TAB_OLD) return VOLUME_SUMMARY_TAB;
   return tab;
@@ -64,4 +75,3 @@ export function isSettingLikeTab(tab: string) {
 export function isDetailOutlineLikeTab(tab: string) {
   return tab === DETAIL_OUTLINE_TAB || tab === DETAIL_OUTLINE_DISPLAY_LABEL || tab === CHAPTER_DETAIL_OUTLINE_TAB;
 }
-

@@ -403,8 +403,14 @@ export function ModelManagePage({ embedded = false, onClose, headerDragHandlePro
     setShowAdd(true);
   };
 
-  const openEdit = (model: ModelItem) => {
-    setEditing(model);
+  const openEdit = async (model: ModelItem) => {
+    let apiKey = model.apiKey;
+    if (window.xinyuexiaModelSecrets) {
+      const secret = await window.xinyuexiaModelSecrets.get(model.instanceId ?? model.id);
+      apiKey = secret.ok ? (secret.apiKey ?? '') : '';
+      if (!secret.ok && model.hasApiKey) showToast(secret.message || '读取模型 API Key 失败。');
+    }
+    setEditing({ ...model, apiKey });
     setShowAdd(false);
   };
 
@@ -741,7 +747,7 @@ export function ModelManagePage({ embedded = false, onClose, headerDragHandlePro
                     </div>
                     <div className="xy-capsule-group w-full">
                       <button
-                        onClick={() => openEdit(model)}
+                        onClick={() => void openEdit(model)}
                         className="xy-capsule-button model-action-button model-action-primary flex-1"
                       >
                         编辑模型

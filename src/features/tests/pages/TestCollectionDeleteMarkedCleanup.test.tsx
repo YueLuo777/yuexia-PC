@@ -54,8 +54,8 @@ describe('TestCollectionPage delete marked cleanup', () => {
     const source = await readFile(collectionPagePath, 'utf8');
 
     removedMarkedTests.forEach(([path, componentName]) => {
-      expect(source).not.toContain(path);
-      expect(source).not.toContain(componentName);
+      expect(source).not.toContainSource(path);
+      expect(source).not.toContainSource(componentName);
     });
   });
 
@@ -66,7 +66,7 @@ describe('TestCollectionPage delete marked cleanup', () => {
       ['ReviewPreviewAnnotationSync', 'TestPage'].join(''),
       ['/review-preview-annotation-sync', '-test'].join(''),
     ].forEach((removedText) => {
-      expect(source).not.toContain(removedText);
+      expect(source).not.toContainSource(removedText);
     });
 
     [
@@ -79,7 +79,7 @@ describe('TestCollectionPage delete marked cleanup', () => {
       '\u5f85\u6d4b\u8bd5',
       '\u6807\u8bb0\u5df2\u6d4b\u8bd5',
     ].forEach((requiredText) => {
-      expect(source).toContain(requiredText);
+      expect(source).toContainSource(requiredText);
     });
   });
 
@@ -87,27 +87,29 @@ describe('TestCollectionPage delete marked cleanup', () => {
     const source = await readFile(collectionPagePath, 'utf8');
     const toggleBody = source.match(/const toggleTestedTest = \(path: string\) => \{([\s\S]*?)\n {2}\};/)?.[1] ?? '';
 
-    expect(toggleBody).toContain('setTestedTestPaths');
-    expect(toggleBody).not.toContain('setActivePath(null)');
-    expect(toggleBody).not.toContain('setCollectionTab(');
+    expect(toggleBody).toContainSource('setTestedTestPaths');
+    expect(toggleBody).not.toContainSource('setActivePath(null)');
+    expect(toggleBody).not.toContainSource('setCollectionTab(');
   });
 
   it('does not show check icons for untested items through theme text color overrides', async () => {
     const source = await readFile(collectionPagePath, 'utf8');
 
-    expect(source).not.toContain('text-transparent');
-    expect(source).toContain('testedTestPaths.has(activePath) ? <Check className="h-3 w-3" /> : null');
-    expect(source).toContain('isTested ? <Check className="h-4 w-4" /> : null');
+    expect(source).not.toContainSource('text-transparent');
+    expect(source).toContainSource('testedTestPaths.has(activePath) ? <Check className="h-3 w-3" /> : null');
+    expect(source).toContainSource('isTested ? <Check className="h-4 w-4" /> : null');
   });
 
   it('prunes deleted test paths from the completed-test bucket', async () => {
     const source = await readFile(collectionPagePath, 'utf8');
 
-    expect(source).toContain('const validTestPaths = new Set(testNumberByPath.keys());');
-    expect(source).toContain('validTestPaths.has(item)');
-    expect(source).toContain('localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(validPaths));');
-    expect(source).toContain('Array.from(current).filter((path) => validTestPaths.has(path))');
-    expect(source).toContain(
+    expect(source).toContainSource('const validTestPaths = new Set(testNumberByPath.keys());');
+    expect(source).toContainSource('validTestPaths.has(item)');
+    expect(source).toContainSource(
+      'localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(validPaths));',
+    );
+    expect(source).toContainSource('Array.from(current).filter((path) => validTestPaths.has(path))');
+    expect(source).toContainSource(
       'localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(Array.from(next)));',
     );
   });

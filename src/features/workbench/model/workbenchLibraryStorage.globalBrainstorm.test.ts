@@ -49,10 +49,10 @@ describe('workbench library global brainstorm storage', () => {
   });
 
   it('migrates old per-work brainstorm entries into the global brainstorm store', () => {
-    localStorage.setItem('legacy-work-settings', JSON.stringify([
-      entry('setting-1', '大纲', '旧作品设定'),
-      entry('brainstorm-old', '脑洞', '旧脑洞'),
-    ]));
+    localStorage.setItem(
+      'legacy-work-settings',
+      JSON.stringify([entry('setting-1', '大纲', '旧作品设定'), entry('brainstorm-old', '脑洞', '旧脑洞')]),
+    );
 
     const merged = readWorkbenchLibraryEntriesWithGlobalBrainstorm('legacy-work-settings');
 
@@ -77,11 +77,15 @@ describe('workbench library global brainstorm storage', () => {
       entry('brainstorm-1', '脑洞', '通用脑洞'),
     ]);
 
-    expect(listener).toHaveBeenCalledWith(expect.objectContaining({
-      detail: { storageKey: 'work-settings' },
-    }));
-    expect(listener).toHaveBeenCalledWith(expect.objectContaining({
-      detail: { storageKey: GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY },
-    }));
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { storageKey: 'work-settings' },
+      }),
+    );
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: { storageKey: GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY },
+      }),
+    );
   });
 });

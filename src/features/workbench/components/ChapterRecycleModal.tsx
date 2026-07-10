@@ -11,19 +11,31 @@ interface ChapterRecycleModalProps {
   onPermanentDelete: (chapterId: number) => void;
 }
 
-export function ChapterRecycleModal({ isOpen, chapters, onClose, onRestore, onPermanentDelete }: ChapterRecycleModalProps) {
+export function ChapterRecycleModal({
+  isOpen,
+  chapters,
+  onClose,
+  onRestore,
+  onPermanentDelete,
+}: ChapterRecycleModalProps) {
   useTopModalEscape(isOpen, onClose);
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="flex h-[420px] max-h-[80vh] w-[560px] max-w-[92vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+      <div
+        className="flex h-[420px] max-h-[80vh] w-[560px] max-w-[92vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-3">
           <div>
             <h3 className="text-base font-bold text-gray-900">章节回收站</h3>
             <p className="mt-0.5 text-xs text-gray-400">删除的章节会暂存在这里，可以恢复或彻底删除。</p>
           </div>
-          <button onClick={onClose} className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
+          <button
+            onClick={onClose}
+            className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -48,10 +60,16 @@ export function ChapterRecycleModal({ isOpen, chapters, onClose, onRestore, onPe
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      <button onClick={() => onRestore(chapter.id)} className="rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 transition-colors hover:bg-gray-50">
+                      <button
+                        onClick={() => onRestore(chapter.id)}
+                        className="rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 transition-colors hover:bg-gray-50"
+                      >
                         恢复
                       </button>
-                      <button onClick={() => onPermanentDelete(chapter.id)} className="flex items-center gap-1 rounded-md border border-red-200 px-3 py-1.5 text-xs text-red-500 transition-colors hover:bg-red-50">
+                      <button
+                        onClick={() => onPermanentDelete(chapter.id)}
+                        className="flex items-center gap-1 rounded-md border border-red-200 px-3 py-1.5 text-xs text-red-500 transition-colors hover:bg-red-50"
+                      >
                         <Trash2 className="h-3 w-3" />
                         <span>彻底删除</span>
                       </button>

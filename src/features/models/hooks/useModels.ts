@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ModelItem, NewModelInput } from '@/features/models/model/modelTypes';
 import { deleteRecordsByModel } from '@/hooks/useCallRecords';
@@ -21,6 +21,18 @@ function normalizeTemperature(value: number | undefined) {
   if (!Number.isFinite(next)) return 0.7;
   const stepped = Math.round(next / 0.05) * 0.05;
   return Math.max(0.1, Math.min(1, Number(stepped.toFixed(2))));
+}
+
+function getModelSecretId(model: Pick<ModelItem, 'id' | 'instanceId'>) {
+  return model.instanceId ?? model.id;
+}
+
+function toStoredModels(models: ModelItem[]) {
+  if (!window.xinyuexiaModelSecrets) return models;
+  return models.map((model) => {
+    if (model.hasApiKey === undefined && model.apiKey.trim()) return model;
+    return { ...model, apiKey: '' };
+  });
 }
 
 function isLegacyImageModel(model: ModelItem & { modelKind?: string }) {
@@ -65,7 +77,7 @@ function readModels() {
 }
 
 function writeModels(models: ModelItem[], options: { notify?: boolean } = {}) {
-  localStorage.setItem(MODELS_KEY, JSON.stringify({ models }));
+  localStorage.setItem(MODELS_KEY, JSON.stringify({ models: toStoredModels(models) }));
   if (options.notify !== false) window.dispatchEvent(new CustomEvent(APP_EVENTS.modelsUpdated));
 }
 
@@ -75,7 +87,10 @@ export function readModelSnapshot() {
 
 export function useModels() {
   const [models, setModels] = useState<ModelItem[]>(readModels);
-  const [activeId, setActiveId] = useState<string | null>(() => localStorage.getItem(ACTIVE_MODEL_KEY) || readModels()[0]?.id || null);
+  const initialModelsRef = useRef(models);
+  const [activeId, setActiveId] = useState<string | null>(
+    () => localStorage.getItem(ACTIVE_MODEL_KEY) || readModels()[0]?.id || null,
+  );
 
   const activeModel = useMemo(() => models.find((model) => model.id === activeId) ?? null, [activeId, models]);
 
@@ -83,6 +98,41 @@ export function useModels() {
     const syncModels = () => setModels(readModels());
     window.addEventListener(APP_EVENTS.modelsUpdated, syncModels);
     return () => window.removeEventListener(APP_EVENTS.modelsUpdated, syncModels);
+  }, []);
+
+  useEffect(() => {
+    const bridge = window.xinyuexiaModelSecrets;
+    if (!bridge) return;
+    let cancelled = false;
+
+    const migrateAndRefreshSecretStatus = async () => {
+      const migratedSecretIds = new Set<string>();
+      for (const model of initialModelsRef.current) {
+        const apiKey = model.apiKey.trim();
+        if (!apiKey) continue;
+        const secretId = getModelSecretId(model);
+        const result = await bridge.set(secretId, apiKey);
+        if (result.ok) migratedSecretIds.add(secretId);
+      }
+
+      const status = await bridge.status();
+      if (cancelled || !status.ok) return;
+      setModels((current) => {
+        const next = current.map((model) => {
+          const secretId = getModelSecretId(model);
+          const hasApiKey = Boolean(status.secrets[secretId] || migratedSecretIds.has(secretId));
+          if (model.apiKey.trim() && !hasApiKey) return model;
+          return { ...model, apiKey: '', hasApiKey };
+        });
+        writeModels(next);
+        return next;
+      });
+    };
+
+    void migrateAndRefreshSecretStatus();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -100,12 +150,16 @@ export function useModels() {
   const addModel = (input: NewModelInput) => {
     const id = normalizeNewModelId(input);
     if (!id || models.some((model) => model.id === id)) return false;
+    const instanceId = createModelInstanceId(id);
+    const apiKey = input.apiKey.trim();
+    const secureBridge = window.xinyuexiaModelSecrets;
     const model: ModelItem = {
       id,
-      instanceId: createModelInstanceId(id),
+      instanceId,
       name: input.name.trim() || id,
       baseUrl: input.baseUrl.trim(),
-      apiKey: input.apiKey.trim(),
+      apiKey: secureBridge ? '' : apiKey,
+      hasApiKey: secureBridge ? Boolean(apiKey) : undefined,
       model: id,
       provider: input.provider ?? 'openai-compatible',
       enabled: true,
@@ -113,27 +167,51 @@ export function useModels() {
       connectionStatus: 'unknown',
       temperature: normalizeTemperature(input.temperature),
     };
+    if (secureBridge) {
+      void secureBridge.set(instanceId, apiKey).then((result) => {
+        if (!result.ok) console.error(result.message || '保存模型 API Key 失败。');
+      });
+    }
     persist([...models, model]);
     setActiveId(model.id);
     return true;
   };
 
   const updateModel = (id: string, updates: Partial<ModelItem>) => {
-    persist(models.map((model) => {
-      if (model.id !== id) return model;
-      const { id: _ignoredId, instanceId: _ignoredInstanceId, ...safeUpdates } = updates;
-      return {
-        ...model,
-        ...safeUpdates,
-        enabled: true,
-        temperature: safeUpdates.temperature === undefined ? model.temperature : normalizeTemperature(safeUpdates.temperature),
-      };
-    }));
+    const target = models.find((model) => model.id === id);
+    const secureBridge = window.xinyuexiaModelSecrets;
+    const hasApiKeyUpdate = Object.prototype.hasOwnProperty.call(updates, 'apiKey');
+    const nextApiKey = hasApiKeyUpdate ? String(updates.apiKey ?? '').trim() : '';
+    if (target && secureBridge && hasApiKeyUpdate) {
+      void secureBridge.set(getModelSecretId(target), nextApiKey).then((result) => {
+        if (!result.ok) console.error(result.message || '保存模型 API Key 失败。');
+      });
+    }
+    persist(
+      models.map((model) => {
+        if (model.id !== id) return model;
+        const { id: _ignoredId, instanceId: _ignoredInstanceId, ...safeUpdates } = updates;
+        if (secureBridge && hasApiKeyUpdate) {
+          safeUpdates.apiKey = '';
+          safeUpdates.hasApiKey = Boolean(nextApiKey);
+        }
+        return {
+          ...model,
+          ...safeUpdates,
+          enabled: true,
+          temperature:
+            safeUpdates.temperature === undefined ? model.temperature : normalizeTemperature(safeUpdates.temperature),
+        };
+      }),
+    );
   };
 
   const deleteModel = (id: string) => {
     const target = models.find((model) => model.id === id);
-    if (target) deleteRecordsByModel(target.id, target.instanceId);
+    if (target) {
+      deleteRecordsByModel(target.id, target.instanceId);
+      void window.xinyuexiaModelSecrets?.remove(getModelSecretId(target));
+    }
     persist(models.filter((model) => model.id !== id));
   };
 

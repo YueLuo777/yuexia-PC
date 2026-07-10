@@ -64,9 +64,11 @@ describe('workbenchPlotPointCard', () => {
   });
 
   it('does not prepend the candidate title back into the body preview', () => {
-    expect(getPlotPointDisplayText({
-      title: '高考灵气潮汐爆发',
-      previewText: '林刻考场异象惊动超管局，高考当天，他坐在考场内吸收灵气。',
-    })).toBe('林刻考场异象惊动超管局，高考当天，他坐在考场内吸收灵气。');
+    expect(
+      getPlotPointDisplayText({
+        title: '高考灵气潮汐爆发',
+        previewText: '林刻考场异象惊动超管局，高考当天，他坐在考场内吸收灵气。',
+      }),
+    ).toBe('林刻考场异象惊动超管局，高考当天，他坐在考场内吸收灵气。');
   });
 });

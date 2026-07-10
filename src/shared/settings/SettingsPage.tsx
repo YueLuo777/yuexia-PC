@@ -5,7 +5,14 @@ import { useSearchParams } from 'react-router-dom';
 import { DarkThemeColorPage } from '@/features/tests/pages/DarkThemeColorPage';
 import { DbSettingsPage } from '@/features/settings/pages/DbSettingsPage';
 import { NavSettingsModal } from '@/shared/navigation/NavSettingsModal';
-import { NAV_CONFIG_UPDATED_EVENT, loadNavConfig, normalizeNavConfig, resetNavConfig, saveNavConfig, type NavGroupConfig } from '@/shared/navigation/navConfig';
+import {
+  NAV_CONFIG_UPDATED_EVENT,
+  loadNavConfig,
+  normalizeNavConfig,
+  resetNavConfig,
+  saveNavConfig,
+  type NavGroupConfig,
+} from '@/shared/navigation/navConfig';
 import { SHORTCUT_SETTINGS_RESET_EVENT, ShortcutSettingsModal } from '@/shared/shortcuts/ShortcutSettingsModal';
 import { SystemSettingsModal } from '@/shared/settings/SystemSettingsModal';
 import { PRIMARY_TEXT_BUTTON_CLASS } from '@/shared/ui/actionButtonClasses';
@@ -13,8 +20,7 @@ import { SettingsSurface } from '@/shared/ui/SettingsSurface';
 
 type SettingsSection = 'system' | 'backup' | 'shortcuts' | 'theme' | 'navigation';
 
-const SETTINGS_HEADER_ACTION_BUTTON_CLASS =
-  PRIMARY_TEXT_BUTTON_CLASS;
+const SETTINGS_HEADER_ACTION_BUTTON_CLASS = PRIMARY_TEXT_BUTTON_CLASS;
 
 const SETTINGS_NAV_ITEMS: Array<{
   id: SettingsSection;
@@ -40,7 +46,9 @@ function readHomeAvatar() {
 
 export function SettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeSection, setActiveSection] = useState<SettingsSection>(() => normalizeSettingsSection(searchParams.get('section')));
+  const [activeSection, setActiveSection] = useState<SettingsSection>(() =>
+    normalizeSettingsSection(searchParams.get('section')),
+  );
   const [homeAvatar, setHomeAvatar] = useState(readHomeAvatar);
   const [navConfig, setNavConfig] = useState<NavGroupConfig[]>(() => normalizeNavConfig(loadNavConfig()));
 
@@ -103,7 +111,9 @@ export function SettingsPage() {
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="min-w-0">
                   <span className="block text-sm font-black leading-5">{item.label}</span>
-                  <span className={`mt-0.5 block truncate text-xs font-bold ${active ? 'text-white/80' : 'text-slate-400'}`}>
+                  <span
+                    className={`mt-0.5 block truncate text-xs font-bold ${active ? 'text-white/80' : 'text-slate-400'}`}
+                  >
                     {item.description}
                   </span>
                 </span>
@@ -140,15 +150,11 @@ export function SettingsPage() {
             {activeSection === 'system' && (
               <SystemSettingsModal isOpen onClose={() => undefined} homeAvatar={homeAvatar} variant="embedded" />
             )}
-            {activeSection === 'backup' && (
-              <DbSettingsPage />
-            )}
+            {activeSection === 'backup' && <DbSettingsPage />}
             {activeSection === 'shortcuts' && (
               <ShortcutSettingsModal isOpen onClose={() => undefined} variant="embedded" />
             )}
-            {activeSection === 'theme' && (
-              <DarkThemeColorPage variant="embedded" />
-            )}
+            {activeSection === 'theme' && <DarkThemeColorPage variant="embedded" />}
             {activeSection === 'navigation' && (
               <NavSettingsModal
                 isOpen

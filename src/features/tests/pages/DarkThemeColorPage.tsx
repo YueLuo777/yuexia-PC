@@ -197,8 +197,12 @@ const DETAIL_OUTLINE_NUMBER_SLOT_KEYS: CustomThemeColorSlotKey[] = [
 const SETTINGS_SOLID_BUTTON_CLASS =
   'flex h-8 min-w-[88px] items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-4 text-sm leading-none text-white transition-colors hover:bg-[#0798b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2] disabled:cursor-not-allowed disabled:bg-slate-300';
 
-const globalCustomThemeSlots = CUSTOM_THEME_COLOR_SLOTS.filter((slot) => GLOBAL_CUSTOM_THEME_SLOT_KEYS.includes(slot.key));
-const detailOutlineNumberSlots = CUSTOM_THEME_COLOR_SLOTS.filter((slot) => DETAIL_OUTLINE_NUMBER_SLOT_KEYS.includes(slot.key));
+const globalCustomThemeSlots = CUSTOM_THEME_COLOR_SLOTS.filter((slot) =>
+  GLOBAL_CUSTOM_THEME_SLOT_KEYS.includes(slot.key),
+);
+const detailOutlineNumberSlots = CUSTOM_THEME_COLOR_SLOTS.filter((slot) =>
+  DETAIL_OUTLINE_NUMBER_SLOT_KEYS.includes(slot.key),
+);
 
 const slots: ThemeSlot[] = [
   { key: 'page', title: '页面背景', desc: '应用最底层的大面积背景。' },
@@ -258,7 +262,9 @@ function uniqueThemePaletteColors(colors: ColorItem[]) {
 
 const themePaletteColors = uniqueThemePaletteColors([...colorGroups.flatMap((group) => group.colors), ...extraColors]);
 if (themePaletteColors.length !== THEME_PALETTE_TARGET_COLOR_COUNT) {
-  throw new Error(`Theme palette should contain ${THEME_PALETTE_TARGET_COLOR_COUNT} colors, got ${themePaletteColors.length}.`);
+  throw new Error(
+    `Theme palette should contain ${THEME_PALETTE_TARGET_COLOR_COUNT} colors, got ${themePaletteColors.length}.`,
+  );
 }
 
 function hexToRgb(hex: string) {
@@ -287,21 +293,22 @@ function getThemePaletteSortKey(color: ColorItem) {
   else if (max === g) hue = ((b - r) / delta + 2) * 60;
   else hue = ((r - g) / delta + 4) * 60;
 
-  const colorBand = hue >= 345 || hue < 15
-    ? 1
-    : hue < 45
-      ? 2
-      : hue < 75
-        ? 3
-        : hue < 165
-          ? 4
-          : hue < 205
-            ? 5
-            : hue < 255
-              ? 6
-              : hue < 315
-                ? 7
-                : 8;
+  const colorBand =
+    hue >= 345 || hue < 15
+      ? 1
+      : hue < 45
+        ? 2
+        : hue < 75
+          ? 3
+          : hue < 165
+            ? 4
+            : hue < 205
+              ? 5
+              : hue < 255
+                ? 6
+                : hue < 315
+                  ? 7
+                  : 8;
 
   return [colorBand, hue, lightness, color.id];
 }
@@ -414,34 +421,36 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
   const page = getPagePalette(mode);
   const previewColors: CustomThemeColorMap = draftColors;
   const activeCustomThemeSlots = activeThemeTab === 'detailOutline' ? detailOutlineNumberSlots : globalCustomThemeSlots;
-  const selectedTarget = activeCustomThemeSlots.find((slot) => slot.key === selectedTargetKey) ?? activeCustomThemeSlots[0];
+  const selectedTarget =
+    activeCustomThemeSlots.find((slot) => slot.key === selectedTargetKey) ?? activeCustomThemeSlots[0];
   const hasCustomThemeChanges = isCustomThemeChanged(draftColors);
-  const customWorkflowGridClass = variant === 'modal'
-    ? 'flex min-h-0 flex-col gap-5'
-    : 'flex flex-col gap-5';
-  const customStickyOverviewClass = variant === 'modal'
-    ? 'grid min-h-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(260px,390px)_minmax(360px,1fr)]'
-    : 'grid grid-cols-1 gap-5 xl:grid-cols-[390px_minmax(360px,1fr)]';
-  const customTargetPanelClass = variant === 'modal'
-    ? 'rounded-xl border bg-white p-3 xl:p-4'
-    : 'rounded-xl border bg-white p-4';
-  const customTargetListClass = variant === 'modal'
-    ? 'editor-scrollbar max-h-[210px] space-y-2 overflow-y-auto pr-1 xl:max-h-[260px]'
-    : 'editor-scrollbar max-h-[220px] space-y-2 overflow-y-auto pr-1';
-  const customColorPickerPanelClass = variant === 'modal'
-    ? 'flex min-h-[260px] flex-1 flex-col rounded-xl border bg-white p-4'
-    : 'flex min-h-[320px] flex-col rounded-xl border bg-white p-4';
-  const customPickerBodyClass = variant === 'modal'
-    ? 'grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_150px_164px]'
-    : 'grid min-h-0 grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_160px_180px]';
-  const customScrollablePaletteClass = variant === 'modal'
-    ? 'editor-scrollbar grid max-h-[360px] min-h-[220px] grid-cols-4 gap-2 overflow-y-auto pr-1 sm:grid-cols-5 md:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-9'
-    : 'editor-scrollbar grid max-h-[460px] min-h-[240px] grid-cols-5 gap-2 overflow-y-auto pr-1 md:grid-cols-7 xl:grid-cols-9 2xl:grid-cols-11';
+  const customWorkflowGridClass = variant === 'modal' ? 'flex min-h-0 flex-col gap-5' : 'flex flex-col gap-5';
+  const customStickyOverviewClass =
+    variant === 'modal'
+      ? 'grid min-h-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(260px,390px)_minmax(360px,1fr)]'
+      : 'grid grid-cols-1 gap-5 xl:grid-cols-[390px_minmax(360px,1fr)]';
+  const customTargetPanelClass =
+    variant === 'modal' ? 'rounded-xl border bg-white p-3 xl:p-4' : 'rounded-xl border bg-white p-4';
+  const customTargetListClass =
+    variant === 'modal'
+      ? 'editor-scrollbar max-h-[210px] space-y-2 overflow-y-auto pr-1 xl:max-h-[260px]'
+      : 'editor-scrollbar max-h-[220px] space-y-2 overflow-y-auto pr-1';
+  const customColorPickerPanelClass =
+    variant === 'modal'
+      ? 'flex min-h-[260px] flex-1 flex-col rounded-xl border bg-white p-4'
+      : 'flex min-h-[320px] flex-col rounded-xl border bg-white p-4';
+  const customPickerBodyClass =
+    variant === 'modal'
+      ? 'grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_150px_164px]'
+      : 'grid min-h-0 grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_160px_180px]';
+  const customScrollablePaletteClass =
+    variant === 'modal'
+      ? 'editor-scrollbar grid max-h-[360px] min-h-[220px] grid-cols-4 gap-2 overflow-y-auto pr-1 sm:grid-cols-5 md:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-9'
+      : 'editor-scrollbar grid max-h-[460px] min-h-[240px] grid-cols-5 gap-2 overflow-y-auto pr-1 md:grid-cols-7 xl:grid-cols-9 2xl:grid-cols-11';
   const customRecentColumnClass = 'min-h-0 rounded-lg border border-slate-100 bg-slate-50/60 p-3';
   const customActionColumnClass = 'min-h-0 rounded-lg border border-slate-100 bg-slate-50/60 p-3';
-  const customPreviewPanelClass = variant === 'modal'
-    ? 'rounded-xl border bg-white p-3 xl:p-4'
-    : 'rounded-xl border bg-white p-4';
+  const customPreviewPanelClass =
+    variant === 'modal' ? 'rounded-xl border bg-white p-3 xl:p-4' : 'rounded-xl border bg-white p-4';
   const customPreviewEditorClass = variant === 'modal' ? 'rounded-lg p-3' : 'rounded-lg p-4';
   const customPreviewLineStackClass = variant === 'modal' ? 'space-y-2' : 'space-y-3';
   const customPreviewLineCount = variant === 'modal' ? 2 : 2;
@@ -551,7 +560,9 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
       <section className="rounded-xl border p-5" style={{ backgroundColor: page.panel, borderColor: page.border }}>
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold" style={{ color: page.title }}>填色位置</h2>
+            <h2 className="text-base font-bold" style={{ color: page.title }}>
+              填色位置
+            </h2>
             <p className="mt-1 text-sm" style={{ color: page.muted }}>
               {pendingSlotKey ? '已选择位置，请点击下方颜色完成填色。' : '先选择一个位置，位置会出现橙色边框。'}
             </p>
@@ -582,11 +593,20 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
                 }}
               >
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="text-sm font-bold" style={{ color: page.title }}>{slot.title}</span>
-                  <span className="h-5 w-5 shrink-0 rounded border border-white/10" style={{ backgroundColor: color }} />
+                  <span className="text-sm font-bold" style={{ color: page.title }}>
+                    {slot.title}
+                  </span>
+                  <span
+                    className="h-5 w-5 shrink-0 rounded border border-white/10"
+                    style={{ backgroundColor: color }}
+                  />
                 </div>
-                <div className="font-mono text-xs" style={{ color: page.body }}>{color}</div>
-                <div className="mt-1 line-clamp-2 text-[11px]" style={{ color: page.muted }}>{slot.desc}</div>
+                <div className="font-mono text-xs" style={{ color: page.body }}>
+                  {color}
+                </div>
+                <div className="mt-1 line-clamp-2 text-[11px]" style={{ color: page.muted }}>
+                  {slot.desc}
+                </div>
               </button>
             );
           })}
@@ -596,8 +616,12 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
       <section className="rounded-xl border p-5" style={{ backgroundColor: page.panel, borderColor: page.border }}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold" style={{ color: page.title }}>颜色</h2>
-            <p className="mt-1 text-sm" style={{ color: page.muted }}>共 {flatColors.length} 种颜色，点击颜色后会填入当前橙框位置。</p>
+            <h2 className="text-base font-bold" style={{ color: page.title }}>
+              颜色
+            </h2>
+            <p className="mt-1 text-sm" style={{ color: page.muted }}>
+              共 {flatColors.length} 种颜色，点击颜色后会填入当前橙框位置。
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <input
@@ -610,10 +634,7 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
               className="h-9 w-28 rounded-lg border px-3 font-mono text-sm outline-none"
               style={{ backgroundColor: page.card, borderColor: page.border, color: page.title }}
             />
-            <button
-              onClick={addCustomColor}
-              className={SETTINGS_SOLID_BUTTON_CLASS}
-            >
+            <button onClick={addCustomColor} className={SETTINGS_SOLID_BUTTON_CLASS}>
               添加颜色
             </button>
           </div>
@@ -640,8 +661,12 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
                   <span>{color.id}</span>
                   {active && <Check className="h-3.5 w-3.5" />}
                 </div>
-                <div className="truncate text-xs font-bold" style={{ color: page.title }}>{color.name}</div>
-                <div className="mt-1 truncate font-mono text-[11px]" style={{ color: page.body }}>{color.value}</div>
+                <div className="truncate text-xs font-bold" style={{ color: page.title }}>
+                  {color.name}
+                </div>
+                <div className="mt-1 truncate font-mono text-[11px]" style={{ color: page.body }}>
+                  {color.value}
+                </div>
               </button>
             );
           })}
@@ -674,7 +699,9 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
                 >
                   <span className="min-w-0">
                     <span className="block text-sm font-black text-slate-950">{slot.label}</span>
-                    <span className="mt-0.5 line-clamp-2 block text-xs font-medium text-slate-500">{slot.description}</span>
+                    <span className="mt-0.5 line-clamp-2 block text-xs font-medium text-slate-500">
+                      {slot.description}
+                    </span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end gap-1">
                     <span
@@ -682,11 +709,16 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
                       style={{
                         backgroundColor: slot.key === 'detailOutlineSelected' ? '#ffffff' : draftColors[slot.key],
                         borderColor: slot.key === 'detailOutlineSelected' ? draftColors[slot.key] : '#e2e8f0',
-                        boxShadow: slot.key === 'detailOutlineSelected' ? `0 0 0 2px ${draftColors[slot.key]}` : undefined,
+                        boxShadow:
+                          slot.key === 'detailOutlineSelected' ? `0 0 0 2px ${draftColors[slot.key]}` : undefined,
                       }}
                     />
                     <span className="font-mono text-[11px] font-black text-slate-500">{draftColors[slot.key]}</span>
-                    {changed ? <span className="rounded-full bg-[#E7F8FD] px-2 py-0.5 text-[11px] font-black text-[#08AACE]">预览中</span> : null}
+                    {changed ? (
+                      <span className="rounded-full bg-[#E7F8FD] px-2 py-0.5 text-[11px] font-black text-[#08AACE]">
+                        预览中
+                      </span>
+                    ) : null}
                   </span>
                 </button>
               );
@@ -695,85 +727,117 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
         </section>
 
         <section className={customPreviewPanelClass} style={{ borderColor: page.border }}>
-        <div className="mb-3 flex items-center justify-between">
-           <div>
-             <h2 className="text-base font-black text-slate-950">预览</h2>
-           </div>
-          <span className="rounded-full bg-slate-100 px-3 py-1 font-mono text-xs font-black text-slate-500">{selectedTarget.cssVar}</span>
-        </div>
-
-        {activeThemeTab === 'detailOutline' ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-3 rounded-lg border border-[#BDEEF7] bg-[#E7F8FD] px-3 py-2 text-sm font-black text-slate-950">第一卷</div>
-            <div className="flex flex-wrap gap-2">
-              {([
-                ['选中', 'detailOutlineSelected'],
-                ['已用', 'detailOutlineUsed'],
-                ['有章纲', 'detailOutlineHasOutline'],
-                ['无章纲', 'detailOutlineNoOutline'],
-              ] as const).map(([label, key], index) => (
-                <div key={key} className="space-y-1">
-                  <div
-                    className="grid h-9 w-9 place-items-center rounded-lg border text-sm font-black text-slate-950"
-                    style={{
-                      backgroundColor: key === 'detailOutlineSelected' ? previewColors.detailOutlineHasOutline : previewColors[key],
-                      borderColor: key === 'detailOutlineSelected' ? previewColors.detailOutlineSelected : key === 'detailOutlineNoOutline' ? '#e2e8f0' : '#08AACE',
-                      boxShadow: key === 'detailOutlineSelected' ? `0 0 0 2px #ffffff, 0 0 0 4px ${previewColors.detailOutlineSelected}` : '0 1px 4px rgba(15,23,42,0.10)',
-                    }}
-                  >
-                    {index + 1}
-                  </div>
-                  <div className="text-center text-[11px] font-black text-slate-500">{label}</div>
-                </div>
-              ))}
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-black text-slate-950">预览</h2>
             </div>
+            <span className="rounded-full bg-slate-100 px-3 py-1 font-mono text-xs font-black text-slate-500">
+              {selectedTarget.cssVar}
+            </span>
           </div>
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="h-8 border-b border-slate-200 px-3 py-1.5 text-xs font-black text-slate-600" style={{ backgroundColor: previewColors.titlebar }}>
-              软件标题栏颜色
-            </div>
-            <div className="grid grid-cols-[140px_1fr]">
-              <div className="space-y-2 border-r border-slate-200 p-3" style={{ backgroundColor: previewColors.sidebarBackground }}>
-                <div className="text-sm font-black text-slate-950">我的小说</div>
-                <div className="rounded-md px-3 py-2 text-sm font-black text-slate-950" style={{ backgroundColor: previewColors.sidebarActive }}>作品信息</div>
-                <div className="rounded-md px-3 py-2 text-sm font-bold text-slate-500">测试集合</div>
+
+          {activeThemeTab === 'detailOutline' ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 rounded-lg border border-[#BDEEF7] bg-[#E7F8FD] px-3 py-2 text-sm font-black text-slate-950">
+                第一卷
               </div>
-              <div className="space-y-3 p-3">
-                <div className="grid grid-cols-3 gap-2">
-                  {['脑洞', '设定', '正文'].map((label, index) => (
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ['选中', 'detailOutlineSelected'],
+                    ['已用', 'detailOutlineUsed'],
+                    ['有章纲', 'detailOutlineHasOutline'],
+                    ['无章纲', 'detailOutlineNoOutline'],
+                  ] as const
+                ).map(([label, key], index) => (
+                  <div key={key} className="space-y-1">
                     <div
-                      key={label}
-                      className="rounded-md border px-3 py-2 text-center text-sm font-black"
-                      style={{ backgroundColor: index === 2 ? previewColors.contentSelected : '#ffffff', borderColor: '#dbe4ef' }}
+                      className="grid h-9 w-9 place-items-center rounded-lg border text-sm font-black text-slate-950"
+                      style={{
+                        backgroundColor:
+                          key === 'detailOutlineSelected' ? previewColors.detailOutlineHasOutline : previewColors[key],
+                        borderColor:
+                          key === 'detailOutlineSelected'
+                            ? previewColors.detailOutlineSelected
+                            : key === 'detailOutlineNoOutline'
+                              ? '#e2e8f0'
+                              : '#08AACE',
+                        boxShadow:
+                          key === 'detailOutlineSelected'
+                            ? `0 0 0 2px #ffffff, 0 0 0 4px ${previewColors.detailOutlineSelected}`
+                            : '0 1px 4px rgba(15,23,42,0.10)',
+                      }}
                     >
-                      {label}
+                      {index + 1}
                     </div>
-                  ))}
+                    <div className="text-center text-[11px] font-black text-slate-500">{label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div
+                className="h-8 border-b border-slate-200 px-3 py-1.5 text-xs font-black text-slate-600"
+                style={{ backgroundColor: previewColors.titlebar }}
+              >
+                软件标题栏颜色
+              </div>
+              <div className="grid grid-cols-[140px_1fr]">
+                <div
+                  className="space-y-2 border-r border-slate-200 p-3"
+                  style={{ backgroundColor: previewColors.sidebarBackground }}
+                >
+                  <div className="text-sm font-black text-slate-950">我的小说</div>
+                  <div
+                    className="rounded-md px-3 py-2 text-sm font-black text-slate-950"
+                    style={{ backgroundColor: previewColors.sidebarActive }}
+                  >
+                    作品信息
+                  </div>
+                  <div className="rounded-md px-3 py-2 text-sm font-bold text-slate-500">测试集合</div>
                 </div>
-                <div className="flex gap-2">
-                  {['脑洞', '设定', '章纲', '正文'].map((label) => (
-                    <div
-                      key={label}
-                      className="min-w-[68px] rounded-md border px-2 py-1.5 text-center text-sm font-black text-slate-950"
-                      style={{ backgroundColor: label === '正文' ? previewColors.flowGroup : '#ffffff', borderColor: label === '正文' ? '#8FE4F2' : '#dbe4ef' }}
-                    >
-                      <div>{label}</div>
-                      <div className="text-xs text-[#08AACE]">2章</div>
-                    </div>
-                  ))}
-                </div>
-                <div className={customPreviewEditorClass} style={{ backgroundColor: previewColors.editorBackground }}>
-                  <div className={customPreviewLineStackClass}>
-                    {Array.from({ length: customPreviewLineCount }, (_, index) => (
-                      <div key={index} className="border-b border-dashed border-slate-300" />
+                <div className="space-y-3 p-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    {['脑洞', '设定', '正文'].map((label, index) => (
+                      <div
+                        key={label}
+                        className="rounded-md border px-3 py-2 text-center text-sm font-black"
+                        style={{
+                          backgroundColor: index === 2 ? previewColors.contentSelected : '#ffffff',
+                          borderColor: '#dbe4ef',
+                        }}
+                      >
+                        {label}
+                      </div>
                     ))}
                   </div>
+                  <div className="flex gap-2">
+                    {['脑洞', '设定', '章纲', '正文'].map((label) => (
+                      <div
+                        key={label}
+                        className="min-w-[68px] rounded-md border px-2 py-1.5 text-center text-sm font-black text-slate-950"
+                        style={{
+                          backgroundColor: label === '正文' ? previewColors.flowGroup : '#ffffff',
+                          borderColor: label === '正文' ? '#8FE4F2' : '#dbe4ef',
+                        }}
+                      >
+                        <div>{label}</div>
+                        <div className="text-xs text-[#08AACE]">2章</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className={customPreviewEditorClass} style={{ backgroundColor: previewColors.editorBackground }}>
+                    <div className={customPreviewLineStackClass}>
+                      {Array.from({ length: customPreviewLineCount }, (_, index) => (
+                        <div key={index} className="border-b border-dashed border-slate-300" />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
         </section>
       </section>
 
@@ -792,7 +856,9 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
                   style={{ backgroundColor: color.value }}
                 />
                 <span className="mt-1 block truncate text-[11px] font-black text-slate-700">{color.name}</span>
-                <span className="block truncate font-mono text-[10px] font-bold text-slate-400">{color.value.toUpperCase()}</span>
+                <span className="block truncate font-mono text-[10px] font-bold text-slate-400">
+                  {color.value.toUpperCase()}
+                </span>
               </button>
             ))}
           </div>
@@ -815,7 +881,9 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
                 ))}
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-slate-200 px-3 py-2 text-sm font-bold leading-5 text-slate-400">暂无常用色</div>
+              <div className="rounded-lg border border-dashed border-slate-200 px-3 py-2 text-sm font-bold leading-5 text-slate-400">
+                暂无常用色
+              </div>
             )}
           </aside>
 
@@ -842,22 +910,13 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
                 }}
                 className="h-9 w-full rounded-lg border border-slate-200 px-3 font-mono text-sm font-bold text-slate-700"
               />
-              <button
-                onClick={resetSelectedTarget}
-                className={`w-full ${SETTINGS_SOLID_BUTTON_CLASS}`}
-              >
+              <button onClick={resetSelectedTarget} className={`w-full ${SETTINGS_SOLID_BUTTON_CLASS}`}>
                 恢复当前项默认
               </button>
-              <button
-                onClick={resetAllTargets}
-                className={`w-full ${SETTINGS_SOLID_BUTTON_CLASS}`}
-              >
+              <button onClick={resetAllTargets} className={`w-full ${SETTINGS_SOLID_BUTTON_CLASS}`}>
                 全部恢复默认
               </button>
-              <button
-                onClick={confirmCustomColors}
-                className={`w-full ${SETTINGS_SOLID_BUTTON_CLASS}`}
-              >
+              <button onClick={confirmCustomColors} className={`w-full ${SETTINGS_SOLID_BUTTON_CLASS}`}>
                 确认替换
               </button>
             </div>
@@ -870,15 +929,29 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
 
   return (
     <div className="h-full min-h-0 overflow-y-auto" style={{ backgroundColor: page.page, color: page.title }}>
-      <div className={isEmbedded ? 'flex h-full min-h-0 flex-col space-y-4 overflow-y-auto pr-1' : variant === 'modal' ? 'min-h-0 space-y-3 px-4 py-4' : 'mx-auto max-w-[1180px] space-y-5 px-8 py-6'}>
+      <div
+        className={
+          isEmbedded
+            ? 'flex h-full min-h-0 flex-col space-y-4 overflow-y-auto pr-1'
+            : variant === 'modal'
+              ? 'min-h-0 space-y-3 px-4 py-4'
+              : 'mx-auto max-w-[1180px] space-y-5 px-8 py-6'
+        }
+      >
         <header
           {...dragHandleProps}
-          className={isEmbedded
-            ? 'flex min-h-[52px] shrink-0 items-center justify-between gap-3 border-b py-2.5'
-            : variant === 'modal'
-              ? 'grid min-h-[52px] grid-cols-[minmax(160px,1fr)_auto_minmax(160px,1fr)] items-center gap-3 rounded-xl border px-4 py-2.5'
-              : 'grid min-h-[52px] grid-cols-[minmax(160px,1fr)_auto_minmax(160px,1fr)] items-center gap-3 border-b px-4 py-2.5'}
-          style={{ ...dragHandleProps?.style, backgroundColor: variant === 'modal' ? page.header : 'transparent', borderColor: page.border }}
+          className={
+            isEmbedded
+              ? 'flex min-h-[52px] shrink-0 items-center justify-between gap-3 border-b py-2.5'
+              : variant === 'modal'
+                ? 'grid min-h-[52px] grid-cols-[minmax(160px,1fr)_auto_minmax(160px,1fr)] items-center gap-3 rounded-xl border px-4 py-2.5'
+                : 'grid min-h-[52px] grid-cols-[minmax(160px,1fr)_auto_minmax(160px,1fr)] items-center gap-3 border-b px-4 py-2.5'
+          }
+          style={{
+            ...dragHandleProps?.style,
+            backgroundColor: variant === 'modal' ? page.header : 'transparent',
+            borderColor: page.border,
+          }}
         >
           {!isEmbedded ? (
             <div className="flex items-center gap-3 justify-self-start">
@@ -890,17 +963,19 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
                 <ArrowLeft className="h-4 w-4" />
               </button>
               <div className="min-w-0">
-                <h1 className="text-lg font-black" style={{ color: page.title }}>主题颜色</h1>
+                <h1 className="text-lg font-black" style={{ color: page.title }}>
+                  主题颜色
+                </h1>
               </div>
             </div>
           ) : null}
 
           <div className="inline-flex rounded-lg border bg-white p-0.5" style={{ borderColor: page.border }}>
-            {([
+            {[
               { key: 'custom' as const, label: '自定义颜色' },
               { key: 'detailOutline' as const, label: '章纲数字块' },
               { key: 'palette' as const, label: '主题色板' },
-            ]).map((tab) => (
+            ].map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => selectThemeTab(tab.key)}
@@ -915,11 +990,14 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
             ))}
           </div>
 
-          <div className="flex justify-self-end rounded-lg border p-0.5" style={{ backgroundColor: page.button, borderColor: page.border }}>
-            {([
+          <div
+            className="flex justify-self-end rounded-lg border p-0.5"
+            style={{ backgroundColor: page.button, borderColor: page.border }}
+          >
+            {[
               { key: 'light' as const, label: '白色', icon: Sun },
               { key: 'dark' as const, label: '黑色', icon: Moon },
-            ]).map((item) => {
+            ].map((item) => {
               const Icon = item.icon;
               const active = mode === item.key;
               return (
@@ -942,7 +1020,9 @@ export function DarkThemeColorPage({ variant = 'page', onClose, dragHandleProps 
 
         {activeThemeTab === 'palette'
           ? renderPaletteTab()
-          : activeThemeTab === 'detailOutline' ? renderCustomThemeEditor(detailOutlineNumberSlots) : renderCustomThemeEditor(globalCustomThemeSlots)}
+          : activeThemeTab === 'detailOutline'
+            ? renderCustomThemeEditor(detailOutlineNumberSlots)
+            : renderCustomThemeEditor(globalCustomThemeSlots)}
       </div>
     </div>
   );

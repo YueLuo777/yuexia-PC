@@ -21,7 +21,8 @@ export const DEFAULT_WORK_SETTING_STARTER_ENTRIES = [
 
 const normalizeSettingTaxonomyType = (value: string | undefined) => value?.trim() || '未分类';
 
-export const getDefaultWorkSettingEntryId = (type: string, title: string) => `${normalizeSettingTaxonomyType(type)}::${title.trim()}`;
+export const getDefaultWorkSettingEntryId = (type: string, title: string) =>
+  `${normalizeSettingTaxonomyType(type)}::${title.trim()}`;
 
 export const DEFAULT_WORK_SETTING_STARTER_ENTRY_IDS: ReadonlySet<string> = new Set(
   DEFAULT_WORK_SETTING_STARTER_ENTRIES.map((item) => getDefaultWorkSettingEntryId(item.type, item.title)),
@@ -50,7 +51,5 @@ export const DEFAULT_SETTING_TYPES = [
 ];
 
 export const DEFAULT_SETTING_TYPE_DOMAINS = Object.fromEntries(
-  Object.entries(SETTING_WORKSPACE_DOMAIN_GROUPS).flatMap(([domain, groups]) => (
-    groups.map((group) => [group, domain])
-  )),
+  Object.entries(SETTING_WORKSPACE_DOMAIN_GROUPS).flatMap(([domain, groups]) => groups.map((group) => [group, domain])),
 ) as Record<string, string>;

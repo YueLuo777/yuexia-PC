@@ -16,7 +16,7 @@ export function parseAiChatTurns(content: string) {
   }
   matches.forEach((match, index) => {
     const start = (match.index ?? 0) + match[0].length;
-    const end = index + 1 < matches.length ? matches[index + 1].index ?? content.length : content.length;
+    const end = index + 1 < matches.length ? (matches[index + 1].index ?? content.length) : content.length;
     const text = content.slice(start, end).trim();
     if (!text) return;
     turns.push({
@@ -36,7 +36,9 @@ export function formatAiThinkingResponse(content: string, reasoning: string, sec
     reasoningText,
     '[[/THINKING]]',
     body ? `\n${body}` : '',
-  ].join('\n').trimEnd();
+  ]
+    .join('\n')
+    .trimEnd();
 }
 
 export function stripAiThinkingBlock(content: string) {
@@ -52,9 +54,7 @@ export function stripBrainstormRequestHeader(content: string) {
 }
 
 export function normalizeBrainstormEchoText(content: string) {
-  return stripBrainstormRequestHeader(stripAiThinkingBlock(content))
-    .replace(/\s+/g, '')
-    .trim();
+  return stripBrainstormRequestHeader(stripAiThinkingBlock(content)).replace(/\s+/g, '').trim();
 }
 
 export function getBrainstormOtherRequirementsBlock(requestText: string) {
@@ -77,7 +77,12 @@ export function getBrainstormDisplayContent(content: string, requestText: string
   return displayContent || '【错误】模型没有返回内容。请重试，或检查模型、提示词和网络。';
 }
 
-export function buildSequentialBrainstormRequestText(baseRequestText: string, index: number, total: number, completedItems: string[]) {
+export function buildSequentialBrainstormRequestText(
+  baseRequestText: string,
+  index: number,
+  total: number,
+  completedItems: string[],
+) {
   return [
     baseRequestText,
     '',
@@ -87,7 +92,9 @@ export function buildSequentialBrainstormRequestText(baseRequestText: string, in
     completedItems.length > 0
       ? `【已生成脑洞，避免重复】\n${completedItems.map((item, itemIndex) => `${itemIndex + 1}. ${item}`).join('\n\n')}`
       : '',
-  ].filter(Boolean).join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 export function formatSequentialBrainstormOutput(completedItems: string[], activeIndex?: number, activeContent = '') {
@@ -95,7 +102,6 @@ export function formatSequentialBrainstormOutput(completedItems: string[], activ
   if (activeIndex && activeContent.trim()) lines.push(`${activeIndex}. ${activeContent.trim()}`);
   return lines.join('\n\n').trim();
 }
-
 
 export function getLatestUsefulAiText(content: string) {
   const turns = parseAiChatTurns(content);
@@ -125,8 +131,10 @@ export function getLatestAiTurnContent(content: string) {
 }
 
 export function getLibraryBackgroundTaskOutput(task: BackgroundAiTask, stoppedText = '【已中止】本次生成已停止。') {
-  if (task.status === 'aborted' && !stripAiThinkingBlock(getLatestAiTurnContent(task.output)).trim()) return stoppedText;
-  if (task.status === 'failed' && task.error && !stripAiThinkingBlock(getLatestAiTurnContent(task.output)).trim()) return `【错误】${task.error}`;
+  if (task.status === 'aborted' && !stripAiThinkingBlock(getLatestAiTurnContent(task.output)).trim())
+    return stoppedText;
+  if (task.status === 'failed' && task.error && !stripAiThinkingBlock(getLatestAiTurnContent(task.output)).trim())
+    return `【错误】${task.error}`;
   return task.output;
 }
 
@@ -146,4 +154,3 @@ export function getSettingEntryBody(entry: WorkbenchLibraryEntry | null | undefi
   const rawContent = entry.content.trim();
   return getLatestUsefulAiText(parsed.body || (rawContent.startsWith('{') ? '' : entry.content));
 }
-

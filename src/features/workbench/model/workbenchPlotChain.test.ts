@@ -56,18 +56,20 @@ describe('workbenchPlotChain', () => {
   });
 
   it('converts plot library items into chain candidates', () => {
-    expect(plotLibraryItemToCandidate({
-      id: 'p1',
-      title: '反击模板',
-      chapter: '第1章',
-      novelTitle: '测试小说',
-      content: '主角抓住敌人破绽，当场反击。',
-      tags: ['爽点'],
-      rating: 90,
-      wordCount: 15,
-      createdAt: '2026-06-08',
-      updatedAt: '2026-06-08',
-    })).toMatchObject({
+    expect(
+      plotLibraryItemToCandidate({
+        id: 'p1',
+        title: '反击模板',
+        chapter: '第1章',
+        novelTitle: '测试小说',
+        content: '主角抓住敌人破绽，当场反击。',
+        tags: ['爽点'],
+        rating: 90,
+        wordCount: 15,
+        createdAt: '2026-06-08',
+        updatedAt: '2026-06-08',
+      }),
+    ).toMatchObject({
       id: 'library:p1',
       title: '反击模板',
       source: '剧情库',

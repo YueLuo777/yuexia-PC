@@ -8,10 +8,7 @@ const BUILD_DIR = path.join(PROJECT_ROOT, 'build');
 const BUILD_PNG = path.join(BUILD_DIR, 'app-icon.png');
 const BUILD_ICO = path.join(BUILD_DIR, 'app-icon.ico');
 const APP_DATA = process.env.APPDATA ?? path.join(os.homedir(), 'AppData', 'Roaming');
-const USER_DATA_DIRS = [
-  path.join(APP_DATA, 'xinyuexia-desktop-dev'),
-  path.join(APP_DATA, 'xinyuexia-desktop'),
-];
+const USER_DATA_DIRS = [path.join(APP_DATA, 'xinyuexia-desktop-dev'), path.join(APP_DATA, 'xinyuexia-desktop')];
 const USER_ICON_NAMES = ['custom-app-icon.png', 'default-app-icon.png'];
 const ICON_SIZES = [16, 24, 32, 48, 64, 128, 256];
 
@@ -41,7 +38,9 @@ function roundImage(sourceImage, size) {
   for (let y = 0; y < imageSize.height; y += 1) {
     for (let x = 0; x < imageSize.width; x += 1) {
       const offset = (y * imageSize.width + x) * 4;
-      bitmap[offset + 3] = Math.round(bitmap[offset + 3] * getRoundedRectCoverage(x, y, imageSize.width, imageSize.height, radius));
+      bitmap[offset + 3] = Math.round(
+        bitmap[offset + 3] * getRoundedRectCoverage(x, y, imageSize.width, imageSize.height, radius),
+      );
     }
   }
 
@@ -86,34 +85,37 @@ function writePng(filePath, image) {
   fs.writeFileSync(filePath, image.toPNG());
 }
 
-app.whenReady().then(() => {
-  const sourcePath = process.argv[2] || findSourceIconPath();
-  if (!sourcePath) throw new Error('No source icon found.');
+app
+  .whenReady()
+  .then(() => {
+    const sourcePath = process.argv[2] || findSourceIconPath();
+    if (!sourcePath) throw new Error('No source icon found.');
 
-  const sourceImage = nativeImage.createFromPath(sourcePath);
-  if (sourceImage.isEmpty()) throw new Error(`Unable to read source icon: ${sourcePath}`);
+    const sourceImage = nativeImage.createFromPath(sourcePath);
+    if (sourceImage.isEmpty()) throw new Error(`Unable to read source icon: ${sourcePath}`);
 
-  const rounded256 = roundImage(sourceImage, 256);
-  writePng(BUILD_PNG, rounded256);
+    const rounded256 = roundImage(sourceImage, 256);
+    writePng(BUILD_PNG, rounded256);
 
-  const icoImages = ICON_SIZES.map((size) => ({
-    size,
-    data: roundImage(sourceImage, size).toPNG(),
-  }));
-  fs.writeFileSync(BUILD_ICO, makeIco(icoImages));
+    const icoImages = ICON_SIZES.map((size) => ({
+      size,
+      data: roundImage(sourceImage, size).toPNG(),
+    }));
+    fs.writeFileSync(BUILD_ICO, makeIco(icoImages));
 
-  USER_DATA_DIRS.forEach((dir) => {
-    USER_ICON_NAMES.forEach((name) => {
-      const filePath = path.join(dir, name);
-      if (fs.existsSync(filePath)) writePng(filePath, rounded256);
+    USER_DATA_DIRS.forEach((dir) => {
+      USER_ICON_NAMES.forEach((name) => {
+        const filePath = path.join(dir, name);
+        if (fs.existsSync(filePath)) writePng(filePath, rounded256);
+      });
     });
-  });
 
-  console.log(`Rounded app icon from ${sourcePath}`);
-  console.log(`Updated ${BUILD_PNG}`);
-  console.log(`Updated ${BUILD_ICO}`);
-  app.quit();
-}).catch((error) => {
-  console.error(error);
-  app.exit(1);
-});
+    console.log(`Rounded app icon from ${sourcePath}`);
+    console.log(`Updated ${BUILD_PNG}`);
+    console.log(`Updated ${BUILD_ICO}`);
+    app.quit();
+  })
+  .catch((error) => {
+    console.error(error);
+    app.exit(1);
+  });

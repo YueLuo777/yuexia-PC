@@ -68,10 +68,7 @@ export function OtherSettingReaderModal({
   if (!isOpen) return null;
 
   return createPortal(
-    <div
-      className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/35"
-      onClick={onClose}
-    >
+    <div className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/35" onClick={onClose}>
       <div
         className="modal-sharp flex h-[min(760px,90vh)] w-[min(1180px,94vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
@@ -79,7 +76,9 @@ export function OtherSettingReaderModal({
         <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
           <div>
             <h3 className="text-xl font-bold text-gray-900">关联其他设定</h3>
-            <p className="mt-1 text-xs text-gray-400">读取设定页面下所有设定条目，勾选后作为本次 AI 请求的参考上下文。</p>
+            <p className="mt-1 text-xs text-gray-400">
+              读取设定页面下所有设定条目，勾选后作为本次 AI 请求的参考上下文。
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -130,59 +129,63 @@ export function OtherSettingReaderModal({
               <div className="flex h-full min-h-[260px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white text-sm font-bold text-gray-400">
                 暂无匹配设定
               </div>
-            ) : visibleGroups.map((group) => (
-              <section key={group.name} className="mb-3">
-                <div className="flex h-11 items-center gap-2 rounded-xl border border-cyan-100 bg-cyan-50 px-2 text-sm font-black text-slate-800">
-                  <Folder className="h-4 w-4 text-[#08AACE]" />
-                  <span className="min-w-0 flex-1 truncate">{group.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => onToggleGroupSelection(group.entries)}
-                    className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-black text-[#08AACE] hover:bg-[#EAF9FD]"
-                  >
-                    全选
-                  </button>
-                  <span className="rounded-full bg-white px-2 py-0.5 text-xs text-slate-500">{group.entries.length}</span>
-                </div>
-                <div className="mt-1 space-y-1">
-                  {group.entries.map((entry) => {
-                    const selected = selectedEntry?.id === entry.id;
-                    const linked = draftIds.has(entry.id);
-                    return (
-                      <div
-                        key={entry.id}
-                        className={`flex min-h-[38px] w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm font-black transition-colors ${
-                          selected
-                            ? 'border border-[#08AACE] bg-[#EAF9FD] text-[#078fb0]'
-                            : 'border border-transparent bg-white text-slate-700 hover:bg-[#EAF9FD] hover:text-[#08AACE]'
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          aria-label={`${draftIds.has(entry.id) ? '取消选择' : '选择'}${entry.title}`}
-                          onClick={() => onToggleEntry(entry.id)}
-                          className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border text-sm font-black transition-colors ${
-                            linked
-                              ? 'border-[#08AACE] bg-[#08AACE] text-white'
-                              : 'border-slate-300 bg-white text-transparent hover:border-[#08AACE] hover:text-[#08AACE]'
+            ) : (
+              visibleGroups.map((group) => (
+                <section key={group.name} className="mb-3">
+                  <div className="flex h-11 items-center gap-2 rounded-xl border border-cyan-100 bg-cyan-50 px-2 text-sm font-black text-slate-800">
+                    <Folder className="h-4 w-4 text-[#08AACE]" />
+                    <span className="min-w-0 flex-1 truncate">{group.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => onToggleGroupSelection(group.entries)}
+                      className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-black text-[#08AACE] hover:bg-[#EAF9FD]"
+                    >
+                      全选
+                    </button>
+                    <span className="rounded-full bg-white px-2 py-0.5 text-xs text-slate-500">
+                      {group.entries.length}
+                    </span>
+                  </div>
+                  <div className="mt-1 space-y-1">
+                    {group.entries.map((entry) => {
+                      const selected = selectedEntry?.id === entry.id;
+                      const linked = draftIds.has(entry.id);
+                      return (
+                        <div
+                          key={entry.id}
+                          className={`flex min-h-[38px] w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm font-black transition-colors ${
+                            selected
+                              ? 'border border-[#08AACE] bg-[#EAF9FD] text-[#078fb0]'
+                              : 'border border-transparent bg-white text-slate-700 hover:bg-[#EAF9FD] hover:text-[#08AACE]'
                           }`}
                         >
-                          ✓
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onPreviewEntry(entry.id)}
-                          className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                        >
-                          <span className="min-w-0 flex-1 truncate">{entry.title}</span>
-                          <span className="shrink-0 text-xs text-[#08AACE]">{entry.wordCount}字</span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
+                          <button
+                            type="button"
+                            aria-label={`${draftIds.has(entry.id) ? '取消选择' : '选择'}${entry.title}`}
+                            onClick={() => onToggleEntry(entry.id)}
+                            className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border text-sm font-black transition-colors ${
+                              linked
+                                ? 'border-[#08AACE] bg-[#08AACE] text-white'
+                                : 'border-slate-300 bg-white text-transparent hover:border-[#08AACE] hover:text-[#08AACE]'
+                            }`}
+                          >
+                            ✓
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onPreviewEntry(entry.id)}
+                            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                          >
+                            <span className="min-w-0 flex-1 truncate">{entry.title}</span>
+                            <span className="shrink-0 text-xs text-[#08AACE]">{entry.wordCount}字</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))
+            )}
           </aside>
 
           <main className="editor-scrollbar min-h-0 overflow-y-auto p-6">
@@ -212,7 +215,6 @@ export function OtherSettingReaderModal({
               </div>
             )}
           </main>
-
         </div>
 
         <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 bg-white px-5 py-4">

@@ -34,7 +34,9 @@ export function CapsuleActionGroup({ items, className = '' }: CapsuleActionGroup
                 index > 0 ? 'border-l border-slate-200' : '',
                 variantClass[variant],
                 itemClassName,
-              ].filter(Boolean).join(' ')}
+              ]
+                .filter(Boolean)
+                .join(' ')}
               {...buttonProps}
             >
               {label}

@@ -30,4 +30,3 @@ export function ensureOneSelected(volumes: Volume[]): Volume[] {
     })),
   }));
 }
-

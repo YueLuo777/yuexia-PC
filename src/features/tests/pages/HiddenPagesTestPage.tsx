@@ -96,7 +96,9 @@ function matchesKeyword(item: HiddenItem, keyword: string) {
     item.hiddenFrom,
     item.reason,
     item.restore,
-  ].join('\n').toLowerCase();
+  ]
+    .join('\n')
+    .toLowerCase();
   return target.includes(keyword);
 }
 
@@ -156,7 +158,10 @@ export function HiddenPagesTestPage() {
                 {group.items.map((item) => {
                   const StatusIcon = statusMeta[item.status].icon;
                   return (
-                    <article key={`${item.status}-${item.path ?? item.title}`} className="flex min-h-[248px] flex-col rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                    <article
+                      key={`${item.status}-${item.path ?? item.title}`}
+                      className="flex min-h-[248px] flex-col rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"
+                    >
                       <div className="mb-4 flex items-start justify-between gap-3">
                         <div className="flex min-w-0 items-center gap-3">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
@@ -164,10 +169,14 @@ export function HiddenPagesTestPage() {
                           </div>
                           <div className="min-w-0">
                             <div className="truncate text-base font-black text-slate-900">{item.title}</div>
-                            {item.path ? <div className="mt-1 truncate text-xs font-bold text-slate-400">{item.path}</div> : null}
+                            {item.path ? (
+                              <div className="mt-1 truncate text-xs font-bold text-slate-400">{item.path}</div>
+                            ) : null}
                           </div>
                         </div>
-                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black ${statusMeta[item.status].className}`}>
+                        <span
+                          className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black ${statusMeta[item.status].className}`}
+                        >
                           {statusMeta[item.status].label}
                         </span>
                       </div>
@@ -194,7 +203,9 @@ export function HiddenPagesTestPage() {
                           onClick={() => item.path && navigate(item.path)}
                           className="xy-arrow-action-button xy-arrow-action-compact disabled:cursor-not-allowed disabled:opacity-45"
                         >
-                          <span className="xy-arrow-action-icon" aria-hidden="true"><ChevronRight className="h-4 w-4" /></span>
+                          <span className="xy-arrow-action-icon" aria-hidden="true">
+                            <ChevronRight className="h-4 w-4" />
+                          </span>
                           <span className="xy-arrow-action-text">{item.path ? '打开检查' : '仅记录'}</span>
                         </button>
                       </div>

@@ -61,14 +61,14 @@ export function LibraryAiLogModal({
   return (
     <LibraryAiLogShell
       id={id}
-      subtitle={activeViewTab === '格式' ? '查看智能导入能识别的标签、分组、条目和子设定格式' : '当前预览：点击发送后会按这里的内容发给 AI'}
-      headerTools={(
-        <SettingSegmentedTabs
-          tabs={LIBRARY_AI_LOG_VIEW_TABS}
-          activeTab={activeViewTab}
-          onChange={onViewTabChange}
-        />
-      )}
+      subtitle={
+        activeViewTab === '格式'
+          ? '查看智能导入能识别的标签、分组、条目和子设定格式'
+          : '当前预览：点击发送后会按这里的内容发给 AI'
+      }
+      headerTools={
+        <SettingSegmentedTabs tabs={LIBRARY_AI_LOG_VIEW_TABS} activeTab={activeViewTab} onChange={onViewTabChange} />
+      }
       onClose={onClose}
     >
       <div className="flex min-h-0 flex-1 flex-col">
@@ -92,34 +92,40 @@ export function LibraryAiLogModal({
         ) : null}
         {activeViewTab === '输出日志' ? (
           <AiRequestLogModalLayout
-            metaItems={visibleAiRequestLog ? [
-              { id: 'chain', label: '链路', value: `${visibleAiRequestLog.tab}生成` },
-              { id: 'model', label: '模型', value: visibleAiRequestLog.modelName },
-              { id: 'prompt', label: '提示词', value: visibleAiRequestLog.promptName },
-              {
-                id: 'user',
-                label: userTextTitle,
-                value: visibleAiRequestLog.visibleUserText,
-                hidden: !visibleAiRequestLog.visibleUserText.trim(),
-              },
-            ] : []}
+            metaItems={
+              visibleAiRequestLog
+                ? [
+                    { id: 'chain', label: '链路', value: `${visibleAiRequestLog.tab}生成` },
+                    { id: 'model', label: '模型', value: visibleAiRequestLog.modelName },
+                    { id: 'prompt', label: '提示词', value: visibleAiRequestLog.promptName },
+                    {
+                      id: 'user',
+                      label: userTextTitle,
+                      value: visibleAiRequestLog.visibleUserText,
+                      hidden: !visibleAiRequestLog.visibleUserText.trim(),
+                    },
+                  ]
+                : []
+            }
             groups={visibleAiRequestLog ? visibleAiRequestLogGroups : []}
             fillSingleGroup
             showGroupedContent={showLibraryAiLogTitles}
             plainPreview={visibleAiRequestLogPlainPreview}
             emptyText="暂无输出日志"
             storageKey={`${id}_groups`}
-            asideExtra={visibleAiRequestLog ? (
-              <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-white p-3 text-sm font-bold text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={showLibraryAiLogTitles}
-                  onChange={(event) => onShowLibraryAiLogTitlesChange(event.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-[#08AACE] focus:ring-[#08AACE]/20"
-                />
-                <span>显示标题内容</span>
-              </label>
-            ) : null}
+            asideExtra={
+              visibleAiRequestLog ? (
+                <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-white p-3 text-sm font-bold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={showLibraryAiLogTitles}
+                    onChange={(event) => onShowLibraryAiLogTitlesChange(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-[#08AACE] focus:ring-[#08AACE]/20"
+                  />
+                  <span>显示标题内容</span>
+                </label>
+              ) : null
+            }
           />
         ) : selectedFormatEntry ? (
           <div className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)] overflow-hidden">
@@ -130,7 +136,9 @@ export function LibraryAiLogModal({
                     <div className="flex h-9 items-center gap-2 rounded-md border border-[#BDEEF7] bg-[#EAF9FD] px-2 text-sm font-black text-slate-900">
                       <Folder className="h-4 w-4 text-[#08AACE]" />
                       <span className="min-w-0 flex-1 truncate">{group.name}</span>
-                      <span className="rounded-full bg-white px-2 py-0.5 text-xs text-slate-500">{group.entries.length}</span>
+                      <span className="rounded-full bg-white px-2 py-0.5 text-xs text-slate-500">
+                        {group.entries.length}
+                      </span>
                     </div>
                     <div className="mt-1 space-y-1">
                       {group.entries.map((entry) => (
@@ -145,7 +153,9 @@ export function LibraryAiLogModal({
                           }`}
                         >
                           <span className="min-w-0 truncate">{entry.title}</span>
-                          <span className="shrink-0 rounded-full bg-slate-50 px-2 py-0.5 text-xs text-[#08AACE]">{entry.fields.length}</span>
+                          <span className="shrink-0 rounded-full bg-slate-50 px-2 py-0.5 text-xs text-[#08AACE]">
+                            {entry.fields.length}
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -163,7 +173,9 @@ export function LibraryAiLogModal({
                   </div>
                   <h3 className="mt-1 text-2xl font-black text-slate-950">{selectedFormatEntry.title}</h3>
                 </div>
-                <span className="rounded-xl border border-cyan-200 bg-[#EAF9FD] px-3 py-2 text-xs font-black text-[#08AACE]">格式预览</span>
+                <span className="rounded-xl border border-cyan-200 bg-[#EAF9FD] px-3 py-2 text-xs font-black text-[#08AACE]">
+                  格式预览
+                </span>
               </div>
               <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-slate-900 bg-white p-4">
                 <div className="mb-3 flex shrink-0 items-center justify-between gap-3">

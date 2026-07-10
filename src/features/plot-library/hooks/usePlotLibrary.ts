@@ -86,11 +86,14 @@ export function parsePlotRating(content: string) {
 
 function parseAnchors(content: string) {
   const cleanContent = sanitizePlotLibraryContent(content);
-  const fsText = cleanContent.match(/<fs>([\s\S]*?)<\/fs>/i)?.[1]?.trim()
-    ?? (() => {
+  const fsText =
+    cleanContent.match(/<fs>([\s\S]*?)<\/fs>/i)?.[1]?.trim() ??
+    (() => {
       const scores = parsePlotScoreMap(cleanContent);
       return scores
-        ? Object.entries(scores).map(([key, value]) => `${key}：${value}`).join('\n')
+        ? Object.entries(scores)
+            .map(([key, value]) => `${key}：${value}`)
+            .join('\n')
         : undefined;
     })();
   const bqText = cleanContent.match(/<bq>([\s\S]*?)<\/bq>/i)?.[1]?.trim();
@@ -102,13 +105,19 @@ function parseRating(content: string) {
 }
 
 function parseTags(content: string, inputTags: string[] = []) {
-  const tagText = content.match(/(?:#\s*)?主题标签[：:\s]*([^\n]+)|【标签】([^\n]+)/)?.[1]
-    ?? content.match(/(?:#\s*)?剧情点标签[：:\s]*([^\n]+)/)?.[1]
-    ?? '';
-  return Array.from(new Set([
-    ...inputTags,
-    ...tagText.split(/[,，、#\s]+/).map((item) => item.trim()).filter(Boolean),
-  ]));
+  const tagText =
+    content.match(/(?:#\s*)?主题标签[：:\s]*([^\n]+)|【标签】([^\n]+)/)?.[1] ??
+    content.match(/(?:#\s*)?剧情点标签[：:\s]*([^\n]+)/)?.[1] ??
+    '';
+  return Array.from(
+    new Set([
+      ...inputTags,
+      ...tagText
+        .split(/[,，、#\s]+/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ]),
+  );
 }
 
 function createId() {
@@ -166,26 +175,29 @@ export function usePlotLibrary() {
     return created;
   }, []);
 
-  const updateItem = useCallback((id: string, updates: Partial<Pick<PlotLibraryItem, 'title' | 'content' | 'tags' | 'rating'>>) => {
-    setItems((prev) => {
-      const next = prev.map((item) => {
-        if (item.id !== id) return item;
-        const content = sanitizePlotLibraryContent(updates.content ?? item.content);
-        return {
-          ...item,
-          ...updates,
-          content,
-          ...parseAnchors(content),
-          tags: updates.tags ?? parseTags(content, item.tags),
-          rating: updates.rating ?? parseRating(content) ?? item.rating,
-          wordCount: wordCount(content),
-          updatedAt: new Date().toISOString(),
-        };
+  const updateItem = useCallback(
+    (id: string, updates: Partial<Pick<PlotLibraryItem, 'title' | 'content' | 'tags' | 'rating'>>) => {
+      setItems((prev) => {
+        const next = prev.map((item) => {
+          if (item.id !== id) return item;
+          const content = sanitizePlotLibraryContent(updates.content ?? item.content);
+          return {
+            ...item,
+            ...updates,
+            content,
+            ...parseAnchors(content),
+            tags: updates.tags ?? parseTags(content, item.tags),
+            rating: updates.rating ?? parseRating(content) ?? item.rating,
+            wordCount: wordCount(content),
+            updatedAt: new Date().toISOString(),
+          };
+        });
+        writeItems(next);
+        return next;
       });
-      writeItems(next);
-      return next;
-    });
-  }, []);
+    },
+    [],
+  );
 
   const deleteItem = useCallback((id: string) => {
     setItems((prev) => {

@@ -19,35 +19,37 @@ describe('shared UI reuse conventions', () => {
     const preferenceSource = readSource('../hooks/useUiPreference.ts');
     const settingsPageSource = readSource('../settings/SettingsPage.tsx');
 
-    expect(actionButtonSource).toContain(
+    expect(actionButtonSource).toContainSource(
       "export type ActionButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';",
     );
-    expect(actionButtonSource).toContain("export type ActionButtonSize = 'sm' | 'md';");
-    expect(buttonClassesSource).toContain('DANGER_TEXT_BUTTON_CLASS');
-    expect(buttonClassesSource).toContain('GHOST_TEXT_BUTTON_CLASS');
-    expect(buttonClassesSource).toContain('ICON_BUTTON_CLASS');
-    expect(iconButtonSource).toContain('export function IconButton');
-    expect(capsuleActionGroupSource).toContain('export function CapsuleActionGroup');
-    expect(capsuleActionGroupSource).toContain('rounded-lg border border-slate-200 bg-white');
-    expect(capsuleActionGroupSource).toContain('hover:bg-[#EAF9FD]');
-    expect(capsuleSelectSource).toContain('const displayedOption = current ?? options[0] ?? null;');
-    expect(capsuleSelectSource).toContain('const selected = !option.disabled && displayedValue === option.value;');
-    expect(capsuleSelectSource).toContain("variant?: 'group' | 'groupedOption';");
-    expect(capsuleSelectSource).toContain('metaLabel?: string;');
-    expect(capsuleSelectSource).toContain("const isGroup = option.variant === 'group';");
-    expect(capsuleSelectSource).toContain("const isGroupedOption = option.variant === 'groupedOption';");
-    expect(capsuleSelectSource).toContain('const hasMetaLabel = !isGroup && Boolean(option.metaLabel);');
-    expect(combinedAiConfigSelectSource).toContain('function getDisplayOption');
-    expect(combinedAiConfigSelectSource).toContain(
+    expect(actionButtonSource).toContainSource("export type ActionButtonSize = 'sm' | 'md';");
+    expect(buttonClassesSource).toContainSource('DANGER_TEXT_BUTTON_CLASS');
+    expect(buttonClassesSource).toContainSource('GHOST_TEXT_BUTTON_CLASS');
+    expect(buttonClassesSource).toContainSource('ICON_BUTTON_CLASS');
+    expect(iconButtonSource).toContainSource('export function IconButton');
+    expect(capsuleActionGroupSource).toContainSource('export function CapsuleActionGroup');
+    expect(capsuleActionGroupSource).toContainSource('rounded-lg border border-slate-200 bg-white');
+    expect(capsuleActionGroupSource).toContainSource('hover:bg-[#EAF9FD]');
+    expect(capsuleSelectSource).toContainSource('const displayedOption = current ?? options[0] ?? null;');
+    expect(capsuleSelectSource).toContainSource(
+      'const selected = !option.disabled && displayedValue === option.value;',
+    );
+    expect(capsuleSelectSource).toContainSource("variant?: 'group' | 'groupedOption';");
+    expect(capsuleSelectSource).toContainSource('metaLabel?: string;');
+    expect(capsuleSelectSource).toContainSource("const isGroup = option.variant === 'group';");
+    expect(capsuleSelectSource).toContainSource("const isGroupedOption = option.variant === 'groupedOption';");
+    expect(capsuleSelectSource).toContainSource('const hasMetaLabel = !isGroup && Boolean(option.metaLabel);');
+    expect(combinedAiConfigSelectSource).toContainSource('function getDisplayOption');
+    expect(combinedAiConfigSelectSource).toContainSource(
       'const selected = !option.disabled && option.value === activeDisplayValue;',
     );
-    expect(combinedAiConfigSelectSource).toContain("const isGroup = option.variant === 'group';");
-    expect(combinedAiConfigSelectSource).toContain("const isGroupedOption = option.variant === 'groupedOption';");
-    expect(combinedAiConfigSelectSource).toContain('const hasMetaLabel = !isGroup && Boolean(option.metaLabel);');
-    expect(combinedAiConfigSelectSource).toContain('option.count');
-    expect(settingsSurfaceSource).toContain("export type SettingsSurfaceMode = 'page' | 'modal' | 'embedded';");
-    expect(preferenceSource).toContain('export function useUiPreference<T>');
-    expect(settingsPageSource).toContain("import { SettingsSurface } from '@/shared/ui/SettingsSurface';");
-    expect(settingsPageSource).toContain('<SettingsSurface mode="embedded" className="flex bg-white">');
+    expect(combinedAiConfigSelectSource).toContainSource("const isGroup = option.variant === 'group';");
+    expect(combinedAiConfigSelectSource).toContainSource("const isGroupedOption = option.variant === 'groupedOption';");
+    expect(combinedAiConfigSelectSource).toContainSource('const hasMetaLabel = !isGroup && Boolean(option.metaLabel);');
+    expect(combinedAiConfigSelectSource).toContainSource('option.count');
+    expect(settingsSurfaceSource).toContainSource("export type SettingsSurfaceMode = 'page' | 'modal' | 'embedded';");
+    expect(preferenceSource).toContainSource('export function useUiPreference<T>');
+    expect(settingsPageSource).toContainSource("import { SettingsSurface } from '@/shared/ui/SettingsSurface';");
+    expect(settingsPageSource).toContainSource('<SettingsSurface mode="embedded" className="flex bg-white">');
   });
 });

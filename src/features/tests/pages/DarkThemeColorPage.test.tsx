@@ -43,7 +43,7 @@ describe('DarkThemeColorPage custom color tab', () => {
   it('records the manual color confirm regression in the in-app error log', () => {
     const errorLog = readSource('../model/errorLogDefaultEntries.generated.ts');
 
-    expect(errorLog).toContain('theme-color-manual-input-confirm-disabled-001');
+    expect(errorLog).toContainSource('theme-color-manual-input-confirm-disabled-001');
   });
 
   it('keeps confirm replacement clickable even when there is no pending change', () => {
@@ -71,33 +71,38 @@ describe('DarkThemeColorPage custom color tab', () => {
       source.indexOf('const colorGroups: ColorGroup[] = ['),
       source.indexOf('const CUSTOM_COLOR_START_ID'),
     );
-    const paletteHexValues = [...paletteBlock.matchAll(/value:\s*'(#(?:[0-9a-fA-F]{6}))'/g)]
-      .map((match) => match[1].toLowerCase());
+    const paletteHexValues = [...paletteBlock.matchAll(/value:\s*'(#(?:[0-9a-fA-F]{6}))'/g)].map((match) =>
+      match[1].toLowerCase(),
+    );
 
-    expect(source).toContain('function uniqueThemePaletteColors(colors: ColorItem[])');
-    expect(source).toContain('const themePaletteColors = uniqueThemePaletteColors([...colorGroups.flatMap((group) => group.colors), ...extraColors]);');
+    expect(source).toContainSource('function uniqueThemePaletteColors(colors: ColorItem[])');
+    expect(source).toContainSource(
+      'const themePaletteColors = uniqueThemePaletteColors([...colorGroups.flatMap((group) => group.colors), ...extraColors]);',
+    );
     expect(new Set(paletteHexValues).size).toBe(86);
   });
 
   it('shares one deduplicated palette between the palette tab and custom color picker', () => {
     const source = readSource('DarkThemeColorPage.tsx');
 
-    expect(source).toContain('const THEME_PALETTE_TARGET_COLOR_COUNT = 86;');
-    expect(source).toContain('const themePaletteColors = uniqueThemePaletteColors([...colorGroups.flatMap((group) => group.colors), ...extraColors]);');
-    expect(source).toContain('function getThemePaletteSortKey(color: ColorItem)');
-    expect(source).toContain('const sortedThemePaletteColors = [...themePaletteColors].sort(');
-    expect(source).toContain('if (themePaletteColors.length !== THEME_PALETTE_TARGET_COLOR_COUNT)');
-    expect(source).toContain('const paletteColorOptions = [...sortedThemePaletteColors, ...customColors];');
-    expect(source).toContain('{paletteColorOptions.map((color) => (');
-    expect(source).not.toContain('const systemColorOptions = [');
-    expect(source).not.toContain('{systemColorOptions.map((color) => (');
+    expect(source).toContainSource('const THEME_PALETTE_TARGET_COLOR_COUNT = 86;');
+    expect(source).toContainSource(
+      'const themePaletteColors = uniqueThemePaletteColors([...colorGroups.flatMap((group) => group.colors), ...extraColors]);',
+    );
+    expect(source).toContainSource('function getThemePaletteSortKey(color: ColorItem)');
+    expect(source).toContainSource('const sortedThemePaletteColors = [...themePaletteColors].sort(');
+    expect(source).toContainSource('if (themePaletteColors.length !== THEME_PALETTE_TARGET_COLOR_COUNT)');
+    expect(source).toContainSource('const paletteColorOptions = [...sortedThemePaletteColors, ...customColors];');
+    expect(source).toContainSource('{paletteColorOptions.map((color) => (');
+    expect(source).not.toContainSource('const systemColorOptions = [');
+    expect(source).not.toContainSource('{systemColorOptions.map((color) => (');
   });
 
   it('opens the custom color workflow before the legacy palette tab', () => {
     const source = readSource('DarkThemeColorPage.tsx');
 
-    expect(source).toContain("type ThemeColorTab = 'palette' | 'custom' | 'detailOutline';");
-    expect(source).toContain("const [activeThemeTab, setActiveThemeTab] = useState<ThemeColorTab>('custom');");
+    expect(source).toContainSource("type ThemeColorTab = 'palette' | 'custom' | 'detailOutline';");
+    expect(source).toContainSource("const [activeThemeTab, setActiveThemeTab] = useState<ThemeColorTab>('custom');");
     const customTabIndex = source.indexOf("{ key: 'custom' as const");
     const detailOutlineTabIndex = source.indexOf("{ key: 'detailOutline' as const");
     const paletteTabIndex = source.indexOf("{ key: 'palette' as const");
@@ -112,20 +117,26 @@ describe('DarkThemeColorPage custom color tab', () => {
   it('uses a compact header and tab strip for fewer clicks and less scanning', () => {
     const source = readSource('DarkThemeColorPage.tsx');
 
-    expect(source).toContain("isEmbedded ? 'flex h-full min-h-0 flex-col space-y-4 overflow-y-auto pr-1'");
-    expect(source).toContain("variant === 'modal' ? 'min-h-0 space-y-3 px-4 py-4'");
-    expect(source).toContain("'mx-auto max-w-[1180px] space-y-5 px-8 py-6'");
-    expect(source).toContain("variant === 'modal'");
-    expect(source).toContain("'grid min-h-[52px] grid-cols-[minmax(160px,1fr)_auto_minmax(160px,1fr)] items-center gap-3 rounded-xl border px-4 py-2.5'");
-    expect(source).toContain("'grid min-h-[52px] grid-cols-[minmax(160px,1fr)_auto_minmax(160px,1fr)] items-center gap-3 border-b px-4 py-2.5'");
-    expect(source).toContain('className="flex h-8 w-8 items-center justify-center rounded-lg border border-brand/20 bg-white text-brand transition-colors hover:bg-brand-light"');
-    expect(source).toContain('<h1 className="text-lg font-black"');
-    expect(source).toContain("{ key: 'light' as const, label: '白色', icon: Sun }");
-    expect(source).toContain("{ key: 'dark' as const, label: '黑色', icon: Moon }");
-    expect(source).toContain('className="inline-flex rounded-lg border bg-white p-0.5"');
-    expect(source).toContain('className="h-8 rounded-md px-4 text-sm font-black transition-colors"');
-    expect(source).not.toContain('原主题色板保留为标签；自定义颜色可选择位置、点击颜色、预览后确认替换。');
-    expect(source).not.toContain('白色主题（默认主题）');
+    expect(source).toContainSource("isEmbedded ? 'flex h-full min-h-0 flex-col space-y-4 overflow-y-auto pr-1'");
+    expect(source).toContainSource("variant === 'modal' ? 'min-h-0 space-y-3 px-4 py-4'");
+    expect(source).toContainSource("'mx-auto max-w-[1180px] space-y-5 px-8 py-6'");
+    expect(source).toContainSource("variant === 'modal'");
+    expect(source).toContainSource(
+      "'grid min-h-[52px] grid-cols-[minmax(160px,1fr)_auto_minmax(160px,1fr)] items-center gap-3 rounded-xl border px-4 py-2.5'",
+    );
+    expect(source).toContainSource(
+      "'grid min-h-[52px] grid-cols-[minmax(160px,1fr)_auto_minmax(160px,1fr)] items-center gap-3 border-b px-4 py-2.5'",
+    );
+    expect(source).toContainSource(
+      'className="flex h-8 w-8 items-center justify-center rounded-lg border border-brand/20 bg-white text-brand transition-colors hover:bg-brand-light"',
+    );
+    expect(source).toContainSource('<h1 className="text-lg font-black"');
+    expect(source).toContainSource("{ key: 'light' as const, label: '白色', icon: Sun }");
+    expect(source).toContainSource("{ key: 'dark' as const, label: '黑色', icon: Moon }");
+    expect(source).toContainSource('className="inline-flex rounded-lg border bg-white p-0.5"');
+    expect(source).toContainSource('className="h-8 rounded-md px-4 text-sm font-black transition-colors"');
+    expect(source).not.toContainSource('原主题色板保留为标签；自定义颜色可选择位置、点击颜色、预览后确认替换。');
+    expect(source).not.toContainSource('白色主题（默认主题）');
   });
 
   it('keeps the custom/palette tab strip inside the top header', () => {
@@ -139,50 +150,54 @@ describe('DarkThemeColorPage custom color tab', () => {
     expect(headerEnd).toBeGreaterThan(headerStart);
     expect(tabStripIndex).toBeGreaterThan(headerStart);
     expect(tabStripIndex).toBeLessThan(headerEnd);
-    expect(contentAfterHeader).not.toContain('inline-flex rounded-lg border bg-white p-0.5');
+    expect(contentAfterHeader).not.toContainSource('inline-flex rounded-lg border bg-white p-0.5');
   });
 
   it('keeps the custom preview visible when the modal is resized narrower', () => {
     const source = readSource('DarkThemeColorPage.tsx');
 
-    expect(source).toContain("const customWorkflowGridClass = variant === 'modal'");
-    expect(source).toContain("flex min-h-0 flex-col gap-5");
-    expect(source).toContain("const customStickyOverviewClass = variant === 'modal'");
-    expect(source).toContain("grid min-h-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(260px,390px)_minmax(360px,1fr)]");
-    expect(source).toContain("const customTargetPanelClass = variant === 'modal'");
-    expect(source).toContain("const customTargetListClass = variant === 'modal'");
-    expect(source).toContain("const customPickerBodyClass = variant === 'modal'");
-    expect(source).toContain("const customColorPickerPanelClass = variant === 'modal'");
-    expect(source).toContain("const customScrollablePaletteClass = variant === 'modal'");
-    expect(source).toContain("const customPreviewLineCount = variant === 'modal' ? 2 : 2;");
-    expect(source).toContain("max-h-[210px]");
-    expect(source).toContain("xl:max-h-[260px]");
-    expect(source).toContain("max-h-[320px]");
-    expect(source).toContain("max-h-[460px]");
-    expect(source).toContain("min-h-[220px]");
-    expect(source).toContain("overflow-y-auto");
-    expect(source).toContain('className={customWorkflowGridClass}');
-    expect(source).toContain('className={customStickyOverviewClass}');
-    expect(source).toContain('className={customTargetPanelClass}');
-    expect(source).toContain('className={customTargetListClass}');
-    expect(source).toContain('className={customPickerBodyClass}');
-    expect(source).toContain('className={customColorPickerPanelClass}');
-    expect(source).toContain('className={customPreviewPanelClass}');
-    expect(source).toContain('className={customScrollablePaletteClass}');
+    expect(source).toContainSource("const customWorkflowGridClass = variant === 'modal'");
+    expect(source).toContainSource('flex min-h-0 flex-col gap-5');
+    expect(source).toContainSource("const customStickyOverviewClass = variant === 'modal'");
+    expect(source).toContainSource(
+      'grid min-h-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(260px,390px)_minmax(360px,1fr)]',
+    );
+    expect(source).toContainSource("const customTargetPanelClass = variant === 'modal'");
+    expect(source).toContainSource("const customTargetListClass = variant === 'modal'");
+    expect(source).toContainSource("const customPickerBodyClass = variant === 'modal'");
+    expect(source).toContainSource("const customColorPickerPanelClass = variant === 'modal'");
+    expect(source).toContainSource("const customScrollablePaletteClass = variant === 'modal'");
+    expect(source).toContainSource("const customPreviewLineCount = variant === 'modal' ? 2 : 2;");
+    expect(source).toContainSource('max-h-[210px]');
+    expect(source).toContainSource('xl:max-h-[260px]');
+    expect(source).toContainSource('max-h-[320px]');
+    expect(source).toContainSource('max-h-[460px]');
+    expect(source).toContainSource('min-h-[220px]');
+    expect(source).toContainSource('overflow-y-auto');
+    expect(source).toContainSource('className={customWorkflowGridClass}');
+    expect(source).toContainSource('className={customStickyOverviewClass}');
+    expect(source).toContainSource('className={customTargetPanelClass}');
+    expect(source).toContainSource('className={customTargetListClass}');
+    expect(source).toContainSource('className={customPickerBodyClass}');
+    expect(source).toContainSource('className={customColorPickerPanelClass}');
+    expect(source).toContainSource('className={customPreviewPanelClass}');
+    expect(source).toContainSource('className={customScrollablePaletteClass}');
   });
 
   it('pins target selection and preview above the scrollable custom color picker', () => {
     const source = readSource('DarkThemeColorPage.tsx');
 
-    expect(source).toContain("const customStickyOverviewClass = variant === 'modal'");
-    expect(source).toContain("grid min-h-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(260px,390px)_minmax(360px,1fr)]");
-    expect(source).toContain("const customColorPickerPanelClass = variant === 'modal'");
-    expect(source).toContain("flex min-h-[260px] flex-1 flex-col rounded-xl border bg-white p-4");
-    expect(source).toContain("const customPickerBodyClass = variant === 'modal'");
-    expect(source).toContain("xl:grid-cols-[minmax(0,1fr)_150px_164px]");
-    expect(source).toContain('<section className={customStickyOverviewClass}>');
-    expect(source).toContain('<section className={customColorPickerPanelClass}');
-    expect(source).toContain('<div className={customPickerBodyClass}>');
+    expect(source).toContainSource("const customStickyOverviewClass = variant === 'modal'");
+    expect(source).toContainSource(
+      'grid min-h-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(260px,390px)_minmax(360px,1fr)]',
+    );
+    expect(source).toContainSource("const customColorPickerPanelClass = variant === 'modal'");
+    expect(source).toContainSource('flex min-h-[260px] flex-1 flex-col rounded-xl border bg-white p-4');
+    expect(source).toContainSource("const customPickerBodyClass = variant === 'modal'");
+    expect(source).toContainSource('xl:grid-cols-[minmax(0,1fr)_150px_164px]');
+    expect(source).toContainSource('<section className={customStickyOverviewClass}>');
+    expect(source).toContainSource('<section className={customColorPickerPanelClass}');
+    expect(source).toContainSource('<div className={customPickerBodyClass}>');
 
     const targetIndex = source.indexOf('className={customTargetPanelClass}');
     const previewIndex = source.indexOf('className={customPreviewPanelClass}');
@@ -198,15 +213,21 @@ describe('DarkThemeColorPage custom color tab', () => {
   it('splits the custom color picker into palette, recent colors, and action columns', () => {
     const source = readSource('DarkThemeColorPage.tsx');
 
-    expect(source).toContain("const customPickerBodyClass = variant === 'modal'");
-    expect(source).toContain("xl:grid-cols-[minmax(0,1fr)_150px_164px]");
-    expect(source).toContain("xl:grid-cols-[minmax(0,1fr)_160px_180px]");
-    expect(source).toContain("const customRecentColumnClass = 'min-h-0 rounded-lg border border-slate-100 bg-slate-50/60 p-3';");
-    expect(source).toContain("const customActionColumnClass = 'min-h-0 rounded-lg border border-slate-100 bg-slate-50/60 p-3';");
-    expect(source).toContain('<div className={customScrollablePaletteClass}>');
-    expect(source).toContain('<aside className={customRecentColumnClass}>');
-    expect(source).toContain('<aside className={customActionColumnClass}>');
-    expect(source).not.toContain('sticky top-0 z-10 mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-white pb-3');
+    expect(source).toContainSource("const customPickerBodyClass = variant === 'modal'");
+    expect(source).toContainSource('xl:grid-cols-[minmax(0,1fr)_150px_164px]');
+    expect(source).toContainSource('xl:grid-cols-[minmax(0,1fr)_160px_180px]');
+    expect(source).toContainSource(
+      "const customRecentColumnClass = 'min-h-0 rounded-lg border border-slate-100 bg-slate-50/60 p-3';",
+    );
+    expect(source).toContainSource(
+      "const customActionColumnClass = 'min-h-0 rounded-lg border border-slate-100 bg-slate-50/60 p-3';",
+    );
+    expect(source).toContainSource('<div className={customScrollablePaletteClass}>');
+    expect(source).toContainSource('<aside className={customRecentColumnClass}>');
+    expect(source).toContainSource('<aside className={customActionColumnClass}>');
+    expect(source).not.toContainSource(
+      'sticky top-0 z-10 mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-white pb-3',
+    );
 
     const paletteIndex = source.indexOf('className={customScrollablePaletteClass}');
     const recentIndex = source.indexOf('className={customRecentColumnClass}');
@@ -222,21 +243,21 @@ describe('DarkThemeColorPage custom color tab', () => {
   it('does not show a redundant click-color title above the custom picker columns', () => {
     const source = readSource('DarkThemeColorPage.tsx');
 
-    expect(source).not.toContain('<h2 className="text-base font-black text-slate-950">点击颜色</h2>');
-    expect(source).toContain('<div className={customPickerBodyClass}>');
+    expect(source).not.toContainSource('<h2 className="text-base font-black text-slate-950">点击颜色</h2>');
+    expect(source).toContainSource('<div className={customPickerBodyClass}>');
   });
 
   it('keeps the original palette as one tab and adds the global custom color workflow as another tab', () => {
     const source = readSource('DarkThemeColorPage.tsx');
 
-    expect(source).toContain("type ThemeColorTab = 'palette' | 'custom' | 'detailOutline';");
-    expect(source).toContain('主题色板');
-    expect(source).toContain('自定义颜色');
-    expect(source).toContain('选择位置');
-    expect(source).toContain('确认替换');
-    expect(source).toContain('常用颜色');
-    expect(source).toContain('type="color"');
-    expect(source).not.toContain('使用此颜色');
+    expect(source).toContainSource("type ThemeColorTab = 'palette' | 'custom' | 'detailOutline';");
+    expect(source).toContainSource('主题色板');
+    expect(source).toContainSource('自定义颜色');
+    expect(source).toContainSource('选择位置');
+    expect(source).toContainSource('确认替换');
+    expect(source).toContainSource('常用颜色');
+    expect(source).toContainSource('type="color"');
+    expect(source).not.toContainSource('使用此颜色');
   });
 
   it('adds a dedicated detail-outline number-block color tab and preview states', () => {
@@ -244,15 +265,19 @@ describe('DarkThemeColorPage custom color tab', () => {
     const modelSource = readSource('../../theme/model/customThemeColors.ts');
     const styleSource = readSource('../../../shared/styles/index.css');
 
-    expect(source).toContain("const GLOBAL_CUSTOM_THEME_SLOT_KEYS: CustomThemeColorSlotKey[] = [");
-    expect(source).toContain("const DETAIL_OUTLINE_NUMBER_SLOT_KEYS: CustomThemeColorSlotKey[] = [");
-    expect(source).toContain("const activeCustomThemeSlots = activeThemeTab === 'detailOutline' ? detailOutlineNumberSlots : globalCustomThemeSlots;");
-    expect(source).toContain("const renderCustomThemeEditor = (slotsToRender: CustomThemeColorSlot[]) =>");
-    expect(source).toContain("activeThemeTab === 'detailOutline' ? renderCustomThemeEditor(detailOutlineNumberSlots)");
-    expect(source).toContain("['选中', 'detailOutlineSelected']");
-    expect(source).toContain("['已用', 'detailOutlineUsed']");
-    expect(source).toContain("['有章纲', 'detailOutlineHasOutline']");
-    expect(source).toContain("['无章纲', 'detailOutlineNoOutline']");
+    expect(source).toContainSource('const GLOBAL_CUSTOM_THEME_SLOT_KEYS: CustomThemeColorSlotKey[] = [');
+    expect(source).toContainSource('const DETAIL_OUTLINE_NUMBER_SLOT_KEYS: CustomThemeColorSlotKey[] = [');
+    expect(source).toContainSource(
+      "const activeCustomThemeSlots = activeThemeTab === 'detailOutline' ? detailOutlineNumberSlots : globalCustomThemeSlots;",
+    );
+    expect(source).toContainSource('const renderCustomThemeEditor = (slotsToRender: CustomThemeColorSlot[]) =>');
+    expect(source).toContainSource(
+      "activeThemeTab === 'detailOutline' ? renderCustomThemeEditor(detailOutlineNumberSlots)",
+    );
+    expect(source).toContainSource("['选中', 'detailOutlineSelected']");
+    expect(source).toContainSource("['已用', 'detailOutlineUsed']");
+    expect(source).toContainSource("['有章纲', 'detailOutlineHasOutline']");
+    expect(source).toContainSource("['无章纲', 'detailOutlineNoOutline']");
 
     [
       'detailOutlineSelected',
@@ -263,16 +288,26 @@ describe('DarkThemeColorPage custom color tab', () => {
       '--xy-detail-outline-number-used',
       '--xy-detail-outline-number-has-outline',
       '--xy-detail-outline-number-no-outline',
-    ].forEach((token) => expect(modelSource).toContain(token));
-    expect(modelSource).toContain("defaultColor: '#08AACE'");
-    expect(modelSource).toContain("if (slot.key === 'detailOutlineSelected' && normalized === LEGACY_DETAIL_OUTLINE_SELECTED_FILL_COLOR)");
-    expect(styleSource).toContain('border-color: var(--xy-detail-outline-number-selected);');
-    expect(styleSource).toContain('background: var(--xy-detail-outline-number-has-outline);');
-    expect(styleSource).toContain('color-mix(in srgb, var(--xy-detail-outline-number-selected) 78%, transparent)');
-    expect(styleSource).not.toContain('background: var(--xy-detail-outline-number-selected);');
-    expect(source).toContain("backgroundColor: key === 'detailOutlineSelected' ? previewColors.detailOutlineHasOutline : previewColors[key]");
-    expect(source).toContain("borderColor: key === 'detailOutlineSelected' ? previewColors.detailOutlineSelected");
-    expect(source).toContain("boxShadow: key === 'detailOutlineSelected' ? `0 0 0 2px #ffffff, 0 0 0 4px ${previewColors.detailOutlineSelected}`");
+    ].forEach((token) => expect(modelSource).toContainSource(token));
+    expect(modelSource).toContainSource("defaultColor: '#08AACE'");
+    expect(modelSource).toContainSource(
+      "if (slot.key === 'detailOutlineSelected' && normalized === LEGACY_DETAIL_OUTLINE_SELECTED_FILL_COLOR)",
+    );
+    expect(styleSource).toContainSource('border-color: var(--xy-detail-outline-number-selected);');
+    expect(styleSource).toContainSource('background: var(--xy-detail-outline-number-has-outline);');
+    expect(styleSource).toContainSource(
+      'color-mix(in srgb, var(--xy-detail-outline-number-selected) 78%, transparent)',
+    );
+    expect(styleSource).not.toContainSource('background: var(--xy-detail-outline-number-selected);');
+    expect(source).toContainSource(
+      "backgroundColor: key === 'detailOutlineSelected' ? previewColors.detailOutlineHasOutline : previewColors[key]",
+    );
+    expect(source).toContainSource(
+      "borderColor: key === 'detailOutlineSelected' ? previewColors.detailOutlineSelected",
+    );
+    expect(source).toContainSource(
+      "boxShadow: key === 'detailOutlineSelected' ? `0 0 0 2px #ffffff, 0 0 0 4px ${previewColors.detailOutlineSelected}`",
+    );
   });
 
   it('offers every requested global color target and previews before saving', () => {
@@ -286,9 +321,9 @@ describe('DarkThemeColorPage custom color tab', () => {
       '工作流分组颜色',
       '正文内容输入区域背景',
       '软件顶部标题栏颜色',
-    ].forEach((label) => expect(modelSource).toContain(label));
-    expect(source).toContain('previewColors');
-    expect(source).toContain('applyCustomThemeColors');
-    expect(source).toContain('rememberCustomThemeColor');
+    ].forEach((label) => expect(modelSource).toContainSource(label));
+    expect(source).toContainSource('previewColors');
+    expect(source).toContainSource('applyCustomThemeColors');
+    expect(source).toContainSource('rememberCustomThemeColor');
   });
 });

@@ -1,4 +1,14 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { BookOpen, FlaskConical, Minus, Plus, Square, X } from 'lucide-react';
 
@@ -90,10 +100,16 @@ interface AppFrameProps {
 
 const INTERNAL_ROUTE_MODULES_BUNDLED = import.meta.env.DEV || import.meta.env.VITE_INCLUDE_INTERNAL_ROUTES === '1';
 const SoftwareUiCatalogPage = INTERNAL_ROUTE_MODULES_BUNDLED
-  ? lazy(() => import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({ default: module.SoftwareUiCatalogPage })))
+  ? lazy(() =>
+      import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({
+        default: module.SoftwareUiCatalogPage,
+      })),
+    )
   : null;
 const TestCollectionPage = INTERNAL_ROUTE_MODULES_BUNDLED
-  ? lazy(() => import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })))
+  ? lazy(() =>
+      import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })),
+    )
   : null;
 
 export function AppFrame({ children }: AppFrameProps) {
@@ -189,9 +205,12 @@ export function AppFrame({ children }: AppFrameProps) {
 
   useEffect(() => {
     let mounted = true;
-    window.xinyuexiaWindow?.isMaximized().then((value) => {
-      if (mounted) setIsMaximized(value);
-    }).catch(() => {});
+    window.xinyuexiaWindow
+      ?.isMaximized()
+      .then((value) => {
+        if (mounted) setIsMaximized(value);
+      })
+      .catch(() => {});
     return () => {
       mounted = false;
     };
@@ -277,13 +296,11 @@ export function AppFrame({ children }: AppFrameProps) {
         }
       }
       gesture.visible = true;
-      const directionEnabled = (
+      const directionEnabled =
         (gesture.direction === 'left' && mouseGestureSettings.goHomeLeftSwipe) ||
-        (gesture.direction === 'right' && mouseGestureSettings.forwardRightSwipe)
-      );
-      gesture.ready = !gesture.invalidated
-        && directionEnabled
-        && Math.abs(deltaY) <= RIGHT_MOUSE_GESTURE_VERTICAL_TOLERANCE;
+        (gesture.direction === 'right' && mouseGestureSettings.forwardRightSwipe);
+      gesture.ready =
+        !gesture.invalidated && directionEnabled && Math.abs(deltaY) <= RIGHT_MOUSE_GESTURE_VERTICAL_TOLERANCE;
       if (gesture.direction === 'left') gesture.ready = gesture.ready && deltaX <= -RIGHT_MOUSE_GESTURE_THRESHOLD;
       if (gesture.direction === 'right') gesture.ready = gesture.ready && deltaX >= RIGHT_MOUSE_GESTURE_THRESHOLD;
       if (!lastPoint || Math.hypot(event.clientX - lastPoint.x, event.clientY - lastPoint.y) >= 3) {
@@ -331,7 +348,13 @@ export function AppFrame({ children }: AppFrameProps) {
       window.removeEventListener('mouseup', handleMouseUp, true);
       window.removeEventListener('contextmenu', handleContextMenu, true);
     };
-  }, [activateHomeTab, location.pathname, mouseGestureSettings.forwardRightSwipe, mouseGestureSettings.goHomeLeftSwipe, navigate]);
+  }, [
+    activateHomeTab,
+    location.pathname,
+    mouseGestureSettings.forwardRightSwipe,
+    mouseGestureSettings.goHomeLeftSwipe,
+    navigate,
+  ]);
 
   useEffect(() => {
     type DragState = {
@@ -364,9 +387,8 @@ export function AppFrame({ children }: AppFrameProps) {
     const viewportPadding = 32;
     const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
-    const isOverlay = (element: HTMLElement) => (
-      element.classList.contains('fixed') && element.classList.contains('inset-0')
-    );
+    const isOverlay = (element: HTMLElement) =>
+      element.classList.contains('fixed') && element.classList.contains('inset-0');
     const findOverlay = (target: HTMLElement | null) => {
       let current: HTMLElement | null = target;
       while (current) {
@@ -376,7 +398,9 @@ export function AppFrame({ children }: AppFrameProps) {
       return null;
     };
     const findDialog = (overlay: HTMLElement, target: HTMLElement) => {
-      const children = Array.from(overlay.children).filter((child): child is HTMLElement => child instanceof HTMLElement);
+      const children = Array.from(overlay.children).filter(
+        (child): child is HTMLElement => child instanceof HTMLElement,
+      );
       return children.find((child) => child.contains(target)) ?? null;
     };
     const findDialogDragHandle = (dialog: HTMLElement) => {
@@ -384,7 +408,9 @@ export function AppFrame({ children }: AppFrameProps) {
       if (explicitHandle) return explicitHandle;
       const semanticHeader = dialog.querySelector<HTMLElement>('header');
       if (semanticHeader) return semanticHeader;
-      const firstBlock = Array.from(dialog.children).find((child): child is HTMLElement => child instanceof HTMLElement);
+      const firstBlock = Array.from(dialog.children).find(
+        (child): child is HTMLElement => child instanceof HTMLElement,
+      );
       if (!firstBlock) return null;
       const hasTitle = Boolean(firstBlock.querySelector('h1,h2,h3,[data-modal-title="true"]'));
       const hasCloseButton = Boolean(firstBlock.querySelector('button,[aria-label*="关闭"],[title*="关闭"]'));
@@ -395,17 +421,26 @@ export function AppFrame({ children }: AppFrameProps) {
       return Boolean(handle?.contains(target));
     };
     const getDialogKey = (dialog: HTMLElement, overlay?: HTMLElement) => {
-      const explicitId = dialog.dataset.modalId
-        || dialog.dataset.globalModalId
-        || overlay?.dataset.modalId
-        || overlay?.dataset.globalModalId;
+      const explicitId =
+        dialog.dataset.modalId ||
+        dialog.dataset.globalModalId ||
+        overlay?.dataset.modalId ||
+        overlay?.dataset.globalModalId;
       if (explicitId) return `xinyuexia_global_modal_position_${explicitId.slice(0, 80)}`;
-      const title = dialog.querySelector('[data-modal-title="true"],h1,h2,h3')?.textContent?.trim() || dialog.className || 'modal';
+      const title =
+        dialog.querySelector('[data-modal-title="true"],h1,h2,h3')?.textContent?.trim() || dialog.className || 'modal';
       return `xinyuexia_global_modal_position_${title.slice(0, 40)}`;
     };
     const readDialogGeometry = (key: string) => {
       try {
-        const parsed = JSON.parse(localStorage.getItem(key) || '{}') as { x?: number; y?: number; left?: number; top?: number; width?: number; height?: number };
+        const parsed = JSON.parse(localStorage.getItem(key) || '{}') as {
+          x?: number;
+          y?: number;
+          left?: number;
+          top?: number;
+          width?: number;
+          height?: number;
+        };
         return {
           x: Number.isFinite(parsed.x) ? Math.round(Number(parsed.x)) : 0,
           y: Number.isFinite(parsed.y) ? Math.round(Number(parsed.y)) : 0,
@@ -419,14 +454,25 @@ export function AppFrame({ children }: AppFrameProps) {
       }
     };
     const saveDialogGeometry = (key: string, dialog: HTMLElement) => {
-      localStorage.setItem(key, JSON.stringify({
-        x: Math.round(Number(dialog.dataset.globalDragX || 0)),
-        y: Math.round(Number(dialog.dataset.globalDragY || 0)),
-        left: Number.isFinite(Number(dialog.dataset.globalFixedLeft)) ? Math.round(Number(dialog.dataset.globalFixedLeft)) : undefined,
-        top: Number.isFinite(Number(dialog.dataset.globalFixedTop)) ? Math.round(Number(dialog.dataset.globalFixedTop)) : undefined,
-        width: Number.isFinite(Number(dialog.dataset.globalResizeWidth)) ? Math.round(Number(dialog.dataset.globalResizeWidth)) : undefined,
-        height: Number.isFinite(Number(dialog.dataset.globalResizeHeight)) ? Math.round(Number(dialog.dataset.globalResizeHeight)) : undefined,
-      }));
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          x: Math.round(Number(dialog.dataset.globalDragX || 0)),
+          y: Math.round(Number(dialog.dataset.globalDragY || 0)),
+          left: Number.isFinite(Number(dialog.dataset.globalFixedLeft))
+            ? Math.round(Number(dialog.dataset.globalFixedLeft))
+            : undefined,
+          top: Number.isFinite(Number(dialog.dataset.globalFixedTop))
+            ? Math.round(Number(dialog.dataset.globalFixedTop))
+            : undefined,
+          width: Number.isFinite(Number(dialog.dataset.globalResizeWidth))
+            ? Math.round(Number(dialog.dataset.globalResizeWidth))
+            : undefined,
+          height: Number.isFinite(Number(dialog.dataset.globalResizeHeight))
+            ? Math.round(Number(dialog.dataset.globalResizeHeight))
+            : undefined,
+        }),
+      );
     };
     const applyTransform = (dialog: HTMLElement, x: number, y: number) => {
       const roundedX = Math.round(x);
@@ -540,7 +586,12 @@ export function AppFrame({ children }: AppFrameProps) {
       handle.appendChild(mark);
     };
     const applyDialogPosition = (dialog: HTMLElement, overlay?: HTMLElement) => {
-      if (dialog.dataset.draggableManaged === 'true' || dialog.dataset.globalModalStatic === 'true' || dialog.dataset.globalDraggableApplied === 'true') return;
+      if (
+        dialog.dataset.draggableManaged === 'true' ||
+        dialog.dataset.globalModalStatic === 'true' ||
+        dialog.dataset.globalDraggableApplied === 'true'
+      )
+        return;
       const geometry = readDialogGeometry(getDialogKey(dialog, overlay));
       dialog.dataset.globalDraggableApplied = 'true';
       const handle = findDialogDragHandle(dialog);
@@ -563,9 +614,8 @@ export function AppFrame({ children }: AppFrameProps) {
         });
       });
     };
-    const isInteractive = (target: HTMLElement) => Boolean(
-      target.closest('button,input,textarea,select,a,[contenteditable="true"],[data-no-modal-drag="true"]'),
-    );
+    const isInteractive = (target: HTMLElement) =>
+      Boolean(target.closest('button,input,textarea,select,a,[contenteditable="true"],[data-no-modal-drag="true"]'));
 
     const handlePointerDown = (event: PointerEvent) => {
       if (event.button !== 0 || !(event.target instanceof HTMLElement)) return;
@@ -593,11 +643,12 @@ export function AppFrame({ children }: AppFrameProps) {
           originWidth: rect.width,
           originHeight: rect.height,
         };
-        document.body.style.cursor = resizeDirection === 'left' || resizeDirection === 'right'
-          ? 'ew-resize'
-          : resizeDirection === 'top' || resizeDirection === 'bottom'
-            ? 'ns-resize'
-            : 'nwse-resize';
+        document.body.style.cursor =
+          resizeDirection === 'left' || resizeDirection === 'right'
+            ? 'ew-resize'
+            : resizeDirection === 'top' || resizeDirection === 'bottom'
+              ? 'ns-resize'
+              : 'nwse-resize';
         document.body.style.userSelect = 'none';
         try {
           event.target.setPointerCapture(event.pointerId);
@@ -612,7 +663,9 @@ export function AppFrame({ children }: AppFrameProps) {
       event.stopPropagation();
       applyDialogPosition(dialog, overlay);
       const key = getDialogKey(dialog, overlay);
-      const fixed = Number.isFinite(Number(dialog.dataset.globalFixedLeft)) && Number.isFinite(Number(dialog.dataset.globalFixedTop));
+      const fixed =
+        Number.isFinite(Number(dialog.dataset.globalFixedLeft)) &&
+        Number.isFinite(Number(dialog.dataset.globalFixedTop));
       dragState = {
         dialog,
         key,
@@ -658,16 +711,18 @@ export function AppFrame({ children }: AppFrameProps) {
         const bottomEdge = resizeState.originTop + resizeState.originHeight;
         const maxLeftResizeWidth = Math.max(minModalWidth, rightEdge - viewportPadding / 2);
         const maxTopResizeHeight = Math.max(minModalHeight, bottomEdge - viewportPadding / 2);
-        const width = resizeState.direction === 'left'
-          ? clamp(resizeState.originWidth - deltaX, minModalWidth, maxLeftResizeWidth)
-          : resizeState.direction === 'right' || resizeState.direction === 'bottom-right'
-            ? clamp(resizeState.originWidth + deltaX, minModalWidth, maxWidth)
-            : resizeState.originWidth;
-        const height = resizeState.direction === 'top'
-          ? clamp(resizeState.originHeight - deltaY, minModalHeight, maxTopResizeHeight)
-          : resizeState.direction === 'bottom' || resizeState.direction === 'bottom-right'
-            ? clamp(resizeState.originHeight + deltaY, minModalHeight, maxHeight)
-            : resizeState.originHeight;
+        const width =
+          resizeState.direction === 'left'
+            ? clamp(resizeState.originWidth - deltaX, minModalWidth, maxLeftResizeWidth)
+            : resizeState.direction === 'right' || resizeState.direction === 'bottom-right'
+              ? clamp(resizeState.originWidth + deltaX, minModalWidth, maxWidth)
+              : resizeState.originWidth;
+        const height =
+          resizeState.direction === 'top'
+            ? clamp(resizeState.originHeight - deltaY, minModalHeight, maxTopResizeHeight)
+            : resizeState.direction === 'bottom' || resizeState.direction === 'bottom-right'
+              ? clamp(resizeState.originHeight + deltaY, minModalHeight, maxHeight)
+              : resizeState.originHeight;
         const left = resizeState.direction === 'left' ? rightEdge - width : resizeState.originLeft;
         const top = resizeState.direction === 'top' ? bottomEdge - height : resizeState.originTop;
         applyFixedPosition(resizeState.dialog, left, top);
@@ -834,14 +889,15 @@ export function AppFrame({ children }: AppFrameProps) {
 
   const mouseGesturePath = mouseGesturePreview?.points.length
     ? mouseGesturePreview.points
-      .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
-      .join(' ')
+        .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+        .join(' ')
     : '';
-  const mouseGestureDirectionLabel = mouseGesturePreview?.direction === 'right'
-    ? '前进'
-    : location.pathname === '/test-collection'
-    ? '返回测试'
-    : '返回我的小说';
+  const mouseGestureDirectionLabel =
+    mouseGesturePreview?.direction === 'right'
+      ? '前进'
+      : location.pathname === '/test-collection'
+        ? '返回测试'
+        : '返回我的小说';
   const mouseGestureContinueLabel = mouseGesturePreview?.direction === 'right' ? '继续右滑' : '继续左滑';
   const mouseGestureArrow = mouseGesturePreview?.direction === 'right' ? '→' : '←';
   const renderThemeOption = (option: (typeof THEME_OPTIONS)[number]) => {
@@ -857,14 +913,18 @@ export function AppFrame({ children }: AppFrameProps) {
         }}
         className={`xy-theme-option ${isSelected ? 'xy-theme-option-active' : ''}`}
       >
-        <span className="xy-theme-option-mark" aria-hidden="true">{isSelected ? '✓' : ''}</span>
+        <span className="xy-theme-option-mark" aria-hidden="true">
+          {isSelected ? '✓' : ''}
+        </span>
         <span className="xy-theme-option-label">{option.label}</span>
       </button>
     );
   };
 
   return (
-    <div className={`writer-assistant-theme flex h-screen w-screen flex-col overflow-hidden bg-[var(--xy-wa-app-bg)] ${themeClassName}`}>
+    <div
+      className={`writer-assistant-theme flex h-screen w-screen flex-col overflow-hidden bg-[var(--xy-wa-app-bg)] ${themeClassName}`}
+    >
       <header
         className="app-titlebar xy-wa-titlebar flex h-12 shrink-0 items-center border-b px-2"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
@@ -877,10 +937,10 @@ export function AppFrame({ children }: AppFrameProps) {
             className="flex h-full max-w-full shrink-0 items-end overflow-hidden"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           >
-          {tabs.map((tab) => {
-            const isActive = activeTabId === tab.id;
-            const isHomeTab = tab.id === HOME_TAB.id;
-            return (
+            {tabs.map((tab) => {
+              const isActive = activeTabId === tab.id;
+              const isHomeTab = tab.id === HOME_TAB.id;
+              return (
                 <div
                   key={tab.id}
                   role="button"
@@ -898,13 +958,17 @@ export function AppFrame({ children }: AppFrameProps) {
                   } ${isHomeTab ? 'w-[126px] text-center' : 'min-w-[128px] max-w-[230px] text-left'}`}
                   title={tab.title}
                 >
-                  <span className={`${isHomeTab ? 'shrink-0' : 'min-w-0 flex-1 truncate text-center'}`}>{tab.title}</span>
+                  <span className={`${isHomeTab ? 'shrink-0' : 'min-w-0 flex-1 truncate text-center'}`}>
+                    {tab.title}
+                  </span>
                   {!tab.fixed && (
                     <button
                       type="button"
                       onClick={(event) => handleCloseTab(event, tab)}
                       className={`grid h-6 w-6 shrink-0 place-items-center rounded-md transition-colors ${
-                        isActive ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-500 hover:bg-white/70 hover:text-slate-700'
+                        isActive
+                          ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+                          : 'text-slate-500 hover:bg-white/70 hover:text-slate-700'
                       }`}
                       aria-label={`关闭${tab.title}`}
                     >
@@ -912,8 +976,8 @@ export function AppFrame({ children }: AppFrameProps) {
                     </button>
                   )}
                 </div>
-            );
-          })}
+              );
+            })}
           </div>
         </nav>
 
@@ -924,26 +988,26 @@ export function AppFrame({ children }: AppFrameProps) {
         >
           {showInternalTools && (
             <>
-          <button
-            onClick={() => {
-              setShowSoftwareUiCatalog(false);
-              setShowTestCollection(true);
-            }}
-            className="xy-wa-icon-button"
-            title="测试板块"
-          >
-            <FlaskConical className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => {
-              setShowTestCollection(false);
-              setShowSoftwareUiCatalog(true);
-            }}
-            className="xy-wa-icon-button"
-            title="UI库"
-          >
-            <BookOpen className="h-4 w-4" />
-          </button>
+              <button
+                onClick={() => {
+                  setShowSoftwareUiCatalog(false);
+                  setShowTestCollection(true);
+                }}
+                className="xy-wa-icon-button"
+                title="测试板块"
+              >
+                <FlaskConical className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => {
+                  setShowTestCollection(false);
+                  setShowSoftwareUiCatalog(true);
+                }}
+                className="xy-wa-icon-button"
+                title="UI库"
+              >
+                <BookOpen className="h-4 w-4" />
+              </button>
             </>
           )}
           <div ref={themeMenuRef} className="relative mr-2">
@@ -989,9 +1053,7 @@ export function AppFrame({ children }: AppFrameProps) {
                         setIsScaleMenuOpen(false);
                       }}
                       className={`grid h-9 w-full grid-cols-[22px_1fr] items-center px-3 text-left text-sm transition-colors ${
-                        isSelected
-                          ? 'bg-slate-100 font-semibold text-slate-900'
-                          : 'text-slate-700 hover:bg-slate-50'
+                        isSelected ? 'bg-slate-100 font-semibold text-slate-900' : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
                       <span className="text-center text-base leading-none">{isSelected ? '✓' : ''}</span>
@@ -1002,21 +1064,21 @@ export function AppFrame({ children }: AppFrameProps) {
               </div>
             )}
             <div className="hidden">
-            <button
-              onClick={() => setAppScale((prev) => Math.max(0.8, Number((prev - 0.1).toFixed(1))))}
-              className="px-2.5 py-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
-              title="缩小 10%"
-            >
-              <Minus className="h-4 w-4" />
-            </button>
-            <span className="min-w-[48px] text-center text-xs text-slate-500">{Math.round(appScale * 100)}%</span>
-            <button
-              onClick={() => setAppScale((prev) => Math.min(1.5, Number((prev + 0.1).toFixed(1))))}
-              className="px-2.5 py-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
-              title="放大 10%"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
+              <button
+                onClick={() => setAppScale((prev) => Math.max(0.8, Number((prev - 0.1).toFixed(1))))}
+                className="px-2.5 py-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                title="缩小 10%"
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+              <span className="min-w-[48px] text-center text-xs text-slate-500">{Math.round(appScale * 100)}%</span>
+              <button
+                onClick={() => setAppScale((prev) => Math.min(1.5, Number((prev + 0.1).toFixed(1))))}
+                className="px-2.5 py-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                title="放大 10%"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
             </div>
           </div>
           <button
@@ -1055,9 +1117,7 @@ export function AppFrame({ children }: AppFrameProps) {
             transform: `scale(${effectiveScale})`,
           }}
         >
-          <div className="h-full bg-slate-50">
-            {children}
-          </div>
+          <div className="h-full bg-slate-50">{children}</div>
         </div>
       </div>
       {mouseGesturePreview && (
@@ -1083,7 +1143,11 @@ export function AppFrame({ children }: AppFrameProps) {
           >
             <span className="text-4xl leading-none">{mouseGestureArrow}</span>
             <span className="text-lg font-black text-white">
-              {mouseGesturePreview.invalid ? '无效手势' : mouseGesturePreview.ready ? mouseGestureDirectionLabel : mouseGestureContinueLabel}
+              {mouseGesturePreview.invalid
+                ? '无效手势'
+                : mouseGesturePreview.ready
+                  ? mouseGestureDirectionLabel
+                  : mouseGestureContinueLabel}
             </span>
           </div>
         </div>
@@ -1100,7 +1164,13 @@ export function AppFrame({ children }: AppFrameProps) {
             className="flex h-[min(820px,90vh)] w-[min(1180px,94vw)] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <Suspense fallback={<div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">正在打开测试...</div>}>
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">
+                  正在打开测试...
+                </div>
+              }
+            >
               <TestCollectionPage embedded onClose={() => setShowTestCollection(false)} />
             </Suspense>
           </div>
@@ -1118,7 +1188,13 @@ export function AppFrame({ children }: AppFrameProps) {
             className="flex h-[min(900px,92vh)] w-[min(1520px,96vw)] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <Suspense fallback={<div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">正在打开 UI库...</div>}>
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">
+                  正在打开 UI库...
+                </div>
+              }
+            >
               <SoftwareUiCatalogPage embedded onClose={() => setShowSoftwareUiCatalog(false)} />
             </Suspense>
           </div>

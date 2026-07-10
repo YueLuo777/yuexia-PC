@@ -9,8 +9,13 @@ export const DETAIL_OUTLINE_CHAPTER_CONTEXT_MENU_SIZE = { width: 136, height: 56
 export function clampFixedMenuPosition(x: number, y: number, size: ContextMenuSize) {
   if (typeof window === 'undefined') return { left: x, top: y };
   return {
-    left: Math.max(CONTEXT_MENU_VIEWPORT_PADDING, Math.min(x, window.innerWidth - size.width - CONTEXT_MENU_VIEWPORT_PADDING)),
-    top: Math.max(CONTEXT_MENU_VIEWPORT_PADDING, Math.min(y, window.innerHeight - size.height - CONTEXT_MENU_VIEWPORT_PADDING)),
+    left: Math.max(
+      CONTEXT_MENU_VIEWPORT_PADDING,
+      Math.min(x, window.innerWidth - size.width - CONTEXT_MENU_VIEWPORT_PADDING),
+    ),
+    top: Math.max(
+      CONTEXT_MENU_VIEWPORT_PADDING,
+      Math.min(y, window.innerHeight - size.height - CONTEXT_MENU_VIEWPORT_PADDING),
+    ),
   };
 }
-

@@ -36,21 +36,18 @@ export function SettingCreateDialog({
   if (!mode) return null;
 
   return createPortal(
-    <div
-      className="modal-sharp fixed inset-0 z-[280] flex items-center justify-center bg-black/35"
-      onClick={onClose}
-    >
+    <div className="modal-sharp fixed inset-0 z-[280] flex items-center justify-center bg-black/35" onClick={onClose}>
       <div
         className="modal-sharp flex w-[min(460px,92vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
           <div>
-            <h3 className="text-xl font-bold text-gray-900">
-              {mode === 'category' ? '新建分组' : `新建${itemLabel}`}
-            </h3>
+            <h3 className="text-xl font-bold text-gray-900">{mode === 'category' ? '新建分组' : `新建${itemLabel}`}</h3>
             <p className="mt-1 text-xs text-gray-400">
-              {mode === 'category' ? '输入分组名称，确认后会显示在左侧分组里。' : `选择所属分组，确认后会创建新的${itemLabel}。`}
+              {mode === 'category'
+                ? '输入分组名称，确认后会显示在左侧分组里。'
+                : `选择所属分组，确认后会创建新的${itemLabel}。`}
             </p>
           </div>
           <button
@@ -84,7 +81,9 @@ export function SettingCreateDialog({
                 className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none transition-colors focus:border-[#08AACE] focus:ring-2 focus:ring-[#08AACE]/15"
               >
                 {typeOptions.map((type) => (
-                  <option key={type} value={type}>{type}</option>
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
                 ))}
               </select>
             </label>
@@ -119,20 +118,11 @@ type CategoryRenameDialogProps = {
   onConfirm: () => void;
 };
 
-export function CategoryRenameDialog({
-  isOpen,
-  draft,
-  onDraftChange,
-  onClose,
-  onConfirm,
-}: CategoryRenameDialogProps) {
+export function CategoryRenameDialog({ isOpen, draft, onDraftChange, onClose, onConfirm }: CategoryRenameDialogProps) {
   if (!isOpen) return null;
 
   return createPortal(
-    <div
-      className="modal-sharp fixed inset-0 z-[280] flex items-center justify-center bg-black/35"
-      onClick={onClose}
-    >
+    <div className="modal-sharp fixed inset-0 z-[280] flex items-center justify-center bg-black/35" onClick={onClose}>
       <div
         className="modal-sharp flex w-[min(420px,92vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
@@ -194,13 +184,7 @@ type EntryRenameDialogProps = {
   onConfirm: () => void;
 };
 
-export function EntryRenameDialog({
-  isOpen,
-  draft,
-  onDraftChange,
-  onClose,
-  onConfirm,
-}: EntryRenameDialogProps) {
+export function EntryRenameDialog({ isOpen, draft, onDraftChange, onClose, onConfirm }: EntryRenameDialogProps) {
   if (!isOpen) return null;
 
   return createPortal(

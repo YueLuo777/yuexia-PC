@@ -33,4 +33,3 @@ This project favors small, verified changes over broad rewrites. Use this checkl
 - Validate main-process IPC inputs before using them.
 - Keep validation helpers testable outside Electron, such as `electron/ipcValidation.cjs`.
 - IPC handlers should return stable `{ ok, ... }` structures for expected failures instead of throwing.
-

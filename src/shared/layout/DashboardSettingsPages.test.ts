@@ -13,53 +13,55 @@ describe('dashboard unified settings page', () => {
     const footerSource = dashboard.slice(footerStart, footerEnd);
 
     expect(footerStart).toBeGreaterThan(-1);
-    expect(footerSource).toContain('to="/settings"');
-    expect(footerSource).toContain('title="设置"');
-    expect(footerSource).toContain('设置');
-    expect(footerSource).toContain('className={SETTINGS_TEXT_BUTTON_CLASS}');
-    expect(footerSource).not.toContain('to="/system-settings"');
-    expect(footerSource).not.toContain('to="/theme-colors"');
-    expect(footerSource).not.toContain('to="/shortcut-settings"');
-    expect(footerSource).not.toContain('to="/nav-settings"');
+    expect(footerSource).toContainSource('to="/settings"');
+    expect(footerSource).toContainSource('title="设置"');
+    expect(footerSource).toContainSource('设置');
+    expect(footerSource).toContainSource('className={SETTINGS_TEXT_BUTTON_CLASS}');
+    expect(footerSource).not.toContainSource('to="/system-settings"');
+    expect(footerSource).not.toContainSource('to="/theme-colors"');
+    expect(footerSource).not.toContainSource('to="/shortcut-settings"');
+    expect(footerSource).not.toContainSource('to="/nav-settings"');
   });
 
   it('uses the same solid cyan button tone as the chapter add-volume button for the settings entry', () => {
     const dashboard = readSource('src/shared/layout/DashboardLayout.tsx');
     const chapterSidebar = readSource('src/features/workbench/components/ChapterSidebar.tsx');
 
-    expect(chapterSidebar).toContain("bg-[#08AACE] hover:bg-[#0798b8]");
-    expect(dashboard).toContain("bg-[#08AACE]");
-    expect(dashboard).toContain("hover:bg-[#0798b8]");
-    expect(dashboard).toContain('text-white');
-    expect(dashboard).not.toContain('border border-brand/20 bg-white px-2');
+    expect(chapterSidebar).toContainSource('bg-[#08AACE] hover:bg-[#0798b8]');
+    expect(dashboard).toContainSource('bg-[#08AACE]');
+    expect(dashboard).toContainSource('hover:bg-[#0798b8]');
+    expect(dashboard).toContainSource('text-white');
+    expect(dashboard).not.toContainSource('border border-brand/20 bg-white px-2');
   });
 
   it('registers the unified settings route and redirects old settings URLs to sections', () => {
     const app = readSource('src/app/App.tsx');
     const internalRoutes = readSource('src/app/InternalRoutesPage.tsx');
 
-    expect(app).toContain('SettingsPage');
-    expect(app).toContain('path="/settings"');
-    expect(app).toContain('to="/settings?section=system"');
-    expect(app).toContain('to="/settings?section=shortcuts"');
-    expect(internalRoutes).toContain('to="/settings?section=theme"');
-    expect(app).toContain('to="/settings?section=navigation"');
+    expect(app).toContainSource('SettingsPage');
+    expect(app).toContainSource('path="/settings"');
+    expect(app).toContainSource('to="/settings?section=system"');
+    expect(app).toContainSource('to="/settings?section=shortcuts"');
+    expect(internalRoutes).toContainSource('to="/settings?section=theme"');
+    expect(app).toContainSource('to="/settings?section=navigation"');
   });
 
   it('keeps the four settings areas inside the unified settings shell', () => {
     const settingsPage = readSource('src/shared/settings/SettingsPage.tsx');
 
-    expect(settingsPage).toContain("type SettingsSection = 'system' | 'backup' | 'shortcuts' | 'theme' | 'navigation'");
-    expect(settingsPage).toContain("id: 'system'");
-    expect(settingsPage).toContain("id: 'backup'");
-    expect(settingsPage).toContain('数据迁移');
-    expect(settingsPage).toContain('DbSettingsPage');
-    expect(settingsPage).toContain("id: 'shortcuts'");
-    expect(settingsPage).toContain("id: 'theme'");
-    expect(settingsPage).toContain("id: 'navigation'");
-    expect(settingsPage).toContain('variant="embedded"');
-    expect(settingsPage).toContain('w-[236px]');
-    expect(settingsPage).toContain('bg-white px-5 py-4');
+    expect(settingsPage).toContainSource(
+      "type SettingsSection = 'system' | 'backup' | 'shortcuts' | 'theme' | 'navigation'",
+    );
+    expect(settingsPage).toContainSource("id: 'system'");
+    expect(settingsPage).toContainSource("id: 'backup'");
+    expect(settingsPage).toContainSource('数据迁移');
+    expect(settingsPage).toContainSource('DbSettingsPage');
+    expect(settingsPage).toContainSource("id: 'shortcuts'");
+    expect(settingsPage).toContainSource("id: 'theme'");
+    expect(settingsPage).toContainSource("id: 'navigation'");
+    expect(settingsPage).toContainSource('variant="embedded"');
+    expect(settingsPage).toContainSource('w-[236px]');
+    expect(settingsPage).toContainSource('bg-white px-5 py-4');
   });
 
   it('keeps settings pages plain and exposes window size memory', () => {
@@ -70,18 +72,20 @@ describe('dashboard unified settings page', () => {
     const electronMain = readSource('electron/main.cjs');
     const sharedButtonClasses = readSource('src/shared/ui/actionButtonClasses.ts');
 
-    expect(systemSettings).toContain("type SettingsTab = 'window' | 'association' | 'appIcon'");
-    expect(systemSettings).toContain('window.xinyuexiaWindow.updateSettings');
-    expect(systemSettings).toContain("import { PRIMARY_TEXT_BUTTON_CLASS } from '@/shared/ui/actionButtonClasses';");
-    expect(systemSettings).toContain('PRIMARY_TEXT_BUTTON_CLASS');
-    expect(sharedButtonClasses).toContain('bg-[#08AACE]');
-    expect(sharedButtonClasses).toContain('hover:bg-[#0798b8]');
-    expect(electronMain).toContain("ipcMain.handle('window-settings:update'");
-    expect(electronMain).toContain('if (!readWindowSettings().rememberSize) return null;');
+    expect(systemSettings).toContainSource("type SettingsTab = 'window' | 'association' | 'appIcon'");
+    expect(systemSettings).toContainSource('window.xinyuexiaWindow.updateSettings');
+    expect(systemSettings).toContainSource(
+      "import { PRIMARY_TEXT_BUTTON_CLASS } from '@/shared/ui/actionButtonClasses';",
+    );
+    expect(systemSettings).toContainSource('PRIMARY_TEXT_BUTTON_CLASS');
+    expect(sharedButtonClasses).toContainSource('bg-[#08AACE]');
+    expect(sharedButtonClasses).toContainSource('hover:bg-[#0798b8]');
+    expect(electronMain).toContainSource("registerTrustedIpcHandler('window-settings:update'");
+    expect(electronMain).toContainSource('if (!readWindowSettings().rememberSize) return null;');
 
-    expect(shortcutSettings).toContain("variant?: 'modal' | 'page' | 'embedded'");
-    expect(navSettings).toContain("variant?: 'modal' | 'page' | 'embedded'");
-    expect(themeSettings).toContain("variant?: 'page' | 'modal' | 'embedded'");
+    expect(shortcutSettings).toContainSource("variant?: 'modal' | 'page' | 'embedded'");
+    expect(navSettings).toContainSource("variant?: 'modal' | 'page' | 'embedded'");
+    expect(themeSettings).toContainSource("variant?: 'page' | 'modal' | 'embedded'");
   });
 
   it('uses the home settings solid cyan style for settings action buttons', () => {
@@ -93,18 +97,18 @@ describe('dashboard unified settings page', () => {
     ].join('\n');
     const sharedButtonClasses = readSource('src/shared/ui/actionButtonClasses.ts');
 
-    expect(sources).toContain("import { PRIMARY_TEXT_BUTTON_CLASS } from '@/shared/ui/actionButtonClasses';");
-    expect(sources).toContain('PRIMARY_TEXT_BUTTON_CLASS');
-    expect(sharedButtonClasses).toContain('rounded-md bg-[#08AACE]');
-    expect(sharedButtonClasses).toContain('hover:bg-[#0798b8]');
-    expect(sharedButtonClasses).toContain('text-white');
-    expect(sources).toContain('SETTINGS_INLINE_BUTTON_CLASS');
-    expect(sources).toContain('添加颜色');
-    expect(sources).toContain('使用中');
-    expect(sources).not.toContain("'rounded-lg border border-brand/20 bg-white px-3 py-2");
-    expect(sources).not.toContain("'rounded-lg border border-brand/20 bg-white px-4 py-2");
-    expect(sources).not.toContain('className={`flex items-center gap-1.5 ${SETTINGS_LIGHT_BUTTON_CLASS}`}');
-    expect(sources).not.toContain('<RotateCcw className=');
+    expect(sources).toContainSource("import { PRIMARY_TEXT_BUTTON_CLASS } from '@/shared/ui/actionButtonClasses';");
+    expect(sources).toContainSource('PRIMARY_TEXT_BUTTON_CLASS');
+    expect(sharedButtonClasses).toContainSource('rounded-md bg-[#08AACE]');
+    expect(sharedButtonClasses).toContainSource('hover:bg-[#0798b8]');
+    expect(sharedButtonClasses).toContainSource('text-white');
+    expect(sources).toContainSource('SETTINGS_INLINE_BUTTON_CLASS');
+    expect(sources).toContainSource('添加颜色');
+    expect(sources).toContainSource('使用中');
+    expect(sources).not.toContainSource("'rounded-lg border border-brand/20 bg-white px-3 py-2");
+    expect(sources).not.toContainSource("'rounded-lg border border-brand/20 bg-white px-4 py-2");
+    expect(sources).not.toContainSource('className={`flex items-center gap-1.5 ${SETTINGS_LIGHT_BUTTON_CLASS}`}');
+    expect(sources).not.toContainSource('<RotateCcw className=');
   });
 
   it('keeps shortcut settings dense with header reset and solid cyan shortcut keys', () => {
@@ -112,30 +116,34 @@ describe('dashboard unified settings page', () => {
     const shortcutSettings = readSource('src/shared/shortcuts/ShortcutSettingsModal.tsx');
     const sharedButtonClasses = readSource('src/shared/ui/actionButtonClasses.ts');
 
-    expect(settingsPage).toContain('SHORTCUT_SETTINGS_RESET_EVENT');
-    expect(settingsPage).toContain('SETTINGS_HEADER_ACTION_BUTTON_CLASS');
-    expect(settingsPage).toContain("activeSection === 'shortcuts'");
-    expect(settingsPage).toContain('window.dispatchEvent(new Event(SHORTCUT_SETTINGS_RESET_EVENT))');
-    expect(settingsPage).toContain('relative shrink-0 border-b');
-    expect(settingsPage).toContain('absolute right-5 top-1/2 -translate-y-1/2');
+    expect(settingsPage).toContainSource('SHORTCUT_SETTINGS_RESET_EVENT');
+    expect(settingsPage).toContainSource('SETTINGS_HEADER_ACTION_BUTTON_CLASS');
+    expect(settingsPage).toContainSource("activeSection === 'shortcuts'");
+    expect(settingsPage).toContainSource('window.dispatchEvent(new Event(SHORTCUT_SETTINGS_RESET_EVENT))');
+    expect(settingsPage).toContainSource('relative shrink-0 border-b');
+    expect(settingsPage).toContainSource('absolute right-5 top-1/2 -translate-y-1/2');
 
-    expect(shortcutSettings).toContain("export const SHORTCUT_SETTINGS_RESET_EVENT = 'xinyuexia_shortcut_settings_reset_requested'");
-    expect(shortcutSettings).toContain('window.addEventListener(SHORTCUT_SETTINGS_RESET_EVENT, handleResetRequest)');
-    expect(shortcutSettings).toContain('grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4');
-    expect(shortcutSettings).toContain('SHORTCUT_KEY_BUTTON_CLASS');
-    expect(shortcutSettings).toContain('SHORTCUT_KEY_TEXT_BUTTON_CLASS');
-    expect(sharedButtonClasses).toContain('export const SHORTCUT_KEY_TEXT_BUTTON_CLASS');
-    expect(sharedButtonClasses).toContain('rounded-md bg-[#08AACE]');
-    expect(shortcutSettings).not.toContain('bg-white text-slate-800 hover:bg-slate-100');
-    expect(shortcutSettings).not.toContain('className="flex justify-end"');
-    expect(shortcutSettings).not.toContain('className="hidden"');
+    expect(shortcutSettings).toContainSource(
+      "export const SHORTCUT_SETTINGS_RESET_EVENT = 'xinyuexia_shortcut_settings_reset_requested'",
+    );
+    expect(shortcutSettings).toContainSource(
+      'window.addEventListener(SHORTCUT_SETTINGS_RESET_EVENT, handleResetRequest)',
+    );
+    expect(shortcutSettings).toContainSource('grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4');
+    expect(shortcutSettings).toContainSource('SHORTCUT_KEY_BUTTON_CLASS');
+    expect(shortcutSettings).toContainSource('SHORTCUT_KEY_TEXT_BUTTON_CLASS');
+    expect(sharedButtonClasses).toContainSource('export const SHORTCUT_KEY_TEXT_BUTTON_CLASS');
+    expect(sharedButtonClasses).toContainSource('rounded-md bg-[#08AACE]');
+    expect(shortcutSettings).not.toContainSource('bg-white text-slate-800 hover:bg-slate-100');
+    expect(shortcutSettings).not.toContainSource('className="flex justify-end"');
+    expect(shortcutSettings).not.toContainSource('className="hidden"');
   });
 
   it('records the unified settings migration in the in-app error log', () => {
     const errorLog = readSource('src/features/tests/model/errorLogDefaultEntries.generated.ts');
 
-    expect(errorLog).toContain('dashboard-unified-settings-page-tree-001');
-    expect(errorLog).toContain('settings-action-buttons-match-home-settings-001');
-    expect(errorLog).toContain('shortcut-settings-four-column-header-reset-001');
+    expect(errorLog).toContainSource('dashboard-unified-settings-page-tree-001');
+    expect(errorLog).toContainSource('settings-action-buttons-match-home-settings-001');
+    expect(errorLog).toContainSource('shortcut-settings-four-column-header-reset-001');
   });
 });

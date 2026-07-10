@@ -1,5 +1,117 @@
 # xinyuexia 问题记录
 
+## 小说库顶部四张概览卡片必须始终限制在可视区域内
+
+- 现象：软件缩放到 110% 后，小说库顶部第四张“扩展卡片”超出窗口，概览区域出现原本没有的横向滚动条。
+- 原因：四张卡片使用持久化的固定像素宽度，网格同时设置了 `min-w-[1780px]` 和 `overflow-x-auto`；窗口有效宽度小于固定最小宽度时只能横向溢出。
+- 处理：把已保存的卡片宽度解释为相对权重，网格使用 `minmax(0, weight fr)` 在当前可用宽度内分配四张卡片；容器补充 `w-full`、`min-w-0` 和横向溢出隐藏。拖动分隔条时按当前网格像素宽度换算权重，保持可调比例但不再扩大整行。
+- 预防：窗口内的多卡片概览行不得设置大于视口的固定最小宽度；需要支持拖动调宽时，应调整相邻卡片比例并保持总宽度不变，同时覆盖 100%、110% 和窄窗口回归。
+- 验证：执行 `npm.cmd run test:run -- src/features/novels/pages/NovelLibraryPage.test.tsx`、`npm.cmd run check` 和 `npm.cmd run build`；在应用内浏览器切换到 110%，确认四张卡片均位于网格边界内且容器 `scrollWidth` 等于 `clientWidth`。
+
+## 桌面运行时与构建工具链必须保持无已知审计漏洞并具备自动桌面冒烟
+
+- 现象：旧版 Electron、electron-builder 和 Vite 的完整依赖审计包含高危漏洞；Electron 虽声明在 `devDependencies`，但它会通过 `electronDist` 进入便携版，不能按普通开发依赖忽略。项目也缺少能真正打开桌面窗口的自动化门禁。
+- 原因：依赖长期只做功能兼容升级，生产审计使用 `--omit=dev` 会漏掉实际随安装包发布的 Electron 二进制；既有测试无法验证主进程、预加载桥和真实渲染页面能否共同启动。
+- 处理：Electron 升级到 43.1.0、electron-builder 升级到 26.15.3、Vite 升级到兼容补丁线 7.3.6，并吸收全部可用审计补丁，完整 `npm audit` 归零。新增 Playwright Electron 冒烟脚本与 Windows CI，自动验证“小说库 → 工作台 → 第1章 剧情审核”。启动器同步支持新版 Electron 显式运行时安装。
+- 预防：桌面发布前必须运行完整审计而不只检查生产依赖；运行时大版本升级必须经过 TypeScript、构建、Electron E2E 和 VBS 实际启动四层回归。
+- 验证：执行 `npm.cmd audit`、`npm.cmd run verify:desktop` 和 `月下PC版.vbs`。
+
+## 模型 API Key 不应以明文留在 localStorage 或渲染层请求头
+
+- 现象：模型配置把 API Key 与模型元数据一起写入 `localStorage`，任何能读取渲染层存储或请求对象的代码都能获得长期密钥。
+- 原因：模型请求最初由渲染层直接构造鉴权头，Electron 主进程只负责转发完整请求，没有独立的密钥所有权与系统加密存储。
+- 处理：新增 Electron `safeStorage` 密钥仓库和受信 IPC；渲染层只把模型实例密钥标识交给主进程，主进程解密后再注入 `Authorization` 或 `x-api-key`。旧明文只有在加密写入成功后才会从 `localStorage` 清除，编辑模型时按需读取。
+- 预防：新增模型服务不得把长期密钥写进可导出的页面存储、调用日志或渲染层请求快照；密钥迁移必须遵守“先加密落盘、再清除旧值”。
+- 验证：执行 `npm.cmd run test:run -- electron/modelSecretStore.test.ts src/features/models/hooks/useModels.test.ts src/features/models/services/callModel.test.ts electron/security.test.mjs`。
+
+## 全局备份导入失败时必须恢复导入前的数据
+
+- 现象：旧导入流程先删除全部本软件数据，再逐项写入备份；如果中途触发容量限制或浏览器存储异常，会同时失去旧数据并只留下半份新数据。
+- 原因：导入操作没有保存旧快照、大小预检和失败回滚，也没有限制压缩包解压后的数据体积。
+- 处理：恢复前保存当前应用数据快照并校验总大小；写入失败时清理半成品并自动恢复旧快照。备份文件限制为 64MB，解压后的可恢复文本限制为 32MB。
+- 预防：任何覆盖式导入都必须先验证、再快照、后替换，失败路径必须有自动回滚测试。
+- 验证：执行 `npm.cmd run test:run -- src/features/settings/pages/DbSettingsPage.test.ts`。
+
+## 大型工作台资料库应按需加载而不是阻塞普通章节编辑
+
+- 现象：`WorkbenchLibraryPanel` 产物约 302KB，普通用户只进入章节编辑也会由工作台静态依赖加载资料库、模型管理和提示词管理代码。
+- 原因：工作台页面静态导入所有子工作流，即使相关资料库或管理弹窗尚未打开，浏览器仍需要解析这些模块。
+- 处理：资料库面板、模型管理和提示词管理改为 `React.lazy` 动态导入，并在真实入口外包裹统一加载状态；普通章节编辑不再预先请求这些功能块。
+- 预防：超过 100KB 且只在特定弹窗或工作流出现的模块默认使用路由或交互级动态导入，并用源码守卫锁定不得恢复静态导入。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/pages/WorkbenchPage.test.tsx` 和 `npm.cmd run build`。
+
+## 桌面启动器不应复用依赖变更前的 Vite 预构建进程
+
+- 现象：更新 `package.json` 或锁文件后再次运行桌面启动器，旧 Vite 进程仍然返回 HTTP 200，启动器会直接复用它；Electron 随后可能出现 React `Invalid hook call`，页面无法正常渲染。
+- 原因：启动器只检查开发服务器是否可访问，没有判断当前进程的依赖预构建是否与磁盘上的依赖输入一致。
+- 处理：对 `package.json`、`package-lock.json` 和 `vite.config.ts` 生成依赖指纹；当现存服务器的指纹缺失或过期时，仅清理命令行同时匹配本项目 Vite 入口与端口的进程，再启动新的开发服务器并写入最新指纹。
+- 预防：桌面开发启动器在复用长驻开发服务器前必须校验依赖输入；清理进程必须同时校验项目路径和端口，不能按进程名批量结束。
+- 验证：执行 `npm.cmd run test:run -- src/app/startupRoute.test.ts`、`npm.cmd run check:launcher`，再运行 `月下PC版.vbs`，确认启动日志出现指纹变更重启、开发服务器返回 HTTP 200、Electron 日志不再出现 `Invalid hook call`。
+
+## 正文自动保存和 AI 流式输出不应高频重写整份索引
+
+- 现象：连续输入正文或接收较长 AI 流式输出时，会在很短时间内反复序列化并写入作品、卷目录或全部后台任务；作品越大、输出越长，主线程抖动和磁盘写入越明显。
+- 原因：正文每次变更除立即保存章节内容外，还同步重写作品与卷目录元数据；AI 每收到一个分片就把全部后台任务写回 localStorage，没有合并窗口。
+- 处理：章节正文仍即时保存；作品和卷目录元数据改为 350ms 合并写入，结构性写入会取消同键旧队列，离开页面前强制落盘。AI 分片改为 250ms 合并持久化，开始、结束、失败、停止、清空和离开页面时立即落盘。
+- 预防：高频输入路径只立即写最小必要数据；大对象索引与流式快照必须使用可刷新、可取消的合并队列，并用假定时器验证多次更新只产生有限写入。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/model/workbenchPersistenceQueue.test.ts src/shared/ai/backgroundAiTasks.test.ts src/features/workbench/hooks/useWorkbenchData.storage.test.ts`。
+
+## 生产依赖不应为热点聚合引入高危间接依赖
+
+- 现象：生产依赖审计包含由 `dailyhot-api` 本地服务链带入的高危漏洞，但桌面端实际只需要调用公开热点聚合接口。
+- 原因：热点服务同时保留了第三方包的本地 Express 启动模式和公开接口回退，扩大了依赖面与维护面。
+- 处理：移除 `dailyhot-api`，热点服务统一使用既有公开 HTTPS 基址与 Electron 主进程代理；更新锁文件后，`npm audit --omit=dev` 为 0 个漏洞。
+- 预防：能用小型、明确的网络适配器完成的功能不要引入整套服务端运行时；升级或新增生产依赖时必须检查生产审计结果和实际调用路径。
+- 验证：执行 `npm.cmd run test:run -- electron/hotspots/hotspotService.test.ts` 和 `npm.cmd audit --omit=dev`。
+
+## 源码契约测试不应因统一格式化产生大面积误报
+
+- 现象：统一执行 Prettier 后，功能未变化但大量源码契约测试因换行、尾逗号、十六进制颜色大小写或已拆分模块位置变化而失败，真实 DOM 回归被噪声淹没。
+- 原因：部分测试直接用原始 `toContain` 和精确 `indexOf` 绑定源码排版；资料库测试还会把默认已展开的分类再次点击为折叠状态。
+- 处理：新增只用于源码契约的 `toContainSource` 规范化匹配器，忽略无语义空白、尾逗号和颜色大小写；已拆分逻辑改为读取对应模块；分类夹具使用幂等展开，同时保留拖拽、右键、结构化字段等真实 DOM 交互用例。
+- 预防：行为优先使用函数或 DOM 测试；确需源码守卫时只断言稳定语义片段，不绑定 Prettier 排版、整段 JSX 或模块原位置。
+- 验证：执行 `npm.cmd run format:check` 和完整 `npm.cmd run test:run`。
+
+## Electron 主页面、IPC、网页权限和热点抓取需要统一安全边界
+
+- 现象：开发启动地址可指向任意远程网页并仍加载预加载桥；IPC 没有核验调用页面；嵌入网页未统一拒绝摄像头、定位等权限；热点详情可以请求本机、内网地址或通过跳转进入内网。
+- 原因：启动环境变量只被当作普通 URL 使用；IPC 默认信任所有 sender；webview 只限制协议和 Node 权限；热点抓取使用自动跟随跳转且没有 DNS/IP 公网校验。
+- 处理：自定义启动地址只允许无凭据的回环 HTTP/HTTPS，主窗口离开可信来源时阻止导航；全部特权 IPC 经统一包装校验主窗口 sender 与可信 URL；所有 Electron session 默认拒绝网页权限和新窗口；热点详情在请求前、每次跳转及最终 URL 上校验域名解析结果，拒绝本机、私网、保留地址和过多跳转。
+- 预防：新增 preload 能力必须接入可信 sender 包装；新增 webview/session 时默认拒绝权限；任何由渲染层提交、主进程代发的 URL 都必须按 SSRF 规则验证，并手动检查重定向链。
+- 验证：执行 `npm.cmd run test:run -- electron/security.test.mjs electron/hotspots/hotspotDetailService.test.ts electron/ipcValidation.test.ts`、`npm.cmd run check:electron` 和 `npm.cmd run check`。
+
+## 永久删除作品后不应复用作品 ID 或残留作品数据
+
+- 现象：永久删除当前最大编号作品后，新建作品可能复用相同 ID，并重新读到旧作品的设定、章纲、AI 会话、备忘录或剧本关联。
+- 原因：作品 ID 仅按当前作品和回收站中的最大值加一生成；永久删除只移除章节正文和卷目录，没有清除按作品 ID 命名的工作台存储。
+- 处理：新增单调递增的作品 ID 游标，删除最高编号作品后也不会回退；永久删除成功写入作品回收站和卷目录后，精确清理该作品的正文、设定、章纲、AI 会话、备忘录、审核任务、润色状态和剧本关联。
+- 预防：持久化实体 ID 不得从当前剩余数据反推复用；新增按作品分区的存储键时，应同步加入永久删除清理清单和邻近 ID 防误删测试。
+- 验证：执行 `npm.cmd run test:run -- src/features/novels/model/novelPersistence.test.ts src/features/novels/hooks/useNovelLibrary.test.tsx` 和 `npm.cmd run check`。
+
+## 删除章节必须先可靠写入回收站再移除正文
+
+- 现象：章节删除逻辑在 React 状态更新函数里给局部变量赋值，随后立即在外部判断；状态更新异步执行时，章节可能从目录消失但没有进入回收站。
+- 原因：代码依赖 React 状态 updater 同步执行，并在目录更新后才保存回收站和删除正文，没有形成可恢复的提交顺序。
+- 处理：删除前从当前快照同步生成回收章节和新目录，先写回收站、再写卷目录，卷目录写入失败时回滚回收站；两份索引写入成功后才删除正文并更新界面状态。
+- 预防：涉及多份本地存储的数据移动应先写可恢复副本、再更新索引、最后删除原数据，不得通过状态 updater 向外传递事务结果。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/hooks/useWorkbenchData.storage.test.ts` 和 `npm.cmd run check`。
+
+## 审核后台任务和章纲预览必须跟随当前章节
+
+- 现象：第一章开始审核后切到第二章，后台任务结果可能显示到第二章；同一作品内修改章纲后，审核预览仍可能显示旧内容。
+- 原因：后台任务 ID 只按作品和审核模式保存，恢复时没有校验章节和模式；章纲列表只依赖存储键做一次 memo，存储内容变化不会触发刷新。
+- 处理：审核任务索引升级为按作品、章节和审核模式分区，恢复和加载状态时同时校验任务元数据；切章清空当前显示并恢复目标章节自己的任务。章纲预览改为使用工作台父页面订阅到的实时资料快照。
+- 预防：异步任务恢复必须校验完整业务作用域；从 localStorage 派生的界面数据必须订阅写入事件或由已有响应式快照下发。
+- 验证：执行 `npm.cmd run test:run -- src/features/workbench/pages/WorkbenchPage.test.tsx -t "stores and restores|uses the reactive"` 和 `npm.cmd run check`。
+
+## 剧本关联小说必须按剧本独立保存
+
+- 现象：在剧本 A 关联小说后切换到剧本 B，剧本 B 会继承同一个关联小说。
+- 原因：所有剧本共用 `xinyuexia_script_editor_linked_novel` 单一存储键，并在切换剧本时重复读取该全局值。
+- 处理：关联键升级为带剧本 ID 的 `xinyuexia_script_editor_linked_novel_v2_{scriptId}`；旧全局值只迁移给首次打开的当前剧本一次，取消关联、会话清理和作品永久删除均同步处理新键。
+- 预防：任何作品级或剧本级状态都必须把所属实体 ID 放入键或数据结构，测试至少覆盖两个实体互不串值。
+- 验证：执行 `npm.cmd run test:run -- src/features/script-editor/pages/ScriptEditorPage.test.tsx src/features/workbench/model/workbenchAssociationCleanup.test.ts` 和 `npm.cmd run check`。
+
 ## 文本审核段落编号应放在正文左侧并只显示数字
 
 - 现象：文本审核的“第 1 段”标签单独占据正文上方一行，段落正文左侧留有空位，纵向空间浪费且编号与正文对应不够直接。

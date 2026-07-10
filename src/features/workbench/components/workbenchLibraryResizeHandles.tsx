@@ -141,10 +141,7 @@ export function useWorkbenchLibraryResizeHandles({
       moveEvent.preventDefault();
       moveEvent.stopPropagation();
       const deltaX = (moveEvent.clientX - startX) / eventScale;
-      const nextWidth = Math.min(
-        maxWidth,
-        Math.max(minWidth, startWidth + deltaX),
-      );
+      const nextWidth = Math.min(maxWidth, Math.max(minWidth, startWidth + deltaX));
       setSettingLibraryLeftWidth(nextWidth);
       persistSettingLibraryWidth(storageKey, activeTab, 'left', nextWidth);
     };
@@ -167,10 +164,7 @@ export function useWorkbenchLibraryResizeHandles({
       moveEvent.preventDefault();
       moveEvent.stopPropagation();
       const deltaX = (startX - moveEvent.clientX) / eventScale;
-      const nextWidth = Math.min(
-        maxWidth,
-        Math.max(minWidth, startWidth + deltaX),
-      );
+      const nextWidth = Math.min(maxWidth, Math.max(minWidth, startWidth + deltaX));
       setSettingLibraryRightWidth(nextWidth);
       persistSettingLibraryWidth(storageKey, activeTab, 'right', nextWidth);
     };
@@ -186,10 +180,7 @@ export function useWorkbenchLibraryResizeHandles({
       moveEvent.preventDefault();
       moveEvent.stopPropagation();
       const deltaX = (moveEvent.clientX - startX) / eventScale;
-      const nextWidth = Math.min(
-        maxWidth,
-        Math.max(BRAINSTORM_PREVIEW_MIN_WIDTH, startWidth + deltaX),
-      );
+      const nextWidth = Math.min(maxWidth, Math.max(BRAINSTORM_PREVIEW_MIN_WIDTH, startWidth + deltaX));
       setBrainstormPreviewWidth(nextWidth);
       persistSettingLibraryWidth(storageKey, activeTab, 'brainstormPreview', nextWidth);
     };
@@ -277,10 +268,7 @@ export function useWorkbenchLibraryResizeHandles({
       />
     ),
     brainstormPreviewResizeHandle: (
-      <WorkbenchLibraryResizeHandle
-        onPointerDown={startBrainstormPreviewWidthResize}
-        title="拖拽调整脑洞预览宽度"
-      />
+      <WorkbenchLibraryResizeHandle onPointerDown={startBrainstormPreviewWidthResize} title="拖拽调整脑洞预览宽度" />
     ),
     plotPointLeftResizeHandle: (
       <WorkbenchLibraryResizeHandle

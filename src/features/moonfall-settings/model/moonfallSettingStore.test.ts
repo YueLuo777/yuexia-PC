@@ -33,14 +33,16 @@ function reviewDraft(patch: Partial<MoonfallReviewItem> = {}): MoonfallReviewIte
 
 function stateWithSettings(settings: MoonfallState['settings']): MoonfallState {
   return {
-    projects: [{
-      id: 'project-a',
-      userId: 'local-user',
-      name: '测试项目',
-      description: '',
-      createdAt: '',
-      updatedAt: '',
-    }],
+    projects: [
+      {
+        id: 'project-a',
+        userId: 'local-user',
+        name: '测试项目',
+        description: '',
+        createdAt: '',
+        updatedAt: '',
+      },
+    ],
     activeProjectId: 'project-a',
     sources: [],
     sourceChunks: [],
@@ -84,16 +86,18 @@ describe('moonfallSettingStore', () => {
   });
 
   it('normalizes extracted AI cards and keeps them pending before review', () => {
-    const items = normalizeAiReviewItems([{
-      title: '阴阳阙',
-      category: '国家与地理',
-      tags: '阴阳阙、月亮',
-      keywords: ['日升月落'],
-      summary: '天上的阴阳建筑。',
-      originalText: '阴阳阙悬在天上。',
-      organizedText: '阴阳阙负责维持日升月落。',
-      confidence: 0.88,
-    }]);
+    const items = normalizeAiReviewItems([
+      {
+        title: '阴阳阙',
+        category: '国家与地理',
+        tags: '阴阳阙、月亮',
+        keywords: ['日升月落'],
+        summary: '天上的阴阳建筑。',
+        originalText: '阴阳阙悬在天上。',
+        organizedText: '阴阳阙负责维持日升月落。',
+        confidence: 0.88,
+      },
+    ]);
 
     const setting = createSettingFromReview('project-a', items[0]);
 

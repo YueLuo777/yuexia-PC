@@ -4,8 +4,16 @@ import { AlertCircle, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 
 import { useModels } from '@/features/models/hooks/useModels';
 import { callModelStream } from '@/features/models/services/callModel';
-import { HOTSPOT_ANALYSIS_PROMPT_CATEGORY, normalizePromptCategoryName, usePrompts } from '@/features/prompts/hooks/usePrompts';
-import { HOTSPOT_ANALYSIS_SYSTEM_PROMPT, buildHotspotSuitabilityPrompt, saveHotspotBrainstorm } from '@/features/hotspots/model/hotspotAi';
+import {
+  HOTSPOT_ANALYSIS_PROMPT_CATEGORY,
+  normalizePromptCategoryName,
+  usePrompts,
+} from '@/features/prompts/hooks/usePrompts';
+import {
+  HOTSPOT_ANALYSIS_SYSTEM_PROMPT,
+  buildHotspotSuitabilityPrompt,
+  saveHotspotBrainstorm,
+} from '@/features/hotspots/model/hotspotAi';
 import { fetchHotspotDetail, hasHotspotDetailContent } from '@/features/hotspots/model/hotspotDetail';
 import {
   HOTSPOT_DEFAULT_MIN_DISPLAY_SCORE,
@@ -15,9 +23,18 @@ import {
   fetchHotspots,
   getHotspotExternalUrl,
 } from '@/features/hotspots/model/hotspotApi';
-import { HOTSPOT_RULE_BASE_SCORE, HOTSPOT_RULE_GROUPS, evaluateHotspotByRules, rankHotspotsByRuleEvaluation } from '@/features/hotspots/model/hotspotRules';
+import {
+  HOTSPOT_RULE_BASE_SCORE,
+  HOTSPOT_RULE_GROUPS,
+  evaluateHotspotByRules,
+  rankHotspotsByRuleEvaluation,
+} from '@/features/hotspots/model/hotspotRules';
 import type { HotspotFetchResult, HotspotItem, HotspotSourceId } from '@/features/hotspots/model/hotspotTypes';
-import { getEditorTextLineHeight, getStoredFontSettings, type FontSettings } from '@/features/workbench/components/EditorToolModals';
+import {
+  getEditorTextLineHeight,
+  getStoredFontSettings,
+  type FontSettings,
+} from '@/features/workbench/components/EditorToolModals';
 import { ActionButton } from '@/shared/ui/ActionButton';
 import { AppModalShell } from '@/shared/ui/AppModalShell';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
@@ -45,7 +62,9 @@ function clampHotspotAnalysisFontSize(value: number) {
 function readHotspotAnalysisFontSize() {
   try {
     const stored = localStorage.getItem(HOTSPOT_ANALYSIS_FONT_SIZE_STORAGE_KEY);
-    return stored === null ? clampHotspotAnalysisFontSize(getStoredFontSettings().fontSize) : clampHotspotAnalysisFontSize(Number(stored));
+    return stored === null
+      ? clampHotspotAnalysisFontSize(getStoredFontSettings().fontSize)
+      : clampHotspotAnalysisFontSize(Number(stored));
   } catch {
     return clampHotspotAnalysisFontSize(getStoredFontSettings().fontSize);
   }
@@ -114,27 +133,36 @@ function HotspotAnalysisOutput({
             className="flex w-full items-center justify-between gap-3 text-left font-black text-[#078fb0] disabled:cursor-default"
           >
             <span className="flex min-w-0 items-center gap-2">
-              {isAnalyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-              <span>{isAnalyzing ? `正在思考（${Math.max(1, thinkingSeconds)} 秒）` : `已思考（用时 ${Math.max(1, thinkingSeconds)} 秒）`}</span>
+              {isAnalyzing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              )}
+              <span>
+                {isAnalyzing
+                  ? `正在思考（${Math.max(1, thinkingSeconds)} 秒）`
+                  : `已思考（用时 ${Math.max(1, thinkingSeconds)} 秒）`}
+              </span>
             </span>
             {!isAnalyzing && hasReasoning && (
-              <span className="shrink-0 text-[11px] font-semibold text-[#078fb0]/70">{isReasoningOpen ? '收起' : '展开'}</span>
+              <span className="shrink-0 text-[11px] font-semibold text-[#078fb0]/70">
+                {isReasoningOpen ? '收起' : '展开'}
+              </span>
             )}
           </button>
-          {showReasoningBody && (
-            hasReasoning ? (
-              <div className="mt-2 max-h-44 overflow-y-auto whitespace-pre-wrap break-words">
-                {reasoning}
-              </div>
+          {showReasoningBody &&
+            (hasReasoning ? (
+              <div className="mt-2 max-h-44 overflow-y-auto whitespace-pre-wrap break-words">{reasoning}</div>
             ) : (
               <div className="mt-2 text-slate-400">等待模型返回思考过程...</div>
-            )
-          )}
+            ))}
         </div>
       )}
 
       {hasAnalysis ? (
-        <pre className="whitespace-pre-wrap break-words" style={analysisTextStyle}>{analysis}</pre>
+        <pre className="whitespace-pre-wrap break-words" style={analysisTextStyle}>
+          {analysis}
+        </pre>
       ) : (
         <div className="flex min-h-[220px] items-center justify-center gap-2 text-sm font-semibold text-cyan-600">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -183,12 +211,19 @@ function HotspotSettingsModal({
           <div key={rule.id} className="rounded-md border border-slate-100 bg-slate-50 p-3">
             <div className="flex items-center justify-between gap-3">
               <div className="text-sm font-black text-slate-800">{rule.name}</div>
-              <div className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-black ${accentClass}`}>{rule.score > 0 ? `+${rule.score}` : rule.score}</div>
+              <div className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-black ${accentClass}`}>
+                {rule.score > 0 ? `+${rule.score}` : rule.score}
+              </div>
             </div>
             <p className="mt-1 text-xs leading-5 text-slate-500">{rule.description}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {rule.keywords.map((keyword) => (
-                <span key={keyword} className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500">{keyword}</span>
+                <span
+                  key={keyword}
+                  className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500"
+                >
+                  {keyword}
+                </span>
               ))}
             </div>
           </div>
@@ -216,7 +251,10 @@ function HotspotSettingsModal({
           <div className="flex items-center justify-between gap-4">
             <div>
               <h3 className="text-sm font-black text-slate-900">分数筛选</h3>
-              <p className="mt-1 text-xs leading-5 text-slate-500">只显示分数大于等于这个值的热点。默认 {HOTSPOT_DEFAULT_MIN_DISPLAY_SCORE} 分，调低会显示更多候选，调高会更严格。</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                只显示分数大于等于这个值的热点。默认 {HOTSPOT_DEFAULT_MIN_DISPLAY_SCORE}{' '}
+                分，调低会显示更多候选，调高会更严格。
+              </p>
             </div>
             <FontSizeStepper
               value={draftMinDisplayScore}
@@ -231,7 +269,9 @@ function HotspotSettingsModal({
           <div className="flex items-center justify-between gap-4">
             <div>
               <h3 className="text-sm font-black text-slate-900">输出滚动</h3>
-              <p className="mt-1 text-xs leading-5 text-slate-500">开启后，AI 小说适合度会在流式输出时自动滚到最新内容；关闭后，滚动条保持在你当前阅读的位置。</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                开启后，AI 小说适合度会在流式输出时自动滚到最新内容；关闭后，滚动条保持在你当前阅读的位置。
+              </p>
             </div>
             <button
               type="button"
@@ -265,10 +305,9 @@ function createEmptyResult(): HotspotFetchResult {
     ok: false,
     capturedAt: new Date().toISOString(),
     items: [],
-    sourceStates: Object.fromEntries(HOTSPOT_SOURCES.map((source) => [
-      source,
-      { ok: false, count: 0, message: '等待刷新' },
-    ])) as HotspotFetchResult['sourceStates'],
+    sourceStates: Object.fromEntries(
+      HOTSPOT_SOURCES.map((source) => [source, { ok: false, count: 0, message: '等待刷新' }]),
+    ) as HotspotFetchResult['sourceStates'],
     stale: false,
   };
 }
@@ -284,12 +323,10 @@ function SourceRadar({
   result: HotspotFetchResult;
   minDisplayScore: number;
 }) {
-  const getDisplayCount = (items: HotspotItem[]) => (
+  const getDisplayCount = (items: HotspotItem[]) =>
     rankHotspotsByRuleEvaluation(items)
       .filter((item) => evaluateHotspotByRules(item).score >= minDisplayScore)
-      .slice(0, HOTSPOT_DISPLAY_LIMIT)
-      .length
-  );
+      .slice(0, HOTSPOT_DISPLAY_LIMIT).length;
   const allDisplayCount = getDisplayCount(result.items);
   return (
     <div className="grid shrink-0 grid-cols-[1.15fr_repeat(5,minmax(112px,1fr))] gap-3 border-b border-slate-100 bg-slate-50 px-5 py-4">
@@ -354,25 +391,29 @@ function HotspotRow({
   disabled: boolean;
 }) {
   return (
-    <div className={`grid min-h-[62px] grid-cols-[34px_minmax(0,1fr)_58px_82px] items-center gap-2 border-b border-slate-100 px-3 py-2 transition-colors ${
-      active ? 'bg-cyan-50/80' : 'bg-white hover:bg-slate-50'
-    }`}
+    <div
+      className={`grid min-h-[62px] grid-cols-[34px_minmax(0,1fr)_58px_82px] items-center gap-2 border-b border-slate-100 px-3 py-2 transition-colors ${
+        active ? 'bg-cyan-50/80' : 'bg-white hover:bg-slate-50'
+      }`}
     >
-      <button type="button" onClick={onOpen} className="text-left text-sm font-black text-slate-400">#{item.rank}</button>
+      <button type="button" onClick={onOpen} className="text-left text-sm font-black text-slate-400">
+        #{item.rank}
+      </button>
       <button type="button" onClick={onOpen} className="min-w-0 text-left">
         <div className="line-clamp-2 text-sm font-semibold leading-5 text-slate-900">{item.title}</div>
         <div className="mt-1 flex min-w-0 items-center gap-2 text-xs text-slate-400">
           <span>{item.sourceName}</span>
           {item.heat && <span className="truncate">{item.heat}</span>}
-          <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-black ${
-            evaluation.level === 'high'
-              ? 'bg-emerald-50 text-emerald-600'
-              : evaluation.level === 'medium'
-                ? 'bg-cyan-50 text-cyan-600'
-                : evaluation.level === 'risk'
-                  ? 'bg-rose-50 text-rose-600'
-                  : 'bg-slate-100 text-slate-400'
-          }`}
+          <span
+            className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-black ${
+              evaluation.level === 'high'
+                ? 'bg-emerald-50 text-emerald-600'
+                : evaluation.level === 'medium'
+                  ? 'bg-cyan-50 text-cyan-600'
+                  : evaluation.level === 'risk'
+                    ? 'bg-rose-50 text-rose-600'
+                    : 'bg-slate-100 text-slate-400'
+            }`}
           >
             {evaluation.levelLabel} {evaluation.score}
           </span>
@@ -433,26 +474,48 @@ export function HotspotPage() {
   const [status, setStatus] = useState('');
   const analysisScrollRef = useRef<HTMLDivElement | null>(null);
 
-  const filteredItems = useMemo(() => (
-    rankHotspotsByRuleEvaluation(activeSource === 'all' ? result.items : result.items.filter((item) => item.source === activeSource))
-      .filter((item) => evaluateHotspotByRules(item).score >= minDisplayScore)
-      .slice(0, HOTSPOT_DISPLAY_LIMIT)
-  ), [activeSource, minDisplayScore, result.items]);
-  const candidateItems = useMemo(() => (
-    activeSource === 'all' ? result.items : result.items.filter((item) => item.source === activeSource)
-  ), [activeSource, result.items]);
-  const activeItem = useMemo(() => result.items.find((item) => item.id === activeItemId) ?? filteredItems[0] ?? null, [activeItemId, filteredItems, result.items]);
-  const hotspotModel = useMemo(() => models.find((model) => model.id === hotspotModelId) ?? models[0] ?? null, [hotspotModelId, models]);
-  const hotspotPrompts = useMemo(() => prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === HOTSPOT_PROMPT_CATEGORY), [prompts]);
-  const activeHotspotPromptId = useMemo(() => (
-    hotspotPrompts.some((prompt) => prompt.id === hotspotPromptId) ? hotspotPromptId : hotspotPrompts[0]?.id ?? ''
-  ), [hotspotPromptId, hotspotPrompts]);
-  const activeHotspotPrompt = useMemo(() => hotspotPrompts.find((prompt) => prompt.id === activeHotspotPromptId) ?? null, [activeHotspotPromptId, hotspotPrompts]);
+  const filteredItems = useMemo(
+    () =>
+      rankHotspotsByRuleEvaluation(
+        activeSource === 'all' ? result.items : result.items.filter((item) => item.source === activeSource),
+      )
+        .filter((item) => evaluateHotspotByRules(item).score >= minDisplayScore)
+        .slice(0, HOTSPOT_DISPLAY_LIMIT),
+    [activeSource, minDisplayScore, result.items],
+  );
+  const candidateItems = useMemo(
+    () => (activeSource === 'all' ? result.items : result.items.filter((item) => item.source === activeSource)),
+    [activeSource, result.items],
+  );
+  const activeItem = useMemo(
+    () => result.items.find((item) => item.id === activeItemId) ?? filteredItems[0] ?? null,
+    [activeItemId, filteredItems, result.items],
+  );
+  const hotspotModel = useMemo(
+    () => models.find((model) => model.id === hotspotModelId) ?? models[0] ?? null,
+    [hotspotModelId, models],
+  );
+  const hotspotPrompts = useMemo(
+    () => prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === HOTSPOT_PROMPT_CATEGORY),
+    [prompts],
+  );
+  const activeHotspotPromptId = useMemo(
+    () =>
+      hotspotPrompts.some((prompt) => prompt.id === hotspotPromptId) ? hotspotPromptId : (hotspotPrompts[0]?.id ?? ''),
+    [hotspotPromptId, hotspotPrompts],
+  );
+  const activeHotspotPrompt = useMemo(
+    () => hotspotPrompts.find((prompt) => prompt.id === activeHotspotPromptId) ?? null,
+    [activeHotspotPromptId, hotspotPrompts],
+  );
 
-  const analysisFontSettings = useMemo(() => ({
-    ...getStoredFontSettings(),
-    fontSize: analysisFontSize,
-  }), [analysisFontSize]);
+  const analysisFontSettings = useMemo(
+    () => ({
+      ...getStoredFontSettings(),
+      fontSize: analysisFontSize,
+    }),
+    [analysisFontSize],
+  );
 
   const setHotspotModelIdWithStorage = useCallback((nextModelId: string) => {
     setHotspotModelId(nextModelId);
@@ -597,11 +660,7 @@ export function HotspotPage() {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <div className="xy-capsule-group overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setIsSettingsOpen(true)}
-              className="xy-capsule-button"
-            >
+            <button type="button" onClick={() => setIsSettingsOpen(true)} className="xy-capsule-button">
               设置
             </button>
           </div>
@@ -619,8 +678,16 @@ export function HotspotPage() {
             className="w-[312px]"
             modelValue={hotspotModel?.id ?? ''}
             promptValue={activeHotspotPromptId}
-            modelOptions={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
-            promptOptions={hotspotPrompts.length === 0 ? [{ value: '', label: '无可用提示词', disabled: true }] : hotspotPrompts.map((prompt) => ({ value: prompt.id, label: prompt.name }))}
+            modelOptions={
+              models.length === 0
+                ? [{ value: '', label: '暂无可用模型', disabled: true }]
+                : models.map((model) => ({ value: model.id, label: model.name }))
+            }
+            promptOptions={
+              hotspotPrompts.length === 0
+                ? [{ value: '', label: '无可用提示词', disabled: true }]
+                : hotspotPrompts.map((prompt) => ({ value: prompt.id, label: prompt.name }))
+            }
             onModelChange={setHotspotModelIdWithStorage}
             onPromptChange={setHotspotPromptIdWithStorage}
             onModelManage={() => navigate('/model-manage')}
@@ -628,93 +695,105 @@ export function HotspotPage() {
           />
         </div>
       </header>
-      <SourceRadar activeSource={activeSource} onChange={setActiveSource} result={result} minDisplayScore={minDisplayScore} />
+      <SourceRadar
+        activeSource={activeSource}
+        onChange={setActiveSource}
+        result={result}
+        minDisplayScore={minDisplayScore}
+      />
       <main className="grid min-h-0 flex-1 grid-cols-[minmax(260px,1fr)_minmax(520px,2fr)] gap-4 overflow-hidden p-4">
         <section className="min-h-0 overflow-hidden rounded-md border border-slate-200 bg-white">
           <div className="flex h-11 items-center justify-between border-b border-slate-100 px-3 text-xs font-semibold text-slate-400">
-            <span>{activeSource === 'all' ? '全部平台' : HOTSPOT_SOURCE_LABELS[activeSource]}：{filteredItems.length} 条高分 / {candidateItems.length} 条候选</span>
+            <span>
+              {activeSource === 'all' ? '全部平台' : HOTSPOT_SOURCE_LABELS[activeSource]}：{filteredItems.length} 条高分
+              / {candidateItems.length} 条候选
+            </span>
             <span>{activeItem ? '点击标题只选中' : '选择热点'}</span>
           </div>
-            <div className="h-[calc(100%-40px)] overflow-auto">
-              {filteredItems.map((item) => (
-                <HotspotRow
-                  key={item.id}
-                  item={item}
-                  evaluation={evaluateHotspotByRules(item)}
-                  active={activeItem?.id === item.id}
-                  onOpen={() => setActiveItemId(item.id)}
-                  onAnalyze={() => void runSingleAnalysis(item)}
-                  onOpenExternal={() => window.open(getHotspotExternalUrl(item), '_blank', 'noopener,noreferrer')}
-                  disabled={isAnalyzing}
-                />
-              ))}
-              {filteredItems.length === 0 && (
-                <div className="flex h-full items-center justify-center px-6 text-center text-sm leading-6 text-slate-400">
-                  {status || `暂无分数达到 ${minDisplayScore} 的热点，可点击刷新重试。`}
-                </div>
-              )}
-            </div>
+          <div className="h-[calc(100%-40px)] overflow-auto">
+            {filteredItems.map((item) => (
+              <HotspotRow
+                key={item.id}
+                item={item}
+                evaluation={evaluateHotspotByRules(item)}
+                active={activeItem?.id === item.id}
+                onOpen={() => setActiveItemId(item.id)}
+                onAnalyze={() => void runSingleAnalysis(item)}
+                onOpenExternal={() => window.open(getHotspotExternalUrl(item), '_blank', 'noopener,noreferrer')}
+                disabled={isAnalyzing}
+              />
+            ))}
+            {filteredItems.length === 0 && (
+              <div className="flex h-full items-center justify-center px-6 text-center text-sm leading-6 text-slate-400">
+                {status || `暂无分数达到 ${minDisplayScore} 的热点，可点击刷新重试。`}
+              </div>
+            )}
+          </div>
         </section>
         <section className="flex min-h-0 flex-col overflow-hidden rounded-md border border-slate-200 bg-white">
-            <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-5">
-              <div className="min-w-0">
-                <div className="truncate text-base font-black text-slate-900">AI 小说适合度</div>
-                <div className="mt-0.5 truncate text-xs text-slate-400">{analysisTitle}</div>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <FontSizeStepper
-                  value={analysisFontSize}
-                  min={HOTSPOT_ANALYSIS_MIN_FONT_SIZE}
-                  max={HOTSPOT_ANALYSIS_MAX_FONT_SIZE}
-                  onChange={setAnalysisFontSizeWithStorage}
-                  ariaLabel="热点分析结果字号"
-                />
-              </div>
+          <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-5">
+            <div className="min-w-0">
+              <div className="truncate text-base font-black text-slate-900">AI 小说适合度</div>
+              <div className="mt-0.5 truncate text-xs text-slate-400">{analysisTitle}</div>
             </div>
-            <div ref={analysisScrollRef} className="min-h-0 flex-1 overflow-auto bg-slate-50 p-5">
-              {isAnalyzing || analysis || analysisReasoning ? (
-                <HotspotAnalysisOutput
-                  analysis={analysis}
-                  reasoning={analysisReasoning}
-                  thinkingSeconds={analysisThinkingSeconds}
-                  isAnalyzing={isAnalyzing}
-                  fontSettings={analysisFontSettings}
-                />
-              ) : (
-                <div className="grid h-full place-items-center">
-                  <div className="max-w-lg rounded-md border border-slate-100 bg-white p-8 text-center shadow-sm">
-                    <Sparkles className="mx-auto h-8 w-8 text-cyan-500" />
-                    <div className="mt-4 text-base font-black text-slate-900">选择一个热点开始评估</div>
-                    <div className="mt-2 text-sm leading-6 text-slate-400">AI 会判断小说适合度、题材方向、核心冲突、改写风险和具体改编方式。这里保留更大的阅读空间，方便直接看分析结果。</div>
-                    {activeItem && (
-                      <div className="mt-6 flex justify-center">
-                        <ActionButton size="sm" onClick={() => void runSingleAnalysis(activeItem)} disabled={isAnalyzing}>开始分析</ActionButton>
-                      </div>
-                    )}
+            <div className="flex shrink-0 items-center gap-2">
+              <FontSizeStepper
+                value={analysisFontSize}
+                min={HOTSPOT_ANALYSIS_MIN_FONT_SIZE}
+                max={HOTSPOT_ANALYSIS_MAX_FONT_SIZE}
+                onChange={setAnalysisFontSizeWithStorage}
+                ariaLabel="热点分析结果字号"
+              />
+            </div>
+          </div>
+          <div ref={analysisScrollRef} className="min-h-0 flex-1 overflow-auto bg-slate-50 p-5">
+            {isAnalyzing || analysis || analysisReasoning ? (
+              <HotspotAnalysisOutput
+                analysis={analysis}
+                reasoning={analysisReasoning}
+                thinkingSeconds={analysisThinkingSeconds}
+                isAnalyzing={isAnalyzing}
+                fontSettings={analysisFontSettings}
+              />
+            ) : (
+              <div className="grid h-full place-items-center">
+                <div className="max-w-lg rounded-md border border-slate-100 bg-white p-8 text-center shadow-sm">
+                  <Sparkles className="mx-auto h-8 w-8 text-cyan-500" />
+                  <div className="mt-4 text-base font-black text-slate-900">选择一个热点开始评估</div>
+                  <div className="mt-2 text-sm leading-6 text-slate-400">
+                    AI
+                    会判断小说适合度、题材方向、核心冲突、改写风险和具体改编方式。这里保留更大的阅读空间，方便直接看分析结果。
                   </div>
+                  {activeItem && (
+                    <div className="mt-6 flex justify-center">
+                      <ActionButton size="sm" onClick={() => void runSingleAnalysis(activeItem)} disabled={isAnalyzing}>
+                        开始分析
+                      </ActionButton>
+                    </div>
+                  )}
                 </div>
+              </div>
+            )}
+          </div>
+          <div className="flex h-12 shrink-0 items-center justify-between gap-4 border-t border-slate-100 bg-white px-4">
+            <div className="flex min-w-0 items-center gap-2 text-xs text-slate-500">
+              {status && (
+                <>
+                  {status.includes('已') ? (
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
+                  )}
+                  <span className="truncate">{status}</span>
+                </>
               )}
             </div>
-            <div className="flex h-12 shrink-0 items-center justify-between gap-4 border-t border-slate-100 bg-white px-4">
-              <div className="flex min-w-0 items-center gap-2 text-xs text-slate-500">
-                {status && (
-                  <>
-                    {status.includes('已') ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" /> : <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />}
-                    <span className="truncate">{status}</span>
-                  </>
-                )}
-              </div>
-              <div className="xy-capsule-group shrink-0 overflow-hidden">
-                <button
-                  type="button"
-                  onClick={saveAnalysis}
-                  disabled={!analysis.trim()}
-                  className="xy-capsule-button"
-                >
-                  保存到脑洞库
-                </button>
-              </div>
+            <div className="xy-capsule-group shrink-0 overflow-hidden">
+              <button type="button" onClick={saveAnalysis} disabled={!analysis.trim()} className="xy-capsule-button">
+                保存到脑洞库
+              </button>
             </div>
+          </div>
         </section>
       </main>
       <HotspotSettingsModal

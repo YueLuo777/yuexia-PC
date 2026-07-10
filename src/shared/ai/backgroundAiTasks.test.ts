@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 
 import {
   clearFinishedBackgroundAiTasks,
@@ -117,5 +117,31 @@ describe('backgroundAiTasks', () => {
     expect(getBackgroundAiTask(runningTask.id)?.status).toBe('running');
     expect(getBackgroundAiTask(finishedTask.id)).toBeNull();
     release();
+  });
+
+  it('coalesces rapid stream chunks before serializing task snapshots', async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+
+    const task = startBackgroundAiTask({
+      kind: 'review',
+      title: '流式持久化限流',
+      runner: async ({ emit }) => {
+        for (let index = 0; index < 50; index += 1) emit(String(index));
+        await gate;
+      },
+    });
+
+    const immediateWrites = setItemSpy.mock.calls.filter(([key]) => key === 'xinyuexia_background_ai_tasks_v1');
+    expect(immediateWrites).toHaveLength(1);
+
+    release();
+    await waitForTask(task.id, () => getBackgroundAiTask(task.id)?.status === 'success');
+    const completedWrites = setItemSpy.mock.calls.filter(([key]) => key === 'xinyuexia_background_ai_tasks_v1');
+    expect(completedWrites.length).toBeLessThanOrEqual(2);
+    setItemSpy.mockRestore();
   });
 });

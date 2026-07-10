@@ -13,7 +13,10 @@ const readErrorLogSource = async () => {
   const { dirname, join } = await import('node:path');
   const { fileURLToPath } = await import('node:url');
 
-  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../features/tests/model/errorLogDefaultEntries.generated.ts'), 'utf8');
+  return readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '../../features/tests/model/errorLogDefaultEntries.generated.ts'),
+    'utf8',
+  );
 };
 
 const readSharedStylesSource = async () => {
@@ -32,14 +35,14 @@ describe('DashboardLayout profile block', () => {
     const profileSource = source.slice(profileStart, navStart);
 
     expect(profileStart).toBeGreaterThan(-1);
-    expect(profileSource).toContain('className="shrink-0 border-b border-[#e1e5eb] px-3 py-[14px]"');
-    expect(profileSource).toContain('flex flex-col items-center justify-center');
-    expect(profileSource).toContain('className="group relative flex h-12 w-12');
-    expect(profileSource).toContain('className="mt-3 w-full min-w-0"');
-    expect(profileSource).toContain('text-center text-[15px]');
-    expect(profileSource).not.toContain('py-7');
-    expect(profileSource).not.toContain('flex items-center gap-2.5');
-    expect(profileSource).not.toContain('border-b border-[#e7e9ee]');
+    expect(profileSource).toContainSource('className="shrink-0 border-b border-[#e1e5eb] px-3 py-[14px]"');
+    expect(profileSource).toContainSource('flex flex-col items-center justify-center');
+    expect(profileSource).toContainSource('className="group relative flex h-12 w-12');
+    expect(profileSource).toContainSource('className="mt-3 w-full min-w-0"');
+    expect(profileSource).toContainSource('text-center text-[15px]');
+    expect(profileSource).not.toContainSource('py-7');
+    expect(profileSource).not.toContainSource('flex items-center gap-2.5');
+    expect(profileSource).not.toContainSource('border-b border-[#e7e9ee]');
   });
 });
 
@@ -47,18 +50,18 @@ describe('DashboardLayout sidebar splitter', () => {
   it('keeps the home sidebar width resizable and persisted', async () => {
     const source = await readDashboardLayoutSource();
 
-    expect(source).toContain("const DASHBOARD_SIDEBAR_WIDTH_KEY = 'xinyuexia_dashboard_sidebar_width'");
-    expect(source).toContain('style={{ width: sidebarWidth }}');
-    expect(source).toContain('onMouseDown={handleSidebarResizeStart}');
-    expect(source).toContain('onKeyDown={handleSidebarResizeKeyDown}');
-    expect(source).toContain("document.body.style.cursor = 'ew-resize'");
-    expect(source).toContain('localStorage.setItem(DASHBOARD_SIDEBAR_WIDTH_KEY, String(nextWidth))');
-    expect(source).toContain('role="separator"');
-    expect(source).toContain('cursor-ew-resize');
-    expect(source).toContain('-ml-[3px] -mr-[3px]');
-    expect(source).toContain('h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100');
-    expect(source).not.toContain('hover:bg-[#eef7fb]');
-    expect(source).not.toContain('className="flex w-[224px] shrink-0');
+    expect(source).toContainSource("const DASHBOARD_SIDEBAR_WIDTH_KEY = 'xinyuexia_dashboard_sidebar_width'");
+    expect(source).toContainSource('style={{ width: sidebarWidth }}');
+    expect(source).toContainSource('onMouseDown={handleSidebarResizeStart}');
+    expect(source).toContainSource('onKeyDown={handleSidebarResizeKeyDown}');
+    expect(source).toContainSource("document.body.style.cursor = 'ew-resize'");
+    expect(source).toContainSource('localStorage.setItem(DASHBOARD_SIDEBAR_WIDTH_KEY, String(nextWidth))');
+    expect(source).toContainSource('role="separator"');
+    expect(source).toContainSource('cursor-ew-resize');
+    expect(source).toContainSource('-ml-[3px] -mr-[3px]');
+    expect(source).toContainSource('h-full w-px bg-[#1E71EF] opacity-0 transition-opacity group-hover:opacity-100');
+    expect(source).not.toContainSource('hover:bg-[#eef7fb]');
+    expect(source).not.toContainSource('className="flex w-[224px] shrink-0');
   });
 });
 
@@ -70,13 +73,13 @@ describe('DashboardLayout footer settings actions', () => {
     const footerSource = source.slice(footerStart, asideEnd);
 
     expect(footerStart).toBeGreaterThan(-1);
-    expect(footerSource).toContain('className="grid grid-cols-1 gap-1.5"');
-    expect(footerSource).not.toContain('rounded-lg border border-[#dfe5ee] bg-white/55 p-1.5 shadow-sm');
-    expect(footerSource).toContain('to="/settings"');
-    expect(footerSource).not.toContain('to="/system-settings"');
-    expect(footerSource).not.toContain('to="/theme-colors"');
-    expect(footerSource).not.toContain('to="/shortcut-settings"');
-    expect(footerSource).not.toContain('to="/nav-settings"');
+    expect(footerSource).toContainSource('className="grid grid-cols-1 gap-1.5"');
+    expect(footerSource).not.toContainSource('rounded-lg border border-[#dfe5ee] bg-white/55 p-1.5 shadow-sm');
+    expect(footerSource).toContainSource('to="/settings"');
+    expect(footerSource).not.toContainSource('to="/system-settings"');
+    expect(footerSource).not.toContainSource('to="/theme-colors"');
+    expect(footerSource).not.toContainSource('to="/shortcut-settings"');
+    expect(footerSource).not.toContainSource('to="/nav-settings"');
   });
 
   it('uses a readable text button instead of icon-only settings buttons', async () => {
@@ -85,23 +88,23 @@ describe('DashboardLayout footer settings actions', () => {
     const asideEnd = source.indexOf('</aside>', footerStart);
     const footerSource = source.slice(footerStart, asideEnd);
 
-    expect(footerSource).toContain('设置');
-    expect(footerSource).not.toContain('系统设置');
-    expect(footerSource).not.toContain('主题颜色');
-    expect(footerSource).not.toContain('快捷键');
-    expect(footerSource).not.toContain('导航设置');
-    expect(footerSource).toContain('className={SETTINGS_TEXT_BUTTON_CLASS}');
-    expect(footerSource).not.toContain('className={SETTINGS_BUTTON_CLASS}');
-    expect(footerSource).not.toContain('<Settings className=');
-    expect(footerSource).not.toContain('<Palette className=');
-    expect(footerSource).not.toContain('<Keyboard className=');
-    expect(footerSource).not.toContain('<ListTree className=');
+    expect(footerSource).toContainSource('设置');
+    expect(footerSource).not.toContainSource('系统设置');
+    expect(footerSource).not.toContainSource('主题颜色');
+    expect(footerSource).not.toContainSource('快捷键');
+    expect(footerSource).not.toContainSource('导航设置');
+    expect(footerSource).toContainSource('className={SETTINGS_TEXT_BUTTON_CLASS}');
+    expect(footerSource).not.toContainSource('className={SETTINGS_BUTTON_CLASS}');
+    expect(footerSource).not.toContainSource('<Settings className=');
+    expect(footerSource).not.toContainSource('<Palette className=');
+    expect(footerSource).not.toContainSource('<Keyboard className=');
+    expect(footerSource).not.toContainSource('<ListTree className=');
   });
 
   it('records the framed footer settings group in the in-app error log', async () => {
     const errorLog = await readErrorLogSource();
 
-    expect(errorLog).toContain('dashboard-footer-settings-actions-individual-frames-001');
+    expect(errorLog).toContainSource('dashboard-footer-settings-actions-individual-frames-001');
   });
 });
 
@@ -113,16 +116,16 @@ describe('DashboardLayout navigation items', () => {
     const navEnd = source.indexOf('{navDividerAfterItemTos.has(item.to)', navStart);
     const navSource = source.slice(navStart, navEnd);
 
-    expect(source).toContain('xy-dashboard-sidebar');
-    expect(source).toContain('xy-dashboard-sidebar-footer');
-    expect(navSource).toContain('xy-dashboard-sidebar-active');
-    expect(navSource).toContain('font-black text-[#142033]');
-    expect(navSource).toContain('font-bold text-[#354154]');
-    expect(navSource).toContain('h-[18px] w-[18px] stroke-[2.4]');
-    expect(navSource).toContain('text-[15px] leading-none');
-    expect(navSource).not.toContain('bg-[#dbe7fb]');
-    expect(styles).toContain('.xy-dashboard-sidebar-active');
-    expect(styles).toContain('background: var(--xy-custom-sidebar-active-bg);');
+    expect(source).toContainSource('xy-dashboard-sidebar');
+    expect(source).toContainSource('xy-dashboard-sidebar-footer');
+    expect(navSource).toContainSource('xy-dashboard-sidebar-active');
+    expect(navSource).toContainSource('font-black text-[#142033]');
+    expect(navSource).toContainSource('font-bold text-[#354154]');
+    expect(navSource).toContainSource('h-[18px] w-[18px] stroke-[2.4]');
+    expect(navSource).toContainSource('text-[15px] leading-none');
+    expect(navSource).not.toContainSource('bg-[#dbe7fb]');
+    expect(styles).toContainSource('.xy-dashboard-sidebar-active');
+    expect(styles).toContainSource('background: var(--xy-custom-sidebar-active-bg);');
   });
 
   it('renders the sidebar as a flat list without zone group rows', async () => {
@@ -131,23 +134,23 @@ describe('DashboardLayout navigation items', () => {
     const footerStart = source.indexOf('<div className="grid shrink-0 grid-cols-2 gap-2 border-t', navStart);
     const navSource = source.slice(navStart, footerStart);
 
-    expect(source).toContain("import { Camera, UserRound } from 'lucide-react'");
-    expect(source).toContain('const visibleNavItems = navConfig.flatMap((group) => (');
-    expect(source).toContain('const visiblePublicNavItems = filterInternalRouteItems(visibleNavItems);');
-    expect(source).toContain('const navDividerAfterItemTos = new Set(navConfig[0]?.dividerAfterItemTos ?? (');
-    expect(navSource).toContain('visiblePublicNavItems.map((item) => {');
-    expect(navSource).toContain('const ItemIcon = getIconByName(item.iconName)');
-    expect(navSource).toContain('navDividerAfterItemTos.has(item.to)');
-    expect(navSource).toContain('className="mx-3 my-2 border-t border-[#e1e5eb]"');
-    expect(navSource).not.toContain('GroupFolderIcon');
-    expect(navSource).not.toContain('groupIndex > 0');
-    expect(navSource).not.toContain('aria-expanded={!isCollapsed}');
-    expect(source).not.toContain('loadCollapsedSections');
-    expect(source).not.toContain('saveCollapsedSections');
-    expect(source).not.toContain('toggleSection');
-    expect(source).not.toContain('FolderOpen');
-    expect(source).not.toContain('Folder,');
-    expect(navSource).not.toContain('<ChevronRight');
-    expect(navSource).not.toContain('<ChevronDown');
+    expect(source).toContainSource("import { Camera, UserRound } from 'lucide-react'");
+    expect(source).toContainSource('const visibleNavItems = navConfig.flatMap((group) => group.items.map');
+    expect(source).toContainSource('const visiblePublicNavItems = filterInternalRouteItems(visibleNavItems);');
+    expect(source).toContainSource('const navDividerAfterItemTos = new Set(navConfig[0]?.dividerAfterItemTos ?? (');
+    expect(navSource).toContainSource('visiblePublicNavItems.map((item) => {');
+    expect(navSource).toContainSource('const ItemIcon = getIconByName(item.iconName)');
+    expect(navSource).toContainSource('navDividerAfterItemTos.has(item.to)');
+    expect(navSource).toContainSource('className="mx-3 my-2 border-t border-[#e1e5eb]"');
+    expect(navSource).not.toContainSource('GroupFolderIcon');
+    expect(navSource).not.toContainSource('groupIndex > 0');
+    expect(navSource).not.toContainSource('aria-expanded={!isCollapsed}');
+    expect(source).not.toContainSource('loadCollapsedSections');
+    expect(source).not.toContainSource('saveCollapsedSections');
+    expect(source).not.toContainSource('toggleSection');
+    expect(source).not.toContainSource('FolderOpen');
+    expect(source).not.toContainSource('Folder,');
+    expect(navSource).not.toContainSource('<ChevronRight');
+    expect(navSource).not.toContainSource('<ChevronDown');
   });
 });

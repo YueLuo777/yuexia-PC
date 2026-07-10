@@ -9,7 +9,8 @@ export const WORKBENCH_SHARED_AI_RIGHT_WIDTH_LIMIT = {
 };
 
 export function normalizeSharedWorkbenchAiRightWidth(value: number, maxWidth = WORKBENCH_SHARED_AI_RIGHT_WIDTH_MAX) {
-  const effectiveMax = Number.isFinite(maxWidth) && maxWidth > 0 ? Math.round(maxWidth) : WORKBENCH_SHARED_AI_RIGHT_WIDTH_MAX;
+  const effectiveMax =
+    Number.isFinite(maxWidth) && maxWidth > 0 ? Math.round(maxWidth) : WORKBENCH_SHARED_AI_RIGHT_WIDTH_MAX;
   const effectiveMin = Math.min(WORKBENCH_SHARED_AI_RIGHT_WIDTH_MIN, effectiveMax);
   if (!Number.isFinite(value)) return Math.min(WORKBENCH_SHARED_AI_RIGHT_WIDTH_DEFAULT, effectiveMax);
   return Math.max(effectiveMin, Math.min(effectiveMax, Math.round(value)));

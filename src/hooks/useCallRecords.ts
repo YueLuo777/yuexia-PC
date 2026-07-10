@@ -85,19 +85,22 @@ export function pruneRecordsByModels(models: Array<{ id: string; instanceId?: st
 }
 
 export function getStatsByModel(records: CallRecord[]) {
-  const stats: Record<string, {
-    modelId: string;
-    modelInstanceId?: string;
-    modelName: string;
-    callCount: number;
-    successCount: number;
-    failCount: number;
-    totalInputTokens: number;
-    totalOutputTokens: number;
-    totalTokens: number;
-    avgLatency: number;
-    totalLatency: number;
-  }> = {};
+  const stats: Record<
+    string,
+    {
+      modelId: string;
+      modelInstanceId?: string;
+      modelName: string;
+      callCount: number;
+      successCount: number;
+      failCount: number;
+      totalInputTokens: number;
+      totalOutputTokens: number;
+      totalTokens: number;
+      avgLatency: number;
+      totalLatency: number;
+    }
+  > = {};
 
   for (const record of records) {
     const key = record.modelInstanceId ?? record.modelId;

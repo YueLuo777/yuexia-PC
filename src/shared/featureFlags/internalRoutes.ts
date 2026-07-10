@@ -58,10 +58,7 @@ export function areInternalRoutesEnabled(
   }
 }
 
-export function filterInternalRouteItems<T extends { to: string }>(
-  items: T[],
-  enabled = areInternalRoutesEnabled(),
-) {
+export function filterInternalRouteItems<T extends { to: string }>(items: T[], enabled = areInternalRoutesEnabled()) {
   if (enabled) return items;
   return items.filter((item) => !isInternalRoutePath(item.to));
 }

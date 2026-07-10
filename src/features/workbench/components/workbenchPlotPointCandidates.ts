@@ -14,14 +14,17 @@ export function parseGeneratedPlotPointCandidates(text: string): WorkbenchPlotPo
     .map((block, index) => {
       const lines = block
         .split(/\r?\n/)
-        .map((line) => line
-          .trim()
-          .replace(/^[-*]\s*/, '')
-          .replace(/^\d+[.、）)]\s*/, '')
-          .replace(/^剧情点\s*\d+[.、）)]?\s*[：:]?\s*/, '')
-          .trim())
+        .map((line) =>
+          line
+            .trim()
+            .replace(/^[-*]\s*/, '')
+            .replace(/^\d+[.、）)]\s*/, '')
+            .replace(/^剧情点\s*\d+[.、）)]?\s*[：:]?\s*/, '')
+            .trim(),
+        )
         .filter(Boolean);
-      const isMetaLine = (line: string) => /^(变量替换|变量替换说明|替换说明|修改说明|改写说明|AI评价|评价|原剧情点|原型)[：:]/.test(line);
+      const isMetaLine = (line: string) =>
+        /^(变量替换|变量替换说明|替换说明|修改说明|改写说明|AI评价|评价|原剧情点|原型)[：:]/.test(line);
       const contentLines = lines.filter((line) => !isMetaLine(line));
       const mainLine = contentLines[0] ?? lines[0] ?? '';
       const variableLine = lines.find((line) => /^(变量替换|变量替换说明|替换说明)[：:]/.test(line));
@@ -33,13 +36,14 @@ export function parseGeneratedPlotPointCandidates(text: string): WorkbenchPlotPo
       const firstContent = labelOnlyMatch
         ? labelOnlyMatch[2].trim()
         : shortTitleMatch
-          ? shortTitleMatch[2].trim().replace(new RegExp(`^${titleFromLine.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[，,、。；;：:\\s]*`), '').trim()
+          ? shortTitleMatch[2]
+              .trim()
+              .replace(new RegExp(`^${titleFromLine.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[，,、。；;：:\\s]*`), '')
+              .trim()
           : normalizedMainLine;
       const adapted = [firstContent, ...contentLines.slice(1)].filter(Boolean).join('\n').trim();
       const derivedTitle = firstContent.split(/[，。！？；,.!?;]/)[0]?.trim() || `AI剧情点 ${index + 1}`;
-      const title = shortTitleMatch
-        ? titleFromLine
-        : derivedTitle.slice(0, 22);
+      const title = shortTitleMatch ? titleFromLine : derivedTitle.slice(0, 22);
       return {
         id: `ai:${index}:${adapted.slice(0, 18)}`,
         title,
@@ -47,7 +51,9 @@ export function parseGeneratedPlotPointCandidates(text: string): WorkbenchPlotPo
         originalGenre: 'AI生成',
         original: block,
         adapted,
-        variable: variableLine?.replace(/^(变量替换|变量替换说明|替换说明)[：:]\s*/, '').trim() || '由当前设定、用户要求和上下文生成',
+        variable:
+          variableLine?.replace(/^(变量替换|变量替换说明|替换说明)[：:]\s*/, '').trim() ||
+          '由当前设定、用户要求和上下文生成',
         review: reviewLine?.replace(/^(AI评价|评价)[：:]\s*/, '').trim(),
       };
     })

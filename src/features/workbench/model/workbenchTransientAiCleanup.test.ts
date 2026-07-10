@@ -9,28 +9,32 @@ describe('clearWorkbenchTransientAiDrafts', () => {
   });
 
   it('clears temporary library AI input and output without deleting saved entries', () => {
-    localStorage.setItem('xinyuexia_workbench_settings_1_tab_configs_v1', JSON.stringify({
-      角色: {
-        selectedId: 'role-1',
-        aiInput: '请优化一下',
-        aiOutput: 'AI输出内容',
-        aiResult: 'AI结果',
-        aiSessions: [
-          {
-            id: '1',
-            input: '脑洞要求',
-            output: '脑洞输出',
-            result: '脑洞结果',
-            previewTitles: ['标题'],
-            previewDrafts: ['草稿'],
-            backgroundAiTaskId: 'task-1',
-          },
-        ],
-      },
-    }));
-    localStorage.setItem('xinyuexia_workbench_settings_1', JSON.stringify([
-      { id: 'role-1', tab: '角色', title: '男主角', content: '正式人物设定' },
-    ]));
+    localStorage.setItem(
+      'xinyuexia_workbench_settings_1_tab_configs_v1',
+      JSON.stringify({
+        角色: {
+          selectedId: 'role-1',
+          aiInput: '请优化一下',
+          aiOutput: 'AI输出内容',
+          aiResult: 'AI结果',
+          aiSessions: [
+            {
+              id: '1',
+              input: '脑洞要求',
+              output: '脑洞输出',
+              result: '脑洞结果',
+              previewTitles: ['标题'],
+              previewDrafts: ['草稿'],
+              backgroundAiTaskId: 'task-1',
+            },
+          ],
+        },
+      }),
+    );
+    localStorage.setItem(
+      'xinyuexia_workbench_settings_1',
+      JSON.stringify([{ id: 'role-1', tab: '角色', title: '男主角', content: '正式人物设定' }]),
+    );
 
     clearWorkbenchTransientAiDrafts();
 
@@ -49,23 +53,26 @@ describe('clearWorkbenchTransientAiDrafts', () => {
   });
 
   it('clears right AI panel sessions but keeps session metadata', () => {
-    localStorage.setItem('xinyuexia_workbench_ai_sessions_1', JSON.stringify({
-      activeSessionId: 2,
-      nextSessionId: 3,
-      nextMessageId: 9,
-      sessions: [
-        {
-          id: 2,
-          input: '用户输入',
-          output: 'AI输出',
-          messages: [{ id: 8, role: 'user', content: '用户输入' }],
-          linkChapter: true,
-          hasSentChapterContext: true,
-          backgroundTaskId: 'task-2',
-          backgroundAssistantMessageId: 8,
-        },
-      ],
-    }));
+    localStorage.setItem(
+      'xinyuexia_workbench_ai_sessions_1',
+      JSON.stringify({
+        activeSessionId: 2,
+        nextSessionId: 3,
+        nextMessageId: 9,
+        sessions: [
+          {
+            id: 2,
+            input: '用户输入',
+            output: 'AI输出',
+            messages: [{ id: 8, role: 'user', content: '用户输入' }],
+            linkChapter: true,
+            hasSentChapterContext: true,
+            backgroundTaskId: 'task-2',
+            backgroundAssistantMessageId: 8,
+          },
+        ],
+      }),
+    );
 
     clearWorkbenchTransientAiDrafts();
 

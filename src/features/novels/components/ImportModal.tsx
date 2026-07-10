@@ -112,15 +112,22 @@ async function extractTextFromDocx(arrayBuffer: ArrayBuffer): Promise<string> {
   return '';
 }
 
-function convertToImportedChapters(result: SmartImportResult, mode: ImportMode, selectedFile: File | null): ImportedChapterInput[] {
+function convertToImportedChapters(
+  result: SmartImportResult,
+  mode: ImportMode,
+  selectedFile: File | null,
+): ImportedChapterInput[] {
   if (mode === 'smart' && result.chapters.length > 0) {
     return result.chapters;
   }
-  return [{
-    title: selectedFile?.name.replace(/\.[^.]+$/, '') || '导入正文',
-    content: result.rawContent || result.chapters.map((chapter) => `${chapter.title}\n${chapter.content}`).join('\n\n'),
-    wordCount: result.rawContent.length || result.totalWordCount,
-  }];
+  return [
+    {
+      title: selectedFile?.name.replace(/\.[^.]+$/, '') || '导入正文',
+      content:
+        result.rawContent || result.chapters.map((chapter) => `${chapter.title}\n${chapter.content}`).join('\n\n'),
+      wordCount: result.rawContent.length || result.totalWordCount,
+    },
+  ];
 }
 
 export function ImportModal({ isOpen, onClose, onImport, defaultType = 'novel' }: ImportModalProps) {
@@ -222,167 +229,189 @@ export function ImportModal({ isOpen, onClose, onImport, defaultType = 'novel' }
       zIndexClass="z-50"
       contentClassName="flex min-h-0 flex-col overflow-hidden"
     >
+      <div className="flex border-b border-gray-100">
+        <button
+          onClick={() => setImportMode('smart')}
+          className={`flex-1 py-3 text-sm font-medium transition-colors ${
+            importMode === 'smart'
+              ? 'border-b-2 border-orange-500 bg-orange-50/50 text-orange-600'
+              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+          }`}
+        >
+          <span className="inline-flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            智能导入
+          </span>
+        </button>
+        <button
+          onClick={() => setImportMode('local')}
+          className={`flex-1 py-3 text-sm font-medium transition-colors ${
+            importMode === 'local'
+              ? 'border-b-2 border-blue-500 bg-blue-50/50 text-blue-600'
+              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+          }`}
+        >
+          <span className="inline-flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            本地导入
+          </span>
+        </button>
+      </div>
 
-        <div className="flex border-b border-gray-100">
-          <button
-            onClick={() => setImportMode('smart')}
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${
-              importMode === 'smart'
-                ? 'border-b-2 border-orange-500 bg-orange-50/50 text-orange-600'
-                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-            }`}
-          >
-            <span className="inline-flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              智能导入
-            </span>
-          </button>
-          <button
-            onClick={() => setImportMode('local')}
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${
-              importMode === 'local'
-                ? 'border-b-2 border-blue-500 bg-blue-50/50 text-blue-600'
-                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-            }`}
-          >
-            <span className="inline-flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              本地导入
-            </span>
-          </button>
+      <div className="space-y-4 overflow-y-auto p-5" style={{ minHeight: '420px', maxHeight: '55vh' }}>
+        {importMode === 'smart' ? (
+          <div className="flex items-start gap-2 rounded-lg bg-orange-50 p-3 text-xs leading-relaxed text-orange-700">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
+            <p>
+              <strong>智能导入</strong>：识别书名、简介和章节，创建全新作品。
+            </p>
+          </div>
+        ) : (
+          <div className="flex items-start gap-2 rounded-lg bg-blue-50 p-3 text-xs leading-relaxed text-blue-700">
+            <Upload className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+            <p>
+              <strong>本地导入</strong>：直接把文件内容保存成单章节，适合完整正文。
+            </p>
+          </div>
+        )}
+
+        <div className="flex flex-col rounded-lg border border-gray-200 p-4">
+          <div className="mb-2 flex items-center gap-3">
+            <span className="text-sm text-gray-700">选择文件</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,.doc,.docx"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="rounded-md border border-gray-200 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50"
+            >
+              选择文件
+            </button>
+          </div>
+          <p className="text-xs text-gray-400">{fileName || '未选择文件（支持 .txt / .doc / .docx，最大 50MB）'}</p>
         </div>
 
-        <div className="space-y-4 overflow-y-auto p-5" style={{ minHeight: '420px', maxHeight: '55vh' }}>
-          {importMode === 'smart' ? (
-            <div className="flex items-start gap-2 rounded-lg bg-orange-50 p-3 text-xs leading-relaxed text-orange-700">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
-              <p><strong>智能导入</strong>：识别书名、简介和章节，创建全新作品。</p>
+        <div className="overflow-hidden rounded-lg border border-orange-200">
+          <div className="flex items-center justify-between border-b border-orange-100 bg-orange-50 px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-orange-500" />
+              <span className="text-sm font-medium text-orange-700">识别结果</span>
             </div>
-          ) : (
-            <div className="flex items-start gap-2 rounded-lg bg-blue-50 p-3 text-xs leading-relaxed text-blue-700">
-              <Upload className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
-              <p><strong>本地导入</strong>：直接把文件内容保存成单章节，适合完整正文。</p>
-            </div>
-          )}
-
-          <div className="flex flex-col rounded-lg border border-gray-200 p-4">
-            <div className="mb-2 flex items-center gap-3">
-              <span className="text-sm text-gray-700">选择文件</span>
-              <input ref={fileInputRef} type="file" accept=".txt,.doc,.docx" className="hidden" onChange={handleFileChange} />
-              <button onClick={() => fileInputRef.current?.click()} className="rounded-md border border-gray-200 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50">
-                选择文件
-              </button>
-            </div>
-            <p className="text-xs text-gray-400">{fileName || '未选择文件（支持 .txt / .doc / .docx，最大 50MB）'}</p>
-          </div>
-
-          <div className="overflow-hidden rounded-lg border border-orange-200">
-            <div className="flex items-center justify-between border-b border-orange-100 bg-orange-50 px-4 py-2.5">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-orange-500" />
-                <span className="text-sm font-medium text-orange-700">识别结果</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-500">
-                  共 <span className="font-bold text-orange-600">{parsedResult?.chapters.length ?? 0}</span> 章，
-                  <span className="ml-1 font-bold text-orange-600">{(parsedResult?.totalWordCount ?? 0).toLocaleString()}</span> 字
-                </span>
-                {selectedFile && (
-                  <button
-                    onClick={async () => {
-                      if (!selectedFile) return;
-                      setIsParsing(true);
-                      try {
-                        const result = await parseSelectedFile(selectedFile);
-                        setManualTitle((current) => current.trim() || result.bookName?.trim() || selectedFile.name.replace(/\.[^.]+$/, ''));
-                      } catch (error) {
-                        alert(error instanceof Error ? error.message : '重新解析失败');
-                      } finally {
-                        setIsParsing(false);
-                      }
-                    }}
-                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs text-orange-600 transition-colors hover:bg-orange-100"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                    重新解析
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-3 p-4">
-              {isParsing ? (
-                <div className="flex items-center justify-center py-12 text-sm text-gray-400">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  正在解析文件...
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex min-w-[60px] items-center gap-1.5">
-                      <BookOpen className="h-3.5 w-3.5 text-gray-400" />
-                      <span className="text-xs text-gray-500">书名</span>
-                    </div>
-                    <input
-                      value={manualTitle}
-                      onChange={(event) => setManualTitle(event.target.value)}
-                      placeholder={parsedResult?.bookName || selectedFile?.name.replace(/\.[^.]+$/, '') || '输入书名'}
-                      className="h-9 w-[240px] rounded-md border border-orange-200 bg-white px-3 text-sm font-semibold text-gray-900 outline-none transition-colors placeholder:font-normal placeholder:text-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                    />
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex min-w-[60px] items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5 text-gray-400" />
-                      <span className="text-xs text-gray-500">简介</span>
-                    </div>
-                    {parsedResult?.synopsis ? (
-                      <p className="line-clamp-4 flex-1 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{parsedResult.synopsis}</p>
-                    ) : (
-                      <span className="text-sm italic text-gray-400">未识别</span>
-                    )}
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex min-w-[60px] items-center gap-1.5">
-                      <Upload className="h-3.5 w-3.5 text-gray-400" />
-                      <span className="text-xs text-gray-500">章节</span>
-                    </div>
-                    {parsedResult && parsedResult.chapters.length > 0 ? (
-                      <div className="flex-1 rounded-lg border border-gray-100 bg-gray-50 p-3">
-                        <div className="mb-2 text-xs text-gray-500">已识别 {parsedResult.chapters.length} 章</div>
-                        <div className="max-h-[160px] space-y-1 overflow-y-auto text-xs text-gray-700">
-                          {parsedResult.chapters.slice(0, 12).map((chapter, index) => (
-                            <div key={`${chapter.title}-${index}`} className="truncate">
-                              {index + 1}. {chapter.title || `第${index + 1}章`}
-                            </div>
-                          ))}
-                          {parsedResult.chapters.length > 12 && (
-                            <div className="pt-1 text-[11px] text-gray-400">... 还有 {parsedResult.chapters.length - 12} 章</div>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="text-sm italic text-gray-400">未识别</span>
-                    )}
-                  </div>
-                </>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-500">
+                共 <span className="font-bold text-orange-600">{parsedResult?.chapters.length ?? 0}</span> 章，
+                <span className="ml-1 font-bold text-orange-600">
+                  {(parsedResult?.totalWordCount ?? 0).toLocaleString()}
+                </span>{' '}
+                字
+              </span>
+              {selectedFile && (
+                <button
+                  onClick={async () => {
+                    if (!selectedFile) return;
+                    setIsParsing(true);
+                    try {
+                      const result = await parseSelectedFile(selectedFile);
+                      setManualTitle(
+                        (current) =>
+                          current.trim() || result.bookName?.trim() || selectedFile.name.replace(/\.[^.]+$/, ''),
+                      );
+                    } catch (error) {
+                      alert(error instanceof Error ? error.message : '重新解析失败');
+                    } finally {
+                      setIsParsing(false);
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs text-orange-600 transition-colors hover:bg-orange-100"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  重新解析
+                </button>
               )}
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50/50 px-5 py-3">
-          <ActionButton onClick={resetAndClose} variant="secondary" size="sm" className="hover:bg-white">
-            取消
-          </ActionButton>
-          <ActionButton
-            onClick={handleImport}
-            disabled={!selectedFile || !parsedResult || isParsing}
-            size="sm"
-            className="px-5"
-          >
-            {importMode === 'smart' ? '智能导入并创建作品' : '开始导入'}
-          </ActionButton>
+          <div className="space-y-3 p-4">
+            {isParsing ? (
+              <div className="flex items-center justify-center py-12 text-sm text-gray-400">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                正在解析文件...
+              </div>
+            ) : (
+              <>
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex min-w-[60px] items-center gap-1.5">
+                    <BookOpen className="h-3.5 w-3.5 text-gray-400" />
+                    <span className="text-xs text-gray-500">书名</span>
+                  </div>
+                  <input
+                    value={manualTitle}
+                    onChange={(event) => setManualTitle(event.target.value)}
+                    placeholder={parsedResult?.bookName || selectedFile?.name.replace(/\.[^.]+$/, '') || '输入书名'}
+                    className="h-9 w-[240px] rounded-md border border-orange-200 bg-white px-3 text-sm font-semibold text-gray-900 outline-none transition-colors placeholder:font-normal placeholder:text-gray-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                  />
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex min-w-[60px] items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-gray-400" />
+                    <span className="text-xs text-gray-500">简介</span>
+                  </div>
+                  {parsedResult?.synopsis ? (
+                    <p className="line-clamp-4 flex-1 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
+                      {parsedResult.synopsis}
+                    </p>
+                  ) : (
+                    <span className="text-sm italic text-gray-400">未识别</span>
+                  )}
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex min-w-[60px] items-center gap-1.5">
+                    <Upload className="h-3.5 w-3.5 text-gray-400" />
+                    <span className="text-xs text-gray-500">章节</span>
+                  </div>
+                  {parsedResult && parsedResult.chapters.length > 0 ? (
+                    <div className="flex-1 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                      <div className="mb-2 text-xs text-gray-500">已识别 {parsedResult.chapters.length} 章</div>
+                      <div className="max-h-[160px] space-y-1 overflow-y-auto text-xs text-gray-700">
+                        {parsedResult.chapters.slice(0, 12).map((chapter, index) => (
+                          <div key={`${chapter.title}-${index}`} className="truncate">
+                            {index + 1}. {chapter.title || `第${index + 1}章`}
+                          </div>
+                        ))}
+                        {parsedResult.chapters.length > 12 && (
+                          <div className="pt-1 text-[11px] text-gray-400">
+                            ... 还有 {parsedResult.chapters.length - 12} 章
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-sm italic text-gray-400">未识别</span>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50/50 px-5 py-3">
+        <ActionButton onClick={resetAndClose} variant="secondary" size="sm" className="hover:bg-white">
+          取消
+        </ActionButton>
+        <ActionButton
+          onClick={handleImport}
+          disabled={!selectedFile || !parsedResult || isParsing}
+          size="sm"
+          className="px-5"
+        >
+          {importMode === 'smart' ? '智能导入并创建作品' : '开始导入'}
+        </ActionButton>
+      </div>
     </AppModalShell>
   );
 }

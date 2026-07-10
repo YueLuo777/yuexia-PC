@@ -1,10 +1,4 @@
-export function buildPlotPointOutputFormatInstruction({
-  count,
-  hasChain,
-}: {
-  count: number;
-  hasChain: boolean;
-}) {
+export function buildPlotPointOutputFormatInstruction({ count, hasChain }: { count: number; hasChain: boolean }) {
   const stageText = hasChain
     ? '同一批候选都必须处在“已选剧情链之后的同一个下一步进度”，例如都可以作为第二章/下一章的不同方案。'
     : '同一批候选都必须处在“小说开头的同一个进度”，例如都可以作为第一章开头的不同方案。';
@@ -19,7 +13,9 @@ export function buildPlotPointOutputFormatInstruction({
         '空剧情链时，每条候选都要能独立放在第一章第一幕，不需要读者先读过另一条候选才能理解。',
       ];
   const bodyKind = hasChain ? '衔接剧情正文' : '开头剧情正文';
-  const reviewKind = hasChain ? '它如何承接已选剧情链、为什么适合作为下一步' : '它为什么适合作为开头、冲突和期待感在哪里';
+  const reviewKind = hasChain
+    ? '它如何承接已选剧情链、为什么适合作为下一步'
+    : '它为什么适合作为开头、冲突和期待感在哪里';
   return [
     `必须输出 ${count} 个候选剧情点，编号必须从 1-${count} 连续排列，不要少于 ${count} 个。`,
     stageText,

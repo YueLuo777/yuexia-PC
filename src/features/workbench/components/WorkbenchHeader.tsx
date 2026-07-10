@@ -1,7 +1,10 @@
 import { Settings } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 
-import type { WorkbenchCreationFlowPageKey, WorkbenchHeaderFlowItem } from '@/features/workbench/model/workbenchCreationFlow';
+import type {
+  WorkbenchCreationFlowPageKey,
+  WorkbenchHeaderFlowItem,
+} from '@/features/workbench/model/workbenchCreationFlow';
 
 export interface WorkbenchHeaderFlowStat {
   meta?: string;
@@ -38,7 +41,9 @@ export function WorkbenchHeader({
   onSelectFlow,
 }: WorkbenchHeaderProps) {
   const workInfoItem = flowItems.find((item) => item.id === 'workInfo');
-  const creationFlowItems = flowItems.filter((item) => item.id !== 'workInfo' && item.flow && item.group === 'creation');
+  const creationFlowItems = flowItems.filter(
+    (item) => item.id !== 'workInfo' && item.flow && item.group === 'creation',
+  );
   const reviewFlowItems = flowItems.filter((item) => item.flow && item.group === 'review');
   const hasRightTools = Boolean(extraTools) || fieldSizeVisible || logVisible;
 
@@ -49,7 +54,7 @@ export function WorkbenchHeader({
     const tone = stat?.tone ?? 'normal';
     return (
       <button
-        key = {item.id}
+        key={item.id}
         type="button"
         onClick={() => {
           if (item.flow) onSelectFlow(item.flow);
@@ -59,7 +64,9 @@ export function WorkbenchHeader({
           active ? 'xy-active' : '',
           tone === 'warning' ? 'xy-flow-warning' : '',
           tone === 'quiet' ? 'xy-flow-quiet' : '',
-        ].filter(Boolean).join(' ')}
+        ]
+          .filter(Boolean)
+          .join(' ')}
       >
         <span className={`xy-flow-status-title ${item.flow === 'brainstorm' ? 'tracking-wide' : ''}`}>
           {item.title}
@@ -75,7 +82,9 @@ export function WorkbenchHeader({
 
   return (
     <header className="xy-wa-toolbar relative flex h-12 shrink-0 items-start border-b bg-white px-4">
-      <div className={`absolute left-0 right-0 top-0 flex h-12 items-center overflow-x-auto px-4 ${hasRightTools ? 'pr-56' : ''}`}>
+      <div
+        className={`absolute left-0 right-0 top-0 flex h-12 items-center overflow-x-auto px-4 ${hasRightTools ? 'pr-56' : ''}`}
+      >
         <div className="xy-capsule-group min-w-0 shrink-0">
           <div
             className="flex min-h-8 min-w-0 max-w-[260px] items-center px-3 text-[0.8125rem] font-semibold text-[#1f2933]"
@@ -84,11 +93,7 @@ export function WorkbenchHeader({
             <span className="min-w-0 truncate">{workTitle}</span>
           </div>
           {workInfoItem ? (
-            <button
-              type="button"
-              onClick={onOpenWorkInfo}
-              className="xy-capsule-button xy-work-info-primary shrink-0"
-            >
+            <button type="button" onClick={onOpenWorkInfo} className="xy-capsule-button xy-work-info-primary shrink-0">
               {workInfoItem.title}
             </button>
           ) : null}
@@ -98,9 +103,7 @@ export function WorkbenchHeader({
           <div className="xy-capsule-group xy-flow-status-group shrink-0">
             {creationFlowItems.map(renderFlowButton)}
           </div>
-          <div className="xy-capsule-group xy-flow-status-group shrink-0">
-            {reviewFlowItems.map(renderFlowButton)}
-          </div>
+          <div className="xy-capsule-group xy-flow-status-group shrink-0">{reviewFlowItems.map(renderFlowButton)}</div>
         </div>
       </div>
       {hasRightTools ? (

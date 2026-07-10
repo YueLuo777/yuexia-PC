@@ -51,17 +51,27 @@ export function PlotPointGenerationModal({
 }: PlotPointGenerationModalProps) {
   return (
     <div
-      className={plotPointStandalone ? 'flex min-h-0 flex-1 items-stretch justify-center bg-white' : 'modal-sharp fixed inset-0 z-[250] flex items-center justify-center bg-black/35 p-4'}
+      className={
+        plotPointStandalone
+          ? 'flex min-h-0 flex-1 items-stretch justify-center bg-white'
+          : 'modal-sharp fixed inset-0 z-[250] flex items-center justify-center bg-black/35 p-4'
+      }
       onClick={plotPointStandalone ? undefined : onClose}
     >
       <div
-        className={plotPointStandalone ? 'flex h-full w-full flex-col overflow-hidden bg-white text-slate-900' : 'modal-sharp flex h-[min(760px,88vh)] w-[min(980px,92vw)] flex-col overflow-hidden rounded-2xl bg-white text-slate-900 shadow-2xl'}
+        className={
+          plotPointStandalone
+            ? 'flex h-full w-full flex-col overflow-hidden bg-white text-slate-900'
+            : 'modal-sharp flex h-[min(760px,88vh)] w-[min(980px,92vw)] flex-col overflow-hidden rounded-2xl bg-white text-slate-900 shadow-2xl'
+        }
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
           <div>
             <h3 className="text-xl font-black text-slate-900">生成剧情链</h3>
-            <p className="mt-1 text-xs font-bold text-slate-400">关联内容与生成章纲一致，会带上大纲设定、前文章纲和当前章节正文。</p>
+            <p className="mt-1 text-xs font-bold text-slate-400">
+              关联内容与生成章纲一致，会带上大纲设定、前文章纲和当前章节正文。
+            </p>
           </div>
           {!plotPointStandalone && (
             <button
@@ -109,7 +119,9 @@ export function PlotPointGenerationModal({
           </aside>
           <main className="flex min-h-0 flex-col p-5">
             <div className="relative min-h-0 flex-1">
-              <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count h-full ${plotPointOutput.trim() ? 'xy-has-value' : ''}`}>
+              <div
+                className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count h-full ${plotPointOutput.trim() ? 'xy-has-value' : ''}`}
+              >
                 {plotPointOutput.startsWith('[[THINKING') ? (
                   <div className="xy-floating-rich-preview editor-scrollbar h-full overflow-y-auto text-sm leading-6 text-slate-600">
                     {renderAiChatContent(plotPointOutput)}
@@ -119,7 +131,11 @@ export function PlotPointGenerationModal({
                     data-no-modal-drag="true"
                     value={plotPointOutput}
                     onChange={(event) => onOutputChange(event.target.value)}
-                    placeholder={plotPointStandalone ? '生成后的剧情点会显示在这里，也可以手动编辑后复制。' : '生成后的剧情点会显示在这里，可以手动调整后复制到章纲要求里。'}
+                    placeholder={
+                      plotPointStandalone
+                        ? '生成后的剧情点会显示在这里，也可以手动编辑后复制。'
+                        : '生成后的剧情点会显示在这里，可以手动调整后复制到章纲要求里。'
+                    }
                     className="editor-scrollbar text-sm leading-6 text-slate-600 outline-none"
                   />
                 )}

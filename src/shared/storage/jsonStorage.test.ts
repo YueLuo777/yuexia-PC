@@ -19,9 +19,8 @@ describe('createJsonStorage', () => {
     localStorage.setItem('items', JSON.stringify([{ id: 1 }, { name: 'bad' }]));
 
     const storage = createJsonStorage('items', [] as Array<{ id: number }>, {
-      normalize: (value) => Array.isArray(value)
-        ? value.filter((item): item is { id: number } => typeof item?.id === 'number')
-        : [],
+      normalize: (value) =>
+        Array.isArray(value) ? value.filter((item): item is { id: number } => typeof item?.id === 'number') : [],
     });
 
     expect(storage.read()).toEqual([{ id: 1 }]);
@@ -41,4 +40,3 @@ describe('createJsonStorage', () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 });
-

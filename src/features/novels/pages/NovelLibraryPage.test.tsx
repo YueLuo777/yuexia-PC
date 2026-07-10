@@ -12,10 +12,10 @@ describe('NovelLibraryPage search styling', () => {
     const pageSource = readSource('NovelLibraryPage.tsx');
     const styles = readSource('../../../shared/styles/index.css');
 
-    expect(pageSource).toContain('className="xy-ui132-search xy-novel-search shrink-0"');
-    expect(pageSource).toContain('placeholder={`搜索${typeLabel}`}');
+    expect(pageSource).toContainSource('className="xy-ui132-search xy-novel-search shrink-0"');
+    expect(pageSource).toContainSource('placeholder={`搜索${typeLabel}`}');
     const normalizedStyles = styles.replace(/\r\n/g, '\n');
-    expect(normalizedStyles).toContain(
+    expect(normalizedStyles).toContainSource(
       '.xy-ui132-search.xy-novel-search input,\n.xy-ui132-search.xy-novel-search input:focus,\n.xy-ui132-search.xy-novel-search input:hover {\n  background-color: #F5F6F6;\n}',
     );
   });
@@ -25,99 +25,106 @@ describe('NovelLibraryPage summary cards', () => {
   it('turns the library title card into a four-card data row', () => {
     const pageSource = readSource('NovelLibraryPage.tsx');
 
-    expect(pageSource).toContain('className="flex-1 overflow-y-auto px-[21px] py-3.5"');
-    expect(pageSource).not.toContain('className="flex-1 overflow-y-auto px-4 py-3.5"');
-    expect(pageSource).not.toContain('className="flex-1 overflow-y-auto px-8 py-7"');
-    expect(pageSource).toContain('NOVEL_LIBRARY_DASHBOARD_WIDTHS_KEY');
-    expect(pageSource).toContain('DEFAULT_DASHBOARD_CARD_WIDTHS = [464, 434, 428, 424]');
-    expect(pageSource).toContain('DASHBOARD_CARD_MIN_WIDTH');
-    expect(pageSource).toContain('dashboardGridTemplate');
-    expect(pageSource).toContain('startDashboardCardResize(event, 0)');
-    expect(pageSource).toContain('startDashboardCardResize(event, 1)');
-    expect(pageSource).toContain('startDashboardCardResize(event, 2)');
-    expect(pageSource).toContain('title="拖拽调整卡片宽度"');
-    expect(pageSource).toContain('data-dashboard-resize-handle');
-    expect(pageSource).not.toContain('grid gap-3 sm:grid-cols-2 xl:grid-cols-4');
-    expect(pageSource).not.toContain('xl:grid-cols-4');
-    expect(pageSource).not.toContain('{typeLabel}数据');
-    expect(pageSource).not.toContain('const title = workType');
-    expect(pageSource).not.toContain('text-[#16518f]">{title}</h1>');
-    expect(pageSource).not.toContain('BookOpen');
-    expect(pageSource).toContain('作品概览');
-    expect(pageSource).not.toContain('当前{typeLabel}库统计');
-    expect(pageSource).toContain("{ label: '作品', value: `${sourceNovels.length} 本`");
-    expect(pageSource).toContain("{ label: '昨日更新', value: `${formatWords(writingSummary.yesterdayWords)} 字`");
-    expect(pageSource).toContain('writingSummary.yesterdayWords');
-    expect(pageSource).toContain("{ label: '字数', value: `${formatWords(totalWorkWords)} 字`");
-    expect(pageSource).toContain('formatWords(totalWorkWords)');
-    expect(pageSource).toContain('averageWorkWords');
-    expect(pageSource).toContain("{ label: '平均字数', value: `${formatWords(averageWorkWords)} 字`");
-    expect(pageSource).toContain('预留 --');
-    expect(pageSource).toContain('space-y-3 overflow-x-auto pb-1');
-    expect(pageSource).toContain('ref={dashboardRowRef}');
-    expect(pageSource).toContain('looksLikeLegacyRatio');
-    expect(pageSource).toContain('${Math.max(DASHBOARD_CARD_MIN_WIDTH, dashboardCardWidths[3])}px');
-    expect(pageSource).toContain('min-w-[1780px]');
-    expect(pageSource).toContain(
-      'flex min-h-[126px] flex-col rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-5 py-4',
+    expect(pageSource).toContainSource('className="flex-1 overflow-y-auto px-[21px] py-3.5"');
+    expect(pageSource).not.toContainSource('className="flex-1 overflow-y-auto px-4 py-3.5"');
+    expect(pageSource).not.toContainSource('className="flex-1 overflow-y-auto px-8 py-7"');
+    expect(pageSource).toContainSource('NOVEL_LIBRARY_DASHBOARD_WIDTHS_KEY');
+    expect(pageSource).toContainSource('DEFAULT_DASHBOARD_CARD_WIDTHS = [464, 434, 428, 424]');
+    expect(pageSource).toContainSource('DASHBOARD_CARD_MIN_WEIGHT');
+    expect(pageSource).toContainSource('dashboardGridTemplate');
+    expect(pageSource).toContainSource('startDashboardCardResize(event, 0)');
+    expect(pageSource).toContainSource('startDashboardCardResize(event, 1)');
+    expect(pageSource).toContainSource('startDashboardCardResize(event, 2)');
+    expect(pageSource).toContainSource('title="拖拽调整卡片宽度"');
+    expect(pageSource).toContainSource('data-dashboard-resize-handle');
+    expect(pageSource).not.toContainSource('grid gap-3 sm:grid-cols-2 xl:grid-cols-4');
+    expect(pageSource).not.toContainSource('xl:grid-cols-4');
+    expect(pageSource).not.toContainSource('{typeLabel}数据');
+    expect(pageSource).not.toContainSource('const title = workType');
+    expect(pageSource).not.toContainSource('text-[#16518f]">{title}</h1>');
+    expect(pageSource).not.toContainSource('BookOpen');
+    expect(pageSource).toContainSource('作品概览');
+    expect(pageSource).not.toContainSource('当前{typeLabel}库统计');
+    expect(pageSource).toContainSource("{ label: '作品', value: `${sourceNovels.length} 本`");
+    expect(pageSource).toContainSource(
+      "{ label: '昨日更新', value: `${formatWords(writingSummary.yesterdayWords)} 字`",
     );
-    expect(pageSource).not.toContain('mt-3 grid grid-cols-2 gap-x-5 gap-y-2');
-    expect(pageSource).toContain('mt-3 grid flex-1 grid-cols-2 grid-rows-2 gap-2');
-    expect(pageSource).toContain(
+    expect(pageSource).toContainSource('writingSummary.yesterdayWords');
+    expect(pageSource).toContainSource("{ label: '字数', value: `${formatWords(totalWorkWords)} 字`");
+    expect(pageSource).toContainSource('formatWords(totalWorkWords)');
+    expect(pageSource).toContainSource('averageWorkWords');
+    expect(pageSource).toContainSource("{ label: '平均字数', value: `${formatWords(averageWorkWords)} 字`");
+    expect(pageSource).toContainSource('预留 --');
+    expect(pageSource).toContainSource('min-w-0 space-y-3 overflow-x-hidden');
+    expect(pageSource).not.toContainSource('space-y-3 overflow-x-auto pb-1');
+    expect(pageSource).toContainSource('ref={dashboardRowRef}');
+    expect(pageSource).toContainSource('looksLikeLegacyRatio');
+    expect(pageSource).toContainSource('`minmax(0, ${Math.max(DASHBOARD_CARD_MIN_WEIGHT, dashboardCardWidths[3])}fr)`');
+    expect(pageSource).toContainSource('weightPerPixel: totalWeight / availableCardWidth');
+    expect(pageSource).toContainSource('className="grid w-full min-w-0"');
+    expect(pageSource).not.toContainSource('min-w-[1780px]');
+    expect(pageSource).toContainSource(
+      'flex min-h-[126px] min-w-0 flex-col rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-5 py-4',
+    );
+    expect(pageSource).not.toContainSource('mt-3 grid grid-cols-2 gap-x-5 gap-y-2');
+    expect(pageSource).toContainSource('mt-3 grid flex-1 grid-cols-2 grid-rows-2 gap-2');
+    expect(pageSource).toContainSource(
       'grid h-full min-h-[40px] grid-cols-[max-content_minmax(86px,1fr)] items-center gap-2',
     );
-    expect(pageSource).toContain('block whitespace-nowrap text-[12px] font-semibold text-[#1f2933]');
-    expect(pageSource).toContain(
+    expect(pageSource).toContainSource('block whitespace-nowrap text-[12px] font-semibold text-[#1f2933]');
+    expect(pageSource).toContainSource(
       'min-w-[86px] shrink-0 text-right text-[clamp(15px,1.05vw,18px)] font-bold leading-none text-[#111827] tabular-nums',
     );
-    expect(pageSource).not.toContain('grid-cols-[minmax(42px,1fr)_minmax(72px,auto)]');
-    expect(pageSource).toContain('<span className="min-w-0 shrink-0">');
-    expect(pageSource).toContain(
+    expect(pageSource).not.toContainSource('grid-cols-[minmax(42px,1fr)_minmax(72px,auto)]');
+    expect(pageSource).toContainSource('<span className="min-w-0 shrink-0">');
+    expect(pageSource).toContainSource(
       '<span className="block whitespace-nowrap text-[12px] font-semibold text-[#1f2933]">{item.label}</span>',
     );
-    expect(pageSource).not.toContain('grid h-full min-h-[40px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2');
-    expect(pageSource).not.toContain('text-right text-[18px] font-bold leading-none text-[#111827]');
-    expect(pageSource).not.toContain('text-right text-[19px] font-bold leading-none text-[#111827]');
-    expect(pageSource).not.toContain('当前${typeLabel}库');
-    expect(pageSource).not.toContain('昨日新增字数');
-    expect(pageSource).not.toContain('累计作品字数');
-    expect(pageSource).not.toContain('单本平均字数');
-    expect(pageSource).toContain(
-      'flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-4 py-3.5',
+    expect(pageSource).not.toContainSource(
+      'grid h-full min-h-[40px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2',
     );
-    expect(pageSource).toContain('mt-2 grid flex-1 grid-cols-2 grid-rows-2 gap-2');
-    expect(pageSource).toContain('flex h-full min-h-[40px] items-center gap-2');
-    expect(pageSource).toContain('作品整理');
-    expect(pageSource).toContain('<h2 className="text-[15px] font-semibold text-[#1f2933]">作品整理</h2>');
-    expect(pageSource).not.toContain('Archive');
-    expect(pageSource).not.toContain('<Archive className="h-3.5 w-3.5" />');
-    expect(pageSource).toContain('最近编辑');
-    expect(pageSource).toContain(
+    expect(pageSource).not.toContainSource('text-right text-[18px] font-bold leading-none text-[#111827]');
+    expect(pageSource).not.toContainSource('text-right text-[19px] font-bold leading-none text-[#111827]');
+    expect(pageSource).not.toContainSource('当前${typeLabel}库');
+    expect(pageSource).not.toContainSource('昨日新增字数');
+    expect(pageSource).not.toContainSource('累计作品字数');
+    expect(pageSource).not.toContainSource('单本平均字数');
+    expect(pageSource).toContainSource(
+      'flex min-h-[126px] min-w-0 flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-4 py-3.5',
+    );
+    expect(pageSource).toContainSource('mt-2 grid flex-1 grid-cols-2 grid-rows-2 gap-2');
+    expect(pageSource).toContainSource('flex h-full min-h-[40px] items-center gap-2');
+    expect(pageSource).toContainSource('作品整理');
+    expect(pageSource).toContainSource('<h2 className="text-[15px] font-semibold text-[#1f2933]">作品整理</h2>');
+    expect(pageSource).not.toContainSource('Archive');
+    expect(pageSource).not.toContainSource('<Archive className="h-3.5 w-3.5" />');
+    expect(pageSource).toContainSource('最近编辑');
+    expect(pageSource).toContainSource(
       '<h2 className="truncate text-[15px] font-semibold leading-none text-[#1f2933]">最近编辑：</h2>',
     );
-    expect(pageSource).not.toContain('text-[24px] font-bold leading-none text-[#1f2933]">最近编辑：');
-    expect(pageSource).toContain('扩展卡片');
-    expect(pageSource).not.toContain('保持专注写作和资料管理');
+    expect(pageSource).not.toContainSource('text-[24px] font-bold leading-none text-[#1f2933]">最近编辑：');
+    expect(pageSource).toContainSource('扩展卡片');
+    expect(pageSource).not.toContainSource('保持专注写作和资料管理');
   });
 
   it('renders recent edits as a compact quick-entry list', () => {
     const pageSource = readSource('NovelLibraryPage.tsx');
 
-    expect(pageSource).toContain('const recentWorks = [...sourceNovels]');
-    expect(pageSource).toContain('parseWorkDateValue(b.lastModifiedAt || b.createdAt)');
-    expect(pageSource).toContain('.slice(0, 3);');
-    expect(pageSource).toContain('最近编辑：');
-    expect(pageSource).toContain('recentWorks.map((work) => (');
-    expect(pageSource).toContain('onClick={() => handleOpen(work.id)}');
-    expect(pageSource).toContain('rounded-[8px] border border-[#dfe5ec] bg-[#fbfdff] px-3 py-1.5');
-    expect(pageSource).toContain('{work.title}');
-    expect(pageSource).toContain('{formatWorkDate(work.lastModifiedAt || work.createdAt)}');
-    expect(pageSource).not.toContain('Clock3');
-    expect(pageSource).not.toContain('快速进入');
-    expect(pageSource).not.toContain('if (latestWork) handleOpen(latestWork.id);');
-    expect(pageSource).not.toContain('继续编辑');
-    expect(pageSource).toContain('暂无最近编辑的{typeLabel}');
-    expect(pageSource).toContain('WRITING_STATS_UPDATED_EVENT');
+    expect(pageSource).toContainSource('const recentWorks = [...sourceNovels]');
+    expect(pageSource).toContainSource('parseWorkDateValue(b.lastModifiedAt || b.createdAt)');
+    expect(pageSource).toContainSource('.slice(0, 3);');
+    expect(pageSource).toContainSource('最近编辑：');
+    expect(pageSource).toContainSource('recentWorks.map((work) => (');
+    expect(pageSource).toContainSource('onClick={() => handleOpen(work.id)}');
+    expect(pageSource).toContainSource('rounded-[8px] border border-[#dfe5ec] bg-[#fbfdff] px-3 py-1.5');
+    expect(pageSource).toContainSource('{work.title}');
+    expect(pageSource).toContainSource('{formatWorkDate(work.lastModifiedAt || work.createdAt)}');
+    expect(pageSource).not.toContainSource('Clock3');
+    expect(pageSource).not.toContainSource('快速进入');
+    expect(pageSource).not.toContainSource('if (latestWork) handleOpen(latestWork.id);');
+    expect(pageSource).not.toContainSource('继续编辑');
+    expect(pageSource).toContainSource('暂无最近编辑的{typeLabel}');
+    expect(pageSource).toContainSource('WRITING_STATS_UPDATED_EVENT');
   });
 });
 
@@ -128,37 +135,41 @@ describe('NovelLibraryPage import flow', () => {
     const recycleModalSource = readSource('../components/RecycleBinModal.tsx');
     const combinedSource = `${newNovelModalSource}\n${importModalSource}\n${recycleModalSource}`;
 
-    expect(newNovelModalSource).toContain("import { AppModalShell } from '@/shared/ui/AppModalShell';");
-    expect(importModalSource).toContain("import { AppModalShell } from '@/shared/ui/AppModalShell';");
-    expect(recycleModalSource).toContain("import { AppModalShell } from '@/shared/ui/AppModalShell';");
-    expect(combinedSource).toContain("import { ActionButton } from '@/shared/ui/ActionButton';");
-    expect(combinedSource).not.toContain('fixed inset-0 z-50 flex items-center justify-center');
+    expect(newNovelModalSource).toContainSource("import { AppModalShell } from '@/shared/ui/AppModalShell';");
+    expect(importModalSource).toContainSource("import { AppModalShell } from '@/shared/ui/AppModalShell';");
+    expect(recycleModalSource).toContainSource("import { AppModalShell } from '@/shared/ui/AppModalShell';");
+    expect(combinedSource).toContainSource("import { ActionButton } from '@/shared/ui/ActionButton';");
+    expect(combinedSource).not.toContainSource('fixed inset-0 z-50 flex items-center justify-center');
   });
 
   it('uses the page library state when importing so the new work appears immediately', () => {
     const pageSource = readSource('NovelLibraryPage.tsx');
     const modalSource = readSource('../components/ImportModal.tsx');
 
-    expect(pageSource).toContain('importNovelWithChapters,');
-    expect(pageSource).toContain('onImport={importNovelWithChapters}');
-    expect(modalSource).toContain('onImport: (input: NewNovelInput, chapters: ImportedChapterInput[]) => number;');
-    expect(modalSource).toContain('export function ImportModal({ isOpen, onClose, onImport, defaultType = ');
-    expect(modalSource).toContain('onImport(');
-    expect(modalSource).not.toContain('useNovelLibrary()');
+    expect(pageSource).toContainSource('importNovelWithChapters');
+    expect(pageSource).toContainSource('onImport={importNovelWithChapters}');
+    expect(modalSource).toContainSource(
+      'onImport: (input: NewNovelInput, chapters: ImportedChapterInput[]) => number;',
+    );
+    expect(modalSource).toContainSource('export function ImportModal({ isOpen, onClose, onImport, defaultType = ');
+    expect(modalSource).toContainSource('onImport(');
+    expect(modalSource).not.toContainSource('useNovelLibrary()');
   });
 
   it('lets smart import use a manually entered title before falling back to recognition or file name', () => {
     const modalSource = readSource('../components/ImportModal.tsx');
 
-    expect(modalSource).toContain("const [manualTitle, setManualTitle] = useState('');");
-    expect(modalSource).toContain("setManualTitle(file.name.replace(/\\.[^.]+$/, ''));");
-    expect(modalSource).toContain("setManualTitle(result.bookName?.trim() || file.name.replace(/\\.[^.]+$/, ''));");
-    expect(modalSource).toContain(
+    expect(modalSource).toContainSource("const [manualTitle, setManualTitle] = useState('');");
+    expect(modalSource).toContainSource("setManualTitle(file.name.replace(/\\.[^.]+$/, ''));");
+    expect(modalSource).toContainSource(
+      "setManualTitle(result.bookName?.trim() || file.name.replace(/\\.[^.]+$/, ''));",
+    );
+    expect(modalSource).toContainSource(
       "? manualTitle.trim() || parsedResult.bookName?.trim() || selectedFile.name.replace(/\\.[^.]+$/, '')",
     );
-    expect(modalSource).toContain('value={manualTitle}');
-    expect(modalSource).toContain('onChange={(event) => setManualTitle(event.target.value)}');
-    expect(modalSource).toContain(
+    expect(modalSource).toContainSource('value={manualTitle}');
+    expect(modalSource).toContainSource('onChange={(event) => setManualTitle(event.target.value)}');
+    expect(modalSource).toContainSource(
       "placeholder={parsedResult?.bookName || selectedFile?.name.replace(/\\.[^.]+$/, '') || '输入书名'}",
     );
   });

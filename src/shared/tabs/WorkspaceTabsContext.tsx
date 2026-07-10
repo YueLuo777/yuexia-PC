@@ -137,19 +137,18 @@ export function WorkspaceTabsProvider({ children }: { children: ReactNode }) {
     setActiveTabIdState((prev) => (prev === id ? HOME_TAB.id : prev));
   }, []);
 
-  const value = useMemo<WorkspaceTabsContextValue>(() => ({
-    tabs,
-    activeTabId,
-    setActiveTabId,
-    openWorkTab,
-    closeTab,
-  }), [activeTabId, closeTab, openWorkTab, setActiveTabId, tabs]);
-
-  return (
-    <WorkspaceTabsContext.Provider value={value}>
-      {children}
-    </WorkspaceTabsContext.Provider>
+  const value = useMemo<WorkspaceTabsContextValue>(
+    () => ({
+      tabs,
+      activeTabId,
+      setActiveTabId,
+      openWorkTab,
+      closeTab,
+    }),
+    [activeTabId, closeTab, openWorkTab, setActiveTabId, tabs],
   );
+
+  return <WorkspaceTabsContext.Provider value={value}>{children}</WorkspaceTabsContext.Provider>;
 }
 
 export function useWorkspaceTabs() {

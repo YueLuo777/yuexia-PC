@@ -48,11 +48,13 @@ export type StartBackgroundAiTaskInput = {
 
 const BACKGROUND_AI_TASKS_STORAGE_KEY = 'xinyuexia_background_ai_tasks_v1';
 const BACKGROUND_AI_TASK_LIMIT = 30;
+const BACKGROUND_AI_PERSIST_INTERVAL_MS = 250;
 
 const listeners = new Set<() => void>();
 const controllers = new Map<string, AbortController>();
 let tasks = readPersistedTasks();
 let beforeUnloadBound = false;
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
 
 function nowText() {
   return new Date().toLocaleString('zh-CN');
@@ -73,11 +75,15 @@ function normalizePersistedTask(value: unknown): BackgroundAiTask | null {
   if (!value || typeof value !== 'object') return null;
   const task = value as Partial<BackgroundAiTask>;
   if (typeof task.id !== 'string' || typeof task.title !== 'string') return null;
-  const status: BackgroundAiTaskStatus = task.status === 'running'
-    ? 'interrupted'
-    : task.status === 'success' || task.status === 'failed' || task.status === 'aborted' || task.status === 'interrupted'
-      ? task.status
-      : 'interrupted';
+  const status: BackgroundAiTaskStatus =
+    task.status === 'running'
+      ? 'interrupted'
+      : task.status === 'success' ||
+          task.status === 'failed' ||
+          task.status === 'aborted' ||
+          task.status === 'interrupted'
+        ? task.status
+        : 'interrupted';
   return {
     id: task.id,
     kind: task.kind ?? 'custom',
@@ -108,24 +114,42 @@ function readPersistedTasks() {
 function persistTasks() {
   if (!canUseLocalStorage()) return;
   try {
-    window.localStorage.setItem(BACKGROUND_AI_TASKS_STORAGE_KEY, JSON.stringify(tasks.slice(0, BACKGROUND_AI_TASK_LIMIT)));
+    window.localStorage.setItem(
+      BACKGROUND_AI_TASKS_STORAGE_KEY,
+      JSON.stringify(tasks.slice(0, BACKGROUND_AI_TASK_LIMIT)),
+    );
   } catch {
     // Local snapshots are best-effort; the in-memory task remains the source of truth while the app is open.
   }
 }
 
-function notifyListeners() {
+function clearPersistTimer() {
+  if (persistTimer === null) return;
+  clearTimeout(persistTimer);
+  persistTimer = null;
+}
+
+function flushPersistTasks() {
+  clearPersistTimer();
   persistTasks();
+}
+
+function schedulePersistTasks() {
+  if (persistTimer !== null) return;
+  persistTimer = setTimeout(flushPersistTasks, BACKGROUND_AI_PERSIST_INTERVAL_MS);
+}
+
+function notifyListeners(options: { flush?: boolean } = {}) {
+  if (options.flush) flushPersistTasks();
+  else schedulePersistTasks();
   listeners.forEach((listener) => listener());
 }
 
 function patchTask(taskId: string, patch: BackgroundAiTaskPatch) {
-  tasks = tasks.map((task) => (
-    task.id === taskId
-      ? { ...task, ...patch, updatedAt: patch.updatedAt ?? nowText() }
-      : task
-  ));
-  notifyListeners();
+  tasks = tasks.map((task) =>
+    task.id === taskId ? { ...task, ...patch, updatedAt: patch.updatedAt ?? nowText() } : task,
+  );
+  notifyListeners({ flush: patch.status !== undefined });
 }
 
 function bindBeforeUnload() {
@@ -135,18 +159,18 @@ function bindBeforeUnload() {
     const closedAt = nowText();
     controllers.forEach((controller) => controller.abort());
     controllers.clear();
-    tasks = tasks.map((task) => (
+    tasks = tasks.map((task) =>
       task.status === 'running'
         ? {
-          ...task,
-          status: 'interrupted',
-          error: '软件已关闭，本次后台任务已停止。',
-          updatedAt: closedAt,
-          completedAt: closedAt,
-        }
-        : task
-    ));
-    persistTasks();
+            ...task,
+            status: 'interrupted',
+            error: '软件已关闭，本次后台任务已停止。',
+            updatedAt: closedAt,
+            completedAt: closedAt,
+          }
+        : task,
+    );
+    flushPersistTasks();
   });
 }
 
@@ -184,7 +208,7 @@ export function startBackgroundAiTask(input: StartBackgroundAiTaskInput) {
   };
   controllers.set(id, controller);
   tasks = [task, ...tasks].slice(0, BACKGROUND_AI_TASK_LIMIT);
-  notifyListeners();
+  notifyListeners({ flush: true });
 
   const emit: BackgroundAiTaskRunnerContext['emit'] = (chunk, options) => {
     if (controller.signal.aborted) return;
@@ -201,35 +225,39 @@ export function startBackgroundAiTask(input: StartBackgroundAiTaskInput) {
     patchTask(id, patch);
   };
 
-  void input.runner({
-    signal: controller.signal,
-    emit,
-    update,
-    getTask: () => getBackgroundAiTask(id),
-  }).then((finalOutput) => {
-    const current = getBackgroundAiTask(id);
-    if (!current || current.status !== 'running') return;
-    const completedAt = nowText();
-    patchTask(id, {
-      status: 'success',
-      output: typeof finalOutput === 'string' ? finalOutput : current.output,
-      progressLabel: '已完成',
-      completedAt,
+  void input
+    .runner({
+      signal: controller.signal,
+      emit,
+      update,
+      getTask: () => getBackgroundAiTask(id),
+    })
+    .then((finalOutput) => {
+      const current = getBackgroundAiTask(id);
+      if (!current || current.status !== 'running') return;
+      const completedAt = nowText();
+      patchTask(id, {
+        status: 'success',
+        output: typeof finalOutput === 'string' ? finalOutput : current.output,
+        progressLabel: '已完成',
+        completedAt,
+      });
+    })
+    .catch((error: unknown) => {
+      const current = getBackgroundAiTask(id);
+      if (!current || current.status !== 'running') return;
+      const completedAt = nowText();
+      const aborted = controller.signal.aborted || (error instanceof DOMException && error.name === 'AbortError');
+      patchTask(id, {
+        status: aborted ? 'aborted' : 'failed',
+        error: aborted ? '已手动停止。' : error instanceof Error ? error.message : '后台任务失败。',
+        progressLabel: aborted ? '已停止' : '失败',
+        completedAt,
+      });
+    })
+    .finally(() => {
+      controllers.delete(id);
     });
-  }).catch((error: unknown) => {
-    const current = getBackgroundAiTask(id);
-    if (!current || current.status !== 'running') return;
-    const completedAt = nowText();
-    const aborted = controller.signal.aborted || (error instanceof DOMException && error.name === 'AbortError');
-    patchTask(id, {
-      status: aborted ? 'aborted' : 'failed',
-      error: aborted ? '已手动停止。' : error instanceof Error ? error.message : '后台任务失败。',
-      progressLabel: aborted ? '已停止' : '失败',
-      completedAt,
-    });
-  }).finally(() => {
-    controllers.delete(id);
-  });
 
   return task;
 }
@@ -257,12 +285,12 @@ export function stopAllBackgroundAiTasks(reason = '已手动停止。') {
 
 export function clearFinishedBackgroundAiTasks() {
   tasks = tasks.filter((task) => task.status === 'running');
-  notifyListeners();
+  notifyListeners({ flush: true });
 }
 
 export function resetBackgroundAiTasksForTests() {
   controllers.forEach((controller) => controller.abort());
   controllers.clear();
   tasks = [];
-  notifyListeners();
+  notifyListeners({ flush: true });
 }

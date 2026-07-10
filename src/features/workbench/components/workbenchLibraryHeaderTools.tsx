@@ -16,7 +16,13 @@ import {
   SETTING_PREVIEW_MIN_FONT_SIZE,
 } from './workbenchBrainstormState';
 import type { LibraryFontTarget } from './workbenchLibraryDataState';
-import { BRAINSTORM_TAB, DETAIL_OUTLINE_TAB, ROLE_TAB, SETTING_TAB, getWorkbenchTabDisplayLabel } from './workbenchLibraryTabs';
+import {
+  BRAINSTORM_TAB,
+  DETAIL_OUTLINE_TAB,
+  ROLE_TAB,
+  SETTING_TAB,
+  getWorkbenchTabDisplayLabel,
+} from './workbenchLibraryTabs';
 
 type FontChangeHandler = (value: number) => void;
 
@@ -232,7 +238,9 @@ export function WorkbenchLibraryTopTabs({
           key={tab}
           onClick={() => onTabChange(tab)}
           className={`rounded-xl px-4 py-2 text-sm font-bold transition-colors ${
-            activeTab === tab ? 'bg-brand text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-800'
+            activeTab === tab
+              ? 'bg-brand text-white'
+              : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-800'
           }`}
         >
           {getWorkbenchTabDisplayLabel(tab)}

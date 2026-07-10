@@ -15,8 +15,14 @@ const workbenchPagePath = resolve(process.cwd(), 'src/features/workbench/pages/W
 const libraryStoragePath = resolve(process.cwd(), 'src/features/workbench/components/workbenchLibraryStorageState.ts');
 const libraryPanelPath = resolve(process.cwd(), 'src/features/workbench/components/WorkbenchLibraryPanel.tsx');
 const chapterEditorPath = resolve(process.cwd(), 'src/features/workbench/components/ChapterEditor.tsx');
-const fieldSizeSettingsModalPath = resolve(process.cwd(), 'src/features/workbench/components/workbenchFieldSizeSettingsModal.tsx');
-const navigationTogglePath = resolve(process.cwd(), 'src/features/workbench/components/WorkbenchNavigationWidthToggle.tsx');
+const fieldSizeSettingsModalPath = resolve(
+  process.cwd(),
+  'src/features/workbench/components/workbenchFieldSizeSettingsModal.tsx',
+);
+const navigationTogglePath = resolve(
+  process.cwd(),
+  'src/features/workbench/components/WorkbenchNavigationWidthToggle.tsx',
+);
 
 describe('shared workbench left navigation width', () => {
   beforeEach(() => {
@@ -24,7 +30,15 @@ describe('shared workbench left navigation width', () => {
   });
 
   it('uses one optional shared width across writing, library, review and status pages', async () => {
-    const [sharedWidthSource, workbenchPageSource, libraryStorageSource, libraryPanelSource, chapterEditorSource, fieldSizeSettingsModalSource, navigationToggleSource] = await Promise.all([
+    const [
+      sharedWidthSource,
+      workbenchPageSource,
+      libraryStorageSource,
+      libraryPanelSource,
+      chapterEditorSource,
+      fieldSizeSettingsModalSource,
+      navigationToggleSource,
+    ] = await Promise.all([
       readFile(sharedLeftWidthPath, 'utf8'),
       readFile(workbenchPagePath, 'utf8'),
       readFile(libraryStoragePath, 'utf8'),
@@ -34,37 +48,47 @@ describe('shared workbench left navigation width', () => {
       readFile(navigationTogglePath, 'utf8'),
     ]);
 
-    expect(sharedWidthSource).toContain("WORKBENCH_SHARED_LEFT_NAV_WIDTH_STORAGE_KEY = 'xinyuexia_workbench_left_nav_width'");
-    expect(sharedWidthSource).toContain("WORKBENCH_SHARED_LEFT_NAV_WIDTH_ENABLED_KEY = 'xinyuexia_workbench_left_nav_width_unified'");
-    expect(sharedWidthSource).toContain("WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT = 'xinyuexia:workbench-shared-left-nav-width'");
-    expect(sharedWidthSource).toContain('WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN = 180');
-    expect(sharedWidthSource).toContain('readSharedWorkbenchLeftNavWidthEnabled');
-    expect(sharedWidthSource).toContain('writeSharedWorkbenchLeftNavWidthEnabled');
-    expect(sharedWidthSource).toContain('writeSharedWorkbenchLeftNavWidth');
-    expect(sharedWidthSource).toContain('window.dispatchEvent(new CustomEvent(WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT');
-    expect(navigationToggleSource).toContain('readSharedWorkbenchLeftNavWidthEnabled');
-    expect(navigationToggleSource).toContain('writeSharedWorkbenchLeftNavWidthEnabled');
-    expect(navigationToggleSource).toContain('导航宽度统一');
-    expect(navigationToggleSource).toContain('window.addEventListener(WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT');
+    expect(sharedWidthSource).toContainSource(
+      "WORKBENCH_SHARED_LEFT_NAV_WIDTH_STORAGE_KEY = 'xinyuexia_workbench_left_nav_width'",
+    );
+    expect(sharedWidthSource).toContainSource(
+      "WORKBENCH_SHARED_LEFT_NAV_WIDTH_ENABLED_KEY = 'xinyuexia_workbench_left_nav_width_unified'",
+    );
+    expect(sharedWidthSource).toContainSource(
+      "WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT = 'xinyuexia:workbench-shared-left-nav-width'",
+    );
+    expect(sharedWidthSource).toContainSource('WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN = 180');
+    expect(sharedWidthSource).toContainSource('readSharedWorkbenchLeftNavWidthEnabled');
+    expect(sharedWidthSource).toContainSource('writeSharedWorkbenchLeftNavWidthEnabled');
+    expect(sharedWidthSource).toContainSource('writeSharedWorkbenchLeftNavWidth');
+    expect(sharedWidthSource).toContainSource(
+      'window.dispatchEvent(new CustomEvent(WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT',
+    );
+    expect(navigationToggleSource).toContainSource('readSharedWorkbenchLeftNavWidthEnabled');
+    expect(navigationToggleSource).toContainSource('writeSharedWorkbenchLeftNavWidthEnabled');
+    expect(navigationToggleSource).toContainSource('导航宽度统一');
+    expect(navigationToggleSource).toContainSource('window.addEventListener(WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT');
 
-    expect(workbenchPageSource).toContain('readSharedWorkbenchLeftNavWidthEnabled');
-    expect(workbenchPageSource).toContain('writeSharedWorkbenchLeftNavWidth(chapterSidebarWidth');
-    expect(workbenchPageSource).toContain('WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT');
-    expect(workbenchPageSource).toContain('WorkbenchNavigationWidthToggle');
-    expect(workbenchPageSource).toContain("activeCreationFlow === 'writing' || FIELD_SIZE_FLOW_IDS.has(activeCreationFlow)");
+    expect(workbenchPageSource).toContainSource('readSharedWorkbenchLeftNavWidthEnabled');
+    expect(workbenchPageSource).toContainSource('writeSharedWorkbenchLeftNavWidth(chapterSidebarWidth');
+    expect(workbenchPageSource).toContainSource('WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT');
+    expect(workbenchPageSource).toContainSource('WorkbenchNavigationWidthToggle');
+    expect(workbenchPageSource).toContainSource(
+      "activeCreationFlow === 'writing' || FIELD_SIZE_FLOW_IDS.has(activeCreationFlow)",
+    );
 
-    expect(libraryStorageSource).toContain('readSharedWorkbenchLeftNavWidth');
-    expect(libraryStorageSource).toContain('writeSharedWorkbenchLeftNavWidth(');
-    expect(libraryStorageSource).toContain('readSharedWorkbenchLeftNavWidthEnabled');
-    expect(libraryPanelSource).toContain('WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT');
-    expect(libraryPanelSource).toContain('readSharedWorkbenchLeftNavWidthEnabled()');
-    expect(fieldSizeSettingsModalSource).toContain('WorkbenchNavigationWidthToggle');
+    expect(libraryStorageSource).toContainSource('readSharedWorkbenchLeftNavWidth');
+    expect(libraryStorageSource).toContainSource('writeSharedWorkbenchLeftNavWidth(');
+    expect(libraryStorageSource).toContainSource('readSharedWorkbenchLeftNavWidthEnabled');
+    expect(libraryPanelSource).toContainSource('WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT');
+    expect(libraryPanelSource).toContainSource('readSharedWorkbenchLeftNavWidthEnabled()');
+    expect(fieldSizeSettingsModalSource).toContainSource('WorkbenchNavigationWidthToggle');
 
-    expect(chapterEditorSource).toContain('readSharedWorkbenchLeftNavWidth');
-    expect(chapterEditorSource).toContain('writeSharedWorkbenchLeftNavWidth(value');
-    expect(chapterEditorSource).toContain('WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT');
-    expect(chapterEditorSource).toContain('readSharedWorkbenchLeftNavWidthEnabled()');
-    expect(chapterEditorSource).toContain('WorkbenchNavigationWidthToggle');
+    expect(chapterEditorSource).toContainSource('readSharedWorkbenchLeftNavWidth');
+    expect(chapterEditorSource).toContainSource('writeSharedWorkbenchLeftNavWidth(value');
+    expect(chapterEditorSource).toContainSource('WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT');
+    expect(chapterEditorSource).toContainSource('readSharedWorkbenchLeftNavWidthEnabled()');
+    expect(chapterEditorSource).toContainSource('WorkbenchNavigationWidthToggle');
   });
 
   it('lets the setting library follow a narrower writing sidebar when shared navigation width is enabled', () => {

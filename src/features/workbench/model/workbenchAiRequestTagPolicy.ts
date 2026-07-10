@@ -32,7 +32,8 @@ export const WORKBENCH_AI_REQUEST_TAG_POLICIES: WorkbenchAiRequestTagPolicy[] = 
     id: 'body',
     label: '正文',
     useXmlTags: true,
-    reason: '正文生成会同时读取章纲、前文正文、前文梗概、关联设定和写作要求，标签能让 AI 明确哪些是上下文、哪些是任务。',
+    reason:
+      '正文生成会同时读取章纲、前文正文、前文梗概、关联设定和写作要求，标签能让 AI 明确哪些是上下文、哪些是任务。',
     tags: ['本章章纲', '前文正文', '前文梗概', '关联设定', '写作要求'],
   },
   {
@@ -73,11 +74,7 @@ export const WORKBENCH_AI_REQUEST_TAG_POLICIES: WorkbenchAiRequestTagPolicy[] = 
 ];
 
 export function escapeAiRequestTagAttribute(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 export function wrapAiRequestTag(tagName: string, content: string, attributes?: Record<string, string>) {
@@ -93,5 +90,8 @@ export function wrapAiRequestTag(tagName: string, content: string, attributes?: 
 }
 
 export function joinAiRequestSections(sections: string[]) {
-  return sections.map((section) => section.trim()).filter(Boolean).join('\n\n');
+  return sections
+    .map((section) => section.trim())
+    .filter(Boolean)
+    .join('\n\n');
 }

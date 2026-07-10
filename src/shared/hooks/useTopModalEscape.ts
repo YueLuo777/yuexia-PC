@@ -14,9 +14,10 @@ let orderSeed = 0;
 
 function handleEscape(event: KeyboardEvent) {
   if (event.key !== 'Escape') return;
-  const top = escapeStack.reduce<EscapeEntry | null>((current, entry) => (
-    !current || entry.order > current.order ? entry : current
-  ), null);
+  const top = escapeStack.reduce<EscapeEntry | null>(
+    (current, entry) => (!current || entry.order > current.order ? entry : current),
+    null,
+  );
   if (!top) return;
 
   event.preventDefault();

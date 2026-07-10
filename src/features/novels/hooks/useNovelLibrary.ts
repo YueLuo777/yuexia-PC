@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import type { Chapter, Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
 import type { NewNovelInput, Novel, RecycledNovel, WorkType } from '@/features/novels/model/novelTypes';
+import { removeNovelScopedStorage, reserveNextNovelId } from '@/features/novels/model/novelPersistence';
 import { emitWorkspaceNovelSelected } from '@/shared/events/workspaceEvents';
 
 const NOVELS_KEY = 'xinyuexia_novels_v1';
@@ -78,10 +79,6 @@ function readInitialNovels() {
   const defaults = createDefaultNovels();
   writeJson(NOVELS_KEY, defaults);
   return defaults;
-}
-
-function nextNovelId(items: Array<{ id: number }>) {
-  return Math.max(0, ...items.map((item) => item.id)) + 1;
 }
 
 function nextChapterId(volumesMap: Record<number, Volume[]>) {
@@ -207,93 +204,125 @@ export function useNovelLibrary() {
 
   const getNovelsByType = useCallback((type: WorkType) => novels.filter((novel) => novel.type === type), [novels]);
 
-  const createNovel = useCallback((input: NewNovelInput) => {
-    const now = formatDate();
-    const novel: Novel = {
-      id: nextNovelId([...novels, ...recycledNovels]),
-      title: input.title.trim(),
-      type: input.type,
-      category: input.category,
-      synopsis: input.synopsis?.trim(),
-      cover: input.cover,
-      wordCount: 0,
-      createdAt: now,
-      lastModifiedAt: now,
-    };
+  const createNovel = useCallback(
+    (input: NewNovelInput) => {
+      const now = formatDate();
+      const novel: Novel = {
+        id: reserveNextNovelId([...novels, ...recycledNovels]),
+        title: input.title.trim(),
+        type: input.type,
+        category: input.category,
+        synopsis: input.synopsis?.trim(),
+        cover: input.cover,
+        wordCount: 0,
+        createdAt: now,
+        lastModifiedAt: now,
+      };
 
-    const next = [...novels, novel];
-    persistNovels(next);
-    localStorage.setItem(CURRENT_ID_KEY, String(novel.id));
-    setCurrentNovelId(novel.id);
-    emitWorkspaceNovelSelected(novel.id);
-    return novel.id;
-  }, [novels, persistNovels, recycledNovels]);
+      const next = [...novels, novel];
+      persistNovels(next);
+      localStorage.setItem(CURRENT_ID_KEY, String(novel.id));
+      setCurrentNovelId(novel.id);
+      emitWorkspaceNovelSelected(novel.id);
+      return novel.id;
+    },
+    [novels, persistNovels, recycledNovels],
+  );
 
-  const renameNovel = useCallback((id: number, title: string) => {
-    const next = novels.map((novel) => novel.id === id
-      ? { ...novel, title: title.trim(), lastModifiedAt: formatDate() }
-      : novel);
-    persistNovels(next);
-  }, [novels, persistNovels]);
+  const renameNovel = useCallback(
+    (id: number, title: string) => {
+      const next = novels.map((novel) =>
+        novel.id === id ? { ...novel, title: title.trim(), lastModifiedAt: formatDate() } : novel,
+      );
+      persistNovels(next);
+    },
+    [novels, persistNovels],
+  );
 
-  const updateCategory = useCallback((id: number, category: string) => {
-    const next = novels.map((novel) => novel.id === id
-      ? { ...novel, category, lastModifiedAt: formatDate() }
-      : novel);
-    persistNovels(next);
-  }, [novels, persistNovels]);
+  const updateCategory = useCallback(
+    (id: number, category: string) => {
+      const next = novels.map((novel) =>
+        novel.id === id ? { ...novel, category, lastModifiedAt: formatDate() } : novel,
+      );
+      persistNovels(next);
+    },
+    [novels, persistNovels],
+  );
 
-  const updateCover = useCallback((id: number, cover?: string) => {
-    const next = novels.map((novel) => novel.id === id
-      ? { ...novel, cover, lastModifiedAt: formatDate() }
-      : novel);
-    persistNovels(next);
-  }, [novels, persistNovels]);
+  const updateCover = useCallback(
+    (id: number, cover?: string) => {
+      const next = novels.map((novel) => (novel.id === id ? { ...novel, cover, lastModifiedAt: formatDate() } : novel));
+      persistNovels(next);
+    },
+    [novels, persistNovels],
+  );
 
-  const addCategory = useCallback((category: string) => {
-    const trimmed = category.trim();
-    if (!trimmed || categories.includes(trimmed)) return;
-    persistCategories([...categories, trimmed]);
-  }, [categories, persistCategories]);
+  const addCategory = useCallback(
+    (category: string) => {
+      const trimmed = category.trim();
+      if (!trimmed || categories.includes(trimmed)) return;
+      persistCategories([...categories, trimmed]);
+    },
+    [categories, persistCategories],
+  );
 
-  const moveToRecycle = useCallback((id: number) => {
-    const target = novels.find((novel) => novel.id === id);
-    if (!target) return;
+  const moveToRecycle = useCallback(
+    (id: number) => {
+      const target = novels.find((novel) => novel.id === id);
+      if (!target) return;
 
-    const now = new Date();
-    const recycled: RecycledNovel = {
-      ...target,
-      deletedAt: formatDate(now),
-      expireAt: formatDate(addDays(now, 30)),
-    };
+      const now = new Date();
+      const recycled: RecycledNovel = {
+        ...target,
+        deletedAt: formatDate(now),
+        expireAt: formatDate(addDays(now, 30)),
+      };
 
-    persistNovels(novels.filter((novel) => novel.id !== id));
-    persistRecycled([...recycledNovels, recycled]);
-    if (currentNovelId === id) {
-      localStorage.removeItem(CURRENT_ID_KEY);
-      setCurrentNovelId(null);
-      emitWorkspaceNovelSelected(null);
-    }
-  }, [currentNovelId, novels, persistNovels, persistRecycled, recycledNovels]);
+      persistNovels(novels.filter((novel) => novel.id !== id));
+      persistRecycled([...recycledNovels, recycled]);
+      if (currentNovelId === id) {
+        localStorage.removeItem(CURRENT_ID_KEY);
+        setCurrentNovelId(null);
+        emitWorkspaceNovelSelected(null);
+      }
+    },
+    [currentNovelId, novels, persistNovels, persistRecycled, recycledNovels],
+  );
 
-  const restoreNovel = useCallback((id: number) => {
-    const target = recycledNovels.find((novel) => novel.id === id);
-    if (!target) return;
-    const { deletedAt: _deletedAt, expireAt: _expireAt, ...restored } = target;
-    persistRecycled(recycledNovels.filter((novel) => novel.id !== id));
-    persistNovels([...novels, { ...restored, lastModifiedAt: formatDate() }]);
-  }, [novels, persistNovels, persistRecycled, recycledNovels]);
+  const restoreNovel = useCallback(
+    (id: number) => {
+      const target = recycledNovels.find((novel) => novel.id === id);
+      if (!target) return;
+      const { deletedAt: _deletedAt, expireAt: _expireAt, ...restored } = target;
+      persistRecycled(recycledNovels.filter((novel) => novel.id !== id));
+      persistNovels([...novels, { ...restored, lastModifiedAt: formatDate() }]);
+    },
+    [novels, persistNovels, persistRecycled, recycledNovels],
+  );
 
-  const permanentDelete = useCallback((id: number) => {
-    const volumesMap = readJson<Record<number, Volume[]>>(VOLUMES_KEY, {});
-    const volumes = volumesMap[id] ?? [];
-    volumes.forEach((volume) => {
-      volume.chapters.forEach((chapter) => localStorage.removeItem(getContentKey(id, chapter.id)));
-    });
-    const { [id]: _removed, ...restVolumes } = volumesMap;
-    writeJson(VOLUMES_KEY, restVolumes);
-    persistRecycled(recycledNovels.filter((novel) => novel.id !== id));
-  }, [persistRecycled, recycledNovels]);
+  const permanentDelete = useCallback(
+    (id: number) => {
+      const volumesMap = readJson<Record<number, Volume[]>>(VOLUMES_KEY, {});
+      const volumes = volumesMap[id] ?? [];
+      const { [id]: _removed, ...restVolumes } = volumesMap;
+      const nextRecycledNovels = recycledNovels.filter((novel) => novel.id !== id);
+
+      writeJson(RECYCLE_KEY, nextRecycledNovels);
+      try {
+        writeJson(VOLUMES_KEY, restVolumes);
+      } catch (error) {
+        try {
+          writeJson(RECYCLE_KEY, recycledNovels);
+        } catch {
+          // Keep the original failure; the work data has not been removed yet.
+        }
+        throw error;
+      }
+      removeNovelScopedStorage(id, volumes);
+      setRecycledNovels(nextRecycledNovels);
+    },
+    [recycledNovels],
+  );
 
   const selectNovel = useCallback((id: number) => {
     localStorage.setItem(CURRENT_ID_KEY, String(id));
@@ -301,90 +330,100 @@ export function useNovelLibrary() {
     emitWorkspaceNovelSelected(id);
   }, []);
 
-  const importNovels = useCallback((items: Novel[]) => {
-    const merged = [...novels];
-    for (const item of items) {
-      merged.push({
-        ...item,
-        id: nextNovelId([...merged, ...recycledNovels]),
-        createdAt: item.createdAt || formatDate(),
-        lastModifiedAt: item.lastModifiedAt || formatDate(),
-      });
-    }
-    persistNovels(merged);
-  }, [novels, persistNovels, recycledNovels]);
-
-  const importNovelWithChapters = useCallback((input: NewNovelInput, chapters: ImportedChapterInput[]) => {
-    const now = formatDate();
-    const volumesMap = readJson<Record<number, Volume[]>>(VOLUMES_KEY, {});
-    const nextId = nextNovelId([...novels, ...recycledNovels]);
-    const safeChapters = chapters.length > 0
-      ? chapters
-      : [{ title: '', content: '', wordCount: 0 }];
-    const imported = createImportedVolumes(input.type, safeChapters, volumesMap);
-
-    const novel: Novel = {
-      id: nextId,
-      title: input.title.trim(),
-      type: input.type,
-      category: input.category,
-      synopsis: input.synopsis?.trim(),
-      cover: input.cover,
-      wordCount: imported.totalWordCount,
-      createdAt: now,
-      lastModifiedAt: now,
-    };
-
-    const nextNovels = [...novels, novel];
-    const nextVolumesMap = { ...volumesMap, [nextId]: imported.volumes };
-    persistNovels(nextNovels);
-    writeJson(VOLUMES_KEY, nextVolumesMap);
-    imported.contents.forEach(({ chapterId, content }) => {
-      localStorage.setItem(getContentKey(nextId, chapterId), content);
-    });
-    localStorage.setItem(CURRENT_ID_KEY, String(nextId));
-    setCurrentNovelId(nextId);
-    emitWorkspaceNovelSelected(nextId);
-    return nextId;
-  }, [novels, persistNovels, recycledNovels]);
-
-  const exportNovelAsText = useCallback((id: number) => {
-    const novel = novels.find((item) => item.id === id);
-    if (!novel) return null;
-    const volumesMap = readJson<Record<number, Volume[]>>(VOLUMES_KEY, {});
-    const volumes = volumesMap[id] ?? [];
-    const lines = [
-      `《${novel.title}》`,
-      `类型：${novel.type === 'novel' ? '小说' : '剧本'}`,
-      `分类：${novel.category}`,
-      novel.synopsis ? `简介：${novel.synopsis}` : '',
-      '',
-    ];
-
-    volumes.forEach((volume) => {
-      lines.push(`\n# ${volume.name}\n`);
-      [...volume.chapters]
-        .sort((a, b) => a.serialNumber - b.serialNumber)
-        .forEach((chapter) => {
-          const content = localStorage.getItem(getContentKey(id, chapter.id)) ?? '';
-          const title = chapter.title || `第${chapter.serialNumber}章`;
-          lines.push(`## ${title}`);
-          lines.push(content);
-          lines.push('');
+  const importNovels = useCallback(
+    (items: Novel[]) => {
+      const merged = [...novels];
+      for (const item of items) {
+        merged.push({
+          ...item,
+          id: reserveNextNovelId([...merged, ...recycledNovels]),
+          createdAt: item.createdAt || formatDate(),
+          lastModifiedAt: item.lastModifiedAt || formatDate(),
         });
-    });
+      }
+      persistNovels(merged);
+    },
+    [novels, persistNovels, recycledNovels],
+  );
 
-    return {
-      fileName: `${novel.title}.txt`,
-      content: lines.filter((line, index) => line !== '' || lines[index - 1] !== '').join('\n'),
-    };
-  }, [novels]);
+  const importNovelWithChapters = useCallback(
+    (input: NewNovelInput, chapters: ImportedChapterInput[]) => {
+      const now = formatDate();
+      const volumesMap = readJson<Record<number, Volume[]>>(VOLUMES_KEY, {});
+      const nextId = reserveNextNovelId([...novels, ...recycledNovels]);
+      const safeChapters = chapters.length > 0 ? chapters : [{ title: '', content: '', wordCount: 0 }];
+      const imported = createImportedVolumes(input.type, safeChapters, volumesMap);
 
-  const stats = useMemo(() => ({
-    novelCount: getNovelsByType('novel').length,
-    scriptCount: getNovelsByType('script').length,
-    totalWords: novels.reduce((sum, novel) => sum + novel.wordCount, 0),
-  }), [getNovelsByType, novels]);
+      const novel: Novel = {
+        id: nextId,
+        title: input.title.trim(),
+        type: input.type,
+        category: input.category,
+        synopsis: input.synopsis?.trim(),
+        cover: input.cover,
+        wordCount: imported.totalWordCount,
+        createdAt: now,
+        lastModifiedAt: now,
+      };
+
+      const nextNovels = [...novels, novel];
+      const nextVolumesMap = { ...volumesMap, [nextId]: imported.volumes };
+      persistNovels(nextNovels);
+      writeJson(VOLUMES_KEY, nextVolumesMap);
+      imported.contents.forEach(({ chapterId, content }) => {
+        localStorage.setItem(getContentKey(nextId, chapterId), content);
+      });
+      localStorage.setItem(CURRENT_ID_KEY, String(nextId));
+      setCurrentNovelId(nextId);
+      emitWorkspaceNovelSelected(nextId);
+      return nextId;
+    },
+    [novels, persistNovels, recycledNovels],
+  );
+
+  const exportNovelAsText = useCallback(
+    (id: number) => {
+      const novel = novels.find((item) => item.id === id);
+      if (!novel) return null;
+      const volumesMap = readJson<Record<number, Volume[]>>(VOLUMES_KEY, {});
+      const volumes = volumesMap[id] ?? [];
+      const lines = [
+        `《${novel.title}》`,
+        `类型：${novel.type === 'novel' ? '小说' : '剧本'}`,
+        `分类：${novel.category}`,
+        novel.synopsis ? `简介：${novel.synopsis}` : '',
+        '',
+      ];
+
+      volumes.forEach((volume) => {
+        lines.push(`\n# ${volume.name}\n`);
+        [...volume.chapters]
+          .sort((a, b) => a.serialNumber - b.serialNumber)
+          .forEach((chapter) => {
+            const content = localStorage.getItem(getContentKey(id, chapter.id)) ?? '';
+            const title = chapter.title || `第${chapter.serialNumber}章`;
+            lines.push(`## ${title}`);
+            lines.push(content);
+            lines.push('');
+          });
+      });
+
+      return {
+        fileName: `${novel.title}.txt`,
+        content: lines.filter((line, index) => line !== '' || lines[index - 1] !== '').join('\n'),
+      };
+    },
+    [novels],
+  );
+
+  const stats = useMemo(
+    () => ({
+      novelCount: getNovelsByType('novel').length,
+      scriptCount: getNovelsByType('script').length,
+      totalWords: novels.reduce((sum, novel) => sum + novel.wordCount, 0),
+    }),
+    [getNovelsByType, novels],
+  );
 
   return {
     novels,

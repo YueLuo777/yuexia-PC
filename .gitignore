@@ -2,6 +2,7 @@ node_modules/
 dist/
 release/
 .vite/
+.dev-server-fingerprint
 .run/
 *.local
 npm-debug.log*

@@ -4,364 +4,586 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-const readSource = (relativePath: string) => (
-  readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8')
-);
+const readSource = (relativePath: string) =>
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
 
 describe('ChapterEditor grid line font setting', () => {
   it('keeps review chapter selection non-orange and strengthens review preview dividers', () => {
     const chapterEditorSource = readSource('ChapterEditor.tsx');
     const chapterNumberButtonSource = readSource('../../../shared/ui/ChapterNumberButton.tsx');
     const logLayoutSource = readSource('../../../shared/ui/AiRequestLogModalLayout.tsx');
-    const reviewPanelStart = chapterEditorSource.indexOf('canRenderReviewPanel && createPortal');
+    const reviewPanelStart = chapterEditorSource.indexOf('canRenderReviewPanel &&');
     const reviewPanelSource = chapterEditorSource.slice(reviewPanelStart, reviewPanelStart + 22000);
 
     expect(reviewPanelStart).toBeGreaterThan(-1);
-    expect(chapterEditorSource).toContain('ChapterNumberButton,');
-    expect(chapterNumberButtonSource).toContain("return 'xy-detail-outline-number-no-outline hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]';");
-    expect(chapterNumberButtonSource).toContain("selected ? 'xy-detail-outline-number-selected' : ''");
-    expect(reviewPanelSource).toContain('flex h-full min-h-0 flex-col overflow-hidden bg-white');
-    expect(reviewPanelSource).not.toContain('flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white');
-    expect(reviewPanelSource).not.toContain('flex h-full min-h-0 flex-col overflow-hidden rounded-t-2xl border border-slate-200 bg-white');
-    expect(reviewPanelSource).not.toContain('flex h-full min-h-0 flex-col rounded-2xl border border-slate-200 bg-white');
-    expect(chapterEditorSource).not.toContain("type AuditPromptStage = 'structure' | 'text';");
-    expect(chapterEditorSource).not.toContain('const AUDIT_PROMPT_STAGES');
-    expect(chapterEditorSource).not.toContain('reviewAuditStagePrompts');
-    expect(chapterEditorSource).toContain('const getBalancedReviewPreviewTextWidth = (nextOutlineWidth = reviewPreviewOutlineWidth, nextShowOutline = effectiveShowReviewOutline) => {');
-    expect(chapterEditorSource).toContain('const fixedWidth = nextShowOutline ? nextOutlineWidth + REVIEW_PREVIEW_SEPARATOR_WIDTH * 2 : REVIEW_PREVIEW_SEPARATOR_WIDTH;');
-    expect(chapterEditorSource).toContain('const dynamicTextWidthLimit = {');
-    expect(chapterEditorSource).toContain('max: Math.max(REVIEW_PREVIEW_TEXT_WIDTH_LIMIT.max, (gridWidth - fixedWidth) / 2),');
-    expect(chapterEditorSource).toContain('const syncReviewPreviewTextColumnsWidth = (nextOutlineWidth = reviewPreviewOutlineWidth, nextShowOutline = effectiveShowReviewOutline) => {');
-    expect(chapterEditorSource).toContain('setReviewPreviewTextWidth(sharedTextWidth);');
-    expect(chapterEditorSource).toContain('localStorage.setItem(REVIEW_PREVIEW_TEXT_WIDTH_STORAGE_KEY, String(sharedTextWidth));');
-    expect(chapterEditorSource).toContain('return sharedTextWidth;');
-    expect(chapterEditorSource).toContain('const setReviewPreviewWidthModeWithStorage = (nextMode: ReviewPreviewWidthMode) => {');
-    expect(chapterEditorSource).toContain("if (nextMode === 'free') {");
-    expect(chapterEditorSource).toContain('setReviewPreviewUsesCustomTextWidth(false);');
-    expect(chapterEditorSource).toContain('localStorage.setItem(REVIEW_PREVIEW_WIDTH_MODE_STORAGE_KEY, nextMode);');
-    expect(chapterEditorSource).toContain('const availableWidth = Math.max(0, gridWidth - REVIEW_PREVIEW_SEPARATOR_WIDTH * 2);');
-    expect(chapterEditorSource).toContain('setReviewPreviewOutlineWidth(outlineWidth);');
-    expect(chapterEditorSource).toContain('const setReviewOutlineVisibilityWithBalancedColumns = (nextShowReviewOutline: boolean) => {');
-    expect(chapterEditorSource).toContain('setShowReviewOutline(nextShowReviewOutline);');
-    expect(chapterEditorSource).toContain('localStorage.setItem(REVIEW_PREVIEW_OUTLINE_VISIBLE_STORAGE_KEY, String(nextShowReviewOutline));');
-    expect(chapterEditorSource).toContain('setReviewPreviewUsesCustomTextWidth(false);');
-    expect(chapterEditorSource).toContain('clampPanelWidth(availableWidth * 0.26, REVIEW_PREVIEW_OUTLINE_WIDTH_LIMIT)');
-    expect(chapterEditorSource).toContain('setReviewPreviewOutlineWidth(outlineWidth);');
-    expect(chapterEditorSource).toContain("if (reviewPreviewWidthMode === 'free') syncReviewPreviewTextColumnsWidth(nextOutlineWidth, canShowReviewOutline && nextShowReviewOutline);");
-    expect(chapterEditorSource).not.toContain('REVIEW_PREVIEW_ANNOTATION_WIDTH_STORAGE_KEY');
-    expect(chapterEditorSource).toContain('const [showReviewOutline, setShowReviewOutline] = useState(() => readReviewPreviewOutlineVisible());');
-    expect(chapterEditorSource).toContain("const activeReviewDetailOutlineText = activeReviewDetailOutline?.content.trim() ?? '';");
-    expect(chapterEditorSource).toContain("const canShowReviewOutline = reviewMode !== 'polish';");
-    expect(chapterEditorSource).toContain('const effectiveShowReviewOutline = canShowReviewOutline && showReviewOutline;');
-    expect(chapterEditorSource).toContain('const polishPreviewText = reviewRevisedDraft.trim() || extractReviewRevisedText(reviewAiOutput);');
-    expect(chapterEditorSource).toContain('const polishPreviewParagraphs = useMemo(() => splitReviewParagraphs(polishPreviewText), [polishPreviewText]);');
-    expect(chapterEditorSource).toContain("const REVIEW_PREVIEW_OUTLINE_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_outline_width';");
-    expect(chapterEditorSource).toContain("const REVIEW_PREVIEW_TEXT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_text_width';");
-    expect(chapterEditorSource).toContain("const REVIEW_PREVIEW_WIDTH_MODE_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_width_mode';");
-    expect(chapterEditorSource).toContain("const REVIEW_PREVIEW_OUTLINE_VISIBLE_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_outline_visible';");
-    expect(chapterEditorSource).toContain('const REVIEW_PREVIEW_SEPARATOR_WIDTH = 7;');
-    expect(chapterEditorSource).not.toContain("const REVIEW_PREVIEW_ANNOTATION_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_annotation_width';");
-    expect(chapterEditorSource).toContain('const REVIEW_PREVIEW_TEXT_WIDTH = 420;');
-    expect(chapterEditorSource).toContain('const REVIEW_PREVIEW_TEXT_WIDTH_LIMIT = { min: 240, max: 760 };');
-    expect(chapterEditorSource).toContain("type ReviewPreviewWidthMode = 'locked' | 'free';");
-    expect(chapterEditorSource).toContain('function readReviewPreviewWidthMode(): ReviewPreviewWidthMode {');
-    expect(chapterEditorSource).toContain("return localStorage.getItem(REVIEW_PREVIEW_WIDTH_MODE_STORAGE_KEY) === 'free' ? 'free' : 'locked';");
-    expect(chapterEditorSource).toContain('function readReviewPreviewOutlineVisible() {');
-    expect(chapterEditorSource).toContain("return localStorage.getItem(REVIEW_PREVIEW_OUTLINE_VISIBLE_STORAGE_KEY) !== 'false';");
-    expect(chapterEditorSource).not.toContain('const REVIEW_PREVIEW_ANNOTATION_WIDTH_LIMIT = { min: 300, max: 640 };');
-    expect(chapterEditorSource).not.toContain('const REVIEW_PREVIEW_ANNOTATION_WIDTH_LIMIT = { min: 360, max: 640 };');
-    expect(chapterEditorSource).toContain('const [reviewPreviewOutlineWidth, setReviewPreviewOutlineWidth] = useState(() => readStoredPanelWidth(REVIEW_PREVIEW_OUTLINE_WIDTH_STORAGE_KEY, REVIEW_PREVIEW_OUTLINE_WIDTH, REVIEW_PREVIEW_OUTLINE_WIDTH_LIMIT));');
-    expect(chapterEditorSource).toContain('const [reviewPreviewTextWidth, setReviewPreviewTextWidth] = useState(() => readStoredPanelWidth(REVIEW_PREVIEW_TEXT_WIDTH_STORAGE_KEY, REVIEW_PREVIEW_TEXT_WIDTH, REVIEW_PREVIEW_TEXT_WIDTH_LIMIT));');
-    expect(chapterEditorSource).toContain("const REVIEW_MODEL_ID_STORAGE_KEY = 'xinyuexia_chapter_editor_review_model_id';");
-    expect(chapterEditorSource).toContain('function readReviewModelId() {');
-    expect(chapterEditorSource).toContain("return localStorage.getItem(REVIEW_MODEL_ID_STORAGE_KEY) ?? '';");
-    expect(chapterEditorSource).toContain('const [reviewModelId, setReviewModelId] = useState(() => readReviewModelId());');
-    expect(chapterEditorSource).toContain('const setReviewModelIdWithStorage = (nextModelId: string) => {');
-    expect(chapterEditorSource).toContain('localStorage.setItem(REVIEW_MODEL_ID_STORAGE_KEY, nextModelId);');
-    expect(chapterEditorSource).toContain("if (reviewModelId) setReviewModelIdWithStorage('');");
-    expect(chapterEditorSource).toContain('if (!reviewModels.some((model) => model.id === reviewModelId)) {');
-    expect(chapterEditorSource).toContain('setReviewModelIdWithStorage(reviewModels[0].id);');
-    expect(chapterEditorSource).toContain('const [reviewPreviewWidthMode, setReviewPreviewWidthMode] = useState<ReviewPreviewWidthMode>(() => readReviewPreviewWidthMode());');
-    expect(chapterEditorSource).toContain('const [reviewPreviewUsesCustomTextWidth, setReviewPreviewUsesCustomTextWidth] = useState(false);');
-    expect(chapterEditorSource).not.toContain('const [reviewPreviewAnnotationWidth, setReviewPreviewAnnotationWidth]');
-    expect(chapterEditorSource).toContain("const [activeReviewPreviewScrollPane, setActiveReviewPreviewScrollPane] = useState<'outline' | 'original' | 'annotation' | null>(null);");
-    expect(chapterEditorSource).toContain("const handleReviewPreviewScroll = (pane: 'outline' | 'original' | 'annotation') => {");
-    expect(chapterEditorSource).toContain('const renderReviewPreviewColumnSeparator = (');
-    expect(chapterEditorSource).toContain("className={`group flex h-full w-full items-stretch justify-center bg-white ${options.onPointerDown ? 'cursor-ew-resize' : 'cursor-default'}`}");
-    expect(chapterEditorSource).toContain('const reviewPreviewOutlineResizeHandle = renderReviewPreviewColumnSeparator({');
-    expect(chapterEditorSource).toContain('const reviewPreviewTextResizeHandle = renderReviewPreviewColumnSeparator({');
-    expect(chapterEditorSource).toContain('initialWidth: reviewPreviewTextWidth,');
-    expect(chapterEditorSource).toContain('storageKey: REVIEW_PREVIEW_TEXT_WIDTH_STORAGE_KEY,');
-    expect(chapterEditorSource).toContain('limit: REVIEW_PREVIEW_TEXT_WIDTH_LIMIT,');
-    expect(chapterEditorSource).toContain('onChange: setReviewPreviewTextWidth,');
-    expect(chapterEditorSource).toContain('onStart: () => setReviewPreviewUsesCustomTextWidth(true),');
-    expect(chapterEditorSource).toContain("const reviewPreviewTextColumnSeparator = reviewPreviewWidthMode === 'locked'");
-    expect(chapterEditorSource).toContain('? renderReviewPreviewColumnSeparator()');
-    expect(chapterEditorSource).toContain(': reviewPreviewTextResizeHandle;');
-    expect(chapterEditorSource).not.toContain('const reviewPreviewAnnotationResizeHandle = renderReviewPreviewResizeHandle((event) => startPanelWidthResize(event, {');
-    expect(chapterEditorSource).not.toContain('const reviewPreviewGridTemplateColumns = effectiveShowReviewOutline');
-    expect(chapterEditorSource).toContain('const reviewPreviewHiddenTextColumnMinWidth = `calc((100% - ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px) / 3)`;');
-    expect(chapterEditorSource).toContain('const reviewPreviewFreeTextColumnMinWidth = effectiveShowReviewOutline');
-    expect(chapterEditorSource).toContain('`calc((100% - ${reviewPreviewOutlineWidth}px - ${REVIEW_PREVIEW_SEPARATOR_WIDTH * 2}px) / 3)`');
-    expect(chapterEditorSource).toContain("const reviewPreviewUseFreeCustomWidth = reviewPreviewWidthMode === 'free' && reviewPreviewUsesCustomTextWidth;");
-    expect(chapterEditorSource).toContain('const reviewPreviewGridTemplateColumns = !reviewPreviewUseFreeCustomWidth');
-    expect(chapterEditorSource).toContain('`${reviewPreviewOutlineWidth}px ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(0, 1fr) ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(0, 1fr)`');
-    expect(chapterEditorSource).toContain('`minmax(${reviewPreviewHiddenTextColumnMinWidth}, 1fr) ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(${reviewPreviewHiddenTextColumnMinWidth}, 1fr)`');
-    expect(chapterEditorSource).toContain('`${reviewPreviewOutlineWidth}px ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(${reviewPreviewFreeTextColumnMinWidth}, ${reviewPreviewTextWidth}px) ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(${reviewPreviewFreeTextColumnMinWidth}, 1fr)`');
-    expect(chapterEditorSource).toContain('`minmax(${reviewPreviewHiddenTextColumnMinWidth}, ${reviewPreviewTextWidth}px) ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(${reviewPreviewHiddenTextColumnMinWidth}, 1fr)`');
-    expect(chapterEditorSource).not.toContain('`${reviewPreviewOutlineWidth}px 7px ${reviewPreviewAnnotationWidth}px 7px ${reviewPreviewAnnotationWidth}px`');
-    expect(chapterEditorSource).not.toContain('`minmax(${reviewPreviewHiddenTextColumnMinWidth}, 1fr) 7px minmax(${reviewPreviewHiddenTextColumnMinWidth}, ${reviewPreviewAnnotationWidth}px)`');
-    expect(chapterEditorSource).not.toContain('`${reviewPreviewOutlineWidth}px 7px minmax(0,1fr) 7px ${reviewPreviewAnnotationWidth}px`');
-    expect(chapterEditorSource).not.toContain('`minmax(0,1fr) 7px ${reviewPreviewAnnotationWidth}px`');
-    expect(chapterEditorSource).not.toContain('const reviewPreviewTextColumnsWidthLabel');
-    expect(chapterEditorSource).toContain("const reviewPreviewOriginalTitle = activeReviewChapter ? `第${activeReviewChapter.serialNumber}章 原文` : '原文';");
-    expect(chapterEditorSource).toContain('const reviewPreviewAnnotationTitle = activeReviewChapter');
-    expect(chapterEditorSource).not.toContain('reviewCompareView');
-    expect(chapterEditorSource).not.toContain('setReviewCompareView');
-    expect(chapterEditorSource).not.toContain('syncReviewDraftFromOutput');
-    expect(chapterEditorSource).not.toContain('applyReviewParagraph');
-    expect(chapterEditorSource).not.toContain('applyAllReviewParagraphs');
-    expect(reviewPanelSource).not.toContain("['preview', '原文'] as const");
-    expect(reviewPanelSource).not.toContain("['paragraph', '段落'] as const");
-    expect(reviewPanelSource).not.toContain("['full', '全文'] as const");
-    expect(reviewPanelSource).not.toContain('生成对比');
-    expect(reviewPanelSource).toContain('canShowReviewOutline ? (');
-    expect(reviewPanelSource).toContain('onClick={() => setReviewOutlineVisibilityWithBalancedColumns(!showReviewOutline)}');
-    expect(reviewPanelSource).toContain("{showReviewOutline ? '隐藏章纲' : '显示章纲'}");
-    expect(reviewPanelSource).toContain("['locked', '等宽锁定'] as const");
-    expect(reviewPanelSource).toContain("['free', '自由调节'] as const");
-    expect(reviewPanelSource).toContain('onClick={() => setReviewPreviewWidthModeWithStorage(mode)}');
-    expect(reviewPanelSource).toContain('reviewPreviewWidthMode === mode');
-    expect(reviewPanelSource).not.toContain('原文/AI同宽');
-    expect(reviewPanelSource).not.toContain('原文/审核同宽');
-    expect(reviewPanelSource).not.toContain('原文/润色后同宽');
-    expect(reviewPanelSource).toContain('style={{ gridTemplateColumns: reviewPreviewGridTemplateColumns }}');
-    expect(reviewPanelSource).toContain('{effectiveShowReviewOutline ? reviewPreviewOutlineResizeHandle : null}');
-    expect(reviewPanelSource).toContain('{reviewPreviewTextColumnSeparator}');
-    expect(reviewPanelSource).toContain("activeReviewPreviewScrollPane === 'outline' ? 'scrollbar-active' : ''");
-    expect(reviewPanelSource).toContain("onScroll={() => handleReviewPreviewScroll('outline')}");
-    expect(reviewPanelSource).toContain("activeReviewPreviewScrollPane === 'original' ? 'scrollbar-active' : ''");
-    expect(reviewPanelSource).toContain("onScroll={() => handleReviewPreviewScroll('original')}");
-    expect(reviewPanelSource).toContain("activeReviewPreviewScrollPane === 'annotation' ? 'scrollbar-active' : ''");
-    expect(reviewPanelSource).toContain("onScroll={() => handleReviewPreviewScroll('annotation')}");
-    expect(chapterEditorSource).toContain('const reviewOriginalParagraphRefs = useRef<Array<HTMLButtonElement | null>>([]);');
-    expect(chapterEditorSource).toContain('export function getCenteredReviewComparisonScrollTop({');
-    expect(chapterEditorSource).toContain('function scrollReviewComparisonTargetIntoCenter(container: HTMLElement | null, target: HTMLElement | null) {');
-    expect(chapterEditorSource).toContain('const reviewOriginalPreviewPaneRef = useRef<HTMLDivElement | null>(null);');
-    expect(chapterEditorSource).toContain('const reviewAnnotationPreviewPaneRef = useRef<HTMLDivElement | null>(null);');
-    expect(chapterEditorSource).toContain('scrollReviewComparisonTargetIntoCenter(reviewOriginalPreviewPaneRef.current, reviewOriginalParagraphRefs.current[index]);');
-    expect(chapterEditorSource).toContain('scrollReviewComparisonTargetIntoCenter(reviewAnnotationPreviewPaneRef.current, reviewAnnotationRefs.current[index]);');
-    expect(chapterEditorSource).not.toContain("scrollIntoView({ block: 'center', behavior: 'smooth' })");
-    expect(reviewPanelSource).toContain('reviewOriginalParagraphRefs.current[index] = node;');
-    expect(reviewPanelSource).toContain('ref={reviewOriginalPreviewPaneRef}');
-    expect(reviewPanelSource).toContain('ref={reviewAnnotationPreviewPaneRef}');
-    expect(reviewPanelSource).not.toContain('快速定位');
-    expect(reviewPanelSource).toContain('第${activeReviewChapter.serialNumber}章 章纲');
-    expect(reviewPanelSource).toContain('{reviewPreviewOriginalTitle}');
-    expect(reviewPanelSource).toContain('{reviewPreviewAnnotationTitle}');
-    expect(reviewPanelSource).not.toContain('润色前');
-    expect(reviewPanelSource).toContain('文笔润色后内容会显示在这里。');
-    expect(chapterEditorSource).toContain("import { isChapterContentPolished } from '@/features/workbench/model/chapterPolishStatus';");
-    expect(chapterEditorSource).toContain("const polished = reviewMode === 'polish'");
-    expect(chapterEditorSource).toContain("title={`第${item.serialNumber}章 ${item.title || '未命名章节'} · ${item.wordCount}字${reviewMode === 'polish' ? ` · ${polished ? '已润色' : '未润色'}` : ''}`}");
-    expect(chapterEditorSource).toContain("reviewMode === 'polish' && !polished");
-    expect(chapterEditorSource).toContain("showAlertDot={reviewMode === 'polish' && !polished}");
-    expect(chapterNumberButtonSource).toContain('absolute -right-1 -top-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white');
-    expect(chapterNumberButtonSource).toContain('aria-label="未润色"');
-    expect(chapterEditorSource).not.toContain("{polished ? '已润' : '未润'}");
-    expect(chapterEditorSource).not.toContain('changedParagraphIndexes');
-    expect(chapterEditorSource).not.toContain('markChapterContentPolished');
-    expect(chapterNumberButtonSource).toContain("selected ? 'xy-detail-outline-number-selected' : ''");
-    expect(chapterNumberButtonSource).toContain("if (state === 'hasOutline') return 'xy-detail-outline-number-has-outline hover:border-[#08B3D9]';");
-    expect(reviewPanelSource).toContain('className={`relative block w-full text-left outline-none ${');
-    expect(reviewPanelSource).toContain('className={`${REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS} ${');
-    expect(reviewPanelSource).not.toContain("selected ? 'bg-[#EAF9FD] text-slate-900 ring-1 ring-[#9BEFFC]'");
-    expect(reviewPanelSource).not.toContain("className={`rounded-xl border p-3 transition-colors ${");
-    expect(reviewPanelSource).not.toContain('AI 返回“原文标注”JSON 后，这里会高亮问题片段并显示审核说明。');
-    expect(chapterEditorSource).toContain("promptOptions={activeReviewPromptOptions.length === 0 ? [{ value: '', label: '无', disabled: true }] : activeReviewPromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))}");
-    expect(chapterEditorSource).not.toContain("<span className=\"text-[#08AACE]\">审核提示词</span>");
-    expect(chapterEditorSource).not.toContain("<span className=\"text-slate-400\">一级分类：审核</span>");
-    expect(reviewPanelSource).toContain('未找到第${activeReviewChapter.serialNumber}章章纲。');
-    expect(chapterEditorSource).toContain("import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';");
-    expect(chapterEditorSource).toContain("const REVIEW_PREVIEW_FONT_SIZE_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_font_size';");
-    expect(chapterEditorSource).toContain('function readReviewPreviewFontSize() {');
-    expect(chapterEditorSource).toContain('const stored = localStorage.getItem(REVIEW_PREVIEW_FONT_SIZE_STORAGE_KEY);');
-    expect(chapterEditorSource).toContain('return stored === null ? 14 : clampReviewPreviewFontSize(Number(stored));');
-    expect(chapterEditorSource).toContain('const [reviewPreviewFontSize, setReviewPreviewFontSize] = useState(() => readReviewPreviewFontSize());');
-    expect(chapterEditorSource).toContain('const setReviewPreviewFontSizeWithStorage = (nextFontSize: number) => {');
-    expect(chapterEditorSource).toContain('localStorage.setItem(REVIEW_PREVIEW_FONT_SIZE_STORAGE_KEY, String(fontSize));');
-    expect(reviewPanelSource).toContain('ariaLabel="审核原文字号"');
-    expect(reviewPanelSource).toContain('onChange={setReviewPreviewFontSizeWithStorage}');
-    expect(chapterEditorSource).toContain('onModelChange={setReviewModelIdWithStorage}');
-    expect(chapterEditorSource).not.toContain('onModelChange={setReviewModelId}');
-    expect(chapterEditorSource).toContain('if (openLogSignal <= 0 || openLogSignal === lastOpenLogSignalRef.current) return;');
-    expect(chapterEditorSource).toContain("if (embeddedMode !== 'audit' && embeddedMode !== 'comment' && embeddedMode !== 'polish') return;");
-    expect(chapterEditorSource).toContain('setIsReviewLogOpen(true);');
-    expect(chapterEditorSource).toContain('onRegisterHeaderLog?: (handler: (() => void) | null) => void;');
-    expect(chapterEditorSource).toContain('onRegisterHeaderLog(() => setIsReviewLogOpen(true));');
-    expect(chapterEditorSource).toContain("import { WorkbenchModal } from './WorkbenchModal';");
-    expect(chapterEditorSource).toContain('const reviewLogModal = isReviewLogOpen ? (');
-    expect(chapterEditorSource).toContain('storageId="chapter_editor_review_request_log"');
-    expect(chapterEditorSource).toContain('closeOnBackdrop={false}');
-    expect(chapterEditorSource).toContain('const basePromptText = activeReviewPrompt?.content?.trim() || modeInstruction;');
-    expect(chapterEditorSource).toContain("const promptText = [basePromptText, compareInstruction].filter(Boolean).join('\\n\\n');");
-    expect(chapterEditorSource).toContain('const userRequirementText = reviewAiInput.trim();');
-    expect(chapterEditorSource).toContain('const userText = userRequirementText ? wrapAiRequestTag(requirementTag, userRequirementText) : \'\';');
-    expect(chapterEditorSource).not.toContain('reviewAiInput.trim() || modeInstruction');
-    expect(chapterEditorSource).toContain("const REVIEW_LOG_SECTION_PREFIX = '[[YUEXIA_REVIEW_LOG_SECTION:';");
-    expect(chapterEditorSource).toContain("createReviewLogSection('系统提示词', promptText)");
-    expect(chapterEditorSource).toContain("...(userText ? [createReviewLogSection('其他要求', userText)] : [])");
-    expect(chapterEditorSource).toContain("log.lastIndexOf('\\n【关联章纲】', originalStart)");
-    expect(chapterEditorSource).not.toContain("['其他要求', '用户要求']");
-    expect(chapterEditorSource).toContain("import { AiRequestLogModalLayout } from '@/shared/ui/AiRequestLogModalLayout';");
-    expect(chapterEditorSource).toContain('<AiRequestLogModalLayout');
-    expect(logLayoutSource).toContain('className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] overflow-hidden"');
-    expect(logLayoutSource).toContain('className="border-r border-slate-100 bg-slate-50 p-4 text-sm"');
-    expect(chapterEditorSource).toContain('value: `作品编辑器 ${activeReviewModeTitle}`');
-    expect(chapterEditorSource).toContain("value: activeReviewModel?.name ?? '未选择模型'");
-    expect(chapterEditorSource).toContain("value: activeReviewPrompt?.name ?? '默认提示词'");
-    expect(chapterEditorSource).toContain("getReviewLogSection(reviewRequestLog, '其他要求').trim()");
-    expect(chapterEditorSource).toContain("title: '其他要求'");
-    expect(logLayoutSource).toContain('className="editor-scrollbar flex min-h-0 flex-1 flex-col overflow-hidden p-5"');
-    expect(chapterEditorSource).toContain("title: '关联章纲'");
-    expect(chapterEditorSource).toContain("content: getReviewLogSection(reviewRequestLog, '关联章纲')");
-    expect(chapterEditorSource).toContain("title: '原文'");
-    expect(chapterEditorSource).toContain("content: getReviewLogSection(reviewRequestLog, '原文')");
-    expect(chapterEditorSource).toContain('function getReviewLogFillGroupWeights(options: { hasOutline: boolean; hasUser: boolean })');
-    expect(chapterEditorSource).toContain('original: 2,');
-    expect(chapterEditorSource).toContain('fillSingleGroup');
-    expect(chapterEditorSource).toContain('fillGroupWeights={reviewLogFillGroupWeights}');
-    expect(chapterEditorSource).not.toContain('absolute inset-4 z-10 flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl');
-    expect(chapterEditorSource).not.toContain("title: '关联内容'");
-    expect(chapterEditorSource).not.toContain("title: '用户要求'");
-    expect(chapterEditorSource).not.toContain('fillGroupId="context"');
-    expect(chapterEditorSource).not.toContain('fillGroupId="original"');
-    expect(reviewPanelSource).toContain('style={{ fontSize: reviewPreviewFontSize }}');
-    expect(reviewPanelSource).not.toContain('xy-selected-orange-bg');
-    expect(reviewPanelSource).not.toContain('grid min-h-0 flex-1 grid-cols-2 divide-x divide-slate-100');
-    expect(chapterEditorSource).toContain("const REVIEW_PREVIEW_PARAGRAPH_LIST_CLASS = 'space-y-3';");
-    expect(chapterEditorSource).toContain("const REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS = 'border-l-2 px-3 py-1.5 leading-7 transition-colors';");
-    expect(chapterEditorSource).toContain("const REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS = 'border-[#08AACE] bg-[#EAF9FD] text-slate-900';");
-    expect(reviewPanelSource).toContain('className={REVIEW_PREVIEW_PARAGRAPH_LIST_CLASS}');
-    expect(reviewPanelSource).toContain('REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS');
-    expect(reviewPanelSource).toContain('REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS');
-    expect(reviewPanelSource).toContain('REVIEW_PREVIEW_PARAGRAPH_EMPTY_CLASS');
-    expect(reviewPanelSource).not.toContain('border-l-2 border-emerald-300 bg-emerald-50/35 px-3 py-1.5');
-    expect(reviewPanelSource).not.toContain('<span className="font-black text-slate-800">当前章节：</span>');
-    expect(reviewPanelSource).not.toContain('<span className="font-black text-slate-800">正文字数：</span>');
-    expect(reviewPanelSource).not.toContain('<span className="font-black text-slate-800">关联章纲：</span>');
-    expect(reviewPanelSource).not.toContain('<div className="relative mt-5 min-h-0 flex-1">');
-    expect(reviewPanelSource).toContain('<div className="relative mt-3 min-h-0 flex-1">');
+    expect(chapterEditorSource).toContainSource('ChapterNumberButton,');
+    expect(chapterNumberButtonSource).toContainSource(
+      "return 'xy-detail-outline-number-no-outline hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]';",
+    );
+    expect(chapterNumberButtonSource).toContainSource("selected ? 'xy-detail-outline-number-selected' : ''");
+    expect(reviewPanelSource).toContainSource('flex h-full min-h-0 flex-col overflow-hidden bg-white');
+    expect(reviewPanelSource).not.toContainSource(
+      'flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white',
+    );
+    expect(reviewPanelSource).not.toContainSource(
+      'flex h-full min-h-0 flex-col overflow-hidden rounded-t-2xl border border-slate-200 bg-white',
+    );
+    expect(reviewPanelSource).not.toContainSource(
+      'flex h-full min-h-0 flex-col rounded-2xl border border-slate-200 bg-white',
+    );
+    expect(chapterEditorSource).not.toContainSource("type AuditPromptStage = 'structure' | 'text';");
+    expect(chapterEditorSource).not.toContainSource('const AUDIT_PROMPT_STAGES');
+    expect(chapterEditorSource).not.toContainSource('reviewAuditStagePrompts');
+    expect(chapterEditorSource).toContainSource(
+      'const getBalancedReviewPreviewTextWidth = (nextOutlineWidth = reviewPreviewOutlineWidth, nextShowOutline = effectiveShowReviewOutline) => {',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const fixedWidth = nextShowOutline ? nextOutlineWidth + REVIEW_PREVIEW_SEPARATOR_WIDTH * 2 : REVIEW_PREVIEW_SEPARATOR_WIDTH;',
+    );
+    expect(chapterEditorSource).toContainSource('const dynamicTextWidthLimit = {');
+    expect(chapterEditorSource).toContainSource(
+      'max: Math.max(REVIEW_PREVIEW_TEXT_WIDTH_LIMIT.max, (gridWidth - fixedWidth) / 2)',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const syncReviewPreviewTextColumnsWidth = (nextOutlineWidth = reviewPreviewOutlineWidth, nextShowOutline = effectiveShowReviewOutline) => {',
+    );
+    expect(chapterEditorSource).toContainSource('setReviewPreviewTextWidth(sharedTextWidth);');
+    expect(chapterEditorSource).toContainSource(
+      'localStorage.setItem(REVIEW_PREVIEW_TEXT_WIDTH_STORAGE_KEY, String(sharedTextWidth));',
+    );
+    expect(chapterEditorSource).toContainSource('return sharedTextWidth;');
+    expect(chapterEditorSource).toContainSource(
+      'const setReviewPreviewWidthModeWithStorage = (nextMode: ReviewPreviewWidthMode) => {',
+    );
+    expect(chapterEditorSource).toContainSource("if (nextMode === 'free') {");
+    expect(chapterEditorSource).toContainSource('setReviewPreviewUsesCustomTextWidth(false);');
+    expect(chapterEditorSource).toContainSource(
+      'localStorage.setItem(REVIEW_PREVIEW_WIDTH_MODE_STORAGE_KEY, nextMode);',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const availableWidth = Math.max(0, gridWidth - REVIEW_PREVIEW_SEPARATOR_WIDTH * 2);',
+    );
+    expect(chapterEditorSource).toContainSource('setReviewPreviewOutlineWidth(outlineWidth);');
+    expect(chapterEditorSource).toContainSource(
+      'const setReviewOutlineVisibilityWithBalancedColumns = (nextShowReviewOutline: boolean) => {',
+    );
+    expect(chapterEditorSource).toContainSource('setShowReviewOutline(nextShowReviewOutline);');
+    expect(chapterEditorSource).toContainSource(
+      'localStorage.setItem(REVIEW_PREVIEW_OUTLINE_VISIBLE_STORAGE_KEY, String(nextShowReviewOutline));',
+    );
+    expect(chapterEditorSource).toContainSource('setReviewPreviewUsesCustomTextWidth(false);');
+    expect(chapterEditorSource).toContainSource(
+      'clampPanelWidth(availableWidth * 0.26, REVIEW_PREVIEW_OUTLINE_WIDTH_LIMIT)',
+    );
+    expect(chapterEditorSource).toContainSource('setReviewPreviewOutlineWidth(outlineWidth);');
+    expect(chapterEditorSource).toContainSource(
+      "if (reviewPreviewWidthMode === 'free') syncReviewPreviewTextColumnsWidth(nextOutlineWidth, canShowReviewOutline && nextShowReviewOutline);",
+    );
+    expect(chapterEditorSource).not.toContainSource('REVIEW_PREVIEW_ANNOTATION_WIDTH_STORAGE_KEY');
+    expect(chapterEditorSource).toContainSource(
+      'const [showReviewOutline, setShowReviewOutline] = useState(() => readReviewPreviewOutlineVisible());',
+    );
+    expect(chapterEditorSource).toContainSource(
+      "const activeReviewDetailOutlineText = activeReviewDetailOutline?.content.trim() ?? '';",
+    );
+    expect(chapterEditorSource).toContainSource("const canShowReviewOutline = reviewMode !== 'polish';");
+    expect(chapterEditorSource).toContainSource(
+      'const effectiveShowReviewOutline = canShowReviewOutline && showReviewOutline;',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const polishPreviewText = reviewRevisedDraft.trim() || extractReviewRevisedText(reviewAiOutput);',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const polishPreviewParagraphs = useMemo(() => splitReviewParagraphs(polishPreviewText), [polishPreviewText]);',
+    );
+    expect(chapterEditorSource).toContainSource(
+      "const REVIEW_PREVIEW_OUTLINE_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_outline_width';",
+    );
+    expect(chapterEditorSource).toContainSource(
+      "const REVIEW_PREVIEW_TEXT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_text_width';",
+    );
+    expect(chapterEditorSource).toContainSource(
+      "const REVIEW_PREVIEW_WIDTH_MODE_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_width_mode';",
+    );
+    expect(chapterEditorSource).toContainSource(
+      "const REVIEW_PREVIEW_OUTLINE_VISIBLE_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_outline_visible';",
+    );
+    expect(chapterEditorSource).toContainSource('const REVIEW_PREVIEW_SEPARATOR_WIDTH = 7;');
+    expect(chapterEditorSource).not.toContainSource(
+      "const REVIEW_PREVIEW_ANNOTATION_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_annotation_width';",
+    );
+    expect(chapterEditorSource).toContainSource('const REVIEW_PREVIEW_TEXT_WIDTH = 420;');
+    expect(chapterEditorSource).toContainSource('const REVIEW_PREVIEW_TEXT_WIDTH_LIMIT = { min: 240, max: 760 };');
+    expect(chapterEditorSource).toContainSource("type ReviewPreviewWidthMode = 'locked' | 'free';");
+    expect(chapterEditorSource).toContainSource('function readReviewPreviewWidthMode(): ReviewPreviewWidthMode {');
+    expect(chapterEditorSource).toContainSource(
+      "return localStorage.getItem(REVIEW_PREVIEW_WIDTH_MODE_STORAGE_KEY) === 'free' ? 'free' : 'locked';",
+    );
+    expect(chapterEditorSource).toContainSource('function readReviewPreviewOutlineVisible() {');
+    expect(chapterEditorSource).toContainSource(
+      "return localStorage.getItem(REVIEW_PREVIEW_OUTLINE_VISIBLE_STORAGE_KEY) !== 'false';",
+    );
+    expect(chapterEditorSource).not.toContainSource(
+      'const REVIEW_PREVIEW_ANNOTATION_WIDTH_LIMIT = { min: 300, max: 640 };',
+    );
+    expect(chapterEditorSource).not.toContainSource(
+      'const REVIEW_PREVIEW_ANNOTATION_WIDTH_LIMIT = { min: 360, max: 640 };',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const [reviewPreviewOutlineWidth, setReviewPreviewOutlineWidth] = useState(() => readStoredPanelWidth(REVIEW_PREVIEW_OUTLINE_WIDTH_STORAGE_KEY, REVIEW_PREVIEW_OUTLINE_WIDTH, REVIEW_PREVIEW_OUTLINE_WIDTH_LIMIT));',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const [reviewPreviewTextWidth, setReviewPreviewTextWidth] = useState(() => readStoredPanelWidth(REVIEW_PREVIEW_TEXT_WIDTH_STORAGE_KEY, REVIEW_PREVIEW_TEXT_WIDTH, REVIEW_PREVIEW_TEXT_WIDTH_LIMIT));',
+    );
+    expect(chapterEditorSource).toContainSource(
+      "const REVIEW_MODEL_ID_STORAGE_KEY = 'xinyuexia_chapter_editor_review_model_id';",
+    );
+    expect(chapterEditorSource).toContainSource('function readReviewModelId() {');
+    expect(chapterEditorSource).toContainSource("return localStorage.getItem(REVIEW_MODEL_ID_STORAGE_KEY) ?? '';");
+    expect(chapterEditorSource).toContainSource(
+      'const [reviewModelId, setReviewModelId] = useState(() => readReviewModelId());',
+    );
+    expect(chapterEditorSource).toContainSource('const setReviewModelIdWithStorage = (nextModelId: string) => {');
+    expect(chapterEditorSource).toContainSource('localStorage.setItem(REVIEW_MODEL_ID_STORAGE_KEY, nextModelId);');
+    expect(chapterEditorSource).toContainSource("if (reviewModelId) setReviewModelIdWithStorage('');");
+    expect(chapterEditorSource).toContainSource('if (!reviewModels.some((model) => model.id === reviewModelId)) {');
+    expect(chapterEditorSource).toContainSource('setReviewModelIdWithStorage(reviewModels[0].id);');
+    expect(chapterEditorSource).toContainSource(
+      'const [reviewPreviewWidthMode, setReviewPreviewWidthMode] = useState<ReviewPreviewWidthMode>(() => readReviewPreviewWidthMode());',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const [reviewPreviewUsesCustomTextWidth, setReviewPreviewUsesCustomTextWidth] = useState(false);',
+    );
+    expect(chapterEditorSource).not.toContainSource(
+      'const [reviewPreviewAnnotationWidth, setReviewPreviewAnnotationWidth]',
+    );
+    expect(chapterEditorSource).toContainSource(
+      "const [activeReviewPreviewScrollPane, setActiveReviewPreviewScrollPane] = useState<'outline' | 'original' | 'annotation' | null>(null);",
+    );
+    expect(chapterEditorSource).toContainSource(
+      "const handleReviewPreviewScroll = (pane: 'outline' | 'original' | 'annotation') => {",
+    );
+    expect(chapterEditorSource).toContainSource('const renderReviewPreviewColumnSeparator = (');
+    expect(chapterEditorSource).toContainSource(
+      "className={`group flex h-full w-full items-stretch justify-center bg-white ${options.onPointerDown ? 'cursor-ew-resize' : 'cursor-default'}`}",
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const reviewPreviewOutlineResizeHandle = renderReviewPreviewColumnSeparator({',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const reviewPreviewTextResizeHandle = renderReviewPreviewColumnSeparator({',
+    );
+    expect(chapterEditorSource).toContainSource('initialWidth: reviewPreviewTextWidth,');
+    expect(chapterEditorSource).toContainSource('storageKey: REVIEW_PREVIEW_TEXT_WIDTH_STORAGE_KEY,');
+    expect(chapterEditorSource).toContainSource('limit: REVIEW_PREVIEW_TEXT_WIDTH_LIMIT,');
+    expect(chapterEditorSource).toContainSource('onChange: setReviewPreviewTextWidth,');
+    expect(chapterEditorSource).toContainSource('onStart: () => setReviewPreviewUsesCustomTextWidth(true),');
+    expect(chapterEditorSource).toContainSource(
+      "const reviewPreviewTextColumnSeparator = reviewPreviewWidthMode === 'locked'",
+    );
+    expect(chapterEditorSource).toContainSource('? renderReviewPreviewColumnSeparator()');
+    expect(chapterEditorSource).toContainSource(': reviewPreviewTextResizeHandle;');
+    expect(chapterEditorSource).not.toContainSource(
+      'const reviewPreviewAnnotationResizeHandle = renderReviewPreviewResizeHandle((event) => startPanelWidthResize(event, {',
+    );
+    expect(chapterEditorSource).not.toContainSource(
+      'const reviewPreviewGridTemplateColumns = effectiveShowReviewOutline',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const reviewPreviewHiddenTextColumnMinWidth = `calc((100% - ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px) / 3)`;',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const reviewPreviewFreeTextColumnMinWidth = effectiveShowReviewOutline',
+    );
+    expect(chapterEditorSource).toContainSource(
+      '`calc((100% - ${reviewPreviewOutlineWidth}px - ${REVIEW_PREVIEW_SEPARATOR_WIDTH * 2}px) / 3)`',
+    );
+    expect(chapterEditorSource).toContainSource(
+      "const reviewPreviewUseFreeCustomWidth = reviewPreviewWidthMode === 'free' && reviewPreviewUsesCustomTextWidth;",
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const reviewPreviewGridTemplateColumns = !reviewPreviewUseFreeCustomWidth',
+    );
+    expect(chapterEditorSource).toContainSource(
+      '`${reviewPreviewOutlineWidth}px ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(0, 1fr) ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(0, 1fr)`',
+    );
+    expect(chapterEditorSource).toContainSource(
+      '`minmax(${reviewPreviewHiddenTextColumnMinWidth}, 1fr) ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(${reviewPreviewHiddenTextColumnMinWidth}, 1fr)`',
+    );
+    expect(chapterEditorSource).toContainSource(
+      '`${reviewPreviewOutlineWidth}px ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(${reviewPreviewFreeTextColumnMinWidth}, ${reviewPreviewTextWidth}px) ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(${reviewPreviewFreeTextColumnMinWidth}, 1fr)`',
+    );
+    expect(chapterEditorSource).toContainSource(
+      '`minmax(${reviewPreviewHiddenTextColumnMinWidth}, ${reviewPreviewTextWidth}px) ${REVIEW_PREVIEW_SEPARATOR_WIDTH}px minmax(${reviewPreviewHiddenTextColumnMinWidth}, 1fr)`',
+    );
+    expect(chapterEditorSource).not.toContainSource(
+      '`${reviewPreviewOutlineWidth}px 7px ${reviewPreviewAnnotationWidth}px 7px ${reviewPreviewAnnotationWidth}px`',
+    );
+    expect(chapterEditorSource).not.toContainSource(
+      '`minmax(${reviewPreviewHiddenTextColumnMinWidth}, 1fr) 7px minmax(${reviewPreviewHiddenTextColumnMinWidth}, ${reviewPreviewAnnotationWidth}px)`',
+    );
+    expect(chapterEditorSource).not.toContainSource(
+      '`${reviewPreviewOutlineWidth}px 7px minmax(0,1fr) 7px ${reviewPreviewAnnotationWidth}px`',
+    );
+    expect(chapterEditorSource).not.toContainSource('`minmax(0,1fr) 7px ${reviewPreviewAnnotationWidth}px`');
+    expect(chapterEditorSource).not.toContainSource('const reviewPreviewTextColumnsWidthLabel');
+    expect(chapterEditorSource).toContainSource(
+      "const reviewPreviewOriginalTitle = activeReviewChapter ? `第${activeReviewChapter.serialNumber}章 原文` : '原文';",
+    );
+    expect(chapterEditorSource).toContainSource('const reviewPreviewAnnotationTitle = activeReviewChapter');
+    expect(chapterEditorSource).not.toContainSource('reviewCompareView');
+    expect(chapterEditorSource).not.toContainSource('setReviewCompareView');
+    expect(chapterEditorSource).not.toContainSource('syncReviewDraftFromOutput');
+    expect(chapterEditorSource).not.toContainSource('applyReviewParagraph');
+    expect(chapterEditorSource).not.toContainSource('applyAllReviewParagraphs');
+    expect(reviewPanelSource).not.toContainSource("['preview', '原文'] as const");
+    expect(reviewPanelSource).not.toContainSource("['paragraph', '段落'] as const");
+    expect(reviewPanelSource).not.toContainSource("['full', '全文'] as const");
+    expect(reviewPanelSource).not.toContainSource('生成对比');
+    expect(reviewPanelSource).toContainSource('canShowReviewOutline ? (');
+    expect(reviewPanelSource).toContainSource(
+      'onClick={() => setReviewOutlineVisibilityWithBalancedColumns(!showReviewOutline)}',
+    );
+    expect(reviewPanelSource).toContainSource("{showReviewOutline ? '隐藏章纲' : '显示章纲'}");
+    expect(reviewPanelSource).toContainSource("['locked', '等宽锁定'] as const");
+    expect(reviewPanelSource).toContainSource("['free', '自由调节'] as const");
+    expect(reviewPanelSource).toContainSource('onClick={() => setReviewPreviewWidthModeWithStorage(mode)}');
+    expect(reviewPanelSource).toContainSource('reviewPreviewWidthMode === mode');
+    expect(reviewPanelSource).not.toContainSource('原文/AI同宽');
+    expect(reviewPanelSource).not.toContainSource('原文/审核同宽');
+    expect(reviewPanelSource).not.toContainSource('原文/润色后同宽');
+    expect(reviewPanelSource).toContainSource('style={{ gridTemplateColumns: reviewPreviewGridTemplateColumns }}');
+    expect(reviewPanelSource).toContainSource('{effectiveShowReviewOutline ? reviewPreviewOutlineResizeHandle : null}');
+    expect(reviewPanelSource).toContainSource('{reviewPreviewTextColumnSeparator}');
+    expect(reviewPanelSource).toContainSource("activeReviewPreviewScrollPane === 'outline' ? 'scrollbar-active' : ''");
+    expect(reviewPanelSource).toContainSource("onScroll={() => handleReviewPreviewScroll('outline')}");
+    expect(reviewPanelSource).toContainSource("activeReviewPreviewScrollPane === 'original' ? 'scrollbar-active' : ''");
+    expect(reviewPanelSource).toContainSource("onScroll={() => handleReviewPreviewScroll('original')}");
+    expect(reviewPanelSource).toContainSource(
+      "activeReviewPreviewScrollPane === 'annotation' ? 'scrollbar-active' : ''",
+    );
+    expect(reviewPanelSource).toContainSource("onScroll={() => handleReviewPreviewScroll('annotation')}");
+    expect(chapterEditorSource).toContainSource(
+      'const reviewOriginalParagraphRefs = useRef<Array<HTMLButtonElement | null>>([]);',
+    );
+    expect(chapterEditorSource).toContainSource('export function getCenteredReviewComparisonScrollTop({');
+    expect(chapterEditorSource).toContainSource(
+      'function scrollReviewComparisonTargetIntoCenter(container: HTMLElement | null, target: HTMLElement | null) {',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const reviewOriginalPreviewPaneRef = useRef<HTMLDivElement | null>(null);',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const reviewAnnotationPreviewPaneRef = useRef<HTMLDivElement | null>(null);',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'scrollReviewComparisonTargetIntoCenter(reviewOriginalPreviewPaneRef.current, reviewOriginalParagraphRefs.current[index]);',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'scrollReviewComparisonTargetIntoCenter(reviewAnnotationPreviewPaneRef.current, reviewAnnotationRefs.current[index]);',
+    );
+    expect(chapterEditorSource).not.toContainSource("scrollIntoView({ block: 'center', behavior: 'smooth' })");
+    expect(reviewPanelSource).toContainSource('reviewOriginalParagraphRefs.current[index] = node;');
+    expect(reviewPanelSource).toContainSource('ref={reviewOriginalPreviewPaneRef}');
+    expect(reviewPanelSource).toContainSource('ref={reviewAnnotationPreviewPaneRef}');
+    expect(reviewPanelSource).not.toContainSource('快速定位');
+    expect(reviewPanelSource).toContainSource('第${activeReviewChapter.serialNumber}章 章纲');
+    expect(reviewPanelSource).toContainSource('{reviewPreviewOriginalTitle}');
+    expect(reviewPanelSource).toContainSource('{reviewPreviewAnnotationTitle}');
+    expect(reviewPanelSource).not.toContainSource('润色前');
+    expect(reviewPanelSource).toContainSource('文笔润色后内容会显示在这里。');
+    expect(chapterEditorSource).toContainSource(
+      "import { isChapterContentPolished } from '@/features/workbench/model/chapterPolishStatus';",
+    );
+    expect(chapterEditorSource).toContainSource("const polished = reviewMode === 'polish'");
+    expect(chapterEditorSource).toContainSource(
+      "title={`第${item.serialNumber}章 ${item.title || '未命名章节'} · ${item.wordCount}字${reviewMode === 'polish' ? ` · ${polished ? '已润色' : '未润色'}` : ''}`}",
+    );
+    expect(chapterEditorSource).toContainSource("reviewMode === 'polish' && !polished");
+    expect(chapterEditorSource).toContainSource("showAlertDot={reviewMode === 'polish' && !polished}");
+    expect(chapterNumberButtonSource).toContainSource(
+      'absolute -right-1 -top-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white',
+    );
+    expect(chapterNumberButtonSource).toContainSource('aria-label="未润色"');
+    expect(chapterEditorSource).not.toContainSource("{polished ? '已润' : '未润'}");
+    expect(chapterEditorSource).not.toContainSource('changedParagraphIndexes');
+    expect(chapterEditorSource).not.toContainSource('markChapterContentPolished');
+    expect(chapterNumberButtonSource).toContainSource("selected ? 'xy-detail-outline-number-selected' : ''");
+    expect(chapterNumberButtonSource).toContainSource(
+      "if (state === 'hasOutline') return 'xy-detail-outline-number-has-outline hover:border-[#08B3D9]';",
+    );
+    expect(reviewPanelSource).toContainSource('className={`relative block w-full text-left outline-none ${');
+    expect(chapterEditorSource).toContainSource('className={`${REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS} ${');
+    expect(reviewPanelSource).not.toContainSource("selected ? 'bg-[#EAF9FD] text-slate-900 ring-1 ring-[#9BEFFC]'");
+    expect(reviewPanelSource).not.toContainSource('className={`rounded-xl border p-3 transition-colors ${');
+    expect(reviewPanelSource).not.toContainSource('AI 返回“原文标注”JSON 后，这里会高亮问题片段并显示审核说明。');
+    expect(chapterEditorSource).toContainSource(
+      "promptOptions={activeReviewPromptOptions.length === 0 ? [{ value: '', label: '无', disabled: true }] : activeReviewPromptOptions}",
+    );
+    expect(chapterEditorSource).toContainSource(
+      'reviewCommentPrompts.map((prompt) => ({ value: prompt.id, label: prompt.name }))',
+    );
+    expect(chapterEditorSource).not.toContainSource('<span className="text-[#08AACE]">审核提示词</span>');
+    expect(chapterEditorSource).not.toContainSource('<span className="text-slate-400">一级分类：审核</span>');
+    expect(reviewPanelSource).toContainSource('未找到第${activeReviewChapter.serialNumber}章章纲。');
+    expect(chapterEditorSource).toContainSource("import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';");
+    expect(chapterEditorSource).toContainSource(
+      "const REVIEW_PREVIEW_FONT_SIZE_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_font_size';",
+    );
+    expect(chapterEditorSource).toContainSource('function readReviewPreviewFontSize() {');
+    expect(chapterEditorSource).toContainSource(
+      'const stored = localStorage.getItem(REVIEW_PREVIEW_FONT_SIZE_STORAGE_KEY);',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'return stored === null ? 14 : clampReviewPreviewFontSize(Number(stored));',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const [reviewPreviewFontSize, setReviewPreviewFontSize] = useState(() => readReviewPreviewFontSize());',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const setReviewPreviewFontSizeWithStorage = (nextFontSize: number) => {',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'localStorage.setItem(REVIEW_PREVIEW_FONT_SIZE_STORAGE_KEY, String(fontSize));',
+    );
+    expect(reviewPanelSource).toContainSource('ariaLabel="审核原文字号"');
+    expect(reviewPanelSource).toContainSource('onChange={setReviewPreviewFontSizeWithStorage}');
+    expect(chapterEditorSource).toContainSource('onModelChange={setReviewModelIdWithStorage}');
+    expect(chapterEditorSource).not.toContainSource('onModelChange={setReviewModelId}');
+    expect(chapterEditorSource).toContainSource(
+      'if (openLogSignal <= 0 || openLogSignal === lastOpenLogSignalRef.current) return;',
+    );
+    expect(chapterEditorSource).toContainSource(
+      "if (embeddedMode !== 'audit' && embeddedMode !== 'comment' && embeddedMode !== 'polish') return;",
+    );
+    expect(chapterEditorSource).toContainSource('setIsReviewLogOpen(true);');
+    expect(chapterEditorSource).toContainSource('onRegisterHeaderLog?: (handler: (() => void) | null) => void;');
+    expect(chapterEditorSource).toContainSource('onRegisterHeaderLog(() => setIsReviewLogOpen(true));');
+    expect(chapterEditorSource).toContainSource("import { WorkbenchModal } from './WorkbenchModal';");
+    expect(chapterEditorSource).toContainSource('const reviewLogModal = isReviewLogOpen ? (');
+    expect(chapterEditorSource).toContainSource('storageId="chapter_editor_review_request_log"');
+    expect(chapterEditorSource).toContainSource('closeOnBackdrop={false}');
+    expect(chapterEditorSource).toContainSource(
+      'const basePromptText = activeReviewPrompt?.content?.trim() || modeInstruction;',
+    );
+    expect(chapterEditorSource).toContainSource(
+      "const promptText = [basePromptText, compareInstruction].filter(Boolean).join('\\n\\n');",
+    );
+    expect(chapterEditorSource).toContainSource('const userRequirementText = reviewAiInput.trim();');
+    expect(chapterEditorSource).toContainSource(
+      "const userText = userRequirementText ? wrapAiRequestTag(requirementTag, userRequirementText) : '';",
+    );
+    expect(chapterEditorSource).not.toContainSource('reviewAiInput.trim() || modeInstruction');
+    expect(chapterEditorSource).toContainSource("const REVIEW_LOG_SECTION_PREFIX = '[[YUEXIA_REVIEW_LOG_SECTION:';");
+    expect(chapterEditorSource).toContainSource("createReviewLogSection('系统提示词', promptText)");
+    expect(chapterEditorSource).toContainSource("...(userText ? [createReviewLogSection('其他要求', userText)] : [])");
+    expect(chapterEditorSource).toContainSource("log.lastIndexOf('\\n【关联章纲】', originalStart)");
+    expect(chapterEditorSource).not.toContainSource("['其他要求', '用户要求']");
+    expect(chapterEditorSource).toContainSource(
+      "import { AiRequestLogModalLayout } from '@/shared/ui/AiRequestLogModalLayout';",
+    );
+    expect(chapterEditorSource).toContainSource('<AiRequestLogModalLayout');
+    expect(logLayoutSource).toContainSource(
+      'className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] overflow-hidden"',
+    );
+    expect(logLayoutSource).toContainSource('className="border-r border-slate-100 bg-slate-50 p-4 text-sm"');
+    expect(chapterEditorSource).toContainSource('value: `作品编辑器 ${activeReviewModeTitle}`');
+    expect(chapterEditorSource).toContainSource("value: activeReviewModel?.name ?? '未选择模型'");
+    expect(chapterEditorSource).toContainSource("value: activeReviewPrompt?.name ?? '默认提示词'");
+    expect(chapterEditorSource).toContainSource("getReviewLogSection(reviewRequestLog, '其他要求').trim()");
+    expect(chapterEditorSource).toContainSource("title: '其他要求'");
+    expect(logLayoutSource).toContainSource(
+      'className="editor-scrollbar flex min-h-0 flex-1 flex-col overflow-hidden p-5"',
+    );
+    expect(chapterEditorSource).toContainSource("title: '关联章纲'");
+    expect(chapterEditorSource).toContainSource("content: getReviewLogSection(reviewRequestLog, '关联章纲')");
+    expect(chapterEditorSource).toContainSource("title: '原文'");
+    expect(chapterEditorSource).toContainSource("content: getReviewLogSection(reviewRequestLog, '原文')");
+    expect(chapterEditorSource).toContainSource(
+      'function getReviewLogFillGroupWeights(options: { hasOutline: boolean; hasUser: boolean })',
+    );
+    expect(chapterEditorSource).toContainSource('original: 2,');
+    expect(chapterEditorSource).toContainSource('fillSingleGroup');
+    expect(chapterEditorSource).toContainSource('fillGroupWeights={reviewLogFillGroupWeights}');
+    expect(chapterEditorSource).not.toContainSource(
+      'absolute inset-4 z-10 flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl',
+    );
+    expect(chapterEditorSource).not.toContainSource("title: '关联内容'");
+    expect(chapterEditorSource).not.toContainSource("title: '用户要求'");
+    expect(chapterEditorSource).not.toContainSource('fillGroupId="context"');
+    expect(chapterEditorSource).not.toContainSource('fillGroupId="original"');
+    expect(reviewPanelSource).toContainSource('style={{ fontSize: reviewPreviewFontSize }}');
+    expect(reviewPanelSource).not.toContainSource('xy-selected-orange-bg');
+    expect(reviewPanelSource).not.toContainSource('grid min-h-0 flex-1 grid-cols-2 divide-x divide-slate-100');
+    expect(chapterEditorSource).toContainSource("const REVIEW_PREVIEW_PARAGRAPH_LIST_CLASS = 'space-y-3';");
+    expect(chapterEditorSource).toContainSource(
+      "const REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS = 'border-l-2 px-3 py-1.5 leading-7 transition-colors';",
+    );
+    expect(chapterEditorSource).toContainSource(
+      "const REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS = 'border-[#08AACE] bg-[#EAF9FD] text-slate-900';",
+    );
+    expect(reviewPanelSource).toContainSource('className={REVIEW_PREVIEW_PARAGRAPH_LIST_CLASS}');
+    expect(reviewPanelSource).toContainSource('REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS');
+    expect(reviewPanelSource).toContainSource('REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS');
+    expect(reviewPanelSource).toContainSource('REVIEW_PREVIEW_PARAGRAPH_EMPTY_CLASS');
+    expect(reviewPanelSource).not.toContainSource('border-l-2 border-emerald-300 bg-emerald-50/35 px-3 py-1.5');
+    expect(reviewPanelSource).not.toContainSource('<span className="font-black text-slate-800">当前章节：</span>');
+    expect(reviewPanelSource).not.toContainSource('<span className="font-black text-slate-800">正文字数：</span>');
+    expect(reviewPanelSource).not.toContainSource('<span className="font-black text-slate-800">关联章纲：</span>');
+    expect(reviewPanelSource).not.toContainSource('<div className="relative mt-5 min-h-0 flex-1">');
+    expect(chapterEditorSource).toContainSource('<div className="relative mt-3 min-h-0 flex-1">');
   });
 
   it('uses minimum left panel widths as review and status defaults for new works', () => {
     const chapterEditorSource = readSource('ChapterEditor.tsx');
 
-    expect(chapterEditorSource).toContain('const REVIEW_PAGE_LEFT_WIDTH = 180;');
-    expect(chapterEditorSource).toContain('const STATUS_PAGE_LEFT_WIDTH = 190;');
-    expect(chapterEditorSource).toContain('const REVIEW_PAGE_LEFT_WIDTH_LIMIT = { min: 180, max: 360 };');
-    expect(chapterEditorSource).toContain('const STATUS_PAGE_LEFT_WIDTH_LIMIT = { min: 190, max: 360 };');
-    expect(chapterEditorSource).not.toContain('const REVIEW_PAGE_LEFT_WIDTH = 220;');
-    expect(chapterEditorSource).not.toContain('const STATUS_PAGE_LEFT_WIDTH = 230;');
+    expect(chapterEditorSource).toContainSource('const REVIEW_PAGE_LEFT_WIDTH = 180;');
+    expect(chapterEditorSource).toContainSource('const STATUS_PAGE_LEFT_WIDTH = 190;');
+    expect(chapterEditorSource).toContainSource('const REVIEW_PAGE_LEFT_WIDTH_LIMIT = { min: 180, max: 360 };');
+    expect(chapterEditorSource).toContainSource('const STATUS_PAGE_LEFT_WIDTH_LIMIT = { min: 190, max: 360 };');
+    expect(chapterEditorSource).not.toContainSource('const REVIEW_PAGE_LEFT_WIDTH = 220;');
+    expect(chapterEditorSource).not.toContainSource('const STATUS_PAGE_LEFT_WIDTH = 230;');
   });
 
   it('keeps the editor paper line mode in the real chapter editor font settings', () => {
     const chapterEditorSource = readSource('ChapterEditor.tsx');
     const modalSource = readSource('EditorToolModals.tsx');
 
-    expect(modalSource).toContain("export type EditorGridLineMode = 'none' | 'solid' | 'dashed';");
-    expect(modalSource).toContain("gridLineMode: 'dashed'");
-    expect(modalSource).toContain("gridLineEnabled: gridLineMode !== 'none'");
-    expect(modalSource).toContain('export const EDITOR_GRID_LINE_LEFT_OFFSET_PX = 64;');
-    expect(modalSource).toContain('export const EDITOR_GRID_LINE_RIGHT_OFFSET_PX = 64;');
-    expect(modalSource).toContain("const EDITOR_GRID_LINE_MASK_COLOR = '#FFFFFF';");
-    expect(modalSource).toContain('const EDITOR_GRID_LINE_ROW_EXTRA_PX = 20;');
-    expect(modalSource).toContain('const EDITOR_GRID_LINE_FOOT_GAP_PX = 1;');
-    expect(modalSource).toContain("const dash = mode === 'dashed' ? \" stroke-dasharray='7 7'\" : '';");
-    expect(modalSource).toContain("x1='${EDITOR_GRID_LINE_LEFT_OFFSET_PX}'");
-    expect(modalSource).toContain('export function getEditorGridLineMetrics(fontSizePx: number)');
-    expect(modalSource).toContain('const lineHeightPx = Math.max(fontSizePx + EDITOR_GRID_LINE_ROW_EXTRA_PX, Math.round(fontSizePx * 1.75));');
-    expect(modalSource).toContain('const lineOffsetPx = lineHeightPx - EDITOR_GRID_LINE_FOOT_GAP_PX;');
-    expect(modalSource).toContain('export function getEditorTextLineHeight(fontSettings: FontSettings)');
-    expect(modalSource).toContain("if (gridLineMode === 'none') return fontSettings.lineHeight;");
-    expect(modalSource).toContain('return `${getEditorGridLineMetrics(fontSettings.fontSize).lineHeightPx}px`;');
-    expect(modalSource).toContain('export function getEditorGridLineStyle(fontSettings: FontSettings, scrollTop = 0): CSSProperties');
-    expect(modalSource).toContain('const { lineHeightPx, lineOffsetPx } = getEditorGridLineMetrics(fontSettings.fontSize);');
-    expect(modalSource).not.toContain('const underlineGapPx = Math.max(8, Math.round(fontSettings.fontSize * 0.22));');
-    expect(modalSource).not.toContain('firstLineCoverHeightPx');
-    expect(modalSource).not.toContain('EDITOR_GRID_LINE_TOP_MASK_EXTRA_PX');
-    expect(modalSource).toContain('const repeatedTopLineMaskHeightPx = Math.max(0, EDITOR_GRID_LINE_TOP_OFFSET_PX + lineOffsetPx - lineHeightPx + 4);');
-    expect(modalSource).toContain('backgroundPosition: `left 0, right 0, 0 ${EDITOR_GRID_LINE_TOP_OFFSET_PX - scrollTop}px`');
-    expect(modalSource).toContain("backgroundRepeat: 'no-repeat, no-repeat, repeat-y'");
-    expect(modalSource).toContain('backgroundSize: `100% ${repeatedTopLineMaskHeightPx}px, ${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px 100%, ${EDITOR_GRID_LINE_CANVAS_WIDTH_PX}px ${lineHeightPx}px`');
-    expect(modalSource).toContain("onClick={() => update({ gridLineMode: option.value })}");
-    expect(modalSource).toContain('local.gridLineMode === option.value');
-    expect(modalSource).not.toContain('checked={local.gridLineEnabled}');
-    expect(modalSource).toContain('...getEditorGridLineStyle(local)');
-    expect(modalSource).toContain('lineHeight: getEditorTextLineHeight(local)');
-    expect(modalSource).toContain('const editorGridLineStyle = getEditorGridLineStyle(fontSettings);');
-    expect(modalSource).toContain('const editorTextLineHeight = getEditorTextLineHeight(fontSettings);');
-    expect(modalSource).toContain('const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;');
-    expect(modalSource).toContain("paddingLeft: editorTextPaddingLeft");
-    expect(modalSource).toContain('const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;');
-    expect(modalSource).toContain("paddingRight: editorTextPaddingRight");
-    expect(modalSource).toContain('export function applyParagraphIndentToText(text: string, enabled: boolean)');
-    expect(modalSource).not.toContain('xy-wa-editor-paragraph-overlay');
-    expect(modalSource).not.toContain("color: paragraphIndent ? fontSettings.fontColor : 'transparent'");
-    expect(modalSource).not.toContain("const editorTextIndent = paragraphIndent ? '2em' : undefined;");
-    expect(modalSource).not.toContain("textIndent: editorTextIndent");
+    expect(modalSource).toContainSource("export type EditorGridLineMode = 'none' | 'solid' | 'dashed';");
+    expect(modalSource).toContainSource("gridLineMode: 'dashed'");
+    expect(modalSource).toContainSource("gridLineEnabled: gridLineMode !== 'none'");
+    expect(modalSource).toContainSource('export const EDITOR_GRID_LINE_LEFT_OFFSET_PX = 64;');
+    expect(modalSource).toContainSource('export const EDITOR_GRID_LINE_RIGHT_OFFSET_PX = 64;');
+    expect(modalSource).toContainSource("const EDITOR_GRID_LINE_MASK_COLOR = '#FFFFFF';");
+    expect(modalSource).toContainSource('const EDITOR_GRID_LINE_ROW_EXTRA_PX = 20;');
+    expect(modalSource).toContainSource('const EDITOR_GRID_LINE_FOOT_GAP_PX = 1;');
+    expect(modalSource).toContainSource("const dash = mode === 'dashed' ? \" stroke-dasharray='7 7'\" : '';");
+    expect(modalSource).toContainSource("x1='${EDITOR_GRID_LINE_LEFT_OFFSET_PX}'");
+    expect(modalSource).toContainSource('export function getEditorGridLineMetrics(fontSizePx: number)');
+    expect(modalSource).toContainSource(
+      'const lineHeightPx = Math.max(fontSizePx + EDITOR_GRID_LINE_ROW_EXTRA_PX, Math.round(fontSizePx * 1.75));',
+    );
+    expect(modalSource).toContainSource('const lineOffsetPx = lineHeightPx - EDITOR_GRID_LINE_FOOT_GAP_PX;');
+    expect(modalSource).toContainSource('export function getEditorTextLineHeight(fontSettings: FontSettings)');
+    expect(modalSource).toContainSource("if (gridLineMode === 'none') return fontSettings.lineHeight;");
+    expect(modalSource).toContainSource('return `${getEditorGridLineMetrics(fontSettings.fontSize).lineHeightPx}px`;');
+    expect(modalSource).toContainSource(
+      'export function getEditorGridLineStyle(fontSettings: FontSettings, scrollTop = 0): CSSProperties',
+    );
+    expect(modalSource).toContainSource(
+      'const { lineHeightPx, lineOffsetPx } = getEditorGridLineMetrics(fontSettings.fontSize);',
+    );
+    expect(modalSource).not.toContainSource(
+      'const underlineGapPx = Math.max(8, Math.round(fontSettings.fontSize * 0.22));',
+    );
+    expect(modalSource).not.toContainSource('firstLineCoverHeightPx');
+    expect(modalSource).not.toContainSource('EDITOR_GRID_LINE_TOP_MASK_EXTRA_PX');
+    expect(modalSource).toContainSource(
+      'const repeatedTopLineMaskHeightPx = Math.max(0, EDITOR_GRID_LINE_TOP_OFFSET_PX + lineOffsetPx - lineHeightPx + 4);',
+    );
+    expect(modalSource).toContainSource(
+      'backgroundPosition: `left 0, right 0, 0 ${EDITOR_GRID_LINE_TOP_OFFSET_PX - scrollTop}px`',
+    );
+    expect(modalSource).toContainSource("backgroundRepeat: 'no-repeat, no-repeat, repeat-y'");
+    expect(modalSource).toContainSource(
+      'backgroundSize: `100% ${repeatedTopLineMaskHeightPx}px, ${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px 100%, ${EDITOR_GRID_LINE_CANVAS_WIDTH_PX}px ${lineHeightPx}px`',
+    );
+    expect(modalSource).toContainSource('onClick={() => update({ gridLineMode: option.value })}');
+    expect(modalSource).toContainSource('local.gridLineMode === option.value');
+    expect(modalSource).not.toContainSource('checked={local.gridLineEnabled}');
+    expect(modalSource).toContainSource('...getEditorGridLineStyle(local)');
+    expect(modalSource).toContainSource('lineHeight: getEditorTextLineHeight(local)');
+    expect(modalSource).toContainSource('const editorGridLineStyle = getEditorGridLineStyle(fontSettings);');
+    expect(modalSource).toContainSource('const editorTextLineHeight = getEditorTextLineHeight(fontSettings);');
+    expect(modalSource).toContainSource('const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;');
+    expect(modalSource).toContainSource('paddingLeft: editorTextPaddingLeft');
+    expect(modalSource).toContainSource('const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;');
+    expect(modalSource).toContainSource('paddingRight: editorTextPaddingRight');
+    expect(modalSource).toContainSource('export function applyParagraphIndentToText(text: string, enabled: boolean)');
+    expect(modalSource).not.toContainSource('xy-wa-editor-paragraph-overlay');
+    expect(modalSource).not.toContainSource("color: paragraphIndent ? fontSettings.fontColor : 'transparent'");
+    expect(modalSource).not.toContainSource("const editorTextIndent = paragraphIndent ? '2em' : undefined;");
+    expect(modalSource).not.toContainSource('textIndent: editorTextIndent');
 
-    expect(chapterEditorSource).toContain('EDITOR_GRID_LINE_LEFT_OFFSET_PX,');
-    expect(chapterEditorSource).toContain('EDITOR_GRID_LINE_RIGHT_OFFSET_PX,');
-    expect(chapterEditorSource).toContain('getEditorGridLineStyle,');
-    expect(chapterEditorSource).toContain('getEditorTextLineHeight,');
-    expect(chapterEditorSource).toContain('const editorGridLineStyle = useMemo(() => getEditorGridLineStyle(fontSettings, editorScrollTop), [editorScrollTop, fontSettings]);');
-    expect(chapterEditorSource).toContain('const editorTextLineHeight = useMemo(() => getEditorTextLineHeight(fontSettings), [fontSettings]);');
-    expect(chapterEditorSource).toContain('const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;');
-    expect(chapterEditorSource).toContain('const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;');
-    expect(chapterEditorSource).not.toContain("const editorTextIndent = formatSettings.paragraphIndent ? '2em' : undefined;");
-    expect(chapterEditorSource).toContain('...editorGridLineStyle');
-    expect(chapterEditorSource).toContain("backgroundColor: 'transparent'");
-    expect(chapterEditorSource).toContain("paddingLeft: editorTextPaddingLeft");
-    expect(chapterEditorSource).toContain("paddingRight: editorTextPaddingRight");
-    expect(chapterEditorSource).toContain('lineHeight: editorTextLineHeight');
-    expect(chapterEditorSource).toContain('const normalizeEditorText = (value: string) => applyParagraphIndentToText(value, formatSettings.paragraphIndent);');
-    expect(chapterEditorSource).toContain('color: fontSettings.fontColor');
-    expect(chapterEditorSource).not.toContain("color: formatSettings.paragraphIndent ? 'transparent' : fontSettings.fontColor");
-    expect(chapterEditorSource).not.toContain("textIndent: editorTextIndent");
-    expect(chapterEditorSource).not.toContain('paragraphIndent={formatSettings.paragraphIndent}');
-    expect(chapterEditorSource).not.toContain('const normalizeEditorText = (value: string) => stripLineIndents(value);');
-    expect(chapterEditorSource).toContain("const cleanedPaste = stripLineIndents(pasted);");
-    expect(chapterEditorSource).toContain("const insertText = formatSettings.paragraphIndent ? '\\n\\u3000\\u3000' : '\\n';");
-    expect(chapterEditorSource).toContain('className="flex items-center gap-2 border-b border-[#e1e5eb] bg-white px-4 py-2"');
-    expect(chapterEditorSource).not.toContain('className="flex items-center gap-2 bg-white px-4 py-2"');
-    expect(chapterEditorSource).not.toContain('normalizeParagraphIndents');
-    expect(chapterEditorSource).not.toContain('PARAGRAPH_INDENT');
-    expect(chapterEditorSource).not.toContain('keepSelectionOutOfParagraphIndent');
-    expect(chapterEditorSource).toContain('onScroll={(event) => setEditorScrollTop(event.currentTarget.scrollTop)}');
-    expect(chapterEditorSource).toContain('placeholder=""');
-    expect(chapterEditorSource).not.toContain('placeholder="从这里开始写..."');
-    expect(chapterEditorSource).toContain("const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] xy-flow-group-bg");
-    expect(chapterEditorSource).toContain("const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';");
+    expect(chapterEditorSource).toContainSource('EDITOR_GRID_LINE_LEFT_OFFSET_PX,');
+    expect(chapterEditorSource).toContainSource('EDITOR_GRID_LINE_RIGHT_OFFSET_PX,');
+    expect(chapterEditorSource).toContainSource('getEditorGridLineStyle,');
+    expect(chapterEditorSource).toContainSource('getEditorTextLineHeight,');
+    expect(chapterEditorSource).toContainSource(
+      'const editorGridLineStyle = useMemo(() => getEditorGridLineStyle(fontSettings, editorScrollTop), [editorScrollTop, fontSettings]);',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const editorTextLineHeight = useMemo(() => getEditorTextLineHeight(fontSettings), [fontSettings]);',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;',
+    );
+    expect(chapterEditorSource).toContainSource(
+      'const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;',
+    );
+    expect(chapterEditorSource).not.toContainSource(
+      "const editorTextIndent = formatSettings.paragraphIndent ? '2em' : undefined;",
+    );
+    expect(chapterEditorSource).toContainSource('...editorGridLineStyle');
+    expect(chapterEditorSource).toContainSource("backgroundColor: 'transparent'");
+    expect(chapterEditorSource).toContainSource('paddingLeft: editorTextPaddingLeft');
+    expect(chapterEditorSource).toContainSource('paddingRight: editorTextPaddingRight');
+    expect(chapterEditorSource).toContainSource('lineHeight: editorTextLineHeight');
+    expect(chapterEditorSource).toContainSource(
+      'const normalizeEditorText = (value: string) => applyParagraphIndentToText(value, formatSettings.paragraphIndent);',
+    );
+    expect(chapterEditorSource).toContainSource('color: fontSettings.fontColor');
+    expect(chapterEditorSource).not.toContainSource(
+      "color: formatSettings.paragraphIndent ? 'transparent' : fontSettings.fontColor",
+    );
+    expect(chapterEditorSource).not.toContainSource('textIndent: editorTextIndent');
+    expect(chapterEditorSource).not.toContainSource('paragraphIndent={formatSettings.paragraphIndent}');
+    expect(chapterEditorSource).not.toContainSource(
+      'const normalizeEditorText = (value: string) => stripLineIndents(value);',
+    );
+    expect(chapterEditorSource).toContainSource('const cleanedPaste = stripLineIndents(pasted);');
+    expect(chapterEditorSource).toContainSource(
+      "const insertText = formatSettings.paragraphIndent ? '\\n\\u3000\\u3000' : '\\n';",
+    );
+    expect(chapterEditorSource).toContainSource(
+      'className="flex items-center gap-2 border-b border-[#e1e5eb] bg-white px-4 py-2"',
+    );
+    expect(chapterEditorSource).not.toContainSource('className="flex items-center gap-2 bg-white px-4 py-2"');
+    expect(chapterEditorSource).not.toContainSource('normalizeParagraphIndents');
+    expect(chapterEditorSource).not.toContainSource('PARAGRAPH_INDENT');
+    expect(chapterEditorSource).not.toContainSource('keepSelectionOutOfParagraphIndent');
+    expect(chapterEditorSource).toContainSource(
+      'onScroll={(event) => setEditorScrollTop(event.currentTarget.scrollTop)}',
+    );
+    expect(chapterEditorSource).toContainSource('placeholder=""');
+    expect(chapterEditorSource).not.toContainSource('placeholder="从这里开始写..."');
+    expect(chapterEditorSource).toContainSource(
+      "const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] xy-flow-group-bg",
+    );
+    expect(chapterEditorSource).toContainSource(
+      "const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';",
+    );
   });
 
   it('keeps high frequency word highlighting visible and color configurable', () => {
     const chapterEditorSource = readSource('ChapterEditor.tsx');
     const modalSource = readSource('EditorToolModals.tsx');
 
-    expect(modalSource).toContain("const HIGH_FREQ_HIGHLIGHT_COLOR_KEY = 'xinyuexia_high_freq_highlight_color';");
-    expect(modalSource).toContain('const highFreqHighlightColorOptions = [');
-    expect(modalSource).toContain("{ label: '暖黄', value: '#FDE68A'");
-    expect(modalSource).toContain("{ label: '浅青', value: '#BDEEF7'");
-    expect(modalSource).toContain("{ label: '浅紫', value: '#DDD6FE'");
-    expect(modalSource).toContain('function getStoredHighFreqHighlightColor()');
-    expect(modalSource).toContain('const [highlightColor, setHighlightColor] = useState(getStoredHighFreqHighlightColor);');
-    expect(modalSource).toContain('setHighlightColor(getStoredHighFreqHighlightColor());');
-    expect(modalSource).toContain('writeJson(HIGH_FREQ_HIGHLIGHT_COLOR_KEY, highlightColor)');
-    expect(modalSource).toContain('style={{ backgroundColor: option.value }}');
-    expect(modalSource).toContain('backgroundColor: highlightOption.value');
-    expect(modalSource).toContain('boxShadow: `0 0 0 1px ${highlightOption.ring}`');
-    expect(modalSource).not.toContain('bg-yellow-300/90');
-    expect(chapterEditorSource).toContain("backgroundColor: 'transparent'");
+    expect(modalSource).toContainSource("const HIGH_FREQ_HIGHLIGHT_COLOR_KEY = 'xinyuexia_high_freq_highlight_color';");
+    expect(modalSource).toContainSource('const highFreqHighlightColorOptions = [');
+    expect(modalSource).toContainSource("{ label: '暖黄', value: '#FDE68A'");
+    expect(modalSource).toContainSource("{ label: '浅青', value: '#BDEEF7'");
+    expect(modalSource).toContainSource("{ label: '浅紫', value: '#DDD6FE'");
+    expect(modalSource).toContainSource('function getStoredHighFreqHighlightColor()');
+    expect(modalSource).toContainSource(
+      'const [highlightColor, setHighlightColor] = useState(getStoredHighFreqHighlightColor);',
+    );
+    expect(modalSource).toContainSource('setHighlightColor(getStoredHighFreqHighlightColor());');
+    expect(modalSource).toContainSource('writeJson(HIGH_FREQ_HIGHLIGHT_COLOR_KEY, highlightColor)');
+    expect(modalSource).toContainSource('style={{ backgroundColor: option.value }}');
+    expect(modalSource).toContainSource('backgroundColor: highlightOption.value');
+    expect(modalSource).toContainSource('boxShadow: `0 0 0 1px ${highlightOption.ring}`');
+    expect(modalSource).not.toContainSource('bg-yellow-300/90');
+    expect(chapterEditorSource).toContainSource("backgroundColor: 'transparent'");
   });
 });

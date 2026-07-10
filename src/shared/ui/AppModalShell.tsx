@@ -80,9 +80,15 @@ export function AppModalShell({
         >
           <div className="min-w-0 shrink-0 cursor-move">
             <h2 className={`truncate font-bold text-gray-900 ${titleClassName}`}>{title}</h2>
-            {subtitle ? <div className="mt-0.5 max-w-[420px] truncate text-xs font-bold text-slate-400">{subtitle}</div> : null}
+            {subtitle ? (
+              <div className="mt-0.5 max-w-[420px] truncate text-xs font-bold text-slate-400">{subtitle}</div>
+            ) : null}
           </div>
-          <div id="app-modal-header-extra" data-no-modal-drag="true" className="flex min-w-0 flex-1 items-center justify-end">
+          <div
+            id="app-modal-header-extra"
+            data-no-modal-drag="true"
+            className="flex min-w-0 flex-1 items-center justify-end"
+          >
             {headerExtra}
           </div>
           <button

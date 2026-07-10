@@ -14,14 +14,6 @@ const SURFACE_CLASS: Record<SettingsSurfaceMode, string> = {
   embedded: 'h-full min-h-0 overflow-hidden',
 };
 
-export function SettingsSurface({
-  children,
-  mode = 'page',
-  className = '',
-}: SettingsSurfaceProps) {
-  return (
-    <div className={`${SURFACE_CLASS[mode]} ${className}`}>
-      {children}
-    </div>
-  );
+export function SettingsSurface({ children, mode = 'page', className = '' }: SettingsSurfaceProps) {
+  return <div className={`${SURFACE_CLASS[mode]} ${className}`}>{children}</div>;
 }

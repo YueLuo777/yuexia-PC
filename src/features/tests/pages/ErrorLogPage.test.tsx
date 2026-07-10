@@ -13,12 +13,14 @@ describe('ErrorLogPage source organization', () => {
     const entriesSource = readSource('../model/errorLogEntries.ts');
     const generatedEntriesSource = readSource('../model/errorLogDefaultEntries.generated.ts');
 
-    expect(pageSource).toContain("import { loadDefaultErrorLogEntries, type ErrorLogEntry } from '@/features/tests/model/errorLogEntries'");
-    expect(pageSource).not.toContain("import { defaultEntries");
-    expect(pageSource).not.toContain('const defaultEntries: ErrorLogEntry[] = [');
-    expect(entriesSource).toContain("export type { ErrorLogEntry } from './errorLogEntryTypes';");
-    expect(entriesSource).toContain('export async function loadDefaultErrorLogEntries()');
-    expect(entriesSource).not.toContain('export const defaultEntries: ErrorLogEntry[] = [');
-    expect(generatedEntriesSource).toContain('export const defaultEntries: ErrorLogEntry[] = [');
+    expect(pageSource).toContainSource(
+      "import { loadDefaultErrorLogEntries, type ErrorLogEntry } from '@/features/tests/model/errorLogEntries'",
+    );
+    expect(pageSource).not.toContainSource('import { defaultEntries');
+    expect(pageSource).not.toContainSource('const defaultEntries: ErrorLogEntry[] = [');
+    expect(entriesSource).toContainSource("export type { ErrorLogEntry } from './errorLogEntryTypes';");
+    expect(entriesSource).toContainSource('export async function loadDefaultErrorLogEntries()');
+    expect(entriesSource).not.toContainSource('export const defaultEntries: ErrorLogEntry[] = [');
+    expect(generatedEntriesSource).toContainSource('export const defaultEntries: ErrorLogEntry[] = [');
   });
 });

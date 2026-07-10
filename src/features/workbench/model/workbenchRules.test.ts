@@ -10,8 +10,18 @@ describe('workbenchRules', () => {
 
   it('finds the selected chapter with its volume context', () => {
     const volumes: Volume[] = [
-      { id: 1, name: 'A', isExpanded: true, chapters: [{ id: 10, title: '', serialNumber: 1, wordCount: 0, isSelected: false }] },
-      { id: 2, name: 'B', isExpanded: true, chapters: [{ id: 20, title: '', serialNumber: 2, wordCount: 0, isSelected: true }] },
+      {
+        id: 1,
+        name: 'A',
+        isExpanded: true,
+        chapters: [{ id: 10, title: '', serialNumber: 1, wordCount: 0, isSelected: false }],
+      },
+      {
+        id: 2,
+        name: 'B',
+        isExpanded: true,
+        chapters: [{ id: 20, title: '', serialNumber: 2, wordCount: 0, isSelected: true }],
+      },
     ];
 
     expect(getSelectedChapter(volumes)).toEqual({
@@ -24,7 +34,12 @@ describe('workbenchRules', () => {
   it('selects the first available chapter when none are selected', () => {
     const volumes: Volume[] = [
       { id: 1, name: 'A', isExpanded: true, chapters: [] },
-      { id: 2, name: 'B', isExpanded: true, chapters: [{ id: 20, title: '', serialNumber: 1, wordCount: 0, isSelected: false }] },
+      {
+        id: 2,
+        name: 'B',
+        isExpanded: true,
+        chapters: [{ id: 20, title: '', serialNumber: 1, wordCount: 0, isSelected: false }],
+      },
     ];
 
     expect(ensureOneSelected(volumes)[1].chapters[0].isSelected).toBe(true);
@@ -32,11 +47,20 @@ describe('workbenchRules', () => {
 
   it('keeps an existing selected chapter unchanged', () => {
     const volumes: Volume[] = [
-      { id: 1, name: 'A', isExpanded: true, chapters: [{ id: 10, title: '', serialNumber: 1, wordCount: 0, isSelected: true }] },
-      { id: 2, name: 'B', isExpanded: true, chapters: [{ id: 20, title: '', serialNumber: 2, wordCount: 0, isSelected: false }] },
+      {
+        id: 1,
+        name: 'A',
+        isExpanded: true,
+        chapters: [{ id: 10, title: '', serialNumber: 1, wordCount: 0, isSelected: true }],
+      },
+      {
+        id: 2,
+        name: 'B',
+        isExpanded: true,
+        chapters: [{ id: 20, title: '', serialNumber: 2, wordCount: 0, isSelected: false }],
+      },
     ];
 
     expect(ensureOneSelected(volumes)).toEqual(volumes);
   });
 });
-

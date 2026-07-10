@@ -21,9 +21,9 @@ function readChapterPolishStatusMap(storageKey: string): ChapterPolishStatusMap 
     const parsed = JSON.parse(localStorage.getItem(getChapterPolishStatusStorageKey(storageKey)) ?? '{}') as unknown;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
     return Object.fromEntries(
-      Object.entries(parsed as Record<string, unknown>).filter((entry): entry is [string, string] => (
-        typeof entry[0] === 'string' && typeof entry[1] === 'string'
-      )),
+      Object.entries(parsed as Record<string, unknown>).filter(
+        (entry): entry is [string, string] => typeof entry[0] === 'string' && typeof entry[1] === 'string',
+      ),
     );
   } catch {
     return {};
@@ -52,9 +52,12 @@ export function countUnpolishedChapters(
   volumes: Volume[],
   getChapterContent: (chapterId: number) => string,
 ) {
-  return volumes.reduce((sum, volume) => (
-    sum + volume.chapters.filter((chapter: Chapter) => (
-      !isChapterContentPolished(storageKey, chapter.id, getChapterContent(chapter.id))
-    )).length
-  ), 0);
+  return volumes.reduce(
+    (sum, volume) =>
+      sum +
+      volume.chapters.filter(
+        (chapter: Chapter) => !isChapterContentPolished(storageKey, chapter.id, getChapterContent(chapter.id)),
+      ).length,
+    0,
+  );
 }

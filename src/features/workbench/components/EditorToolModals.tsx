@@ -118,7 +118,11 @@ function normalizeFontSettings(value: Partial<FontSettings>): FontSettings {
   };
 }
 
-function buildEditorGridLineBackground(lineHeightPx: number, lineOffsetPx: number, mode: Exclude<EditorGridLineMode, 'none'>) {
+function buildEditorGridLineBackground(
+  lineHeightPx: number,
+  lineOffsetPx: number,
+  mode: Exclude<EditorGridLineMode, 'none'>,
+) {
   const stroke = encodeURIComponent('#aab4c0');
   const dash = mode === 'dashed' ? " stroke-dasharray='7 7'" : '';
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${EDITOR_GRID_LINE_CANVAS_WIDTH_PX}' height='${lineHeightPx}' viewBox='0 0 ${EDITOR_GRID_LINE_CANVAS_WIDTH_PX} ${lineHeightPx}'><line x1='${EDITOR_GRID_LINE_LEFT_OFFSET_PX}' y1='${lineOffsetPx}.5' x2='${EDITOR_GRID_LINE_CANVAS_WIDTH_PX}' y2='${lineOffsetPx}.5' stroke='${stroke}' stroke-width='1'${dash}/></svg>`;
@@ -162,8 +166,16 @@ const fontOptions = [
 ];
 
 const colorOptions = [
-  '#374151', '#111827', '#DC2626', '#EA580C', '#D97706',
-  '#059669', '#0891B2', '#2563EB', '#7C3AED', '#DB2777',
+  '#374151',
+  '#111827',
+  '#DC2626',
+  '#EA580C',
+  '#D97706',
+  '#059669',
+  '#0891B2',
+  '#2563EB',
+  '#7C3AED',
+  '#DB2777',
 ];
 
 const highFreqHighlightColorOptions = [
@@ -236,11 +248,13 @@ function normalizeSymbolReplaceRules(value: unknown): SymbolReplaceRule[] {
   }
   if (value && typeof value === 'object') {
     const item = value as Partial<SymbolReplaceRule>;
-    return [{
-      id: `symbol-rule-${Date.now()}`,
-      from: item.from ?? '',
-      to: item.to ?? '',
-    }];
+    return [
+      {
+        id: `symbol-rule-${Date.now()}`,
+        from: item.from ?? '',
+        to: item.to ?? '',
+      },
+    ];
   }
   return [];
 }
@@ -293,10 +307,9 @@ export function removeParagraphInnerFullWidthSpaces(text: string) {
 }
 
 function getStoredHighFreqWords() {
-  return [
-    ...readJson<string[]>(LEGACY_HIGH_FREQ_WORDS_KEY, []),
-    ...readJson<string[]>(HIGH_FREQ_WORDS_KEY, []),
-  ].filter((word, index, list) => word && list.indexOf(word) === index);
+  return [...readJson<string[]>(LEGACY_HIGH_FREQ_WORDS_KEY, []), ...readJson<string[]>(HIGH_FREQ_WORDS_KEY, [])].filter(
+    (word, index, list) => word && list.indexOf(word) === index,
+  );
 }
 
 function isHighFreqEnabled() {
@@ -312,7 +325,9 @@ function setHighFreqEnabled(value: boolean) {
 }
 
 function getStoredHighFreqHighlightColor() {
-  return normalizeHighFreqHighlightColor(readJson<string>(HIGH_FREQ_HIGHLIGHT_COLOR_KEY, defaultHighFreqHighlightColor));
+  return normalizeHighFreqHighlightColor(
+    readJson<string>(HIGH_FREQ_HIGHLIGHT_COLOR_KEY, defaultHighFreqHighlightColor),
+  );
 }
 
 export function applyFormat(text: string, options: FormatOptions) {
@@ -378,7 +393,14 @@ export function saveSnapshot(chapterId: number, content: string) {
   writeJson(HISTORY_KEY, all);
 }
 
-function ModalShell({ title, icon, children, onClose, widthClass = 'w-[520px]', closeOnBackdrop = true }: {
+function ModalShell({
+  title,
+  icon,
+  children,
+  onClose,
+  widthClass = 'w-[520px]',
+  closeOnBackdrop = true,
+}: {
   title: string;
   icon?: ReactNode;
   children: ReactNode;
@@ -390,19 +412,29 @@ function ModalShell({ title, icon, children, onClose, widthClass = 'w-[520px]', 
   useTopModalEscape(true, onClose);
 
   return (
-    <div className="fixed inset-0 z-[240] flex items-center justify-center bg-black/40" onClick={closeOnBackdrop ? onClose : undefined}>
+    <div
+      className="fixed inset-0 z-[240] flex items-center justify-center bg-black/40"
+      onClick={closeOnBackdrop ? onClose : undefined}
+    >
       <div
         className={`relative ${widthClass} max-h-[88vh] max-w-[94vw] overflow-hidden rounded-xl bg-white shadow-2xl`}
         data-draggable-managed="true"
         style={draggable.style}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex cursor-move items-center justify-between border-b border-gray-100 px-5 py-3" {...draggable.dragHandleProps}>
+        <div
+          className="flex cursor-move items-center justify-between border-b border-gray-100 px-5 py-3"
+          {...draggable.dragHandleProps}
+        >
           <div className="flex items-center gap-2">
             {icon}
             <h2 className="text-base font-bold text-gray-900">{title}</h2>
           </div>
-          <button data-no-modal-drag="true" onClick={onClose} className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600">
+          <button
+            data-no-modal-drag="true"
+            onClick={onClose}
+            className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -419,13 +451,16 @@ interface GeneratedCard {
   content: string;
 }
 
-const generateModeConfig: Record<GenerateMode, {
-  title: string;
-  taskName: string;
-  taskTarget: string;
-  promptTitle: string;
-  promptDesc: string;
-}> = {
+const generateModeConfig: Record<
+  GenerateMode,
+  {
+    title: string;
+    taskName: string;
+    taskTarget: string;
+    promptTitle: string;
+    promptDesc: string;
+  }
+> = {
   opening: {
     title: '黄金开篇 审批',
     taskName: '黄金开篇',
@@ -442,7 +477,14 @@ const generateModeConfig: Record<GenerateMode, {
   },
 };
 
-export function AIGenerateModal({ isOpen, onClose, mode, currentChapterSerial, currentContent, onApply }: {
+export function AIGenerateModal({
+  isOpen,
+  onClose,
+  mode,
+  currentChapterSerial,
+  currentContent,
+  onApply,
+}: {
   isOpen: boolean;
   onClose: () => void;
   mode: GenerateMode;
@@ -478,17 +520,21 @@ export function AIGenerateModal({ isOpen, onClose, mode, currentChapterSerial, c
 
   const handleGenerate = () => {
     setIsGenerating(true);
-    setCards(Array.from({ length: Number(chapterCount) }, (_, index) => ({
-      id: index + 1,
-      status: 'thinking',
-      content: '',
-    })));
-    window.setTimeout(() => {
-      setCards(Array.from({ length: Number(chapterCount) }, (_, index) => ({
+    setCards(
+      Array.from({ length: Number(chapterCount) }, (_, index) => ({
         id: index + 1,
-        status: 'done',
-        content: makeDraft(index + 1),
-      })));
+        status: 'thinking',
+        content: '',
+      })),
+    );
+    window.setTimeout(() => {
+      setCards(
+        Array.from({ length: Number(chapterCount) }, (_, index) => ({
+          id: index + 1,
+          status: 'done',
+          content: makeDraft(index + 1),
+        })),
+      );
       setIsGenerating(false);
     }, 700);
   };
@@ -583,9 +629,15 @@ export function AIGenerateModal({ isOpen, onClose, mode, currentChapterSerial, c
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm font-medium text-gray-700">补充信息</p>
                 <div className="flex items-center gap-2">
-                  <button className="rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 transition-colors hover:bg-white">填入预设</button>
-                  <button className="rounded-md border border-gray-200 p-1.5 text-gray-500 transition-colors hover:text-gray-700"><BookOpen className="h-3.5 w-3.5" /></button>
-                  <button className="rounded-md border border-gray-200 p-1.5 text-gray-500 transition-colors hover:text-gray-700"><AtSign className="h-3.5 w-3.5" /></button>
+                  <button className="rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 transition-colors hover:bg-white">
+                    填入预设
+                  </button>
+                  <button className="rounded-md border border-gray-200 p-1.5 text-gray-500 transition-colors hover:text-gray-700">
+                    <BookOpen className="h-3.5 w-3.5" />
+                  </button>
+                  <button className="rounded-md border border-gray-200 p-1.5 text-gray-500 transition-colors hover:text-gray-700">
+                    <AtSign className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               </div>
               <textarea
@@ -603,7 +655,9 @@ export function AIGenerateModal({ isOpen, onClose, mode, currentChapterSerial, c
                   <p className="text-sm font-medium text-gray-700">提示词参数</p>
                   <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">共 1 个</span>
                 </div>
-                <label className="mb-1.5 block text-sm text-gray-600">表情包和颜文字开关<span className="text-red-400">*</span></label>
+                <label className="mb-1.5 block text-sm text-gray-600">
+                  表情包和颜文字开关<span className="text-red-400">*</span>
+                </label>
                 <div className="relative">
                   <CapsuleSelect
                     value={emojiSwitch}
@@ -622,47 +676,54 @@ export function AIGenerateModal({ isOpen, onClose, mode, currentChapterSerial, c
           <div className="flex w-[340px] flex-col border-l border-gray-100">
             <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
               <span className="text-xs text-gray-500">工具生成内容</span>
-              <span className="text-xs text-gray-400">当前 <WordCountText value={cards.reduce((sum, card) => sum + card.content.replace(/\s/g, '').length, 0)} /></span>
+              <span className="text-xs text-gray-400">
+                当前{' '}
+                <WordCountText value={cards.reduce((sum, card) => sum + card.content.replace(/\s/g, '').length, 0)} />
+              </span>
             </div>
             <div className="flex-1 space-y-3 overflow-y-auto p-4">
               {cards.length === 0 ? (
                 <div className="flex h-full items-center justify-center p-6 text-center">
                   <p className="text-sm leading-6 text-gray-400">尚未生成内容，请先完成提示词审批并开始生成。</p>
                 </div>
-              ) : cards.map((card) => (
-                <div key={card.id} className="rounded-lg border border-gray-100 p-4">
-                  {card.status === 'thinking' ? (
-                    <div className="mb-3 flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-brand-dark" />
-                      <span className="text-sm text-gray-600">思考中...</span>
+              ) : (
+                cards.map((card) => (
+                  <div key={card.id} className="rounded-lg border border-gray-100 p-4">
+                    {card.status === 'thinking' ? (
+                      <div className="mb-3 flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-brand-dark" />
+                        <span className="text-sm text-gray-600">思考中...</span>
+                      </div>
+                    ) : (
+                      <p className="mb-3 whitespace-pre-wrap text-sm leading-6 text-gray-700">{card.content}</p>
+                    )}
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-gray-400">
+                        字数: <WordCountText value={card.content.replace(/\s/g, '').length} />
+                      </span>
+                      <button
+                        onClick={() => void navigator.clipboard.writeText(card.content)}
+                        disabled={!card.content}
+                        className="flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-xs text-gray-500 transition-colors hover:bg-gray-50 disabled:opacity-40"
+                      >
+                        <Copy className="h-3 w-3" />
+                        复制
+                      </button>
+                      <button
+                        onClick={() => {
+                          onApply(card.content);
+                          onClose();
+                        }}
+                        disabled={!card.content}
+                        className="flex items-center gap-1 rounded bg-brand px-2 py-1 text-xs text-white transition-colors hover:bg-brand-dark disabled:opacity-40"
+                      >
+                        <Plus className="h-3 w-3" />
+                        采纳
+                      </button>
                     </div>
-                  ) : (
-                    <p className="mb-3 whitespace-pre-wrap text-sm leading-6 text-gray-700">{card.content}</p>
-                  )}
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-400">字数: <WordCountText value={card.content.replace(/\s/g, '').length} /></span>
-                    <button
-                      onClick={() => void navigator.clipboard.writeText(card.content)}
-                      disabled={!card.content}
-                      className="flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-xs text-gray-500 transition-colors hover:bg-gray-50 disabled:opacity-40"
-                    >
-                      <Copy className="h-3 w-3" />
-                      复制
-                    </button>
-                    <button
-                      onClick={() => {
-                        onApply(card.content);
-                        onClose();
-                      }}
-                      disabled={!card.content}
-                      className="flex items-center gap-1 rounded bg-brand px-2 py-1 text-xs text-white transition-colors hover:bg-brand-dark disabled:opacity-40"
-                    >
-                      <Plus className="h-3 w-3" />
-                      采纳
-                    </button>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -691,7 +752,12 @@ export function AIGenerateModal({ isOpen, onClose, mode, currentChapterSerial, c
   );
 }
 
-export function FontSettingsModal({ isOpen, onClose, settings, onChange }: {
+export function FontSettingsModal({
+  isOpen,
+  onClose,
+  settings,
+  onChange,
+}: {
   isOpen: boolean;
   onClose: () => void;
   settings: FontSettings;
@@ -711,10 +777,18 @@ export function FontSettingsModal({ isOpen, onClose, settings, onChange }: {
   };
 
   return (
-    <ModalShell title="字体设置" icon={<Type className="h-4 w-4 text-brand" />} onClose={onClose} widthClass="w-[420px]">
+    <ModalShell
+      title="字体设置"
+      icon={<Type className="h-4 w-4 text-brand" />}
+      onClose={onClose}
+      widthClass="w-[420px]"
+    >
       <div className="space-y-5 p-5">
         <section>
-          <div className="mb-2 flex items-center gap-2 text-sm text-gray-700"><Type className="h-3.5 w-3.5 text-gray-400" />字体</div>
+          <div className="mb-2 flex items-center gap-2 text-sm text-gray-700">
+            <Type className="h-3.5 w-3.5 text-gray-400" />
+            字体
+          </div>
           <div className="grid grid-cols-3 gap-2">
             {fontOptions.map((font) => (
               <button
@@ -729,7 +803,10 @@ export function FontSettingsModal({ isOpen, onClose, settings, onChange }: {
           </div>
         </section>
         <section>
-          <div className="mb-2 flex items-center gap-2 text-sm text-gray-700"><Palette className="h-3.5 w-3.5 text-gray-400" />字体颜色</div>
+          <div className="mb-2 flex items-center gap-2 text-sm text-gray-700">
+            <Palette className="h-3.5 w-3.5 text-gray-400" />
+            字体颜色
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             {colorOptions.map((color) => (
               <button
@@ -739,7 +816,13 @@ export function FontSettingsModal({ isOpen, onClose, settings, onChange }: {
                 style={{ backgroundColor: color }}
               />
             ))}
-            <input ref={colorInputRef} type="color" value={local.fontColor} onChange={(event) => update({ fontColor: event.target.value })} className="h-7 w-7 cursor-pointer overflow-hidden rounded-full border-0 p-0" />
+            <input
+              ref={colorInputRef}
+              type="color"
+              value={local.fontColor}
+              onChange={(event) => update({ fontColor: event.target.value })}
+              className="h-7 w-7 cursor-pointer overflow-hidden rounded-full border-0 p-0"
+            />
           </div>
         </section>
         <SliderSetting label="字号" value={`${local.fontSize}px`} icon={<Type className="h-3.5 w-3.5 text-gray-400" />}>
@@ -751,10 +834,31 @@ export function FontSettingsModal({ isOpen, onClose, settings, onChange }: {
             ariaLabel="编辑器工具字号"
           />
         </SliderSetting>
-        <SliderSetting label="行高" value={String(local.lineHeight)} icon={<Rows3 className="h-3.5 w-3.5 text-gray-400" />}>
-          <button onClick={() => update({ lineHeight: Math.max(1, Number((local.lineHeight - 0.1).toFixed(1))) })} className="h-7 w-7 rounded border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">-</button>
-          <input type="range" min={10} max={24} value={Math.round(local.lineHeight * 10)} onChange={(event) => update({ lineHeight: Number(event.target.value) / 10 })} className="flex-1" />
-          <button onClick={() => update({ lineHeight: Math.min(2.4, Number((local.lineHeight + 0.1).toFixed(1))) })} className="h-7 w-7 rounded border border-gray-200 text-sm text-gray-500 hover:bg-gray-50">+</button>
+        <SliderSetting
+          label="行高"
+          value={String(local.lineHeight)}
+          icon={<Rows3 className="h-3.5 w-3.5 text-gray-400" />}
+        >
+          <button
+            onClick={() => update({ lineHeight: Math.max(1, Number((local.lineHeight - 0.1).toFixed(1))) })}
+            className="h-7 w-7 rounded border border-gray-200 text-sm text-gray-500 hover:bg-gray-50"
+          >
+            -
+          </button>
+          <input
+            type="range"
+            min={10}
+            max={24}
+            value={Math.round(local.lineHeight * 10)}
+            onChange={(event) => update({ lineHeight: Number(event.target.value) / 10 })}
+            className="flex-1"
+          />
+          <button
+            onClick={() => update({ lineHeight: Math.min(2.4, Number((local.lineHeight + 0.1).toFixed(1))) })}
+            className="h-7 w-7 rounded border border-gray-200 text-sm text-gray-500 hover:bg-gray-50"
+          >
+            +
+          </button>
         </SliderSetting>
         <section>
           <div className="mb-2 flex items-start justify-between gap-3">
@@ -782,24 +886,53 @@ export function FontSettingsModal({ isOpen, onClose, settings, onChange }: {
         </section>
         <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
           <p className="mb-2 text-xs text-gray-400">预览</p>
-          <div className="rounded border border-gray-200 bg-white p-3" style={{ ...getEditorGridLineStyle(local), fontFamily: local.fontFamily, color: local.fontColor, fontSize: Math.min(local.fontSize, 16), lineHeight: getEditorTextLineHeight(local) }}>
+          <div
+            className="rounded border border-gray-200 bg-white p-3"
+            style={{
+              ...getEditorGridLineStyle(local),
+              fontFamily: local.fontFamily,
+              color: local.fontColor,
+              fontSize: Math.min(local.fontSize, 16),
+              lineHeight: getEditorTextLineHeight(local),
+            }}
+          >
             这是一段预览文字，用于查看字体设置效果。
           </div>
         </div>
       </div>
       <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-3">
-        <button onClick={() => update(defaultFontSettings)} className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700">恢复默认</button>
-        <button onClick={onClose} className="rounded-md bg-brand px-4 py-2 text-sm text-white hover:bg-brand-dark">确定</button>
+        <button
+          onClick={() => update(defaultFontSettings)}
+          className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700"
+        >
+          恢复默认
+        </button>
+        <button onClick={onClose} className="rounded-md bg-brand px-4 py-2 text-sm text-white hover:bg-brand-dark">
+          确定
+        </button>
       </div>
     </ModalShell>
   );
 }
 
-function SliderSetting({ label, value, icon, children }: { label: string; value: string; icon: ReactNode; children: ReactNode }) {
+function SliderSetting({
+  label,
+  value,
+  icon,
+  children,
+}: {
+  label: string;
+  value: string;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <section>
       <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-gray-700">{icon}{label}</div>
+        <div className="flex items-center gap-2 text-sm text-gray-700">
+          {icon}
+          {label}
+        </div>
         <span className="text-xs text-gray-400">{value}</span>
       </div>
       <div className="flex items-center gap-2">{children}</div>
@@ -807,7 +940,13 @@ function SliderSetting({ label, value, icon, children }: { label: string; value:
   );
 }
 
-export function SmartFormatModal({ isOpen, onClose, currentText, settings, onApply }: {
+export function SmartFormatModal({
+  isOpen,
+  onClose,
+  currentText,
+  settings,
+  onApply,
+}: {
   isOpen: boolean;
   onClose: () => void;
   currentText: string;
@@ -828,7 +967,12 @@ export function SmartFormatModal({ isOpen, onClose, currentText, settings, onApp
   };
 
   return (
-    <ModalShell title="智能排版" icon={<Wand2 className="h-5 w-5 text-brand" />} onClose={onClose} widthClass="w-[560px]">
+    <ModalShell
+      title="智能排版"
+      icon={<Wand2 className="h-5 w-5 text-brand" />}
+      onClose={onClose}
+      widthClass="w-[560px]"
+    >
       <div className="px-5 py-3">
         <ToggleRow
           label="段落缩进"
@@ -836,7 +980,12 @@ export function SmartFormatModal({ isOpen, onClose, currentText, settings, onApp
           checked={options.paragraphIndent}
           onChange={(value) => setOptions((prev) => ({ ...prev, paragraphIndent: value }))}
         />
-        <ToggleRow label="合并空段落" desc="合并空行并整理成连续正文段落" checked={options.mergeParagraphs} onChange={(value) => setOptions((prev) => ({ ...prev, mergeParagraphs: value }))} />
+        <ToggleRow
+          label="合并空段落"
+          desc="合并空行并整理成连续正文段落"
+          checked={options.mergeParagraphs}
+          onChange={(value) => setOptions((prev) => ({ ...prev, mergeParagraphs: value }))}
+        />
         {preview && (
           <div className="mt-3 rounded-lg border border-gray-100 bg-gray-50 p-3">
             <p className="mb-2 text-xs text-gray-400">预览</p>
@@ -845,13 +994,29 @@ export function SmartFormatModal({ isOpen, onClose, currentText, settings, onApp
         )}
       </div>
       <div className="flex items-center justify-between border-t border-gray-100 px-5 py-2.5">
-        <button onClick={() => { setOptions(defaultFormatOptions); setPreview(''); }} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
-          <RotateCcw className="h-4 w-4" />恢复默认
+        <button
+          onClick={() => {
+            setOptions(defaultFormatOptions);
+            setPreview('');
+          }}
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700"
+        >
+          <RotateCcw className="h-4 w-4" />
+          恢复默认
         </button>
         <div className="flex gap-2">
-          <button onClick={() => setPreview(applyFormat(currentText, options))} className="rounded-md border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">预览效果</button>
-          <button onClick={apply} className="flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark">
-            <Wand2 className="h-4 w-4" />立即智能排版
+          <button
+            onClick={() => setPreview(applyFormat(currentText, options))}
+            className="rounded-md border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+          >
+            预览效果
+          </button>
+          <button
+            onClick={apply}
+            className="flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
+          >
+            <Wand2 className="h-4 w-4" />
+            立即智能排版
           </button>
         </div>
       </div>
@@ -859,7 +1024,17 @@ export function SmartFormatModal({ isOpen, onClose, currentText, settings, onApp
   );
 }
 
-function ToggleRow({ label, desc, checked, onChange }: { label: string; desc?: string; checked: boolean; onChange: (value: boolean) => void }) {
+function ToggleRow({
+  label,
+  desc,
+  checked,
+  onChange,
+}: {
+  label: string;
+  desc?: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
   return (
     <div className="flex items-start justify-between border-b border-gray-100 py-2.5 last:border-0">
       <div>
@@ -875,7 +1050,9 @@ export function Switch({ checked, onClick }: { checked: boolean; onClick: () => 
   return (
     <button onClick={onClick} className="px-2 py-1.5" title={checked ? '已启用，点击关闭' : '未启用，点击开启'}>
       <div className={`relative h-4 w-7 rounded-full transition-colors ${checked ? 'bg-brand' : 'bg-gray-300'}`}>
-        <div className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow-sm transition-transform ${checked ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+        <div
+          className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow-sm transition-transform ${checked ? 'translate-x-3.5' : 'translate-x-0.5'}`}
+        />
       </div>
     </button>
   );
@@ -896,13 +1073,21 @@ export function HighFreqModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
   if (!isOpen) return null;
 
   const addWords = () => {
-    const nextWords = input.split(/[,，\n]+/).map((word) => word.trim()).filter((word) => word && !words.includes(word));
+    const nextWords = input
+      .split(/[,，\n]+/)
+      .map((word) => word.trim())
+      .filter((word) => word && !words.includes(word));
     if (nextWords.length) setWords((prev) => [...prev, ...nextWords]);
     setInput('');
   };
 
   return (
-    <ModalShell title="词语替换设置" icon={<BarChart3 className="h-4 w-4 text-brand" />} onClose={onClose} widthClass="w-[480px]">
+    <ModalShell
+      title="词语替换设置"
+      icon={<BarChart3 className="h-4 w-4 text-brand" />}
+      onClose={onClose}
+      widthClass="w-[480px]"
+    >
       <div className="max-h-[60vh] space-y-4 overflow-y-auto p-5">
         <div>
           <p className="mb-2 text-sm text-gray-700">添加需要替换的词语</p>
@@ -912,9 +1097,15 @@ export function HighFreqModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
             ) : (
               <div className="flex flex-wrap gap-2">
                 {words.map((word, index) => (
-                  <span key={`${word}-${index}`} className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700">
+                  <span
+                    key={`${word}-${index}`}
+                    className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700"
+                  >
                     {word}
-                    <button onClick={() => setWords((prev) => prev.filter((_, itemIndex) => itemIndex !== index))} className="text-gray-400 hover:text-red-500">
+                    <button
+                      onClick={() => setWords((prev) => prev.filter((_, itemIndex) => itemIndex !== index))}
+                      className="text-gray-400 hover:text-red-500"
+                    >
                       <X className="h-3 w-3" />
                     </button>
                   </span>
@@ -923,8 +1114,21 @@ export function HighFreqModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
             )}
           </div>
           <div className="flex items-center gap-2">
-            <input value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') addWords(); }} placeholder="请输入需要替换的词语" className="flex-1 rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand" />
-            <button onClick={addWords} className="rounded-md bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-900">添加</button>
+            <input
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') addWords();
+              }}
+              placeholder="请输入需要替换的词语"
+              className="flex-1 rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+            <button
+              onClick={addWords}
+              className="rounded-md bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-900"
+            >
+              添加
+            </button>
           </div>
           <p className="mt-3 text-xs text-gray-400">用逗号或换行分隔多个词。</p>
         </div>
@@ -939,7 +1143,9 @@ export function HighFreqModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                   type="button"
                   onClick={() => setHighlightColor(option.value)}
                   className={`flex h-10 items-center gap-2 rounded-lg border px-2 text-xs font-bold transition-colors ${
-                    selected ? 'border-brand bg-brand-light text-brand' : 'border-gray-200 bg-white text-gray-600 hover:border-brand/40'
+                    selected
+                      ? 'border-brand bg-brand-light text-brand'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-brand/40'
                   }`}
                 >
                   <span
@@ -954,8 +1160,24 @@ export function HighFreqModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
         </div>
       </div>
       <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-3">
-        <button onClick={onClose} className="rounded-md border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">取消</button>
-        <button onClick={() => { writeJson(HIGH_FREQ_WORDS_KEY, words); writeJson(LEGACY_HIGH_FREQ_WORDS_KEY, words); writeJson(HIGH_FREQ_HIGHLIGHT_COLOR_KEY, highlightColor); window.dispatchEvent(new CustomEvent('xinyuexia_high_freq_updated')); onClose(); }} className="rounded-md bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-900">保存</button>
+        <button
+          onClick={onClose}
+          className="rounded-md border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+        >
+          取消
+        </button>
+        <button
+          onClick={() => {
+            writeJson(HIGH_FREQ_WORDS_KEY, words);
+            writeJson(LEGACY_HIGH_FREQ_WORDS_KEY, words);
+            writeJson(HIGH_FREQ_HIGHLIGHT_COLOR_KEY, highlightColor);
+            window.dispatchEvent(new CustomEvent('xinyuexia_high_freq_updated'));
+            onClose();
+          }}
+          className="rounded-md bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-900"
+        >
+          保存
+        </button>
       </div>
     </ModalShell>
   );
@@ -1006,10 +1228,7 @@ export function SymbolReplaceToggle({ onEnable }: { onEnable?: () => void }) {
   return <Switch checked={enabled} onClick={toggle} />;
 }
 
-export function SymbolReplaceModal({ isOpen, onClose }: {
-  isOpen: boolean;
-  onClose: () => void;
-}) {
+export function SymbolReplaceModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [settings, setSettings] = useState<SymbolReplaceRule[]>(getStoredSymbolReplaceSettings);
   const [message, setMessage] = useState('');
 
@@ -1088,7 +1307,10 @@ export function SymbolReplaceModal({ isOpen, onClose }: {
         </div>
 
         <div className="flex justify-end gap-3 border-t border-gray-100 px-7 py-4 pr-10">
-          <button onClick={addRule} className="h-11 min-w-[124px] rounded-xl border border-brand px-5 text-base font-bold text-brand hover:bg-brand-light">
+          <button
+            onClick={addRule}
+            className="h-11 min-w-[124px] rounded-xl border border-brand px-5 text-base font-bold text-brand hover:bg-brand-light"
+          >
             新增规则
           </button>
           <button
@@ -1106,7 +1328,11 @@ export function SymbolReplaceModal({ isOpen, onClose }: {
   );
 }
 
-export function HighlightOverlay({ content, fontSettings, scrollTop = 0 }: {
+export function HighlightOverlay({
+  content,
+  fontSettings,
+  scrollTop = 0,
+}: {
   content: string;
   fontSettings: FontSettings;
   scrollTop?: number;
@@ -1135,12 +1361,13 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0 }: {
   const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;
   const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;
   const shouldHighlightWords = enabled && words.length > 0;
-  const escaped = shouldHighlightWords ? [...words]
-    .sort((a, b) => b.length - a.length)
-    .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) : [];
+  const escaped = shouldHighlightWords
+    ? [...words].sort((a, b) => b.length - a.length).map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    : [];
   const regex = escaped.length > 0 ? new RegExp(`(${escaped.join('|')})`, 'g') : null;
   const wordSet = new Set(words);
-  const highlightOption = highFreqHighlightColorOptions.find((option) => option.value === highlightColor) ?? highFreqHighlightColorOptions[0];
+  const highlightOption =
+    highFreqHighlightColorOptions.find((option) => option.value === highlightColor) ?? highFreqHighlightColorOptions[0];
   const lines = content.split('\n');
 
   return (
@@ -1161,8 +1388,8 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0 }: {
         const parts = regex ? line.split(regex) : [line || '\u00A0'];
         return (
           <span key={lineIndex}>
-            {parts.map((part, partIndex) => wordSet.has(part)
-              ? (
+            {parts.map((part, partIndex) =>
+              wordSet.has(part) ? (
                 <span
                   key={partIndex}
                   className="rounded-sm text-transparent"
@@ -1173,8 +1400,10 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0 }: {
                 >
                   {part}
                 </span>
-              )
-              : <span key={partIndex}>{part}</span>)}
+              ) : (
+                <span key={partIndex}>{part}</span>
+              ),
+            )}
           </span>
         );
       })}
@@ -1182,7 +1411,12 @@ export function HighlightOverlay({ content, fontSettings, scrollTop = 0 }: {
   );
 }
 
-export function HistoryModal({ isOpen, onClose, chapterId, onRestore }: {
+export function HistoryModal({
+  isOpen,
+  onClose,
+  chapterId,
+  onRestore,
+}: {
   isOpen: boolean;
   onClose: () => void;
   chapterId: number;
@@ -1195,7 +1429,12 @@ export function HistoryModal({ isOpen, onClose, chapterId, onRestore }: {
   if (!isOpen) return null;
 
   return (
-    <ModalShell title="历史版本" icon={<RotateCcw className="h-4 w-4 text-brand" />} onClose={onClose} widthClass="w-[480px]">
+    <ModalShell
+      title="历史版本"
+      icon={<RotateCcw className="h-4 w-4 text-brand" />}
+      onClose={onClose}
+      widthClass="w-[480px]"
+    >
       <div className="border-b border-amber-100 bg-amber-50 px-5 py-3 text-xs leading-5 text-gray-600">
         每 5 分钟自动保存一次历史版本，最多保留 20 个。
       </div>
@@ -1205,26 +1444,45 @@ export function HistoryModal({ isOpen, onClose, chapterId, onRestore }: {
             <RotateCcw className="mx-auto mb-3 h-8 w-8 text-gray-300" />
             <p className="text-sm text-gray-400">暂无历史快照</p>
           </div>
-        ) : [...snapshots].reverse().map((snapshot) => (
-          <div key={snapshot.id} className="flex items-center justify-between rounded-lg border border-gray-100 p-3 hover:bg-gray-50">
-            <div className="min-w-0 flex-1">
-              <div className="mb-1 flex items-center gap-2">
-                <span className="text-sm text-gray-700">{snapshot.timestamp}</span>
-                <span className="text-xs text-gray-400"><WordCountText value={snapshot.wordCount} compact /></span>
+        ) : (
+          [...snapshots].reverse().map((snapshot) => (
+            <div
+              key={snapshot.id}
+              className="flex items-center justify-between rounded-lg border border-gray-100 p-3 hover:bg-gray-50"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex items-center gap-2">
+                  <span className="text-sm text-gray-700">{snapshot.timestamp}</span>
+                  <span className="text-xs text-gray-400">
+                    <WordCountText value={snapshot.wordCount} compact />
+                  </span>
+                </div>
+                <p className="truncate text-xs text-gray-400">{snapshot.content.slice(0, 60)}</p>
               </div>
-              <p className="truncate text-xs text-gray-400">{snapshot.content.slice(0, 60)}</p>
+              <button
+                onClick={() => {
+                  onRestore(snapshot.content);
+                  onClose();
+                }}
+                className="ml-3 shrink-0 rounded-md border border-brand px-3 py-1.5 text-xs text-brand hover:bg-brand-light"
+              >
+                恢复
+              </button>
             </div>
-            <button onClick={() => { onRestore(snapshot.content); onClose(); }} className="ml-3 shrink-0 rounded-md border border-brand px-3 py-1.5 text-xs text-brand hover:bg-brand-light">
-              恢复
-            </button>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </ModalShell>
   );
 }
 
-export function TitleOptimizeModal({ isOpen, onClose, currentChapterSerial, currentContent, onApply }: {
+export function TitleOptimizeModal({
+  isOpen,
+  onClose,
+  currentChapterSerial,
+  currentContent,
+  onApply,
+}: {
   isOpen: boolean;
   onClose: () => void;
   currentChapterSerial: number;
@@ -1242,54 +1500,99 @@ export function TitleOptimizeModal({ isOpen, onClose, currentChapterSerial, curr
     setIsGenerating(true);
     window.setTimeout(() => {
       const seed = currentContent.replace(/\s/g, '').slice(0, 18) || '本章剧情';
-      setTitles([
-        `第${currentChapterSerial}章 ${seed}暗潮初起`,
-        `第${currentChapterSerial}章 危机逼近，真相浮现`,
-        `第${currentChapterSerial}章 反转将至`,
-        `第${currentChapterSerial}章 旧局崩塌`,
-        `第${currentChapterSerial}章 他终于出手`,
-        `第${currentChapterSerial}章 所有人都低估了他`,
-        `第${currentChapterSerial}章 一步错，满盘惊`,
-        `第${currentChapterSerial}章 隐藏底牌曝光`,
-        `第${currentChapterSerial}章 局势彻底失控`,
-        `第${currentChapterSerial}章 新的交易`,
-      ].map((title) => title.slice(0, maxLength + 4)).slice(0, candidateCount));
+      setTitles(
+        [
+          `第${currentChapterSerial}章 ${seed}暗潮初起`,
+          `第${currentChapterSerial}章 危机逼近，真相浮现`,
+          `第${currentChapterSerial}章 反转将至`,
+          `第${currentChapterSerial}章 旧局崩塌`,
+          `第${currentChapterSerial}章 他终于出手`,
+          `第${currentChapterSerial}章 所有人都低估了他`,
+          `第${currentChapterSerial}章 一步错，满盘惊`,
+          `第${currentChapterSerial}章 隐藏底牌曝光`,
+          `第${currentChapterSerial}章 局势彻底失控`,
+          `第${currentChapterSerial}章 新的交易`,
+        ]
+          .map((title) => title.slice(0, maxLength + 4))
+          .slice(0, candidateCount),
+      );
       setIsGenerating(false);
     }, 600);
   };
 
   return (
-    <ModalShell title="AI 标题优化" icon={<Sparkles className="h-4 w-4 text-brand" />} onClose={onClose} widthClass="w-[520px]">
+    <ModalShell
+      title="AI 标题优化"
+      icon={<Sparkles className="h-4 w-4 text-brand" />}
+      onClose={onClose}
+      widthClass="w-[520px]"
+    >
       <div className="max-h-[640px] space-y-4 overflow-y-auto p-5">
         <div className="grid grid-cols-2 gap-3">
           <label className="text-xs text-gray-500">
             发布平台
-            <input value={platform} onChange={(event) => setPlatform(event.target.value)} className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand" />
+            <input
+              value={platform}
+              onChange={(event) => setPlatform(event.target.value)}
+              className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand"
+            />
           </label>
           <label className="text-xs text-gray-500">
             标题字数上限
-            <input type="number" min={1} max={50} value={maxLength} onChange={(event) => setMaxLength(Number(event.target.value))} className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand" />
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={maxLength}
+              onChange={(event) => setMaxLength(Number(event.target.value))}
+              className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand"
+            />
           </label>
         </div>
         <div className="rounded-lg bg-gray-50 p-3">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm text-gray-600">第{currentChapterSerial}章 · {platform}</span>
+            <span className="text-sm text-gray-600">
+              第{currentChapterSerial}章 · {platform}
+            </span>
             <label className="flex items-center gap-2 text-xs text-gray-500">
               候选数
-              <input type="number" min={1} max={20} value={candidateCount} onChange={(event) => setCandidateCount(Number(event.target.value))} className="w-16 rounded-md border border-gray-200 px-2 py-1 text-center text-sm" />
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={candidateCount}
+                onChange={(event) => setCandidateCount(Number(event.target.value))}
+                className="w-16 rounded-md border border-gray-200 px-2 py-1 text-center text-sm"
+              />
             </label>
           </div>
-          <button onClick={generate} disabled={isGenerating} className="flex w-full items-center justify-center gap-2 rounded-md bg-brand py-2.5 text-sm text-white hover:bg-brand-dark disabled:bg-gray-300">
-            <Sparkles className="h-4 w-4" />{isGenerating ? '生成中...' : '生成标题'}
+          <button
+            onClick={generate}
+            disabled={isGenerating}
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-brand py-2.5 text-sm text-white hover:bg-brand-dark disabled:bg-gray-300"
+          >
+            <Sparkles className="h-4 w-4" />
+            {isGenerating ? '生成中...' : '生成标题'}
           </button>
         </div>
         {titles.length > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-gray-500">生成结果</p>
             {titles.map((title, index) => (
-              <button key={`${title}-${index}`} onClick={() => { onApply(title.replace(/^第\d+章\s*/, '')); onClose(); }} className="flex w-full items-center justify-between rounded-lg border border-gray-100 p-3 text-left hover:border-brand hover:bg-brand-light">
-                <span className="text-sm text-gray-700">{index + 1}. {title}</span>
-                <span className="text-xs text-gray-400"><WordCountText value={title.length} compact /></span>
+              <button
+                key={`${title}-${index}`}
+                onClick={() => {
+                  onApply(title.replace(/^第\d+章\s*/, ''));
+                  onClose();
+                }}
+                className="flex w-full items-center justify-between rounded-lg border border-gray-100 p-3 text-left hover:border-brand hover:bg-brand-light"
+              >
+                <span className="text-sm text-gray-700">
+                  {index + 1}. {title}
+                </span>
+                <span className="text-xs text-gray-400">
+                  <WordCountText value={title.length} compact />
+                </span>
               </button>
             ))}
           </div>
@@ -1299,7 +1602,12 @@ export function TitleOptimizeModal({ isOpen, onClose, currentChapterSerial, curr
   );
 }
 
-export function ChapterAssociateModal({ isOpen, onClose, chapters, onAssociate }: {
+export function ChapterAssociateModal({
+  isOpen,
+  onClose,
+  chapters,
+  onAssociate,
+}: {
   isOpen: boolean;
   onClose: () => void;
   chapters: ChapterAssociateItem[];
@@ -1328,25 +1636,50 @@ export function ChapterAssociateModal({ isOpen, onClose, chapters, onAssociate }
   const selectRecent = (count: number) => setSelectedIds(new Set(chapters.slice(-count).map((chapter) => chapter.id)));
 
   return (
-    <ModalShell title="关联章节" icon={<Link2 className="h-4 w-4 text-brand" />} onClose={onClose} widthClass="w-[420px]">
+    <ModalShell
+      title="关联章节"
+      icon={<Link2 className="h-4 w-4 text-brand" />}
+      onClose={onClose}
+      widthClass="w-[420px]"
+    >
       <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-4 py-2">
         <div className="flex flex-wrap gap-1.5">
           {[5, 10, 50, 100].map((count) => (
-            <button key={count} onClick={() => selectRecent(count)} className="rounded border border-gray-200 bg-white px-2 py-1 text-[10px] text-gray-600 hover:bg-gray-50">
+            <button
+              key={count}
+              onClick={() => selectRecent(count)}
+              className="rounded border border-gray-200 bg-white px-2 py-1 text-[10px] text-gray-600 hover:bg-gray-50"
+            >
               近{count}章
             </button>
           ))}
-          <button onClick={() => setSelectedIds(new Set(chapters.map((chapter) => chapter.id)))} className="rounded border border-gray-200 bg-white px-2 py-1 text-[10px] text-gray-600 hover:bg-gray-50">全选</button>
-          <button onClick={() => setSelectedIds(new Set())} className="rounded border border-gray-200 bg-white px-2 py-1 text-[10px] text-gray-600 hover:bg-gray-50">清空</button>
+          <button
+            onClick={() => setSelectedIds(new Set(chapters.map((chapter) => chapter.id)))}
+            className="rounded border border-gray-200 bg-white px-2 py-1 text-[10px] text-gray-600 hover:bg-gray-50"
+          >
+            全选
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="rounded border border-gray-200 bg-white px-2 py-1 text-[10px] text-gray-600 hover:bg-gray-50"
+          >
+            清空
+          </button>
         </div>
-        <div className="ml-2 shrink-0 text-[10px] text-gray-500"><span className="font-bold text-brand">{selectedCount}</span> 章</div>
+        <div className="ml-2 shrink-0 text-[10px] text-gray-500">
+          <span className="font-bold text-brand">{selectedCount}</span> 章
+        </div>
       </div>
       <div className="max-h-[320px] overflow-y-auto px-4 py-3">
         <div className="grid grid-cols-5 gap-2">
           {chapters.map((chapter) => {
             const isSelected = selectedIds.has(chapter.id);
             return (
-              <button key={chapter.id} onClick={() => toggle(chapter.id)} className={`rounded border px-1 py-1.5 text-[11px] transition-colors ${isSelected ? 'border-brand bg-brand-light font-medium text-brand-dark' : 'border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100'}`}>
+              <button
+                key={chapter.id}
+                onClick={() => toggle(chapter.id)}
+                className={`rounded border px-1 py-1.5 text-[11px] transition-colors ${isSelected ? 'border-brand bg-brand-light font-medium text-brand-dark' : 'border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+              >
                 第{chapter.serialNumber}章
               </button>
             );
@@ -1354,9 +1687,17 @@ export function ChapterAssociateModal({ isOpen, onClose, chapters, onAssociate }
         </div>
       </div>
       <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3">
-        <span className="text-[10px] text-gray-500">已选 <span className="font-bold text-brand">{selectedCount}</span> 章 · <span className="font-bold text-brand">{selectedWords.toLocaleString()}</span> 字</span>
+        <span className="text-[10px] text-gray-500">
+          已选 <span className="font-bold text-brand">{selectedCount}</span> 章 ·{' '}
+          <span className="font-bold text-brand">{selectedWords.toLocaleString()}</span> 字
+        </span>
         <div className="flex gap-2">
-          <button onClick={onClose} className="rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50">取消</button>
+          <button
+            onClick={onClose}
+            className="rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+          >
+            取消
+          </button>
           <button
             onClick={() => {
               const ids = Array.from(selectedIds);

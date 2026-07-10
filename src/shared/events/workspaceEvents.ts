@@ -7,7 +7,9 @@ export interface WorkspaceNovelSelectedDetail {
 }
 
 export function emitWorkspaceNovelSelected(novelId: number | null) {
-  window.dispatchEvent(new CustomEvent<WorkspaceNovelSelectedDetail>(WORKSPACE_NOVEL_SELECTED_EVENT, {
-    detail: { novelId },
-  }));
+  window.dispatchEvent(
+    new CustomEvent<WorkspaceNovelSelectedDetail>(WORKSPACE_NOVEL_SELECTED_EVENT, {
+      detail: { novelId },
+    }),
+  );
 }

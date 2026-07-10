@@ -5,9 +5,7 @@ import { BRAINSTORM_TAB, ROLE_TAB, SETTING_TAB } from './workbenchLibraryTabs';
 export type WorkbenchLibraryAiLogScope = 'library' | 'outline';
 
 export function getWorkbenchLibraryAiLogScope(activeTab: string): WorkbenchLibraryAiLogScope {
-  return activeTab === SETTING_TAB || activeTab === ROLE_TAB || activeTab === BRAINSTORM_TAB
-    ? 'library'
-    : 'outline';
+  return activeTab === SETTING_TAB || activeTab === ROLE_TAB || activeTab === BRAINSTORM_TAB ? 'library' : 'outline';
 }
 
 interface WorkbenchLibraryAiLogTriggerOptions {

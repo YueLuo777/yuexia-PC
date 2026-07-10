@@ -149,79 +149,87 @@ export function DashboardLayout() {
     localStorage.setItem(DASHBOARD_SIDEBAR_WIDTH_KEY, String(nextWidth));
   }, []);
 
-  const handleSidebarResizeStart = useCallback((event: ReactMouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const startX = event.clientX;
-    const startWidth = sidebarWidth;
-    let nextWidth = startWidth;
-    const previousCursor = document.body.style.cursor;
-    const previousUserSelect = document.body.style.userSelect;
-
-    document.body.style.cursor = 'ew-resize';
-    document.body.style.userSelect = 'none';
-
-    const finishResize = () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('blur', handleWindowBlur);
-      document.body.style.cursor = previousCursor;
-      document.body.style.userSelect = previousUserSelect;
-      persistSidebarWidth(nextWidth);
-    };
-
-    const calculateNextWidth = (clientX: number) => clampDashboardSidebarWidth(startWidth + clientX - startX);
-
-    function handleMouseMove(moveEvent: MouseEvent) {
-      nextWidth = calculateNextWidth(moveEvent.clientX);
-      setSidebarWidth(nextWidth);
-    }
-
-    function handleMouseUp(upEvent: MouseEvent) {
-      nextWidth = calculateNextWidth(upEvent.clientX);
-      finishResize();
-    }
-
-    function handleWindowBlur() {
-      finishResize();
-    }
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('blur', handleWindowBlur);
-  }, [persistSidebarWidth, sidebarWidth]);
-
-  const handleSidebarResizeKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
-    const step = event.shiftKey ? 24 : 12;
-    if (event.key === 'ArrowLeft') {
+  const handleSidebarResizeStart = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
       event.preventDefault();
-      persistSidebarWidth(sidebarWidth - step);
-    }
-    if (event.key === 'ArrowRight') {
-      event.preventDefault();
-      persistSidebarWidth(sidebarWidth + step);
-    }
-    if (event.key === 'Home') {
-      event.preventDefault();
-      persistSidebarWidth(DASHBOARD_SIDEBAR_MIN_WIDTH);
-    }
-    if (event.key === 'End') {
-      event.preventDefault();
-      persistSidebarWidth(DASHBOARD_SIDEBAR_MAX_WIDTH);
-    }
-  }, [persistSidebarWidth, sidebarWidth]);
+      event.stopPropagation();
 
-  const visibleNavItems = navConfig.flatMap((group) => (
-    group.items.map((item) => ({
-      ...item,
-      hidden: item.hidden || group.hidden,
-    }))
-  )).filter((item) => !item.hidden);
+      const startX = event.clientX;
+      const startWidth = sidebarWidth;
+      let nextWidth = startWidth;
+      const previousCursor = document.body.style.cursor;
+      const previousUserSelect = document.body.style.userSelect;
+
+      document.body.style.cursor = 'ew-resize';
+      document.body.style.userSelect = 'none';
+
+      const finishResize = () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+        window.removeEventListener('blur', handleWindowBlur);
+        document.body.style.cursor = previousCursor;
+        document.body.style.userSelect = previousUserSelect;
+        persistSidebarWidth(nextWidth);
+      };
+
+      const calculateNextWidth = (clientX: number) => clampDashboardSidebarWidth(startWidth + clientX - startX);
+
+      function handleMouseMove(moveEvent: MouseEvent) {
+        nextWidth = calculateNextWidth(moveEvent.clientX);
+        setSidebarWidth(nextWidth);
+      }
+
+      function handleMouseUp(upEvent: MouseEvent) {
+        nextWidth = calculateNextWidth(upEvent.clientX);
+        finishResize();
+      }
+
+      function handleWindowBlur() {
+        finishResize();
+      }
+
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('blur', handleWindowBlur);
+    },
+    [persistSidebarWidth, sidebarWidth],
+  );
+
+  const handleSidebarResizeKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLDivElement>) => {
+      const step = event.shiftKey ? 24 : 12;
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        persistSidebarWidth(sidebarWidth - step);
+      }
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        persistSidebarWidth(sidebarWidth + step);
+      }
+      if (event.key === 'Home') {
+        event.preventDefault();
+        persistSidebarWidth(DASHBOARD_SIDEBAR_MIN_WIDTH);
+      }
+      if (event.key === 'End') {
+        event.preventDefault();
+        persistSidebarWidth(DASHBOARD_SIDEBAR_MAX_WIDTH);
+      }
+    },
+    [persistSidebarWidth, sidebarWidth],
+  );
+
+  const visibleNavItems = navConfig
+    .flatMap((group) =>
+      group.items.map((item) => ({
+        ...item,
+        hidden: item.hidden || group.hidden,
+      })),
+    )
+    .filter((item) => !item.hidden);
   const visiblePublicNavItems = filterInternalRouteItems(visibleNavItems);
-  const navDividerAfterItemTos = new Set(navConfig[0]?.dividerAfterItemTos ?? (
-    navConfig[0]?.dividerAfterItemTo ? [navConfig[0].dividerAfterItemTo] : []
-  ));
+  const navDividerAfterItemTos = new Set(
+    navConfig[0]?.dividerAfterItemTos ?? (navConfig[0]?.dividerAfterItemTo ? [navConfig[0].dividerAfterItemTo] : []),
+  );
 
   return (
     <div className="flex h-full overflow-hidden bg-white">
@@ -313,7 +321,9 @@ export function DashboardLayout() {
                         : 'font-bold text-[#354154] hover:bg-white/70 hover:text-[#142033]'
                     }`}
                   >
-                    <ItemIcon className={`h-[18px] w-[18px] stroke-[2.4] ${isActive ? 'text-[#1e71ef]' : 'text-[#4d5b6c]'}`} />
+                    <ItemIcon
+                      className={`h-[18px] w-[18px] stroke-[2.4] ${isActive ? 'text-[#1e71ef]' : 'text-[#4d5b6c]'}`}
+                    />
                     <span className="text-[15px] leading-none">{item.label}</span>
                   </Link>
                   {navDividerAfterItemTos.has(item.to) ? (
@@ -326,15 +336,8 @@ export function DashboardLayout() {
         </div>
 
         <div className="xy-dashboard-sidebar-footer shrink-0 border-t border-[#e1e5eb] p-3">
-          <div
-            data-testid="dashboard-footer-settings-group"
-            className="grid grid-cols-1 gap-1.5"
-          >
-            <Link
-              to="/settings"
-              className={SETTINGS_TEXT_BUTTON_CLASS}
-              title="设置"
-            >
+          <div data-testid="dashboard-footer-settings-group" className="grid grid-cols-1 gap-1.5">
+            <Link to="/settings" className={SETTINGS_TEXT_BUTTON_CLASS} title="设置">
               设置
             </Link>
           </div>

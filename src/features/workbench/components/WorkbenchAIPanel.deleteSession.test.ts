@@ -18,37 +18,41 @@ describe('WorkbenchAIPanel session deletion', () => {
   it('does not show a top status after deleting the current chat session', () => {
     const deleteSessionBody = readFunctionBody('deleteSession');
 
-    expect(deleteSessionBody).not.toContain('flashStatus(');
-    expect(deleteSessionBody).not.toContain('已删除当前会话');
+    expect(deleteSessionBody).not.toContainSource('flashStatus(');
+    expect(deleteSessionBody).not.toContainSource('已删除当前会话');
   });
 
   it('does not show a top status after resetting chat sessions', () => {
     const resetSessionsBody = readFunctionBody('resetSessions');
 
-    expect(resetSessionsBody).not.toContain('flashStatus(');
-    expect(resetSessionsBody).not.toContain('已新开空会话');
+    expect(resetSessionsBody).not.toContainSource('flashStatus(');
+    expect(resetSessionsBody).not.toContainSource('已新开空会话');
   });
 
   it('uses an opaque active session background so the border line does not show through', () => {
     const sessionControlsBody = readFunctionBody('renderSessionControls');
 
-    expect(sessionControlsBody).toContain('bg-[#EAF9FD]');
-    expect(sessionControlsBody).not.toContain('bg-brand/10');
+    expect(sessionControlsBody).toContainSource('bg-[#EAF9FD]');
+    expect(sessionControlsBody).not.toContainSource('bg-brand/10');
   });
 
   it('keeps session buttons separated without restoring the white backplate', () => {
     const sessionControlsBody = readFunctionBody('renderSessionControls');
 
-    expect(sessionControlsBody).toContain('xy-floating-session-buttons scrollbar-hidden flex min-w-0 items-center overflow-x-auto');
-    expect(sessionControlsBody).not.toContain('items-center gap-1 overflow-x-auto');
-    expect(sessionControlsBody).toContain('flex h-7 max-w-full items-center overflow-visible');
-    expect(sessionControlsBody).not.toContain('overflow-hidden bg-white');
+    expect(sessionControlsBody).toContainSource(
+      'xy-floating-session-buttons scrollbar-hidden flex min-w-0 items-center overflow-x-auto',
+    );
+    expect(sessionControlsBody).not.toContainSource('items-center gap-1 overflow-x-auto');
+    expect(sessionControlsBody).toContainSource('flex h-7 max-w-full items-center overflow-visible');
+    expect(sessionControlsBody).not.toContainSource('overflow-hidden bg-white');
   });
 
   it('renders the AI output font size control in the workbench header tool area', () => {
-    expect(source).toContain("setHeaderToolPortalTarget(document.getElementById('workbench-header-extra-tools'))");
-    expect(source).toContain('createPortal(outputFontSizeTool, headerToolPortalTarget)');
-    expect(source).toContain('ariaLabel="AI 输出字号"');
-    expect(source).not.toContain('className="xy-floating-chat-font-tool"');
+    expect(source).toContainSource(
+      "setHeaderToolPortalTarget(document.getElementById('workbench-header-extra-tools'))",
+    );
+    expect(source).toContainSource('createPortal(outputFontSizeTool, headerToolPortalTarget)');
+    expect(source).toContainSource('ariaLabel="AI 输出字号"');
+    expect(source).not.toContainSource('className="xy-floating-chat-font-tool"');
   });
 });

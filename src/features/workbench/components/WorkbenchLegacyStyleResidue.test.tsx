@@ -18,10 +18,10 @@ describe('workbench legacy selected style residue', () => {
     ].map((path) => ({ path, source: readSource(path) }));
 
     for (const { path, source } of sources) {
-      expect(source, path).not.toContain('xy-selected-orange-bg');
-      expect(source, path).not.toContain('bg-[#FFF7ED]');
-      expect(source, path).not.toContain("defaultColor: '#FFF7ED'");
-      expect(source, path).not.toContain('--xy-detail-outline-number-used: #FFF7ED');
+      expect(source, path).not.toContainSource('xy-selected-orange-bg');
+      expect(source, path).not.toContainSource('bg-[#FFF7ED]');
+      expect(source, path).not.toContainSource("defaultColor: '#FFF7ED'");
+      expect(source, path).not.toContainSource('--xy-detail-outline-number-used: #FFF7ED');
     }
 
     const styles = readSource('src/shared/styles/index.css');
@@ -30,7 +30,7 @@ describe('workbench legacy selected style residue', () => {
       styles.indexOf('.xy-detail-outline-number-has-outline {'),
     );
 
-    expect(usedNumberRule).not.toContain('#f97316');
-    expect(usedNumberRule).not.toContain('249, 115, 22');
+    expect(usedNumberRule).not.toContainSource('#f97316');
+    expect(usedNumberRule).not.toContainSource('249, 115, 22');
   });
 });

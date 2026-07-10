@@ -16,7 +16,10 @@ function readDailyStats(): DailyWritingStats {
     const parsed = JSON.parse(localStorage.getItem(WRITING_STATS_KEY) ?? '{}') as unknown;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
     return Object.fromEntries(
-      Object.entries(parsed).map(([key, value]) => [key, Number.isFinite(Number(value)) ? Math.max(0, Math.round(Number(value))) : 0]),
+      Object.entries(parsed).map(([key, value]) => [
+        key,
+        Number.isFinite(Number(value)) ? Math.max(0, Math.round(Number(value))) : 0,
+      ]),
     );
   } catch {
     return {};
@@ -46,8 +49,9 @@ export function readWritingSummary(now = new Date()) {
 
   return {
     yesterdayWords: stats[yesterdayKey] ?? 0,
-    monthWords: Object.entries(stats).reduce((sum, [key, value]) => (
-      key.startsWith(monthPrefix) ? sum + value : sum
-    ), 0),
+    monthWords: Object.entries(stats).reduce(
+      (sum, [key, value]) => (key.startsWith(monthPrefix) ? sum + value : sum),
+      0,
+    ),
   };
 }

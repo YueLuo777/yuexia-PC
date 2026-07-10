@@ -1,21 +1,11 @@
-export type RoleStateFieldKey =
-  | 'currentSituation'
-  | 'currentGoal'
-  | 'abilityState'
-  | 'resourceState'
-  | 'otherState';
+export type RoleStateFieldKey = 'currentSituation' | 'currentGoal' | 'abilityState' | 'resourceState' | 'otherState';
 
 export type RoleStateFieldLevel = '每章更新' | '变化时更新' | '按需关联' | '硬性约束';
 
 export type RoleStateSettings = Record<RoleStateFieldKey, string>;
 export type RoleStateUpdateChapterKey = RoleStateFieldKey | 'relationshipState';
 export type RoleStateUpdateChapters = Partial<Record<RoleStateUpdateChapterKey, number>>;
-export type RoleBaseSettingFieldKey =
-  | 'appearance'
-  | 'aliasName'
-  | 'corePersonality'
-  | 'background'
-  | 'abilityRules';
+export type RoleBaseSettingFieldKey = 'appearance' | 'aliasName' | 'corePersonality' | 'background' | 'abilityRules';
 
 export const ROLE_STATE_FIELD_DEFINITIONS: Array<{
   key: RoleStateFieldKey;

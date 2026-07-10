@@ -27,14 +27,9 @@ describe('workbenchRoleTypes', () => {
   });
 
   it('treats all approved character groups as undeletable default groups', () => {
-    [
-      '女主角',
-      '重要正派角色',
-      '正派配角',
-      '重要反派角色',
-      '反派配角',
-      '龙套角色',
-    ].forEach((type) => expect(isDefaultWorkbenchRoleType(type)).toBe(true));
+    ['女主角', '重要正派角色', '正派配角', '重要反派角色', '反派配角', '龙套角色'].forEach((type) =>
+      expect(isDefaultWorkbenchRoleType(type)).toBe(true),
+    );
 
     expect(isDefaultWorkbenchRoleType('临时角色')).toBe(false);
   });
@@ -60,30 +55,36 @@ describe('workbenchRoleTypes', () => {
     ];
 
     expect(getDefaultPlotChainRoleIds(roles)).toEqual(['role-1']);
-    expect(getInitialPlotChainRoleIds({
-      configuredRoleIds: undefined,
-      plotPointStandalone: true,
-      roles,
-    })).toEqual(['role-1']);
+    expect(
+      getInitialPlotChainRoleIds({
+        configuredRoleIds: undefined,
+        plotPointStandalone: true,
+        roles,
+      }),
+    ).toEqual(['role-1']);
   });
 
   it('always includes male protagonist roles in plot-chain context even after explicit clears', () => {
-    expect(getInitialPlotChainRoleIds({
-      configuredRoleIds: [],
-      plotPointStandalone: true,
-      roles: [{ id: 'role-1', group: '男主角' }],
-    })).toEqual(['role-1']);
+    expect(
+      getInitialPlotChainRoleIds({
+        configuredRoleIds: [],
+        plotPointStandalone: true,
+        roles: [{ id: 'role-1', group: '男主角' }],
+      }),
+    ).toEqual(['role-1']);
   });
 
   it('keeps explicit plot-chain role selections and adds the male protagonist baseline', () => {
-    expect(getInitialPlotChainRoleIds({
-      configuredRoleIds: ['role-2'],
-      plotPointStandalone: true,
-      roles: [
-        { id: 'role-1', group: '男主角' },
-        { id: 'role-2', group: '女主角' },
-      ],
-    })).toEqual(['role-2', 'role-1']);
+    expect(
+      getInitialPlotChainRoleIds({
+        configuredRoleIds: ['role-2'],
+        plotPointStandalone: true,
+        roles: [
+          { id: 'role-1', group: '男主角' },
+          { id: 'role-2', group: '女主角' },
+        ],
+      }),
+    ).toEqual(['role-2', 'role-1']);
   });
 
   it('prevents creating another role in male protagonist when one already exists', () => {

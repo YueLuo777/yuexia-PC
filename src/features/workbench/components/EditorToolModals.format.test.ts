@@ -12,9 +12,7 @@ describe('EditorToolModals smart format', () => {
   it('always removes full-width spaces inside paragraphs without a visible option', () => {
     const text = '123123131231241234\u3000\u3000aaaa\u3000\u3000bbbb';
 
-    expect(applyFormat(text, { paragraphIndent: false, mergeParagraphs: true })).toBe(
-      '123123131231241234aaaabbbb',
-    );
+    expect(applyFormat(text, { paragraphIndent: false, mergeParagraphs: true })).toBe('123123131231241234aaaabbbb');
   });
 
   it('does not treat paragraph-leading full-width spaces as inner spaces', () => {
@@ -34,11 +32,15 @@ describe('EditorToolModals smart format', () => {
   it('keeps the smart format modal compact without large empty gutters', () => {
     const modalSource = readSource();
 
-    expect(modalSource).toContain('className="px-5 py-3"');
-    expect(modalSource).toContain('className="flex items-start justify-between border-b border-gray-100 py-2.5 last:border-0"');
-    expect(modalSource).toContain('className="flex items-center justify-between border-t border-gray-100 px-5 py-2.5"');
-    expect(modalSource).toContain('className="mt-3 rounded-lg border border-gray-100 bg-gray-50 p-3"');
-    expect(modalSource).not.toContain('className="space-y-1 p-5"');
-    expect(modalSource).not.toContain('border-b border-gray-100 py-3 last:border-0');
+    expect(modalSource).toContainSource('className="px-5 py-3"');
+    expect(modalSource).toContainSource(
+      'className="flex items-start justify-between border-b border-gray-100 py-2.5 last:border-0"',
+    );
+    expect(modalSource).toContainSource(
+      'className="flex items-center justify-between border-t border-gray-100 px-5 py-2.5"',
+    );
+    expect(modalSource).toContainSource('className="mt-3 rounded-lg border border-gray-100 bg-gray-50 p-3"');
+    expect(modalSource).not.toContainSource('className="space-y-1 p-5"');
+    expect(modalSource).not.toContainSource('border-b border-gray-100 py-3 last:border-0');
   });
 });

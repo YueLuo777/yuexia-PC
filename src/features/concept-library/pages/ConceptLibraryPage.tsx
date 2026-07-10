@@ -106,15 +106,16 @@ function buildGenreUserContent(platform: ConceptPlatform, genre: string, title: 
     '',
     '题材设定：',
     rawInput.trim(),
-  ].filter(Boolean).join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 function buildInspirationUserContent(draft: ConceptInspirationDraft) {
-  return CONCEPT_INSPIRATION_FIELDS
-    .map((field) => {
-      const value = draft[field.key].trim();
-      return value ? `${field.label}：${value}` : '';
-    })
+  return CONCEPT_INSPIRATION_FIELDS.map((field) => {
+    const value = draft[field.key].trim();
+    return value ? `${field.label}：${value}` : '';
+  })
     .filter(Boolean)
     .join('\n');
 }
@@ -164,13 +165,7 @@ function stopFormEvent(event: React.SyntheticEvent) {
   event.stopPropagation();
 }
 
-function ConceptCard({
-  item,
-  onDelete,
-}: {
-  item: ConceptLibraryItem;
-  onDelete: (id: string) => void;
-}) {
+function ConceptCard({ item, onDelete }: { item: ConceptLibraryItem; onDelete: (id: string) => void }) {
   const [copied, setCopied] = useState(false);
   const [showAssociation, setShowAssociation] = useState(false);
   const association = item.kind === 'inspiration' ? item.association : undefined;
@@ -185,7 +180,9 @@ function ConceptCard({
     association ? `标题：${association.title}` : '',
     association?.summary ? `梗概：${association.summary}` : '',
     association?.content ?? '',
-  ].filter(Boolean).join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(copyText);
@@ -198,19 +195,26 @@ function ConceptCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${item.kind === 'inspiration' ? 'bg-cyan-50 text-cyan-700' : 'bg-violet-50 text-violet-700'}`}>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-bold ${item.kind === 'inspiration' ? 'bg-cyan-50 text-cyan-700' : 'bg-violet-50 text-violet-700'}`}
+            >
               {item.kind === 'inspiration' ? '灵感' : '题材'}
             </span>
             {item.status === 'pending' && (
               <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700">待整理</span>
             )}
             {item.cloudSyncedAt && (
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700">已云备份</span>
+              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700">
+                已云备份
+              </span>
             )}
           </div>
           <h2 className="mt-2 break-words text-base font-black leading-6 text-slate-950">{item.title}</h2>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-bold text-slate-400">
-            <span className="inline-flex items-center gap-1"><Folder className="h-3.5 w-3.5" />{getItemDirectory(item)}</span>
+            <span className="inline-flex items-center gap-1">
+              <Folder className="h-3.5 w-3.5" />
+              {getItemDirectory(item)}
+            </span>
             <span>{formatTime(item.updatedAt)}</span>
           </div>
         </div>
@@ -234,7 +238,11 @@ function ConceptCard({
         </div>
       </div>
 
-      {item.summary && <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm font-bold leading-6 text-slate-600">{item.summary}</p>}
+      {item.summary && (
+        <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm font-bold leading-6 text-slate-600">
+          {item.summary}
+        </p>
+      )}
 
       {item.kind === 'genreConcept' && (
         <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-bold text-slate-500">
@@ -261,13 +269,21 @@ function ConceptCard({
                 <span className="rounded-full bg-white px-2 py-0.5 text-xs font-black text-cyan-700">AI 联想版</span>
                 <h3 className="break-words text-sm font-black text-slate-900">{association.title}</h3>
               </div>
-              {association.summary && <p className="mt-2 text-sm font-bold leading-6 text-cyan-800">{association.summary}</p>}
-              <div className="mt-2 whitespace-pre-wrap break-words text-sm leading-7 text-slate-700">{association.content}</div>
+              {association.summary && (
+                <p className="mt-2 text-sm font-bold leading-6 text-cyan-800">{association.summary}</p>
+              )}
+              <div className="mt-2 whitespace-pre-wrap break-words text-sm leading-7 text-slate-700">
+                {association.content}
+              </div>
               {association.tags.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {association.tags.map((tag) => (
-                    <span key = {tag} className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-cyan-700">
-                      <Tags className="h-3 w-3" />{tag}
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-cyan-700"
+                    >
+                      <Tags className="h-3 w-3" />
+                      {tag}
                     </span>
                   ))}
                 </div>
@@ -279,18 +295,42 @@ function ConceptCard({
 
       {item.kind === 'genreConcept' && (
         <div className="mt-3 grid gap-2 text-sm leading-6 text-slate-600">
-          {item.sellingPoints.length > 0 && <div><span className="font-black text-slate-800">卖点：</span>{item.sellingPoints.join('；')}</div>}
-          {item.audience && <div><span className="font-black text-slate-800">受众：</span>{item.audience}</div>}
-          {item.conflict && <div><span className="font-black text-slate-800">核心冲突：</span>{item.conflict}</div>}
-          {item.openingHook && <div><span className="font-black text-slate-800">开篇钩子：</span>{item.openingHook}</div>}
+          {item.sellingPoints.length > 0 && (
+            <div>
+              <span className="font-black text-slate-800">卖点：</span>
+              {item.sellingPoints.join('；')}
+            </div>
+          )}
+          {item.audience && (
+            <div>
+              <span className="font-black text-slate-800">受众：</span>
+              {item.audience}
+            </div>
+          )}
+          {item.conflict && (
+            <div>
+              <span className="font-black text-slate-800">核心冲突：</span>
+              {item.conflict}
+            </div>
+          )}
+          {item.openingHook && (
+            <div>
+              <span className="font-black text-slate-800">开篇钩子：</span>
+              {item.openingHook}
+            </div>
+          )}
         </div>
       )}
 
       {item.tags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {item.tags.map((tag) => (
-            <span key = {tag} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500">
-              <Tags className="h-3 w-3" />{tag}
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500"
+            >
+              <Tags className="h-3 w-3" />
+              {tag}
             </span>
           ))}
         </div>
@@ -323,18 +363,24 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
   const [inspirationGenerateCount, setInspirationGenerateCount] = useState('10');
 
   const activeItems = useMemo(() => items.filter((item) => item.kind === activeTab), [activeTab, items]);
-  const categories = useMemo(() => ['全部', ...Array.from(new Set(activeItems.map((item) => item.category || '待整理')))], [activeItems]);
-  const categoryGroups = useMemo(() => (
-    categories
-      .filter((category) => category !== '全部')
-      .map((category) => ({
-        category,
-        items: activeItems.filter((item) => (item.category || '待整理') === category),
-      }))
-  ), [activeItems, categories]);
-  const selectedItem = useMemo(() => (
-    activeItems.find((item) => item.id === selectedItemId) ?? null
-  ), [activeItems, selectedItemId]);
+  const categories = useMemo(
+    () => ['全部', ...Array.from(new Set(activeItems.map((item) => item.category || '待整理')))],
+    [activeItems],
+  );
+  const categoryGroups = useMemo(
+    () =>
+      categories
+        .filter((category) => category !== '全部')
+        .map((category) => ({
+          category,
+          items: activeItems.filter((item) => (item.category || '待整理') === category),
+        })),
+    [activeItems, categories],
+  );
+  const selectedItem = useMemo(
+    () => activeItems.find((item) => item.id === selectedItemId) ?? null,
+    [activeItems, selectedItemId],
+  );
   const visibleItems = useMemo(() => {
     if (selectedItem) return [selectedItem];
     const keyword = search.trim().toLowerCase();
@@ -352,12 +398,20 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
         item.kind === 'inspiration' ? item.association?.title : '',
         item.kind === 'inspiration' ? item.association?.summary : '',
         item.kind === 'inspiration' ? item.association?.content : '',
-        ...(item.kind === 'inspiration' ? item.association?.tags ?? [] : []),
-      ].join('\n').toLowerCase().includes(keyword);
+        ...(item.kind === 'inspiration' ? (item.association?.tags ?? []) : []),
+      ]
+        .join('\n')
+        .toLowerCase()
+        .includes(keyword);
     });
   }, [activeItems, search, selectedCategory, selectedItem]);
 
-  const configuredCloud = Boolean(cloudConfig.bucket.trim() && cloudConfig.region.trim() && cloudConfig.secretId.trim() && cloudConfig.secretKey.trim());
+  const configuredCloud = Boolean(
+    cloudConfig.bucket.trim() &&
+    cloudConfig.region.trim() &&
+    cloudConfig.secretId.trim() &&
+    cloudConfig.secretKey.trim(),
+  );
   const cloudObjectKey = getConceptCloudObjectKey(cloudConfig);
   const inspirationUserContent = useMemo(() => buildInspirationUserContent(inspirationDraft), [inspirationDraft]);
   const previewAiRequestLog = useMemo<ConceptAiRequestLog>(() => {
@@ -366,33 +420,39 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
       createdAt: '当前预览',
       action: activeTab === 'inspiration' ? '灵感整理保存' : '题材整理保存',
       modelName: activeModel?.name ?? '未选择模型',
-      systemPrompt: activeTab === 'inspiration' ? buildInspirationPrompt(mode) : buildGenreConceptPrompt(platform, genre),
-      userContent: activeTab === 'inspiration' ? inspirationUserContent : buildGenreUserContent(platform, genre, genreTitle, genreInput),
+      systemPrompt:
+        activeTab === 'inspiration' ? buildInspirationPrompt(mode) : buildGenreConceptPrompt(platform, genre),
+      userContent:
+        activeTab === 'inspiration'
+          ? inspirationUserContent
+          : buildGenreUserContent(platform, genre, genreTitle, genreInput),
     };
   }, [activeModel?.name, activeTab, genre, genreInput, genreTitle, inspirationUserContent, platform]);
   const visibleAiRequestLog = lastAiRequestLog ?? previewAiRequestLog;
-  const embeddedToolbarTarget = embedded && typeof document !== 'undefined'
-    ? document.getElementById('concept-library-toolbar-slot')
-    : null;
-  const embeddedToolbar = useMemo(() => (
-    <>
-      <button
-        type="button"
-        onClick={() => navigate('/model-manage')}
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-[20px] border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 shadow-sm transition-colors hover:border-cyan-200 hover:text-cyan-700"
-      >
-        <Settings className="h-4 w-4" />
-        设置
-      </button>
-      <button
-        type="button"
-        onClick={() => setIsAiLogOpen(true)}
-        className="inline-flex h-10 items-center justify-center rounded-[20px] border border-slate-200 bg-white px-5 text-sm font-black text-slate-700 shadow-sm transition-colors hover:border-cyan-200 hover:text-cyan-700"
-      >
-        日志
-      </button>
-    </>
-  ), [navigate]);
+  const embeddedToolbarTarget =
+    embedded && typeof document !== 'undefined' ? document.getElementById('concept-library-toolbar-slot') : null;
+  const embeddedToolbar = useMemo(
+    () => (
+      <>
+        <button
+          type="button"
+          onClick={() => navigate('/model-manage')}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-[20px] border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 shadow-sm transition-colors hover:border-cyan-200 hover:text-cyan-700"
+        >
+          <Settings className="h-4 w-4" />
+          设置
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsAiLogOpen(true)}
+          className="inline-flex h-10 items-center justify-center rounded-[20px] border border-slate-200 bg-white px-5 text-sm font-black text-slate-700 shadow-sm transition-colors hover:border-cyan-200 hover:text-cyan-700"
+        >
+          日志
+        </button>
+      </>
+    ),
+    [navigate],
+  );
 
   const deleteConceptItem = (id: string) => {
     const item = items.find((current) => current.id === id);
@@ -406,7 +466,8 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
   const clearActiveKind = () => {
     if (activeItems.length === 0) return;
     const label = getKindLabel(activeTab);
-    if (!window.confirm(`确定清空全部${label}吗？这个操作不会影响${activeTab === 'inspiration' ? '题材' : '灵感'}。`)) return;
+    if (!window.confirm(`确定清空全部${label}吗？这个操作不会影响${activeTab === 'inspiration' ? '题材' : '灵感'}。`))
+      return;
     replaceAll(items.filter((item) => item.kind !== activeTab));
     setSelectedCategory('全部');
     setSelectedItemId(null);
@@ -467,19 +528,31 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
           setNotice('AI 没有返回可确认的联想内容，请重试。');
           return;
         }
-        const item = createInspirationConcept(rawInput, result, { includeAssociation: false, useAssociationAsMain: true });
+        const item = createInspirationConcept(rawInput, result, {
+          includeAssociation: false,
+          useAssociationAsMain: true,
+        });
         setPendingAssociationItem(item);
         setNotice('AI 联想已生成，请确认后保存。');
         return;
       }
     } catch (error) {
-      setNotice(`${mode === 'association' ? 'AI 联想失败' : 'AI 整理失败，已保存为待整理'}：${error instanceof Error ? error.message : '未知错误'}`);
+      setNotice(
+        `${mode === 'association' ? 'AI 联想失败' : 'AI 整理失败，已保存为待整理'}：${error instanceof Error ? error.message : '未知错误'}`,
+      );
     } finally {
       if (mode !== 'association') {
         const item = createInspirationConcept(rawInput, result, { includeAssociation: mode === 'both' });
-        saveInspirationItem(item, result
-          ? (mode === 'both' ? '灵感整理版和 AI 联想版已保存。' : '灵感已整理并保存。')
-          : (!activeModel ? '没有可用模型，已保存为待整理。' : 'AI 返回格式无法解析，已保存为待整理。'));
+        saveInspirationItem(
+          item,
+          result
+            ? mode === 'both'
+              ? '灵感整理版和 AI 联想版已保存。'
+              : '灵感已整理并保存。'
+            : !activeModel
+              ? '没有可用模型，已保存为待整理。'
+              : 'AI 返回格式无法解析，已保存为待整理。',
+        );
       }
       setIsSubmitting(false);
     }
@@ -584,51 +657,57 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
     <div className="flex h-full min-h-0 flex-col bg-slate-50 text-slate-900">
       {embeddedToolbarTarget && createPortal(embeddedToolbar, embeddedToolbarTarget)}
       {!embedded && (
-      <header className="shrink-0 border-b border-slate-200 bg-white px-6 py-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="flex items-center gap-2 text-xl font-black text-slate-950">
-              <Sparkles className="h-5 w-5 text-cyan-600" />
-              构思库
-            </h1>
-            <div className="mt-1 flex flex-wrap gap-3 text-xs font-bold text-slate-400">
-              <span>全部 {stats.total}</span>
-              <span>灵感 {stats.inspirations}</span>
-              <span>题材 {stats.genreConcepts}</span>
-              <span>待整理 {stats.pending}</span>
+        <header className="shrink-0 border-b border-slate-200 bg-white px-6 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="flex items-center gap-2 text-xl font-black text-slate-950">
+                <Sparkles className="h-5 w-5 text-cyan-600" />
+                构思库
+              </h1>
+              <div className="mt-1 flex flex-wrap gap-3 text-xs font-bold text-slate-400">
+                <span>全部 {stats.total}</span>
+                <span>灵感 {stats.inspirations}</span>
+                <span>题材 {stats.genreConcepts}</span>
+                <span>待整理 {stats.pending}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={activeId ?? ''}
+                onChange={(event) => setActiveId(event.target.value || null)}
+                className="h-9 min-w-[180px] rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-cyan-400"
+              >
+                {models.length === 0 ? (
+                  <option value="">暂无模型</option>
+                ) : (
+                  models.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.name}
+                    </option>
+                  ))
+                )}
+              </select>
+              <button
+                type="button"
+                onClick={() => setIsAiLogOpen(true)}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 transition-colors hover:border-cyan-200 hover:text-cyan-700"
+                title="查看输出给 AI 的内容"
+              >
+                <FileText className="h-4 w-4" />
+                输出日志
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCloudSettings(true)}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-cyan-100 bg-cyan-50 px-3 text-sm font-black text-cyan-700 transition-colors hover:border-cyan-200 hover:bg-cyan-100"
+                title="COS 云同步"
+              >
+                <Cloud className="h-4 w-4" />
+                云同步
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={activeId ?? ''}
-              onChange={(event) => setActiveId(event.target.value || null)}
-              className="h-9 min-w-[180px] rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-cyan-400"
-            >
-              {models.length === 0 ? <option value="">暂无模型</option> : models.map((model) => (
-                <option key = {model.id} value={model.id}>{model.name}</option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => setIsAiLogOpen(true)}
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-600 transition-colors hover:border-cyan-200 hover:text-cyan-700"
-              title="查看输出给 AI 的内容"
-            >
-              <FileText className="h-4 w-4" />
-              输出日志
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowCloudSettings(true)}
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-cyan-100 bg-cyan-50 px-3 text-sm font-black text-cyan-700 transition-colors hover:border-cyan-200 hover:bg-cyan-100"
-              title="COS 云同步"
-            >
-              <Cloud className="h-4 w-4" />
-              云同步
-            </button>
-          </div>
-        </div>
-      </header>
+        </header>
       )}
 
       <AppModalShell
@@ -641,19 +720,66 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
         backdropClassName="bg-slate-950/35 p-5"
         contentClassName="p-5"
       >
-            <div className="mt-4 grid gap-3">
-              <input data-no-modal-drag="true" value={cloudConfig.bucket} onChange={(event) => setCloudConfig({ ...cloudConfig, bucket: event.target.value })} placeholder="Bucket，例如 writer-1250000000" className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white" />
-              <input data-no-modal-drag="true" value={cloudConfig.region} onChange={(event) => setCloudConfig({ ...cloudConfig, region: event.target.value })} placeholder="Region，例如 ap-guangzhou" className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white" />
-              <input data-no-modal-drag="true" value={cloudConfig.secretId} onChange={(event) => setCloudConfig({ ...cloudConfig, secretId: event.target.value })} placeholder="SecretId" className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white" />
-              <input data-no-modal-drag="true" value={cloudConfig.secretKey} onChange={(event) => setCloudConfig({ ...cloudConfig, secretKey: event.target.value })} placeholder="SecretKey" type="password" className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white" />
-              <input data-no-modal-drag="true" value={cloudConfig.prefix} onChange={(event) => setCloudConfig({ ...cloudConfig, prefix: event.target.value })} placeholder="云端目录，例如 xinyuexia" className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white" />
-            </div>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <ActionButton type="button" onClick={saveCloudConfig} variant="secondary">保存</ActionButton>
-              <ActionButton type="button" onClick={() => void uploadCloudSnapshot()} disabled={isCloudBusy} variant="secondary">上传</ActionButton>
-              <ActionButton type="button" onClick={() => void restoreCloudSnapshot()} disabled={isCloudBusy} variant="secondary">恢复</ActionButton>
-            </div>
-            <p className="mt-4 break-all text-xs font-bold leading-5 text-slate-400">云端文件：{cloudObjectKey}</p>
+        <div className="mt-4 grid gap-3">
+          <input
+            data-no-modal-drag="true"
+            value={cloudConfig.bucket}
+            onChange={(event) => setCloudConfig({ ...cloudConfig, bucket: event.target.value })}
+            placeholder="Bucket，例如 writer-1250000000"
+            className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white"
+          />
+          <input
+            data-no-modal-drag="true"
+            value={cloudConfig.region}
+            onChange={(event) => setCloudConfig({ ...cloudConfig, region: event.target.value })}
+            placeholder="Region，例如 ap-guangzhou"
+            className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white"
+          />
+          <input
+            data-no-modal-drag="true"
+            value={cloudConfig.secretId}
+            onChange={(event) => setCloudConfig({ ...cloudConfig, secretId: event.target.value })}
+            placeholder="SecretId"
+            className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white"
+          />
+          <input
+            data-no-modal-drag="true"
+            value={cloudConfig.secretKey}
+            onChange={(event) => setCloudConfig({ ...cloudConfig, secretKey: event.target.value })}
+            placeholder="SecretKey"
+            type="password"
+            className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white"
+          />
+          <input
+            data-no-modal-drag="true"
+            value={cloudConfig.prefix}
+            onChange={(event) => setCloudConfig({ ...cloudConfig, prefix: event.target.value })}
+            placeholder="云端目录，例如 xinyuexia"
+            className="h-10 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:bg-white"
+          />
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <ActionButton type="button" onClick={saveCloudConfig} variant="secondary">
+            保存
+          </ActionButton>
+          <ActionButton
+            type="button"
+            onClick={() => void uploadCloudSnapshot()}
+            disabled={isCloudBusy}
+            variant="secondary"
+          >
+            上传
+          </ActionButton>
+          <ActionButton
+            type="button"
+            onClick={() => void restoreCloudSnapshot()}
+            disabled={isCloudBusy}
+            variant="secondary"
+          >
+            恢复
+          </ActionButton>
+        </div>
+        <p className="mt-4 break-all text-xs font-bold leading-5 text-slate-400">云端文件：{cloudObjectKey}</p>
       </AppModalShell>
 
       <AppModalShell
@@ -693,21 +819,34 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
           <>
             <div className="min-h-0 flex-1 overflow-y-auto p-5">
               {pendingAssociationItem.summary && (
-                <p className="rounded-lg bg-cyan-50 px-3 py-2 text-sm font-bold leading-6 text-cyan-800">{pendingAssociationItem.summary}</p>
+                <p className="rounded-lg bg-cyan-50 px-3 py-2 text-sm font-bold leading-6 text-cyan-800">
+                  {pendingAssociationItem.summary}
+                </p>
               )}
-              <div className="mt-3 whitespace-pre-wrap break-words text-sm leading-7 text-slate-700">{pendingAssociationItem.content}</div>
+              <div className="mt-3 whitespace-pre-wrap break-words text-sm leading-7 text-slate-700">
+                {pendingAssociationItem.content}
+              </div>
               {pendingAssociationItem.tags.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   {pendingAssociationItem.tags.map((tag) => (
-                    <span key = {tag} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500">
-                      <Tags className="h-3 w-3" />{tag}
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500"
+                    >
+                      <Tags className="h-3 w-3" />
+                      {tag}
                     </span>
                   ))}
                 </div>
               )}
             </div>
             <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-slate-100 p-4">
-              <ActionButton type="button" onClick={() => setPendingAssociationItem(null)} variant="secondary" className="w-full">
+              <ActionButton
+                type="button"
+                onClick={() => setPendingAssociationItem(null)}
+                variant="secondary"
+                className="w-full"
+              >
                 取消
               </ActionButton>
               <ActionButton type="button" onClick={confirmAssociationSave} className="w-full">
@@ -725,7 +864,7 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
               const active = activeTab === tab.id;
               return (
                 <button
-                  key = {tab.id}
+                  key={tab.id}
                   type="button"
                   onClick={() => {
                     setActiveTab(tab.id);
@@ -752,7 +891,9 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
                 setSelectedItemId(null);
               }}
               className={`flex h-9 w-full items-center justify-between rounded-lg px-3 text-left text-sm font-black transition-colors ${
-                selectedCategory === '全部' && !selectedItem ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 hover:bg-slate-50'
+                selectedCategory === '全部' && !selectedItem
+                  ? 'bg-cyan-50 text-cyan-700'
+                  : 'text-slate-600 hover:bg-slate-50'
               }`}
             >
               <span className="inline-flex min-w-0 items-center gap-2">
@@ -762,7 +903,7 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
               <span className="text-xs text-slate-400">{activeItems.length}</span>
             </button>
             {categoryGroups.map((group) => (
-              <div key = {group.category} className="rounded-lg border border-slate-100 bg-white">
+              <div key={group.category} className="rounded-lg border border-slate-100 bg-white">
                 <button
                   type="button"
                   onClick={() => {
@@ -770,7 +911,9 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
                     setSelectedItemId(null);
                   }}
                   className={`flex h-9 w-full items-center justify-between rounded-lg px-3 text-left text-sm font-black transition-colors ${
-                    selectedCategory === group.category && !selectedItem ? 'bg-cyan-50 text-cyan-700' : 'text-slate-600 hover:bg-slate-50'
+                    selectedCategory === group.category && !selectedItem
+                      ? 'bg-cyan-50 text-cyan-700'
+                      : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   <span className="inline-flex min-w-0 items-center gap-2">
@@ -783,14 +926,16 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
                 <div className="pb-2">
                   {group.items.map((item) => (
                     <button
-                      key = {item.id}
+                      key={item.id}
                       type="button"
                       onClick={() => {
                         setSelectedCategory(item.category || '待整理');
                         setSelectedItemId(item.id);
                       }}
                       className={`ml-5 flex min-h-8 w-[calc(100%-1.25rem)] items-center gap-2 rounded-md px-3 py-1.5 text-left text-xs font-bold leading-5 transition-colors ${
-                        selectedItemId === item.id ? 'bg-cyan-50 text-cyan-700' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                        selectedItemId === item.id
+                          ? 'bg-cyan-50 text-cyan-700'
+                          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
                       }`}
                     >
                       <FileText className="h-3.5 w-3.5 shrink-0" />
@@ -818,14 +963,20 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
               <div className="mt-3 flex max-w-full items-start gap-2">
                 <CombinedAiConfigSelect
                   className="w-full"
-                  style={{
-                    width: '100%',
-                    maxWidth: '100%',
-                    '--xy-field-width': '100%',
-                  } as CSSProperties}
+                  style={
+                    {
+                      width: '100%',
+                      maxWidth: '100%',
+                      '--xy-field-width': '100%',
+                    } as CSSProperties
+                  }
                   modelValue={activeId ?? ''}
                   promptValue="brainstorm"
-                  modelOptions={models.length === 0 ? [{ value: '', label: '暂无可用模型', disabled: true }] : models.map((model) => ({ value: model.id, label: model.name }))}
+                  modelOptions={
+                    models.length === 0
+                      ? [{ value: '', label: '暂无可用模型', disabled: true }]
+                      : models.map((model) => ({ value: model.id, label: model.name }))
+                  }
                   promptOptions={[{ value: 'brainstorm', label: '脑洞' }]}
                   onModelChange={(value) => setActiveId(value || null)}
                   onPromptChange={() => undefined}
@@ -837,57 +988,67 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
                 <div className="xy-brainstorm-question-panel xy-shellless-panel editor-scrollbar min-h-0 flex flex-1 flex-col overflow-y-auto overflow-x-hidden px-0 py-2">
                   <div className="flex min-h-full flex-col gap-4 pt-2">
                     <div className="grid shrink-0 grid-cols-2 gap-4 text-sm font-bold text-gray-700">
-                      {CONCEPT_INSPIRATION_FIELDS.filter((field) => field.key === 'genre' || field.key === 'theme').map((field) => {
+                      {CONCEPT_INSPIRATION_FIELDS.filter((field) => field.key === 'genre' || field.key === 'theme').map(
+                        (field) => {
+                          const rows = getInspirationFieldRows(inspirationDraft[field.key]);
+                          return (
+                            <div
+                              key={field.key}
+                              className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${inspirationDraft[field.key].trim() ? 'xy-has-value' : ''}`}
+                            >
+                              <textarea
+                                data-no-modal-drag="true"
+                                value={inspirationDraft[field.key]}
+                                onChange={(event) => setInspirationField(field.key, event.target.value)}
+                                placeholder={field.placeholder}
+                                rows={1}
+                                className="font-bold leading-5"
+                                style={{
+                                  height: `${Math.max(52, rows * 20 + 32)}px`,
+                                  overflowY: 'hidden',
+                                }}
+                              />
+                              <label>{field.label}</label>
+                            </div>
+                          );
+                        },
+                      )}
+                    </div>
+                    {CONCEPT_INSPIRATION_FIELDS.filter((field) => field.key !== 'genre' && field.key !== 'theme').map(
+                      (field) => {
                         const rows = getInspirationFieldRows(inspirationDraft[field.key]);
+                        const isLastField = field.key === 'requirement';
                         return (
-                          <div
-                            key = {field.key}
-                            className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${inspirationDraft[field.key].trim() ? 'xy-has-value' : ''}`}
-                          >
-                            <textarea
-                              data-no-modal-drag="true"
-                              value={inspirationDraft[field.key]}
-                              onChange={(event) => setInspirationField(field.key, event.target.value)}
-                              placeholder={field.placeholder}
-                              rows={1}
-                              className="font-bold leading-5"
-                              style={{
-                                height: `${Math.max(52, rows * 20 + 32)}px`,
-                                overflowY: 'hidden',
-                              }}
-                            />
-                            <label>{field.label}</label>
+                          <div key={field.key} className="block shrink-0 text-sm font-bold text-gray-700">
+                            <div
+                              className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${inspirationDraft[field.key].trim() ? 'xy-has-value' : ''}`}
+                            >
+                              <textarea
+                                data-no-modal-drag="true"
+                                value={inspirationDraft[field.key]}
+                                onChange={(event) => setInspirationField(field.key, event.target.value)}
+                                placeholder={field.placeholder}
+                                rows={1}
+                                className={`font-bold leading-5 ${isLastField ? 'min-h-0 flex-1' : ''}`}
+                                style={
+                                  isLastField
+                                    ? {
+                                        minHeight: `${Math.max(180, rows * 20 + 52)}px`,
+                                        height: '100%',
+                                        overflowY: 'hidden',
+                                      }
+                                    : {
+                                        height: `${Math.max(52, rows * 20 + 32)}px`,
+                                        overflowY: 'hidden',
+                                      }
+                                }
+                              />
+                              <label>{field.label}</label>
+                            </div>
                           </div>
                         );
-                      })}
-                    </div>
-                    {CONCEPT_INSPIRATION_FIELDS.filter((field) => field.key !== 'genre' && field.key !== 'theme').map((field) => {
-                      const rows = getInspirationFieldRows(inspirationDraft[field.key]);
-                      const isLastField = field.key === 'requirement';
-                      return (
-                        <div key = {field.key} className="block shrink-0 text-sm font-bold text-gray-700">
-                          <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${inspirationDraft[field.key].trim() ? 'xy-has-value' : ''}`}>
-                            <textarea
-                              data-no-modal-drag="true"
-                              value={inspirationDraft[field.key]}
-                              onChange={(event) => setInspirationField(field.key, event.target.value)}
-                              placeholder={field.placeholder}
-                              rows={1}
-                              className={`font-bold leading-5 ${isLastField ? 'min-h-0 flex-1' : ''}`}
-                              style={isLastField ? {
-                                minHeight: `${Math.max(180, rows * 20 + 52)}px`,
-                                height: '100%',
-                                overflowY: 'hidden',
-                              } : {
-                                height: `${Math.max(52, rows * 20 + 32)}px`,
-                                overflowY: 'hidden',
-                              }}
-                            />
-                            <label>{field.label}</label>
-                          </div>
-                        </div>
-                      );
-                    })}
+                      },
+                    )}
                   </div>
                 </div>
                 <div className="mt-2 flex items-center gap-3">
@@ -898,7 +1059,7 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
                         const active = inspirationGenerateCount === value;
                         return (
                           <button
-                            key = {value}
+                            key={value}
                             type="button"
                             onClick={() => setInspirationGenerateCount(value)}
                             className={`min-w-0 flex-1 border-r border-slate-200 px-2 text-sm font-black leading-none transition-colors last:border-r-0 ${
@@ -930,53 +1091,66 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
               <div className="xy-brainstorm-question-panel xy-shellless-panel editor-scrollbar min-h-0 overflow-y-auto overflow-x-hidden px-0 py-2">
                 <div className="flex flex-col gap-4 pt-2">
                   <div className="grid grid-cols-2 gap-4 text-sm font-bold text-gray-700">
-                    {CONCEPT_INSPIRATION_FIELDS.filter((field) => field.key === 'genre' || field.key === 'theme').map((field) => {
+                    {CONCEPT_INSPIRATION_FIELDS.filter((field) => field.key === 'genre' || field.key === 'theme').map(
+                      (field) => {
+                        const rows = getInspirationFieldRows(inspirationDraft[field.key]);
+                        return (
+                          <div
+                            key={field.key}
+                            className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${inspirationDraft[field.key].trim() ? 'xy-has-value' : ''}`}
+                          >
+                            <textarea
+                              data-no-modal-drag="true"
+                              value={inspirationDraft[field.key]}
+                              onChange={(event) => setInspirationField(field.key, event.target.value)}
+                              placeholder={field.placeholder}
+                              rows={1}
+                              className="font-bold leading-5"
+                              style={{
+                                height: `${Math.max(52, rows * 20 + 32)}px`,
+                                overflowY: 'hidden',
+                              }}
+                            />
+                            <label>{field.label}</label>
+                          </div>
+                        );
+                      },
+                    )}
+                  </div>
+                  {CONCEPT_INSPIRATION_FIELDS.filter((field) => field.key !== 'genre' && field.key !== 'theme').map(
+                    (field) => {
                       const rows = getInspirationFieldRows(inspirationDraft[field.key]);
+                      const isMainField = field.key === 'idea';
                       return (
-                        <div
-                          key={field.key}
-                          className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${inspirationDraft[field.key].trim() ? 'xy-has-value' : ''}`}
-                        >
-                          <textarea
-                            data-no-modal-drag="true"
-                            value={inspirationDraft[field.key]}
-                            onChange={(event) => setInspirationField(field.key, event.target.value)}
-                            placeholder={field.placeholder}
-                            rows={1}
-                            className="font-bold leading-5"
-                            style={{
-                              height: `${Math.max(52, rows * 20 + 32)}px`,
-                              overflowY: 'hidden',
-                            }}
-                          />
-                          <label>{field.label}</label>
+                        <div key={field.key} className="block text-sm font-bold text-gray-700">
+                          <div
+                            className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${inspirationDraft[field.key].trim() ? 'xy-has-value' : ''}`}
+                          >
+                            <textarea
+                              data-no-modal-drag="true"
+                              value={inspirationDraft[field.key]}
+                              onChange={(event) => setInspirationField(field.key, event.target.value)}
+                              placeholder={field.placeholder}
+                              rows={1}
+                              className="font-bold leading-5"
+                              style={{
+                                height: `${Math.max(isMainField ? 150 : 72, rows * 20 + 32)}px`,
+                                overflowY: 'hidden',
+                              }}
+                            />
+                            <label>
+                              {field.label}
+                              {isMainField && (
+                                <span>
+                                  <WordCountText value={countTextWords(inspirationDraft[field.key])} />
+                                </span>
+                              )}
+                            </label>
+                          </div>
                         </div>
                       );
-                    })}
-                  </div>
-                  {CONCEPT_INSPIRATION_FIELDS.filter((field) => field.key !== 'genre' && field.key !== 'theme').map((field) => {
-                    const rows = getInspirationFieldRows(inspirationDraft[field.key]);
-                    const isMainField = field.key === 'idea';
-                    return (
-                      <div key={field.key} className="block text-sm font-bold text-gray-700">
-                        <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${inspirationDraft[field.key].trim() ? 'xy-has-value' : ''}`}>
-                          <textarea
-                            data-no-modal-drag="true"
-                            value={inspirationDraft[field.key]}
-                            onChange={(event) => setInspirationField(field.key, event.target.value)}
-                            placeholder={field.placeholder}
-                            rows={1}
-                            className="font-bold leading-5"
-                            style={{
-                              height: `${Math.max(isMainField ? 150 : 72, rows * 20 + 32)}px`,
-                              overflowY: 'hidden',
-                            }}
-                          />
-                          <label>{field.label}{isMainField && <span><WordCountText value={countTextWords(inspirationDraft[field.key])} /></span>}</label>
-                        </div>
-                      </div>
-                    );
-                  })}
+                    },
+                  )}
                 </div>
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2">
@@ -1017,7 +1191,11 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
                     onChange={(event) => setPlatform(event.target.value as ConceptPlatform)}
                     className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700 outline-none focus:border-cyan-400"
                   >
-                    {platforms.map((item) => <option key = {item} value={item}>{item}</option>)}
+                    {platforms.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
                   </select>
                 </label>
                 <label className="text-sm font-black text-slate-800">
@@ -1028,7 +1206,11 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
                     onChange={(event) => setGenre(event.target.value)}
                     className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700 outline-none focus:border-cyan-400"
                   >
-                    {genres.map((item) => <option key = {item} value={item}>{item}</option>)}
+                    {genres.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
                   </select>
                 </label>
               </div>
@@ -1094,7 +1276,11 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
                 }}
                 className="h-10 min-w-[150px] rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-cyan-400"
               >
-                {categories.map((category) => <option key = {category} value={category}>{category}</option>)}
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
               </select>
               <button
                 type="button"
@@ -1111,14 +1297,16 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
             {visibleItems.length > 0 ? (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
                 {visibleItems.map((item) => (
-                  <ConceptCard key = {item.id} item={item} onDelete={deleteConceptItem} />
+                  <ConceptCard key={item.id} item={item} onDelete={deleteConceptItem} />
                 ))}
               </div>
             ) : (
               <div className="grid h-full min-h-[360px] place-items-center rounded-lg border border-dashed border-slate-200 bg-white text-center">
                 <div>
                   <Sparkles className="mx-auto h-10 w-10 text-slate-300" />
-                  <p className="mt-3 text-sm font-black text-slate-500">暂无{activeTab === 'inspiration' ? '灵感' : '题材'}构思</p>
+                  <p className="mt-3 text-sm font-black text-slate-500">
+                    暂无{activeTab === 'inspiration' ? '灵感' : '题材'}构思
+                  </p>
                   <p className="mt-1 text-xs font-bold text-slate-400">右侧发送给 AI 后会自动保存到这里。</p>
                 </div>
               </div>
@@ -1129,5 +1317,3 @@ export function ConceptLibraryPage({ embedded = false }: ConceptLibraryPageProps
     </div>
   );
 }
-
-

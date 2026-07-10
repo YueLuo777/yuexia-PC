@@ -14,6 +14,10 @@ import {
 } from 'lucide-react';
 
 import { BrowserWorkspace } from '@/features/script-editor/components/BrowserWorkspace';
+import {
+  readScriptLinkedNovelId,
+  writeScriptLinkedNovelId,
+} from '@/features/script-editor/model/scriptLinkedNovelStorage';
 import { useMaterials } from '@/features/materials/hooks/useMaterials';
 import type { MaterialItem } from '@/features/materials/model/materialTypes';
 import { savePlotItems } from '@/features/plot-library/hooks/usePlotLibrary';
@@ -35,8 +39,6 @@ const MIN_WIDTH = 150;
 const GROUP_SIZE = 50;
 const FULL_WIDTH = 9999;
 const EDITOR_MODE_KEY = 'xinyuexia_script_editor_mode';
-const LINKED_NOVEL_KEY = 'xinyuexia_script_editor_linked_novel';
-const LEGACY_LINKED_KEYS = ['sev2_linked_novel', 'script_editor_linked_novel'];
 const WIDTH_STORAGE_KEYS: Record<EditorMode, string> = {
   dual: 'xinyuexia_script_editor_widths_dual',
   script: 'xinyuexia_script_editor_widths_script',
@@ -52,28 +54,6 @@ const MODE_LABELS: Record<EditorMode, string> = {
   script: '纯剧本编辑',
   browser: '浏览器编辑',
 };
-
-function clearLinkedNovelStorage() {
-  try {
-    localStorage.removeItem(LINKED_NOVEL_KEY);
-    LEGACY_LINKED_KEYS.forEach((key) => localStorage.removeItem(key));
-  } catch {
-    // Ignore storage failures.
-  }
-}
-
-function readLinkedNovelStorage() {
-  try {
-    const keys = [LINKED_NOVEL_KEY, ...LEGACY_LINKED_KEYS];
-    for (const key of keys) {
-      const value = Number(localStorage.getItem(key));
-      if (Number.isFinite(value) && value > 0) return value;
-    }
-  } catch {
-    // Ignore storage failures.
-  }
-  return null;
-}
 
 function countText(text: string) {
   return text.replace(/\s/g, '').length;
@@ -1011,6 +991,7 @@ export function ScriptEditorPage() {
     saveContent,
     updateNovelChapterContent,
   } = useWorkbenchData();
+  const currentScript = currentNovel?.type === 'script' ? currentNovel : null;
   const { items: materials } = useMaterials();
   const { tabs, activeTabId } = useWorkspaceTabs();
   const [isQuickNavOpen, setIsQuickNavOpen] = useState(false);
@@ -1020,7 +1001,9 @@ export function ScriptEditorPage() {
     () => (localStorage.getItem(EDITOR_MODE_KEY) as EditorMode) || 'dual',
   );
   const [aiCollapsed, setAiCollapsed] = useState<boolean>(() => readStoredJson(AI_COLLAPSED_KEYS[editorMode], false));
-  const [linkedNovelId, setLinkedNovelId] = useState<number | null>(() => readLinkedNovelStorage());
+  const [linkedNovelId, setLinkedNovelId] = useState<number | null>(() =>
+    readScriptLinkedNovelId(currentScript?.id ?? null),
+  );
   const [selectedNovelChapterId, setSelectedNovelChapterId] = useState<number | null>(null);
   const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
@@ -1040,7 +1023,6 @@ export function ScriptEditorPage() {
     startWidths: Record<string, number>;
   } | null>(null);
 
-  const currentScript = currentNovel?.type === 'script' ? currentNovel : null;
   const selectedScriptChapter = selectedChapter?.chapter ?? null;
   const selectedVolumeName = selectedChapter?.volumeName ?? null;
   const linkedNovel = useMemo(
@@ -1058,9 +1040,17 @@ export function ScriptEditorPage() {
   const activeTab = tabs.find((tab) => tab.id === activeTabId);
 
   useEffect(() => {
-    setLinkedNovelId(readLinkedNovelStorage());
+    setLinkedNovelId(readScriptLinkedNovelId(currentScript?.id ?? null));
     setSelectedNovelChapterId(null);
   }, [currentScript?.id]);
+
+  const updateLinkedNovel = useCallback(
+    (novelId: number | null) => {
+      writeScriptLinkedNovelId(currentScript?.id ?? null, novelId);
+      setLinkedNovelId(novelId);
+    },
+    [currentScript?.id],
+  );
 
   useEffect(() => {
     const activeTab = tabs.find((tab) => tab.id === activeTabId);
@@ -1108,16 +1098,6 @@ export function ScriptEditorPage() {
       localStorage.setItem('current_chapter_id', String(selectedScriptChapter.id));
     }
   }, [selectedScriptChapter?.id]);
-
-  useEffect(() => {
-    if (linkedNovelId === null) {
-      localStorage.removeItem(LINKED_NOVEL_KEY);
-      LEGACY_LINKED_KEYS.forEach((key) => localStorage.removeItem(key));
-      return;
-    }
-    localStorage.setItem(LINKED_NOVEL_KEY, String(linkedNovelId));
-    LEGACY_LINKED_KEYS.forEach((key) => localStorage.setItem(key, String(linkedNovelId)));
-  }, [linkedNovelId]);
 
   const widths = useMemo(() => {
     const browserWidths = {
@@ -1352,7 +1332,7 @@ export function ScriptEditorPage() {
           {linkedNovelId !== null && (
             <button
               onClick={() => {
-                setLinkedNovelId(null);
+                updateLinkedNovel(null);
                 setSelectedNovelChapterId(null);
               }}
               className="xy-capsule-button xy-danger"
@@ -1483,7 +1463,7 @@ export function ScriptEditorPage() {
         novels={linkedNovelOptions}
         onClose={() => setIsLinkModalOpen(false)}
         onLink={(novelId) => {
-          setLinkedNovelId(novelId);
+          updateLinkedNovel(novelId);
           setIsLinkModalOpen(false);
         }}
       />

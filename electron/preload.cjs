@@ -37,6 +37,13 @@ contextBridge.exposeInMainWorld('xinyuexiaModel', {
   cancelStream: (requestId) => ipcRenderer.invoke('model:cancel-stream', requestId),
 });
 
+contextBridge.exposeInMainWorld('xinyuexiaModelSecrets', {
+  status: () => ipcRenderer.invoke('model-secrets:status'),
+  get: (secretId) => ipcRenderer.invoke('model-secrets:get', secretId),
+  set: (secretId, apiKey) => ipcRenderer.invoke('model-secrets:set', secretId, apiKey),
+  remove: (secretId) => ipcRenderer.invoke('model-secrets:remove', secretId),
+});
+
 contextBridge.exposeInMainWorld('xinyuexiaAppIcon', {
   read: () => ipcRenderer.invoke('app-icon:read'),
   select: () => ipcRenderer.invoke('app-icon:select'),

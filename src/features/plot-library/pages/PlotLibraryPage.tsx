@@ -1,11 +1,13 @@
 import { type ChangeEvent, type DragEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  AlertTriangle, ArrowUpDown, Check, Edit3, Library, Search,
-  Tag, Trash2, X,
-} from 'lucide-react';
+import { AlertTriangle, ArrowUpDown, Check, Edit3, Library, Search, Tag, Trash2, X } from 'lucide-react';
 
-import { parsePlotRating, parsePlotScoreMap, sanitizePlotLibraryContent, usePlotLibrary } from '@/features/plot-library/hooks/usePlotLibrary';
+import {
+  parsePlotRating,
+  parsePlotScoreMap,
+  sanitizePlotLibraryContent,
+  usePlotLibrary,
+} from '@/features/plot-library/hooks/usePlotLibrary';
 import type { NewPlotLibraryItem, PlotLibraryItem } from '@/features/plot-library/model/plotLibraryTypes';
 import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
@@ -21,13 +23,13 @@ function extractPlotTags(content: string): string[] {
   if (!content) return [];
   const blocks = Array.from(content.matchAll(/<bq>([\s\S]*?)<\/bq>/g));
   if (blocks.length === 0) return [];
-  const tags = blocks.flatMap((match) => (
+  const tags = blocks.flatMap((match) =>
     match[1]
       .replace(/标签[:：]/g, '')
       .split(/[#＃、\s，,]+/)
       .map((tag) => tag.trim())
-      .filter((tag) => tag.length > 0 && tag.length < 20)
-  ));
+      .filter((tag) => tag.length > 0 && tag.length < 20),
+  );
   return Array.from(new Set(tags)).slice(0, 8);
 }
 
@@ -63,11 +65,7 @@ function stripForcedPromptLeak(rawText: string) {
     .split('\n')
     .filter((line) => {
       const trimmed = line.trim();
-      return !(
-        /【?强制包裹】?/.test(trimmed) ||
-        /所有分数必须放在/.test(trimmed) ||
-        /仅填数字/.test(trimmed)
-      );
+      return !(/【?强制包裹】?/.test(trimmed) || /所有分数必须放在/.test(trimmed) || /仅填数字/.test(trimmed));
     })
     .join('\n');
 }
@@ -105,19 +103,21 @@ function normalizeSearchText(value: string) {
 }
 
 function buildPlotSearchText(item: PlotLibraryItem) {
-  return normalizeSearchText([
-    item.title,
-    item.novelTitle,
-    item.chapter,
-    item.content,
-    item.fsText ?? '',
-    item.bqText ?? '',
-    prepareModalText(item.content),
-    item.tags.join(' '),
-    extractPlotTags(item.content).join(' '),
-    String(item.rating ?? ''),
-    String(item.wordCount ?? ''),
-  ].join(' '));
+  return normalizeSearchText(
+    [
+      item.title,
+      item.novelTitle,
+      item.chapter,
+      item.content,
+      item.fsText ?? '',
+      item.bqText ?? '',
+      prepareModalText(item.content),
+      item.tags.join(' '),
+      extractPlotTags(item.content).join(' '),
+      String(item.rating ?? ''),
+      String(item.wordCount ?? ''),
+    ].join(' '),
+  );
 }
 
 function matchesSearch(item: PlotLibraryItem, keyword: string) {
@@ -208,10 +208,13 @@ function normalizeImportedPlotPoint(value: unknown, index: number): NewPlotLibra
   if (!content) return null;
   const rawTags = Array.isArray(value.tags)
     ? value.tags.map((tag) => readString(tag)).filter(Boolean)
-    : readString(value.tags).split(/[,，、\s]+/).filter(Boolean);
-  const rating = typeof value.rating === 'number' && Number.isFinite(value.rating)
-    ? Math.max(0, Math.min(100, value.rating))
-    : undefined;
+    : readString(value.tags)
+        .split(/[,，、\s]+/)
+        .filter(Boolean);
+  const rating =
+    typeof value.rating === 'number' && Number.isFinite(value.rating)
+      ? Math.max(0, Math.min(100, value.rating))
+      : undefined;
   return {
     title: readString(value.title),
     chapter: readString(value.chapter),
@@ -244,11 +247,7 @@ function parseTextPlotPoints(rawText: string): NewPlotLibraryItem[] {
 function parseImportedPlotPoints(rawText: string): NewPlotLibraryItem[] {
   try {
     const parsed = JSON.parse(rawText) as unknown;
-    const source = Array.isArray(parsed)
-      ? parsed
-      : isRecord(parsed) && Array.isArray(parsed.items)
-        ? parsed.items
-        : [];
+    const source = Array.isArray(parsed) ? parsed : isRecord(parsed) && Array.isArray(parsed.items) ? parsed.items : [];
     const normalized = source
       .map((item, index) => normalizeImportedPlotPoint(item, index))
       .filter((item): item is NewPlotLibraryItem => Boolean(item));
@@ -260,9 +259,7 @@ function parseImportedPlotPoints(rawText: string): NewPlotLibraryItem[] {
 }
 
 function buildReadablePlotExport(items: PlotLibraryItem[]) {
-  return items
-    .map((item) => normalizeTextPlotBlock(item.content))
-    .join('\n\n\n');
+  return items.map((item) => normalizeTextPlotBlock(item.content)).join('\n\n\n');
 }
 
 function normalizePlotContentForDuplicate(content: string) {
@@ -302,7 +299,17 @@ interface PlotLibraryPageProps {
 }
 
 export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {}) {
-  const { items, recycleItems, addItems, deleteItem, updateItem, clearAll, restoreItem, permanentDeleteItem, clearRecycle } = usePlotLibrary();
+  const {
+    items,
+    recycleItems,
+    addItems,
+    deleteItem,
+    updateItem,
+    clearAll,
+    restoreItem,
+    permanentDeleteItem,
+    clearRecycle,
+  } = usePlotLibrary();
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [toolbarTarget, setToolbarTarget] = useState<HTMLElement | null>(null);
   const [search, setSearch] = useState('');
@@ -375,17 +382,15 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
     return list;
   }, [items, search, sortMode, activeTagFilter, stablePlotIdByItemId]);
 
-  const visiblePlotItems = useMemo(
-    () => filtered.filter((item) => item.content.trim().length > 0),
-    [filtered],
-  );
+  const visiblePlotItems = useMemo(() => filtered.filter((item) => item.content.trim().length > 0), [filtered]);
 
   const exportSortedItems = useMemo(
-    () => [...visiblePlotItems].sort((a, b) => {
-      const scoreDiff = (extractScore(b.content) || 0) - (extractScore(a.content) || 0);
-      if (scoreDiff !== 0) return scoreDiff;
-      return (stablePlotIdByItemId.get(a.id) ?? 0) - (stablePlotIdByItemId.get(b.id) ?? 0);
-    }),
+    () =>
+      [...visiblePlotItems].sort((a, b) => {
+        const scoreDiff = (extractScore(b.content) || 0) - (extractScore(a.content) || 0);
+        if (scoreDiff !== 0) return scoreDiff;
+        return (stablePlotIdByItemId.get(a.id) ?? 0) - (stablePlotIdByItemId.get(b.id) ?? 0);
+      }),
     [stablePlotIdByItemId, visiblePlotItems],
   );
 
@@ -401,10 +406,7 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
     () => exportSortedItems.filter((item) => selectedExportIds.has(item.id)),
     [exportSortedItems, selectedExportIds],
   );
-  const exportPreviewText = useMemo(
-    () => buildReadablePlotExport(selectedExportItems),
-    [selectedExportItems],
-  );
+  const exportPreviewText = useMemo(() => buildReadablePlotExport(selectedExportItems), [selectedExportItems]);
 
   const handleImportFile = async (file: File | undefined) => {
     if (!file) return;
@@ -521,7 +523,11 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
           style={{ paddingRight: search ? '2rem' : undefined }}
         />
         {search && (
-          <button type="button" onClick={() => setSearch('')} className="absolute right-1.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+          <button
+            type="button"
+            onClick={() => setSearch('')}
+            className="absolute right-1.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          >
             <X className="h-3 w-3" />
           </button>
         )}
@@ -584,84 +590,94 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
         onChange={handleImportPlotPoints}
       />
       {embedded && toolbarTarget ? createPortal(toolbar, toolbarTarget) : null}
-      {(!embedded || !toolbarTarget) && <div className={`flex ${embedded ? 'h-14' : 'h-16'} shrink-0 items-center border-b border-gray-200 bg-white px-6`}>
-        <div className="flex w-full items-center justify-between">
-          {!embedded ? (
-          <div className="min-w-0">
-              <h1 className="text-xl font-bold text-gray-900">剧情库</h1>
-              <p className="text-[10px] text-gray-400">
-                共 {items.length} 条剧情点
-                {search.trim() && ` · 搜索 ${filtered.length} 条`}
-                {activeTagFilter && ` · 筛选「${activeTagFilter}」${filtered.length} 条`}
-              </p>
-          </div>
-          ) : (
-            <div className="min-w-0 text-xs font-bold text-gray-400">共 {items.length} 条剧情点</div>
-          )}
-          <div className="flex items-center gap-2">
-            <label className="xy-ui132-search w-48">
-              <Search />
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="搜索..."
-                style={{ paddingRight: search ? '2rem' : undefined }}
-              />
-              {search && (
-                <button type="button" onClick={() => setSearch('')} className="absolute right-1.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600">
-                  <X className="w-3 h-3" />
+      {(!embedded || !toolbarTarget) && (
+        <div
+          className={`flex ${embedded ? 'h-14' : 'h-16'} shrink-0 items-center border-b border-gray-200 bg-white px-6`}
+        >
+          <div className="flex w-full items-center justify-between">
+            {!embedded ? (
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold text-gray-900">剧情库</h1>
+                <p className="text-[10px] text-gray-400">
+                  共 {items.length} 条剧情点
+                  {search.trim() && ` · 搜索 ${filtered.length} 条`}
+                  {activeTagFilter && ` · 筛选「${activeTagFilter}」${filtered.length} 条`}
+                </p>
+              </div>
+            ) : (
+              <div className="min-w-0 text-xs font-bold text-gray-400">共 {items.length} 条剧情点</div>
+            )}
+            <div className="flex items-center gap-2">
+              <label className="xy-ui132-search w-48">
+                <Search />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="搜索..."
+                  style={{ paddingRight: search ? '2rem' : undefined }}
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch('')}
+                    className="absolute right-1.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </label>
+              <div className="flex items-center gap-1">
+                <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />
+                <CapsuleSelect
+                  value={sortMode}
+                  onChange={(value) => setSortMode(value as SortMode)}
+                  className="w-[118px]"
+                  buttonClassName="h-8 gap-1 rounded-lg px-3 text-xs"
+                  options={[
+                    { value: 'time', label: '最新' },
+                    { value: 'id-asc', label: 'ID顺序' },
+                    { value: 'wordCount-desc', label: '字数多' },
+                    { value: 'wordCount-asc', label: '字数少' },
+                    { value: 'score-desc', label: '评分高' },
+                    { value: 'score-asc', label: '评分低' },
+                  ]}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowImportModal(true)}
+                className="flex h-8 items-center rounded-lg bg-[#EAF9FD] px-3 text-[11px] font-bold text-[#08AACE] transition-colors hover:bg-[#d9f3fa]"
+              >
+                <span className="whitespace-nowrap">导入剧情点</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenExportModal}
+                className="flex h-8 items-center rounded-lg bg-white px-3 text-[11px] font-bold text-slate-700 ring-1 ring-slate-200 transition-colors hover:bg-slate-50"
+              >
+                <span className="whitespace-nowrap">导出剧情点</span>
+              </button>
+              <button
+                onClick={() => setShowRecycle(true)}
+                className="flex h-8 items-center rounded-lg bg-slate-100 px-3 text-[11px] text-slate-600 transition-colors hover:bg-slate-200"
+              >
+                <span className="whitespace-nowrap">
+                  回收站{recycleItems.length > 0 ? ` ${recycleItems.length}` : ''}
+                </span>
+              </button>
+              {items.length > 0 && (
+                <button
+                  onClick={() => setShowClearConfirm(true)}
+                  className="flex h-8 items-center rounded-lg bg-red-50 px-3 text-[11px] text-red-600 transition-colors hover:bg-red-100"
+                >
+                  <span className="whitespace-nowrap">清空</span>
                 </button>
               )}
-            </label>
-            <div className="flex items-center gap-1">
-              <ArrowUpDown className="w-3.5 h-3.5 text-gray-400" />
-              <CapsuleSelect
-                value={sortMode}
-                onChange={(value) => setSortMode(value as SortMode)}
-                className="w-[118px]"
-                buttonClassName="h-8 gap-1 rounded-lg px-3 text-xs"
-                options={[
-                  { value: 'time', label: '最新' },
-                  { value: 'id-asc', label: 'ID顺序' },
-                  { value: 'wordCount-desc', label: '字数多' },
-                  { value: 'wordCount-asc', label: '字数少' },
-                  { value: 'score-desc', label: '评分高' },
-                  { value: 'score-asc', label: '评分低' },
-                ]}
-              />
             </div>
-            <button
-              type="button"
-              onClick={() => setShowImportModal(true)}
-              className="flex h-8 items-center rounded-lg bg-[#EAF9FD] px-3 text-[11px] font-bold text-[#08AACE] transition-colors hover:bg-[#d9f3fa]"
-            >
-              <span className="whitespace-nowrap">导入剧情点</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleOpenExportModal}
-              className="flex h-8 items-center rounded-lg bg-white px-3 text-[11px] font-bold text-slate-700 ring-1 ring-slate-200 transition-colors hover:bg-slate-50"
-            >
-              <span className="whitespace-nowrap">导出剧情点</span>
-            </button>
-            <button
-              onClick={() => setShowRecycle(true)}
-              className="flex h-8 items-center rounded-lg bg-slate-100 px-3 text-[11px] text-slate-600 transition-colors hover:bg-slate-200"
-            >
-              <span className="whitespace-nowrap">回收站{recycleItems.length > 0 ? ` ${recycleItems.length}` : ''}</span>
-            </button>
-            {items.length > 0 && (
-              <button
-                onClick={() => setShowClearConfirm(true)}
-                className="flex h-8 items-center rounded-lg bg-red-50 px-3 text-[11px] text-red-600 transition-colors hover:bg-red-100"
-              >
-                <span className="whitespace-nowrap">清空</span>
-              </button>
-            )}
           </div>
         </div>
-      </div>}
+      )}
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <div className="w-[198px] shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
@@ -669,9 +685,7 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
             <button
               onClick={() => setActiveTagFilter(null)}
               className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between ${
-                activeTagFilter === null
-                  ? 'bg-brand text-white'
-                  : 'hover:bg-gray-50 text-gray-700'
+                activeTagFilter === null ? 'bg-brand text-white' : 'hover:bg-gray-50 text-gray-700'
               }`}
             >
               <span className="text-sm font-medium">全部</span>
@@ -684,20 +698,18 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
                 key={tag}
                 onClick={() => setActiveTagFilter(activeTagFilter === tag ? null : tag)}
                 className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center justify-between ${
-                  activeTagFilter === tag
-                    ? 'bg-brand text-white'
-                    : 'hover:bg-gray-50 text-gray-700'
+                  activeTagFilter === tag ? 'bg-brand text-white' : 'hover:bg-gray-50 text-gray-700'
                 }`}
               >
                 <span className="text-sm truncate flex-1 min-w-0">{tag}</span>
-                <span className={`text-xs shrink-0 ml-1 ${activeTagFilter === tag ? 'text-white/80' : 'text-gray-400'}`}>
+                <span
+                  className={`text-xs shrink-0 ml-1 ${activeTagFilter === tag ? 'text-white/80' : 'text-gray-400'}`}
+                >
                   {count}
                 </span>
               </button>
             ))}
-            {tagNav.length === 0 && (
-              <div className="text-center py-6 text-sm text-gray-300">暂无标签</div>
-            )}
+            {tagNav.length === 0 && <div className="text-center py-6 text-sm text-gray-300">暂无标签</div>}
           </div>
         </div>
 
@@ -705,9 +717,7 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
           {filtered.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-gray-300">
               <Library className="w-12 h-12 mb-2" />
-              <p className="text-sm">
-                {items.length === 0 ? '暂无剧情点，在提炼页面导入' : '没有匹配的剧情点'}
-              </p>
+              <p className="text-sm">{items.length === 0 ? '暂无剧情点，在提炼页面导入' : '没有匹配的剧情点'}</p>
             </div>
           )}
           {filtered.length > 0 && (
@@ -730,58 +740,66 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
                       }}
                       className="flex min-h-[176px] w-full flex-col overflow-hidden text-left"
                     >
-                    <div className="relative flex w-full flex-1 min-h-0">
-                      <div className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-gray-200" />
-                      {fsScores ? (
-                        <div className="w-1/2 min-w-0 bg-gray-50/30 flex flex-col">
-                          <div className="flex items-center justify-between border-b border-gray-100 px-2.5 py-2 leading-none">
-                            <span className="text-[13px] text-blue-600">ID：</span>
-                            <span className="text-[15px] font-bold text-blue-600">{displayId}</span>
-                          </div>
-                          <div className="flex flex-1 flex-col justify-center gap-1.5 p-2.5 pb-3 pt-2">
-                            {Object.entries(fsScores).filter(([key]) => !isAverageScoreKey(key)).map(([key, value]) => (
-                              <div key={key} className="flex items-center justify-between leading-none">
-                                <span className="text-[15px] text-gray-500">{key}</span>
-                                <span className={`text-[15px] font-bold ${
-                                  isScoringDimension(key) ? getScoreColor(value) : 'text-gray-800'
-                                }`}>{value}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="mt-auto flex flex-col gap-1.5 border-t border-gray-100 px-2.5 py-2 leading-none">
-                            {averageScore && (
+                      <div className="relative flex w-full flex-1 min-h-0">
+                        <div className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-gray-200" />
+                        {fsScores ? (
+                          <div className="w-1/2 min-w-0 bg-gray-50/30 flex flex-col">
+                            <div className="flex items-center justify-between border-b border-gray-100 px-2.5 py-2 leading-none">
+                              <span className="text-[13px] text-blue-600">ID：</span>
+                              <span className="text-[15px] font-bold text-blue-600">{displayId}</span>
+                            </div>
+                            <div className="flex flex-1 flex-col justify-center gap-1.5 p-2.5 pb-3 pt-2">
+                              {Object.entries(fsScores)
+                                .filter(([key]) => !isAverageScoreKey(key))
+                                .map(([key, value]) => (
+                                  <div key={key} className="flex items-center justify-between leading-none">
+                                    <span className="text-[15px] text-gray-500">{key}</span>
+                                    <span
+                                      className={`text-[15px] font-bold ${
+                                        isScoringDimension(key) ? getScoreColor(value) : 'text-gray-800'
+                                      }`}
+                                    >
+                                      {value}
+                                    </span>
+                                  </div>
+                                ))}
+                            </div>
+                            <div className="mt-auto flex flex-col gap-1.5 border-t border-gray-100 px-2.5 py-2 leading-none">
+                              {averageScore && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[13px] text-gray-400">平均分</span>
+                                  <span className={`text-[15px] font-bold ${getScoreColor(averageScore)}`}>
+                                    {averageScore}
+                                  </span>
+                                </div>
+                              )}
                               <div className="flex items-center justify-between">
-                                <span className="text-[13px] text-gray-400">平均分</span>
-                                <span className={`text-[15px] font-bold ${getScoreColor(averageScore)}`}>{averageScore}</span>
+                                <span className="text-[13px] text-gray-900">字数</span>
+                                <span className="text-[15px] font-bold text-gray-900">{item.wordCount}</span>
                               </div>
-                            )}
-                            <div className="flex items-center justify-between">
-                              <span className="text-[13px] text-gray-900">字数</span>
-                              <span className="text-[15px] font-bold text-gray-900">{item.wordCount}</span>
                             </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="w-1/2 min-w-0 p-2.5 bg-gray-50/30 flex items-center justify-center">
-                          <span className="text-[11px] text-gray-400">无评分</span>
-                        </div>
-                      )}
-                      <div className="w-1/2 min-w-0 px-1.5 py-2.5 flex flex-col justify-center gap-2">
-                        {tags.length > 0 ? (
-                          tags.map((tag, i) => (
-                            <span
-                              key={i}
-                              className="w-full truncate rounded-full px-1.5 py-1 text-center text-[12px] leading-none"
-                              style={{ backgroundColor: '#f0f5ff', color: '#4a6cf7' }}
-                            >
-                              {tag}
-                            </span>
-                          ))
                         ) : (
-                          <span className="text-[14px] text-gray-400 text-center">无标签</span>
+                          <div className="w-1/2 min-w-0 p-2.5 bg-gray-50/30 flex items-center justify-center">
+                            <span className="text-[11px] text-gray-400">无评分</span>
+                          </div>
                         )}
+                        <div className="w-1/2 min-w-0 px-1.5 py-2.5 flex flex-col justify-center gap-2">
+                          {tags.length > 0 ? (
+                            tags.map((tag, i) => (
+                              <span
+                                key={i}
+                                className="w-full truncate rounded-full px-1.5 py-1 text-center text-[12px] leading-none"
+                                style={{ backgroundColor: '#f0f5ff', color: '#4a6cf7' }}
+                              >
+                                {tag}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[14px] text-gray-400 text-center">无标签</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
                     </button>
                   </div>
                 );
@@ -792,8 +810,14 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
       </div>
 
       {showImportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowImportModal(false)}>
-          <div className="w-[520px] overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+          onClick={() => setShowImportModal(false)}
+        >
+          <div
+            className="w-[520px] overflow-hidden rounded-xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
               <div>
                 <h3 className="text-sm font-bold text-gray-900">导入剧情点</h3>
@@ -860,8 +884,14 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
       )}
 
       {importResult !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setImportResult(null)}>
-          <div className="w-[360px] overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+          onClick={() => setImportResult(null)}
+        >
+          <div
+            className="w-[360px] overflow-hidden rounded-xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
               <h3 className="text-sm font-bold text-gray-900">导入完成</h3>
               <button
@@ -900,12 +930,20 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
       )}
 
       {showExportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowExportModal(false)}>
-          <div className="flex h-[76vh] w-[1120px] flex-col overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+          onClick={() => setShowExportModal(false)}
+        >
+          <div
+            className="flex h-[76vh] w-[1120px] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
               <div>
                 <h3 className="text-sm font-bold text-gray-900">导出剧情点</h3>
-                <p className="mt-0.5 text-[11px] text-gray-400">已选择 {selectedExportItems.length} / {visiblePlotItems.length} 条</p>
+                <p className="mt-0.5 text-[11px] text-gray-400">
+                  已选择 {selectedExportItems.length} / {visiblePlotItems.length} 条
+                </p>
               </div>
               <button
                 type="button"
@@ -939,7 +977,8 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
                     const start = groupIndex * 50 + 1;
                     const end = start + groupItems.length - 1;
                     const collapsed = collapsedExportGroups.has(groupIndex);
-                    const allSelected = groupItems.length > 0 && groupItems.every((item) => selectedExportIds.has(item.id));
+                    const allSelected =
+                      groupItems.length > 0 && groupItems.every((item) => selectedExportIds.has(item.id));
                     return (
                       <div key={groupIndex} className="rounded-xl border border-gray-200 bg-white">
                         <div className="flex items-center justify-between border-b border-gray-100 px-3 py-2">
@@ -948,8 +987,12 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
                             onClick={() => toggleExportGroupCollapse(groupIndex)}
                             className="flex min-w-0 items-center gap-2 text-left text-[12px] font-black text-gray-800"
                           >
-                            <span className={`inline-block transition-transform ${collapsed ? '-rotate-90' : ''}`}>⌄</span>
-                            <span>{start}-{end}</span>
+                            <span className={`inline-block transition-transform ${collapsed ? '-rotate-90' : ''}`}>
+                              ⌄
+                            </span>
+                            <span>
+                              {start}-{end}
+                            </span>
                           </button>
                           <button
                             type="button"
@@ -1022,8 +1065,18 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
       )}
 
       {showDetail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => { setShowDetail(null); setEditingId(null); setShowFullDetailContent(false); }}>
-          <div className="w-[600px] max-h-[80vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+          onClick={() => {
+            setShowDetail(null);
+            setEditingId(null);
+            setShowFullDetailContent(false);
+          }}
+        >
+          <div
+            className="w-[600px] max-h-[80vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-gray-900">剧情点</h3>
@@ -1048,7 +1101,9 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
                       <Check className="w-3 h-3" /> 保存
                     </button>
                     <button
-                      onClick={() => { setEditingId(null); }}
+                      onClick={() => {
+                        setEditingId(null);
+                      }}
                       className="px-3 py-1.5 text-[11px] text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       取消
@@ -1071,13 +1126,20 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
                       ariaLabel="剧情详情字号"
                     />
                     <button
-                      onClick={() => { setEditingId(showDetail.id); setEditContent(showDetail.content); }}
+                      onClick={() => {
+                        setEditingId(showDetail.id);
+                        setEditContent(showDetail.content);
+                      }}
                       className="flex items-center gap-1 px-3 py-1.5 text-[11px] text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                     >
                       <Edit3 className="w-3 h-3" /> 编辑
                     </button>
                     <button
-                      onClick={() => { deleteItem(showDetail.id); setShowDetail(null); setEditingId(null); }}
+                      onClick={() => {
+                        deleteItem(showDetail.id);
+                        setShowDetail(null);
+                        setEditingId(null);
+                      }}
                       className="flex items-center gap-1 px-3 py-1.5 text-[11px] text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
                     >
                       <Trash2 className="w-3 h-3" /> 删除
@@ -1085,7 +1147,11 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
                   </>
                 )}
                 <button
-                  onClick={() => { setShowDetail(null); setEditingId(null); setShowFullDetailContent(false); }}
+                  onClick={() => {
+                    setShowDetail(null);
+                    setEditingId(null);
+                    setShowFullDetailContent(false);
+                  }}
                   className="p-1 text-gray-400 hover:text-gray-600 rounded"
                 >
                   <X className="w-4 h-4" />
@@ -1108,10 +1174,10 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
                 >
                   {showFullDetailContent
                     ? prepareFullModalSegments(showDetail.content).map((segment, index) => (
-                      <span key={index} className={segment.hidden ? 'text-red-600' : undefined}>
-                        {segment.text}
-                      </span>
-                    ))
+                        <span key={index} className={segment.hidden ? 'text-red-600' : undefined}>
+                          {segment.text}
+                        </span>
+                      ))
                     : prepareModalText(showDetail.content)}
                 </div>
               )}
@@ -1121,8 +1187,15 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
       )}
 
       {showRecycle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowRecycle(false)}>
-          <div className="flex max-h-[90vh] flex-col overflow-hidden rounded-xl bg-white shadow-2xl" style={{ width: `min(${recycleModalWidth}px, 94vw)` }} onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+          onClick={() => setShowRecycle(false)}
+        >
+          <div
+            className="flex max-h-[90vh] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+            style={{ width: `min(${recycleModalWidth}px, 94vw)` }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100">
@@ -1154,7 +1227,10 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
                   <p className="text-sm">回收站为空</p>
                 </div>
               ) : (
-                <div className="grid min-h-[542px] auto-rows-[170px] gap-4" style={{ gridTemplateColumns: `repeat(${recycleColumnCount}, minmax(0, 1fr))` }}>
+                <div
+                  className="grid min-h-[542px] auto-rows-[170px] gap-4"
+                  style={{ gridTemplateColumns: `repeat(${recycleColumnCount}, minmax(0, 1fr))` }}
+                >
                   {recycleItems.map((item) => (
                     <article
                       key={item.id}
@@ -1165,12 +1241,17 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <h4 className="truncate text-sm font-bold text-gray-900">{item.title}</h4>
-                            <span className="shrink-0 rounded bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500">{item.wordCount} 字</span>
+                            <span className="shrink-0 rounded bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500">
+                              {item.wordCount} 字
+                            </span>
                           </div>
                           <p className="mt-1 text-[11px] text-gray-400">
-                            {item.chapter || item.novelTitle || '未记录来源'} · 删除于 {item.deletedAt ? new Date(item.deletedAt).toLocaleString('zh-CN') : '-'}
+                            {item.chapter || item.novelTitle || '未记录来源'} · 删除于{' '}
+                            {item.deletedAt ? new Date(item.deletedAt).toLocaleString('zh-CN') : '-'}
                           </p>
-                          <p className="mt-2 line-clamp-3 text-xs leading-5 text-gray-500">{prepareModalText(item.content) || item.content}</p>
+                          <p className="mt-2 line-clamp-3 text-xs leading-5 text-gray-500">
+                            {prepareModalText(item.content) || item.content}
+                          </p>
                         </div>
                         <div className="mt-3 grid grid-cols-2 gap-2">
                           <button
@@ -1203,12 +1284,20 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
       )}
 
       {recycleDetail && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/35" onClick={() => setRecycleDetail(null)}>
-          <div className="flex max-h-[82vh] w-[760px] flex-col overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/35"
+          onClick={() => setRecycleDetail(null)}
+        >
+          <div
+            className="flex max-h-[82vh] w-[760px] flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <div className="min-w-0">
                 <h3 className="truncate text-base font-bold text-gray-900">{recycleDetail.title}</h3>
-                <p className="mt-1 text-[11px] text-gray-400">{recycleDetail.wordCount} 字 · {recycleDetail.chapter || recycleDetail.novelTitle || '未记录来源'}</p>
+                <p className="mt-1 text-[11px] text-gray-400">
+                  {recycleDetail.wordCount} 字 · {recycleDetail.chapter || recycleDetail.novelTitle || '未记录来源'}
+                </p>
               </div>
               <button onClick={() => setRecycleDetail(null)} className="rounded p-1 text-gray-400 hover:text-gray-600">
                 <X className="h-4 w-4" />
@@ -1250,7 +1339,11 @@ export function PlotLibraryPage({ embedded = false }: PlotLibraryPageProps = {})
                 取消
               </button>
               <button
-                onClick={() => { clearAll(); setShowClearConfirm(false); setShowDetail(null); }}
+                onClick={() => {
+                  clearAll();
+                  setShowClearConfirm(false);
+                  setShowDetail(null);
+                }}
                 className="flex items-center gap-1.5 px-5 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors"
               >
                 <Trash2 className="w-4 h-4" /> 确认清空

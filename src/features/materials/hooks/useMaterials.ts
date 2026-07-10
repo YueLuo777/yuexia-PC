@@ -36,45 +36,65 @@ export function useMaterials() {
     writeItems(next);
   }, []);
 
-  const addMaterial = useCallback((input: NewMaterialInput) => {
-    const now = new Date().toISOString();
-    const item: MaterialItem = {
-      id: createId(),
-      novelId: input.novelId,
-      novelTitle: input.novelTitle,
-      type: input.type,
-      title: input.title.trim(),
-      content: input.content,
-      chapterName: input.chapterName?.trim() || undefined,
-      chapterSerial: input.chapterSerial,
-      tags: input.tags ?? [],
-      rating: input.rating,
-      createdAt: now,
-      updatedAt: now,
-    };
-    persist([item, ...items]);
-    return item;
-  }, [items, persist]);
+  const addMaterial = useCallback(
+    (input: NewMaterialInput) => {
+      const now = new Date().toISOString();
+      const item: MaterialItem = {
+        id: createId(),
+        novelId: input.novelId,
+        novelTitle: input.novelTitle,
+        type: input.type,
+        title: input.title.trim(),
+        content: input.content,
+        chapterName: input.chapterName?.trim() || undefined,
+        chapterSerial: input.chapterSerial,
+        tags: input.tags ?? [],
+        rating: input.rating,
+        createdAt: now,
+        updatedAt: now,
+      };
+      persist([item, ...items]);
+      return item;
+    },
+    [items, persist],
+  );
 
-  const updateMaterial = useCallback((id: string, updates: Partial<Pick<MaterialItem, 'title' | 'content' | 'chapterName' | 'chapterSerial' | 'novelId' | 'novelTitle' | 'type' | 'tags' | 'rating'>>) => {
-    persist(items.map((item) => item.id === id
-      ? { ...item, ...updates, updatedAt: new Date().toISOString() }
-      : item));
-  }, [items, persist]);
+  const updateMaterial = useCallback(
+    (
+      id: string,
+      updates: Partial<
+        Pick<
+          MaterialItem,
+          'title' | 'content' | 'chapterName' | 'chapterSerial' | 'novelId' | 'novelTitle' | 'type' | 'tags' | 'rating'
+        >
+      >,
+    ) => {
+      persist(
+        items.map((item) => (item.id === id ? { ...item, ...updates, updatedAt: new Date().toISOString() } : item)),
+      );
+    },
+    [items, persist],
+  );
 
-  const deleteMaterial = useCallback((id: string) => {
-    persist(items.filter((item) => item.id !== id));
-  }, [items, persist]);
+  const deleteMaterial = useCallback(
+    (id: string) => {
+      persist(items.filter((item) => item.id !== id));
+    },
+    [items, persist],
+  );
 
   const clearAll = useCallback(() => {
     persist([]);
   }, [persist]);
 
-  const stats = useMemo(() => ({
-    count: items.length,
-    novelCount: new Set(items.map((item) => item.novelId)).size,
-    tagCount: new Set(items.flatMap((item) => item.tags ?? [])).size,
-  }), [items]);
+  const stats = useMemo(
+    () => ({
+      count: items.length,
+      novelCount: new Set(items.map((item) => item.novelId)).size,
+      tagCount: new Set(items.flatMap((item) => item.tags ?? [])).size,
+    }),
+    [items],
+  );
 
   return {
     items,

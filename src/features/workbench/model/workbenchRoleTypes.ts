@@ -41,9 +41,7 @@ export function shouldShowRolePinAction(roleType?: string | null) {
 }
 
 export function getDefaultPlotChainRoleIds(roles: Array<{ id: string; group: string }>) {
-  return roles
-    .filter((role) => normalizeWorkbenchRoleType(role.group) === '男主角')
-    .map((role) => role.id);
+  return roles.filter((role) => normalizeWorkbenchRoleType(role.group) === '男主角').map((role) => role.id);
 }
 
 export function getInitialPlotChainRoleIds({

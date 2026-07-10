@@ -2,6 +2,7 @@ interface ElectronWebviewElement extends HTMLElement {
   canGoBack: () => boolean;
   canGoForward: () => boolean;
   capturePage?: () => Promise<{ toDataURL: () => string }>;
+  executeJavaScript?: (code: string, userGesture?: boolean) => Promise<unknown>;
   getTitle?: () => string;
   getURL: () => string;
   goBack: () => void;

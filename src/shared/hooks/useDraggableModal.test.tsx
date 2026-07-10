@@ -14,9 +14,7 @@ describe('useDraggableModal', () => {
 
     render(<InlineDefaultGeometryHarness />);
 
-    expect(consoleError).not.toHaveBeenCalledWith(
-      expect.stringContaining('Maximum update depth exceeded'),
-    );
+    expect(consoleError).not.toHaveBeenCalledWith(expect.stringContaining('Maximum update depth exceeded'));
 
     consoleError.mockRestore();
   });

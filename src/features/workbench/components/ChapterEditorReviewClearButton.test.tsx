@@ -9,14 +9,16 @@ describe('ChapterEditor review AI output clear button', () => {
   it('clears the active review output and disconnects persisted background tasks', () => {
     const source = readSource('src/features/workbench/components/ChapterEditor.tsx');
 
-    expect(source).toContain('const clearReviewAiOutput = () => {');
-    expect(source).toContain('if (taskId) stopBackgroundAiTask(taskId);');
-    expect(source).toContain('writeReviewBackgroundTaskId(settingsStorageKey, reviewMode, undefined);');
-    expect(source).toContain('output: \'\'');
-    expect(source).toContain('revisedDraft: \'\'');
-    expect(source).toContain('requestLog: \'\'');
-    expect(source).toContain('backgroundTaskId: undefined');
-    expect(source).toContain('onClick={clearReviewAiOutput}');
-    expect(source).not.toContain('onClick={() => setReviewAiOutput(\'\')}');
+    expect(source).toContainSource('const clearReviewAiOutput = () => {');
+    expect(source).toContainSource('if (taskId) stopBackgroundAiTask(taskId);');
+    expect(source).toContainSource(
+      'writeReviewBackgroundTaskId(settingsStorageKey, reviewChapterId ?? activeChapterId, reviewMode, undefined);',
+    );
+    expect(source).toContainSource("output: ''");
+    expect(source).toContainSource("revisedDraft: ''");
+    expect(source).toContainSource("requestLog: ''");
+    expect(source).toContainSource('backgroundTaskId: undefined');
+    expect(source).toContainSource('onClick={clearReviewAiOutput}');
+    expect(source).not.toContainSource("onClick={() => setReviewAiOutput('')}");
   });
 });

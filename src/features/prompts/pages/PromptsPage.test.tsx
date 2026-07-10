@@ -15,25 +15,27 @@ describe('PromptsPage modal layering', () => {
     const editorSource = source.slice(editorStart, editorEnd);
     const recycleSource = source.slice(editorEnd);
 
-    expect(editorSource).toContain(
+    expect(editorSource).toContainSource(
       'className="modal-sharp fixed inset-0 z-[290] flex items-center justify-center bg-transparent p-6"',
     );
-    expect(editorSource).not.toContain('bg-black/40 p-6');
-    expect(recycleSource).toContain('bg-black/40');
+    expect(editorSource).not.toContainSource('bg-black/40 p-6');
+    expect(recycleSource).toContainSource('bg-black/40');
   });
 
   it('places audit secondary categories inside prompt management instead of the review panel', () => {
     const source = readPromptsPageSource();
 
-    expect(source).toContain('AUDIT_PROMPT_SUBCATEGORIES');
-    expect(source).toContain(
+    expect(source).toContainSource('AUDIT_PROMPT_SUBCATEGORIES');
+    expect(source).toContainSource(
       'const [activeAuditSubcategory, setActiveAuditSubcategory] = useState(DEFAULT_AUDIT_PROMPT_SUBCATEGORY);',
     );
-    expect(source).toContain('activeCategory === AUDIT_PROMPT_CATEGORY');
-    expect(source).toContain('审核二级分类');
-    expect(source).toContain('normalizePromptSubcategory(item.category, item.subCategory) === activeAuditSubcategory');
-    expect(source).toContain('subCategory: normalizePromptSubcategory(category, prev.subCategory)');
-    expect(source).toContain('normalizePromptSubcategory(prompt.category, prompt.subCategory)');
+    expect(source).toContainSource('activeCategory === AUDIT_PROMPT_CATEGORY');
+    expect(source).toContainSource('审核二级分类');
+    expect(source).toContainSource(
+      'normalizePromptSubcategory(item.category, item.subCategory) === activeAuditSubcategory',
+    );
+    expect(source).toContainSource('subCategory: normalizePromptSubcategory(category, prev.subCategory)');
+    expect(source).toContainSource('normalizePromptSubcategory(prompt.category, prompt.subCategory)');
   });
 
   it('moves prompt category badges below the title so they do not squeeze names', () => {
@@ -42,14 +44,16 @@ describe('PromptsPage modal layering', () => {
     const cardEnd = source.indexOf('<button\n            onClick={openCreate}', cardStart);
     const cardSource = source.slice(cardStart, cardEnd);
 
-    expect(cardSource).toContain('<h2 className="truncate text-[17px] font-bold text-slate-900">{prompt.name}</h2>');
-    expect(cardSource).toContain('<div className="mt-2 flex flex-col items-start gap-1">');
-    expect(cardSource).toContain(
+    expect(cardSource).toContainSource(
+      '<h2 className="truncate text-[17px] font-bold text-slate-900">{prompt.name}</h2>',
+    );
+    expect(cardSource).toContainSource('<div className="mt-2 flex flex-col items-start gap-1">');
+    expect(cardSource).toContainSource(
       '<span className="rounded-xl border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-500">{prompt.category}</span>',
     );
-    expect(cardSource).toContain('line-clamp-3 text-[13px] leading-6 text-slate-500');
-    expect(cardSource).not.toContain('<div className="flex items-center gap-2">');
-    expect(cardSource).not.toContain('line-clamp-4 text-[13px] leading-6 text-slate-500');
+    expect(cardSource).toContainSource('line-clamp-3 text-[13px] leading-6 text-slate-500');
+    expect(cardSource).not.toContainSource('<div className="flex items-center gap-2">');
+    expect(cardSource).not.toContainSource('line-clamp-4 text-[13px] leading-6 text-slate-500');
   });
 
   it('uses attached add-category control and right-click deletion with confirmation', () => {
@@ -58,35 +62,37 @@ describe('PromptsPage modal layering', () => {
     const categoryBarEnd = source.indexOf('{activeCategory === AUDIT_PROMPT_CATEGORY', categoryBarStart);
     const categoryBarSource = source.slice(categoryBarStart, categoryBarEnd);
 
-    expect(source).toContain('const [categoryContextMenu, setCategoryContextMenu]');
-    expect(source).toContain('const [categoryDeleteTarget, setCategoryDeleteTarget]');
-    expect(source).toContain(
+    expect(source).toContainSource('const [categoryContextMenu, setCategoryContextMenu]');
+    expect(source).toContainSource('const [categoryDeleteTarget, setCategoryDeleteTarget]');
+    expect(source).toContainSource(
       'function getPromptCategoryContextMenuPosition(event: ReactMouseEvent<HTMLButtonElement>)',
     );
-    expect(source).toContain('document.querySelector(\'[data-capsule-select-portal-root="true"]\')');
-    expect(source).toContain('(event.clientX - rect.left) / scaleX');
-    expect(source).toContain('(event.clientY - rect.top) / scaleY');
-    expect(source).toContain('setCategoryContextMenu({ category, ...getPromptCategoryContextMenuPosition(event) });');
-    expect(source).toContain(
+    expect(source).toContainSource('document.querySelector(\'[data-capsule-select-portal-root="true"]\')');
+    expect(source).toContainSource('(event.clientX - rect.left) / scaleX');
+    expect(source).toContainSource('(event.clientY - rect.top) / scaleY');
+    expect(source).toContainSource(
+      'setCategoryContextMenu({ category, ...getPromptCategoryContextMenuPosition(event) });',
+    );
+    expect(source).toContainSource(
       'const openCategoryContextMenu = (event: ReactMouseEvent<HTMLButtonElement>, category: string)',
     );
-    expect(source).toContain('if (isDefaultPromptCategory(category))');
-    expect(source).toContain('const confirmCategoryDelete = () =>');
-    expect(source).toContain('isDefaultPromptCategory(categoryDeleteTarget)');
-    expect(source).toContain('title="确认删除分类"');
-    expect(source).toContain('confirmText="删除该分类"');
-    expect(categoryBarSource).toContain('onContextMenu={(event) => openCategoryContextMenu(event, category)}');
-    expect(categoryBarSource).toContain(
+    expect(source).toContainSource('if (isDefaultPromptCategory(category))');
+    expect(source).toContainSource('const confirmCategoryDelete = () =>');
+    expect(source).toContainSource('isDefaultPromptCategory(categoryDeleteTarget)');
+    expect(source).toContainSource('title="确认删除分类"');
+    expect(source).toContainSource('confirmText="删除该分类"');
+    expect(categoryBarSource).toContainSource('onContextMenu={(event) => openCategoryContextMenu(event, category)}');
+    expect(categoryBarSource).toContainSource(
       'className="flex h-8 shrink-0 items-stretch overflow-hidden rounded-md border border-slate-200 bg-white',
     );
-    expect(categoryBarSource).toContain(
+    expect(categoryBarSource).toContainSource(
       'className="flex h-full min-w-[96px] items-center justify-center whitespace-nowrap bg-[#08AACE]',
     );
-    expect(categoryBarSource).toContain('删除该分类');
-    expect(categoryBarSource).not.toContain('categoryDeleteMode');
-    expect(categoryBarSource).not.toContain('xy-category-capsule-delete');
-    expect(categoryBarSource).not.toContain('删除分类');
-    expect(source).not.toContain('setCategoryContextMenu({ category, x: event.clientX, y: event.clientY });');
+    expect(categoryBarSource).toContainSource('删除该分类');
+    expect(categoryBarSource).not.toContainSource('categoryDeleteMode');
+    expect(categoryBarSource).not.toContainSource('xy-category-capsule-delete');
+    expect(categoryBarSource).not.toContainSource('删除分类');
+    expect(source).not.toContainSource('setCategoryContextMenu({ category, x: event.clientX, y: event.clientY });');
   });
 
   it('adds txt import and export controls beside the recycle bin action', () => {
@@ -97,33 +103,33 @@ describe('PromptsPage modal layering', () => {
     const headerEnd = source.indexOf('</div>\n        </div>', headerStart);
     const headerSource = source.slice(headerStart, headerEnd);
 
-    expect(source).toContain("const PROMPT_EXPORT_HEADER = '月下提示词导出 v1';");
-    expect(source).toContain("const PROMPT_EXPORT_BLOCK_SEPARATOR = '--- 提示词 ---';");
-    expect(source).toContain('downloadPromptTextFile(fileName, buildPromptExportText(prompts));');
-    expect(source).toContain('parsePromptExportText(');
-    expect(source).toContain('const created = addPrompts(imported);');
-    expect(headerSource).toContain('accept=".txt,text/plain"');
-    expect(headerSource).toContain('onChange={importPrompts}');
-    expect(headerSource).toContain('导入提示词');
-    expect(headerSource).toContain('导出提示词');
+    expect(source).toContainSource("const PROMPT_EXPORT_HEADER = '月下提示词导出 v1';");
+    expect(source).toContainSource("const PROMPT_EXPORT_BLOCK_SEPARATOR = '--- 提示词 ---';");
+    expect(source).toContainSource('downloadPromptTextFile(fileName, buildPromptExportText(prompts));');
+    expect(source).toContainSource('parsePromptExportText(');
+    expect(source).toContainSource('const created = addPrompts(imported);');
+    expect(headerSource).toContainSource('accept=".txt,text/plain"');
+    expect(headerSource).toContainSource('onChange={importPrompts}');
+    expect(headerSource).toContainSource('导入提示词');
+    expect(headerSource).toContainSource('导出提示词');
     expect(headerSource.indexOf('导入提示词')).toBeLessThan(headerSource.indexOf('导出提示词'));
     expect(headerSource.indexOf('导出提示词')).toBeLessThan(headerSource.indexOf('setShowRecycle(true)'));
     expect(headerSource.indexOf('setShowRecycle(true)')).toBeLessThan(headerSource.indexOf('xy-ui132-search'));
-    expect(headerSource).toContain('<div className="shrink-0">');
-    expect(headerSource).toContain('placeholder="搜索提示词..."');
-    expect(headerSource).not.toContain('<Upload');
-    expect(headerSource).not.toContain('<Download');
+    expect(headerSource).toContainSource('<div className="shrink-0">');
+    expect(headerSource).toContainSource('placeholder="搜索提示词..."');
+    expect(headerSource).not.toContainSource('<Upload');
+    expect(headerSource).not.toContainSource('<Download');
   });
 
   it('uses compact prompt management spacing inside fixed modals', () => {
     const source = readPromptsPageSource();
 
-    expect(source).toContain('<div className="flex-1 overflow-y-auto px-5 py-4">');
-    expect(source).toContain('<div className="mb-3 flex flex-wrap items-center justify-between gap-3">');
-    expect(source).toContain('<div className="mb-3 flex flex-wrap items-center gap-2">');
-    expect(source).toContain('<div className="mb-4 flex items-center gap-3">');
-    expect(source).not.toContain('<div className="flex-1 overflow-y-auto px-7 py-7">');
-    expect(source).not.toContain('<div className="mb-6 flex items-center justify-between gap-5">');
-    expect(source).not.toContain('<div className="mb-7 flex flex-wrap items-center gap-3">');
+    expect(source).toContainSource('<div className="flex-1 overflow-y-auto px-5 py-4">');
+    expect(source).toContainSource('<div className="mb-3 flex flex-wrap items-center justify-between gap-3">');
+    expect(source).toContainSource('<div className="mb-3 flex flex-wrap items-center gap-2">');
+    expect(source).toContainSource('<div className="mb-4 flex items-center gap-3">');
+    expect(source).not.toContainSource('<div className="flex-1 overflow-y-auto px-7 py-7">');
+    expect(source).not.toContainSource('<div className="mb-6 flex items-center justify-between gap-5">');
+    expect(source).not.toContainSource('<div className="mb-7 flex flex-wrap items-center gap-3">');
   });
 });

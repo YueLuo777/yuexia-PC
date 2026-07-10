@@ -1,5 +1,8 @@
 import type { PlotLibraryItem } from '@/features/plot-library/model/plotLibraryTypes';
-import { getPlotPointDisplayText, prepareCollapsedPlotPointCard } from '@/features/workbench/model/workbenchPlotPointCard';
+import {
+  getPlotPointDisplayText,
+  prepareCollapsedPlotPointCard,
+} from '@/features/workbench/model/workbenchPlotPointCard';
 
 export type PlotPointSourceMode = 'library' | 'ai' | 'mixed';
 export type PlotPointLengthMode = 'short' | 'medium' | 'long';

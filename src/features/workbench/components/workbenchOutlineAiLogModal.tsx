@@ -14,7 +14,11 @@ type OutlineAiLogModalProps = {
   onClose: () => void;
 };
 
-function getOutlineAiLogFillGroupWeights(options: { hasReaderContext: boolean; hasContext: boolean; hasUser: boolean }): Record<string, number> {
+function getOutlineAiLogFillGroupWeights(options: {
+  hasReaderContext: boolean;
+  hasContext: boolean;
+  hasUser: boolean;
+}): Record<string, number> {
   const hasReference = options.hasReaderContext || options.hasContext;
   if (hasReference) {
     return {

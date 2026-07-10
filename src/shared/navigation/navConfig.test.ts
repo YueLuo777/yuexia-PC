@@ -26,7 +26,7 @@ describe('navigation config without zones', () => {
     expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/library')?.label).toBe('资料库');
     expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/genre-iteration')?.label).toBe('题材迭代');
     expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/tomato-browser')?.label).toBe('番茄浏览器');
-    expect(JSON.stringify(DEFAULT_NAV_CONFIG)).not.toContain('专区');
+    expect(JSON.stringify(DEFAULT_NAV_CONFIG)).not.toContainSource('专区');
   });
 
   it('renames the library navigation entry to materials library even for saved old configs', () => {
@@ -39,7 +39,7 @@ describe('navigation config without zones', () => {
     ]);
 
     expect(normalized[0].items.find((item) => item.to === '/library')?.label).toBe('资料库');
-    expect(JSON.stringify(normalized)).not.toContain('"label":"库"');
+    expect(JSON.stringify(normalized)).not.toContainSource('"label":"库"');
   });
 
   it('flattens old zone-based navigation while preserving hidden item intent and default divider', () => {
@@ -67,8 +67,8 @@ describe('navigation config without zones', () => {
     expect(normalized[0].items.some((item) => item.to === '/novels')).toBe(true);
     expect(normalized[0].items.find((item) => item.to === '/scripts')?.hidden).toBe(true);
     expect(normalized[0].items.find((item) => item.to === '/prompts')?.hidden).toBe(true);
-    expect(JSON.stringify(normalized)).not.toContain('创作专区');
-    expect(JSON.stringify(normalized)).not.toContain('数据专区');
+    expect(JSON.stringify(normalized)).not.toContainSource('创作专区');
+    expect(JSON.stringify(normalized)).not.toContainSource('数据专区');
   });
 
   it('removes the retired hotspot route from saved navigation configs', () => {
@@ -140,9 +140,9 @@ describe('navigation config without zones', () => {
   it('routes the tomato browser nav entry to the former number 15 test page', () => {
     const app = readSource('src/app/App.tsx');
 
-    expect(app).toContain('TomatoGenreIterationTestPage');
-    expect(app).toContain('path="/tomato-browser"');
-    expect(app).toContain("import('@/features/tests/pages/TomatoGenreIterationTestPage')");
+    expect(app).toContainSource('TomatoGenreIterationTestPage');
+    expect(app).toContainSource('path="/tomato-browser"');
+    expect(app).toContainSource("import('@/features/tests/pages/TomatoGenreIterationTestPage')");
   });
 
   it('preserves a custom navigation divider and allows hiding it', () => {

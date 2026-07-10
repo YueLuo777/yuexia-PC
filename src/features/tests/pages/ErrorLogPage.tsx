@@ -3,10 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { loadDefaultErrorLogEntries, type ErrorLogEntry } from '@/features/tests/model/errorLogEntries';
 
-
-
 const STORAGE_KEY = 'xinyuexia_test_error_logs';
-
 
 function readSavedEntries(defaultEntries: ErrorLogEntry[]) {
   try {
@@ -66,17 +63,12 @@ export function ErrorLogPage() {
   const filteredEntries = useMemo(() => {
     const keyword = search.trim().toLowerCase();
     if (!keyword) return entries;
-    return entries.filter((entry) => (
-      [
-        entry.title,
-        entry.area,
-        entry.symptom,
-        entry.cause,
-        entry.solution,
-        entry.prevention,
-        entry.keywords.join(' '),
-      ].join(' ').toLowerCase().includes(keyword)
-    ));
+    return entries.filter((entry) =>
+      [entry.title, entry.area, entry.symptom, entry.cause, entry.solution, entry.prevention, entry.keywords.join(' ')]
+        .join(' ')
+        .toLowerCase()
+        .includes(keyword),
+    );
   }, [entries, search]);
 
   const addEntry = () => {
@@ -89,7 +81,10 @@ export function ErrorLogPage() {
       cause: draft.cause.trim() || '待排查',
       solution: draft.solution.trim(),
       prevention: draft.prevention.trim() || '后续补充',
-      keywords: draft.keywords.split(/[,\s，、]+/).map((item) => item.trim()).filter(Boolean),
+      keywords: draft.keywords
+        .split(/[,\s，、]+/)
+        .map((item) => item.trim())
+        .filter(Boolean),
       updatedAt: new Date().toLocaleDateString('zh-CN'),
     };
     setEntries((current) => {
@@ -115,7 +110,9 @@ export function ErrorLogPage() {
         <div>
           <div className="text-sm font-black text-[#08AACE]">Error Log</div>
           <h1 className="mt-1 text-2xl font-black text-slate-950">错误日志</h1>
-          <p className="mt-1 text-xs font-bold text-slate-400">记录软件里出现过的问题、原因和修复办法，后续遇到同类问题先从这里查。</p>
+          <p className="mt-1 text-xs font-bold text-slate-400">
+            记录软件里出现过的问题、原因和修复办法，后续遇到同类问题先从这里查。
+          </p>
         </div>
         <div className="relative w-[320px] max-w-full">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
@@ -144,7 +141,10 @@ export function ErrorLogPage() {
             {filteredEntries.map((entry) => {
               const isDefault = defaultEntryIds.has(entry.id);
               return (
-                <article key={entry.id} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+                <article
+                  key={entry.id}
+                  className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+                >
                   <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
@@ -189,7 +189,12 @@ export function ErrorLogPage() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {entry.keywords.map((keyword) => (
-                        <span key={keyword} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-500">{keyword}</span>
+                        <span
+                          key={keyword}
+                          className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-500"
+                        >
+                          {keyword}
+                        </span>
                       ))}
                     </div>
                   </div>
@@ -205,15 +210,17 @@ export function ErrorLogPage() {
             <h2 className="text-base font-black text-slate-950">新增记录</h2>
           </div>
           <div className="mt-4 space-y-3">
-            {([
-              ['title', '问题标题'],
-              ['area', '出现位置'],
-              ['symptom', '现象'],
-              ['cause', '原因'],
-              ['solution', '解决办法'],
-              ['prevention', '以后避免'],
-              ['keywords', '关键词，用逗号分隔'],
-            ] as const).map(([key, label]) => (
+            {(
+              [
+                ['title', '问题标题'],
+                ['area', '出现位置'],
+                ['symptom', '现象'],
+                ['cause', '原因'],
+                ['solution', '解决办法'],
+                ['prevention', '以后避免'],
+                ['keywords', '关键词，用逗号分隔'],
+              ] as const
+            ).map(([key, label]) => (
               <label key={key} className="block">
                 <span className="mb-1 block text-xs font-black text-slate-400">{label}</span>
                 {key === 'title' || key === 'area' || key === 'keywords' ? (

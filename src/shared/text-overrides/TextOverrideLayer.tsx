@@ -69,10 +69,10 @@ function replaceTextNodeValue(node: Text, replacement: string) {
 
 function applyTextToElement(element: HTMLElement, original: string, replacement: string) {
   const normalizedOriginal = normalizeTextValue(original);
-  const textNodes = Array.from(element.childNodes)
-    .filter((node): node is Text => node.nodeType === Node.TEXT_NODE);
-  const targetNode = textNodes.find((node) => normalizeTextValue(node.textContent ?? '') === normalizedOriginal)
-    ?? textNodes.find((node) => normalizeTextValue(node.textContent ?? ''));
+  const textNodes = Array.from(element.childNodes).filter((node): node is Text => node.nodeType === Node.TEXT_NODE);
+  const targetNode =
+    textNodes.find((node) => normalizeTextValue(node.textContent ?? '') === normalizedOriginal) ??
+    textNodes.find((node) => normalizeTextValue(node.textContent ?? ''));
   if (targetNode) replaceTextNodeValue(targetNode, replacement);
 }
 
@@ -235,7 +235,10 @@ export function TextOverrideLayer() {
                 <Edit3 className="h-4 w-4 text-brand" />
                 修改文案
               </div>
-              <button onClick={() => setEditing(null)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+              <button
+                onClick={() => setEditing(null)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -252,16 +255,24 @@ export function TextOverrideLayer() {
                 <span className="mb-2 block text-sm font-bold text-slate-700">新文案</span>
                 <input
                   value={editing.replacement}
-                  onChange={(event) => setEditing((prev) => (prev ? { ...prev, replacement: event.target.value } : prev))}
+                  onChange={(event) =>
+                    setEditing((prev) => (prev ? { ...prev, replacement: event.target.value } : prev))
+                  }
                   autoFocus
                   className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-900 outline-none focus:border-brand"
                 />
               </label>
               <div className="flex justify-end gap-2">
-                <button onClick={() => setEditing(null)} className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">
+                <button
+                  onClick={() => setEditing(null)}
+                  className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50"
+                >
                   取消
                 </button>
-                <button onClick={saveEditing} className="rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-dark">
+                <button
+                  onClick={saveEditing}
+                  className="rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-dark"
+                >
                   保存
                 </button>
               </div>

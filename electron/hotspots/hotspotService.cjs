@@ -2,8 +2,6 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 
 const PUBLIC_BASE_URL = 'https://api-hot.imsyy.top';
-const LOCAL_DAILYHOT_PORT = 36688;
-const LOCAL_BASE_URL = `http://127.0.0.1:${LOCAL_DAILYHOT_PORT}`;
 const DEFAULT_CACHE_TTL_MS = 10 * 60 * 1000;
 const MAX_FETCH_LIMIT = 100;
 const SOURCE_LABELS = {
@@ -69,25 +67,7 @@ function createCacheStore(cacheFile) {
   };
 }
 
-let localServerPromise = null;
-
-async function ensureLocalDailyHotServer() {
-  if (!localServerPromise) {
-    localServerPromise = import('dailyhot-api')
-      .then(async (module) => {
-        const serveHotApi = module.default;
-        if (typeof serveHotApi === 'function') {
-          serveHotApi(LOCAL_DAILYHOT_PORT);
-          await new Promise((resolve) => setTimeout(resolve, 250));
-        }
-      })
-      .catch(() => undefined);
-  }
-  return localServerPromise;
-}
-
-async function defaultFetchJson(url, options = {}) {
-  if (options.ensureLocal) await ensureLocalDailyHotServer();
+async function defaultFetchJson(url) {
   const response = await fetch(url, {
     headers: {
       accept: 'application/json',
@@ -99,22 +79,26 @@ async function defaultFetchJson(url, options = {}) {
 }
 
 function createHotspotService(options = {}) {
-  const shouldUseEmbeddedServer = !options.baseUrl && !process.env.XINYUEXIA_DAILYHOT_BASE_URL;
-  const baseUrl = (options.baseUrl || process.env.XINYUEXIA_DAILYHOT_BASE_URL || LOCAL_BASE_URL).replace(/\/+$/, '');
+  const baseUrl = (options.baseUrl || process.env.XINYUEXIA_DAILYHOT_BASE_URL || PUBLIC_BASE_URL).replace(/\/+$/, '');
   const cacheTtlMs = Number(options.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS);
   const now = options.now || (() => new Date().toISOString());
-  const fetchJson = options.fetchJson || ((url) => defaultFetchJson(url, { ensureLocal: shouldUseEmbeddedServer }));
-  const cacheStore = options.readCache && options.writeCache
-    ? { read: options.readCache, write: options.writeCache }
-    : createCacheStore(options.cacheFile || path.join(process.cwd(), 'runtime', 'hotspots', 'dailyhot-cache.json'));
+  const fetchJson = options.fetchJson || defaultFetchJson;
+  const cacheStore =
+    options.readCache && options.writeCache
+      ? { read: options.readCache, write: options.writeCache }
+      : createCacheStore(options.cacheFile || path.join(process.cwd(), 'runtime', 'hotspots', 'dailyhot-cache.json'));
 
   async function fetchAll(input = {}) {
     const sources = Array.isArray(input.sources) && input.sources.length > 0 ? input.sources : DEFAULT_SOURCES;
-    const limit = Number.isFinite(Number(input.limit)) ? Math.max(1, Math.min(MAX_FETCH_LIMIT, Number(input.limit))) : 50;
+    const limit = Number.isFinite(Number(input.limit))
+      ? Math.max(1, Math.min(MAX_FETCH_LIMIT, Number(input.limit)))
+      : 50;
     const force = Boolean(input.force);
     const cached = await cacheStore.read();
     const capturedAt = now();
-    const cacheAge = cached?.capturedAt ? Date.parse(capturedAt) - Date.parse(cached.capturedAt) : Number.POSITIVE_INFINITY;
+    const cacheAge = cached?.capturedAt
+      ? Date.parse(capturedAt) - Date.parse(cached.capturedAt)
+      : Number.POSITIVE_INFINITY;
     if (!force && cached?.items?.length && cacheAge >= 0 && cacheAge < cacheTtlMs) {
       return {
         ok: true,
@@ -126,14 +110,16 @@ function createHotspotService(options = {}) {
       };
     }
 
-    const sourceEntries = await Promise.all(sources.map(async (source) => {
-      try {
-        const payload = await fetchJson(`${baseUrl}/${source}`);
-        return [source, normalizeDailyHotItems(source, payload, capturedAt, limit), null];
-      } catch (error) {
-        return [source, [], error instanceof Error ? error.message : 'fetch failed'];
-      }
-    }));
+    const sourceEntries = await Promise.all(
+      sources.map(async (source) => {
+        try {
+          const payload = await fetchJson(`${baseUrl}/${source}`);
+          return [source, normalizeDailyHotItems(source, payload, capturedAt, limit), null];
+        } catch (error) {
+          return [source, [], error instanceof Error ? error.message : 'fetch failed'];
+        }
+      }),
+    );
 
     const sourceMap = {};
     const errors = {};
@@ -171,7 +157,6 @@ function groupItemsBySource(items, sources) {
 
 module.exports = {
   createHotspotService,
-  LOCAL_BASE_URL,
   PUBLIC_BASE_URL,
   normalizeDailyHotItems,
 };

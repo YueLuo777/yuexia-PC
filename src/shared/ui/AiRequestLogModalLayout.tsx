@@ -1,10 +1,6 @@
 import type { ReactNode } from 'react';
 
-import {
-  AiRequestLogContent,
-  AiRequestLogGroups,
-  type AiRequestLogGroup,
-} from '@/shared/ui/AiRequestLogGroups';
+import { AiRequestLogContent, AiRequestLogGroups, type AiRequestLogGroup } from '@/shared/ui/AiRequestLogGroups';
 
 export type AiRequestLogMetaItem = {
   id: string;

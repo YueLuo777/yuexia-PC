@@ -21,15 +21,16 @@
     "scan:dist-secrets": "node scripts/check-dist-secrets.cjs dist",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:e2e": "node scripts/electron-smoke.mjs",
     "verify:quick": "npm run lint && npm run check && npm run check:electron && npm run check:launcher && npm run test:run",
     "verify": "npm run verify:quick && npm run build && npm run scan:dist-secrets",
-    "pack:win": "npm run verify && electron-builder --win portable"
+    "verify:desktop": "npm run verify && npm run test:e2e",
+    "pack:win": "npm run verify:desktop && electron-builder --win portable"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "dailyhot-api": "^2.0.8",
     "jszip": "^3.10.1",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
@@ -47,24 +48,25 @@
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.23",
     "cross-env": "^7.0.3",
-    "electron": "^31.7.7",
-    "electron-builder": "^24.13.3",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^10.4.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
+    "playwright": "^1.61.1",
     "postcss": "^8.5.6",
     "prettier": "^3.8.3",
     "tailwindcss": "^3.4.19",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.60.1",
-    "vite": "^7.2.4",
+    "vite": "^7.3.6",
     "vitest": "^4.1.7"
   },
   "allowScripts": {
-    "electron@31.7.7": true,
+    "electron@43.1.0": true,
     "esbuild@0.27.7": true
   },
   "build": {

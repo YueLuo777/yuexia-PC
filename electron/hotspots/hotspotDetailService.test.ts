@@ -2,14 +2,13 @@ import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const {
-  createHotspotDetailService,
-  extractHotspotDetailFromHtml,
-} = require('./hotspotDetailService.cjs') as typeof import('./hotspotDetailService.cjs');
+const { createHotspotDetailService, extractHotspotDetailFromHtml } =
+  require('./hotspotDetailService.cjs') as typeof import('./hotspotDetailService.cjs');
 
 describe('hotspotDetailService', () => {
   it('extracts title, description, keywords, and readable body text from html', () => {
-    const detail = extractHotspotDetailFromHtml(`
+    const detail = extractHotspotDetailFromHtml(
+      `
       <html>
         <head>
           <title>页面标题</title>
@@ -25,7 +24,9 @@ describe('hotspotDetailService', () => {
           </article>
         </body>
       </html>
-    `, 'https://example.test/news');
+    `,
+      'https://example.test/news',
+    );
 
     expect(detail.ok).toBe(true);
     expect(detail.title).toBe('页面标题');
@@ -38,6 +39,7 @@ describe('hotspotDetailService', () => {
   it('fetches and caches hotspot detail pages', async () => {
     let fetchCount = 0;
     const service = createHotspotDetailService({
+      lookupImpl: async () => [{ address: '93.184.216.34', family: 4 }],
       fetchImpl: async () => {
         fetchCount += 1;
         return {
@@ -57,6 +59,45 @@ describe('hotspotDetailService', () => {
     expect(first.finalUrl).toBe('https://example.test/final');
     expect(first.description).toBe('详情摘要');
     expect(second.fromCache).toBe(true);
+    expect(fetchCount).toBe(1);
+  });
+
+  it('blocks direct and DNS-resolved private network targets', async () => {
+    let fetchCount = 0;
+    const service = createHotspotDetailService({
+      lookupImpl: async () => [{ address: '192.168.1.20', family: 4 }],
+      fetchImpl: async () => {
+        fetchCount += 1;
+        return { ok: true };
+      },
+    });
+
+    const direct = await service.fetchDetail({ url: 'http://127.0.0.1/admin' });
+    const resolved = await service.fetchDetail({ url: 'https://internal.example.test/admin' });
+
+    expect(direct).toMatchObject({ ok: false, error: '热点链接不能访问本机或内网地址' });
+    expect(resolved).toMatchObject({ ok: false, error: '热点链接不能访问本机或内网地址' });
+    expect(fetchCount).toBe(0);
+  });
+
+  it('validates every redirect before following it', async () => {
+    let fetchCount = 0;
+    const service = createHotspotDetailService({
+      lookupImpl: async () => [{ address: '93.184.216.34', family: 4 }],
+      fetchImpl: async () => {
+        fetchCount += 1;
+        return {
+          ok: false,
+          status: 302,
+          url: 'https://example.test/start',
+          headers: { get: (name: string) => (name === 'location' ? 'http://127.0.0.1/private' : '') },
+        };
+      },
+    });
+
+    const detail = await service.fetchDetail({ url: 'https://example.test/start' });
+
+    expect(detail).toMatchObject({ ok: false, error: '热点链接不能访问本机或内网地址' });
     expect(fetchCount).toBe(1);
   });
 

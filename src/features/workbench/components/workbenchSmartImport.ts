@@ -1,4 +1,7 @@
-import { SETTING_IMPORT_ROLE_TOP_LABELS, SETTING_IMPORT_TOP_LABEL_DEFAULT_TYPES } from '@/features/workbench/model/workbenchSettingTaxonomy';
+import {
+  SETTING_IMPORT_ROLE_TOP_LABELS,
+  SETTING_IMPORT_TOP_LABEL_DEFAULT_TYPES,
+} from '@/features/workbench/model/workbenchSettingTaxonomy';
 
 import {
   buildRoleStateSettingsText,
@@ -38,7 +41,10 @@ export function buildImportedRoleEntryTitle(segment: SmartImportRoleSegment, exi
 export function createImportedRoleContent(segment: SmartImportRoleSegment, existingRole?: RoleContent): RoleContent {
   const sections = parseSectionedSettingBody(segment.body);
   const importedType = getImportedRoleSection(sections, ['身份定位', '角色定位', '人物定位', '身份', '类型']);
-  const type = importedType || existingRole?.type || (/男主角|主角/.test(segment.title) ? DEFAULT_MALE_PROTAGONIST_ROLE_TYPE : '未分类');
+  const type =
+    importedType ||
+    existingRole?.type ||
+    (/男主角|主角/.test(segment.title) ? DEFAULT_MALE_PROTAGONIST_ROLE_TYPE : '未分类');
   const baseFields = createEmptyRoleBaseSettingFields();
   baseFields.appearance = getImportedRoleSection(sections, ['外貌', '人物外貌', '形象']);
   baseFields.aliasName = getImportedRoleSection(sections, ['称号/外号/别称', '称号', '外号', '别称', '别名']);
@@ -68,7 +74,6 @@ export function createImportedRoleContent(segment: SmartImportRoleSegment, exist
   };
 }
 
-
 export function normalizeImportedSettingKey(value: string) {
   return value.trim().replace(/\s+/g, ' ');
 }
@@ -80,7 +85,12 @@ export function normalizeImportedSettingBody(value: string) {
 export function classifySettingText(text: string) {
   const source = text.toLowerCase();
   if (/(爽点|卖点|期待感|差异点|题材|男频|读者第一眼)/.test(source)) return '题材卖点';
-  if (/(境界|等级|阶位|成长|修炼|突破|修为|职业|技能|资源消耗|晋升|练气|筑基|金丹|元婴|化神|异能等级|机甲等级|基因等级)/.test(source)) return '成长体系';
+  if (
+    /(境界|等级|阶位|成长|修炼|突破|修为|职业|技能|资源消耗|晋升|练气|筑基|金丹|元婴|化神|异能等级|机甲等级|基因等级)/.test(
+      source,
+    )
+  )
+    return '成长体系';
   if (/(金手指|外挂|独有能力|代价|升级方式|误用风险|系统|面板)/.test(source)) return '金手指';
   if (/(邪教|魔教|反派组织|敌对|黑暗势力|反派势力)/.test(source)) return '反派势力';
   if (/(中立|商会|协会|交易所|佣兵|旁观势力)/.test(source)) return '中立势力';
@@ -105,22 +115,26 @@ export function classifySettingText(text: string) {
 export function createImportItemSegments(sectionBody: string, fallbackTitle: string) {
   const itemPattern = /^\s*(?:\*([^*\n]+)\*|#([^#\n]+)#)\s*[：:]\s*/gm;
   const itemMatches = [...sectionBody.matchAll(itemPattern)];
-  if (itemMatches.length === 0) return [{
-    title: fallbackTitle,
-    body: sectionBody.trim(),
-  }];
+  if (itemMatches.length === 0)
+    return [
+      {
+        title: fallbackTitle,
+        body: sectionBody.trim(),
+      },
+    ];
 
-  return itemMatches.map((itemMatch, index) => {
-    const title = (itemMatch[1] ?? itemMatch[2] ?? '').trim();
-    const bodyStart = (itemMatch.index ?? 0) + itemMatch[0].length;
-    const bodyEnd = index + 1 < itemMatches.length
-      ? itemMatches[index + 1].index ?? sectionBody.length
-      : sectionBody.length;
-    return {
-      title,
-      body: sectionBody.slice(bodyStart, bodyEnd).trim(),
-    };
-  }).filter((item) => item.title && item.body);
+  return itemMatches
+    .map((itemMatch, index) => {
+      const title = (itemMatch[1] ?? itemMatch[2] ?? '').trim();
+      const bodyStart = (itemMatch.index ?? 0) + itemMatch[0].length;
+      const bodyEnd =
+        index + 1 < itemMatches.length ? (itemMatches[index + 1].index ?? sectionBody.length) : sectionBody.length;
+      return {
+        title,
+        body: sectionBody.slice(bodyStart, bodyEnd).trim(),
+      };
+    })
+    .filter((item) => item.title && item.body);
 }
 
 export function collectTaggedSettingSegments(
@@ -140,8 +154,9 @@ export function collectTaggedSettingSegments(
     if (!type || !sectionBody) continue;
 
     if (SETTING_IMPORT_ROLE_TOP_LABELS.has(type)) {
-      createImportItemSegments(sectionBody, DEFAULT_MALE_PROTAGONIST_ROLE_TITLE)
-        .forEach((item) => result.roleSegments.push(item));
+      createImportItemSegments(sectionBody, DEFAULT_MALE_PROTAGONIST_ROLE_TITLE).forEach((item) =>
+        result.roleSegments.push(item),
+      );
       continue;
     }
 
@@ -150,20 +165,23 @@ export function collectTaggedSettingSegments(
       const beforeCount = result.settingSegments.length + result.roleSegments.length;
       collectTaggedSettingSegments(sectionBody, topDefaultType, result);
       if (result.settingSegments.length + result.roleSegments.length === beforeCount) {
-        createImportItemSegments(sectionBody, topDefaultType)
-          .forEach((item) => result.settingSegments.push({ ...item, type: topDefaultType }));
+        createImportItemSegments(sectionBody, topDefaultType).forEach((item) =>
+          result.settingSegments.push({ ...item, type: topDefaultType }),
+        );
       }
       continue;
     }
 
     const normalizedType = normalizeSettingType(type);
-    createImportItemSegments(sectionBody, normalizedType)
-      .forEach((item) => result.settingSegments.push({ ...item, type: normalizedType }));
+    createImportItemSegments(sectionBody, normalizedType).forEach((item) =>
+      result.settingSegments.push({ ...item, type: normalizedType }),
+    );
   }
 
   if (!matched && forcedDefaultType) {
-    createImportItemSegments(normalized, forcedDefaultType)
-      .forEach((item) => result.settingSegments.push({ ...item, type: forcedDefaultType }));
+    createImportItemSegments(normalized, forcedDefaultType).forEach((item) =>
+      result.settingSegments.push({ ...item, type: forcedDefaultType }),
+    );
   }
 }
 
@@ -180,17 +198,24 @@ export function createSmartSettingSegments(text: string) {
   const normalized = text.replace(/\r\n/g, '\n').trim();
   if (!normalized) return [];
   const rawBlocks = normalized
-    .split(/\n{2,}|(?=\n\s*(?:第[一二三四五六七八九十百千万\d]+[章节卷]|[一二三四五六七八九十]+[、.．]|[0-9]+[、.．]|[-*]\s+))/)
+    .split(
+      /\n{2,}|(?=\n\s*(?:第[一二三四五六七八九十百千万\d]+[章节卷]|[一二三四五六七八九十]+[、.．]|[0-9]+[、.．]|[-*]\s+))/,
+    )
     .map((item) => item.replace(/^\s*[-*]\s*/, '').trim())
     .filter(Boolean);
   const blocks = rawBlocks.length > 0 ? rawBlocks : [normalized];
   return blocks.map((body, index) => {
-    const firstLine = body.split('\n').find((line) => line.trim())?.trim() ?? '';
-    const title = firstLine
-      .replace(/^#+\s*/, '')
-      .replace(/^[一二三四五六七八九十]+[、.．]\s*/, '')
-      .replace(/^[0-9]+[、.．]\s*/, '')
-      .slice(0, 24) || `智能设定${index + 1}`;
+    const firstLine =
+      body
+        .split('\n')
+        .find((line) => line.trim())
+        ?.trim() ?? '';
+    const title =
+      firstLine
+        .replace(/^#+\s*/, '')
+        .replace(/^[一二三四五六七八九十]+[、.．]\s*/, '')
+        .replace(/^[0-9]+[、.．]\s*/, '')
+        .slice(0, 24) || `智能设定${index + 1}`;
     return {
       title,
       type: classifySettingText(body),

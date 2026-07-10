@@ -1,11 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { MoonfallReviewItem, MoonfallState } from './moonfallSettingTypes';
-import {
-  createSettingFromReview,
-  MOONFALL_STATE_KEY,
-  normalizeMoonfallState,
-} from './moonfallSettingStore';
+import { createSettingFromReview, MOONFALL_STATE_KEY, normalizeMoonfallState } from './moonfallSettingStore';
 import {
   createMoonfallBackup,
   hydrateMoonfallStateFromDatabase,
@@ -41,14 +37,16 @@ function makeState(id: string, title: string, updatedAt: string): MoonfallState 
   };
   return {
     ...state,
-    projects: [{
-      id: 'project-a',
-      userId: 'local-user',
-      name: '测试项目',
-      description: '',
-      createdAt: updatedAt,
-      updatedAt,
-    }],
+    projects: [
+      {
+        id: 'project-a',
+        userId: 'local-user',
+        name: '测试项目',
+        description: '',
+        createdAt: updatedAt,
+        updatedAt,
+      },
+    ],
     activeProjectId: 'project-a',
     settings: [setting],
   };

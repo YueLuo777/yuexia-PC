@@ -26,4 +26,3 @@ export function mergeDetailOutlineStateExpectation(outline: string, stateExpecta
     .filter((part) => part.trim())
     .join('\n\n');
 }
-

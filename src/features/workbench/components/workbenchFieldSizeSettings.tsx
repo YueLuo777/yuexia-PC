@@ -42,9 +42,9 @@ export const WORKBENCH_FIELD_SIZE_DEFAULTS: Record<WorkbenchFieldSizeKey, Workbe
   detailOutlinePromptSelect: { width: 250, height: 44, fontSize: 13 },
 };
 
-export const WORKBENCH_FIELD_SIZE_SETTING_KEYS = (Object.keys(WORKBENCH_FIELD_SIZE_DEFAULTS) as WorkbenchFieldSizeKey[]).filter(
-  (key) => key !== 'roleCategoryName' && key !== 'roleCreateName',
-);
+export const WORKBENCH_FIELD_SIZE_SETTING_KEYS = (
+  Object.keys(WORKBENCH_FIELD_SIZE_DEFAULTS) as WorkbenchFieldSizeKey[]
+).filter((key) => key !== 'roleCategoryName' && key !== 'roleCreateName');
 
 const WORKBENCH_FIELD_SIZE_LABELS: Partial<Record<WorkbenchFieldSizeKey, string>> = {
   roleSearch: '角色短字段',
@@ -80,7 +80,10 @@ export function clampFieldSizeValue(prop: WorkbenchFieldSizeProp, value: number)
   return Math.min(limit.max, Math.max(limit.min, Math.round(value)));
 }
 
-export function normalizeFieldSizeSpec(key: WorkbenchFieldSizeKey, value?: Partial<WorkbenchFieldSizeSpec>): WorkbenchFieldSizeSpec {
+export function normalizeFieldSizeSpec(
+  key: WorkbenchFieldSizeKey,
+  value?: Partial<WorkbenchFieldSizeSpec>,
+): WorkbenchFieldSizeSpec {
   const base = WORKBENCH_FIELD_SIZE_DEFAULTS[key];
   return {
     width: clampFieldSizeValue('width', Number(value?.width ?? base.width)),
@@ -91,11 +94,16 @@ export function normalizeFieldSizeSpec(key: WorkbenchFieldSizeKey, value?: Parti
 
 export function readWorkbenchFieldSizeSpecs(): Record<WorkbenchFieldSizeKey, WorkbenchFieldSizeSpec> {
   try {
-    const parsed = JSON.parse(localStorage.getItem(WORKBENCH_FIELD_SIZE_STORAGE_KEY) || '{}') as Partial<Record<WorkbenchFieldSizeKey, Partial<WorkbenchFieldSizeSpec>>>;
-    return (Object.keys(WORKBENCH_FIELD_SIZE_DEFAULTS) as WorkbenchFieldSizeKey[]).reduce((acc, key) => {
-      acc[key] = normalizeFieldSizeSpec(key, parsed[key]);
-      return acc;
-    }, {} as Record<WorkbenchFieldSizeKey, WorkbenchFieldSizeSpec>);
+    const parsed = JSON.parse(localStorage.getItem(WORKBENCH_FIELD_SIZE_STORAGE_KEY) || '{}') as Partial<
+      Record<WorkbenchFieldSizeKey, Partial<WorkbenchFieldSizeSpec>>
+    >;
+    return (Object.keys(WORKBENCH_FIELD_SIZE_DEFAULTS) as WorkbenchFieldSizeKey[]).reduce(
+      (acc, key) => {
+        acc[key] = normalizeFieldSizeSpec(key, parsed[key]);
+        return acc;
+      },
+      {} as Record<WorkbenchFieldSizeKey, WorkbenchFieldSizeSpec>,
+    );
   } catch {
     return { ...WORKBENCH_FIELD_SIZE_DEFAULTS };
   }

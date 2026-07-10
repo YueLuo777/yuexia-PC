@@ -45,7 +45,11 @@ export function ActionButton({
 }: ActionButtonProps) {
   const baseClassName = variant === 'primary' ? SIZE_CLASS[size] : VARIANT_CLASS[variant];
   return (
-    <button type={type} className={`${baseClassName} ${variant === 'primary' ? '' : SECONDARY_SIZE_CLASS[size]} ${className}`} {...buttonProps}>
+    <button
+      type={type}
+      className={`${baseClassName} ${variant === 'primary' ? '' : SECONDARY_SIZE_CLASS[size]} ${className}`}
+      {...buttonProps}
+    >
       {children}
     </button>
   );

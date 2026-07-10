@@ -44,14 +44,62 @@ export const defaultMouseGestureSettings: MouseGestureSettings = {
 };
 
 export const shortcutActions: ShortcutAction[] = [
-  { id: 'close_floating', group: '界面与导航', title: '关闭浮层', desc: '关闭当前弹层或右侧栏', defaultBinding: { key: 'Escape' } },
-  { id: 'go_home', group: '界面与导航', title: '回到我的小说', desc: '快速返回我的小说页面', defaultBinding: { key: 'F1' } },
-  { id: 'close_work_tab', group: '界面与导航', title: '关闭作品标签页', desc: '关闭当前打开的作品标签页', defaultBinding: { key: 'w', ctrl: true } },
-  { id: 'toggle_text_edit_mode', group: '界面与导航', title: '文案修改模式', desc: '进入或退出点击文字修改文案的模式', defaultBinding: { key: '1', ctrl: true } },
-  { id: 'delete_chapter', group: '章节编辑', title: '删除章节', desc: '删除当前选中的章节', defaultBinding: { key: 'Delete' } },
-  { id: 'smart_format', group: '章节编辑', title: '自动排版', desc: '整理空行与首尾空白', defaultBinding: { key: 'r', ctrl: true } },
-  { id: 'save_chapter', group: '章节编辑', title: '保存', desc: '保存当前章节内容', defaultBinding: { key: 's', ctrl: true } },
-  { id: 'undo_edit', group: '章节编辑', title: '撤销', desc: '撤销上一步编辑', defaultBinding: { key: 'z', ctrl: true } },
+  {
+    id: 'close_floating',
+    group: '界面与导航',
+    title: '关闭浮层',
+    desc: '关闭当前弹层或右侧栏',
+    defaultBinding: { key: 'Escape' },
+  },
+  {
+    id: 'go_home',
+    group: '界面与导航',
+    title: '回到我的小说',
+    desc: '快速返回我的小说页面',
+    defaultBinding: { key: 'F1' },
+  },
+  {
+    id: 'close_work_tab',
+    group: '界面与导航',
+    title: '关闭作品标签页',
+    desc: '关闭当前打开的作品标签页',
+    defaultBinding: { key: 'w', ctrl: true },
+  },
+  {
+    id: 'toggle_text_edit_mode',
+    group: '界面与导航',
+    title: '文案修改模式',
+    desc: '进入或退出点击文字修改文案的模式',
+    defaultBinding: { key: '1', ctrl: true },
+  },
+  {
+    id: 'delete_chapter',
+    group: '章节编辑',
+    title: '删除章节',
+    desc: '删除当前选中的章节',
+    defaultBinding: { key: 'Delete' },
+  },
+  {
+    id: 'smart_format',
+    group: '章节编辑',
+    title: '自动排版',
+    desc: '整理空行与首尾空白',
+    defaultBinding: { key: 'r', ctrl: true },
+  },
+  {
+    id: 'save_chapter',
+    group: '章节编辑',
+    title: '保存',
+    desc: '保存当前章节内容',
+    defaultBinding: { key: 's', ctrl: true },
+  },
+  {
+    id: 'undo_edit',
+    group: '章节编辑',
+    title: '撤销',
+    desc: '撤销上一步编辑',
+    defaultBinding: { key: 'z', ctrl: true },
+  },
 ];
 
 export function formatShortcut(binding: ShortcutBinding) {
@@ -107,7 +155,10 @@ function isSameShortcutBinding(left: ShortcutBinding, right: ShortcutBinding) {
 }
 
 export function getDefaultShortcutBindings() {
-  return Object.fromEntries(shortcutActions.map((action) => [action.id, action.defaultBinding])) as Record<ShortcutActionId, ShortcutBinding>;
+  return Object.fromEntries(shortcutActions.map((action) => [action.id, action.defaultBinding])) as Record<
+    ShortcutActionId,
+    ShortcutBinding
+  >;
 }
 
 function isShortcutActionId(value: string): value is ShortcutActionId {
@@ -155,12 +206,12 @@ export function normalizeMouseGestureSettings(value: unknown): MouseGestureSetti
   if (!value || typeof value !== 'object') return defaultMouseGestureSettings;
   const raw = value as Partial<MouseGestureSettings>;
   return {
-    goHomeLeftSwipe: typeof raw.goHomeLeftSwipe === 'boolean'
-      ? raw.goHomeLeftSwipe
-      : defaultMouseGestureSettings.goHomeLeftSwipe,
-    forwardRightSwipe: typeof raw.forwardRightSwipe === 'boolean'
-      ? raw.forwardRightSwipe
-      : defaultMouseGestureSettings.forwardRightSwipe,
+    goHomeLeftSwipe:
+      typeof raw.goHomeLeftSwipe === 'boolean' ? raw.goHomeLeftSwipe : defaultMouseGestureSettings.goHomeLeftSwipe,
+    forwardRightSwipe:
+      typeof raw.forwardRightSwipe === 'boolean'
+        ? raw.forwardRightSwipe
+        : defaultMouseGestureSettings.forwardRightSwipe,
   };
 }
 

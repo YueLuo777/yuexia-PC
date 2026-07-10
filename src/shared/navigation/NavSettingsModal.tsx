@@ -18,12 +18,9 @@ import type { NavGroupConfig, NavItemConfig } from '@/shared/navigation/navConfi
 
 const SETTINGS_PAGE_BACK_BUTTON_CLASS =
   'flex h-9 w-9 items-center justify-center rounded-lg border transition-colors border-brand/20 bg-white text-brand hover:bg-brand-light';
-const SETTINGS_LIGHT_BUTTON_CLASS =
-  PRIMARY_TEXT_BUTTON_CLASS;
-const SETTINGS_INLINE_BUTTON_CLASS =
-  INLINE_PRIMARY_TEXT_BUTTON_CLASS;
-const SETTINGS_PAGE_SHELL_CLASS =
-  'mx-auto flex h-full w-full max-w-[1120px] flex-col overflow-hidden';
+const SETTINGS_LIGHT_BUTTON_CLASS = PRIMARY_TEXT_BUTTON_CLASS;
+const SETTINGS_INLINE_BUTTON_CLASS = INLINE_PRIMARY_TEXT_BUTTON_CLASS;
+const SETTINGS_PAGE_SHELL_CLASS = 'mx-auto flex h-full w-full max-w-[1120px] flex-col overflow-hidden';
 
 interface NavSettingsModalProps {
   isOpen: boolean;
@@ -43,33 +40,35 @@ const ROOT_NAV_GROUP: NavGroupConfig = {
 };
 
 function normalizeDraft(config: NavGroupConfig[]) {
-  const items = config.flatMap((group) => (
+  const items = config.flatMap((group) =>
     group.items.map((item) => ({
       ...item,
       hidden: item.hidden || group.hidden || undefined,
-    }))
-  ));
+    })),
+  );
 
-  return [{
-    ...ROOT_NAV_GROUP,
-    dividerAfterItemTo: config[0]?.dividerAfterItemTo ?? null,
-    dividerAfterItemTos: config[0]?.dividerAfterItemTos ?? (
-      config[0]?.dividerAfterItemTo ? [config[0].dividerAfterItemTo] : []
-    ),
-    items,
-  }];
+  return [
+    {
+      ...ROOT_NAV_GROUP,
+      dividerAfterItemTo: config[0]?.dividerAfterItemTo ?? null,
+      dividerAfterItemTos:
+        config[0]?.dividerAfterItemTos ?? (config[0]?.dividerAfterItemTo ? [config[0].dividerAfterItemTo] : []),
+      items,
+    },
+  ];
 }
 
 function getSwapPreviewItems<T>(items: T[], dragSourceIndex: number | null, targetIndex: number | null) {
   if (
-    dragSourceIndex === null
-    || targetIndex === null
-    || dragSourceIndex === targetIndex
-    || dragSourceIndex < 0
-    || targetIndex < 0
-    || dragSourceIndex >= items.length
-    || targetIndex >= items.length
-  ) return items;
+    dragSourceIndex === null ||
+    targetIndex === null ||
+    dragSourceIndex === targetIndex ||
+    dragSourceIndex < 0 ||
+    targetIndex < 0 ||
+    dragSourceIndex >= items.length ||
+    targetIndex >= items.length
+  )
+    return items;
   const next = [...items];
   const [moved] = next.splice(dragSourceIndex, 1);
   next.splice(targetIndex, 0, moved);
@@ -104,9 +103,10 @@ function hasNavPointerRetargetedTooSoon(
 ) {
   if (!pointerDrag.lastPreviewTargetKey || pointerDrag.lastPreviewTargetKey === targetKey) return false;
   const distanceFromLastPreview = Math.hypot(clientX - pointerDrag.lastPreviewX, clientY - pointerDrag.lastPreviewY);
-  const retargetDistance = targetKey === `nav:${pointerDrag.sourceIndex}`
-    ? NAV_POINTER_DRAG_RETURN_DISTANCE
-    : NAV_POINTER_DRAG_RETARGET_DISTANCE;
+  const retargetDistance =
+    targetKey === `nav:${pointerDrag.sourceIndex}`
+      ? NAV_POINTER_DRAG_RETURN_DISTANCE
+      : NAV_POINTER_DRAG_RETARGET_DISTANCE;
   return distanceFromLastPreview < retargetDistance;
 }
 
@@ -121,7 +121,14 @@ function rememberNavPointerPreviewTarget(
   pointerDrag.lastPreviewY = clientY;
 }
 
-export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, variant = 'modal' }: NavSettingsModalProps) {
+export function NavSettingsModal({
+  isOpen,
+  onClose,
+  config,
+  onSave,
+  onReset,
+  variant = 'modal',
+}: NavSettingsModalProps) {
   const isPage = variant === 'page';
   const isEmbedded = variant === 'embedded';
   const isRouteSurface = isPage || isEmbedded;
@@ -156,13 +163,13 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
   if (!isOpen) return null;
 
   const draftItems = draft[0]?.items ?? [];
-  const draftDividerAfterItemTos = draft[0]?.dividerAfterItemTos ?? (
-    draft[0]?.dividerAfterItemTo ? [draft[0].dividerAfterItemTo] : []
-  );
+  const draftDividerAfterItemTos =
+    draft[0]?.dividerAfterItemTos ?? (draft[0]?.dividerAfterItemTo ? [draft[0].dividerAfterItemTo] : []);
   const visibleDraftItems = draftItems.filter((item) => !item.hidden);
-  const previewDraftItems = dragSrc !== null && dragOver && !dividerDragSrc
-    ? getSwapPreviewItems(draftItems, dragSrc, dragOver.itemIdx)
-    : draftItems;
+  const previewDraftItems =
+    dragSrc !== null && dragOver && !dividerDragSrc
+      ? getSwapPreviewItems(draftItems, dragSrc, dragOver.itemIdx)
+      : draftItems;
 
   const normalizeDividerAfterItemTos = (items: NavItemConfig[], dividerAfterItemTos: string[]) => {
     const visibleItemTos = new Set(items.filter((item) => !item.hidden).map((item) => item.to));
@@ -171,27 +178,27 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
 
   const saveItems = (items: NavItemConfig[], dividerAfterItemTos = draftDividerAfterItemTos) => {
     const normalizedDividerAfterItemTos = normalizeDividerAfterItemTos(items, dividerAfterItemTos);
-    const next = [{
-      ...ROOT_NAV_GROUP,
-      dividerAfterItemTo: normalizedDividerAfterItemTos[0] ?? null,
-      dividerAfterItemTos: normalizedDividerAfterItemTos,
-      items,
-    }];
+    const next = [
+      {
+        ...ROOT_NAV_GROUP,
+        dividerAfterItemTo: normalizedDividerAfterItemTos[0] ?? null,
+        dividerAfterItemTos: normalizedDividerAfterItemTos,
+        items,
+      },
+    ];
     setDraft(next);
     onSave(JSON.parse(JSON.stringify(next)));
   };
 
   const commitItemLabel = (itemIndex: number, value: string) => {
-    const nextItems = draftItems.map((item, index) => (
-      index === itemIndex ? { ...item, label: value.trim() || item.label } : item
-    ));
+    const nextItems = draftItems.map((item, index) =>
+      index === itemIndex ? { ...item, label: value.trim() || item.label } : item,
+    );
     saveItems(nextItems);
   };
 
   const toggleItemHidden = (itemIndex: number) => {
-    const nextItems = draftItems.map((item, index) => (
-      index === itemIndex ? { ...item, hidden: !item.hidden } : item
-    ));
+    const nextItems = draftItems.map((item, index) => (index === itemIndex ? { ...item, hidden: !item.hidden } : item));
     saveItems(nextItems);
   };
 
@@ -203,7 +210,10 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
   };
 
   const removeDivider = (itemTo: string) => {
-    saveItems(draftItems, draftDividerAfterItemTos.filter((dividerItemTo) => dividerItemTo !== itemTo));
+    saveItems(
+      draftItems,
+      draftDividerAfterItemTos.filter((dividerItemTo) => dividerItemTo !== itemTo),
+    );
   };
 
   const setNavDragOver = (next: { itemIdx: number; pos: 'before' | 'after' } | null) => {
@@ -235,10 +245,14 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
 
   const resolveDividerDropTarget = (targetItemIdx: number) => {
     const targetItem = draftItems[targetItemIdx];
-    const previousVisibleItem = draftItems.slice(0, targetItemIdx).reverse().find((item) => !item.hidden);
+    const previousVisibleItem = draftItems
+      .slice(0, targetItemIdx)
+      .reverse()
+      .find((item) => !item.hidden);
     const nextVisibleItem = draftItems.slice(targetItemIdx + 1).find((item) => !item.hidden);
-    if (navDragOverRef.current?.pos === 'before') return previousVisibleItem?.to ?? (!targetItem?.hidden ? targetItem?.to : nextVisibleItem?.to) ?? null;
-    return (!targetItem?.hidden ? targetItem?.to : previousVisibleItem?.to ?? nextVisibleItem?.to) ?? null;
+    if (navDragOverRef.current?.pos === 'before')
+      return previousVisibleItem?.to ?? (!targetItem?.hidden ? targetItem?.to : nextVisibleItem?.to) ?? null;
+    return (!targetItem?.hidden ? targetItem?.to : (previousVisibleItem?.to ?? nextVisibleItem?.to)) ?? null;
   };
 
   const commitDragDrop = (targetItemIdx: number) => {
@@ -246,9 +260,10 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
     if (dividerDragSrc) {
       const nextItemTo = resolveDividerDropTarget(targetItemIdx);
       if (!nextItemTo) return;
-      saveItems(draftItems, draftDividerAfterItemTos.map((itemTo) => (
-        itemTo === dividerDragSrc ? nextItemTo : itemTo
-      )));
+      saveItems(
+        draftItems,
+        draftDividerAfterItemTos.map((itemTo) => (itemTo === dividerDragSrc ? nextItemTo : itemTo)),
+      );
       return;
     }
     const dragSrc = navDragSrcRef.current;
@@ -378,7 +393,13 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
 
   return (
     <div
-      className={isEmbedded ? 'h-full min-h-0 overflow-hidden' : isPage ? 'h-full min-h-0 overflow-hidden bg-slate-50 px-8 py-6' : 'fixed inset-0 z-50 flex items-center justify-center bg-black/40'}
+      className={
+        isEmbedded
+          ? 'h-full min-h-0 overflow-hidden'
+          : isPage
+            ? 'h-full min-h-0 overflow-hidden bg-slate-50 px-8 py-6'
+            : 'fixed inset-0 z-50 flex items-center justify-center bg-black/40'
+      }
       onMouseDown={(event) => {
         if (!isRouteSurface && event.target === event.currentTarget) onClose();
       }}
@@ -386,43 +407,73 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
       <div
         data-draggable-managed={isRouteSurface ? undefined : 'true'}
         data-modal-id={isRouteSurface ? undefined : 'dashboard-nav-settings'}
-        className={isEmbedded ? 'flex h-full min-h-0 w-full flex-col overflow-hidden' : isPage ? SETTINGS_PAGE_SHELL_CLASS : 'relative flex max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] w-[640px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'}
-        style={isRouteSurface ? undefined : ({
-          ...draggable.style,
-          maxWidth: 'calc((100vw - 32px) / var(--xinyuexia-effective-scale, 1))',
-          maxHeight: 'calc((100vh - 112px) / var(--xinyuexia-effective-scale, 1))',
-        } as React.CSSProperties)}
+        className={
+          isEmbedded
+            ? 'flex h-full min-h-0 w-full flex-col overflow-hidden'
+            : isPage
+              ? SETTINGS_PAGE_SHELL_CLASS
+              : 'relative flex max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] w-[640px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'
+        }
+        style={
+          isRouteSurface
+            ? undefined
+            : ({
+                ...draggable.style,
+                maxWidth: 'calc((100vw - 32px) / var(--xinyuexia-effective-scale, 1))',
+                maxHeight: 'calc((100vh - 112px) / var(--xinyuexia-effective-scale, 1))',
+              } as React.CSSProperties)
+        }
       >
         {!isEmbedded && (
-        <div {...(isPage ? {} : draggable.dragHandleProps)} className={isPage ? 'flex items-center justify-between border-b border-gray-100 pb-4' : 'flex items-center justify-between border-b border-gray-100 px-6 py-4'}>
-          <div className="flex items-center gap-3">
-            {isPage ? (
+          <div
+            {...(isPage ? {} : draggable.dragHandleProps)}
+            className={
+              isPage
+                ? 'flex items-center justify-between border-b border-gray-100 pb-4'
+                : 'flex items-center justify-between border-b border-gray-100 px-6 py-4'
+            }
+          >
+            <div className="flex items-center gap-3">
+              {isPage ? (
+                <button
+                  onClick={onClose}
+                  className={SETTINGS_PAGE_BACK_BUTTON_CLASS}
+                  title="返回我的小说"
+                  aria-label="返回我的小说"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+              ) : null}
+              <div>
+                <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900">
+                  <Settings className="h-4 w-4 text-brand" />
+                  导航设置
+                </h2>
+                <p className="mt-0.5 text-base text-gray-400">
+                  支持双击改名、隐藏显示、拖拽排序，以及新增、拖拽、删除分割线。
+                </p>
+              </div>
+            </div>
+            {!isPage ? (
               <button
                 onClick={onClose}
-                className={SETTINGS_PAGE_BACK_BUTTON_CLASS}
-                title="返回我的小说"
-                aria-label="返回我的小说"
+                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <X className="h-4 w-4" />
               </button>
             ) : null}
-            <div>
-            <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900">
-              <Settings className="h-4 w-4 text-brand" />
-              导航设置
-            </h2>
-            <p className="mt-0.5 text-base text-gray-400">支持双击改名、隐藏显示、拖拽排序，以及新增、拖拽、删除分割线。</p>
-            </div>
           </div>
-          {!isPage ? (
-            <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
-              <X className="h-4 w-4" />
-            </button>
-          ) : null}
-        </div>
         )}
 
-        <div className={isEmbedded ? 'min-h-0 flex-1 overflow-y-auto pb-5 pr-1' : isPage ? 'flex-1 overflow-y-auto py-5' : 'flex-1 overflow-y-auto p-5'}>
+        <div
+          className={
+            isEmbedded
+              ? 'min-h-0 flex-1 overflow-y-auto pb-5 pr-1'
+              : isPage
+                ? 'flex-1 overflow-y-auto py-5'
+                : 'flex-1 overflow-y-auto p-5'
+          }
+        >
           <div className="space-y-1">
             {previewDraftItems.map((item, previewIndex) => {
               const itemIndex = draftItems.findIndex((draftItem) => draftItem.to === item.to);
@@ -480,7 +531,11 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
                       />
                     ) : (
                       <>
-                        <span className={`min-w-0 flex-1 truncate text-base font-medium ${isHidden ? 'text-gray-400 line-through' : 'text-gray-700'}`}>{item.label}</span>
+                        <span
+                          className={`min-w-0 flex-1 truncate text-base font-medium ${isHidden ? 'text-gray-400 line-through' : 'text-gray-700'}`}
+                        >
+                          {item.label}
+                        </span>
                         <button
                           onClick={() => {
                             setEditingItem(itemIndex);
@@ -490,14 +545,13 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
                         >
                           修改
                         </button>
-                        <button
-                          onClick={() => toggleItemHidden(itemIndex)}
-                          className={SETTINGS_INLINE_BUTTON_CLASS}
-                        >
+                        <button onClick={() => toggleItemHidden(itemIndex)} className={SETTINGS_INLINE_BUTTON_CLASS}>
                           {isHidden ? '恢复' : '隐藏'}
                         </button>
                         {isDraggingPreview ? (
-                          <span className="rounded-full bg-white/80 px-2 py-0.5 text-xs font-black text-brand">虚影，松手后落实</span>
+                          <span className="rounded-full bg-white/80 px-2 py-0.5 text-xs font-black text-brand">
+                            虚影，松手后落实
+                          </span>
                         ) : null}
                       </>
                     )}
@@ -537,8 +591,20 @@ export function NavSettingsModal({ isOpen, onClose, config, onSave, onReset, var
           </div>
         </div>
 
-        <div className={isRouteSurface ? 'flex shrink-0 items-center justify-between border-t border-gray-100 py-3' : 'flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-6 py-3'}>
-          <button onClick={() => { onReset(); if (!isRouteSurface) onClose(); }} className={SETTINGS_LIGHT_BUTTON_CLASS}>
+        <div
+          className={
+            isRouteSurface
+              ? 'flex shrink-0 items-center justify-between border-t border-gray-100 py-3'
+              : 'flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-6 py-3'
+          }
+        >
+          <button
+            onClick={() => {
+              onReset();
+              if (!isRouteSurface) onClose();
+            }}
+            className={SETTINGS_LIGHT_BUTTON_CLASS}
+          >
             恢复默认
           </button>
           <div className="flex items-center gap-2">

@@ -1,5 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Globe, Maximize2, Minimize2, Plus, RefreshCw, Save, Star, Trash2, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Globe,
+  Maximize2,
+  Minimize2,
+  Plus,
+  RefreshCw,
+  Save,
+  Star,
+  Trash2,
+  X,
+} from 'lucide-react';
 
 import {
   getBrowserHostLabel,
@@ -79,15 +91,17 @@ function readActiveBrowserTabId(fallbackId: string) {
 }
 
 function normalizeSavedUrls(value: Array<string | BrowserSavedUrl>) {
-  return value.map((item) => {
-    if (typeof item === 'string') {
-      return { title: getBrowserHostLabel(item), url: item };
-    }
-    return {
-      title: item.title || getBrowserHostLabel(item.url),
-      url: item.url,
-    };
-  }).filter((item) => item.url);
+  return value
+    .map((item) => {
+      if (typeof item === 'string') {
+        return { title: getBrowserHostLabel(item), url: item };
+      }
+      return {
+        title: item.title || getBrowserHostLabel(item.url),
+        url: item.url,
+      };
+    })
+    .filter((item) => item.url);
 }
 
 export function BrowserWorkspace({ width }: { width: number }) {
@@ -101,7 +115,9 @@ export function BrowserWorkspace({ width }: { width: number }) {
   const [inputUrl, setInputUrl] = useState(() => activeTab.url);
   const [bookmarkTitle, setBookmarkTitle] = useState('');
   const [currentUrl, setCurrentUrl] = useState(() => activeTab.url);
-  const [savedUrls, setSavedUrls] = useState<BrowserSavedUrl[]>(() => normalizeSavedUrls(readStoredJson<Array<string | BrowserSavedUrl>>(BROWSER_SAVED_URLS_KEY, [])));
+  const [savedUrls, setSavedUrls] = useState<BrowserSavedUrl[]>(() =>
+    normalizeSavedUrls(readStoredJson<Array<string | BrowserSavedUrl>>(BROWSER_SAVED_URLS_KEY, [])),
+  );
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -148,9 +164,9 @@ export function BrowserWorkspace({ width }: { width: number }) {
         const latestTitle = view.getTitle?.() || getBrowserHostLabel(latestUrl);
         setCurrentUrl(latestUrl);
         setInputUrl(latestUrl);
-        setBrowserTabs((prev) => prev.map((tab) => (
-          tab.id === activeTabId ? { ...tab, url: latestUrl, title: latestTitle } : tab
-        )));
+        setBrowserTabs((prev) =>
+          prev.map((tab) => (tab.id === activeTabId ? { ...tab, url: latestUrl, title: latestTitle } : tab)),
+        );
         setCanGoBack(view.canGoBack());
         setCanGoForward(view.canGoForward());
       } catch {
@@ -364,31 +380,34 @@ export function BrowserWorkspace({ width }: { width: number }) {
           </div>
           {savedUrls.length > 0 ? (
             <div className="flex max-h-[76px] flex-wrap gap-1.5 overflow-y-auto pr-1">
-            {savedUrls.map((item) => (
-              <div
-                key={item.url}
-                className="group flex max-w-[220px] items-center gap-1 rounded-full border border-gray-200 bg-white pl-2.5 pr-1 py-1 text-[11px] text-gray-600"
-                title={item.url}
-              >
-                <button onClick={() => openUrl(item.url)} className="min-w-0 flex-1 truncate text-left hover:text-brand">
-                  {item.title}
-                </button>
-                <button
-                  onClick={() => addBrowserTab(item.url)}
-                  className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-gray-300 hover:bg-gray-100 hover:text-blue-600"
-                  title="新标签打开"
+              {savedUrls.map((item) => (
+                <div
+                  key={item.url}
+                  className="group flex max-w-[220px] items-center gap-1 rounded-full border border-gray-200 bg-white pl-2.5 pr-1 py-1 text-[11px] text-gray-600"
+                  title={item.url}
                 >
-                  <Plus className="h-3 w-3" />
-                </button>
-                <button
-                  onClick={() => removeSavedUrl(item.url)}
-                  className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-gray-300 hover:bg-red-50 hover:text-red-500"
-                  title="删除收藏"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
+                  <button
+                    onClick={() => openUrl(item.url)}
+                    className="min-w-0 flex-1 truncate text-left hover:text-brand"
+                  >
+                    {item.title}
+                  </button>
+                  <button
+                    onClick={() => addBrowserTab(item.url)}
+                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-gray-300 hover:bg-gray-100 hover:text-blue-600"
+                    title="新标签打开"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                  <button
+                    onClick={() => removeSavedUrl(item.url)}
+                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-gray-300 hover:bg-red-50 hover:text-red-500"
+                    title="删除收藏"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="rounded-md border border-dashed border-gray-200 bg-white px-3 py-2 text-center text-xs text-gray-400">
@@ -399,17 +418,19 @@ export function BrowserWorkspace({ width }: { width: number }) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden bg-white [scrollbar-gutter:stable] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#9a9a9a] [&::-webkit-scrollbar-track]:bg-transparent">
-        {embeddedBrowserEnabled ? React.createElement('webview', {
-          ref: webviewRef,
-          src: currentUrl,
-          partition: BROWSER_PARTITION,
-          style: {
-            display: 'flex',
-            width: '100%',
-            minWidth: usesMobileViewport ? `${MOBILE_VIEWPORT_WIDTH}px` : `${DESKTOP_VIEWPORT_MIN_WIDTH}px`,
-            height: '100%',
-          },
-        }) : (
+        {embeddedBrowserEnabled ? (
+          React.createElement('webview', {
+            ref: webviewRef,
+            src: currentUrl,
+            partition: BROWSER_PARTITION,
+            style: {
+              display: 'flex',
+              width: '100%',
+              minWidth: usesMobileViewport ? `${MOBILE_VIEWPORT_WIDTH}px` : `${DESKTOP_VIEWPORT_MIN_WIDTH}px`,
+              height: '100%',
+            },
+          })
+        ) : (
           <div className="flex h-full items-center justify-center bg-gray-50 px-4 text-center text-xs text-gray-500">
             内置浏览器仅在开发模式或显式启用的内部包中开放。
           </div>

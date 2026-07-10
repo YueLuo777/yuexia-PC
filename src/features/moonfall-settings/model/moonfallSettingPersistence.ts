@@ -30,12 +30,12 @@ function nowIso() {
 
 function countStatePayload(state: MoonfallState) {
   return (
-    state.settings.length
-    + state.sources.length
-    + state.sourceChunks.length
-    + state.relations.length
-    + state.retrievalLogs.length
-    + state.importTasks.length
+    state.settings.length +
+    state.sources.length +
+    state.sourceChunks.length +
+    state.relations.length +
+    state.retrievalLogs.length +
+    state.importTasks.length
   );
 }
 
@@ -61,7 +61,10 @@ function itemTime(item: { createdAt?: string; updatedAt?: string }) {
   return Math.max(timeValue(item.updatedAt), timeValue(item.createdAt));
 }
 
-function mergeById<T extends { id: string; createdAt?: string; updatedAt?: string }>(localItems: T[], databaseItems: T[]) {
+function mergeById<T extends { id: string; createdAt?: string; updatedAt?: string }>(
+  localItems: T[],
+  databaseItems: T[],
+) {
   const map = new Map<string, T>();
   databaseItems.forEach((item) => map.set(item.id, item));
   localItems.forEach((localItem) => {
@@ -125,19 +128,21 @@ export function createMoonfallBackup(state: MoonfallState, reason: string) {
 }
 
 export function readMoonfallBackups() {
-  return readBackupIndex().map((key) => {
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as MoonfallBackupRecord;
-      return {
-        ...parsed,
-        state: normalizeMoonfallState(parsed.state),
-      };
-    } catch {
-      return null;
-    }
-  }).filter((item): item is MoonfallBackupRecord => Boolean(item));
+  return readBackupIndex()
+    .map((key) => {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as MoonfallBackupRecord;
+        return {
+          ...parsed,
+          state: normalizeMoonfallState(parsed.state),
+        };
+      } catch {
+        return null;
+      }
+    })
+    .filter((item): item is MoonfallBackupRecord => Boolean(item));
 }
 
 function writeLocalMoonfallState(state: MoonfallState) {

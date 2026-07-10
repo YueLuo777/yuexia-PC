@@ -45,15 +45,21 @@ const emptyChapterMenu: ChapterContextMenu = { visible: false, x: 0, y: 0, volum
 const emptyVolumeMenu: VolumeContextMenu = { visible: false, x: 0, y: 0, volumeId: null };
 const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 200;
 const CHAPTER_SIDEBAR_BOTTOM_ROW_CLASS = 'flex items-center gap-1.5 border-t border-[#e6e8ec] px-2 py-2';
-const CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS = 'flex h-8 min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-md px-1.5 text-sm leading-none text-white transition-colors';
-const WORKBENCH_FOLDER_GROUP_BUTTON_BASE_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors';
+const CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS =
+  'flex h-8 min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-md px-1.5 text-sm leading-none text-white transition-colors';
+const WORKBENCH_FOLDER_GROUP_BUTTON_BASE_CLASS =
+  'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors';
 const WORKBENCH_FOLDER_GROUP_DEFAULT_TONE_CLASS = 'border-[#BDEEF7] xy-flow-group-bg';
 const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';
 const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#6f7e90]';
-const CHAPTER_CONTEXT_MENU_CLASS = 'fixed z-[100] w-[136px] overflow-visible rounded-[8px] border border-[#e5e7eb] bg-white py-1 shadow-[0_10px_28px_rgba(15,23,42,0.14)]';
-const CHAPTER_CONTEXT_MENU_ITEM_CLASS = 'flex h-[42px] w-full items-center gap-3 px-3 text-left text-[15px] font-medium text-[#1f2933] transition-colors hover:bg-[#f5f7fa]';
-const CHAPTER_CONTEXT_MENU_DANGER_CLASS = 'flex h-[42px] w-full items-center gap-3 px-3 text-left text-[15px] font-medium text-[#ff3b30] transition-colors hover:bg-[#fff1f0]';
-const CHAPTER_CONTEXT_MENU_SUBMENU_CLASS = 'absolute left-[calc(100%+4px)] top-0 hidden w-[176px] overflow-hidden rounded-[8px] border border-[#e5e7eb] bg-white py-1 shadow-[0_10px_28px_rgba(15,23,42,0.14)] group-hover:block';
+const CHAPTER_CONTEXT_MENU_CLASS =
+  'fixed z-[100] w-[136px] overflow-visible rounded-[8px] border border-[#e5e7eb] bg-white py-1 shadow-[0_10px_28px_rgba(15,23,42,0.14)]';
+const CHAPTER_CONTEXT_MENU_ITEM_CLASS =
+  'flex h-[42px] w-full items-center gap-3 px-3 text-left text-[15px] font-medium text-[#1f2933] transition-colors hover:bg-[#f5f7fa]';
+const CHAPTER_CONTEXT_MENU_DANGER_CLASS =
+  'flex h-[42px] w-full items-center gap-3 px-3 text-left text-[15px] font-medium text-[#ff3b30] transition-colors hover:bg-[#fff1f0]';
+const CHAPTER_CONTEXT_MENU_SUBMENU_CLASS =
+  'absolute left-[calc(100%+4px)] top-0 hidden w-[176px] overflow-hidden rounded-[8px] border border-[#e5e7eb] bg-white py-1 shadow-[0_10px_28px_rgba(15,23,42,0.14)] group-hover:block';
 const CHAPTER_CONTEXT_MENU_DIVIDER_CLASS = 'mx-3 h-px bg-[#edf0f2]';
 
 function getContextMenuPoint(event: ReactMouseEvent<HTMLElement>) {
@@ -100,7 +106,10 @@ export function ChapterSidebar({
   const [isNonEmptyVolumePromptOpen, setIsNonEmptyVolumePromptOpen] = useState(false);
   const chapterUnit = workType === 'script' ? '集' : '章';
   const volumeUnit = workType === 'script' ? '卷' : '卷';
-  const unpublishedCount = volumes.reduce((sum, volume) => sum + volume.chapters.filter((chapter) => !chapter.isPublished).length, 0);
+  const unpublishedCount = volumes.reduce(
+    (sum, volume) => sum + volume.chapters.filter((chapter) => !chapter.isPublished).length,
+    0,
+  );
 
   useEffect(() => {
     if (!chapterMenu.visible) return;
@@ -116,11 +125,10 @@ export function ChapterSidebar({
     return () => window.removeEventListener('click', close);
   }, [volumeMenu.visible]);
 
-  const sortedUnpublishedChapters = (volume: Volume) => (
+  const sortedUnpublishedChapters = (volume: Volume) =>
     [...volume.chapters]
       .filter((chapter) => !chapter.isPublished)
-      .sort((a, b) => (sortAsc ? a.serialNumber - b.serialNumber : b.serialNumber - a.serialNumber))
-  );
+      .sort((a, b) => (sortAsc ? a.serialNumber - b.serialNumber : b.serialNumber - a.serialNumber));
 
   const handleDeleteVolume = (volumeId: number) => {
     const target = volumes.find((volume) => volume.id === volumeId);
@@ -153,13 +161,13 @@ export function ChapterSidebar({
         </div>
         <div className="flex items-center gap-1.5">
           {workType !== 'script' && (
-          <button
-            onClick={onTogglePublished}
-            className="flex h-8 items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-2 text-sm text-white transition-colors hover:bg-[#0798b8]"
-            title="已发布"
-          >
-            {showPublished ? '收回已发布' : '展开已发布'}
-          </button>
+            <button
+              onClick={onTogglePublished}
+              className="flex h-8 items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-2 text-sm text-white transition-colors hover:bg-[#0798b8]"
+              title="已发布"
+            >
+              {showPublished ? '收回已发布' : '展开已发布'}
+            </button>
           )}
         </div>
       </div>
@@ -178,10 +186,17 @@ export function ChapterSidebar({
                   setVolumeMenu({ visible: true, ...getContextMenuPoint(event), volumeId: volume.id });
                 }}
               >
-                <button onClick={() => onToggleVolume(volume.id)} className="flex min-w-0 flex-1 items-center gap-2 text-left" aria-expanded={volume.isExpanded}>
+                <button
+                  onClick={() => onToggleVolume(volume.id)}
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                  aria-expanded={volume.isExpanded}
+                >
                   <VolumeFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
                   <span className="min-w-0 flex-1 truncate leading-none">{volume.name}</span>
-                  <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{volume.chapters.length}{chapterUnit}</span>
+                  <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>
+                    {volume.chapters.length}
+                    {chapterUnit}
+                  </span>
                 </button>
 
                 <button
@@ -205,7 +220,12 @@ export function ChapterSidebar({
                       onContextMenu={(event) => {
                         event.preventDefault();
                         event.stopPropagation();
-                        setChapterMenu({ visible: true, ...getContextMenuPoint(event), volumeId: volume.id, chapterId: chapter.id });
+                        setChapterMenu({
+                          visible: true,
+                          ...getContextMenuPoint(event),
+                          volumeId: volume.id,
+                          chapterId: chapter.id,
+                        });
                       }}
                       className={`xy-chapter-sidebar-row group relative flex w-full cursor-pointer items-center gap-2 rounded-[8px] border px-1 py-1 text-left transition-colors ${
                         chapter.isSelected
@@ -214,7 +234,9 @@ export function ChapterSidebar({
                       }`}
                     >
                       <span className="flex-1 truncate whitespace-nowrap text-sm font-black text-gray-700">
-                        第{chapter.serialNumber}{chapterUnit}{chapter.title ? ` ${chapter.title}` : ''}
+                        第{chapter.serialNumber}
+                        {chapterUnit}
+                        {chapter.title ? ` ${chapter.title}` : ''}
                       </span>
                       <span className="ml-auto shrink-0 text-[11px] font-black text-gray-400 transition-opacity group-hover:opacity-0">
                         {getChapterWordCount(chapter.id)}
@@ -239,10 +261,17 @@ export function ChapterSidebar({
       </div>
 
       <div className={CHAPTER_SIDEBAR_BOTTOM_ROW_CLASS}>
-        <button onClick={onAddVolume} className={`${CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS} bg-[#08AACE] hover:bg-[#0798b8]`} title={`新增${volumeUnit}`}>
+        <button
+          onClick={onAddVolume}
+          className={`${CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS} bg-[#08AACE] hover:bg-[#0798b8]`}
+          title={`新增${volumeUnit}`}
+        >
           新增卷
         </button>
-        <button onClick={onToggleSort} className={`${CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS} bg-[#08AACE] hover:bg-[#0798b8]`}>
+        <button
+          onClick={onToggleSort}
+          className={`${CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS} bg-[#08AACE] hover:bg-[#0798b8]`}
+        >
           {sortAsc ? '倒序' : '正序'}
         </button>
       </div>
@@ -273,7 +302,8 @@ export function ChapterSidebar({
         >
           <button
             onClick={() => {
-              if (chapterMenu.volumeId && chapterMenu.chapterId) handleEditChapter(chapterMenu.volumeId, chapterMenu.chapterId);
+              if (chapterMenu.volumeId && chapterMenu.chapterId)
+                handleEditChapter(chapterMenu.volumeId, chapterMenu.chapterId);
             }}
             className={CHAPTER_CONTEXT_MENU_ITEM_CLASS}
           >
@@ -281,7 +311,8 @@ export function ChapterSidebar({
           </button>
           <button
             onClick={() => {
-              if (chapterMenu.volumeId && chapterMenu.chapterId) handleEditChapter(chapterMenu.volumeId, chapterMenu.chapterId);
+              if (chapterMenu.volumeId && chapterMenu.chapterId)
+                handleEditChapter(chapterMenu.volumeId, chapterMenu.chapterId);
             }}
             className={CHAPTER_CONTEXT_MENU_ITEM_CLASS}
           >
@@ -290,17 +321,15 @@ export function ChapterSidebar({
           <div className={CHAPTER_CONTEXT_MENU_DIVIDER_CLASS} />
           <button
             onClick={() => {
-              if (chapterMenu.volumeId && chapterMenu.chapterId) handlePublish(chapterMenu.volumeId, chapterMenu.chapterId);
+              if (chapterMenu.volumeId && chapterMenu.chapterId)
+                handlePublish(chapterMenu.volumeId, chapterMenu.chapterId);
             }}
             className={CHAPTER_CONTEXT_MENU_ITEM_CLASS}
           >
             发布章节
           </button>
           <div className="group relative">
-            <button
-              type="button"
-              className={`${CHAPTER_CONTEXT_MENU_ITEM_CLASS} bg-transparent`}
-            >
+            <button type="button" className={`${CHAPTER_CONTEXT_MENU_ITEM_CLASS} bg-transparent`}>
               <span className="min-w-0 flex-1">移入分组</span>
               <ChevronRight className="h-4 w-4 shrink-0 text-[#c3c9d2]" />
             </button>
@@ -317,7 +346,8 @@ export function ChapterSidebar({
           <div className={CHAPTER_CONTEXT_MENU_DIVIDER_CLASS} />
           <button
             onClick={() => {
-              if (chapterMenu.volumeId && chapterMenu.chapterId) onDeleteChapter(chapterMenu.volumeId, chapterMenu.chapterId);
+              if (chapterMenu.volumeId && chapterMenu.chapterId)
+                onDeleteChapter(chapterMenu.volumeId, chapterMenu.chapterId);
               setChapterMenu(emptyChapterMenu);
             }}
             className={CHAPTER_CONTEXT_MENU_DANGER_CLASS}

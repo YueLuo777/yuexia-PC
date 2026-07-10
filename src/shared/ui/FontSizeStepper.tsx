@@ -27,16 +27,17 @@ export function FontSizeStepper({
         className="xy-font-size-stepper-button xy-font-size-stepper-decrement"
         title="缩小字号"
       >
-        <svg className="xy-font-size-stepper-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 2">
+        <svg
+          className="xy-font-size-stepper-icon"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 18 2"
+        >
           <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M1 1h16" />
         </svg>
       </button>
-      <input
-        readOnly
-        value={value}
-        className="xy-font-size-stepper-input"
-        aria-label={ariaLabel}
-      />
+      <input readOnly value={value} className="xy-font-size-stepper-input" aria-label={ariaLabel} />
       <button
         type="button"
         onClick={increment}
@@ -44,7 +45,13 @@ export function FontSizeStepper({
         className="xy-font-size-stepper-button xy-font-size-stepper-increment"
         title="放大字号"
       >
-        <svg className="xy-font-size-stepper-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
+        <svg
+          className="xy-font-size-stepper-icon"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 18 18"
+        >
           <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 1v16M1 9h16" />
         </svg>
       </button>

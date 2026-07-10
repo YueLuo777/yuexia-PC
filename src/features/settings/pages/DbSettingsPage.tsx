@@ -4,6 +4,8 @@ import { useRef, useState } from 'react';
 
 const BACKUP_MANIFEST_FILE = 'manifest.json';
 const BACKUP_LOCAL_STORAGE_FILE = 'local-storage.json';
+const MAX_BACKUP_FILE_BYTES = 64 * 1024 * 1024;
+const MAX_RESTORABLE_TEXT_LENGTH = 32 * 1024 * 1024;
 
 type MigrationBackup = {
   version?: number;
@@ -34,16 +36,16 @@ const SECRET_VALUE_PATTERN = /\b(?:sk-[A-Za-z0-9_-]{12,}|Bearer\s+[A-Za-z0-9._-]
 function isSensitiveFieldName(name: string) {
   const normalized = name.replace(/[-_\s]/g, '').toLowerCase();
   return (
-    normalized.includes('secret')
-    || normalized.includes('token')
-    || normalized.includes('password')
-    || normalized.includes('authorization')
-    || normalized === 'apikey'
-    || normalized === 'xapikey'
-    || normalized === 'privatekey'
-    || normalized === 'accesskey'
-    || normalized === 'accesskeyid'
-    || normalized === 'accesskeysecret'
+    normalized.includes('secret') ||
+    normalized.includes('token') ||
+    normalized.includes('password') ||
+    normalized.includes('authorization') ||
+    normalized === 'apikey' ||
+    normalized === 'xapikey' ||
+    normalized === 'privatekey' ||
+    normalized === 'accesskey' ||
+    normalized === 'accesskeyid' ||
+    normalized === 'accesskeysecret'
   );
 }
 
@@ -54,10 +56,7 @@ function redactSensitiveJsonValue(value: unknown): unknown {
   }
 
   return Object.fromEntries(
-    Object.entries(value).map(([key, item]) => [
-      key,
-      isSensitiveFieldName(key) ? '' : redactSensitiveJsonValue(item),
-    ]),
+    Object.entries(value).map(([key, item]) => [key, isSensitiveFieldName(key) ? '' : redactSensitiveJsonValue(item)]),
   );
 }
 
@@ -86,6 +85,13 @@ export function filterRestorableLocalStorageData(data: Record<string, unknown>) 
   return next;
 }
 
+function assertRestorableDataSize(data: Record<string, string>) {
+  const totalLength = Object.entries(data).reduce((total, [key, value]) => total + key.length + value.length, 0);
+  if (totalLength > MAX_RESTORABLE_TEXT_LENGTH) {
+    throw new Error('备份内容超过本地存储可安全恢复的大小，请拆分作品或清理大型图片后重试。');
+  }
+}
+
 export function sanitizeLocalStorageBackup(data: Record<string, unknown>) {
   const next: Record<string, string> = {};
   Object.entries(filterRestorableLocalStorageData(data)).forEach(([key, value]) => {
@@ -96,10 +102,30 @@ export function sanitizeLocalStorageBackup(data: Record<string, unknown>) {
 
 export function replaceRestorableLocalStorageData(data: Record<string, unknown>) {
   const next = filterRestorableLocalStorageData(data);
-  Object.keys(readAllLocalStorage()).forEach((key) => {
-    if (isRestorableLocalStorageKey(key)) localStorage.removeItem(key);
-  });
-  Object.entries(next).forEach(([key, value]) => localStorage.setItem(key, value));
+  assertRestorableDataSize(next);
+  const previous = filterRestorableLocalStorageData(readAllLocalStorage());
+  const replace = (snapshot: Record<string, string>) => {
+    Object.keys(readAllLocalStorage()).forEach((key) => {
+      if (isRestorableLocalStorageKey(key)) localStorage.removeItem(key);
+    });
+    Object.entries(snapshot).forEach(([key, value]) => localStorage.setItem(key, value));
+  };
+
+  try {
+    replace(next);
+  } catch (error) {
+    try {
+      replace(previous);
+    } catch (rollbackError) {
+      throw new Error(
+        `导入失败且自动回滚未完成：${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`,
+        { cause: rollbackError },
+      );
+    }
+    throw new Error(`导入失败，已恢复导入前的数据：${error instanceof Error ? error.message : String(error)}`, {
+      cause: error,
+    });
+  }
   return next;
 }
 
@@ -124,16 +150,23 @@ export function DbSettingsPage() {
       const zip = new JSZip();
       const exportedAt = new Date().toISOString();
       const localStorageBackup = sanitizeLocalStorageBackup(readAllLocalStorage());
-      zip.file(BACKUP_MANIFEST_FILE, JSON.stringify({
-        version: 4,
-        exportedAt,
-        app: '月下写作',
-        note: '这个全局迁移包用于把一台电脑上的作品、提示词、页面设置和本地资料恢复到另一台电脑；出于安全原因，API Key、Secret、Token、Password 等密钥字段会被清空。',
-        includes: {
-          localStorage: true,
-          localStorageKeys: Object.keys(localStorageBackup).length,
-        },
-      }, null, 2));
+      zip.file(
+        BACKUP_MANIFEST_FILE,
+        JSON.stringify(
+          {
+            version: 4,
+            exportedAt,
+            app: '月下写作',
+            note: '这个全局迁移包用于把一台电脑上的作品、提示词、页面设置和本地资料恢复到另一台电脑；出于安全原因，API Key、Secret、Token、Password 等密钥字段会被清空。',
+            includes: {
+              localStorage: true,
+              localStorageKeys: Object.keys(localStorageBackup).length,
+            },
+          },
+          null,
+          2,
+        ),
+      );
       zip.file(BACKUP_LOCAL_STORAGE_FILE, JSON.stringify(localStorageBackup, null, 2));
 
       const blob = await zip.generateAsync({ type: 'blob' });
@@ -153,6 +186,10 @@ export function DbSettingsPage() {
 
   const importMigrationBackup = async (file?: File) => {
     if (!file) return;
+    if (file.size > MAX_BACKUP_FILE_BYTES) {
+      setNotice('备份文件超过 64MB，已拒绝导入。请确认文件来源或拆分数据后重试。');
+      return;
+    }
     if (!window.confirm('导入后会先清除当前电脑里本软件的数据，再恢复备份内容。确认继续？')) return;
     setIsBusy(true);
     try {
@@ -163,6 +200,7 @@ export function DbSettingsPage() {
         const zip = await JSZip.loadAsync(await file.arrayBuffer());
         const localStorageText = await zip.file(BACKUP_LOCAL_STORAGE_FILE)?.async('string');
         if (!localStorageText) throw new Error('备份包里没有全局数据文件。');
+        if (localStorageText.length > MAX_RESTORABLE_TEXT_LENGTH) throw new Error('备份解压后的数据体积过大。');
         backup = {
           version: 4,
           localStorage: JSON.parse(localStorageText) as Record<string, unknown>,

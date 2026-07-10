@@ -27,17 +27,10 @@ import type {
   WorkbenchPlotPointCandidate,
 } from '@/features/workbench/model/workbenchPlotChain';
 
-import {
-  getActiveBrainstormAiSessionId,
-  normalizeBrainstormAiSessions,
-} from './workbenchBrainstormState';
+import { getActiveBrainstormAiSessionId, normalizeBrainstormAiSessions } from './workbenchBrainstormState';
 import { getTabConfigsStorageKey } from './workbenchLibraryStorageState';
 import { BRAINSTORM_TAB, ROLE_TAB, SETTING_TAB, normalizeTabName } from './workbenchLibraryTabs';
-import {
-  createEmptyRoleStateSettings,
-  parseRoleContent,
-  stringifyRoleContent,
-} from './workbenchRoleContent';
+import { createEmptyRoleStateSettings, parseRoleContent, stringifyRoleContent } from './workbenchRoleContent';
 import {
   getStructuredSettingFieldSetByDefaultTitle,
   normalizeSettingType,
@@ -118,36 +111,39 @@ export function clearStoredBrainstormAiSessionPreviews(storageKey: string) {
   const currentConfig = currentConfigs[BRAINSTORM_TAB] ?? {};
   const currentSessions = normalizeBrainstormAiSessions(currentConfig.aiSessions, currentConfig);
   const activeId = getActiveBrainstormAiSessionId(currentConfig.activeAiSessionId, currentSessions);
-  const nextSessions = currentSessions.map((session) => (
+  const nextSessions = currentSessions.map((session) =>
     session.id === activeId
       ? (() => {
-        const task = session.backgroundAiTaskId ? getBackgroundAiTask(session.backgroundAiTaskId) : null;
-        const keepBackgroundOutput = Boolean(task && (task.status === 'running' || task.status === 'success'));
-        return {
-          ...session,
-          input: '',
-          output: keepBackgroundOutput ? session.output : '',
-          result: keepBackgroundOutput ? session.result : '',
-          backgroundAiTaskId: keepBackgroundOutput ? session.backgroundAiTaskId : undefined,
-          previewCount: keepBackgroundOutput ? session.previewCount : undefined,
-          previewTitles: [],
-          previewDrafts: [],
-          previewSelectedIndexes: undefined,
-        };
-      })()
-      : session
-  ));
-  localStorage.setItem(getTabConfigsStorageKey(storageKey), JSON.stringify({
-    ...currentConfigs,
-    [BRAINSTORM_TAB]: {
-      ...currentConfig,
-      aiSessions: nextSessions,
-      activeAiSessionId: activeId,
-      aiInput: '',
-      aiOutput: '',
-      aiResult: '',
-    },
-  }));
+          const task = session.backgroundAiTaskId ? getBackgroundAiTask(session.backgroundAiTaskId) : null;
+          const keepBackgroundOutput = Boolean(task && (task.status === 'running' || task.status === 'success'));
+          return {
+            ...session,
+            input: '',
+            output: keepBackgroundOutput ? session.output : '',
+            result: keepBackgroundOutput ? session.result : '',
+            backgroundAiTaskId: keepBackgroundOutput ? session.backgroundAiTaskId : undefined,
+            previewCount: keepBackgroundOutput ? session.previewCount : undefined,
+            previewTitles: [],
+            previewDrafts: [],
+            previewSelectedIndexes: undefined,
+          };
+        })()
+      : session,
+  );
+  localStorage.setItem(
+    getTabConfigsStorageKey(storageKey),
+    JSON.stringify({
+      ...currentConfigs,
+      [BRAINSTORM_TAB]: {
+        ...currentConfig,
+        aiSessions: nextSessions,
+        activeAiSessionId: activeId,
+        aiInput: '',
+        aiOutput: '',
+        aiResult: '',
+      },
+    }),
+  );
 }
 
 export type LibraryTabConfigs = Record<string, LibraryTabConfig>;
@@ -155,7 +151,7 @@ export type LibraryTabConfigs = Record<string, LibraryTabConfig>;
 export function readTabConfigs(storageKey: string): LibraryTabConfigs {
   try {
     const raw = localStorage.getItem(getTabConfigsStorageKey(storageKey));
-    const parsed = raw ? JSON.parse(raw) as LibraryTabConfigs : {};
+    const parsed = raw ? (JSON.parse(raw) as LibraryTabConfigs) : {};
     if (parsed && typeof parsed === 'object' && !parsed[SETTING_TAB] && parsed['设定']) {
       parsed[SETTING_TAB] = parsed['设定'];
     }
@@ -173,10 +169,14 @@ export function getRoleTypesStorageKey(storageKey: string) {
 export function readCustomRoleTypes(storageKey: string) {
   try {
     const raw = localStorage.getItem(getRoleTypesStorageKey(storageKey));
-    const parsed = raw ? JSON.parse(raw) as string[] : [];
-    return Array.from(new Set(parsed
-      .filter((item) => typeof item === 'string' && item.trim())
-      .map((item) => normalizeWorkbenchRoleType(item))));
+    const parsed = raw ? (JSON.parse(raw) as string[]) : [];
+    return Array.from(
+      new Set(
+        parsed
+          .filter((item) => typeof item === 'string' && item.trim())
+          .map((item) => normalizeWorkbenchRoleType(item)),
+      ),
+    );
   } catch {
     return [];
   }
@@ -208,7 +208,7 @@ export function getSettingTypeDomainsStorageKey(storageKey: string) {
 export function readCustomSettingTypes(storageKey: string) {
   try {
     const raw = localStorage.getItem(getSettingTypesStorageKey(storageKey));
-    const parsed = raw ? JSON.parse(raw) as string[] : [];
+    const parsed = raw ? (JSON.parse(raw) as string[]) : [];
     return parsed.filter((item) => typeof item === 'string' && item.trim());
   } catch {
     return [];
@@ -218,7 +218,7 @@ export function readCustomSettingTypes(storageKey: string) {
 export function readCustomSettingTypeDomains(storageKey: string): Record<string, string> {
   try {
     const raw = localStorage.getItem(getSettingTypeDomainsStorageKey(storageKey));
-    const parsed = raw ? JSON.parse(raw) as Record<string, unknown> : {};
+    const parsed = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
     return Object.entries(parsed).reduce<Record<string, string>>((acc, [type, domain]) => {
       if (type.trim() && typeof domain === 'string' && domain.trim()) acc[type] = domain;
       return acc;
@@ -235,7 +235,7 @@ export function getHiddenSettingTypesStorageKey(storageKey: string) {
 export function readStringList(storageKey: string) {
   try {
     const raw = localStorage.getItem(storageKey);
-    const parsed = raw ? JSON.parse(raw) as string[] : [];
+    const parsed = raw ? (JSON.parse(raw) as string[]) : [];
     return parsed.filter((item) => typeof item === 'string' && item.trim());
   } catch {
     return [];
@@ -244,12 +244,15 @@ export function readStringList(storageKey: string) {
 
 export function normalizeLinkedOtherSettingIds(value: unknown) {
   if (!Array.isArray(value)) return [];
-  return Array.from(new Set(value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)));
+  return Array.from(
+    new Set(value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)),
+  );
 }
 
 export function readHiddenRoleTypes(storageKey: string) {
-  const hidden = readStringList(getHiddenRoleTypesStorageKey(storageKey))
-    .map((item) => normalizeWorkbenchRoleType(item));
+  const hidden = readStringList(getHiddenRoleTypesStorageKey(storageKey)).map((item) =>
+    normalizeWorkbenchRoleType(item),
+  );
   if (localStorage.getItem(getRoleTaxonomyDefaultsVersionStorageKey(storageKey)) === ROLE_TAXONOMY_DEFAULTS_VERSION) {
     return Array.from(new Set(hidden));
   }
@@ -260,9 +263,10 @@ export function readHiddenRoleTypes(storageKey: string) {
 }
 
 export function readHiddenSettingTypes(storageKey: string) {
-  const hidden = readStringList(getHiddenSettingTypesStorageKey(storageKey))
-    .map((item) => normalizeSettingType(item));
-  if (localStorage.getItem(getSettingTaxonomyDefaultsVersionStorageKey(storageKey)) === SETTING_TAXONOMY_DEFAULTS_VERSION) {
+  const hidden = readStringList(getHiddenSettingTypesStorageKey(storageKey)).map((item) => normalizeSettingType(item));
+  if (
+    localStorage.getItem(getSettingTaxonomyDefaultsVersionStorageKey(storageKey)) === SETTING_TAXONOMY_DEFAULTS_VERSION
+  ) {
     return Array.from(new Set(hidden));
   }
   const next = Array.from(new Set(hidden.filter((type) => !DEFAULT_SETTING_TYPES.includes(type))));
@@ -291,7 +295,7 @@ export function getDefaultWorkSettingStarterVersionStorageKey(storageKey: string
   return `${storageKey}_work_setting_starter_version`;
 }
 
-export function createDefaultWorkSettingStarterEntry(item: typeof DEFAULT_WORK_SETTING_STARTER_ENTRIES[number]) {
+export function createDefaultWorkSettingStarterEntry(item: (typeof DEFAULT_WORK_SETTING_STARTER_ENTRIES)[number]) {
   const structuredFieldSet = getStructuredSettingFieldSetByDefaultTitle(item.type, item.title);
   return {
     ...createWorkbenchLibraryEntry(SETTING_TAB, item.title),
@@ -308,9 +312,9 @@ export function isObsoleteAutoCreatedDefaultEntry(entry: WorkbenchLibraryEntry) 
   if (entry.tab !== SETTING_TAB || isLockedDefaultSettingEntry(entry)) return false;
   const setting = parseSettingContent(entry.content);
   const normalizedType = normalizeSettingType(setting.type);
-  return !setting.body.trim()
-    && entry.title.trim() === normalizedType
-    && DEFAULT_SETTING_TYPES.includes(normalizedType);
+  return (
+    !setting.body.trim() && entry.title.trim() === normalizedType && DEFAULT_SETTING_TYPES.includes(normalizedType)
+  );
 }
 
 export function isObsoleteDefaultInstructionEntry(entry: WorkbenchLibraryEntry) {
@@ -331,18 +335,23 @@ export function removeObsoleteDefaultSettingEntries(entries: WorkbenchLibraryEnt
 
 export function withDefaultWorkSettingStarterEntries(entries: WorkbenchLibraryEntry[], storageKey: string) {
   const cleanedEntries = removeObsoleteDefaultSettingEntries(entries);
-  if (localStorage.getItem(getDefaultWorkSettingStarterVersionStorageKey(storageKey)) === DEFAULT_WORK_SETTING_STARTER_VERSION) {
+  if (
+    localStorage.getItem(getDefaultWorkSettingStarterVersionStorageKey(storageKey)) ===
+    DEFAULT_WORK_SETTING_STARTER_VERSION
+  ) {
     return cleanedEntries;
   }
-  const existingKeys = new Set(cleanedEntries
-    .filter((entry) => entry.tab === SETTING_TAB)
-    .map((entry) => {
-      const setting = parseSettingContent(entry.content);
-      return `${setting.type}::${entry.title.trim()}`;
-    }));
-  const missingEntries = DEFAULT_WORK_SETTING_STARTER_ENTRIES
-    .filter((item) => !existingKeys.has(`${item.type}::${item.title}`))
-    .map(createDefaultWorkSettingStarterEntry);
+  const existingKeys = new Set(
+    cleanedEntries
+      .filter((entry) => entry.tab === SETTING_TAB)
+      .map((entry) => {
+        const setting = parseSettingContent(entry.content);
+        return `${setting.type}::${entry.title.trim()}`;
+      }),
+  );
+  const missingEntries = DEFAULT_WORK_SETTING_STARTER_ENTRIES.filter(
+    (item) => !existingKeys.has(`${item.type}::${item.title}`),
+  ).map(createDefaultWorkSettingStarterEntry);
   localStorage.setItem(getDefaultWorkSettingStarterVersionStorageKey(storageKey), DEFAULT_WORK_SETTING_STARTER_VERSION);
   return missingEntries.length > 0 ? [...missingEntries, ...cleanedEntries] : cleanedEntries;
 }
@@ -366,7 +375,9 @@ export function createDefaultMaleProtagonistRoleEntry() {
 }
 
 export function hasMaleProtagonistRoleEntry(entries: WorkbenchLibraryEntry[]) {
-  return entries.some((entry) => entry.tab === ROLE_TAB && isMaleProtagonistRoleType(parseRoleContent(entry.content).type));
+  return entries.some(
+    (entry) => entry.tab === ROLE_TAB && isMaleProtagonistRoleType(parseRoleContent(entry.content).type),
+  );
 }
 
 export function withDefaultMaleProtagonistRoleEntry(entries: WorkbenchLibraryEntry[]) {
@@ -394,8 +405,9 @@ export function getBrainstormRecycleStorageKey(storageKey: string) {
 }
 
 export function readBrainstormRecycleEntries(storageKey: string) {
-  return normalizeEntries(readWorkbenchLibraryEntries(getBrainstormRecycleStorageKey(storageKey)))
-    .filter((entry) => entry.tab === BRAINSTORM_TAB);
+  return normalizeEntries(readWorkbenchLibraryEntries(getBrainstormRecycleStorageKey(storageKey))).filter(
+    (entry) => entry.tab === BRAINSTORM_TAB,
+  );
 }
 
 export function writeBrainstormRecycleEntries(storageKey: string, entries: WorkbenchLibraryEntry[]) {
@@ -407,9 +419,7 @@ export function isLockedDefaultSettingEntry(entry: WorkbenchLibraryEntry) {
   const setting = parseSettingContent(entry.content);
   const defaultEntryId = getDefaultWorkSettingEntryId(setting.type, entry.title);
   return Boolean(
-    (setting.lockedDefaultEntryId && DEFAULT_WORK_SETTING_STARTER_ENTRY_IDS.has(setting.lockedDefaultEntryId))
-    || DEFAULT_WORK_SETTING_STARTER_ENTRY_IDS.has(defaultEntryId),
+    (setting.lockedDefaultEntryId && DEFAULT_WORK_SETTING_STARTER_ENTRY_IDS.has(setting.lockedDefaultEntryId)) ||
+    DEFAULT_WORK_SETTING_STARTER_ENTRY_IDS.has(defaultEntryId),
   );
 }
-
-

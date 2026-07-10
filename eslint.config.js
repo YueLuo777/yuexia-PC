@@ -18,10 +18,7 @@ export default tseslint.config(
   },
   {
     files: ['src/**/*.{ts,tsx}'],
-    extends: [
-      js.configs.recommended,
-      ...tseslint.configs.recommended,
-    ],
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',

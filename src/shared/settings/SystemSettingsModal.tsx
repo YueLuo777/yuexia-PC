@@ -28,18 +28,13 @@ function readHomeAvatar() {
   return localStorage.getItem(USER_AVATAR_KEY) || '';
 }
 
-const SETTINGS_LIGHT_BUTTON_CLASS =
-  PRIMARY_TEXT_BUTTON_CLASS;
+const SETTINGS_LIGHT_BUTTON_CLASS = PRIMARY_TEXT_BUTTON_CLASS;
 const SETTINGS_PAGE_BACK_BUTTON_CLASS =
   'flex h-9 w-9 items-center justify-center rounded-lg border transition-colors border-brand/20 bg-white text-brand hover:bg-brand-light';
-const SETTINGS_PAGE_SHELL_CLASS =
-  'mx-auto flex h-full w-full max-w-[1040px] flex-col overflow-hidden';
-const SETTINGS_PAGE_BODY_CLASS =
-  'grid min-h-0 flex-1 grid-cols-[180px_minmax(0,1fr)] gap-6 pt-4';
-const SETTINGS_PAGE_NAV_CLASS =
-  'shrink-0 border-r border-slate-100 pr-4';
-const SETTINGS_PAGE_CONTENT_CLASS =
-  'min-w-0 overflow-y-auto px-1 pb-6';
+const SETTINGS_PAGE_SHELL_CLASS = 'mx-auto flex h-full w-full max-w-[1040px] flex-col overflow-hidden';
+const SETTINGS_PAGE_BODY_CLASS = 'grid min-h-0 flex-1 grid-cols-[180px_minmax(0,1fr)] gap-6 pt-4';
+const SETTINGS_PAGE_NAV_CLASS = 'shrink-0 border-r border-slate-100 pr-4';
+const SETTINGS_PAGE_CONTENT_CLASS = 'min-w-0 overflow-y-auto px-1 pb-6';
 
 export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant = 'modal' }: SystemSettingsModalProps) {
   const isPage = variant === 'page';
@@ -164,45 +159,89 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
 
   return (
     <div
-      className={isEmbedded ? 'h-full min-h-0 overflow-hidden' : isPage ? 'h-full min-h-0 overflow-hidden bg-slate-50 px-8 py-6' : 'fixed inset-0 z-[120] flex items-center justify-center bg-black/40 p-4'}
+      className={
+        isEmbedded
+          ? 'h-full min-h-0 overflow-hidden'
+          : isPage
+            ? 'h-full min-h-0 overflow-hidden bg-slate-50 px-8 py-6'
+            : 'fixed inset-0 z-[120] flex items-center justify-center bg-black/40 p-4'
+      }
       onClick={isRouteSurface ? undefined : onClose}
     >
       <div
         data-draggable-managed={isRouteSurface ? undefined : 'true'}
         data-modal-id={isRouteSurface ? undefined : 'dashboard-system-settings'}
-        className={isEmbedded ? 'flex h-full min-h-0 w-full flex-col overflow-hidden' : isPage ? SETTINGS_PAGE_SHELL_CLASS : 'relative flex h-[min(720px,calc(100vh-32px))] w-[936px] max-w-[96vw] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'}
-        style={isRouteSurface ? undefined : ({
-          ...draggable.style,
-          maxWidth: 'calc((100vw - 32px) / var(--xinyuexia-effective-scale, 1))',
-          maxHeight: 'calc((100vh - 112px) / var(--xinyuexia-effective-scale, 1))',
-        } as React.CSSProperties)}
+        className={
+          isEmbedded
+            ? 'flex h-full min-h-0 w-full flex-col overflow-hidden'
+            : isPage
+              ? SETTINGS_PAGE_SHELL_CLASS
+              : 'relative flex h-[min(720px,calc(100vh-32px))] w-[936px] max-w-[96vw] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'
+        }
+        style={
+          isRouteSurface
+            ? undefined
+            : ({
+                ...draggable.style,
+                maxWidth: 'calc((100vw - 32px) / var(--xinyuexia-effective-scale, 1))',
+                maxHeight: 'calc((100vh - 112px) / var(--xinyuexia-effective-scale, 1))',
+              } as React.CSSProperties)
+        }
         onClick={(event) => event.stopPropagation()}
       >
         {!isEmbedded && (
-        <div {...(isPage ? {} : draggable.dragHandleProps)} className={isPage ? 'flex shrink-0 items-center justify-between border-b border-slate-100 pb-4' : 'flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3'}>
-          <div className="flex items-center gap-3">
-            {isPage ? (
+          <div
+            {...(isPage ? {} : draggable.dragHandleProps)}
+            className={
+              isPage
+                ? 'flex shrink-0 items-center justify-between border-b border-slate-100 pb-4'
+                : 'flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3'
+            }
+          >
+            <div className="flex items-center gap-3">
+              {isPage ? (
+                <button
+                  onClick={onClose}
+                  className={SETTINGS_PAGE_BACK_BUTTON_CLASS}
+                  title="返回我的小说"
+                  aria-label="返回我的小说"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+              ) : null}
+              <h2 className={isPage ? 'text-2xl font-black text-slate-950' : 'text-base font-bold text-slate-900'}>
+                系统设置
+              </h2>
+            </div>
+            {!isRouteSurface ? (
               <button
                 onClick={onClose}
-                className={SETTINGS_PAGE_BACK_BUTTON_CLASS}
-                title="返回我的小说"
-                aria-label="返回我的小说"
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <X className="h-4 w-4" />
               </button>
             ) : null}
-            <h2 className={isPage ? 'text-2xl font-black text-slate-950' : 'text-base font-bold text-slate-900'}>系统设置</h2>
           </div>
-          {!isRouteSurface ? (
-            <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-              <X className="h-4 w-4" />
-            </button>
-          ) : null}
-        </div>
         )}
 
-        <div className={isEmbedded ? 'grid min-h-0 flex-1 grid-cols-[160px_minmax(0,1fr)] gap-5' : isPage ? SETTINGS_PAGE_BODY_CLASS : 'flex min-h-0 flex-1'}>
-          <div className={isEmbedded ? 'shrink-0 border-r border-slate-100 pr-4' : isPage ? SETTINGS_PAGE_NAV_CLASS : 'w-36 shrink-0 border-r border-slate-100 bg-slate-50 p-3'}>
+        <div
+          className={
+            isEmbedded
+              ? 'grid min-h-0 flex-1 grid-cols-[160px_minmax(0,1fr)] gap-5'
+              : isPage
+                ? SETTINGS_PAGE_BODY_CLASS
+                : 'flex min-h-0 flex-1'
+          }
+        >
+          <div
+            className={
+              isEmbedded
+                ? 'shrink-0 border-r border-slate-100 pr-4'
+                : isPage
+                  ? SETTINGS_PAGE_NAV_CLASS
+                  : 'w-36 shrink-0 border-r border-slate-100 bg-slate-50 p-3'
+            }
+          >
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -222,10 +261,24 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
             ))}
           </div>
 
-          <div className={isEmbedded ? 'min-w-0 overflow-y-auto pb-6 pr-1' : isPage ? SETTINGS_PAGE_CONTENT_CLASS : 'min-w-0 flex-1 overflow-y-auto p-4'}>
+          <div
+            className={
+              isEmbedded
+                ? 'min-w-0 overflow-y-auto pb-6 pr-1'
+                : isPage
+                  ? SETTINGS_PAGE_CONTENT_CLASS
+                  : 'min-w-0 flex-1 overflow-y-auto p-4'
+            }
+          >
             {activeTab === 'window' && (
               <div className="space-y-4">
-                <section className={isRouteSurface ? 'border-b border-slate-100 pb-4' : 'rounded-2xl border border-slate-100 bg-slate-50 p-4'}>
+                <section
+                  className={
+                    isRouteSurface
+                      ? 'border-b border-slate-100 pb-4'
+                      : 'rounded-2xl border border-slate-100 bg-slate-50 p-4'
+                  }
+                >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
                       <h3 className="text-sm font-bold text-slate-900">记住窗口大小</h3>
@@ -233,7 +286,8 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
                         开启后，软件会用上一次关闭前的窗口宽高和位置启动；关闭后，每次启动使用默认窗口大小。
                       </p>
                       <p className="mt-2 text-xs font-bold text-slate-400">
-                        当前默认：{windowSettings?.defaultBounds.width ?? 1366} × {windowSettings?.defaultBounds.height ?? 768}
+                        当前默认：{windowSettings?.defaultBounds.width ?? 1366} ×{' '}
+                        {windowSettings?.defaultBounds.height ?? 768}
                         {windowSettings?.currentBounds
                           ? `，当前：${windowSettings.currentBounds.width} × ${windowSettings.currentBounds.height}`
                           : ''}
@@ -253,7 +307,9 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">恢复默认窗口大小</h3>
-                      <p className="mt-1 text-xs leading-5 text-slate-500">把当前窗口恢复到默认宽高，并清掉已保存的窗口尺寸。</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        把当前窗口恢复到默认宽高，并清掉已保存的窗口尺寸。
+                      </p>
                     </div>
                     <button
                       type="button"
@@ -269,7 +325,13 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
 
             {activeTab === 'association' && (
               <div className="space-y-4">
-                <div className={isRouteSurface ? 'border-b border-cyan-100 py-3' : 'rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4'}>
+                <div
+                  className={
+                    isRouteSurface
+                      ? 'border-b border-cyan-100 py-3'
+                      : 'rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4'
+                  }
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <h3 className="text-sm font-bold text-slate-900">关联有效期</h3>
@@ -277,7 +339,9 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
                         本章、上下文、脑洞、其他设定、关联小说等内容只在当前打开软件期间保留；关闭软件后会自动取消，下一次打开恢复未关联。
                       </p>
                     </div>
-                    <span className="shrink-0 rounded-full border border-cyan-200 bg-white px-3 py-1 text-xs font-bold text-brand">当前会话</span>
+                    <span className="shrink-0 rounded-full border border-cyan-200 bg-white px-3 py-1 text-xs font-bold text-brand">
+                      当前会话
+                    </span>
                   </div>
                 </div>
               </div>
@@ -294,9 +358,13 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-slate-900">{iconInfo?.isCustom ? '当前使用自定义图标' : '当前使用默认图标'}</p>
+                    <p className="text-sm font-bold text-slate-900">
+                      {iconInfo?.isCustom ? '当前使用自定义图标' : '当前使用默认图标'}
+                    </p>
                     <p className="mt-1 truncate text-xs text-slate-400">{iconInfo?.iconPath ?? '未读取到图标路径'}</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">任务栏图标通常需要重启软件后完全刷新；如果 Windows 有缓存，可能还需要重新固定任务栏图标。</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      任务栏图标通常需要重启软件后完全刷新；如果 Windows 有缓存，可能还需要重新固定任务栏图标。
+                    </p>
                   </div>
                 </div>
 
@@ -324,7 +392,9 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
 
                   <div className="rounded-2xl border border-slate-100 bg-white p-3">
                     <p className="text-sm font-bold text-slate-900">默认图标</p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">把当前正在使用的图标保存为默认图标，恢复默认或下次启动时会优先使用它。</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      把当前正在使用的图标保存为默认图标，恢复默认或下次启动时会优先使用它。
+                    </p>
                     <button
                       onClick={makeDefaultIcon}
                       disabled={isBusy || !iconInfo?.ok}
@@ -344,10 +414,7 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <h3 className="text-sm font-bold text-slate-900">可选图标</h3>
-                    <button
-                      onClick={() => void refreshIconInfo()}
-                      className={SETTINGS_LIGHT_BUTTON_CLASS}
-                    >
+                    <button onClick={() => void refreshIconInfo()} className={SETTINGS_LIGHT_BUTTON_CLASS}>
                       刷新
                     </button>
                   </div>
@@ -387,18 +454,10 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
                 </div>
 
                 <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-3">
-                  <button
-                    onClick={resetIcon}
-                    disabled={isBusy}
-                    className={SETTINGS_LIGHT_BUTTON_CLASS}
-                  >
+                  <button onClick={resetIcon} disabled={isBusy} className={SETTINGS_LIGHT_BUTTON_CLASS}>
                     恢复默认
                   </button>
-                  <button
-                    onClick={selectIcon}
-                    disabled={isBusy}
-                    className={SETTINGS_LIGHT_BUTTON_CLASS}
-                  >
+                  <button onClick={selectIcon} disabled={isBusy} className={SETTINGS_LIGHT_BUTTON_CLASS}>
                     上传图片
                   </button>
                 </div>

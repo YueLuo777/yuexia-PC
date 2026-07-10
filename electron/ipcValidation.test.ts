@@ -2,12 +2,8 @@ import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const {
-  normalizeDatabaseDataDir,
-  normalizeCollectionName,
-  normalizeItemsArray,
-  normalizeModelRequestInput,
-} = require('./ipcValidation.cjs') as typeof import('./ipcValidation.cjs');
+const { normalizeDatabaseDataDir, normalizeCollectionName, normalizeItemsArray, normalizeModelRequestInput } =
+  require('./ipcValidation.cjs') as typeof import('./ipcValidation.cjs');
 
 describe('ipcValidation', () => {
   it('accepts only known database collection names', () => {
@@ -55,23 +51,27 @@ describe('ipcValidation', () => {
       ok: false,
       message: 'Model endpoint must be a valid HTTPS URL.',
     });
-    expect(normalizeModelRequestInput({ endpoint: 'https://user:pass@example.test/v1', headers: {}, body: '{}' })).toEqual({
+    expect(
+      normalizeModelRequestInput({ endpoint: 'https://user:pass@example.test/v1', headers: {}, body: '{}' }),
+    ).toEqual({
       ok: false,
       message: 'Model endpoint must not include credentials.',
     });
   });
 
   it('filters model request headers and rejects oversized bodies', () => {
-    expect(normalizeModelRequestInput({
-      endpoint: 'https://example.test/v1/chat/completions',
-      headers: {
-        Authorization: 'Bearer token',
-        Cookie: 'secret',
-        'x-api-key': 'key',
-        'X-Unsafe': 'nope',
-      },
-      body: '{}',
-    })).toEqual({
+    expect(
+      normalizeModelRequestInput({
+        endpoint: 'https://example.test/v1/chat/completions',
+        headers: {
+          Authorization: 'Bearer token',
+          Cookie: 'secret',
+          'x-api-key': 'key',
+          'X-Unsafe': 'nope',
+        },
+        body: '{}',
+      }),
+    ).toEqual({
       ok: true,
       endpoint: 'https://example.test/v1/chat/completions',
       headers: {
@@ -81,22 +81,26 @@ describe('ipcValidation', () => {
       body: '{}',
     });
 
-    expect(normalizeModelRequestInput({
-      endpoint: 'https://example.test/v1/chat/completions',
-      headers: {},
-      body: 'x'.repeat(4 * 1024 * 1024 + 1),
-    })).toEqual({
+    expect(
+      normalizeModelRequestInput({
+        endpoint: 'https://example.test/v1/chat/completions',
+        headers: {},
+        body: 'x'.repeat(4 * 1024 * 1024 + 1),
+      }),
+    ).toEqual({
       ok: false,
       message: 'Model request body is too large.',
     });
   });
 
   it('normalizes valid model requests', () => {
-    expect(normalizeModelRequestInput({
-      endpoint: 'https://example.test/v1/chat/completions',
-      headers: { Authorization: 'Bearer token' },
-      body: { hello: 'world' },
-    })).toEqual({
+    expect(
+      normalizeModelRequestInput({
+        endpoint: 'https://example.test/v1/chat/completions',
+        headers: { Authorization: 'Bearer token' },
+        body: { hello: 'world' },
+      }),
+    ).toEqual({
       ok: true,
       endpoint: 'https://example.test/v1/chat/completions',
       headers: { Authorization: 'Bearer token' },
@@ -104,4 +108,3 @@ describe('ipcValidation', () => {
     });
   });
 });
-
