@@ -385,6 +385,7 @@ import { RoleBaseStateEditor } from './workbenchRoleEditor';
 import { RoleHistoryModal } from './workbenchRoleHistoryModal';
 import { WorkbenchLibrarySidebar } from './workbenchLibrarySidebar';
 import { WorkbenchRoleSidebar } from './workbenchRoleSidebar';
+import { WorkbenchRoleLibraryView } from './workbenchRoleLibraryView';
 import {
   DEFAULT_SETTING_IMPORT_FORMAT_ENTRY_ID,
   DEFAULT_SETTING_IMPORT_FORMAT_TAB_ID,
@@ -4454,25 +4455,27 @@ export function WorkbenchLibraryPanel({
       ) : null;
 
     return (
-      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white" style={scaleStyle}>
-        {renderTopTabs()}
-        {categoryContextMenu}
-        {entryContextMenu}
-        {roleHistoryModal}
-        {deleteConfirmDialog}
-        {fieldSizeSettingsModal}
-        {settingCreateModal}
-        {categoryRenameModal}
-        {managementModal && <LibraryManagementModal modal={managementModal} onClose={() => setManagementModal(null)} />}
-        <div
-          className="grid h-full min-h-0 flex-1 overflow-hidden bg-white"
-          style={{
-            gridTemplateColumns:
-              settingLibraryMode === 'advanced'
-                ? `${settingLibraryLeftWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px`
-                : `${settingLibraryLeftWidth}px 0px minmax(0,1fr)`,
-          }}
-        >
+      <WorkbenchRoleLibraryView
+        scaleStyle={scaleStyle}
+        topTabs={renderTopTabs()}
+        overlays={
+          <>
+            {categoryContextMenu}
+            {entryContextMenu}
+            {roleHistoryModal}
+            {deleteConfirmDialog}
+            {fieldSizeSettingsModal}
+            {settingCreateModal}
+            {categoryRenameModal}
+            {managementModal && (
+              <LibraryManagementModal modal={managementModal} onClose={() => setManagementModal(null)} />
+            )}
+          </>
+        }
+        settingLibraryMode={settingLibraryMode}
+        settingLibraryLeftWidth={settingLibraryLeftWidth}
+        settingLibraryRightWidth={settingLibraryRightWidth}
+        sidebar={
           <WorkbenchRoleSidebar
             roleTab={ROLE_TAB}
             roleSearch={roleSearch}
@@ -4510,120 +4513,54 @@ export function WorkbenchLibraryPanel({
             addRole={addRole}
             getDefaultRoleCreateType={getDefaultRoleCreateType}
           />
-          {leftResizeHandle}
-          <main
-            className={`min-w-0 flex min-h-0 flex-col overflow-hidden bg-white ${settingLibraryMode === 'advanced' ? 'border-r border-gray-100' : ''}`}
-          >
-            {selectedEntry && selectedRole ? (
-              <RoleBaseStateEditor
-                entry={selectedEntry}
-                role={selectedRole}
-                roleEntries={roleEntries}
-                roleTypeOptions={roleTypeOptions}
-                roleTextFontSize={roleTextFontSize}
-                currentChapterNumber={currentOutlineChapterNumber}
-                roleLifeStatus={selectedRoleLifeStatus}
-                onTitleChange={updateSelectedRoleTitle}
-                onRoleChange={updateRole}
-              />
-            ) : (
-              <div className="m-5 flex h-full items-center justify-center rounded-xl border border-dashed border-gray-200 text-sm text-gray-400">
-                点击左侧“新建角色”开始创建角色
-              </div>
-            )}
-          </main>
-
-          {settingLibraryMode === 'advanced' && (
-            <>
-              {rightResizeHandle}
-              <aside className="flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 px-4 pb-4 pt-2">
-                <div className="flex shrink-0 items-center justify-between gap-3">
-                  <h3 className="shrink-0 text-base font-bold text-gray-900">角色生成</h3>
-                  <div className="flex shrink-0 items-center gap-2">
-                    {renderFieldSizeButton()}
-                    {renderLibraryAiLogButton('library')}
-                  </div>
-                </div>
-                <div className="mt-3 shrink-0 space-y-3">
-                  <CombinedAiConfigSelect
-                    style={getEmbeddedConfigSelectStyle(getConfigFieldSizeStyle(ROLE_TAB, 'model'))}
-                    modelValue={activeTabConfig.modelId ?? ''}
-                    promptValue={activeTabConfig.promptId ?? ''}
-                    modelOptions={
-                      models.length === 0
-                        ? [{ value: '', label: '暂无可用模型', disabled: true }]
-                        : models.map((model) => ({ value: model.id, label: model.name }))
-                    }
-                    promptOptions={
-                      rolePromptOptions.length === 0
-                        ? [{ value: '', label: '暂无设定提示词', disabled: true }]
-                        : rolePromptOptions.map((prompt) => ({ value: prompt.id, label: prompt.name }))
-                    }
-                    onModelChange={(value) => updateActiveTabConfig({ modelId: value })}
-                    onPromptChange={(value) => updateActiveTabConfig({ promptId: value })}
-                    onModelManage={() => setManagementModal({ type: 'models' })}
-                    onPromptManage={() => setManagementModal({ type: 'prompts', category: PROMPT_SETTING_CATEGORY })}
-                    promptDisabled={Boolean(activeTabConfig.promptDisabled)}
-                    onPromptContextMenu={(event) => {
-                      event.preventDefault();
-                      const { left, top } = clampFixedMenuPosition(
-                        event.clientX,
-                        event.clientY,
-                        PROMPT_DISABLE_CONTEXT_MENU_SIZE,
-                      );
-                      setPromptDisableMenu({
-                        tab: ROLE_TAB,
-                        disabled: Boolean(activeTabConfig.promptDisabled),
-                        x: left,
-                        y: top,
-                      });
-                    }}
-                  />
-                </div>
-                <div className="relative mt-5 min-h-0 flex-1">
-                  <button
-                    type="button"
-                    onClick={clearLibraryAiDialog}
-                    disabled={!hasLibraryAiContent && !isLibraryAiLoading}
-                    className="xy-floating-outline-clear-button xy-border-embedded-transparent-backplate absolute -top-2 right-4 px-1 text-xs font-black text-red-500 hover:text-red-600 disabled:text-red-300"
-                  >
-                    清空
-                  </button>
-                  <div
-                    className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count h-full ${aiOutput.trim() ? 'xy-has-value' : ''}`}
-                  >
-                    <textarea
-                      value={aiOutput}
-                      onChange={(event) => setAiOutput(event.target.value)}
-                      placeholder="AI输出框"
-                      className="editor-scrollbar"
-                    />
-                    <span className="xy-floating-count">
-                      <WordCountText value={countTextWords(aiOutput)} />
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-2 shrink-0">
-                  <AiInlineInput
-                    ref={libraryAiInputRef}
-                    value={aiInput}
-                    onChange={(event) => {
-                      setAiInput(event.target.value);
-                      resizeFloatingAiTextarea(event.currentTarget);
-                    }}
-                    onKeyDown={handleLibraryAiInputKeyDown}
-                    onSend={() => void sendLibraryAiMessage()}
-                    onStop={stopLibraryAiMessage}
-                    sendDisabled={isLibraryAiLoading || !canSendLibraryAiMessage}
-                    stopDisabled={!isLibraryAiLoading}
-                    placeholder="输入对话指令..."
-                  />
-                </div>
-              </aside>
-            </>
-          )}
-        </div>
-      </div>
+        }
+        leftResizeHandle={leftResizeHandle}
+        rightResizeHandle={rightResizeHandle}
+        selectedEntry={selectedEntry}
+        selectedRole={selectedRole}
+        roleEntries={roleEntries}
+        roleTypeOptions={roleTypeOptions}
+        roleTextFontSize={roleTextFontSize}
+        currentOutlineChapterNumber={currentOutlineChapterNumber}
+        selectedRoleLifeStatus={selectedRoleLifeStatus}
+        onTitleChange={updateSelectedRoleTitle}
+        onRoleChange={updateRole}
+        fieldSizeButton={renderFieldSizeButton()}
+        aiLogButton={renderLibraryAiLogButton('library')}
+        configStyle={getEmbeddedConfigSelectStyle(getConfigFieldSizeStyle(ROLE_TAB, 'model'))}
+        activeTabConfig={activeTabConfig}
+        models={models}
+        rolePromptOptions={rolePromptOptions}
+        onModelChange={(value) => updateActiveTabConfig({ modelId: value })}
+        onPromptChange={(value) => updateActiveTabConfig({ promptId: value })}
+        onModelManage={() => setManagementModal({ type: 'models' })}
+        onPromptManage={() => setManagementModal({ type: 'prompts', category: PROMPT_SETTING_CATEGORY })}
+        onPromptContextMenu={(event) => {
+          event.preventDefault();
+          const { left, top } = clampFixedMenuPosition(event.clientX, event.clientY, PROMPT_DISABLE_CONTEXT_MENU_SIZE);
+          setPromptDisableMenu({
+            tab: ROLE_TAB,
+            disabled: Boolean(activeTabConfig.promptDisabled),
+            x: left,
+            y: top,
+          });
+        }}
+        aiOutput={aiOutput}
+        onAiOutputChange={(event) => setAiOutput(event.target.value)}
+        onClearAi={clearLibraryAiDialog}
+        hasLibraryAiContent={hasLibraryAiContent}
+        isLibraryAiLoading={isLibraryAiLoading}
+        aiInputRef={libraryAiInputRef}
+        aiInput={aiInput}
+        onAiInputChange={(event) => {
+          setAiInput(event.target.value);
+          resizeFloatingAiTextarea(event.currentTarget);
+        }}
+        onAiInputKeyDown={handleLibraryAiInputKeyDown}
+        onSendAi={() => void sendLibraryAiMessage()}
+        onStopAi={stopLibraryAiMessage}
+        canSendLibraryAiMessage={canSendLibraryAiMessage}
+      />
     );
   }
 

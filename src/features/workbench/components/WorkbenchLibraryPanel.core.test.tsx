@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { WorkbenchLibraryPanel } from './WorkbenchLibraryPanel';
 import {
   readWorkbenchLibraryPanelSource,
+  readWorkbenchLibraryPanelEntrySource,
   readSharedStylesSource,
   readChapterEditorSource,
   readEditorToolModalsSource,
@@ -16,6 +17,7 @@ describe('WorkbenchLibraryPanel core integration contracts', () => {
 
   it('keeps workbench library panel split into focused helper modules', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
+    const entrySource = await readWorkbenchLibraryPanelEntrySource();
 
     expect(panelSource).toContainSource("import { LibraryAiLogShell } from './workbenchLibraryAiLogShell';");
     expect(panelSource).toContainSource(
@@ -27,6 +29,7 @@ describe('WorkbenchLibraryPanel core integration contracts', () => {
     );
     expect(panelSource).toContainSource("from './workbenchLibraryPanelConstants';");
     expect(panelSource).toContainSource("import { SettingSegmentedTabs } from './workbenchSettingSegmentedTabs';");
+    expect(panelSource).toContainSource("import { WorkbenchRoleLibraryView } from './workbenchRoleLibraryView';");
     expect(panelSource).toContainSource("from './workbenchFieldSizeSettings';");
     expect(panelSource).not.toContainSource('function LibraryAiLogShell({');
     expect(panelSource).not.toContainSource('function LibraryManagementModal({');
@@ -34,6 +37,7 @@ describe('WorkbenchLibraryPanel core integration contracts', () => {
     expect(panelSource).not.toContainSource('function SettingImportFormatPreviewText({ content }');
     expect(panelSource).not.toContainSource('function resizeFloatingAiTextarea(textarea: HTMLTextAreaElement | null)');
     expect(panelSource).not.toContainSource('function FieldSizeNumberInput({');
+    expect(entrySource).not.toContainSource('<h3 className="shrink-0 text-base font-bold text-gray-900">角色生成</h3>');
   });
 
   it('keeps the main chapter writing surface on the white paper background', async () => {

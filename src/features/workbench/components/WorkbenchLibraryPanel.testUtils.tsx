@@ -44,11 +44,20 @@ export const readWorkbenchLibraryPanelSource = async () => {
     'workbenchRoleContent.ts',
     'workbenchRoleEditor.tsx',
     'workbenchRoleHistoryModal.tsx',
+    'workbenchRoleLibraryView.tsx',
     'workbenchRoleSidebar.tsx',
     'workbenchSmartImport.ts',
   ];
 
   return files.map((file) => readFileSync(join(baseDir, file), 'utf8')).join('\n\n');
+};
+
+export const readWorkbenchLibraryPanelEntrySource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchLibraryPanel.tsx'), 'utf8');
 };
 
 export const readWorkbenchSettingTaxonomySource = async () => {
