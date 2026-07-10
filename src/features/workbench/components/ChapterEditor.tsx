@@ -27,6 +27,29 @@ import {
 import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
 import { isChapterContentPolished } from '@/features/workbench/model/chapterPolishStatus';
 import {
+  AUDIT_OUTLINE_FIT_ITEM,
+  AUDIT_STRUCTURE_CHECK_ITEMS,
+  getAuditOutlineFitPercent,
+  getAuditStructureItemDetail,
+  getAuditStructureItemStatus,
+  isAuditOutputPassed,
+} from '@/features/workbench/model/chapterAuditResult';
+import {
+  buildReviewTextDiff,
+  extractReviewAnnotations,
+  extractReviewRevisedText,
+  getReviewAnnotationParagraphIndex,
+  splitReviewParagraphs,
+  stripReviewThinkingBlock,
+  type ReviewAnnotation,
+} from '@/features/workbench/model/chapterReviewText';
+import {
+  createReviewLogSection,
+  formatAiThinkingResponse,
+  getReviewLogFillGroupWeights,
+  getReviewLogSection,
+} from '@/features/workbench/model/chapterReviewLog';
+import {
   REVIEW_MODE_TITLES,
   clearAllReviewModeResults,
   createReviewModeState,
@@ -407,23 +430,6 @@ const REVIEW_MODE_PROMPT_CATEGORIES: Record<ReviewMode, string> = {
   comment: COMMENT_PROMPT_CATEGORY,
   polish: POLISH_PROMPT_CATEGORY,
 };
-const AUDIT_OUTLINE_FIT_ITEM = '章纲贴合度';
-const AUDIT_STRUCTURE_CHECK_ITEMS = [
-  AUDIT_OUTLINE_FIT_ITEM,
-  '主要事件是否完整',
-  '人物行为是否合理',
-  '前后逻辑是否清楚',
-  '剧情推进是否顺畅',
-  '伏笔/设定是否矛盾',
-];
-const AUDIT_STRUCTURE_ITEM_KEYWORDS: Record<string, string[]> = {
-  章纲贴合度: ['章纲贴合度', '是否偏离章纲', '是否符合章纲', '符合章纲', '章纲'],
-  主要事件是否完整: ['主要事件是否完整', '本章主要事情是否清楚', '主要事件', '事情是否清楚'],
-  人物行为是否合理: ['人物行为是否合理', '人物行为', '行为是否合理'],
-  前后逻辑是否清楚: ['前后逻辑是否清楚', '因果是否清楚', '前后逻辑', '因果', '逻辑因果'],
-  剧情推进是否顺畅: ['剧情推进是否顺畅', '节奏是否断裂', '剧情推进', '节奏', '断裂'],
-  '伏笔/设定是否矛盾': ['伏笔/设定是否矛盾', '伏笔', '设定是否矛盾', '设定矛盾'],
-};
 const AUDIT_STRUCTURE_PROMPT_FORMAT = `请按软件可识别的固定格式输出。每一项只能选择：通过 / 不通过。不要输出“部分通过”“基本通过”等第三种状态。
 
 【剧情审核结果】
@@ -528,71 +534,6 @@ function countCompactWords(text: string) {
   return text.replace(/\s/g, '').length;
 }
 
-const REVIEW_LOG_SECTION_PREFIX = '[[YUEXIA_REVIEW_LOG_SECTION:';
-const REVIEW_LOG_SECTION_SUFFIX = ']]';
-const REVIEW_LOG_SECTION_TITLES = ['系统提示词', '关联章纲', '原文', '其他要求', '发送上下文'] as const;
-
-function createReviewLogSection(title: (typeof REVIEW_LOG_SECTION_TITLES)[number], content: string) {
-  return `${REVIEW_LOG_SECTION_PREFIX}${title}${REVIEW_LOG_SECTION_SUFFIX}\n${content}`;
-}
-
-function getReviewLogSection(log: string, title: string) {
-  const marker = `${REVIEW_LOG_SECTION_PREFIX}${title}${REVIEW_LOG_SECTION_SUFFIX}`;
-  const start = log.indexOf(marker);
-  if (start >= 0) {
-    const bodyStart = start + marker.length;
-    const nextSectionStart = REVIEW_LOG_SECTION_TITLES.map((sectionTitle) =>
-      log.indexOf(`${REVIEW_LOG_SECTION_PREFIX}${sectionTitle}${REVIEW_LOG_SECTION_SUFFIX}`, bodyStart),
-    )
-      .filter((index) => index >= 0)
-      .sort((a, b) => a - b)[0];
-    return (nextSectionStart === undefined ? log.slice(bodyStart) : log.slice(bodyStart, nextSectionStart)).trim();
-  }
-
-  const findHeader = (sectionTitle: string, fromIndex = 0) => log.indexOf(`\n【${sectionTitle}】`, fromIndex);
-  const originalStart = findHeader('原文');
-  const sendContextStart = findHeader('发送上下文');
-  const outlineStart = originalStart >= 0 ? log.lastIndexOf('\n【关联章纲】', originalStart) : findHeader('关联章纲');
-  const promptStart = findHeader('系统提示词');
-  const userStart = originalStart >= 0 ? findHeader('其他要求', originalStart) : -1;
-  const safeUserStart = userStart >= 0 && (sendContextStart < 0 || userStart < sendContextStart) ? userStart : -1;
-  const legacySections: Record<string, { start: number; end: number }> = {
-    系统提示词: { start: promptStart, end: outlineStart },
-    关联章纲: { start: outlineStart, end: originalStart },
-    原文: { start: originalStart, end: safeUserStart >= 0 ? safeUserStart : sendContextStart },
-    其他要求: { start: safeUserStart, end: sendContextStart },
-    发送上下文: { start: sendContextStart, end: -1 },
-  };
-  const legacySection = legacySections[title];
-  if (!legacySection || legacySection.start < 0) return '';
-  const bodyStart = log.indexOf('\n', legacySection.start + 1);
-  if (bodyStart < 0) return '';
-  return (legacySection.end < 0 ? log.slice(bodyStart) : log.slice(bodyStart, legacySection.end)).trim();
-}
-
-function getReviewLogFillGroupWeights(options: { hasOutline: boolean; hasUser: boolean }): Record<string, number> {
-  return {
-    prompt: 1,
-    ...(options.hasOutline ? { outline: 1 } : {}),
-    original: 2,
-    ...(options.hasUser ? { user: 1 } : {}),
-  };
-}
-
-function formatAiThinkingResponse(content: string, reasoning: string, seconds: number, done: boolean) {
-  const reasoningText = reasoning.trim();
-  const body = content.trimStart();
-  if (!reasoningText) return body || (done ? '' : '正在思考...');
-  return [
-    `[[THINKING seconds=${Math.max(0, seconds)} status=${done ? 'done' : 'thinking'}]]`,
-    reasoningText,
-    '[[/THINKING]]',
-    body,
-  ]
-    .join('\n')
-    .trimEnd();
-}
-
 function renderAiThinkingContent(content: string) {
   const thinkingMatch = content.match(
     /^\[\[THINKING seconds=(\d+) status=(thinking|done)\]\]\n([\s\S]*?)\n\[\[\/THINKING\]\]\n?\n?([\s\S]*)$/,
@@ -635,12 +576,6 @@ function findReviewDetailOutline(entries: WorkbenchLibraryEntry[], chapter: Chap
   );
 }
 
-function stripReviewThinkingBlock(content: string) {
-  return content
-    .replace(/\[\[THINKING seconds=\d+ status=(?:thinking|done)\]\]\n[\s\S]*?\n\[\[\/THINKING\]\]\n?/g, '')
-    .trim();
-}
-
 function getReviewBackgroundTaskOutput(task: BackgroundAiTask, mode: ReviewMode) {
   if (task.status === 'aborted' && !stripReviewThinkingBlock(task.output).trim()) {
     return `【已停止】本次${REVIEW_MODE_TITLES[mode]}已停止。`;
@@ -649,21 +584,6 @@ function getReviewBackgroundTaskOutput(task: BackgroundAiTask, mode: ReviewMode)
     return `【错误】${task.error}`;
   }
   return task.output;
-}
-
-function extractReviewRevisedText(output: string) {
-  const clean = stripReviewThinkingBlock(output);
-  const marked = clean.match(
-    /【修改后全文】\s*([\s\S]*?)(?=\n?【(?:审核|点评|修改说明|问题|建议|原文|说明)[^】]*】|$)/,
-  );
-  if (marked?.[1]?.trim()) return marked[1].trim();
-  const fenced = clean.match(/```(?:text|txt|markdown|md)?\s*([\s\S]*?)```/i);
-  if (fenced?.[1]?.trim()) return fenced[1].trim();
-  return '';
-}
-
-function getReviewVisibleOutput(output: string) {
-  return stripReviewThinkingBlock(output).trim();
 }
 
 function getAuditPromptSubcategory(prompt?: { category: string; subCategory?: string } | null) {
@@ -681,115 +601,6 @@ function isStructureAuditPrompt(prompt?: { category: string; subCategory?: strin
   return getAuditPromptSubcategory(prompt) === '剧情审核';
 }
 
-function isAuditOutputPassed(output: string) {
-  const clean = getReviewVisibleOutput(output);
-  const conclusionMatch = clean.match(/【剧情审核结论】\s*(不通过|通过)/);
-  if (conclusionMatch) return conclusionMatch[1] === '通过' && !/【结果】\s*不通过/.test(clean);
-  return /通过/.test(clean) && !/部分通过|不通过|未通过|不合格|失败/.test(clean);
-}
-
-function getAuditOutlineFitPercent(output: string) {
-  const clean = getReviewVisibleOutput(output);
-  const outlineMatch = clean.match(
-    /【审核项】\s*(?:章纲贴合度|是否偏离章纲|是否符合章纲)[\s\S]{0,160}?【贴合度】\s*(\d{1,3})\s*%/,
-  );
-  const fallbackMatch = clean.match(/章纲贴合度[^\d]{0,20}(\d{1,3})\s*%/);
-  const value = Number((outlineMatch ?? fallbackMatch)?.[1]);
-  if (!Number.isFinite(value)) return null;
-  return Math.min(100, Math.max(0, value));
-}
-
-function getAuditStructureItemKeywords(item: string) {
-  return AUDIT_STRUCTURE_ITEM_KEYWORDS[item] ?? [item];
-}
-
-function getAuditStructureItemSection(output: string, item: string) {
-  const clean = getReviewVisibleOutput(output);
-  if (!clean) return '';
-  const keywords = getAuditStructureItemKeywords(item);
-  const matches = [...clean.matchAll(/【审核项】\s*([^\n\r]+)/g)];
-  const matchedIndex = matches.findIndex((match) => {
-    const title = match[1]?.trim() ?? '';
-    return keywords.some((keyword) => title.includes(keyword));
-  });
-  if (matchedIndex >= 0) {
-    const start = matches[matchedIndex].index ?? 0;
-    const nextAuditStart = matches[matchedIndex + 1]?.index;
-    const summaryStart = clean.indexOf('【总体判断】', start + 1);
-    const endCandidates = [nextAuditStart, summaryStart].filter(
-      (index): index is number => typeof index === 'number' && index > start,
-    );
-    const end = endCandidates.length > 0 ? Math.min(...endCandidates) : clean.length;
-    return clean.slice(start, end).trim();
-  }
-
-  const lines = clean
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const lineIndex = lines.findIndex((line) => keywords.some((keyword) => line.includes(keyword)));
-  if (lineIndex < 0) return '';
-  const nextIndex = lines.findIndex((line, index) => index > lineIndex && /【审核项】|【总体判断】/.test(line));
-  return lines
-    .slice(lineIndex, nextIndex < 0 ? lineIndex + 8 : nextIndex)
-    .join('\n')
-    .trim();
-}
-
-function getAuditBracketField(section: string, label: string) {
-  const marker = `【${label}】`;
-  const start = section.indexOf(marker);
-  if (start < 0) return '';
-  const bodyStart = start + marker.length;
-  const nextMarkers = [
-    '【审核项】',
-    '【贴合度】',
-    '【结果】',
-    '【说明】',
-    '【建议】',
-    '【总体判断】',
-    '【剧情审核结论】',
-    '【最需要改的问题】',
-    '【优先修改建议】',
-  ].filter((nextMarker) => nextMarker !== marker);
-  const nextStart = nextMarkers
-    .map((nextMarker) => section.indexOf(nextMarker, bodyStart))
-    .filter((index) => index >= 0)
-    .sort((a, b) => a - b)[0];
-  return (nextStart === undefined ? section.slice(bodyStart) : section.slice(bodyStart, nextStart)).trim();
-}
-
-function getAuditStructureItemDetail(output: string, item: string) {
-  const section = getAuditStructureItemSection(output, item);
-  return {
-    description: getAuditBracketField(section, '说明'),
-    suggestion: getAuditBracketField(section, '建议'),
-  };
-}
-
-function getAuditStructureItemStatus(output: string, item: string) {
-  const clean = getReviewVisibleOutput(output);
-  if (!clean) return 'pending' as const;
-  const keywords = getAuditStructureItemKeywords(item);
-  const lines = clean
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const matchedIndex = lines.findIndex((line) => keywords.some((keyword) => line.includes(keyword)));
-  const matchedLine = matchedIndex >= 0 ? lines[matchedIndex] : '';
-  const targetText = matchedIndex >= 0 ? lines.slice(matchedIndex, matchedIndex + 5).join('\n') : clean;
-  const explicitResult = targetText.match(/【结果】\s*(不通过|通过)/) ?? matchedLine.match(/[：:]\s*(不通过|通过)/);
-  if (explicitResult) return explicitResult[1] === '不通过' ? ('failed' as const) : ('passed' as const);
-  if (item === AUDIT_OUTLINE_FIT_ITEM) {
-    const outlineFitPercent = getAuditOutlineFitPercent(output);
-    if (outlineFitPercent !== null) return outlineFitPercent >= 85 ? ('passed' as const) : ('failed' as const);
-  }
-  if (/不通过|未通过|不合格|失败/.test(targetText)) return 'failed' as const;
-  if (/通过|合格/.test(targetText)) return 'passed' as const;
-  if (isAuditOutputPassed(output)) return 'passed' as const;
-  return 'pending' as const;
-}
-
 function buildAuditPromptSelectOptions(
   prompts: Array<{ id: string; name: string; category: string; subCategory?: string }>,
 ) {
@@ -798,71 +609,6 @@ function buildAuditPromptSelectOptions(
     const metaLabel = subCategory === '文本审核' ? '文本' : '剧情';
     return items.map((prompt) => ({ value: prompt.id, label: prompt.name, metaLabel }));
   });
-}
-
-function splitReviewParagraphs(text: string) {
-  return text.replace(/\r\n/g, '\n').split('\n');
-}
-
-type ReviewAnnotation = {
-  id: string;
-  severity: string;
-  type: string;
-  paragraphIndex: number;
-  originalText: string;
-  problem: string;
-  suggestion: string;
-  action: string;
-};
-
-function normalizeReviewAnnotation(value: unknown, index: number): ReviewAnnotation | null {
-  if (!value || typeof value !== 'object') return null;
-  const raw = value as Record<string, unknown>;
-  const paragraphIndex = Number(raw.paragraphIndex);
-  const originalText = typeof raw.originalText === 'string' ? raw.originalText.trim() : '';
-  if (!Number.isFinite(paragraphIndex) || !originalText) return null;
-  return {
-    id: typeof raw.id === 'string' && raw.id.trim() ? raw.id.trim() : `A${String(index + 1).padStart(3, '0')}`,
-    severity: typeof raw.severity === 'string' && raw.severity.trim() ? raw.severity.trim() : '提醒',
-    type: typeof raw.type === 'string' && raw.type.trim() ? raw.type.trim() : '问题标注',
-    paragraphIndex,
-    originalText,
-    problem: typeof raw.problem === 'string' ? raw.problem.trim() : '',
-    suggestion: typeof raw.suggestion === 'string' ? raw.suggestion.trim() : '',
-    action: typeof raw.action === 'string' && raw.action.trim() ? raw.action.trim() : '建议处理',
-  };
-}
-
-function extractReviewAnnotations(output: string): ReviewAnnotation[] {
-  const clean = stripReviewThinkingBlock(output);
-  const candidates = [
-    clean.match(/#\s*原文标注[\s\S]*?```(?:json)?\s*(\[[\s\S]*?\])\s*```/i)?.[1],
-    clean.match(/原文标注[\s\S]*?```(?:json)?\s*(\[[\s\S]*?\])\s*```/i)?.[1],
-    clean.match(/```json\s*(\[[\s\S]*?\])\s*```/i)?.[1],
-  ].filter((item): item is string => Boolean(item?.trim()));
-
-  for (const candidate of candidates) {
-    try {
-      const parsed: unknown = JSON.parse(candidate);
-      if (!Array.isArray(parsed)) continue;
-      return parsed
-        .map((item, index) => normalizeReviewAnnotation(item, index))
-        .filter((item): item is ReviewAnnotation => Boolean(item));
-    } catch {
-      // Ignore malformed AI annotation blocks and keep the review page usable.
-    }
-  }
-  return [];
-}
-
-function getReviewAnnotationParagraphIndex(annotation: ReviewAnnotation, paragraphCount: number) {
-  if (annotation.paragraphIndex >= 1 && annotation.paragraphIndex <= paragraphCount) {
-    return annotation.paragraphIndex - 1;
-  }
-  if (annotation.paragraphIndex >= 0 && annotation.paragraphIndex < paragraphCount) {
-    return annotation.paragraphIndex;
-  }
-  return -1;
 }
 
 function getReviewSeverityClass(severity: string) {
@@ -911,122 +657,6 @@ function renderAnnotatedReviewParagraph(paragraph: string, annotations: ReviewAn
       )}
     </>
   );
-}
-
-type ReviewTextDiffSegment = {
-  text: string;
-  changed?: boolean;
-};
-
-const REVIEW_TEXT_DIFF_MAX_CELLS = 320_000;
-
-function pushReviewTextDiffSegment(segments: ReviewTextDiffSegment[], text: string, changed: boolean) {
-  if (!text) return;
-  const previous = segments[segments.length - 1];
-  if (previous && Boolean(previous.changed) === changed) {
-    previous.text += text;
-    return;
-  }
-  segments.push(changed ? { text, changed: true } : { text });
-}
-
-function reverseReviewTextDiffSegments(segments: ReviewTextDiffSegment[]) {
-  return segments
-    .reverse()
-    .map((segment) => ({ ...segment, text: Array.from(segment.text).reverse().join('') }))
-    .filter((segment) => segment.text);
-}
-
-function buildFallbackReviewTextDiff(originalText: string, revisedText: string) {
-  let prefixLength = 0;
-  const maxPrefix = Math.min(originalText.length, revisedText.length);
-  while (prefixLength < maxPrefix && originalText[prefixLength] === revisedText[prefixLength]) {
-    prefixLength += 1;
-  }
-
-  let suffixLength = 0;
-  const maxSuffix = Math.min(originalText.length - prefixLength, revisedText.length - prefixLength);
-  while (
-    suffixLength < maxSuffix &&
-    originalText[originalText.length - 1 - suffixLength] === revisedText[revisedText.length - 1 - suffixLength]
-  ) {
-    suffixLength += 1;
-  }
-
-  const original: ReviewTextDiffSegment[] = [];
-  const revised: ReviewTextDiffSegment[] = [];
-  pushReviewTextDiffSegment(original, originalText.slice(0, prefixLength), false);
-  pushReviewTextDiffSegment(revised, revisedText.slice(0, prefixLength), false);
-  pushReviewTextDiffSegment(
-    original,
-    originalText.slice(prefixLength, suffixLength ? originalText.length - suffixLength : originalText.length),
-    true,
-  );
-  pushReviewTextDiffSegment(
-    revised,
-    revisedText.slice(prefixLength, suffixLength ? revisedText.length - suffixLength : revisedText.length),
-    true,
-  );
-  if (suffixLength > 0) {
-    pushReviewTextDiffSegment(original, originalText.slice(originalText.length - suffixLength), false);
-    pushReviewTextDiffSegment(revised, revisedText.slice(revisedText.length - suffixLength), false);
-  }
-  return { original, revised, hasChanges: originalText !== revisedText };
-}
-
-function buildReviewTextDiff(originalText: string, revisedText: string) {
-  if (originalText === revisedText) {
-    return {
-      original: originalText ? [{ text: originalText }] : [],
-      revised: revisedText ? [{ text: revisedText }] : [],
-      hasChanges: false,
-    };
-  }
-
-  const originalChars = Array.from(originalText);
-  const revisedChars = Array.from(revisedText);
-  const rowSize = revisedChars.length + 1;
-  const cellCount = (originalChars.length + 1) * rowSize;
-  if (cellCount > REVIEW_TEXT_DIFF_MAX_CELLS) {
-    return buildFallbackReviewTextDiff(originalText, revisedText);
-  }
-
-  const table = new Uint32Array(cellCount);
-  for (let i = 1; i <= originalChars.length; i += 1) {
-    const previousRow = (i - 1) * rowSize;
-    const currentRow = i * rowSize;
-    for (let j = 1; j <= revisedChars.length; j += 1) {
-      table[currentRow + j] =
-        originalChars[i - 1] === revisedChars[j - 1]
-          ? table[previousRow + j - 1] + 1
-          : Math.max(table[previousRow + j], table[currentRow + j - 1]);
-    }
-  }
-
-  const original: ReviewTextDiffSegment[] = [];
-  const revised: ReviewTextDiffSegment[] = [];
-  let i = originalChars.length;
-  let j = revisedChars.length;
-  while (i > 0 || j > 0) {
-    if (i > 0 && j > 0 && originalChars[i - 1] === revisedChars[j - 1]) {
-      pushReviewTextDiffSegment(original, originalChars[i - 1], false);
-      pushReviewTextDiffSegment(revised, revisedChars[j - 1], false);
-      i -= 1;
-      j -= 1;
-    } else if (j > 0 && (i === 0 || table[i * rowSize + j - 1] >= table[(i - 1) * rowSize + j])) {
-      pushReviewTextDiffSegment(revised, revisedChars[j - 1], true);
-      j -= 1;
-    } else if (i > 0) {
-      pushReviewTextDiffSegment(original, originalChars[i - 1], true);
-      i -= 1;
-    }
-  }
-
-  return {
-    original: reverseReviewTextDiffSegments(original),
-    revised: reverseReviewTextDiffSegments(revised),
-    hasChanges: true,
-  };
 }
 
 function renderTextAuditOriginalDiff(originalText: string, revisedText?: string) {

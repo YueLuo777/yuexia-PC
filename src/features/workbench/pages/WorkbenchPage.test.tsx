@@ -439,10 +439,13 @@ describe('ChapterEditor prompt snapshots', () => {
 
   it('renders audit results in the middle review column instead of the right input panel', async () => {
     const source = await readSource('../components/ChapterEditor.tsx');
+    const auditResultSource = await readSource('../model/chapterAuditResult.ts');
+    const reviewTextSource = await readSource('../model/chapterReviewText.ts');
 
-    expect(source).toContainSource("const AUDIT_OUTLINE_FIT_ITEM = '章纲贴合度';");
-    expect(source).toContainSource('const AUDIT_STRUCTURE_CHECK_ITEMS = [');
-    expect(source).toContainSource('AUDIT_OUTLINE_FIT_ITEM,');
+    expect(source).toContainSource("from '@/features/workbench/model/chapterAuditResult';");
+    expect(auditResultSource).toContainSource("export const AUDIT_OUTLINE_FIT_ITEM = '章纲贴合度';");
+    expect(auditResultSource).toContainSource('export const AUDIT_STRUCTURE_CHECK_ITEMS = [');
+    expect(auditResultSource).toContainSource('AUDIT_OUTLINE_FIT_ITEM,');
     expect(source).toContainSource('const AUDIT_STRUCTURE_PROMPT_FORMAT = `请按软件可识别的固定格式输出。');
     expect(source).toContainSource('每一项只能选择：通过 / 不通过');
     expect(source).toContainSource('不要输出“部分通过”“基本通过”等第三种状态');
@@ -461,14 +464,18 @@ describe('ChapterEditor prompt snapshots', () => {
     );
     expect(source).not.toContainSource('value: `__audit_group_${subCategory}`');
     expect(source).not.toContainSource("variant: 'groupedOption' as const");
-    expect(source).toContainSource('function getAuditStructureItemStatus(output: string, item: string) {');
-    expect(source).toContainSource('function getAuditOutlineFitPercent(output: string) {');
-    expect(source).toContainSource('function getAuditStructureItemDetail(output: string, item: string) {');
-    expect(source).toContainSource("description: getAuditBracketField(section, '说明')");
-    expect(source).toContainSource("suggestion: getAuditBracketField(section, '建议')");
-    expect(source).toContainSource('const explicitResult = targetText.match(/【结果】\\s*(不通过|通过)/)');
-    expect(source).toContainSource("return 'passed' as const;");
-    expect(source).toContainSource("return 'failed' as const;");
+    expect(auditResultSource).toContainSource(
+      'export function getAuditStructureItemStatus(output: string, item: string) {',
+    );
+    expect(auditResultSource).toContainSource('export function getAuditOutlineFitPercent(output: string) {');
+    expect(auditResultSource).toContainSource(
+      'export function getAuditStructureItemDetail(output: string, item: string) {',
+    );
+    expect(auditResultSource).toContainSource("description: getAuditBracketField(section, '说明')");
+    expect(auditResultSource).toContainSource("suggestion: getAuditBracketField(section, '建议')");
+    expect(auditResultSource).toContainSource('const explicitResult = targetText.match(/【结果】\\s*(不通过|通过)/)');
+    expect(auditResultSource).toContainSource("return 'passed' as const;");
+    expect(auditResultSource).toContainSource("return 'failed' as const;");
     expect(source).toContainSource(
       'function isTextAuditPrompt(prompt?: { category: string; subCategory?: string } | null) {',
     );
@@ -484,8 +491,11 @@ describe('ChapterEditor prompt snapshots', () => {
     expect(source).toContainSource(
       "() => (isAuditTextReview ? reviewRevisedDraft.trim() || extractReviewRevisedText(reviewAiOutput) : '')",
     );
-    expect(source).toContainSource('function buildReviewTextDiff(originalText: string, revisedText: string) {');
-    expect(source).toContainSource('const REVIEW_TEXT_DIFF_MAX_CELLS = 320_000;');
+    expect(source).toContainSource("from '@/features/workbench/model/chapterReviewText';");
+    expect(reviewTextSource).toContainSource(
+      'export function buildReviewTextDiff(originalText: string, revisedText: string): ReviewTextDiff {',
+    );
+    expect(reviewTextSource).toContainSource('const REVIEW_TEXT_DIFF_MAX_CELLS = 320_000;');
     expect(source).toContainSource(
       'function renderTextAuditOriginalDiff(originalText: string, revisedText?: string) {',
     );
@@ -531,15 +541,15 @@ describe('ChapterEditor prompt snapshots', () => {
     expect(source).toContainSource("${expanded ? 'rotate-180' : '-rotate-90'}");
     expect(source).toContainSource("{itemDetail.description || '暂无说明。'}");
     expect(source).toContainSource("{itemDetail.suggestion || '暂无建议。'}");
-    expect(source).toContainSource("章纲贴合度: ['章纲贴合度', '是否偏离章纲', '是否符合章纲'");
+    expect(auditResultSource).toContainSource("章纲贴合度: ['章纲贴合度', '是否偏离章纲', '是否符合章纲'");
     expect(source).toContainSource('const outlineFitPercent =');
     expect(source).toContainSource(
       'item === AUDIT_OUTLINE_FIT_ITEM ? getAuditOutlineFitPercent(reviewAiOutput) : null;',
     );
     expect(source).toContainSource('const itemStatusLabel =');
     expect(source).toContainSource('outlineFitPercent !== null');
-    expect(source).toContainSource("前后逻辑是否清楚: ['前后逻辑是否清楚', '因果是否清楚'");
-    expect(source).toContainSource("剧情推进是否顺畅: ['剧情推进是否顺畅', '节奏是否断裂'");
+    expect(auditResultSource).toContainSource("前后逻辑是否清楚: ['前后逻辑是否清楚', '因果是否清楚'");
+    expect(auditResultSource).toContainSource("剧情推进是否顺畅: ['剧情推进是否顺畅', '节奏是否断裂'");
     expect(source).toContainSource("? '文本审核'");
     expect(source).toContainSource(": '剧情审核'");
     expect(source).toContainSource('`第${activeReviewChapter.serialNumber}章 ${reviewPreviewAnnotationLabel}`');

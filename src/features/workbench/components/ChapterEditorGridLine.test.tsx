@@ -9,7 +9,9 @@ const readSource = (relativePath: string) =>
 
 describe('ChapterEditor grid line font setting', () => {
   it('keeps review chapter selection non-orange and strengthens review preview dividers', () => {
-    const chapterEditorSource = readSource('ChapterEditor.tsx');
+    const chapterEditorSource = [readSource('ChapterEditor.tsx'), readSource('../model/chapterReviewLog.ts')].join(
+      '\n\n',
+    );
     const chapterNumberButtonSource = readSource('../../../shared/ui/ChapterNumberButton.tsx');
     const logLayoutSource = readSource('../../../shared/ui/AiRequestLogModalLayout.tsx');
     const reviewPanelStart = chapterEditorSource.indexOf('canRenderReviewPanel &&');
@@ -399,9 +401,9 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterEditorSource).toContainSource("content: getReviewLogSection(reviewRequestLog, '关联章纲')");
     expect(chapterEditorSource).toContainSource("title: '原文'");
     expect(chapterEditorSource).toContainSource("content: getReviewLogSection(reviewRequestLog, '原文')");
-    expect(chapterEditorSource).toContainSource(
-      'function getReviewLogFillGroupWeights(options: { hasOutline: boolean; hasUser: boolean })',
-    );
+    expect(chapterEditorSource).toContainSource('export function getReviewLogFillGroupWeights(options: {');
+    expect(chapterEditorSource).toContainSource('hasOutline: boolean;');
+    expect(chapterEditorSource).toContainSource('hasUser: boolean;');
     expect(chapterEditorSource).toContainSource('original: 2,');
     expect(chapterEditorSource).toContainSource('fillSingleGroup');
     expect(chapterEditorSource).toContainSource('fillGroupWeights={reviewLogFillGroupWeights}');

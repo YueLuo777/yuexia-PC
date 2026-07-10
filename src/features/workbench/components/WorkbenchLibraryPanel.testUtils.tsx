@@ -246,7 +246,12 @@ export const readChapterEditorSource = async () => {
   const { fileURLToPath } = await import('node:url');
   const { dirname, join } = await import('node:path');
 
-  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'ChapterEditor.tsx'), 'utf8');
+  const baseDir = dirname(fileURLToPath(import.meta.url));
+  return [
+    readFileSync(join(baseDir, 'ChapterEditor.tsx'), 'utf8'),
+    readFileSync(join(baseDir, '../model/chapterReviewLog.ts'), 'utf8'),
+    readFileSync(join(baseDir, '../model/chapterReviewText.ts'), 'utf8'),
+  ].join('\n\n');
 };
 
 export const readEditorToolModalsSource = async () => {
