@@ -183,8 +183,11 @@ describe('Workbench splitters', () => {
   it('does not allow empty chapter content sources to be selected or confirmed', async () => {
     const source = await readSource('WorkbenchPage.tsx');
     const chapterContextSource = await readSource('../components/WorkbenchContextChapterSummaryList.tsx');
+    const contextModelSource = await readSource('../model/workbenchContextModel.ts');
 
-    expect(source).toContainSource('function hasContextContent(item: WorkbenchLinkedContextItem | null | undefined)');
+    expect(contextModelSource).toContainSource(
+      'export function hasContextContent(item: WorkbenchLinkedContextItem | null | undefined)',
+    );
     expect(chapterContextSource).toContainSource('const canPickChapter = rowSelectable && chapterWordCount > 0;');
     expect(chapterContextSource).toContainSource(
       'const canPickSummary = Boolean(row.summaryItem) && !row.isCurrent && summaryWordCount > 0;',
