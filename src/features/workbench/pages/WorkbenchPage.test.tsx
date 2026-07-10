@@ -32,6 +32,17 @@ describe('Workbench page component boundaries', () => {
     expect(source).not.toContainSource('function ChapterExportPanel({');
     expect(exportPanelSource).toContainSource('export function ChapterExportPanel({');
   });
+
+  it('keeps editor settings in its own component', async () => {
+    const source = await readSource('WorkbenchPage.tsx');
+    const modalSource = await readSource('../components/WorkbenchEditorSettingsModal.tsx');
+
+    expect(source).toContainSource(
+      "import { WorkbenchEditorSettingsModal } from '@/features/workbench/components/WorkbenchEditorSettingsModal';",
+    );
+    expect(source).not.toContainSource('function EditorSettingsModal({');
+    expect(modalSource).toContainSource('export function WorkbenchEditorSettingsModal({');
+  });
 });
 
 describe('Workbench find replace modal placement', () => {

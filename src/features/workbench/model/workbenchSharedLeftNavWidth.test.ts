@@ -23,6 +23,10 @@ const navigationTogglePath = resolve(
   process.cwd(),
   'src/features/workbench/components/WorkbenchNavigationWidthToggle.tsx',
 );
+const editorSettingsModalPath = resolve(
+  process.cwd(),
+  'src/features/workbench/components/WorkbenchEditorSettingsModal.tsx',
+);
 
 describe('shared workbench left navigation width', () => {
   beforeEach(() => {
@@ -38,6 +42,7 @@ describe('shared workbench left navigation width', () => {
       chapterEditorSource,
       fieldSizeSettingsModalSource,
       navigationToggleSource,
+      editorSettingsModalSource,
     ] = await Promise.all([
       readFile(sharedLeftWidthPath, 'utf8'),
       readFile(workbenchPagePath, 'utf8'),
@@ -46,6 +51,7 @@ describe('shared workbench left navigation width', () => {
       readFile(chapterEditorPath, 'utf8'),
       readFile(fieldSizeSettingsModalPath, 'utf8'),
       readFile(navigationTogglePath, 'utf8'),
+      readFile(editorSettingsModalPath, 'utf8'),
     ]);
 
     expect(sharedWidthSource).toContainSource(
@@ -72,7 +78,8 @@ describe('shared workbench left navigation width', () => {
     expect(workbenchPageSource).toContainSource('readSharedWorkbenchLeftNavWidthEnabled');
     expect(workbenchPageSource).toContainSource('writeSharedWorkbenchLeftNavWidth(chapterSidebarWidth');
     expect(workbenchPageSource).toContainSource('WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT');
-    expect(workbenchPageSource).toContainSource('WorkbenchNavigationWidthToggle');
+    expect(workbenchPageSource).toContainSource('WorkbenchEditorSettingsModal');
+    expect(editorSettingsModalSource).toContainSource('WorkbenchNavigationWidthToggle');
     expect(workbenchPageSource).toContainSource(
       "activeCreationFlow === 'writing' || FIELD_SIZE_FLOW_IDS.has(activeCreationFlow)",
     );
