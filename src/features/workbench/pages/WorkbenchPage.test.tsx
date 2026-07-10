@@ -23,6 +23,17 @@ describe('Workbench library loading', () => {
   });
 });
 
+describe('Workbench page component boundaries', () => {
+  it('keeps the chapter export selection UI in its own component', async () => {
+    const source = await readSource('WorkbenchPage.tsx');
+    const exportPanelSource = await readSource('../components/ChapterExportPanel.tsx');
+
+    expect(source).toContainSource("from '@/features/workbench/components/ChapterExportPanel';");
+    expect(source).not.toContainSource('function ChapterExportPanel({');
+    expect(exportPanelSource).toContainSource('export function ChapterExportPanel({');
+  });
+});
+
 describe('Workbench find replace modal placement', () => {
   it('opens from a body portal with centered default geometry', async () => {
     const source = await readSource('WorkbenchPage.tsx');
