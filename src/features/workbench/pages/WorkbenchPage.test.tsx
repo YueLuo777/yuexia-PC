@@ -63,6 +63,17 @@ describe('Workbench page component boundaries', () => {
     expect(source).not.toContainSource('function ManagementModal({');
     expect(modalSource).toContainSource('export function WorkbenchManagementModal({');
   });
+
+  it('keeps context preview and explicit selection in its own component', async () => {
+    const source = await readSource('WorkbenchPage.tsx');
+    const contextSource = await readSource('../components/WorkbenchContextSelectionColumn.tsx');
+
+    expect(source).toContainSource("from '@/features/workbench/components/WorkbenchContextSelectionColumn';");
+    expect(source).not.toContainSource('function ContextSelectionColumn({');
+    expect(contextSource).toContainSource('onClick={() => setPreviewItemId(item.id)}');
+    expect(contextSource).toContainSource('role="checkbox"');
+    expect(contextSource).toContainSource('onToggle(item.id);');
+  });
 });
 
 describe('Workbench find replace modal placement', () => {
