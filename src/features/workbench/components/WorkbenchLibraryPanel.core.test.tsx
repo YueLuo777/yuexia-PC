@@ -30,6 +30,7 @@ describe('WorkbenchLibraryPanel core integration contracts', () => {
     expect(panelSource).toContainSource("from './workbenchLibraryPanelConstants';");
     expect(panelSource).toContainSource("import { SettingSegmentedTabs } from './workbenchSettingSegmentedTabs';");
     expect(panelSource).toContainSource("import { WorkbenchRoleLibraryView } from './workbenchRoleLibraryView';");
+    expect(panelSource).toContainSource("import { WorkbenchSimpleLibraryView } from './workbenchSimpleLibraryView';");
     expect(panelSource).toContainSource("from './workbenchFieldSizeSettings';");
     expect(panelSource).not.toContainSource('function LibraryAiLogShell({');
     expect(panelSource).not.toContainSource('function LibraryManagementModal({');
