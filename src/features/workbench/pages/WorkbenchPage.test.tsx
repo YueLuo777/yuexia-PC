@@ -74,6 +74,16 @@ describe('Workbench page component boundaries', () => {
     expect(contextSource).toContainSource('role="checkbox"');
     expect(contextSource).toContainSource('onToggle(item.id);');
   });
+
+  it('keeps chapter context navigation in its own component', async () => {
+    const source = await readSource('WorkbenchPage.tsx');
+    const chapterContextSource = await readSource('../components/WorkbenchContextChapterSummaryList.tsx');
+
+    expect(source).toContainSource("from '@/features/workbench/components/WorkbenchContextChapterSummaryList';");
+    expect(source).not.toContainSource('function ContextChapterSummaryList({');
+    expect(chapterContextSource).toContainSource('export function WorkbenchContextChapterSummaryList({');
+    expect(chapterContextSource).toContainSource('最近 {count} 章');
+  });
 });
 
 describe('Workbench find replace modal placement', () => {
@@ -172,15 +182,16 @@ describe('Workbench splitters', () => {
   });
   it('does not allow empty chapter content sources to be selected or confirmed', async () => {
     const source = await readSource('WorkbenchPage.tsx');
+    const chapterContextSource = await readSource('../components/WorkbenchContextChapterSummaryList.tsx');
 
     expect(source).toContainSource('function hasContextContent(item: WorkbenchLinkedContextItem | null | undefined)');
-    expect(source).toContainSource('const canPickChapter = rowSelectable && chapterWordCount > 0;');
-    expect(source).toContainSource(
+    expect(chapterContextSource).toContainSource('const canPickChapter = rowSelectable && chapterWordCount > 0;');
+    expect(chapterContextSource).toContainSource(
       'const canPickSummary = Boolean(row.summaryItem) && !row.isCurrent && summaryWordCount > 0;',
     );
-    expect(source).toContainSource('const outlineLocked = lockedIds.has(row.outlineItem.id);');
-    expect(source).toContainSource('disabled={!canPickChapter}');
-    expect(source).toContainSource('disabled={!canPickSummary}');
+    expect(chapterContextSource).toContainSource('const outlineLocked = lockedIds.has(row.outlineItem.id);');
+    expect(chapterContextSource).toContainSource('disabled={!canPickChapter}');
+    expect(chapterContextSource).toContainSource('disabled={!canPickSummary}');
     expect(source).toContainSource('if (!hasContextContent(item)) return;');
     expect(source).toContainSource('&& draftContextWordCount > 0');
     expect(source).toContainSource('&& selectedDraftContextItems.every(hasContextContent);');
@@ -312,9 +323,12 @@ describe('Workbench linked context clearing', () => {
 
   it('locks the current chapter outline and keeps previous chapter outline out of optional selections', async () => {
     const source = await readSource('WorkbenchPage.tsx');
+    const chapterContextSource = await readSource('../components/WorkbenchContextChapterSummaryList.tsx');
 
-    expect(source).toContainSource('<ContextSelectionDot checked={selectedOutline} disabled locked={outlineLocked} />');
-    expect(source).toContainSource('label={`第${row.serialNumber}章章纲`}');
+    expect(chapterContextSource).toContainSource(
+      '<ContextSelectionDot checked={selectedOutline} disabled locked={outlineLocked} />',
+    );
+    expect(chapterContextSource).toContainSource('label={`第${row.serialNumber}章章纲`}');
     expect(source).toContainSource('const rowIds = [row.chapterItem.id, row.summaryItem?.id].filter(');
     expect(source).not.toContainSource('row.isCurrent ? null : row.outlineItem.id');
     expect(source).not.toContainSource(
