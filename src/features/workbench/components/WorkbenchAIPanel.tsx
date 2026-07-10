@@ -10,7 +10,11 @@ import {
   readMoonfallState,
   writeMoonfallState,
 } from '@/features/moonfall-settings/model/moonfallSettingStore';
-import { COMMENT_PROMPT_CATEGORY, STATUS_PROMPT_CATEGORY, SUMMARY_PROMPT_CATEGORY, readPromptSnapshot } from '@/features/prompts/hooks/usePrompts';
+import {
+  BODY_PROMPT_CATEGORY,
+  normalizePromptCategoryName,
+  readPromptSnapshot,
+} from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import { joinAiRequestSections, wrapAiRequestTag } from '@/features/workbench/model/workbenchAiRequestTagPolicy';
 import {
@@ -28,6 +32,7 @@ import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
 import { WordCountText } from '@/shared/ui/WordCountText';
+import { applyFormat, getStoredFormatSettings } from './EditorToolModals';
 import { WorkbenchModal } from './WorkbenchModal';
 
 export type WorkbenchAITool = 'ai';
@@ -40,8 +45,6 @@ export interface WorkbenchLinkedContextItem {
   title: string;
   content: string;
 }
-
-const WORKBENCH_AI_EXCLUDED_PROMPT_CATEGORIES = new Set(['脑洞', '设定', '章纲', '审核', COMMENT_PROMPT_CATEGORY, '润色', STATUS_PROMPT_CATEGORY, SUMMARY_PROMPT_CATEGORY]);
 
 const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 162;
@@ -141,12 +144,15 @@ function stripAiThinkingBlock(content: string) {
 
 function getBackgroundTaskDisplayOutput(task: BackgroundAiTask, stoppedText = '【已停止】本次生成已停止。') {
   if (task.status === 'aborted' && !stripAiThinkingBlock(task.output).trim()) return stoppedText;
-  if (task.status === 'failed' && task.error && !stripAiThinkingBlock(task.output).trim()) return `【错误】${task.error}`;
+  if (task.status === 'failed' && task.error && !stripAiThinkingBlock(task.output).trim())
+    return `【错误】${task.error}`;
   return task.output;
 }
 
 function renderAiChatContent(content: string) {
-  const thinkingMatch = content.match(/^\[\[THINKING seconds=(\d+) status=(thinking|done)\]\]\n([\s\S]*?)\n\[\[\/THINKING\]\]\n?\n?([\s\S]*)$/);
+  const thinkingMatch = content.match(
+    /^\[\[THINKING seconds=(\d+) status=(thinking|done)\]\]\n([\s\S]*?)\n\[\[\/THINKING\]\]\n?\n?([\s\S]*)$/,
+  );
   if (thinkingMatch) {
     const seconds = thinkingMatch[1] ?? '0';
     const done = thinkingMatch[2] === 'done';
@@ -158,11 +164,7 @@ function renderAiChatContent(content: string) {
           <div className="mb-1 flex items-center justify-between font-black text-[#078fb0]">
             <span>{done ? `已思考（用时 ${seconds} 秒）` : `正在思考（${seconds} 秒）`}</span>
           </div>
-          {reasoning && (
-            <div className="max-h-36 overflow-y-auto whitespace-pre-wrap break-words">
-              {reasoning}
-            </div>
-          )}
+          {reasoning && <div className="max-h-36 overflow-y-auto whitespace-pre-wrap break-words">{reasoning}</div>}
         </div>
         {answer && <div className="whitespace-pre-wrap break-words">{answer}</div>}
       </div>
@@ -172,7 +174,7 @@ function renderAiChatContent(content: string) {
 }
 
 function buildBodyLinkedContextPayload(items: WorkbenchLinkedContextItem[]) {
-  const formatItems = (source: WorkbenchLinkedContextSource, fallbackTitle: string) => (
+  const formatItems = (source: WorkbenchLinkedContextSource, fallbackTitle: string) =>
     items
       .filter((item) => item.source === source && item.content.trim())
       .map((item, index) => {
@@ -180,12 +182,8 @@ function buildBodyLinkedContextPayload(items: WorkbenchLinkedContextItem[]) {
         const prefix = item.group ? `${itemTitle}（${item.group}）` : itemTitle;
         return `### ${prefix}\n${item.content.trim()}`;
       })
-      .join('\n\n')
-  );
-  const linkedSettingText = joinAiRequestSections([
-    formatItems('setting', '设定'),
-    formatItems('role', '角色'),
-  ]);
+      .join('\n\n');
+  const linkedSettingText = joinAiRequestSections([formatItems('setting', '设定'), formatItems('role', '角色')]);
   return joinAiRequestSections([
     wrapAiRequestTag('本章章纲', formatItems('outline', '章纲')),
     wrapAiRequestTag('前文梗概', formatItems('summary', '梗概')),
@@ -286,7 +284,9 @@ function normalizeSessions(value: unknown): AiSession[] {
         output: typeof session.output === 'string' ? session.output : '',
         messages: Array.isArray(session.messages)
           ? session.messages
-              .filter((message): message is AiMessage => Boolean(message && typeof message === 'object' && 'content' in message))
+              .filter((message): message is AiMessage =>
+                Boolean(message && typeof message === 'object' && 'content' in message),
+              )
               .map((message, messageIndex) => ({
                 id: Number.isFinite(message.id) ? Number(message.id) : messageIndex + 1,
                 role: message.role === 'user' ? 'user' : 'assistant',
@@ -390,7 +390,7 @@ export function WorkbenchAIPanel({
   const output = activeSession?.output ?? '';
   const enabledModels = useMemo(() => models.filter((model) => model.enabled), [models]);
   const chatPrompts = useMemo(
-    () => prompts.filter((prompt) => !WORKBENCH_AI_EXCLUDED_PROMPT_CATEGORIES.has(prompt.category)),
+    () => prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === BODY_PROMPT_CATEGORY),
     [prompts],
   );
   const selectedModel = enabledModels.find((model) => model.id === selectedModelId) ?? enabledModels[0] ?? null;
@@ -399,14 +399,21 @@ export function WorkbenchAIPanel({
   const linkedChapterWordCount = selectedChapterContent.replace(/\s/g, '').length;
   const hasLinkedChapter = Boolean(activeSession?.linkChapter);
   const activeLinkedContextItems = hasLinkedChapter ? [] : linkedContextItems;
-  const linkedContextWordCount = activeLinkedContextItems.reduce((sum, item) => sum + getTextWordCount(item.content), 0);
+  const linkedContextWordCount = activeLinkedContextItems.reduce(
+    (sum, item) => sum + getTextWordCount(item.content),
+    0,
+  );
   const hasLinkedContext = activeLinkedContextItems.length > 0;
-  const activeLinkWordCount = hasLinkedContext ? linkedContextWordCount : (hasLinkedChapter ? linkedChapterWordCount : 0);
+  const activeLinkWordCount = hasLinkedContext ? linkedContextWordCount : hasLinkedChapter ? linkedChapterWordCount : 0;
   const shouldShowActiveLinkStats = hasLinkedContext || hasLinkedChapter;
   const previewLinkedContextPayload = buildBodyLinkedContextPayload(activeLinkedContextItems);
-  const previewUseChapter = !previewLinkedContextPayload && Boolean(activeSession?.linkChapter && selectedChapterContent.trim());
-  const previewContextText = previewLinkedContextPayload || (previewUseChapter ? wrapAiRequestTag('前文正文', selectedChapterContent, { 标题: chapterContextLabel }) : '');
+  const previewUseChapter =
+    !previewLinkedContextPayload && Boolean(activeSession?.linkChapter && selectedChapterContent.trim());
+  const previewContextText =
+    previewLinkedContextPayload ||
+    (previewUseChapter ? wrapAiRequestTag('前文正文', selectedChapterContent, { 标题: chapterContextLabel }) : '');
   const previewUserTextForAi = wrapAiRequestTag('写作要求', input.trim());
+  const canSendMessage = Boolean(input.trim() || previewContextText.trim());
   const previewRequestLog = buildAiRequestLog({
     createdAt: '当前预览',
     modelName: selectedModel?.name ?? '未选择模型',
@@ -414,7 +421,7 @@ export function WorkbenchAIPanel({
     systemPrompt: selectedPrompt?.content ?? getDefaultInstruction(activeTool),
     userContent: previewUserTextForAi,
     visibleUserContent: input.trim(),
-    contextTitle: previewLinkedContextPayload ? '关联资料' : (previewContextText ? `${chapterContextLabel}内容` : ''),
+    contextTitle: previewLinkedContextPayload ? '关联资料' : previewContextText ? `${chapterContextLabel}内容` : '',
     contextText: previewContextText,
     linkedItems: previewLinkedContextPayload ? activeLinkedContextItems : [],
     linkChapter: Boolean(activeSession?.linkChapter),
@@ -442,9 +449,7 @@ export function WorkbenchAIPanel({
   }, []);
 
   const updateSession = (sessionId: number, patch: Partial<Omit<AiSession, 'id'>>) => {
-    setSessions((prev) => prev.map((session) => (
-      session.id === sessionId ? { ...session, ...patch } : session
-    )));
+    setSessions((prev) => prev.map((session) => (session.id === sessionId ? { ...session, ...patch } : session)));
   };
 
   const updateActiveSession = (patch: Partial<Omit<AiSession, 'id'>>) => {
@@ -520,12 +525,15 @@ export function WorkbenchAIPanel({
       skipNextSaveRef.current = false;
       return;
     }
-    localStorage.setItem(storageKey, JSON.stringify({
-      sessions,
-      activeSessionId,
-      nextSessionId: nextSessionIdRef.current,
-      nextMessageId: nextMessageIdRef.current,
-    }));
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        sessions,
+        activeSessionId,
+        nextSessionId: nextSessionIdRef.current,
+        nextMessageId: nextMessageIdRef.current,
+      }),
+    );
   }, [activeSessionId, sessions, storageKey]);
 
   useEffect(() => {
@@ -556,13 +564,16 @@ export function WorkbenchAIPanel({
             ? Number(task.meta?.assistantMessageId)
             : session.backgroundAssistantMessageId;
           const nextOutput = getBackgroundTaskDisplayOutput(task);
-          const nextMessages = typeof assistantMessageId === 'number'
-            ? session.messages.map((message) => (
-              message.id === assistantMessageId ? { ...message, content: nextOutput } : message
-            ))
-            : session.messages;
+          const nextMessages =
+            typeof assistantMessageId === 'number'
+              ? session.messages.map((message) =>
+                  message.id === assistantMessageId ? { ...message, content: nextOutput } : message,
+                )
+              : session.messages;
           const outputChanged = session.output !== nextOutput;
-          const messageChanged = nextMessages.some((message, index) => message.content !== session.messages[index]?.content);
+          const messageChanged = nextMessages.some(
+            (message, index) => message.content !== session.messages[index]?.content,
+          );
           const assistantChanged = session.backgroundAssistantMessageId !== assistantMessageId;
           if (!outputChanged && !messageChanged && !assistantChanged) return session;
           changed = true;
@@ -576,16 +587,13 @@ export function WorkbenchAIPanel({
         return changed ? next : prev;
       });
 
-      const activeTask = activeSession?.backgroundTaskId
-        ? getBackgroundAiTask(activeSession.backgroundTaskId)
-        : null;
+      const activeTask = activeSession?.backgroundTaskId ? getBackgroundAiTask(activeSession.backgroundTaskId) : null;
       setIsLoading(activeTask?.status === 'running');
     };
 
     syncBackgroundTasks();
     return subscribeBackgroundAiTasks(syncBackgroundTasks);
   }, [activeSession?.backgroundTaskId, activeSessionId, storageKey]);
-
 
   useEffect(() => {
     if (!isLoading) {
@@ -611,15 +619,18 @@ export function WorkbenchAIPanel({
     if (!activeSession) return;
     const sessionId = activeSession.id;
     const text = input.trim();
-    if (!text || isLoading) return;
     const activeRequestLinkedContextItems = activeSession.linkChapter ? [] : linkedContextItems;
     const linkedContextPayload = buildBodyLinkedContextPayload(activeRequestLinkedContextItems);
     const shouldAttachChapter = !linkedContextPayload && activeSession.linkChapter && selectedChapterContent.trim();
-    const contextPayload = linkedContextPayload || (shouldAttachChapter ? wrapAiRequestTag('前文正文', selectedChapterContent, { 标题: chapterContextLabel }) : '');
+    const contextPayload =
+      linkedContextPayload ||
+      (shouldAttachChapter ? wrapAiRequestTag('前文正文', selectedChapterContent, { 标题: chapterContextLabel }) : '');
+    const hasSendableContext = Boolean(contextPayload.trim());
+    if (isLoading || (!text && !hasSendableContext)) return;
     const effectiveContextPayload = contextPayload;
-    const contextTitle = linkedContextPayload ? '关联资料' : (contextPayload ? `${chapterContextLabel}内容` : '');
+    const contextTitle = linkedContextPayload ? '关联资料' : contextPayload ? `${chapterContextLabel}内容` : '';
     const promptText = configPrompt?.content ?? getDefaultInstruction(activeTool);
-    const userTextForAi = wrapAiRequestTag('写作要求', text);
+    const userTextForAi = text ? wrapAiRequestTag('写作要求', text) : '';
     const requestLog = buildAiRequestLog({
       createdAt: new Date().toLocaleString('zh-CN'),
       modelName: configModel?.name ?? '未选择模型',
@@ -633,7 +644,11 @@ export function WorkbenchAIPanel({
       linkChapter: Boolean(activeSession.linkChapter),
     });
     setLastRequestLog(requestLog);
-    const userMessage: AiMessage = { id: nextMessageIdRef.current++, role: 'user', content: text };
+    const userMessage: AiMessage = {
+      id: nextMessageIdRef.current++,
+      role: 'user',
+      content: text || `使用${contextTitle || '关联内容'}生成正文`,
+    };
     const assistantMessage: AiMessage = { id: nextMessageIdRef.current++, role: 'assistant', content: '正在生成...' };
     const nextMessages = [...activeSession.messages, userMessage, assistantMessage];
     updateSession(sessionId, {
@@ -647,9 +662,9 @@ export function WorkbenchAIPanel({
       const errorText = '尚未配置可用模型。请先到模型管理中新增模型。';
       updateSession(sessionId, {
         output: errorText,
-        messages: nextMessages.map((message) => (
-          message.id === assistantMessage.id ? { ...message, content: errorText } : message
-        )),
+        messages: nextMessages.map((message) =>
+          message.id === assistantMessage.id ? { ...message, content: errorText } : message,
+        ),
       });
       return;
     }
@@ -667,38 +682,38 @@ export function WorkbenchAIPanel({
         assistantMessageId: assistantMessage.id,
       },
       runner: async ({ signal, emit }) => {
-      let content = '';
-      let reasoningContent = '';
-      const startedAt = Date.now();
-      const getThinkingSeconds = () => Math.max(0, Math.round((Date.now() - startedAt) / 1000));
-      try {
-        content = await callModelStream({
-          model: configModel,
-          prompt: promptText,
-          userContent: userTextForAi,
-          chapterContext: effectiveContextPayload,
-          signal,
-          recordType: 'stream',
-          onReasoning: (chunk) => {
-            reasoningContent += chunk;
-            emit(formatAiThinkingResponse(content, reasoningContent, getThinkingSeconds(), false), { replace: true });
-          },
-          onChunk: (chunk) => {
-            content += chunk;
-            emit(formatAiThinkingResponse(content, reasoningContent, getThinkingSeconds(), false), { replace: true });
-          },
-        });
-        if (reasoningContent.trim()) {
-          content = formatAiThinkingResponse(content, reasoningContent, getThinkingSeconds(), true);
+        let content = '';
+        let reasoningContent = '';
+        const startedAt = Date.now();
+        const getThinkingSeconds = () => Math.max(0, Math.round((Date.now() - startedAt) / 1000));
+        try {
+          content = await callModelStream({
+            model: configModel,
+            prompt: promptText,
+            userContent: userTextForAi,
+            chapterContext: effectiveContextPayload,
+            signal,
+            recordType: 'stream',
+            onReasoning: (chunk) => {
+              reasoningContent += chunk;
+              emit(formatAiThinkingResponse(content, reasoningContent, getThinkingSeconds(), false), { replace: true });
+            },
+            onChunk: (chunk) => {
+              content += chunk;
+              emit(formatAiThinkingResponse(content, reasoningContent, getThinkingSeconds(), false), { replace: true });
+            },
+          });
+          if (reasoningContent.trim()) {
+            content = formatAiThinkingResponse(content, reasoningContent, getThinkingSeconds(), true);
+          }
+          return content;
+        } catch (error) {
+          if (!(error instanceof DOMException && error.name === 'AbortError')) {
+            const errorText = error instanceof Error ? `【错误】${error.message}` : '【错误】模型请求失败。';
+            emit(errorText, { replace: true, progressLabel: '失败' });
+          }
+          throw error;
         }
-        return content;
-      } catch (error) {
-        if (!(error instanceof DOMException && error.name === 'AbortError')) {
-          const errorText = error instanceof Error ? `【错误】${error.message}` : '【错误】模型请求失败。';
-          emit(errorText, { replace: true, progressLabel: '失败' });
-        }
-        throw error;
-      }
       },
     });
     updateSession(sessionId, {
@@ -715,14 +730,17 @@ export function WorkbenchAIPanel({
     }
     const nextId = nextSessionIdRef.current;
     nextSessionIdRef.current += 1;
-    setSessions((prev) => [...prev, {
-      id: nextId,
-      input: '',
-      output: '',
-      messages: [],
-      linkChapter: false,
-      hasSentChapterContext: false,
-    }]);
+    setSessions((prev) => [
+      ...prev,
+      {
+        id: nextId,
+        input: '',
+        output: '',
+        messages: [],
+        linkChapter: false,
+        hasSentChapterContext: false,
+      },
+    ]);
     setActiveSessionId(nextId);
   };
 
@@ -733,14 +751,16 @@ export function WorkbenchAIPanel({
       onClearLinkedContext?.();
       const nextId = nextSessionIdRef.current;
       nextSessionIdRef.current += 1;
-      setSessions([{
-        id: nextId,
-        input: '',
-        output: '',
-        messages: [],
-        linkChapter: false,
-        hasSentChapterContext: false,
-      }]);
+      setSessions([
+        {
+          id: nextId,
+          input: '',
+          output: '',
+          messages: [],
+          linkChapter: false,
+          hasSentChapterContext: false,
+        },
+      ]);
       setActiveSessionId(nextId);
       setLastRequestLog(null);
       setIsLoading(false);
@@ -749,7 +769,9 @@ export function WorkbenchAIPanel({
     setSessions((prev) => {
       const next = prev.filter((session) => session.id !== sessionId);
       if (activeSessionId === sessionId) {
-        setActiveSessionId(next[Math.max(0, prev.findIndex((session) => session.id === sessionId) - 1)]?.id ?? next[0].id);
+        setActiveSessionId(
+          next[Math.max(0, prev.findIndex((session) => session.id === sessionId) - 1)]?.id ?? next[0].id,
+        );
       }
       return next;
     });
@@ -790,7 +812,11 @@ export function WorkbenchAIPanel({
     }
     if (currentModel.connectionStatus === 'connected') {
       const latency = typeof currentModel.connectionLatencyMs === 'number' ? currentModel.connectionLatencyMs : null;
-      return <span className="text-xs font-bold tabular-nums text-emerald-600">{latency === null ? '--ms' : `${latency}ms`}</span>;
+      return (
+        <span className="text-xs font-bold tabular-nums text-emerald-600">
+          {latency === null ? '--ms' : `${latency}ms`}
+        </span>
+      );
     }
     return null;
   };
@@ -868,21 +894,23 @@ export function WorkbenchAIPanel({
             className="w-full"
             modelValue={model?.id ?? modelId}
             promptValue={prompt?.id ?? chatPrompts[0]?.id ?? promptId}
-            modelOptions={enabledModels.length === 0
-              ? [{ value: '', label: '无可用模型', disabled: true }]
-              : enabledModels.map((option) => ({ value: option.id, label: option.name }))}
-            promptOptions={chatPrompts.length === 0
-              ? [{ value: '', label: '无可用提示词', disabled: true }]
-              : chatPrompts.map((option) => ({ value: option.id, label: option.name }))}
+            modelOptions={
+              enabledModels.length === 0
+                ? [{ value: '', label: '无可用模型', disabled: true }]
+                : enabledModels.map((option) => ({ value: option.id, label: option.name }))
+            }
+            promptOptions={
+              chatPrompts.length === 0
+                ? [{ value: '', label: '无可用提示词', disabled: true }]
+                : chatPrompts.map((option) => ({ value: option.id, label: option.name }))
+            }
             onModelChange={onModelChange}
             onPromptChange={onPromptChange}
             onModelManage={() => onOpenModelManage?.()}
             onPromptManage={() => onOpenAgentManage?.()}
           />
           {renderModelStatus(model) ? (
-            <div className="mt-1 flex h-4 justify-end text-xs font-bold">
-              {renderModelStatus(model)}
-            </div>
+            <div className="mt-1 flex h-4 justify-end text-xs font-bold">{renderModelStatus(model)}</div>
           ) : null}
         </div>
       </div>
@@ -903,7 +931,7 @@ export function WorkbenchAIPanel({
   return (
     <aside className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-gray-50">
       {headerToolPortalTarget ? createPortal(outputFontSizeTool, headerToolPortalTarget) : null}
-      {(statusText || onClose) ? (
+      {statusText || onClose ? (
         <div className="flex min-h-10 shrink-0 items-center justify-end gap-3 border-b border-gray-100 px-3 py-1.5">
           <div className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto">
             {statusText && <span className="min-w-0 truncate text-[11px] text-brand">{statusText}</span>}
@@ -936,10 +964,7 @@ export function WorkbenchAIPanel({
             {activeSession?.messages.length ? (
               <div className="flex flex-col gap-3">
                 {activeSession.messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
+                  <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div
                       className={`max-w-[82%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 leading-7 shadow-sm ${
                         message.role === 'user'
@@ -948,7 +973,9 @@ export function WorkbenchAIPanel({
                       }`}
                       style={{ fontSize: outputFontSize }}
                     >
-                      {isLoading && message.role === 'assistant' && message.content === '正在生成...' ? loadingText : renderAiChatContent(message.content)}
+                      {isLoading && message.role === 'assistant' && message.content === '正在生成...'
+                        ? loadingText
+                        : renderAiChatContent(message.content)}
                     </div>
                   </div>
                 ))}
@@ -961,7 +988,9 @@ export function WorkbenchAIPanel({
           </div>
           {renderSessionControls()}
           {renderSessionActions()}
-          <span className="xy-floating-count"><WordCountText value={outputWordCount} compact /></span>
+          <span className="xy-floating-count">
+            <WordCountText value={outputWordCount} compact />
+          </span>
         </div>
         <div className="mt-2 flex shrink-0 items-start justify-between gap-2 text-xs text-gray-400">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -1017,7 +1046,7 @@ export function WorkbenchAIPanel({
             }}
             onSend={() => void sendMessage()}
             onStop={stopMessage}
-            sendDisabled={isLoading || !input.trim()}
+            sendDisabled={isLoading || !canSendMessage}
             stopDisabled={!isLoading}
             placeholder="请输入你的要求..."
           />
@@ -1026,8 +1055,8 @@ export function WorkbenchAIPanel({
               <button
                 onClick={() => {
                   if (!output.trim()) return;
-                  onReplaceContent(stripAiThinkingBlock(output));
-                  flashStatus('已替换正文');
+                  onReplaceContent(applyFormat(stripAiThinkingBlock(output), getStoredFormatSettings()));
+                  flashStatus('已智能排版并替换正文');
                 }}
                 disabled={!output.trim()}
                 className="min-w-0 flex-1 bg-brand px-2 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
@@ -1091,9 +1120,10 @@ export function WorkbenchAIPanel({
               {
                 id: 'context-source',
                 label: '资料来源',
-                value: visibleRequestLog.linkedItems.length > 0
-                  ? `关联资料 · ${visibleRequestLog.linkedItems.length}项`
-                  : `${chapterContextLabel}内容`,
+                value:
+                  visibleRequestLog.linkedItems.length > 0
+                    ? `关联资料 · ${visibleRequestLog.linkedItems.length}项`
+                    : `${chapterContextLabel}内容`,
                 valueClassName: 'text-brand',
                 hidden: !visibleRequestLog.contextText.trim(),
               },
@@ -1111,9 +1141,26 @@ export function WorkbenchAIPanel({
               },
             ]}
             groups={[
-              { id: 'prompt', title: '提示词', meta: `${getTextWordCount(visibleRequestLog.systemPrompt)} 字`, content: visibleRequestLog.systemPrompt },
-              { id: 'context', title: '资料', meta: `${visibleRequestLog.contextWordCount} 字`, content: visibleRequestLog.contextText, tone: 'cyan' },
-              { id: 'user', title: '用户要求', meta: `${getTextWordCount(visibleRequestLog.userContent)} 字`, content: visibleRequestLog.visibleUserContent.trim() ? visibleRequestLog.userContent : '', tone: 'amber' },
+              {
+                id: 'prompt',
+                title: '提示词',
+                meta: `${getTextWordCount(visibleRequestLog.systemPrompt)} 字`,
+                content: visibleRequestLog.systemPrompt,
+              },
+              {
+                id: 'context',
+                title: '资料',
+                meta: `${visibleRequestLog.contextWordCount} 字`,
+                content: visibleRequestLog.contextText,
+                tone: 'cyan',
+              },
+              {
+                id: 'user',
+                title: '用户要求',
+                meta: `${getTextWordCount(visibleRequestLog.userContent)} 字`,
+                content: visibleRequestLog.visibleUserContent.trim() ? visibleRequestLog.userContent : '',
+                tone: 'amber',
+              },
             ]}
             fillSingleGroup
             fillGroupWeights={getBodyAiLogFillGroupWeights(visibleRequestLog)}

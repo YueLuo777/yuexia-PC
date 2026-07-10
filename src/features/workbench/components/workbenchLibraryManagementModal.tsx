@@ -1,15 +1,11 @@
 import { createPortal } from 'react-dom';
 
-import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
 import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
-import { WORKBENCH_MANAGEMENT_MODAL_SIZE_CLASS } from './workbenchManagementModalSize';
+import { WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS } from './workbenchManagementModalSize';
 
-export type LibraryManagementModalState =
-  | { type: 'models' }
-  | { type: 'prompts'; category: string }
-  | null;
+export type LibraryManagementModalState = { type: 'models' } | { type: 'prompts'; category: string } | null;
 
 export function LibraryManagementModal({
   modal,
@@ -18,7 +14,6 @@ export function LibraryManagementModal({
   modal: Exclude<LibraryManagementModalState, null>;
   onClose: () => void;
 }) {
-  const draggable = useDraggableModal(`workbench_library_${modal.type}_${modal.type === 'prompts' ? modal.category : 'models'}`);
   useTopModalEscape(true, onClose);
 
   return createPortal(
@@ -29,18 +24,13 @@ export function LibraryManagementModal({
       }}
     >
       <section
-        data-draggable-managed="true"
-        style={draggable.style}
-        className={`modal-sharp relative flex ${WORKBENCH_MANAGEMENT_MODAL_SIZE_CLASS} max-w-[94vw] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]`}
+        data-global-modal-static="true"
+        className={`modal-sharp relative flex ${WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS} max-w-[80vw] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]`}
       >
         {modal.type === 'prompts' ? (
-          <header
-            {...draggable.dragHandleProps}
-            className="flex h-12 shrink-0 cursor-move items-center justify-between border-b border-slate-100 px-5"
-          >
+          <header className="flex h-12 shrink-0 items-center justify-between border-b border-slate-100 px-5">
             <h2 className="text-base font-bold text-slate-900">提示词管理</h2>
             <button
-              data-no-modal-drag="true"
               onClick={onClose}
               className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
             >
@@ -49,9 +39,11 @@ export function LibraryManagementModal({
           </header>
         ) : null}
         <div className="min-h-0 flex-1 overflow-hidden">
-          {modal.type === 'models'
-            ? <ModelManagePage embedded onClose={onClose} headerDragHandleProps={draggable.dragHandleProps} />
-            : <PromptsPage initialCategory={modal.category} />}
+          {modal.type === 'models' ? (
+            <ModelManagePage embedded onClose={onClose} />
+          ) : (
+            <PromptsPage initialCategory={modal.category} />
+          )}
         </div>
       </section>
     </div>,

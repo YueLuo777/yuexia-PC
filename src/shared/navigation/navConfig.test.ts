@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { DEFAULT_NAV_CONFIG, normalizeNavConfig } from '@/shared/navigation/navConfig';
+
+const readSource = (path: string) => readFileSync(join(process.cwd(), path), 'utf8');
 
 describe('navigation config without zones', () => {
   it('keeps the default navigation as one flat internal group', () => {
@@ -12,6 +16,7 @@ describe('navigation config without zones', () => {
       '/novels',
       '/scripts',
       '/genre-iteration',
+      '/tomato-browser',
       '/library',
       '/prompts',
       '/model-manage',
@@ -20,17 +25,18 @@ describe('navigation config without zones', () => {
     ]);
     expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/library')?.label).toBe('资料库');
     expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/genre-iteration')?.label).toBe('题材迭代');
+    expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/tomato-browser')?.label).toBe('番茄浏览器');
     expect(JSON.stringify(DEFAULT_NAV_CONFIG)).not.toContain('专区');
   });
 
   it('renames the library navigation entry to materials library even for saved old configs', () => {
-    const normalized = normalizeNavConfig([{
-      title: '导航',
-      iconName: 'LayoutGrid',
-      items: [
-        { iconName: 'Library', label: '库', to: '/library' },
-      ],
-    }]);
+    const normalized = normalizeNavConfig([
+      {
+        title: '导航',
+        iconName: 'LayoutGrid',
+        items: [{ iconName: 'Library', label: '库', to: '/library' }],
+      },
+    ]);
 
     expect(normalized[0].items.find((item) => item.to === '/library')?.label).toBe('资料库');
     expect(JSON.stringify(normalized)).not.toContain('"label":"库"');
@@ -50,9 +56,7 @@ describe('navigation config without zones', () => {
         title: '数据专区',
         iconName: 'Database',
         hidden: true,
-        items: [
-          { iconName: 'Tag', label: '提示词管理', to: '/prompts' },
-        ],
+        items: [{ iconName: 'Tag', label: '提示词管理', to: '/prompts' }],
       },
     ]);
 
@@ -68,76 +72,132 @@ describe('navigation config without zones', () => {
   });
 
   it('removes the retired hotspot route from saved navigation configs', () => {
-    const normalized = normalizeNavConfig([{
-      title: '导航',
-      iconName: 'LayoutGrid',
-      items: [
-        { iconName: 'Activity', label: '热点分析', to: '/hotspots' },
-        { iconName: 'Sparkles', label: '题材迭代', to: '/genre-iteration' },
-      ],
-    }]);
+    const normalized = normalizeNavConfig([
+      {
+        title: '导航',
+        iconName: 'LayoutGrid',
+        items: [
+          { iconName: 'Activity', label: '热点分析', to: '/hotspots' },
+          { iconName: 'Sparkles', label: '题材迭代', to: '/genre-iteration' },
+        ],
+      },
+    ]);
 
     expect(normalized[0].items.some((item) => item.to === '/hotspots')).toBe(false);
     expect(normalized[0].items.some((item) => item.to === '/genre-iteration')).toBe(true);
   });
 
   it('moves genre iteration directly below scripts for saved old navigation order', () => {
-    const normalized = normalizeNavConfig([{
-      title: '导航',
-      iconName: 'LayoutGrid',
-      items: [
-        { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
-        { iconName: 'Film', label: '我的剧本', to: '/scripts' },
-        { iconName: 'Library', label: '资料库', to: '/library' },
-        { iconName: 'Sparkles', label: '题材迭代', to: '/genre-iteration' },
-      ],
-    }]);
+    const normalized = normalizeNavConfig([
+      {
+        title: '导航',
+        iconName: 'LayoutGrid',
+        items: [
+          { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
+          { iconName: 'Film', label: '我的剧本', to: '/scripts' },
+          { iconName: 'Library', label: '资料库', to: '/library' },
+          { iconName: 'Sparkles', label: '题材迭代', to: '/genre-iteration' },
+        ],
+      },
+    ]);
 
     expect(normalized[0].items.map((item) => item.to).slice(0, 4)).toEqual([
       '/novels',
       '/scripts',
       '/genre-iteration',
-      '/library',
+      '/tomato-browser',
     ]);
   });
 
-  it('preserves a custom navigation divider and allows hiding it', () => {
-    expect(normalizeNavConfig([{
-      title: '导航',
-      iconName: 'LayoutGrid',
-      dividerAfterItemTo: '/prompts',
-      items: DEFAULT_NAV_CONFIG[0].items,
-    }])[0].dividerAfterItemTo).toBe('/prompts');
-    expect(normalizeNavConfig([{
-      title: '导航',
-      iconName: 'LayoutGrid',
-      dividerAfterItemTo: '/prompts',
-      items: DEFAULT_NAV_CONFIG[0].items,
-    }])[0].dividerAfterItemTos).toEqual(['/prompts']);
+  it('adds the tomato browser navigation entry to saved configs and keeps it below genre iteration', () => {
+    const normalized = normalizeNavConfig([
+      {
+        title: '导航',
+        iconName: 'LayoutGrid',
+        items: [
+          { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
+          { iconName: 'Film', label: '我的剧本', to: '/scripts' },
+          { iconName: 'Library', label: '资料库', to: '/library' },
+          { iconName: 'Sparkles', label: '题材迭代', to: '/genre-iteration' },
+        ],
+      },
+    ]);
 
-    expect(normalizeNavConfig([{
-      title: '导航',
-      iconName: 'LayoutGrid',
-      dividerAfterItemTo: null,
-      items: DEFAULT_NAV_CONFIG[0].items,
-    }])[0].dividerAfterItemTo).toBeNull();
-    expect(normalizeNavConfig([{
-      title: '导航',
-      iconName: 'LayoutGrid',
-      dividerAfterItemTo: null,
-      items: DEFAULT_NAV_CONFIG[0].items,
-    }])[0].dividerAfterItemTos).toEqual([]);
+    expect(normalized[0].items.map((item) => item.to).slice(0, 5)).toEqual([
+      '/novels',
+      '/scripts',
+      '/genre-iteration',
+      '/tomato-browser',
+      '/library',
+    ]);
+    expect(normalized[0].items.find((item) => item.to === '/tomato-browser')).toMatchObject({
+      iconName: 'Globe',
+      label: '番茄浏览器',
+      to: '/tomato-browser',
+    });
+  });
+
+  it('routes the tomato browser nav entry to the former number 15 test page', () => {
+    const app = readSource('src/app/App.tsx');
+
+    expect(app).toContain('TomatoGenreIterationTestPage');
+    expect(app).toContain('path="/tomato-browser"');
+    expect(app).toContain("import('@/features/tests/pages/TomatoGenreIterationTestPage')");
+  });
+
+  it('preserves a custom navigation divider and allows hiding it', () => {
+    expect(
+      normalizeNavConfig([
+        {
+          title: '导航',
+          iconName: 'LayoutGrid',
+          dividerAfterItemTo: '/prompts',
+          items: DEFAULT_NAV_CONFIG[0].items,
+        },
+      ])[0].dividerAfterItemTo,
+    ).toBe('/prompts');
+    expect(
+      normalizeNavConfig([
+        {
+          title: '导航',
+          iconName: 'LayoutGrid',
+          dividerAfterItemTo: '/prompts',
+          items: DEFAULT_NAV_CONFIG[0].items,
+        },
+      ])[0].dividerAfterItemTos,
+    ).toEqual(['/prompts']);
+
+    expect(
+      normalizeNavConfig([
+        {
+          title: '导航',
+          iconName: 'LayoutGrid',
+          dividerAfterItemTo: null,
+          items: DEFAULT_NAV_CONFIG[0].items,
+        },
+      ])[0].dividerAfterItemTo,
+    ).toBeNull();
+    expect(
+      normalizeNavConfig([
+        {
+          title: '导航',
+          iconName: 'LayoutGrid',
+          dividerAfterItemTo: null,
+          items: DEFAULT_NAV_CONFIG[0].items,
+        },
+      ])[0].dividerAfterItemTos,
+    ).toEqual([]);
   });
 
   it('preserves multiple navigation dividers and drops invalid or hidden targets', () => {
-    const normalized = normalizeNavConfig([{
-      title: '导航',
-      iconName: 'LayoutGrid',
-      dividerAfterItemTos: ['/novels', '/prompts', '/missing', '/prompts', '/scripts'],
-      items: DEFAULT_NAV_CONFIG[0].items.map((item) => (
-        item.to === '/scripts' ? { ...item, hidden: true } : item
-      )),
-    }]);
+    const normalized = normalizeNavConfig([
+      {
+        title: '导航',
+        iconName: 'LayoutGrid',
+        dividerAfterItemTos: ['/novels', '/prompts', '/missing', '/prompts', '/scripts'],
+        items: DEFAULT_NAV_CONFIG[0].items.map((item) => (item.to === '/scripts' ? { ...item, hidden: true } : item)),
+      },
+    ]);
 
     expect(normalized[0].dividerAfterItemTo).toBe('/novels');
     expect(normalized[0].dividerAfterItemTos).toEqual(['/novels', '/prompts']);

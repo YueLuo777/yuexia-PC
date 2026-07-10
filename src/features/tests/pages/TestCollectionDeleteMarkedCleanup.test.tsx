@@ -40,6 +40,13 @@ const removedMarkedTests = [
   ['/review-comparison-centering-test', 'ReviewComparisonCenteringTestPage'],
   ['/hotspot-layout-preview-test', 'HotspotLayoutPreviewTestPage'],
   ['/prompt-audit-badge-layout-test', 'PromptAuditBadgeLayoutTestPage'],
+  ['/clean-writer-style-preview-test', 'CleanWriterStylePreviewTestPage'],
+  ['/workbench-ai-right-width-preview-test', 'WorkbenchAiRightWidthPreviewTestPage'],
+  ['/shuimo-selection-state-preview-test', 'ShuimoSelectionStatePreviewTestPage'],
+  ['/shuimo-sidebar-scheme-preview-test', 'ShuimoSidebarSchemePreviewTestPage'],
+  ['/shuimo-semantic-palette-preview-test', 'ShuimoSemanticPalettePreviewTestPage'],
+  ['/genre-iteration-moonfall-style-test', 'GenreIterationMoonfallStyleTestPage'],
+  ['/audit-prompt-select-grouping-test', 'AuditPromptSelectGroupingTestPage'],
 ] as const;
 
 describe('TestCollectionPage delete marked cleanup', () => {
@@ -97,9 +104,11 @@ describe('TestCollectionPage delete marked cleanup', () => {
     const source = await readFile(collectionPagePath, 'utf8');
 
     expect(source).toContain('const validTestPaths = new Set(testNumberByPath.keys());');
-    expect(source).toContain("validTestPaths.has(item)");
+    expect(source).toContain('validTestPaths.has(item)');
     expect(source).toContain('localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(validPaths));');
     expect(source).toContain('Array.from(current).filter((path) => validTestPaths.has(path))');
-    expect(source).toContain('localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(Array.from(next)));');
+    expect(source).toContain(
+      'localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(Array.from(next)));',
+    );
   });
 });

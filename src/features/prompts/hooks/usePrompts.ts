@@ -9,9 +9,10 @@ const PROMPT_RECYCLE_KEY = 'xinyuexia_prompt_recycle_v1';
 const PROMPT_CATEGORIES_KEY = 'xinyuexia_prompt_categories_v1';
 const UNCATEGORIZED = '未分类';
 export const AUDIT_PROMPT_CATEGORY = '审核';
-export const DEFAULT_AUDIT_PROMPT_SUBCATEGORY = '结构审核';
-export const AUDIT_PROMPT_SUBCATEGORIES = ['结构审核', '文本审核'] as const;
+export const DEFAULT_AUDIT_PROMPT_SUBCATEGORY = '剧情审核';
+export const AUDIT_PROMPT_SUBCATEGORIES = ['剧情审核', '文本审核'] as const;
 export const COMMENT_PROMPT_CATEGORY = '综合点评';
+export const BODY_PROMPT_CATEGORY = '正文';
 export const STATUS_PROMPT_CATEGORY = '更新状态';
 export const SUMMARY_PROMPT_CATEGORY = '生成梗概';
 export const HOTSPOT_ANALYSIS_PROMPT_CATEGORY = '题材迭代';
@@ -32,7 +33,19 @@ const PROMPT_CATEGORY_ALIASES: Record<string, string> = {
   卷概要: SUMMARY_PROMPT_CATEGORY,
   梗概: SUMMARY_PROMPT_CATEGORY,
 };
-export const DEFAULT_PROMPT_CATEGORIES = ['脑洞', '设定', '章纲', '正文', '审核', COMMENT_PROMPT_CATEGORY, '润色', STATUS_PROMPT_CATEGORY, SUMMARY_PROMPT_CATEGORY, HOTSPOT_ANALYSIS_PROMPT_CATEGORY, UNCATEGORIZED];
+export const DEFAULT_PROMPT_CATEGORIES = [
+  '脑洞',
+  '设定',
+  '章纲',
+  BODY_PROMPT_CATEGORY,
+  '审核',
+  COMMENT_PROMPT_CATEGORY,
+  '润色',
+  STATUS_PROMPT_CATEGORY,
+  SUMMARY_PROMPT_CATEGORY,
+  HOTSPOT_ANALYSIS_PROMPT_CATEGORY,
+  UNCATEGORIZED,
+];
 
 export function normalizePromptCategoryName(category: string) {
   const trimmed = category.trim() || UNCATEGORIZED;
@@ -46,31 +59,34 @@ export function isDefaultPromptCategory(category: string) {
 export function normalizePromptSubcategory(category: string, subCategory?: string) {
   if (normalizePromptCategoryName(category) !== AUDIT_PROMPT_CATEGORY) return undefined;
   const trimmed = subCategory?.trim() ?? '';
-  return AUDIT_PROMPT_SUBCATEGORIES.includes(trimmed as typeof AUDIT_PROMPT_SUBCATEGORIES[number])
-    ? trimmed
+  const normalized = trimmed === '结构审核' ? DEFAULT_AUDIT_PROMPT_SUBCATEGORY : trimmed;
+  return AUDIT_PROMPT_SUBCATEGORIES.includes(normalized as (typeof AUDIT_PROMPT_SUBCATEGORIES)[number])
+    ? normalized
     : DEFAULT_AUDIT_PROMPT_SUBCATEGORY;
 }
 
 const PROMPTS_UPDATED_EVENT = APP_EVENTS.promptsUpdated;
 
 const promptsStorage = createJsonStorage<PromptItem[]>(PROMPTS_KEY, [], {
-  normalize: (value) => Array.isArray(value)
-    ? (value as PromptItem[]).map((prompt) => ({
-        ...prompt,
-        category: normalizePromptCategoryName(prompt.category ?? UNCATEGORIZED),
-        subCategory: normalizePromptSubcategory(prompt.category ?? UNCATEGORIZED, prompt.subCategory),
-      }))
-    : [],
+  normalize: (value) =>
+    Array.isArray(value)
+      ? (value as PromptItem[]).map((prompt) => ({
+          ...prompt,
+          category: normalizePromptCategoryName(prompt.category ?? UNCATEGORIZED),
+          subCategory: normalizePromptSubcategory(prompt.category ?? UNCATEGORIZED, prompt.subCategory),
+        }))
+      : [],
   eventName: PROMPTS_UPDATED_EVENT,
 });
 const promptRecycleStorage = createJsonStorage<PromptItem[]>(PROMPT_RECYCLE_KEY, [], {
-  normalize: (value) => Array.isArray(value)
-    ? (value as PromptItem[]).map((prompt) => ({
-        ...prompt,
-        category: normalizePromptCategoryName(prompt.category ?? UNCATEGORIZED),
-        subCategory: normalizePromptSubcategory(prompt.category ?? UNCATEGORIZED, prompt.subCategory),
-      }))
-    : [],
+  normalize: (value) =>
+    Array.isArray(value)
+      ? (value as PromptItem[]).map((prompt) => ({
+          ...prompt,
+          category: normalizePromptCategoryName(prompt.category ?? UNCATEGORIZED),
+          subCategory: normalizePromptSubcategory(prompt.category ?? UNCATEGORIZED, prompt.subCategory),
+        }))
+      : [],
   eventName: PROMPTS_UPDATED_EVENT,
 });
 function orderCategories(value: string[]) {
@@ -87,7 +103,12 @@ function orderCategories(value: string[]) {
 }
 
 const promptCategoriesStorage = createJsonStorage<string[]>(PROMPT_CATEGORIES_KEY, DEFAULT_PROMPT_CATEGORIES, {
-  normalize: (value) => orderCategories(Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : DEFAULT_PROMPT_CATEGORIES),
+  normalize: (value) =>
+    orderCategories(
+      Array.isArray(value)
+        ? value.filter((item): item is string => typeof item === 'string')
+        : DEFAULT_PROMPT_CATEGORIES,
+    ),
   eventName: PROMPTS_UPDATED_EVENT,
 });
 
@@ -123,10 +144,7 @@ export function usePrompts() {
       setCategories(promptCategoriesStorage.read());
     };
     const syncPromptStorage = (event: StorageEvent) => {
-      if (
-        event.key
-        && ![PROMPTS_KEY, PROMPT_RECYCLE_KEY, PROMPT_CATEGORIES_KEY].includes(event.key)
-      ) {
+      if (event.key && ![PROMPTS_KEY, PROMPT_RECYCLE_KEY, PROMPT_CATEGORIES_KEY].includes(event.key)) {
         return;
       }
       syncPromptState();
@@ -246,15 +264,17 @@ export function usePrompts() {
   };
 
   const togglePin = (id: string) => {
-    persistPrompts(prompts.map((prompt) => (
-      prompt.id === id
-        ? {
-            ...prompt,
-            isFavorite: !prompt.isFavorite,
-            pinnedAt: prompt.isFavorite ? undefined : new Date().toISOString(),
-          }
-        : prompt
-    )));
+    persistPrompts(
+      prompts.map((prompt) =>
+        prompt.id === id
+          ? {
+              ...prompt,
+              isFavorite: !prompt.isFavorite,
+              pinnedAt: prompt.isFavorite ? undefined : new Date().toISOString(),
+            }
+          : prompt,
+      ),
+    );
   };
 
   const toggleLock = (id: string) => {
@@ -262,9 +282,11 @@ export function usePrompts() {
   };
 
   const usePrompt = (id: string) => {
-    persistPrompts(prompts.map((prompt) => (
-      prompt.id === id ? { ...prompt, usageCount: (prompt.usageCount ?? 0) + 1, updatedAt: nowText() } : prompt
-    )));
+    persistPrompts(
+      prompts.map((prompt) =>
+        prompt.id === id ? { ...prompt, usageCount: (prompt.usageCount ?? 0) + 1, updatedAt: nowText() } : prompt,
+      ),
+    );
   };
 
   const addCategory = (category: string) => {
@@ -276,9 +298,11 @@ export function usePrompts() {
   const removeCategory = (category: string) => {
     if (isDefaultPromptCategory(category)) return;
     persistCategories(categories.filter((item) => item !== category));
-    persistPrompts(prompts.map((prompt) => (
-      prompt.category === category ? { ...prompt, category: UNCATEGORIZED, updatedAt: nowText() } : prompt
-    )));
+    persistPrompts(
+      prompts.map((prompt) =>
+        prompt.category === category ? { ...prompt, category: UNCATEGORIZED, updatedAt: nowText() } : prompt,
+      ),
+    );
   };
 
   return {

@@ -1,4 +1,4 @@
-﻿import { Check, ChevronDown, Settings } from 'lucide-react';
+﻿import { Check, ChevronDown, FileText, ListTree, Settings } from 'lucide-react';
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -58,7 +58,9 @@ export function CombinedAiConfigSelect({
   const activeValue = openSegment === 'model' ? modelValue : promptValue;
   const activeDisplayValue = getDisplayOption(activeValue, activeOptions)?.value ?? '';
   const modelDisplay = getDisplayLabel(modelValue, modelOptions, '暂无可用模型');
-  const promptDisplay = promptDisabled ? promptDisabledLabel : getDisplayLabel(promptValue, promptOptions, `暂无${promptLabel}`);
+  const promptDisplay = promptDisabled
+    ? promptDisabledLabel
+    : getDisplayLabel(promptValue, promptOptions, `暂无${promptLabel}`);
   const isModelOpen = openSegment === 'model';
   const isPromptOpen = openSegment === 'prompt' && !promptDisabled;
 
@@ -73,11 +75,14 @@ export function CombinedAiConfigSelect({
     return () => window.removeEventListener('mousedown', close);
   }, [openSegment]);
 
-  useEffect(() => () => {
-    if (tooltipTimerRef.current !== null) {
-      window.clearTimeout(tooltipTimerRef.current);
-    }
-  }, []);
+  useEffect(
+    () => () => {
+      if (tooltipTimerRef.current !== null) {
+        window.clearTimeout(tooltipTimerRef.current);
+      }
+    },
+    [],
+  );
 
   const hideHoverTooltip = () => {
     if (tooltipTimerRef.current !== null) {
@@ -107,11 +112,16 @@ export function CombinedAiConfigSelect({
     return (
       <div
         className={`absolute top-[calc(100%-2px)] z-[10050] max-h-[240px] overflow-y-auto border-2 border-t-0 border-[#08AACE] bg-white py-1 shadow-[0_18px_34px_rgba(8,170,206,0.14)] ${
-          openSegment === 'model' ? 'left-0 w-1/2 rounded-bl-xl rounded-br-none' : 'right-0 w-1/2 rounded-bl-none rounded-br-xl'
+          openSegment === 'model'
+            ? 'left-0 w-1/2 rounded-bl-xl rounded-br-none'
+            : 'right-0 w-1/2 rounded-bl-none rounded-br-xl'
         }`}
       >
         {activeOptions.map((option) => {
           const selected = !option.disabled && option.value === activeDisplayValue;
+          const isGroup = option.variant === 'group';
+          const isGroupedOption = option.variant === 'groupedOption';
+          const hasMetaLabel = !isGroup && Boolean(option.metaLabel);
           return (
             <button
               key={option.value}
@@ -125,14 +135,42 @@ export function CombinedAiConfigSelect({
                 else onPromptChange(option.value);
                 setOpenSegment(null);
               }}
-              className={`flex h-9 w-full items-center justify-between gap-3 px-4 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:text-slate-300 ${
-                selected
-                  ? 'bg-[#EAF9FD] font-black text-slate-900 hover:bg-[#EAF9FD]'
-                  : 'bg-white font-bold text-slate-800 hover:bg-sky-50 hover:text-[#08AACE]'
-              }`}
+              className={
+                isGroup
+                  ? 'flex h-8 w-full cursor-default items-center gap-2 px-4 text-left text-xs font-black text-slate-500 disabled:cursor-default disabled:text-slate-500'
+                  : `flex min-h-9 items-center justify-between gap-3 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:text-slate-300 ${
+                      isGroupedOption
+                        ? 'ml-6 w-[calc(100%-1.5rem)] border-l border-dashed border-slate-200 px-3'
+                        : 'w-full px-4'
+                    } ${
+                      selected
+                        ? 'bg-[#EAF9FD] font-black text-slate-900 hover:bg-[#EAF9FD]'
+                        : 'bg-white font-bold text-slate-800 hover:bg-sky-50 hover:text-[#08AACE]'
+                    }`
+              }
             >
-              <span className="min-w-0 truncate">{option.label}</span>
-              {selected && <Check className="h-4 w-4 shrink-0 text-[#08AACE]" />}
+              {isGroup ? (
+                <>
+                  <ListTree className="h-3.5 w-3.5 shrink-0 text-[#08AACE]" />
+                  <span className="min-w-0 truncate">{option.label}</span>
+                  {typeof option.count === 'number' ? (
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] leading-none text-slate-400">
+                      {option.count}
+                    </span>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <span className="flex min-w-0 items-center gap-2">
+                    {isGroupedOption ? <FileText className="h-4 w-4 shrink-0 text-slate-300" /> : null}
+                    <span className="min-w-0 truncate">{option.label}</span>
+                    {hasMetaLabel ? (
+                      <span className="shrink-0 text-[11px] font-black text-slate-400">{option.metaLabel}</span>
+                    ) : null}
+                  </span>
+                  {selected && <Check className="h-4 w-4 shrink-0 text-[#08AACE]" />}
+                </>
+              )}
             </button>
           );
         })}
@@ -161,7 +199,9 @@ export function CombinedAiConfigSelect({
             }`}
           >
             <span className="min-w-0 truncate pl-4 pr-1 text-sm font-black text-slate-800">{modelDisplay}</span>
-            <ChevronDown className={`h-4 w-4 text-[#08AACE] transition-transform ${openSegment === 'model' ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`h-4 w-4 text-[#08AACE] transition-transform ${openSegment === 'model' ? 'rotate-180' : ''}`}
+            />
           </button>
           <span className="xy-combined-ai-config-label xy-border-embedded-transparent-backplate absolute left-3 top-0 z-10 -translate-y-1/2 font-black leading-none text-[#08AACE]">
             {modelLabel}
@@ -196,12 +236,16 @@ export function CombinedAiConfigSelect({
             }}
             className={`grid h-full w-full min-w-0 grid-cols-[minmax(0,1fr)_24px] items-center text-left transition-colors ${
               isPromptOpen ? 'rounded-tr-[10px] rounded-br-none' : 'rounded-r-[10px]'
-            } ${
-              promptDisabled ? 'cursor-default bg-slate-50 text-slate-400' : 'hover:bg-[#EAF9FD]'
-            }`}
+            } ${promptDisabled ? 'cursor-default bg-slate-50 text-slate-400' : 'hover:bg-[#EAF9FD]'}`}
           >
-            <span className={`min-w-0 truncate pl-4 pr-1 text-sm font-black ${promptDisabled ? 'text-slate-400' : 'text-slate-800'}`}>{promptDisplay}</span>
-            <ChevronDown className={`h-4 w-4 text-[#08AACE] transition-transform ${openSegment === 'prompt' ? 'rotate-180' : ''}`} />
+            <span
+              className={`min-w-0 truncate pl-4 pr-1 text-sm font-black ${promptDisabled ? 'text-slate-400' : 'text-slate-800'}`}
+            >
+              {promptDisplay}
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 text-[#08AACE] transition-transform ${openSegment === 'prompt' ? 'rotate-180' : ''}`}
+            />
           </button>
           <span className="xy-combined-ai-config-label xy-border-embedded-transparent-backplate absolute left-3 top-0 z-10 -translate-y-1/2 font-black leading-none text-[#08AACE]">
             {promptLabel}
@@ -222,16 +266,18 @@ export function CombinedAiConfigSelect({
         </div>
       </div>
       {renderDropdown()}
-      {hoverTooltip ? createPortal(
-        <div
-          role="tooltip"
-          className="pointer-events-none fixed z-[10060] -translate-x-1/2 -translate-y-full rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-bold text-white shadow-lg"
-          style={{ left: hoverTooltip.x, top: hoverTooltip.y }}
-        >
-          {hoverTooltip.text}
-        </div>,
-        document.body,
-      ) : null}
+      {hoverTooltip
+        ? createPortal(
+            <div
+              role="tooltip"
+              className="pointer-events-none fixed z-[10060] -translate-x-1/2 -translate-y-full rounded-lg bg-slate-950 px-2.5 py-1.5 text-xs font-bold text-white shadow-lg"
+              style={{ left: hoverTooltip.x, top: hoverTooltip.y }}
+            >
+              {hoverTooltip.text}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

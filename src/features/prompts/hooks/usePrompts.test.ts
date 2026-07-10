@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   AUDIT_PROMPT_SUBCATEGORIES,
+  BODY_PROMPT_CATEGORY,
   DEFAULT_PROMPT_CATEGORIES,
   DEFAULT_AUDIT_PROMPT_SUBCATEGORY,
   HOTSPOT_ANALYSIS_PROMPT_CATEGORY,
@@ -14,14 +15,13 @@ import {
   normalizePromptSubcategory,
 } from './usePrompts';
 
-const readUsePromptsSource = () => (
-  readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'usePrompts.ts'), 'utf8')
-);
+const readUsePromptsSource = () => readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'usePrompts.ts'), 'utf8');
 
 describe('usePrompts categories', () => {
   it('uses setting and chapter-outline prompt categories without plot chain', () => {
     expect(DEFAULT_PROMPT_CATEGORIES).toContain('设定');
     expect(DEFAULT_PROMPT_CATEGORIES).toContain('章纲');
+    expect(DEFAULT_PROMPT_CATEGORIES).toContain(BODY_PROMPT_CATEGORY);
     expect(DEFAULT_PROMPT_CATEGORIES).toContain(HOTSPOT_ANALYSIS_PROMPT_CATEGORY);
     expect(DEFAULT_PROMPT_CATEGORIES).toContain('综合点评');
     expect(DEFAULT_PROMPT_CATEGORIES).toContain('润色');
@@ -52,10 +52,11 @@ describe('usePrompts categories', () => {
   });
 
   it('keeps audit prompt subcategories normalized under audit only', () => {
-    expect(AUDIT_PROMPT_SUBCATEGORIES).toEqual(['结构审核', '文本审核']);
-    expect(DEFAULT_AUDIT_PROMPT_SUBCATEGORY).toBe('结构审核');
+    expect(AUDIT_PROMPT_SUBCATEGORIES).toEqual(['剧情审核', '文本审核']);
+    expect(DEFAULT_AUDIT_PROMPT_SUBCATEGORY).toBe('剧情审核');
     expect(normalizePromptSubcategory('审核', '文本审核')).toBe('文本审核');
-    expect(normalizePromptSubcategory('审核', '')).toBe('结构审核');
+    expect(normalizePromptSubcategory('审核', '结构审核')).toBe('剧情审核');
+    expect(normalizePromptSubcategory('审核', '')).toBe('剧情审核');
     expect(normalizePromptSubcategory('综合点评', '文本审核')).toBeUndefined();
   });
   it('supports batch prompt imports without repeatedly writing from stale prompt state', () => {

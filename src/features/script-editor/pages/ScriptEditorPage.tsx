@@ -25,11 +25,7 @@ import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
-import {
-  loadNavConfig,
-  normalizeNavConfig,
-  type NavGroupConfig,
-} from '@/shared/navigation/navConfig';
+import { loadNavConfig, normalizeNavConfig, type NavGroupConfig } from '@/shared/navigation/navConfig';
 
 type EditorMode = 'dual' | 'script' | 'browser';
 type AIResultAction = 'replace' | 'append' | 'setting' | 'outline' | 'plot';
@@ -101,14 +97,16 @@ function getVolumeChapterLabel(volumeName: string, chapter: Pick<Chapter, 'seria
 
 function normalizeEditorContent(text: string) {
   const lines = text.split('\n');
-  return lines.map((line, index) => {
-    const trimmed = line.trim();
-    if (!trimmed) return '';
-    if (index === 0 || lines[index - 1].trim() === '') {
-      return line.startsWith('　　') ? line : `　　${trimmed}`;
-    }
-    return trimmed;
-  }).join('\n');
+  return lines
+    .map((line, index) => {
+      const trimmed = line.trim();
+      if (!trimmed) return '';
+      if (index === 0 || lines[index - 1].trim() === '') {
+        return line.startsWith('　　') ? line : `　　${trimmed}`;
+      }
+      return trimmed;
+    })
+    .join('\n');
 }
 
 function AreaHeader({ label, extra }: { label: string; extra?: React.ReactNode }) {
@@ -292,7 +290,9 @@ function ScriptSidebar({
   onAddChapter: (volumeId: number) => void;
   onDeleteChapter: (volumeId: number, chapterId: number) => void;
 }) {
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; volumeId: number; chapterId: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; volumeId: number; chapterId: number } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -305,15 +305,11 @@ function ScriptSidebar({
     <aside className="flex shrink-0 flex-col overflow-hidden border-r border-gray-200 bg-white" style={{ width }}>
       <AreaHeader
         label="剧本目录"
-        extra={(
-          <button
-            onClick={onAddVolume}
-            className="xy-ui125-plus-button"
-            title="新增卷"
-          >
+        extra={
+          <button onClick={onAddVolume} className="xy-ui125-plus-button" title="新增卷">
             <Plus />
           </button>
-        )}
+        }
       />
       <div className="flex-1 space-y-1 overflow-y-auto p-2">
         {volumes.map((volume) => (
@@ -350,7 +346,12 @@ function ScriptSidebar({
                       onClick={() => onSelectChapter(volume.id, chapter.id)}
                       onContextMenu={(event) => {
                         event.preventDefault();
-                        setContextMenu({ x: event.clientX, y: event.clientY, volumeId: volume.id, chapterId: chapter.id });
+                        setContextMenu({
+                          x: event.clientX,
+                          y: event.clientY,
+                          volumeId: volume.id,
+                          chapterId: chapter.id,
+                        });
                       }}
                       className={`script-editor-chapter-item flex w-full items-center rounded px-2 py-1.5 text-xs transition-colors ${
                         selectedChapterId === chapter.id
@@ -359,7 +360,9 @@ function ScriptSidebar({
                       }`}
                     >
                       <span className="flex-1 truncate text-left">{getVolumeChapterLabel(volume.name, chapter)}</span>
-                      <span className={`ml-1 shrink-0 text-[10px] ${selectedChapterId === chapter.id ? 'text-orange-400' : 'text-gray-400'}`}>
+                      <span
+                        className={`ml-1 shrink-0 text-[10px] ${selectedChapterId === chapter.id ? 'text-orange-400' : 'text-gray-400'}`}
+                      >
                         {chapter.wordCount || 0}字
                       </span>
                     </button>
@@ -393,7 +396,11 @@ function ScriptSidebar({
 }
 
 function groupChapters(chapters: Array<{ id: number; serialNumber: number; title: string }>) {
-  const groups: Array<{ index: number; label: string; chapters: Array<{ id: number; serialNumber: number; title: string }> }> = [];
+  const groups: Array<{
+    index: number;
+    label: string;
+    chapters: Array<{ id: number; serialNumber: number; title: string }>;
+  }> = [];
   for (let i = 0; i < chapters.length; i += GROUP_SIZE) {
     const slice = chapters.slice(i, i + GROUP_SIZE);
     groups.push({
@@ -416,13 +423,19 @@ function NovelSidebar({
   selectedChapterId: number | null;
   onSelectChapter: (chapterId: number) => void;
 }) {
-  const chapters = useMemo(() => linkedVolumes
-    .flatMap((volume) => volume.chapters.map((chapter) => ({
-      id: chapter.id,
-      serialNumber: chapter.serialNumber,
-      title: chapter.title,
-    })))
-    .sort((a, b) => a.serialNumber - b.serialNumber), [linkedVolumes]);
+  const chapters = useMemo(
+    () =>
+      linkedVolumes
+        .flatMap((volume) =>
+          volume.chapters.map((chapter) => ({
+            id: chapter.id,
+            serialNumber: chapter.serialNumber,
+            title: chapter.title,
+          })),
+        )
+        .sort((a, b) => a.serialNumber - b.serialNumber),
+    [linkedVolumes],
+  );
   const groups = useMemo(() => groupChapters(chapters), [chapters]);
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set([1]));
 
@@ -432,7 +445,10 @@ function NovelSidebar({
 
   return (
     <aside className="flex min-w-[150px] flex-1 flex-col overflow-hidden border-l border-gray-200 bg-white">
-      <AreaHeader label="小说目录" extra={!linkedNovel ? <span className="text-xs text-gray-400">未关联小说</span> : undefined} />
+      <AreaHeader
+        label="小说目录"
+        extra={!linkedNovel ? <span className="text-xs text-gray-400">未关联小说</span> : undefined}
+      />
       <div className="flex-1 space-y-1 overflow-y-auto p-2">
         {!linkedNovel ? (
           <div className="h-full" />
@@ -509,7 +525,9 @@ function ScriptEditorArea({
   onRenameChapter: (title: string) => void;
   onDeleteChapter: () => void;
 }) {
-  const [fontSize, setFontSize] = useState(() => Number(localStorage.getItem('xinyuexia_script_editor_font_size') ?? 16));
+  const [fontSize, setFontSize] = useState(() =>
+    Number(localStorage.getItem('xinyuexia_script_editor_font_size') ?? 16),
+  );
   const [isFindOpen, setIsFindOpen] = useState(false);
   const [findText, setFindText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -520,7 +538,15 @@ function ScriptEditorArea({
 
   useEffect(() => {
     const handleFindShortcut = (event: KeyboardEvent) => {
-      if (!chapter || event.key.toLowerCase() !== 'f' || !event.ctrlKey || event.shiftKey || event.altKey || event.metaKey) return;
+      if (
+        !chapter ||
+        event.key.toLowerCase() !== 'f' ||
+        !event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey ||
+        event.metaKey
+      )
+        return;
       event.preventDefault();
       event.stopPropagation();
       setIsFindOpen(true);
@@ -594,15 +620,17 @@ function ScriptEditorArea({
     <section className="flex min-w-0 flex-col overflow-hidden bg-white" style={{ width }}>
       <AreaHeader
         label="剧本编辑区"
-        extra={showAiToggle ? (
-          <button
-            onClick={onToggleAI}
-            className="flex items-center gap-1.5 rounded-md bg-brand px-3 py-1 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
-          >
-            {aiCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
-            <span>{aiCollapsed ? '展开 AI' : '收起 AI'}</span>
-          </button>
-        ) : undefined}
+        extra={
+          showAiToggle ? (
+            <button
+              onClick={onToggleAI}
+              className="flex items-center gap-1.5 rounded-md bg-brand px-3 py-1 text-sm font-semibold text-white transition-colors hover:bg-brand-dark"
+            >
+              {aiCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+              <span>{aiCollapsed ? '展开 AI' : '收起 AI'}</span>
+            </button>
+          ) : undefined
+        }
       />
       <div className="flex h-10 shrink-0 items-center gap-2 border-b border-gray-100 bg-white px-3">
         <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">{volumeName || '-'}</span>
@@ -615,13 +643,7 @@ function ScriptEditorArea({
         <span className="text-xs text-gray-400">{countText(content)} 字</span>
       </div>
       <div className="flex h-8 shrink-0 items-center gap-1 border-b border-gray-100 px-3">
-        <FontSizeStepper
-          value={fontSize}
-          min={12}
-          max={24}
-          onChange={setFontSize}
-          ariaLabel="剧本编辑器字号"
-        />
+        <FontSizeStepper value={fontSize} min={12} max={24} onChange={setFontSize} ariaLabel="剧本编辑器字号" />
         <button
           onClick={() => onChangeContent(normalizeEditorContent(content))}
           className="rounded border border-brand px-2 py-0.5 text-xs text-brand transition-colors hover:bg-brand-light"
@@ -653,8 +675,15 @@ function ScriptEditorArea({
               placeholder="查找"
               className="h-8 w-40 rounded-lg border border-gray-200 px-2 text-xs outline-none focus:border-brand"
             />
-            <button onClick={findNext} className="rounded-lg bg-brand px-3 py-1.5 text-xs text-white">查找</button>
-            <button onClick={() => setIsFindOpen(false)} className="rounded-lg px-2 py-1.5 text-xs text-gray-400 hover:bg-gray-100">关闭</button>
+            <button onClick={findNext} className="rounded-lg bg-brand px-3 py-1.5 text-xs text-white">
+              查找
+            </button>
+            <button
+              onClick={() => setIsFindOpen(false)}
+              className="rounded-lg px-2 py-1.5 text-xs text-gray-400 hover:bg-gray-100"
+            >
+              关闭
+            </button>
           </div>
         )}
         <textarea
@@ -731,17 +760,19 @@ function NovelPreviewArea({
     <section className="flex shrink-0 flex-col overflow-hidden border-l border-gray-200 bg-white" style={{ width }}>
       <AreaHeader
         label="小说预览区"
-        extra={linkedNovel && selectedChapter ? (
-          <div className="flex items-center gap-2">
-            {saveStatus && <span className="text-xs font-medium text-brand">{saveStatus}</span>}
-            <button
-              onClick={isEditing ? handleSave : () => setIsEditing(true)}
-              className="rounded-md bg-brand px-3 py-1 text-xs font-bold text-white hover:bg-brand-dark"
-            >
-              {isEditing ? '保存' : '编辑'}
-            </button>
-          </div>
-        ) : undefined}
+        extra={
+          linkedNovel && selectedChapter ? (
+            <div className="flex items-center gap-2">
+              {saveStatus && <span className="text-xs font-medium text-brand">{saveStatus}</span>}
+              <button
+                onClick={isEditing ? handleSave : () => setIsEditing(true)}
+                className="rounded-md bg-brand px-3 py-1 text-xs font-bold text-white hover:bg-brand-dark"
+              >
+                {isEditing ? '保存' : '编辑'}
+              </button>
+            </div>
+          ) : undefined
+        }
       />
       {!linkedNovel ? (
         <div className="flex-1" />
@@ -777,7 +808,8 @@ function NovelPreviewArea({
             )}
           </div>
           <div className="flex h-9 shrink-0 items-center border-t border-gray-100 bg-white px-3 text-xs text-gray-400">
-            字数 <span className="ml-1 font-medium text-brand">{countText(isEditing ? draftContent : previewContent)}</span>
+            字数{' '}
+            <span className="ml-1 font-medium text-brand">{countText(isEditing ? draftContent : previewContent)}</span>
           </div>
         </>
       )}
@@ -835,6 +867,7 @@ function MaterialSidebar({
 }) {
   const [filterType, setFilterType] = useState<MaterialFilterType>('novel');
   const [expandedNovelIds, setExpandedNovelIds] = useState<Set<number>>(new Set());
+  const initializedExpandedNovelIdsRef = useRef<Set<number>>(new Set());
 
   const filteredMaterials = useMemo(
     () => (filterType === 'all' ? materials : materials.filter((item) => item.type === filterType)),
@@ -855,9 +888,20 @@ function MaterialSidebar({
     });
     return Array.from(grouped.values()).map((group) => ({
       ...group,
-      materials: [...group.materials].sort((a, b) => (a.chapterSerial ?? Number.MAX_SAFE_INTEGER) - (b.chapterSerial ?? Number.MAX_SAFE_INTEGER)),
+      materials: [...group.materials].sort(
+        (a, b) => (a.chapterSerial ?? Number.MAX_SAFE_INTEGER) - (b.chapterSerial ?? Number.MAX_SAFE_INTEGER),
+      ),
     }));
   }, [filteredMaterials]);
+
+  useEffect(() => {
+    const nextNovelIds = groups
+      .map((group) => group.novelId)
+      .filter((novelId) => !initializedExpandedNovelIdsRef.current.has(novelId));
+    if (nextNovelIds.length === 0) return;
+    nextNovelIds.forEach((novelId) => initializedExpandedNovelIdsRef.current.add(novelId));
+    setExpandedNovelIds((prev) => new Set([...prev, ...nextNovelIds]));
+  }, [groups]);
 
   const filterButtons: Array<{ key: MaterialFilterType; label: string; icon: React.ReactNode }> = [
     { key: 'novel', label: '小说', icon: <BookOpen className="h-3.5 w-3.5" /> },
@@ -926,7 +970,11 @@ function MaterialSidebar({
                         <p className="line-clamp-2 text-xs leading-5 text-gray-700">{material.content}</p>
                         <div className="mt-2 flex items-center justify-between text-[10px] text-gray-400">
                           <span>
-                            {material.chapterSerial ? `第${material.chapterSerial}章` : material.type === 'script' ? '剧本资料' : '小说资料'}
+                            {material.chapterSerial
+                              ? `第${material.chapterSerial}章`
+                              : material.type === 'script'
+                                ? '剧本资料'
+                                : '小说资料'}
                           </span>
                           <span>{new Date(material.updatedAt).toLocaleDateString('zh-CN')}</span>
                         </div>
@@ -968,16 +1016,22 @@ export function ScriptEditorPage() {
   const [isQuickNavOpen, setIsQuickNavOpen] = useState(false);
   const [quickNavConfig] = useState<NavGroupConfig[]>(() => normalizeNavConfig(loadNavConfig()));
 
-  const [editorMode, setEditorMode] = useState<EditorMode>(() => (
-    (localStorage.getItem(EDITOR_MODE_KEY) as EditorMode) || 'dual'
-  ));
+  const [editorMode, setEditorMode] = useState<EditorMode>(
+    () => (localStorage.getItem(EDITOR_MODE_KEY) as EditorMode) || 'dual',
+  );
   const [aiCollapsed, setAiCollapsed] = useState<boolean>(() => readStoredJson(AI_COLLAPSED_KEYS[editorMode], false));
   const [linkedNovelId, setLinkedNovelId] = useState<number | null>(() => readLinkedNovelStorage());
   const [selectedNovelChapterId, setSelectedNovelChapterId] = useState<number | null>(null);
   const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
-  const [deleteChapterTarget, setDeleteChapterTarget] = useState<{ volumeId: number; chapterId: number; title: string } | null>(null);
-  const [colWidths, setColWidths] = useState<Record<string, number>>(() => readStoredJson(WIDTH_STORAGE_KEYS[editorMode], {}));
+  const [deleteChapterTarget, setDeleteChapterTarget] = useState<{
+    volumeId: number;
+    chapterId: number;
+    title: string;
+  } | null>(null);
+  const [colWidths, setColWidths] = useState<Record<string, number>>(() =>
+    readStoredJson(WIDTH_STORAGE_KEYS[editorMode], {}),
+  );
 
   const dragRef = useRef<{
     leftKey: string;
@@ -1033,9 +1087,13 @@ export function ScriptEditorPage() {
       setSelectedNovelChapterId(null);
       return;
     }
-    const hasSelected = linkedNovelVolumes.some((volume) => volume.chapters.some((chapter) => chapter.id === selectedNovelChapterId));
+    const hasSelected = linkedNovelVolumes.some((volume) =>
+      volume.chapters.some((chapter) => chapter.id === selectedNovelChapterId),
+    );
     if (hasSelected) return;
-    const firstChapter = linkedNovelVolumes.flatMap((volume) => volume.chapters).sort((a, b) => a.serialNumber - b.serialNumber)[0];
+    const firstChapter = linkedNovelVolumes
+      .flatMap((volume) => volume.chapters)
+      .sort((a, b) => a.serialNumber - b.serialNumber)[0];
     setSelectedNovelChapterId(firstChapter?.id ?? null);
   }, [linkedNovel, linkedNovelVolumes, selectedNovelChapterId]);
 
@@ -1103,51 +1161,57 @@ export function ScriptEditorPage() {
     };
   }, [aiCollapsed, colWidths, editorMode]);
 
-  const persistWidths = useCallback((next: Record<string, number>) => {
-    setColWidths(next);
-    localStorage.setItem(WIDTH_STORAGE_KEYS[editorMode], JSON.stringify(next));
-  }, [editorMode]);
+  const persistWidths = useCallback(
+    (next: Record<string, number>) => {
+      setColWidths(next);
+      localStorage.setItem(WIDTH_STORAGE_KEYS[editorMode], JSON.stringify(next));
+    },
+    [editorMode],
+  );
 
-  const startResize = useCallback((leftKey: string, rightKey: string, event: ReactMouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    dragRef.current = {
-      leftKey,
-      rightKey,
-      startX: event.clientX,
-      startWidths: { ...widths },
-    };
+  const startResize = useCallback(
+    (leftKey: string, rightKey: string, event: ReactMouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      dragRef.current = {
+        leftKey,
+        rightKey,
+        startX: event.clientX,
+        startWidths: { ...widths },
+      };
 
-    const handleMove = (moveEvent: MouseEvent) => {
-      if (!dragRef.current) return;
-      const { leftKey: currentLeftKey, rightKey: currentRightKey, startX, startWidths } = dragRef.current;
-      const delta = moveEvent.clientX - startX;
-      const nextLeft = Math.max(MIN_WIDTH, startWidths[currentLeftKey] + delta);
-      if (currentRightKey === '__flex') {
-        persistWidths({ ...startWidths, [currentLeftKey]: nextLeft });
-        return;
-      }
-      const nextRight = Math.max(MIN_WIDTH, startWidths[currentRightKey] - delta);
-      persistWidths({
-        ...startWidths,
-        [currentLeftKey]: nextLeft,
-        [currentRightKey]: nextRight,
-      });
-    };
+      const handleMove = (moveEvent: MouseEvent) => {
+        if (!dragRef.current) return;
+        const { leftKey: currentLeftKey, rightKey: currentRightKey, startX, startWidths } = dragRef.current;
+        const delta = moveEvent.clientX - startX;
+        const nextLeft = Math.max(MIN_WIDTH, startWidths[currentLeftKey] + delta);
+        if (currentRightKey === '__flex') {
+          persistWidths({ ...startWidths, [currentLeftKey]: nextLeft });
+          return;
+        }
+        const nextRight = Math.max(MIN_WIDTH, startWidths[currentRightKey] - delta);
+        persistWidths({
+          ...startWidths,
+          [currentLeftKey]: nextLeft,
+          [currentRightKey]: nextRight,
+        });
+      };
 
-    const handleUp = () => {
-      dragRef.current = null;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleUp);
-    };
+      const handleUp = () => {
+        dragRef.current = null;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        window.removeEventListener('mousemove', handleMove);
+        window.removeEventListener('mouseup', handleUp);
+      };
 
-    document.body.style.cursor = 'ew-resize';
-    document.body.style.userSelect = 'none';
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleUp);
-  }, [persistWidths, widths]);
+      document.body.style.cursor = 'ew-resize';
+      document.body.style.userSelect = 'none';
+      window.addEventListener('mousemove', handleMove);
+      window.addEventListener('mouseup', handleUp);
+    },
+    [persistWidths, widths],
+  );
 
   const handleToggleAI = useCallback(() => {
     setAiCollapsed((prev) => {
@@ -1157,42 +1221,47 @@ export function ScriptEditorPage() {
     });
   }, [editorMode]);
 
-  const handleApplyAIResult = useCallback((action: AIResultAction, content: string) => {
-    if (!currentScript) return;
-    if (action === 'replace') {
-      saveContent(content);
-      return;
-    }
-    if (action === 'append') {
-      saveContent(editorContent.trim() ? `${editorContent}\n\n${content}` : content);
-      return;
-    }
-    if (action === 'setting') {
-      addWorkbenchLibraryEntry(
-        `xinyuexia_workbench_settings_${currentScript.id}`,
-        '设定',
-        `AI设定-${selectedScriptChapter?.title || currentScript.title}`,
-        content,
-      );
-      return;
-    }
-    if (action === 'outline') {
-      addWorkbenchLibraryEntry(
-        `xinyuexia_workbench_outline_${currentScript.id}`,
-        '章节梗概',
-        `AI梗概-${selectedScriptChapter?.title || currentScript.title}`,
-        content,
-      );
-      return;
-    }
-    savePlotItems([{
-      title: `AI剧情-${selectedScriptChapter?.title || currentScript.title}`,
-      chapter: selectedScriptChapter?.title || '未选择章节',
-      novelTitle: currentScript.title,
-      content,
-      tags: ['AI助手'],
-    }]);
-  }, [currentScript, editorContent, saveContent, selectedScriptChapter]);
+  const handleApplyAIResult = useCallback(
+    (action: AIResultAction, content: string) => {
+      if (!currentScript) return;
+      if (action === 'replace') {
+        saveContent(content);
+        return;
+      }
+      if (action === 'append') {
+        saveContent(editorContent.trim() ? `${editorContent}\n\n${content}` : content);
+        return;
+      }
+      if (action === 'setting') {
+        addWorkbenchLibraryEntry(
+          `xinyuexia_workbench_settings_${currentScript.id}`,
+          '设定',
+          `AI设定-${selectedScriptChapter?.title || currentScript.title}`,
+          content,
+        );
+        return;
+      }
+      if (action === 'outline') {
+        addWorkbenchLibraryEntry(
+          `xinyuexia_workbench_outline_${currentScript.id}`,
+          '章节梗概',
+          `AI梗概-${selectedScriptChapter?.title || currentScript.title}`,
+          content,
+        );
+        return;
+      }
+      savePlotItems([
+        {
+          title: `AI剧情-${selectedScriptChapter?.title || currentScript.title}`,
+          chapter: selectedScriptChapter?.title || '未选择章节',
+          novelTitle: currentScript.title,
+          content,
+          tags: ['AI助手'],
+        },
+      ]);
+    },
+    [currentScript, editorContent, saveContent, selectedScriptChapter],
+  );
 
   useEffect(() => {
     const handleShortcut = (event: Event) => {
@@ -1330,10 +1399,27 @@ export function ScriptEditorPage() {
         />
 
         <>
-          <ResizeHandle onMouseDown={(event) => startResize('sEdit', aiCollapsed ? (editorMode === 'dual' ? 'nPreview' : editorMode === 'script' ? 'mPreview' : '__flex') : 'ai', event)} />
+          <ResizeHandle
+            onMouseDown={(event) =>
+              startResize(
+                'sEdit',
+                aiCollapsed
+                  ? editorMode === 'dual'
+                    ? 'nPreview'
+                    : editorMode === 'script'
+                      ? 'mPreview'
+                      : '__flex'
+                  : 'ai',
+                event,
+              )
+            }
+          />
           {!aiCollapsed && (
             <>
-              <aside className="shrink-0 overflow-hidden border-l border-gray-200 bg-white" style={{ width: widths.ai }}>
+              <aside
+                className="shrink-0 overflow-hidden border-l border-gray-200 bg-white"
+                style={{ width: widths.ai }}
+              >
                 <WorkbenchAIPanel
                   activeTool="ai"
                   workId={`script-${currentScript.id}`}
@@ -1343,7 +1429,15 @@ export function ScriptEditorPage() {
                   onReplaceContent={saveContent}
                 />
               </aside>
-              <ResizeHandle onMouseDown={(event) => startResize('ai', editorMode === 'dual' ? 'nPreview' : editorMode === 'script' ? 'mPreview' : '__flex', event)} />
+              <ResizeHandle
+                onMouseDown={(event) =>
+                  startResize(
+                    'ai',
+                    editorMode === 'dual' ? 'nPreview' : editorMode === 'script' ? 'mPreview' : '__flex',
+                    event,
+                  )
+                }
+              />
             </>
           )}
         </>
@@ -1381,9 +1475,7 @@ export function ScriptEditorPage() {
           </>
         )}
 
-        {editorMode === 'browser' && (
-          <BrowserWorkspace width={widths.browserPane} />
-        )}
+        {editorMode === 'browser' && <BrowserWorkspace width={widths.browserPane} />}
       </div>
 
       <LinkNovelModal

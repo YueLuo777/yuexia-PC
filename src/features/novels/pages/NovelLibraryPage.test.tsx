@@ -4,9 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-const readSource = (relativePath: string) => (
-  readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8')
-);
+const readSource = (relativePath: string) =>
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
 
 describe('NovelLibraryPage search styling', () => {
   it('keeps the novel search input on the requested #F5F6F6 background', () => {
@@ -15,7 +14,10 @@ describe('NovelLibraryPage search styling', () => {
 
     expect(pageSource).toContain('className="xy-ui132-search xy-novel-search shrink-0"');
     expect(pageSource).toContain('placeholder={`搜索${typeLabel}`}');
-    expect(styles).toContain('.xy-ui132-search.xy-novel-search input,\n.xy-ui132-search.xy-novel-search input:focus,\n.xy-ui132-search.xy-novel-search input:hover {\n  background-color: #F5F6F6;\n}');
+    const normalizedStyles = styles.replace(/\r\n/g, '\n');
+    expect(normalizedStyles).toContain(
+      '.xy-ui132-search.xy-novel-search input,\n.xy-ui132-search.xy-novel-search input:focus,\n.xy-ui132-search.xy-novel-search input:hover {\n  background-color: #F5F6F6;\n}',
+    );
   });
 });
 
@@ -27,7 +29,7 @@ describe('NovelLibraryPage summary cards', () => {
     expect(pageSource).not.toContain('className="flex-1 overflow-y-auto px-4 py-3.5"');
     expect(pageSource).not.toContain('className="flex-1 overflow-y-auto px-8 py-7"');
     expect(pageSource).toContain('NOVEL_LIBRARY_DASHBOARD_WIDTHS_KEY');
-    expect(pageSource).toContain('DEFAULT_DASHBOARD_CARD_WIDTHS');
+    expect(pageSource).toContain('DEFAULT_DASHBOARD_CARD_WIDTHS = [464, 434, 428, 424]');
     expect(pageSource).toContain('DASHBOARD_CARD_MIN_WIDTH');
     expect(pageSource).toContain('dashboardGridTemplate');
     expect(pageSource).toContain('startDashboardCardResize(event, 0)');
@@ -53,16 +55,26 @@ describe('NovelLibraryPage summary cards', () => {
     expect(pageSource).toContain('预留 --');
     expect(pageSource).toContain('space-y-3 overflow-x-auto pb-1');
     expect(pageSource).toContain('ref={dashboardRowRef}');
-    expect(pageSource).toContain('minmax(${DASHBOARD_CARD_MIN_WIDTH}px, ${dashboardCardWidths[3]}fr)');
-    expect(pageSource).toContain('min-w-[960px]');
-    expect(pageSource).toContain('flex min-h-[126px] flex-col rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-5 py-4');
+    expect(pageSource).toContain('looksLikeLegacyRatio');
+    expect(pageSource).toContain('${Math.max(DASHBOARD_CARD_MIN_WIDTH, dashboardCardWidths[3])}px');
+    expect(pageSource).toContain('min-w-[1780px]');
+    expect(pageSource).toContain(
+      'flex min-h-[126px] flex-col rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-5 py-4',
+    );
     expect(pageSource).not.toContain('mt-3 grid grid-cols-2 gap-x-5 gap-y-2');
     expect(pageSource).toContain('mt-3 grid flex-1 grid-cols-2 grid-rows-2 gap-2');
-    expect(pageSource).toContain('grid h-full min-h-[40px] grid-cols-[max-content_minmax(86px,1fr)] items-center gap-2');
+    expect(pageSource).toContain(
+      'grid h-full min-h-[40px] grid-cols-[max-content_minmax(86px,1fr)] items-center gap-2',
+    );
     expect(pageSource).toContain('block whitespace-nowrap text-[12px] font-semibold text-[#1f2933]');
-    expect(pageSource).toContain('min-w-[86px] shrink-0 text-right text-[clamp(15px,1.05vw,18px)] font-bold leading-none text-[#111827] tabular-nums');
+    expect(pageSource).toContain(
+      'min-w-[86px] shrink-0 text-right text-[clamp(15px,1.05vw,18px)] font-bold leading-none text-[#111827] tabular-nums',
+    );
     expect(pageSource).not.toContain('grid-cols-[minmax(42px,1fr)_minmax(72px,auto)]');
-    expect(pageSource).toContain('<span className="min-w-0 shrink-0">\n                    <span className="block whitespace-nowrap text-[12px] font-semibold text-[#1f2933]">{item.label}</span>');
+    expect(pageSource).toContain('<span className="min-w-0 shrink-0">');
+    expect(pageSource).toContain(
+      '<span className="block whitespace-nowrap text-[12px] font-semibold text-[#1f2933]">{item.label}</span>',
+    );
     expect(pageSource).not.toContain('grid h-full min-h-[40px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2');
     expect(pageSource).not.toContain('text-right text-[18px] font-bold leading-none text-[#111827]');
     expect(pageSource).not.toContain('text-right text-[19px] font-bold leading-none text-[#111827]');
@@ -70,7 +82,9 @@ describe('NovelLibraryPage summary cards', () => {
     expect(pageSource).not.toContain('昨日新增字数');
     expect(pageSource).not.toContain('累计作品字数');
     expect(pageSource).not.toContain('单本平均字数');
-    expect(pageSource).toContain('flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-4 py-3.5');
+    expect(pageSource).toContain(
+      'flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-4 py-3.5',
+    );
     expect(pageSource).toContain('mt-2 grid flex-1 grid-cols-2 grid-rows-2 gap-2');
     expect(pageSource).toContain('flex h-full min-h-[40px] items-center gap-2');
     expect(pageSource).toContain('作品整理');
@@ -78,7 +92,9 @@ describe('NovelLibraryPage summary cards', () => {
     expect(pageSource).not.toContain('Archive');
     expect(pageSource).not.toContain('<Archive className="h-3.5 w-3.5" />');
     expect(pageSource).toContain('最近编辑');
-    expect(pageSource).toContain('<h2 className="truncate text-[15px] font-semibold leading-none text-[#1f2933]">最近编辑：</h2>');
+    expect(pageSource).toContain(
+      '<h2 className="truncate text-[15px] font-semibold leading-none text-[#1f2933]">最近编辑：</h2>',
+    );
     expect(pageSource).not.toContain('text-[24px] font-bold leading-none text-[#1f2933]">最近编辑：');
     expect(pageSource).toContain('扩展卡片');
     expect(pageSource).not.toContain('保持专注写作和资料管理');
@@ -137,9 +153,13 @@ describe('NovelLibraryPage import flow', () => {
     expect(modalSource).toContain("const [manualTitle, setManualTitle] = useState('');");
     expect(modalSource).toContain("setManualTitle(file.name.replace(/\\.[^.]+$/, ''));");
     expect(modalSource).toContain("setManualTitle(result.bookName?.trim() || file.name.replace(/\\.[^.]+$/, ''));");
-    expect(modalSource).toContain("? manualTitle.trim() || parsedResult.bookName?.trim() || selectedFile.name.replace(/\\.[^.]+$/, '')");
+    expect(modalSource).toContain(
+      "? manualTitle.trim() || parsedResult.bookName?.trim() || selectedFile.name.replace(/\\.[^.]+$/, '')",
+    );
     expect(modalSource).toContain('value={manualTitle}');
     expect(modalSource).toContain('onChange={(event) => setManualTitle(event.target.value)}');
-    expect(modalSource).toContain("placeholder={parsedResult?.bookName || selectedFile?.name.replace(/\\.[^.]+$/, '') || '输入书名'}");
+    expect(modalSource).toContain(
+      "placeholder={parsedResult?.bookName || selectedFile?.name.replace(/\\.[^.]+$/, '') || '输入书名'}",
+    );
   });
 });

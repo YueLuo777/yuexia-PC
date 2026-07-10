@@ -1,5 +1,13 @@
 ﻿import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -9,12 +17,16 @@ import { ChapterSidebar } from '@/features/workbench/components/ChapterSidebar';
 import { ModelManagePage } from '@/features/models/pages/ModelManagePage';
 import { PublishedSidebar } from '@/features/workbench/components/PublishedSidebar';
 import { PromptsPage } from '@/features/prompts/pages/PromptsPage';
-import { WorkbenchAIPanel, type WorkbenchLinkedContextItem, type WorkbenchLinkedContextSource } from '@/features/workbench/components/WorkbenchAIPanel';
+import {
+  WorkbenchAIPanel,
+  type WorkbenchLinkedContextItem,
+  type WorkbenchLinkedContextSource,
+} from '@/features/workbench/components/WorkbenchAIPanel';
 import { WorkbenchHeader, type WorkbenchHeaderFlowStats } from '@/features/workbench/components/WorkbenchHeader';
 import { WorkbenchLibraryPanel } from '@/features/workbench/components/WorkbenchLibraryPanel';
 import { WorkbenchModal } from '@/features/workbench/components/WorkbenchModal';
 import { WorkbenchNavigationWidthToggle } from '@/features/workbench/components/WorkbenchNavigationWidthToggle';
-import { WORKBENCH_MANAGEMENT_MODAL_SIZE_CLASS } from '@/features/workbench/components/workbenchManagementModalSize';
+import { WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS } from '@/features/workbench/components/workbenchManagementModalSize';
 import { readChapterContent, useWorkbenchData } from '@/features/workbench/hooks/useWorkbenchData';
 import {
   WORKBENCH_HEADER_FLOW_ITEMS,
@@ -142,7 +154,16 @@ const CONTEXT_SETTING_TYPE_ORDER = [
   '其他设定',
   '未分类',
 ];
-const CONTEXT_ROLE_TYPE_ORDER = ['男主角', '女主角', '重要正派角色', '正派配角', '重要反派角色', '反派配角', '龙套角色', '未分类'];
+const CONTEXT_ROLE_TYPE_ORDER = [
+  '男主角',
+  '女主角',
+  '重要正派角色',
+  '正派配角',
+  '重要反派角色',
+  '反派配角',
+  '龙套角色',
+  '未分类',
+];
 
 const PUBLISH_CONFIRM_KEY = 'xinyuexia_workbench_publish_confirm';
 const GLOBAL_NOTES_KEY = 'xinyuexia_workbench_notes';
@@ -155,7 +176,10 @@ const APP_SCALE_BASE = 1.1;
 const APP_SCALE_STORAGE_VERSION = '2';
 const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
 
-function readWorkbenchLibrarySnapshots(settingsStorageKey: string, outlineStorageKey: string): WorkbenchLibrarySnapshots {
+function readWorkbenchLibrarySnapshots(
+  settingsStorageKey: string,
+  outlineStorageKey: string,
+): WorkbenchLibrarySnapshots {
   if (!settingsStorageKey || !outlineStorageKey) {
     return {
       settingsEntries: [],
@@ -168,17 +192,26 @@ function readWorkbenchLibrarySnapshots(settingsStorageKey: string, outlineStorag
   };
 }
 
-function shouldSyncWorkbenchLibrarySnapshot(eventKey: string | null | undefined, settingsStorageKey: string, outlineStorageKey: string) {
+function shouldSyncWorkbenchLibrarySnapshot(
+  eventKey: string | null | undefined,
+  settingsStorageKey: string,
+  outlineStorageKey: string,
+) {
   if (!eventKey) return true;
-  return eventKey === settingsStorageKey
-    || eventKey === outlineStorageKey
-    || eventKey === GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY;
+  return (
+    eventKey === settingsStorageKey ||
+    eventKey === outlineStorageKey ||
+    eventKey === GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY
+  );
 }
 
-function useWorkbenchLibrarySnapshots(settingsStorageKey: string, outlineStorageKey: string): WorkbenchLibrarySnapshots {
-  const [snapshots, setSnapshots] = useState<WorkbenchLibrarySnapshots>(() => (
-    readWorkbenchLibrarySnapshots(settingsStorageKey, outlineStorageKey)
-  ));
+function useWorkbenchLibrarySnapshots(
+  settingsStorageKey: string,
+  outlineStorageKey: string,
+): WorkbenchLibrarySnapshots {
+  const [snapshots, setSnapshots] = useState<WorkbenchLibrarySnapshots>(() =>
+    readWorkbenchLibrarySnapshots(settingsStorageKey, outlineStorageKey),
+  );
 
   useEffect(() => {
     const syncSnapshots = () => {
@@ -248,9 +281,14 @@ function normalizeChapterSidebarWidth(value: number) {
 
 function readWorkbenchChapterSidebarWidth() {
   if (readSharedWorkbenchLeftNavWidthEnabled()) {
-    return normalizeChapterSidebarWidth(readSharedWorkbenchLeftNavWidth(getChapterSidebarMaxWidth(), CHAPTER_SIDEBAR_MIN_WIDTH));
+    return normalizeChapterSidebarWidth(
+      readSharedWorkbenchLeftNavWidth(getChapterSidebarMaxWidth(), CHAPTER_SIDEBAR_MIN_WIDTH),
+    );
   }
-  const saved = Number.parseInt(localStorage.getItem('xinyuexia_chapter_sidebar_width') ?? String(CHAPTER_SIDEBAR_DEFAULT_WIDTH), 10);
+  const saved = Number.parseInt(
+    localStorage.getItem('xinyuexia_chapter_sidebar_width') ?? String(CHAPTER_SIDEBAR_DEFAULT_WIDTH),
+    10,
+  );
   return normalizeChapterSidebarWidth(saved);
 }
 
@@ -274,7 +312,10 @@ function findOccurrences(text: string, search: string) {
   return result;
 }
 
-function getChapterExportTitle(item: Pick<ChapterExportItem, 'serialNumber' | 'title'>, workType: WorkbenchNovel['type']) {
+function getChapterExportTitle(
+  item: Pick<ChapterExportItem, 'serialNumber' | 'title'>,
+  workType: WorkbenchNovel['type'],
+) {
   const chapterUnit = workType === 'script' ? '集' : '章';
   return `第${item.serialNumber}${chapterUnit}${item.title ? ` ${item.title}` : ''}`;
 }
@@ -284,14 +325,14 @@ function sanitizeExportFileName(fileName: string) {
 }
 
 function escapeDocHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-export function buildChapterExportText(novelTitle: string, workType: WorkbenchNovel['type'], items: ChapterExportItem[]) {
+export function buildChapterExportText(
+  novelTitle: string,
+  workType: WorkbenchNovel['type'],
+  items: ChapterExportItem[],
+) {
   const lines: string[] = [`《${novelTitle}》`, ''];
   let currentVolumeId: number | null = null;
 
@@ -305,7 +346,10 @@ export function buildChapterExportText(novelTitle: string, workType: WorkbenchNo
     lines.push('');
   });
 
-  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd();
+  return lines
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trimEnd();
 }
 
 function buildChapterExportDoc(novelTitle: string, workType: WorkbenchNovel['type'], items: ChapterExportItem[]) {
@@ -401,10 +445,7 @@ function getPreferredChapterNarrativeItem(row: ContextChapterPair) {
   return null;
 }
 
-function keepExclusiveChapterNarrativeItems(
-  rows: ContextChapterPair[],
-  items: WorkbenchLinkedContextItem[],
-) {
+function keepExclusiveChapterNarrativeItems(rows: ContextChapterPair[], items: WorkbenchLinkedContextItem[]) {
   const ids = new Set(items.map((item) => item.id));
   rows.forEach((row) => {
     if (!row.summaryItem) return;
@@ -416,13 +457,7 @@ function keepExclusiveChapterNarrativeItems(
   return items.filter((item) => ids.has(item.id));
 }
 
-function ContextSourceWordStatus({
-  label,
-  value,
-}: {
-  label: string;
-  value: number;
-}) {
+function ContextSourceWordStatus({ label, value }: { label: string; value: number }) {
   if (value <= 0) {
     return <span className="font-black text-red-500">无{label}</span>;
   }
@@ -449,12 +484,15 @@ function ContextSourceRowWordStatus({
   return (
     <>
       <span className="shrink-0">{label}</span>
-      <span className={['w-[6ch] shrink-0 text-right text-xs font-black tabular-nums', muted ? 'text-slate-300' : 'text-brand'].join(' ')}>
+      <span
+        className={[
+          'w-[6ch] shrink-0 text-right text-xs font-black tabular-nums',
+          muted ? 'text-slate-300' : 'text-brand',
+        ].join(' ')}
+      >
         {value}
       </span>
-      <span className={['shrink-0 text-xs font-black', muted ? 'text-slate-300' : 'text-slate-500'].join(' ')}>
-        字
-      </span>
+      <span className={['shrink-0 text-xs font-black', muted ? 'text-slate-300' : 'text-slate-500'].join(' ')}>字</span>
     </>
   );
 }
@@ -470,7 +508,10 @@ function ContextSelectionDot({
 }) {
   return (
     <span
-      className={['grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 bg-white', locked ? 'border-slate-300' : checked ? 'border-[#3B82F6]' : disabled ? 'border-slate-200' : 'border-slate-300'].join(' ')}
+      className={[
+        'grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 bg-white',
+        locked ? 'border-slate-300' : checked ? 'border-[#3B82F6]' : disabled ? 'border-slate-200' : 'border-slate-300',
+      ].join(' ')}
     >
       {checked && <span className={['h-2 w-2 rounded-full', locked ? 'bg-slate-400' : 'bg-[#3B82F6]'].join(' ')} />}
     </span>
@@ -493,11 +534,12 @@ function getContextEntryGroup(tab: string, type?: string) {
 function parseContextSettingContent(content: string) {
   try {
     const parsed = JSON.parse(content) as Partial<{ type: string; body: string }>;
-    const parsedType = parsed.type === '境界体系' || parsed.type === '等级体系'
-      ? '成长体系'
-      : parsed.type === '主线剧情'
-        ? '剧情规划'
-        : parsed.type;
+    const parsedType =
+      parsed.type === '境界体系' || parsed.type === '等级体系'
+        ? '成长体系'
+        : parsed.type === '主线剧情'
+          ? '剧情规划'
+          : parsed.type;
     return {
       type: parsedType || '未分类',
       body: parsed.body || '',
@@ -525,13 +567,10 @@ const CONTEXT_ROLE_STATE_FIELDS = [
 function formatContextRoleStateSettings(value: unknown, legacyStatus = '') {
   if (!value || typeof value !== 'object') return legacyStatus.trim();
   const record = value as Partial<Record<(typeof CONTEXT_ROLE_STATE_FIELDS)[number][0], unknown>>;
-  const text = CONTEXT_ROLE_STATE_FIELDS
-    .map(([key, label]) => {
-      const fieldValue = record[key];
-      return typeof fieldValue === 'string' && fieldValue.trim()
-        ? `${label}：${fieldValue.trim()}`
-        : '';
-    })
+  const text = CONTEXT_ROLE_STATE_FIELDS.map(([key, label]) => {
+    const fieldValue = record[key];
+    return typeof fieldValue === 'string' && fieldValue.trim() ? `${label}：${fieldValue.trim()}` : '';
+  })
     .filter(Boolean)
     .join('\n\n');
   return text || legacyStatus.trim();
@@ -539,12 +578,16 @@ function formatContextRoleStateSettings(value: unknown, legacyStatus = '') {
 
 function parseContextRoleStatusContent(content: string) {
   try {
-    const parsed = JSON.parse(content) as Partial<{ type: string; lifeStatus: string; status: string; stateSettings: unknown }>;
+    const parsed = JSON.parse(content) as Partial<{
+      type: string;
+      lifeStatus: string;
+      status: string;
+      stateSettings: unknown;
+    }>;
     const stateText = formatContextRoleStateSettings(parsed.stateSettings, parsed.status);
-    const body = [
-      parsed.lifeStatus ? `生存状态：${parsed.lifeStatus}` : '',
-      stateText ? `状态设定：${stateText}` : '',
-    ].filter(Boolean).join('\n');
+    const body = [parsed.lifeStatus ? `生存状态：${parsed.lifeStatus}` : '', stateText ? `状态设定：${stateText}` : '']
+      .filter(Boolean)
+      .join('\n');
     return {
       type: parsed.type || '角色状态',
       body,
@@ -571,14 +614,18 @@ function parseContextRoleContent(content: string) {
     const legacyBaseSetting = [
       parsed.personality?.trim() ? `人物设定：${parsed.personality.trim()}` : '',
       parsed.background?.trim() ? parsed.background.trim() : '',
-    ].filter(Boolean).join('\n\n');
+    ]
+      .filter(Boolean)
+      .join('\n\n');
     const baseSetting = parsed.baseSetting?.trim() || legacyBaseSetting;
     const stateText = formatContextRoleStateSettings(parsed.stateSettings, parsed.status);
     const body = [
       parsed.lifeStatus ? `生存状态：${parsed.lifeStatus}` : '',
       baseSetting ? `基础设定：${baseSetting}` : '',
       stateText ? `状态设定：${stateText}` : '',
-    ].filter(Boolean).join('\n\n');
+    ]
+      .filter(Boolean)
+      .join('\n\n');
     return {
       type: parsed.type || '人物设定',
       body: body || content,
@@ -600,7 +647,7 @@ function orderContextEntriesByType(
   const normalizedOrder = [...typeOrder, ...entries.map(getType)]
     .map((type) => type.trim() || '未分类')
     .filter((type, index, source) => source.indexOf(type) === index);
-  return normalizedOrder.flatMap((type) => (
+  return normalizedOrder.flatMap((type) =>
     entries
       .map((entry, index) => ({ entry, index }))
       .filter(({ entry }) => (getType(entry).trim() || '未分类') === type)
@@ -614,21 +661,23 @@ function orderContextEntriesByType(
         }
         return left.index - right.index;
       })
-      .map(({ entry }) => entry)
-  ));
+      .map(({ entry }) => entry),
+  );
 }
 
 function extractContextStatusRecord(content: string) {
   const marker = '【状态记录】';
   const markerIndex = content.indexOf(marker);
   if (markerIndex >= 0) return content.slice(markerIndex).trim();
-  return content
-    .split(/\n{2,}/)
-    .map((block) => block.trim())
-    .filter(Boolean)
-    .filter((block) => /状态|变化|当前|进度|持有|关系|立场/.test(block))
-    .join('\n\n')
-    .trim() || content;
+  return (
+    content
+      .split(/\n{2,}/)
+      .map((block) => block.trim())
+      .filter(Boolean)
+      .filter((block) => /状态|变化|当前|进度|持有|关系|立场/.test(block))
+      .join('\n\n')
+      .trim() || content
+  );
 }
 
 function isContextStatusCandidate(tab: string, type?: string, title?: string, content?: string) {
@@ -666,11 +715,11 @@ function ContextChapterSummaryList({
 }) {
   const normalizedSearch = searchText.trim().toLowerCase();
   const filteredRows = normalizedSearch
-    ? rows.filter((row) => (
-      `${row.serialNumber} ${row.title} ${row.volumeName} ${row.chapterItem.content} ${row.summaryItem?.content ?? ''}`
-        .toLowerCase()
-        .includes(normalizedSearch)
-    ))
+    ? rows.filter((row) =>
+        `${row.serialNumber} ${row.title} ${row.volumeName} ${row.chapterItem.content} ${row.summaryItem?.content ?? ''}`
+          .toLowerCase()
+          .includes(normalizedSearch),
+      )
     : rows;
   const [collapsedVolumeIds, setCollapsedVolumeIds] = useState<Set<number>>(() => new Set());
   const volumeGroups = Array.from(
@@ -703,17 +752,30 @@ function ContextChapterSummaryList({
           placeholder="搜索章节标题..."
           className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none focus:border-[#08AACE]"
         />
-        <button type="button" onClick={onClear} className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 hover:bg-slate-50">
+        <button
+          type="button"
+          onClick={onClear}
+          className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 hover:bg-slate-50"
+        >
           清空
         </button>
       </div>
       <div className="mt-4 flex shrink-0 flex-wrap gap-2">
         {[3, 5, 10].map((count) => (
-          <button key={count} type="button" onClick={() => onSelectRecent(count)} className="h-9 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 hover:border-[#08AACE] hover:text-[#08AACE]">
+          <button
+            key={count}
+            type="button"
+            onClick={() => onSelectRecent(count)}
+            className="h-9 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 hover:border-[#08AACE] hover:text-[#08AACE]"
+          >
             最近 {count} 章
           </button>
         ))}
-        <button type="button" onClick={() => onSelectRecent(10)} className="h-9 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 hover:border-[#08AACE] hover:text-[#08AACE]">
+        <button
+          type="button"
+          onClick={() => onSelectRecent(10)}
+          className="h-9 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 hover:border-[#08AACE] hover:text-[#08AACE]"
+        >
           增选 10 章
         </button>
       </div>
@@ -726,14 +788,24 @@ function ContextChapterSummaryList({
           <div className="divide-y divide-slate-100">
             {volumeGroups.map((group) => {
               const collapsed = collapsedVolumeIds.has(group.volumeId);
-      const selectedCount = group.rows.filter((row) => (
-                selectedIds.has(row.chapterItem.id)
-                || selectedIds.has(row.outlineItem.id)
-                || Boolean(row.summaryItem && selectedIds.has(row.summaryItem.id))
-              )).length;
-              const totalChapterWords = group.rows.reduce((sum, row) => sum + getContextWordCount(row.chapterItem.content), 0);
-              const totalOutlineWords = group.rows.reduce((sum, row) => sum + getContextWordCount(row.outlineItem.content), 0);
-              const totalSummaryWords = group.rows.reduce((sum, row) => sum + (row.summaryItem ? getContextWordCount(row.summaryItem.content) : 0), 0);
+              const selectedCount = group.rows.filter(
+                (row) =>
+                  selectedIds.has(row.chapterItem.id) ||
+                  selectedIds.has(row.outlineItem.id) ||
+                  Boolean(row.summaryItem && selectedIds.has(row.summaryItem.id)),
+              ).length;
+              const totalChapterWords = group.rows.reduce(
+                (sum, row) => sum + getContextWordCount(row.chapterItem.content),
+                0,
+              );
+              const totalOutlineWords = group.rows.reduce(
+                (sum, row) => sum + getContextWordCount(row.outlineItem.content),
+                0,
+              );
+              const totalSummaryWords = group.rows.reduce(
+                (sum, row) => sum + (row.summaryItem ? getContextWordCount(row.summaryItem.content) : 0),
+                0,
+              );
               return (
                 <section key={group.volumeId} className="bg-white">
                   <button
@@ -742,7 +814,11 @@ function ContextChapterSummaryList({
                     className="flex h-11 w-full items-center justify-between gap-3 bg-[#E6F7FB] px-4 pr-10 text-left transition-colors hover:bg-[#d7f1f8]"
                   >
                     <span className="flex min-w-0 items-center gap-2">
-                      {collapsed ? <ChevronRight className="h-4 w-4 shrink-0 text-slate-900" /> : <ChevronDown className="h-4 w-4 shrink-0 text-slate-900" />}
+                      {collapsed ? (
+                        <ChevronRight className="h-4 w-4 shrink-0 text-slate-900" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 shrink-0 text-slate-900" />
+                      )}
                       <span className="truncate text-sm font-black text-slate-800">{group.volumeName}</span>
                       {selectedCount > 0 && (
                         <span className="rounded-full bg-[#EAF9FD] px-2 py-0.5 text-[11px] font-black text-[#078fb0]">
@@ -786,7 +862,10 @@ function ContextChapterSummaryList({
                                 onToggleChapter(row);
                               }
                             }}
-                            className={['grid cursor-pointer grid-cols-[36px_minmax(0,1fr)_96px_auto] items-center gap-3 py-3 pl-4 pr-10 text-sm transition-colors hover:bg-sky-50/60', checked ? 'bg-sky-50/45' : 'bg-white'].join(' ')}
+                            className={[
+                              'grid cursor-pointer grid-cols-[36px_minmax(0,1fr)_96px_auto] items-center gap-3 py-3 pl-4 pr-10 text-sm transition-colors hover:bg-sky-50/60',
+                              checked ? 'bg-sky-50/45' : 'bg-white',
+                            ].join(' ')}
                           >
                             <button
                               type="button"
@@ -817,7 +896,14 @@ function ContextChapterSummaryList({
                               className="flex items-center justify-end whitespace-nowrap text-sm font-bold"
                               onClick={(event) => event.stopPropagation()}
                             >
-                              <label className={['inline-flex h-8 shrink-0 items-center gap-1.5', canPickChapter ? 'cursor-pointer text-slate-700' : 'cursor-not-allowed text-slate-300'].join(' ')}>
+                              <label
+                                className={[
+                                  'inline-flex h-8 shrink-0 items-center gap-1.5',
+                                  canPickChapter
+                                    ? 'cursor-pointer text-slate-700'
+                                    : 'cursor-not-allowed text-slate-300',
+                                ].join(' ')}
+                              >
                                 <input
                                   type="radio"
                                   disabled={!canPickChapter}
@@ -826,10 +912,19 @@ function ContextChapterSummaryList({
                                   className="sr-only"
                                 />
                                 <ContextSelectionDot checked={selectedChapter} disabled={!canPickChapter} />
-                                <ContextSourceRowWordStatus label="正文" value={chapterWordCount} muted={!canPickChapter} />
+                                <ContextSourceRowWordStatus
+                                  label="正文"
+                                  value={chapterWordCount}
+                                  muted={!canPickChapter}
+                                />
                               </label>
                               <label
-                                className={['ml-3 inline-flex h-8 shrink-0 items-center gap-1.5 border-l border-slate-200 pl-3', canPickSummary ? 'cursor-pointer text-slate-700' : 'cursor-not-allowed text-slate-300'].join(' ')}
+                                className={[
+                                  'ml-3 inline-flex h-8 shrink-0 items-center gap-1.5 border-l border-slate-200 pl-3',
+                                  canPickSummary
+                                    ? 'cursor-pointer text-slate-700'
+                                    : 'cursor-not-allowed text-slate-300',
+                                ].join(' ')}
                               >
                                 <input
                                   type="radio"
@@ -839,7 +934,11 @@ function ContextChapterSummaryList({
                                   className="sr-only"
                                 />
                                 <ContextSelectionDot checked={selectedSummary} disabled={!canPickSummary} />
-                                <ContextSourceRowWordStatus label="梗概" value={summaryWordCount} muted={!canPickSummary} />
+                                <ContextSourceRowWordStatus
+                                  label="梗概"
+                                  value={summaryWordCount}
+                                  muted={!canPickSummary}
+                                />
                               </label>
                               <label className="ml-3 inline-flex h-8 shrink-0 cursor-not-allowed items-center gap-1.5 border-l border-slate-200 pl-3 text-slate-300">
                                 <input
@@ -850,7 +949,11 @@ function ContextChapterSummaryList({
                                   className="sr-only"
                                 />
                                 <ContextSelectionDot checked={selectedOutline} disabled locked={outlineLocked} />
-                                <ContextSourceRowWordStatus label={`第${row.serialNumber}章章纲`} value={outlineWordCount} muted={!outlineLocked} />
+                                <ContextSourceRowWordStatus
+                                  label={`第${row.serialNumber}章章纲`}
+                                  value={outlineWordCount}
+                                  muted={!outlineLocked}
+                                />
                               </label>
                             </div>
                           </div>
@@ -862,7 +965,6 @@ function ContextChapterSummaryList({
               );
             })}
           </div>
-
         )}
       </div>
     </div>
@@ -913,9 +1015,7 @@ function ContextSelectionColumn({
     <section className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] overflow-hidden bg-white">
       <aside className="min-h-0 border-r border-slate-100 bg-slate-50 p-3">
         <div className="mb-2 flex items-center justify-between gap-2 px-2">
-          <div className="min-w-0 truncate text-[15px] font-black text-slate-400">
-            {column.title}
-          </div>
+          <div className="min-w-0 truncate text-[15px] font-black text-slate-400">{column.title}</div>
           <button
             type="button"
             onClick={() => toggleItemsSelection(column.items)}
@@ -974,7 +1074,9 @@ function ContextSelectionColumn({
                             onClick={() => setPreviewItemId(item.id)}
                             className={
                               'flex h-10 w-full items-center gap-2 rounded-lg px-2 text-left text-[15px] font-black ' +
-                              (checked ? 'xy-selected-content-bg text-gray-900' : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800')
+                              (checked
+                                ? 'xy-selected-content-bg text-gray-900'
+                                : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800')
                             }
                           >
                             <span
@@ -995,7 +1097,9 @@ function ContextSelectionColumn({
                               }}
                               className={
                                 'grid h-4 w-4 shrink-0 place-items-center rounded border text-[10px] ' +
-                                (checked ? 'border-[#08AACE] bg-[#08AACE] text-white' : 'border-slate-300 bg-white text-transparent')
+                                (checked
+                                  ? 'border-[#08AACE] bg-[#08AACE] text-white'
+                                  : 'border-slate-300 bg-white text-transparent')
                               }
                             >
                               ✓
@@ -1017,7 +1121,9 @@ function ContextSelectionColumn({
           <article
             className={
               'flex h-full min-h-0 flex-col rounded-2xl border px-5 py-4 ' +
-              (selectedIds.has(previewItem.id) ? 'border-[#08AACE] xy-selected-content-bg text-slate-900' : 'border-gray-100 bg-gray-50 text-gray-600')
+              (selectedIds.has(previewItem.id)
+                ? 'border-[#08AACE] xy-selected-content-bg text-slate-900'
+                : 'border-gray-100 bg-gray-50 text-gray-600')
             }
           >
             <div className="mb-3 flex shrink-0 items-start justify-between gap-4">
@@ -1028,16 +1134,22 @@ function ContextSelectionColumn({
                     onClick={() => onToggle(previewItem.id)}
                     className={
                       'grid h-6 w-6 shrink-0 place-items-center rounded-md border text-xs font-black ' +
-                      (selectedIds.has(previewItem.id) ? 'border-[#08AACE] bg-[#08AACE] text-white' : 'border-slate-300 bg-white text-transparent')
+                      (selectedIds.has(previewItem.id)
+                        ? 'border-[#08AACE] bg-[#08AACE] text-white'
+                        : 'border-slate-300 bg-white text-transparent')
                     }
                   >
                     ✓
                   </button>
                   <h4 className="truncate text-lg font-black text-slate-900">{previewItem.title}</h4>
-                  <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-black text-[#08AACE]">{previewItem.group}</span>
+                  <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-black text-[#08AACE]">
+                    {previewItem.group}
+                  </span>
                 </div>
               </div>
-              <span className="shrink-0 text-sm font-black text-[#08AACE]"><WordCountText value={getContextWordCount(previewItem.content)} /></span>
+              <span className="shrink-0 text-sm font-black text-[#08AACE]">
+                <WordCountText value={getContextWordCount(previewItem.content)} />
+              </span>
             </div>
             <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words pr-2 text-sm font-semibold leading-7 text-slate-600">
               {previewItem.content || '暂无内容'}
@@ -1098,20 +1210,21 @@ function WorkbenchFindReplaceModal({
   const [activeIndex, setActiveIndex] = useState(0);
   const [status, setStatus] = useState('');
 
-  const chapters = volumes.flatMap((volume) => (
+  const chapters = volumes.flatMap((volume) =>
     volume.chapters.map((chapter) => ({
       volumeId: volume.id,
       chapterId: chapter.id,
       label: `第${chapter.serialNumber}${chapter.title ? `章 ${chapter.title}` : '章'}`,
       content: selectedChapter?.chapter.id === chapter.id ? editorContent : readChapterContent(novelId, chapter.id),
-    }))
-  ));
-  const scopedChapters = scope === 'chapter' && selectedChapter
-    ? chapters.filter((chapter) => chapter.chapterId === selectedChapter.chapter.id)
-    : chapters;
-  const matches = scopedChapters.flatMap((chapter) => (
-    findOccurrences(chapter.content, searchText).map((index) => ({ ...chapter, index }))
-  ));
+    })),
+  );
+  const scopedChapters =
+    scope === 'chapter' && selectedChapter
+      ? chapters.filter((chapter) => chapter.chapterId === selectedChapter.chapter.id)
+      : chapters;
+  const matches = scopedChapters.flatMap((chapter) =>
+    findOccurrences(chapter.content, searchText).map((index) => ({ ...chapter, index })),
+  );
   const total = matches.length;
   const safeActiveIndex = total === 0 ? 0 : Math.min(activeIndex, total - 1);
 
@@ -1142,9 +1255,10 @@ function WorkbenchFindReplaceModal({
 
   const replaceInScope = (targetScope: FindScope) => {
     if (!searchText) return;
-    const targets = targetScope === 'chapter' && selectedChapter
-      ? chapters.filter((chapter) => chapter.chapterId === selectedChapter.chapter.id)
-      : chapters;
+    const targets =
+      targetScope === 'chapter' && selectedChapter
+        ? chapters.filter((chapter) => chapter.chapterId === selectedChapter.chapter.id)
+        : chapters;
     const updates: Record<number, string> = {};
     let count = 0;
     targets.forEach((chapter) => {
@@ -1181,7 +1295,11 @@ function WorkbenchFindReplaceModal({
           style={{ ...draggable.dragHandleProps.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
         >
           <h2 className="text-base font-bold text-gray-900">查找替换</h2>
-          <button data-no-modal-drag="true" onClick={onClose} className="rounded-lg px-2.5 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700">
+          <button
+            data-no-modal-drag="true"
+            onClick={onClose}
+            className="rounded-lg px-2.5 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          >
             关闭
           </button>
         </header>
@@ -1216,16 +1334,44 @@ function WorkbenchFindReplaceModal({
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={() => goMatch(-1)} disabled={total === 0} className="rounded-lg px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-brand disabled:opacity-40">
+            <button
+              onClick={() => goMatch(-1)}
+              disabled={total === 0}
+              className="rounded-lg px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-brand disabled:opacity-40"
+            >
               上一个
             </button>
-            <div className="w-14 text-center text-lg font-bold text-brand">{total === 0 ? '0/0' : `${safeActiveIndex + 1}/${total}`}</div>
-            <button onClick={() => goMatch(1)} disabled={total === 0} className="rounded-lg px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-brand disabled:opacity-40">
+            <div className="w-14 text-center text-lg font-bold text-brand">
+              {total === 0 ? '0/0' : `${safeActiveIndex + 1}/${total}`}
+            </div>
+            <button
+              onClick={() => goMatch(1)}
+              disabled={total === 0}
+              className="rounded-lg px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-brand disabled:opacity-40"
+            >
               下一个
             </button>
-            <button onClick={replaceCurrent} disabled={total === 0} className="ml-auto rounded-lg bg-brand px-5 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300">替换</button>
-            <button onClick={() => replaceInScope('chapter')} disabled={!searchText} className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-bold text-white hover:bg-gray-800 disabled:bg-gray-300">本章替换</button>
-            <button onClick={() => replaceInScope('book')} disabled={!searchText} className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-bold text-white hover:bg-gray-800 disabled:bg-gray-300">全书替换</button>
+            <button
+              onClick={replaceCurrent}
+              disabled={total === 0}
+              className="ml-auto rounded-lg bg-brand px-5 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
+            >
+              替换
+            </button>
+            <button
+              onClick={() => replaceInScope('chapter')}
+              disabled={!searchText}
+              className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-bold text-white hover:bg-gray-800 disabled:bg-gray-300"
+            >
+              本章替换
+            </button>
+            <button
+              onClick={() => replaceInScope('book')}
+              disabled={!searchText}
+              className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-bold text-white hover:bg-gray-800 disabled:bg-gray-300"
+            >
+              全书替换
+            </button>
           </div>
 
           <div className="h-4 text-xs text-gray-400">
@@ -1239,34 +1385,25 @@ function WorkbenchFindReplaceModal({
   );
 }
 
-function ManagementModal({
-  type,
-  onClose,
-}: {
-  type: ManagementModalKey;
-  onClose: () => void;
-}) {
-  const draggable = useDraggableModal(`workbench_${type}_management`);
+function ManagementModal({ type, onClose }: { type: ManagementModalKey; onClose: () => void }) {
   useTopModalEscape(true, onClose);
   const title = type === 'models' ? '模型管理' : '提示词管理';
 
-  return (
-    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/35 px-8 py-8" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose();
-    }}>
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[220] flex items-center justify-center bg-black/35 px-8 py-8"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
       <section
-        data-draggable-managed="true"
-        className={`relative flex ${WORKBENCH_MANAGEMENT_MODAL_SIZE_CLASS} flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]`}
-        style={draggable.style}
+        data-global-modal-static="true"
+        className={`relative flex ${WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS} flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]`}
       >
         {type === 'agents' ? (
-          <header
-            {...draggable.dragHandleProps}
-            className="flex h-11 shrink-0 cursor-move items-center justify-between border-b border-slate-200 bg-white px-4"
-          >
+          <header className="flex h-11 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
             <h2 className="text-sm font-bold text-slate-900">{title}</h2>
             <button
-              data-no-modal-drag="true"
               onClick={onClose}
               className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
               title="关闭"
@@ -1276,13 +1413,11 @@ function ManagementModal({
           </header>
         ) : null}
         <div className="min-h-0 flex-1 overflow-hidden">
-          {type === 'models'
-            ? <ModelManagePage embedded onClose={onClose} headerDragHandleProps={draggable.dragHandleProps} />
-            : <PromptsPage />}
+          {type === 'models' ? <ModelManagePage embedded onClose={onClose} /> : <PromptsPage />}
         </div>
-        <ModalResizeHandles draggable={draggable} />
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -1299,9 +1434,12 @@ function EditorSettingsModal({
   useTopModalEscape(true, onClose);
 
   return (
-    <div className="fixed inset-0 z-[220] flex items-center justify-center bg-black/35 px-6 py-6" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose();
-    }}>
+    <div
+      className="fixed inset-0 z-[220] flex items-center justify-center bg-black/35 px-6 py-6"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
       <section
         data-draggable-managed="true"
         className="relative w-[520px] max-w-[94vw] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]"
@@ -1312,7 +1450,11 @@ function EditorSettingsModal({
           className="flex h-12 cursor-move items-center justify-between border-b border-gray-100 px-5"
         >
           <h2 className="text-base font-bold text-gray-900">作品编辑器设定</h2>
-          <button data-no-modal-drag="true" onClick={onClose} className="rounded-lg px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700">
+          <button
+            data-no-modal-drag="true"
+            onClick={onClose}
+            className="rounded-lg px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+          >
             关闭
           </button>
         </header>
@@ -1327,7 +1469,9 @@ function EditorSettingsModal({
             />
             <span>
               <span className="block text-base font-bold text-gray-900">发布确认</span>
-              <span className="mt-1 block text-sm leading-6 text-gray-500">勾选后，点击发布章节时，会先弹出确认窗口，避免误点发布。</span>
+              <span className="mt-1 block text-sm leading-6 text-gray-500">
+                勾选后，点击发布章节时，会先弹出确认窗口，避免误点发布。
+              </span>
             </span>
           </label>
           <WorkbenchNavigationWidthToggle />
@@ -1354,10 +1498,14 @@ function ChapterExportPanel({
   const [format, setFormat] = useState<ChapterExportFormat>('txt');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [notice, setNotice] = useState('');
-  const chapterGroups = useMemo(() => volumes.map((volume) => ({
-    volume,
-    chapters: [...volume.chapters].sort((a, b) => a.serialNumber - b.serialNumber),
-  })), [volumes]);
+  const chapterGroups = useMemo(
+    () =>
+      volumes.map((volume) => ({
+        volume,
+        chapters: [...volume.chapters].sort((a, b) => a.serialNumber - b.serialNumber),
+      })),
+    [volumes],
+  );
   const allChapterIds = useMemo(
     () => chapterGroups.flatMap((group) => group.chapters.map((chapter) => chapter.id)),
     [chapterGroups],
@@ -1366,11 +1514,15 @@ function ChapterExportPanel({
     .map((group) => `${group.volume.id}:${group.chapters.map((chapter) => chapter.id).join(',')}`)
     .join('|');
   const selectedSet = new Set(selectedIds);
-  const selectedWordCount = chapterGroups.reduce((sum, group) => (
-    sum + group.chapters.reduce((innerSum, chapter) => (
-      selectedSet.has(chapter.id) ? innerSum + getChapterWordCount(chapter.id) : innerSum
-    ), 0)
-  ), 0);
+  const selectedWordCount = chapterGroups.reduce(
+    (sum, group) =>
+      sum +
+      group.chapters.reduce(
+        (innerSum, chapter) => (selectedSet.has(chapter.id) ? innerSum + getChapterWordCount(chapter.id) : innerSum),
+        0,
+      ),
+    0,
+  );
   const chapterUnit = workType === 'script' ? '集' : '章';
 
   useEffect(() => {
@@ -1477,7 +1629,9 @@ function ChapterExportPanel({
                       className="h-4 w-4 accent-brand"
                     />
                     <span className="min-w-0 flex-1 truncate text-sm font-bold text-brand-dark">{volume.name}</span>
-                    <span className="text-xs font-bold text-gray-500">{selectedCount}/{chapters.length}</span>
+                    <span className="text-xs font-bold text-gray-500">
+                      {selectedCount}/{chapters.length}
+                    </span>
                   </label>
 
                   <div className="grid grid-cols-2 gap-2 p-3">
@@ -1499,7 +1653,9 @@ function ChapterExportPanel({
                         <span className="min-w-0 flex-1 truncate text-sm text-gray-700">
                           {getChapterExportTitle(chapter, workType)}
                         </span>
-                        <span className="shrink-0 text-xs text-gray-400"><WordCountText value={getChapterWordCount(chapter.id)} /></span>
+                        <span className="shrink-0 text-xs text-gray-400">
+                          <WordCountText value={getChapterWordCount(chapter.id)} />
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -1513,10 +1669,18 @@ function ChapterExportPanel({
       <div className="flex shrink-0 items-center justify-between border-t border-gray-100 px-5 py-4">
         <div className="text-sm text-red-500">{notice}</div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={onClose} className="h-10 rounded-lg border border-gray-200 bg-white px-5 text-sm font-bold text-gray-600 hover:bg-gray-50">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-10 rounded-lg border border-gray-200 bg-white px-5 text-sm font-bold text-gray-600 hover:bg-gray-50"
+          >
             取消
           </button>
-          <button type="button" onClick={submitExport} className="h-10 rounded-lg bg-brand px-6 text-sm font-bold text-white hover:bg-brand-dark">
+          <button
+            type="button"
+            onClick={submitExport}
+            className="h-10 rounded-lg bg-brand px-6 text-sm font-bold text-white hover:bg-brand-dark"
+          >
             开始导出
           </button>
         </div>
@@ -1558,11 +1722,16 @@ export function WorkbenchPage() {
   const [publishConfirm, setPublishConfirm] = useState(() => localStorage.getItem(PUBLISH_CONFIRM_KEY) === 'true');
   const [navigationWidthUnified, setNavigationWidthUnified] = useState(() => readSharedWorkbenchLeftNavWidthEnabled());
   const [pendingPublish, setPendingPublish] = useState<PendingPublish | null>(null);
-  const [globalNotes, setGlobalNotes] = useState<MemoItem[]>(() => readMemoItems(GLOBAL_NOTES_LIST_KEY, GLOBAL_NOTES_KEY, 'global'));
+  const [globalNotes, setGlobalNotes] = useState<MemoItem[]>(() =>
+    readMemoItems(GLOBAL_NOTES_LIST_KEY, GLOBAL_NOTES_KEY, 'global'),
+  );
   const [workNotes, setWorkNotes] = useState<MemoItem[]>([]);
   const [workNotesNovelId, setWorkNotesNovelId] = useState<number | null>(null);
   const [selectedMemo, setSelectedMemo] = useState<{ scope: MemoScope; id: string } | null>(null);
-  const [collapsedMemoSections, setCollapsedMemoSections] = useState<Record<MemoScope, boolean>>({ global: false, work: false });
+  const [collapsedMemoSections, setCollapsedMemoSections] = useState<Record<MemoScope, boolean>>({
+    global: false,
+    work: false,
+  });
   const [showPublished, setShowPublished] = useState(false);
   const [replaceUndoSnapshot, setReplaceUndoSnapshot] = useState<{ chapterId: number; content: string } | null>(null);
   const [aiPanelWidth, setAiPanelWidth] = useState(() => {
@@ -1570,7 +1739,10 @@ export function WorkbenchPage() {
   });
   const [chapterSidebarWidth, setChapterSidebarWidth] = useState(readWorkbenchChapterSidebarWidth);
   const [publishedSidebarWidth, setPublishedSidebarWidth] = useState(() => {
-    const saved = Number.parseInt(localStorage.getItem('xinyuexia_published_sidebar_width') ?? String(PUBLISHED_SIDEBAR_DEFAULT_WIDTH), 10);
+    const saved = Number.parseInt(
+      localStorage.getItem('xinyuexia_published_sidebar_width') ?? String(PUBLISHED_SIDEBAR_DEFAULT_WIDTH),
+      10,
+    );
     return normalizePublishedSidebarWidth(saved);
   });
   const [isDraggingPanel, setIsDraggingPanel] = useState(false);
@@ -1704,7 +1876,13 @@ export function WorkbenchPage() {
 
   useEffect(() => {
     if (!currentNovelId) return;
-    setWorkNotes(readMemoItems(`${WORK_NOTES_LIST_KEY_PREFIX}${currentNovelId}`, `${WORK_NOTES_KEY_PREFIX}${currentNovelId}`, 'work'));
+    setWorkNotes(
+      readMemoItems(
+        `${WORK_NOTES_LIST_KEY_PREFIX}${currentNovelId}`,
+        `${WORK_NOTES_KEY_PREFIX}${currentNovelId}`,
+        'work',
+      ),
+    );
     setWorkNotesNovelId(currentNovelId);
   }, [currentNovelId]);
 
@@ -1714,11 +1892,16 @@ export function WorkbenchPage() {
   }, [currentNovelId, workNotes, workNotesNovelId]);
 
   useEffect(() => {
-    const currentExists = selectedMemo?.scope === 'global'
-      ? globalNotes.some((note) => note.id === selectedMemo.id)
-      : workNotes.some((note) => note.id === selectedMemo?.id);
+    const currentExists =
+      selectedMemo?.scope === 'global'
+        ? globalNotes.some((note) => note.id === selectedMemo.id)
+        : workNotes.some((note) => note.id === selectedMemo?.id);
     if (currentExists) return;
-    const fallback = globalNotes[0] ? { scope: 'global' as const, id: globalNotes[0].id } : workNotes[0] ? { scope: 'work' as const, id: workNotes[0].id } : null;
+    const fallback = globalNotes[0]
+      ? { scope: 'global' as const, id: globalNotes[0].id }
+      : workNotes[0]
+        ? { scope: 'work' as const, id: workNotes[0].id }
+        : null;
     setSelectedMemo(fallback);
   }, [globalNotes, selectedMemo, workNotes]);
 
@@ -1884,7 +2067,10 @@ export function WorkbenchPage() {
         <div className="rounded-xl border border-gray-100 bg-white p-8 text-center shadow-sm">
           <h1 className="text-lg font-bold text-gray-900">未选择作品</h1>
           <p className="mt-2 text-sm text-gray-500">请先从作品列表选择一本小说或剧本。</p>
-          <Link to="/novels" className="mt-5 inline-flex rounded-md bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark">
+          <Link
+            to="/novels"
+            className="mt-5 inline-flex rounded-md bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark"
+          >
             返回我的小说
           </Link>
         </div>
@@ -1893,23 +2079,18 @@ export function WorkbenchPage() {
   }
 
   const chapterCount = volumes.reduce((sum, volume) => sum + volume.chapters.length, 0);
-  const unpolishedChapterCount = countUnpolishedChapters(
-    settingsStorageKey,
-    volumes,
-    (chapterId) => (
-      selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
-    ),
+  const unpolishedChapterCount = countUnpolishedChapters(settingsStorageKey, volumes, (chapterId) =>
+    selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId),
   );
   const selectedVolumeName = selectedChapter
-    ? volumes.find((volume) => volume.id === selectedChapter.volumeId)?.name ?? '未选择卷'
+    ? (volumes.find((volume) => volume.id === selectedChapter.volumeId)?.name ?? '未选择卷')
     : '未选择卷';
 
-  const canUndoReplace = Boolean(
-    selectedChapter && replaceUndoSnapshot?.chapterId === selectedChapter.chapter.id,
-  );
-  const activeMemo = selectedMemo?.scope === 'global'
-    ? globalNotes.find((note) => note.id === selectedMemo.id) ?? null
-    : workNotes.find((note) => note.id === selectedMemo?.id) ?? null;
+  const canUndoReplace = Boolean(selectedChapter && replaceUndoSnapshot?.chapterId === selectedChapter.chapter.id);
+  const activeMemo =
+    selectedMemo?.scope === 'global'
+      ? (globalNotes.find((note) => note.id === selectedMemo.id) ?? null)
+      : (workNotes.find((note) => note.id === selectedMemo?.id) ?? null);
   const settingContextEntries = orderContextEntriesByType(
     settingsEntries.filter((entry) => normalizeTabName(entry.tab) === SETTING_TAB),
     CONTEXT_SETTING_TYPE_ORDER,
@@ -1990,10 +2171,14 @@ export function WorkbenchPage() {
       title: entry.title || '未命名梗概',
       content: entry.content || '',
     }));
-  const summaryChapterSerials = new Set(summaryContextItems.map((item) => getContextEntrySerial(item.title)).filter(Boolean));
+  const summaryChapterSerials = new Set(
+    summaryContextItems.map((item) => getContextEntrySerial(item.title)).filter(Boolean),
+  );
   const summaryChapterCount = summaryChapterSerials.size > 0 ? summaryChapterSerials.size : summaryContextItems.length;
   const flowStats: WorkbenchHeaderFlowStats = {
-    brainstorm: { meta: `${settingsEntries.filter((entry) => normalizeTabName(entry.tab) === BRAINSTORM_TAB).length}个脑洞` },
+    brainstorm: {
+      meta: `${settingsEntries.filter((entry) => normalizeTabName(entry.tab) === BRAINSTORM_TAB).length}个脑洞`,
+    },
     outline: { meta: `${settingsEntries.filter((entry) => normalizeTabName(entry.tab) === SETTING_TAB).length}个设定` },
     chapterOutline: { meta: `${outlineContextItems.length}章` },
     writing: { meta: `${chapterCount}章` },
@@ -2004,7 +2189,7 @@ export function WorkbenchPage() {
     summary: { meta: `${summaryChapterCount}章`, tone: summaryChapterCount < chapterCount ? 'warning' : 'normal' },
   };
   const selectedChapterSerialNumber = selectedChapter?.chapter.serialNumber ?? Number.POSITIVE_INFINITY;
-  const chapterContextItems: WorkbenchLinkedContextItem[] = volumes.flatMap((volume) => (
+  const chapterContextItems: WorkbenchLinkedContextItem[] = volumes.flatMap((volume) =>
     volume.chapters
       .filter((chapter) => chapter.serialNumber <= selectedChapterSerialNumber)
       .map((chapter) => ({
@@ -2013,8 +2198,8 @@ export function WorkbenchPage() {
         group: volume.name,
         title: chapter.title || `第${chapter.serialNumber}章`,
         content: readChapterContent(currentNovel.id, chapter.id),
-      }))
-  ));
+      })),
+  );
   const outlineItemBySerial = new Map<number, WorkbenchLinkedContextItem>();
   outlineContextItems.forEach((item) => {
     const serial = getContextEntrySerial(item.title);
@@ -2025,86 +2210,116 @@ export function WorkbenchPage() {
     const serial = getContextEntrySerial(item.title);
     if (serial && !summaryItemBySerial.has(serial)) summaryItemBySerial.set(serial, item);
   });
-  const contextChapterRows: ContextChapterPair[] = volumes.flatMap((volume) => (
-    [...volume.chapters]
-      .filter((chapter) => chapter.serialNumber <= selectedChapterSerialNumber)
-      .sort((a, b) => b.serialNumber - a.serialNumber)
-      .map((chapter) => {
-        const chapterItem = chapterContextItems.find((item) => item.id === `chapter:${chapter.id}`) ?? {
-          id: `chapter:${chapter.id}`,
-          source: 'chapter' as const,
-          group: volume.name,
-          title: chapter.title || `第${chapter.serialNumber}章`,
-          content: readChapterContent(currentNovel.id, chapter.id),
-        };
-        const outlineItem = outlineItemBySerial.get(chapter.serialNumber) ?? {
-          id: `outline:chapter:${chapter.id}`,
-          source: 'outline' as const,
-          group: volume.name,
-          title: `第${chapter.serialNumber}章章纲`,
-          content: '',
-        };
-        return {
-          volumeId: volume.id,
-          volumeName: volume.name,
-          chapterId: chapter.id,
-          serialNumber: chapter.serialNumber,
-          title: chapter.title,
-          isCurrent: chapter.id === selectedChapter?.chapter.id,
-          chapterItem,
-          outlineItem,
-          summaryItem: summaryItemBySerial.get(chapter.serialNumber) ?? null,
-        };
-      })
-  )).sort((a, b) => b.serialNumber - a.serialNumber);
+  const contextChapterRows: ContextChapterPair[] = volumes
+    .flatMap((volume) =>
+      [...volume.chapters]
+        .filter((chapter) => chapter.serialNumber <= selectedChapterSerialNumber)
+        .sort((a, b) => b.serialNumber - a.serialNumber)
+        .map((chapter) => {
+          const chapterItem = chapterContextItems.find((item) => item.id === `chapter:${chapter.id}`) ?? {
+            id: `chapter:${chapter.id}`,
+            source: 'chapter' as const,
+            group: volume.name,
+            title: chapter.title || `第${chapter.serialNumber}章`,
+            content: readChapterContent(currentNovel.id, chapter.id),
+          };
+          const outlineItem = outlineItemBySerial.get(chapter.serialNumber) ?? {
+            id: `outline:chapter:${chapter.id}`,
+            source: 'outline' as const,
+            group: volume.name,
+            title: `第${chapter.serialNumber}章章纲`,
+            content: '',
+          };
+          return {
+            volumeId: volume.id,
+            volumeName: volume.name,
+            chapterId: chapter.id,
+            serialNumber: chapter.serialNumber,
+            title: chapter.title,
+            isCurrent: chapter.id === selectedChapter?.chapter.id,
+            chapterItem,
+            outlineItem,
+            summaryItem: summaryItemBySerial.get(chapter.serialNumber) ?? null,
+          };
+        }),
+    )
+    .sort((a, b) => b.serialNumber - a.serialNumber);
   const otherContextColumns: ContextColumn[] = [
     { source: 'setting', title: '大纲设定', subtitle: '读取大纲里的设定分类和卡片', items: settingContextItems },
   ];
   const roleContextColumns: ContextColumn[] = [
-    { source: 'role', title: '人物设定', subtitle: '读取大纲里的人物设定，并保持分类和卡片顺序', items: roleContextItems },
+    {
+      source: 'role',
+      title: '人物设定',
+      subtitle: '读取大纲里的人物设定，并保持分类和卡片顺序',
+      items: roleContextItems,
+    },
   ];
   const statusContextColumns: ContextColumn[] = [
-    { source: 'role', title: '状态', subtitle: '读取角色、道具、势力等卡片里的最新状态记录', items: statusContextItems },
+    {
+      source: 'role',
+      title: '状态',
+      subtitle: '读取角色、道具、势力等卡片里的最新状态记录',
+      items: statusContextItems,
+    },
   ];
-  const activeContextColumns = contextLibraryTab === 'status'
-    ? statusContextColumns
-    : contextLibraryTab === 'role'
-    ? roleContextColumns
-    : otherContextColumns;
-  const chapterRowContextItems = contextChapterRows.flatMap((row) => [
-    row.chapterItem,
-    row.outlineItem,
-    row.summaryItem,
-  ].filter((item): item is WorkbenchLinkedContextItem => Boolean(item)));
-  const allContextItems = [...chapterRowContextItems, ...outlineContextItems, ...summaryContextItems, ...settingContextItems, ...roleContextItems, ...statusContextItems];
+  const activeContextColumns =
+    contextLibraryTab === 'status'
+      ? statusContextColumns
+      : contextLibraryTab === 'role'
+        ? roleContextColumns
+        : otherContextColumns;
+  const chapterRowContextItems = contextChapterRows.flatMap((row) =>
+    [row.chapterItem, row.outlineItem, row.summaryItem].filter((item): item is WorkbenchLinkedContextItem =>
+      Boolean(item),
+    ),
+  );
+  const allContextItems = [
+    ...chapterRowContextItems,
+    ...outlineContextItems,
+    ...summaryContextItems,
+    ...settingContextItems,
+    ...roleContextItems,
+    ...statusContextItems,
+  ];
   const contextItemById = new Map(allContextItems.map((item) => [item.id, item]));
-  const requiredContextItems = contextChapterRows
-    .filter((row) => row.isCurrent)
-    .map((row) => row.outlineItem);
+  const requiredContextItems = contextChapterRows.filter((row) => row.isCurrent).map((row) => row.outlineItem);
   const requiredContextIds = new Set(requiredContextItems.map((item) => item.id));
-  const previousContextRow = contextChapterRows.find((row) => !row.isCurrent && row.serialNumber < selectedChapterSerialNumber) ?? null;
+  const previousContextRow =
+    contextChapterRows.find((row) => !row.isCurrent && row.serialNumber < selectedChapterSerialNumber) ?? null;
   const defaultOptionalContextItems = [
     previousContextRow ? getPreferredChapterNarrativeItem(previousContextRow) : null,
   ].filter((item): item is WorkbenchLinkedContextItem => Boolean(item));
   const rawOptionalLinkedContextItems = contextSelectionTouched
     ? linkedContextItems.filter((item) => !requiredContextIds.has(item.id))
     : defaultOptionalContextItems;
-  const optionalLinkedContextItems = keepExclusiveChapterNarrativeItems(contextChapterRows, rawOptionalLinkedContextItems);
+  const optionalLinkedContextItems = keepExclusiveChapterNarrativeItems(
+    contextChapterRows,
+    rawOptionalLinkedContextItems,
+  );
   const shouldAttachRequiredContext = !contextSelectionTouched || linkedContextItems.length > 0;
   const effectiveRequiredContextItems = shouldAttachRequiredContext ? requiredContextItems : [];
-  const effectiveLinkedContextItems = mergeContextItems([...effectiveRequiredContextItems, ...optionalLinkedContextItems]);
+  const effectiveLinkedContextItems = mergeContextItems([
+    ...effectiveRequiredContextItems,
+    ...optionalLinkedContextItems,
+  ]);
   const selectedDraftContextItems = Array.from(draftContextIds)
     .map((id) => contextItemById.get(id))
     .filter((item): item is WorkbenchLinkedContextItem => Boolean(item));
-  const draftContextWordCount = selectedDraftContextItems.reduce((sum, item) => sum + getContextWordCount(item.content), 0);
+  const draftContextWordCount = selectedDraftContextItems.reduce(
+    (sum, item) => sum + getContextWordCount(item.content),
+    0,
+  );
   const draftChapterWordCount = getContextItemsWordCount(selectedDraftContextItems, 'chapter');
   const draftOutlineWordCount = getContextItemsWordCount(selectedDraftContextItems, 'outline');
   const draftSummaryWordCount = getContextItemsWordCount(selectedDraftContextItems, 'summary');
-  const canConfirmContextLibrary = requiredContextItems.length > 0
-    && requiredContextItems.every(hasContextContent)
-    && draftContextWordCount > 0
-    && selectedDraftContextItems.every(hasContextContent);
-  const contextLibraryConfirmTitle = canConfirmContextLibrary ? '确认关联资料'
+  const canConfirmContextLibrary =
+    requiredContextItems.length > 0 &&
+    requiredContextItems.every(hasContextContent) &&
+    draftContextWordCount > 0 &&
+    selectedDraftContextItems.every(hasContextContent);
+  const contextLibraryConfirmTitle = canConfirmContextLibrary
+    ? '确认关联资料'
     : requiredContextItems.length === 0 || !requiredContextItems.every(hasContextContent)
       ? '当前章节没有章纲，无法确认关联'
       : '请选择至少一项有内容的资料';
@@ -2151,10 +2366,9 @@ export function WorkbenchPage() {
         if (hasContextContent(row.outlineItem)) next.add(row.outlineItem.id);
         return next;
       }
-      const rowIds = [
-        row.chapterItem.id,
-        row.summaryItem?.id,
-      ].filter((id): id is string => Boolean(id && !requiredContextIds.has(id)));
+      const rowIds = [row.chapterItem.id, row.summaryItem?.id].filter((id): id is string =>
+        Boolean(id && !requiredContextIds.has(id)),
+      );
       const selected = rowIds.length > 0 && rowIds.some((id) => next.has(id));
       rowIds.forEach((id) => {
         if (selected) next.delete(id);
@@ -2228,7 +2442,8 @@ export function WorkbenchPage() {
   const updateMemo = (updates: Partial<Pick<MemoItem, 'title' | 'content'>>) => {
     if (!selectedMemo) return;
     const patch = { ...updates, updatedAt: formatMemoTime() };
-    const updater = (items: MemoItem[]) => items.map((item) => (item.id === selectedMemo.id ? { ...item, ...patch } : item));
+    const updater = (items: MemoItem[]) =>
+      items.map((item) => (item.id === selectedMemo.id ? { ...item, ...patch } : item));
     if (selectedMemo.scope === 'global') setGlobalNotes(updater);
     else setWorkNotes(updater);
   };
@@ -2265,7 +2480,7 @@ export function WorkbenchPage() {
 
   const collectExportChapters = (chapterIds: number[]): ChapterExportItem[] => {
     const targetIds = new Set(chapterIds);
-    return volumes.flatMap((volume) => (
+    return volumes.flatMap((volume) =>
       [...volume.chapters]
         .sort((a, b) => a.serialNumber - b.serialNumber)
         .filter((chapter) => targetIds.has(chapter.id))
@@ -2275,11 +2490,12 @@ export function WorkbenchPage() {
           chapterId: chapter.id,
           serialNumber: chapter.serialNumber,
           title: chapter.title,
-          content: selectedChapter?.chapter.id === chapter.id
-            ? editorContent
-            : readChapterContent(currentNovel.id, chapter.id),
-        }))
-    ));
+          content:
+            selectedChapter?.chapter.id === chapter.id
+              ? editorContent
+              : readChapterContent(currentNovel.id, chapter.id),
+        })),
+    );
   };
 
   const handleExportSelectedChapters = (format: ChapterExportFormat, chapterIds: number[]) => {
@@ -2296,10 +2512,7 @@ export function WorkbenchPage() {
       return;
     }
 
-    downloadTextFile(
-      `${fileBaseName}.txt`,
-      buildChapterExportText(currentNovel.title, currentNovel.type, items),
-    );
+    downloadTextFile(`${fileBaseName}.txt`, buildChapterExportText(currentNovel.title, currentNovel.type, items));
   };
 
   const handleExportChapters = () => {
@@ -2314,9 +2527,9 @@ export function WorkbenchPage() {
     const volume = volumes.find((item) => item.id === volumeId);
     const chapter = volume?.chapters.find((item) => item.id === chapterId);
     if (!volume || !chapter) return;
-    const duplicate = volume.chapters.find((item) => (
-      item.id !== chapterId && item.isPublished && item.serialNumber === chapter.serialNumber
-    ));
+    const duplicate = volume.chapters.find(
+      (item) => item.id !== chapterId && item.isPublished && item.serialNumber === chapter.serialNumber,
+    );
     if (duplicate) {
       window.alert(`已有第${chapter.serialNumber}${currentNovel.type === 'script' ? '集' : '章'}，请检查序号`);
       return;
@@ -2423,9 +2636,9 @@ export function WorkbenchPage() {
           tabs={['细纲']}
           emptyText="暂无章纲内容"
           volumes={volumes}
-          getChapterContent={(chapterId) => (
+          getChapterContent={(chapterId) =>
             selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
-          )}
+          }
           scale={1}
         />
       );
@@ -2444,15 +2657,20 @@ export function WorkbenchPage() {
           tabs={['梗概']}
           emptyText="暂无梗概内容"
           volumes={volumes}
-          getChapterContent={(chapterId) => (
+          getChapterContent={(chapterId) =>
             selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
-          )}
+          }
           scale={1}
         />
       );
     }
 
-    if (activeCreationFlow === 'audit' || activeCreationFlow === 'comment' || activeCreationFlow === 'polish' || activeCreationFlow === 'status') {
+    if (
+      activeCreationFlow === 'audit' ||
+      activeCreationFlow === 'comment' ||
+      activeCreationFlow === 'polish' ||
+      activeCreationFlow === 'status'
+    ) {
       return (
         <ChapterEditor
           embeddedMode={activeCreationFlow}
@@ -2468,10 +2686,12 @@ export function WorkbenchPage() {
           volumes={volumes}
           settingsStorageKey={settingsStorageKey}
           outlineStorageKey={outlineStorageKey}
-          getChapterContent={(chapterId) => (
+          getChapterContent={(chapterId) =>
             selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
-          )}
-          onUpdateChapterContent={(chapterId, nextContent) => updateNovelChapterContent(currentNovel.id, chapterId, nextContent)}
+          }
+          onUpdateChapterContent={(chapterId, nextContent) =>
+            updateNovelChapterContent(currentNovel.id, chapterId, nextContent)
+          }
           onRenameChapter={renameChapter}
           onChangeContent={saveContent}
           onUpdateSerialNumber={updateChapterSerialNumber}
@@ -2495,10 +2715,12 @@ export function WorkbenchPage() {
         volumes={volumes}
         settingsStorageKey={settingsStorageKey}
         outlineStorageKey={outlineStorageKey}
-        getChapterContent={(chapterId) => (
+        getChapterContent={(chapterId) =>
           selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId)
-        )}
-        onUpdateChapterContent={(chapterId, nextContent) => updateNovelChapterContent(currentNovel.id, chapterId, nextContent)}
+        }
+        onUpdateChapterContent={(chapterId, nextContent) =>
+          updateNovelChapterContent(currentNovel.id, chapterId, nextContent)
+        }
         onRenameChapter={renameChapter}
         onChangeContent={saveContent}
         onUpdateSerialNumber={updateChapterSerialNumber}
@@ -2592,9 +2814,7 @@ export function WorkbenchPage() {
             </div>
 
             <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#f5f5f7]">
-              <div className="flex min-h-0 flex-1 overflow-hidden bg-white">
-                {renderCreationFlowContent()}
-              </div>
+              <div className="flex min-h-0 flex-1 overflow-hidden bg-white">{renderCreationFlowContent()}</div>
             </section>
 
             <div
@@ -2635,9 +2855,7 @@ export function WorkbenchPage() {
           </>
         ) : (
           <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#f5f5f7]">
-            <div className="flex min-h-0 flex-1 overflow-hidden bg-white">
-              {renderCreationFlowContent()}
-            </div>
+            <div className="flex min-h-0 flex-1 overflow-hidden bg-white">{renderCreationFlowContent()}</div>
           </section>
         )}
       </div>
@@ -2670,12 +2888,7 @@ export function WorkbenchPage() {
         onPermanentDelete={permanentDeleteChapter}
       />
 
-      {managementModal && (
-        <ManagementModal
-          type={managementModal}
-          onClose={() => setManagementModal(null)}
-        />
-      )}
+      {managementModal && <ManagementModal type={managementModal} onClose={() => setManagementModal(null)} />}
 
       {isContextLibraryOpen && (
         <WorkbenchModal
@@ -2685,8 +2898,11 @@ export function WorkbenchPage() {
           storageId="workbench_context_library"
           widthClass="w-[min(1296px,94vw)]"
           heightClass="h-[min(820px,88vh)] min-h-[520px]"
-          headerExtra={(
-            <div data-no-modal-drag="true" className="inline-flex shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 text-sm font-black">
+          headerExtra={
+            <div
+              data-no-modal-drag="true"
+              className="inline-flex shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 text-sm font-black"
+            >
               <button
                 type="button"
                 onClick={() => setContextLibraryTab('outlineChapter')}
@@ -2732,7 +2948,7 @@ export function WorkbenchPage() {
                 状态
               </button>
             </div>
-          )}
+          }
         >
           <div className="flex min-h-0 flex-1 flex-col bg-white p-5">
             {contextLibraryTab === 'outlineChapter' ? (
@@ -2763,10 +2979,22 @@ export function WorkbenchPage() {
             <div className="mt-4 flex shrink-0 items-center justify-between gap-4 border-t border-gray-100 bg-white px-5 py-4">
               <div className="min-w-0 space-y-1 text-sm font-bold text-gray-500">
                 <div>将读取 {selectedDraftContextItems.length} 项</div>
-                <div>正文：<ContextSourceWordStatus label="正文" value={draftChapterWordCount} /></div>
-                <div>梗概：<ContextSourceWordStatus label="梗概" value={draftSummaryWordCount} /></div>
-                <div>章纲：<ContextSourceWordStatus label="章纲" value={draftOutlineWordCount} /></div>
-                <div>共多少字：<WordCountText value={draftContextWordCount} /></div>
+                <div>
+                  正文：
+                  <ContextSourceWordStatus label="正文" value={draftChapterWordCount} />
+                </div>
+                <div>
+                  梗概：
+                  <ContextSourceWordStatus label="梗概" value={draftSummaryWordCount} />
+                </div>
+                <div>
+                  章纲：
+                  <ContextSourceWordStatus label="章纲" value={draftOutlineWordCount} />
+                </div>
+                <div>
+                  共多少字：
+                  <WordCountText value={draftContextWordCount} />
+                </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <button
@@ -2787,7 +3015,12 @@ export function WorkbenchPage() {
                   type="button"
                   disabled={!canConfirmContextLibrary}
                   onClick={confirmContextLibrary}
-                  className={['h-10 rounded-xl px-6 text-sm font-black text-white shadow-sm', canConfirmContextLibrary ? 'bg-[#08AACE] hover:bg-[#0798b8]' : 'cursor-not-allowed bg-slate-300 shadow-none'].join(' ')}
+                  className={[
+                    'h-10 rounded-xl px-6 text-sm font-black text-white shadow-sm',
+                    canConfirmContextLibrary
+                      ? 'bg-[#08AACE] hover:bg-[#0798b8]'
+                      : 'cursor-not-allowed bg-slate-300 shadow-none',
+                  ].join(' ')}
                   title={contextLibraryConfirmTitle}
                 >
                   确认关联
@@ -2821,9 +3054,7 @@ export function WorkbenchPage() {
       <ConfirmDialog
         isOpen={!!pendingPublish}
         title="确认发布"
-        description={pendingPublish
-          ? `确定要发布「${pendingPublish.title}」吗？发布后章节会移动到已发布。`
-          : ''}
+        description={pendingPublish ? `确定要发布「${pendingPublish.title}」吗？发布后章节会移动到已发布。` : ''}
         confirmText="确认发布"
         onClose={() => setPendingPublish(null)}
         onConfirm={() => {
@@ -2845,12 +3076,32 @@ export function WorkbenchPage() {
             <section className="rounded-xl border border-gray-200 p-5">
               <h3 className="mb-4 text-lg font-bold text-gray-900">作品概览</h3>
               <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">作品名</p><p className="mt-1.5 text-base font-bold text-gray-900">{currentNovel.title}</p></div>
-                <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">类型</p><p className="mt-1.5 text-base font-bold text-gray-900">{currentNovel.type === 'script' ? '剧本' : '小说'}</p></div>
-                <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">分类</p><p className="mt-1.5 text-base font-bold text-gray-900">{currentNovel.category ?? '未分类'}</p></div>
-                <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">卷数</p><p className="mt-1.5 text-base font-bold text-gray-900">{volumes.length}</p></div>
-                <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">章节数</p><p className="mt-1.5 text-base font-bold text-gray-900">{chapterCount}</p></div>
-                <div className="rounded-lg bg-gray-50 p-4"><p className="text-sm text-gray-400">总字数</p><p className="mt-1.5 text-base font-bold text-brand">{currentNovel.wordCount ?? 0}</p></div>
+                <div className="rounded-lg bg-gray-50 p-4">
+                  <p className="text-sm text-gray-400">作品名</p>
+                  <p className="mt-1.5 text-base font-bold text-gray-900">{currentNovel.title}</p>
+                </div>
+                <div className="rounded-lg bg-gray-50 p-4">
+                  <p className="text-sm text-gray-400">类型</p>
+                  <p className="mt-1.5 text-base font-bold text-gray-900">
+                    {currentNovel.type === 'script' ? '剧本' : '小说'}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-gray-50 p-4">
+                  <p className="text-sm text-gray-400">分类</p>
+                  <p className="mt-1.5 text-base font-bold text-gray-900">{currentNovel.category ?? '未分类'}</p>
+                </div>
+                <div className="rounded-lg bg-gray-50 p-4">
+                  <p className="text-sm text-gray-400">卷数</p>
+                  <p className="mt-1.5 text-base font-bold text-gray-900">{volumes.length}</p>
+                </div>
+                <div className="rounded-lg bg-gray-50 p-4">
+                  <p className="text-sm text-gray-400">章节数</p>
+                  <p className="mt-1.5 text-base font-bold text-gray-900">{chapterCount}</p>
+                </div>
+                <div className="rounded-lg bg-gray-50 p-4">
+                  <p className="text-sm text-gray-400">总字数</p>
+                  <p className="mt-1.5 text-base font-bold text-brand">{currentNovel.wordCount ?? 0}</p>
+                </div>
               </div>
             </section>
             <section className="rounded-xl border border-gray-200 p-5">
@@ -2863,11 +3114,37 @@ export function WorkbenchPage() {
         </div>
       </WorkbenchModal>
 
-      <WorkbenchModal title={settingLibraryInitialTab === '脑洞' ? '生成脑洞' : '生成大纲'} isOpen={activeModal === 'settingLibrary'} onClose={() => setActiveModal(null)} storageId="workbench_setting_library" widthClass="w-[1452px]" heightClass="h-[86vh] max-h-[95vh]" titleClassName="text-3xl" closeOnBackdrop={false}>
-        <WorkbenchLibraryPanel storageKey={settingsStorageKey} outlineStorageKey={outlineStorageKey} tabs={['大纲', '角色', '脑洞']} emptyText="暂无内容" volumes={volumes} scale={1.1} defaultActiveTab={settingLibraryInitialTab} />
+      <WorkbenchModal
+        title={settingLibraryInitialTab === '脑洞' ? '生成脑洞' : '生成大纲'}
+        isOpen={activeModal === 'settingLibrary'}
+        onClose={() => setActiveModal(null)}
+        storageId="workbench_setting_library"
+        widthClass="w-[1452px]"
+        heightClass="h-[86vh] max-h-[95vh]"
+        titleClassName="text-3xl"
+        closeOnBackdrop={false}
+      >
+        <WorkbenchLibraryPanel
+          storageKey={settingsStorageKey}
+          outlineStorageKey={outlineStorageKey}
+          tabs={['大纲', '角色', '脑洞']}
+          emptyText="暂无内容"
+          volumes={volumes}
+          scale={1.1}
+          defaultActiveTab={settingLibraryInitialTab}
+        />
       </WorkbenchModal>
 
-      <WorkbenchModal title="章纲" isOpen={activeModal === 'detailOutlineLibrary'} onClose={() => setActiveModal(null)} storageId="workbench_detail_outline_library" widthClass="w-[1452px]" heightClass="h-[86vh] max-h-[95vh]" titleClassName="text-3xl" closeOnBackdrop={false}>
+      <WorkbenchModal
+        title="章纲"
+        isOpen={activeModal === 'detailOutlineLibrary'}
+        onClose={() => setActiveModal(null)}
+        storageId="workbench_detail_outline_library"
+        widthClass="w-[1452px]"
+        heightClass="h-[86vh] max-h-[95vh]"
+        titleClassName="text-3xl"
+        closeOnBackdrop={false}
+      >
         <WorkbenchLibraryPanel
           storageKey={settingsStorageKey}
           outlineStorageKey={outlineStorageKey}
@@ -2879,21 +3156,34 @@ export function WorkbenchPage() {
         />
       </WorkbenchModal>
 
-      <WorkbenchModal title="备忘录" isOpen={activeModal === 'notes'} onClose={() => setActiveModal(null)} storageId="workbench_notes" widthClass="w-[min(1180px,96vw)]">
+      <WorkbenchModal
+        title="备忘录"
+        isOpen={activeModal === 'notes'}
+        onClose={() => setActiveModal(null)}
+        storageId="workbench_notes"
+        widthClass="w-[min(1180px,96vw)]"
+      >
         <div className="grid min-h-0 flex-1 grid-cols-[330px_minmax(0,1fr)] bg-white">
           <aside className="flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 p-4">
-            {([
+            {[
               { scope: 'global' as const, title: '全局备忘录', items: globalNotes },
               { scope: 'work' as const, title: '作品备忘录', items: workNotes },
-            ]).map(({ scope, title, items }) => (
-              <section key={scope} className="mb-4 flex min-h-0 flex-1 flex-col rounded-xl border border-gray-200 bg-white">
+            ].map(({ scope, title, items }) => (
+              <section
+                key={scope}
+                className="mb-4 flex min-h-0 flex-1 flex-col rounded-xl border border-gray-200 bg-white"
+              >
                 <div className="flex h-12 shrink-0 items-center gap-2 border-b border-gray-100 px-3">
                   <button
                     onClick={() => toggleMemoSection(scope)}
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-brand"
                     title={collapsedMemoSections[scope] ? '展开' : '折叠'}
                   >
-                    {collapsedMemoSections[scope] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    {collapsedMemoSections[scope] ? (
+                      <ChevronRight className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
                   </button>
                   <button
                     onClick={() => toggleMemoSection(scope)}
@@ -2901,7 +3191,9 @@ export function WorkbenchPage() {
                   >
                     {title}
                   </button>
-                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-bold text-gray-500">{items.length}</span>
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-bold text-gray-500">
+                    {items.length}
+                  </span>
                   <button
                     onClick={() => addMemo(scope)}
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand/30 bg-white text-brand hover:bg-brand-light"
@@ -2923,11 +3215,15 @@ export function WorkbenchPage() {
                               key={item.id}
                               onClick={() => selectMemo(scope, item.id)}
                               className={`w-full rounded-lg border px-3 py-2 text-left transition-colors ${
-                                selected ? 'border-brand bg-brand-light/70' : 'border-gray-100 bg-gray-50 hover:border-brand/40 hover:bg-white'
+                                selected
+                                  ? 'border-brand bg-brand-light/70'
+                                  : 'border-gray-100 bg-gray-50 hover:border-brand/40 hover:bg-white'
                               }`}
                             >
                               <div className="truncate text-sm font-bold text-gray-800">{item.title}</div>
-                              <div className="mt-1 line-clamp-2 text-xs leading-5 text-gray-400">{item.content || '暂无内容'}</div>
+                              <div className="mt-1 line-clamp-2 text-xs leading-5 text-gray-400">
+                                {item.content || '暂无内容'}
+                              </div>
                             </button>
                           );
                         })}
@@ -2955,9 +3251,9 @@ export function WorkbenchPage() {
                 <textarea
                   value={activeMemo.content}
                   onChange={(event) => updateMemo({ content: event.target.value })}
-                  placeholder={selectedMemo?.scope === 'global'
-                    ? '全局备忘录会在整个软件中共通...'
-                    : '作品备忘录只属于当前作品...'}
+                  placeholder={
+                    selectedMemo?.scope === 'global' ? '全局备忘录会在整个软件中共通...' : '作品备忘录只属于当前作品...'
+                  }
                   className="editor-scrollbar flex-1 resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm leading-7 text-gray-700 outline-none focus:border-brand"
                 />
                 <div className="mt-3 text-right text-xs text-gray-400">更新于 {activeMemo.updatedAt || '-'}</div>
@@ -2973,4 +3269,3 @@ export function WorkbenchPage() {
     </div>
   );
 }
-

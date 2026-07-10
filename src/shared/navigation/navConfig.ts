@@ -73,6 +73,7 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
       { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
       { iconName: 'Film', label: '我的剧本', to: '/scripts' },
       { iconName: 'Sparkles', label: '题材迭代', to: '/genre-iteration' },
+      { iconName: 'Globe', label: '番茄浏览器', to: '/tomato-browser' },
       { iconName: 'Library', label: '资料库', to: '/library' },
       { iconName: 'Tag', label: '提示词管理', to: '/prompts' },
       { iconName: 'Settings', label: '模型管理', to: '/model-manage' },
@@ -119,6 +120,7 @@ const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
   '/theme-colors': '主题颜色',
   '/test-collection': '测试板块',
   '/genre-iteration': '题材迭代',
+  '/tomato-browser': '番茄浏览器',
 };
 
 function cloneDefaultConfig() {
@@ -143,7 +145,8 @@ function flattenNavConfig(config: NavGroupConfig[]) {
   for (const group of config) {
     if (REMOVED_GROUP_TITLES.has(group.title)) continue;
     if (Array.isArray(group.dividerAfterItemTos)) dividerAfterItemTos = group.dividerAfterItemTos;
-    else if (group.dividerAfterItemTo !== undefined) dividerAfterItemTos = group.dividerAfterItemTo === null ? [] : [group.dividerAfterItemTo];
+    else if (group.dividerAfterItemTo !== undefined)
+      dividerAfterItemTos = group.dividerAfterItemTo === null ? [] : [group.dividerAfterItemTo];
     for (const item of group.items) {
       if (REMOVED_ROUTES.has(item.to)) continue;
       if (seenRoutes.has(item.to)) continue;
@@ -156,22 +159,26 @@ function flattenNavConfig(config: NavGroupConfig[]) {
     }
   }
   moveRouteAfter(items, '/genre-iteration', '/scripts');
+  moveRouteAfter(items, '/tomato-browser', '/genre-iteration');
 
   const visibleItemRoutes = new Set(items.filter((item) => !item.hidden).map((item) => item.to));
-  const fallbackDividerAfterItemTos = DEFAULT_NAV_CONFIG[0].dividerAfterItemTos ?? (
-    DEFAULT_NAV_CONFIG[0].dividerAfterItemTo ? [DEFAULT_NAV_CONFIG[0].dividerAfterItemTo] : []
-  );
+  const fallbackDividerAfterItemTos =
+    DEFAULT_NAV_CONFIG[0].dividerAfterItemTos ??
+    (DEFAULT_NAV_CONFIG[0].dividerAfterItemTo ? [DEFAULT_NAV_CONFIG[0].dividerAfterItemTo] : []);
   const rawDividerAfterItemTos = dividerAfterItemTos === undefined ? fallbackDividerAfterItemTos : dividerAfterItemTos;
-  const normalizedDividerAfterItemTos = Array.from(new Set(rawDividerAfterItemTos ?? []))
-    .filter((itemTo) => visibleItemRoutes.has(itemTo));
+  const normalizedDividerAfterItemTos = Array.from(new Set(rawDividerAfterItemTos ?? [])).filter((itemTo) =>
+    visibleItemRoutes.has(itemTo),
+  );
 
-  return [{
-    title: NAV_ROOT_GROUP_TITLE,
-    iconName: 'LayoutGrid',
-    dividerAfterItemTo: normalizedDividerAfterItemTos[0] ?? null,
-    dividerAfterItemTos: normalizedDividerAfterItemTos,
-    items,
-  }];
+  return [
+    {
+      title: NAV_ROOT_GROUP_TITLE,
+      iconName: 'LayoutGrid',
+      dividerAfterItemTo: normalizedDividerAfterItemTos[0] ?? null,
+      dividerAfterItemTos: normalizedDividerAfterItemTos,
+      items,
+    },
+  ];
 }
 
 function mergeWithDefaultConfig(config: NavGroupConfig[]) {
@@ -191,15 +198,23 @@ export function normalizeNavConfig(config: NavGroupConfig[]) {
 }
 
 function isValidConfig(config: unknown): config is NavGroupConfig[] {
-  return Array.isArray(config) && config.every((group) => (
-    group &&
-    typeof group === 'object' &&
-    typeof group.title === 'string' &&
-    typeof group.iconName === 'string' &&
-    (group.dividerAfterItemTo === undefined || typeof group.dividerAfterItemTo === 'string' || group.dividerAfterItemTo === null) &&
-    (group.dividerAfterItemTos === undefined || (Array.isArray(group.dividerAfterItemTos) && group.dividerAfterItemTos.every((item: unknown) => typeof item === 'string'))) &&
-    Array.isArray(group.items)
-  ));
+  return (
+    Array.isArray(config) &&
+    config.every(
+      (group) =>
+        group &&
+        typeof group === 'object' &&
+        typeof group.title === 'string' &&
+        typeof group.iconName === 'string' &&
+        (group.dividerAfterItemTo === undefined ||
+          typeof group.dividerAfterItemTo === 'string' ||
+          group.dividerAfterItemTo === null) &&
+        (group.dividerAfterItemTos === undefined ||
+          (Array.isArray(group.dividerAfterItemTos) &&
+            group.dividerAfterItemTos.every((item: unknown) => typeof item === 'string'))) &&
+        Array.isArray(group.items),
+    )
+  );
 }
 
 export function loadNavConfig(): NavGroupConfig[] {

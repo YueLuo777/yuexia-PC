@@ -82,24 +82,79 @@ export type StructuredSettingFieldSet = {
   groups?: readonly StructuredSettingFieldGroup[];
 };
 
+export type StructuredSettingFieldDraft = {
+  entryId: string;
+  fieldSetId: string;
+  body: string;
+  fields: Record<string, string>;
+} | null;
+
 export const STRUCTURED_SETTING_TABS = ['固定设定', '状态设定', '确认'] as const;
 export type StructuredSettingTab = (typeof STRUCTURED_SETTING_TABS)[number];
 
 export const MONSTER_BESTIARY_FIELDS: readonly StructuredSettingFieldDefinition[] = [
   { key: 'monsterImage', title: '怪物形象', placeholder: '体型、外貌、颜色、标志性器官、压迫感和辨认特征。' },
-  { key: 'monsterAbility', title: '怪物能力', placeholder: '攻击方式、天赋能力、防御特性、特殊感知、族群配合或战斗习惯。' },
-  { key: 'monsterBackground', title: '怪物背景', placeholder: '来源、种族来历、诞生原因、传说、与地图/势力/主线的关联。' },
+  {
+    key: 'monsterAbility',
+    title: '怪物能力',
+    placeholder: '攻击方式、天赋能力、防御特性、特殊感知、族群配合或战斗习惯。',
+  },
+  {
+    key: 'monsterBackground',
+    title: '怪物背景',
+    placeholder: '来源、种族来历、诞生原因、传说、与地图/势力/主线的关联。',
+  },
   { key: 'monsterWeakness', title: '怪物弱点', placeholder: '弱点部位、克制方式、恐惧物、行动限制、破解条件和禁忌。' },
-  { key: 'habitatTrace', title: '出没位置', placeholder: '栖息地、当前出没区域、最近出现章节、是否正在追踪或伏击角色。' },
+  {
+    key: 'habitatTrace',
+    title: '出没位置',
+    placeholder: '栖息地、当前出没区域、最近出现章节、是否正在追踪或伏击角色。',
+  },
   { key: 'dropResources', title: '掉落/资源', placeholder: '妖丹、兽骨、鳞甲、毒囊、血脉、材料、情报或可获取收益。' },
 ];
 export const FORESHADOW_SETTING_FIELDS: readonly StructuredSettingFieldDefinition[] = [
-  { key: 'foreshadowCode', title: '伏笔编号', placeholder: '最多 10 位编号。', control: 'input', maxLength: 10, fieldClassName: 'xy-structured-header-field h-[48px] min-w-0' },
-  { key: 'firstSeenChapter', title: '首次出现章节', placeholder: '第3章', control: 'input', maxLength: 7, fieldClassName: 'xy-structured-header-field h-[48px] min-w-0' },
-  { key: 'recoveredChapter', title: '回收章节', placeholder: '第36章', control: 'input', maxLength: 7, fieldClassName: 'xy-structured-header-field h-[48px] min-w-0' },
-  { key: 'relatedObject', title: '关联对象', placeholder: '关联人物、道具、势力、地图、怪物或剧情事件。', fieldClassName: 'min-h-0' },
-  { key: 'setupMethod', title: '铺垫方式', placeholder: '读者第一次看到它时是什么形式，例如异常反应、对话暗示、物品细节或旁人失态。', fieldClassName: 'min-h-0' },
-  { key: 'foreshadowContent', title: '伏笔内容', placeholder: '详细写明表层信息、隐藏真相、后续反转、回收方式和对剧情的影响。', fieldClassName: 'col-span-2 min-h-0' },
+  {
+    key: 'foreshadowCode',
+    title: '伏笔编号',
+    placeholder: '最多 10 位编号。',
+    control: 'input',
+    maxLength: 10,
+    fieldClassName: 'xy-structured-header-field h-[48px] min-w-0',
+  },
+  {
+    key: 'firstSeenChapter',
+    title: '首次出现章节',
+    placeholder: '第3章',
+    control: 'input',
+    maxLength: 7,
+    fieldClassName: 'xy-structured-header-field h-[48px] min-w-0',
+  },
+  {
+    key: 'recoveredChapter',
+    title: '回收章节',
+    placeholder: '第36章',
+    control: 'input',
+    maxLength: 7,
+    fieldClassName: 'xy-structured-header-field h-[48px] min-w-0',
+  },
+  {
+    key: 'relatedObject',
+    title: '关联对象',
+    placeholder: '关联人物、道具、势力、地图、怪物或剧情事件。',
+    fieldClassName: 'min-h-0',
+  },
+  {
+    key: 'setupMethod',
+    title: '铺垫方式',
+    placeholder: '读者第一次看到它时是什么形式，例如异常反应、对话暗示、物品细节或旁人失态。',
+    fieldClassName: 'min-h-0',
+  },
+  {
+    key: 'foreshadowContent',
+    title: '伏笔内容',
+    placeholder: '详细写明表层信息、隐藏真相、后续反转、回收方式和对剧情的影响。',
+    fieldClassName: 'col-span-2 min-h-0',
+  },
 ];
 export const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[] = [
   {
@@ -162,8 +217,16 @@ export const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[]
       { key: 'organization', title: '组织架构', placeholder: '首领、长老、部门、等级、权力来源和决策方式。' },
       { key: 'mainCharacters', title: '主要人物', placeholder: '首领、代表人物、关键成员，以及他们在势力中的作用。' },
       { key: 'factionRelations', title: '势力关系', placeholder: '当前盟友、敌人、合作对象、冲突对象和利益绑定。' },
-      { key: 'protagonistStrategy', title: '对主角策略', placeholder: '当前如何拉拢、利用、保护、试探、压制或追杀主角。' },
-      { key: 'coreConflict', title: '核心问题/矛盾', placeholder: '当前内部隐患、外部压力、资源危机、路线冲突或待解决问题。' },
+      {
+        key: 'protagonistStrategy',
+        title: '对主角策略',
+        placeholder: '当前如何拉拢、利用、保护、试探、压制或追杀主角。',
+      },
+      {
+        key: 'coreConflict',
+        title: '核心问题/矛盾',
+        placeholder: '当前内部隐患、外部压力、资源危机、路线冲突或待解决问题。',
+      },
     ],
   },
   {
@@ -177,8 +240,16 @@ export const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[]
     fields: [
       { key: 'mapOverview', title: '世界架构', placeholder: '大陆规模、地理风貌、主要国家/宗门分布和世界层级。' },
       { key: 'regionDivision', title: '区域划分', placeholder: '国家、城池、宗门地盘、荒域、边境、海域等区域层级。' },
-      { key: 'factionDistribution', title: '势力分布', placeholder: '哪些势力控制哪些地域，边界、缓冲区和争夺区在哪里。' },
-      { key: 'resourceDistribution', title: '资源分布', placeholder: '矿脉、灵药、妖兽材料、遗迹、交易中心和稀缺产地。' },
+      {
+        key: 'factionDistribution',
+        title: '势力分布',
+        placeholder: '哪些势力控制哪些地域，边界、缓冲区和争夺区在哪里。',
+      },
+      {
+        key: 'resourceDistribution',
+        title: '资源分布',
+        placeholder: '矿脉、灵药、妖兽材料、遗迹、交易中心和稀缺产地。',
+      },
       { key: 'geographyRules', title: '世界规则', placeholder: '禁飞、灵气浓度、空间异常、天气灾害等地图底层规则。' },
     ],
   },
@@ -254,7 +325,11 @@ export const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[]
       { key: 'coreEffect', title: '核心效果', placeholder: '主要能力、战斗表现、辅助用途、剧情作用和辨识度。' },
       { key: 'growthMethod', title: '修炼/升级', placeholder: '如何修炼、突破条件、熟练度提升方式、进阶材料或代价。' },
       { key: 'useLimit', title: '使用限制', placeholder: '冷却、消耗、境界门槛、反噬、禁忌、不能做到什么。' },
-      { key: 'foreshadowing', title: '相关伏笔', placeholder: '隐藏形态、后续解锁、来源秘密、与人物身世或主线的关联。' },
+      {
+        key: 'foreshadowing',
+        title: '相关伏笔',
+        placeholder: '隐藏形态、后续解锁、来源秘密、与人物身世或主线的关联。',
+      },
       { key: 'currentMastery', title: '当前熟练度', placeholder: '当前掌握到什么程度、能稳定使用哪些招式。' },
       { key: 'breakthroughState', title: '当前突破', placeholder: '是否接近突破、卡在哪一层、缺少什么条件。' },
       { key: 'damageSeal', title: '受损/封印', placeholder: '是否受损、被封、被污染、被限制或暂时无法使用。' },
@@ -288,12 +363,26 @@ export const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[]
       {
         title: '固定设定',
         description: '特殊资源的长期规则，记录为什么珍贵、怎么获得、谁能用、什么时候失效和主线关联。',
-        fieldKeys: ['basicInfo', 'acquireCondition', 'useRules', 'permissionBoundary', 'failureCondition', 'mainlineRelation'],
+        fieldKeys: [
+          'basicInfo',
+          'acquireCondition',
+          'useRules',
+          'permissionBoundary',
+          'failureCondition',
+          'mainlineRelation',
+        ],
       },
       {
         title: '状态设定',
         description: '章节推进后会变化，AI 更新时只刷新归属、可用、次数、竞争、激活和触发状态。',
-        fieldKeys: ['currentOwnership', 'availableStatus', 'remainingUses', 'competitionRisk', 'activationProgress', 'recentTrigger'],
+        fieldKeys: [
+          'currentOwnership',
+          'availableStatus',
+          'remainingUses',
+          'competitionRisk',
+          'activationProgress',
+          'recentTrigger',
+        ],
       },
     ],
     fields: [
@@ -324,7 +413,11 @@ export const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[]
       { key: 'origin', title: '来历', placeholder: '物品的来源背景、制造者、历史、被谁发现或带入剧情。' },
       { key: 'ownershipChange', title: '归属变化', placeholder: '曾经持有者、转手原因、争夺过程、当前归属如何形成。' },
       { key: 'currentStatus', title: '当前状态', placeholder: '持有者、损坏/封印/激活状态、是否可用、是否暴露。' },
-      { key: 'foreshadowing', title: '相关伏笔', placeholder: '隐藏能力、后续解锁、与人物身世/主线秘密/地图线索的关联。' },
+      {
+        key: 'foreshadowing',
+        title: '相关伏笔',
+        placeholder: '隐藏能力、后续解锁、与人物身世/主线秘密/地图线索的关联。',
+      },
     ],
   },
   {
@@ -395,18 +488,39 @@ export function stringifySettingContent(value: SettingContent) {
 }
 
 export function createEmptyStructuredSettingFields(fieldSet: StructuredSettingFieldSet) {
-  return fieldSet.fields.reduce((result, field) => {
-    result[field.key] = '';
-    return result;
-  }, {} as Record<string, string>);
+  return fieldSet.fields.reduce(
+    (result, field) => {
+      result[field.key] = '';
+      return result;
+    },
+    {} as Record<string, string>,
+  );
 }
 
 export function parseSectionedSettingBody(body: string) {
   const sections: Record<string, string> = {};
-  const pattern = /(?:^|\n)\s*【([^】\n]+)】：\s*\n([\s\S]*?)(?=\n\s*【[^】\n]+】：\s*\n|$)/g;
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(body)) !== null) {
-    sections[match[1].trim()] = match[2].trim();
+  const normalizedBody = body.replace(/\r\n/g, '\n');
+  let currentTitle = '';
+  let currentLines: string[] = [];
+  const commitCurrentSection = () => {
+    if (!currentTitle) return;
+    sections[currentTitle] = currentLines.join('\n').trim();
+  };
+
+  normalizedBody.split('\n').forEach((line) => {
+    const headerMatch = line.match(/^\s*【([^】\n]+)】\s*(?:[：:]\s*(.*))?$/);
+    if (headerMatch) {
+      commitCurrentSection();
+      currentTitle = headerMatch[1].trim();
+      currentLines = [headerMatch[2] ?? ''];
+      return;
+    }
+    if (currentTitle) {
+      currentLines.push(line);
+    }
+  });
+  if (currentTitle) {
+    commitCurrentSection();
   }
   return sections;
 }
@@ -421,9 +535,33 @@ export function parseStructuredSettingFields(body: string, fieldSet: StructuredS
 }
 
 export function stringifyStructuredSettingFields(fields: Record<string, string>, fieldSet: StructuredSettingFieldSet) {
-  return fieldSet.fields
-    .map((field) => `【${field.title}】：\n${fields[field.key].trim()}`)
-    .join('\n\n');
+  return fieldSet.fields.map((field) => `【${field.title}】：\n${fields[field.key].trim()}`).join('\n\n');
+}
+
+export function resolveStructuredSettingDraftFields(
+  draft: StructuredSettingFieldDraft,
+  entryId: string,
+  fieldSetId: string,
+  body: string,
+  parsedFields: Record<string, string>,
+) {
+  return draft && draft.entryId === entryId && draft.fieldSetId === fieldSetId && draft.body === body
+    ? draft.fields
+    : parsedFields;
+}
+
+export function createStructuredSettingFieldDraft(
+  entryId: string,
+  fieldSetId: string,
+  body: string,
+  fields: Record<string, string>,
+): StructuredSettingFieldDraft {
+  return {
+    entryId,
+    fieldSetId,
+    body,
+    fields,
+  };
 }
 
 export function getStructuredSettingFieldSet(entry: WorkbenchLibraryEntry, setting: SettingContent | null) {
@@ -431,19 +569,22 @@ export function getStructuredSettingFieldSet(entry: WorkbenchLibraryEntry, setti
     const fieldSet = STRUCTURED_SETTING_FIELD_SETS.find((item) => item.id === setting.structuredFieldSetId);
     if (fieldSet) return fieldSet;
   }
-  const titleMatchedFieldSet = STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => (
-    setting?.type === fieldSet.entryType && entry.title.trim() === fieldSet.entryTitle
-  ));
+  const titleMatchedFieldSet = STRUCTURED_SETTING_FIELD_SETS.find(
+    (fieldSet) => setting?.type === fieldSet.entryType && entry.title.trim() === fieldSet.entryTitle,
+  );
   if (titleMatchedFieldSet) return titleMatchedFieldSet;
-  const typeMatchedFieldSet = STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => (
-    fieldSet.matchAllTitles && setting?.type === fieldSet.entryType
-  ));
+  const typeMatchedFieldSet = STRUCTURED_SETTING_FIELD_SETS.find(
+    (fieldSet) => fieldSet.matchAllTitles && setting?.type === fieldSet.entryType,
+  );
   if (typeMatchedFieldSet) return typeMatchedFieldSet;
   if (setting?.body.trim()) {
     const sections = parseSectionedSettingBody(setting.body);
-    return STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => (
-      setting.type === fieldSet.entryType && fieldSet.fields.some((field) => sections[field.title] !== undefined)
-    )) ?? null;
+    return (
+      STRUCTURED_SETTING_FIELD_SETS.find(
+        (fieldSet) =>
+          setting.type === fieldSet.entryType && fieldSet.fields.some((field) => sections[field.title] !== undefined),
+      ) ?? null
+    );
   }
   return null;
 }
@@ -451,9 +592,12 @@ export function getStructuredSettingFieldSet(entry: WorkbenchLibraryEntry, setti
 export function getStructuredSettingFieldSetByDefaultTitle(type: string, title: string) {
   const normalizedType = normalizeSettingType(type);
   const normalizedTitle = title.trim();
-  return STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => (
-    normalizeSettingType(fieldSet.entryType) === normalizedType && fieldSet.entryTitle === normalizedTitle
-  )) ?? null;
+  return (
+    STRUCTURED_SETTING_FIELD_SETS.find(
+      (fieldSet) =>
+        normalizeSettingType(fieldSet.entryType) === normalizedType && fieldSet.entryTitle === normalizedTitle,
+    ) ?? null
+  );
 }
 
 export function getSettingImportFormatFieldSet(type: string, title: string) {
@@ -466,12 +610,16 @@ export function getSettingImportFormatFieldSet(type: string, title: string) {
   if (normalizedType === '世界地图' && title.trim() === '危险区域') {
     return STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => fieldSet.id === 'faction-danger-zone') ?? null;
   }
-  return STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => (
-    fieldSet.matchAllTitles && normalizeSettingType(fieldSet.entryType) === normalizedType
-  )) ?? null;
+  return (
+    STRUCTURED_SETTING_FIELD_SETS.find(
+      (fieldSet) => fieldSet.matchAllTitles && normalizeSettingType(fieldSet.entryType) === normalizedType,
+    ) ?? null
+  );
 }
 
-export function mapStructuredFieldsToImportFormat(fields: readonly StructuredSettingFieldDefinition[]): SettingImportFormatField[] {
+export function mapStructuredFieldsToImportFormat(
+  fields: readonly StructuredSettingFieldDefinition[],
+): SettingImportFormatField[] {
   return fields.map((field) => ({ title: field.title, placeholder: field.placeholder }));
 }
 
@@ -492,14 +640,15 @@ export function getSettingImportFormatEntryTitles(type: string, currentSettingEn
   const currentTitles = currentSettingEntries
     .filter((entry) => normalizeSettingType(parseSettingContent(entry.content).type) === normalizedType)
     .map((entry) => entry.title);
-  const starterTitles = DEFAULT_WORK_SETTING_STARTER_ENTRIES
-    .filter((entry) => normalizeSettingType(entry.type) === normalizedType)
-    .map((entry) => entry.title);
-  const structuredTitles = STRUCTURED_SETTING_FIELD_SETS
-    .filter((fieldSet) => normalizeSettingType(fieldSet.entryType) === normalizedType && !fieldSet.matchAllTitles)
-    .map((fieldSet) => fieldSet.entryTitle);
-  const knownTitles = Array.from(new Set([...currentTitles, ...starterTitles, ...structuredTitles]))
-    .filter((title) => title.trim());
+  const starterTitles = DEFAULT_WORK_SETTING_STARTER_ENTRIES.filter(
+    (entry) => normalizeSettingType(entry.type) === normalizedType,
+  ).map((entry) => entry.title);
+  const structuredTitles = STRUCTURED_SETTING_FIELD_SETS.filter(
+    (fieldSet) => normalizeSettingType(fieldSet.entryType) === normalizedType && !fieldSet.matchAllTitles,
+  ).map((fieldSet) => fieldSet.entryTitle);
+  const knownTitles = Array.from(new Set([...currentTitles, ...starterTitles, ...structuredTitles])).filter((title) =>
+    title.trim(),
+  );
   const visibleTitles = knownTitles.filter((title) => normalizeSettingType(title) !== normalizedType);
   return visibleTitles.length > 0 ? visibleTitles : [normalizedType];
 }
@@ -522,12 +671,14 @@ export function createSettingImportFormatEntry(
 
 export function buildSettingImportFormatTabs(options: BuildSettingImportFormatTabsOptions): SettingImportFormatTab[] {
   const { visibleSettingTypes, settingEntries, getSettingTypeWorkspaceDomain } = options;
-  const workGroups = visibleSettingTypes.filter((type) => !getSettingTypeWorkspaceDomain(type)).map((groupName) => ({
-    name: groupName,
-    entries: getSettingImportFormatEntryTitles(groupName, settingEntries).map((title) => (
-      createSettingImportFormatEntry('work', '作品设定', groupName, title)
-    )),
-  }));
+  const workGroups = visibleSettingTypes
+    .filter((type) => !getSettingTypeWorkspaceDomain(type))
+    .map((groupName) => ({
+      name: groupName,
+      entries: getSettingImportFormatEntryTitles(groupName, settingEntries).map((title) =>
+        createSettingImportFormatEntry('work', '作品设定', groupName, title),
+      ),
+    }));
   const roleFields: SettingImportFormatField[] = [
     { title: '人物姓名', placeholder: '角色姓名。' },
     { title: '身份定位', placeholder: '男主角、女主角、配角、反派等。' },
@@ -561,20 +712,24 @@ export function buildSettingImportFormatTabs(options: BuildSettingImportFormatTa
         },
       ],
     },
-    ...([
-      ['factions', '势力设定', 'setting:faction'],
-      ['items', '道具资源', 'setting:item'],
-      ['monsters', '怪物图鉴', 'setting:monster'],
-      ['foreshadow', '伏笔线索', 'setting:foreshadow'],
-    ] as const).map(([tabId, tabTitle, domain]) => ({
+    ...(
+      [
+        ['factions', '势力设定', 'setting:faction'],
+        ['items', '道具资源', 'setting:item'],
+        ['monsters', '怪物图鉴', 'setting:monster'],
+        ['foreshadow', '伏笔线索', 'setting:foreshadow'],
+      ] as const
+    ).map(([tabId, tabTitle, domain]) => ({
       id: tabId,
       title: tabTitle,
-      groups: visibleSettingTypes.filter((type) => getSettingTypeWorkspaceDomain(type) === domain).map((groupName) => ({
-        name: groupName,
-        entries: getSettingImportFormatEntryTitles(groupName, settingEntries).map((title) => (
-          createSettingImportFormatEntry(tabId, tabTitle, groupName, title)
-        )),
-      })),
+      groups: visibleSettingTypes
+        .filter((type) => getSettingTypeWorkspaceDomain(type) === domain)
+        .map((groupName) => ({
+          name: groupName,
+          entries: getSettingImportFormatEntryTitles(groupName, settingEntries).map((title) =>
+            createSettingImportFormatEntry(tabId, tabTitle, groupName, title),
+          ),
+        })),
     })),
   ];
   return domainTabs;
@@ -584,9 +739,11 @@ export const DEFAULT_SETTING_IMPORT_FORMAT_TAB_ID = 'work';
 export const DEFAULT_SETTING_IMPORT_FORMAT_ENTRY_ID = '';
 
 export function findSettingImportFormatEntry(entryId: string, tabs: SettingImportFormatTab[]) {
-  return tabs
-    .flatMap((tab) => tab.groups.flatMap((group) => group.entries))
-    .find((entry) => entry.id === entryId) ?? tabs[0]?.groups[0]?.entries[0] ?? null;
+  return (
+    tabs.flatMap((tab) => tab.groups.flatMap((group) => group.entries)).find((entry) => entry.id === entryId) ??
+    tabs[0]?.groups[0]?.entries[0] ??
+    null
+  );
 }
 
 export function buildSettingImportFormatEntryBlock(entry: SettingImportFormatEntry) {
@@ -594,67 +751,42 @@ export function buildSettingImportFormatEntryBlock(entry: SettingImportFormatEnt
     `【${field.title}】：`,
     field.title === '身份定位' ? '男主角' : '内容',
   ]);
-  return [
-    `*${entry.title}*：`,
-    ...fieldLines,
-  ].join('\n').trimEnd();
+  return [`*${entry.title}*：`, ...fieldLines].join('\n').trimEnd();
 }
 
 export function buildSettingImportFormatPreview(entry: SettingImportFormatEntry) {
   const entryBlock = buildSettingImportFormatEntryBlock(entry);
   if (entry.tabTitle === '人物设定') {
-    return [
-      '<人物设定>',
-      entryBlock,
-      '</人物设定>',
-    ].join('\n').trimEnd();
+    return ['<人物设定>', entryBlock, '</人物设定>'].join('\n').trimEnd();
   }
-  return [
-    `<${entry.tabTitle}>`,
-    `<${entry.groupName}>`,
-    entryBlock,
-    `</${entry.groupName}>`,
-    `</${entry.tabTitle}>`,
-  ].join('\n').trimEnd();
+  return [`<${entry.tabTitle}>`, `<${entry.groupName}>`, entryBlock, `</${entry.groupName}>`, `</${entry.tabTitle}>`]
+    .join('\n')
+    .trimEnd();
 }
 
 export function buildSettingImportFormatGroupPreview(tab: SettingImportFormatTab, group: SettingImportFormatGroup) {
   const entryBlocks = group.entries.map((entry) => buildSettingImportFormatEntryBlock(entry));
   if (tab.title === '人物设定') {
-    return [
-      '<人物设定>',
-      ...entryBlocks,
-      '</人物设定>',
-    ].join('\n').trimEnd();
+    return ['<人物设定>', ...entryBlocks, '</人物设定>'].join('\n').trimEnd();
   }
-  return [
-    `<${tab.title}>`,
-    `<${group.name}>`,
-    ...entryBlocks,
-    `</${group.name}>`,
-    `</${tab.title}>`,
-  ].join('\n').trimEnd();
+  return [`<${tab.title}>`, `<${group.name}>`, ...entryBlocks, `</${group.name}>`, `</${tab.title}>`]
+    .join('\n')
+    .trimEnd();
 }
 
 export function buildSettingImportFormatTabPreview(tab: SettingImportFormatTab) {
   if (tab.title === '人物设定') {
-    const entryBlocks = tab.groups.flatMap((group) => group.entries.map((entry) => buildSettingImportFormatEntryBlock(entry)));
-    return [
-      '<人物设定>',
-      ...entryBlocks,
-      '</人物设定>',
-    ].join('\n').trimEnd();
+    const entryBlocks = tab.groups.flatMap((group) =>
+      group.entries.map((entry) => buildSettingImportFormatEntryBlock(entry)),
+    );
+    return ['<人物设定>', ...entryBlocks, '</人物设定>'].join('\n').trimEnd();
   }
-  const groupBlocks = tab.groups.map((group) => [
-    `<${group.name}>`,
-    ...group.entries.map((entry) => buildSettingImportFormatEntryBlock(entry)),
-    `</${group.name}>`,
-  ].join('\n').trimEnd());
-  return [
-    `<${tab.title}>`,
-    ...groupBlocks,
-    `</${tab.title}>`,
-  ].join('\n').trimEnd();
+  const groupBlocks = tab.groups.map((group) =>
+    [`<${group.name}>`, ...group.entries.map((entry) => buildSettingImportFormatEntryBlock(entry)), `</${group.name}>`]
+      .join('\n')
+      .trimEnd(),
+  );
+  return [`<${tab.title}>`, ...groupBlocks, `</${tab.title}>`].join('\n').trimEnd();
 }
 
 export function buildSettingImportFormatScopedPreview(

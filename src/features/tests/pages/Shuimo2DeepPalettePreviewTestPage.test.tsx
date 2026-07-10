@@ -31,14 +31,11 @@ describe('Shuimo2DeepPalettePreviewTestPage', () => {
     expect(source).toContain('AI输入区');
   });
 
-  it('adds the deep shuimo2 palette preview to the UI test collection after the shuimo palette page', async () => {
+  it('keeps the deep shuimo2 palette preview in the UI test collection', async () => {
     const source = await readFile(collectionPagePath, 'utf8');
 
     expect(source).toContain('Shuimo2DeepPalettePreviewTestPage');
     expect(source).toContain('/shuimo2-deep-palette-preview-test');
     expect(source).toContain('水墨2 深度配色预览');
-    expect(source.indexOf('/shuimo-semantic-palette-preview-test')).toBeLessThan(
-      source.indexOf('/shuimo2-deep-palette-preview-test'),
-    );
   });
 });

@@ -1,4 +1,14 @@
-import { AlertTriangle, Image as ImageIcon, Plus, RefreshCw, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react';
+import {
+  AlertTriangle,
+  Image as ImageIcon,
+  Plus,
+  RefreshCw,
+  Search,
+  SlidersHorizontal,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -27,9 +37,8 @@ interface FullCardSettings extends NovelCardSettings {
 
 const CARD_SETTINGS_KEY = 'novel_card_settings';
 const NOVEL_LIBRARY_DASHBOARD_WIDTHS_KEY = 'novel_library_dashboard_card_widths_v1';
-const DEFAULT_DASHBOARD_CARD_WIDTHS = [1.25, 1.45, 1.75, 1];
-const DASHBOARD_CARD_MIN_WIDTH = 220;
-const DASHBOARD_CARD_MIN_RATIO = 0.35;
+const DEFAULT_DASHBOARD_CARD_WIDTHS = [464, 434, 428, 424];
+const DASHBOARD_CARD_MIN_WIDTH = 360;
 const DASHBOARD_CARD_RESIZE_HANDLE_WIDTH = 10;
 const defaultBtnOrder = ['重命名', '封面', '导出', '删除'];
 const defaultBtnColors: Record<string, BtnColor> = {
@@ -115,9 +124,7 @@ function PillSegmentButton({
       type="button"
       onClick={onClick}
       className={`min-w-0 flex-1 rounded-[9px] text-sm font-semibold transition-colors ${
-        active
-          ? 'bg-white text-[#08AACE] shadow-sm'
-          : 'text-slate-500 hover:bg-white/70 hover:text-slate-700'
+        active ? 'bg-white text-[#08AACE] shadow-sm' : 'text-slate-500 hover:bg-white/70 hover:text-slate-700'
       }`}
     >
       {children}
@@ -138,12 +145,24 @@ function loadCardSettings(): FullCardSettings {
     }
     if (savedOrder.length === 0) savedOrder = [...defaultBtnOrder];
     return {
-      cardWidth: ['small', 'medium', 'large'].includes(parsed.cardWidth) ? parsed.cardWidth : defaultCardSettings.cardWidth,
-      coverHeight: ['small', 'medium', 'large'].includes(parsed.coverHeight) ? parsed.coverHeight : defaultCardSettings.coverHeight,
-      cardHeight: ['small', 'medium', 'large'].includes(parsed.cardHeight) ? parsed.cardHeight : defaultCardSettings.cardHeight,
-      statFontSize: ['small', 'medium', 'large'].includes(parsed.statFontSize) ? parsed.statFontSize : defaultCardSettings.statFontSize,
-      buttonFontSize: ['small', 'medium', 'large'].includes(parsed.buttonFontSize) ? parsed.buttonFontSize : defaultCardSettings.buttonFontSize,
-      buttonFontWeight: ['normal', 'bold'].includes(parsed.buttonFontWeight) ? parsed.buttonFontWeight : defaultCardSettings.buttonFontWeight,
+      cardWidth: ['small', 'medium', 'large'].includes(parsed.cardWidth)
+        ? parsed.cardWidth
+        : defaultCardSettings.cardWidth,
+      coverHeight: ['small', 'medium', 'large'].includes(parsed.coverHeight)
+        ? parsed.coverHeight
+        : defaultCardSettings.coverHeight,
+      cardHeight: ['small', 'medium', 'large'].includes(parsed.cardHeight)
+        ? parsed.cardHeight
+        : defaultCardSettings.cardHeight,
+      statFontSize: ['small', 'medium', 'large'].includes(parsed.statFontSize)
+        ? parsed.statFontSize
+        : defaultCardSettings.statFontSize,
+      buttonFontSize: ['small', 'medium', 'large'].includes(parsed.buttonFontSize)
+        ? parsed.buttonFontSize
+        : defaultCardSettings.buttonFontSize,
+      buttonFontWeight: ['normal', 'bold'].includes(parsed.buttonFontWeight)
+        ? parsed.buttonFontWeight
+        : defaultCardSettings.buttonFontWeight,
       btnPerRow: [2, 3].includes(parsed.btnPerRow) ? parsed.btnPerRow : defaultCardSettings.btnPerRow,
       btnRows: [1, 2, 3].includes(parsed.btnRows) ? parsed.btnRows : defaultCardSettings.btnRows,
       btnOrder: savedOrder,
@@ -164,9 +183,14 @@ function readDashboardCardWidths() {
     if (!saved) return [...DEFAULT_DASHBOARD_CARD_WIDTHS];
     const parsed = JSON.parse(saved);
     if (!Array.isArray(parsed)) return [...DEFAULT_DASHBOARD_CARD_WIDTHS];
+    const looksLikeLegacyRatio = parsed.some((item) => {
+      const value = Number(item);
+      return Number.isFinite(value) && value > 0 && value < 10;
+    });
+    if (looksLikeLegacyRatio) return [...DEFAULT_DASHBOARD_CARD_WIDTHS];
     return DEFAULT_DASHBOARD_CARD_WIDTHS.map((fallback, index) => {
       const value = Number(parsed[index]);
-      return Number.isFinite(value) ? Math.max(DASHBOARD_CARD_MIN_RATIO, value) : fallback;
+      return Number.isFinite(value) ? Math.max(DASHBOARD_CARD_MIN_WIDTH, value) : fallback;
     });
   } catch {
     return [...DEFAULT_DASHBOARD_CARD_WIDTHS];
@@ -250,7 +274,11 @@ function CardSettingsModal({
                   <label className="mb-1.5 block text-sm font-medium text-gray-600">统计文字</label>
                   <PillSegmentGroup>
                     {(['small', 'medium', 'large'] as const).map((value, index) => (
-                      <PillSegmentButton key={value} onClick={() => onChange({ ...settings, statFontSize: value })} active={settings.statFontSize === value}>
+                      <PillSegmentButton
+                        key={value}
+                        onClick={() => onChange({ ...settings, statFontSize: value })}
+                        active={settings.statFontSize === value}
+                      >
                         {['小', '中', '大'][index]}
                       </PillSegmentButton>
                     ))}
@@ -260,7 +288,11 @@ function CardSettingsModal({
                   <label className="mb-1.5 block text-sm font-medium text-gray-600">按钮文字</label>
                   <PillSegmentGroup>
                     {(['small', 'medium', 'large'] as const).map((value, index) => (
-                      <PillSegmentButton key={value} onClick={() => onChange({ ...settings, buttonFontSize: value })} active={settings.buttonFontSize === value}>
+                      <PillSegmentButton
+                        key={value}
+                        onClick={() => onChange({ ...settings, buttonFontSize: value })}
+                        active={settings.buttonFontSize === value}
+                      >
                         {['小', '中', '大'][index]}
                       </PillSegmentButton>
                     ))}
@@ -270,7 +302,11 @@ function CardSettingsModal({
                   <label className="mb-1.5 block text-sm font-medium text-gray-600">按钮字重</label>
                   <PillSegmentGroup>
                     {(['normal', 'bold'] as const).map((value, index) => (
-                      <PillSegmentButton key={value} onClick={() => onChange({ ...settings, buttonFontWeight: value })} active={settings.buttonFontWeight === value}>
+                      <PillSegmentButton
+                        key={value}
+                        onClick={() => onChange({ ...settings, buttonFontWeight: value })}
+                        active={settings.buttonFontWeight === value}
+                      >
                         {['常规', '粗体'][index]}
                       </PillSegmentButton>
                     ))}
@@ -286,7 +322,11 @@ function CardSettingsModal({
                   <label className="mb-1.5 block text-sm font-medium text-gray-600">每行按钮</label>
                   <PillSegmentGroup>
                     {[2, 3].map((value) => (
-                      <PillSegmentButton key={value} onClick={() => onChange({ ...settings, btnPerRow: value as 2 | 3 })} active={settings.btnPerRow === value}>
+                      <PillSegmentButton
+                        key={value}
+                        onClick={() => onChange({ ...settings, btnPerRow: value as 2 | 3 })}
+                        active={settings.btnPerRow === value}
+                      >
                         {value}个
                       </PillSegmentButton>
                     ))}
@@ -296,7 +336,11 @@ function CardSettingsModal({
                   <label className="mb-1.5 block text-sm font-medium text-gray-600">按钮行数</label>
                   <PillSegmentGroup>
                     {[1, 2, 3].map((value) => (
-                      <PillSegmentButton key={value} onClick={() => onChange({ ...settings, btnRows: value as 1 | 2 | 3 })} active={settings.btnRows === value}>
+                      <PillSegmentButton
+                        key={value}
+                        onClick={() => onChange({ ...settings, btnRows: value as 1 | 2 | 3 })}
+                        active={settings.btnRows === value}
+                      >
                         {value}行
                       </PillSegmentButton>
                     ))}
@@ -308,9 +352,14 @@ function CardSettingsModal({
 
           <div className="flex w-[280px] flex-col gap-3 overflow-y-auto bg-gray-50/50 p-4">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-600">拖拽填空（{settings.btnRows}行×{settings.btnPerRow}个）</label>
+              <label className="mb-1.5 block text-sm font-medium text-gray-600">
+                拖拽填空（{settings.btnRows}行×{settings.btnPerRow}个）
+              </label>
               <div className="mx-auto flex w-[240px] flex-col rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-                <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${settings.btnPerRow}, 1fr)`, gridAutoRows: '36px' }}>
+                <div
+                  className="grid gap-1.5"
+                  style={{ gridTemplateColumns: `repeat(${settings.btnPerRow}, 1fr)`, gridAutoRows: '36px' }}
+                >
                   {slots.map((label, index) => (
                     <div
                       key={index}
@@ -367,22 +416,30 @@ function CardSettingsModal({
             <div>
               <label className="mb-1.5 block text-sm font-medium text-gray-600">颜色</label>
               <div className="space-y-1">
-                {settings.btnOrder.slice(0, settings.btnPerRow * settings.btnRows).filter(Boolean).map((label) => (
-                  <div key={label} className="flex items-center gap-1.5">
-                    <span className="w-10 truncate text-xs text-gray-500">{label}</span>
-                    <div className="flex flex-1 gap-0.5">
-                      {colorOptions.map((option) => (
-                        <button
-                          key={`${label}-${option.value}`}
-                          onClick={() => onChange({ ...settings, btnColors: { ...settings.btnColors, [label]: option.value } })}
-                          className={`h-3.5 w-3.5 rounded-full border transition-all ${(settings.btnColors[label] || 'gray') === option.value ? 'scale-110 border-gray-800' : 'border-transparent hover:scale-110'}`}
-                          style={{ backgroundColor: option.value === 'blue' ? '#1E71EF' : option.value === 'red' ? '#EF4444' : '#9CA3AF' }}
-                          title={option.label}
-                        />
-                      ))}
+                {settings.btnOrder
+                  .slice(0, settings.btnPerRow * settings.btnRows)
+                  .filter(Boolean)
+                  .map((label) => (
+                    <div key={label} className="flex items-center gap-1.5">
+                      <span className="w-10 truncate text-xs text-gray-500">{label}</span>
+                      <div className="flex flex-1 gap-0.5">
+                        {colorOptions.map((option) => (
+                          <button
+                            key={`${label}-${option.value}`}
+                            onClick={() =>
+                              onChange({ ...settings, btnColors: { ...settings.btnColors, [label]: option.value } })
+                            }
+                            className={`h-3.5 w-3.5 rounded-full border transition-all ${(settings.btnColors[label] || 'gray') === option.value ? 'scale-110 border-gray-800' : 'border-transparent hover:scale-110'}`}
+                            style={{
+                              backgroundColor:
+                                option.value === 'blue' ? '#1E71EF' : option.value === 'red' ? '#EF4444' : '#9CA3AF',
+                            }}
+                            title={option.label}
+                          />
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           </div>
@@ -390,7 +447,9 @@ function CardSettingsModal({
 
         <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-6 py-3">
           <button
-            onClick={() => onChange({ ...defaultCardSettings, btnOrder: [...defaultBtnOrder], btnColors: { ...defaultBtnColors } })}
+            onClick={() =>
+              onChange({ ...defaultCardSettings, btnOrder: [...defaultBtnOrder], btnColors: { ...defaultBtnColors } })
+            }
             className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-500 transition-colors hover:bg-white"
           >
             <RefreshCw className="h-3.5 w-3.5" />
@@ -405,7 +464,17 @@ function CardSettingsModal({
   );
 }
 
-function DeleteConfirmModal({ isOpen, onClose, onConfirm, title }: { isOpen: boolean; onClose: () => void; onConfirm: () => void; title: string }) {
+function DeleteConfirmModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+}) {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
@@ -417,8 +486,18 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, title }: { isOpen: boo
         <p className="mb-3 text-xs text-gray-400">{title}</p>
         <p className="mb-6 text-sm text-gray-500">删除后将进入回收站，30 天内可恢复；到期后自动删除。</p>
         <div className="flex items-center justify-end gap-3">
-          <button onClick={onClose} className="rounded-md border border-gray-200 px-5 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">取消</button>
-          <button onClick={onConfirm} className="rounded-md bg-amber-500 px-5 py-2 text-sm text-white hover:bg-amber-600 transition-colors">移入回收站</button>
+          <button
+            onClick={onClose}
+            className="rounded-md border border-gray-200 px-5 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            取消
+          </button>
+          <button
+            onClick={onConfirm}
+            className="rounded-md bg-amber-500 px-5 py-2 text-sm text-white hover:bg-amber-600 transition-colors"
+          >
+            移入回收站
+          </button>
         </div>
       </div>
     </div>
@@ -462,7 +541,10 @@ function CoverModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="flex h-[720px] w-[860px] max-w-[94vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+      <div
+        className="flex h-[720px] w-[860px] max-w-[94vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="border-b border-gray-100 px-6 py-4">
           <h2 className="text-base font-bold text-gray-900">设置封面</h2>
           <p className="mt-0.5 text-xs text-gray-400">{novel.title}</p>
@@ -480,20 +562,26 @@ function CoverModal({
                 </div>
               )}
             </div>
-            {message && <div className="mt-3 rounded-xl bg-white px-3 py-2 text-xs leading-5 text-gray-500">{message}</div>}
+            {message && (
+              <div className="mt-3 rounded-xl bg-white px-3 py-2 text-xs leading-5 text-gray-500">{message}</div>
+            )}
           </aside>
 
           <main className="flex min-h-0 flex-col">
             <div className="flex shrink-0 gap-2 border-b border-gray-100 px-5 py-3">
-              {([
-                { id: 'upload', label: '上传封面' },
-                { id: 'library', label: '封面库' },
-              ] as const).map((tab) => (
+              {(
+                [
+                  { id: 'upload', label: '上传封面' },
+                  { id: 'library', label: '封面库' },
+                ] as const
+              ).map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
-                    activeTab === tab.id ? 'bg-brand text-white' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                    activeTab === tab.id
+                      ? 'bg-brand text-white'
+                      : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
                   }`}
                 >
                   {tab.label}
@@ -507,7 +595,12 @@ function CoverModal({
                   <label className="flex h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 text-sm text-gray-500 hover:border-brand hover:bg-brand-light/30">
                     <Upload className="mb-2 h-6 w-6 text-gray-300" />
                     点击选择本地图片
-                    <input type="file" accept="image/*" className="hidden" onChange={(event) => handleFileUpload(event.target.files?.[0])} />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) => handleFileUpload(event.target.files?.[0])}
+                    />
                   </label>
                   <div>
                     <label className="mb-2 block text-xs font-medium text-gray-600">封面地址</label>
@@ -521,8 +614,8 @@ function CoverModal({
                 </div>
               )}
 
-              {activeTab === 'library' && (
-                relatedCovers.length === 0 ? (
+              {activeTab === 'library' &&
+                (relatedCovers.length === 0 ? (
                   <div className="flex h-full min-h-[260px] items-center justify-center rounded-2xl border border-dashed border-gray-200 text-sm text-gray-400">
                     封面库暂无{novel.type === 'script' ? '剧本' : '小说'}封面
                   </div>
@@ -536,7 +629,9 @@ function CoverModal({
                           setMessage(`已选择封面：${item.title}`);
                         }}
                         className={`overflow-hidden rounded-xl border bg-white text-left transition-colors ${
-                          value === item.image ? 'border-brand ring-1 ring-brand' : 'border-gray-100 hover:border-brand/50'
+                          value === item.image
+                            ? 'border-brand ring-1 ring-brand'
+                            : 'border-gray-100 hover:border-brand/50'
                         }`}
                       >
                         <div className="aspect-[3/4] bg-gray-100">
@@ -544,26 +639,36 @@ function CoverModal({
                         </div>
                         <div className="p-2">
                           <div className="truncate text-xs font-medium text-gray-700">{item.title}</div>
-                          <div className="mt-0.5 truncate text-[10px] text-gray-400">{item.modelName ?? item.createdAt}</div>
+                          <div className="mt-0.5 truncate text-[10px] text-gray-400">
+                            {item.modelName ?? item.createdAt}
+                          </div>
                         </div>
                       </button>
                     ))}
                   </div>
-                )
-              )}
+                ))}
             </div>
           </main>
         </div>
 
         <div className="flex justify-between border-t border-gray-100 px-6 py-4">
-          <button onClick={() => onSave(undefined)} className="rounded-lg border border-red-200 px-4 py-2 text-xs text-red-600 hover:bg-red-50">
+          <button
+            onClick={() => onSave(undefined)}
+            className="rounded-lg border border-red-200 px-4 py-2 text-xs text-red-600 hover:bg-red-50"
+          >
             清空封面
           </button>
           <div className="flex gap-2">
-            <button onClick={onClose} className="rounded-lg border border-gray-200 px-4 py-2 text-xs text-gray-600 hover:bg-gray-50">
+            <button
+              onClick={onClose}
+              className="rounded-lg border border-gray-200 px-4 py-2 text-xs text-gray-600 hover:bg-gray-50"
+            >
               取消
             </button>
-            <button onClick={() => onSave(value.trim() || undefined)} className="rounded-lg bg-brand px-5 py-2 text-xs text-white hover:bg-brand-dark">
+            <button
+              onClick={() => onSave(value.trim() || undefined)}
+              className="rounded-lg bg-brand px-5 py-2 text-xs text-white hover:bg-brand-dark"
+            >
               保存
             </button>
           </div>
@@ -616,50 +721,42 @@ export function NovelLibraryPage() {
     startX: number;
     leftWidth: number;
     rightWidth: number;
-    ratioUnitWidth: number;
   } | null>(null);
   const dashboardGridTemplate = [
-    `minmax(${DASHBOARD_CARD_MIN_WIDTH}px, ${dashboardCardWidths[0]}fr)`,
+    `${Math.max(DASHBOARD_CARD_MIN_WIDTH, dashboardCardWidths[0])}px`,
     `${DASHBOARD_CARD_RESIZE_HANDLE_WIDTH}px`,
-    `minmax(${DASHBOARD_CARD_MIN_WIDTH}px, ${dashboardCardWidths[1]}fr)`,
+    `${Math.max(DASHBOARD_CARD_MIN_WIDTH, dashboardCardWidths[1])}px`,
     `${DASHBOARD_CARD_RESIZE_HANDLE_WIDTH}px`,
-    `minmax(${DASHBOARD_CARD_MIN_WIDTH}px, ${dashboardCardWidths[2]}fr)`,
+    `${Math.max(DASHBOARD_CARD_MIN_WIDTH, dashboardCardWidths[2])}px`,
     `${DASHBOARD_CARD_RESIZE_HANDLE_WIDTH}px`,
-    `minmax(${DASHBOARD_CARD_MIN_WIDTH}px, ${dashboardCardWidths[3]}fr)`,
+    `${Math.max(DASHBOARD_CARD_MIN_WIDTH, dashboardCardWidths[3])}px`,
   ].join(' ');
 
   const startDashboardCardResize = (event: ReactPointerEvent<HTMLButtonElement>, index: number) => {
     event.preventDefault();
     const leftWidth = dashboardCardWidths[index] ?? DASHBOARD_CARD_MIN_WIDTH;
     const rightWidth = dashboardCardWidths[index + 1] ?? DASHBOARD_CARD_MIN_WIDTH;
-    const availableWidth = Math.max(
-      DASHBOARD_CARD_MIN_WIDTH * dashboardCardWidths.length,
-      (dashboardRowRef.current?.clientWidth ?? 0) - DASHBOARD_CARD_RESIZE_HANDLE_WIDTH * (dashboardCardWidths.length - 1),
-    );
-    const totalRatio = dashboardCardWidths.reduce((sum, width) => sum + width, 0);
-    const ratioUnitWidth = availableWidth / totalRatio;
     dashboardResizeRef.current = {
       index,
       startX: event.clientX,
       leftWidth,
       rightWidth,
-      ratioUnitWidth,
     };
 
     const handleMove = (moveEvent: PointerEvent) => {
       const state = dashboardResizeRef.current;
       if (!state) return;
       const delta = moveEvent.clientX - state.startX;
-      const totalWidth = (state.leftWidth + state.rightWidth) * state.ratioUnitWidth;
+      const totalWidth = state.leftWidth + state.rightWidth;
       const nextLeftWidth = Math.min(
         totalWidth - DASHBOARD_CARD_MIN_WIDTH,
-        Math.max(DASHBOARD_CARD_MIN_WIDTH, state.leftWidth * state.ratioUnitWidth + delta),
+        Math.max(DASHBOARD_CARD_MIN_WIDTH, state.leftWidth + delta),
       );
       const nextRightWidth = totalWidth - nextLeftWidth;
       setDashboardCardWidths((current) => {
         const next = [...current];
-        next[state.index] = nextLeftWidth / state.ratioUnitWidth;
-        next[state.index + 1] = nextRightWidth / state.ratioUnitWidth;
+        next[state.index] = nextLeftWidth;
+        next[state.index + 1] = nextRightWidth;
         saveDashboardCardWidths(next);
         return next;
       });
@@ -695,14 +792,21 @@ export function NovelLibraryPage() {
   const totalWorkWords = sourceNovels.reduce((sum, novel) => sum + novel.wordCount, 0);
   const averageWorkWords = sourceNovels.length > 0 ? Math.round(totalWorkWords / sourceNovels.length) : 0;
   const recentWorks = [...sourceNovels]
-    .sort((a, b) => parseWorkDateValue(b.lastModifiedAt || b.createdAt) - parseWorkDateValue(a.lastModifiedAt || a.createdAt))
+    .sort(
+      (a, b) =>
+        parseWorkDateValue(b.lastModifiedAt || b.createdAt) - parseWorkDateValue(a.lastModifiedAt || a.createdAt),
+    )
     .slice(0, 3);
   const filters = ['全部', ...categories];
-  const filteredNovels = useMemo(() => sourceNovels.filter((novel) => {
-    const matchFilter = activeFilter === '全部' || novel.category === activeFilter;
-    const matchSearch = !searchQuery.trim() || novel.title.toLowerCase().includes(searchQuery.trim().toLowerCase());
-    return matchFilter && matchSearch;
-  }), [activeFilter, searchQuery, sourceNovels]);
+  const filteredNovels = useMemo(
+    () =>
+      sourceNovels.filter((novel) => {
+        const matchFilter = activeFilter === '全部' || novel.category === activeFilter;
+        const matchSearch = !searchQuery.trim() || novel.title.toLowerCase().includes(searchQuery.trim().toLowerCase());
+        return matchFilter && matchSearch;
+      }),
+    [activeFilter, searchQuery, sourceNovels],
+  );
 
   const coverTarget = novels.find((novel) => novel.id === coverTargetId) ?? null;
 
@@ -760,141 +864,186 @@ export function NovelLibraryPage() {
     <div className="flex h-screen flex-col bg-white">
       <main className="flex-1 overflow-y-auto px-[21px] py-3.5">
         <div className="space-y-3 overflow-x-auto pb-1">
-          <div ref={dashboardRowRef} className="grid min-w-[960px]" style={{ gridTemplateColumns: dashboardGridTemplate }}>
-          <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-5 py-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[15px] font-bold text-[#1f2933]">作品概览</p>
-              </div>
-              <span className="shrink-0 rounded-full border border-[#dbe7f8] bg-white/80 px-2.5 py-0.5 text-[12px] font-semibold text-[#6b7b8d]">预留 --</span>
-            </div>
-            <div className="mt-3 grid flex-1 grid-cols-2 grid-rows-2 gap-2">
-              {[
-                { label: '作品', value: `${sourceNovels.length} 本` },
-                { label: '昨日更新', value: `${formatWords(writingSummary.yesterdayWords)} 字` },
-                { label: '字数', value: `${formatWords(totalWorkWords)} 字` },
-                { label: '平均字数', value: `${formatWords(averageWorkWords)} 字` },
-              ].map((item) => (
-                <article
-                  key={item.label}
-                  className="grid h-full min-h-[40px] grid-cols-[max-content_minmax(86px,1fr)] items-center gap-2 rounded-[8px] border border-[#e6e8ec] bg-white px-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
-                >
-                  <span className="min-w-0 shrink-0">
-                    <span className="block whitespace-nowrap text-[12px] font-semibold text-[#1f2933]">{item.label}</span>
-                  </span>
-                  <strong className="min-w-[86px] shrink-0 text-right text-[clamp(15px,1.05vw,18px)] font-bold leading-none text-[#111827] tabular-nums">{item.value}</strong>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <button
-            type="button"
-            title="拖拽调整卡片宽度"
-            aria-label="拖拽调整卡片宽度"
-            data-dashboard-resize-handle
-            onPointerDown={(event) => startDashboardCardResize(event, 0)}
-            className="group flex h-full cursor-col-resize items-stretch justify-center px-[3px]"
+          <div
+            ref={dashboardRowRef}
+            className="grid min-w-[1780px]"
+            style={{ gridTemplateColumns: dashboardGridTemplate }}
           >
-            <span className="h-full w-px rounded-full bg-transparent transition-colors group-hover:bg-[#08AACE] group-active:bg-[#08AACE]" />
-          </button>
-
-          <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-4 py-3.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <h2 className="text-[15px] font-semibold text-[#1f2933]">作品整理</h2>
+            <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#dfe5ec] bg-[#f7faff] px-5 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[15px] font-bold text-[#1f2933]">作品概览</p>
+                </div>
+                <span className="shrink-0 rounded-full border border-[#dbe7f8] bg-white/80 px-2.5 py-0.5 text-[12px] font-semibold text-[#6b7b8d]">
+                  预留 --
+                </span>
               </div>
-              <span className="text-[13px] font-medium text-[#9aa3af]">{filteredNovels.length}/{sourceNovels.length}</span>
-            </div>
-            <div className="mt-2 grid flex-1 grid-cols-2 grid-rows-2 gap-2">
-              {[
-                { label: `新建${typeLabel}`, desc: '创建作品', icon: Plus, onClick: () => setIsNewOpen(true), tone: 'blue' },
-                { label: '导入', desc: '本地导入', icon: Upload, onClick: () => setIsImportOpen(true), tone: 'green' },
-                { label: '卡片设置', desc: '调整封面', icon: SlidersHorizontal, onClick: () => setShowCardSettings(true), tone: 'amber' },
-                { label: '回收站', desc: `${recycledNovels.length} 项`, icon: Trash2, onClick: () => setIsRecycleOpen(true), tone: 'purple' },
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
+              <div className="mt-3 grid flex-1 grid-cols-2 grid-rows-2 gap-2">
+                {[
+                  { label: '作品', value: `${sourceNovels.length} 本` },
+                  { label: '昨日更新', value: `${formatWords(writingSummary.yesterdayWords)} 字` },
+                  { label: '字数', value: `${formatWords(totalWorkWords)} 字` },
+                  { label: '平均字数', value: `${formatWords(averageWorkWords)} 字` },
+                ].map((item) => (
+                  <article
                     key={item.label}
-                    type="button"
-                    onClick={item.onClick}
-                    className="flex h-full min-h-[40px] items-center gap-2 rounded-[8px] border border-[#e6e8ec] bg-white px-2.5 text-left transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
+                    className="grid h-full min-h-[40px] grid-cols-[max-content_minmax(86px,1fr)] items-center gap-2 rounded-[8px] border border-[#e6e8ec] bg-white px-3 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
                   >
-                    <span className={[
-                      'grid h-6 w-6 shrink-0 place-items-center rounded-[5px] text-white',
-                      item.tone === 'green' ? 'bg-[#31a85f]' : item.tone === 'amber' ? 'bg-[#f3a400]' : item.tone === 'purple' ? 'bg-[#9b6cf0]' : 'bg-[#1e71ef]',
-                    ].join(' ')}>
-                      <Icon className="h-3 w-3" />
+                    <span className="min-w-0 shrink-0">
+                      <span className="block whitespace-nowrap text-[12px] font-semibold text-[#1f2933]">
+                        {item.label}
+                      </span>
                     </span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-[12px] font-semibold text-[#1f2933]">{item.label}</span>
-                      <span className="block truncate text-[10px] text-[#9aa3af]">{item.desc}</span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <button
-            type="button"
-            title="拖拽调整卡片宽度"
-            aria-label="拖拽调整卡片宽度"
-            data-dashboard-resize-handle
-            onPointerDown={(event) => startDashboardCardResize(event, 1)}
-            className="group flex h-full cursor-col-resize items-stretch justify-center px-[3px]"
-          >
-            <span className="h-full w-px rounded-full bg-transparent transition-colors group-hover:bg-[#08AACE] group-active:bg-[#08AACE]" />
-          </button>
-
-          <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-white px-4 py-4">
-            <h2 className="truncate text-[15px] font-semibold leading-none text-[#1f2933]">最近编辑：</h2>
-            {recentWorks.length > 0 ? (
-              <div className="mt-4 grid gap-2">
-                {recentWorks.map((work) => (
-                  <button
-                    key={work.id}
-                    type="button"
-                    onClick={() => handleOpen(work.id)}
-                    onMouseEnter={() => handlePrepareOpen(work.id)}
-                    onFocus={() => handlePrepareOpen(work.id)}
-                    className="grid min-h-[34px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[8px] border border-[#dfe5ec] bg-[#fbfdff] px-3 py-1.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
-                  >
-                    <span className="min-w-0 truncate text-[15px] font-bold text-[#1f2933]">{work.title}</span>
-                    <span className="shrink-0 text-[13px] font-medium text-[#8d98a6]">{formatWorkDate(work.lastModifiedAt || work.createdAt)}</span>
-                  </button>
+                    <strong className="min-w-[86px] shrink-0 text-right text-[clamp(15px,1.05vw,18px)] font-bold leading-none text-[#111827] tabular-nums">
+                      {item.value}
+                    </strong>
+                  </article>
                 ))}
               </div>
-            ) : (
-              <p className="mt-5 text-[14px] font-medium text-[#9aa3af]">暂无最近编辑的{typeLabel}</p>
-            )}
-          </section>
+            </section>
 
-          <button
-            type="button"
-            title="拖拽调整卡片宽度"
-            aria-label="拖拽调整卡片宽度"
-            data-dashboard-resize-handle
-            onPointerDown={(event) => startDashboardCardResize(event, 2)}
-            className="group flex h-full cursor-col-resize items-stretch justify-center px-[3px]"
-          >
-            <span className="h-full w-px rounded-full bg-transparent transition-colors group-hover:bg-[#08AACE] group-active:bg-[#08AACE]" />
-          </button>
+            <button
+              type="button"
+              title="拖拽调整卡片宽度"
+              aria-label="拖拽调整卡片宽度"
+              data-dashboard-resize-handle
+              onPointerDown={(event) => startDashboardCardResize(event, 0)}
+              className="group flex h-full cursor-col-resize items-stretch justify-center px-[3px]"
+            >
+              <span className="h-full w-px rounded-full bg-transparent transition-colors group-hover:bg-[#08AACE] group-active:bg-[#08AACE]" />
+            </button>
 
-          <section className="flex min-h-[126px] flex-col rounded-[8px] border border-dashed border-[#d7dce4] bg-[#fbfbfc] px-5 py-4">
-            <p className="text-[13px] font-medium text-[#9aa3af]">预留</p>
-            <h2 className="mt-1.5 truncate text-[23px] font-bold text-[#68727f]">扩展卡片</h2>
-            <p className="mt-3 text-[13px] font-medium leading-5 text-[#9aa3af]">后续可以放灵感、待办、今日目标或资料提醒。</p>
-          </section>
+            <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-[#fbfbfc] px-4 py-3.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <h2 className="text-[15px] font-semibold text-[#1f2933]">作品整理</h2>
+                </div>
+                <span className="text-[13px] font-medium text-[#9aa3af]">
+                  {filteredNovels.length}/{sourceNovels.length}
+                </span>
+              </div>
+              <div className="mt-2 grid flex-1 grid-cols-2 grid-rows-2 gap-2">
+                {[
+                  {
+                    label: `新建${typeLabel}`,
+                    desc: '创建作品',
+                    icon: Plus,
+                    onClick: () => setIsNewOpen(true),
+                    tone: 'blue',
+                  },
+                  {
+                    label: '导入',
+                    desc: '本地导入',
+                    icon: Upload,
+                    onClick: () => setIsImportOpen(true),
+                    tone: 'green',
+                  },
+                  {
+                    label: '卡片设置',
+                    desc: '调整封面',
+                    icon: SlidersHorizontal,
+                    onClick: () => setShowCardSettings(true),
+                    tone: 'amber',
+                  },
+                  {
+                    label: '回收站',
+                    desc: `${recycledNovels.length} 项`,
+                    icon: Trash2,
+                    onClick: () => setIsRecycleOpen(true),
+                    tone: 'purple',
+                  },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={item.onClick}
+                      className="flex h-full min-h-[40px] items-center gap-2 rounded-[8px] border border-[#e6e8ec] bg-white px-2.5 text-left transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
+                    >
+                      <span
+                        className={[
+                          'grid h-6 w-6 shrink-0 place-items-center rounded-[5px] text-white',
+                          item.tone === 'green'
+                            ? 'bg-[#31a85f]'
+                            : item.tone === 'amber'
+                              ? 'bg-[#f3a400]'
+                              : item.tone === 'purple'
+                                ? 'bg-[#9b6cf0]'
+                                : 'bg-[#1e71ef]',
+                        ].join(' ')}
+                      >
+                        <Icon className="h-3 w-3" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-[12px] font-semibold text-[#1f2933]">{item.label}</span>
+                        <span className="block truncate text-[10px] text-[#9aa3af]">{item.desc}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
 
+            <button
+              type="button"
+              title="拖拽调整卡片宽度"
+              aria-label="拖拽调整卡片宽度"
+              data-dashboard-resize-handle
+              onPointerDown={(event) => startDashboardCardResize(event, 1)}
+              className="group flex h-full cursor-col-resize items-stretch justify-center px-[3px]"
+            >
+              <span className="h-full w-px rounded-full bg-transparent transition-colors group-hover:bg-[#08AACE] group-active:bg-[#08AACE]" />
+            </button>
+
+            <section className="flex min-h-[126px] flex-col rounded-[8px] border border-[#e6e8ec] bg-white px-4 py-4">
+              <h2 className="truncate text-[15px] font-semibold leading-none text-[#1f2933]">最近编辑：</h2>
+              {recentWorks.length > 0 ? (
+                <div className="mt-4 grid gap-2">
+                  {recentWorks.map((work) => (
+                    <button
+                      key={work.id}
+                      type="button"
+                      onClick={() => handleOpen(work.id)}
+                      onMouseEnter={() => handlePrepareOpen(work.id)}
+                      onFocus={() => handlePrepareOpen(work.id)}
+                      className="grid min-h-[34px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[8px] border border-[#dfe5ec] bg-[#fbfdff] px-3 py-1.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:border-[#b8caef] hover:bg-[#f6f9ff]"
+                    >
+                      <span className="min-w-0 truncate text-[15px] font-bold text-[#1f2933]">{work.title}</span>
+                      <span className="shrink-0 text-[13px] font-medium text-[#8d98a6]">
+                        {formatWorkDate(work.lastModifiedAt || work.createdAt)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-5 text-[14px] font-medium text-[#9aa3af]">暂无最近编辑的{typeLabel}</p>
+              )}
+            </section>
+
+            <button
+              type="button"
+              title="拖拽调整卡片宽度"
+              aria-label="拖拽调整卡片宽度"
+              data-dashboard-resize-handle
+              onPointerDown={(event) => startDashboardCardResize(event, 2)}
+              className="group flex h-full cursor-col-resize items-stretch justify-center px-[3px]"
+            >
+              <span className="h-full w-px rounded-full bg-transparent transition-colors group-hover:bg-[#08AACE] group-active:bg-[#08AACE]" />
+            </button>
+
+            <section className="flex min-h-[126px] flex-col rounded-[8px] border border-dashed border-[#d7dce4] bg-[#fbfbfc] px-5 py-4">
+              <p className="text-[13px] font-medium text-[#9aa3af]">预留</p>
+              <h2 className="mt-1.5 truncate text-[23px] font-bold text-[#68727f]">扩展卡片</h2>
+              <p className="mt-3 text-[13px] font-medium leading-5 text-[#9aa3af]">
+                后续可以放灵感、待办、今日目标或资料提醒。
+              </p>
+            </section>
           </div>
         </div>
 
         {notice && (
-          <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
-            {notice}
-          </div>
+          <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">{notice}</div>
         )}
 
         <div className="mb-7 mt-7 flex items-center justify-between gap-4">
@@ -907,7 +1056,9 @@ export function NovelLibraryPage() {
               >
                 <span>{filter}</span>
                 <span className="xy-category-capsule-count">
-                  {filter === '全部' ? sourceNovels.length : sourceNovels.filter((novel) => novel.category === filter).length}
+                  {filter === '全部'
+                    ? sourceNovels.length
+                    : sourceNovels.filter((novel) => novel.category === filter).length}
                 </span>
               </button>
             ))}
@@ -1003,21 +1154,32 @@ export function NovelLibraryPage() {
       />
 
       {renameTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setRenameTarget(null)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+          onClick={() => setRenameTarget(null)}
+        >
           <div className="w-[360px] rounded-xl bg-white p-6 shadow-xl" onClick={(event) => event.stopPropagation()}>
             <h3 className="mb-4 text-base font-bold text-gray-900">修改作品名称</h3>
             <input
               value={renameTarget.title}
               onChange={(event) => setRenameTarget({ ...renameTarget, title: event.target.value })}
-              onKeyDown={(event) => { if (event.key === 'Enter') confirmRename(); }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') confirmRename();
+              }}
               className="mb-5 w-full rounded-md border border-gray-200 px-3 py-2 text-sm transition-colors focus:border-brand"
               autoFocus
             />
             <div className="flex items-center justify-end gap-3">
-              <button onClick={() => setRenameTarget(null)} className="px-4 py-2 text-sm text-gray-500 transition-colors hover:text-gray-700">
+              <button
+                onClick={() => setRenameTarget(null)}
+                className="px-4 py-2 text-sm text-gray-500 transition-colors hover:text-gray-700"
+              >
                 取消
               </button>
-              <button onClick={confirmRename} className="rounded-lg bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark">
+              <button
+                onClick={confirmRename}
+                className="rounded-lg bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark"
+              >
                 确认
               </button>
             </div>

@@ -4,6 +4,7 @@ import {
   EyeOff,
   FolderTree,
   Globe,
+  ListTree,
   NotebookText,
   Moon,
   Palette,
@@ -25,34 +26,14 @@ const SoftwareUiCatalogPage = lazy(() =>
 const DarkThemeColorPage = lazy(() =>
   import('@/features/tests/pages/DarkThemeColorPage').then((module) => ({ default: module.DarkThemeColorPage })),
 );
-const CleanWriterStylePreviewTestPage = lazy(() =>
-  import('@/features/tests/pages/CleanWriterStylePreviewTestPage').then((module) => ({
-    default: module.CleanWriterStylePreviewTestPage,
-  })),
-);
-const ShuimoSidebarSchemePreviewTestPage = lazy(() =>
-  import('@/features/tests/pages/ShuimoSidebarSchemePreviewTestPage').then((module) => ({
-    default: module.ShuimoSidebarSchemePreviewTestPage,
-  })),
-);
-const ShuimoSelectionStatePreviewTestPage = lazy(() =>
-  import('@/features/tests/pages/ShuimoSelectionStatePreviewTestPage').then((module) => ({
-    default: module.ShuimoSelectionStatePreviewTestPage,
-  })),
-);
-const ShuimoSemanticPalettePreviewTestPage = lazy(() =>
-  import('@/features/tests/pages/ShuimoSemanticPalettePreviewTestPage').then((module) => ({
-    default: module.ShuimoSemanticPalettePreviewTestPage,
-  })),
-);
 const Shuimo2DeepPalettePreviewTestPage = lazy(() =>
   import('@/features/tests/pages/Shuimo2DeepPalettePreviewTestPage').then((module) => ({
     default: module.Shuimo2DeepPalettePreviewTestPage,
   })),
 );
-const WorkbenchAiRightWidthPreviewTestPage = lazy(() =>
-  import('@/features/tests/pages/WorkbenchAiRightWidthPreviewTestPage').then((module) => ({
-    default: module.WorkbenchAiRightWidthPreviewTestPage,
+const NavigationContextMenuPrototypeTestPage = lazy(() =>
+  import('@/features/tests/pages/NavigationContextMenuPrototypeTestPage').then((module) => ({
+    default: module.NavigationContextMenuPrototypeTestPage,
   })),
 );
 const ErrorLogPage = lazy(() =>
@@ -68,6 +49,16 @@ const PromptWorkflowPreviewTestPage = lazy(() =>
     default: module.PromptWorkflowPreviewTestPage,
   })),
 );
+const AuditPromptSelectSoftGroupingTestPage = lazy(() =>
+  import('@/features/tests/pages/AuditPromptSelectSoftGroupingTestPage').then((module) => ({
+    default: module.AuditPromptSelectSoftGroupingTestPage,
+  })),
+);
+const TextAuditDiffDisplayTestPage = lazy(() =>
+  import('@/features/tests/pages/TextAuditDiffDisplayTestPage').then((module) => ({
+    default: module.TextAuditDiffDisplayTestPage,
+  })),
+);
 const TestBrowserPage = lazy(() =>
   import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })),
 );
@@ -76,12 +67,6 @@ const TomatoGenreIterationTestPage = lazy(() =>
     default: module.TomatoGenreIterationTestPage,
   })),
 );
-const GenreIterationMoonfallStyleTestPage = lazy(() =>
-  import('@/features/tests/pages/GenreIterationMoonfallStyleTestPage').then((module) => ({
-    default: module.GenreIterationMoonfallStyleTestPage,
-  })),
-);
-
 const testGroups = [
   {
     title: 'UI 与主题',
@@ -115,34 +100,6 @@ const testGroups = [
         badge: 'Theme',
       },
       {
-        title: '清爽编辑器风格预览',
-        description: '用明亮留白、轻边框和低干扰编辑区做一张可对照的写作样张。',
-        path: '/clean-writer-style-preview-test',
-        icon: Palette,
-        badge: 'Clean',
-      },
-      {
-        title: '水墨层级配色方案预览',
-        description: '并排比较水墨主题的分组、设定名、选中设定、背景和内容卡片配色。',
-        path: '/shuimo-sidebar-scheme-preview-test',
-        icon: Palette,
-        badge: 'Shuimo',
-      },
-      {
-        title: '水墨设定条目选中态预览',
-        description: '并排比较水墨主题里设定条目的墨线、青色描边、纸卡浮起和圆点标记选中态。',
-        path: '/shuimo-selection-state-preview-test',
-        icon: Palette,
-        badge: 'Select',
-      },
-      {
-        title: '水墨语义配色预览',
-        description: '全面比较水墨主题里主操作、浅底面板、危险操作、AI 输出框、正文选中和状态提示应该使用的颜色。',
-        path: '/shuimo-semantic-palette-preview-test',
-        icon: Palette,
-        badge: 'Palette',
-      },
-      {
         title: '水墨2 深度配色预览',
         description: '对照软件标题栏、正文选中、分组、AI 输入区、发送图标、字号控件和首页侧栏的水墨2候选配色。',
         path: '/shuimo2-deep-palette-preview-test',
@@ -150,11 +107,11 @@ const testGroups = [
         badge: 'Shuimo2',
       },
       {
-        title: '右侧 AI 区宽度预览',
-        description: '并排查看脑洞、设定、章纲、生成梗概右侧 AI 区在 420px 和 460px 下的真实按钮与输入框效果。',
-        path: '/workbench-ai-right-width-preview-test',
-        icon: Palette,
-        badge: 'AI Width',
+        title: '导航右键菜单原型',
+        description: '测试导航项右键重命名/隐藏、空白处恢复隐藏导航、分割线删除和拖拽排序。',
+        path: '/navigation-context-menu-prototype-test',
+        icon: ListTree,
+        badge: 'Nav Menu',
       },
     ],
   },
@@ -175,6 +132,20 @@ const testGroups = [
         icon: FolderTree,
         badge: 'Prompt View',
       },
+      {
+        title: '审核提示词轻量下拉方案',
+        description: '对比标签、轻分隔、顶部筛选和双列分类，降低审核提示词下拉的切换感。',
+        path: '/audit-prompt-select-soft-grouping-test',
+        icon: ListTree,
+        badge: 'Audit Prompt',
+      },
+      {
+        title: '文本审核差异显示方案',
+        description: '对比审核后正文红字、左右对照、段落卡片和改动清单几种文本审核结果显示方式。',
+        path: '/text-audit-diff-display-test',
+        icon: NotebookText,
+        badge: 'Text Audit',
+      },
     ],
   },
   {
@@ -193,13 +164,6 @@ const testGroups = [
         path: '/tomato-genre-iteration-test',
         icon: Globe,
         badge: 'Tomato',
-      },
-      {
-        title: '题材迭代月下风格预览',
-        description: '用月下软件的浅色面板、青色强调和三栏工作台重新布局题材迭代板块，先在测试区确认视觉。',
-        path: '/genre-iteration-moonfall-style-test',
-        icon: Sparkles,
-        badge: 'Genre UI',
       },
     ],
   },
@@ -332,6 +296,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <PromptLibraryStructureTestPage />;
       case '/prompt-workflow-preview-test':
         return <PromptWorkflowPreviewTestPage />;
+      case '/audit-prompt-select-soft-grouping-test':
+        return <AuditPromptSelectSoftGroupingTestPage />;
+      case '/text-audit-diff-display-test':
+        return <TextAuditDiffDisplayTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':
@@ -340,24 +308,14 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <SoftwareUiCatalogPage embedded onClose={() => setActivePath(null)} />;
       case '/theme-colors':
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
-      case '/clean-writer-style-preview-test':
-        return <CleanWriterStylePreviewTestPage />;
-      case '/shuimo-sidebar-scheme-preview-test':
-        return <ShuimoSidebarSchemePreviewTestPage />;
-      case '/shuimo-selection-state-preview-test':
-        return <ShuimoSelectionStatePreviewTestPage />;
-      case '/shuimo-semantic-palette-preview-test':
-        return <ShuimoSemanticPalettePreviewTestPage />;
       case '/shuimo2-deep-palette-preview-test':
         return <Shuimo2DeepPalettePreviewTestPage />;
-      case '/workbench-ai-right-width-preview-test':
-        return <WorkbenchAiRightWidthPreviewTestPage />;
+      case '/navigation-context-menu-prototype-test':
+        return <NavigationContextMenuPrototypeTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':
         return <TomatoGenreIterationTestPage />;
-      case '/genre-iteration-moonfall-style-test':
-        return <GenreIterationMoonfallStyleTestPage />;
       default:
         return null;
     }
@@ -388,9 +346,7 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
               <span
                 className={[
                   'flex h-4 w-4 items-center justify-center rounded border',
-                  testedTestPaths.has(activePath)
-                    ? 'border-brand bg-brand text-white'
-                    : 'border-slate-300 bg-white',
+                  testedTestPaths.has(activePath) ? 'border-brand bg-brand text-white' : 'border-slate-300 bg-white',
                 ].join(' ')}
               >
                 {testedTestPaths.has(activePath) ? <Check className="h-3 w-3" /> : null}
@@ -406,7 +362,7 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
             <X className="h-4 w-4" />
           </button>
         </header>
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <Suspense
             fallback={
               <div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">

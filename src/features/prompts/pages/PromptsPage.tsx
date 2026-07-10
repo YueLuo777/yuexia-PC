@@ -77,12 +77,7 @@ function downloadPromptTextFile(fileName: string, content: string) {
 }
 
 function buildPromptExportText(items: PromptItem[]) {
-  const lines = [
-    PROMPT_EXPORT_HEADER,
-    `导出时间: ${new Date().toLocaleString('zh-CN')}`,
-    `数量: ${items.length}`,
-    '',
-  ];
+  const lines = [PROMPT_EXPORT_HEADER, `导出时间: ${new Date().toLocaleString('zh-CN')}`, `数量: ${items.length}`, ''];
   items.forEach((item, index) => {
     lines.push(
       PROMPT_EXPORT_BLOCK_SEPARATOR,
@@ -115,18 +110,28 @@ function getPromptExportSection(block: string, label: string, nextLabel?: string
   return pattern.exec(block)?.[1]?.trim() ?? '';
 }
 
-function parsePromptExportText(rawText: string, fallbackName: string, fallbackCategory: string, fallbackType: PromptTab): NewPromptInput[] {
+function parsePromptExportText(
+  rawText: string,
+  fallbackName: string,
+  fallbackCategory: string,
+  fallbackType: PromptTab,
+): NewPromptInput[] {
   const text = rawText.replace(/\r\n/g, '\n').trim();
   if (!text) return [];
   if (!text.includes(PROMPT_EXPORT_BLOCK_SEPARATOR)) {
-    const firstLine = text.split('\n').find((line) => line.trim())?.trim();
-    return [{
-      name: firstLine?.slice(0, 36) || fallbackName.replace(/\.[^.]+$/, '') || '导入提示词',
-      description: `从 ${fallbackName} 导入`,
-      content: text,
-      category: fallbackCategory,
-      promptType: fallbackType,
-    }];
+    const firstLine = text
+      .split('\n')
+      .find((line) => line.trim())
+      ?.trim();
+    return [
+      {
+        name: firstLine?.slice(0, 36) || fallbackName.replace(/\.[^.]+$/, '') || '导入提示词',
+        description: `从 ${fallbackName} 导入`,
+        content: text,
+        category: fallbackCategory,
+        promptType: fallbackType,
+      },
+    ];
   }
   return text
     .split(PROMPT_EXPORT_BLOCK_SEPARATOR)
@@ -160,10 +165,17 @@ function PromptEditorModal({
   defaultCategory?: string | null;
   initial?: PromptItem | null;
   onClose: () => void;
-  onSave: (draft: { name: string; description: string; content: string; category: string; subCategory?: string }) => void;
+  onSave: (draft: {
+    name: string;
+    description: string;
+    content: string;
+    category: string;
+    subCategory?: string;
+  }) => void;
 }) {
   useTopModalEscape(isOpen, onClose);
-  const fallbackCategory = defaultCategory && categories.includes(defaultCategory) ? defaultCategory : categories[0] ?? '未分类';
+  const fallbackCategory =
+    defaultCategory && categories.includes(defaultCategory) ? defaultCategory : (categories[0] ?? '未分类');
   const [draft, setDraft] = useState({
     name: '',
     description: '',
@@ -193,7 +205,10 @@ function PromptEditorModal({
       >
         <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-8 py-6">
           <h2 className="text-[18px] font-bold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]">
+          <button
+            onClick={onClose}
+            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -223,11 +238,13 @@ function PromptEditorModal({
                 {categories.map((category) => (
                   <button
                     key={category}
-                    onClick={() => setDraft((prev) => ({
-                      ...prev,
-                      category,
-                      subCategory: normalizePromptSubcategory(category, prev.subCategory),
-                    }))}
+                    onClick={() =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        category,
+                        subCategory: normalizePromptSubcategory(category, prev.subCategory),
+                      }))
+                    }
                     className={`rounded-2xl border px-4 py-2 text-sm transition-colors ${
                       draft.category === category
                         ? 'border-brand bg-brand-light text-brand'
@@ -262,7 +279,9 @@ function PromptEditorModal({
             ) : null}
           </div>
 
-          <div className={`xy-floating-field xy-floating-compact xy-floating-fill flex min-h-0 flex-col ${draft.content.trim() ? 'xy-has-value' : ''}`}>
+          <div
+            className={`xy-floating-field xy-floating-compact xy-floating-fill flex min-h-0 flex-col ${draft.content.trim() ? 'xy-has-value' : ''}`}
+          >
             <textarea
               value={draft.content}
               onChange={(event) => setDraft((prev) => ({ ...prev, content: event.target.value }))}
@@ -278,10 +297,7 @@ function PromptEditorModal({
           <ActionButton onClick={onClose} variant="secondary">
             取消
           </ActionButton>
-          <ActionButton
-            onClick={() => onSave(draft)}
-            disabled={!draft.name.trim() || !draft.content.trim()}
-          >
+          <ActionButton onClick={() => onSave(draft)} disabled={!draft.name.trim() || !draft.content.trim()}>
             {initial ? '保存修改' : '创建提示词'}
           </ActionButton>
         </div>
@@ -309,13 +325,19 @@ function PromptRecycleModal({
 
   return (
     <div className="modal-sharp fixed inset-0 z-[270] flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="modal-sharp flex h-[560px] w-[680px] max-w-[94vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+      <div
+        className="modal-sharp flex h-[560px] w-[680px] max-w-[94vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <div>
             <h2 className="text-base font-bold text-slate-900">回收站</h2>
             <p className="mt-1 text-xs text-slate-400">可恢复误删提示词，彻底删除后无法找回。</p>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]">
+          <button
+            onClick={onClose}
+            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -333,11 +355,17 @@ function PromptRecycleModal({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <h3 className="truncate text-sm font-bold text-slate-900">{item.name}</h3>
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">{TAB_LABELS[normalizePromptTypeForTab(item.promptType)]}</span>
-                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] text-blue-500">{item.category}</span>
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">
+                          {TAB_LABELS[normalizePromptTypeForTab(item.promptType)]}
+                        </span>
+                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] text-blue-500">
+                          {item.category}
+                        </span>
                       </div>
                       <p className="mt-1 truncate text-xs text-slate-400">{item.description || '暂无说明'}</p>
-                      <p className="mt-1 text-[10px] text-slate-300">删除于 {item.deletedAt ? new Date(item.deletedAt).toLocaleString('zh-CN') : '-'}</p>
+                      <p className="mt-1 text-[10px] text-slate-300">
+                        删除于 {item.deletedAt ? new Date(item.deletedAt).toLocaleString('zh-CN') : '-'}
+                      </p>
                     </div>
                     <div className="xy-capsule-group shrink-0">
                       <button onClick={() => onRestore(item.id)} className="xy-capsule-button">
@@ -395,7 +423,9 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
   const [newCategory, setNewCategory] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<PromptItem | null>(null);
   const [showRecycle, setShowRecycle] = useState(false);
-  const [categoryContextMenu, setCategoryContextMenu] = useState<{ category: string; x: number; y: number } | null>(null);
+  const [categoryContextMenu, setCategoryContextMenu] = useState<{ category: string; x: number; y: number } | null>(
+    null,
+  );
   const [categoryDeleteTarget, setCategoryDeleteTarget] = useState<string | null>(null);
 
   useEffect(() => {
@@ -419,24 +449,27 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
 
   const filteredPrompts = useMemo(() => {
     const keyword = searchQuery.trim().toLowerCase();
-    return prompts.filter((item) => {
-      const matchType = normalizePromptTypeForTab(item.promptType) === activeTab;
-      const matchCategory = !activeCategory || item.category === activeCategory;
-      const matchSubcategory = activeCategory !== AUDIT_PROMPT_CATEGORY
-        || normalizePromptSubcategory(item.category, item.subCategory) === activeAuditSubcategory;
-      const matchKeyword =
-        !keyword
-        || item.name.toLowerCase().includes(keyword)
-        || item.description.toLowerCase().includes(keyword)
-        || item.content.toLowerCase().includes(keyword);
-      return matchType && matchCategory && matchSubcategory && matchKeyword;
-    }).sort((a, b) => {
-      if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
-      if (a.isFavorite && b.isFavorite) {
-        return (a.pinnedAt ?? a.updatedAt).localeCompare(b.pinnedAt ?? b.updatedAt);
-      }
-      return 0;
-    });
+    return prompts
+      .filter((item) => {
+        const matchType = normalizePromptTypeForTab(item.promptType) === activeTab;
+        const matchCategory = !activeCategory || item.category === activeCategory;
+        const matchSubcategory =
+          activeCategory !== AUDIT_PROMPT_CATEGORY ||
+          normalizePromptSubcategory(item.category, item.subCategory) === activeAuditSubcategory;
+        const matchKeyword =
+          !keyword ||
+          item.name.toLowerCase().includes(keyword) ||
+          item.description.toLowerCase().includes(keyword) ||
+          item.content.toLowerCase().includes(keyword);
+        return matchType && matchCategory && matchSubcategory && matchKeyword;
+      })
+      .sort((a, b) => {
+        if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
+        if (a.isFavorite && b.isFavorite) {
+          return (a.pinnedAt ?? a.updatedAt).localeCompare(b.pinnedAt ?? b.updatedAt);
+        }
+        return 0;
+      });
   }, [activeAuditSubcategory, activeCategory, activeTab, prompts, searchQuery]);
 
   const openCreate = () => {
@@ -450,12 +483,20 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
     setShowForm(true);
   };
 
-  const savePrompt = (draft: { name: string; description: string; content: string; category: string; subCategory?: string }) => {
+  const savePrompt = (draft: {
+    name: string;
+    description: string;
+    content: string;
+    category: string;
+    subCategory?: string;
+  }) => {
     if (editingItem) updatePrompt(editingItem.id, draft);
     else addPrompt({ ...draft, promptType: activeTab });
     setActiveCategory(draft.category);
     if (normalizePromptCategoryName(draft.category) === AUDIT_PROMPT_CATEGORY) {
-      setActiveAuditSubcategory(normalizePromptSubcategory(draft.category, draft.subCategory) ?? DEFAULT_AUDIT_PROMPT_SUBCATEGORY);
+      setActiveAuditSubcategory(
+        normalizePromptSubcategory(draft.category, draft.subCategory) ?? DEFAULT_AUDIT_PROMPT_SUBCATEGORY,
+      );
     }
     setSearchQuery('');
     setShowForm(false);
@@ -527,8 +568,8 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
 
   return (
     <div className="flex h-full flex-col bg-slate-50">
-      <div className="flex-1 overflow-y-auto px-7 py-7">
-        <div className="mb-6 flex items-center justify-between gap-5">
+      <div className="flex-1 overflow-y-auto px-5 py-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div className="xy-radio-inputs">
             {(Object.keys(TAB_LABELS) as PromptTab[]).map((tab) => (
               <button
@@ -536,12 +577,15 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
                 onClick={() => setActiveTab(tab)}
                 className={`xy-radio-option ${activeTab === tab ? 'xy-active' : ''}`}
               >
-                {TAB_LABELS[tab]} <span className="ml-1 text-sm opacity-70">{prompts.filter((item) => normalizePromptTypeForTab(item.promptType) === tab).length}</span>
+                {TAB_LABELS[tab]}{' '}
+                <span className="ml-1 text-sm opacity-70">
+                  {prompts.filter((item) => normalizePromptTypeForTab(item.promptType) === tab).length}
+                </span>
               </button>
             ))}
           </div>
 
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex min-w-0 shrink-0 flex-nowrap items-center justify-end gap-2">
             <input
               ref={importInputRef}
               type="file"
@@ -549,56 +593,49 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
               className="hidden"
               onChange={importPrompts}
             />
-            <ActionButton
-              onClick={() => importInputRef.current?.click()}
-              variant="secondary"
-            >
+            <ActionButton onClick={() => importInputRef.current?.click()} variant="secondary">
               导入提示词
             </ActionButton>
-            <ActionButton
-              onClick={exportPrompts}
-              variant="secondary"
-            >
+            <ActionButton onClick={exportPrompts} variant="secondary">
               导出提示词
             </ActionButton>
-            <ActionButton
-              onClick={() => setShowRecycle(true)}
-              variant="secondary"
-            >
+            <ActionButton onClick={() => setShowRecycle(true)} variant="secondary">
               回收站{recycleBin.length > 0 ? `(${recycleBin.length})` : ''}
             </ActionButton>
-            <div className="xy-ui132-search">
-              <Search />
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="搜索提示词..."
-              />
+            <div className="shrink-0">
+              <div className="xy-ui132-search">
+                <Search />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="搜索提示词..."
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="mb-7 flex flex-wrap items-center gap-3">
-          <div className="xy-category-capsules min-w-0">
-          <button
-            onClick={() => setActiveCategory(null)}
-            className={`xy-category-capsule ${activeCategory === null ? 'xy-active' : ''}`}
-          >
-            全部
-          </button>
-          {categories.map((category) => (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="xy-category-capsules min-w-0 flex-1">
             <button
-              key={category}
-              onClick={() => setActiveCategory(category)}
-              onContextMenu={(event) => openCategoryContextMenu(event, category)}
-              className={`xy-category-capsule ${activeCategory === category ? 'xy-active' : ''}`}
+              onClick={() => setActiveCategory(null)}
+              className={`xy-category-capsule ${activeCategory === null ? 'xy-active' : ''}`}
             >
-              {category}
+              全部
             </button>
-          ))}
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setActiveCategory(category)}
+                onContextMenu={(event) => openCategoryContextMenu(event, category)}
+                className={`xy-category-capsule ${activeCategory === category ? 'xy-active' : ''}`}
+              >
+                {category}
+              </button>
+            ))}
           </div>
-          <div className="flex h-8 items-stretch overflow-hidden rounded-md border border-slate-200 bg-white transition-colors focus-within:border-[#08AACE] focus-within:ring-2 focus-within:ring-[#8FE4F2]/70">
+          <div className="flex h-8 shrink-0 items-stretch overflow-hidden rounded-md border border-slate-200 bg-white transition-colors focus-within:border-[#08AACE] focus-within:ring-2 focus-within:ring-[#8FE4F2]/70">
             <input
               value={newCategory}
               onChange={(event) => setNewCategory(event.target.value)}
@@ -638,7 +675,7 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
         ) : null}
 
         {activeCategory === AUDIT_PROMPT_CATEGORY ? (
-          <div className="mb-7 flex items-center gap-3">
+          <div className="mb-4 flex items-center gap-3">
             <span className="text-sm font-bold text-slate-400">审核二级分类</span>
             <div className="grid w-[260px] grid-cols-2 overflow-hidden rounded-2xl border border-cyan-100 bg-white">
               {AUDIT_PROMPT_SUBCATEGORIES.map((subCategory) => (
@@ -661,76 +698,72 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
 
         <div className="flex flex-wrap gap-4">
           {filteredPrompts.length === 0 && (
-              <div className="flex h-[247px] w-[255px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white">
+            <div className="flex h-[247px] w-[255px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white">
               <Sparkles className="mb-3 h-10 w-10 text-slate-300" />
               <p className="text-sm text-slate-400">暂无提示词</p>
             </div>
           )}
           {filteredPrompts.map((prompt) => (
-              <article
-                key={prompt.id}
-                className="flex h-[247px] w-[255px] flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <h2 className="truncate text-[17px] font-bold text-slate-900">{prompt.name}</h2>
-                    <div className="mt-2 flex flex-col items-start gap-1">
-                      <span className="rounded-xl border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-500">{prompt.category}</span>
-                      {prompt.category === AUDIT_PROMPT_CATEGORY ? (
-                        <span className="rounded-xl border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-xs text-cyan-600">
-                          {normalizePromptSubcategory(prompt.category, prompt.subCategory)}
-                        </span>
-                      ) : null}
-                    </div>
+            <article
+              key={prompt.id}
+              className="flex h-[247px] w-[255px] flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate text-[17px] font-bold text-slate-900">{prompt.name}</h2>
+                  <div className="mt-2 flex flex-col items-start gap-1">
+                    <span className="rounded-xl border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-500">
+                      {prompt.category}
+                    </span>
+                    {prompt.category === AUDIT_PROMPT_CATEGORY ? (
+                      <span className="rounded-xl border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-xs text-cyan-600">
+                        {normalizePromptSubcategory(prompt.category, prompt.subCategory)}
+                      </span>
+                    ) : null}
                   </div>
+                </div>
+                <button
+                  onClick={() => toggleLock(prompt.id)}
+                  className={`grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2] ${
+                    prompt.isLocked ? 'text-orange-500' : 'text-slate-400'
+                  }`}
+                >
+                  {prompt.isLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                </button>
+              </div>
+
+              <div className="mt-2 line-clamp-3 text-[13px] leading-6 text-slate-500">
+                {prompt.description || '暂无说明'}
+              </div>
+
+              <div className="mt-auto">
+                <p className="mb-2 text-left text-[13px] font-medium text-blue-500">{prompt.content.length} 字</p>
+                <div className="xy-capsule-group w-full">
                   <button
-                    onClick={() => toggleLock(prompt.id)}
-                    className={`grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2] ${
-                      prompt.isLocked
-                        ? 'text-orange-500'
-                        : 'text-slate-400'
-                    }`}
+                    onClick={() => togglePin(prompt.id)}
+                    className={`xy-capsule-button flex-1 ${prompt.isFavorite ? 'xy-active' : ''}`}
                   >
-                    {prompt.isLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                    置顶
+                  </button>
+                  <button
+                    onClick={() => openEdit(prompt)}
+                    disabled={prompt.isLocked}
+                    className="xy-capsule-button flex-1"
+                  >
+                    编辑
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!prompt.isLocked) setDeleteTarget(prompt);
+                    }}
+                    disabled={prompt.isLocked}
+                    className={`xy-capsule-button flex-1 ${prompt.isLocked ? '' : 'xy-danger'}`}
+                  >
+                    删除
                   </button>
                 </div>
-
-                <div className="mt-2 line-clamp-3 text-[13px] leading-6 text-slate-500">{prompt.description || '暂无说明'}</div>
-
-                <div className="mt-auto">
-                  <p className="mb-2 text-left text-[13px] font-medium text-blue-500">{prompt.content.length} 字</p>
-                  <div className="xy-capsule-group w-full">
-                    <button
-                      onClick={() => togglePin(prompt.id)}
-                      className={`xy-capsule-button flex-1 ${
-                        prompt.isFavorite ? 'xy-active' : ''
-                      }`}
-                    >
-                      置顶
-                    </button>
-                    <button
-                      onClick={() => openEdit(prompt)}
-                      disabled={prompt.isLocked}
-                      className="xy-capsule-button flex-1"
-                    >
-                      编辑
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (!prompt.isLocked) setDeleteTarget(prompt);
-                      }}
-                      disabled={prompt.isLocked}
-                      className={`xy-capsule-button flex-1 ${
-                        prompt.isLocked
-                          ? ''
-                          : 'xy-danger'
-                      }`}
-                    >
-                      删除
-                    </button>
-                  </div>
-                </div>
-              </article>
+              </div>
+            </article>
           ))}
           <button
             onClick={openCreate}

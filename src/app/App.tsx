@@ -10,19 +10,50 @@ import {
 import { bindWorkbenchTransientAiCleanup } from '@/features/workbench/model/workbenchTransientAiCleanup';
 import { areInternalRoutesEnabled } from '@/shared/featureFlags/internalRoutes';
 
-const ConceptLibraryPage = lazy(() => import('@/features/concept-library/pages/ConceptLibraryPage').then((module) => ({ default: module.ConceptLibraryPage })));
-const GenreIterationPage = lazy(() => import('@/features/genre-iteration/pages/GenreIterationPage').then((module) => ({ default: module.GenreIterationPage })));
-const LibraryHubPage = lazy(() => import('@/features/library-hub/pages/LibraryHubPage').then((module) => ({ default: module.LibraryHubPage })));
-const DbSettingsPage = lazy(() => import('@/features/settings/pages/DbSettingsPage').then((module) => ({ default: module.DbSettingsPage })));
-const ModelManagePage = lazy(() => import('@/features/models/pages/ModelManagePage').then((module) => ({ default: module.ModelManagePage })));
-const NovelLibraryPage = lazy(() => import('@/features/novels/pages/NovelLibraryPage').then((module) => ({ default: module.NovelLibraryPage })));
-const PromptsPage = lazy(() => import('@/features/prompts/pages/PromptsPage').then((module) => ({ default: module.PromptsPage })));
+const ConceptLibraryPage = lazy(() =>
+  import('@/features/concept-library/pages/ConceptLibraryPage').then((module) => ({
+    default: module.ConceptLibraryPage,
+  })),
+);
+const GenreIterationPage = lazy(() =>
+  import('@/features/genre-iteration/pages/GenreIterationPage').then((module) => ({
+    default: module.GenreIterationPage,
+  })),
+);
+const TomatoGenreIterationTestPage = lazy(() =>
+  import('@/features/tests/pages/TomatoGenreIterationTestPage').then((module) => ({
+    default: module.TomatoGenreIterationTestPage,
+  })),
+);
+const LibraryHubPage = lazy(() =>
+  import('@/features/library-hub/pages/LibraryHubPage').then((module) => ({ default: module.LibraryHubPage })),
+);
+const DbSettingsPage = lazy(() =>
+  import('@/features/settings/pages/DbSettingsPage').then((module) => ({ default: module.DbSettingsPage })),
+);
+const ModelManagePage = lazy(() =>
+  import('@/features/models/pages/ModelManagePage').then((module) => ({ default: module.ModelManagePage })),
+);
+const NovelLibraryPage = lazy(() =>
+  import('@/features/novels/pages/NovelLibraryPage').then((module) => ({ default: module.NovelLibraryPage })),
+);
+const PromptsPage = lazy(() =>
+  import('@/features/prompts/pages/PromptsPage').then((module) => ({ default: module.PromptsPage })),
+);
 const ScriptEditorPage = lazy(() => import('@/features/script-editor/pages/ScriptEditorPage'));
-const WorkbenchPage = lazy(() => import('@/features/workbench/pages/WorkbenchPage').then((module) => ({ default: module.WorkbenchPage })));
+const WorkbenchPage = lazy(() =>
+  import('@/features/workbench/pages/WorkbenchPage').then((module) => ({ default: module.WorkbenchPage })),
+);
 const TokenUsagePage = lazy(() => import('@/pages/TokenUsagePage'));
-const TextOverridesPage = lazy(() => import('@/features/text-overrides/pages/TextOverridesPage').then((module) => ({ default: module.TextOverridesPage })));
-const DashboardLayout = lazy(() => import('@/shared/layout/DashboardLayout').then((module) => ({ default: module.DashboardLayout })));
-const SettingsPage = lazy(() => import('@/shared/settings/SettingsPage').then((module) => ({ default: module.SettingsPage })));
+const TextOverridesPage = lazy(() =>
+  import('@/features/text-overrides/pages/TextOverridesPage').then((module) => ({ default: module.TextOverridesPage })),
+);
+const DashboardLayout = lazy(() =>
+  import('@/shared/layout/DashboardLayout').then((module) => ({ default: module.DashboardLayout })),
+);
+const SettingsPage = lazy(() =>
+  import('@/shared/settings/SettingsPage').then((module) => ({ default: module.SettingsPage })),
+);
 const INTERNAL_ROUTE_MODULES_BUNDLED = import.meta.env.DEV || import.meta.env.VITE_INCLUDE_INTERNAL_ROUTES === '1';
 const InternalRoutesPage = INTERNAL_ROUTE_MODULES_BUNDLED
   ? lazy(() => import('@/app/InternalRoutesPage').then((module) => ({ default: module.InternalRoutesPage })))
@@ -96,6 +127,7 @@ export default function App() {
                 <Route path="/scripts" element={<NovelLibraryPage />} />
                 <Route path="/library" element={<LibraryHubPage />} />
                 <Route path="/genre-iteration" element={<GenreIterationPage />} />
+                <Route path="/tomato-browser" element={<TomatoGenreIterationTestPage />} />
                 <Route path="/concept-library" element={<ConceptLibraryPage />} />
                 <Route path="/prompts" element={<PromptsPage />} />
                 <Route path="/model-manage" element={<ModelManagePage />} />
@@ -103,9 +135,7 @@ export default function App() {
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/text-overrides" element={<TextOverridesPage />} />
                 <Route path="/token-usage" element={<TokenUsagePage />} />
-                {showInternalRoutes && InternalRoutesPage && (
-                  <Route path="*" element={<InternalRoutesPage />} />
-                )}
+                {showInternalRoutes && InternalRoutesPage && <Route path="*" element={<InternalRoutesPage />} />}
                 <Route path="/system-settings" element={<Navigate to="/settings?section=system" replace />} />
                 <Route path="/shortcut-settings" element={<Navigate to="/settings?section=shortcuts" replace />} />
                 <Route path="/nav-settings" element={<Navigate to="/settings?section=navigation" replace />} />

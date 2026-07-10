@@ -1,4 +1,4 @@
-import { Check, ChevronDown } from 'lucide-react';
+import { Check, ChevronDown, FileText, ListTree } from 'lucide-react';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -6,6 +6,9 @@ export type CapsuleSelectOption = {
   value: string;
   label: string;
   disabled?: boolean;
+  variant?: 'group' | 'groupedOption';
+  count?: number;
+  metaLabel?: string;
 };
 
 type CapsuleSelectProps = {
@@ -25,6 +28,7 @@ type CapsuleSelectProps = {
   disableToggleActive?: boolean;
   onDisableToggle?: () => void;
   disableToggleLabel?: string;
+  preserveOptionOrder?: boolean;
 };
 
 function getInlineActionShape(buttonClassName: string) {
@@ -110,6 +114,7 @@ export function CapsuleSelect({
   disableToggleActive = false,
   onDisableToggle,
   disableToggleLabel,
+  preserveOptionOrder = false,
 }: CapsuleSelectProps) {
   const id = useId();
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -122,7 +127,11 @@ export function CapsuleSelect({
   const displayedOption = current ?? options[0] ?? null;
   const displayedValue = displayedOption?.value ?? '';
   const displayLabel = disabled && disabledLabel ? disabledLabel : displayedOption?.label || placeholder;
-  const visibleOptions = displayedOption ? [displayedOption, ...options.filter((option) => option.value !== displayedOption.value)] : options;
+  const visibleOptions = preserveOptionOrder
+    ? options
+    : displayedOption
+      ? [displayedOption, ...options.filter((option) => option.value !== displayedOption.value)]
+      : options;
   const hasInlineActions = Boolean(actionLabel);
   const hasDisableToggle = Boolean(onDisableToggle);
   const shouldRenderLocalDropdown = hasInlineActions || Boolean(floatingLabel);
@@ -133,16 +142,9 @@ export function CapsuleSelect({
   const updateDropdownRect = () => {
     const rect = (controlRef.current ?? buttonRef.current)?.getBoundingClientRect();
     if (!rect) return;
-    const viewportWidth = Math.max(
-      window.innerWidth || 0,
-      document.documentElement.clientWidth || 0,
-      rect.right + 8,
-    );
+    const viewportWidth = Math.max(window.innerWidth || 0, document.documentElement.clientWidth || 0, rect.right + 8);
     const safeWidth = Math.max(rect.width, 1);
-    const safeLeft = Math.min(
-      Math.max(rect.left, 8),
-      Math.max(8, viewportWidth - safeWidth - 8),
-    );
+    const safeLeft = Math.min(Math.max(rect.left, 8), Math.max(8, viewportWidth - safeWidth - 8));
     setDropdownRect({
       left: safeLeft,
       top: rect.bottom,
@@ -183,48 +185,94 @@ export function CapsuleSelect({
     setOpen((currentOpen) => !currentOpen);
   };
 
-  const dropdownMenu = open && !disabled ? (
-    <div
-      ref={dropdownRef}
-      className={`${shouldRenderLocalDropdown ? `absolute left-0 right-0 top-[calc(100%-2px)] ${inlineActionShape.connectedDropdownRadius} border-2 border-t-0 border-[#08AACE] shadow-[0_18px_34px_rgba(8,170,206,0.14)]` : `${dropdownRect.fixed ? 'fixed' : 'absolute'} rounded-xl border border-slate-200 shadow-2xl`} z-[10050] max-h-[240px] overflow-y-auto bg-white py-1`}
-      style={shouldRenderLocalDropdown ? undefined : {
-        left: dropdownRect.left,
-        top: dropdownRect.top,
-        width: dropdownRect.width,
-      }}
-    >
-      {visibleOptions.map((option) => {
-        const selected = !option.disabled && displayedValue === option.value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            disabled={option.disabled}
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              if (option.disabled) return;
-              onChange(option.value);
-              setOpen(false);
-            }}
-            className={`flex h-9 w-full items-center justify-between gap-3 px-5 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:text-slate-300 ${
-              selected
-                ? 'bg-[#EAF9FD] font-black text-slate-900 hover:bg-[#EAF9FD]'
-                : 'bg-white font-bold text-slate-800 hover:bg-sky-50 hover:text-[#08AACE]'
-            }`}
-          >
-            <span className="min-w-0 truncate">{option.label}</span>
-            {selected && <Check className="h-4 w-4 shrink-0 text-[#08AACE]" />}
-          </button>
-        );
-      })}
-    </div>
-  ) : null;
-  const dropdown = dropdownMenu && shouldRenderLocalDropdown ? dropdownMenu : dropdownMenu ? createPortal(dropdownMenu, document.body) : null;
+  const dropdownMenu =
+    open && !disabled ? (
+      <div
+        ref={dropdownRef}
+        className={`${shouldRenderLocalDropdown ? `absolute left-0 right-0 top-[calc(100%-2px)] ${inlineActionShape.connectedDropdownRadius} border-2 border-t-0 border-[#08AACE] shadow-[0_18px_34px_rgba(8,170,206,0.14)]` : `${dropdownRect.fixed ? 'fixed' : 'absolute'} rounded-xl border border-slate-200 shadow-2xl`} z-[10050] max-h-[240px] overflow-y-auto bg-white py-1`}
+        style={
+          shouldRenderLocalDropdown
+            ? undefined
+            : {
+                left: dropdownRect.left,
+                top: dropdownRect.top,
+                width: dropdownRect.width,
+              }
+        }
+      >
+        {visibleOptions.map((option) => {
+          const selected = !option.disabled && displayedValue === option.value;
+          const isGroup = option.variant === 'group';
+          const isGroupedOption = option.variant === 'groupedOption';
+          const hasMetaLabel = !isGroup && Boolean(option.metaLabel);
+          return (
+            <button
+              key={option.value}
+              type="button"
+              disabled={option.disabled}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (option.disabled) return;
+                onChange(option.value);
+                setOpen(false);
+              }}
+              className={
+                isGroup
+                  ? 'flex h-8 w-full cursor-default items-center gap-2 px-5 text-left text-xs font-black text-slate-500 disabled:cursor-default disabled:text-slate-500'
+                  : `flex min-h-9 items-center justify-between gap-3 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:text-slate-300 ${
+                      isGroupedOption
+                        ? 'ml-6 w-[calc(100%-1.5rem)] border-l border-dashed border-slate-200 px-4'
+                        : 'w-full px-5'
+                    } ${
+                      selected
+                        ? 'bg-[#EAF9FD] font-black text-slate-900 hover:bg-[#EAF9FD]'
+                        : 'bg-white font-bold text-slate-800 hover:bg-sky-50 hover:text-[#08AACE]'
+                    }`
+              }
+            >
+              {isGroup ? (
+                <>
+                  <ListTree className="h-3.5 w-3.5 shrink-0 text-[#08AACE]" />
+                  <span className="min-w-0 truncate">{option.label}</span>
+                  {typeof option.count === 'number' ? (
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] leading-none text-slate-400">
+                      {option.count}
+                    </span>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <span className="flex min-w-0 items-center gap-2">
+                    {isGroupedOption ? <FileText className="h-4 w-4 shrink-0 text-slate-300" /> : null}
+                    <span className="min-w-0 truncate">{option.label}</span>
+                    {hasMetaLabel ? (
+                      <span className="shrink-0 text-[11px] font-black text-slate-400">{option.metaLabel}</span>
+                    ) : null}
+                  </span>
+                  {selected && <Check className="h-4 w-4 shrink-0 text-[#08AACE]" />}
+                </>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    ) : null;
+  const dropdown =
+    dropdownMenu && shouldRenderLocalDropdown
+      ? dropdownMenu
+      : dropdownMenu
+        ? createPortal(dropdownMenu, document.body)
+        : null;
 
   if (hasInlineActions) {
     return (
-      <div ref={rootRef} style={style} title={title} className={`relative min-w-0 ${floatingLabel ? 'pt-3' : ''} ${className}`}>
+      <div
+        ref={rootRef}
+        style={style}
+        title={title}
+        className={`relative min-w-0 ${floatingLabel ? 'pt-3' : ''} ${className}`}
+      >
         <div
           ref={(element) => {
             controlRef.current = element;
@@ -234,11 +282,15 @@ export function CapsuleSelect({
           } ${connectedDropdownOpen ? `${inlineActionShape.connectedControlRadius} border-b-transparent` : ''}`}
         >
           {floatingLabel && (
-            <span className={`pointer-events-none absolute left-5 top-0 z-20 max-w-[128px] -translate-y-1/2 px-1 text-[12px] font-black leading-none text-slate-800 ${disabled ? 'bg-slate-100' : 'bg-white'}`}>
+            <span
+              className={`pointer-events-none absolute left-5 top-0 z-20 max-w-[128px] -translate-y-1/2 px-1 text-[12px] font-black leading-none text-slate-800 ${disabled ? 'bg-slate-100' : 'bg-white'}`}
+            >
               {floatingLabel}
             </span>
           )}
-          <div className={`flex h-full min-w-0 overflow-hidden ${inlineActionShape.innerRadius} ${inlineActionShape.actionPadding}`}>
+          <div
+            className={`flex h-full min-w-0 overflow-hidden ${inlineActionShape.innerRadius} ${inlineActionShape.actionPadding}`}
+          >
             <button
               ref={buttonRef}
               id={id}
@@ -306,7 +358,9 @@ export function CapsuleSelect({
             disabled ? 'border-slate-200 bg-white text-slate-400' : 'border-[#08AACE]'
           } ${connectedDropdownOpen ? `${inlineActionShape.connectedControlRadius} border-b-transparent` : ''}`}
         >
-          <span className={`pointer-events-none absolute left-5 top-0 z-20 max-w-[128px] -translate-y-1/2 px-1 text-[12px] font-black leading-none text-slate-800 ${disabled ? 'bg-white' : 'bg-white'}`}>
+          <span
+            className={`pointer-events-none absolute left-5 top-0 z-20 max-w-[128px] -translate-y-1/2 px-1 text-[12px] font-black leading-none text-slate-800 ${disabled ? 'bg-white' : 'bg-white'}`}
+          >
             {floatingLabel}
           </span>
           <div className="flex h-full min-w-0 overflow-hidden rounded-[inherit]">

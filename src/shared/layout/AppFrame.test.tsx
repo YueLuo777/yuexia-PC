@@ -14,7 +14,8 @@ describe('writer workspace chrome styling', () => {
     const styles = await readSource('../styles/index.css');
 
     expect(styles).toContain('--xy-wa-titlebar: #E4E9EF;');
-    expect(styles).toContain('.writer-assistant-theme .xy-wa-titlebar {\n  background: var(--xy-wa-titlebar);');
+    expect(styles).toContain('.writer-assistant-theme .xy-wa-titlebar {');
+    expect(styles).toContain('background: var(--xy-wa-titlebar);');
     expect(appFrame).toContain('className="app-titlebar xy-wa-titlebar flex h-12 shrink-0 items-center border-b px-2"');
   });
 
@@ -23,7 +24,9 @@ describe('writer workspace chrome styling', () => {
     const selectedRuleStart = styles.indexOf('.writer-assistant-theme .xy-selected-content-bg,');
     const selectedRuleEnd = styles.indexOf('.writer-assistant-theme .xy-selected-mint-bg,', selectedRuleStart);
     const selectedRule = styles.slice(selectedRuleStart, selectedRuleEnd);
-    const darkTitlebarRules = [...styles.matchAll(/\.theme-dark \.app-titlebar \{[\s\S]*?\}/g)].map((match) => match[0]);
+    const darkTitlebarRules = [...styles.matchAll(/\.theme-dark \.app-titlebar \{[\s\S]*?\}/g)].map(
+      (match) => match[0],
+    );
 
     expect(selectedRule).toContain('background-color: var(--xy-custom-content-selected-bg) !important;');
     expect(selectedRule).not.toContain('background-color: #FFF7ED !important;');
@@ -50,10 +53,7 @@ describe('writer workspace chrome styling', () => {
     const appFrame = await readSource('AppFrame.tsx');
     const tabs = await readSource('../tabs/WorkspaceTabsContext.tsx');
     const styles = await readSource('../styles/index.css');
-    const homeRule = styles.slice(
-      styles.indexOf('.workspace-tab-home,'),
-      styles.indexOf('.xy-wa-book-cover-empty {'),
-    );
+    const homeRule = styles.slice(styles.indexOf('.workspace-tab-home,'), styles.indexOf('.xy-wa-book-cover-empty {'));
 
     expect(tabs).toContain("title: '首页'");
     expect(tabs).toContain("path: '/novels'");
@@ -101,7 +101,7 @@ describe('writer workspace chrome styling', () => {
     expect(appFrame).not.toContain("label: '07号测试'");
     expect(appFrame).not.toContain("key: 'dark'");
     expect(appFrame).not.toContain("label: '黑色'");
-    expect(appFrame).not.toContain('themeMode === \'dark\'');
+    expect(appFrame).not.toContain("themeMode === 'dark'");
     expect(appFrame).toContain('setIsThemeMenuOpen((prev) => !prev)');
     expect(appFrame).toContain('aria-haspopup="menu"');
     expect(appFrame).toContain('xy-theme-menu');
@@ -148,6 +148,16 @@ describe('writer workspace chrome styling', () => {
     expect(appFrame).toContain('ref={themeMenuRef}');
   });
 
+  it('skips globally static modals when applying fallback drag and resize behavior', async () => {
+    const appFrame = await readSource('AppFrame.tsx');
+
+    expect(appFrame).toContain("dialog.dataset.globalModalStatic === 'true'");
+    expect(appFrame).toContain(
+      "if (!dialog || dialog.dataset.draggableManaged === 'true' || dialog.dataset.globalModalStatic === 'true') return;",
+    );
+    expect(appFrame).toContain('ensureResizeHandle(dialog);');
+  });
+
   it('keeps the shuimo dashboard sidebar in a light paper palette', async () => {
     const styles = await readSource('../styles/index.css');
 
@@ -176,7 +186,10 @@ describe('writer workspace chrome styling', () => {
   it('renders the shuimo paper-lift marker as the same line sparkles icon used in the preview', async () => {
     const styles = await readSource('../styles/index.css');
     const markerRuleStart = styles.indexOf('.theme-shuimo .xy-selected-mint-bg::before');
-    const markerRuleEnd = styles.indexOf('.theme-shuimo .xy-chapter-sidebar-row.xy-selected-mint-bg::before', markerRuleStart);
+    const markerRuleEnd = styles.indexOf(
+      '.theme-shuimo .xy-chapter-sidebar-row.xy-selected-mint-bg::before',
+      markerRuleStart,
+    );
     const markerRule = styles.slice(markerRuleStart, markerRuleEnd);
 
     expect(markerRuleStart).toBeGreaterThanOrEqual(0);
@@ -192,7 +205,10 @@ describe('writer workspace chrome styling', () => {
   it('uses the same line sparkles paper-lift marker in the shuimo2 theme', async () => {
     const styles = await readSource('../styles/index.css');
     const markerRuleStart = styles.indexOf('.theme-shuimo2 .xy-selected-mint-bg::before');
-    const markerRuleEnd = styles.indexOf('.theme-shuimo2 .xy-chapter-sidebar-row.xy-selected-mint-bg::before', markerRuleStart);
+    const markerRuleEnd = styles.indexOf(
+      '.theme-shuimo2 .xy-chapter-sidebar-row.xy-selected-mint-bg::before',
+      markerRuleStart,
+    );
     const markerRule = styles.slice(markerRuleStart, markerRuleEnd);
 
     expect(markerRuleStart).toBeGreaterThanOrEqual(0);

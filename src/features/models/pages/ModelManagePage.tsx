@@ -47,7 +47,10 @@ function saveCardsPerRow(cardsPerRow: ModelCardsPerRow) {
   localStorage.setItem(MODEL_MANAGE_SETTINGS_KEY, JSON.stringify({ cardsPerRow }));
 }
 
-const providerMeta: Record<ModelProvider, { label: string; defaultBaseUrl: string; modelPlaceholder: string; namePlaceholder: string }> = {
+const providerMeta: Record<
+  ModelProvider,
+  { label: string; defaultBaseUrl: string; modelPlaceholder: string; namePlaceholder: string }
+> = {
   'openai-compatible': {
     label: 'OpenAI 兼容（GPT / DeepSeek 等）',
     defaultBaseUrl: '',
@@ -86,14 +89,15 @@ function normalizeModelDraft(draft: ModelDraft) {
 
 function getSwapPreviewItems<T>(items: T[], dragSourceIndex: number | null, targetIndex: number | null) {
   if (
-    dragSourceIndex === null
-    || targetIndex === null
-    || dragSourceIndex === targetIndex
-    || dragSourceIndex < 0
-    || targetIndex < 0
-    || dragSourceIndex >= items.length
-    || targetIndex >= items.length
-  ) return items;
+    dragSourceIndex === null ||
+    targetIndex === null ||
+    dragSourceIndex === targetIndex ||
+    dragSourceIndex < 0 ||
+    targetIndex < 0 ||
+    dragSourceIndex >= items.length ||
+    targetIndex >= items.length
+  )
+    return items;
   const next = [...items];
   const [moved] = next.splice(dragSourceIndex, 1);
   next.splice(targetIndex, 0, moved);
@@ -128,9 +132,10 @@ function hasModelPointerRetargetedTooSoon(
 ) {
   if (!pointerDrag.lastPreviewTargetKey || pointerDrag.lastPreviewTargetKey === targetKey) return false;
   const distanceFromLastPreview = Math.hypot(clientX - pointerDrag.lastPreviewX, clientY - pointerDrag.lastPreviewY);
-  const retargetDistance = targetKey === `model:${pointerDrag.sourceIndex}`
-    ? MODEL_POINTER_DRAG_RETURN_DISTANCE
-    : MODEL_POINTER_DRAG_RETARGET_DISTANCE;
+  const retargetDistance =
+    targetKey === `model:${pointerDrag.sourceIndex}`
+      ? MODEL_POINTER_DRAG_RETURN_DISTANCE
+      : MODEL_POINTER_DRAG_RETARGET_DISTANCE;
   return distanceFromLastPreview < retargetDistance;
 }
 
@@ -183,112 +188,108 @@ function ModelEditorModal({
       zIndexClass="z-[260]"
       storageId="model-editor-modal"
     >
-        <div className="min-h-0 space-y-5 overflow-y-auto px-8 py-7">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className={`xy-floating-field ${draft.name.trim() ? 'xy-has-value' : ''}`}>
-              <input
-                value={draft.name}
-                onChange={(event) => setDraft((prev) => ({ ...prev, name: event.target.value }))}
-                placeholder={currentProvider.namePlaceholder}
-              />
-              <label>模型名称</label>
-            </div>
-            <div className={`xy-floating-field ${draft.id.trim() ? 'xy-has-value' : ''}`}>
-              <input
-                value={draft.id}
-                onChange={(event) => setDraft((prev) => ({ ...prev, id: event.target.value }))}
-                placeholder={currentProvider.modelPlaceholder}
-              />
-              <label>模型 ID</label>
-            </div>
-          </div>
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="block text-sm font-medium text-slate-600">温度预设</label>
-              <span className="text-xs font-bold text-brand">{formatTemperature(draft.temperature)}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {temperaturePresets.map((preset) => (
-                <button
-                  key={preset.label}
-                  onClick={() => setDraft((prev) => ({ ...prev, temperature: preset.value }))}
-                  className={`rounded-2xl border px-3 py-2 text-left transition-colors ${
-                    normalizeTemperature(draft.temperature) === preset.value
-                      ? 'border-brand bg-brand-light text-brand'
-                      : 'border-slate-200 text-slate-500 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="text-sm font-bold">{preset.label}</div>
-                  <div className="mt-0.5 text-[11px] opacity-80">{formatTemperature(preset.value)}</div>
-                  <div className="mt-1 truncate text-[10px] opacity-70">{preset.desc}</div>
-                </button>
-              ))}
-            </div>
+      <div className="min-h-0 space-y-5 overflow-y-auto px-8 py-7">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className={`xy-floating-field ${draft.name.trim() ? 'xy-has-value' : ''}`}>
             <input
-              type="range"
-              min={0.1}
-              max={1}
-              step={0.05}
-              value={normalizeTemperature(draft.temperature)}
-              onChange={(event) => setDraft((prev) => ({ ...prev, temperature: normalizeTemperature(Number(event.target.value)) }))}
-              className="mt-3 w-full accent-brand"
+              value={draft.name}
+              onChange={(event) => setDraft((prev) => ({ ...prev, name: event.target.value }))}
+              placeholder={currentProvider.namePlaceholder}
             />
+            <label>模型名称</label>
           </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-slate-600">接口类型</label>
-            <CapsuleSelect
-              value={draft.provider}
-              onChange={(value) => {
-                const provider = value as ModelProvider;
-                setDraft((prev) => ({
-                  ...prev,
-                  provider,
-                  baseUrl: prev.baseUrl,
-                }));
-              }}
-              options={(Object.keys(providerMeta) as ModelProvider[]).map((provider) => ({
-                value: provider,
-                label: providerMeta[provider].label,
-              }))}
-            />
-          </div>
-          <div className={`xy-floating-field ${draft.baseUrl.trim() ? 'xy-has-value' : ''}`}>
+          <div className={`xy-floating-field ${draft.id.trim() ? 'xy-has-value' : ''}`}>
             <input
-              value={draft.baseUrl}
-              onChange={(event) => setDraft((prev) => ({ ...prev, baseUrl: event.target.value }))}
-              placeholder={currentProvider.defaultBaseUrl}
+              value={draft.id}
+              onChange={(event) => setDraft((prev) => ({ ...prev, id: event.target.value }))}
+              placeholder={currentProvider.modelPlaceholder}
             />
-            <label>接口地址</label>
+            <label>模型 ID</label>
           </div>
-          <div>
-            <div className={`xy-floating-field xy-floating-with-action ${draft.apiKey.trim() ? 'xy-has-value' : ''}`}>
-              <input
-                type={showKey ? 'text' : 'password'}
-                value={draft.apiKey}
-                onChange={(event) => setDraft((prev) => ({ ...prev, apiKey: event.target.value }))}
-              />
-              <label>API Key</label>
+        </div>
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <label className="block text-sm font-medium text-slate-600">温度预设</label>
+            <span className="text-xs font-bold text-brand">{formatTemperature(draft.temperature)}</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {temperaturePresets.map((preset) => (
               <button
-                onClick={() => setShowKey((prev) => !prev)}
-                className="xy-floating-action"
+                key={preset.label}
+                onClick={() => setDraft((prev) => ({ ...prev, temperature: preset.value }))}
+                className={`rounded-2xl border px-3 py-2 text-left transition-colors ${
+                  normalizeTemperature(draft.temperature) === preset.value
+                    ? 'border-brand bg-brand-light text-brand'
+                    : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                }`}
               >
-                {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                <div className="text-sm font-bold">{preset.label}</div>
+                <div className="mt-0.5 text-[11px] opacity-80">{formatTemperature(preset.value)}</div>
+                <div className="mt-1 truncate text-[10px] opacity-70">{preset.desc}</div>
               </button>
-            </div>
+            ))}
+          </div>
+          <input
+            type="range"
+            min={0.1}
+            max={1}
+            step={0.05}
+            value={normalizeTemperature(draft.temperature)}
+            onChange={(event) =>
+              setDraft((prev) => ({ ...prev, temperature: normalizeTemperature(Number(event.target.value)) }))
+            }
+            className="mt-3 w-full accent-brand"
+          />
+        </div>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-slate-600">接口类型</label>
+          <CapsuleSelect
+            value={draft.provider}
+            onChange={(value) => {
+              const provider = value as ModelProvider;
+              setDraft((prev) => ({
+                ...prev,
+                provider,
+                baseUrl: prev.baseUrl,
+              }));
+            }}
+            options={(Object.keys(providerMeta) as ModelProvider[]).map((provider) => ({
+              value: provider,
+              label: providerMeta[provider].label,
+            }))}
+          />
+        </div>
+        <div className={`xy-floating-field ${draft.baseUrl.trim() ? 'xy-has-value' : ''}`}>
+          <input
+            value={draft.baseUrl}
+            onChange={(event) => setDraft((prev) => ({ ...prev, baseUrl: event.target.value }))}
+            placeholder={currentProvider.defaultBaseUrl}
+          />
+          <label>接口地址</label>
+        </div>
+        <div>
+          <div className={`xy-floating-field xy-floating-with-action ${draft.apiKey.trim() ? 'xy-has-value' : ''}`}>
+            <input
+              type={showKey ? 'text' : 'password'}
+              value={draft.apiKey}
+              onChange={(event) => setDraft((prev) => ({ ...prev, apiKey: event.target.value }))}
+            />
+            <label>API Key</label>
+            <button onClick={() => setShowKey((prev) => !prev)} className="xy-floating-action">
+              {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
         </div>
+      </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-8 py-5">
-          <ActionButton onClick={onClose} variant="secondary">
-            取消
-          </ActionButton>
-          <ActionButton
-            onClick={() => onSave(draft)}
-            disabled={!draft.name.trim() || !draft.id.trim()}
-          >
-            保存修改
-          </ActionButton>
-        </div>
+      <div className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-8 py-5">
+        <ActionButton onClick={onClose} variant="secondary">
+          取消
+        </ActionButton>
+        <ActionButton onClick={() => onSave(draft)} disabled={!draft.name.trim() || !draft.id.trim()}>
+          保存修改
+        </ActionButton>
+      </div>
     </AppModalShell>
   );
 }
@@ -307,7 +308,10 @@ function ModelManageSettingsModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-sharp fixed inset-0 z-[265] flex items-center justify-center bg-black/35 px-6" onClick={onClose}>
+    <div
+      className="modal-sharp fixed inset-0 z-[265] flex items-center justify-center bg-black/35 px-6"
+      onClick={onClose}
+    >
       <div
         className="modal-sharp w-[420px] max-w-[92vw] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
@@ -319,7 +323,10 @@ function ModelManageSettingsModal({
             </div>
             <h2 className="text-base font-bold text-slate-900">模型管理设置</h2>
           </div>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]">
+          <button
+            onClick={onClose}
+            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -351,11 +358,7 @@ function ModelManageSettingsModal({
   );
 }
 
-export function ModelManagePage({
-  embedded = false,
-  onClose,
-  headerDragHandleProps,
-}: ModelManagePageProps = {}) {
+export function ModelManagePage({ embedded = false, onClose, headerDragHandleProps }: ModelManagePageProps = {}) {
   const { models, addModel, updateModel, deleteModel, reorderModels } = useModels();
   const { records, clearApiTestFailures } = useCallRecords();
   const [showAdd, setShowAdd] = useState(false);
@@ -373,14 +376,16 @@ export function ModelManagePage({
   const modelPointerDragRef = useRef<ModelPointerDragState>(null);
 
   const enabledCount = models.filter((model) => model.enabled).length;
-  const previewModels = dragSourceIndex !== null && dragOverIndex !== null
-    ? getSwapPreviewItems(models, dragSourceIndex, dragOverIndex)
-    : models;
+  const previewModels =
+    dragSourceIndex !== null && dragOverIndex !== null
+      ? getSwapPreviewItems(models, dragSourceIndex, dragOverIndex)
+      : models;
   const failureLogs = useMemo(
-    () => records
-      .filter((record) => record.type === 'api_test' && record.status === 'failed')
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, 30),
+    () =>
+      records
+        .filter((record) => record.type === 'api_test' && record.status === 'failed')
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 30),
     [records],
   );
 
@@ -535,7 +540,10 @@ export function ModelManagePage({
         chapterContext: '',
         recordType: 'api_test',
       });
-      updateModel(model.id, { connectionStatus: 'connected', connectionLatencyMs: Math.round(performance.now() - startedAt) });
+      updateModel(model.id, {
+        connectionStatus: 'connected',
+        connectionLatencyMs: Math.round(performance.now() - startedAt),
+      });
       showToast('连接成功');
     } catch (error) {
       const latencyMs = Math.round(performance.now() - startedAt);
@@ -565,10 +573,7 @@ export function ModelManagePage({
     if (model.connectionStatus === 'testing') return '测试中';
     return '未测试';
   };
-  const {
-    className: headerDragHandleClassName,
-    ...resolvedHeaderDragHandleProps
-  } = headerDragHandleProps ?? {};
+  const { className: headerDragHandleClassName, ...resolvedHeaderDragHandleProps } = headerDragHandleProps ?? {};
   const headerClassName = embedded
     ? `flex h-11 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 ${headerDragHandleProps ? 'cursor-move' : ''} ${headerDragHandleClassName ?? ''}`
     : `flex h-16 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-6 ${headerDragHandleClassName ?? ''}`;
@@ -577,8 +582,12 @@ export function ModelManagePage({
     <div className="flex h-full flex-col bg-slate-50">
       <div {...resolvedHeaderDragHandleProps} className={headerClassName}>
         <div className="flex min-w-0 items-center gap-3">
-          <h1 className={embedded ? 'text-sm font-bold text-slate-900' : 'text-xl font-bold text-slate-900'}>模型管理</h1>
-          <span className="flex h-7 items-center rounded-lg bg-orange-500 px-3 text-xs text-white">模型 {enabledCount} 个</span>
+          <h1 className={embedded ? 'text-sm font-bold text-slate-900' : 'text-xl font-bold text-slate-900'}>
+            模型管理
+          </h1>
+          <span className="flex h-7 items-center rounded-lg bg-orange-500 px-3 text-xs text-white">
+            模型 {enabledCount} 个
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -603,15 +612,13 @@ export function ModelManagePage({
         </div>
       </div>
 
-      <div className={`flex min-h-0 flex-1 overflow-hidden px-7 py-6 ${cardsPerRow === 4 ? 'gap-4' : 'gap-5'}`}>
+      <div className={`flex min-h-0 flex-1 overflow-hidden px-5 py-4 ${cardsPerRow === 4 ? 'gap-4' : 'gap-5'}`}>
         <div className="min-w-0 flex-1 overflow-y-auto pr-1">
-          <div className="mb-5 flex items-center gap-4">
-            {models.length > 1 && (
-              <div className="text-sm text-slate-400">
-                拖拽卡片可调整模型顺序
-              </div>
-            )}
-          </div>
+          {models.length > 1 ? (
+            <div className="mb-3 flex items-center gap-4">
+              <div className="text-sm text-slate-400">拖拽卡片可调整模型顺序</div>
+            </div>
+          ) : null}
 
           <div
             className={`grid auto-rows-fr items-stretch ${cardsPerRow === 4 ? 'gap-4' : 'gap-5'}`}
@@ -655,43 +662,23 @@ export function ModelManagePage({
                     cardsPerRow === 4 ? 'p-4 pr-[58px]' : 'p-5 pr-[78px]'
                   } ${isDraggingPreview ? 'border-dashed border-brand/45 bg-brand/10 shadow-inner' : 'border-slate-200'}`}
                 >
-                {isDraggingPreview ? (
-                  <span className="absolute left-4 top-4 z-20 rounded-full bg-white/85 px-2.5 py-1 text-xs font-black text-brand shadow-sm">虚影，松手后落实</span>
-                ) : null}
-                <div
-                  className={`model-temp-slider absolute z-10 flex flex-col items-center rounded-full border border-slate-200 bg-slate-50 px-1.5 py-3 ${
-                    cardsPerRow === 4 ? 'bottom-4 right-3 top-[80px] w-10' : 'bottom-5 right-4 top-[96px] w-14'
-                  }`}
-                  title={`温度 ${formatTemperature(model.temperature ?? 0.7)}`}
-                  draggable={false}
-                  onMouseDown={(event) => {
-                    event.stopPropagation();
-                    setTemperatureDragId(model.id);
-                  }}
-                  onMouseUp={() => setTemperatureDragId(null)}
-                  onMouseLeave={() => setTemperatureDragId(null)}
-                  onPointerDown={(event) => {
-                    event.stopPropagation();
-                    setTemperatureDragId(model.id);
-                  }}
-                  onPointerUp={() => setTemperatureDragId(null)}
-                  onPointerCancel={() => setTemperatureDragId(null)}
-                  onDragStart={(event) => event.preventDefault()}
-                >
-                  <span className="mb-1 text-xs font-bold text-slate-400">温</span>
-                  <input
-                    type="range"
-                    min={0.1}
-                    max={1}
-                    step={0.05}
-                    value={normalizeTemperature(model.temperature ?? 0.7)}
-                    onChange={(event) => updateModel(model.id, { temperature: normalizeTemperature(Number(event.target.value)) })}
+                  {isDraggingPreview ? (
+                    <span className="absolute left-4 top-4 z-20 rounded-full bg-white/85 px-2.5 py-1 text-xs font-black text-brand shadow-sm">
+                      虚影，松手后落实
+                    </span>
+                  ) : null}
+                  <div
+                    className={`model-temp-slider absolute z-10 flex flex-col items-center rounded-full border border-slate-200 bg-slate-50 px-1.5 py-3 ${
+                      cardsPerRow === 4 ? 'bottom-4 right-3 top-[80px] w-10' : 'bottom-5 right-4 top-[96px] w-14'
+                    }`}
+                    title={`温度 ${formatTemperature(model.temperature ?? 0.7)}`}
                     draggable={false}
                     onMouseDown={(event) => {
                       event.stopPropagation();
                       setTemperatureDragId(model.id);
                     }}
                     onMouseUp={() => setTemperatureDragId(null)}
+                    onMouseLeave={() => setTemperatureDragId(null)}
                     onPointerDown={(event) => {
                       event.stopPropagation();
                       setTemperatureDragId(model.id);
@@ -699,44 +686,92 @@ export function ModelManagePage({
                     onPointerUp={() => setTemperatureDragId(null)}
                     onPointerCancel={() => setTemperatureDragId(null)}
                     onDragStart={(event) => event.preventDefault()}
-                    className={`${cardsPerRow === 4 ? 'w-6' : 'w-8'} h-full cursor-pointer accent-brand`}
-                    style={{ writingMode: 'vertical-lr', direction: 'rtl' }}
-                  />
-                  <span className="mt-1 text-xs font-bold text-brand">{formatTemperature(model.temperature ?? 0.7)}</span>
-                </div>
-
-                <div className="mb-3 min-w-0">
-                  <div className="text-base font-bold leading-snug text-slate-900 [overflow-wrap:anywhere]" title={model.name}>{model.name}</div>
-                </div>
-
-                <div className="mt-auto space-y-2 border-t border-slate-100 pt-3">
-                  <div className="model-card-meta mb-2 space-y-1.5 rounded-xl bg-slate-50 px-3 py-2.5">
-                    <div className="truncate text-xs text-slate-500" title={model.model}>模型ID: {model.model}</div>
-                    <div className="truncate text-xs text-slate-500">状态：<span className={model.enabled ? 'text-emerald-600' : 'text-slate-400'}>{statusText(model)}</span></div>
-                  </div>
-                  <div className="xy-capsule-group w-full">
-                    <button onClick={() => openEdit(model)} className="xy-capsule-button model-action-button model-action-primary flex-1">编辑模型</button>
-                    <button onClick={() => void testModel(model)} className="xy-capsule-button model-action-button model-action-info flex-1">API 测试</button>
-                  </div>
-                  <div className="xy-capsule-group w-full">
-                    <button
-                      onClick={() => updateModel(model.id, { locked: !model.locked })}
-                      className={`xy-capsule-button model-action-button ${model.locked ? 'xy-active' : ''} flex-1`}
-                    >
-                      {model.locked ? '已锁定' : '锁定'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (!model.locked) setDeleteTarget(model);
+                  >
+                    <span className="mb-1 text-xs font-bold text-slate-400">温</span>
+                    <input
+                      type="range"
+                      min={0.1}
+                      max={1}
+                      step={0.05}
+                      value={normalizeTemperature(model.temperature ?? 0.7)}
+                      onChange={(event) =>
+                        updateModel(model.id, { temperature: normalizeTemperature(Number(event.target.value)) })
+                      }
+                      draggable={false}
+                      onMouseDown={(event) => {
+                        event.stopPropagation();
+                        setTemperatureDragId(model.id);
                       }}
-                      disabled={model.locked}
-                      className={`xy-capsule-button model-action-button ${model.locked ? 'model-action-disabled' : 'model-action-danger xy-danger'} flex-1`}
+                      onMouseUp={() => setTemperatureDragId(null)}
+                      onPointerDown={(event) => {
+                        event.stopPropagation();
+                        setTemperatureDragId(model.id);
+                      }}
+                      onPointerUp={() => setTemperatureDragId(null)}
+                      onPointerCancel={() => setTemperatureDragId(null)}
+                      onDragStart={(event) => event.preventDefault()}
+                      className={`${cardsPerRow === 4 ? 'w-6' : 'w-8'} h-full cursor-pointer accent-brand`}
+                      style={{ writingMode: 'vertical-lr', direction: 'rtl' }}
+                    />
+                    <span className="mt-1 text-xs font-bold text-brand">
+                      {formatTemperature(model.temperature ?? 0.7)}
+                    </span>
+                  </div>
+
+                  <div className="mb-3 min-w-0">
+                    <div
+                      className="text-base font-bold leading-snug text-slate-900 [overflow-wrap:anywhere]"
+                      title={model.name}
                     >
-                      删除
-                    </button>
+                      {model.name}
+                    </div>
+                  </div>
+
+                  <div className="mt-auto space-y-2 border-t border-slate-100 pt-3">
+                    <div className="model-card-meta mb-2 space-y-1.5 rounded-xl bg-slate-50 px-3 py-2.5">
+                      <div className="truncate text-xs text-slate-500" title={model.model}>
+                        模型ID: {model.model}
+                      </div>
+                      <div className="truncate text-xs text-slate-500">
+                        状态：
+                        <span className={model.enabled ? 'text-emerald-600' : 'text-slate-400'}>
+                          {statusText(model)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="xy-capsule-group w-full">
+                      <button
+                        onClick={() => openEdit(model)}
+                        className="xy-capsule-button model-action-button model-action-primary flex-1"
+                      >
+                        编辑模型
+                      </button>
+                      <button
+                        onClick={() => void testModel(model)}
+                        className="xy-capsule-button model-action-button model-action-info flex-1"
+                      >
+                        API 测试
+                      </button>
+                    </div>
+                    <div className="xy-capsule-group w-full">
+                      <button
+                        onClick={() => updateModel(model.id, { locked: !model.locked })}
+                        className={`xy-capsule-button model-action-button ${model.locked ? 'xy-active' : ''} flex-1`}
+                      >
+                        {model.locked ? '已锁定' : '锁定'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!model.locked) setDeleteTarget(model);
+                        }}
+                        disabled={model.locked}
+                        className={`xy-capsule-button model-action-button ${model.locked ? 'model-action-disabled' : 'model-action-danger xy-danger'} flex-1`}
+                      >
+                        删除
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
               );
             })}
             <button
@@ -749,7 +784,9 @@ export function ModelManagePage({
         </div>
 
         {!embedded && (
-          <aside className={`model-failure-panel flex shrink-0 flex-col overflow-hidden rounded-[20px] border border-slate-200 bg-white ${cardsPerRow === 4 ? 'w-[280px]' : 'w-[300px]'}`}>
+          <aside
+            className={`model-failure-panel flex shrink-0 flex-col overflow-hidden rounded-[20px] border border-slate-200 bg-white ${cardsPerRow === 4 ? 'w-[280px]' : 'w-[300px]'}`}
+          >
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-50">
@@ -768,7 +805,9 @@ export function ModelManagePage({
                 >
                   清空记录
                 </button>
-                <span className="rounded-lg bg-red-50 px-2 py-1 text-xs font-medium text-red-500">{failureLogs.length}</span>
+                <span className="rounded-lg bg-red-50 px-2 py-1 text-xs font-medium text-red-500">
+                  {failureLogs.length}
+                </span>
               </div>
             </div>
 
@@ -781,15 +820,24 @@ export function ModelManagePage({
                 </div>
               ) : (
                 failureLogs.map((log) => (
-                  <article key={log.id} className="model-failure-log rounded-2xl border border-red-100 bg-red-50/50 p-3">
+                  <article
+                    key={log.id}
+                    className="model-failure-log rounded-2xl border border-red-100 bg-red-50/50 p-3"
+                  >
                     <div className="mb-2 flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-bold text-slate-900" title={log.modelName}>{log.modelName}</div>
-                        <div className="mt-0.5 truncate text-[11px] text-slate-400" title={log.endpoint}>{log.endpoint || '未记录接口地址'}</div>
+                        <div className="truncate text-sm font-bold text-slate-900" title={log.modelName}>
+                          {log.modelName}
+                        </div>
+                        <div className="mt-0.5 truncate text-[11px] text-slate-400" title={log.endpoint}>
+                          {log.endpoint || '未记录接口地址'}
+                        </div>
                       </div>
                       <span className="shrink-0 text-[11px] text-slate-400">{formatLogTime(log.timestamp)}</span>
                     </div>
-                    <pre className="model-failure-error max-h-36 overflow-y-auto whitespace-pre-wrap rounded-xl bg-white p-3 text-xs leading-5 text-red-700">{log.error || '未返回错误内容'}</pre>
+                    <pre className="model-failure-error max-h-36 overflow-y-auto whitespace-pre-wrap rounded-xl bg-white p-3 text-xs leading-5 text-red-700">
+                      {log.error || '未返回错误内容'}
+                    </pre>
                   </article>
                 ))
               )}
@@ -801,9 +849,18 @@ export function ModelManagePage({
       <ModelEditorModal
         isOpen={showAdd || !!editing}
         title={editing ? '编辑模型' : '新增模型'}
-        initial={editing
-          ? { name: editing.name, id: editing.model || editing.id, baseUrl: editing.baseUrl, apiKey: editing.apiKey, provider: editing.provider ?? 'openai-compatible', temperature: editing.temperature ?? 0.7 }
-          : { name: '', id: '', baseUrl: '', apiKey: '', provider: 'openai-compatible', temperature: 0.7 }}
+        initial={
+          editing
+            ? {
+                name: editing.name,
+                id: editing.model || editing.id,
+                baseUrl: editing.baseUrl,
+                apiKey: editing.apiKey,
+                provider: editing.provider ?? 'openai-compatible',
+                temperature: editing.temperature ?? 0.7,
+              }
+            : { name: '', id: '', baseUrl: '', apiKey: '', provider: 'openai-compatible', temperature: 0.7 }
+        }
         onClose={() => {
           setEditing(null);
           setShowAdd(false);
