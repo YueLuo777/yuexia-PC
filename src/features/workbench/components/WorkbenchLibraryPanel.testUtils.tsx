@@ -49,6 +49,7 @@ export const readWorkbenchLibraryPanelSource = async () => {
     'workbenchRoleHistoryModal.tsx',
     'workbenchRoleLibraryView.tsx',
     'workbenchRoleSidebar.tsx',
+    'workbenchSettingEditor.tsx',
     'workbenchSimpleLibraryView.tsx',
     'workbenchSmartImport.ts',
   ];

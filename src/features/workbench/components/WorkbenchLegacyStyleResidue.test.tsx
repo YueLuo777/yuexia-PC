@@ -12,6 +12,7 @@ describe('workbench legacy selected style residue', () => {
     const sources = [
       'src/features/workbench/components/ChapterEditor.tsx',
       'src/features/workbench/components/WorkbenchLibraryPanel.tsx',
+      'src/features/workbench/components/workbenchSettingEditor.tsx',
       'src/features/workbench/pages/WorkbenchPage.tsx',
       'src/shared/styles/index.css',
       'src/features/theme/model/customThemeColors.ts',
