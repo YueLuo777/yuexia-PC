@@ -43,6 +43,7 @@ export const readWorkbenchLibraryPanelSource = async () => {
     'workbenchLibraryTabs.ts',
     'workbenchOtherSettingReaderModal.tsx',
     'workbenchPlotPointCandidates.ts',
+    'workbenchPlotPointChainWorkspace.tsx',
     'workbenchPlotPointGenerationModal.tsx',
     'workbenchRoleContent.ts',
     'workbenchRoleEditor.tsx',
@@ -304,6 +305,14 @@ export const readWorkbenchPlotChainSource = async () => {
   const { dirname, join } = await import('node:path');
 
   return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../model/workbenchPlotChain.ts'), 'utf8');
+};
+
+export const readWorkbenchPlotPointChainWorkspaceSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchPlotPointChainWorkspace.tsx'), 'utf8');
 };
 
 export const readTestCollectionSource = async () => {

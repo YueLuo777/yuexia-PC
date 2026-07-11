@@ -12,6 +12,7 @@ import {
   readCapsuleSelectSource,
   readChapterEditorSource,
   readAiInlineInputSource,
+  readWorkbenchPlotPointChainWorkspaceSource,
   readTestCollectionSource,
 } from './WorkbenchLibraryPanel.testUtils';
 
@@ -442,12 +443,12 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
   });
 
   it('renders the selected plot point delete action as a bordered warning button', async () => {
-    const panelSource = await readWorkbenchLibraryPanelSource();
-    const selectedListStart = panelSource.indexOf('visiblePlotPointSelectedItems.map((item) => {');
-    const deleteButtonAnchor = panelSource.indexOf('删除', selectedListStart);
-    const removeButtonStart = panelSource.lastIndexOf('<button', deleteButtonAnchor);
-    const removeButtonEnd = panelSource.indexOf('</button>', deleteButtonAnchor);
-    const removeButtonSource = panelSource.slice(removeButtonStart, removeButtonEnd);
+    const workspaceSource = await readWorkbenchPlotPointChainWorkspaceSource();
+    const selectedListStart = workspaceSource.indexOf('visibleSelectedItems.map((item) => {');
+    const deleteButtonAnchor = workspaceSource.indexOf('删除', selectedListStart);
+    const removeButtonStart = workspaceSource.lastIndexOf('<button', deleteButtonAnchor);
+    const removeButtonEnd = workspaceSource.indexOf('</button>', deleteButtonAnchor);
+    const removeButtonSource = workspaceSource.slice(removeButtonStart, removeButtonEnd);
 
     expect(selectedListStart).toBeGreaterThan(-1);
     expect(deleteButtonAnchor).toBeGreaterThan(selectedListStart);
@@ -457,8 +458,8 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     expect(removeButtonSource).toContainSource('bg-red-50');
     expect(removeButtonSource).toContainSource('shadow-sm');
     expect(removeButtonSource).not.toContainSource('className="shrink-0 text-xs font-black text-red-500"');
-    expect(removeButtonSource).toContainSource('togglePlotPointCandidate(item.id)');
-    expect(removeButtonSource).not.toContainSource('openDetailOutlineFromPlotPoint');
+    expect(removeButtonSource).toContainSource('onToggleCandidate(item.id)');
+    expect(removeButtonSource).not.toContainSource('onOpenDetailOutline');
   });
 
   it('removes the completed border transparent backplate placement test page', async () => {

@@ -7,6 +7,7 @@ import { parseGeneratedPlotPointCandidates } from './WorkbenchLibraryPanel';
 import {
   readWorkbenchLibraryPanelSource,
   readWorkbenchPlotChainSource,
+  readWorkbenchPlotPointChainWorkspaceSource,
   readTestCollectionSource,
 } from './WorkbenchLibraryPanel.testUtils';
 
@@ -93,22 +94,15 @@ describe('WorkbenchLibraryPanel plot-point flows', () => {
   });
 
   it('keeps plot point preview actions at the bottom without the preview title or status copy', async () => {
-    const panelSource = await readWorkbenchLibraryPanelSource();
-    const plotPointStandaloneStart = panelSource.indexOf('if (plotPointStandalone) {');
-    const centerPanelStart = panelSource.indexOf(
-      '<section className="min-w-0 flex min-h-0 flex-col bg-white">',
-      plotPointStandaloneStart,
-    );
-    const centerPanelEnd = panelSource.indexOf('{plotPointRightResizeHandle}', centerPanelStart);
-    const centerPanelSource = panelSource.slice(centerPanelStart, centerPanelEnd);
-    const candidateListIndex = centerPanelSource.indexOf('plotPointVisibleCandidates.length === 0');
+    const workspaceSource = await readWorkbenchPlotPointChainWorkspaceSource();
+    const centerPanelStart = workspaceSource.indexOf('<section className="min-w-0 flex min-h-0 flex-col bg-white">');
+    const centerPanelSource = workspaceSource.slice(centerPanelStart);
+    const candidateListIndex = centerPanelSource.indexOf('visibleCandidates.length === 0');
     const actionRowIndex = centerPanelSource.indexOf(
       '<div className="flex h-14 shrink-0 items-center justify-end gap-2 border-t border-slate-100 px-4">',
     );
 
-    expect(plotPointStandaloneStart).toBeGreaterThan(-1);
     expect(centerPanelStart).toBeGreaterThan(-1);
-    expect(centerPanelEnd).toBeGreaterThan(centerPanelStart);
     expect(candidateListIndex).toBeGreaterThan(-1);
     expect(actionRowIndex).toBeGreaterThan(candidateListIndex);
     expect(centerPanelSource).not.toContainSource('<h2 className="text-sm font-black text-slate-950">剧情点预览</h2>');
@@ -246,9 +240,10 @@ describe('WorkbenchLibraryPanel plot-point flows', () => {
   it('renders selected plot point cards as a full-content timeline preview area', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const plotChainSource = await readWorkbenchPlotChainSource();
-    const selectedListStart = panelSource.indexOf('relative space-y-4 pl-6 before:absolute');
-    const selectedListEnd = panelSource.indexOf('{plotPointLeftResizeHandle}', selectedListStart);
-    const selectedListSource = panelSource.slice(selectedListStart, selectedListEnd);
+    const workspaceSource = await readWorkbenchPlotPointChainWorkspaceSource();
+    const selectedListStart = workspaceSource.indexOf('relative space-y-4 pl-6 before:absolute');
+    const selectedListEnd = workspaceSource.indexOf('{leftResizeHandle}', selectedListStart);
+    const selectedListSource = workspaceSource.slice(selectedListStart, selectedListEnd);
 
     expect(selectedListStart).toBeGreaterThan(-1);
     expect(selectedListEnd).toBeGreaterThan(selectedListStart);
@@ -263,8 +258,8 @@ describe('WorkbenchLibraryPanel plot-point flows', () => {
     );
     expect(panelSource).toContainSource("if (plotPointChainFilterMode === 'written') return written;");
     expect(panelSource).toContainSource("if (plotPointChainFilterMode === 'unwritten') return !written;");
-    expect(panelSource).toContainSource('markPlotPointChainItemWritten(item.id)');
-    expect(panelSource).toContainSource('movePlotPointChainItemToUnwritten(item.id)');
+    expect(panelSource).toContainSource('onMarkWritten={markPlotPointChainItemWritten}');
+    expect(panelSource).toContainSource('onMoveToUnwritten={movePlotPointChainItemToUnwritten}');
     expect(panelSource).toContainSource("['all', '全部']");
     expect(panelSource).toContainSource("['unwritten', '只看未写']");
     expect(panelSource).toContainSource("['written', '只看已写']");
@@ -272,10 +267,10 @@ describe('WorkbenchLibraryPanel plot-point flows', () => {
     expect(panelSource).toContainSource('h-10 w-20 whitespace-nowrap rounded-2xl border px-2');
     expect(panelSource).toContainSource('h-10 w-20 whitespace-nowrap rounded-2xl bg-[#08AACE]');
     expect(panelSource).not.toContainSource('grid-cols-[repeat(auto-fit,minmax(128px,1fr))]');
-    expect(panelSource).toContainSource('onClick={openDetailOutlineFromPlotPoint}');
+    expect(panelSource).toContainSource('onOpenDetailOutline={openDetailOutlineFromPlotPoint}');
     expect(panelSource).not.toContainSource("['hideWritten', '已写隐藏']");
-    expect(selectedListSource).toContainSource('visiblePlotPointSelectedItems.map((item) => {');
-    expect(selectedListSource).toContainSource('const written = plotPointWrittenIdSet.has(item.id);');
+    expect(selectedListSource).toContainSource('visibleSelectedItems.map((item) => {');
+    expect(selectedListSource).toContainSource('const written = writtenIds.has(item.id);');
     expect(selectedListSource).toContainSource("written ? '移回未写' : '标为已写'");
     expect(selectedListSource).toContainSource('删除');
     expect(selectedListSource).not.toContainSource('生成章纲');
@@ -284,7 +279,7 @@ describe('WorkbenchLibraryPanel plot-point flows', () => {
     expect(selectedListSource).toContainSource("['潜力', metrics.potential]");
     expect(selectedListSource).toContainSource("['衔接', metrics.fit]");
     expect(selectedListSource).toContainSource(
-      'const reviewExpanded = expandedPlotPointPreviewIds.includes(`chain-review:${item.id}`);',
+      'const reviewExpanded = expandedPreviewIds.includes(`chain-review:${item.id}`);',
     );
     expect(selectedListSource).not.toContainSource('时间线预览 · 剧情点');
     expect(selectedListSource).not.toContainSource('item.title || `剧情点 ${index + 1}`');
@@ -312,19 +307,17 @@ describe('WorkbenchLibraryPanel plot-point flows', () => {
     expect(plotChainSource).toContainSource("if (score >= 70) return 'border-sky-200 bg-sky-50 text-sky-700';");
     expect(plotChainSource).toContainSource("return 'border-emerald-200 bg-emerald-50 text-emerald-700';");
     expect(selectedListSource).toContainSource('${getWorkbenchPlotPointMetricClass(value)}');
-    expect(selectedListSource).toContainSource(
-      'onClick={() => togglePlotPointPreviewExpanded(`chain-review:${item.id}`)}',
-    );
-    const writtenActionIndex = selectedListSource.indexOf(': markPlotPointChainItemWritten(item.id)');
+    expect(selectedListSource).toContainSource('onClick={() => onTogglePreviewExpanded(`chain-review:${item.id}`)}');
+    const writtenActionIndex = selectedListSource.indexOf(': onMarkWritten(item.id)');
     expect(selectedListSource.indexOf('mt-3 grid grid-cols-3 gap-2')).toBeLessThan(
-      selectedListSource.indexOf('onClick={() => togglePlotPointPreviewExpanded(`chain-review:${item.id}`)}'),
+      selectedListSource.indexOf('onClick={() => onTogglePreviewExpanded(`chain-review:${item.id}`)}'),
     );
     expect(
-      selectedListSource.indexOf('onClick={() => togglePlotPointPreviewExpanded(`chain-review:${item.id}`)}'),
+      selectedListSource.indexOf('onClick={() => onTogglePreviewExpanded(`chain-review:${item.id}`)}'),
     ).toBeLessThan(writtenActionIndex);
     expect(selectedListSource).toContainSource("{reviewExpanded ? '收起AI评价' : 'AI评价'}");
     expect(selectedListSource).toContainSource('{reviewExpanded && (');
-    expect(selectedListSource).toContainSource('getWorkbenchPlotPointReview(item, isPlotPointFollowupStage)');
+    expect(selectedListSource).toContainSource('getWorkbenchPlotPointReview(item, isFollowupStage)');
     expect(selectedListSource).not.toContainSource('w-[104px] shrink-0 space-y-1.5');
     expect(selectedListSource).not.toContainSource(
       'flex h-8 items-center justify-between rounded-xl bg-white px-3 shadow-sm',
@@ -346,11 +339,11 @@ describe('WorkbenchLibraryPanel plot-point flows', () => {
   });
 
   it('keeps plot chain action buttons white instead of emerald tinted on the detail outline page', async () => {
-    const panelSource = await readWorkbenchLibraryPanelSource();
-    const writtenButtonAnchor = panelSource.indexOf(': markPlotPointChainItemWritten(item.id)');
-    const writtenButtonStart = panelSource.lastIndexOf('<button', writtenButtonAnchor);
-    const writtenButtonEnd = panelSource.indexOf('</button>', writtenButtonAnchor);
-    const writtenButtonSource = panelSource.slice(writtenButtonStart, writtenButtonEnd);
+    const workspaceSource = await readWorkbenchPlotPointChainWorkspaceSource();
+    const writtenButtonAnchor = workspaceSource.indexOf(': onMarkWritten(item.id)');
+    const writtenButtonStart = workspaceSource.lastIndexOf('<button', writtenButtonAnchor);
+    const writtenButtonEnd = workspaceSource.indexOf('</button>', writtenButtonAnchor);
+    const writtenButtonSource = workspaceSource.slice(writtenButtonStart, writtenButtonEnd);
 
     expect(writtenButtonAnchor).toBeGreaterThan(-1);
     expect(writtenButtonSource).toContainSource(
@@ -403,7 +396,7 @@ describe('WorkbenchLibraryPanel plot-point flows', () => {
     );
     expect(panelSource).toContainSource('{PLOT_POINT_CHAIN_SLOTS.length - 1}条');
     expect(panelSource).toContainSource('plotPointChainWrittenSelections');
-    expect(panelSource).toContainSource('markPlotPointChainItemWritten(item.id)');
+    expect(panelSource).toContainSource('onMarkWritten={markPlotPointChainItemWritten}');
     expect(panelSource).toContainSource("['written', '只看已写']");
   });
 
