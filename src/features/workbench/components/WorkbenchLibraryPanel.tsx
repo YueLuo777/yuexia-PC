@@ -92,6 +92,18 @@ import {
   readSharedWorkbenchLeftNavWidthEnabled,
 } from '@/features/workbench/model/workbenchSharedLeftNavWidth';
 import type { Chapter, Volume } from '@/features/workbench/model/workbenchTypes';
+import {
+  OTHER_SETTING_LINK_TABS,
+  countTextWords,
+  isMaleProtagonistRoleTypeChangeLocked,
+  type ClearSettingsMeta,
+  type ClearSettingsTarget,
+  type PendingCategoryRename,
+  type PendingEntryDelete,
+  type PendingEntryRename,
+  type SettingLinkSource,
+  type WorkbenchLibraryPanelProps,
+} from '@/features/workbench/model/workbenchLibraryPanelModel';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import {
@@ -410,54 +422,6 @@ import {
 } from './workbenchSmartImport';
 
 export { parseGeneratedPlotPointCandidates } from './workbenchPlotPointCandidates';
-
-interface WorkbenchLibraryPanelProps {
-  storageKey: string;
-  tabs: string[];
-  emptyText: string;
-  volumes?: Volume[];
-  getChapterContent?: (chapterId: number) => string;
-  outlineStorageKey?: string;
-  scale?: number;
-  defaultActiveTab?: string;
-  fieldSizeOpenSignal?: number;
-  showInlineFieldSizeButton?: boolean;
-  openLogSignal?: number;
-  onRegisterHeaderLog?: (handler: (() => void) | null) => void;
-  openPlotPointSignal?: number;
-  plotPointStandalone?: boolean;
-  onOpenDetailOutlineFromPlotChain?: () => void;
-  toolbarPortalId?: string;
-}
-
-function isMaleProtagonistRoleTypeChangeLocked(currentType: string, nextType: string) {
-  return isMaleProtagonistRoleType(currentType) && !isMaleProtagonistRoleType(nextType);
-}
-
-type PendingCategoryRename = {
-  kind: 'role' | 'setting';
-  type: string;
-} | null;
-
-type ClearSettingsTarget = 'settingCategories' | 'settingEntries' | 'roleCategories' | 'roleEntries';
-type ClearSettingsMeta = { label: string; count: number; description: string };
-
-type PendingEntryDelete = Pick<WorkbenchLibraryEntry, 'id' | 'title' | 'tab'> | null;
-type PendingEntryRename = Pick<WorkbenchLibraryEntry, 'id' | 'title' | 'tab'> | null;
-
-const OTHER_SETTING_LINK_TABS = [
-  { id: 'work', title: '作品设定' },
-  { id: 'roles', title: '人物设定' },
-  { id: 'factions', title: '势力设定' },
-  { id: 'items', title: '道具资源' },
-  { id: 'monsters', title: '怪物图鉴' },
-  { id: 'foreshadow', title: '伏笔线索' },
-] as const;
-type SettingLinkSource = 'current' | 'other' | 'brainstorm' | null;
-
-function countTextWords(content: string) {
-  return content.replace(/\s/g, '').length;
-}
 
 export function WorkbenchLibraryPanel({
   storageKey,

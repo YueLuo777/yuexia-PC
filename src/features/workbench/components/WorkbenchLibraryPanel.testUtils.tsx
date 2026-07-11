@@ -34,6 +34,7 @@ export const readWorkbenchLibraryPanelSource = async () => {
     'workbenchOutlineAiLogModal.tsx',
     'workbenchFieldSizeSettingsModal.tsx',
     'workbenchLibraryMenuPosition.ts',
+    '../model/workbenchLibraryPanelModel.ts',
     'workbenchLibraryRequestLog.tsx',
     'workbenchLibraryResizeHandles.tsx',
     'workbenchLibraryStorageState.ts',
