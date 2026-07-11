@@ -4,7 +4,13 @@ import { AiInlineInput } from '@/shared/ui/AiInlineInput';
 import { WordCountText } from '@/shared/ui/WordCountText';
 
 import { getFloatingTitleInputStyle } from './workbenchBrainstormState';
+import {
+  BRAINSTORM_QUESTION_FIELDS,
+  type BrainstormQuestionDraft,
+  type BrainstormQuestionKey,
+} from './workbenchBrainstormState';
 import { resizeFloatingAiTextarea } from './workbenchFloatingAiTextarea';
+import { getBrainstormQuestionRows } from './workbenchLibraryRequestLog';
 
 type BrainstormPreviewEditorProps = {
   title?: string;
@@ -232,5 +238,115 @@ export function BrainstormOutputWorkspace({
         </div>
       </div>
     </section>
+  );
+}
+
+type BrainstormQuestionPanelProps = {
+  draft: BrainstormQuestionDraft;
+  isLoading: boolean;
+  onFieldChange: (key: BrainstormQuestionKey, value: string) => void;
+  onGenerate: () => void;
+};
+
+export function BrainstormQuestionPanel({ draft, isLoading, onFieldChange, onGenerate }: BrainstormQuestionPanelProps) {
+  return (
+    <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="xy-brainstorm-question-panel xy-shellless-panel editor-scrollbar min-h-0 flex flex-1 flex-col overflow-y-auto overflow-x-hidden px-0 py-2">
+        <div className="flex min-h-full flex-col gap-4 pt-2">
+          {BRAINSTORM_QUESTION_FIELDS.map((field, index) => {
+            const isLastField = index === BRAINSTORM_QUESTION_FIELDS.length - 1;
+            const questionRows = getBrainstormQuestionRows(draft[field.key]);
+            if (field.key === 'brainstormCount' || field.key === 'brainstormBackground') return null;
+            if (field.key === 'brainstormGenre') {
+              const pairedFields = BRAINSTORM_QUESTION_FIELDS.filter(
+                (item) => item.key === 'brainstormGenre' || item.key === 'brainstormBackground',
+              );
+              return (
+                <div
+                  key="brainstorm-genre-background-row"
+                  className="grid shrink-0 grid-cols-2 gap-4 text-sm font-bold text-gray-700"
+                >
+                  {pairedFields.map((pairedField) => {
+                    const pairedRows = getBrainstormQuestionRows(draft[pairedField.key]);
+                    return (
+                      <div
+                        key={pairedField.key}
+                        className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${draft[pairedField.key].trim() ? 'xy-has-value' : ''}`}
+                      >
+                        <textarea
+                          value={draft[pairedField.key]}
+                          onChange={(event) => onFieldChange(pairedField.key, event.target.value)}
+                          placeholder={pairedField.placeholder}
+                          rows={1}
+                          className="font-bold leading-5"
+                          style={{ height: `${Math.max(52, pairedRows * 20 + 32)}px`, overflowY: 'hidden' }}
+                        />
+                        <label>{pairedField.label}</label>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            }
+            return (
+              <div key={field.key} className="block shrink-0 text-sm font-bold text-gray-700">
+                <div
+                  className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${draft[field.key].trim() ? 'xy-has-value' : ''}`}
+                >
+                  <textarea
+                    value={draft[field.key]}
+                    onChange={(event) => onFieldChange(field.key, event.target.value)}
+                    placeholder={field.placeholder}
+                    rows={1}
+                    className={`font-bold leading-5 ${isLastField ? 'min-h-0 flex-1' : ''}`}
+                    style={
+                      isLastField
+                        ? {
+                            minHeight: `${Math.max(180, questionRows * 20 + 52)}px`,
+                            height: '100%',
+                            overflowY: 'hidden',
+                          }
+                        : { height: `${Math.max(52, questionRows * 20 + 32)}px`, overflowY: 'hidden' }
+                    }
+                  />
+                  <label>{field.label}</label>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="mt-2 flex items-center gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <span className="shrink-0 text-sm font-black text-slate-950">逐个生成</span>
+          <div className="flex h-8 min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white">
+            {['3', '5', '10'].map((value) => {
+              const active = draft.brainstormCount === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => onFieldChange('brainstormCount', active ? '' : value)}
+                  className={`min-w-0 flex-1 border-r border-slate-200 px-2 text-sm font-black leading-none transition-colors last:border-r-0 ${
+                    active
+                      ? 'bg-[#08AACE] text-white'
+                      : 'bg-white text-slate-700 hover:bg-[#EAF9FD] hover:text-[#08AACE]'
+                  }`}
+                >
+                  {value}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <button
+          onClick={onGenerate}
+          disabled={isLoading}
+          className="h-10 w-20 shrink-0 whitespace-nowrap rounded-xl bg-brand px-0 text-sm font-bold leading-none text-white shadow-sm hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
+        >
+          {isLoading ? '生成中...' : '逐个生成'}
+        </button>
+      </div>
+    </div>
   );
 }

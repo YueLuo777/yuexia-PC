@@ -334,7 +334,7 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
   it('renders brainstorm count as a sequential-only segmented button group aligned to the input left edge', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const countButtonStart = panelSource.indexOf("{['3', '5', '10'].map((value) => {");
-    const generateButtonStart = panelSource.indexOf('onClick={openBrainstormGenerateConfirm}', countButtonStart);
+    const generateButtonStart = panelSource.indexOf('onClick={onGenerate}', countButtonStart);
     const countButtonSource = panelSource.slice(countButtonStart, generateButtonStart);
 
     expect(countButtonStart).toBeGreaterThan(-1);
@@ -347,7 +347,8 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(panelSource).not.toContainSource("['batch', '一次']");
     expect(panelSource).not.toContainSource('brainstormGenerateMode');
     expect(panelSource).toContainSource('<span className="shrink-0 text-sm font-black text-slate-950">逐个生成</span>');
-    expect(panelSource).toContainSource("{isLibraryAiLoading ? '生成中...' : '逐个生成'}");
+    expect(panelSource).toContainSource("{isLoading ? '生成中...' : '逐个生成'}");
+    expect(panelSource).toContainSource('onGenerate={openBrainstormGenerateConfirm}');
     expect(panelSource).not.toContainSource(
       '<span className="shrink-0 text-sm font-black text-slate-950">生成个数：</span>',
     );
@@ -356,7 +357,7 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(panelSource).toContainSource(
       'flex h-8 min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white',
     );
-    expect(countButtonSource).toContainSource("setBrainstormQuestionField('brainstormCount', active ? '' : value)");
+    expect(countButtonSource).toContainSource("onFieldChange('brainstormCount', active ? '' : value)");
     expect(countButtonSource).toContainSource('last:border-r-0');
     expect(countButtonSource).not.toContainSource("'1'");
     expect(countButtonSource).not.toContainSource("'2'");
