@@ -386,7 +386,8 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
       '确定要清空全部自建设定吗？当前共有 ${deletableSettingEntriesForClear.length} 条可删除设定会被删除，默认设定条目会保留。',
     );
     expect(panelSource).toContainSource('确定要清空全部角色吗？');
-    expect(panelSource).toContainSource('确认清空${currentClearSettingsMeta.label}');
+    expect(panelSource).toContainSource('确认清空${meta.label}');
+    expect(panelSource).toContainSource('<ClearSettingsConfirmDialog');
     expect(panelSource).toContainSource(
       'onClearEntries={() => openClearSettingsConfirmFromMenu(categoryMenuClearEntryTarget)}',
     );

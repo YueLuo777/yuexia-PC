@@ -26,6 +26,7 @@ export const readWorkbenchLibraryPanelSource = async () => {
     'workbenchLibraryAiText.ts',
     'workbenchLibraryAiLogModal.tsx',
     'workbenchLibraryContextMenus.tsx',
+    'workbenchLibraryConfirmDialogs.tsx',
     'workbenchLibraryDataState.ts',
     'workbenchLibraryDialogs.tsx',
     'workbenchLibraryDrag.ts',

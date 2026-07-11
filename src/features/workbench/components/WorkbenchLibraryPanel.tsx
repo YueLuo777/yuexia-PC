@@ -116,7 +116,6 @@ import {
 import { AiInlineInput } from '@/shared/ui/AiInlineInput';
 import { ChapterNumberButton } from '@/shared/ui/ChapterNumberButton';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
-import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { LinkedSourceControl } from '@/shared/ui/LinkedSourceControl';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 import { WordCountText } from '@/shared/ui/WordCountText';
@@ -142,6 +141,7 @@ import {
 } from './workbenchLibraryHeaderTools';
 import { useWorkbenchLibraryAiLogTriggers } from './workbenchLibraryAiLogTriggers';
 import { useWorkbenchLibraryResizeHandles } from './workbenchLibraryResizeHandles';
+import { ClearSettingsConfirmDialog, EntryDeleteConfirmDialog } from './workbenchLibraryConfirmDialogs';
 import {
   BrainstormGenerateConfirmModal,
   BrainstormPromptEditModal,
@@ -4196,19 +4196,11 @@ export function WorkbenchLibraryPanel({
       onMoveToType={moveEntryFromMenuToType}
     />
   );
-  const pendingDeleteLabel = pendingEntryDelete?.tab === ROLE_TAB ? '角色' : pendingEntryDelete?.tab;
-  const pendingDeleteDescription =
-    pendingEntryDelete?.tab === BRAINSTORM_TAB
-      ? `确定要删除脑洞「${pendingEntryDelete?.title ?? ''}」吗？\n删除后会进入脑洞回收站，可以恢复。`
-      : `确定要删除${pendingDeleteLabel ?? '内容'}「${pendingEntryDelete?.title ?? ''}」吗？\n删除后无法恢复。`;
   const deleteConfirmDialog = (
-    <ConfirmDialog
-      isOpen={Boolean(pendingEntryDelete)}
-      title="确认删除"
-      description={pendingDeleteDescription}
-      confirmText="删除"
-      cancelText="取消"
-      confirmVariant="danger"
+    <EntryDeleteConfirmDialog
+      pendingEntry={pendingEntryDelete}
+      roleTab={ROLE_TAB}
+      brainstormTab={BRAINSTORM_TAB}
       onClose={() => setPendingEntryDelete(null)}
       onConfirm={handleConfirmDeleteEntry}
     />
@@ -4224,21 +4216,10 @@ export function WorkbenchLibraryPanel({
   );
   const currentClearSettingsMeta = clearSettingsTargetMeta[clearSettingsConfirmTarget];
   const clearSettingsConfirmDialog = (
-    <ConfirmDialog
+    <ClearSettingsConfirmDialog
       isOpen={isClearSettingsConfirmOpen}
-      title={
-        clearSettingsConfirmStep === 1
-          ? `确认清空${currentClearSettingsMeta.label}`
-          : `再次确认清空${currentClearSettingsMeta.label}`
-      }
-      description={
-        clearSettingsConfirmStep === 1
-          ? `${currentClearSettingsMeta.description}\n\n这是第一次确认，点击确认后还需要再确认一次。`
-          : `最后确认：即将清空${currentClearSettingsMeta.label}，这个操作会立即生效。请确认不是误点。`
-      }
-      confirmText={clearSettingsConfirmStep === 1 ? '确认，继续' : `确认清空${currentClearSettingsMeta.label}`}
-      cancelText="再看看"
-      confirmVariant="danger"
+      step={clearSettingsConfirmStep}
+      meta={currentClearSettingsMeta}
       onClose={closeClearSettingsConfirm}
       onConfirm={confirmClearSettings}
     />
