@@ -6,16 +6,20 @@ const root = process.cwd();
 const readSource = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
 
 describe('genre iteration page integration', () => {
-  it('registers the genre iteration page in app routes and default navigation', () => {
+  it('registers the genre iteration page inside the test collection instead of formal navigation', () => {
     const app = readSource('src/app/App.tsx');
     const nav = readSource('src/shared/navigation/navConfig.ts');
+    const testCollection = readSource('src/features/tests/pages/TestCollectionPage.tsx');
     const page = readSource('src/features/genre-iteration/pages/GenreIterationPage.tsx');
     const workbench = readSource('src/features/genre-iteration/components/GenreIterationWorkbench.tsx');
 
-    expect(app).toContainSource('GenreIterationPage');
-    expect(app).toContainSource('path="/genre-iteration"');
-    expect(nav).toContainSource("to: '/genre-iteration'");
-    expect(nav).toContainSource("label: '题材迭代'");
+    expect(app).not.toContainSource('GenreIterationPage');
+    expect(app).not.toContainSource('path="/genre-iteration"');
+    expect(nav).not.toContainSource("to: '/genre-iteration'");
+    expect(testCollection).toContainSource('GenreIterationPage');
+    expect(testCollection).toContainSource("path: '/genre-iteration-test'");
+    expect(testCollection).toContainSource("title: '题材迭代'");
+    expect(testCollection).toContainSource("case '/genre-iteration-test':");
     expect(page).toContainSource('GenreIterationWorkbench');
     expect(workbench).toContainSource('CombinedAiConfigSelect');
     expect(workbench).toContainSource('GENRE_ITERATION_PROMPT_CATEGORY');

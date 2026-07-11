@@ -15,7 +15,6 @@ describe('navigation config without zones', () => {
     expect(DEFAULT_NAV_CONFIG[0].items.map((item) => item.to)).toEqual([
       '/novels',
       '/scripts',
-      '/genre-iteration',
       '/tomato-browser',
       '/library',
       '/prompts',
@@ -24,7 +23,7 @@ describe('navigation config without zones', () => {
       '/test-collection',
     ]);
     expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/library')?.label).toBe('资料库');
-    expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/genre-iteration')?.label).toBe('题材迭代');
+    expect(DEFAULT_NAV_CONFIG[0].items.some((item) => item.to === '/genre-iteration')).toBe(false);
     expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/tomato-browser')?.label).toBe('番茄浏览器');
     expect(JSON.stringify(DEFAULT_NAV_CONFIG)).not.toContainSource('专区');
   });
@@ -71,7 +70,7 @@ describe('navigation config without zones', () => {
     expect(JSON.stringify(normalized)).not.toContainSource('数据专区');
   });
 
-  it('removes the retired hotspot route from saved navigation configs', () => {
+  it('removes retired hotspot and genre iteration routes from saved navigation configs', () => {
     const normalized = normalizeNavConfig([
       {
         title: '导航',
@@ -84,10 +83,10 @@ describe('navigation config without zones', () => {
     ]);
 
     expect(normalized[0].items.some((item) => item.to === '/hotspots')).toBe(false);
-    expect(normalized[0].items.some((item) => item.to === '/genre-iteration')).toBe(true);
+    expect(normalized[0].items.some((item) => item.to === '/genre-iteration')).toBe(false);
   });
 
-  it('moves genre iteration directly below scripts for saved old navigation order', () => {
+  it('removes genre iteration and keeps tomato browser directly below scripts for saved old navigation order', () => {
     const normalized = normalizeNavConfig([
       {
         title: '导航',
@@ -104,12 +103,12 @@ describe('navigation config without zones', () => {
     expect(normalized[0].items.map((item) => item.to).slice(0, 4)).toEqual([
       '/novels',
       '/scripts',
-      '/genre-iteration',
       '/tomato-browser',
+      '/library',
     ]);
   });
 
-  it('adds the tomato browser navigation entry to saved configs and keeps it below genre iteration', () => {
+  it('adds the tomato browser navigation entry to saved configs and keeps it below scripts', () => {
     const normalized = normalizeNavConfig([
       {
         title: '导航',
@@ -123,10 +122,9 @@ describe('navigation config without zones', () => {
       },
     ]);
 
-    expect(normalized[0].items.map((item) => item.to).slice(0, 5)).toEqual([
+    expect(normalized[0].items.map((item) => item.to).slice(0, 4)).toEqual([
       '/novels',
       '/scripts',
-      '/genre-iteration',
       '/tomato-browser',
       '/library',
     ]);

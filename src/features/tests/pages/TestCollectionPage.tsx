@@ -62,6 +62,11 @@ const TextAuditDiffDisplayTestPage = lazy(() =>
 const TestBrowserPage = lazy(() =>
   import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })),
 );
+const GenreIterationPage = lazy(() =>
+  import('@/features/genre-iteration/pages/GenreIterationPage').then((module) => ({
+    default: module.GenreIterationPage,
+  })),
+);
 const TomatoGenreIterationTestPage = lazy(() =>
   import('@/features/tests/pages/TomatoGenreIterationTestPage').then((module) => ({
     default: module.TomatoGenreIterationTestPage,
@@ -164,6 +169,13 @@ const testGroups = [
         path: '/tomato-genre-iteration-test',
         icon: Globe,
         badge: 'Tomato',
+      },
+      {
+        title: '题材迭代',
+        description: '从正式导航移入测试板块的题材迭代工作台，用于继续验证小说读取、爽点提炼和题材迁移流程。',
+        path: '/genre-iteration-test',
+        icon: Sparkles,
+        badge: 'Genre',
       },
     ],
   },
@@ -316,6 +328,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':
         return <TomatoGenreIterationTestPage />;
+      case '/genre-iteration-test':
+        return <GenreIterationPage />;
       default:
         return null;
     }

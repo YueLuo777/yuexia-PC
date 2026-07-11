@@ -15,11 +15,6 @@ const ConceptLibraryPage = lazy(() =>
     default: module.ConceptLibraryPage,
   })),
 );
-const GenreIterationPage = lazy(() =>
-  import('@/features/genre-iteration/pages/GenreIterationPage').then((module) => ({
-    default: module.GenreIterationPage,
-  })),
-);
 const TomatoGenreIterationTestPage = lazy(() =>
   import('@/features/tests/pages/TomatoGenreIterationTestPage').then((module) => ({
     default: module.TomatoGenreIterationTestPage,
@@ -126,7 +121,6 @@ export default function App() {
                 <Route path="/novels" element={<NovelLibraryPage />} />
                 <Route path="/scripts" element={<NovelLibraryPage />} />
                 <Route path="/library" element={<LibraryHubPage />} />
-                <Route path="/genre-iteration" element={<GenreIterationPage />} />
                 <Route path="/tomato-browser" element={<TomatoGenreIterationTestPage />} />
                 <Route path="/concept-library" element={<ConceptLibraryPage />} />
                 <Route path="/prompts" element={<PromptsPage />} />

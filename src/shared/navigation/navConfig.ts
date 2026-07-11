@@ -72,7 +72,6 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
     items: [
       { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
       { iconName: 'Film', label: '我的剧本', to: '/scripts' },
-      { iconName: 'Sparkles', label: '题材迭代', to: '/genre-iteration' },
       { iconName: 'Globe', label: '番茄浏览器', to: '/tomato-browser' },
       { iconName: 'Library', label: '资料库', to: '/library' },
       { iconName: 'Tag', label: '提示词管理', to: '/prompts' },
@@ -111,6 +110,7 @@ const REMOVED_ROUTES = new Set([
   '/text-overrides',
   '/hidden-content',
   '/concept-library',
+  '/genre-iteration',
 ]);
 const REMOVED_GROUP_TITLES = new Set(['首页专区', '隐藏专区', '功能专区']);
 const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
@@ -119,7 +119,6 @@ const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
   '/software-ui-catalog': 'UI库',
   '/theme-colors': '主题颜色',
   '/test-collection': '测试板块',
-  '/genre-iteration': '题材迭代',
   '/tomato-browser': '番茄浏览器',
 };
 
@@ -158,8 +157,7 @@ function flattenNavConfig(config: NavGroupConfig[]) {
       });
     }
   }
-  moveRouteAfter(items, '/genre-iteration', '/scripts');
-  moveRouteAfter(items, '/tomato-browser', '/genre-iteration');
+  moveRouteAfter(items, '/tomato-browser', '/scripts');
 
   const visibleItemRoutes = new Set(items.filter((item) => !item.hidden).map((item) => item.to));
   const fallbackDividerAfterItemTos =
