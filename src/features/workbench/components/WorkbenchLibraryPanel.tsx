@@ -203,6 +203,7 @@ import {
   type BrainstormQuestionKey,
 } from './workbenchBrainstormState';
 import { resizeFloatingAiTextarea } from './workbenchFloatingAiTextarea';
+import { BrainstormOutputWorkspace, BrainstormPreviewEditor } from './workbenchBrainstormWorkspace';
 import { DetailOutlineReaderModal, type DetailOutlineReaderTab } from './workbenchDetailOutlineReaderModal';
 import { LibraryAiLogModal, type LibraryAiLogViewTab } from './workbenchLibraryAiLogModal';
 import { LibraryManagementModal, type LibraryManagementModalState } from './workbenchLibraryManagementModal';
@@ -4972,45 +4973,22 @@ export function WorkbenchLibraryPanel({
                 </div>
               )
             ) : activeIsBrainstorm ? (
-              <div className="flex min-h-0 flex-1 flex-col p-5">
-                <div className="relative min-h-0 flex-1">
-                  <div
-                    className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-brainstorm-preview-field xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${currentBrainstormBody.trim() ? 'xy-has-value' : ''}`}
-                  >
-                    <textarea
-                      value={currentBrainstormBody}
-                      onFocus={() => setActiveLibraryFontTarget('brainstormPreview')}
-                      onChange={(event) => {
-                        if (!currentSelectedEntry || !currentSelectedSetting) return;
-                        updateEntry(currentSelectedEntry.id, {
-                          content: stringifySettingContent({ ...currentSelectedSetting, body: event.target.value }),
-                        });
-                      }}
-                      placeholder="这里显示选中的脑洞内容，也可以直接编辑。"
-                      className="editor-scrollbar text-sm leading-7 text-gray-700"
-                      style={{ fontSize: brainstormPreviewFontSize }}
-                    />
-                    <label aria-hidden="true" className="opacity-0">
-                      脑洞预览
-                    </label>
-                    {currentSelectedEntry && (
-                      <div className="xy-floating-inline-title-tool xy-brainstorm-floating-title-tool xy-floating-title-count xy-border-embedded-transparent-backplate absolute top-0 z-20 -translate-y-1/2">
-                        <input
-                          value={currentSelectedEntry.title}
-                          onFocus={() => setActiveLibraryFontTarget('brainstormPreview')}
-                          onChange={(event) => updateEntry(currentSelectedEntry.id, { title: event.target.value })}
-                          className="xy-floating-title-input max-w-[120px] min-w-[58px] text-sm font-black leading-none text-slate-950 outline-none"
-                          style={getFloatingTitleInputStyle(currentSelectedEntry.title, 3, 9)}
-                          aria-label="脑洞名称"
-                        />
-                        <span>
-                          <WordCountText value={currentBrainstormPreviewWordCount} />
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <BrainstormPreviewEditor
+                title={currentSelectedEntry?.title}
+                body={currentBrainstormBody}
+                wordCount={currentBrainstormPreviewWordCount}
+                fontSize={brainstormPreviewFontSize}
+                onFocus={() => setActiveLibraryFontTarget('brainstormPreview')}
+                onTitleChange={(title) => {
+                  if (currentSelectedEntry) updateEntry(currentSelectedEntry.id, { title });
+                }}
+                onBodyChange={(body) => {
+                  if (!currentSelectedEntry || !currentSelectedSetting) return;
+                  updateEntry(currentSelectedEntry.id, {
+                    content: stringifySettingContent({ ...currentSelectedSetting, body }),
+                  });
+                }}
+              />
             ) : currentSelectedEntry ? (
               <div className={`flex min-h-0 flex-1 flex-col ${currentStructuredTitleFieldLabel ? 'px-5 py-3' : 'p-5'}`}>
                 {currentStructuredTitleFieldLabel ? (
@@ -5360,120 +5338,36 @@ export function WorkbenchLibraryPanel({
           {activeIsBrainstorm && brainstormPreviewResizeHandle}
 
           {activeIsBrainstorm && (
-            <section className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-white">
-              <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] gap-2 p-4">
-                <div className="editor-scrollbar xy-brainstorm-output-preview-list flex min-h-0 flex-col gap-3 overflow-y-auto pr-1">
-                  {brainstormOutputPreviews.map((previewValue, index) => {
-                    const titleValue = brainstormOutputTitles[index] ?? getTemporaryBrainstormTitle(index);
-                    const previewWordCount = countTextWords(previewValue);
-                    const outputChecked = selectedBrainstormOutputIndexSet.has(index);
-                    return (
-                      <div key={index} className="relative min-h-[120px] flex-1">
-                        <div
-                          className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${previewValue.trim() ? 'xy-has-value' : ''}`}
-                        >
-                          <textarea
-                            value={previewValue}
-                            onFocus={() => setActiveLibraryFontTarget('brainstormOutput')}
-                            onScroll={() => handleBrainstormOutputTextareaScroll(index)}
-                            onChange={(event) => setBrainstormOutputPreviewDraft(index, event.target.value)}
-                            placeholder={`这里显示本次 AI 生成的${titleValue}，保存脑洞时只保存这里的内容。`}
-                            className={`scrollbar-scroll-only text-sm leading-6 text-gray-700 ${activeBrainstormOutputScrollIndex === index ? 'scrollbar-active' : ''}`}
-                            style={{ fontSize: brainstormOutputFontSize }}
-                          />
-                          <label aria-hidden="true" className="opacity-0">
-                            脑洞输出框
-                          </label>
-                        </div>
-                        <div className="xy-floating-inline-title-tool xy-brainstorm-output-title-tool xy-floating-title-count xy-border-embedded-transparent-backplate absolute top-0 z-20 -translate-y-1/2">
-                          {showBrainstormOutputSelection && (
-                            <button
-                              type="button"
-                              role="checkbox"
-                              aria-checked={outputChecked}
-                              aria-label={`${titleValue}保存勾选`}
-                              onClick={() => toggleBrainstormOutputPreviewSelected(index)}
-                              className={`grid h-4 w-4 shrink-0 place-items-center rounded border text-[10px] font-black leading-none transition-colors ${
-                                outputChecked
-                                  ? 'border-[#08AACE] bg-[#08AACE] text-white'
-                                  : 'border-slate-300 bg-white text-transparent hover:border-[#08AACE]'
-                              }`}
-                            >
-                              ✓
-                            </button>
-                          )}
-                          <input
-                            value={titleValue}
-                            onFocus={() => setActiveLibraryFontTarget('brainstormOutput')}
-                            onChange={(event) => setBrainstormOutputPreviewTitle(index, event.target.value)}
-                            className="xy-floating-title-input max-w-[180px] min-w-[72px] text-sm font-black leading-none text-slate-950 outline-none"
-                            style={getFloatingTitleInputStyle(titleValue, 4, 12)}
-                            aria-label={`脑洞输出名称 ${index + 1}`}
-                          />
-                          <span>
-                            <WordCountText value={previewWordCount} />
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="min-h-0 space-y-3">
-                  <AiInlineInput
-                    ref={libraryAiInputRef}
-                    value={aiInput}
-                    onChange={(event) => {
-                      setAiInput(event.target.value);
-                      resizeFloatingAiTextarea(event.currentTarget);
-                    }}
-                    onKeyDown={handleLibraryAiInputKeyDown}
-                    onSend={() => void sendLibraryAiMessage()}
-                    onStop={stopLibraryAiMessage}
-                    sendDisabled={isLibraryAiLoading || !canSendLibraryAiMessage}
-                    stopDisabled={!isLibraryAiLoading}
-                    placeholder="输入对话指令..."
-                  />
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      <div className="xy-capsule-group overflow-hidden">
-                        <button
-                          onClick={() => saveBrainstormOutput(currentSelectedEntry?.id)}
-                          disabled={!currentSelectedEntry || selectedBrainstormOutputCount !== 1}
-                          className="xy-capsule-button"
-                        >
-                          替换当前脑洞
-                        </button>
-                        <button
-                          onClick={saveBrainstormOutputAsNew}
-                          disabled={selectedBrainstormOutputCount === 0}
-                          className="xy-capsule-button"
-                        >
-                          保存为新脑洞
-                        </button>
-                      </div>
-                      <div className="xy-capsule-group overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={copyBrainstormOutputArea}
-                          disabled={!brainstormOutputValue.trim()}
-                          className="xy-capsule-button"
-                        >
-                          复制脑洞
-                        </button>
-                        <button
-                          type="button"
-                          onClick={clearBrainstormOutputArea}
-                          disabled={!brainstormOutputValue.trim() && !isLibraryAiLoading}
-                          className="xy-capsule-button text-red-500 hover:text-red-600 disabled:text-red-300"
-                        >
-                          清空脑洞
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
+            <BrainstormOutputWorkspace
+              previews={brainstormOutputPreviews}
+              titles={brainstormOutputTitles}
+              selectedIndexes={selectedBrainstormOutputIndexSet}
+              showSelection={showBrainstormOutputSelection}
+              activeScrollIndex={activeBrainstormOutputScrollIndex}
+              fontSize={brainstormOutputFontSize}
+              aiInputRef={libraryAiInputRef}
+              aiInput={aiInput}
+              isLoading={isLibraryAiLoading}
+              canSend={canSendLibraryAiMessage}
+              selectedCount={selectedBrainstormOutputCount}
+              currentEntryId={currentSelectedEntry?.id}
+              outputValue={brainstormOutputValue}
+              onFocusOutput={() => setActiveLibraryFontTarget('brainstormOutput')}
+              onScrollOutput={handleBrainstormOutputTextareaScroll}
+              onPreviewChange={setBrainstormOutputPreviewDraft}
+              onTitleChange={setBrainstormOutputPreviewTitle}
+              onToggleSelected={toggleBrainstormOutputPreviewSelected}
+              onAiInputChange={setAiInput}
+              onAiInputKeyDown={handleLibraryAiInputKeyDown}
+              onSend={() => void sendLibraryAiMessage()}
+              onStop={stopLibraryAiMessage}
+              onReplaceCurrent={saveBrainstormOutput}
+              onSaveAsNew={saveBrainstormOutputAsNew}
+              onCopy={copyBrainstormOutputArea}
+              onClear={clearBrainstormOutputArea}
+              getTitle={getTemporaryBrainstormTitle}
+              countWords={countTextWords}
+            />
           )}
 
           {settingLibraryMode === 'advanced' && (

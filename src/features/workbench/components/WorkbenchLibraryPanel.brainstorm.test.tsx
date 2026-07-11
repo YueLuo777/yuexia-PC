@@ -185,10 +185,12 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(actionGroupSource).toContainSource('保存为新脑洞');
     expect(actionGroupSource).toContainSource('复制脑洞');
     expect(actionGroupSource).toContainSource('清空脑洞');
-    expect(actionGroupSource).toContainSource('onClick={copyBrainstormOutputArea}');
-    expect(actionGroupSource).toContainSource('disabled={!brainstormOutputValue.trim()}');
-    expect(actionGroupSource).toContainSource('onClick={clearBrainstormOutputArea}');
-    expect(actionGroupSource).toContainSource('disabled={!brainstormOutputValue.trim() && !isLibraryAiLoading}');
+    expect(actionGroupSource).toContainSource('onClick={onCopy}');
+    expect(actionGroupSource).toContainSource('disabled={!outputValue.trim()}');
+    expect(actionGroupSource).toContainSource('onClick={onClear}');
+    expect(actionGroupSource).toContainSource('disabled={!outputValue.trim() && !isLoading}');
+    expect(panelSource).toContainSource('onCopy={copyBrainstormOutputArea}');
+    expect(panelSource).toContainSource('onClear={clearBrainstormOutputArea}');
     expect(actionGroupSource).not.toContainSource('onClick={clearLibraryAiDialog}');
     expect(panelSource).toContainSource('const clearBrainstormOutputArea = () => {');
     expect(panelSource).toContainSource('const copyBrainstormOutputArea = () => {');
@@ -206,7 +208,7 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(panelSource).toContainSource("ariaLabel: '脑洞输出字号'");
     expect(panelSource).toContainSource("ariaLabel: '脑洞预览字号'");
     expect(panelSource).toContainSource("onFocus={() => setActiveLibraryFontTarget('brainstormPreview')}");
-    expect(panelSource).toContainSource("onFocus={() => setActiveLibraryFontTarget('brainstormOutput')}");
+    expect(panelSource).toContainSource("onFocusOutput={() => setActiveLibraryFontTarget('brainstormOutput')}");
     expect(panelSource).toContainSource('createPortal(renderLibraryHeaderFontSizeTool(), headerToolPortalTarget)');
     expect(brainstormPreviewSource).not.toContainSource('xy-floating-border-font-tool');
     expect(brainstormOutputSource).not.toContainSource('xy-floating-border-font-tool');
@@ -271,7 +273,7 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     );
     const actionGroupSource = panelSource.slice(
       actionGroupStart,
-      panelSource.indexOf('{settingLibraryMode ===', actionGroupStart),
+      panelSource.indexOf('</section>', actionGroupStart),
     );
 
     expect(outputListSource).not.toContainSource('清空脑洞');
@@ -280,8 +282,8 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(actionGroupSource).toContainSource('保存为新脑洞');
     expect(actionGroupSource).toContainSource('复制脑洞');
     expect(actionGroupSource).toContainSource('清空脑洞');
-    expect(actionGroupSource).toContainSource('onClick={copyBrainstormOutputArea}');
-    expect(actionGroupSource).toContainSource('onClick={clearBrainstormOutputArea}');
+    expect(actionGroupSource).toContainSource('onClick={onCopy}');
+    expect(actionGroupSource).toContainSource('onClick={onClear}');
     expect(actionGroupSource).not.toContainSource('onClick={clearLibraryAiDialog}');
     expect(actionGroupSource).not.toContainSource('删除');
     expect(actionGroupSource).not.toContainSource('confirmDeleteEntry(currentSelectedEntry);');
@@ -540,17 +542,15 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(panelSource).toContainSource(
       'const showBrainstormOutputSelection = activeIsBrainstorm && brainstormOutputPreviewCount > 1;',
     );
-    expect(panelSource).toContainSource('{brainstormOutputPreviews.map((previewValue, index) => {');
+    expect(panelSource).toContainSource('{previews.map((previewValue, index) => {');
     expect(panelSource).toContainSource('role="checkbox"');
     expect(panelSource).toContainSource('aria-checked={outputChecked}');
-    expect(panelSource).toContainSource('onClick={() => toggleBrainstormOutputPreviewSelected(index)}');
+    expect(panelSource).toContainSource('onClick={() => onToggleSelected(index)}');
     expect(panelSource).toContainSource('aria-label={`脑洞输出名称 ${index + 1}`}');
-    expect(panelSource).toContainSource(
-      'onChange={(event) => setBrainstormOutputPreviewTitle(index, event.target.value)}',
-    );
+    expect(panelSource).toContainSource('onChange={(event) => onTitleChange(index, event.target.value)}');
     expect(panelSource).toContainSource('previewCount: targetBrainstormPreviewCount');
-    expect(panelSource).toContainSource('disabled={!currentSelectedEntry || selectedBrainstormOutputCount !== 1}');
-    expect(panelSource).toContainSource('disabled={selectedBrainstormOutputCount === 0}');
+    expect(panelSource).toContainSource('disabled={!currentEntryId || selectedCount !== 1}');
+    expect(panelSource).toContainSource('disabled={selectedCount === 0}');
     expect(panelSource).toContainSource('clearStoredBrainstormAiSessionPreviews(storageKey);');
     expect(panelSource).not.toContainSource("currentSelectedEntry.title || '未命名脑洞'");
     expect(entryClickSource).not.toContainSource('setAiResult(getBrainstormEntryBody(entry));');

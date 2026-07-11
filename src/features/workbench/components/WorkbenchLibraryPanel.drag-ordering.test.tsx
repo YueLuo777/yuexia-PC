@@ -79,13 +79,11 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     );
     expect(panelSource).toContainSource('<label aria-hidden="true" className="opacity-0">脑洞预览</label>');
     expect(panelSource).toContainSource('aria-label="脑洞名称"');
-    expect(panelSource).toContainSource(
-      'onChange={(event) => updateEntry(currentSelectedEntry.id, { title: event.target.value })}',
-    );
+    expect(panelSource).toContainSource('onChange={(event) => onTitleChange(event.target.value)}');
     expect(panelSource).toContainSource(
       'xy-floating-title-input max-w-[120px] min-w-[58px] text-sm font-black leading-none text-slate-950 outline-none',
     );
-    expect(panelSource).toContainSource('style={getFloatingTitleInputStyle(currentSelectedEntry.title, 3, 9)}');
+    expect(panelSource).toContainSource('style={getFloatingTitleInputStyle(title, 3, 9)}');
     expect(panelSource).toContainSource('style={getFloatingTitleInputStyle(titleValue, 4, 12)}');
     expect(panelSource).toContainSource('<label className="xy-floating-title-count">');
     expect(panelSource).toContainSource(
@@ -161,7 +159,7 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const outputAreaStart = panelSource.indexOf('xy-brainstorm-output-preview-list');
     const actionAreaStart = panelSource.indexOf('<AiInlineInput', outputAreaStart);
-    const actionAreaEnd = panelSource.indexOf('{settingLibraryMode ===', actionAreaStart);
+    const actionAreaEnd = panelSource.indexOf('</section>', actionAreaStart);
     const actionAreaSource = panelSource.slice(actionAreaStart, actionAreaEnd);
 
     expect(outputAreaStart).toBeGreaterThan(-1);

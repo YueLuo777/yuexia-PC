@@ -21,6 +21,7 @@ export const readWorkbenchLibraryPanelSource = async () => {
     'WorkbenchLibraryPanel.tsx',
     'workbenchBrainstormModals.tsx',
     'workbenchBrainstormState.ts',
+    'workbenchBrainstormWorkspace.tsx',
     'workbenchDetailOutlineReaderModal.tsx',
     'workbenchDetailOutlineState.ts',
     'workbenchLibraryAiText.ts',
