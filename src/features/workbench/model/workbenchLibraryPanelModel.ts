@@ -1,6 +1,7 @@
 import type { WorkbenchLibraryEntry } from './workbenchLibraryStorage';
 import { isMaleProtagonistRoleType } from './workbenchRoleTypes';
 import type { Volume } from './workbenchTypes';
+import type { OtherSettingLinkEntry, OtherSettingLinkTab } from '../components/workbenchOtherSettingReaderModal';
 
 export interface WorkbenchLibraryPanelProps {
   storageKey: string;
@@ -49,4 +50,40 @@ export function isMaleProtagonistRoleTypeChangeLocked(currentType: string, nextT
 
 export function countTextWords(content: string) {
   return content.replace(/\s/g, '').length;
+}
+
+export function flattenOtherSettingLinkEntries(tabs: OtherSettingLinkTab[]) {
+  return tabs.flatMap((tab) => tab.groups.flatMap((group) => group.entries));
+}
+
+export function filterOtherSettingLinkGroups(tab: OtherSettingLinkTab | undefined, query: string) {
+  const keyword = query.trim();
+  return (tab?.groups ?? [])
+    .map((group) => ({
+      ...group,
+      entries: group.entries.filter(
+        (entry) => !keyword || `${entry.title} ${entry.type} ${entry.groupName} ${entry.text}`.includes(keyword),
+      ),
+    }))
+    .filter((group) => group.entries.length > 0);
+}
+
+export function resolveOtherSettingLinkEntry(
+  entries: OtherSettingLinkEntry[],
+  visibleGroups: OtherSettingLinkTab['groups'],
+  previewId: string | null,
+) {
+  return (
+    entries.find((entry) => entry.id === previewId) ??
+    visibleGroups.flatMap((group) => group.entries)[0] ??
+    entries[0] ??
+    null
+  );
+}
+
+export function resolveOtherSettingLinkDraftEntries(entries: OtherSettingLinkEntry[], draftIds: Set<string>) {
+  const entryMap = new Map(entries.map((entry) => [entry.id, entry]));
+  return Array.from(draftIds)
+    .map((id) => entryMap.get(id))
+    .filter((entry): entry is OtherSettingLinkEntry => Boolean(entry));
 }

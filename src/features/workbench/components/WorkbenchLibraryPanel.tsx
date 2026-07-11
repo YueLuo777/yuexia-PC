@@ -95,7 +95,11 @@ import type { Chapter, Volume } from '@/features/workbench/model/workbenchTypes'
 import {
   OTHER_SETTING_LINK_TABS,
   countTextWords,
+  filterOtherSettingLinkGroups,
+  flattenOtherSettingLinkEntries,
   isMaleProtagonistRoleTypeChangeLocked,
+  resolveOtherSettingLinkDraftEntries,
+  resolveOtherSettingLinkEntry,
   type ClearSettingsMeta,
   type ClearSettingsTarget,
   type PendingCategoryRename,
@@ -3923,7 +3927,7 @@ export function WorkbenchLibraryPanel({
     });
   }, [getSettingTypeWorkspaceDomain, groupedRoles, settingEntries, settingTypeOptions]);
   const otherSettingLinkFlatEntries = useMemo(
-    () => otherSettingLinkTabs.flatMap((tab) => tab.groups.flatMap((group) => group.entries)),
+    () => flattenOtherSettingLinkEntries(otherSettingLinkTabs),
     [otherSettingLinkTabs],
   );
   const activeOtherSettingLinkEntries = useMemo(() => {
@@ -4233,25 +4237,16 @@ export function WorkbenchLibraryPanel({
   );
   const selectedOtherSettingLinkTab =
     otherSettingLinkTabs.find((tab) => tab.id === otherSettingReaderTabId) ?? otherSettingLinkTabs[0];
-  const otherSettingReaderKeyword = otherSettingReaderQuery.trim();
-  const visibleOtherSettingGroups = (selectedOtherSettingLinkTab?.groups ?? [])
-    .map((group) => ({
-      ...group,
-      entries: group.entries.filter(
-        (entry) =>
-          !otherSettingReaderKeyword ||
-          `${entry.title} ${entry.type} ${entry.groupName} ${entry.text}`.includes(otherSettingReaderKeyword),
-      ),
-    }))
-    .filter((group) => group.entries.length > 0);
-  const selectedOtherSettingLinkEntry =
-    otherSettingLinkFlatEntries.find((entry) => entry.id === otherSettingReaderPreviewId) ??
-    visibleOtherSettingGroups.flatMap((group) => group.entries)[0] ??
-    otherSettingLinkFlatEntries[0] ??
-    null;
-  const draftOtherSettingLinkEntries = Array.from(draftOtherSettingReaderIds)
-    .map((id) => otherSettingLinkFlatEntries.find((entry) => entry.id === id))
-    .filter((entry): entry is OtherSettingLinkEntry => Boolean(entry));
+  const visibleOtherSettingGroups = filterOtherSettingLinkGroups(selectedOtherSettingLinkTab, otherSettingReaderQuery);
+  const selectedOtherSettingLinkEntry = resolveOtherSettingLinkEntry(
+    otherSettingLinkFlatEntries,
+    visibleOtherSettingGroups,
+    otherSettingReaderPreviewId,
+  );
+  const draftOtherSettingLinkEntries = resolveOtherSettingLinkDraftEntries(
+    otherSettingLinkFlatEntries,
+    draftOtherSettingReaderIds,
+  );
   const draftOtherSettingLinkWordCount = draftOtherSettingLinkEntries.reduce((sum, entry) => sum + entry.wordCount, 0);
   const previewOtherSettingReaderEntry = (entryId: string) => {
     const entry = otherSettingLinkFlatEntries.find((item) => item.id === entryId);
