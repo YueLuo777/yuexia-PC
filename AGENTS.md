@@ -35,6 +35,7 @@
 - 禁止通过压缩代码、合并多条语句、删除必要注释或降低可读性来规避行数检查。
 - 禁止未经用户明确批准提高 `HARD_LIMIT`、`TEST_HARD_LIMIT`，增加新的 `TRANSITION_LIMIT_OVERRIDES`，或提高现有临时豁免值。
 - 修改已有豁免大文件时，新增逻辑应优先拆到独立文件，原则上不得让该大文件继续增长；历史豁免值只能保持或下降，不能继续提高。
+- `src/features/workbench/components/WorkbenchLibraryPanel.tsx` 等历史豁免超大文件禁止继续承载新功能的大型逻辑；后续新功能必须优先拆到独立组件、Hook、model、service 或工具文件，完成时该类大文件行数原则上不得增加，并必须通过 `npm.cmd run check:source-size` 验证。
 - 生成分片、样式分片和 `*.part-N.*` 文件不得超过现有检查规定的 500 行上限。
 - 完成代码修改后必须运行 `npm.cmd run check:source-size`；失败时继续拆分，不得把任务报告为已完成。
 
