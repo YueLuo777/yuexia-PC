@@ -78,7 +78,7 @@ export const readWorkbenchLibraryPanelSource = async () => {
     'workbenchStructuredSettingDefinitions.ts',
   ];
 
-  return files.map((file) => readFileSync(join(baseDir, file), 'utf8')).join('\n\n');
+  return files.map((file) => readFileSync(join(baseDir, file), 'utf8').replace(/\r\n?/g, '\n')).join('\n\n');
 };
 
 export const readWorkbenchLibraryPanelEntrySource = async () => {

@@ -2,7 +2,10 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const source = readFileSync(resolve(process.cwd(), 'src/features/workbench/components/ChapterReviewPreview.tsx'), 'utf8');
+const source = readFileSync(resolve(process.cwd(), 'src/features/workbench/components/ChapterReviewPreview.tsx'), 'utf8').replace(
+  /\r\n?/g,
+  '\n',
+);
 
 describe('ChapterReviewPreview detail labels', () => {
   it('styles both detail labels like the passed status pill', () => {

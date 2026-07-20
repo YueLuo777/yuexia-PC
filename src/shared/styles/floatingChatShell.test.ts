@@ -10,10 +10,11 @@ const css = Array.from({ length: 12 }, (_, index) =>
     'utf8',
   ),
 ).join('\n');
+const normalizedCss = css.replace(/\r\n?/g, '\n');
 
 const readRule = (selector: string) => {
   const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = css.match(new RegExp(`${escapedSelector}\\s*\\{([^}]*)\\}`));
+  const match = normalizedCss.match(new RegExp(`${escapedSelector}\\s*\\{([^}]*)\\}`));
   return match?.[1] ?? '';
 };
 
