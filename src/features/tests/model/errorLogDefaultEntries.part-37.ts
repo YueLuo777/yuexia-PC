@@ -2,6 +2,17 @@ import type { ErrorLogEntry } from './errorLogEntryTypes';
 
 export const defaultEntriesPart37: ErrorLogEntry[] = [
   {
+    id: 'launcher-stale-vite-optimized-deps-recovery-001',
+    title: 'Vite 端口可访问时仍应检查优化依赖是否失效',
+    area: '桌面启动器 / Vite 开发服务器 / 依赖缓存',
+    symptom: 'Vite 进程和端口看似正常，但 `.vite/deps` 中的优化依赖过期或损坏时，页面仍可能白屏、依赖 404 或模块加载失败。',
+    cause: '启动器原来只检查端口和依赖指纹，无法识别指纹未变但 Vite 优化依赖文件已经不可访问的情况。',
+    solution: '在复用已运行的 Vite 前读取主模块，抽样检查最多 12 个 `.vite/deps` 模块；检测失败时复用项目级 Vite 进程清理，删除 `node_modules/.vite` 并重启服务。',
+    prevention: '启动器回归测试应同时覆盖主模块正常、优化依赖失效和主模块不可访问，并确保清理范围只限当前项目。',
+    keywords: ['Vite', 'optimized deps', 'node_modules/.vite', '白屏', '启动器', 'launch-xinyuexia.mjs'],
+    updatedAt: '2026-07-20',
+  },
+  {
     id: 'default-cover-custom-history-library-001',
     title: '默认封面设置应保留可选的自定义封面历史',
     area: '设置 / 默认封面设置 / 自定义封面库',
