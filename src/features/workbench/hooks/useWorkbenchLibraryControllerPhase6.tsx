@@ -946,12 +946,12 @@ export function useWorkbenchLibraryControllerPhase6(scope: Record<string, any>) 
     roleCategories: {
       label: '角色分组',
       count: roleTypeOptions.filter((type) => type !== UNCATEGORIZED_TYPE && !isDefaultWorkbenchRoleType(type)).length,
-      description: `确定要清空全部自建人物分组吗？女主角、重要正派角色、正派配角、重要反派角色、反派配角、龙套角色等默认分组会保留。`,
+      description: `确定要清空全部自建人物分组吗？男女主、重要正派角色、正派配角、重要反派角色、反派配角、龙套角色等默认分组会保留。`,
     },
     roleEntries: {
       label: '角色',
       count: deletableRoleEntries.length,
-      description: `确定要清空全部角色吗？当前共有 ${deletableRoleEntries.length} 个可删除角色会被删除，男主角会保留。`,
+      description: `确定要清空全部角色吗？当前共有 ${deletableRoleEntries.length} 个可删除角色会被删除，男女主默认角色会保留。`,
     },
   };
   const closeClearSettingsConfirm = () => {

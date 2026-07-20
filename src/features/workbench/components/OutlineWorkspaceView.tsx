@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck -- pure outline view adapter.
-import React from 'react';
+import { DetailOutlineBorderFontTool, DetailOutlineTitleWordCount, normalizeDetailOutlineFontSize } from './DetailOutlineBorderFontTool';
 export function renderOutlineWorkspaceView(scope: Record<string, any>) {
   const {
     AiInlineInput,
@@ -113,9 +113,13 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
     updateVolumeSummary,
     volumes,
   } = scope;
+  const detailOutlineStateFontSize = normalizeDetailOutlineFontSize(
+    activeTabConfig.detailOutlineStateFontSize,
+    detailOutlineFontSize,
+  );
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-white" style={scaleStyle}>
-      {libraryHeaderFontSizePortal}
+      {!isDetailOutlineTab && libraryHeaderFontSizePortal}
       {(activeTab === OUTLINE_LIBRARY_TAB || activeTab === DETAIL_OUTLINE_TAB) &&
         renderTopTabs()}
       {deleteConfirmDialog}
@@ -433,10 +437,10 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                     ref={(element) => {
                       outlinePreviewRefs.current[chapter.id] = element;
                     }}
-                    className="flex h-full min-h-0 flex-col gap-4"
+                    className="flex h-full min-h-0 flex-col gap-6"
                   >
                     <section
-                      className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-[0_0_62%] ${detailOutlineParts.outline.trim() ? 'xy-has-value' : ''}`}
+                      className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill min-h-0 flex-[0_0_62%] ${detailOutlineParts.outline.trim() ? 'xy-has-value' : ''}`}
                     >
                       <textarea
                         data-no-modal-drag="true"
@@ -457,18 +461,17 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                       />
                       <label className="xy-floating-title-count xy-detail-outline-title-count">
                         <span className="xy-floating-title-text xy-detail-outline-heading-title">
-                          {outlineCardTitle}
+                          {outlineCardTitle}<DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.outline)} spacingClassName="ml-[2ch]" />
                         </span>
                       </label>
-                      <span className="xy-floating-outline-chapter-meta xy-border-embedded-transparent-backplate absolute right-9 top-0 z-20 max-w-[44%] -translate-y-1/2 truncate text-sm font-black leading-5 text-slate-950">
-                        {`第${getVolumeDisplayIndex(volume.id)}卷 · ${chapter.title.trim() || '未命名章节'}`}
-                      </span>
-                      <span className="xy-floating-count">
-                        <WordCountText value={countTextWords(detailOutlineParts.outline)} />
-                      </span>
+                      <DetailOutlineBorderFontTool
+                        value={detailOutlineFontSize}
+                        onChange={(value) => updateActiveTabConfig({ detailOutlineFontSize: value })}
+                        ariaLabel="章纲字号"
+                      />
                     </section>
                     <section
-                      className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${detailOutlineParts.stateExpectation.trim() ? 'xy-has-value' : ''}`}
+                      className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill min-h-0 flex-1 ${detailOutlineParts.stateExpectation.trim() ? 'xy-has-value' : ''}`}
                     >
                       <textarea
                         data-no-modal-drag="true"
@@ -483,15 +486,19 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                         style={{
                           height: '100%',
                           overflowY: 'auto',
-                          fontSize: detailOutlineFontSize,
+                          fontSize: detailOutlineStateFontSize,
                         }}
                       />
                       <label className="xy-floating-title-count xy-detail-outline-title-count">
-                        <span className="xy-floating-title-text xy-detail-outline-heading-title">状态变化</span>
+                        <span className="xy-floating-title-text xy-detail-outline-heading-title">
+                          状态变化<DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.stateExpectation)} />
+                        </span>
                       </label>
-                      <span className="xy-floating-count">
-                        <WordCountText value={countTextWords(detailOutlineParts.stateExpectation)} />
-                      </span>
+                      <DetailOutlineBorderFontTool
+                        value={detailOutlineStateFontSize}
+                        onChange={(value) => updateActiveTabConfig({ detailOutlineStateFontSize: value })}
+                        ariaLabel="状态变化字号"
+                      />
                     </section>
                   </div>
                 );
@@ -552,21 +559,15 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                           }
                         >
                           {outlineCardTitle}
+                          {isDetailOutlineTab && <DetailOutlineTitleWordCount value={countTextWords(outlineCardContent)} spacingClassName="ml-[2ch]" />}
                         </span>
                       </label>
-                      <span className="xy-floating-outline-chapter-meta xy-border-embedded-transparent-backplate absolute right-9 top-0 z-20 max-w-[44%] -translate-y-1/2 truncate text-sm font-black leading-5 text-slate-950">
-                        {isDetailOutlineTab ? (
-                          `第${getVolumeDisplayIndex(volume.id)}卷 · ${chapter.title.trim() || '未命名章节'}`
-                        ) : (
+                      {!isDetailOutlineTab && (
+                        <span className="xy-floating-outline-chapter-meta xy-border-embedded-transparent-backplate absolute right-9 top-0 z-20 max-w-[44%] -translate-y-1/2 truncate text-sm font-black leading-5 text-slate-950">
                           <>
                             第{chapter.serialNumber}章 {chapter.title.trim() || '未命名章节'}{' '}
                             <WordCountText value={chapter.wordCount} compact />
                           </>
-                        )}
-                      </span>
-                      {isDetailOutlineTab && (
-                        <span className="xy-floating-count">
-                          <WordCountText value={countTextWords(outlineCardContent)} />
                         </span>
                       )}
                     </section>

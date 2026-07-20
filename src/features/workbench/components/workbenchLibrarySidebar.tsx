@@ -16,6 +16,7 @@ import {
   type WorkbenchLibraryEntry,
 } from '@/features/workbench/model/workbenchLibraryStorage';
 import { WordCountText } from '@/shared/ui/WordCountText';
+import { DEFAULT_WORKBENCH_ROLE_TYPES, isMaleProtagonistRoleType } from '@/features/workbench/model/workbenchRoleTypes';
 
 import type { LibraryEntryDragState } from './workbenchLibraryDrag';
 import {
@@ -26,9 +27,11 @@ import {
   WORKBENCH_LIBRARY_ENTRY_EMPTY_CLASS,
 } from './workbenchLibraryPanelConstants';
 import { SETTING_TAB, UNCATEGORIZED_TYPE } from './workbenchLibraryTabs';
+import { parseRoleContent } from './workbenchRoleContent';
 
 type LibraryGroup = {
   type: string;
+  displayType?: string;
   entries: WorkbenchLibraryEntry[];
 };
 
@@ -134,7 +137,39 @@ export function WorkbenchLibrarySidebar({
   openSettingCreateDialog,
   setIsBrainstormRecycleOpen,
 }: WorkbenchLibrarySidebarProps) {
-  const groups = activeIsSettingLike ? groupedSettingEntries : [{ type: UNCATEGORIZED_TYPE, entries: currentEntries }];
+  const groups = activeIsSettingLike
+    ? isOutlineCharacterScope
+      ? (() => {
+          const groupByType = new Map(groupedSettingEntries.map((group) => [group.type, group]));
+          const neutralType = String.fromCharCode(20013, 31435, 35282, 33394);
+          const usedTypes = new Set<string>();
+          const makeGroup = (label: string, types: string[], fallbackType: string) => {
+            const matched = types.map((type) => groupByType.get(type)).filter(Boolean) as LibraryGroup[];
+            types.forEach((type) => usedTypes.add(type));
+            return {
+              type: matched[0]?.type ?? fallbackType,
+              displayType: label,
+              entries: matched.flatMap((group) => group.entries),
+            };
+          };
+          const defaults = DEFAULT_WORKBENCH_ROLE_TYPES;
+          const nextGroups = [
+            makeGroup(String.fromCharCode(30007, 22899, 20027), defaults.slice(0, 2), defaults[0]),
+            makeGroup(String.fromCharCode(26680, 24515, 37197, 35282), [defaults[2], defaults[4]], defaults[2]),
+            makeGroup(String.fromCharCode(27491, 27966, 35282, 33394), [defaults[3]], defaults[3]),
+            makeGroup(String.fromCharCode(21453, 27966, 35282, 33394), [defaults[5]], defaults[5]),
+            makeGroup(String.fromCharCode(20013, 31435, 35282, 33394), [neutralType], neutralType),
+            makeGroup(String.fromCharCode(40857, 22871, 35282, 33394), [defaults[6]], defaults[6]),
+          ];
+          groupedSettingEntries.forEach((group) => {
+            if (!usedTypes.has(group.type)) {
+              nextGroups.push({ ...group, displayType: group.displayType ?? group.type });
+            }
+          });
+          return nextGroups;
+        })()
+      : groupedSettingEntries
+    : [{ type: UNCATEGORIZED_TYPE, entries: currentEntries }];
 
   return (
     <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-1 py-2" style={style}>
@@ -190,7 +225,7 @@ export function WorkbenchLibrarySidebar({
                   aria-expanded={expanded}
                 >
                   <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
-                  <span className="min-w-0 flex-1 truncate leading-none">{group.type}</span>
+                  <span className="min-w-0 flex-1 truncate leading-none">{group.displayType ?? group.type}</span>
                   <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{previewEntries.length}</span>
                 </button>
               </div>
@@ -253,6 +288,11 @@ export function WorkbenchLibrarySidebar({
                             >
                               {entry.title}
                             </span>
+                            {isOutlineCharacterScope && isMaleProtagonistRoleType(parseRoleContent(entry.content).type) ? (
+                              <span className="shrink-0 rounded-md bg-[#E7F8FD] px-1.5 py-0.5 text-xs font-black text-[#08AACE]">
+                                男主
+                              </span>
+                            ) : null}
                             <span className="ml-auto shrink-0 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-black text-[#08AACE]">
                               <WordCountText value={entryWordCount} compact />
                             </span>

@@ -2,11 +2,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   ASSOCIATED_CHAPTERS_KEY,
+  KEEP_WORKBENCH_ASSOCIATIONS_KEY,
   WORKBENCH_ASSOCIATION_SESSION_RESET_KEY,
   bindWorkbenchAssociationCloseCleanup,
   getWorkbenchAssociationRuntimeId,
   readWorkbenchLinkedContextItems,
   resetWorkbenchAssociationsForNewAppSession,
+  writeKeepWorkbenchAssociations,
   writeWorkbenchLinkedContextItems,
 } from './workbenchAssociationCleanup';
 
@@ -114,6 +116,64 @@ describe('workbench association session cleanup', () => {
     expect(localStorage.getItem('xinyuexia_workbench_linked_context_1')).toBeNull();
   });
 
+  it('keeps every association and carries runtime-scoped links into a new session when enabled', () => {
+    writeKeepWorkbenchAssociations(true);
+    localStorage.setItem(ASSOCIATED_CHAPTERS_KEY, JSON.stringify([1, 2]));
+    localStorage.setItem(
+      'xinyuexia_workbench_linked_context_1',
+      JSON.stringify({
+        associationSessionId: 'older-runtime',
+        items: [
+          {
+            id: 'ctx-1',
+            source: 'setting',
+            group: '作品设定',
+            title: '核心设定',
+            content: '保留内容',
+          },
+        ],
+      }),
+    );
+    localStorage.setItem(
+      'xinyuexia_workbench_settings_1_tab_configs_v1',
+      JSON.stringify({
+        setting: {
+          associationSessionId: 'older-runtime',
+          loadedBrainstormId: 'brainstorm-1',
+          linkedOtherSettingIds: ['setting-1'],
+        },
+      }),
+    );
+    localStorage.setItem(
+      'xinyuexia_workbench_ai_sessions_1',
+      JSON.stringify({ sessions: [{ id: 1, linkedItems: [{ id: 'ctx-1' }], linkChapter: true }] }),
+    );
+    localStorage.setItem('xinyuexia_script_editor_linked_novel_v2_3', '12');
+
+    resetWorkbenchAssociationsForNewAppSession();
+
+    expect(localStorage.getItem(KEEP_WORKBENCH_ASSOCIATIONS_KEY)).toBe('1');
+    expect(JSON.parse(localStorage.getItem(ASSOCIATED_CHAPTERS_KEY) ?? '[]')).toEqual([1, 2]);
+    expect(readWorkbenchLinkedContextItems(1)).toEqual([
+      {
+        id: 'ctx-1',
+        source: 'setting',
+        group: '作品设定',
+        title: '核心设定',
+        content: '保留内容',
+      },
+    ]);
+    const envelope = JSON.parse(localStorage.getItem('xinyuexia_workbench_linked_context_1') ?? '{}');
+    const configs = JSON.parse(localStorage.getItem('xinyuexia_workbench_settings_1_tab_configs_v1') ?? '{}');
+    expect(envelope.associationSessionId).toBe(getWorkbenchAssociationRuntimeId());
+    expect(configs.setting.associationSessionId).toBe(getWorkbenchAssociationRuntimeId());
+    expect(JSON.parse(localStorage.getItem('xinyuexia_workbench_ai_sessions_1') ?? '{}').sessions[0]).toMatchObject({
+      linkedItems: [{ id: 'ctx-1' }],
+      linkChapter: true,
+    });
+    expect(localStorage.getItem('xinyuexia_script_editor_linked_novel_v2_3')).toBe('12');
+  });
+
   it('ignores linked context saved by an older app runtime', () => {
     localStorage.setItem(
       'xinyuexia_workbench_linked_context_1',
@@ -165,7 +225,18 @@ describe('workbench association session cleanup', () => {
     dispose();
   });
 
-  it('clears associations when the desktop window is hidden', () => {
+  it('keeps associations when the page closes and keep association is enabled', () => {
+    writeKeepWorkbenchAssociations(true);
+    const dispose = bindWorkbenchAssociationCloseCleanup();
+    localStorage.setItem(ASSOCIATED_CHAPTERS_KEY, JSON.stringify([1]));
+
+    window.dispatchEvent(new Event('pagehide'));
+
+    expect(JSON.parse(localStorage.getItem(ASSOCIATED_CHAPTERS_KEY) ?? '[]')).toEqual([1]);
+    dispose();
+  });
+
+  it('does not treat a temporarily hidden desktop window as closing the software', () => {
     const dispose = bindWorkbenchAssociationCloseCleanup();
     localStorage.setItem(ASSOCIATED_CHAPTERS_KEY, JSON.stringify([1]));
     Object.defineProperty(document, 'visibilityState', {
@@ -175,7 +246,7 @@ describe('workbench association session cleanup', () => {
 
     document.dispatchEvent(new Event('visibilitychange'));
 
-    expect(localStorage.getItem(ASSOCIATED_CHAPTERS_KEY)).toBeNull();
+    expect(JSON.parse(localStorage.getItem(ASSOCIATED_CHAPTERS_KEY) ?? '[]')).toEqual([1]);
     dispose();
   });
 });

@@ -35,6 +35,8 @@ import {
 export const DEFAULT_ROLE_TYPES = DEFAULT_WORKBENCH_ROLE_TYPES;
 export const DEFAULT_MALE_PROTAGONIST_ROLE_TYPE = '男主角';
 export const DEFAULT_MALE_PROTAGONIST_ROLE_TITLE = '男主角';
+export const DEFAULT_FEMALE_PROTAGONIST_ROLE_TYPE = '女主角';
+export const DEFAULT_FEMALE_PROTAGONIST_ROLE_TITLE = '女主角';
 
 export type LibraryTabConfig = {
   selectedId?: string | null;
@@ -81,6 +83,7 @@ export type LibraryTabConfig = {
   settingPreviewFontSize?: number;
   roleTextFontSize?: number;
   detailOutlineFontSize?: number;
+  detailOutlineStateFontSize?: number;
 };
 
 export type LibraryFontTarget = 'brainstormPreview' | 'brainstormOutput' | 'settingPreview' | 'detailOutline';
@@ -165,7 +168,7 @@ export function getHiddenRoleTypesStorageKey(storageKey: string) {
   return `${storageKey}_hidden_role_types`;
 }
 
-export const ROLE_TAXONOMY_DEFAULTS_VERSION = '2026-06-24-role-groups-v3';
+export const ROLE_TAXONOMY_DEFAULTS_VERSION = '2026-07-20-role-groups-v4';
 export const SETTING_TAXONOMY_DEFAULTS_VERSION = '2026-06-18-setting-tabs-groups-v3';
 
 export function getRoleTaxonomyDefaultsVersionStorageKey(storageKey: string) {
@@ -353,6 +356,24 @@ export function createDefaultMaleProtagonistRoleEntry() {
   };
 }
 
+export function createDefaultFemaleProtagonistRoleEntry() {
+  return {
+    ...createWorkbenchLibraryEntry(ROLE_TAB, DEFAULT_FEMALE_PROTAGONIST_ROLE_TITLE),
+    content: stringifyRoleContent({
+      type: DEFAULT_FEMALE_PROTAGONIST_ROLE_TYPE,
+      lifeStatus: '存活',
+      baseSetting: '',
+      relationship: '',
+      stateSettings: createEmptyRoleStateSettings(),
+      stateUpdateChapters: {},
+      personality: '',
+      background: '',
+      status: '',
+      history: [],
+    }),
+  };
+}
+
 export function hasMaleProtagonistRoleEntry(entries: WorkbenchLibraryEntry[]) {
   return entries.some(
     (entry) => entry.tab === ROLE_TAB && isMaleProtagonistRoleType(parseRoleContent(entry.content).type),
@@ -360,9 +381,28 @@ export function hasMaleProtagonistRoleEntry(entries: WorkbenchLibraryEntry[]) {
 }
 
 export function withDefaultMaleProtagonistRoleEntry(entries: WorkbenchLibraryEntry[]) {
-  if (hasMaleProtagonistRoleEntry(entries)) return entries;
-  return [createDefaultMaleProtagonistRoleEntry(), ...entries];
+  const nextEntries = hasMaleProtagonistRoleEntry(entries)
+    ? entries
+    : [createDefaultMaleProtagonistRoleEntry(), ...entries];
+  if (
+    nextEntries.some(
+      (entry) =>
+        entry.tab === ROLE_TAB &&
+        normalizeWorkbenchRoleType(parseRoleContent(entry.content).type) === DEFAULT_FEMALE_PROTAGONIST_ROLE_TYPE,
+    )
+  )
+    return nextEntries;
+  const maleIndex = nextEntries.findIndex(
+    (entry) => entry.tab === ROLE_TAB && isMaleProtagonistRoleType(parseRoleContent(entry.content).type),
+  );
+  const insertAt = maleIndex >= 0 ? maleIndex + 1 : 0;
+  return [
+    ...nextEntries.slice(0, insertAt),
+    createDefaultFemaleProtagonistRoleEntry(),
+    ...nextEntries.slice(insertAt),
+  ];
 }
+
 
 export function readNormalizedEntriesWithVisibleDefaults(storageKey: string, tabs: string[]) {
   const entries = readNormalizedEntriesWithGlobalBrainstorm(storageKey);

@@ -9,9 +9,11 @@ import type {
 } from 'react';
 
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
+import { DEFAULT_WORKBENCH_ROLE_TYPES, isMaleProtagonistRoleType } from '@/features/workbench/model/workbenchRoleTypes';
 
 import type { WorkbenchFieldSizeKey, WorkbenchFieldSizeSpec } from './workbenchFieldSizeSettings';
 import type { LibraryEntryDragState } from './workbenchLibraryDrag';
+import { parseRoleContent } from './workbenchRoleContent';
 import {
   WORKBENCH_FOLDER_GROUP_BUTTON_CLASS,
   WORKBENCH_FOLDER_GROUP_COUNT_CLASS,
@@ -20,6 +22,7 @@ import {
 
 type RoleGroup = {
   type: string;
+  label?: string;
   entries: WorkbenchLibraryEntry[];
 };
 
@@ -121,6 +124,25 @@ export function WorkbenchRoleSidebar({
   addRole,
   getDefaultRoleCreateType,
 }: WorkbenchRoleSidebarProps) {
+  const groupByType = new Map(groupedRoles.map((group) => [group.type, group]));
+  const neutralType = String.fromCharCode(20013, 31435, 35282, 33394);
+  const usedTypes = new Set<string>();
+  const makeGroup = (label: string, types: string[], fallbackType: string): RoleGroup => {
+    const matched = types.map((type) => groupByType.get(type)).filter(Boolean) as RoleGroup[];
+    types.forEach((type) => usedTypes.add(type));
+    return { type: matched[0]?.type ?? fallbackType, label, entries: matched.flatMap((group) => group.entries) };
+  };
+  const defaults = DEFAULT_WORKBENCH_ROLE_TYPES;
+  const displayGroups = [
+    makeGroup(String.fromCharCode(30007, 22899, 20027), defaults.slice(0, 2), defaults[0]),
+    makeGroup(String.fromCharCode(26680, 24515, 37197, 35282), [defaults[2], defaults[4]], defaults[2]),
+    makeGroup(String.fromCharCode(27491, 27966, 35282, 33394), [defaults[3]], defaults[3]),
+    makeGroup(String.fromCharCode(21453, 27966, 35282, 33394), [defaults[5]], defaults[5]),
+    makeGroup(String.fromCharCode(20013, 31435, 35282, 33394), [neutralType], neutralType),
+    makeGroup(String.fromCharCode(40857, 22871, 35282, 33394), [defaults[6]], defaults[6]),
+    ...groupedRoles.filter((group) => !usedTypes.has(group.type)),
+  ];
+
   return (
     <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-4 pb-3 pt-2">
       <div className="flex shrink-0 gap-2">
@@ -141,7 +163,7 @@ export function WorkbenchRoleSidebar({
       </div>
 
       <div className="mt-5 min-h-0 flex-1 space-y-2 overflow-y-auto">
-        {groupedRoles.map((group) => {
+        {displayGroups.map((group) => {
           const expanded = expandedRoleTypes.has(group.type);
           const isDropTarget = libraryDropTarget?.tab === roleTab && libraryDropTarget.type === group.type;
           const previewEntries = getPreviewedLibraryGroupEntries(group.entries, roleTab, group.type);
@@ -173,7 +195,7 @@ export function WorkbenchRoleSidebar({
                   aria-expanded={expanded}
                 >
                   <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
-                  <span className="min-w-0 flex-1 truncate leading-none">{group.type}</span>
+                  <span className="min-w-0 flex-1 truncate leading-none">{group.label ?? group.type}</span>
                   <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{previewEntries.length}</span>
                 </button>
               </div>
@@ -211,7 +233,23 @@ export function WorkbenchRoleSidebar({
                             : 'border-transparent bg-white text-gray-600 hover:border-gray-200'
                         } ${draggingLibraryEntry?.entryId === entry.id ? 'cursor-grabbing scale-[0.99] opacity-80 ring-2 ring-[#08AACE]/35 shadow-sm' : ''}`}
                       >
-                        <span className="min-w-0 flex-1 truncate">{entry.title}</span>
+                        <span className="flex min-w-0 flex-1 items-center gap-2">
+                          <span className="min-w-0 truncate">{entry.title}</span>
+                          <span
+                            aria-label={`${parseRoleContent(entry.content).lifeStatus}状态`}
+                            className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                              parseRoleContent(entry.content).lifeStatus === '死亡'
+                                ? 'bg-red-500'
+                                : 'bg-emerald-500'
+                            }`}
+                            title={parseRoleContent(entry.content).lifeStatus}
+                          />
+                        </span>
+                        {isMaleProtagonistRoleType(parseRoleContent(entry.content).type) ? (
+                          <span className="shrink-0 rounded-md bg-[#E7F8FD] px-1.5 py-0.5 text-xs font-black text-[#08AACE]">
+                            男主
+                          </span>
+                        ) : null}
                         {showPinAction && (
                           <button
                             type="button"

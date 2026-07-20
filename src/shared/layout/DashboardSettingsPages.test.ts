@@ -141,20 +141,24 @@ describe('dashboard unified settings page', () => {
       readSource('src/features/tests/pages/darkThemeColorData.ts'),
     ].join('\n');
     const electronMain = readSource('electron/main.cjs');
+    const windowBounds = readSource('electron/windowBounds.cjs');
     const windowStateStore = readSource('electron/windowStateStore.cjs');
     const sharedButtonClasses = readSource('src/shared/ui/actionButtonClasses.ts');
 
     expect(systemSettings).toContainSource("type SettingsTab = 'window' | 'association' | 'appIcon'");
     expect(systemSettings).toContainSource('window.xinyuexiaWindow.updateSettings');
+    expect(systemSettings).toContainSource('window.xinyuexiaWindow.applyBoundsPreset');
+    expect(systemSettings).toContainSource("window.addEventListener('resize', refreshCurrentBounds)");
     expect(systemSettings).toContainSource('SystemSettingsCompactSections');
     expect(systemSettings).toContainSource('WindowSettingsCompactSection');
     expect(systemSettings).toContainSource('AssociationSettingsCompactSection');
     expect(systemSettings).not.toContainSource('flex flex-wrap items-start justify-between gap-4');
-    expect(compactSections).toContainSource(
-      "const SETTINGS_GRID_CLASS = 'grid w-full grid-cols-1 items-stretch gap-3 sm:grid-cols-2 xl:grid-cols-4';",
-    );
-    expect(compactSections).toContainSource('flex h-full flex-col');
-    expect(compactSections).toContainSource('mt-auto');
+    expect(compactSections).toContainSource('const currentBounds = settings?.currentBounds ?? defaultBounds;');
+    expect(compactSections).toContainSource('const startupBounds = settings?.startupBounds ?? defaultBounds;');
+    expect(compactSections).toContainSource('aria-label="窗口大小记忆"');
+    expect(compactSections).toContainSource('<fieldset disabled={rememberSize}');
+    expect(compactSections).toContainSource('应用并预览');
+    expect(compactSections).toContainSource('{ width: 2064, height: 1120 }');
     expect(systemSettings).toContainSource(
       "import { PRIMARY_TEXT_BUTTON_CLASS } from '@/shared/ui/actionButtonClasses';",
     );
@@ -162,14 +166,14 @@ describe('dashboard unified settings page', () => {
     expect(sharedButtonClasses).toContainSource('bg-[#08AACE]');
     expect(sharedButtonClasses).toContainSource('hover:bg-[#0798b8]');
     expect(electronMain).toContainSource("registerTrustedIpcHandler('window-settings:update'");
+    expect(electronMain).toContainSource("registerTrustedIpcHandler('window-settings:apply-bounds-preset'");
     expect(electronMain).toContainSource('windowStateStore.readSettings().rememberSize');
-    expect(electronMain).toContainSource('STARTUP_MAX_WORK_AREA_HEIGHT_RATIO = 0.75');
     expect(electronMain).toContainSource('fitStartupBoundsToWorkArea');
-    expect(electronMain).toContainSource(
-      'Math.floor(workArea.height * STARTUP_MAX_WORK_AREA_HEIGHT_RATIO) - STARTUP_HEIGHT_ROUNDING_MARGIN',
-    );
-    expect(electronMain).toContainSource('saved maximized state ignored so startup height remains within 75%');
-    expect(windowStateStore).toContainSource('if (!readSettings().rememberSize) return null;');
+    expect(electronMain).toContainSource('fitWindowBoundsToWorkArea(requestedBounds, display.workArea)');
+    expect(electronMain).not.toContainSource('STARTUP_MAX_WORK_AREA_HEIGHT_RATIO');
+    expect(windowBounds).toContainSource('const width = Math.min(requestedWidth');
+    expect(windowBounds).toContainSource('const height = Math.min(requestedHeight');
+    expect(windowStateStore).toContainSource('if (!settings.rememberSize) return { ...settings.startupBounds, isMaximized: false };');
 
     expect(shortcutSettings).toContainSource("variant?: 'modal' | 'page' | 'embedded'");
     expect(navSettings).toContainSource("variant?: 'modal' | 'page' | 'embedded'");

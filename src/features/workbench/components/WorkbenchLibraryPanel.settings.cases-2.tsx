@@ -57,7 +57,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
     );
 
     expect(screen.getByRole('button', { name: '作品设定9' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '人物设定1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '人物设定2' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '势力设定0' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '道具资源0' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '怪物图鉴0' })).toBeInTheDocument();

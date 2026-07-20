@@ -43,17 +43,11 @@ describe('SettingsHierarchyDesignTestPage', () => {
     expect(navigationAccordion).toHaveAttribute('aria-expanded', 'true');
   });
 
-  it('keeps the compact formal settings shell and the test entry last in the UI group', async () => {
+  it('keeps the compact formal settings shell and its test entry registered', async () => {
     const collectionSource = await readFile(collectionPath, 'utf8');
     const formalSettingsSource = await readFile(formalSettingsPath, 'utf8');
     const compactSectionsSource = await readFile(compactSectionsPath, 'utf8');
-    const uiGroupStart = collectionSource.indexOf("title: 'UI 与主题'");
-    const aiGroupStart = collectionSource.indexOf("title: 'AI 链路测试'");
-    const uiGroupSource = collectionSource.slice(uiGroupStart, aiGroupStart);
-
-    expect(uiGroupSource.lastIndexOf("path: '/settings-hierarchy-design-test'")).toBe(
-      uiGroupSource.lastIndexOf('path:'),
-    );
+    expect(collectionSource).toContainSource("path: '/settings-hierarchy-design-test'");
     expect(collectionSource).toContainSource("title: '软件设置入口多方案'");
     expect(collectionSource).toContainSource('SettingsHierarchyDesignTestPage');
     expect(collectionSource).toContainSource("case '/settings-hierarchy-design-test'");

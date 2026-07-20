@@ -8,6 +8,7 @@ import {
   type FormalRouteComponentKey,
 } from '@/app/routeRegistry';
 import { AppFrame } from '@/shared/layout/AppFrame';
+import { RendererReadySignal } from '@/app/RendererReadySignal';
 import { WorkspaceTabsProvider } from '@/shared/tabs/WorkspaceTabsContext';
 import {
   bindWorkbenchAssociationCloseCleanup,
@@ -137,6 +138,7 @@ export default function App() {
               })}
               <Route path="*" element={<Navigate to={STARTUP_ROUTE_PATH} replace />} />
             </Routes>
+            <RendererReadySignal />
           </Suspense>
         </AppErrorBoundary>
       </AppFrame>

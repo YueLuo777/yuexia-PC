@@ -127,7 +127,7 @@ export function useChapterReviewRequest({
       ...(userText ? [createReviewLogSection('其他要求', userText)] : []),
       createReviewLogSection('发送上下文', chapterContext),
     ].join('\n');
-    return { promptText, userText, chapterContext, requestLog, isStructureAudit };
+    return { promptText, userText, chapterContext, requestLog, isStructureAudit, isTextAudit };
   };
 
   const sendReviewAiMessage = async () => {
@@ -150,8 +150,8 @@ export function useChapterReviewRequest({
       setRequestReviewOutput('【错误】尚未配置可用模型，请先到模型管理中新增并启用模型。');
       return;
     }
-    const { promptText, userText, chapterContext, requestLog, isStructureAudit } = buildReviewPayload();
-    const pendingOutput = isStructureAudit ? createAiThinkingPlaceholder(0) : '正在思考...';
+    const { promptText, userText, chapterContext, requestLog, isStructureAudit, isTextAudit } = buildReviewPayload();
+    const pendingOutput = isStructureAudit || isTextAudit ? createAiThinkingPlaceholder(0) : '正在思考...';
     const task = startBackgroundAiTask({
       kind: requestMode === 'polish' ? 'polish' : 'review',
       title: `${REVIEW_MODE_TITLES[requestMode]}：${activeReviewChapter.title || `第${activeReviewChapter.serialNumber}章`}`,

@@ -205,6 +205,7 @@ describe('WorkbenchLibraryPanel structured setting flows', () => {
     expect(within(titleRow).getByLabelText('伏笔编号')).toBeInTheDocument();
     expect(within(titleRow).getByLabelText('首次出现章节')).toBeInTheDocument();
     expect(within(titleRow).getByLabelText('回收章节')).toBeInTheDocument();
+    expect(within(titleRow).queryByText('0字')).not.toBeInTheDocument();
     const structuredFields = screen.getByTestId('structured-setting-fields');
     expect(within(structuredFields).queryByLabelText('伏笔编号')).not.toBeInTheDocument();
     expect(within(structuredFields).queryByLabelText('首次出现章节')).not.toBeInTheDocument();
@@ -215,12 +216,10 @@ describe('WorkbenchLibraryPanel structured setting flows', () => {
     expect(structuredSettingsSource).toContainSource("id: 'foreshadow-main'");
     expect(structuredSettingsSource).toContainSource("id: 'foreshadow-character'");
     expect(panelSource).toContainSource('<header className="shrink-0 pb-3">');
-    expect(panelSource).toContainSource('grid grid-cols-[4fr_2fr_2fr_2fr] gap-4 overflow-visible pb-1 pt-3');
-    expect(panelSource).toContainSource('usesForeshadowHeaderLayout');
-    expect(panelSource).toContainSource(
-      'xy-floating-title-count xy-structured-title-label',
+    expect(panelSource).toContainSource('testId="structured-title-field"');
+    expect(structuredSettingsSource).toContainSource(
+      "fieldClassName: 'xy-structured-header-field xy-foreshadow-code-field h-[48px] w-[176px] shrink-0'",
     );
-    expect(structuredSettingsSource).toContainSource("fieldClassName: 'xy-structured-header-field h-[48px] min-w-0'");
     expect(panelSource).not.toContainSource('headerWidth');
     const styleSource = await readSharedStylesSource();
     expect(styleSource).toContainSource(
@@ -229,6 +228,8 @@ describe('WorkbenchLibraryPanel structured setting flows', () => {
     expect(styleSource).toContainSource('height: 48px;');
     expect(styleSource).toContainSource('.xy-floating-field.xy-structured-header-field input::placeholder');
     expect(styleSource).toContainSource('font-size: 0.8125rem;');
+    expect(styleSource).toContainSource('.xy-floating-field.xy-foreshadow-code-field');
+    expect(styleSource).toContainSource('width: 176px !important;');
     expect(structuredSettingsSource).toContainSource("gridContentClassName: 'grid-rows-[150px_minmax(0,1fr)]'");
     expect(structuredSettingsSource).toContainSource("fieldClassName: 'col-span-2 min-h-0'");
     expect(structuredSettingsSource).toContainSource("title: '首次出现章节'");
@@ -526,7 +527,7 @@ describe('WorkbenchLibraryPanel structured setting flows', () => {
     ensureLibraryGroupExpanded('功法能力1');
     fireEvent.click(screen.getByText('玄雷步').closest('button') as HTMLElement);
 
-    expect(screen.getByRole('button', { name: '固定设定' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '基础设定' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '状态设定' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '确认' })).toBeInTheDocument();
     expect(screen.getByLabelText('基本信息')).toBeInTheDocument();

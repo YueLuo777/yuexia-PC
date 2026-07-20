@@ -58,23 +58,6 @@ function normalizeDraft(config: NavGroupConfig[]) {
   ];
 }
 
-function getSwapPreviewItems<T>(items: T[], dragSourceIndex: number | null, targetIndex: number | null) {
-  if (
-    dragSourceIndex === null ||
-    targetIndex === null ||
-    dragSourceIndex === targetIndex ||
-    dragSourceIndex < 0 ||
-    targetIndex < 0 ||
-    dragSourceIndex >= items.length ||
-    targetIndex >= items.length
-  )
-    return items;
-  const next = [...items];
-  const [moved] = next.splice(dragSourceIndex, 1);
-  next.splice(targetIndex, 0, moved);
-  return next;
-}
-
 type NavPointerDragState = {
   sourceIndex: number;
   pointerId: number;
@@ -97,6 +80,7 @@ import {
   NAV_POINTER_DRAG_RETURN_DISTANCE,
   hasNavPointerRetargetedTooSoon,
   rememberNavPointerPreviewTarget,
+  reorderNavigationItems,
 } from './navSettingsOrdering';
 
 export function NavSettingsModal({
@@ -144,10 +128,6 @@ export function NavSettingsModal({
   const draftDividerAfterItemTos =
     draft[0]?.dividerAfterItemTos ?? (draft[0]?.dividerAfterItemTo ? [draft[0].dividerAfterItemTo] : []);
   const visibleDraftItems = draftItems.filter((item) => !item.hidden);
-  const previewDraftItems =
-    dragSrc !== null && dragOver && !dividerDragSrc
-      ? getSwapPreviewItems(draftItems, dragSrc, dragOver.itemIdx)
-      : draftItems;
 
   const normalizeDividerAfterItemTos = (items: NavItemConfig[], dividerAfterItemTos: string[]) => {
     const visibleItemTos = new Set(items.filter((item) => !item.hidden).map((item) => item.to));
@@ -246,7 +226,7 @@ export function NavSettingsModal({
     }
     const dragSrc = navDragSrcRef.current;
     if (dragSrc === null) return;
-    const nextItems = getSwapPreviewItems(draftItems, dragSrc, targetItemIdx);
+    const nextItems = reorderNavigationItems(draftItems, dragSrc, targetItemIdx);
     saveItems(nextItems);
   };
 
@@ -342,11 +322,6 @@ export function NavSettingsModal({
     setNavDragOver({ itemIdx: targetIndex, pos });
   };
 
-  const updateNavPointerPreview = (event: React.PointerEvent<HTMLElement>) => {
-    updateNavPointerPreviewAt(event.clientX, event.clientY);
-    if (navPointerDragRef.current?.active) event.preventDefault();
-  };
-
   const finishNavPointerDragById = (pointerId: number) => {
     const pointerDrag = navPointerDragRef.current;
     if (!pointerDrag || pointerDrag.pointerId !== pointerId) return;
@@ -363,10 +338,6 @@ export function NavSettingsModal({
     window.setTimeout(() => {
       navPointerSuppressClickRef.current = false;
     }, 0);
-  };
-
-  const finishNavPointerDrag = (event: React.PointerEvent<HTMLElement>) => {
-    finishNavPointerDragById(event.pointerId);
   };
 
   return (
@@ -454,35 +425,26 @@ export function NavSettingsModal({
           }
         >
           <div className="space-y-1">
-            {previewDraftItems.map((item, previewIndex) => {
-              const itemIndex = draftItems.findIndex((draftItem) => draftItem.to === item.to);
+            {draftItems.map((item, itemIndex) => {
               const ItemIcon = getIconByName(item.iconName);
               const isEditing = editingItem === itemIndex;
               const isHidden = !!item.hidden;
               const hasDividerAfter = draftDividerAfterItemTos.includes(item.to);
-              const isDraggingPreview = dragSrc === itemIndex && dragOver && !dividerDragSrc;
+              const isDraggingPreview = dragSrc === itemIndex && !dividerDragSrc;
+              const isNavDropTarget = dragSrc !== null && !dividerDragSrc && dragOver?.itemIdx === itemIndex;
 
               return (
                 <div key={`${item.to}-${itemIndex}`} className="relative">
-                  {dividerDragSrc && dragOver?.itemIdx === itemIndex && dragOver.pos === 'before' && (
-                    <div className="absolute -top-[3px] left-0 right-0 z-10 h-[3px] rounded-full bg-brand" />
-                  )}
+                  {(dividerDragSrc || isNavDropTarget) &&
+                    dragOver?.itemIdx === itemIndex &&
+                    dragOver.pos === 'before' && (
+                      <div className="absolute -top-[3px] left-0 right-0 z-10 h-[3px] rounded-full bg-brand" />
+                    )}
                   <div
                     data-nav-item-index={itemIndex}
-                    data-nav-item-preview-index={previewIndex}
-                    draggable={!isEditing && !isHidden}
-                    onDragStart={() => {
-                      navDropHandledRef.current = false;
-                      setNavDragSrc(itemIndex);
-                    }}
-                    onDragOver={(event) => handleDragOver(event, itemIndex, previewIndex)}
-                    onDrop={() => handleDrop(itemIndex, previewIndex)}
-                    onDragEnd={handleDragEnd}
+                    data-nav-item-preview-index={itemIndex}
                     onPointerDown={(event) => beginNavPointerDrag(event, itemIndex)}
-                    onPointerMove={updateNavPointerPreview}
-                    onPointerUp={finishNavPointerDrag}
-                    onPointerCancel={finishNavPointerDrag}
-                    className={`flex min-h-[46px] items-center gap-3 rounded-md border-2 px-3 py-2 transition-all ${
+                    className={`flex min-h-[46px] cursor-grab touch-none select-none items-center gap-3 rounded-md border-2 px-3 py-2 transition-colors active:cursor-grabbing ${
                       isHidden
                         ? 'border-transparent bg-gray-100 opacity-60'
                         : isDraggingPreview
@@ -529,15 +491,17 @@ export function NavSettingsModal({
                         </button>
                         {isDraggingPreview ? (
                           <span className="rounded-full bg-white/80 px-2 py-0.5 text-xs font-black text-brand">
-                            虚影，松手后落实
+                            拖动中，松手后移动
                           </span>
                         ) : null}
                       </>
                     )}
                   </div>
-                  {dividerDragSrc && dragOver?.itemIdx === itemIndex && dragOver.pos === 'after' && (
-                    <div className="absolute -bottom-[3px] left-0 right-0 z-10 h-[3px] rounded-full bg-brand" />
-                  )}
+                  {(dividerDragSrc || isNavDropTarget) &&
+                    dragOver?.itemIdx === itemIndex &&
+                    dragOver.pos === 'after' && (
+                      <div className="absolute -bottom-[3px] left-0 right-0 z-10 h-[3px] rounded-full bg-brand" />
+                    )}
                   {hasDividerAfter ? (
                     <div
                       draggable={!isHidden}
@@ -545,8 +509,8 @@ export function NavSettingsModal({
                         navDropHandledRef.current = false;
                         setNavDividerDragSrc(item.to);
                       }}
-                      onDragOver={(event) => handleDragOver(event, itemIndex, previewIndex)}
-                      onDrop={() => handleDrop(itemIndex, previewIndex)}
+                      onDragOver={(event) => handleDragOver(event, itemIndex, itemIndex)}
+                      onDrop={() => handleDrop(itemIndex, itemIndex)}
                       onDragEnd={handleDragEnd}
                       className={`group my-1 flex min-h-8 cursor-grab items-center gap-2 rounded-md px-3 transition-colors active:cursor-grabbing ${
                         dividerDragSrc === item.to ? 'bg-brand/10' : 'hover:bg-[#f2f7fb]'

@@ -29,7 +29,7 @@ export const WORKBENCH_FIELD_SIZE_DEFAULTS: Record<WorkbenchFieldSizeKey, Workbe
   roleCreateName: { width: 260, height: 44, fontSize: 13 },
   roleDetailName: { width: 220, height: 44, fontSize: 13 },
   roleDetailCategory: { width: 220, height: 44, fontSize: 13 },
-  settingName: { width: 220, height: 56, fontSize: 18 },
+  settingName: { width: 232, height: 56, fontSize: 18 },
   settingModelSelect: { width: 250, height: 44, fontSize: 13 },
   settingPromptSelect: { width: 250, height: 44, fontSize: 13 },
   roleModelSelect: { width: 250, height: 44, fontSize: 13 },

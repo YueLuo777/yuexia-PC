@@ -1,10 +1,14 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { SettingsPage } from './SettingsPage';
 
 describe('SettingsPage hierarchy', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it('keeps only window settings in user settings and moves association and app icon into test settings', () => {
     render(
       <MemoryRouter initialEntries={['/settings?section=system']}>
@@ -18,14 +22,13 @@ describe('SettingsPage hierarchy', () => {
     expect(screen.queryByLabelText('系统设置子导航')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: '系统设置' })).not.toBeInTheDocument();
 
-    const firstCard = screen.getByRole('heading', { name: '记住窗口大小' }).closest('section');
-    const secondCard = screen.getByRole('heading', { name: '恢复默认窗口大小' }).closest('section');
-    const settingsGrid = firstCard?.parentElement;
-    expect(settingsGrid).toHaveClass('xl:grid-cols-4');
-    expect(settingsGrid).not.toHaveClass('mx-auto');
-    expect(settingsGrid?.children).toHaveLength(2);
-    expect(settingsGrid?.children[0]).toBe(firstCard);
-    expect(settingsGrid?.children[1]).toBe(secondCard);
+    const windowSection = screen.getByRole('heading', { name: '窗口大小' }).closest('section');
+    expect(windowSection).toHaveTextContent('默认 1600 × 900');
+    expect(windowSection).toHaveTextContent('当前 1600 × 900');
+    expect(windowSection).toHaveTextContent('启动 1600 × 900');
+    expect(screen.getByRole('checkbox', { name: '窗口大小记忆' })).not.toBeChecked();
+    expect(screen.getByRole('group')).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: '1600 × 900' })).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(screen.getByRole('button', { name: '测试设置' }));
     const testNavigation = screen.getByRole('navigation', { name: '测试设置顶部导航' });
@@ -33,7 +36,16 @@ describe('SettingsPage hierarchy', () => {
     expect(testNavigation).toHaveTextContent('软件图标');
 
     fireEvent.click(screen.getByRole('button', { name: '关联设置' }));
-    expect(screen.getByRole('heading', { name: '关联有效期' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '保持关联' })).toBeInTheDocument();
+    const keepAssociations = screen.getByRole('checkbox', { name: '保持关联' });
+    expect(keepAssociations).not.toBeChecked();
+    expect(screen.getByText('恢复未关联状态')).toBeInTheDocument();
+
+    fireEvent.click(keepAssociations);
+
+    expect(keepAssociations).toBeChecked();
+    expect(localStorage.getItem('xinyuexia_keep_workbench_associations_v1')).toBe('1');
+    expect(screen.getByText('保留全部关联')).toBeInTheDocument();
   });
 
   it('shows five shortcut settings per row on wide screens', () => {

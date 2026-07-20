@@ -125,7 +125,7 @@ export function ChapterReviewPreview({
   reviewAnnotationRefs,
   onApplyTextAuditContent,
 }: ChapterReviewPreviewProps) {
-  const showContinuousTextAudit = isAuditTextReview && Boolean(auditRevisedText.trim()) && auditParagraphCountMatches;
+  const showContinuousTextAudit = isAuditTextReview && Boolean(auditRevisedText.trim());
   return (
     <main className="min-h-0 bg-white">
       <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
@@ -316,7 +316,7 @@ export function ChapterReviewPreview({
                     <div className="flex h-full items-center justify-center px-6 text-center text-sm font-bold leading-6 text-amber-600">
                       {auditRevisedText.trim()
                         ? `原文 ${reviewOriginalParagraphs.length} 段，审核后 ${auditRevisedParagraphs.length} 段。段落数量不一致，请让 AI 按原文段落重新输出。`
-                        : '未识别到【修改后全文】，请让 AI 按文本审核格式输出修改后正文。'}
+                        : 'AI正在思考，请稍后……'}
                     </div>
                   ) : isAuditStructureReview ? (
                     <div className="space-y-3">

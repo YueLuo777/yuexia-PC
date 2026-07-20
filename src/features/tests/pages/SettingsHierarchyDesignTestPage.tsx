@@ -90,7 +90,7 @@ function SystemContent({ tab }: { tab: SystemTab }) {
   return (
     <div className="py-4">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="text-sm font-black text-slate-950">{association ? '关联有效期' : '软件图标'}</h3>
+        <h3 className="text-sm font-black text-slate-950">{association ? '保持关联' : '软件图标'}</h3>
         <p className="mt-1 text-xs leading-5 text-slate-500">
           {association
             ? '控制章节、上下文和关联资料在软件关闭后是否继续保留。'

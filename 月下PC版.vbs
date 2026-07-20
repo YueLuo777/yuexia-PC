@@ -67,16 +67,8 @@ Sub ShowNodeMissingMessage()
 End Sub
 
 Sub RunNodeLauncherHidden(nodePath, launcherPath, launcherMode)
-  Dim wmi, startup, process, processId, result
-  Set wmi = GetObject("winmgmts:\\.\root\cimv2")
-  Set startup = wmi.Get("Win32_ProcessStartup").SpawnInstance_
-  startup.ShowWindow = 0
-  Set process = wmi.Get("Win32_Process")
   command = """" & nodePath & """ """ & launcherPath & """ " & launcherMode
-  result = process.Create(command, root, startup, processId)
-  If result <> 0 Then
-    shell.Run command, 0, False
-  End If
+  shell.Run command, 0, False
 End Sub
 
 root = fso.GetParentFolderName(WScript.ScriptFullName)

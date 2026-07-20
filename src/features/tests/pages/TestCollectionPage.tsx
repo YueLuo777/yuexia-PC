@@ -8,6 +8,7 @@ import {
   NotebookText,
   Moon,
   Palette,
+  Ruler,
   Search,
   Sparkles,
   X,
@@ -41,9 +42,29 @@ const CompactLibraryFormTestPage = lazy(() =>
     default: module.CompactLibraryFormTestPage,
   })),
 );
+const SettingNameWidthDesignTestPage = lazy(() =>
+  import('@/features/tests/pages/SettingNameWidthDesignTestPage').then((module) => ({
+    default: module.SettingNameWidthDesignTestPage,
+  })),
+);
+const IdentityPositionVariantsTestPage = lazy(() =>
+  import('@/features/tests/pages/IdentityPositionVariantsTestPage').then((module) => ({
+    default: module.IdentityPositionVariantsTestPage,
+  })),
+);
 const SettingsHierarchyDesignTestPage = lazy(() =>
   import('@/features/tests/pages/SettingsHierarchyDesignTestPage').then((module) => ({
     default: module.SettingsHierarchyDesignTestPage,
+  })),
+);
+const WorkbenchFlowTabsSpacingTestPage = lazy(() =>
+  import('@/features/tests/pages/WorkbenchFlowTabsSpacingTestPage').then((module) => ({
+    default: module.WorkbenchFlowTabsSpacingTestPage,
+  })),
+);
+const UiConsistencyAuditTestPage = lazy(() =>
+  import('@/features/tests/pages/UiConsistencyAuditTestPage').then((module) => ({
+    default: module.UiConsistencyAuditTestPage,
   })),
 );
 const ErrorLogPage = lazy(() =>
@@ -141,11 +162,39 @@ const testGroups = [
         badge: 'Compact Form',
       },
       {
+        title: '设定页面完整复原（图1表单）',
+        description: '原08号测试：完整复刻正式设定页的流程栏、分类栏、资料目录、编辑器和右侧 AI 区，并按内容分配字段宽度。',
+        path: '/setting-name-width-design-test',
+        icon: Ruler,
+        badge: 'Setting Form',
+      },
+      {
         title: '软件设置入口多方案',
         description: '对比全顶部导航、图标窄栏、卡片逐级进入、搜索优先和单页折叠五种设置布局。',
         path: '/settings-hierarchy-design-test',
         icon: ListTree,
         badge: 'Settings UI',
+      },
+      {
+        title: '顶部工作流按钮栏间距测试',
+        description: '对比脑洞、设定、章纲等顶部按钮栏的底部留白、分组间距和流程层次。',
+        path: '/workbench-flow-tabs-spacing-test',
+        icon: Ruler,
+        badge: 'Flow Tabs',
+      },
+      {
+        title: '同类 UI 一致性审查',
+        description: '按实际软件入口列出六类同用途 UI 的并存版本、具体差异、源码位置和建议统一方向。',
+        path: '/ui-consistency-audit-test',
+        icon: ListTree,
+        badge: 'UI Audit',
+      },
+      {
+        title: '身份定位样式方案',
+        description: '比较身份定位与存活状态的四种组合方式，选择更自然的正式人物设定头部样式。',
+        path: '/identity-position-variants-test',
+        icon: Ruler,
+        badge: 'Role Header',
       },
     ],
   },
@@ -366,6 +415,14 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <CompactLibraryFormTestPage />;
       case '/settings-hierarchy-design-test':
         return <SettingsHierarchyDesignTestPage />;
+      case '/setting-name-width-design-test':
+        return <SettingNameWidthDesignTestPage />;
+      case '/workbench-flow-tabs-spacing-test':
+        return <WorkbenchFlowTabsSpacingTestPage />;
+      case '/ui-consistency-audit-test':
+        return <UiConsistencyAuditTestPage />;
+      case '/identity-position-variants-test':
+        return <IdentityPositionVariantsTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':

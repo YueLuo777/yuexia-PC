@@ -89,7 +89,7 @@ export type StructuredSettingFieldDraft = {
   fields: Record<string, string>;
 } | null;
 
-export const STRUCTURED_SETTING_TABS = ['固定设定', '状态设定', '确认'] as const;
+export const STRUCTURED_SETTING_TABS = ['基础设定', '状态设定', '确认'] as const;
 export type StructuredSettingTab = (typeof STRUCTURED_SETTING_TABS)[number];
 
 export const MONSTER_BESTIARY_FIELDS: readonly StructuredSettingFieldDefinition[] = [
@@ -119,7 +119,7 @@ export const FORESHADOW_SETTING_FIELDS: readonly StructuredSettingFieldDefinitio
     placeholder: '最多 10 位编号。',
     control: 'input',
     maxLength: 10,
-    fieldClassName: 'xy-structured-header-field h-[48px] min-w-0',
+    fieldClassName: 'xy-structured-header-field xy-foreshadow-code-field h-[48px] w-[176px] shrink-0',
   },
   {
     key: 'firstSeenChapter',
@@ -197,11 +197,11 @@ export const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[]
     entryType: '正派势力',
     entryTitle: '1号势力',
     titleFieldLabel: '势力名',
-    titleFieldGroupTitle: '固定设定',
+    titleFieldGroupTitle: '基础设定',
     gridColumnsClassName: 'grid-cols-2',
     groups: [
       {
-        title: '固定设定',
+        title: '基础设定',
         description: '长期档案，智能导入时优先补全，后续除非设定变更通常不覆盖。',
         fieldKeys: ['basicInfo', 'factionTraits', 'organization', 'mainCharacters'],
       },
@@ -235,7 +235,7 @@ export const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[]
     entryTitle: '世界地图',
     matchAllTitles: true,
     titleFieldLabel: '地图名',
-    titleFieldGroupTitle: '固定设定',
+    titleFieldGroupTitle: '基础设定',
     gridColumnsClassName: 'grid-cols-2',
     fields: [
       { key: 'mapOverview', title: '世界架构', placeholder: '大陆规模、地理风貌、主要国家/宗门分布和世界层级。' },
@@ -259,7 +259,7 @@ export const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[]
     entryTitle: '危险区域',
     matchAllTitles: true,
     titleFieldLabel: '区域名',
-    titleFieldGroupTitle: '固定设定',
+    titleFieldGroupTitle: '基础设定',
     gridColumnsClassName: 'grid-cols-2',
     fields: [
       { key: 'zoneOverview', title: '区域概况', placeholder: '危险区类型、范围、环境、入口位置和外界认知。' },
@@ -309,7 +309,7 @@ export const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[]
     gridColumnsClassName: 'grid-cols-2',
     groups: [
       {
-        title: '固定设定',
+        title: '基础设定',
         description: '功法能力的长期规则，记录来源、核心效果、成长方式、限制和伏笔。',
         fieldKeys: ['basicInfo', 'abilitySource', 'coreEffect', 'growthMethod', 'useLimit', 'foreshadowing'],
       },
@@ -361,7 +361,7 @@ export const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[]
     gridColumnsClassName: 'grid-cols-2',
     groups: [
       {
-        title: '固定设定',
+        title: '基础设定',
         description: '特殊资源的长期规则，记录为什么珍贵、怎么获得、谁能用、什么时候失效和主线关联。',
         fieldKeys: [
           'basicInfo',

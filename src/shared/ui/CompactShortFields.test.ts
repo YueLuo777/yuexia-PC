@@ -26,9 +26,12 @@ describe('compact short fields across formal pages', () => {
   it('keeps brainstorm prompt metadata and setting names compact', () => {
     const brainstormSource = readSource('src/features/workbench/components/BrainstormPromptEditModal.tsx');
     const settingSource = readSource('src/features/workbench/components/workbenchSettingEditor.tsx');
+    const nameFieldSource = readSource('src/features/workbench/components/WorkbenchNameField.tsx');
     expect(brainstormSource).toContainSource('<span className="w-12 shrink-0">名称</span>');
     expect(brainstormSource).toContainSource('<span className="w-12 shrink-0 pt-2">说明</span>');
-    expect(settingSource).toContainSource('<span className="w-[64px] shrink-0">设定名</span>');
-    expect(settingSource).not.toContainSource('xy-floating-outline-setting-name');
+    expect(settingSource.match(/<WorkbenchNameField/g)).toHaveLength(3);
+    expect(nameFieldSource).toContainSource('className="xy-workbench-name-field"');
+    expect(nameFieldSource).toContainSource('className="xy-workbench-name-field-caption"');
+    expect(settingSource).not.toContainSource('<span className="w-[64px] shrink-0">设定名</span>');
   });
 });

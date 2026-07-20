@@ -129,7 +129,7 @@ describe('WorkbenchLibraryPanel role library flows', () => {
       '怪物列表',
       '主线伏笔',
     ]);
-    expect(storedRoles).toHaveLength(1);
+    expect(storedRoles).toHaveLength(2);
     expect(storedRoles[0].title).toBe('林刻');
     const importedRole = JSON.parse(storedRoles[0].content);
     expect(importedRole.type).toBe('男主角');
@@ -261,9 +261,9 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(screen.queryByRole('button', { name: '资源体系1' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '书写规则2' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '人物设定1' }));
-    expect(screen.getByRole('button', { name: '男主角1' })).toBeInTheDocument();
-    ['女主角', '重要正派角色', '正派配角', '重要反派角色', '反派配角', '龙套角色'].forEach((group) => {
+    fireEvent.click(screen.getByRole('button', { name: '人物设定2' }));
+    expect(screen.getByRole('button', { name: '男女主2' })).toBeInTheDocument();
+    ['核心配角', '正派角色', '反派角色', '中立角色', '龙套角色'].forEach((group) => {
       expect(screen.getByRole('button', { name: `${group}0` })).toBeInTheDocument();
     });
     expect(screen.queryByRole('button', { name: '未分类0' })).not.toBeInTheDocument();
@@ -297,9 +297,9 @@ describe('WorkbenchLibraryPanel role library flows', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: '人物设定1' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '人物设定1' }));
-    expect(screen.getByRole('button', { name: '男主角1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '人物设定2' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '人物设定2' }));
+    expect(screen.getByRole('button', { name: '男女主2' })).toBeInTheDocument();
     expect(screen.getByDisplayValue('男主角')).toBeInTheDocument();
     expect(screen.queryByText('身份定位')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '存活' })).not.toBeInTheDocument();
@@ -307,7 +307,7 @@ describe('WorkbenchLibraryPanel role library flows', () => {
 
     const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
     const roleEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '角色');
-    expect(roleEntries).toHaveLength(1);
+    expect(roleEntries).toHaveLength(2);
     expect(roleEntries[0].title).toBe('男主角');
     expect(JSON.parse(roleEntries[0].content)).toMatchObject({
       type: '男主角',
@@ -326,7 +326,7 @@ describe('WorkbenchLibraryPanel role library flows', () => {
       'if (normalizedUpdates.type && isMaleProtagonistRoleTypeChangeLocked(currentSelectedRole.type, normalizedUpdates.type)) return;',
     );
     expect(panelSource).toContainSource(
-      'if (isMaleProtagonistRoleTypeChangeLocked(role.type, targetType)) return null;',
+      'if (!preserveFemaleProtagonist && isMaleProtagonistRoleTypeChangeLocked(role.type, targetType)) return null;',
     );
     expect(panelSource).toContainSource(
       "if (entryMenu.tab === ROLE_TAB && isMaleProtagonistRoleType(entryMenu.roleType ?? '')) return;",
@@ -342,9 +342,9 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(panelSource).toContainSource('const showRoleIdentityControls = !roleIsMaleProtagonist;');
     expect(panelSource).toContainSource('{showRoleIdentityControls ? (');
     expect(panelSource).toContainSource('<div aria-hidden="true" className="h-[42px] min-w-[168px] shrink-0" />');
-    expect(panelSource).toContainSource('<div aria-hidden="true" className="h-9 w-[112px] shrink-0" />');
+    expect(panelSource).toContainSource('xy-role-life-toggle inline-flex h-[42px] w-[112px]');
     expect(panelSource).toContainSource('buttonClassName="h-[42px] px-3 text-sm"');
-    expect(panelSource).not.toContainSource('buttonClassName="h-10 rounded-xl border-2 border-cyan-200 px-3 text-sm"');
+    expect(panelSource).toContainSource('className="xy-role-identity-select w-[168px] shrink-0"');
   });
   it('splits protagonist cheat advantage preview into the approved five fields', async () => {
     const storageKey = 'workbench-cheat-advantage-structured-preview-test';
@@ -420,7 +420,7 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     ensureLibraryGroupExpanded('正派势力1');
     fireEvent.click(screen.getByText('1号势力').closest('button') as HTMLElement);
 
-    expect(screen.getByRole('button', { name: '固定设定' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '基础设定' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '状态设定' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '确认' })).toBeInTheDocument();
     expect(screen.queryByText(/长期档案，智能导入时优先补全/)).not.toBeInTheDocument();
@@ -428,13 +428,9 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(screen.getByTestId('structured-title-field')).toContainElement(screen.getByLabelText('势力名'));
     expect(screen.getByTestId('structured-setting-fields')).not.toContainElement(screen.getByLabelText('势力名'));
     expect(screen.queryByText('设定名')).not.toBeInTheDocument();
-    expect(panelSource).toContainSource("currentStructuredTitleFieldLabel ? 'px-5 py-3' : 'p-5'");
-    expect(panelSource).toContainSource(
-      "'xy-floating-field xy-floating-outline-fixed xy-structured-title-field h-[48px] w-[168px] shrink-0'",
-    );
-    expect(panelSource).toContainSource(
-      'xy-floating-title-count xy-structured-title-label',
-    );
+    expect(panelSource).toContainSource('className="xy-setting-name-editor flex min-h-0 flex-1 flex-col px-5 py-3"');
+    expect(panelSource).toContainSource('<WorkbenchNameField');
+    expect(panelSource).toContainSource('testId="structured-title-field"');
     expect(panelSource).toContainSource('<div aria-hidden="true" className="h-9 w-[112px] shrink-0" />');
     expect(panelSource).toContainSource(
       '{currentStructuredActiveGroup.title}共 {currentStructuredActiveGroupWordCount} 字',
@@ -486,8 +482,9 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     const styleSource = await readSharedStylesSource();
 
     expect(structuredSettingsSource).toContainSource(
-      "const STRUCTURED_SETTING_TABS = ['固定设定', '状态设定', '确认'] as const;",
+      "const STRUCTURED_SETTING_TABS = ['基础设定', '状态设定', '确认'] as const;",
     );
+    expect(structuredSettingsSource).not.toContainSource('固定设定');
     expect(panelSource).toContainSource('activeStructuredSettingTab');
     expect(panelSource).toContainSource("import { SettingSegmentedTabs } from './workbenchSettingSegmentedTabs';");
     expect(segmentedTabsSource).toContainSource('function SettingSegmentedTabs<T extends string>');

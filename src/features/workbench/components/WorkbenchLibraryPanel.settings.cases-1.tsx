@@ -358,7 +358,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
     expect(panelSource).toContainSource("roleCategories: {\n      label: '角色分组'");
     expect(panelSource).toContainSource('确定要清空全部自建人物分组吗？');
     expect(panelSource).toContainSource(
-      '女主角、重要正派角色、正派配角、重要反派角色、反派配角、龙套角色等默认分组会保留。',
+      '男女主、重要正派角色、正派配角、重要反派角色、反派配角、龙套角色等默认分组会保留。',
     );
     expect(panelSource).not.toContainSource('SETTING_CLEAR_DOMAIN_LABELS');
     expect(panelSource).not.toContainSource("'setting:faction': '势力'");

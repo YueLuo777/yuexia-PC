@@ -58,7 +58,15 @@ import {
   readWorkbenchLinkedContextItems,
   writeWorkbenchLinkedContextItems,
 } from '@/features/workbench/model/workbenchAssociationCleanup';
-import { BRAINSTORM_TAB, SETTING_TAB, normalizeTabName } from '@/features/workbench/components/workbenchLibraryTabs';
+import {
+  BRAINSTORM_TAB,
+  BRAINSTORM_TYPE,
+  ROLE_TAB,
+  SETTING_TAB,
+  UNCATEGORIZED_TYPE,
+  normalizeTabName,
+} from '@/features/workbench/components/workbenchLibraryTabs';
+import { parseSettingContent } from '@/features/workbench/components/workbenchStructuredSettings';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
 import { WordCountText } from '@/shared/ui/WordCountText';
@@ -418,7 +426,15 @@ export function WorkbenchPage() {
     brainstorm: {
       meta: `${settingsEntries.filter((entry) => normalizeTabName(entry.tab) === BRAINSTORM_TAB).length}个脑洞`,
     },
-    outline: { meta: `${settingsEntries.length - settingsEntries.filter((entry) => normalizeTabName(entry.tab) === BRAINSTORM_TAB).length}个设定` },
+    outline: {
+      meta: `${settingsEntries.filter((entry) => {
+        const normalizedTab = normalizeTabName(entry.tab);
+        if (normalizedTab === ROLE_TAB) return true;
+        if (normalizedTab !== SETTING_TAB) return false;
+        const settingType = parseSettingContent(entry.content).type;
+        return settingType !== BRAINSTORM_TYPE && settingType !== UNCATEGORIZED_TYPE;
+      }).length}个设定`,
+    },
     chapterOutline: { meta: `${outlineContextItems.length}章` },
     writing: { meta: `${chapterCount}章` },
     audit: { meta: `${chapterCount}章未审`, tone: 'warning' },

@@ -25,6 +25,7 @@ import {
   type RoleBaseSettingFieldKey,
   type RoleStateFieldKey,
 } from './workbenchRoleSettingFields';
+import { WorkbenchNameField } from './WorkbenchNameField';
 import { SettingSegmentedTabs } from './workbenchSettingSegmentedTabs';
 
 function countTextWords(content: string) {
@@ -144,27 +145,21 @@ export function RoleBaseStateEditor({
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col bg-white">
-      <div className="flex min-h-0 flex-1 flex-col gap-3 px-5 py-3">
-        <header className="shrink-0 border-b border-slate-200 pb-3">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
+      <div className="xy-setting-name-editor flex min-h-0 flex-1 flex-col gap-0 px-5 py-3">
+        <header className="shrink-0 space-y-3">
+          <div className="flex h-[48px] items-start gap-3">
+            <div className="h-[48px] min-w-0">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="xy-floating-field xy-floating-outline-fixed xy-role-name-embedded-field h-[48px] w-[148px] shrink-0">
-                  <label className="xy-floating-title-count xy-role-name-embedded-label">
-                    人物姓名
-                  </label>
-                  <input
-                    aria-label="人物姓名"
-                    value={entry.title}
-                    onChange={(event) => onTitleChange(event.target.value)}
-                    placeholder="填写人物姓名"
-                    className="h-6 w-full bg-transparent text-[17px] font-medium leading-6 text-slate-950 outline-none placeholder:text-slate-400"
-                  />
-                </div>
+                <WorkbenchNameField
+                  label="人物姓名"
+                  value={entry.title}
+                  onValueChange={onTitleChange}
+                  placeholder="填写人物姓名"
+                />
                 {showRoleIdentityControls ? (
                   <CapsuleSelect
                     floatingLabel="身份定位"
-                    className="xy-capsule-fill min-w-[168px]"
+                    className="xy-role-identity-select w-[168px] shrink-0"
                     value={role.type}
                     onChange={(value) => onRoleChange({ type: value })}
                     options={roleTypeOptions.map((type) => ({
@@ -185,31 +180,29 @@ export function RoleBaseStateEditor({
                 ) : (
                   <div aria-hidden="true" className="h-[42px] min-w-[168px] shrink-0" />
                 )}
+                {showRoleIdentityControls ? (
+                  <div className="xy-role-life-toggle inline-flex h-[42px] w-[112px] shrink-0 items-center rounded-[21px] bg-slate-100 p-1">
+                    {(['存活', '死亡'] as const).map((status) => {
+                      const active = roleLifeStatus === status;
+                      return (
+                        <button
+                          key={status}
+                          type="button"
+                          onClick={() => onRoleChange({ lifeStatus: status })}
+                          className={`flex-1 rounded-2xl text-xs font-black transition-colors ${
+                            active ? 'bg-white text-[#08AACE] shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                          }`}
+                        >
+                          {status}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </div>
             </div>
-            {showRoleIdentityControls ? (
-              <div className="inline-flex h-9 w-[112px] shrink-0 rounded-[18px] bg-slate-100 p-1">
-                {(['存活', '死亡'] as const).map((status) => {
-                  const active = roleLifeStatus === status;
-                  return (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() => onRoleChange({ lifeStatus: status })}
-                      className={`flex-1 rounded-2xl text-xs font-black transition-colors ${
-                        active ? 'bg-white text-[#08AACE] shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                      }`}
-                    >
-                      {status}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div aria-hidden="true" className="h-9 w-[112px] shrink-0" />
-            )}
           </div>
-          <div className="mt-3 flex items-center justify-between gap-4 overflow-x-auto pb-1">
+          <div className="flex items-center justify-between gap-4 overflow-x-auto pb-1">
             <SettingSegmentedTabs
               tabs={roleSettingTabs}
               activeTab={activeRoleSettingTab}

@@ -163,7 +163,7 @@ export function createOutlineControllerPhase1(scope: Record<string, any>) {
   };
   const getOutlineChapterFrameTitle = (volume: Volume, chapter: Chapter) =>
     isDetailOutlineTab
-      ? `第${chapter.serialNumber}章章纲`
+      ? `第${chapter.serialNumber}章 章纲`
       : `第${chapter.serialNumber}章梗概（第${getVolumeDisplayIndex(volume.id)}卷）`;
   const updateChapterSummary = (serialNumber: number, content: string) => {
     const title = getChapterSummaryTitle(serialNumber);

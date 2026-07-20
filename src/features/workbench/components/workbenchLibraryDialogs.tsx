@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import { RoleCreateDialog } from './RoleCreateDialog';
 
 export type PromptDisableMenu = {
   tab: string;
@@ -34,6 +35,17 @@ export function SettingCreateDialog({
   onConfirm,
 }: SettingCreateDialogProps) {
   if (!mode) return null;
+
+  if (mode === 'setting' && itemLabel === '角色') {
+    return (
+      <RoleCreateDialog
+        draft={draft}
+        onDraftChange={onDraftChange}
+        onClose={onClose}
+        onConfirm={onConfirm}
+      />
+    );
+  }
 
   return createPortal(
     <div className="modal-sharp fixed inset-0 z-[280] flex items-center justify-center bg-black/35" onClick={onClose}>
@@ -70,7 +82,7 @@ export function SettingCreateDialog({
               }}
               placeholder={mode === 'category' ? '输入分组名字' : `输入${itemLabel}名字`}
             />
-            <label>{mode === 'category' ? '分组名字' : `${itemLabel}名字`}</label>
+              <label>{mode === 'category' ? '分组名字' : `${itemLabel}名字`}</label>
           </div>
           {mode === 'setting' && (
             <label className="mt-4 block text-sm font-black text-slate-700">

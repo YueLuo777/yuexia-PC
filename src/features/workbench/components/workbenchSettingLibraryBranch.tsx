@@ -45,6 +45,7 @@ import {
   type StructuredSettingFieldDraft,
   type StructuredSettingTab,
 } from './workbenchStructuredSettings';
+import { getWorkbenchSidebarWordCountSource } from './workbenchLibrarySidebarWordCount';
 import {
   DEFAULT_ROLE_TYPES,
   ROLE_TAXONOMY_DEFAULTS_VERSION,
@@ -539,11 +540,7 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
       const role = isOutlineCharacterScope ? getParsedRoleEntry(entry) : null;
       return role?.type ?? parsed?.type ?? fallbackType;
     };
-    const getLibrarySidebarEntryWordCount = (entry: WorkbenchLibraryEntry) => {
-      const parsed = activeIsSettingLike ? getParsedSettingEntry(entry) : null;
-      const role = isOutlineCharacterScope ? getParsedRoleEntry(entry) : null;
-      return countTextWords(role ? getRoleReadableContent(role) : parsed ? parsed.body : entry.content);
-    };
+    const getLibrarySidebarEntryWordCount = (entry: WorkbenchLibraryEntry) => countTextWords(getWorkbenchSidebarWordCountSource(entry, activeIsSettingLike ? getParsedSettingEntry(entry) : null, isOutlineCharacterScope ? getParsedRoleEntry(entry) : null));
     const visibleWorkSettingTypes = new Set(settingTypeOptions.filter((type) => !getSettingTypeWorkspaceDomain(type)));
     const visibleRoleTypes = new Set(roleTypeOptions);
     const visibleWorkSettingCount = settingEntries.filter((entry) =>

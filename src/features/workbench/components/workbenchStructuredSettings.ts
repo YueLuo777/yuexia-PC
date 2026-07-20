@@ -106,6 +106,13 @@ export function parseStructuredSettingFields(body: string, fieldSet: StructuredS
   return fields;
 }
 
+export function getStructuredSettingWordCountSource(entry: WorkbenchLibraryEntry, setting: SettingContent) {
+  const fieldSet = getStructuredSettingFieldSet(entry, setting);
+  if (!fieldSet) return setting.body;
+  const fields = parseStructuredSettingFields(setting.body, fieldSet);
+  return Object.values(fields).join('');
+}
+
 export function stringifyStructuredSettingFields(fields: Record<string, string>, fieldSet: StructuredSettingFieldSet) {
   return fieldSet.fields.map((field) => `【${field.title}】：\n${fields[field.key].trim()}`).join('\n\n');
 }

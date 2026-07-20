@@ -6,6 +6,8 @@ const { createAppIconService } = require('./appIconService.cjs');
 const { registerCosIpcHandlers } = require('./cosService.cjs');
 const { createModelSecretStore } = require('./modelSecretStore.cjs');
 const { registerModelRequestIpcHandlers } = require('./modelRequestService.cjs');
+const { createStartupExperience } = require('./startupExperience.cjs');
+const { fitCenteredWindowSizeToWorkArea, fitWindowBoundsToWorkArea } = require('./windowBounds.cjs');
 const { createWindowStateStore } = require('./windowStateStore.cjs');
 
 const DEV_URL = 'http://127.0.0.1:18328/#/novels';
@@ -16,13 +18,12 @@ const APP_ID = 'com.yuexia.writer.desktop';
 const APP_NAME = '月下写作';
 const SHARED_STATE_DIR_NAME = 'xinyuexia-desktop';
 const DEFAULT_WINDOW_BOUNDS = {
-  width: 1366,
-  height: 768,
+  width: 1600,
+  height: 900,
 };
 const MIN_WINDOW_WIDTH = 1100;
 const MIN_WINDOW_HEIGHT = 680;
-const STARTUP_MAX_WORK_AREA_HEIGHT_RATIO = 0.75;
-const STARTUP_HEIGHT_ROUNDING_MARGIN = 8;
+const IS_HEADLESS_SMOKE = process.env.XINYUEXIA_SMOKE_HEADLESS === '1';
 const MAIN_LOG_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'electron-main.log');
 const MODEL_SECRETS_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'model-secrets.json');
 
@@ -41,6 +42,16 @@ const windowStateStore = createWindowStateStore({
   sharedStateDirName: SHARED_STATE_DIR_NAME,
   minWidth: MIN_WINDOW_WIDTH,
   minHeight: MIN_WINDOW_HEIGHT,
+  defaultBounds: DEFAULT_WINDOW_BOUNDS,
+  stateDir: IS_HEADLESS_SMOKE ? app.getPath('userData') : undefined,
+});
+const startupExperience = createStartupExperience({
+  BrowserWindow,
+  screen,
+  icon: APP_ICON,
+  isHeadless: IS_HEADLESS_SMOKE,
+  log: writeMainLog,
+  revealMainWindow: () => focusMainWindow(),
 });
 
 const gotLock = app.requestSingleInstanceLock();
@@ -125,23 +136,7 @@ function fitStartupBoundsToWorkArea(inputBounds) {
         height: Math.max(1, Math.round(requestedBounds.height)),
       })
     : screen.getPrimaryDisplay();
-  const { workArea } = display;
-  const maximumHeight = Math.max(
-    1,
-    Math.floor(workArea.height * STARTUP_MAX_WORK_AREA_HEIGHT_RATIO) - STARTUP_HEIGHT_ROUNDING_MARGIN,
-  );
-  const height = Math.min(Math.max(1, Math.round(requestedBounds.height)), maximumHeight);
-  const width = Math.min(Math.max(1, Math.round(requestedBounds.width)), workArea.width);
-
-  if (!hasSavedPosition) return { ...requestedBounds, width, height };
-
-  const heightWasLimited = height !== Math.round(requestedBounds.height);
-  const x = Math.min(Math.max(Math.round(requestedBounds.x), workArea.x), workArea.x + workArea.width - width);
-  const y = heightWasLimited
-    ? workArea.y + Math.floor((workArea.height - height) / 2)
-    : Math.min(Math.max(Math.round(requestedBounds.y), workArea.y), workArea.y + workArea.height - height);
-
-  return { ...requestedBounds, x, y, width, height };
+  return fitWindowBoundsToWorkArea(requestedBounds, display.workArea);
 }
 
 function getWindowOptions(savedState) {
@@ -198,7 +193,7 @@ function updateWindowSettings(nextSettings) {
   const previous = windowStateStore.readSettings();
   const next = windowStateStore.persistSettings({
     ...previous,
-    ...windowStateStore.normalizeSettings(nextSettings),
+    ...(nextSettings && typeof nextSettings === 'object' ? nextSettings : {}),
   });
   if (next.rememberSize) saveWindowState(mainWindow);
   return readWindowSettingsResult();
@@ -212,8 +207,25 @@ function resetWindowBoundsToDefault() {
   }
 
   windowStateStore.clearState();
+  windowStateStore.persistSettings({ rememberSize: false, startupBounds: DEFAULT_WINDOW_BOUNDS });
 
-  if (windowStateStore.readSettings().rememberSize) saveWindowState(mainWindow);
+  return readWindowSettingsResult();
+}
+
+async function applyWindowBoundsPreset(inputBounds) {
+  if (!mainWindow || mainWindow.isDestroyed()) return readWindowSettingsResult();
+  const width = Number(inputBounds?.width);
+  const height = Number(inputBounds?.height);
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return readWindowSettingsResult();
+  const display = screen.getDisplayMatching(mainWindow.getBounds());
+  if (mainWindow.isMaximized()) {
+    const unmaximizeCompleted = new Promise((resolve) => mainWindow.once('unmaximize', resolve));
+    mainWindow.unmaximize();
+    await unmaximizeCompleted;
+  }
+  mainWindow.setBounds(fitCenteredWindowSizeToWorkArea({ width, height }, display.workArea));
+  if (IS_HEADLESS_SMOKE) mainWindow.hide();
+  saveWindowState(mainWindow);
   return readWindowSettingsResult();
 }
 
@@ -229,7 +241,7 @@ function notifyWindowMaximizedState(targetWindow) {
 
 function focusMainWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  if (process.env.XINYUEXIA_SMOKE_HEADLESS === '1') return;
+  if (IS_HEADLESS_SMOKE) return;
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.setAlwaysOnTop(true);
   mainWindow.show();
@@ -264,8 +276,7 @@ async function loadStartUrl(targetWindow, retries = 10) {
     )
     .catch(() => {});
   if (!targetWindow.isDestroyed()) {
-    targetWindow.show();
-    targetWindow.focus();
+    startupExperience.reveal('load-failed');
   }
 }
 
@@ -287,7 +298,9 @@ function attachWindowStateTracking(targetWindow) {
 function applySavedWindowState(targetWindow, savedState) {
   if (!savedState || !savedState.isMaximized) return;
   if (!targetWindow || targetWindow.isDestroyed()) return;
-  writeMainLog('saved maximized state ignored so startup height remains within 75% of the work area');
+  if (!targetWindow.isMaximized()) targetWindow.maximize();
+  if (IS_HEADLESS_SMOKE) targetWindow.hide();
+  writeMainLog('saved maximized state restored');
 }
 
 function attachRendererDiagnostics(targetWindow) {
@@ -348,34 +361,16 @@ function createWindow() {
 
   const savedState = windowStateStore.readState();
   mainWindow = new BrowserWindow(getWindowOptions(savedState));
-  const createdWindow = mainWindow;
   writeMainLog(`main window created startUrl=${resolveStartUrl()}`);
 
   attachWindowStateTracking(mainWindow);
   attachRendererDiagnostics(mainWindow);
   applySavedWindowState(mainWindow, savedState);
-
-  const revealCreatedWindow = (reason) => {
-    if (mainWindow !== createdWindow || createdWindow.isDestroyed()) return;
-    writeMainLog(`main window reveal fallback reason=${reason}`);
-    applySavedWindowState(createdWindow, savedState);
-    focusMainWindow();
-  };
-
-  mainWindow.once('ready-to-show', () => {
-    revealCreatedWindow('ready-to-show');
-  });
-
-  mainWindow.webContents.once('did-finish-load', () => {
-    revealCreatedWindow('did-finish-load');
-  });
-
-  setTimeout(() => {
-    revealCreatedWindow('startup-timeout');
-  }, 2500);
+  startupExperience.begin(mainWindow, savedState);
 
   mainWindow.on('closed', () => {
     writeMainLog('main window closed');
+    startupExperience.close();
     mainWindow = null;
   });
 
@@ -454,9 +449,14 @@ registerTrustedIpcHandler('window:is-maximized', () => mainWindow?.isMaximized()
 registerTrustedIpcHandler('window:reload', () => {
   mainWindow?.webContents.reloadIgnoringCache();
 });
+registerTrustedIpcHandler('app:renderer-ready', () => {
+  startupExperience.reveal('renderer-ready');
+  return true;
+});
 registerTrustedIpcHandler('window-settings:read', () => readWindowSettingsResult());
 registerTrustedIpcHandler('window-settings:update', (_event, nextSettings) => updateWindowSettings(nextSettings));
 registerTrustedIpcHandler('window-settings:reset-bounds', () => resetWindowBoundsToDefault());
+registerTrustedIpcHandler('window-settings:apply-bounds-preset', (_event, bounds) => applyWindowBoundsPreset(bounds));
 registerTrustedIpcHandler('model-secrets:status', () => modelSecretStore.status());
 registerTrustedIpcHandler('model-secrets:get', (_event, secretId) => modelSecretStore.get(secretId));
 registerTrustedIpcHandler('model-secrets:set', (_event, secretId, apiKey) => modelSecretStore.set(secretId, apiKey));
@@ -469,11 +469,13 @@ registerCosIpcHandlers(registerTrustedIpcHandler);
 registerModelRequestIpcHandlers(registerTrustedIpcHandler, { modelSecretStore });
 
 app.on('before-quit', () => {
+  startupExperience.close();
   saveWindowState(mainWindow);
 });
 
 app.on('second-instance', () => {
   writeMainLog('second-instance received');
+  if (startupExperience.focusSplash()) return;
   focusMainWindow();
 });
 

@@ -159,40 +159,26 @@ describe('WorkbenchLibraryPanel outline flows', () => {
       'xy-floating-outline-clear-button xy-border-embedded-transparent-backplate absolute -top-2 right-10 z-30 px-1',
     );
   });
-  it('keeps detail outline card top labels from competing with body word counts', async () => {
+  it('removes the duplicate chapter meta and embeds independent font controls in both detail outline frames', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
-    const styleSource = await readSharedStylesSource();
-    const cardMetaAnchor = panelSource.indexOf('xy-floating-outline-chapter-meta');
-    const cardMetaStart = panelSource.lastIndexOf(
-      'const { volume, chapter } = selectedOutlineChapter;',
-      cardMetaAnchor,
-    );
+    const cardMetaStart = panelSource.indexOf('const { volume, chapter } = selectedOutlineChapter;');
     const cardMetaEnd = panelSource.indexOf('</section>', cardMetaStart);
     const cardMetaSource = panelSource.slice(cardMetaStart, cardMetaEnd);
 
-    expect(cardMetaAnchor).toBeGreaterThan(-1);
     expect(cardMetaStart).toBeGreaterThan(-1);
     expect(cardMetaEnd).toBeGreaterThan(cardMetaStart);
-    expect(cardMetaSource).toContainSource('chapter.serialNumber');
-    expect(cardMetaSource).toContainSource('chapter.title.trim() ||');
     expect(cardMetaSource).toContainSource('detailOutlineParts.outline');
-    expect(cardMetaSource).toContainSource('WordCountText value={countTextWords(detailOutlineParts.outline)}');
-    expect(cardMetaSource).toContainSource(
-      "`第${getVolumeDisplayIndex(volume.id)}卷 · ${chapter.title.trim() || '未命名章节'}`",
-    );
-    expect(cardMetaSource).toContainSource('max-w-[44%]');
-    expect(cardMetaSource).not.toContainSource('max-w-[58%]');
-    expect(cardMetaSource).not.toContainSource('正文：');
-    expect(cardMetaSource).toContainSource('xy-floating-outline-chapter-meta xy-border-embedded-transparent-backplate');
-    expect(styleSource).toContainSource(
-      '.xy-floating-field.xy-floating-outline-preview .xy-floating-outline-chapter-meta',
-    );
-    expect(styleSource).toContainSource('background: transparent;');
-    expect(styleSource).toContainSource(
-      '.xy-floating-field.xy-floating-outline-preview .xy-floating-outline-chapter-meta *',
-    );
+    expect(cardMetaSource).not.toContainSource('chapter.title.trim() ||');
+    expect(cardMetaSource).not.toContainSource('xy-floating-outline-chapter-meta');
+    expect(cardMetaSource).not.toContainSource('未命名章节');
+    expect(cardMetaSource).toContainSource('ariaLabel="章纲字号"');
+    expect(panelSource).toContainSource('ariaLabel="状态变化字号"');
+    expect(panelSource).toContainSource('detailOutlineStateFontSize?: number');
+    expect(panelSource).toContainSource('activeTabConfig.detailOutlineStateFontSize');
+    expect(panelSource).toContainSource('xy-detail-outline-border-font-tool xy-border-embedded-transparent-backplate');
+    expect(panelSource).toContainSource('{!isDetailOutlineTab && libraryHeaderFontSizePortal}');
   });
-  it('keeps detail outline card titles free of body word counts', async () => {
+  it('places each detail outline word count directly after its frame title', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const styleSource = await readSharedStylesSource();
     const cardSourceStart = panelSource.indexOf('const { volume, chapter } = selectedOutlineChapter;');
@@ -210,22 +196,35 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     expect(cardSource).toContainSource('value={detailOutlineParts.outline}');
     expect(cardSource).toContainSource('value={detailOutlineParts.stateExpectation}');
     expect(panelSource).toContainSource(
-      '<span className="xy-floating-title-text xy-detail-outline-heading-title">状态变化</span>',
+      '<DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.stateExpectation)} />',
     );
     expect(labelSource).toContainSource('xy-detail-outline-title-count');
     expect(labelSource).toContainSource('xy-floating-title-text xy-detail-outline-heading-title');
     expect(labelSource).toContainSource('{outlineCardTitle}');
-    expect(panelSource).toContainSource('? `第${chapter.serialNumber}章章纲`');
-    expect(panelSource).not.toContainSource(
-      '? `第${chapter.serialNumber}章章纲（第${getVolumeDisplayIndex(volume.id)}卷）`',
+    expect(labelSource).toContainSource(
+      '<DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.outline)} spacingClassName="ml-[2ch]" />',
     );
-    expect(labelSource).not.toContainSource('countTextWords(outlineCardContent)');
-    expect(labelSource).not.toContainSource('WordCountText');
-    expect(labelSource).not.toContainSource('章纲：');
-    expect(cardSource).toContainSource('<WordCountText value={countTextWords(detailOutlineParts.outline)} />');
     expect(panelSource).toContainSource(
+      'className={`${spacingClassName} xy-detail-outline-title-word-count xy-border-embedded-transparent-backplate whitespace-nowrap`}',
+    );
+    expect(panelSource).toContainSource('spacingClassName="ml-[2ch]"');
+    expect(panelSource).toContainSource('className="text-brand">{value}</span>');
+    expect(panelSource).toContainSource('className="text-slate-400">字</span>');
+    expect(styleSource).toContainSource(
+      '.xy-floating-field .xy-detail-outline-border-font-tool .xy-font-size-stepper-input',
+    );
+    expect(styleSource).toContainSource('height: 1.76rem;');
+    expect(styleSource).toContainSource('border-radius: 0;');
+    expect(panelSource).toContainSource('className="flex h-full min-h-0 flex-col gap-6"');
+    expect(panelSource).toContainSource('absolute right-9 top-1 z-[60] -translate-y-1/2');
+    expect(styleSource).toContainSource('isolation: isolate;');
+    expect(panelSource).toContainSource('? `第${chapter.serialNumber}章 章纲`');
+    expect(panelSource).not.toContainSource('? `${volume.name} 第${chapter.serialNumber}章 章纲`');
+    expect(cardSource).not.toContainSource('<WordCountText value={countTextWords(detailOutlineParts.outline)} />');
+    expect(cardSource).not.toContainSource(
       '<WordCountText value={countTextWords(detailOutlineParts.stateExpectation)} />',
     );
+    expect(labelSource).not.toContainSource('章纲：');
     const rightPreviewStart = panelSource.indexOf('<div className="relative mt-5 min-h-[170px] flex-1">');
     const rightPreviewEnd = panelSource.indexOf('{isDetailOutlineTab && (', rightPreviewStart);
     const rightPreviewSource = panelSource.slice(rightPreviewStart, rightPreviewEnd);
@@ -256,7 +255,6 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     expect(clearPreviewSource).not.toContainSource('updateVolumeSummary');
     expect(cardSource).not.toContainSource("'--xy-floating-count-left': '12.8rem'");
     expect(cardSource).not.toContainSource("'--xy-floating-count-left': isDetailOutlineTab ? '12.8rem' : '11.4rem'");
-    expect(cardSource).not.toContainSource('{!isDetailOutlineTab && (');
     expect(styleSource).toContainSource('gap: 0.32rem;');
     expect(styleSource).toContainSource('max-width: min(13rem, calc(42% - 1.5rem));');
     expect(styleSource).toContainSource('.xy-detail-outline-title-count .xy-floating-title-text');
@@ -274,7 +272,7 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     expect(styleSource).toContainSource('bottom: auto;');
     expect(styleSource).toContainSource('transform: translateY(-50%);');
   });
-  it('places library preview font size controls in the header tool slot and applies detail outline size to every chapter outline card', async () => {
+  it('keeps general library font controls in the header while moving detail outline controls into their frames', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const cardSourceStart = panelSource.indexOf('const { volume, chapter } = selectedOutlineChapter;');
     const cardSourceEnd = panelSource.indexOf('</section>', cardSourceStart);
@@ -294,6 +292,7 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     const outlineDirectorySource = panelSource.slice(outlineDirectoryStart, outlineDirectoryEnd);
 
     expect(panelSource).toContainSource('detailOutlineFontSize?: number');
+    expect(panelSource).toContainSource('detailOutlineStateFontSize?: number');
     expect(panelSource).toContainSource('const detailOutlineFontSize = clampFontSize(');
     expect(panelSource).toContainSource('setDetailOutlineFontSize: (value: number) =>');
     expect(panelSource).toContainSource('fontSize: detailOutlineFontSize');
@@ -313,7 +312,7 @@ describe('WorkbenchLibraryPanel outline flows', () => {
       'const libraryHeaderFontSizePortal = headerToolPortalTarget && !showInlineFieldSizeButton',
     );
     expect(panelSource).toContainSource('createPortal(renderLibraryHeaderFontSizeTool(), headerToolPortalTarget)');
-    expect(panelSource).toContainSource('{libraryHeaderFontSizePortal}');
+    expect(panelSource).toContainSource('{!isDetailOutlineTab && libraryHeaderFontSizePortal}');
     expect(panelSource).toContainSource("ariaLabel: '章纲字号'");
     expect(panelSource).toContainSource("ariaLabel: '脑洞预览字号'");
     expect(panelSource).toContainSource("ariaLabel: 'AI输出字号'");
@@ -330,8 +329,9 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     expect(panelSource).toContainSource('className="shrink-0"');
     expect(cardSourceStart).toBeGreaterThan(-1);
     expect(cardSourceEnd).toBeGreaterThan(cardSourceStart);
-    expect(cardSource).not.toContainSource('ariaLabel="章纲字号"');
-    expect(cardSource).not.toContainSource('<div className="xy-floating-border-font-tool">');
+    expect(cardSource).toContainSource('ariaLabel="章纲字号"');
+    expect(panelSource).toContainSource('ariaLabel="状态变化字号"');
+    expect(panelSource).toContainSource('fontSize: detailOutlineStateFontSize');
     expect(settingPreviewSource).not.toContainSource('<div className="xy-floating-border-font-tool">');
     expect(emptySettingPreviewSource).not.toContainSource('<div className="xy-floating-border-font-tool">');
     expect(outlineDirectoryStart).toBeGreaterThan(-1);

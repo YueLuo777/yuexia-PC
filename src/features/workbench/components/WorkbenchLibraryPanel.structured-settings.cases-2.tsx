@@ -44,7 +44,7 @@ describe('WorkbenchLibraryPanel structured setting flows', () => {
     ensureLibraryGroupExpanded('特殊资源1');
     fireEvent.click(screen.getByText('龙脉权限').closest('button') as HTMLElement);
 
-    expect(screen.getByRole('button', { name: '固定设定' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '基础设定' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '状态设定' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '确认' })).toBeInTheDocument();
     expect(screen.getByLabelText('基本信息')).toBeInTheDocument();

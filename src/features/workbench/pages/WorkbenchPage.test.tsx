@@ -322,16 +322,17 @@ describe('Workbench library snapshots', () => {
     const source = await readSource('WorkbenchPage.tsx');
 
     expect(source).toContainSource(
-      "import { BRAINSTORM_TAB, SETTING_TAB, normalizeTabName } from '@/features/workbench/components/workbenchLibraryTabs';",
+      "BRAINSTORM_TAB, BRAINSTORM_TYPE, ROLE_TAB, SETTING_TAB, UNCATEGORIZED_TYPE, normalizeTabName",
     );
     expect(source).toContainSource('settingsEntries.filter((entry) => normalizeTabName(entry.tab) === SETTING_TAB)');
     expect(source).toContainSource(
       'settingsEntries.filter((entry) => normalizeTabName(entry.tab) === BRAINSTORM_TAB).length',
     );
-    expect(source).toContainSource(
-      'settingsEntries.length - settingsEntries.filter((entry) => normalizeTabName(entry.tab) === BRAINSTORM_TAB).length',
-    );
-    expect(source).toContainSource('meta: `${settingsEntries.length');
+    expect(source).toContainSource('if (normalizedTab === ROLE_TAB) return true;');
+    expect(source).toContainSource('if (normalizedTab !== SETTING_TAB) return false;');
+    expect(source).toContainSource('settingType !== BRAINSTORM_TYPE && settingType !== UNCATEGORIZED_TYPE');
+    expect(source).toContainSource('const normalizedTab = normalizeTabName(entry.tab);');
+    expect(source).not.toContainSource('settingsEntries.length - settingsEntries.filter');
     expect(source).not.toContainSource("settingsEntries.filter((entry) => entry.tab === '大纲')");
     expect(source).not.toContainSource("settingsEntries.filter((entry) => entry.tab === '脑洞')");
   });
@@ -457,6 +458,7 @@ describe('ChapterEditor prompt snapshots', () => {
 
     expect(source).toContainSource(') : !reviewAiOutput.trim() && !isAuditStructureReview ? (');
     expect(source).toContainSource('{activeReviewModeTitle}后内容会显示在这里。');
+    expect(source).toContainSource('AI正在思考，请稍后……');
     expect(source).toContainSource(') : reviewOriginalParagraphs.length === 0 || !activeReviewContent.trim() ? (');
   });
 
@@ -551,6 +553,7 @@ describe('ChapterEditor prompt snapshots', () => {
     expect(source).toContainSource('审核后缺少本段，请让 AI 保留段落位置。');
     expect(source).toContainSource('renderTextAuditOriginalDiff(paragraph, auditRevisedParagraphs[index])');
     expect(source).toContainSource('const showContinuousTextAudit =');
+    expect(source).toContainSource('const showContinuousTextAudit = isAuditTextReview && Boolean(auditRevisedText.trim());');
     expect(source).toContainSource('<ChapterTextAuditContinuousReview');
     expect(source).toContainSource('data-testid="formal-text-audit-continuous-review"');
     expect(source).toContainSource('接受修改');

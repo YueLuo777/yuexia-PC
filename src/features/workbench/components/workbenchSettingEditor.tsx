@@ -4,6 +4,7 @@ import { WordCountText } from '@/shared/ui/WordCountText';
 
 import type { WorkbenchFieldSizeSpec } from './workbenchFieldSizeSettings';
 import { DEFAULT_SETTING_ENTRY_TYPE } from './workbenchLibraryTabs';
+import { WorkbenchNameField } from './WorkbenchNameField';
 import { SettingSegmentedTabs } from './workbenchSettingSegmentedTabs';
 import {
   STRUCTURED_SETTING_TABS,
@@ -45,23 +46,16 @@ export function WorkbenchSettingEditor({
   activeSettingSidebarScrollKey,
   activeSettingWorkspaceType,
   settingPreviewFontSize,
-  settingNameFieldSpec,
   setActiveLibraryFontTarget,
   updateEntry,
   updateStructuredSettingField,
   handleSettingSidebarScroll,
   createEditableSettingEntry,
 }: WorkbenchSettingEditorProps) {
-  const currentStructuredTitleFieldLabel = currentStructuredSettingFieldSet?.titleFieldLabel;
-  const usesForeshadowHeaderLayout =
-    currentStructuredSettingFieldSet?.id === 'foreshadow-main' ||
-    currentStructuredSettingFieldSet?.id === 'foreshadow-character';
-  const structuredTitleRowClassName = usesForeshadowHeaderLayout
-    ? 'grid grid-cols-[4fr_2fr_2fr_2fr] gap-4 overflow-visible pb-1 pt-3'
-    : 'flex items-start gap-4 overflow-visible pb-1 pt-3';
-  const structuredTitleFieldClassName = usesForeshadowHeaderLayout
-    ? 'xy-floating-field xy-floating-outline-fixed xy-structured-title-field min-w-0'
-    : 'xy-floating-field xy-floating-outline-fixed xy-structured-title-field h-[48px] w-[168px] shrink-0';
+  const currentStructuredTitleFieldLabel = currentStructuredSettingFieldSet
+    ? (currentStructuredSettingFieldSet.titleFieldLabel ?? '\u8bbe\u5b9a\u540d')
+    : undefined;
+  const structuredTitleRowClassName = 'flex items-start gap-4 overflow-visible pb-1';
   const currentStructuredActiveGroup =
     currentStructuredSettingFieldSet?.groups?.find((group) => group.title === activeStructuredSettingTab) ??
     currentStructuredSettingFieldSet?.groups?.[0];
@@ -71,28 +65,20 @@ export function WorkbenchSettingEditor({
       (total, fieldKey) => total + countTextWords(currentStructuredSettingFields[fieldKey] ?? ''),
       0,
     ) ?? 0;
-  const settingNameFieldStyle = { width: settingNameFieldSpec.width, maxWidth: '100%' };
 
   if (!currentSelectedEntry) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col p-5">
+      <div className="xy-setting-name-editor flex min-h-0 flex-1 flex-col px-5 py-3">
         <div className="mb-6 flex shrink-0 items-start justify-between gap-4">
-          <div className="max-w-full" style={{ width: settingNameFieldSpec.width }}>
-            <label className="flex items-center gap-3 text-sm font-bold text-slate-600" style={settingNameFieldStyle}>
-              <span className="w-[64px] shrink-0">设定名</span>
-              <input
-                data-no-modal-drag="true"
-                value=""
-                onChange={(event) => {
-                  const title = event.target.value;
-                  if (!title.trim()) return;
-                  createEditableSettingEntry({ title });
-                }}
-                placeholder="输入设定名"
-                className="h-9 min-w-0 flex-1 rounded-[10px] border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#08AACE] focus:ring-4 focus:ring-[#08AACE]/10"
-              />
-            </label>
-          </div>
+          <WorkbenchNameField
+            label="设定名"
+            value=""
+            placeholder="输入设定名"
+            onValueChange={(title) => {
+                if (!title.trim()) return;
+                createEditableSettingEntry({ title });
+            }}
+          />
         </div>
         <div className="relative min-h-0 flex-1">
           <div className="xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1">
@@ -127,27 +113,19 @@ export function WorkbenchSettingEditor({
   }
 
   return (
-    <div className={`flex min-h-0 flex-1 flex-col ${currentStructuredTitleFieldLabel ? 'px-5 py-3' : 'p-5'}`}>
+    <div className="xy-setting-name-editor flex min-h-0 flex-1 flex-col px-5 py-3">
       {currentStructuredTitleFieldLabel ? (
         <header className="shrink-0 pb-3">
           <div data-testid="structured-title-row" className={structuredTitleRowClassName}>
-            <div data-testid="structured-title-field" className={structuredTitleFieldClassName}>
-              <label className="xy-floating-title-count xy-structured-title-label">
-                {currentStructuredTitleFieldLabel}
-              </label>
-              <input
-                data-no-modal-drag="true"
-                aria-label={currentStructuredTitleFieldLabel}
-                value={currentSelectedEntry.title}
-                disabled={currentSelectedSettingIsLockedDefault}
-                onChange={(event) => updateEntry(currentSelectedEntry.id, { title: event.target.value })}
-                placeholder={currentStructuredTitleFieldLabel}
-                title={currentSelectedSettingIsLockedDefault ? '默认设定条目已锁定，不能改名' : undefined}
-                className={`h-7 w-full bg-transparent text-lg font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400 ${
-                  currentSelectedSettingIsLockedDefault ? 'cursor-not-allowed text-slate-500' : ''
-                }`}
-              />
-            </div>
+            <WorkbenchNameField
+              testId="structured-title-field"
+              label={currentStructuredTitleFieldLabel}
+              value={currentSelectedEntry.title}
+              disabled={currentSelectedSettingIsLockedDefault}
+              onValueChange={(title) => updateEntry(currentSelectedEntry.id, { title })}
+              placeholder={currentStructuredTitleFieldLabel}
+              title={currentSelectedSettingIsLockedDefault ? '默认设定条目已锁定，不能改名' : undefined}
+            />
             {currentStructuredSettingFieldSet?.headerFieldKeys?.map((fieldKey) => {
               const field = currentStructuredSettingFieldSet.fields.find((item) => item.key === fieldKey);
               if (!field) return null;
@@ -168,12 +146,7 @@ export function WorkbenchSettingEditor({
                     className="text-sm leading-7 text-gray-700"
                     style={{ fontSize: settingPreviewFontSize }}
                   />
-                  <label className="xy-floating-title-count">
-                    {field.title}{' '}
-                    <span>
-                      <WordCountText value={countTextWords(value)} />
-                    </span>
-                  </label>
+                  <label className="xy-floating-title-count">{field.title}</label>
                 </div>
               );
             })}
@@ -198,20 +171,14 @@ export function WorkbenchSettingEditor({
         </header>
       ) : (
         <div className="mb-6 flex shrink-0 items-start justify-between gap-4">
-          <div className="max-w-full" style={{ width: settingNameFieldSpec.width }}>
-            <label className="flex items-center gap-3 text-sm font-bold text-slate-600" style={settingNameFieldStyle}>
-              <span className="w-[64px] shrink-0">设定名</span>
-              <input
-                data-no-modal-drag="true"
-                value={currentSelectedEntry.title}
-                disabled={currentSelectedSettingIsLockedDefault}
-                onChange={(event) => updateEntry(currentSelectedEntry.id, { title: event.target.value })}
-                placeholder="设定名"
-                title={currentSelectedSettingIsLockedDefault ? '默认设定条目已锁定，不能改名' : undefined}
-                className={`h-9 min-w-0 flex-1 rounded-[10px] border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#08AACE] focus:ring-4 focus:ring-[#08AACE]/10 ${currentSelectedSettingIsLockedDefault ? 'cursor-not-allowed bg-slate-50 text-slate-500' : ''}`}
-              />
-            </label>
-          </div>
+          <WorkbenchNameField
+            label="设定名"
+            value={currentSelectedEntry.title}
+            disabled={currentSelectedSettingIsLockedDefault}
+            onValueChange={(title) => updateEntry(currentSelectedEntry.id, { title })}
+            placeholder="设定名"
+            title={currentSelectedSettingIsLockedDefault ? '默认设定条目已锁定，不能改名' : undefined}
+          />
         </div>
       )}
       <div className="relative min-h-0 flex-1">

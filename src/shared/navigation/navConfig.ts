@@ -118,16 +118,6 @@ function cloneDefaultConfig() {
   return JSON.parse(JSON.stringify(DEFAULT_NAV_CONFIG)) as NavGroupConfig[];
 }
 
-function moveRouteAfter(items: NavItemConfig[], route: string, afterRoute: string) {
-  const itemIndex = items.findIndex((item) => item.to === route);
-  const afterIndex = items.findIndex((item) => item.to === afterRoute);
-  if (itemIndex === -1 || afterIndex === -1 || itemIndex === afterIndex + 1) return;
-
-  const [item] = items.splice(itemIndex, 1);
-  const nextAfterIndex = items.findIndex((candidate) => candidate.to === afterRoute);
-  items.splice(nextAfterIndex + 1, 0, item);
-}
-
 function flattenNavConfig(config: NavGroupConfig[]) {
   const seenRoutes = new Set<string>();
   const items: NavItemConfig[] = [];
@@ -149,8 +139,6 @@ function flattenNavConfig(config: NavGroupConfig[]) {
       });
     }
   }
-  moveRouteAfter(items, '/tomato-browser', '/novels');
-
   const visibleItemRoutes = new Set(items.filter((item) => !item.hidden).map((item) => item.to));
   const fallbackDividerAfterItemTos =
     DEFAULT_NAV_CONFIG[0].dividerAfterItemTos ??

@@ -147,6 +147,20 @@ describe('navigation config without zones', () => {
     });
   });
 
+  it('preserves the exact custom order selected in navigation settings', () => {
+    const customOrder = ['/prompts', '/novels', '/model-manage', '/tomato-browser', '/token-usage', '/test-collection'];
+    const itemsByRoute = new Map(DEFAULT_NAV_CONFIG[0].items.map((item) => [item.to, item]));
+    const normalized = normalizeNavConfig([
+      {
+        title: '导航',
+        iconName: 'LayoutGrid',
+        items: customOrder.map((route) => ({ ...itemsByRoute.get(route)! })),
+      },
+    ]);
+
+    expect(normalized[0].items.map((item) => item.to)).toEqual(customOrder);
+  });
+
   it('routes the tomato browser nav entry to the former number 15 test page', () => {
     const app = readSource('src/app/App.tsx');
 
