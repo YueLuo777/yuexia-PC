@@ -430,10 +430,10 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(screen.queryByText('设定名')).not.toBeInTheDocument();
     expect(panelSource).toContainSource("currentStructuredTitleFieldLabel ? 'px-5 py-3' : 'p-5'");
     expect(panelSource).toContainSource(
-      "'relative flex h-[48px] w-[168px] shrink-0 items-center rounded-[20px] border-2 border-slate-950 bg-white px-4 py-0'",
+      "'xy-floating-field xy-floating-outline-fixed xy-structured-title-field h-[48px] w-[168px] shrink-0'",
     );
     expect(panelSource).toContainSource(
-      'className={`h-7 w-full bg-transparent text-lg font-medium leading-7 text-slate-950 outline-none placeholder:text-slate-400',
+      'xy-floating-title-count xy-structured-title-label',
     );
     expect(panelSource).toContainSource('<div aria-hidden="true" className="h-9 w-[112px] shrink-0" />');
     expect(panelSource).toContainSource(

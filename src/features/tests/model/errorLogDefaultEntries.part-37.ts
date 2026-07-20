@@ -2,6 +2,17 @@ import type { ErrorLogEntry } from './errorLogEntryTypes';
 
 export const defaultEntriesPart37: ErrorLogEntry[] = [
   {
+    id: 'workbench-setting-embedded-title-and-count-001',
+    title: '工作台设定标题应统一嵌入边框且正确统计数量',
+    area: '工作台 / 设定 / 字段标题与顶部统计',
+    symptom: '设定名使用普通输入框，与故事类型、世界观等浮动边框不一致；人物姓名标签压线时显得突兀；顶部设定数没有包含人物和伏笔条目。',
+    cause: '结构化设定的标题字段使用了单独的头部标记，人物姓名沿用了与浮动字段不同的标签结构；工作流统计只按大纲设定 tab 计数，排除了人物和伏笔类型。',
+    solution: '将结构化设定名和所有头部标题统一改为浮动边框字段，人物姓名使用带背景色的嵌入式标签；设定总数改为所有非脑洞条目之和。',
+    prevention: '新增设定类型时必须同时检查设定名、世界观、人物姓名等标题的浮动边框样式，并用顶部分类数量与各分类之和进行回归核对。',
+    keywords: ['设定名', '故事类型', '人物姓名', '世界观', '伏笔线索', '设定数量', 'WorkbenchSettingEditor'],
+    updatedAt: '2026-07-20',
+  },
+  {
     id: 'launcher-stale-vite-optimized-deps-recovery-001',
     title: 'Vite 端口可访问时仍应检查优化依赖是否失效',
     area: '桌面启动器 / Vite 开发服务器 / 依赖缓存',

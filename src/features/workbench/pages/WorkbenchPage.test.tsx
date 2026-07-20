@@ -328,6 +328,10 @@ describe('Workbench library snapshots', () => {
     expect(source).toContainSource(
       'settingsEntries.filter((entry) => normalizeTabName(entry.tab) === BRAINSTORM_TAB).length',
     );
+    expect(source).toContainSource(
+      'settingsEntries.length - settingsEntries.filter((entry) => normalizeTabName(entry.tab) === BRAINSTORM_TAB).length',
+    );
+    expect(source).toContainSource('meta: `${settingsEntries.length');
     expect(source).not.toContainSource("settingsEntries.filter((entry) => entry.tab === '大纲')");
     expect(source).not.toContainSource("settingsEntries.filter((entry) => entry.tab === '脑洞')");
   });

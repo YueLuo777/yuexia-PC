@@ -149,17 +149,18 @@ export function RoleBaseStateEditor({
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-3">
-                <label className="relative flex h-[48px] w-[148px] shrink-0 items-center rounded-[20px] border-2 border-slate-950 bg-white px-4 py-0">
-                  <span className="xy-border-embedded-transparent-backplate absolute left-5 top-0 z-10 -translate-y-1/2 pr-2 text-sm font-medium leading-5 text-slate-500">
+                <div className="xy-floating-field xy-floating-outline-fixed xy-role-name-embedded-field h-[48px] w-[148px] shrink-0">
+                  <label className="xy-floating-title-count xy-role-name-embedded-label">
                     人物姓名
-                  </span>
+                  </label>
                   <input
+                    aria-label="人物姓名"
                     value={entry.title}
                     onChange={(event) => onTitleChange(event.target.value)}
                     placeholder="填写人物姓名"
                     className="h-6 w-full bg-transparent text-[17px] font-medium leading-6 text-slate-950 outline-none placeholder:text-slate-400"
                   />
-                </label>
+                </div>
                 {showRoleIdentityControls ? (
                   <CapsuleSelect
                     floatingLabel="身份定位"

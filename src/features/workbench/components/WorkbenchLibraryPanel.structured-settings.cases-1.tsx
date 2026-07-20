@@ -218,7 +218,7 @@ describe('WorkbenchLibraryPanel structured setting flows', () => {
     expect(panelSource).toContainSource('grid grid-cols-[4fr_2fr_2fr_2fr] gap-4 overflow-visible pb-1 pt-3');
     expect(panelSource).toContainSource('usesForeshadowHeaderLayout');
     expect(panelSource).toContainSource(
-      'left-5 top-0 z-10 -translate-y-1/2 text-base font-medium leading-5 text-slate-950',
+      'xy-floating-title-count xy-structured-title-label',
     );
     expect(structuredSettingsSource).toContainSource("fieldClassName: 'xy-structured-header-field h-[48px] min-w-0'");
     expect(panelSource).not.toContainSource('headerWidth');

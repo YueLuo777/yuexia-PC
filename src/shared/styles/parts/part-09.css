@@ -99,6 +99,30 @@
   padding-bottom: 0;
 }
 
+.xy-floating-field.xy-structured-title-field input {
+  height: 48px;
+  padding: 0 1rem;
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.xy-floating-field.xy-structured-title-field label.xy-structured-title-label {
+  left: 22px;
+  color: #111827;
+}
+
+.xy-floating-field.xy-role-name-embedded-field input {
+  height: 48px;
+  padding: 0 1rem;
+  font-size: 1.0625rem;
+  font-weight: 500;
+}
+
+.xy-floating-field.xy-role-name-embedded-field label.xy-role-name-embedded-label {
+  left: 20px;
+  color: #64748b;
+}
+
 .xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed input {
   height: 48px;
 }

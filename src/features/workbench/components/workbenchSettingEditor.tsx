@@ -60,8 +60,8 @@ export function WorkbenchSettingEditor({
     ? 'grid grid-cols-[4fr_2fr_2fr_2fr] gap-4 overflow-visible pb-1 pt-3'
     : 'flex items-start gap-4 overflow-visible pb-1 pt-3';
   const structuredTitleFieldClassName = usesForeshadowHeaderLayout
-    ? 'relative flex h-[48px] min-w-0 items-center rounded-[20px] border-2 border-slate-950 bg-white px-4 py-0'
-    : 'relative flex h-[48px] w-[168px] shrink-0 items-center rounded-[20px] border-2 border-slate-950 bg-white px-4 py-0';
+    ? 'xy-floating-field xy-floating-outline-fixed xy-structured-title-field min-w-0'
+    : 'xy-floating-field xy-floating-outline-fixed xy-structured-title-field h-[48px] w-[168px] shrink-0';
   const currentStructuredActiveGroup =
     currentStructuredSettingFieldSet?.groups?.find((group) => group.title === activeStructuredSettingTab) ??
     currentStructuredSettingFieldSet?.groups?.[0];
@@ -131,10 +131,10 @@ export function WorkbenchSettingEditor({
       {currentStructuredTitleFieldLabel ? (
         <header className="shrink-0 pb-3">
           <div data-testid="structured-title-row" className={structuredTitleRowClassName}>
-            <label data-testid="structured-title-field" className={structuredTitleFieldClassName}>
-              <span className="xy-border-embedded-transparent-backplate absolute left-5 top-0 z-10 -translate-y-1/2 text-base font-medium leading-5 text-slate-950">
+            <div data-testid="structured-title-field" className={structuredTitleFieldClassName}>
+              <label className="xy-floating-title-count xy-structured-title-label">
                 {currentStructuredTitleFieldLabel}
-              </span>
+              </label>
               <input
                 data-no-modal-drag="true"
                 aria-label={currentStructuredTitleFieldLabel}
@@ -147,7 +147,7 @@ export function WorkbenchSettingEditor({
                   currentSelectedSettingIsLockedDefault ? 'cursor-not-allowed text-slate-500' : ''
                 }`}
               />
-            </label>
+            </div>
             {currentStructuredSettingFieldSet?.headerFieldKeys?.map((fieldKey) => {
               const field = currentStructuredSettingFieldSet.fields.find((item) => item.key === fieldKey);
               if (!field) return null;

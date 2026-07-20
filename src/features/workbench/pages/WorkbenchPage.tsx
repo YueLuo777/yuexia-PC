@@ -418,7 +418,7 @@ export function WorkbenchPage() {
     brainstorm: {
       meta: `${settingsEntries.filter((entry) => normalizeTabName(entry.tab) === BRAINSTORM_TAB).length}个脑洞`,
     },
-    outline: { meta: `${settingsEntries.filter((entry) => normalizeTabName(entry.tab) === SETTING_TAB).length}个设定` },
+    outline: { meta: `${settingsEntries.length - settingsEntries.filter((entry) => normalizeTabName(entry.tab) === BRAINSTORM_TAB).length}个设定` },
     chapterOutline: { meta: `${outlineContextItems.length}章` },
     writing: { meta: `${chapterCount}章` },
     audit: { meta: `${chapterCount}章未审`, tone: 'warning' },
