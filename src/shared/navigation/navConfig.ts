@@ -106,10 +106,10 @@ const REMOVED_ROUTES = new Set([
   '/genre-iteration',
   '/scripts',
   '/script-editor-v2',
+  '/library',
 ]);
 const REMOVED_GROUP_TITLES = new Set(['首页专区', '隐藏专区', '功能专区']);
 const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
-  '/library': '资料库',
   '/test-collection': '测试板块',
   '/tomato-browser': '番茄浏览器',
 };

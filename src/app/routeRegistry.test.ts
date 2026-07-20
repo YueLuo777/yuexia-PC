@@ -25,7 +25,6 @@ describe('application route registry', () => {
     expect(DEFAULT_NAV_ROUTE_ITEMS.map((item) => item.to)).toEqual([
       '/novels',
       '/tomato-browser',
-      '/library',
       '/prompts',
       '/model-manage',
       '/token-usage',
@@ -62,7 +61,8 @@ describe('application route registry', () => {
     expect(formalPaths).not.toContain('/concept-library');
     expect(formalPaths).not.toContain('/db-settings');
     expect(formalPaths).not.toContain('/text-overrides');
-    expect(redirects['/concept-library']).toBe('/library');
+    expect(redirects).not.toHaveProperty('/concept-library');
+    expect(APP_ROUTE_PATHS).not.toHaveProperty('library');
     expect(redirects['/db-settings']).toBe('/settings?section=backup');
     expect(APP_ROUTE_PATHS).not.toHaveProperty('conceptLibrary');
     expect(APP_ROUTE_PATHS).not.toHaveProperty('dbSettings');

@@ -18,14 +18,6 @@
       "nav": { "iconName": "Globe", "label": "番茄浏览器" }
     },
     {
-      "id": "library",
-      "path": "/library",
-      "component": "libraryHub",
-      "dashboard": true,
-      "smoke": true,
-      "nav": { "iconName": "Library", "label": "资料库" }
-    },
-    {
       "id": "prompts",
       "path": "/prompts",
       "component": "prompts",
@@ -103,7 +95,6 @@
     }
   ],
   "legacyRedirects": [
-    { "path": "/concept-library", "to": "/library" },
     { "path": "/db-settings", "to": "/settings?section=backup" },
     { "path": "/system-settings", "to": "/settings?section=system" },
     { "path": "/shortcut-settings", "to": "/settings?section=shortcuts" },

@@ -21,9 +21,6 @@ const TomatoGenreIterationTestPage = lazy(() =>
     default: module.TomatoGenreIterationTestPage,
   })),
 );
-const LibraryHubPage = lazy(() =>
-  import('@/features/library-hub/pages/LibraryHubPage').then((module) => ({ default: module.LibraryHubPage })),
-);
 const ModelManagePage = lazy(() =>
   import('@/features/models/pages/ModelManagePage').then((module) => ({ default: module.ModelManagePage })),
 );
@@ -49,7 +46,6 @@ const InternalRoutesPage = INTERNAL_ROUTE_MODULES_BUNDLED
   : null;
 
 const FORMAL_ROUTE_COMPONENTS = {
-  libraryHub: LibraryHubPage,
   modelManage: ModelManagePage,
   novelLibrary: NovelLibraryPage,
   prompts: PromptsPage,

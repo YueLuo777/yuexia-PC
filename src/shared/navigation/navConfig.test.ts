@@ -16,19 +16,18 @@ describe('navigation config without zones', () => {
     expect(DEFAULT_NAV_CONFIG[0].items.map((item) => item.to)).toEqual([
       '/novels',
       '/tomato-browser',
-      '/library',
       '/prompts',
       '/model-manage',
       '/token-usage',
       '/test-collection',
     ]);
-    expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/library')?.label).toBe('资料库');
+    expect(DEFAULT_NAV_CONFIG[0].items.some((item) => item.to === '/library')).toBe(false);
     expect(DEFAULT_NAV_CONFIG[0].items.some((item) => item.to === '/genre-iteration')).toBe(false);
     expect(DEFAULT_NAV_CONFIG[0].items.find((item) => item.to === '/tomato-browser')?.label).toBe('番茄浏览器');
     expect(JSON.stringify(DEFAULT_NAV_CONFIG)).not.toContainSource('专区');
   });
 
-  it('renames the library navigation entry to materials library even for saved old configs', () => {
+  it('removes the retired library navigation entry from saved old configs', () => {
     const normalized = normalizeNavConfig([
       {
         title: '导航',
@@ -37,8 +36,7 @@ describe('navigation config without zones', () => {
       },
     ]);
 
-    expect(normalized[0].items.find((item) => item.to === '/library')?.label).toBe('资料库');
-    expect(JSON.stringify(normalized)).not.toContainSource('"label":"库"');
+    expect(normalized[0].items.some((item) => item.to === '/library')).toBe(false);
   });
 
   it('flattens old zone-based navigation while preserving hidden item intent and default divider', () => {
@@ -70,7 +68,7 @@ describe('navigation config without zones', () => {
     expect(JSON.stringify(normalized)).not.toContainSource('数据专区');
   });
 
-  it('removes retired script, hotspot, and genre iteration routes from saved navigation configs', () => {
+  it('removes retired script, library, hotspot, and genre iteration routes from saved navigation configs', () => {
     const normalized = normalizeNavConfig([
       {
         title: '导航',
@@ -78,6 +76,7 @@ describe('navigation config without zones', () => {
         items: [
           { iconName: 'Film', label: '我的剧本', to: '/scripts' },
           { iconName: 'Film', label: '剧本编辑器', to: '/script-editor-v2' },
+          { iconName: 'Library', label: '资料库', to: '/library' },
           { iconName: 'Activity', label: '热点分析', to: '/hotspots' },
           { iconName: 'Sparkles', label: '题材迭代', to: '/genre-iteration' },
         ],
@@ -86,6 +85,7 @@ describe('navigation config without zones', () => {
 
     expect(normalized[0].items.some((item) => item.to === '/scripts')).toBe(false);
     expect(normalized[0].items.some((item) => item.to === '/script-editor-v2')).toBe(false);
+    expect(normalized[0].items.some((item) => item.to === '/library')).toBe(false);
     expect(normalized[0].items.some((item) => item.to === '/hotspots')).toBe(false);
     expect(normalized[0].items.some((item) => item.to === '/genre-iteration')).toBe(false);
   });
@@ -98,7 +98,7 @@ describe('navigation config without zones', () => {
     expect(source).not.toContainSource("'/theme-colors': '主题颜色'");
   });
 
-  it('removes scripts and genre iteration while keeping tomato browser below novels', () => {
+  it('removes scripts, library, and genre iteration while keeping tomato browser below novels', () => {
     const normalized = normalizeNavConfig([
       {
         title: '导航',
@@ -115,8 +115,8 @@ describe('navigation config without zones', () => {
     expect(normalized[0].items.map((item) => item.to).slice(0, 4)).toEqual([
       '/novels',
       '/tomato-browser',
-      '/library',
       '/prompts',
+      '/model-manage',
     ]);
   });
 
@@ -137,8 +137,8 @@ describe('navigation config without zones', () => {
     expect(normalized[0].items.map((item) => item.to).slice(0, 4)).toEqual([
       '/novels',
       '/tomato-browser',
-      '/library',
       '/prompts',
+      '/model-manage',
     ]);
     expect(normalized[0].items.find((item) => item.to === '/tomato-browser')).toMatchObject({
       iconName: 'Globe',

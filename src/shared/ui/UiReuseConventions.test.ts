@@ -17,7 +17,6 @@ describe('shared UI reuse conventions', () => {
     const settingsPageSource = readSource('../settings/SettingsPage.tsx');
     const testCollectionSource = readSource('../../features/tests/pages/TestCollectionPage.tsx');
     const aiConfigConsumers = [
-      '../../features/concept-library/components/ConceptInspirationForm.tsx',
       '../../features/genre-iteration/components/GenreIterationWorkbench.tsx',
       '../../features/workbench/components/ChapterReviewAiPanel.tsx',
       '../../features/workbench/components/ChapterStatusPanel.tsx',
