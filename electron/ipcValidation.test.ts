@@ -8,7 +8,8 @@ const { normalizeDatabaseDataDir, normalizeCollectionName, normalizeItemsArray, 
 describe('ipcValidation', () => {
   it('accepts only known database collection names', () => {
     expect(normalizeCollectionName('materials')).toBe('materials');
-    expect(normalizeCollectionName('moonfallSettings')).toBe('moonfallSettings');
+    expect(normalizeCollectionName('moonfallSettings')).toBeNull();
+    expect(normalizeCollectionName('plotLibrary')).toBeNull();
     expect(normalizeCollectionName('unknown')).toBeNull();
   });
 

@@ -310,6 +310,14 @@ export function useConceptLibrary() {
     [persist],
   );
 
+  const addItems = useCallback(
+    (newItems: ConceptLibraryItem[]) => {
+      if (newItems.length === 0) return;
+      persist([...newItems, ...readItems()]);
+    },
+    [persist],
+  );
+
   const updateItem = useCallback(
     (
       id: string,
@@ -354,6 +362,7 @@ export function useConceptLibrary() {
     items,
     stats,
     addItem,
+    addItems,
     updateItem,
     deleteItem,
     replaceAll,

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { APP_ROUTE_PATHS } from '@/app/routeRegistry';
 import { DEFAULT_NAV_CONFIG, normalizeNavConfig } from '@/shared/navigation/navConfig';
 
 const readSource = (path: string) => readFileSync(join(process.cwd(), path), 'utf8');
@@ -86,6 +87,14 @@ describe('navigation config without zones', () => {
     expect(normalized[0].items.some((item) => item.to === '/genre-iteration')).toBe(false);
   });
 
+  it('does not keep label normalizers for routes removed before label normalization', () => {
+    const source = readSource('src/shared/navigation/navConfig.ts');
+
+    expect(source).not.toContainSource("'/text-overrides': '文案修改'");
+    expect(source).not.toContainSource("'/software-ui-catalog': 'UI库'");
+    expect(source).not.toContainSource("'/theme-colors': '主题颜色'");
+  });
+
   it('removes genre iteration and keeps tomato browser directly below scripts for saved old navigation order', () => {
     const normalized = normalizeNavConfig([
       {
@@ -138,8 +147,10 @@ describe('navigation config without zones', () => {
   it('routes the tomato browser nav entry to the former number 15 test page', () => {
     const app = readSource('src/app/App.tsx');
 
+    expect(APP_ROUTE_PATHS.tomatoBrowser).toBe('/tomato-browser');
     expect(app).toContainSource('TomatoGenreIterationTestPage');
-    expect(app).toContainSource('path="/tomato-browser"');
+    expect(app).toContainSource('DASHBOARD_FORMAL_ROUTES.map');
+    expect(app).toContainSource('path={route.path}');
     expect(app).toContainSource("import('@/features/tests/pages/TomatoGenreIterationTestPage')");
   });
 

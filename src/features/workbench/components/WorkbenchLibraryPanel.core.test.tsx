@@ -41,6 +41,16 @@ describe('WorkbenchLibraryPanel core integration contracts', () => {
     expect(entrySource).not.toContainSource('<h3 className="shrink-0 text-base font-bold text-gray-900">角色生成</h3>');
   });
 
+  it('keeps brainstorm directory initialization and entry parsing stable', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+
+    expect(panelSource).toContainSource('const initializedStorageKeyRef = useRef(storageKey);');
+    expect(panelSource).toContainSource('if (initializedStorageKeyRef.current !== storageKey)');
+    expect(panelSource).toContainSource('const parsedSettingEntryCache = new Map');
+    expect(panelSource).toContainSource('const getParsedSettingEntry = (entry: WorkbenchLibraryEntry) =>');
+    expect(panelSource).toContainSource('useLayoutEffect(() => {');
+  });
+
   it('keeps the main chapter writing surface on the white paper background', async () => {
     const styleSource = await readSharedStylesSource();
     const chapterEditorSource = await readChapterEditorSource();

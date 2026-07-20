@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  createAiThinkingPlaceholder,
   createReviewLogSection,
   formatAiThinkingResponse,
   getReviewLogFillGroupWeights,
@@ -57,5 +58,10 @@ describe('chapterReviewLog', () => {
     );
     expect(formatAiThinkingResponse('', '', 3, false)).toBe('正在思考...');
     expect(formatAiThinkingResponse('', '', 3, true)).toBe('');
+  });
+
+  it('creates a marker-backed empty thinking card before reasoning arrives', () => {
+    expect(createAiThinkingPlaceholder(0)).toBe('[[THINKING seconds=0 status=thinking]]\n\n[[/THINKING]]');
+    expect(createAiThinkingPlaceholder(-3)).toBe('[[THINKING seconds=0 status=thinking]]\n\n[[/THINKING]]');
   });
 });

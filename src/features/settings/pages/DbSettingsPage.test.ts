@@ -120,12 +120,26 @@ describe('DbSettingsPage backup guards', () => {
     expect(localStorage.getItem('unrelated_extension_token')).toBe('external-token');
   });
 
-  it('presents the page as global data migration instead of hidden database backup', () => {
+  it('removes the repeated migration heading while preserving import and export actions', () => {
     const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'DbSettingsPage.tsx'), 'utf8');
+    const novelLibrarySource = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../../novels/pages/NovelLibraryPage.tsx'),
+      'utf8',
+    );
+    const createButtonClass =
+      'h-10 rounded-[10px] bg-[#08AACE] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0798B8]';
 
-    expect(source).toContainSource('全局数据迁移');
+    expect(source).not.toContainSource('<h1 className="text-xl font-bold text-gray-900">全局数据迁移</h1>');
+    expect(source).not.toContainSource('用于把家里电脑的软件数据迁移到公司电脑');
+    expect(source).toContainSource('items-center justify-end gap-4');
     expect(source).toContainSource('导出全局备份');
     expect(source).toContainSource('导入全局备份');
+    expect(source).toContainSource('onClick={exportMigrationBackup}');
+    expect(source).toContainSource('onClick={() => fileInputRef.current?.click()}');
+    expect(source.match(new RegExp(createButtonClass.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'))).toHaveLength(2);
+    expect(novelLibrarySource).toContainSource(createButtonClass);
+    expect(source).not.toContainSource('DatabaseBackup');
+    expect(source).not.toContainSource('ArchiveRestore');
     expect(source).toContainSource('replaceRestorableLocalStorageData(localStorageData)');
     expect(source).toContainSource('yuexia-global-backup-');
     expect(source).toContainSource('API Key、Secret、Token、Password 等密钥字段会被清空');

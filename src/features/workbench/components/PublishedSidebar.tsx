@@ -191,7 +191,7 @@ export function PublishedSidebar({
                           event.stopPropagation();
                           onUnpublishChapter(chapter.id);
                         }}
-                        className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded bg-gray-400 px-2 py-1 text-xs leading-none text-white opacity-0 transition-all hover:bg-gray-500 group-hover:opacity-100"
+                        className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded bg-[#08AACE] px-2 py-1 text-xs leading-none text-white opacity-0 transition-all hover:bg-[#0798b8] group-hover:opacity-100"
                       >
                         撤回
                       </button>

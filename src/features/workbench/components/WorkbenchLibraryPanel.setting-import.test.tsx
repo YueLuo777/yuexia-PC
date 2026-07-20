@@ -287,7 +287,9 @@ describe('WorkbenchLibraryPanel setting import flows', () => {
     expect(panelSource).toContainSource('visibleSettingTypes: settingTypeOptions,');
     expect(panelSource).toContainSource('settingEntries,');
     expect(panelSource).toContainSource('getSettingTypeWorkspaceDomain,');
-    expect(panelSource).toContainSource('}), [getSettingTypeWorkspaceDomain, settingEntries, settingTypeOptions]);');
+    expect(panelSource).toContainSource(
+      '), [buildSettingImportFormatTabs, getSettingTypeWorkspaceDomain, settingEntries, settingTypeOptions],',
+    );
     expect(panelSource).toContainSource(
       'const activeSettingImportFormatTab = settingImportFormatGuideTabs.find((tab) => tab.id === settingImportFormatTabId) ?? settingImportFormatGuideTabs[0];',
     );

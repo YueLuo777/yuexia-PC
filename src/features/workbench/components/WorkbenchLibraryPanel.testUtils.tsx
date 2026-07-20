@@ -1,5 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react';
 
+import { readChapterEditorSource as readChapterEditorSourceFiles } from './chapterEditorSource.testUtils';
+
 export const TEST_WORK_SETTING_STARTER_VERSION = '2026-06-25-foreshadow-fields-v1';
 
 export const unlockSmartImportSettings = () => {
@@ -19,6 +21,21 @@ export const readWorkbenchLibraryPanelSource = async () => {
   const baseDir = dirname(fileURLToPath(import.meta.url));
   const files = [
     'WorkbenchLibraryPanel.tsx',
+    'workbenchSettingLibraryBranch.tsx',
+    'workbenchSettingLibraryView.tsx',
+    'workbenchSettingLibraryWorkspaceView.tsx',
+    'workbenchOutlineLibraryBranch.tsx',
+    'OutlineWorkspaceView.tsx',
+    'createOutlineControllerPhase1.tsx',
+    'createOutlineControllerPhase2.tsx',
+    'createOutlineControllerPhase3.tsx',
+    '../hooks/useWorkbenchLibraryControllerPhase1.tsx',
+    '../hooks/useWorkbenchLibraryControllerPhase2.tsx',
+    '../hooks/useWorkbenchLibraryControllerPhase3.tsx',
+    '../hooks/useWorkbenchLibraryControllerPhase4.tsx',
+    '../hooks/useWorkbenchLibraryControllerPhase5.tsx',
+    '../hooks/useWorkbenchLibraryControllerPhase6.tsx',
+    '../hooks/useWorkbenchLibraryControllerPhase7.tsx',
     'workbenchBrainstormModals.tsx',
     'workbenchBrainstormState.ts',
     'workbenchBrainstormWorkspace.tsx',
@@ -42,9 +59,6 @@ export const readWorkbenchLibraryPanelSource = async () => {
     'workbenchLibraryStorageState.ts',
     'workbenchLibraryTabs.ts',
     'workbenchOtherSettingReaderModal.tsx',
-    'workbenchPlotPointCandidates.ts',
-    'workbenchPlotPointChainWorkspace.tsx',
-    'workbenchPlotPointGenerationModal.tsx',
     'workbenchRoleContent.ts',
     'workbenchRoleEditor.tsx',
     'workbenchRoleHistoryModal.tsx',
@@ -52,7 +66,16 @@ export const readWorkbenchLibraryPanelSource = async () => {
     'workbenchRoleSidebar.tsx',
     'workbenchSettingEditor.tsx',
     'workbenchSimpleLibraryView.tsx',
+    '../hooks/useWorkbenchLibraryFieldSizes.ts',
+    '../hooks/useWorkbenchLibraryFontSizes.ts',
+    '../hooks/useWorkbenchLibraryBackgroundTasks.ts',
+    '../hooks/useWorkbenchLibraryDrag.ts',
+    'workbenchLibraryOrdering.ts',
+    'workbenchOutlinePreviewPane.tsx',
+    'workbenchOutlineAiPanel.tsx',
     'workbenchSmartImport.ts',
+    'workbenchStructuredSettings.ts',
+    'workbenchStructuredSettingDefinitions.ts',
   ];
 
   return files.map((file) => readFileSync(join(baseDir, file), 'utf8')).join('\n\n');
@@ -87,7 +110,11 @@ export const readWorkbenchStructuredSettingsSource = async () => {
   const { fileURLToPath } = await import('node:url');
   const { dirname, join } = await import('node:path');
 
-  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchStructuredSettings.ts'), 'utf8');
+  const baseDir = dirname(fileURLToPath(import.meta.url));
+  return [
+    readFileSync(join(baseDir, 'workbenchStructuredSettings.ts'), 'utf8'),
+    readFileSync(join(baseDir, 'workbenchStructuredSettingDefinitions.ts'), 'utf8'),
+  ].join('\n\n');
 };
 
 export const readWorkbenchRoleSettingFieldsSource = async () => {
@@ -183,7 +210,10 @@ export const readSharedStylesSource = async () => {
   const { fileURLToPath } = await import('node:url');
   const { dirname, join } = await import('node:path');
 
-  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../shared/styles/index.css'), 'utf8');
+  const stylesDir = join(dirname(fileURLToPath(import.meta.url)), '../../../shared/styles/parts');
+  return Array.from({ length: 12 }, (_, index) =>
+    readFileSync(join(stylesDir, `part-${String(index + 1).padStart(2, '0')}.css`), 'utf8'),
+  ).join('\n');
 };
 
 export const readCombinedAiConfigSelectSource = async () => {
@@ -253,7 +283,7 @@ export const readChapterEditorSource = async () => {
 
   const baseDir = dirname(fileURLToPath(import.meta.url));
   return [
-    readFileSync(join(baseDir, 'ChapterEditor.tsx'), 'utf8'),
+    readChapterEditorSourceFiles(),
     readFileSync(join(baseDir, '../model/chapterReviewLog.ts'), 'utf8'),
     readFileSync(join(baseDir, '../model/chapterReviewText.ts'), 'utf8'),
   ].join('\n\n');
@@ -264,7 +294,20 @@ export const readEditorToolModalsSource = async () => {
   const { fileURLToPath } = await import('node:url');
   const { dirname, join } = await import('node:path');
 
-  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'EditorToolModals.tsx'), 'utf8');
+  const baseDir = dirname(fileURLToPath(import.meta.url));
+  return [
+    'EditorToolModals.tsx',
+    'editorToolState.ts',
+    'EditorToolModalShell.tsx',
+    'EditorGenerateModals.tsx',
+    'EditorAiGenerateModal.tsx',
+    'EditorFontSettingsModal.tsx',
+    'EditorSmartFormatModal.tsx',
+    'EditorReplaceTools.tsx',
+    'EditorHistoryModals.tsx',
+  ]
+    .map((file) => readFileSync(join(baseDir, file), 'utf8'))
+    .join('\n\n');
 };
 
 export const readChapterSidebarSource = async () => {
@@ -288,7 +331,14 @@ export const readWorkbenchAiPanelSource = async () => {
   const { fileURLToPath } = await import('node:url');
   const { dirname, join } = await import('node:path');
 
-  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchAIPanel.tsx'), 'utf8');
+  const baseDir = dirname(fileURLToPath(import.meta.url));
+  return [
+    readFileSync(join(baseDir, 'WorkbenchAIPanel.tsx'), 'utf8'),
+    readFileSync(join(baseDir, 'workbenchAiPanelSupport.tsx'), 'utf8'),
+    readFileSync(join(baseDir, 'WorkbenchAiRequestLogModal.tsx'), 'utf8'),
+    readFileSync(join(baseDir, 'WorkbenchAiConversationView.tsx'), 'utf8'),
+    readFileSync(join(baseDir, 'WorkbenchAiConfigPanel.tsx'), 'utf8'),
+  ].join('\n\n');
 };
 
 export const readAiInlineInputSource = async () => {
@@ -297,22 +347,6 @@ export const readAiInlineInputSource = async () => {
   const { dirname, join } = await import('node:path');
 
   return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../shared/ui/AiInlineInput.tsx'), 'utf8');
-};
-
-export const readWorkbenchPlotChainSource = async () => {
-  const { readFileSync } = await import('node:fs');
-  const { fileURLToPath } = await import('node:url');
-  const { dirname, join } = await import('node:path');
-
-  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../model/workbenchPlotChain.ts'), 'utf8');
-};
-
-export const readWorkbenchPlotPointChainWorkspaceSource = async () => {
-  const { readFileSync } = await import('node:fs');
-  const { fileURLToPath } = await import('node:url');
-  const { dirname, join } = await import('node:path');
-
-  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchPlotPointChainWorkspace.tsx'), 'utf8');
 };
 
 export const readTestCollectionSource = async () => {

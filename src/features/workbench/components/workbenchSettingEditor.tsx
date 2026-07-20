@@ -2,7 +2,7 @@ import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbench
 import { countTextWords } from '@/features/workbench/model/workbenchLibraryPanelModel';
 import { WordCountText } from '@/shared/ui/WordCountText';
 
-import { getWorkbenchFieldSizeStyle, type WorkbenchFieldSizeSpec } from './workbenchFieldSizeSettings';
+import type { WorkbenchFieldSizeSpec } from './workbenchFieldSizeSettings';
 import { DEFAULT_SETTING_ENTRY_TYPE } from './workbenchLibraryTabs';
 import { SettingSegmentedTabs } from './workbenchSettingSegmentedTabs';
 import {
@@ -71,17 +71,15 @@ export function WorkbenchSettingEditor({
       (total, fieldKey) => total + countTextWords(currentStructuredSettingFields[fieldKey] ?? ''),
       0,
     ) ?? 0;
-  const settingNameFieldStyle = getWorkbenchFieldSizeStyle(settingNameFieldSpec);
+  const settingNameFieldStyle = { width: settingNameFieldSpec.width, maxWidth: '100%' };
 
   if (!currentSelectedEntry) {
     return (
       <div className="flex min-h-0 flex-1 flex-col p-5">
         <div className="mb-6 flex shrink-0 items-start justify-between gap-4">
           <div className="max-w-full" style={{ width: settingNameFieldSpec.width }}>
-            <div
-              className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-setting-name xy-floating-custom-field-size"
-              style={settingNameFieldStyle}
-            >
+            <label className="flex items-center gap-3 text-sm font-bold text-slate-600" style={settingNameFieldStyle}>
+              <span className="w-[64px] shrink-0">设定名</span>
               <input
                 data-no-modal-drag="true"
                 value=""
@@ -91,9 +89,9 @@ export function WorkbenchSettingEditor({
                   createEditableSettingEntry({ title });
                 }}
                 placeholder="输入设定名"
+                className="h-9 min-w-0 flex-1 rounded-[10px] border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#08AACE] focus:ring-4 focus:ring-[#08AACE]/10"
               />
-              <label>设定名</label>
-            </div>
+            </label>
           </div>
         </div>
         <div className="relative min-h-0 flex-1">
@@ -201,10 +199,8 @@ export function WorkbenchSettingEditor({
       ) : (
         <div className="mb-6 flex shrink-0 items-start justify-between gap-4">
           <div className="max-w-full" style={{ width: settingNameFieldSpec.width }}>
-            <div
-              className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-setting-name xy-floating-custom-field-size ${currentSelectedEntry.title.trim() ? 'xy-has-value' : ''}`}
-              style={settingNameFieldStyle}
-            >
+            <label className="flex items-center gap-3 text-sm font-bold text-slate-600" style={settingNameFieldStyle}>
+              <span className="w-[64px] shrink-0">设定名</span>
               <input
                 data-no-modal-drag="true"
                 value={currentSelectedEntry.title}
@@ -212,10 +208,9 @@ export function WorkbenchSettingEditor({
                 onChange={(event) => updateEntry(currentSelectedEntry.id, { title: event.target.value })}
                 placeholder="设定名"
                 title={currentSelectedSettingIsLockedDefault ? '默认设定条目已锁定，不能改名' : undefined}
-                className={currentSelectedSettingIsLockedDefault ? 'cursor-not-allowed text-slate-500' : undefined}
+                className={`h-9 min-w-0 flex-1 rounded-[10px] border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#08AACE] focus:ring-4 focus:ring-[#08AACE]/10 ${currentSelectedSettingIsLockedDefault ? 'cursor-not-allowed bg-slate-50 text-slate-500' : ''}`}
               />
-              <label>设定名</label>
-            </div>
+            </label>
           </div>
         </div>
       )}

@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Volume } from '@/features/workbench/model/workbenchTypes';
 
 import { ChapterSidebar } from './ChapterSidebar';
+import { readChapterEditorSource } from './chapterEditorSource.testUtils';
 
 const volumes: Volume[] = [
   {
@@ -117,7 +118,7 @@ describe('ChapterSidebar', () => {
 
   it('aligns the unpublished header height with the body editor chapter toolbar', () => {
     const chapterSidebarSource = readSource('ChapterSidebar.tsx');
-    const chapterEditorSource = readSource('ChapterEditor.tsx');
+    const chapterEditorSource = readChapterEditorSource();
 
     expect(chapterSidebarSource).toContainSource(
       'className="flex h-12 shrink-0 items-center justify-between border-b border-[#e6e8ec] bg-[#fbfbfc] px-3"',
@@ -149,10 +150,16 @@ describe('ChapterSidebar', () => {
 
   it('only changes the selected chapter background in the body chapter list', () => {
     const chapterSidebarSource = readSource('ChapterSidebar.tsx');
-    const sharedStylesSource = readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), '../../../shared/styles/index.css'),
-      'utf8',
-    );
+    const sharedStylesSource = Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        join(
+          dirname(fileURLToPath(import.meta.url)),
+          '../../../shared/styles/parts',
+          `part-${String(index + 1).padStart(2, '0')}.css`,
+        ),
+        'utf8',
+      ),
+    ).join('\n');
 
     expect(chapterSidebarSource).toContainSource("? 'border-transparent xy-selected-mint-bg'");
     expect(chapterSidebarSource).toContainSource('xy-chapter-sidebar-row');
@@ -181,13 +188,30 @@ describe('ChapterSidebar', () => {
     );
   });
 
+  it('uses the same cyan action color for publish and retract buttons', () => {
+    const chapterSidebarSource = readSource('ChapterSidebar.tsx');
+    const publishedSidebarSource = readSource('PublishedSidebar.tsx');
+    const actionTone = 'bg-[#08AACE] px-2 py-1 text-xs leading-none text-white';
+
+    expect(chapterSidebarSource).toContainSource(actionTone);
+    expect(publishedSidebarSource).toContainSource(actionTone);
+    expect(publishedSidebarSource).toContainSource('hover:bg-[#0798b8]');
+    expect(publishedSidebarSource).not.toContainSource('bg-gray-400 px-2 py-1 text-xs');
+  });
+
   it('keeps volume rows in the default folder color while selected chapters use mint green', () => {
     const chapterSidebarSource = readSource('ChapterSidebar.tsx');
     const publishedSidebarSource = readSource('PublishedSidebar.tsx');
-    const sharedStylesSource = readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), '../../../shared/styles/index.css'),
-      'utf8',
-    );
+    const sharedStylesSource = Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        join(
+          dirname(fileURLToPath(import.meta.url)),
+          '../../../shared/styles/parts',
+          `part-${String(index + 1).padStart(2, '0')}.css`,
+        ),
+        'utf8',
+      ),
+    ).join('\n');
 
     expect(chapterSidebarSource).toContainSource(
       'className={`${WORKBENCH_FOLDER_GROUP_BUTTON_BASE_CLASS} ${WORKBENCH_FOLDER_GROUP_DEFAULT_TONE_CLASS}`',

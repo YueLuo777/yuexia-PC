@@ -36,6 +36,16 @@ const NavigationContextMenuPrototypeTestPage = lazy(() =>
     default: module.NavigationContextMenuPrototypeTestPage,
   })),
 );
+const CompactLibraryFormTestPage = lazy(() =>
+  import('@/features/tests/pages/CompactLibraryFormTestPage').then((module) => ({
+    default: module.CompactLibraryFormTestPage,
+  })),
+);
+const SettingsHierarchyDesignTestPage = lazy(() =>
+  import('@/features/tests/pages/SettingsHierarchyDesignTestPage').then((module) => ({
+    default: module.SettingsHierarchyDesignTestPage,
+  })),
+);
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
 );
@@ -57,6 +67,11 @@ const AuditPromptSelectSoftGroupingTestPage = lazy(() =>
 const TextAuditDiffDisplayTestPage = lazy(() =>
   import('@/features/tests/pages/TextAuditDiffDisplayTestPage').then((module) => ({
     default: module.TextAuditDiffDisplayTestPage,
+  })),
+);
+const TextAuditReviewWorkbenchTestPage = lazy(() =>
+  import('@/features/tests/pages/TextAuditReviewWorkbenchTestPage').then((module) => ({
+    default: module.TextAuditReviewWorkbenchTestPage,
   })),
 );
 const TestBrowserPage = lazy(() =>
@@ -118,6 +133,20 @@ const testGroups = [
         icon: ListTree,
         badge: 'Nav Menu',
       },
+      {
+        title: '资料库紧凑行式表单',
+        description: '使用正常尺寸验证短字段按内容宽度、标签与输入同行、短字段并排和长文本压缩高度。',
+        path: '/compact-library-form-test',
+        icon: Sparkles,
+        badge: 'Compact Form',
+      },
+      {
+        title: '软件设置入口多方案',
+        description: '对比全顶部导航、图标窄栏、卡片逐级进入、搜索优先和单页折叠五种设置布局。',
+        path: '/settings-hierarchy-design-test',
+        icon: ListTree,
+        badge: 'Settings UI',
+      },
     ],
   },
   {
@@ -150,6 +179,13 @@ const testGroups = [
         path: '/text-audit-diff-display-test',
         icon: NotebookText,
         badge: 'Text Audit',
+      },
+      {
+        title: '文本审核逐段审阅工作台',
+        description: '在接近正式审核页面的章节目录、正文预览和 AI 配置三栏中，测试逐段接受、保留和编辑后采用。',
+        path: '/text-audit-review-workbench-test',
+        icon: NotebookText,
+        badge: 'Audit Page',
       },
     ],
   },
@@ -312,6 +348,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <AuditPromptSelectSoftGroupingTestPage />;
       case '/text-audit-diff-display-test':
         return <TextAuditDiffDisplayTestPage />;
+      case '/text-audit-review-workbench-test':
+        return <TextAuditReviewWorkbenchTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':
@@ -324,6 +362,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <Shuimo2DeepPalettePreviewTestPage />;
       case '/navigation-context-menu-prototype-test':
         return <NavigationContextMenuPrototypeTestPage />;
+      case '/compact-library-form-test':
+        return <CompactLibraryFormTestPage />;
+      case '/settings-hierarchy-design-test':
+        return <SettingsHierarchyDesignTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':

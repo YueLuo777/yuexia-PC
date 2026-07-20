@@ -4,7 +4,12 @@ import { dirname, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
-const css = readFileSync(resolve(currentDir, 'index.css'), 'utf8');
+const css = Array.from({ length: 12 }, (_, index) =>
+  readFileSync(
+    resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+    'utf8',
+  ),
+).join('\n');
 
 const readRule = (selector: string) => {
   const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

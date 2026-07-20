@@ -1,0 +1,425 @@
+.theme-shuimo .xy-dashboard-sidebar-footer a {
+  background: #08aace !important;
+  color: #fffdf8 !important;
+}
+
+.theme-shuimo .xy-dashboard-sidebar-footer a:hover {
+  background: #078fae !important;
+  color: #fffdf8 !important;
+}
+
+.theme-shuimo [class*='bg-[#f7faff]'],
+.theme-shuimo [class*='bg-[#fbfbfc]'],
+.theme-shuimo [class*='bg-[#fbfdff]'] {
+  background-color: #fffdf8 !important;
+}
+
+.theme-shuimo [class*='hover:bg-[#f6f9ff]']:hover {
+  background-color: #f4fbfc !important;
+}
+
+.theme-shuimo [class*='border-[#dfe5ec]'],
+.theme-shuimo [class*='border-[#d7dce4]'],
+.theme-shuimo [class*='border-[#e6e8ec]'] {
+  border-color: #e2d7c6 !important;
+}
+
+.theme-shuimo .workspace-tab-active {
+  background: #fffdf8 !important;
+  border-color: #d8cdbb !important;
+  border-bottom-color: #fffdf8 !important;
+  color: #25211b !important;
+}
+
+.theme-shuimo .workspace-tab-home {
+  background: #eaf9fd !important;
+  border-color: #9debfa !important;
+  color: #087f99 !important;
+}
+
+.theme-shuimo .workspace-tab-inactive {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: #7d715f !important;
+}
+
+.theme-shuimo .workspace-tab-inactive:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: #25211b !important;
+}
+
+.theme-shuimo .workspace-tab-accent {
+  background: #08aace !important;
+}
+
+.theme-shuimo .script-editor-page,
+.theme-shuimo .script-editor-page aside,
+.theme-shuimo .script-editor-page section,
+.theme-shuimo .script-editor-page main {
+  background: #f5f0e6 !important;
+}
+
+.theme-shuimo .script-editor-topbar,
+.theme-shuimo .script-editor-area-header {
+  background: #fbf7ef !important;
+  border-color: #e2d7c6 !important;
+}
+
+.theme-shuimo .script-editor-group-toggle {
+  background: #fffdf8 !important;
+  border-color: #d8cdbb !important;
+  color: #25211b !important;
+}
+
+.theme-shuimo .script-editor-group-toggle:hover {
+  background: #f4fbfc !important;
+}
+
+.theme-shuimo .script-editor-chapter-idle,
+.theme-shuimo .script-editor-number-idle,
+.theme-shuimo .script-editor-material-idle {
+  background: transparent !important;
+  border-color: #d8cdbb !important;
+  color: #5e5346 !important;
+}
+
+.theme-shuimo .script-editor-chapter-idle:hover,
+.theme-shuimo .script-editor-number-idle:hover,
+.theme-shuimo .script-editor-material-idle:hover {
+  background: #fffdf8 !important;
+  border-color: #bdeef7 !important;
+  color: #25211b !important;
+}
+
+.theme-shuimo .script-editor-chapter-active,
+.theme-shuimo .script-editor-number-active,
+.theme-shuimo .script-editor-material-active,
+.theme-shuimo .script-editor-mode-active {
+  background: #eaf9fd !important;
+  border-color: #9debfa !important;
+  color: #087f99 !important;
+}
+
+.theme-shuimo .script-editor-mode-idle {
+  background: #fffdf8 !important;
+  color: #5e5346 !important;
+}
+
+.theme-shuimo .script-editor-mode-idle:hover {
+  background: #f4fbfc !important;
+  color: #25211b !important;
+}
+
+.theme-shuimo .script-editor-page textarea,
+.theme-shuimo .xy-wa-editor-surface {
+  background: #fffdf8 !important;
+  color: #25211b !important;
+}
+
+.theme-shuimo .model-card,
+.theme-shuimo .model-failure-panel,
+.theme-shuimo .model-card-meta,
+.theme-shuimo .model-temp-slider,
+.theme-shuimo .model-failure-error {
+  background: #fffdf8 !important;
+  border-color: #e2d7c6 !important;
+}
+
+.theme-shuimo .editor-scrollbar::-webkit-scrollbar-thumb,
+html.theme-shuimo ::-webkit-scrollbar-thumb {
+  background: var(--xy-scrollbar-thumb, #b8a78d) !important;
+}
+
+.theme-shuimo .editor-scrollbar:hover::-webkit-scrollbar-thumb,
+html.theme-shuimo ::-webkit-scrollbar-thumb:hover {
+  background: var(--xy-scrollbar-thumb-hover, #9f8d72) !important;
+}
+
+html.theme-shuimo2 {
+  --background: 38 44% 90%;
+  --foreground: 32 35% 14%;
+  --card: 40 78% 96%;
+  --card-foreground: 32 35% 14%;
+  --popover: 40 78% 96%;
+  --popover-foreground: 32 35% 14%;
+  --muted: 37 38% 84%;
+  --muted-foreground: 32 22% 40%;
+  --accent: 34 48% 82%;
+  --accent-foreground: 30 42% 26%;
+  --border: 35 38% 73%;
+  --input: 35 38% 73%;
+  --ring: 32 34% 49%;
+  --xy-scrollbar-thumb: #c0a57b;
+  --xy-scrollbar-thumb-hover: #a98253;
+  --xy-custom-sidebar-bg: #ebdcc3;
+  --xy-custom-sidebar-active-bg: #f0d8b8;
+  --xy-custom-content-selected-bg: #efd7b7;
+  --xy-custom-flow-group-bg: #ebdcc3;
+  --xy-detail-outline-number-selected: #7c5732;
+  --xy-detail-outline-number-used: #f4e8d5;
+  --xy-detail-outline-number-has-outline: #f7eedc;
+  --xy-detail-outline-number-no-outline: #fff8ec;
+  --xy-wa-titlebar: #e8d6bd;
+  --xy-wa-toolbar: #f7eedc;
+  --xy-wa-app-bg: #f4e9d8;
+  --xy-wa-panel: #fff8ec;
+  --xy-wa-border: #d5bfa0;
+  --xy-wa-border-strong: #cdaf87;
+  --xy-wa-blue: #7c5732;
+  --xy-wa-blue-hover: #654524;
+  --xy-wa-active: #ead2ae;
+  --xy-wa-active-soft: #f4e8d5;
+  --xy-wa-accent-border: #cdaf87;
+  --xy-wa-text: #2d241a;
+  --xy-wa-muted: #7c674e;
+  --xy-wa-faint: #a88e6b;
+  --xy-wa-editor-bg: #fff8ec;
+  --xy-wa-cover-blue: #d7b782;
+  --xy-floating-backplate-bg: #fff8ec;
+}
+
+html.theme-shuimo2 body,
+.theme-shuimo2,
+.theme-shuimo2 [class*='bg-slate-50'],
+.theme-shuimo2 [class*='bg-gray-50'],
+.theme-shuimo2 [class*='bg-zinc-50'] {
+  background-color: #f4e9d8 !important;
+  color: #2d241a !important;
+}
+
+.theme-shuimo2 [class*='bg-white'],
+.theme-shuimo2 [class*='bg-slate-100'],
+.theme-shuimo2 [class*='bg-gray-100'],
+.theme-shuimo2 [class*='bg-zinc-100'] {
+  background-color: #fff8ec !important;
+}
+
+.theme-shuimo2 [class*='bg-white/'],
+.theme-shuimo2 [class*='bg-slate-50/'],
+.theme-shuimo2 [class*='bg-gray-50/'] {
+  background-color: rgba(255, 248, 236, 0.9) !important;
+}
+
+.theme-shuimo2 [class*='bg-brand'],
+.theme-shuimo2 [class*='bg-blue-500'],
+.theme-shuimo2 [class*='bg-sky-500'],
+.theme-shuimo2 [class*='bg-cyan-500'],
+.theme-shuimo2 [class*='bg-[#08AACE]'],
+.theme-shuimo2 [class*='bg-[#08B3D9]'],
+.theme-shuimo2 [class*='hover:bg-[#0798b8]']:hover,
+.theme-shuimo2 [class*='hover:bg-[#078fb0]']:hover {
+  background-color: #7c5732 !important;
+}
+
+.theme-shuimo2 [class*='bg-brand-light'],
+.theme-shuimo2 [class*='bg-blue-50'],
+.theme-shuimo2 [class*='bg-sky-50'],
+.theme-shuimo2 [class*='bg-cyan-50'],
+.theme-shuimo2 [class*='bg-[#F4FBFC]'],
+.theme-shuimo2 [class*='bg-[#EAF9FD]'],
+.theme-shuimo2 [class*='bg-[#E7F8FD]'],
+.theme-shuimo2 [class*='bg-[#f2fbfd]'],
+.theme-shuimo2 [class*='bg-[#f7fdff]'],
+.theme-shuimo2 [class*='hover:bg-brand-light']:hover,
+.theme-shuimo2 [class*='hover:bg-blue-50']:hover,
+.theme-shuimo2 [class*='hover:bg-sky-50']:hover,
+.theme-shuimo2 [class*='hover:bg-cyan-50']:hover,
+.theme-shuimo2 [class*='hover:bg-[#F4FBFC]']:hover,
+.theme-shuimo2 [class*='hover:bg-[#EAF9FD]']:hover,
+.theme-shuimo2 [class*='hover:bg-[#f2fbfd]']:hover,
+.theme-shuimo2 [class*='hover:bg-[#f7fdff]']:hover {
+  background-color: #f4e8d5 !important;
+}
+
+.theme-shuimo2 [class*='bg-red-50'],
+.theme-shuimo2 [class*='bg-rose-50'],
+.theme-shuimo2 [class*='hover:bg-red-50']:hover,
+.theme-shuimo2 [class*='hover:bg-rose-50']:hover {
+  background-color: #f2d9cf !important;
+}
+
+.theme-shuimo2 [class*='bg-red-500'],
+.theme-shuimo2 [class*='bg-red-600'],
+.theme-shuimo2 [class*='bg-[#DC2626]'],
+.theme-shuimo2 [class*='hover:bg-red-600']:hover,
+.theme-shuimo2 [class*='hover:bg-red-700']:hover {
+  background-color: #9b4739 !important;
+}
+
+.theme-shuimo2 [class*='bg-orange-50'],
+.theme-shuimo2 [class*='bg-amber-50'],
+.theme-shuimo2 [class*='bg-yellow-'],
+.theme-shuimo2 mark {
+  background-color: #f2deba !important;
+}
+
+.theme-shuimo2 [class*='border-brand'],
+.theme-shuimo2 [class*='border-blue'],
+.theme-shuimo2 [class*='border-sky'],
+.theme-shuimo2 [class*='border-cyan'],
+.theme-shuimo2 [class*='border-[#08AACE]'],
+.theme-shuimo2 [class*='border-[#08B3D9]'],
+.theme-shuimo2 [class*='border-[#bdeef7]'],
+.theme-shuimo2 [class*='border-[#9DEBFA]'] {
+  border-color: #cdaf87 !important;
+}
+
+.theme-shuimo2 [class*='border-red'],
+.theme-shuimo2 [class*='border-rose'] {
+  border-color: #d8ad9e !important;
+}
+
+.theme-shuimo2 [class*='border-slate-'],
+.theme-shuimo2 [class*='border-gray-'],
+.theme-shuimo2 [class*='border-zinc-'],
+.theme-shuimo2 [class*='border-white'],
+.theme-shuimo2 [class*='border-[#dfe5ec]'],
+.theme-shuimo2 [class*='border-[#d7dce4]'],
+.theme-shuimo2 [class*='border-[#e6e8ec]'] {
+  border-color: #d5bfa0 !important;
+}
+
+.theme-shuimo2 [class*='text-brand'],
+.theme-shuimo2 [class*='text-brand-dark'],
+.theme-shuimo2 [class*='text-blue'],
+.theme-shuimo2 [class*='text-sky'],
+.theme-shuimo2 [class*='text-cyan'],
+.theme-shuimo2 [class*='text-[#08AACE]'],
+.theme-shuimo2 [class*='text-[#078fb0]'],
+.theme-shuimo2 [class*='text-[#078FAE]'] {
+  color: #7c5732 !important;
+}
+
+.theme-shuimo2 [class*='text-red'],
+.theme-shuimo2 [class*='text-rose'] {
+  color: #9b4739 !important;
+}
+
+.theme-shuimo2 [class*='text-orange'],
+.theme-shuimo2 [class*='text-amber'],
+.theme-shuimo2 [class*='text-yellow'] {
+  color: #9a6a2d !important;
+}
+
+.theme-shuimo2 [class*='text-white'] {
+  color: #fff8ec !important;
+}
+
+.theme-shuimo2 [class*='text-slate-900'],
+.theme-shuimo2 [class*='text-slate-800'],
+.theme-shuimo2 [class*='text-gray-900'],
+.theme-shuimo2 [class*='text-gray-800'],
+.theme-shuimo2 [class*='text-zinc-900'],
+.theme-shuimo2 [class*='text-zinc-800'] {
+  color: #2d241a !important;
+}
+
+.theme-shuimo2 [class*='text-slate-700'],
+.theme-shuimo2 [class*='text-slate-600'],
+.theme-shuimo2 [class*='text-gray-700'],
+.theme-shuimo2 [class*='text-gray-600'],
+.theme-shuimo2 [class*='text-zinc-700'],
+.theme-shuimo2 [class*='text-zinc-600'] {
+  color: #5d4a35 !important;
+}
+
+.theme-shuimo2 [class*='text-slate-500'],
+.theme-shuimo2 [class*='text-slate-400'],
+.theme-shuimo2 [class*='text-gray-500'],
+.theme-shuimo2 [class*='text-gray-400'],
+.theme-shuimo2 [class*='text-zinc-500'],
+.theme-shuimo2 [class*='text-zinc-400'] {
+  color: #7c674e !important;
+}
+
+.theme-shuimo2 input,
+.theme-shuimo2 textarea,
+.theme-shuimo2 select {
+  background-color: #fff8ec !important;
+  border-color: #cdaf87 !important;
+  color: #2d241a !important;
+}
+
+.theme-shuimo2 input::placeholder,
+.theme-shuimo2 textarea::placeholder {
+  color: #a88e6b !important;
+}
+
+.theme-shuimo2 .app-titlebar {
+  background: var(--xy-wa-titlebar) !important;
+  border-color: #d5bfa0 !important;
+}
+
+.theme-shuimo2 .xy-dashboard-sidebar {
+  background: #e4d1b3 !important;
+  border-color: #d5bfa0 !important;
+  color: #2d241a !important;
+}
+
+.theme-shuimo2 .xy-dashboard-sidebar-footer {
+  background: #e4d1b3 !important;
+  border-color: #d5bfa0 !important;
+}
+
+.theme-shuimo2 .xy-dashboard-sidebar a:not(.xy-dashboard-sidebar-active) {
+  background: #fff8ec !important;
+  color: #5d4a35 !important;
+}
+
+.theme-shuimo2 .xy-dashboard-sidebar a:not(.xy-dashboard-sidebar-active):hover {
+  background: #f4e8d5 !important;
+  color: #2d241a !important;
+}
+
+.theme-shuimo2 .xy-dashboard-sidebar-active {
+  background: #f0d8b8 !important;
+  color: #7c5732 !important;
+  border-color: #cdaf87 !important;
+}
+
+.theme-shuimo2 .xy-dashboard-sidebar-footer a {
+  background: #7c5732 !important;
+  color: #fff8ec !important;
+}
+
+.theme-shuimo2 .xy-dashboard-sidebar-footer a:hover {
+  background: #654524 !important;
+  color: #fff8ec !important;
+}
+
+.theme-shuimo2 .workspace-tab-active {
+  background: #fff8ec !important;
+  border-color: #cdaf87 !important;
+  border-bottom-color: #fff8ec !important;
+  color: #2d241a !important;
+}
+
+.theme-shuimo2 .workspace-tab-home {
+  background: #ead2ae !important;
+  border-color: #cdaf87 !important;
+  color: #7c5732 !important;
+}
+
+.theme-shuimo2 .workspace-tab-inactive {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: #7c674e !important;
+}
+
+.theme-shuimo2 .workspace-tab-inactive:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: #2d241a !important;
+}
+
+.theme-shuimo2 .workspace-tab-accent {
+  background: #7c5732 !important;
+}
+
+.theme-shuimo2 .script-editor-page,
+.theme-shuimo2 .script-editor-page aside,
+.theme-shuimo2 .script-editor-page section,
+.theme-shuimo2 .script-editor-page main {
+  background: #f4e9d8 !important;
+}

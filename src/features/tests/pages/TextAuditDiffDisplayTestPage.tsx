@@ -2,19 +2,10 @@ import { Check, FileText, Highlighter, ListChecks, SplitSquareHorizontal } from 
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-type DiffToken = {
-  text: string;
-  changed?: boolean;
-  removed?: boolean;
-};
-
-type DiffParagraph = {
-  id: string;
-  label: string;
-  original: string;
-  revised: DiffToken[];
-  note: string;
-};
+import {
+  TextAuditInteractiveReviewPrototype,
+  type TextAuditDiffParagraph,
+} from './TextAuditInteractiveReviewPrototype';
 
 type DisplayScheme = {
   id: string;
@@ -23,11 +14,18 @@ type DisplayScheme = {
   recommended?: boolean;
 };
 
-const sampleParagraphs: DiffParagraph[] = [
+const sampleParagraphs: TextAuditDiffParagraph[] = [
   {
     id: 'p1',
     label: '第 1 段',
     original: '林啸站在门口，心里非常复杂。他知道今天一定会出事。',
+    originalDiff: [
+      { text: '林啸站在门口，' },
+      { text: '心里非常复杂', changed: true, removed: true },
+      { text: '。他知道今天' },
+      { text: '一定', changed: true, removed: true },
+      { text: '会出事。' },
+    ],
     revised: [
       { text: '林啸站在门口，' },
       { text: '指节无声收紧', changed: true },
@@ -36,13 +34,37 @@ const sampleParagraphs: DiffParagraph[] = [
       { text: '会出事。' },
     ],
     note: '把笼统心理改成可见动作，并把绝对判断改成更自然的预感。',
+    category: '表达优化',
   },
   {
     id: 'p2',
     label: '第 2 段',
     original: '屋里很安静，安静得让人感觉特别安静。',
+    originalDiff: [
+      { text: '屋里很安静，' },
+      { text: '安静得让人感觉特别安静', changed: true, removed: true },
+      { text: '。' },
+    ],
     revised: [{ text: '屋里很安静，' }, { text: '连灯芯爆开的轻响都显得刺耳', changed: true }, { text: '。' }],
     note: '删除重复表达，补成更具体的氛围描写。',
+    category: '重复表达',
+  },
+  {
+    id: 'p3',
+    label: '第 3 段',
+    original: '桌上的信封没有署名，封口却压着林家的旧印。',
+    revised: [{ text: '桌上的信封没有署名，封口却压着林家的旧印。' }],
+    note: '本段表达清楚，审核后保持原文。',
+    category: '未修改',
+  },
+  {
+    id: 'p4',
+    label: '第 4 段',
+    original: '“你终于来了”老人抬起头。',
+    originalDiff: [{ text: '“你终于来了' }, { text: '”', changed: true, removed: true }, { text: '老人抬起头。' }],
+    revised: [{ text: '“你终于来了' }, { text: '。”', changed: true }, { text: '老人抬起头。' }],
+    note: '补全对话句末标点。',
+    category: '标点修正',
   },
 ];
 
@@ -70,7 +92,7 @@ const schemes: DisplayScheme[] = [
   },
 ];
 
-function RevisedText({ paragraph }: { paragraph: DiffParagraph }) {
+function RevisedText({ paragraph }: { paragraph: TextAuditDiffParagraph }) {
   return (
     <>
       {paragraph.revised.map((token, index) => (
@@ -205,12 +227,16 @@ export function TextAuditDiffDisplayTestPage() {
       <div className="mx-auto max-w-6xl space-y-5">
         <header className="rounded-xl border border-cyan-100 bg-white p-5 shadow-sm">
           <div className="text-xs font-black text-[#08AACE]">文本审核差异显示测试</div>
-          <h1 className="mt-1 text-2xl font-black text-slate-950">原文 / 审核后左右对照方案</h1>
+          <h1 className="mt-1 text-2xl font-black text-slate-950">文本审核逐段确认方案</h1>
           <p className="mt-2 max-w-3xl text-sm font-bold leading-6 text-slate-500">
-            先在测试区比较几种显示方式。正式页可以把“第 N 章 审核结果”改成“第 N 章 审核后”，并在文本审核模式下对 AI
-            修改过的字句做红色标记。
+            在原文 / 审核后左右对照的基础上，加入逐段接受、保留原文、编辑后采用、改动导航和最终正文预览。
           </p>
         </header>
+        <TextAuditInteractiveReviewPrototype paragraphs={sampleParagraphs} />
+        <div className="pt-2">
+          <h2 className="text-base font-black text-slate-900">静态显示方式对照</h2>
+          <p className="mt-1 text-xs font-bold text-slate-400">下面保留原来的四种方案，方便继续比较纯展示效果。</p>
+        </div>
         <InlineRedScheme />
         <SideBySideScheme />
         <ParagraphCardsScheme />

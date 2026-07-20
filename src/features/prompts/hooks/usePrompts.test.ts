@@ -9,10 +9,11 @@ import {
   BODY_PROMPT_CATEGORY,
   DEFAULT_PROMPT_CATEGORIES,
   DEFAULT_AUDIT_PROMPT_SUBCATEGORY,
-  HOTSPOT_ANALYSIS_PROMPT_CATEGORY,
+  GENRE_ITERATION_PROMPT_CATEGORY,
   isDefaultPromptCategory,
   normalizePromptCategoryName,
   normalizePromptSubcategory,
+  removeRetiredScriptPromptData,
 } from './usePrompts';
 
 const readUsePromptsSource = () => readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'usePrompts.ts'), 'utf8');
@@ -22,15 +23,15 @@ describe('usePrompts categories', () => {
     expect(DEFAULT_PROMPT_CATEGORIES).toContainSource('设定');
     expect(DEFAULT_PROMPT_CATEGORIES).toContainSource('章纲');
     expect(DEFAULT_PROMPT_CATEGORIES).toContainSource(BODY_PROMPT_CATEGORY);
-    expect(DEFAULT_PROMPT_CATEGORIES).toContainSource(HOTSPOT_ANALYSIS_PROMPT_CATEGORY);
+    expect(DEFAULT_PROMPT_CATEGORIES).toContainSource(GENRE_ITERATION_PROMPT_CATEGORY);
     expect(DEFAULT_PROMPT_CATEGORIES).toContainSource('综合点评');
     expect(DEFAULT_PROMPT_CATEGORIES).toContainSource('润色');
     expect(DEFAULT_PROMPT_CATEGORIES).toContainSource('更新状态');
     expect(DEFAULT_PROMPT_CATEGORIES).toContainSource('生成梗概');
     expect(DEFAULT_PROMPT_CATEGORIES.indexOf('生成梗概')).toBeLessThan(
-      DEFAULT_PROMPT_CATEGORIES.indexOf(HOTSPOT_ANALYSIS_PROMPT_CATEGORY),
+      DEFAULT_PROMPT_CATEGORIES.indexOf(GENRE_ITERATION_PROMPT_CATEGORY),
     );
-    expect(DEFAULT_PROMPT_CATEGORIES.indexOf(HOTSPOT_ANALYSIS_PROMPT_CATEGORY)).toBeLessThan(
+    expect(DEFAULT_PROMPT_CATEGORIES.indexOf(GENRE_ITERATION_PROMPT_CATEGORY)).toBeLessThan(
       DEFAULT_PROMPT_CATEGORIES.indexOf('未分类'),
     );
     expect(DEFAULT_PROMPT_CATEGORIES).not.toContainSource('大纲');
@@ -71,5 +72,17 @@ describe('usePrompts categories', () => {
     );
     expect(addPromptsSource).toContainSource('return items;');
     expect(source).toContainSource('addPrompts,');
+  });
+
+  it('permanently removes retired script prompts from active and recycled storage', () => {
+    const novelPrompt = { id: 'novel-1', promptType: 'novel' };
+    const scriptPrompt = { id: 'script-1', promptType: 'script' };
+    localStorage.setItem('xinyuexia_prompts_v1', JSON.stringify([novelPrompt, scriptPrompt]));
+    localStorage.setItem('xinyuexia_prompt_recycle_v1', JSON.stringify([scriptPrompt]));
+
+    removeRetiredScriptPromptData();
+
+    expect(JSON.parse(localStorage.getItem('xinyuexia_prompts_v1') ?? '[]')).toEqual([novelPrompt]);
+    expect(JSON.parse(localStorage.getItem('xinyuexia_prompt_recycle_v1') ?? '[]')).toEqual([]);
   });
 });

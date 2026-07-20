@@ -3,9 +3,14 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { readChapterEditorSource } from '@/features/workbench/components/chapterEditorSource.testUtils';
+
 const testPagePath = resolve(process.cwd(), 'src/features/tests/pages/TextAuditDiffDisplayTestPage.tsx');
+const interactivePrototypePath = resolve(
+  process.cwd(),
+  'src/features/tests/pages/TextAuditInteractiveReviewPrototype.tsx',
+);
 const collectionPagePath = resolve(process.cwd(), 'src/features/tests/pages/TestCollectionPage.tsx');
-const chapterEditorPath = resolve(process.cwd(), 'src/features/workbench/components/ChapterEditor.tsx');
 
 async function readSource(path: string) {
   return readFile(path, 'utf8');
@@ -19,10 +24,27 @@ describe('TextAuditDiffDisplayTestPage', () => {
     expect(source).toContainSource('方案 B：原文 / 审核后左右对照');
     expect(source).toContainSource('方案 C：按段落卡片展示');
     expect(source).toContainSource('方案 D：只列改动清单');
-    expect(source).toContainSource('原文 / 审核后左右对照方案');
+    expect(source).toContainSource('文本审核逐段确认方案');
     expect(source).toContainSource('红字为 AI 修改');
     expect(source).toContainSource('recommended: true');
     expect(source).toContainSource("token.changed ? 'font-black text-red-500'");
+  });
+
+  it('provides an interactive paragraph review flow before applying accepted changes', async () => {
+    const source = await readSource(interactivePrototypePath);
+
+    expect(source).toContainSource('逐段审阅原型');
+    expect(source).toContainSource('1 剧情审核 · 已通过');
+    expect(source).toContainSource('2 文本审核 · 审阅中');
+    expect(source).toContainSource('上一处');
+    expect(source).toContainSource('下一处');
+    expect(source).toContainSource("showChangesOnly ? '显示全部段落' : '只看改动'");
+    expect(source).toContainSource('保留原文');
+    expect(source).toContainSource('编辑后采用');
+    expect(source).toContainSource('接受本段');
+    expect(source).toContainSource('应用已接受修改（{acceptedCount}）');
+    expect(source).toContainSource('最终正文预览');
+    expect(source).toContainSource('本测试页只演示审阅交互，不会改动真实章节正文');
   });
 
   it('is available from the software test collection', async () => {
@@ -36,7 +58,7 @@ describe('TextAuditDiffDisplayTestPage', () => {
   });
 
   it('names audit previews by chapter and audit type while keeping status output out of revised text fallback', async () => {
-    const source = await readSource(chapterEditorPath);
+    const source = readChapterEditorSource();
 
     expect(source).toContainSource("? '文本审核'");
     expect(source).toContainSource(": '剧情审核'");

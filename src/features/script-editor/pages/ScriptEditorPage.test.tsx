@@ -7,7 +7,11 @@ const readSource = (file: string) => fs.readFileSync(path.join(root, file), 'utf
 
 describe('ScriptEditorPage', () => {
   it('opens material novel groups by default when new groups appear', () => {
-    const source = readSource('src/features/script-editor/pages/ScriptEditorPage.tsx');
+    const source = [
+      readSource('src/features/script-editor/pages/ScriptEditorPage.tsx'),
+      readSource('src/features/script-editor/components/ScriptEditorWorkspacePanels.tsx'),
+      readSource('src/features/script-editor/components/ScriptEditorMaterialPanels.tsx'),
+    ].join('\n');
 
     expect(source).toContainSource('initializedExpandedNovelIdsRef');
     expect(source).toContainSource('!initializedExpandedNovelIdsRef.current.has(novelId)');

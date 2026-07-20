@@ -14,19 +14,13 @@ import {
 import {
   GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY,
   createWorkbenchLibraryEntry,
+  ensureBrainstormSerialNumbers,
   readWorkbenchLibraryEntries,
   readWorkbenchLibraryEntriesWithGlobalBrainstorm,
   writeWorkbenchLibraryEntries,
   writeWorkbenchLibraryEntriesWithGlobalBrainstorm,
   type WorkbenchLibraryEntry,
 } from '@/features/workbench/model/workbenchLibraryStorage';
-import type {
-  PlotPointChainSlot,
-  PlotPointLengthMode,
-  PlotPointSourceMode,
-  WorkbenchPlotPointCandidate,
-} from '@/features/workbench/model/workbenchPlotChain';
-
 import { getActiveBrainstormAiSessionId, normalizeBrainstormAiSessions } from './workbenchBrainstormState';
 import { getTabConfigsStorageKey } from './workbenchLibraryStorageState';
 import { BRAINSTORM_TAB, ROLE_TAB, SETTING_TAB, normalizeTabName } from './workbenchLibraryTabs';
@@ -61,24 +55,9 @@ export type LibraryTabConfig = {
   detailOutlineReaderSettingIds?: string[];
   detailOutlineReaderRoleIds?: string[];
   detailOutlineReaderOutlineIds?: string[];
-  detailOutlineReaderPlotChainIds?: string[];
-  plotPointPromptId?: string;
   detailOutlinePromptId?: string;
   outlineSummaryPromptId?: string;
   selectedOutlineChapterId?: number | null;
-  plotPointSourceMode?: PlotPointSourceMode;
-  plotPointGenerateCount?: number;
-  plotPointLength?: PlotPointLengthMode;
-  plotPointOpeningElements?: string[];
-  plotPointPreviewDraft?: string;
-  plotPointAiTaskId?: string;
-  plotPointGeneratedCandidateText?: string;
-  plotPointPreviewCleared?: boolean;
-  plotPointSelectedCandidates?: WorkbenchPlotPointCandidate[];
-  plotPointChainSelections?: Partial<Record<PlotPointChainSlot, string[]>>;
-  plotPointChainWrittenSelections?: Partial<Record<PlotPointChainSlot, string[]>>;
-  plotPointChainNames?: Partial<Record<PlotPointChainSlot, string>>;
-  plotPointActiveChainSlot?: PlotPointChainSlot;
   modelId?: string;
   promptId?: string;
   promptDisabled?: boolean;
@@ -276,7 +255,7 @@ export function readHiddenSettingTypes(storageKey: string) {
 }
 
 export function normalizeEntries(entries: WorkbenchLibraryEntry[]) {
-  return entries.map((entry) => ({ ...entry, tab: normalizeTabName(entry.tab) }));
+  return ensureBrainstormSerialNumbers(entries.map((entry) => ({ ...entry, tab: normalizeTabName(entry.tab) })));
 }
 
 export function hasLibraryAiDialogContent(aiInput = '', aiOutput = '', aiResult = '') {

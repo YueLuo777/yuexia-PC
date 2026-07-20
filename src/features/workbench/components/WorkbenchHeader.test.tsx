@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { fireEvent, render, screen } from '@testing-library/react';
@@ -103,7 +103,12 @@ describe('WorkbenchHeader', () => {
     const flowGroups = container.querySelector('.xy-workbench-flow-groups');
     expect(flowGroups).not.toBeNull();
     expect(flowGroups).toHaveClass('ml-8');
-    const styleSource = readSource('../../../shared/styles/index.css');
+    const styleSource = Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+        'utf8',
+      ),
+    ).join('\n');
     expect(styleSource).toContainSource('min-height: 2.5rem;');
     expect(styleSource).toContainSource('min-width: 5.875rem;');
     expect(styleSource).toContainSource('flex-direction: column;');
@@ -120,7 +125,12 @@ describe('WorkbenchHeader', () => {
   });
 
   it('applies the option 02 compact border without importing preview-only dividers', () => {
-    const styleSource = readSource('../../../shared/styles/index.css');
+    const styleSource = Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+        'utf8',
+      ),
+    ).join('\n');
 
     expect(styleSource).toContainSource('border: 1px solid #D8E1EC;');
     expect(styleSource).toContainSource('border-color: #8FE4F2;');
@@ -139,7 +149,12 @@ describe('WorkbenchHeader', () => {
   });
 
   it('keeps active flow buttons bordered on both sides', () => {
-    const styleSource = readSource('../../../shared/styles/index.css');
+    const styleSource = Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+        'utf8',
+      ),
+    ).join('\n');
     const flowButtonRule = styleSource.match(/\.xy-flow-status-button \{[\s\S]*?\n\}/)?.[0] ?? '';
     const activeRule = styleSource.match(/\.xy-flow-status-button\.xy-active \{[\s\S]*?\n\}/)?.[0] ?? '';
 

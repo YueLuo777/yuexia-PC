@@ -7,7 +7,6 @@ export const SETTING_TAB = '大纲';
 export const PROMPT_SETTING_CATEGORY = '设定';
 export const DETAIL_OUTLINE_TAB = '细纲';
 export const DETAIL_OUTLINE_PROMPT_CATEGORY = '章纲';
-export const PLOT_CHAIN_PROMPT_CATEGORY = DETAIL_OUTLINE_PROMPT_CATEGORY;
 export const DETAIL_OUTLINE_DISPLAY_LABEL = '章纲';
 export const OUTLINE_LIBRARY_TAB = '梗概';
 export const LEGACY_OUTLINE_LIBRARY_TAB = '摘要';

@@ -4,20 +4,52 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
+import { readChapterEditorSource } from './chapterEditorSource.testUtils';
+
 const readSource = (relativePath: string) =>
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
 
+const readEditorToolModalsSource = () =>
+  [
+    'EditorToolModals.tsx',
+    'editorToolState.ts',
+    'EditorToolModalShell.tsx',
+    'EditorGenerateModals.tsx',
+    'EditorAiGenerateModal.tsx',
+    'EditorFontSettingsModal.tsx',
+    'EditorSmartFormatModal.tsx',
+    'EditorReplaceTools.tsx',
+    'EditorHistoryModals.tsx',
+  ]
+    .map(readSource)
+    .join('\n\n');
+
 describe('ChapterEditor grid line font setting', () => {
+  it('keeps the symbol replacement settings reachable after rules already exist', () => {
+    const source = readChapterEditorSource();
+
+    expect(source).toContainSource('openSymbolReplaceSettings={() => setIsSymbolReplaceOpen(true)}');
+    expect(source).toContainSource('title="词语替换设置"');
+    expect(source).toContainSource('aria-label="词语替换设置"');
+  });
+
   it('keeps review chapter selection non-orange and strengthens review preview dividers', () => {
-    const chapterEditorSource = [readSource('ChapterEditor.tsx'), readSource('../model/chapterReviewLog.ts')].join(
-      '\n\n',
-    );
+    const chapterEditorEntrySource = readSource('ChapterEditor.tsx');
+    const chapterEditorSource = [readChapterEditorSource(), readSource('../model/chapterReviewLog.ts')].join('\n\n');
     const chapterNumberButtonSource = readSource('../../../shared/ui/ChapterNumberButton.tsx');
     const logLayoutSource = readSource('../../../shared/ui/AiRequestLogModalLayout.tsx');
+    const reviewLayoutSource = readSource('ChapterReviewPanel.tsx');
     const reviewPanelStart = chapterEditorSource.indexOf('canRenderReviewPanel &&');
-    const reviewPanelSource = chapterEditorSource.slice(reviewPanelStart, reviewPanelStart + 22000);
+    const reviewPanelSource = [
+      readSource('ChapterEditorView.tsx'),
+      readSource('ChapterReviewDirectory.tsx'),
+      readSource('ChapterReviewPreview.tsx'),
+    ].join('\n\n');
 
     expect(reviewPanelStart).toBeGreaterThan(-1);
+    expect(reviewLayoutSource).toContainSource(
+      "className={`grid min-h-0 flex-1 bg-slate-50 ${embeddedMode ? 'pb-3' : ''}`}",
+    );
     expect(chapterEditorSource).toContainSource('ChapterNumberButton,');
     expect(chapterNumberButtonSource).toContainSource(
       "return 'xy-detail-outline-number-no-outline hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]';",
@@ -256,7 +288,7 @@ describe('ChapterEditor grid line font setting', () => {
     expect(reviewPanelSource).not.toContainSource('原文/润色后同宽');
     expect(reviewPanelSource).toContainSource('style={{ gridTemplateColumns: reviewPreviewGridTemplateColumns }}');
     expect(reviewPanelSource).toContainSource('{effectiveShowReviewOutline ? reviewPreviewOutlineResizeHandle : null}');
-    expect(reviewPanelSource).toContainSource('{reviewPreviewTextColumnSeparator}');
+    expect(reviewPanelSource).toContainSource('{showContinuousTextAudit ? null : reviewPreviewTextColumnSeparator}');
     expect(reviewPanelSource).toContainSource("activeReviewPreviewScrollPane === 'outline' ? 'scrollbar-active' : ''");
     expect(reviewPanelSource).toContainSource("onScroll={() => handleReviewPreviewScroll('outline')}");
     expect(reviewPanelSource).toContainSource("activeReviewPreviewScrollPane === 'original' ? 'scrollbar-active' : ''");
@@ -319,8 +351,9 @@ describe('ChapterEditor grid line font setting', () => {
     expect(reviewPanelSource).not.toContainSource("selected ? 'bg-[#EAF9FD] text-slate-900 ring-1 ring-[#9BEFFC]'");
     expect(reviewPanelSource).not.toContainSource('className={`rounded-xl border p-3 transition-colors ${');
     expect(reviewPanelSource).not.toContainSource('AI 返回“原文标注”JSON 后，这里会高亮问题片段并显示审核说明。');
+    expect(chapterEditorSource).toContainSource('promptOptions:');
     expect(chapterEditorSource).toContainSource(
-      "promptOptions={activeReviewPromptOptions.length === 0 ? [{ value: '', label: '无', disabled: true }] : activeReviewPromptOptions}",
+      "activeReviewPromptOptions.length === 0 ? [{ value: '', label: '无', disabled: true }] : activeReviewPromptOptions",
     );
     expect(chapterEditorSource).toContainSource(
       'reviewCommentPrompts.map((prompt) => ({ value: prompt.id, label: prompt.name }))',
@@ -392,13 +425,13 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterEditorSource).toContainSource('value: `作品编辑器 ${activeReviewModeTitle}`');
     expect(chapterEditorSource).toContainSource("value: activeReviewModel?.name ?? '未选择模型'");
     expect(chapterEditorSource).toContainSource("value: activeReviewPrompt?.name ?? '默认提示词'");
-    expect(chapterEditorSource).toContainSource("getReviewLogSection(reviewRequestLog, '其他要求').trim()");
+    expect(chapterEditorSource).toContainSource("const user = getReviewLogSection(reviewRequestLog, '其他要求')");
     expect(chapterEditorSource).toContainSource("title: '其他要求'");
     expect(logLayoutSource).toContainSource(
       'className="editor-scrollbar flex min-h-0 flex-1 flex-col overflow-hidden p-5"',
     );
     expect(chapterEditorSource).toContainSource("title: '关联章纲'");
-    expect(chapterEditorSource).toContainSource("content: getReviewLogSection(reviewRequestLog, '关联章纲')");
+    expect(chapterEditorSource).toContainSource('content: outline');
     expect(chapterEditorSource).toContainSource("title: '原文'");
     expect(chapterEditorSource).toContainSource("content: getReviewLogSection(reviewRequestLog, '原文')");
     expect(chapterEditorSource).toContainSource('export function getReviewLogFillGroupWeights(options: {');
@@ -406,7 +439,7 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterEditorSource).toContainSource('hasUser: boolean;');
     expect(chapterEditorSource).toContainSource('original: 2,');
     expect(chapterEditorSource).toContainSource('fillSingleGroup');
-    expect(chapterEditorSource).toContainSource('fillGroupWeights={reviewLogFillGroupWeights}');
+    expect(chapterEditorSource).toContainSource('fillGroupWeights={getReviewLogFillGroupWeights');
     expect(chapterEditorSource).not.toContainSource(
       'absolute inset-4 z-10 flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl',
     );
@@ -437,7 +470,7 @@ describe('ChapterEditor grid line font setting', () => {
   });
 
   it('uses minimum left panel widths as review and status defaults for new works', () => {
-    const chapterEditorSource = readSource('ChapterEditor.tsx');
+    const chapterEditorSource = readChapterEditorSource();
 
     expect(chapterEditorSource).toContainSource('const REVIEW_PAGE_LEFT_WIDTH = 180;');
     expect(chapterEditorSource).toContainSource('const STATUS_PAGE_LEFT_WIDTH = 190;');
@@ -448,8 +481,8 @@ describe('ChapterEditor grid line font setting', () => {
   });
 
   it('keeps the editor paper line mode in the real chapter editor font settings', () => {
-    const chapterEditorSource = readSource('ChapterEditor.tsx');
-    const modalSource = readSource('EditorToolModals.tsx');
+    const chapterEditorSource = readChapterEditorSource();
+    const modalSource = readEditorToolModalsSource();
 
     expect(modalSource).toContainSource("export type EditorGridLineMode = 'none' | 'solid' | 'dashed';");
     expect(modalSource).toContainSource("gridLineMode: 'dashed'");
@@ -568,8 +601,8 @@ describe('ChapterEditor grid line font setting', () => {
   });
 
   it('keeps high frequency word highlighting visible and color configurable', () => {
-    const chapterEditorSource = readSource('ChapterEditor.tsx');
-    const modalSource = readSource('EditorToolModals.tsx');
+    const chapterEditorSource = readChapterEditorSource();
+    const modalSource = readEditorToolModalsSource();
 
     expect(modalSource).toContainSource("const HIGH_FREQ_HIGHLIGHT_COLOR_KEY = 'xinyuexia_high_freq_highlight_color';");
     expect(modalSource).toContainSource('const highFreqHighlightColorOptions = [');

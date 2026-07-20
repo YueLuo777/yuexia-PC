@@ -4,8 +4,13 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-const readSource = (relativePath: string) =>
-  readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
+import { readChapterEditorSource } from '@/features/workbench/components/chapterEditorSource.testUtils';
+
+const readSource = (relativePath: string) => {
+  const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
+  if (relativePath !== 'ModelManagePage.tsx') return source;
+  return `${source}\n${readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../components/ModelManageParts.tsx'), 'utf8')}`;
+};
 
 describe('ModelManagePage drag sorting', () => {
   it('uses swap-style preview while dragging model cards', () => {
@@ -41,7 +46,7 @@ describe('ModelManagePage drag sorting', () => {
     const workbenchPageSource = readSource('../../workbench/pages/WorkbenchPage.tsx');
     const workbenchManagementModalSource = readSource('../../workbench/components/WorkbenchManagementModal.tsx');
     const libraryModalSource = readSource('../../workbench/components/workbenchLibraryManagementModal.tsx');
-    const chapterEditorSource = readSource('../../workbench/components/ChapterEditor.tsx');
+    const chapterEditorSource = readChapterEditorSource();
 
     expect(source).toContainSource('type ModelManagePageProps');
     expect(source).toContainSource('embedded = false');
@@ -53,9 +58,7 @@ describe('ModelManagePage drag sorting', () => {
 
     expect(workbenchManagementModalSource).toContainSource('<LazyModelManagePage embedded onClose={onClose} />');
     expect(libraryModalSource).toContainSource('<ModelManagePage embedded onClose={onClose} />');
-    expect(chapterEditorSource).toContainSource(
-      '<ModelManagePage embedded onClose={() => setReviewManagementModal(null)} />',
-    );
+    expect(chapterEditorSource).toContainSource('<ModelManagePage embedded onClose={onClose} />');
     expect(workbenchPageSource).not.toContainSource('headerDragHandleProps={draggable.dragHandleProps}');
     expect(libraryModalSource).not.toContainSource('headerDragHandleProps={draggable.dragHandleProps}');
   });
@@ -64,7 +67,7 @@ describe('ModelManagePage drag sorting', () => {
     const source = readSource('ModelManagePage.tsx');
 
     expect(source).toContainSource('const MODEL_MANAGE_COLUMNS: ModelCardsPerRow = 4;');
-    expect(source).toContainSource("const MODEL_CARD_HEIGHT_CLASS = 'h-[250px]';");
+    expect(source).toContainSource("const MODEL_CARD_HEIGHT_CLASS = 'h-[247px]';");
     expect(source).toContainSource('flex min-h-0 flex-1 overflow-hidden px-5 py-4');
     expect(source).toContainSource('{models.length > 1 ? (');
     expect(source).toContainSource('<div className="mb-3 flex items-center gap-4">');
@@ -80,11 +83,35 @@ describe('ModelManagePage drag sorting', () => {
     expect(source).not.toContainSource('([3, 4] as const)');
   });
 
+  it('matches the add-model card to the create-prompt card styling', () => {
+    const source = readSource('ModelManagePage.tsx');
+    const promptSource = readSource('../../prompts/pages/PromptsPage.tsx');
+    const sharedCreateCardStyle =
+      'rounded-xl border border-dashed border-[#08AACE]/50 bg-white text-[#08AACE] transition-colors hover:border-[#08AACE] hover:bg-[#E7F8FD]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]';
+
+    expect(source).toContainSource(sharedCreateCardStyle);
+    expect(promptSource).toContainSource(sharedCreateCardStyle);
+    expect(source).toContainSource('<RadialCreateButton label="新增模型" />');
+    expect(promptSource).toContainSource('<RadialCreateButton label="创建提示词" />');
+  });
+
+  it('enlarges the model editor and switches slider changes to the custom temperature preset', () => {
+    const source = readSource('ModelManagePage.tsx');
+
+    expect(source).toContainSource('widthClass="w-[713px]"');
+    expect(source).toContainSource('heightClass="min-h-[650px] max-h-[calc(100vh-48px)]"');
+    expect(source).toContainSource('grid grid-cols-4 gap-2');
+    expect(source).toContainSource('getTemperaturePresetSelection');
+    expect(source).toContainSource("setTemperaturePresetSelection('custom');");
+    expect(source).toContainSource('<div className="text-sm font-bold">自定义</div>');
+    expect(source).toContainSource('手动调节温度');
+  });
+
   it('caps workbench management modal size at 80 percent of the app viewport', () => {
     const workbenchPageSource = readSource('../../workbench/pages/WorkbenchPage.tsx');
     const workbenchManagementModalSource = readSource('../../workbench/components/WorkbenchManagementModal.tsx');
     const libraryModalSource = readSource('../../workbench/components/workbenchLibraryManagementModal.tsx');
-    const chapterEditorSource = readSource('../../workbench/components/ChapterEditor.tsx');
+    const chapterEditorSource = readChapterEditorSource();
     const sizeSource = readSource('../../workbench/components/workbenchManagementModalSize.ts');
 
     expect(sizeSource).toContainSource(

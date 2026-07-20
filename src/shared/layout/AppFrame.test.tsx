@@ -1,17 +1,31 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const readSource = async (relativePath: string) => {
   const { readFileSync } = await import('node:fs');
   const { dirname, join } = await import('node:path');
   const { fileURLToPath } = await import('node:url');
 
-  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
+  const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
+  if (relativePath !== 'AppFrame.tsx') return source;
+  return [
+    source,
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'appFrameSupport.tsx'), 'utf8'),
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'AppFrameView.tsx'), 'utf8'),
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'useAppFrameNavigationEffects.ts'), 'utf8'),
+  ].join('\n');
 };
 
 describe('writer workspace chrome styling', () => {
   it('uses the requested #E4E9EF color for the top titlebar', async () => {
     const appFrame = await readSource('AppFrame.tsx');
-    const styles = await readSource('../styles/index.css');
+    const styles = await Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+        'utf8',
+      ),
+    ).join('\n');
 
     expect(styles).toContainSource('--xy-wa-titlebar: #E4E9EF;');
     expect(styles).toContainSource('.writer-assistant-theme .xy-wa-titlebar {');
@@ -22,7 +36,12 @@ describe('writer workspace chrome styling', () => {
   });
 
   it('lets confirmed custom theme colors override fixed selected and dark-theme chrome styles', async () => {
-    const styles = await readSource('../styles/index.css');
+    const styles = await Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+        'utf8',
+      ),
+    ).join('\n');
     const selectedRuleStart = styles.indexOf('.writer-assistant-theme .xy-selected-content-bg,');
     const selectedRuleEnd = styles.indexOf('.writer-assistant-theme .xy-selected-mint-bg,', selectedRuleStart);
     const selectedRule = styles.slice(selectedRuleStart, selectedRuleEnd);
@@ -41,7 +60,12 @@ describe('writer workspace chrome styling', () => {
   });
 
   it('keeps the writing editor surface free of ruled horizontal lines', async () => {
-    const styles = await readSource('../styles/index.css');
+    const styles = await Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+        'utf8',
+      ),
+    ).join('\n');
     const editorRule = styles.slice(
       styles.indexOf('.xy-wa-editor-surface {'),
       styles.indexOf('.xy-wa-book-cover-empty {'),
@@ -54,7 +78,12 @@ describe('writer workspace chrome styling', () => {
   it('uses the same readable title size for home and work tabs', async () => {
     const appFrame = await readSource('AppFrame.tsx');
     const tabs = await readSource('../tabs/WorkspaceTabsContext.tsx');
-    const styles = await readSource('../styles/index.css');
+    const styles = await Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+        'utf8',
+      ),
+    ).join('\n');
     const homeRule = styles.slice(styles.indexOf('.workspace-tab-home,'), styles.indexOf('.xy-wa-book-cover-empty {'));
 
     expect(tabs).toContainSource("title: '首页'");
@@ -89,7 +118,12 @@ describe('writer workspace chrome styling', () => {
 
   it('exposes default, shuimo, shuimo2 and clean as selectable app theme modes', async () => {
     const appFrame = await readSource('AppFrame.tsx');
-    const styles = await readSource('../styles/index.css');
+    const styles = await Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+        'utf8',
+      ),
+    ).join('\n');
 
     expect(appFrame).toContainSource("type AppThemeMode = 'light' | 'shuimo' | 'shuimo2' | 'test07';");
     expect(appFrame).toContainSource("const APP_THEME_KEY = 'xinyuexia_app_theme_mode_v1';");
@@ -161,7 +195,12 @@ describe('writer workspace chrome styling', () => {
   });
 
   it('keeps the shuimo dashboard sidebar in a light paper palette', async () => {
-    const styles = await readSource('../styles/index.css');
+    const styles = await Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+        'utf8',
+      ),
+    ).join('\n');
 
     expect(styles).not.toContainSource('#22342F');
     expect(styles).toContainSource('.theme-shuimo .xy-dashboard-sidebar {');
@@ -171,7 +210,12 @@ describe('writer workspace chrome styling', () => {
   });
 
   it('uses the paper-lift selected entry state in the shuimo theme', async () => {
-    const styles = await readSource('../styles/index.css');
+    const styles = await Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+        'utf8',
+      ),
+    ).join('\n');
 
     expect(styles).toContainSource('.theme-shuimo .xy-selected-mint-bg,');
     expect(styles).toContainSource('background-color: #FFFFFF !important;');
@@ -186,7 +230,12 @@ describe('writer workspace chrome styling', () => {
   });
 
   it('renders the shuimo paper-lift marker as the same line sparkles icon used in the preview', async () => {
-    const styles = await readSource('../styles/index.css');
+    const styles = await Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+        'utf8',
+      ),
+    ).join('\n');
     const markerRuleStart = styles.indexOf('.theme-shuimo .xy-selected-mint-bg::before');
     const markerRuleEnd = styles.indexOf(
       '.theme-shuimo .xy-chapter-sidebar-row.xy-selected-mint-bg::before',
@@ -205,7 +254,12 @@ describe('writer workspace chrome styling', () => {
   });
 
   it('uses the same line sparkles paper-lift marker in the shuimo2 theme', async () => {
-    const styles = await readSource('../styles/index.css');
+    const styles = await Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+        'utf8',
+      ),
+    ).join('\n');
     const markerRuleStart = styles.indexOf('.theme-shuimo2 .xy-selected-mint-bg::before');
     const markerRuleEnd = styles.indexOf(
       '.theme-shuimo2 .xy-chapter-sidebar-row.xy-selected-mint-bg::before',
@@ -225,7 +279,12 @@ describe('writer workspace chrome styling', () => {
   });
 
   it('tones down floating label backplates in shuimo2 so field titles do not look like white stickers', async () => {
-    const styles = await readSource('../styles/index.css');
+    const styles = await Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+        'utf8',
+      ),
+    ).join('\n');
 
     expect(styles).toContainSource('.theme-shuimo2 .xy-floating-field.xy-floating-outline-fixed label');
     expect(styles).toContainSource('.theme-shuimo2 .xy-floating-field.xy-floating-outline-fixed.xy-has-value label');
@@ -236,7 +295,12 @@ describe('writer workspace chrome styling', () => {
   });
 
   it('applies the aged-scroll palette proposal as the formal shuimo2 theme', async () => {
-    const styles = await readSource('../styles/index.css');
+    const styles = await Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+        'utf8',
+      ),
+    ).join('\n');
 
     expect(styles).toContainSource('--xy-wa-titlebar: #E8D6BD;');
     expect(styles).toContainSource('--xy-wa-app-bg: #F4E9D8;');

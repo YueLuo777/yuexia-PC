@@ -40,7 +40,11 @@ describe('internal route feature gate', () => {
   });
 
   it('filters test and diagnostics navigation items behind the same gate', () => {
+    const gateSource = readSource('internalRoutes.ts');
+
     expect(INTERNAL_ROUTE_PATHS).toContainSource('/test-collection');
+    expect(gateSource).toContainSource("import { INTERNAL_ROUTE_PATHS } from '@/app/routeRegistry';");
+    expect(gateSource).toContainSource("export { INTERNAL_ROUTE_PATHS } from '@/app/routeRegistry';");
     expect(isInternalRoutePath('/error-log')).toBe(true);
     expect(
       filterInternalRouteItems(

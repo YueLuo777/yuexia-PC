@@ -1,4 +1,6 @@
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { readErrorLogDefaultEntriesSource } from '../../features/tests/model/readErrorLogDefaultEntriesSource';
 
 const readDashboardLayoutSource = async () => {
   const { readFileSync } = await import('node:fs');
@@ -8,23 +10,19 @@ const readDashboardLayoutSource = async () => {
   return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'DashboardLayout.tsx'), 'utf8');
 };
 
-const readErrorLogSource = async () => {
-  const { readFileSync } = await import('node:fs');
-  const { dirname, join } = await import('node:path');
-  const { fileURLToPath } = await import('node:url');
-
-  return readFileSync(
-    join(dirname(fileURLToPath(import.meta.url)), '../../features/tests/model/errorLogDefaultEntries.generated.ts'),
-    'utf8',
-  );
-};
+const readErrorLogSource = async () => readErrorLogDefaultEntriesSource();
 
 const readSharedStylesSource = async () => {
   const { readFileSync } = await import('node:fs');
   const { dirname, join } = await import('node:path');
   const { fileURLToPath } = await import('node:url');
 
-  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../styles/index.css'), 'utf8');
+  return Array.from({ length: 12 }, (_, index) =>
+    readFileSync(
+      resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+      'utf8',
+    ),
+  ).join('\n');
 };
 
 describe('DashboardLayout profile block', () => {

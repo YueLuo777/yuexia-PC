@@ -24,7 +24,6 @@ const TAB_CONFIG_ASSOCIATION_DEFAULTS: Record<string, unknown> = {
   detailOutlineReaderSettingIds: [],
   detailOutlineReaderRoleIds: [],
   detailOutlineReaderOutlineIds: [],
-  detailOutlineReaderPlotChainIds: [],
 };
 
 export type StoredWorkbenchLinkedContextItem = {

@@ -158,7 +158,7 @@ export function BrainstormOutputWorkspace({
                     style={{ fontSize }}
                   />
                   <label aria-hidden="true" className="opacity-0">
-                    脑洞输出框
+                    AI输出框
                   </label>
                 </div>
                 <div className="xy-floating-inline-title-tool xy-brainstorm-output-title-tool xy-floating-title-count xy-border-embedded-transparent-backplate absolute top-0 z-20 -translate-y-1/2">
@@ -184,7 +184,7 @@ export function BrainstormOutputWorkspace({
                     onChange={(event) => onTitleChange(index, event.target.value)}
                     className="xy-floating-title-input max-w-[180px] min-w-[72px] text-sm font-black leading-none text-slate-950 outline-none"
                     style={getFloatingTitleInputStyle(titleValue, 4, 12)}
-                    aria-label={`脑洞输出名称 ${index + 1}`}
+                    aria-label={`AI输出名称 ${index + 1}`}
                   />
                   <span>
                     <WordCountText value={previewWordCount} />
@@ -205,6 +205,7 @@ export function BrainstormOutputWorkspace({
             sendDisabled={isLoading || !canSend}
             stopDisabled={!isLoading}
             placeholder="输入对话指令..."
+            className="xy-brainstorm-ai-input"
           />
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-center gap-2">

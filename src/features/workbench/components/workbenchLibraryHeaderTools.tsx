@@ -38,7 +38,6 @@ export type WorkbenchLibraryActiveFontConfigOptions = {
   activeTab: string;
   activeLibraryFontTarget: LibraryFontTarget;
   outlineSettingScope: string;
-  plotPointStandalone: boolean;
   brainstormPreviewFontSize: number;
   brainstormOutputFontSize: number;
   settingPreviewFontSize: number;
@@ -55,7 +54,6 @@ export function getWorkbenchLibraryActiveFontConfig({
   activeTab,
   activeLibraryFontTarget,
   outlineSettingScope,
-  plotPointStandalone,
   brainstormPreviewFontSize,
   brainstormOutputFontSize,
   settingPreviewFontSize,
@@ -82,7 +80,7 @@ export function getWorkbenchLibraryActiveFontConfig({
       min: BRAINSTORM_OUTPUT_MIN_FONT_SIZE,
       max: BRAINSTORM_OUTPUT_MAX_FONT_SIZE,
       onChange: setBrainstormOutputFontSize,
-      ariaLabel: '脑洞输出字号',
+      ariaLabel: 'AI输出字号',
     };
   }
 
@@ -115,7 +113,7 @@ export function getWorkbenchLibraryActiveFontConfig({
     };
   }
 
-  if (activeTab === DETAIL_OUTLINE_TAB && !plotPointStandalone) {
+  if (activeTab === DETAIL_OUTLINE_TAB) {
     return {
       value: detailOutlineFontSize,
       min: DETAIL_OUTLINE_MIN_FONT_SIZE,

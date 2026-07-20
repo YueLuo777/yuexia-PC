@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { readChapterEditorSource } from '../components/chapterEditorSource.testUtils';
+
 import {
   WORKBENCH_SHARED_LEFT_NAV_WIDTH_ENABLED_KEY,
   WORKBENCH_SHARED_LEFT_NAV_WIDTH_STORAGE_KEY,
@@ -12,9 +14,14 @@ import { SETTING_TAB } from '../components/workbenchLibraryTabs';
 
 const sharedLeftWidthPath = resolve(process.cwd(), 'src/features/workbench/model/workbenchSharedLeftNavWidth.ts');
 const workbenchPagePath = resolve(process.cwd(), 'src/features/workbench/pages/WorkbenchPage.tsx');
+const workbenchLayoutWidthsPath = resolve(process.cwd(), 'src/features/workbench/hooks/useWorkbenchLayoutWidths.ts');
+const workbenchModalHostPath = resolve(process.cwd(), 'src/features/workbench/components/WorkbenchPageModalHost.tsx');
 const libraryStoragePath = resolve(process.cwd(), 'src/features/workbench/components/workbenchLibraryStorageState.ts');
 const libraryPanelPath = resolve(process.cwd(), 'src/features/workbench/components/WorkbenchLibraryPanel.tsx');
-const chapterEditorPath = resolve(process.cwd(), 'src/features/workbench/components/ChapterEditor.tsx');
+const libraryControllerPath = resolve(
+  process.cwd(),
+  'src/features/workbench/hooks/useWorkbenchLibraryControllerPhase2.tsx',
+);
 const fieldSizeSettingsModalPath = resolve(
   process.cwd(),
   'src/features/workbench/components/workbenchFieldSizeSettingsModal.tsx',
@@ -45,10 +52,16 @@ describe('shared workbench left navigation width', () => {
       editorSettingsModalSource,
     ] = await Promise.all([
       readFile(sharedLeftWidthPath, 'utf8'),
-      readFile(workbenchPagePath, 'utf8'),
+      Promise.all([
+        readFile(workbenchPagePath, 'utf8'),
+        readFile(workbenchLayoutWidthsPath, 'utf8'),
+        readFile(workbenchModalHostPath, 'utf8'),
+      ]).then((parts) => parts.join('\n')),
       readFile(libraryStoragePath, 'utf8'),
-      readFile(libraryPanelPath, 'utf8'),
-      readFile(chapterEditorPath, 'utf8'),
+      Promise.all([readFile(libraryPanelPath, 'utf8'), readFile(libraryControllerPath, 'utf8')]).then((parts) =>
+        parts.join('\n'),
+      ),
+      Promise.resolve(readChapterEditorSource()),
       readFile(fieldSizeSettingsModalPath, 'utf8'),
       readFile(navigationTogglePath, 'utf8'),
       readFile(editorSettingsModalPath, 'utf8'),

@@ -1,5 +1,5 @@
-import { Feather, MoreHorizontal } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Check, ChevronRight, Feather, MoreHorizontal } from 'lucide-react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 
 import type { Novel } from '@/features/novels/model/novelTypes';
 
@@ -20,13 +20,15 @@ export interface NovelCardSettings {
 
 interface NovelCardProps {
   novel: Novel;
-  isSelected: boolean;
   settings: NovelCardSettings;
+  defaultCoverSrc?: string;
+  categories: string[];
   onPrepareOpen?: (id: number) => void;
   onOpen: (id: number) => void;
   onRename: (id: number, title: string) => void;
   onCover: (id: number) => void;
   onExport: (id: number) => void;
+  onMoveToCategory: (id: number, category: string) => void;
   onDelete: (id: number) => void;
 }
 
@@ -48,22 +50,38 @@ const statFontMap = {
   large: 'text-[15px]',
 } as const;
 
+function getMenuLabel(label: string) {
+  if (label === '封面') return '书封管理';
+  if (label === '删除') return '移入回收站';
+  return label;
+}
+
 export function NovelCard({
   novel,
-  isSelected,
   settings,
+  defaultCoverSrc,
+  categories,
   onPrepareOpen,
   onOpen,
   onRename,
   onCover,
   onExport,
+  onMoveToCategory,
   onDelete,
 }: NovelCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMoveMenuOpen, setIsMoveMenuOpen] = useState(false);
   const cardRef = useRef<HTMLElement | null>(null);
   const btnOrder = settings.btnOrder?.length ? settings.btnOrder : ['重命名', '封面', '导出', '删除'];
   const statFont = statFontMap[settings.statFontSize ?? 'medium'];
-  const menuItems = btnOrder.filter(Boolean);
+  const configuredMenuItems = btnOrder.filter((label) => Boolean(label) && label !== '移入');
+  const deleteItemIndex = configuredMenuItems.indexOf('删除');
+  const menuItems =
+    deleteItemIndex >= 0
+      ? [...configuredMenuItems.slice(0, deleteItemIndex), '移入', ...configuredMenuItems.slice(deleteItemIndex)]
+      : [...configuredMenuItems, '移入'];
+  const moveCategories = Array.from(new Set([...categories, novel.category].filter(Boolean)));
+  const coverSrc = novel.cover || (novel.type === 'novel' ? defaultCoverSrc : undefined);
 
   const actions: Record<string, (event: React.MouseEvent) => void> = {
     重命名: (event) => {
@@ -92,10 +110,14 @@ export function NovelCard({
       if (!(target instanceof Node)) return;
       if (cardRef.current?.contains(target)) return;
       setIsMenuOpen(false);
+      setIsMoveMenuOpen(false);
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsMenuOpen(false);
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false);
+        setIsMoveMenuOpen(false);
+      }
     };
 
     window.addEventListener('pointerdown', handlePointerDown, true);
@@ -116,6 +138,7 @@ export function NovelCard({
       onFocus={() => onPrepareOpen?.(novel.id)}
       onClick={() => {
         setIsMenuOpen(false);
+        setIsMoveMenuOpen(false);
         onOpen(novel.id);
       }}
       onKeyDown={(event) => {
@@ -128,15 +151,13 @@ export function NovelCard({
       style={{ width: widthMap[settings.cardWidth] }}
     >
       <div
-        className={`xy-wa-book-cover ${novel.cover ? 'xy-wa-book-cover-image' : 'xy-wa-book-cover-empty'} relative flex shrink-0 flex-col items-center justify-center overflow-hidden rounded-[4px] border shadow-[0_2px_8px_rgba(15,23,42,0.12)] transition ${
-          isSelected ? 'border-[#1e71ef] ring-2 ring-[#1e71ef]/20' : 'border-[#d8dde6] group-hover:border-[#9ebcf6]'
-        }`}
+        className={`xy-wa-book-cover ${coverSrc ? 'xy-wa-book-cover-image' : 'xy-wa-book-cover-empty'} relative flex shrink-0 flex-col items-center justify-center overflow-hidden rounded-[4px] border border-[#d8dde6] shadow-[0_2px_8px_rgba(15,23,42,0.12)] transition group-hover:border-[#9ebcf6]`}
         style={{
           height: coverHeightMap[settings.coverHeight],
         }}
       >
-        {novel.cover ? (
-          <img src={novel.cover} alt="封面" className="h-full w-full object-cover" />
+        {coverSrc ? (
+          <img src={coverSrc} alt={novel.cover ? '封面' : '默认封面'} className="h-full w-full object-cover" />
         ) : (
           <Feather
             className="pointer-events-none absolute bottom-7 right-4 h-14 w-14 -rotate-12 text-[#4b8fe8]/35"
@@ -154,6 +175,7 @@ export function NovelCard({
             type="button"
             onClick={(event) => {
               event.stopPropagation();
+              if (isMenuOpen) setIsMoveMenuOpen(false);
               setIsMenuOpen((prev) => !prev);
             }}
             aria-haspopup="menu"
@@ -170,25 +192,84 @@ export function NovelCard({
       {isMenuOpen ? (
         <div
           role="menu"
-          className="absolute right-0 top-[calc(100%-36px)] z-20 w-28 overflow-hidden rounded-md border border-[#dce1e8] bg-white py-1 shadow-lg"
+          aria-label="作品操作菜单"
+          className="absolute right-0 top-[calc(100%-36px)] z-20 w-[222px] rounded-xl border border-slate-100 bg-white py-2 shadow-[0_14px_35px_rgba(15,23,42,0.16)]"
           onClick={(event) => event.stopPropagation()}
         >
+          <div className="px-3 pb-2 pt-1">
+            <div className="text-[13px] font-medium text-[#8b95a1]">最近更新：{novel.lastModifiedAt || '暂无记录'}</div>
+            <div className="mt-1 truncate text-[13px] font-medium text-[#8b95a1]">
+              当前分类：{novel.category || '未分类'}
+            </div>
+          </div>
+          <div className="mx-1 border-t border-slate-200" />
           {menuItems.map((label) => (
-            <button
-              key={label}
-              role="menuitem"
-              onClick={(event) => {
-                actions[label]?.(event);
-                setIsMenuOpen(false);
-              }}
-              className={`block h-8 w-full px-3 text-left text-[13px] transition-colors ${
-                label === '删除'
-                  ? 'text-red-500 hover:bg-red-50'
-                  : 'text-[#586574] hover:bg-[#f2f6ff] hover:text-[#1e71ef]'
-              }`}
-            >
-              {label}
-            </button>
+            <Fragment key={label}>
+              {(label === '移入' || label === '删除') && <div className="mx-1 border-t border-slate-200" />}
+              {label === '移入' ? (
+                <div
+                  className="relative"
+                  onMouseEnter={() => setIsMoveMenuOpen(true)}
+                  onMouseLeave={() => setIsMoveMenuOpen(false)}
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    aria-haspopup="menu"
+                    aria-expanded={isMoveMenuOpen}
+                    onFocus={() => setIsMoveMenuOpen(true)}
+                    className="flex h-11 w-full items-center justify-between rounded-md px-3 text-left text-[14px] font-medium text-[#3d4856] transition-colors hover:bg-[#f2f3f5]"
+                  >
+                    <span>移入分类</span>
+                    <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+
+                  {isMoveMenuOpen ? (
+                    <div
+                      role="menu"
+                      aria-label="分类选择"
+                      className="absolute left-[calc(100%-1px)] top-0 z-30 w-[212px] rounded-xl border border-slate-100 bg-white py-1.5 shadow-[0_14px_35px_rgba(15,23,42,0.16)]"
+                    >
+                      {moveCategories.map((category) => {
+                        const isCurrent = category === novel.category;
+                        return (
+                          <button
+                            key={category}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={isCurrent}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (!isCurrent) onMoveToCategory(novel.id, category);
+                            }}
+                            className={`flex h-10 w-full items-center justify-between gap-3 px-4 text-left text-[14px] font-medium transition-colors ${
+                              isCurrent ? 'bg-[#f2f6ff] font-bold text-[#126df5]' : 'text-[#3d4856] hover:bg-[#f4f7fb]'
+                            }`}
+                          >
+                            <span className="min-w-0 truncate">{category}</span>
+                            {isCurrent ? <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <button
+                  role="menuitem"
+                  onClick={(event) => {
+                    actions[label]?.(event);
+                    setIsMenuOpen(false);
+                    setIsMoveMenuOpen(false);
+                  }}
+                  className={`block h-11 w-full rounded-md px-3 text-left text-[14px] font-medium transition-colors ${
+                    label === '删除' ? 'text-red-500 hover:bg-red-50' : 'text-[#3d4856] hover:bg-[#f2f3f5]'
+                  }`}
+                >
+                  {getMenuLabel(label)}
+                </button>
+              )}
+            </Fragment>
           ))}
         </div>
       ) : null}

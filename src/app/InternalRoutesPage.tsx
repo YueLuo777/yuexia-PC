@@ -1,5 +1,7 @@
-import { lazy } from 'react';
+import { lazy, type ComponentType } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+
+import { INTERNAL_ROUTE_DEFINITIONS, STARTUP_ROUTE_PATH, type InternalRouteComponentKey } from '@/app/routeRegistry';
 
 const TestCollectionPage = lazy(() =>
   import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })),
@@ -17,17 +19,26 @@ const TestBrowserPage = lazy(() =>
   import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })),
 );
 
+const INTERNAL_ROUTE_COMPONENTS = {
+  errorLog: ErrorLogPage,
+  hiddenPages: HiddenPagesTestPage,
+  softwareUiCatalog: SoftwareUiCatalogPage,
+  testBrowser: TestBrowserPage,
+  testCollection: TestCollectionPage,
+} satisfies Record<InternalRouteComponentKey, ComponentType>;
+
 export function InternalRoutesPage() {
   return (
     <Routes>
-      <Route path="/test-collection" element={<TestCollectionPage />} />
-      <Route path="/software-ui-catalog" element={<SoftwareUiCatalogPage />} />
-      <Route path="/hidden-content" element={<HiddenPagesTestPage />} />
-      <Route path="/hidden-pages-test" element={<HiddenPagesTestPage />} />
-      <Route path="/error-log" element={<ErrorLogPage />} />
-      <Route path="/theme-colors" element={<Navigate to="/settings?section=theme" replace />} />
-      <Route path="/test-browser" element={<TestBrowserPage />} />
-      <Route path="*" element={<Navigate to="/novels" replace />} />
+      {INTERNAL_ROUTE_DEFINITIONS.map((route) => {
+        if (route.redirectTo) {
+          return <Route key={route.id} path={route.path} element={<Navigate to={route.redirectTo} replace />} />;
+        }
+        if (!route.component) return null;
+        const Page = INTERNAL_ROUTE_COMPONENTS[route.component];
+        return <Route key={route.id} path={route.path} element={<Page />} />;
+      })}
+      <Route path="*" element={<Navigate to={STARTUP_ROUTE_PATH} replace />} />
     </Routes>
   );
 }

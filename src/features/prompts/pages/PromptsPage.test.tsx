@@ -2,12 +2,39 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import { PromptsPage } from './PromptsPage';
 
 const readPromptsPageSource = () =>
-  readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'PromptsPage.tsx'), 'utf8');
+  [
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../components/PromptPageParts.tsx'), 'utf8'),
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../components/PromptCategoryCreateModal.tsx'), 'utf8'),
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'PromptsPage.tsx'), 'utf8'),
+  ].join('\n');
 
 describe('PromptsPage modal layering', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('opens directly as novel prompts with no script prompt page or type branch', () => {
+    const source = readPromptsPageSource();
+    render(
+      <MemoryRouter>
+        <PromptsPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('heading', { name: '小说提示词' })).toBeInTheDocument();
+    expect(screen.queryByText('剧本提示词')).not.toBeInTheDocument();
+    expect(source).not.toContainSource("type PromptTab = 'novel' | 'script'");
+    expect(source).not.toContainSource("promptType === 'script'");
+    expect(source).not.toContainSource('剧本提示词');
+  });
+
   it('keeps the prompt editor modal from dimming the prompt management window behind it', () => {
     const source = readPromptsPageSource();
     const editorStart = source.indexOf('function PromptEditorModal');
@@ -56,7 +83,7 @@ describe('PromptsPage modal layering', () => {
     expect(cardSource).not.toContainSource('line-clamp-4 text-[13px] leading-6 text-slate-500');
   });
 
-  it('uses attached add-category control and right-click deletion with confirmation', () => {
+  it('creates categories through a software-style input modal and keeps right-click deletion', () => {
     const source = readPromptsPageSource();
     const categoryBarStart = source.indexOf('<div className="xy-category-capsules min-w-0 flex-1">');
     const categoryBarEnd = source.indexOf('{activeCategory === AUDIT_PROMPT_CATEGORY', categoryBarStart);
@@ -82,17 +109,32 @@ describe('PromptsPage modal layering', () => {
     expect(source).toContainSource('title="确认删除分类"');
     expect(source).toContainSource('confirmText="删除该分类"');
     expect(categoryBarSource).toContainSource('onContextMenu={(event) => openCategoryContextMenu(event, category)}');
-    expect(categoryBarSource).toContainSource(
-      'className="flex h-8 shrink-0 items-stretch overflow-hidden rounded-md border border-slate-200 bg-white',
-    );
-    expect(categoryBarSource).toContainSource(
-      'className="flex h-full min-w-[96px] items-center justify-center whitespace-nowrap bg-[#08AACE]',
-    );
+    expect(categoryBarSource).toContainSource('<ActionButton onClick={() => setShowCategoryCreate(true)}>新增分类</ActionButton>');
+    expect(source).toContainSource('<PromptCategoryCreateModal');
+    expect(source).toContainSource('placeholder="请输入分类名称"');
+    expect(source).not.toContainSource('placeholder="新增分类"');
+    expect(source).not.toContainSource('value={newCategory}');
     expect(categoryBarSource).toContainSource('删除该分类');
     expect(categoryBarSource).not.toContainSource('categoryDeleteMode');
     expect(categoryBarSource).not.toContainSource('xy-category-capsule-delete');
     expect(categoryBarSource).not.toContainSource('删除分类');
     expect(source).not.toContainSource('setCategoryContextMenu({ category, x: event.clientX, y: event.clientY });');
+  });
+
+  it('adds a category after the user enters a name and confirms', () => {
+    render(
+      <MemoryRouter>
+        <PromptsPage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '新增分类' }));
+    const input = screen.getByRole('textbox', { name: '分类名称' });
+    fireEvent.change(input, { target: { value: '自定义分类' } });
+    fireEvent.click(screen.getByRole('button', { name: '确定' }));
+
+    expect(screen.getByRole('button', { name: '自定义分类' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: '新增分类' })).not.toBeInTheDocument();
   });
 
   it('adds txt import and export controls beside the recycle bin action', () => {

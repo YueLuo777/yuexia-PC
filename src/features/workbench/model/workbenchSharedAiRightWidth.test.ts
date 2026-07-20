@@ -3,24 +3,28 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { readChapterEditorSource } from '../components/chapterEditorSource.testUtils';
+
 const sharedWidthPath = resolve(process.cwd(), 'src/features/workbench/model/workbenchSharedAiRightWidth.ts');
 const workbenchPagePath = resolve(process.cwd(), 'src/features/workbench/pages/WorkbenchPage.tsx');
+const workbenchLayoutWidthsPath = resolve(process.cwd(), 'src/features/workbench/hooks/useWorkbenchLayoutWidths.ts');
 const libraryStoragePath = resolve(process.cwd(), 'src/features/workbench/components/workbenchLibraryStorageState.ts');
 const libraryConstantsPath = resolve(
   process.cwd(),
   'src/features/workbench/components/workbenchLibraryPanelConstants.ts',
 );
-const chapterEditorPath = resolve(process.cwd(), 'src/features/workbench/components/ChapterEditor.tsx');
 
 describe('shared workbench AI right width', () => {
   it('uses one shared width key with a 380px minimum across writing, library, review and status pages', async () => {
     const [sharedWidthSource, workbenchPageSource, libraryStorageSource, libraryConstantsSource, chapterEditorSource] =
       await Promise.all([
         readFile(sharedWidthPath, 'utf8'),
-        readFile(workbenchPagePath, 'utf8'),
+        Promise.all([readFile(workbenchPagePath, 'utf8'), readFile(workbenchLayoutWidthsPath, 'utf8')]).then((parts) =>
+          parts.join('\n'),
+        ),
         readFile(libraryStoragePath, 'utf8'),
         readFile(libraryConstantsPath, 'utf8'),
-        readFile(chapterEditorPath, 'utf8'),
+        Promise.resolve(readChapterEditorSource()),
       ]);
 
     expect(sharedWidthSource).toContainSource(

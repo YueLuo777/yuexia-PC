@@ -5,7 +5,7 @@ export interface PromptItem {
   content: string;
   category: string;
   subCategory?: string;
-  promptType: 'novel' | 'script' | 'default';
+  promptType: 'novel' | 'default';
   usageCount: number;
   isFavorite: boolean;
   pinnedAt?: string;
@@ -21,5 +21,5 @@ export interface NewPromptInput {
   content: string;
   category: string;
   subCategory?: string;
-  promptType?: 'novel' | 'script' | 'default';
+  promptType?: 'novel' | 'default';
 }

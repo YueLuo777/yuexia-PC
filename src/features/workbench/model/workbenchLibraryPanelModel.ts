@@ -16,9 +16,6 @@ export interface WorkbenchLibraryPanelProps {
   showInlineFieldSizeButton?: boolean;
   openLogSignal?: number;
   onRegisterHeaderLog?: (handler: (() => void) | null) => void;
-  openPlotPointSignal?: number;
-  plotPointStandalone?: boolean;
-  onOpenDetailOutlineFromPlotChain?: () => void;
   toolbarPortalId?: string;
 }
 

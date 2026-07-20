@@ -50,7 +50,7 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
       "export const WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS = 'min-h-[38px] w-full rounded-xl",
     );
     expect(panelSource).toContainSource('className="flex w-full items-center gap-2"');
-    expect(panelSource).toContainSource('className="min-w-0 truncate pl-3 text-sm font-black text-gray-700"');
+    expect(panelSource).toContainSource("activeIsBrainstorm ? '' : 'pl-3'");
     expect(panelSource).toContainSource(
       'className="ml-auto shrink-0 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-black text-[#08AACE]"',
     );
@@ -60,6 +60,20 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(settingSidebarSource).not.toContainSource('space-y-0.5 overflow-y-auto pr-1');
     expect(settingSidebarSource).not.toContainSource('max-h-[760px] space-y-0.5 overflow-y-auto');
     expect(settingSidebarSource).not.toContainSource('setting-group:${effectiveLibraryTab}:${group.type}');
+  });
+
+  it('shows persistent brainstorm numbers and provides manual compact sorting above recycle bin', async () => {
+    const sidebarSource = await readWorkbenchLibrarySidebarSource();
+    const panelSource = await readWorkbenchLibraryPanelSource();
+
+    expect(sidebarSource).toContainSource('{entry.brainstormSerialNumber ?? previewIndex + 1}');
+    expect(sidebarSource).not.toContainSource('{entry.brainstormSerialNumber ?? previewIndex + 1}号');
+    expect(sidebarSource).toContainSource('className="-ml-1 shrink-0 text-sm font-black text-[#08AACE]"');
+    expect(sidebarSource).toContainSource('脑洞排序');
+    expect(sidebarSource).toContainSource('resequenceBrainstormEntries(brainstormEntries)');
+    expect(sidebarSource.indexOf('脑洞排序')).toBeLessThan(sidebarSource.indexOf('脑洞回收站'));
+    expect(panelSource).toContainSource('brainstormSerialNumberIsUsed');
+    expect(panelSource).toContainSource('nextBrainstormSerialNumber');
   });
 
   it('does not render the internal setting role brainstorm tabs and shows the requested brainstorm page', async () => {
@@ -205,7 +219,7 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(panelSource).toContainSource('const renderActiveLibraryFontSizeTool = () => {');
     expect(panelSource).toContainSource("if (activeLibraryFontTarget === 'brainstormPreview')");
     expect(panelSource).toContainSource('className="xy-header-stream-tool"');
-    expect(panelSource).toContainSource("ariaLabel: '脑洞输出字号'");
+    expect(panelSource).toContainSource("ariaLabel: 'AI输出字号'");
     expect(panelSource).toContainSource("ariaLabel: '脑洞预览字号'");
     expect(panelSource).toContainSource("onFocus={() => setActiveLibraryFontTarget('brainstormPreview')}");
     expect(panelSource).toContainSource("onFocusOutput={() => setActiveLibraryFontTarget('brainstormOutput')}");
@@ -229,6 +243,20 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(styleSource).toContainSource('width: 2.02rem;');
     expect(styleSource).toContainSource('.xy-stream-toggle-track {');
     expect(styleSource).toContainSource('background: #08AACE;');
+  });
+
+  it('uses a dark brainstorm request border and keeps the request input close to AI output', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const styleSource = await readSharedStylesSource();
+
+    expect(panelSource).toContainSource('className="xy-brainstorm-ai-input"');
+    expect(styleSource).toContainSource(
+      '.xy-floating-field.xy-brainstorm-ai-input.xy-floating-with-inline-actions textarea',
+    );
+    expect(styleSource).toContainSource('border-color: #111827;');
+    expect(styleSource).toContainSource('.xy-brainstorm-output-preview-list {');
+    expect(styleSource).toContainSource('padding-bottom: 0.25rem;');
+    expect(styleSource).not.toContainSource('padding-bottom: 1.25rem;');
   });
 
   it('does not render brainstorm session controls on the output frame', () => {
@@ -271,10 +299,7 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
       '<div className="flex min-w-0 flex-wrap items-center gap-2">',
       outputListEnd,
     );
-    const actionGroupSource = panelSource.slice(
-      actionGroupStart,
-      panelSource.indexOf('</section>', actionGroupStart),
-    );
+    const actionGroupSource = panelSource.slice(actionGroupStart, panelSource.indexOf('</section>', actionGroupStart));
 
     expect(outputListSource).not.toContainSource('清空脑洞');
     expect(actionGroupStart).toBeGreaterThan(-1);
@@ -510,7 +535,7 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
       'function getSelectedBrainstormPreviewIndexes(previews: string[], selectedIndexes?: number[])',
     );
     expect(panelSource).toContainSource('function getBrainstormOutputCount(value: string)');
-    expect(panelSource).toContainSource("return '脑洞输出';");
+    expect(panelSource).toContainSource("return 'AI输出';");
     expect(panelSource).not.toContainSource('return `${index + 1}号脑洞`;');
     expect(panelSource).not.toContainSource('return `脑洞输出框${index + 1}`;');
     expect(panelSource).not.toContainSource('return `新脑洞${index + 1}`;');
@@ -547,7 +572,7 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(panelSource).toContainSource('role="checkbox"');
     expect(panelSource).toContainSource('aria-checked={outputChecked}');
     expect(panelSource).toContainSource('onClick={() => onToggleSelected(index)}');
-    expect(panelSource).toContainSource('aria-label={`脑洞输出名称 ${index + 1}`}');
+    expect(panelSource).toContainSource('aria-label={`AI输出名称 ${index + 1}`}');
     expect(panelSource).toContainSource('onChange={(event) => onTitleChange(index, event.target.value)}');
     expect(panelSource).toContainSource('previewCount: targetBrainstormPreviewCount');
     expect(panelSource).toContainSource('disabled={!currentEntryId || selectedCount !== 1}');
@@ -599,9 +624,6 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(panelSource).toContainSource(
       '<aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50">',
     );
-    expect(panelSource).toContainSource(
-      '<aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-100 bg-gray-50 px-1 py-2">',
-    );
     expect(chapterSource).toContainSource(
       '<aside className="flex min-h-0 flex-col border-r border-slate-100 bg-gray-50 px-1 py-2">',
     );
@@ -642,7 +664,9 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(entryListSource).toContainSource(
       "activeIsBrainstorm\n                              ? 'border-transparent bg-white text-gray-700 hover:border-gray-200 hover:bg-gray-50'",
     );
-    expect(entryListSource).toContainSource('className="min-w-0 truncate pl-3 text-sm font-black text-gray-700"');
+    expect(entryListSource).toContainSource("activeIsBrainstorm ? '' : 'pl-3'");
+    expect(entryListSource).toContainSource('{entry.brainstormSerialNumber ?? previewIndex + 1}');
+    expect(entryListSource).not.toContainSource('{entry.brainstormSerialNumber ?? previewIndex + 1}号');
     expect(entryListSource).toContainSource(
       'className="ml-auto shrink-0 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-black text-[#08AACE]"',
     );

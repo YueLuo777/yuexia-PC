@@ -4,10 +4,14 @@ import { useNavigate } from 'react-router-dom';
 
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
+import {
+  AssociationSettingsCompactSection,
+  WindowSettingsCompactSection,
+} from '@/shared/settings/SystemSettingsCompactSections';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 import { PRIMARY_TEXT_BUTTON_CLASS } from '@/shared/ui/actionButtonClasses';
 
-type SettingsTab = 'window' | 'association' | 'appIcon';
+export type SettingsTab = 'window' | 'association' | 'appIcon';
 
 const tabs: Array<{ id: SettingsTab; label: string }> = [
   { id: 'window', label: '窗口' },
@@ -22,6 +26,9 @@ interface SystemSettingsModalProps {
   onClose: () => void;
   homeAvatar?: string;
   variant?: 'modal' | 'page' | 'embedded';
+  activeTab?: SettingsTab;
+  onActiveTabChange?: (tab: SettingsTab) => void;
+  hideTabNavigation?: boolean;
 }
 
 function readHomeAvatar() {
@@ -36,7 +43,15 @@ const SETTINGS_PAGE_BODY_CLASS = 'grid min-h-0 flex-1 grid-cols-[180px_minmax(0,
 const SETTINGS_PAGE_NAV_CLASS = 'shrink-0 border-r border-slate-100 pr-4';
 const SETTINGS_PAGE_CONTENT_CLASS = 'min-w-0 overflow-y-auto px-1 pb-6';
 
-export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant = 'modal' }: SystemSettingsModalProps) {
+export function SystemSettingsModal({
+  isOpen,
+  onClose,
+  homeAvatar = '',
+  variant = 'modal',
+  activeTab: controlledActiveTab,
+  onActiveTabChange,
+  hideTabNavigation = false,
+}: SystemSettingsModalProps) {
   const isPage = variant === 'page';
   const isEmbedded = variant === 'embedded';
   const isRouteSurface = isPage || isEmbedded;
@@ -51,6 +66,12 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
   const iconDir = iconInfo?.projectIconDir ?? fallbackIconDir;
   const projectIcons = iconInfo?.projectIcons ?? [];
   const supportsProjectIconList = Array.isArray(iconInfo?.projectIcons);
+  const selectedTab = controlledActiveTab ?? activeTab;
+
+  const selectTab = (tab: SettingsTab) => {
+    setActiveTab(tab);
+    onActiveTabChange?.(tab);
+  };
 
   const refreshIconInfo = async () => {
     const result = await window.xinyuexiaAppIcon?.read();
@@ -226,129 +247,66 @@ export function SystemSettingsModal({ isOpen, onClose, homeAvatar = '', variant 
 
         <div
           className={
-            isEmbedded
+            isEmbedded && !hideTabNavigation
               ? 'grid min-h-0 flex-1 grid-cols-[160px_minmax(0,1fr)] gap-5'
               : isPage
                 ? SETTINGS_PAGE_BODY_CLASS
                 : 'flex min-h-0 flex-1'
           }
         >
-          <div
-            className={
-              isEmbedded
-                ? 'shrink-0 border-r border-slate-100 pr-4'
-                : isPage
-                  ? SETTINGS_PAGE_NAV_CLASS
-                  : 'w-36 shrink-0 border-r border-slate-100 bg-slate-50 p-3'
-            }
-          >
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`mb-2 w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition-colors ${
-                  activeTab === tab.id
-                    ? isEmbedded
-                      ? 'bg-[#08AACE] text-white shadow-sm'
-                      : 'bg-white text-brand shadow-sm ring-1 ring-slate-100'
-                    : isEmbedded
-                      ? 'text-slate-600 hover:bg-[#E7F8FD] hover:text-[#08AACE]'
-                      : 'text-slate-500 hover:bg-white hover:text-slate-800'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          {!hideTabNavigation && (
+            <div
+              className={
+                isEmbedded
+                  ? 'shrink-0 border-r border-slate-100 pr-4'
+                  : isPage
+                    ? SETTINGS_PAGE_NAV_CLASS
+                    : 'w-36 shrink-0 border-r border-slate-100 bg-slate-50 p-3'
+              }
+            >
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => selectTab(tab.id)}
+                  className={`mb-2 w-full rounded-lg px-4 py-3 text-left text-sm font-bold transition-colors ${
+                    selectedTab === tab.id
+                      ? isEmbedded
+                        ? 'bg-[#08AACE] text-white shadow-sm'
+                        : 'bg-white text-brand shadow-sm ring-1 ring-slate-100'
+                      : isEmbedded
+                        ? 'text-slate-600 hover:bg-[#E7F8FD] hover:text-[#08AACE]'
+                        : 'text-slate-500 hover:bg-white hover:text-slate-800'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div
             className={
-              isEmbedded
+              isEmbedded && !hideTabNavigation
                 ? 'min-w-0 overflow-y-auto pb-6 pr-1'
-                : isPage
-                  ? SETTINGS_PAGE_CONTENT_CLASS
-                  : 'min-w-0 flex-1 overflow-y-auto p-4'
+                : isEmbedded
+                  ? 'min-w-0 flex-1 overflow-y-auto'
+                  : isPage
+                    ? SETTINGS_PAGE_CONTENT_CLASS
+                    : 'min-w-0 flex-1 overflow-y-auto p-4'
             }
           >
-            {activeTab === 'window' && (
-              <div className="space-y-4">
-                <section
-                  className={
-                    isRouteSurface
-                      ? 'border-b border-slate-100 pb-4'
-                      : 'rounded-2xl border border-slate-100 bg-slate-50 p-4'
-                  }
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-slate-900">记住窗口大小</h3>
-                      <p className="mt-1 text-xs leading-5 text-slate-500">
-                        开启后，软件会用上一次关闭前的窗口宽高和位置启动；关闭后，每次启动使用默认窗口大小。
-                      </p>
-                      <p className="mt-2 text-xs font-bold text-slate-400">
-                        当前默认：{windowSettings?.defaultBounds.width ?? 1366} ×{' '}
-                        {windowSettings?.defaultBounds.height ?? 768}
-                        {windowSettings?.currentBounds
-                          ? `，当前：${windowSettings.currentBounds.width} × ${windowSettings.currentBounds.height}`
-                          : ''}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => void updateRememberWindowSize(!(windowSettings?.rememberSize ?? true))}
-                      className={SETTINGS_LIGHT_BUTTON_CLASS}
-                    >
-                      {(windowSettings?.rememberSize ?? true) ? '已开启' : '已关闭'}
-                    </button>
-                  </div>
-                </section>
-
-                <section className={isRouteSurface ? 'pb-2' : 'rounded-2xl border border-slate-100 bg-white p-4'}>
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900">恢复默认窗口大小</h3>
-                      <p className="mt-1 text-xs leading-5 text-slate-500">
-                        把当前窗口恢复到默认宽高，并清掉已保存的窗口尺寸。
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => void resetWindowBounds()}
-                      className={SETTINGS_LIGHT_BUTTON_CLASS}
-                    >
-                      恢复默认
-                    </button>
-                  </div>
-                </section>
-              </div>
+            {selectedTab === 'window' && (
+              <WindowSettingsCompactSection
+                settings={windowSettings}
+                onToggleRemember={() => void updateRememberWindowSize(!(windowSettings?.rememberSize ?? true))}
+                onResetBounds={() => void resetWindowBounds()}
+              />
             )}
 
-            {activeTab === 'association' && (
-              <div className="space-y-4">
-                <div
-                  className={
-                    isRouteSurface
-                      ? 'border-b border-cyan-100 py-3'
-                      : 'rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4'
-                  }
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-slate-900">关联有效期</h3>
-                      <p className="mt-1 text-xs leading-5 text-slate-500">
-                        本章、上下文、脑洞、其他设定、关联小说等内容只在当前打开软件期间保留；关闭软件后会自动取消，下一次打开恢复未关联。
-                      </p>
-                    </div>
-                    <span className="shrink-0 rounded-full border border-cyan-200 bg-white px-3 py-1 text-xs font-bold text-brand">
-                      当前会话
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
+            {selectedTab === 'association' && <AssociationSettingsCompactSection />}
 
-            {activeTab === 'appIcon' && (
-              <div className="space-y-4">
+            {selectedTab === 'appIcon' && (
+              <div className="mx-auto w-full max-w-[1080px] space-y-4">
                 <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
                     {iconInfo?.dataUrl ? (

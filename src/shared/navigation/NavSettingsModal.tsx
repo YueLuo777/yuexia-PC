@@ -90,36 +90,14 @@ type NavPointerDragState = {
   cleanup: () => void;
 } | null;
 
-const NAV_POINTER_DRAG_ACTIVATION_DISTANCE = 14;
-const NAV_POINTER_DRAG_ACTIVATION_DELAY_MS = 160;
-const NAV_POINTER_DRAG_RETARGET_DISTANCE = 28;
-const NAV_POINTER_DRAG_RETURN_DISTANCE = 28;
-
-function hasNavPointerRetargetedTooSoon(
-  pointerDrag: NonNullable<NavPointerDragState>,
-  targetKey: string,
-  clientX: number,
-  clientY: number,
-) {
-  if (!pointerDrag.lastPreviewTargetKey || pointerDrag.lastPreviewTargetKey === targetKey) return false;
-  const distanceFromLastPreview = Math.hypot(clientX - pointerDrag.lastPreviewX, clientY - pointerDrag.lastPreviewY);
-  const retargetDistance =
-    targetKey === `nav:${pointerDrag.sourceIndex}`
-      ? NAV_POINTER_DRAG_RETURN_DISTANCE
-      : NAV_POINTER_DRAG_RETARGET_DISTANCE;
-  return distanceFromLastPreview < retargetDistance;
-}
-
-function rememberNavPointerPreviewTarget(
-  pointerDrag: NonNullable<NavPointerDragState>,
-  targetKey: string,
-  clientX: number,
-  clientY: number,
-) {
-  pointerDrag.lastPreviewTargetKey = targetKey;
-  pointerDrag.lastPreviewX = clientX;
-  pointerDrag.lastPreviewY = clientY;
-}
+import {
+  NAV_POINTER_DRAG_ACTIVATION_DISTANCE,
+  NAV_POINTER_DRAG_ACTIVATION_DELAY_MS,
+  NAV_POINTER_DRAG_RETARGET_DISTANCE,
+  NAV_POINTER_DRAG_RETURN_DISTANCE,
+  hasNavPointerRetargetedTooSoon,
+  rememberNavPointerPreviewTarget,
+} from './navSettingsOrdering';
 
 export function NavSettingsModal({
   isOpen,
@@ -405,11 +383,12 @@ export function NavSettingsModal({
       }}
     >
       <div
+        data-nav-settings-layout={isEmbedded ? 'embedded' : undefined}
         data-draggable-managed={isRouteSurface ? undefined : 'true'}
         data-modal-id={isRouteSurface ? undefined : 'dashboard-nav-settings'}
         className={
           isEmbedded
-            ? 'flex h-full min-h-0 w-full flex-col overflow-hidden'
+            ? 'flex h-full min-h-0 w-full max-w-[960px] flex-col overflow-hidden'
             : isPage
               ? SETTINGS_PAGE_SHELL_CLASS
               : 'relative flex max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] w-[640px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'

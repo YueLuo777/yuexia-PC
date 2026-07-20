@@ -8,7 +8,6 @@ type OutlineAiLogModalProps = {
   activeTab: string;
   requestLog: LibraryAiRequestLog;
   isDetailOutlineTab: boolean;
-  plotPointStandalone: boolean;
   shouldShowOutlineBodyContext: boolean;
   outlineUserLogTitle: string;
   onClose: () => void;
@@ -36,7 +35,6 @@ export function OutlineAiLogModal({
   activeTab,
   requestLog,
   isDetailOutlineTab,
-  plotPointStandalone,
   shouldShowOutlineBodyContext,
   outlineUserLogTitle,
   onClose,
@@ -99,8 +97,6 @@ export function OutlineAiLogModal({
           readerTitle: '关联资料',
           readerEmptyText: '未关联章纲、设定或角色',
           userTitle: outlineUserLogTitle,
-          expandReaderContextContent: plotPointStandalone,
-          expandAllContent: plotPointStandalone,
         })}
         fillSingleGroup
         fillGroupWeights={fillGroupWeights}

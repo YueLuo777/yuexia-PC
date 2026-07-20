@@ -1,14 +1,8 @@
-export const INTERNAL_ROUTE_STORAGE_KEY = 'xinyuexia_show_internal_routes';
+import { INTERNAL_ROUTE_PATHS } from '@/app/routeRegistry';
 
-export const INTERNAL_ROUTE_PATHS = [
-  '/test-collection',
-  '/software-ui-catalog',
-  '/hidden-content',
-  '/hidden-pages-test',
-  '/error-log',
-  '/theme-colors',
-  '/test-browser',
-] as const;
+export { INTERNAL_ROUTE_PATHS } from '@/app/routeRegistry';
+
+export const INTERNAL_ROUTE_STORAGE_KEY = 'xinyuexia_show_internal_routes';
 
 type InternalRouteEnv = {
   DEV?: boolean;

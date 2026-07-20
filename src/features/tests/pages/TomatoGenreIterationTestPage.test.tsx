@@ -16,7 +16,10 @@ describe('tomato genre iteration test page', () => {
   });
 
   it('lays out a three-column browser-driven topic iteration workflow without crawling full text', () => {
-    const page = readSource('src/features/tests/pages/TomatoGenreIterationTestPage.tsx');
+    const page = [
+      readSource('src/features/tests/pages/TomatoGenreIterationTestPage.tsx'),
+      readSource('src/features/tests/pages/TomatoGenreIterationTestPageView.tsx'),
+    ].join('\n');
 
     expect(page).toContainSource('gridTemplateColumns: layoutColumns');
     expect(page).toContainSource('TOMATO_AI_PANEL_MIN_WIDTH = Math.round(TOMATO_AI_PANEL_WIDTH * 0.6)');

@@ -172,24 +172,6 @@ function migratePrompts() {
   }
 }
 
-function migratePlotLibrary() {
-  const legacy = readJson<Array<Record<string, JsonValue>>>('plot_library_v1', []);
-  if (legacy.length === 0) return;
-  const current = readJson<Array<Record<string, JsonValue>>>('xinyuexia_plot_library_v1', []);
-  const items = legacy.map((item) => ({
-    id: String(item.id ?? `legacy-plot-${Date.now()}`),
-    title: String(item.title ?? '剧情点'),
-    chapter: String(item.chapter ?? ''),
-    novelTitle: String(item.sourceFile ?? item.novelTitle ?? '旧版剧情库'),
-    content: String(item.content ?? ''),
-    tags: Array.isArray(item.tags) ? item.tags.filter((tag): tag is string => typeof tag === 'string') : [],
-    wordCount: Number(item.wordCount ?? String(item.content ?? '').replace(/\s+/g, '').length),
-    createdAt: String(item.createdAt ?? new Date().toISOString()),
-    updatedAt: String(item.updatedAt ?? item.createdAt ?? new Date().toISOString()),
-  }));
-  writeJson('xinyuexia_plot_library_v1', mergeById(current as typeof items, items));
-}
-
 export function runLegacyMigration() {
   if (localStorage.getItem(MIGRATION_KEY) === '1') return;
   try {
@@ -197,7 +179,6 @@ export function runLegacyMigration() {
     migrateModels();
     migrateMaterials();
     migratePrompts();
-    migratePlotLibrary();
     localStorage.setItem(MIGRATION_KEY, '1');
   } catch (error) {
     console.warn('旧版数据迁移失败：', error);

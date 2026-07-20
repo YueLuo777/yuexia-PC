@@ -9,12 +9,6 @@ import {
   BRAINSTORM_PREVIEW_MAX_WIDTH,
   BRAINSTORM_PREVIEW_MIN_WIDTH,
   OUTLINE_ACTION_RIGHT_MIN_WIDTH,
-  PLOT_POINT_LAYOUT_LEFT_MAX_WIDTH,
-  PLOT_POINT_LAYOUT_LEFT_MIN_WIDTH,
-  PLOT_POINT_LAYOUT_RIGHT_MAX_WIDTH,
-  PLOT_POINT_LAYOUT_RIGHT_MIN_WIDTH,
-  PLOT_POINT_LAYOUT_TREE_MAX_WIDTH,
-  PLOT_POINT_LAYOUT_TREE_MIN_WIDTH,
   SETTING_LIBRARY_RIGHT_MAX_WIDTH,
   SETTING_LIBRARY_RIGHT_MIN_WIDTH,
 } from './workbenchLibraryPanelConstants';
@@ -22,7 +16,6 @@ import { BRAINSTORM_TAB, DETAIL_OUTLINE_TAB, OUTLINE_LIBRARY_TAB, SETTING_TAB } 
 import {
   getSettingLibraryLeftMaxWidth,
   getSettingLibraryLeftMinWidth,
-  persistPlotPointLayoutWidth,
   persistSettingLibraryWidth,
 } from './workbenchLibraryStorageState';
 
@@ -63,15 +56,9 @@ type WorkbenchLibraryResizeHandlesOptions = {
   settingLibraryLeftWidth: number;
   settingLibraryRightWidth: number;
   brainstormPreviewWidth: number;
-  plotPointLayoutTreeWidth: number;
-  plotPointLayoutLeftWidth: number;
-  plotPointLayoutRightWidth: number;
   setSettingLibraryLeftWidth: ResizeWidthSetter;
   setSettingLibraryRightWidth: ResizeWidthSetter;
   setBrainstormPreviewWidth: ResizeWidthSetter;
-  setPlotPointLayoutTreeWidth: ResizeWidthSetter;
-  setPlotPointLayoutLeftWidth: ResizeWidthSetter;
-  setPlotPointLayoutRightWidth: ResizeWidthSetter;
 };
 
 function getResizeEventScale(element: HTMLElement, fallbackScale: number) {
@@ -117,15 +104,9 @@ export function useWorkbenchLibraryResizeHandles({
   settingLibraryLeftWidth,
   settingLibraryRightWidth,
   brainstormPreviewWidth,
-  plotPointLayoutTreeWidth,
-  plotPointLayoutLeftWidth,
-  plotPointLayoutRightWidth,
   setSettingLibraryLeftWidth,
   setSettingLibraryRightWidth,
   setBrainstormPreviewWidth,
-  setPlotPointLayoutTreeWidth,
-  setPlotPointLayoutLeftWidth,
-  setPlotPointLayoutRightWidth,
 }: WorkbenchLibraryResizeHandlesOptions) {
   const startLeftWidthResize = (event: ReactPointerEvent<HTMLDivElement>) => {
     const { eventScale, startX } = prepareResize(event, scale);
@@ -187,69 +168,6 @@ export function useWorkbenchLibraryResizeHandles({
     bindWindowResize(handleMove);
   };
 
-  const startPlotPointTreeWidthResize = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const { eventScale, startX } = prepareResize(event, scale);
-    const startWidth = Math.min(
-      PLOT_POINT_LAYOUT_TREE_MAX_WIDTH,
-      Math.max(PLOT_POINT_LAYOUT_TREE_MIN_WIDTH, plotPointLayoutTreeWidth),
-    );
-
-    const handleMove = (moveEvent: PointerEvent) => {
-      moveEvent.preventDefault();
-      moveEvent.stopPropagation();
-      const deltaX = (moveEvent.clientX - startX) / eventScale;
-      const nextWidth = Math.min(
-        PLOT_POINT_LAYOUT_TREE_MAX_WIDTH,
-        Math.max(PLOT_POINT_LAYOUT_TREE_MIN_WIDTH, startWidth + deltaX),
-      );
-      setPlotPointLayoutTreeWidth(nextWidth);
-      persistPlotPointLayoutWidth(storageKey, 'tree', nextWidth);
-    };
-    bindWindowResize(handleMove);
-  };
-
-  const startPlotPointLeftWidthResize = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const { eventScale, startX } = prepareResize(event, scale);
-    const startWidth = Math.min(
-      PLOT_POINT_LAYOUT_LEFT_MAX_WIDTH,
-      Math.max(PLOT_POINT_LAYOUT_LEFT_MIN_WIDTH, plotPointLayoutLeftWidth),
-    );
-
-    const handleMove = (moveEvent: PointerEvent) => {
-      moveEvent.preventDefault();
-      moveEvent.stopPropagation();
-      const deltaX = (moveEvent.clientX - startX) / eventScale;
-      const nextWidth = Math.min(
-        PLOT_POINT_LAYOUT_LEFT_MAX_WIDTH,
-        Math.max(PLOT_POINT_LAYOUT_LEFT_MIN_WIDTH, startWidth + deltaX),
-      );
-      setPlotPointLayoutLeftWidth(nextWidth);
-      persistPlotPointLayoutWidth(storageKey, 'left', nextWidth);
-    };
-    bindWindowResize(handleMove);
-  };
-
-  const startPlotPointRightWidthResize = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const { eventScale, startX } = prepareResize(event, scale);
-    const startWidth = Math.min(
-      PLOT_POINT_LAYOUT_RIGHT_MAX_WIDTH,
-      Math.max(PLOT_POINT_LAYOUT_RIGHT_MIN_WIDTH, plotPointLayoutRightWidth),
-    );
-
-    const handleMove = (moveEvent: PointerEvent) => {
-      moveEvent.preventDefault();
-      moveEvent.stopPropagation();
-      const deltaX = (startX - moveEvent.clientX) / eventScale;
-      const nextWidth = Math.min(
-        PLOT_POINT_LAYOUT_RIGHT_MAX_WIDTH,
-        Math.max(PLOT_POINT_LAYOUT_RIGHT_MIN_WIDTH, startWidth + deltaX),
-      );
-      setPlotPointLayoutRightWidth(nextWidth);
-      persistPlotPointLayoutWidth(storageKey, 'right', nextWidth);
-    };
-    bindWindowResize(handleMove);
-  };
-
   return {
     leftResizeHandle: (
       <WorkbenchLibraryResizeHandle
@@ -269,27 +187,6 @@ export function useWorkbenchLibraryResizeHandles({
     ),
     brainstormPreviewResizeHandle: (
       <WorkbenchLibraryResizeHandle onPointerDown={startBrainstormPreviewWidthResize} title="拖拽调整脑洞预览宽度" />
-    ),
-    plotPointLeftResizeHandle: (
-      <WorkbenchLibraryResizeHandle
-        onPointerDown={startPlotPointLeftWidthResize}
-        title="拖拽调整剧情链左侧宽度"
-        widthClass="w-3"
-      />
-    ),
-    plotPointTreeResizeHandle: (
-      <WorkbenchLibraryResizeHandle
-        onPointerDown={startPlotPointTreeWidthResize}
-        title="拖拽调整剧情链目录宽度"
-        widthClass="w-3"
-      />
-    ),
-    plotPointRightResizeHandle: (
-      <WorkbenchLibraryResizeHandle
-        onPointerDown={startPlotPointRightWidthResize}
-        title="拖拽调整剧情链右侧宽度"
-        widthClass="w-3"
-      />
     ),
   };
 }

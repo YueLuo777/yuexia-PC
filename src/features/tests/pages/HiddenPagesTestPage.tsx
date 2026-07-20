@@ -38,33 +38,6 @@ const statusMeta: Record<HiddenItemStatus, { label: string; className: string; i
 
 const hiddenGroups: Array<{ title: string; desc: string; items: HiddenItem[] }> = [
   {
-    title: '剧情链隐藏内容',
-    desc: '这些剧情库相关入口从剧情链正式操作区隐藏，当前默认只保留 AI 生成来源。',
-    items: [
-      {
-        title: '剧情链来源：剧情库按钮',
-        status: 'feature-hidden',
-        hiddenFrom: '作品编辑器 / 生成剧情链 / 右侧生成规则 / 来源。',
-        reason: '剧情库生成效果当前不稳定，容易把已有剧情骨架带入当前小说，造成变量和进度不贴合。',
-        restore: '在 WorkbenchLibraryPanel 中把 library 加回可见来源列表，并恢复对应按钮。',
-      },
-      {
-        title: '剧情链来源：混合按钮',
-        status: 'feature-hidden',
-        hiddenFrom: '作品编辑器 / 生成剧情链 / 右侧生成规则 / 来源。',
-        reason: '混合来源仍会引入剧情库参考，当前隐藏以保证剧情链只按关联设定和提示词生成。',
-        restore: '在 WorkbenchLibraryPanel 中把 mixed 加回可见来源列表，并确认剧情库参考是否仍要发送给 AI。',
-      },
-      {
-        title: '剧情链请求里的剧情库参考',
-        status: 'embedded-hidden',
-        hiddenFrom: '生成剧情链请求内容里的“可参考剧情库”。',
-        reason: '来源被固定为 AI 生成后，剧情链不会再把剧情库候选作为参考上下文发送给 AI。',
-        restore: '恢复剧情库或混合来源后，该参考内容会按来源逻辑重新进入请求。',
-      },
-    ],
-  },
-  {
     title: '保留但不作为主入口',
     desc: '这些路由或组件仍存在，主要是为了以后恢复、排查或内嵌使用。',
     items: [

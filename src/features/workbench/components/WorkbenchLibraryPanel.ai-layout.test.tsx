@@ -20,7 +20,6 @@ describe('WorkbenchLibraryPanel AI and shared layout contracts', () => {
 
     expect(panelSource).toContainSource("target: 'workbenchLibraryAi'");
     expect(panelSource).toContainSource("target: 'workbenchOutlineAi'");
-    expect(panelSource).toContainSource("target: 'workbenchPlotPointAi'");
     expect(panelSource).toContainSource('subscribeBackgroundAiTasks(syncBackgroundTasks)');
     expect(panelSource).toContainSource('stopBackgroundAiTask');
     expect(panelSource).not.toContainSource('libraryAiAbortRef');

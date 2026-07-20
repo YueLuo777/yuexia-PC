@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  beginReviewModeRequest,
   clearAllReviewModeResults,
   getReviewBackgroundTaskStorageKey,
   isReviewBackgroundTaskForChapter,
@@ -55,6 +56,30 @@ describe('chapterReviewTaskState', () => {
       revisedDraft: '',
       requestLog: '',
       backgroundTaskId: undefined,
+    });
+  });
+
+  it('clears an applied revision draft when a new review request begins', () => {
+    const state: ReviewModeState = {
+      input: '继续检查表达',
+      output: '上一次结果',
+      revisedDraft: '上一次已应用的正文',
+      requestLog: '上一次日志',
+      backgroundTaskId: 'old-task',
+    };
+
+    expect(
+      beginReviewModeRequest(state, {
+        output: '正在思考...',
+        requestLog: '本次日志',
+        backgroundTaskId: 'new-task',
+      }),
+    ).toEqual({
+      input: '继续检查表达',
+      output: '正在思考...',
+      revisedDraft: '',
+      requestLog: '本次日志',
+      backgroundTaskId: 'new-task',
     });
   });
 });

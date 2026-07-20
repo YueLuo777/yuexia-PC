@@ -27,6 +27,19 @@ export function createReviewModeState(): ReviewModeState {
   };
 }
 
+export function beginReviewModeRequest(
+  state: ReviewModeState,
+  options: { output: string; requestLog: string; backgroundTaskId: string },
+): ReviewModeState {
+  return {
+    ...state,
+    output: options.output,
+    revisedDraft: '',
+    requestLog: options.requestLog,
+    backgroundTaskId: options.backgroundTaskId,
+  };
+}
+
 function clearReviewModeResult(state: ReviewModeState): ReviewModeState {
   return {
     ...state,

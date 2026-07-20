@@ -47,6 +47,9 @@ const removedMarkedTests = [
   ['/shuimo-semantic-palette-preview-test', 'ShuimoSemanticPalettePreviewTestPage'],
   ['/genre-iteration-moonfall-style-test', 'GenreIterationMoonfallStyleTestPage'],
   ['/audit-prompt-select-grouping-test', 'AuditPromptSelectGroupingTestPage'],
+  ['/novel-library-toolbar-layout-test', 'NovelLibraryToolbarLayoutTestPage'],
+  ['/text-audit-continuous-context-test', 'TextAuditContinuousContextTestPage'],
+  ['/novel-card-menu-design-test', 'NovelCardMenuDesignTestPage'],
 ] as const;
 
 describe('TestCollectionPage delete marked cleanup', () => {

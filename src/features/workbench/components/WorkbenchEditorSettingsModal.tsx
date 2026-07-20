@@ -3,6 +3,7 @@ import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
 
 import { WorkbenchNavigationWidthToggle } from './WorkbenchNavigationWidthToggle';
+import { WorkbenchReplaceBodyWarningSetting } from './WorkbenchReplaceBodyWarningSetting';
 
 type WorkbenchEditorSettingsModalProps = {
   publishConfirm: boolean;
@@ -59,6 +60,7 @@ export function WorkbenchEditorSettingsModal({
               </span>
             </span>
           </label>
+          <WorkbenchReplaceBodyWarningSetting />
           <WorkbenchNavigationWidthToggle />
         </div>
         <ModalResizeHandles draggable={draggable} />

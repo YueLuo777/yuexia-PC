@@ -11,6 +11,14 @@ describe('workbench legacy selected style residue', () => {
   it('keeps production workbench surfaces free of legacy orange selected styles', () => {
     const sources = [
       'src/features/workbench/components/ChapterEditor.tsx',
+      'src/features/workbench/components/chapterEditorLayout.tsx',
+      'src/features/workbench/components/chapterEditorReviewConfig.ts',
+      'src/features/workbench/components/chapterEditorPresentation.tsx',
+      'src/features/workbench/components/ChapterStatusPanel.tsx',
+      'src/features/workbench/components/ChapterReviewDirectory.tsx',
+      'src/features/workbench/components/ChapterReviewPreview.tsx',
+      'src/features/workbench/components/ChapterReviewAiPanel.tsx',
+      'src/features/workbench/components/ChapterReviewManagementModal.tsx',
       'src/features/workbench/components/WorkbenchLibraryPanel.tsx',
       'src/features/workbench/components/workbenchSettingEditor.tsx',
       'src/features/workbench/pages/WorkbenchPage.tsx',

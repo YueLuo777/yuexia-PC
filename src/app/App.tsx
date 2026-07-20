@@ -1,6 +1,12 @@
-import { Component, Suspense, lazy, useEffect, type ReactNode } from 'react';
+import { Component, Suspense, lazy, useEffect, type ComponentType, type ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
+import {
+  FORMAL_ROUTE_DEFINITIONS,
+  LEGACY_ROUTE_REDIRECTS,
+  STARTUP_ROUTE_PATH,
+  type FormalRouteComponentKey,
+} from '@/app/routeRegistry';
 import { AppFrame } from '@/shared/layout/AppFrame';
 import { WorkspaceTabsProvider } from '@/shared/tabs/WorkspaceTabsContext';
 import {
@@ -10,11 +16,6 @@ import {
 import { bindWorkbenchTransientAiCleanup } from '@/features/workbench/model/workbenchTransientAiCleanup';
 import { areInternalRoutesEnabled } from '@/shared/featureFlags/internalRoutes';
 
-const ConceptLibraryPage = lazy(() =>
-  import('@/features/concept-library/pages/ConceptLibraryPage').then((module) => ({
-    default: module.ConceptLibraryPage,
-  })),
-);
 const TomatoGenreIterationTestPage = lazy(() =>
   import('@/features/tests/pages/TomatoGenreIterationTestPage').then((module) => ({
     default: module.TomatoGenreIterationTestPage,
@@ -22,9 +23,6 @@ const TomatoGenreIterationTestPage = lazy(() =>
 );
 const LibraryHubPage = lazy(() =>
   import('@/features/library-hub/pages/LibraryHubPage').then((module) => ({ default: module.LibraryHubPage })),
-);
-const DbSettingsPage = lazy(() =>
-  import('@/features/settings/pages/DbSettingsPage').then((module) => ({ default: module.DbSettingsPage })),
 );
 const ModelManagePage = lazy(() =>
   import('@/features/models/pages/ModelManagePage').then((module) => ({ default: module.ModelManagePage })),
@@ -40,9 +38,6 @@ const WorkbenchPage = lazy(() =>
   import('@/features/workbench/pages/WorkbenchPage').then((module) => ({ default: module.WorkbenchPage })),
 );
 const TokenUsagePage = lazy(() => import('@/pages/TokenUsagePage'));
-const TextOverridesPage = lazy(() =>
-  import('@/features/text-overrides/pages/TextOverridesPage').then((module) => ({ default: module.TextOverridesPage })),
-);
 const DashboardLayout = lazy(() =>
   import('@/shared/layout/DashboardLayout').then((module) => ({ default: module.DashboardLayout })),
 );
@@ -53,6 +48,21 @@ const INTERNAL_ROUTE_MODULES_BUNDLED = import.meta.env.DEV || import.meta.env.VI
 const InternalRoutesPage = INTERNAL_ROUTE_MODULES_BUNDLED
   ? lazy(() => import('@/app/InternalRoutesPage').then((module) => ({ default: module.InternalRoutesPage })))
   : null;
+
+const FORMAL_ROUTE_COMPONENTS = {
+  libraryHub: LibraryHubPage,
+  modelManage: ModelManagePage,
+  novelLibrary: NovelLibraryPage,
+  prompts: PromptsPage,
+  scriptEditor: ScriptEditorPage,
+  settings: SettingsPage,
+  tokenUsage: TokenUsagePage,
+  tomatoGenreIteration: TomatoGenreIterationTestPage,
+  workbench: WorkbenchPage,
+} satisfies Record<FormalRouteComponentKey, ComponentType>;
+
+const DASHBOARD_FORMAL_ROUTES = FORMAL_ROUTE_DEFINITIONS.filter((route) => route.dashboard);
+const STANDALONE_FORMAL_ROUTES = FORMAL_ROUTE_DEFINITIONS.filter((route) => !route.dashboard);
 
 function AppFallback() {
   return (
@@ -87,7 +97,7 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error
           </pre>
           <button
             onClick={() => {
-              window.location.hash = '#/novels';
+              window.location.hash = `#${STARTUP_ROUTE_PATH}`;
               window.location.reload();
             }}
             className="mt-4 rounded-xl bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-dark"
@@ -116,27 +126,22 @@ export default function App() {
         <AppErrorBoundary>
           <Suspense fallback={<AppFallback />}>
             <Routes>
-              <Route path="/" element={<Navigate to="/novels" replace />} />
+              <Route path="/" element={<Navigate to={STARTUP_ROUTE_PATH} replace />} />
               <Route element={<DashboardLayout />}>
-                <Route path="/novels" element={<NovelLibraryPage />} />
-                <Route path="/scripts" element={<NovelLibraryPage />} />
-                <Route path="/library" element={<LibraryHubPage />} />
-                <Route path="/tomato-browser" element={<TomatoGenreIterationTestPage />} />
-                <Route path="/concept-library" element={<ConceptLibraryPage />} />
-                <Route path="/prompts" element={<PromptsPage />} />
-                <Route path="/model-manage" element={<ModelManagePage />} />
-                <Route path="/db-settings" element={<DbSettingsPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/text-overrides" element={<TextOverridesPage />} />
-                <Route path="/token-usage" element={<TokenUsagePage />} />
+                {DASHBOARD_FORMAL_ROUTES.map((route) => {
+                  const Page = FORMAL_ROUTE_COMPONENTS[route.component];
+                  return <Route key={route.id} path={route.path} element={<Page />} />;
+                })}
                 {showInternalRoutes && InternalRoutesPage && <Route path="*" element={<InternalRoutesPage />} />}
-                <Route path="/system-settings" element={<Navigate to="/settings?section=system" replace />} />
-                <Route path="/shortcut-settings" element={<Navigate to="/settings?section=shortcuts" replace />} />
-                <Route path="/nav-settings" element={<Navigate to="/settings?section=navigation" replace />} />
+                {LEGACY_ROUTE_REDIRECTS.map((redirect) => (
+                  <Route key={redirect.path} path={redirect.path} element={<Navigate to={redirect.to} replace />} />
+                ))}
               </Route>
-              <Route path="/workbench" element={<WorkbenchPage />} />
-              <Route path="/script-editor-v2" element={<ScriptEditorPage />} />
-              <Route path="*" element={<Navigate to="/novels" replace />} />
+              {STANDALONE_FORMAL_ROUTES.map((route) => {
+                const Page = FORMAL_ROUTE_COMPONENTS[route.component];
+                return <Route key={route.id} path={route.path} element={<Page />} />;
+              })}
+              <Route path="*" element={<Navigate to={STARTUP_ROUTE_PATH} replace />} />
             </Routes>
           </Suspense>
         </AppErrorBoundary>

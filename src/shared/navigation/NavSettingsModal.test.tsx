@@ -4,8 +4,11 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-const readSource = (relativePath: string) =>
-  readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
+const readSource = (relativePath: string) => {
+  const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
+  if (relativePath !== 'NavSettingsModal.tsx') return source;
+  return `${source}\n${readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'navSettingsOrdering.ts'), 'utf8')}`;
+};
 
 describe('NavSettingsModal flat navigation editing', () => {
   it('removes zone management from the navigation settings UI', () => {
@@ -70,5 +73,13 @@ describe('NavSettingsModal flat navigation editing', () => {
     expect(source).toContainSource('虚影，松手后落实');
     expect(source).not.toContainSource('targetIndex === pointerDrag.sourceIndex');
     expect(source).not.toContainSource("dragSrc === itemIndex\n                          ? 'scale-[0.98]");
+  });
+
+  it('keeps the embedded editor left aligned within a 960px work area', () => {
+    const source = readSource('NavSettingsModal.tsx');
+
+    expect(source).toContainSource("data-nav-settings-layout={isEmbedded ? 'embedded' : undefined}");
+    expect(source).toContainSource('flex h-full min-h-0 w-full max-w-[960px] flex-col overflow-hidden');
+    expect(source).not.toContainSource('mx-auto flex h-full min-h-0 w-full max-w-[960px]');
   });
 });

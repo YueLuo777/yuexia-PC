@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildReviewTextDiff,
   extractReviewAnnotations,
+  extractReviewModificationNotes,
   extractReviewRevisedText,
   getReviewAnnotationParagraphIndex,
   splitReviewParagraphs,
@@ -36,6 +37,18 @@ describe('chapterReviewText', () => {
 
   it('normalizes line endings without removing empty review paragraphs', () => {
     expect(splitReviewParagraphs('第一段\r\n\r\n第三段')).toEqual(['第一段', '', '第三段']);
+  });
+
+  it('extracts paragraph modification reasons and infers compact categories', () => {
+    expect(
+      extractReviewModificationNotes(
+        `【修改后全文】\n正文\n【修改说明】\n第2段：删除重复表达。\n第5段｜情绪描写：改为动作表达。\n第8段：压缩冗长句式。`,
+      ),
+    ).toEqual([
+      { paragraphIndex: 1, category: '重复表达', note: '删除重复表达。' },
+      { paragraphIndex: 4, category: '情绪描写', note: '改为动作表达。' },
+      { paragraphIndex: 7, category: '句式精简', note: '压缩冗长句式。' },
+    ]);
   });
 
   it('parses valid annotation entries and supplies safe defaults', () => {

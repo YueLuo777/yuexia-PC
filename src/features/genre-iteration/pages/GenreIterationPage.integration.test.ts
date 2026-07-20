@@ -11,7 +11,10 @@ describe('genre iteration page integration', () => {
     const nav = readSource('src/shared/navigation/navConfig.ts');
     const testCollection = readSource('src/features/tests/pages/TestCollectionPage.tsx');
     const page = readSource('src/features/genre-iteration/pages/GenreIterationPage.tsx');
-    const workbench = readSource('src/features/genre-iteration/components/GenreIterationWorkbench.tsx');
+    const workbench = [
+      readSource('src/features/genre-iteration/components/GenreIterationWorkbench.tsx'),
+      readSource('src/features/genre-iteration/components/genreIterationParts.tsx'),
+    ].join('\n');
 
     expect(app).not.toContainSource('GenreIterationPage');
     expect(app).not.toContainSource('path="/genre-iteration"');

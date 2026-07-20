@@ -25,92 +25,35 @@ import {
 } from '@/shared/shortcuts/shortcutConfig';
 import { hasTopModalEscapeHandler, useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { HOME_TAB, useWorkspaceTabs, type WorkspaceTab } from '@/shared/tabs/WorkspaceTabsContext';
-import { TextOverrideLayer } from '@/shared/text-overrides/TextOverrideLayer';
 import { applyCustomThemeColors } from '@/features/theme/model/customThemeColors';
 import { areInternalRoutesEnabled } from '@/shared/featureFlags/internalRoutes';
 
-const APP_SCALE_KEY = 'xinyuexia_app_scale';
-const APP_SCALE_VERSION_KEY = 'xinyuexia_app_scale_version';
-const DARK_THEME_KEY = 'xinyuexia_dark_theme';
-const APP_THEME_KEY = 'xinyuexia_app_theme_mode_v1';
-const APP_SCALE_BASE = 1.1;
-const APP_SCALE_STORAGE_VERSION = '2';
-const APP_SCALE_OPTIONS = [1, 1.1, 1.25, 1.5, 1.75, 2].map((labelScale) => ({
-  labelScale,
-  effectiveScale: Number((APP_SCALE_BASE * labelScale).toFixed(3)),
-}));
-const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
-const RIGHT_MOUSE_GESTURE_THRESHOLD = 90;
-const RIGHT_MOUSE_GESTURE_VERTICAL_TOLERANCE = 80;
-const RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD = 18;
-
-type AppThemeMode = 'light' | 'shuimo' | 'shuimo2' | 'test07';
-
-const THEME_OPTIONS: Array<{ key: AppThemeMode; label: string }> = [
-  { key: 'light', label: '默认主题' },
-  { key: 'shuimo', label: '水墨' },
-  { key: 'shuimo2', label: '水墨2' },
-  { key: 'test07', label: '清爽主题' },
-];
-
-type MouseGesturePreview = {
-  startX: number;
-  startY: number;
-  currentX: number;
-  currentY: number;
-  points: Array<{ x: number; y: number }>;
-  ready: boolean;
-  invalid: boolean;
-  direction: 'left' | 'right' | null;
-};
-
-function loadScale() {
-  try {
-    const raw = Number(localStorage.getItem(APP_SCALE_KEY) ?? '1');
-    if (!Number.isFinite(raw)) return APP_SCALE_BASE;
-    const isCurrentVersion = localStorage.getItem(APP_SCALE_VERSION_KEY) === APP_SCALE_STORAGE_VERSION;
-    const effectiveScale = isCurrentVersion ? raw : raw * APP_SCALE_BASE;
-    return Math.max(APP_SCALE_BASE, Math.min(APP_SCALE_BASE * 2, effectiveScale));
-  } catch {
-    return APP_SCALE_BASE;
-  }
-}
-
-function getScaleLabel(scale: number) {
-  return Math.round((scale / APP_SCALE_BASE) * 100);
-}
-
-function isAppThemeMode(value: string | null): value is AppThemeMode {
-  return value === 'light' || value === 'shuimo' || value === 'shuimo2' || value === 'test07';
-}
-
-function loadThemeMode(): AppThemeMode {
-  try {
-    const savedTheme = localStorage.getItem(APP_THEME_KEY);
-    if (isAppThemeMode(savedTheme)) return savedTheme;
-    return 'light';
-  } catch {
-    return 'light';
-  }
-}
-
-interface AppFrameProps {
-  children: ReactNode;
-}
-
-const INTERNAL_ROUTE_MODULES_BUNDLED = import.meta.env.DEV || import.meta.env.VITE_INCLUDE_INTERNAL_ROUTES === '1';
-const SoftwareUiCatalogPage = INTERNAL_ROUTE_MODULES_BUNDLED
-  ? lazy(() =>
-      import('@/features/tests/pages/SoftwareUiCatalogPage').then((module) => ({
-        default: module.SoftwareUiCatalogPage,
-      })),
-    )
-  : null;
-const TestCollectionPage = INTERNAL_ROUTE_MODULES_BUNDLED
-  ? lazy(() =>
-      import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })),
-    )
-  : null;
+import {
+  APP_SCALE_KEY,
+  APP_SCALE_VERSION_KEY,
+  DARK_THEME_KEY,
+  APP_THEME_KEY,
+  APP_SCALE_BASE,
+  APP_SCALE_STORAGE_VERSION,
+  APP_SCALE_OPTIONS,
+  APP_EFFECTIVE_SCALE_CSS_VAR,
+  RIGHT_MOUSE_GESTURE_THRESHOLD,
+  RIGHT_MOUSE_GESTURE_VERTICAL_TOLERANCE,
+  RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD,
+  type AppThemeMode,
+  THEME_OPTIONS,
+  type MouseGesturePreview,
+  loadScale,
+  getScaleLabel,
+  isAppThemeMode,
+  loadThemeMode,
+  type AppFrameProps,
+  INTERNAL_ROUTE_MODULES_BUNDLED,
+  SoftwareUiCatalogPage,
+  TestCollectionPage,
+} from './appFrameSupport';
+import { renderAppFrameView } from './AppFrameView';
+import { useAppFrameNavigationEffects } from './useAppFrameNavigationEffects';
 
 export function AppFrame({ children }: AppFrameProps) {
   const navigate = useNavigate();
@@ -137,224 +80,20 @@ export function AppFrame({ children }: AppFrameProps) {
   useTopModalEscape(showInternalTools && showTestCollection, () => setShowTestCollection(false));
   useTopModalEscape(showInternalTools && showSoftwareUiCatalog, () => setShowSoftwareUiCatalog(false));
 
-  useEffect(() => {
-    applyCustomThemeColors();
-  }, []);
-
-  useEffect(() => {
-    if (!isThemeMenuOpen) return;
-    const handleThemeMenuOutsidePointerDown = (event: PointerEvent) => {
-      if (themeMenuRef.current?.contains(event.target as Node)) return;
-      setIsThemeMenuOpen(false);
-    };
-    document.addEventListener('pointerdown', handleThemeMenuOutsidePointerDown);
-    return () => document.removeEventListener('pointerdown', handleThemeMenuOutsidePointerDown);
-  }, [isThemeMenuOpen]);
-
-  const activateHomeTab = useCallback(() => {
-    setActiveTabId(HOME_TAB.id);
-    navigate(HOME_TAB.path);
-  }, [navigate, setActiveTabId]);
-
-  useEffect(() => {
-    localStorage.setItem(APP_SCALE_KEY, String(appScale));
-    localStorage.setItem(APP_SCALE_VERSION_KEY, APP_SCALE_STORAGE_VERSION);
-  }, [appScale]);
-
-  useEffect(() => {
-    document.documentElement.style.setProperty(APP_EFFECTIVE_SCALE_CSS_VAR, String(effectiveScale));
-    return () => {
-      document.documentElement.style.removeProperty(APP_EFFECTIVE_SCALE_CSS_VAR);
-    };
-  }, [effectiveScale]);
-
-  useEffect(() => {
-    document.documentElement.classList.remove('theme-dark');
-    document.documentElement.classList.toggle('theme-shuimo', themeMode === 'shuimo');
-    document.documentElement.classList.toggle('theme-shuimo2', themeMode === 'shuimo2');
-    document.documentElement.classList.toggle('theme-test07', themeMode === 'test07');
-    localStorage.setItem(APP_THEME_KEY, themeMode);
-    localStorage.setItem(DARK_THEME_KEY, '0');
-    return () => {
-      document.documentElement.classList.remove('theme-shuimo2');
-      document.documentElement.classList.remove('theme-test07');
-    };
-  }, [themeMode]);
-
-  useEffect(() => {
-    const html = document.documentElement;
-    const body = document.body;
-    const root = document.getElementById('root');
-    const prevHtmlOverflow = html.style.overflow;
-    const prevBodyOverflow = body.style.overflow;
-    const prevBodyZoom = body.style.zoom;
-    const prevRootOverflow = root?.style.overflow ?? '';
-
-    html.style.overflow = 'hidden';
-    body.style.overflow = 'hidden';
-    body.style.zoom = '1';
-    if (root) root.style.overflow = 'hidden';
-
-    return () => {
-      html.style.overflow = prevHtmlOverflow;
-      body.style.overflow = prevBodyOverflow;
-      body.style.zoom = prevBodyZoom;
-      if (root) root.style.overflow = prevRootOverflow;
-    };
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-    window.xinyuexiaWindow
-      ?.isMaximized()
-      .then((value) => {
-        if (mounted) setIsMaximized(value);
-      })
-      .catch(() => {});
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    return window.xinyuexiaWindow?.onMaximizedChange?.((value) => {
-      setIsMaximized(value);
-    });
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'F5') {
-        event.preventDefault();
-        void window.xinyuexiaWindow?.reload();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  useEffect(() => {
-    if (!mouseGestureSettings.goHomeLeftSwipe && !mouseGestureSettings.forwardRightSwipe) {
-      setMouseGesturePreview(null);
-      return;
-    }
-    let gesture: {
-      startX: number;
-      startY: number;
-      visible: boolean;
-      ready: boolean;
-      invalidated: boolean;
-      direction: 'left' | 'right' | null;
-      points: Array<{ x: number; y: number }>;
-    } | null = null;
-    let suppressNextContextMenu = false;
-
-    const goHome = () => {
-      if (location.pathname === '/test-collection') {
-        window.dispatchEvent(new Event(TEST_COLLECTION_SHOW_INDEX_EVENT));
-        return;
-      }
-      activateHomeTab();
-    };
-    const goForward = () => {
-      navigate(1);
-    };
-
-    const handleMouseDown = (event: globalThis.MouseEvent) => {
-      if (event.button !== 2) return;
-      gesture = {
-        startX: event.clientX,
-        startY: event.clientY,
-        visible: false,
-        ready: false,
-        invalidated: false,
-        direction: null,
-        points: [{ x: event.clientX, y: event.clientY }],
-      };
-      setMouseGesturePreview(null);
-    };
-
-    const handleMouseMove = (event: globalThis.MouseEvent) => {
-      if (!gesture) return;
-      const deltaX = event.clientX - gesture.startX;
-      const deltaY = event.clientY - gesture.startY;
-      const distance = Math.hypot(deltaX, deltaY);
-      if (Math.abs(deltaX) < RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD && !gesture.visible) return;
-      if (distance < RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD) return;
-      const lastPoint = gesture.points[gesture.points.length - 1];
-      const segmentDx = lastPoint ? event.clientX - lastPoint.x : 0;
-      const segmentDy = lastPoint ? event.clientY - lastPoint.y : 0;
-      if (!gesture.direction) {
-        if (deltaX <= -RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD) gesture.direction = 'left';
-        if (deltaX >= RIGHT_MOUSE_GESTURE_PREVIEW_THRESHOLD) gesture.direction = 'right';
-      }
-      if (gesture.visible && gesture.direction) {
-        const reversed = gesture.direction === 'left' ? segmentDx > 0 : segmentDx < 0;
-        if (reversed || Math.abs(segmentDy) > 14) {
-          gesture.invalidated = true;
-          gesture.ready = false;
-        }
-      }
-      gesture.visible = true;
-      const directionEnabled =
-        (gesture.direction === 'left' && mouseGestureSettings.goHomeLeftSwipe) ||
-        (gesture.direction === 'right' && mouseGestureSettings.forwardRightSwipe);
-      gesture.ready =
-        !gesture.invalidated && directionEnabled && Math.abs(deltaY) <= RIGHT_MOUSE_GESTURE_VERTICAL_TOLERANCE;
-      if (gesture.direction === 'left') gesture.ready = gesture.ready && deltaX <= -RIGHT_MOUSE_GESTURE_THRESHOLD;
-      if (gesture.direction === 'right') gesture.ready = gesture.ready && deltaX >= RIGHT_MOUSE_GESTURE_THRESHOLD;
-      if (!lastPoint || Math.hypot(event.clientX - lastPoint.x, event.clientY - lastPoint.y) >= 3) {
-        gesture.points = [...gesture.points, { x: event.clientX, y: event.clientY }].slice(-220);
-      }
-      suppressNextContextMenu = true;
-      event.preventDefault();
-      event.stopPropagation();
-      setMouseGesturePreview({
-        startX: gesture.startX,
-        startY: gesture.startY,
-        currentX: event.clientX,
-        currentY: event.clientY,
-        points: gesture.points,
-        ready: gesture.ready,
-        invalid: gesture.invalidated,
-        direction: gesture.direction,
-      });
-    };
-
-    const handleMouseUp = () => {
-      if (gesture?.ready && !gesture.invalidated) {
-        suppressNextContextMenu = true;
-        if (gesture.direction === 'left') goHome();
-        if (gesture.direction === 'right') goForward();
-      }
-      gesture = null;
-      setMouseGesturePreview(null);
-    };
-
-    const handleContextMenu = (event: globalThis.MouseEvent) => {
-      if (!suppressNextContextMenu) return;
-      event.preventDefault();
-      event.stopPropagation();
-      suppressNextContextMenu = false;
-    };
-
-    window.addEventListener('mousedown', handleMouseDown, true);
-    window.addEventListener('mousemove', handleMouseMove, true);
-    window.addEventListener('mouseup', handleMouseUp, true);
-    window.addEventListener('contextmenu', handleContextMenu, true);
-    return () => {
-      window.removeEventListener('mousedown', handleMouseDown, true);
-      window.removeEventListener('mousemove', handleMouseMove, true);
-      window.removeEventListener('mouseup', handleMouseUp, true);
-      window.removeEventListener('contextmenu', handleContextMenu, true);
-    };
-  }, [
-    activateHomeTab,
-    location.pathname,
-    mouseGestureSettings.forwardRightSwipe,
-    mouseGestureSettings.goHomeLeftSwipe,
+  const { activateHomeTab } = useAppFrameNavigationEffects({
+    appScale,
+    effectiveScale,
+    isThemeMenuOpen,
+    location,
+    mouseGestureSettings,
     navigate,
-  ]);
+    setActiveTabId,
+    setIsMaximized,
+    setIsThemeMenuOpen,
+    setMouseGesturePreview,
+    themeMenuRef,
+    themeMode,
+  });
 
   useEffect(() => {
     type DragState = {
@@ -921,286 +660,48 @@ export function AppFrame({ children }: AppFrameProps) {
     );
   };
 
-  return (
-    <div
-      className={`writer-assistant-theme flex h-screen w-screen flex-col overflow-hidden bg-[var(--xy-wa-app-bg)] ${themeClassName}`}
-    >
-      <header
-        className="app-titlebar xy-wa-titlebar flex h-12 shrink-0 items-center border-b px-2"
-        style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-      >
-        <nav
-          className="flex h-full min-w-0 flex-1 items-center overflow-x-auto"
-          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-        >
-          <div
-            className="flex h-full max-w-full shrink-0 items-end overflow-hidden"
-            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-          >
-            {tabs.map((tab) => {
-              const isActive = activeTabId === tab.id;
-              const isHomeTab = tab.id === HOME_TAB.id;
-              return (
-                <div
-                  key={tab.id}
-                  role="button"
-                  tabIndex={0}
-                  data-titlebar-no-drag="true"
-                  style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-                  onClick={() => activateTab(tab)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') activateTab(tab);
-                  }}
-                  className={`workspace-tab group relative flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-t-md border px-3 text-[15px] font-bold text-[#68727f] transition-all hover:text-[#1f2933] ${
-                    isActive
-                      ? `workspace-tab-active border-[#cfd6df] border-b-white bg-white font-bold text-[#1f2933] shadow-[0_-1px_0_rgba(255,255,255,0.6)_inset] ${isHomeTab ? 'workspace-tab-home' : ''}`
-                      : `workspace-tab-inactive border-transparent bg-transparent ${isHomeTab ? 'workspace-tab-home-inactive' : ''}`
-                  } ${isHomeTab ? 'w-[126px] text-center' : 'min-w-[128px] max-w-[230px] text-left'}`}
-                  title={tab.title}
-                >
-                  <span className={`${isHomeTab ? 'shrink-0' : 'min-w-0 flex-1 truncate text-center'}`}>
-                    {tab.title}
-                  </span>
-                  {!tab.fixed && (
-                    <button
-                      type="button"
-                      onClick={(event) => handleCloseTab(event, tab)}
-                      className={`grid h-6 w-6 shrink-0 place-items-center rounded-md transition-colors ${
-                        isActive
-                          ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
-                          : 'text-slate-500 hover:bg-white/70 hover:text-slate-700'
-                      }`}
-                      aria-label={`关闭${tab.title}`}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </nav>
-
-        <div
-          className="flex shrink-0 items-center gap-1.5"
-          data-titlebar-no-drag="true"
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-        >
-          {showInternalTools && (
-            <>
-              <button
-                onClick={() => {
-                  setShowSoftwareUiCatalog(false);
-                  setShowTestCollection(true);
-                }}
-                className="xy-wa-icon-button"
-                title="测试板块"
-              >
-                <FlaskConical className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => {
-                  setShowTestCollection(false);
-                  setShowSoftwareUiCatalog(true);
-                }}
-                className="xy-wa-icon-button"
-                title="UI库"
-              >
-                <BookOpen className="h-4 w-4" />
-              </button>
-            </>
-          )}
-          <div ref={themeMenuRef} className="relative mr-2">
-            <button
-              type="button"
-              onClick={() => {
-                setIsScaleMenuOpen(false);
-                setIsThemeMenuOpen((prev) => !prev);
-              }}
-              className={`xy-theme-trigger-button xy-${themeMode}-active`}
-              title="主题"
-              aria-haspopup="menu"
-              aria-expanded={isThemeMenuOpen}
-            >
-              <span className="xy-theme-trigger-label">主题</span>
-            </button>
-            {isThemeMenuOpen && (
-              <div className="xy-theme-menu absolute right-0 top-10 z-[90] w-52 p-1.5" role="menu" aria-label="主题">
-                {THEME_OPTIONS.map(renderThemeOption)}
-              </div>
-            )}
-          </div>
-          <div className="relative ml-1">
-            <button
-              onClick={() => {
-                setIsThemeMenuOpen(false);
-                setIsScaleMenuOpen((prev) => !prev);
-              }}
-              className="h-8 min-w-[70px] rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800"
-              title="界面比例"
-            >
-              {getScaleLabel(appScale)}%
-            </button>
-            {isScaleMenuOpen && (
-              <div className="absolute right-0 top-10 z-[80] w-[104px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
-                {APP_SCALE_OPTIONS.map((option) => {
-                  const isSelected = Math.abs(appScale - option.effectiveScale) < 0.001;
-                  return (
-                    <button
-                      key={option.labelScale}
-                      onClick={() => {
-                        setAppScale(option.effectiveScale);
-                        setIsScaleMenuOpen(false);
-                      }}
-                      className={`grid h-9 w-full grid-cols-[22px_1fr] items-center px-3 text-left text-sm transition-colors ${
-                        isSelected ? 'bg-slate-100 font-semibold text-slate-900' : 'text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      <span className="text-center text-base leading-none">{isSelected ? '✓' : ''}</span>
-                      <span>{Math.round(option.labelScale * 100)}%</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            <div className="hidden">
-              <button
-                onClick={() => setAppScale((prev) => Math.max(0.8, Number((prev - 0.1).toFixed(1))))}
-                className="px-2.5 py-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
-                title="缩小 10%"
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="min-w-[48px] text-center text-xs text-slate-500">{Math.round(appScale * 100)}%</span>
-              <button
-                onClick={() => setAppScale((prev) => Math.min(1.5, Number((prev + 0.1).toFixed(1))))}
-                className="px-2.5 py-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
-                title="放大 10%"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-          <button
-            onClick={() => void window.xinyuexiaWindow?.minimize()}
-            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-            title="最小化"
-          >
-            <Minus className="h-4 w-4" />
-          </button>
-          <button
-            onClick={async () => {
-              await toggleMaximizeWindow();
-            }}
-            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-            title={isMaximized ? '还原' : '最大化'}
-          >
-            <Square className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => void window.xinyuexiaWindow?.close()}
-            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
-            title="关闭"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      </header>
-
-      <div className="min-h-0 flex-1 overflow-hidden bg-slate-50">
-        <div
-          className="relative origin-top-left overflow-hidden bg-slate-50"
-          data-capsule-select-portal-root="true"
-          style={{
-            width: `${100 / effectiveScale}%`,
-            height: `${100 / effectiveScale}%`,
-            transform: `scale(${effectiveScale})`,
-          }}
-        >
-          <div className="h-full bg-slate-50">{children}</div>
-        </div>
-      </div>
-      {mouseGesturePreview && (
-        <div className="pointer-events-none fixed inset-0 z-[9999]">
-          <svg className="absolute inset-0 h-full w-full">
-            <path
-              d={mouseGesturePath}
-              fill="none"
-              stroke={mouseGesturePreview.invalid ? '#ef4444' : mouseGesturePreview.ready ? '#0284c7' : '#0ea5e9'}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="5"
-            />
-          </svg>
-          <div
-            className={`absolute flex min-w-[140px] items-center gap-3 rounded-2xl border px-5 py-4 text-white shadow-2xl ${
-              mouseGesturePreview.invalid ? 'border-red-500 bg-red-600' : 'border-slate-700 bg-slate-950'
-            }`}
-            style={{
-              left: Math.max(20, mouseGesturePreview.startX - 92),
-              top: Math.max(58, mouseGesturePreview.startY - 96),
-            }}
-          >
-            <span className="text-4xl leading-none">{mouseGestureArrow}</span>
-            <span className="text-lg font-black text-white">
-              {mouseGesturePreview.invalid
-                ? '无效手势'
-                : mouseGesturePreview.ready
-                  ? mouseGestureDirectionLabel
-                  : mouseGestureContinueLabel}
-            </span>
-          </div>
-        </div>
-      )}
-      {showInternalTools && showTestCollection && TestCollectionPage && (
-        <div
-          className="fixed inset-0 z-[335] flex items-center justify-center bg-slate-950/45 p-5"
-          data-titlebar-no-drag="true"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setShowTestCollection(false);
-          }}
-        >
-          <div
-            className="flex h-[min(820px,90vh)] w-[min(1180px,94vw)] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <Suspense
-              fallback={
-                <div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">
-                  正在打开测试...
-                </div>
-              }
-            >
-              <TestCollectionPage embedded onClose={() => setShowTestCollection(false)} />
-            </Suspense>
-          </div>
-        </div>
-      )}
-      {showInternalTools && showSoftwareUiCatalog && SoftwareUiCatalogPage && (
-        <div
-          className="fixed inset-0 z-[340] flex items-center justify-center bg-slate-950/45 p-5"
-          data-titlebar-no-drag="true"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setShowSoftwareUiCatalog(false);
-          }}
-        >
-          <div
-            className="flex h-[min(900px,92vh)] w-[min(1520px,96vw)] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <Suspense
-              fallback={
-                <div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">
-                  正在打开 UI库...
-                </div>
-              }
-            >
-              <SoftwareUiCatalogPage embedded onClose={() => setShowSoftwareUiCatalog(false)} />
-            </Suspense>
-          </div>
-        </div>
-      )}
-      <TextOverrideLayer />
-    </div>
-  );
+  return renderAppFrameView({
+    APP_SCALE_OPTIONS,
+    BookOpen,
+    FlaskConical,
+    HOME_TAB,
+    Minus,
+    Plus,
+    SoftwareUiCatalogPage,
+    Square,
+    Suspense,
+    THEME_OPTIONS,
+    TestCollectionPage,
+    X,
+    activateTab,
+    activeTabId,
+    appScale,
+    children,
+    effectiveScale,
+    getScaleLabel,
+    handleCloseTab,
+    isMaximized,
+    isScaleMenuOpen,
+    isThemeMenuOpen,
+    routePath: location.pathname,
+    mouseGestureArrow,
+    mouseGestureContinueLabel,
+    mouseGestureDirectionLabel,
+    mouseGesturePath,
+    mouseGesturePreview,
+    renderThemeOption,
+    setAppScale,
+    setIsScaleMenuOpen,
+    setIsThemeMenuOpen,
+    setShowSoftwareUiCatalog,
+    setShowTestCollection,
+    showInternalTools,
+    showSoftwareUiCatalog,
+    showTestCollection,
+    tabs,
+    themeClassName,
+    themeMenuRef,
+    themeMode,
+    toggleMaximizeWindow,
+  });
 }

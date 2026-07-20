@@ -3,6 +3,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { APP_ROUTE_PATHS, STARTUP_ROUTE_PATH } from './routeRegistry';
+
 const repoRoot = process.cwd();
 
 const readSource = (relativePath: string) => readFileSync(join(repoRoot, relativePath), 'utf8');
@@ -14,8 +16,11 @@ describe('startup routing', () => {
     const electronMain = readSource('electron/main.cjs');
     const launcher = readSource('launch-xinyuexia.mjs');
 
-    expect(app).toContainSource('<Route path="/" element={<Navigate to="/novels" replace />} />');
-    expect(app).toContainSource('<Route path="*" element={<Navigate to="/novels" replace />} />');
+    expect(STARTUP_ROUTE_PATH).toBe('/novels');
+    expect(APP_ROUTE_PATHS.novels).toBe(STARTUP_ROUTE_PATH);
+    expect(app).toContainSource('<Route path="/" element={<Navigate to={STARTUP_ROUTE_PATH} replace />} />');
+    expect(app).toContainSource('<Route path="*" element={<Navigate to={STARTUP_ROUTE_PATH} replace />} />');
+    expect(app).toContainSource('window.location.hash = `#${STARTUP_ROUTE_PATH}`;');
     expect(app).not.toContainSource('@/pages/DashboardPage');
     expect(app).not.toContainSource('path="/dashboard"');
 

@@ -8,6 +8,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   base: './',
   plugins: [react()],
+  build: {
+    // The workbench is loaded as one lazy route; keep its current 612 KB chunk from
+    // producing a misleading warning while the route-level split remains intact.
+    chunkSizeWarningLimit: 700,
+  },
   test: {
     environment: 'jsdom',
     globals: true,

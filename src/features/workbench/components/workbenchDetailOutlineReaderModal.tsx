@@ -8,7 +8,7 @@ import {
   WORKBENCH_FOLDER_GROUP_ICON_CLASS,
 } from './workbenchLibraryPanelConstants';
 
-export type DetailOutlineReaderTab = 'settings' | 'roles' | 'outlines' | 'plotChain';
+export type DetailOutlineReaderTab = 'settings' | 'roles' | 'outlines';
 
 export type DetailOutlineReaderItem = {
   id: string;
@@ -32,14 +32,12 @@ type DetailOutlineReaderModalProps = {
   draftDetailOutlineReaderSettingIds: Set<string>;
   draftDetailOutlineReaderRoleIds: Set<string>;
   draftDetailOutlineReaderOutlineIds: Set<string>;
-  draftDetailOutlineReaderPlotChainIds: Set<string>;
   activeDetailOutlineReaderPreviewItem: DetailOutlineReaderItem | null;
   isActiveDetailOutlineReaderPreviewChecked: boolean;
   draftDetailOutlineReaderItems: DetailOutlineReaderItem[];
   draftDetailOutlineReaderWordCount: number;
   detailOutlineReaderSettingItems: DetailOutlineReaderItem[];
   detailOutlineReaderRoleItems: DetailOutlineReaderItem[];
-  detailOutlineReaderPlotChainItems: DetailOutlineReaderItem[];
   setIsDetailOutlineReaderOpen: (isOpen: boolean) => void;
   setDetailOutlineReaderTab: (tab: DetailOutlineReaderTab) => void;
   setDetailOutlineReaderPreviewId: (id: string) => void;
@@ -49,7 +47,6 @@ type DetailOutlineReaderModalProps = {
   toggleDraftDetailOutlineReaderSetting: (id: string) => void;
   toggleDraftDetailOutlineReaderRole: (id: string) => void;
   toggleDraftDetailOutlineReaderOutline: (id: string) => void;
-  toggleDraftDetailOutlineReaderPlotChain: (id: string) => void;
   clearDraftDetailOutlineReader: () => void;
   confirmDetailOutlineReader: () => void;
 };
@@ -64,14 +61,12 @@ export function DetailOutlineReaderModal({
   draftDetailOutlineReaderSettingIds,
   draftDetailOutlineReaderRoleIds,
   draftDetailOutlineReaderOutlineIds,
-  draftDetailOutlineReaderPlotChainIds,
   activeDetailOutlineReaderPreviewItem,
   isActiveDetailOutlineReaderPreviewChecked,
   draftDetailOutlineReaderItems,
   draftDetailOutlineReaderWordCount,
   detailOutlineReaderSettingItems,
   detailOutlineReaderRoleItems,
-  detailOutlineReaderPlotChainItems,
   setIsDetailOutlineReaderOpen,
   setDetailOutlineReaderTab,
   setDetailOutlineReaderPreviewId,
@@ -81,7 +76,6 @@ export function DetailOutlineReaderModal({
   toggleDraftDetailOutlineReaderSetting,
   toggleDraftDetailOutlineReaderRole,
   toggleDraftDetailOutlineReaderOutline,
-  toggleDraftDetailOutlineReaderPlotChain,
   clearDraftDetailOutlineReader,
   confirmDetailOutlineReader,
 }: DetailOutlineReaderModalProps) {
@@ -151,9 +145,7 @@ export function DetailOutlineReaderModal({
                   ? '设定导航'
                   : detailOutlineReaderTab === 'roles'
                     ? '角色导航'
-                    : detailOutlineReaderTab === 'plotChain'
-                      ? '剧情链'
-                      : '前文章纲'}
+                    : '前文章纲'}
               </div>
             </div>
             <div className="editor-scrollbar h-full space-y-1 overflow-y-auto pb-8">
@@ -163,9 +155,7 @@ export function DetailOutlineReaderModal({
                     ? '暂无设定分组'
                     : detailOutlineReaderTab === 'roles'
                       ? '暂无角色分组'
-                      : detailOutlineReaderTab === 'plotChain'
-                        ? '当前剧情链暂无可关联剧情点'
-                        : '当前章节前面暂无可读章纲'}
+                      : '当前章节前面暂无可读章纲'}
                 </div>
               ) : (
                 detailOutlineReaderNavGroups.map((group) => {
@@ -206,14 +196,12 @@ export function DetailOutlineReaderModal({
                       {!collapsed && (
                         <div className="mt-1 space-y-1 bg-white">
                           {group.items.map((item) => {
-                            const checked =
-                              detailOutlineReaderTab === 'settings'
-                                ? draftDetailOutlineReaderSettingIds.has(item.id)
-                                : detailOutlineReaderTab === 'roles'
-                                  ? draftDetailOutlineReaderRoleIds.has(item.id)
-                                  : detailOutlineReaderTab === 'plotChain'
-                                    ? draftDetailOutlineReaderPlotChainIds.has(item.id)
-                                    : draftDetailOutlineReaderOutlineIds.has(item.id);
+                                const checked =
+                                  detailOutlineReaderTab === 'settings'
+                                    ? draftDetailOutlineReaderSettingIds.has(item.id)
+                                    : detailOutlineReaderTab === 'roles'
+                                      ? draftDetailOutlineReaderRoleIds.has(item.id)
+                                      : draftDetailOutlineReaderOutlineIds.has(item.id);
                             return (
                               <button
                                 key={item.id}
@@ -236,8 +224,6 @@ export function DetailOutlineReaderModal({
                                       toggleDraftDetailOutlineReaderSetting(item.id);
                                     else if (detailOutlineReaderTab === 'roles')
                                       toggleDraftDetailOutlineReaderRole(item.id);
-                                    else if (detailOutlineReaderTab === 'plotChain')
-                                      toggleDraftDetailOutlineReaderPlotChain(item.id);
                                     else toggleDraftDetailOutlineReaderOutline(item.id);
                                   }}
                                   onKeyDown={(event) => {
@@ -249,8 +235,6 @@ export function DetailOutlineReaderModal({
                                       toggleDraftDetailOutlineReaderSetting(item.id);
                                     else if (detailOutlineReaderTab === 'roles')
                                       toggleDraftDetailOutlineReaderRole(item.id);
-                                    else if (detailOutlineReaderTab === 'plotChain')
-                                      toggleDraftDetailOutlineReaderPlotChain(item.id);
                                     else toggleDraftDetailOutlineReaderOutline(item.id);
                                   }}
                                   className={`grid h-4 w-4 shrink-0 place-items-center rounded border text-[10px] ${
@@ -290,9 +274,7 @@ export function DetailOutlineReaderModal({
                         ? '设定'
                         : detailOutlineReaderTab === 'roles'
                           ? '角色'
-                          : detailOutlineReaderTab === 'plotChain'
-                            ? '剧情链'
-                            : '章纲'}{' '}
+                          : '章纲'}{' '}
                       / {activeDetailOutlineReaderPreviewItem.group}
                     </div>
                     <div className="flex items-center gap-2">
@@ -303,8 +285,6 @@ export function DetailOutlineReaderModal({
                             toggleDraftDetailOutlineReaderSetting(activeDetailOutlineReaderPreviewItem.id);
                           else if (detailOutlineReaderTab === 'roles')
                             toggleDraftDetailOutlineReaderRole(activeDetailOutlineReaderPreviewItem.id);
-                          else if (detailOutlineReaderTab === 'plotChain')
-                            toggleDraftDetailOutlineReaderPlotChain(activeDetailOutlineReaderPreviewItem.id);
                           else toggleDraftDetailOutlineReaderOutline(activeDetailOutlineReaderPreviewItem.id);
                         }}
                         className={
@@ -341,9 +321,7 @@ export function DetailOutlineReaderModal({
                   ? '暂无可关联设定'
                   : detailOutlineReaderTab === 'roles'
                     ? '暂无可关联角色'
-                    : detailOutlineReaderTab === 'plotChain'
-                      ? '暂无可关联剧情链'
-                      : '暂无可关联章纲'}
+                    : '暂无可关联章纲'}
               </div>
             )}
           </main>
@@ -365,9 +343,7 @@ export function DetailOutlineReaderModal({
                           ? 'settings'
                           : detailOutlineReaderRoleItems.some((item) => item.id === entry.id)
                             ? 'roles'
-                            : detailOutlineReaderPlotChainItems.some((item) => item.id === entry.id)
-                              ? 'plotChain'
-                              : 'outlines',
+                            : 'outlines',
                       );
                       setDetailOutlineReaderPreviewId(entry.id);
                     }}

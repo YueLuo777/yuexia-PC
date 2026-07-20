@@ -1,4 +1,4 @@
-﻿import { Check, ChevronDown, FileText, ListTree, Settings } from 'lucide-react';
+﻿import { Check, ChevronDown, Settings } from 'lucide-react';
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -111,10 +111,8 @@ export function CombinedAiConfigSelect({
     if (!openSegment || (openSegment === 'prompt' && promptDisabled)) return null;
     return (
       <div
-        className={`absolute top-[calc(100%-2px)] z-[10050] max-h-[240px] overflow-y-auto border-2 border-t-0 border-[#08AACE] bg-white py-1 shadow-[0_18px_34px_rgba(8,170,206,0.14)] ${
-          openSegment === 'model'
-            ? 'left-0 w-1/2 rounded-bl-xl rounded-br-none'
-            : 'right-0 w-1/2 rounded-bl-none rounded-br-xl'
+        className={`absolute top-[calc(100%+0.5rem)] z-[10050] max-h-[260px] overflow-y-auto rounded-2xl border border-white bg-white p-1.5 shadow-[0_20px_48px_rgba(15,23,42,0.15)] ${
+          openSegment === 'model' ? 'left-0 w-1/2' : 'right-0 w-1/2'
         }`}
       >
         {activeOptions.map((option) => {
@@ -137,21 +135,18 @@ export function CombinedAiConfigSelect({
               }}
               className={
                 isGroup
-                  ? 'flex h-8 w-full cursor-default items-center gap-2 px-4 text-left text-xs font-black text-slate-500 disabled:cursor-default disabled:text-slate-500'
-                  : `flex min-h-9 items-center justify-between gap-3 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:text-slate-300 ${
-                      isGroupedOption
-                        ? 'ml-6 w-[calc(100%-1.5rem)] border-l border-dashed border-slate-200 px-3'
-                        : 'w-full px-4'
+                  ? 'flex h-8 w-full cursor-default items-center gap-2 px-3 text-left text-xs font-black text-slate-500 disabled:cursor-default disabled:text-slate-500'
+                  : `flex min-h-10 items-center justify-between gap-3 rounded-xl px-3 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:text-slate-300 ${
+                      isGroupedOption ? 'ml-5 w-[calc(100%-1.25rem)] border-l border-dashed border-slate-200' : 'w-full'
                     } ${
                       selected
-                        ? 'bg-[#EAF9FD] font-black text-slate-900 hover:bg-[#EAF9FD]'
-                        : 'bg-white font-bold text-slate-800 hover:bg-sky-50 hover:text-[#08AACE]'
+                        ? 'bg-[#E8F8FC] font-black text-slate-950'
+                        : 'bg-transparent font-bold text-slate-700 hover:bg-slate-50 hover:text-[#08AACE]'
                     }`
               }
             >
               {isGroup ? (
                 <>
-                  <ListTree className="h-3.5 w-3.5 shrink-0 text-[#08AACE]" />
                   <span className="min-w-0 truncate">{option.label}</span>
                   {typeof option.count === 'number' ? (
                     <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] leading-none text-slate-400">
@@ -162,13 +157,12 @@ export function CombinedAiConfigSelect({
               ) : (
                 <>
                   <span className="flex min-w-0 items-center gap-2">
-                    {isGroupedOption ? <FileText className="h-4 w-4 shrink-0 text-slate-300" /> : null}
                     <span className="min-w-0 truncate">{option.label}</span>
                     {hasMetaLabel ? (
                       <span className="shrink-0 text-[11px] font-black text-slate-400">{option.metaLabel}</span>
                     ) : null}
                   </span>
-                  {selected && <Check className="h-4 w-4 shrink-0 text-[#08AACE]" />}
+                  {selected && <Check aria-label="已选择" className="h-4 w-4 shrink-0 text-emerald-500" strokeWidth={3} />}
                 </>
               )}
             </button>

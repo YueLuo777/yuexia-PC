@@ -1,13 +1,10 @@
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
-
 import { describe, expect, it } from 'vitest';
 
-const editorPath = resolve(process.cwd(), 'src/features/workbench/components/ChapterEditor.tsx');
+import { readChapterEditorSource } from './chapterEditorSource.testUtils';
 
 describe('ChapterEditor review preview annotation sync', () => {
-  it('moves the 15th review preview sync behavior into the production review page', async () => {
-    const source = await readFile(editorPath, 'utf8');
+  it('moves the 15th review preview sync behavior into the production review page', () => {
+    const source = readChapterEditorSource();
 
     expect(source).toContainSource('const [activeReviewParagraphIndex, setActiveReviewParagraphIndex] = useState(0);');
     expect(source).toContainSource('const reviewAnnotationRefs = useRef<Array<HTMLDivElement | null>>([]);');

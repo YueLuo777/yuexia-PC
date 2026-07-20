@@ -4,7 +4,11 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const sourcePath = join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchAIPanel.tsx');
-const source = readFileSync(sourcePath, 'utf8');
+const source = [
+  readFileSync(sourcePath, 'utf8'),
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchAiConversationView.tsx'), 'utf8'),
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchAIPanelView.tsx'), 'utf8'),
+].join('\n');
 
 const readFunctionBody = (functionName: string) => {
   const start = source.indexOf(`const ${functionName} =`);
@@ -30,14 +34,16 @@ describe('WorkbenchAIPanel session deletion', () => {
   });
 
   it('uses an opaque active session background so the border line does not show through', () => {
-    const sessionControlsBody = readFunctionBody('renderSessionControls');
+    const sessionControlsBody = source;
 
     expect(sessionControlsBody).toContainSource('bg-[#EAF9FD]');
     expect(sessionControlsBody).not.toContainSource('bg-brand/10');
   });
 
   it('keeps session buttons separated without restoring the white backplate', () => {
-    const sessionControlsBody = readFunctionBody('renderSessionControls');
+    const sessionControlsStart = source.indexOf('xy-floating-chat-session-tool');
+    const sessionControlsEnd = source.indexOf('xy-floating-chat-action-tool', sessionControlsStart);
+    const sessionControlsBody = source.slice(sessionControlsStart, sessionControlsEnd);
 
     expect(sessionControlsBody).toContainSource(
       'xy-floating-session-buttons scrollbar-hidden flex min-w-0 items-center overflow-x-auto',

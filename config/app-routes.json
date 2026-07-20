@@ -1,0 +1,127 @@
+{
+  "startupPath": "/novels",
+  "formal": [
+    {
+      "id": "novels",
+      "path": "/novels",
+      "component": "novelLibrary",
+      "dashboard": true,
+      "smoke": true,
+      "nav": { "iconName": "BookOpen", "label": "我的小说" }
+    },
+    {
+      "id": "scripts",
+      "path": "/scripts",
+      "component": "novelLibrary",
+      "dashboard": true,
+      "smoke": true,
+      "nav": { "iconName": "Film", "label": "我的剧本" }
+    },
+    {
+      "id": "tomatoBrowser",
+      "path": "/tomato-browser",
+      "component": "tomatoGenreIteration",
+      "dashboard": true,
+      "smoke": true,
+      "nav": { "iconName": "Globe", "label": "番茄浏览器" }
+    },
+    {
+      "id": "library",
+      "path": "/library",
+      "component": "libraryHub",
+      "dashboard": true,
+      "smoke": true,
+      "nav": { "iconName": "Library", "label": "资料库" }
+    },
+    {
+      "id": "prompts",
+      "path": "/prompts",
+      "component": "prompts",
+      "dashboard": true,
+      "smoke": true,
+      "nav": { "iconName": "Tag", "label": "提示词管理" }
+    },
+    {
+      "id": "modelManage",
+      "path": "/model-manage",
+      "component": "modelManage",
+      "dashboard": true,
+      "smoke": true,
+      "nav": { "iconName": "Settings", "label": "模型管理" }
+    },
+    {
+      "id": "settings",
+      "path": "/settings",
+      "component": "settings",
+      "dashboard": true,
+      "smoke": true
+    },
+    {
+      "id": "tokenUsage",
+      "path": "/token-usage",
+      "component": "tokenUsage",
+      "dashboard": true,
+      "smoke": true,
+      "nav": { "iconName": "BarChart3", "label": "Token用量" }
+    },
+    {
+      "id": "scriptEditor",
+      "path": "/script-editor-v2",
+      "component": "scriptEditor",
+      "dashboard": false,
+      "smoke": true
+    },
+    {
+      "id": "workbench",
+      "path": "/workbench",
+      "component": "workbench",
+      "dashboard": false,
+      "smoke": true
+    }
+  ],
+  "internal": [
+    {
+      "id": "testCollection",
+      "path": "/test-collection",
+      "component": "testCollection",
+      "nav": { "iconName": "FlaskConical", "label": "测试板块" }
+    },
+    {
+      "id": "softwareUiCatalog",
+      "path": "/software-ui-catalog",
+      "component": "softwareUiCatalog"
+    },
+    {
+      "id": "hiddenContent",
+      "path": "/hidden-content",
+      "component": "hiddenPages"
+    },
+    {
+      "id": "hiddenPagesTest",
+      "path": "/hidden-pages-test",
+      "component": "hiddenPages"
+    },
+    {
+      "id": "errorLog",
+      "path": "/error-log",
+      "component": "errorLog"
+    },
+    {
+      "id": "themeColors",
+      "path": "/theme-colors",
+      "redirectTo": "/settings?section=theme"
+    },
+    {
+      "id": "testBrowser",
+      "path": "/test-browser",
+      "component": "testBrowser"
+    }
+  ],
+  "legacyRedirects": [
+    { "path": "/concept-library", "to": "/library" },
+    { "path": "/db-settings", "to": "/settings?section=backup" },
+    { "path": "/system-settings", "to": "/settings?section=system" },
+    { "path": "/shortcut-settings", "to": "/settings?section=shortcuts" },
+    { "path": "/nav-settings", "to": "/settings?section=navigation" }
+  ]
+}

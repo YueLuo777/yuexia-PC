@@ -8,7 +8,13 @@ import type {
   SetStateAction,
 } from 'react';
 
-import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
+import {
+  GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY,
+  readWorkbenchLibraryEntries,
+  resequenceBrainstormEntries,
+  writeWorkbenchLibraryEntries,
+  type WorkbenchLibraryEntry,
+} from '@/features/workbench/model/workbenchLibraryStorage';
 import { WordCountText } from '@/shared/ui/WordCountText';
 
 import type { LibraryEntryDragState } from './workbenchLibraryDrag';
@@ -235,7 +241,16 @@ export function WorkbenchLibrarySidebar({
                           } ${draggingLibraryEntry?.entryId === entry.id ? 'cursor-grabbing scale-[0.99] opacity-80 ring-2 ring-[#08AACE]/35 shadow-sm' : ''}`}
                         >
                           <div className="flex w-full items-center gap-2">
-                            <span className="min-w-0 truncate pl-3 text-sm font-black text-gray-700">
+                            {activeIsBrainstorm && (
+                              <span className="-ml-1 shrink-0 text-sm font-black text-[#08AACE]">
+                                {entry.brainstormSerialNumber ?? previewIndex + 1}
+                              </span>
+                            )}
+                            <span
+                              className={`min-w-0 truncate text-sm font-black text-gray-700 ${
+                                activeIsBrainstorm ? '' : 'pl-3'
+                              }`}
+                            >
                               {entry.title}
                             </span>
                             <span className="ml-auto shrink-0 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-black text-[#08AACE]">
@@ -279,7 +294,21 @@ export function WorkbenchLibrarySidebar({
         </div>
       )}
       {activeIsBrainstorm && (
-        <div className="shrink-0 border-t border-gray-100 bg-gray-50 pt-3">
+        <div className="shrink-0 space-y-2 border-t border-gray-100 bg-gray-50 pt-3">
+          <button
+            type="button"
+            disabled={currentEntries.length === 0}
+            onClick={() => {
+              const brainstormEntries = readWorkbenchLibraryEntries(GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY);
+              writeWorkbenchLibraryEntries(
+                GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY,
+                resequenceBrainstormEntries(brainstormEntries),
+              );
+            }}
+            className="h-10 w-full rounded-xl border border-cyan-200 bg-white px-3 text-sm font-black text-[#08AACE] shadow-sm transition-colors hover:border-[#08AACE] hover:bg-[#EAF9FD] disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300"
+          >
+            脑洞排序
+          </button>
           <button
             type="button"
             onClick={() => setIsBrainstormRecycleOpen(true)}

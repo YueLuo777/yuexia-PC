@@ -7,11 +7,41 @@ export interface WorkbenchLibraryEntry {
   updatedAt: string;
   pinnedAt?: number;
   deletedAt?: string;
+  brainstormSerialNumber?: number;
 }
 
 export const WORKBENCH_LIBRARY_UPDATED_EVENT = 'xinyuexia_workbench_library_updated';
 export const WORKBENCH_BRAINSTORM_TAB = '脑洞';
 export const GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY = 'xinyuexia_global_brainstorm_library_v1';
+
+function isValidBrainstormSerialNumber(value: unknown): value is number {
+  return Number.isInteger(value) && Number(value) > 0;
+}
+
+export function ensureBrainstormSerialNumbers(entries: WorkbenchLibraryEntry[]) {
+  const usedSerialNumbers = new Set(
+    entries
+      .filter((entry) => isBrainstormEntry(entry) && isValidBrainstormSerialNumber(entry.brainstormSerialNumber))
+      .map((entry) => entry.brainstormSerialNumber as number),
+  );
+  let nextSerialNumber = usedSerialNumbers.size > 0 ? Math.max(...usedSerialNumbers) + 1 : 1;
+
+  return entries.map((entry) => {
+    if (!isBrainstormEntry(entry) || isValidBrainstormSerialNumber(entry.brainstormSerialNumber)) return entry;
+    while (usedSerialNumbers.has(nextSerialNumber)) nextSerialNumber += 1;
+    const normalizedEntry = { ...entry, brainstormSerialNumber: nextSerialNumber };
+    usedSerialNumbers.add(nextSerialNumber);
+    nextSerialNumber += 1;
+    return normalizedEntry;
+  });
+}
+
+export function resequenceBrainstormEntries(entries: WorkbenchLibraryEntry[]) {
+  let nextSerialNumber = 1;
+  return entries.map((entry) =>
+    isBrainstormEntry(entry) ? { ...entry, brainstormSerialNumber: nextSerialNumber++ } : entry,
+  );
+}
 
 export function readWorkbenchLibraryEntries(storageKey: string): WorkbenchLibraryEntry[] {
   try {
@@ -80,10 +110,4 @@ export function createWorkbenchLibraryEntry(tab: string, title: string, content 
     content,
     updatedAt: new Date().toLocaleString('zh-CN'),
   };
-}
-
-export function addWorkbenchLibraryEntry(storageKey: string, tab: string, title: string, content: string) {
-  const nextEntry = createWorkbenchLibraryEntry(tab, title, content);
-  writeWorkbenchLibraryEntries(storageKey, [nextEntry, ...readWorkbenchLibraryEntries(storageKey)]);
-  return nextEntry;
 }

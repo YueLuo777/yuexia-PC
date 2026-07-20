@@ -20,6 +20,12 @@ export type ReviewTextDiff = {
   hasChanges: boolean;
 };
 
+export type ReviewModificationNote = {
+  paragraphIndex: number;
+  category: string;
+  note: string;
+};
+
 const REVIEW_TEXT_DIFF_MAX_CELLS = 320_000;
 
 export function stripReviewThinkingBlock(content: string) {
@@ -41,6 +47,32 @@ export function extractReviewRevisedText(output: string) {
 
 export function splitReviewParagraphs(text: string) {
   return text.replace(/\r\n/g, '\n').split('\n');
+}
+
+function inferReviewModificationCategory(note: string) {
+  if (/重复|反复|赘余|啰嗦/.test(note)) return '重复表达';
+  if (/精简|冗长|副词|句式|节奏/.test(note)) return '句式精简';
+  if (/错别字|标点|病句|语法/.test(note)) return '文字修正';
+  return '表达优化';
+}
+
+export function extractReviewModificationNotes(output: string): ReviewModificationNote[] {
+  const clean = stripReviewThinkingBlock(output);
+  const section = clean.match(/【修改说明】\s*([\s\S]*?)(?=\n?【[^】]+】|$)/)?.[1]?.trim() ?? '';
+  if (!section) return [];
+  const notes: ReviewModificationNote[] = [];
+  const pattern = /^第\s*(\d+)\s*段(?:\s*[｜|]\s*([^：:\n]+))?\s*[：:]\s*(.+)$/gm;
+  for (const match of section.matchAll(pattern)) {
+    const paragraphNumber = Number(match[1]);
+    const note = match[3]?.trim() ?? '';
+    if (!Number.isInteger(paragraphNumber) || paragraphNumber < 1 || !note) continue;
+    notes.push({
+      paragraphIndex: paragraphNumber - 1,
+      category: match[2]?.trim() || inferReviewModificationCategory(note),
+      note,
+    });
+  }
+  return notes;
 }
 
 function normalizeReviewAnnotation(value: unknown, index: number): ReviewAnnotation | null {

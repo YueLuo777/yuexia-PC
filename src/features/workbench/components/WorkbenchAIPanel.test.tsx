@@ -4,9 +4,31 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-const readSource = (fileName: string) => readFileSync(join(dirname(fileURLToPath(import.meta.url)), fileName), 'utf8');
+const readSource = (fileName: string) => {
+  const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), fileName), 'utf8');
+  if (fileName !== 'WorkbenchAIPanel.tsx') return source;
+  return [
+    source,
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchAiPanelSupport.tsx'), 'utf8'),
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchAiRequestLogModal.tsx'), 'utf8'),
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchAiConversationView.tsx'), 'utf8'),
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchAiConfigPanel.tsx'), 'utf8'),
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchAIPanelView.tsx'), 'utf8'),
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchReplaceBodyButton.tsx'), 'utf8'),
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../model/workbenchReplaceBodyWarning.ts'), 'utf8'),
+  ].join('\n');
+};
 
 describe('WorkbenchAIPanel linked context controls', () => {
+  it('passes the active input through the extracted view scope', () => {
+    const panelSource = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchAIPanel.tsx'), 'utf8');
+    const viewSource = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchAIPanelView.tsx'), 'utf8');
+
+    expect(panelSource).toMatch(/renderWorkbenchAIPanelView\([\s\S]*?\binput,\s*inputTextareaRef\b/);
+    expect(viewSource).toMatch(/\{[\s\S]*?\binput,\s*inputTextareaRef\b[\s\S]*?\}\s*=\s*scope/s);
+    expect(viewSource).toContainSource('value={input}');
+  });
+
   it('uses only body category prompts for the body AI panel', () => {
     const source = readSource('WorkbenchAIPanel.tsx');
 
@@ -34,9 +56,11 @@ describe('WorkbenchAIPanel linked context controls', () => {
 
     expect(source).toContainSource("import { applyFormat, getStoredFormatSettings } from './EditorToolModals';");
     expect(source).toContainSource(
-      'onReplaceContent(applyFormat(stripAiThinkingBlock(output), getStoredFormatSettings()));',
+      'const content = applyFormat(stripAiThinkingBlock(output), getStoredFormatSettings());',
     );
-    expect(source).toContainSource("flashStatus('已智能排版并替换正文');");
+    expect(source).toContainSource('shouldWarnBeforeReplacingBody(content, threshold)');
+    expect(source).toContainSource('<WorkbenchReplaceBodyButton');
+    expect(source).toContainSource("onReplaced={() => flashStatus('已智能排版并替换正文')}");
     expect(source).not.toContainSource('onReplaceContent(stripAiThinkingBlock(output));');
   });
 
@@ -91,7 +115,7 @@ describe('WorkbenchAIPanel linked context controls', () => {
       "content: visibleRequestLog.visibleUserContent.trim() ? visibleRequestLog.userContent : ''",
     );
     expect(source).toContainSource('fillSingleGroup');
-    expect(source).toContainSource('fillGroupWeights={getBodyAiLogFillGroupWeights(visibleRequestLog)}');
+    expect(source).toContainSource('fillGroupWeights={getBodyAiLogFillGroupWeights(log)}');
     expect(logLayoutSource).toContainSource('<AiRequestLogGroups');
     expect(logLayoutSource).toContainSource('fillGroupWeights={fillGroupWeights}');
     expect(source).not.toContainSource('fillGroupId="context"');

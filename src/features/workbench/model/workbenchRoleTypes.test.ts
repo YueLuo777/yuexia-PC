@@ -3,9 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_WORKBENCH_ROLE_TYPES,
   canCreateWorkbenchRoleInType,
-  getDefaultPlotChainRoleIds,
-  getInitialPlotChainRoleIds,
-  getPlotPointProtagonistReplacementRule,
   isDefaultWorkbenchRoleType,
   normalizeWorkbenchRoleLifeStatus,
   normalizeWorkbenchRoleType,
@@ -48,45 +45,6 @@ describe('workbenchRoleTypes', () => {
     expect(normalizeWorkbenchRoleType('')).toBe('龙套角色');
   });
 
-  it('defaults plot-chain role association to male protagonist roles when no explicit selection exists', () => {
-    const roles = [
-      { id: 'role-1', group: '男主角' },
-      { id: 'role-2', group: '女主角' },
-    ];
-
-    expect(getDefaultPlotChainRoleIds(roles)).toEqual(['role-1']);
-    expect(
-      getInitialPlotChainRoleIds({
-        configuredRoleIds: undefined,
-        plotPointStandalone: true,
-        roles,
-      }),
-    ).toEqual(['role-1']);
-  });
-
-  it('always includes male protagonist roles in plot-chain context even after explicit clears', () => {
-    expect(
-      getInitialPlotChainRoleIds({
-        configuredRoleIds: [],
-        plotPointStandalone: true,
-        roles: [{ id: 'role-1', group: '男主角' }],
-      }),
-    ).toEqual(['role-1']);
-  });
-
-  it('keeps explicit plot-chain role selections and adds the male protagonist baseline', () => {
-    expect(
-      getInitialPlotChainRoleIds({
-        configuredRoleIds: ['role-2'],
-        plotPointStandalone: true,
-        roles: [
-          { id: 'role-1', group: '男主角' },
-          { id: 'role-2', group: '女主角' },
-        ],
-      }),
-    ).toEqual(['role-2', 'role-1']);
-  });
-
   it('prevents creating another role in male protagonist when one already exists', () => {
     expect(canCreateWorkbenchRoleInType(['男主角'], '男主角')).toBe(false);
     expect(canCreateWorkbenchRoleInType(['男主角'], '女主角')).toBe(true);
@@ -105,15 +63,4 @@ describe('workbenchRoleTypes', () => {
     expect(shouldShowRolePinAction('正派配角')).toBe(true);
   });
 
-  it('builds a source-agnostic plot point rule that replaces protagonist variables with the male lead name', () => {
-    const rule = getPlotPointProtagonistReplacementRule([
-      { title: '林刻', group: '男主角' },
-      { title: '姜月', group: '女主角' },
-    ]);
-
-    expect(rule).toContain('无论剧情点来源');
-    expect(rule).toContain('主角');
-    expect(rule).toContain('林刻');
-    expect(rule).not.toContain('姜月');
-  });
 });

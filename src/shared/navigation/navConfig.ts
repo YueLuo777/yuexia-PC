@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
+import { DEFAULT_NAV_ROUTE_ITEMS, STARTUP_ROUTE_PATH } from '@/app/routeRegistry';
+
 export interface NavItemConfig {
   iconName: string;
   label: string;
@@ -67,18 +69,9 @@ export const DEFAULT_NAV_CONFIG: NavGroupConfig[] = [
   {
     title: NAV_ROOT_GROUP_TITLE,
     iconName: 'LayoutGrid',
-    dividerAfterItemTo: '/novels',
-    dividerAfterItemTos: ['/novels'],
-    items: [
-      { iconName: 'BookOpen', label: '我的小说', to: '/novels' },
-      { iconName: 'Film', label: '我的剧本', to: '/scripts' },
-      { iconName: 'Globe', label: '番茄浏览器', to: '/tomato-browser' },
-      { iconName: 'Library', label: '资料库', to: '/library' },
-      { iconName: 'Tag', label: '提示词管理', to: '/prompts' },
-      { iconName: 'Settings', label: '模型管理', to: '/model-manage' },
-      { iconName: 'BarChart3', label: 'Token用量', to: '/token-usage' },
-      { iconName: 'FlaskConical', label: '测试板块', to: '/test-collection' },
-    ],
+    dividerAfterItemTo: STARTUP_ROUTE_PATH,
+    dividerAfterItemTos: [STARTUP_ROUTE_PATH],
+    items: DEFAULT_NAV_ROUTE_ITEMS,
   },
 ];
 
@@ -115,9 +108,6 @@ const REMOVED_ROUTES = new Set([
 const REMOVED_GROUP_TITLES = new Set(['首页专区', '隐藏专区', '功能专区']);
 const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
   '/library': '资料库',
-  '/text-overrides': '文案修改',
-  '/software-ui-catalog': 'UI库',
-  '/theme-colors': '主题颜色',
   '/test-collection': '测试板块',
   '/tomato-browser': '番茄浏览器',
 };

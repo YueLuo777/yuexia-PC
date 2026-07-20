@@ -15,13 +15,13 @@ export const COMMENT_PROMPT_CATEGORY = '综合点评';
 export const BODY_PROMPT_CATEGORY = '正文';
 export const STATUS_PROMPT_CATEGORY = '更新状态';
 export const SUMMARY_PROMPT_CATEGORY = '生成梗概';
-export const HOTSPOT_ANALYSIS_PROMPT_CATEGORY = '题材迭代';
+export const GENRE_ITERATION_PROMPT_CATEGORY = '题材迭代';
 const PROMPT_CATEGORY_ALIASES: Record<string, string> = {
   大纲: '设定',
   细纲: '章纲',
   章节细纲: '章纲',
   剧情链: '章纲',
-  热点分析: HOTSPOT_ANALYSIS_PROMPT_CATEGORY,
+  热点分析: GENRE_ITERATION_PROMPT_CATEGORY,
   点评: COMMENT_PROMPT_CATEGORY,
   更新: STATUS_PROMPT_CATEGORY,
   状态: STATUS_PROMPT_CATEGORY,
@@ -33,6 +33,27 @@ const PROMPT_CATEGORY_ALIASES: Record<string, string> = {
   卷概要: SUMMARY_PROMPT_CATEGORY,
   梗概: SUMMARY_PROMPT_CATEGORY,
 };
+
+function removeRetiredScriptPromptRecords(storageKey: string) {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const parsed = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    if (!Array.isArray(parsed)) return;
+    const retained = parsed.filter(
+      (item) => !item || typeof item !== 'object' || (item as { promptType?: unknown }).promptType !== 'script',
+    );
+    if (retained.length !== parsed.length) localStorage.setItem(storageKey, JSON.stringify(retained));
+  } catch {
+    // 损坏数据继续交给统一存储归一化处理。
+  }
+}
+
+export function removeRetiredScriptPromptData() {
+  removeRetiredScriptPromptRecords(PROMPTS_KEY);
+  removeRetiredScriptPromptRecords(PROMPT_RECYCLE_KEY);
+}
+
+removeRetiredScriptPromptData();
 export const DEFAULT_PROMPT_CATEGORIES = [
   '脑洞',
   '设定',
@@ -43,7 +64,7 @@ export const DEFAULT_PROMPT_CATEGORIES = [
   '润色',
   STATUS_PROMPT_CATEGORY,
   SUMMARY_PROMPT_CATEGORY,
-  HOTSPOT_ANALYSIS_PROMPT_CATEGORY,
+  GENRE_ITERATION_PROMPT_CATEGORY,
   UNCATEGORIZED,
 ];
 
@@ -72,6 +93,7 @@ const promptsStorage = createJsonStorage<PromptItem[]>(PROMPTS_KEY, [], {
     Array.isArray(value)
       ? (value as PromptItem[]).map((prompt) => ({
           ...prompt,
+          promptType: prompt.promptType === 'default' ? 'default' : 'novel',
           category: normalizePromptCategoryName(prompt.category ?? UNCATEGORIZED),
           subCategory: normalizePromptSubcategory(prompt.category ?? UNCATEGORIZED, prompt.subCategory),
         }))
@@ -83,6 +105,7 @@ const promptRecycleStorage = createJsonStorage<PromptItem[]>(PROMPT_RECYCLE_KEY,
     Array.isArray(value)
       ? (value as PromptItem[]).map((prompt) => ({
           ...prompt,
+          promptType: prompt.promptType === 'default' ? 'default' : 'novel',
           category: normalizePromptCategoryName(prompt.category ?? UNCATEGORIZED),
           subCategory: normalizePromptSubcategory(prompt.category ?? UNCATEGORIZED, prompt.subCategory),
         }))

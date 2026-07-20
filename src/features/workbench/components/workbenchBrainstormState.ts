@@ -94,7 +94,7 @@ export function getBrainstormOutputCount(value: string) {
 }
 
 export function getTemporaryBrainstormTitle(_index: number) {
-  return '脑洞输出';
+  return 'AI输出';
 }
 
 export function getSelectedBrainstormPreviewIndexes(previews: string[], selectedIndexes?: number[]) {

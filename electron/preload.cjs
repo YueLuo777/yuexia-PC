@@ -57,8 +57,3 @@ contextBridge.exposeInMainWorld('xinyuexiaCos', {
   putObject: (input) => ipcRenderer.invoke('cos:put-object', input),
   getObject: (input) => ipcRenderer.invoke('cos:get-object', input),
 });
-
-contextBridge.exposeInMainWorld('xinyuexiaHotspots', {
-  fetchAll: (input) => ipcRenderer.invoke('hotspots:fetch-all', input),
-  fetchDetail: (input) => ipcRenderer.invoke('hotspots:fetch-detail', input),
-});

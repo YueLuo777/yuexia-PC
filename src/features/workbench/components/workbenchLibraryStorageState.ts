@@ -14,15 +14,6 @@ import {
   BRAINSTORM_PREVIEW_WIDTH,
   OUTLINE_ACTION_RIGHT_MIN_WIDTH,
   OUTLINE_LEFT_MAX_DISPLAY_WIDTH,
-  PLOT_POINT_LAYOUT_LEFT_MAX_WIDTH,
-  PLOT_POINT_LAYOUT_LEFT_MIN_WIDTH,
-  PLOT_POINT_LAYOUT_LEFT_WIDTH,
-  PLOT_POINT_LAYOUT_RIGHT_MAX_WIDTH,
-  PLOT_POINT_LAYOUT_RIGHT_MIN_WIDTH,
-  PLOT_POINT_LAYOUT_RIGHT_WIDTH,
-  PLOT_POINT_LAYOUT_TREE_MAX_WIDTH,
-  PLOT_POINT_LAYOUT_TREE_MIN_WIDTH,
-  PLOT_POINT_LAYOUT_TREE_WIDTH,
   SETTING_LIBRARY_LEFT_MAX_WIDTH,
   SETTING_LIBRARY_LEFT_MIN_WIDTH,
   SETTING_LIBRARY_LEFT_WIDTH,
@@ -249,48 +240,4 @@ export function persistSettingLibraryWidth(
     return;
   }
   localStorage.setItem(getSettingLibraryWidthStorageKey(storageKey, tab, side), String(value));
-}
-
-export function getPlotPointLayoutWidthStorageKey(storageKey: string, side: 'tree' | 'left' | 'right') {
-  return `${storageKey}_plot_point_layout_${side}_width_v1`;
-}
-
-export function readPlotPointLayoutTreeWidth(storageKey: string) {
-  try {
-    const value = Number(
-      localStorage.getItem(getPlotPointLayoutWidthStorageKey(storageKey, 'tree')) ?? PLOT_POINT_LAYOUT_TREE_WIDTH,
-    );
-    if (!Number.isFinite(value)) return PLOT_POINT_LAYOUT_TREE_WIDTH;
-    return Math.min(PLOT_POINT_LAYOUT_TREE_MAX_WIDTH, Math.max(PLOT_POINT_LAYOUT_TREE_MIN_WIDTH, value));
-  } catch {
-    return PLOT_POINT_LAYOUT_TREE_WIDTH;
-  }
-}
-
-export function readPlotPointLayoutLeftWidth(storageKey: string) {
-  try {
-    const value = Number(
-      localStorage.getItem(getPlotPointLayoutWidthStorageKey(storageKey, 'left')) ?? PLOT_POINT_LAYOUT_LEFT_WIDTH,
-    );
-    if (!Number.isFinite(value)) return PLOT_POINT_LAYOUT_LEFT_WIDTH;
-    return Math.min(PLOT_POINT_LAYOUT_LEFT_MAX_WIDTH, Math.max(PLOT_POINT_LAYOUT_LEFT_MIN_WIDTH, value));
-  } catch {
-    return PLOT_POINT_LAYOUT_LEFT_WIDTH;
-  }
-}
-
-export function readPlotPointLayoutRightWidth(storageKey: string) {
-  try {
-    const value = Number(
-      localStorage.getItem(getPlotPointLayoutWidthStorageKey(storageKey, 'right')) ?? PLOT_POINT_LAYOUT_RIGHT_WIDTH,
-    );
-    if (!Number.isFinite(value)) return PLOT_POINT_LAYOUT_RIGHT_WIDTH;
-    return Math.min(PLOT_POINT_LAYOUT_RIGHT_MAX_WIDTH, Math.max(PLOT_POINT_LAYOUT_RIGHT_MIN_WIDTH, value));
-  } catch {
-    return PLOT_POINT_LAYOUT_RIGHT_WIDTH;
-  }
-}
-
-export function persistPlotPointLayoutWidth(storageKey: string, side: 'tree' | 'left' | 'right', value: number) {
-  localStorage.setItem(getPlotPointLayoutWidthStorageKey(storageKey, side), String(value));
 }

@@ -1,4 +1,4 @@
-import { ArchiveRestore, DatabaseBackup, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import JSZip from 'jszip';
 import { useRef, useState } from 'react';
 
@@ -16,7 +16,6 @@ type MigrationBackup = {
 const RESTORABLE_STORAGE_KEY_PREFIXES = [
   'xinyuexia_',
   'workbench_',
-  'plot_point_layout_',
   'materials:',
   'current_',
   'concept_',
@@ -27,7 +26,6 @@ const RESTORABLE_STORAGE_KEY_PREFIXES = [
 const RESTORABLE_STORAGE_KEYS = new Set([
   'materials',
   'materials_data_v1',
-  'plot_library_v1',
   'concept_library_ai_request_log_groups',
 ]);
 const BLOCKED_STORAGE_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
@@ -225,13 +223,7 @@ export function DbSettingsPage() {
 
   return (
     <div className="flex h-full flex-col bg-gray-50">
-      <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-gray-200 bg-white px-6">
-        <div className="min-w-0">
-          <h1 className="text-xl font-bold text-gray-900">全局数据迁移</h1>
-          <p className="mt-0.5 truncate text-xs text-gray-400">
-            用于把家里电脑的软件数据迁移到公司电脑：作品、提示词、设定、资料、布局和常用设置会一起导出。
-          </p>
-        </div>
+      <header className="flex h-16 shrink-0 items-center justify-end gap-4 border-b border-gray-200 bg-white px-6">
         <div className="flex shrink-0 items-center gap-2">
           <input
             ref={fileInputRef}
@@ -246,17 +238,15 @@ export function DbSettingsPage() {
           <button
             onClick={exportMigrationBackup}
             disabled={isBusy}
-            className="inline-flex h-8 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+            className="h-10 rounded-[10px] bg-[#08AACE] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0798B8] disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            <DatabaseBackup className="h-4 w-4" />
             导出全局备份
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isBusy}
-            className="inline-flex h-8 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+            className="h-10 rounded-[10px] bg-[#08AACE] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0798B8] disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            <ArchiveRestore className="h-4 w-4" />
             导入全局备份
           </button>
         </div>

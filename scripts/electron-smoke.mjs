@@ -27,11 +27,39 @@ try {
       ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
       NODE_ENV: 'test',
       XINYUEXIA_LOAD_DIST: '1',
+      XINYUEXIA_SMOKE_HEADLESS: '1',
     },
     timeout: 30_000,
   });
 
+  await electronApp.evaluate(async ({ BrowserWindow, screen }) => {
+    let appWindow = BrowserWindow.getAllWindows()[0];
+    for (let attempt = 0; !appWindow && attempt < 40; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      appWindow = BrowserWindow.getAllWindows()[0];
+    }
+    if (!appWindow) return;
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const secondaryDisplay = screen.getAllDisplays().find((display) => display.id !== primaryDisplay.id);
+    if (!secondaryDisplay) return;
+    const bounds = appWindow.getBounds();
+    const { workArea } = secondaryDisplay;
+    const width = Math.min(bounds.width, workArea.width);
+    const height = Math.min(bounds.height, Math.max(1, Math.floor(workArea.height * 0.75) - 8));
+    appWindow.setBounds({
+      x: workArea.x + Math.floor((workArea.width - width) / 2),
+      y: workArea.y + Math.floor((workArea.height - height) / 2),
+      width,
+      height,
+    });
+  });
+
   page = await electronApp.firstWindow({ timeout: 30_000 });
+
+  const smokeWindowIsVisible = await electronApp.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()[0]?.isVisible(),
+  );
+  assert.equal(smokeWindowIsVisible, false, 'automated smoke window should remain hidden');
 
   page.on('pageerror', (error) => runtimeErrors.push(`pageerror: ${error.message}`));
   page.on('console', (message) => {
@@ -41,6 +69,30 @@ try {
   await page.waitForLoadState('domcontentloaded');
   await page.getByText('作品概览', { exact: true }).waitFor({ timeout: 30_000 });
   assert.match(page.url(), /#\/novels(?:$|[/?])/, 'desktop app should open the novel library');
+
+  const startupWindowGeometry = await electronApp.evaluate(({ BrowserWindow, screen }) => {
+    const appWindow = BrowserWindow.getAllWindows()[0];
+    const bounds = appWindow.getBounds();
+    const workArea = screen.getDisplayMatching(bounds).workArea;
+    return { bounds, workArea };
+  });
+  assert.ok(
+    startupWindowGeometry.bounds.height <= Math.floor(startupWindowGeometry.workArea.height * 0.75),
+    `startup window height ${startupWindowGeometry.bounds.height} should stay within 75% of work area height ${startupWindowGeometry.workArea.height}`,
+  );
+
+  const overviewValuesStayInsideCards = await page.locator('[data-overview-stat]').evaluateAll(
+    (cards) =>
+      cards.length === 4 &&
+      cards.every((card) => {
+        const value = card.querySelector('[data-auto-fit-text] > span');
+        if (!value) return false;
+        const cardRect = card.getBoundingClientRect();
+        const valueRect = value.getBoundingClientRect();
+        return valueRect.left >= cardRect.left - 0.5 && valueRect.right <= cardRect.right + 0.5;
+      }),
+  );
+  assert.equal(overviewValuesStayInsideCards, true, 'overview values should stay inside their card borders');
 
   const defaultNovel = page.getByRole('button', { name: /默认小说1/ });
   await defaultNovel.waitFor({ timeout: 15_000 });

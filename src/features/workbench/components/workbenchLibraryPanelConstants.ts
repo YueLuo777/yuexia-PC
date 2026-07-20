@@ -13,7 +13,7 @@ export const WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS =
 export const WORKBENCH_LIBRARY_ENTRY_BUTTON_CLASS = `group cursor-default select-none ${WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS} transition-[background-color,border-color,box-shadow,opacity,transform] duration-150`;
 export const WORKBENCH_LIBRARY_ENTRY_EMPTY_CLASS = `flex items-center ${WORKBENCH_LIBRARY_ENTRY_ROW_BASE_CLASS} text-gray-400`;
 export const DETAIL_OUTLINE_SIDEBAR_HEADER_CLASS =
-  'flex h-[42px] shrink-0 items-center justify-between border-b border-[#e6e8ec] bg-[#fbfbfc] px-3 py-2.5';
+  'flex h-12 shrink-0 items-center justify-between border-b border-[#e6e8ec] bg-[#fbfbfc] px-3';
 export const DETAIL_OUTLINE_SIDEBAR_TITLE_CLASS = 'whitespace-nowrap text-sm font-bold text-gray-900';
 export const DETAIL_OUTLINE_SIDEBAR_COUNT_CLASS =
   'flex h-5 w-5 items-center justify-center rounded-full bg-[#E7F8FD] text-xs font-medium text-[#08AACE]';
@@ -41,13 +41,3 @@ export const BRAINSTORM_LAYOUT_PREVIEW_MAX_WIDTH = 480;
 export const BRAINSTORM_LAYOUT_RIGHT_MIN_WIDTH = 340;
 export const BRAINSTORM_LAYOUT_RIGHT_MAX_WIDTH = 760;
 export const BRAINSTORM_LAYOUT_OUTPUT_MIN_WIDTH = 320;
-export const PLOT_POINT_LAYOUT_LEFT_WIDTH = 300;
-export const PLOT_POINT_LAYOUT_TREE_MIN_WIDTH = 132;
-export const PLOT_POINT_LAYOUT_TREE_WIDTH = PLOT_POINT_LAYOUT_TREE_MIN_WIDTH;
-export const PLOT_POINT_LAYOUT_TREE_MAX_WIDTH = 260;
-export const PLOT_POINT_LAYOUT_LEFT_MIN_WIDTH = 220;
-export const PLOT_POINT_LAYOUT_LEFT_MAX_WIDTH = 520;
-export const PLOT_POINT_LAYOUT_RIGHT_WIDTH = 360;
-export const PLOT_POINT_LAYOUT_RIGHT_MIN_WIDTH = 300;
-export const PLOT_POINT_LAYOUT_RIGHT_MAX_WIDTH = 620;
-export const PLOT_POINT_LAYOUT_CENTER_MIN_WIDTH = 360;

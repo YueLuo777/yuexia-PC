@@ -25,8 +25,8 @@ export const WORKBENCH_AI_REQUEST_TAG_POLICIES: WorkbenchAiRequestTagPolicy[] = 
     id: 'detailOutline',
     label: '章纲',
     useXmlTags: true,
-    reason: '章纲会混合设定资料、角色资料、前文章纲、剧情链和本章要求，需要清楚区分参考材料和用户指令。',
-    tags: ['关联资料', '设定资料', '角色资料', '前文章纲', '剧情链', '本章要求'],
+    reason: '章纲会混合设定资料、角色资料、前文章纲和本章要求，需要清楚区分参考材料和用户指令。',
+    tags: ['关联资料', '设定资料', '角色资料', '前文章纲', '本章要求'],
   },
   {
     id: 'body',

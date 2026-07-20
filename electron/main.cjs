@@ -1,12 +1,12 @@
 const { app, BrowserWindow, dialog, ipcMain, nativeImage, safeStorage, shell, screen } = require('electron');
-const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
-const { normalizeModelRequestInput } = require('./ipcValidation.cjs');
-const { createHotspotDetailService } = require('./hotspots/hotspotDetailService.cjs');
-const { createHotspotService } = require('./hotspots/hotspotService.cjs');
+const { createAppIconService } = require('./appIconService.cjs');
+const { registerCosIpcHandlers } = require('./cosService.cjs');
 const { createModelSecretStore } = require('./modelSecretStore.cjs');
+const { registerModelRequestIpcHandlers } = require('./modelRequestService.cjs');
+const { createWindowStateStore } = require('./windowStateStore.cjs');
 
 const DEV_URL = 'http://127.0.0.1:18328/#/novels';
 const DIST_ENTRY = path.join(__dirname, '..', 'dist', 'index.html');
@@ -21,29 +21,27 @@ const DEFAULT_WINDOW_BOUNDS = {
 };
 const MIN_WINDOW_WIDTH = 1100;
 const MIN_WINDOW_HEIGHT = 680;
-const CUSTOM_APP_ICON_FILE_NAME = 'custom-app-icon.png';
-const CUSTOM_APP_ICON_SOURCE_FILE_NAME = 'custom-app-icon-source.json';
-const DEFAULT_APP_ICON_FILE_NAME = 'default-app-icon.png';
-const PROJECT_APP_ICON_DIR = path.join(path.resolve(__dirname, '..'), 'ruanjianfengmian');
-const PROJECT_APP_ICON_FILE_NAMES = ['fengmian.png', 'fengmian.jpg', 'fengmian.jpeg', 'fengmian.webp', 'fengmian.ico'];
-const PROJECT_APP_ICON_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.ico']);
-const SHARED_WINDOW_STATE_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'window-state.json');
-const SHARED_WINDOW_SETTINGS_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'window-settings.json');
-const DEFAULT_WINDOW_SETTINGS = {
-  rememberSize: true,
-};
-const LEGACY_WINDOW_STATE_FILES = [
-  path.join(app.getPath('userData'), 'window-state.json'),
-  path.join(app.getPath('appData'), 'xinyuexia-desktop-dev', 'window-state.json'),
-];
-const HOTSPOT_CACHE_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'hotspots', 'dailyhot-cache.json');
+const STARTUP_MAX_WORK_AREA_HEIGHT_RATIO = 0.75;
+const STARTUP_HEIGHT_ROUNDING_MARGIN = 8;
 const MAIN_LOG_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'electron-main.log');
 const MODEL_SECRETS_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'model-secrets.json');
 
 let mainWindow = null;
-const hotspotDetailService = createHotspotDetailService();
-const hotspotService = createHotspotService({ cacheFile: HOTSPOT_CACHE_FILE });
 const modelSecretStore = createModelSecretStore({ safeStorage, filePath: MODEL_SECRETS_FILE });
+const appIconService = createAppIconService({
+  app,
+  dialog,
+  nativeImage,
+  appIcon: APP_ICON,
+  projectRoot: path.resolve(__dirname, '..'),
+  getMainWindow: () => mainWindow,
+});
+const windowStateStore = createWindowStateStore({
+  app,
+  sharedStateDirName: SHARED_STATE_DIR_NAME,
+  minWidth: MIN_WINDOW_WIDTH,
+  minHeight: MIN_WINDOW_HEIGHT,
+});
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
@@ -116,282 +114,45 @@ function isTrustedRendererUrl(url) {
   }
 }
 
-function parseWindowState(filePath) {
-  try {
-    const raw = fs.readFileSync(filePath, 'utf8');
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') return null;
-
-    const width = Number(parsed.width);
-    const height = Number(parsed.height);
-    const x = Number(parsed.x);
-    const y = Number(parsed.y);
-
-    if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
-
-    return {
-      width: Math.max(MIN_WINDOW_WIDTH, Math.round(width)),
-      height: Math.max(MIN_WINDOW_HEIGHT, Math.round(height)),
-      x: Number.isFinite(x) ? Math.round(x) : undefined,
-      y: Number.isFinite(y) ? Math.round(y) : undefined,
-      isMaximized: parsed.isMaximized === true,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function normalizeWindowSettings(input) {
-  const settings = input && typeof input === 'object' ? input : {};
-  return {
-    rememberSize: settings.rememberSize !== false,
-  };
-}
-
-function readWindowSettings() {
-  try {
-    if (!fs.existsSync(SHARED_WINDOW_SETTINGS_FILE)) return { ...DEFAULT_WINDOW_SETTINGS };
-    const parsed = JSON.parse(fs.readFileSync(SHARED_WINDOW_SETTINGS_FILE, 'utf8'));
-    return normalizeWindowSettings(parsed);
-  } catch {
-    return { ...DEFAULT_WINDOW_SETTINGS };
-  }
-}
-
-function persistWindowSettings(settings) {
-  const normalized = normalizeWindowSettings(settings);
-  try {
-    fs.mkdirSync(path.dirname(SHARED_WINDOW_SETTINGS_FILE), { recursive: true });
-    fs.writeFileSync(SHARED_WINDOW_SETTINGS_FILE, JSON.stringify(normalized, null, 2), 'utf8');
-  } catch (error) {
-    console.warn('Failed to persist window settings:', error);
-  }
-  return normalized;
-}
-
-function persistWindowState(state) {
-  try {
-    fs.mkdirSync(path.dirname(SHARED_WINDOW_STATE_FILE), { recursive: true });
-    fs.writeFileSync(SHARED_WINDOW_STATE_FILE, JSON.stringify(state, null, 2), 'utf8');
-  } catch (error) {
-    console.warn('Failed to persist window state:', error);
-  }
-}
-
-function readWindowState() {
-  if (!readWindowSettings().rememberSize) return null;
-  const candidates = [SHARED_WINDOW_STATE_FILE, ...LEGACY_WINDOW_STATE_FILES];
-  for (const filePath of candidates) {
-    const state = parseWindowState(filePath);
-    if (!state) continue;
-    if (filePath !== SHARED_WINDOW_STATE_FILE) {
-      persistWindowState(state);
-    }
-    return state;
-  }
-  return null;
-}
-
-function isVisibleOnSomeDisplay(bounds) {
-  if (typeof bounds?.x !== 'number' || typeof bounds?.y !== 'number') return true;
-
-  return screen.getAllDisplays().some(({ workArea }) => {
-    const horizontalOverlap = bounds.x < workArea.x + workArea.width && bounds.x + bounds.width > workArea.x;
-    const verticalOverlap = bounds.y < workArea.y + workArea.height && bounds.y + bounds.height > workArea.y;
-    return horizontalOverlap && verticalOverlap;
-  });
-}
-
-function getCustomAppIconPath() {
-  return path.join(app.getPath('userData'), CUSTOM_APP_ICON_FILE_NAME);
-}
-
-function getDefaultAppIconPath() {
-  return path.join(app.getPath('userData'), DEFAULT_APP_ICON_FILE_NAME);
-}
-
-function getCustomAppIconSourcePath() {
-  return path.join(app.getPath('userData'), CUSTOM_APP_ICON_SOURCE_FILE_NAME);
-}
-
-function readSelectedProjectIconFileName() {
-  try {
-    const sourcePath = getCustomAppIconSourcePath();
-    if (!fs.existsSync(sourcePath)) return '';
-    const parsed = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
-    return typeof parsed?.fileName === 'string' ? parsed.fileName : '';
-  } catch {
-    return '';
-  }
-}
-
-function saveSelectedProjectIconFileName(fileName) {
-  fs.mkdirSync(path.dirname(getCustomAppIconSourcePath()), { recursive: true });
-  fs.writeFileSync(getCustomAppIconSourcePath(), JSON.stringify({ fileName }, null, 2), 'utf8');
-}
-
-function clearSelectedProjectIconFileName() {
-  const sourcePath = getCustomAppIconSourcePath();
-  if (fs.existsSync(sourcePath)) fs.unlinkSync(sourcePath);
-}
-
-function getProjectAppIconPath() {
-  return (
-    PROJECT_APP_ICON_FILE_NAMES.map((fileName) => path.join(PROJECT_APP_ICON_DIR, fileName)).find((filePath) =>
-      fs.existsSync(filePath),
-    ) ?? null
+function fitStartupBoundsToWorkArea(inputBounds) {
+  const requestedBounds = { ...inputBounds };
+  const hasSavedPosition = Number.isFinite(requestedBounds.x) && Number.isFinite(requestedBounds.y);
+  const display = hasSavedPosition
+    ? screen.getDisplayMatching({
+        x: Math.round(requestedBounds.x),
+        y: Math.round(requestedBounds.y),
+        width: Math.max(1, Math.round(requestedBounds.width)),
+        height: Math.max(1, Math.round(requestedBounds.height)),
+      })
+    : screen.getPrimaryDisplay();
+  const { workArea } = display;
+  const maximumHeight = Math.max(
+    1,
+    Math.floor(workArea.height * STARTUP_MAX_WORK_AREA_HEIGHT_RATIO) - STARTUP_HEIGHT_ROUNDING_MARGIN,
   );
-}
+  const height = Math.min(Math.max(1, Math.round(requestedBounds.height)), maximumHeight);
+  const width = Math.min(Math.max(1, Math.round(requestedBounds.width)), workArea.width);
 
-function readProjectAppIcons() {
-  if (!fs.existsSync(PROJECT_APP_ICON_DIR)) return [];
-  const selectedFileName = readSelectedProjectIconFileName();
-  return fs
-    .readdirSync(PROJECT_APP_ICON_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && PROJECT_APP_ICON_EXTENSIONS.has(path.extname(entry.name).toLowerCase()))
-    .map((entry) => {
-      const filePath = path.join(PROJECT_APP_ICON_DIR, entry.name);
-      const image = nativeImage.createFromPath(filePath);
-      if (image.isEmpty()) return null;
-      const previewImage = image.resize({ width: 128, height: 128, quality: 'best' });
-      return {
-        fileName: entry.name,
-        filePath,
-        dataUrl: previewImage.toDataURL(),
-        isSelected: entry.name === selectedFileName,
-      };
-    })
-    .filter(Boolean)
-    .sort((a, b) => a.fileName.localeCompare(b.fileName, 'zh-CN'));
-}
+  if (!hasSavedPosition) return { ...requestedBounds, width, height };
 
-function getRoundedRectCoverage(x, y, width, height, radius) {
-  const samples = 3;
-  let covered = 0;
-  for (let sy = 0; sy < samples; sy += 1) {
-    for (let sx = 0; sx < samples; sx += 1) {
-      const cx = x + (sx + 0.5) / samples;
-      const cy = y + (sy + 0.5) / samples;
-      const innerX = Math.max(radius, Math.min(cx, width - radius));
-      const innerY = Math.max(radius, Math.min(cy, height - radius));
-      const dx = cx - innerX;
-      const dy = cy - innerY;
-      if (dx * dx + dy * dy <= radius * radius) covered += 1;
-    }
-  }
-  return covered / (samples * samples);
-}
+  const heightWasLimited = height !== Math.round(requestedBounds.height);
+  const x = Math.min(Math.max(Math.round(requestedBounds.x), workArea.x), workArea.x + workArea.width - width);
+  const y = heightWasLimited
+    ? workArea.y + Math.floor((workArea.height - height) / 2)
+    : Math.min(Math.max(Math.round(requestedBounds.y), workArea.y), workArea.y + workArea.height - height);
 
-function roundAppIconImage(sourceImage) {
-  if (!sourceImage || sourceImage.isEmpty()) return sourceImage;
-  const image = sourceImage.resize({ width: 256, height: 256, quality: 'best' });
-  const size = image.getSize();
-  if (!size.width || !size.height) return image;
-  const bitmap = image.toBitmap();
-  const radius = Math.round(Math.min(size.width, size.height) * 0.22);
-
-  for (let y = 0; y < size.height; y += 1) {
-    for (let x = 0; x < size.width; x += 1) {
-      const offset = (y * size.width + x) * 4;
-      bitmap[offset + 3] = Math.round(
-        bitmap[offset + 3] * getRoundedRectCoverage(x, y, size.width, size.height, radius),
-      );
-    }
-  }
-
-  return nativeImage.createFromBitmap(bitmap, size);
-}
-
-function saveIconImage(targetPath, sourceImage) {
-  if (!sourceImage || sourceImage.isEmpty()) {
-    return { ok: false, message: '无法读取这个图片，请换一张 PNG、JPG、WEBP 或 ICO。' };
-  }
-
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  const roundedIcon = roundAppIconImage(sourceImage);
-  fs.writeFileSync(targetPath, roundedIcon.toPNG());
-  return { ok: true };
-}
-
-function saveCustomAppIconFromPath(sourcePath, sourceFileName = '') {
-  const sourceImage = nativeImage.createFromPath(sourcePath);
-  const saved = saveIconImage(getCustomAppIconPath(), sourceImage);
-  if (!saved.ok) return saved;
-  if (sourceFileName) saveSelectedProjectIconFileName(sourceFileName);
-  else clearSelectedProjectIconFileName();
-  return { ok: true };
-}
-
-function saveCustomAppIconFromDataUrl(dataUrl, sourceFileName = '') {
-  if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
-    return { ok: false, message: '没有读取到可用的首页图标。' };
-  }
-  const sourceImage = nativeImage.createFromDataURL(dataUrl);
-  const saved = saveIconImage(getCustomAppIconPath(), sourceImage);
-  if (!saved.ok) return saved;
-  if (sourceFileName) saveSelectedProjectIconFileName(sourceFileName);
-  else clearSelectedProjectIconFileName();
-  return { ok: true };
-}
-
-function saveCurrentIconAsDefault() {
-  const sourceImage = nativeImage.createFromPath(getCurrentAppIconPath());
-  return saveIconImage(getDefaultAppIconPath(), sourceImage);
-}
-
-function getCurrentAppIconPath() {
-  const customIcon = getCustomAppIconPath();
-  const defaultIcon = getDefaultAppIconPath();
-  const projectIcon = getProjectAppIconPath();
-  if (fs.existsSync(customIcon)) return customIcon;
-  if (fs.existsSync(defaultIcon)) return defaultIcon;
-  if (projectIcon) return projectIcon;
-  return APP_ICON;
-}
-
-function readCurrentAppIcon() {
-  const iconPath = getCurrentAppIconPath();
-  const image = nativeImage.createFromPath(iconPath);
-  const selectedProjectIconFileName = readSelectedProjectIconFileName();
-  const defaultIconPath = getDefaultAppIconPath();
-  return {
-    ok: !image.isEmpty(),
-    isCustom: iconPath !== APP_ICON && iconPath !== defaultIconPath,
-    isDefaultOverride: iconPath === defaultIconPath,
-    projectIconDir: PROJECT_APP_ICON_DIR,
-    acceptedFileNames: PROJECT_APP_ICON_FILE_NAMES,
-    selectedProjectIconFileName,
-    projectIcons: readProjectAppIcons(),
-    defaultIconPath,
-    iconPath,
-    dataUrl: image.isEmpty() ? '' : image.toDataURL(),
-  };
-}
-
-function applyWindowIcon(targetWindow = mainWindow) {
-  if (!targetWindow || targetWindow.isDestroyed()) return readCurrentAppIcon();
-  const icon = nativeImage.createFromPath(getCurrentAppIconPath());
-  if (!icon.isEmpty()) targetWindow.setIcon(icon);
-  return readCurrentAppIcon();
+  return { ...requestedBounds, x, y, width, height };
 }
 
 function getWindowOptions(savedState) {
-  const bounds = {
-    ...DEFAULT_WINDOW_BOUNDS,
-    ...(savedState ?? {}),
-  };
-
-  if (!isVisibleOnSomeDisplay(bounds)) {
-    delete bounds.x;
-    delete bounds.y;
-  }
+  const bounds = fitStartupBoundsToWorkArea({ ...DEFAULT_WINDOW_BOUNDS, ...(savedState ?? {}) });
 
   return {
     ...bounds,
-    minWidth: MIN_WINDOW_WIDTH,
-    minHeight: MIN_WINDOW_HEIGHT,
+    minWidth: Math.min(MIN_WINDOW_WIDTH, bounds.width),
+    minHeight: Math.min(MIN_WINDOW_HEIGHT, bounds.height),
     title: APP_NAME,
-    icon: getCurrentAppIconPath(),
+    icon: appIconService.getCurrentAppIconPath(),
     backgroundColor: '#f9fafb',
     autoHideMenuBar: true,
     frame: false,
@@ -412,11 +173,11 @@ function isWebviewTagEnabled() {
 
 function saveWindowState(targetWindow) {
   if (!targetWindow || targetWindow.isDestroyed()) return;
-  if (!readWindowSettings().rememberSize) return;
+  if (!windowStateStore.readSettings().rememberSize) return;
 
   const bounds = targetWindow.isMaximized() ? targetWindow.getNormalBounds() : targetWindow.getBounds();
 
-  persistWindowState({
+  windowStateStore.persistState({
     x: bounds.x,
     y: bounds.y,
     width: bounds.width,
@@ -427,15 +188,18 @@ function saveWindowState(targetWindow) {
 
 function readWindowSettingsResult() {
   return {
-    ...readWindowSettings(),
+    ...windowStateStore.readSettings(),
     defaultBounds: { ...DEFAULT_WINDOW_BOUNDS },
     currentBounds: mainWindow && !mainWindow.isDestroyed() ? mainWindow.getBounds() : null,
   };
 }
 
 function updateWindowSettings(nextSettings) {
-  const previous = readWindowSettings();
-  const next = persistWindowSettings({ ...previous, ...normalizeWindowSettings(nextSettings) });
+  const previous = windowStateStore.readSettings();
+  const next = windowStateStore.persistSettings({
+    ...previous,
+    ...windowStateStore.normalizeSettings(nextSettings),
+  });
   if (next.rememberSize) saveWindowState(mainWindow);
   return readWindowSettingsResult();
 }
@@ -443,19 +207,13 @@ function updateWindowSettings(nextSettings) {
 function resetWindowBoundsToDefault() {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.unmaximize();
-    mainWindow.setBounds({ ...DEFAULT_WINDOW_BOUNDS });
+    mainWindow.setBounds(fitStartupBoundsToWorkArea(DEFAULT_WINDOW_BOUNDS));
     mainWindow.center();
   }
 
-  if (fs.existsSync(SHARED_WINDOW_STATE_FILE)) {
-    try {
-      fs.unlinkSync(SHARED_WINDOW_STATE_FILE);
-    } catch (error) {
-      console.warn('Failed to reset window state:', error);
-    }
-  }
+  windowStateStore.clearState();
 
-  if (readWindowSettings().rememberSize) saveWindowState(mainWindow);
+  if (windowStateStore.readSettings().rememberSize) saveWindowState(mainWindow);
   return readWindowSettingsResult();
 }
 
@@ -471,6 +229,7 @@ function notifyWindowMaximizedState(targetWindow) {
 
 function focusMainWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (process.env.XINYUEXIA_SMOKE_HEADLESS === '1') return;
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.setAlwaysOnTop(true);
   mainWindow.show();
@@ -528,7 +287,7 @@ function attachWindowStateTracking(targetWindow) {
 function applySavedWindowState(targetWindow, savedState) {
   if (!savedState || !savedState.isMaximized) return;
   if (!targetWindow || targetWindow.isDestroyed()) return;
-  targetWindow.maximize();
+  writeMainLog('saved maximized state ignored so startup height remains within 75% of the work area');
 }
 
 function attachRendererDiagnostics(targetWindow) {
@@ -587,7 +346,7 @@ function createWindow() {
     return mainWindow;
   }
 
-  const savedState = readWindowState();
+  const savedState = windowStateStore.readState();
   mainWindow = new BrowserWindow(getWindowOptions(savedState));
   const createdWindow = mainWindow;
   writeMainLog(`main window created startUrl=${resolveStartUrl()}`);
@@ -698,429 +457,16 @@ registerTrustedIpcHandler('window:reload', () => {
 registerTrustedIpcHandler('window-settings:read', () => readWindowSettingsResult());
 registerTrustedIpcHandler('window-settings:update', (_event, nextSettings) => updateWindowSettings(nextSettings));
 registerTrustedIpcHandler('window-settings:reset-bounds', () => resetWindowBoundsToDefault());
-registerTrustedIpcHandler('hotspots:fetch-all', async (_event, input) => hotspotService.fetchAll(input));
-registerTrustedIpcHandler('hotspots:fetch-detail', async (_event, input) => hotspotDetailService.fetchDetail(input));
 registerTrustedIpcHandler('model-secrets:status', () => modelSecretStore.status());
 registerTrustedIpcHandler('model-secrets:get', (_event, secretId) => modelSecretStore.get(secretId));
 registerTrustedIpcHandler('model-secrets:set', (_event, secretId, apiKey) => modelSecretStore.set(secretId, apiKey));
 registerTrustedIpcHandler('model-secrets:remove', (_event, secretId) => modelSecretStore.remove(secretId));
 
-registerTrustedIpcHandler('app-icon:read', async () => readCurrentAppIcon());
+appIconService.registerIpcHandlers(registerTrustedIpcHandler);
 
-registerTrustedIpcHandler('app-icon:select', async () => {
-  if (!mainWindow || mainWindow.isDestroyed()) return { ok: false, message: '窗口未就绪。' };
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: '选择软件图标图片',
-    properties: ['openFile'],
-    filters: [
-      { name: '图片文件', extensions: ['png', 'jpg', 'jpeg', 'webp', 'ico'] },
-      { name: '所有文件', extensions: ['*'] },
-    ],
-  });
-  if (result.canceled || result.filePaths.length === 0) return { ok: false, canceled: true };
-
-  try {
-    const saved = saveCustomAppIconFromPath(result.filePaths[0]);
-    if (!saved.ok) return saved;
-    return { ...applyWindowIcon(mainWindow), ok: true, message: '图标已更新。' };
-  } catch (error) {
-    return {
-      ok: false,
-      message: error instanceof Error ? error.message : '保存图标失败。',
-    };
-  }
-});
-
-registerTrustedIpcHandler('app-icon:use-project-icon', async (_event, fileName) => {
-  if (typeof fileName !== 'string' || path.basename(fileName) !== fileName) {
-    return { ...readCurrentAppIcon(), ok: false, message: '图标文件名无效。' };
-  }
-  if (!PROJECT_APP_ICON_EXTENSIONS.has(path.extname(fileName).toLowerCase())) {
-    return { ...readCurrentAppIcon(), ok: false, message: '只能选择 PNG、JPG、WEBP 或 ICO 图片。' };
-  }
-
-  const sourcePath = path.join(PROJECT_APP_ICON_DIR, fileName);
-  if (!fs.existsSync(sourcePath)) {
-    return { ...readCurrentAppIcon(), ok: false, message: '没有找到这张图标图片。' };
-  }
-
-  try {
-    const saved = saveCustomAppIconFromPath(sourcePath, fileName);
-    if (!saved.ok) return { ...readCurrentAppIcon(), ...saved };
-    return { ...applyWindowIcon(mainWindow), ok: true, message: '软件图标已切换。' };
-  } catch (error) {
-    return {
-      ...readCurrentAppIcon(),
-      ok: false,
-      message: error instanceof Error ? error.message : '切换图标失败。',
-    };
-  }
-});
-
-registerTrustedIpcHandler('app-icon:use-data-url', async (_event, dataUrl, sourceFileName = 'home-icon.png') => {
-  try {
-    const saved = saveCustomAppIconFromDataUrl(dataUrl, sourceFileName);
-    if (!saved.ok) return { ...readCurrentAppIcon(), ...saved };
-    return { ...applyWindowIcon(mainWindow), ok: true, message: '软件图标已切换为首页图标。' };
-  } catch (error) {
-    return {
-      ...readCurrentAppIcon(),
-      ok: false,
-      message: error instanceof Error ? error.message : '切换首页图标失败。',
-    };
-  }
-});
-
-registerTrustedIpcHandler('app-icon:make-default', async () => {
-  try {
-    const saved = saveCurrentIconAsDefault();
-    if (!saved.ok) return { ...readCurrentAppIcon(), ...saved };
-    return { ...applyWindowIcon(mainWindow), ok: true, message: '已将当前图标设为默认图标。' };
-  } catch (error) {
-    return {
-      ...readCurrentAppIcon(),
-      ok: false,
-      message: error instanceof Error ? error.message : '设置默认图标失败。',
-    };
-  }
-});
-
-registerTrustedIpcHandler('app-icon:reset', async () => {
-  try {
-    const customIcon = getCustomAppIconPath();
-    if (fs.existsSync(customIcon)) fs.unlinkSync(customIcon);
-    clearSelectedProjectIconFileName();
-    return { ...applyWindowIcon(mainWindow), ok: true, message: '已恢复默认图标。' };
-  } catch (error) {
-    return {
-      ok: false,
-      message: error instanceof Error ? error.message : '恢复默认图标失败。',
-    };
-  }
-});
-
-function normalizeCosConfig(input) {
-  const config = input && typeof input === 'object' ? input : {};
-  const bucket = typeof config.bucket === 'string' ? config.bucket.trim() : '';
-  const region = typeof config.region === 'string' ? config.region.trim() : '';
-  const secretId = typeof config.secretId === 'string' ? config.secretId.trim() : '';
-  const secretKey = typeof config.secretKey === 'string' ? config.secretKey.trim() : '';
-  if (!/^[a-z0-9][a-z0-9-]{2,62}-\d{5,}$/.test(bucket)) {
-    return { ok: false, message: 'COS Bucket 格式不正确，应类似 writer-1250000000。' };
-  }
-  if (!/^[a-z0-9-]{3,40}$/.test(region)) {
-    return { ok: false, message: 'COS Region 格式不正确，应类似 ap-guangzhou。' };
-  }
-  if (!secretId || !secretKey) {
-    return { ok: false, message: 'COS SecretId / SecretKey 不能为空。' };
-  }
-  return { ok: true, config: { bucket, region, secretId, secretKey } };
-}
-
-function normalizeCosObjectKey(value) {
-  const key = typeof value === 'string' ? value.trim().replace(/^\/+/, '') : '';
-  if (!key || key.includes('\\') || key.includes('\0') || key.split('/').some((part) => part === '..')) {
-    return { ok: false, message: 'COS 云端文件路径无效。' };
-  }
-  return { ok: true, key };
-}
-
-function encodeCosObjectPath(key) {
-  return `/${key
-    .split('/')
-    .filter(Boolean)
-    .map((part) => encodeURIComponent(part))
-    .join('/')}`;
-}
-
-function sha1Hex(value) {
-  return crypto.createHash('sha1').update(value).digest('hex');
-}
-
-function hmacSha1Hex(key, value) {
-  return crypto.createHmac('sha1', key).update(value).digest('hex');
-}
-
-function createCosAuthorization({ method, pathname, host, secretId, secretKey }) {
-  const now = Math.floor(Date.now() / 1000);
-  const keyTime = `${now};${now + 600}`;
-  const headerList = 'host';
-  const urlParamList = '';
-  const headerString = `host=${encodeURIComponent(host).toLowerCase()}`;
-  const httpString = [method.toLowerCase(), pathname, '', headerString, ''].join('\n');
-  const signKey = hmacSha1Hex(secretKey, keyTime);
-  const stringToSign = ['sha1', keyTime, sha1Hex(httpString), ''].join('\n');
-  const signature = hmacSha1Hex(signKey, stringToSign);
-  return [
-    'q-sign-algorithm=sha1',
-    `q-ak=${secretId}`,
-    `q-sign-time=${keyTime}`,
-    `q-key-time=${keyTime}`,
-    `q-header-list=${headerList}`,
-    `q-url-param-list=${urlParamList}`,
-    `q-signature=${signature}`,
-  ].join('&');
-}
-
-async function requestCosObject({ method, config, key, body, contentType }) {
-  const normalizedConfig = normalizeCosConfig(config);
-  if (!normalizedConfig.ok) return { ok: false, status: 400, message: normalizedConfig.message };
-  const normalizedKey = normalizeCosObjectKey(key);
-  if (!normalizedKey.ok) return { ok: false, status: 400, message: normalizedKey.message };
-
-  const { bucket, region, secretId, secretKey } = normalizedConfig.config;
-  const host = `${bucket}.cos.${region}.myqcloud.com`;
-  const pathname = encodeCosObjectPath(normalizedKey.key);
-  const authorization = createCosAuthorization({ method, pathname, host, secretId, secretKey });
-  const headers = {
-    Authorization: authorization,
-  };
-  if (method === 'PUT') {
-    headers['Content-Type'] = contentType || 'application/json; charset=utf-8';
-  }
-
-  try {
-    const response = await fetch(`https://${host}${pathname}`, {
-      method,
-      headers,
-      body: method === 'PUT' ? String(body ?? '') : undefined,
-    });
-    const text = await response.text();
-    return {
-      ok: response.ok,
-      status: response.status,
-      text,
-      key: normalizedKey.key,
-      message: response.ok ? undefined : text.slice(0, 500) || `COS request failed (${response.status}).`,
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      status: 0,
-      message: error instanceof Error ? error.message : 'COS request failed.',
-    };
-  }
-}
-
-registerTrustedIpcHandler('cos:put-object', async (_event, input) =>
-  requestCosObject({
-    method: 'PUT',
-    config: input?.config,
-    key: input?.key,
-    body: input?.body,
-    contentType: input?.contentType,
-  }),
-);
-
-registerTrustedIpcHandler('cos:get-object', async (_event, input) =>
-  requestCosObject({
-    method: 'GET',
-    config: input?.config,
-    key: input?.key,
-  }),
-);
-
-function applyStoredModelSecret(input, request) {
-  const secretId = typeof input?.modelSecretId === 'string' ? input.modelSecretId.trim() : '';
-  if (!secretId) return { ok: true, request };
-  const secret = modelSecretStore.get(secretId);
-  if (!secret.ok || !secret.apiKey) {
-    return { ok: false, message: secret.message || '模型 API Key 尚未保存。' };
-  }
-  const headers = { ...request.headers };
-  if (input?.provider === 'anthropic') {
-    headers['x-api-key'] = secret.apiKey;
-    delete headers.Authorization;
-  } else {
-    headers.Authorization = `Bearer ${secret.apiKey}`;
-    delete headers['x-api-key'];
-  }
-  return { ok: true, request: { ...request, headers } };
-}
-
-registerTrustedIpcHandler('model:request', async (_event, input) => {
-  const normalizedRequest = normalizeModelRequestInput(input);
-  if (!normalizedRequest.ok) {
-    return { ok: false, status: 400, text: normalizedRequest.message };
-  }
-  const authenticatedRequest = applyStoredModelSecret(input, normalizedRequest);
-  if (!authenticatedRequest.ok) {
-    return { ok: false, status: 400, text: authenticatedRequest.message };
-  }
-  const request = authenticatedRequest.request;
-
-  const timeoutMs = Number.isFinite(Number(input?.timeoutMs)) ? Math.max(1000, Number(input.timeoutMs)) : 60000;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(request.endpoint, {
-      method: 'POST',
-      headers: request.headers,
-      body: request.body,
-      signal: controller.signal,
-    });
-    return {
-      ok: response.ok,
-      status: response.status,
-      text: await response.text(),
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      status: error instanceof Error && error.name === 'AbortError' ? 408 : 0,
-      text:
-        error instanceof Error && error.name === 'AbortError'
-          ? `Model request timed out after ${timeoutMs}ms.`
-          : error instanceof Error
-            ? error.message
-            : 'Model request failed.',
-    };
-  } finally {
-    clearTimeout(timeout);
-  }
-});
-
-const modelStreamControllers = new Map();
-
-function extractModelStreamParts(payload) {
-  const choices = Array.isArray(payload?.choices) ? payload.choices : [];
-  const openAiText = choices
-    .map((choice) => choice?.delta?.content ?? choice?.message?.content ?? choice?.text ?? '')
-    .join('');
-  const openAiReasoning = choices
-    .map(
-      (choice) =>
-        choice?.delta?.reasoning_content ??
-        choice?.delta?.reasoning ??
-        choice?.delta?.reasoning_text ??
-        choice?.delta?.thinking ??
-        '',
-    )
-    .join('');
-  if (openAiText || openAiReasoning) {
-    return { content: openAiText, reasoning: openAiReasoning };
-  }
-
-  if (payload?.type === 'content_block_delta' && typeof payload?.delta?.text === 'string') {
-    return { content: payload.delta.text, reasoning: '' };
-  }
-  if (
-    payload?.type === 'content_block_delta' &&
-    (payload?.delta?.type === 'thinking_delta' || typeof payload?.delta?.thinking === 'string')
-  ) {
-    return { content: '', reasoning: payload.delta.thinking ?? '' };
-  }
-  if (payload?.type === 'message_delta' && typeof payload?.delta?.text === 'string') {
-    return { content: payload.delta.text, reasoning: '' };
-  }
-  if (typeof payload?.reasoning_content === 'string') return { content: '', reasoning: payload.reasoning_content };
-  if (typeof payload?.reasoning === 'string') return { content: '', reasoning: payload.reasoning };
-  if (typeof payload?.completion === 'string') return { content: payload.completion, reasoning: '' };
-  if (typeof payload?.content === 'string') return { content: payload.content, reasoning: '' };
-  return { content: '', reasoning: '' };
-}
-
-function consumeModelStreamBuffer(buffer, sendChunk) {
-  const lines = buffer.split(/\r?\n/);
-  const rest = lines.pop() ?? '';
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line.startsWith('data:')) continue;
-    const dataLine = line.slice(5).trim();
-    if (!dataLine || dataLine === '[DONE]') continue;
-    try {
-      const parts = extractModelStreamParts(JSON.parse(dataLine));
-      if (parts.reasoning) sendChunk(parts.reasoning, 'reasoning');
-      if (parts.content) sendChunk(parts.content, 'content');
-    } catch {
-      // Ignore malformed event fragments and keep reading the stream.
-    }
-  }
-  return rest;
-}
-
-registerTrustedIpcHandler('model:stream', async (event, input) => {
-  const normalizedRequest = normalizeModelRequestInput(input);
-  if (!normalizedRequest.ok) {
-    return { ok: false, status: 400, text: normalizedRequest.message };
-  }
-  const authenticatedRequest = applyStoredModelSecret(input, normalizedRequest);
-  if (!authenticatedRequest.ok) {
-    return { ok: false, status: 400, text: authenticatedRequest.message };
-  }
-  const request = authenticatedRequest.request;
-
-  const requestId =
-    typeof input?.requestId === 'string' && input.requestId ? input.requestId : `model-stream-${Date.now()}`;
-  const channel = `model:stream:${requestId}`;
-  const timeoutMs = Number.isFinite(Number(input?.timeoutMs)) ? Math.max(1000, Number(input.timeoutMs)) : 180000;
-  const controller = new AbortController();
-  modelStreamControllers.set(requestId, controller);
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  let fullText = '';
-
-  const sendChunk = (text, chunkType = 'content') => {
-    if (chunkType === 'content') fullText += text;
-    event.sender.send(channel, { type: 'chunk', chunkType, text });
-  };
-
-  try {
-    const response = await fetch(request.endpoint, {
-      method: 'POST',
-      headers: request.headers,
-      body: request.body,
-      signal: controller.signal,
-    });
-
-    if (!response.ok || !response.body) {
-      return {
-        ok: response.ok,
-        status: response.status,
-        text: await response.text(),
-      };
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      buffer = consumeModelStreamBuffer(buffer, sendChunk);
-    }
-    buffer += decoder.decode();
-    consumeModelStreamBuffer(`${buffer}\n`, sendChunk);
-
-    return {
-      ok: true,
-      status: response.status,
-      text: fullText,
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      status: error instanceof Error && error.name === 'AbortError' ? 408 : 0,
-      text:
-        error instanceof Error && error.name === 'AbortError'
-          ? `Model request timed out after ${timeoutMs}ms.`
-          : error instanceof Error
-            ? error.message
-            : 'Model stream request failed.',
-    };
-  } finally {
-    clearTimeout(timeout);
-    modelStreamControllers.delete(requestId);
-  }
-});
-
-registerTrustedIpcHandler('model:cancel-stream', async (_event, requestId) => {
-  const controller = modelStreamControllers.get(requestId);
-  if (!controller) return false;
-  controller.abort();
-  modelStreamControllers.delete(requestId);
-  return true;
-});
+/* Network IPC implementations live in focused services; keep registration beside the trusted sender guard. */
+registerCosIpcHandlers(registerTrustedIpcHandler);
+registerModelRequestIpcHandlers(registerTrustedIpcHandler, { modelSecretStore });
 
 app.on('before-quit', () => {
   saveWindowState(mainWindow);

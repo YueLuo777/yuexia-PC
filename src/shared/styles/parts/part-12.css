@@ -1,0 +1,95 @@
+.xy-combined-ai-config-label,
+.xy-combined-ai-config-manage {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.xy-combined-ai-config-label::before,
+.xy-combined-ai-config-manage::before {
+  display: none !important;
+  background: transparent !important;
+}
+
+.xy-combined-ai-config-label {
+  min-width: 2.65rem;
+  text-align: center;
+  font-size: 13px;
+}
+
+.xy-combined-ai-config-manage:hover,
+.xy-combined-ai-config-manage:focus-visible {
+  background-color: transparent !important;
+}
+
+.xy-combined-ai-config-manage svg {
+  -webkit-text-stroke: 0;
+  paint-order: normal;
+  filter:
+    drop-shadow(0 0 1px var(--xy-floating-backplate-bg, #ffffff))
+    drop-shadow(0 0 1px var(--xy-floating-backplate-bg, #ffffff))
+    drop-shadow(0 0 1px var(--xy-floating-backplate-bg, #ffffff));
+}
+
+.writer-assistant-theme .ring-\[\#08B3D9\],
+.writer-assistant-theme .focus\:ring-\[\#08AACE\]\/20:focus {
+  --tw-ring-color: color-mix(in srgb, var(--xy-wa-blue) 72%, transparent) !important;
+}
+
+.writer-assistant-theme .ring-\[\#bdeef7\],
+.writer-assistant-theme .ring-\[\#9DEBFA\] {
+  --tw-ring-color: color-mix(in srgb, var(--xy-wa-blue) 28%, transparent) !important;
+}
+
+.writer-assistant-theme .shadow-\[0_8px_18px_rgba\(8\,170\,206\,0\.08\)\] {
+  --tw-shadow-color: color-mix(in srgb, var(--xy-wa-blue) 12%, transparent) !important;
+}
+
+.writer-assistant-theme .xy-floating-field.xy-floating-with-inline-actions textarea {
+  border-color: var(--xy-wa-blue);
+}
+
+.writer-assistant-theme .xy-ai-inline-send {
+  color: #21b8da;
+}
+
+.writer-assistant-theme .xy-ai-inline-send:hover:not(:disabled) {
+  background: var(--xy-wa-active-soft);
+}
+
+.writer-assistant-theme .xy-ai-inline-send:active:not(:disabled) {
+  background: var(--xy-wa-active);
+}
+
+.writer-assistant-theme .xy-ai-inline-stop {
+  border-left-color: #d7dee8;
+}
+
+.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral.xy-floating-with-inline-actions textarea {
+  border-color: #d7dee8;
+}
+
+.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral.xy-floating-with-inline-actions:focus-within textarea,
+.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral.xy-floating-with-inline-actions.xy-has-value textarea {
+  border-color: #94a3b8;
+}
+
+.writer-assistant-theme .xy-floating-field.xy-brainstorm-ai-input.xy-floating-with-inline-actions textarea {
+  border-color: #111827;
+}
+
+.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral .xy-ai-inline-send {
+  color: #21b8da;
+}
+
+.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral .xy-ai-inline-send:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral .xy-ai-inline-send:active:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral .xy-ai-inline-stop {
+  border-left-color: #d7dee8;
+}

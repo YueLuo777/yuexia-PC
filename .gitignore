@@ -24,3 +24,6 @@ runtime/node/**
 shujuku/postgres-data/**
 shujuku/data/*.json
 recovered-localstorage/
+# Local UI review screenshots and unreferenced design-source exports.
+logs/*.png
+design-assets/

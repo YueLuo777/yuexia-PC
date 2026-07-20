@@ -1,6 +1,6 @@
 const path = require('node:path');
 
-const DATABASE_COLLECTION_NAMES = new Set(['plotLibrary', 'plotRecycle', 'materials', 'moonfallSettings']);
+const DATABASE_COLLECTION_NAMES = new Set(['materials']);
 const MODEL_REQUEST_BODY_LIMIT_BYTES = 4 * 1024 * 1024;
 const MODEL_REQUEST_HEADER_NAMES = new Set([
   'accept',

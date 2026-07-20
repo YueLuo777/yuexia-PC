@@ -1,15 +1,38 @@
 import { describe, expect, it } from 'vitest';
 
+import { readChapterEditorSource } from '../components/chapterEditorSource.testUtils';
+
 const readSource = async (relativePath: string) => {
   const { readFileSync } = await import('node:fs');
   const { dirname, join } = await import('node:path');
   const { fileURLToPath } = await import('node:url');
 
-  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
+  const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
+  if (relativePath === '../../../shared/hooks/useDraggableModal.ts') {
+    return `${source}\n${readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../../shared/hooks/draggableModalGeometry.ts'), 'utf8')}`;
+  }
+  if (relativePath !== 'WorkbenchPage.tsx') return source;
+  return [
+    source,
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../components/workbenchPageSupport.tsx'), 'utf8'),
+    readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../components/WorkbenchCreationFlowContent.tsx'),
+      'utf8',
+    ),
+    readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../components/WorkbenchContextLibraryModal.tsx'),
+      'utf8',
+    ),
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../components/WorkbenchWritingLayout.tsx'), 'utf8'),
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../components/WorkbenchPageModalHost.tsx'), 'utf8'),
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../hooks/useWorkbenchLayoutWidths.ts'), 'utf8'),
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../hooks/useWorkbenchDocumentActions.ts'), 'utf8'),
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../hooks/useWorkbenchContextLibrary.ts'), 'utf8'),
+  ].join('\n');
 };
 
 describe('Workbench library loading', () => {
-  it('loads the large library panel only when a library flow is opened', async () => {
+  it('loads the large library panel lazily and keeps the setting instance prepared', async () => {
     const source = await readSource('WorkbenchPage.tsx');
     const managementModalSource = await readSource('../components/WorkbenchManagementModal.tsx');
 
@@ -21,6 +44,21 @@ describe('Workbench library loading', () => {
       "import { WorkbenchLibraryPanel } from '@/features/workbench/components/WorkbenchLibraryPanel';",
     );
     expect(source).toContainSource('<Suspense');
+    expect(source).toContainSource('data-setting-library-cache');
+    expect(source).toContainSource('data-chapter-outline-library-cache');
+    expect(source).toContainSource('data-summary-library-cache');
+    expect(source).toContainSource("settingLibraryVisible?'flex h-full min-h-0 min-w-0 flex-1':'hidden'");
+    expect(source).toContainSource("chapterOutlineVisible?'flex h-full min-h-0 min-w-0 flex-1':'hidden'");
+    expect(source).toContainSource("summaryVisible?'flex h-full min-h-0 min-w-0 flex-1':'hidden'");
+    expect(source).toContainSource('const LibraryPanel=memo(function LibraryPanel');
+    expect(source).toContainSource('!previous.cacheVisible&&!next.cacheVisible');
+    expect(source).toContainSource('cacheVisible={chapterOutlineVisible}');
+    expect(source).toContainSource('cacheVisible={summaryVisible}');
+    expect(source).toContainSource("defaultActiveTab={activeFlow==='outline'?'大纲':'脑洞'}");
+    expect(source).not.toContainSource('<LibraryPanel key={activeFlow}');
+    expect(source).not.toContainSource('key="chapterOutline"');
+    expect(source).not.toContainSource('key="summary"');
+    expect(source).toContainSource('showInlineFieldSizeButton:!visible');
   });
 });
 
@@ -53,6 +91,7 @@ describe('Workbench page component boundaries', () => {
     );
     expect(source).not.toContainSource('function EditorSettingsModal({');
     expect(modalSource).toContainSource('export function WorkbenchEditorSettingsModal({');
+    expect(modalSource).toContainSource('WorkbenchReplaceBodyWarningSetting');
   });
 
   it('keeps model and prompt management in its own portal component', async () => {
@@ -276,7 +315,7 @@ describe('Workbench library snapshots', () => {
     );
     expect(source).not.toContainSource('const outlineEntries = readWorkbenchLibraryEntries(outlineStorageKey);');
     expect(source).toContainSource('const reviewLibraryEntries = useMemo(');
-    expect(source.match(/reviewLibraryEntries=\{reviewLibraryEntries\}/g)).toHaveLength(2);
+    expect(source).toContainSource('reviewLibraryEntries, getChapterContent');
   });
 
   it('normalizes legacy setting and brainstorm tabs before building parent context stats', async () => {
@@ -321,7 +360,7 @@ describe('Workbench linked context clearing', () => {
     expect(source).toContainSource('setDraftContextIds(new Set(confirmedSelectedItems.map((item) => item.id)));');
     expect(source).toContainSource('确认关联');
     expect(source).not.toContainSource('确认读取');
-    expect(source).toContainSource('title={contextLibraryConfirmTitle}');
+    expect(source).toContainSource('confirmTitle: contextLibraryConfirmTitle');
   });
 
   it('locks the current chapter outline and keeps previous chapter outline out of optional selections', async () => {
@@ -346,28 +385,28 @@ describe('Workbench linked context clearing', () => {
 
 describe('ChapterEditor prompt snapshots', () => {
   it('subscribes to prompt library updates for review and status prompt selects', async () => {
-    const source = await readSource('../components/ChapterEditor.tsx');
+    const source = readChapterEditorSource();
 
     expect(source).toContainSource("from '@/features/prompts/hooks/usePrompts';");
     expect(source).toContainSource('normalizePromptCategoryName');
     expect(source).toContainSource('usePrompts');
-    expect(source).toContainSource('const { prompts: reviewPrompts } = usePrompts();');
+    expect(source).toContainSource('const { prompts } = usePrompts();');
     expect(source).not.toContainSource('readPromptSnapshot().prompts');
     expect(source).not.toContainSource('import { normalizePromptCategoryName, readPromptSnapshot }');
   });
 
   it('uses review mode prompt categories for chapter review prompt selects', async () => {
-    const source = await readSource('../components/ChapterEditor.tsx');
+    const source = readChapterEditorSource();
 
     expect(source).toContainSource('const REVIEW_MODE_PROMPT_CATEGORIES: Record<ReviewMode, string> = {');
     expect(source).toContainSource("audit: '审核'");
     expect(source).toContainSource('comment: COMMENT_PROMPT_CATEGORY');
     expect(source).toContainSource('polish: POLISH_PROMPT_CATEGORY');
-    expect(source).toContainSource('const reviewAuditPrompts = useMemo(() => {');
-    expect(source).toContainSource("normalizePromptCategoryName(prompt.category) === '审核'");
-    expect(source).toContainSource('const reviewCommentPrompts = useMemo(() => {');
+    expect(source).toContainSource('const reviewAuditPrompts = useMemo(');
+    expect(source).toContainSource('normalizePromptCategoryName(prompt.category) === AUDIT_PROMPT_CATEGORY');
+    expect(source).toContainSource('const reviewCommentPrompts = useMemo(');
     expect(source).toContainSource('normalizePromptCategoryName(prompt.category) === COMMENT_PROMPT_CATEGORY');
-    expect(source).toContainSource('const reviewPolishPrompts = useMemo(() => {');
+    expect(source).toContainSource('const reviewPolishPrompts = useMemo(');
     expect(source).toContainSource('normalizePromptCategoryName(prompt.category) === POLISH_PROMPT_CATEGORY');
     expect(source).toContainSource('const activeReviewPromptOptions =');
     expect(source).toContainSource('? buildAuditPromptSelectOptions(reviewAuditPrompts)');
@@ -377,7 +416,7 @@ describe('ChapterEditor prompt snapshots', () => {
   });
 
   it('stores and restores review background outputs within the matching chapter only', async () => {
-    const source = await readSource('../components/ChapterEditor.tsx');
+    const source = readChapterEditorSource();
     const taskStateSource = await readSource('../model/chapterReviewTaskState.ts');
 
     expect(taskStateSource).toContainSource('return `${settingsStorageKey}_review_background_tasks_v2`;');
@@ -402,7 +441,7 @@ describe('ChapterEditor prompt snapshots', () => {
   });
 
   it('uses the reactive parent library snapshot for review detail outlines', async () => {
-    const source = await readSource('../components/ChapterEditor.tsx');
+    const source = readChapterEditorSource();
 
     expect(source).toContainSource('reviewLibraryEntries?: WorkbenchLibraryEntry[];');
     expect(source).toContainSource('const entries = reviewLibraryEntries ?? [');
@@ -410,7 +449,7 @@ describe('ChapterEditor prompt snapshots', () => {
   });
 
   it('keeps review annotation preview empty before AI output exists', async () => {
-    const source = await readSource('../components/ChapterEditor.tsx');
+    const source = readChapterEditorSource();
 
     expect(source).toContainSource(') : !reviewAiOutput.trim() && !isAuditStructureReview ? (');
     expect(source).toContainSource('{activeReviewModeTitle}后内容会显示在这里。');
@@ -418,7 +457,7 @@ describe('ChapterEditor prompt snapshots', () => {
   });
 
   it('keeps review prompt and model management modals fixed at 80 percent', async () => {
-    const source = await readSource('../components/ChapterEditor.tsx');
+    const source = readChapterEditorSource();
 
     expect(source).toContainSource('const REVIEW_MANAGEMENT_MODAL_SIZE_CLASS =');
     expect(source).toContainSource(
@@ -438,7 +477,7 @@ describe('ChapterEditor prompt snapshots', () => {
   });
 
   it('renders audit results in the middle review column instead of the right input panel', async () => {
-    const source = await readSource('../components/ChapterEditor.tsx');
+    const source = readChapterEditorSource();
     const auditResultSource = await readSource('../model/chapterAuditResult.ts');
     const reviewTextSource = await readSource('../model/chapterReviewText.ts');
 
@@ -507,25 +546,25 @@ describe('ChapterEditor prompt snapshots', () => {
     expect(source).toContainSource('整段已删除');
     expect(source).toContainSource('审核后缺少本段，请让 AI 保留段落位置。');
     expect(source).toContainSource('renderTextAuditOriginalDiff(paragraph, auditRevisedParagraphs[index])');
-    expect(source).toContainSource('renderTextAuditRevisedDiff(originalParagraph, revisedParagraph)');
-    expect(source).toContainSource('grid grid-cols-[2rem_minmax(0,1fr)] gap-2');
-    expect(source).toContainSource('aria-label={`第 ${index + 1} 段`}');
-    expect(source).toContainSource('{index + 1}');
-    expect(source).not.toContainSource("第 {index + 1} 段{originalParagraph === undefined ? ' · 新增段落' : ''}");
-    expect(source).toContainSource('Math.max(reviewOriginalParagraphs.length, auditRevisedParagraphs.length)');
+    expect(source).toContainSource('const showContinuousTextAudit =');
+    expect(source).toContainSource('<ChapterTextAuditContinuousReview');
+    expect(source).toContainSource('data-testid="formal-text-audit-continuous-review"');
+    expect(source).toContainSource('接受修改');
+    expect(source).toContainSource('修改后采用');
+    expect(source).toContainSource('重新修改');
+    expect(source).toContainSource('应用已接受修改（{acceptedCount}）');
     expect(source).toContainSource('如果认为某一整段应删除，请保留该段位置为空段，不要让后续段落前移；');
     expect(source).toContainSource(
       '软件会自动把审核后新增或改写的字句标成红色，请不要自行添加 HTML、Markdown 标记或颜色说明。',
     );
+    expect(source).toContainSource('每个被修改段落单独一行，格式为“第N段｜修改类型：修改原因”');
     expect(source).not.toContainSource("(isAuditTextReview ? auditVisibleOutput : '')");
     expect(source).toContainSource(
       'const auditParagraphCountMatches = reviewOriginalParagraphs.length === auditRevisedParagraphs.length;',
     );
     expect(source).toContainSource(') : !reviewAiOutput.trim() && !isAuditStructureReview ? (');
     expect(source).toContainSource(') : isAuditTextReview ? (');
-    expect(source).toContainSource(
-      '原文 {reviewOriginalParagraphs.length} 段 / 审核后 {auditRevisedParagraphs.length} 段',
-    );
+    expect(source).toContainSource('段落数量不一致，请让 AI 按原文段落重新输出。');
     expect(source).toContainSource(') : isAuditStructureReview ? (');
     expect(source).toContainSource('AUDIT_STRUCTURE_CHECK_ITEMS.map((item) => {');
     expect(source).toContainSource('const itemStatus = getAuditStructureItemStatus(reviewAiOutput, item);');

@@ -1,16 +1,24 @@
 import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { readErrorLogDefaultEntriesSource } from '../model/readErrorLogDefaultEntriesSource';
 import { MemoryRouter } from 'react-router-dom';
 
 import { CUSTOM_THEME_COLORS_STORAGE_KEY } from '@/features/theme/model/customThemeColors';
 import { DarkThemeColorPage } from './DarkThemeColorPage';
 
-const readSource = (relativePath: string) =>
-  readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
+const readSource = (relativePath: string) => {
+  const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
+  if (relativePath !== 'DarkThemeColorPage.tsx') return source;
+  return [source, 'DarkThemeColorPageView.tsx', 'darkThemeColorData.ts']
+    .map((file, index) =>
+      index === 0 ? file : readFileSync(join(dirname(fileURLToPath(import.meta.url)), file), 'utf8'),
+    )
+    .join('\n');
+};
 
 describe('DarkThemeColorPage custom color tab', () => {
   it('enables confirm replacement as soon as a valid manual color is typed', () => {
@@ -41,7 +49,7 @@ describe('DarkThemeColorPage custom color tab', () => {
   });
 
   it('records the manual color confirm regression in the in-app error log', () => {
-    const errorLog = readSource('../model/errorLogDefaultEntries.generated.ts');
+    const errorLog = readErrorLogDefaultEntriesSource();
 
     expect(errorLog).toContainSource('theme-color-manual-input-confirm-disabled-001');
   });
@@ -263,7 +271,12 @@ describe('DarkThemeColorPage custom color tab', () => {
   it('adds a dedicated detail-outline number-block color tab and preview states', () => {
     const source = readSource('DarkThemeColorPage.tsx');
     const modelSource = readSource('../../theme/model/customThemeColors.ts');
-    const styleSource = readSource('../../../shared/styles/index.css');
+    const styleSource = Array.from({ length: 12 }, (_, index) =>
+      readFileSync(
+        resolve(process.cwd(), 'src/shared/styles/parts', `part-${String(index + 1).padStart(2, '0')}.css`),
+        'utf8',
+      ),
+    ).join('\n');
 
     expect(source).toContainSource('const GLOBAL_CUSTOM_THEME_SLOT_KEYS: CustomThemeColorSlotKey[] = [');
     expect(source).toContainSource('const DETAIL_OUTLINE_NUMBER_SLOT_KEYS: CustomThemeColorSlotKey[] = [');

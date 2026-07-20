@@ -59,7 +59,6 @@ describe('workbench association session cleanup', () => {
           detailOutlineReaderSettingIds: ['setting-1'],
           detailOutlineReaderRoleIds: ['role-1'],
           detailOutlineReaderOutlineIds: ['outline-1'],
-          detailOutlineReaderPlotChainIds: ['plot-1'],
           unrelated: 'keep',
         },
       }),
@@ -99,7 +98,6 @@ describe('workbench association session cleanup', () => {
       detailOutlineReaderSettingIds: [],
       detailOutlineReaderRoleIds: [],
       detailOutlineReaderOutlineIds: [],
-      detailOutlineReaderPlotChainIds: [],
       unrelated: 'keep',
     });
     expect(sessionStorage.getItem(WORKBENCH_ASSOCIATION_SESSION_RESET_KEY)).toBe('1');

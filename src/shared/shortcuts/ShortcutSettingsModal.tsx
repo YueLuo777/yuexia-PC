@@ -187,7 +187,7 @@ export function ShortcutSettingsModal({ isOpen, onClose, variant = 'modal' }: Sh
             {groups.map(([group, actions]) => (
               <section key={group}>
                 <h3 className="mb-2 text-base font-bold text-slate-800">{group}</h3>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                   {actions.map((action) => {
                     const isEditing = editingId === action.id;
                     return (

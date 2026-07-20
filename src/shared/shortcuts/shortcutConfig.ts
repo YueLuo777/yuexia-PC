@@ -4,7 +4,6 @@ export type ShortcutActionId =
   | 'close_floating'
   | 'go_home'
   | 'close_work_tab'
-  | 'toggle_text_edit_mode'
   | 'delete_chapter'
   | 'smart_format'
   | 'save_chapter'
@@ -31,7 +30,6 @@ export const MOUSE_GESTURE_SETTINGS_KEY = 'xinyuexia_mouse_gesture_settings_v1';
 export const SHORTCUT_UPDATED_EVENT = APP_EVENTS.shortcutsUpdated;
 export const SHORTCUT_ACTION_EVENT = APP_EVENTS.shortcutAction;
 const LEGACY_SMART_FORMAT_BINDING: ShortcutBinding = { key: 'r', ctrl: true, shift: true };
-const LEGACY_TEXT_EDIT_BINDING: ShortcutBinding = { key: 'e', ctrl: true, alt: true };
 
 export interface MouseGestureSettings {
   goHomeLeftSwipe: boolean;
@@ -64,13 +62,6 @@ export const shortcutActions: ShortcutAction[] = [
     title: '关闭作品标签页',
     desc: '关闭当前打开的作品标签页',
     defaultBinding: { key: 'w', ctrl: true },
-  },
-  {
-    id: 'toggle_text_edit_mode',
-    group: '界面与导航',
-    title: '文案修改模式',
-    desc: '进入或退出点击文字修改文案的模式',
-    defaultBinding: { key: '1', ctrl: true },
   },
   {
     id: 'delete_chapter',
@@ -181,9 +172,6 @@ export function normalizeShortcutBindings(value: unknown) {
     };
     if (id === 'smart_format' && isSameShortcutBinding(next[id], LEGACY_SMART_FORMAT_BINDING)) {
       next[id] = defaults.smart_format;
-    }
-    if (id === 'toggle_text_edit_mode' && isSameShortcutBinding(next[id], LEGACY_TEXT_EDIT_BINDING)) {
-      next[id] = defaults.toggle_text_edit_mode;
     }
   }
   return next;

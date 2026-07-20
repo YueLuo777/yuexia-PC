@@ -6,9 +6,35 @@ import { describe, expect, it } from 'vitest';
 
 import { applyFormat, applyParagraphIndentToText, removeParagraphInnerFullWidthSpaces } from './EditorToolModals';
 
-const readSource = () => readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'EditorToolModals.tsx'), 'utf8');
+const readSource = () => {
+  const baseDir = dirname(fileURLToPath(import.meta.url));
+  return [
+    'EditorToolModals.tsx',
+    'editorToolState.ts',
+    'EditorToolModalShell.tsx',
+    'EditorGenerateModals.tsx',
+    'EditorAiGenerateModal.tsx',
+    'EditorFontSettingsModal.tsx',
+    'EditorSmartFormatModal.tsx',
+    'EditorReplaceTools.tsx',
+    'EditorHistoryModals.tsx',
+    'ChapterEditorModalHost.tsx',
+  ]
+    .map((file) => readFileSync(join(baseDir, file), 'utf8'))
+    .join('\n\n');
+};
 
 describe('EditorToolModals smart format', () => {
+  it('persists format switches immediately and describes paragraph indentation accurately', () => {
+    const source = readSource();
+
+    expect(source).toContainSource('writeJson(SMART_FORMAT_KEY, next);');
+    expect(source).toContainSource('onSettingsChange?.(next);');
+    expect(source).toContainSource('每个非空段落开头写入两个全角空格');
+    expect(source).not.toContainSource('视觉缩进，不写入正文空格');
+    expect(source).toContainSource('onSettingsChange={setFormatSettings}');
+  });
+
   it('always removes full-width spaces inside paragraphs without a visible option', () => {
     const text = '123123131231241234\u3000\u3000aaaa\u3000\u3000bbbb';
 
