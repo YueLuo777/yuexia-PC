@@ -5,7 +5,6 @@ export type FormalRouteComponentKey =
   | 'modelManage'
   | 'novelLibrary'
   | 'prompts'
-  | 'scriptEditor'
   | 'settings'
   | 'tokenUsage'
   | 'tomatoGenreIteration'

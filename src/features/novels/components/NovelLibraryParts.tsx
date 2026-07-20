@@ -59,14 +59,8 @@ export const defaultCardSettings: FullCardSettings = {
 
 let workbenchPagePreload: Promise<unknown> | null = null;
 let workbenchLibraryPanelPreload: Promise<unknown> | null = null;
-let scriptEditorPagePreload: Promise<unknown> | null = null;
 
-export function preloadEditorPage(workType: WorkType) {
-  if (workType === 'script') {
-    scriptEditorPagePreload ??= import('@/features/script-editor/pages/ScriptEditorPage');
-    return scriptEditorPagePreload;
-  }
-
+export function preloadEditorPage() {
   workbenchPagePreload ??= import('@/features/workbench/pages/WorkbenchPage');
   workbenchLibraryPanelPreload ??= import('@/features/workbench/components/WorkbenchLibraryPanel');
   return Promise.all([workbenchPagePreload, workbenchLibraryPanelPreload]);

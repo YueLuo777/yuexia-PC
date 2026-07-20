@@ -24,7 +24,6 @@ describe('application route registry', () => {
     expect(STARTUP_ROUTE_PATH).toBe(APP_ROUTE_PATHS.novels);
     expect(DEFAULT_NAV_ROUTE_ITEMS.map((item) => item.to)).toEqual([
       '/novels',
-      '/scripts',
       '/tomato-browser',
       '/library',
       '/prompts',
@@ -34,6 +33,10 @@ describe('application route registry', () => {
     ]);
     expect(INTERNAL_ROUTE_PATHS).toEqual(INTERNAL_ROUTE_DEFINITIONS.map((route) => route.path));
     expect(FORMAL_SMOKE_ROUTE_PATHS).toContain('/tomato-browser');
+    expect(APP_ROUTE_PATHS).not.toHaveProperty('scripts');
+    expect(APP_ROUTE_PATHS).not.toHaveProperty('scriptEditor');
+    expect(FORMAL_SMOKE_ROUTE_PATHS).not.toContain('/scripts');
+    expect(FORMAL_SMOKE_ROUTE_PATHS).not.toContain('/script-editor-v2');
     expect(FORMAL_SMOKE_ROUTE_PATHS).toEqual(
       FORMAL_ROUTE_DEFINITIONS.filter((route) => route.smoke).map((route) => route.path),
     );

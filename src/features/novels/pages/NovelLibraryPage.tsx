@@ -1,6 +1,6 @@
 import { AlertTriangle, Image as ImageIcon, RefreshCw, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import { ImportModal } from '@/features/novels/components/ImportModal';
 import { useCoverLibrary } from '@/features/covers/hooks/useCoverLibrary';
@@ -9,7 +9,7 @@ import { NovelCard, type NovelCardSettings } from '@/features/novels/components/
 import { RecycleBinModal } from '@/features/novels/components/RecycleBinModal';
 import { useNovelLibrary } from '@/features/novels/hooks/useNovelLibrary';
 import { useDefaultNovelCover } from '@/features/novels/hooks/useDefaultNovelCover';
-import type { Novel, WorkType } from '@/features/novels/model/novelTypes';
+import type { Novel } from '@/features/novels/model/novelTypes';
 import { readWritingSummary, WRITING_STATS_UPDATED_EVENT } from '@/shared/stats/writingStats';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { AutoFitText } from '@/shared/ui/AutoFitText';
@@ -36,11 +36,10 @@ import {
 } from '@/features/novels/components/NovelLibraryParts';
 
 export function NovelLibraryPage() {
-  const location = useLocation();
   const navigate = useNavigate();
   const { openWorkTab } = useWorkspaceTabs();
-  const workType: WorkType = location.pathname === '/scripts' ? 'script' : 'novel';
-  const typeLabel = workType === 'novel' ? '小说' : '剧本';
+  const workType = 'novel' as const;
+  const typeLabel = '小说';
   const { selectedCover: defaultNovelCover } = useDefaultNovelCover();
 
   const {
@@ -73,18 +72,8 @@ export function NovelLibraryPage() {
   const [notice, setNotice] = useState('');
   const [writingSummary, setWritingSummary] = useState(readWritingSummary);
   useEffect(() => {
-    setIsNewOpen(false);
-    setIsImportOpen(false);
-    setIsRecycleOpen(false);
-    setRenameTarget(null);
-    setCoverTargetId(null);
-    setDeleteTargetId(null);
-    setNotice('');
-  }, [workType]);
-
-  useEffect(() => {
-    void preloadEditorPage(workType);
-  }, [workType]);
+    void preloadEditorPage();
+  }, []);
 
   const sourceNovels = getNovelsByType(workType);
   const totalWorkWords = sourceNovels.reduce((sum, novel) => sum + novel.wordCount, 0);
@@ -120,16 +109,17 @@ export function NovelLibraryPage() {
 
   const handlePrepareOpen = (id: number) => {
     const novel = novels.find((item) => item.id === id);
-    if (!novel) return;
-    void preloadEditorPage(novel.type);
+    if (novel?.type !== 'novel') return;
+    void preloadEditorPage();
   };
 
   const handleOpen = (id: number) => {
     const novel = novels.find((item) => item.id === id);
     if (!novel) return;
-    void preloadEditorPage(novel.type);
+    if (novel.type !== 'novel') return;
+    void preloadEditorPage();
     selectNovel(id);
-    const path = novel.type === 'script' ? '/script-editor-v2' : '/workbench';
+    const path = '/workbench';
     openWorkTab({
       workId: novel.id,
       workType: novel.type,

@@ -31,16 +31,12 @@ describe('Electron security source guards', () => {
     expect(mainSource).toContainSource('details.lineNumber');
   });
 
-  it('does not allow webview popups from embedded browser surfaces', () => {
+  it('does not allow webview popups from the embedded test browser', () => {
     const testBrowserSource = readWorkspaceFile('src/features/browser/pages/TestBrowserPage.tsx');
-    const scriptBrowserSource = readWorkspaceFile('src/features/script-editor/components/BrowserWorkspace.tsx');
 
     expect(testBrowserSource).toContainSource("React.createElement('webview'");
-    expect(scriptBrowserSource).toContainSource("React.createElement('webview'");
     expect(testBrowserSource).toContainSource('isEmbeddedBrowserEnabled()');
-    expect(scriptBrowserSource).toContainSource('isEmbeddedBrowserEnabled()');
     expect(testBrowserSource).not.toContainSource('allowpopups');
-    expect(scriptBrowserSource).not.toContainSource('allowpopups');
   });
 
   it('hardens attached webviews in the main process', () => {

@@ -10,14 +10,6 @@
       "nav": { "iconName": "BookOpen", "label": "我的小说" }
     },
     {
-      "id": "scripts",
-      "path": "/scripts",
-      "component": "novelLibrary",
-      "dashboard": true,
-      "smoke": true,
-      "nav": { "iconName": "Film", "label": "我的剧本" }
-    },
-    {
       "id": "tomatoBrowser",
       "path": "/tomato-browser",
       "component": "tomatoGenreIteration",
@@ -63,13 +55,6 @@
       "dashboard": true,
       "smoke": true,
       "nav": { "iconName": "BarChart3", "label": "Token用量" }
-    },
-    {
-      "id": "scriptEditor",
-      "path": "/script-editor-v2",
-      "component": "scriptEditor",
-      "dashboard": false,
-      "smoke": true
     },
     {
       "id": "workbench",

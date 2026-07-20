@@ -576,7 +576,7 @@ export function AppFrame({ children }: AppFrameProps) {
   }, [activateHomeTab, activeTabId, closeTab, navigate, selectNovel, setActiveTabId, shortcutBindings, tabs]);
 
   useEffect(() => {
-    if (location.pathname !== '/workbench' && location.pathname !== '/script-editor-v2') {
+    if (location.pathname !== '/workbench') {
       setActiveTabId(HOME_TAB.id);
       return;
     }
@@ -587,8 +587,8 @@ export function AppFrame({ children }: AppFrameProps) {
 
     const work = novels.find((item) => item.id === workId);
     if (!work) return;
-    const path = work.type === 'script' ? '/script-editor-v2' : '/workbench';
-    if (path !== location.pathname) return;
+    if (work.type !== 'novel') return;
+    const path = '/workbench';
 
     openWorkTab({
       workId: work.id,

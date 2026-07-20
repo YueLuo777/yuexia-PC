@@ -33,7 +33,6 @@ const NovelLibraryPage = lazy(() =>
 const PromptsPage = lazy(() =>
   import('@/features/prompts/pages/PromptsPage').then((module) => ({ default: module.PromptsPage })),
 );
-const ScriptEditorPage = lazy(() => import('@/features/script-editor/pages/ScriptEditorPage'));
 const WorkbenchPage = lazy(() =>
   import('@/features/workbench/pages/WorkbenchPage').then((module) => ({ default: module.WorkbenchPage })),
 );
@@ -54,7 +53,6 @@ const FORMAL_ROUTE_COMPONENTS = {
   modelManage: ModelManagePage,
   novelLibrary: NovelLibraryPage,
   prompts: PromptsPage,
-  scriptEditor: ScriptEditorPage,
   settings: SettingsPage,
   tokenUsage: TokenUsagePage,
   tomatoGenreIteration: TomatoGenreIterationTestPage,

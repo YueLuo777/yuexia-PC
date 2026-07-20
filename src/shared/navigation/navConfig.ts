@@ -104,6 +104,8 @@ const REMOVED_ROUTES = new Set([
   '/hidden-content',
   '/concept-library',
   '/genre-iteration',
+  '/scripts',
+  '/script-editor-v2',
 ]);
 const REMOVED_GROUP_TITLES = new Set(['首页专区', '隐藏专区', '功能专区']);
 const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
@@ -147,7 +149,7 @@ function flattenNavConfig(config: NavGroupConfig[]) {
       });
     }
   }
-  moveRouteAfter(items, '/tomato-browser', '/scripts');
+  moveRouteAfter(items, '/tomato-browser', '/novels');
 
   const visibleItemRoutes = new Set(items.filter((item) => !item.hidden).map((item) => item.to));
   const fallbackDividerAfterItemTos =
