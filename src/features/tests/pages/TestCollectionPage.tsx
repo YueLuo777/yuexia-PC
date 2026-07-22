@@ -100,9 +100,6 @@ const PostAuditStatusUpdateTestPage = lazy(() =>
     default: module.PostAuditStatusUpdateTestPage,
   })),
 );
-const SettingStatusFusionTestPage = lazy(() =>
-  import('@/features/tests/pages/SettingStatusFusionTestPage').then((module) => ({ default: module.SettingStatusFusionTestPage })),
-);
 const TestBrowserPage = lazy(() =>
   import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })),
 );
@@ -250,13 +247,6 @@ const testGroups = [
         path: '/post-audit-status-update-test',
         icon: ListTree,
         badge: 'Status Flow',
-      },
-      {
-        title: '设定与状态融合工作台',
-        description: '在同一页面体验完整当前设定、字段更新规则、待确认变化、字段历史和原文依据。',
-        path: '/setting-status-fusion-test',
-        icon: ListTree,
-        badge: 'Setting Status',
       },
     ],
   },
@@ -423,8 +413,6 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <TextAuditReviewWorkbenchTestPage />;
       case '/post-audit-status-update-test':
         return <PostAuditStatusUpdateTestPage />;
-      case '/setting-status-fusion-test':
-        return <SettingStatusFusionTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':

@@ -274,7 +274,7 @@ describe('WorkbenchLibraryPanel structured setting flows', () => {
 
     expect(structuredSettingsSource).toContainSource("id: 'foreshadow-main'");
     expect(structuredSettingsSource).toContainSource("id: 'foreshadow-character'");
-    expect(panelSource).toContainSource('<header className="shrink-0 pb-3">');
+    expect(panelSource).toContainSource('<header className="shrink-0 border-b border-slate-100 pb-3">');
     expect(panelSource).toContainSource('data-testid="structured-title-field"');
     expect(panelSource).toContainSource('className={`${controlClassName} h-10 w-[176px]`}');
     expect(panelSource).not.toContainSource('headerWidth');
@@ -548,7 +548,7 @@ describe('WorkbenchLibraryPanel structured setting flows', () => {
     expect(body).toContainSource('【当前状态】：\n主角持有，器灵沉睡，裂纹未修复。');
     expect(body).toContainSource('【相关伏笔】：\n鼎底残符指向药宗真正传承地。');
   });
-  it('splits ability settings into fixed settings, status settings, and confirmation tabs', async () => {
+  it('shows ability fixed and status fields together with confirmation in the right status panel', async () => {
     const storageKey = 'workbench-item-ability-structured-preview-test';
     localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
     localStorage.setItem(
@@ -577,33 +577,26 @@ describe('WorkbenchLibraryPanel structured setting flows', () => {
     ensureLibraryGroupExpanded('功法能力1');
     fireEvent.click(screen.getByText('玄雷步').closest('button') as HTMLElement);
 
-    expect(screen.getByRole('button', { name: '基础设定' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '状态设定' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '确认' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '基础设定' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '状态设定' })).toBeInTheDocument();
     expect(screen.getByLabelText('基本信息')).toBeInTheDocument();
     expect(screen.getByLabelText('能力来源')).toBeInTheDocument();
     expect(screen.getByLabelText('核心效果')).toBeInTheDocument();
     expect(screen.getByLabelText('修炼/升级')).toBeInTheDocument();
     expect(screen.getByLabelText('使用限制')).toBeInTheDocument();
     expect(screen.getByLabelText('相关伏笔')).toBeInTheDocument();
-    expect(
-      screen.queryByText('功法能力的长期规则，记录来源、核心效果、成长方式、限制和伏笔。'),
-    ).not.toBeInTheDocument();
+    expect(screen.getByText('功法能力的长期规则，记录来源、核心效果、成长方式、限制和伏笔。')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '状态设定' }));
     expect(screen.getByLabelText('当前熟练度')).toBeInTheDocument();
     expect(screen.getByLabelText('当前突破')).toBeInTheDocument();
     expect(screen.getByLabelText('受损/封印')).toBeInTheDocument();
     expect(screen.getByLabelText('暴露程度')).toBeInTheDocument();
     expect(screen.getByLabelText('冷却/代价')).toBeInTheDocument();
     expect(screen.getByLabelText('最近使用')).toBeInTheDocument();
-    expect(
-      screen.queryByText('章节推进后会变化，AI 更新时只刷新熟练度、突破、受损封印、暴露程度、代价和最近使用。'),
-    ).not.toBeInTheDocument();
+    expect(screen.getByText('章节推进后会变化，AI 更新时只刷新熟练度、突破、受损封印、暴露程度、代价和最近使用。')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '确认' }));
-    expect(screen.getByText('确认更新')).toBeInTheDocument();
-    expect(screen.getByText(/确认后才写入状态设定/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '状态 · 0' }));
+    expect(screen.getByText(/当前范围没有待确认更新/)).toBeInTheDocument();
   });
   it('keeps resource currency as fixed structured settings without status or confirm tabs', async () => {
     const storageKey = 'workbench-resource-currency-structured-preview-test';

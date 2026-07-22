@@ -40,6 +40,7 @@ import {
   isWorkbenchCreationFlowPageKey,
   type WorkbenchCreationFlowPageKey,
 } from '@/features/workbench/model/workbenchCreationFlow';
+import { useWorkbenchStatusFlowNavigation } from '@/features/workbench/model/workbenchSettingStatusSelection';
 import {
   WORKBENCH_SHARED_AI_RIGHT_WIDTH_EVENT,
   WORKBENCH_SHARED_AI_RIGHT_WIDTH_DEFAULT,
@@ -153,6 +154,7 @@ export function WorkbenchPage() {
   const [isEditorSettingsOpen, setIsEditorSettingsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalKey | null>(null);
   const [activeCreationFlow, setActiveCreationFlow] = useState<WorkbenchCreationFlowPageKey>('writing');
+  useWorkbenchStatusFlowNavigation(setActiveCreationFlow);
   const [managementModal, setManagementModal] = useState<WorkbenchManagementModalKey | null>(null);
   const [fieldSizeOpenSignal, setFieldSizeOpenSignal] = useState(0);
   const [aiLogOpenSignal, setAiLogOpenSignal] = useState(0);
@@ -555,9 +557,7 @@ export function WorkbenchPage() {
     summaryContextItems,
   });
 
-  const switchCreationFlow = (flow: WorkbenchCreationFlowPageKey) => {
-    setActiveCreationFlow(flow);
-  };
+  const switchCreationFlow = setActiveCreationFlow;
 
   const showFieldSizeButton = activeCreationFlow === 'writing' || FIELD_SIZE_FLOW_IDS.has(activeCreationFlow);
   const showHeaderLogButton = true;

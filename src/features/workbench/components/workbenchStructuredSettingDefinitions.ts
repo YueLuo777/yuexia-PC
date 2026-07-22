@@ -4,6 +4,11 @@ import {
   DEFAULT_WORK_SETTING_STARTER_ENTRIES,
 } from '@/features/workbench/model/workbenchSettingTaxonomy';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
+import type {
+  PendingSettingFieldUpdate,
+  SettingFieldHistoryEvent,
+  SettingFieldUpdatePolicy,
+} from '@/features/workbench/model/workbenchSettingStatus';
 
 import { ROLE_BASE_SETTING_FIELD_DEFINITIONS, ROLE_STATE_FIELD_DEFINITIONS } from './workbenchRoleSettingFields';
 
@@ -51,6 +56,9 @@ export interface SettingContent {
   body: string;
   structuredFieldSetId?: string;
   lockedDefaultEntryId?: string;
+  statusHistory?: SettingFieldHistoryEvent[];
+  pendingStatusUpdates?: PendingSettingFieldUpdate[];
+  fieldUpdatePolicies?: Record<string, SettingFieldUpdatePolicy>;
 }
 
 export type StructuredSettingFieldDefinition = {

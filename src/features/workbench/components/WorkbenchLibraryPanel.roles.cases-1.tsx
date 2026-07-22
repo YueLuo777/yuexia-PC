@@ -339,7 +339,7 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(panelSource).toContainSource(
       'disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent',
     );
-    expect(panelSource).toContainSource('const showRoleIdentityControls = !roleIsMaleProtagonist;');
+    expect(panelSource).toContainSource('const showRoleIdentityControls = !isMaleProtagonistRoleType(role.type);');
     expect(panelSource).toContainSource('{showRoleIdentityControls ? (');
     expect(panelSource).toContainSource('<div aria-hidden="true" className="h-[48px] min-w-[180px] shrink-0" />');
     expect(panelSource).toContainSource('label="身份定位"');
@@ -391,7 +391,7 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(body).toContainSource('【使用限制】：\n短时间内吞噬过量会污染神魂。');
     expect(body).toContainSource('【隐藏真相】：\n系统其实是旧神复苏前留下的筛选器。');
   });
-  it('uses role-style tabs for righteous faction fixed, status, and confirmation settings', async () => {
+  it('shows righteous faction fixed and status fields together with status history on the right', async () => {
     const storageKey = 'workbench-righteous-faction-structured-preview-test';
     const panelSource = await readWorkbenchLibraryPanelSource();
     localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
@@ -421,51 +421,34 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     ensureLibraryGroupExpanded('正派势力1');
     fireEvent.click(screen.getByText('1号势力').closest('button') as HTMLElement);
 
-    expect(screen.getByRole('button', { name: '基础设定' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '状态设定' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '确认' })).toBeInTheDocument();
-    expect(screen.queryByText(/长期档案，智能导入时优先补全/)).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '基础设定' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '状态设定' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '基础设定' })).not.toBeInTheDocument();
     expect(screen.getByLabelText('势力名')).toHaveValue('1号势力');
     expect(screen.getByTestId('structured-title-field')).toContainElement(screen.getByLabelText('势力名'));
-    expect(screen.getByTestId('structured-setting-fields')).not.toContainElement(screen.getByLabelText('势力名'));
+    screen.getAllByTestId('structured-setting-fields').forEach((group) => {
+      expect(group).not.toContainElement(screen.getByLabelText('势力名'));
+    });
     expect(screen.queryByText('设定名')).not.toBeInTheDocument();
-    expect(panelSource).toContainSource('className="xy-setting-name-editor flex min-h-0 flex-1 flex-col px-5 py-3"');
-    expect(panelSource).toContainSource('<WorkbenchNameField');
+    expect(panelSource).toContainSource('当前设定完整显示');
     expect(panelSource).toContainSource('testId="structured-title-field"');
-    expect(panelSource).toContainSource('<div aria-hidden="true" className="h-9 w-[112px] shrink-0" />');
-    expect(panelSource).toContainSource(
-      '{currentStructuredActiveGroup.title}共 {currentStructuredActiveGroupWordCount} 字',
-    );
-    expect(panelSource).not.toContainSource(
-      'className={`h-full w-full bg-transparent text-xl font-black leading-7 text-slate-950 outline-none placeholder:text-slate-400',
-    );
-    expect(panelSource).not.toContainSource(
-      'className="relative h-[54px] w-[168px] shrink-0 rounded-[22px] border-2 border-slate-950 bg-white px-4 pb-2 pt-4"',
-    );
     expect(screen.getByLabelText('基本信息')).toBeInTheDocument();
     expect(screen.getByLabelText('势力特点')).toBeInTheDocument();
     expect(screen.getByLabelText('组织架构')).toBeInTheDocument();
     expect(screen.getByLabelText('主要人物')).toBeInTheDocument();
-    expect(screen.queryByLabelText('势力关系')).not.toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText('势力名'), { target: { value: '青云宗' } });
-    fireEvent.change(screen.getByLabelText('基本信息'), { target: { value: '青云宗，东洲正道宗门。' } });
-
-    fireEvent.click(screen.getByRole('button', { name: '状态设定' }));
-    expect(screen.queryByText(/智能更新时优先刷新这一侧/)).not.toBeInTheDocument();
     expect(screen.getByLabelText('势力关系')).toBeInTheDocument();
     expect(screen.getByLabelText('对主角策略')).toBeInTheDocument();
     expect(screen.getByLabelText('核心问题/矛盾')).toBeInTheDocument();
-    expect(screen.queryByLabelText('基本信息')).not.toBeInTheDocument();
-    expect(screen.queryByText('设定预览')).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('势力名'), { target: { value: '青云宗' } });
+    fireEvent.change(screen.getByLabelText('基本信息'), { target: { value: '青云宗，东洲正道宗门。' } });
 
     fireEvent.change(screen.getByLabelText('势力关系'), { target: { value: '暂时与主角合作，暗中防备魔道。' } });
     fireEvent.change(screen.getByLabelText('对主角策略'), { target: { value: '先保护主角，再观察其金手指来源。' } });
     fireEvent.change(screen.getByLabelText('核心问题/矛盾'), { target: { value: '内部长老对是否支持主角存在分歧。' } });
 
-    fireEvent.click(screen.getByRole('button', { name: '确认' }));
-    expect(screen.getByText('确认更新')).toBeInTheDocument();
-    expect(screen.getByText(/AI 反馈进入确认区后/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '状态 · 0' }));
+    expect(screen.getByText(/当前范围没有待确认更新/)).toBeInTheDocument();
 
     const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
     const factionEntry = storedEntries.find((entry: { title: string }) => entry.title === '青云宗');
@@ -475,38 +458,14 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(body).toContainSource('【对主角策略】：\n先保护主角，再观察其金手指来源。');
     expect(body).toContainSource('【核心问题/矛盾】：\n内部长老对是否支持主角存在分歧。');
   });
-  it('keeps structured setting group tabs aligned with role editor styling and smaller placeholders', async () => {
+  it('keeps structured settings in continuous black-frame groups with smaller placeholders', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
-    const segmentedTabsSource = await readWorkbenchSettingSegmentedTabsSource();
-    const sharedSegmentedTabsSource = await readSharedSegmentedTabsSource();
     const styleSource = await readSharedStylesSource();
 
-    expect(structuredSettingsSource).toContainSource(
-      "const STRUCTURED_SETTING_TABS = ['基础设定', '状态设定', '确认'] as const;",
-    );
-    expect(structuredSettingsSource).not.toContainSource('固定设定');
-    expect(panelSource).toContainSource('activeStructuredSettingTab');
-    expect(panelSource).toContainSource("import { SettingSegmentedTabs } from './workbenchSettingSegmentedTabs';");
-    expect(segmentedTabsSource).toContainSource('function SettingSegmentedTabs<T extends string>');
-    expect(segmentedTabsSource).toContainSource("import { SegmentedTabs } from '@/shared/ui/SegmentedTabs';");
-    expect(segmentedTabsSource).toContainSource('return <SegmentedTabs {...props} />;');
-    expect(sharedSegmentedTabsSource).toContainSource(
-      "className = 'flex h-10 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white'",
-    );
-    expect(sharedSegmentedTabsSource).toContainSource('active');
-    expect(sharedSegmentedTabsSource).toContainSource("'border-[#08AACE] bg-[#EAF9FD] text-[#078FAE]'");
-    expect(sharedSegmentedTabsSource).toContainSource(
-      "'bg-white text-slate-600 hover:bg-[#EAF9FD] hover:text-[#078FAE]'",
-    );
-    expect(panelSource).toContainSource('onChange={setActiveStructuredSettingTab}');
-    expect(panelSource).toContainSource("activeStructuredSettingTab === '确认'");
-    expect(panelSource).not.toContainSource('{activeGroup.description}');
-    expect(structuredSettingsSource).not.toContainSource('currentStructuredSettingFieldSet.groups.map((group)');
-    expect(panelSource).not.toContainSource("'border-slate-950 bg-slate-950 text-white'");
-    expect(panelSource).not.toContainSource(
-      "'border-slate-200 bg-white text-slate-500 hover:border-cyan-200 hover:text-cyan-700'",
-    );
+    expect(structuredSettingsSource).toContainSource("groups: [");
+    expect(panelSource).toContainSource('groups.map((group)');
+    expect(panelSource).toContainSource('border-2 border-slate-950');
     expect(panelSource).toContainSource('xy-structured-setting-field');
     expect(styleSource).toContainSource('.xy-floating-field.xy-structured-setting-field textarea::placeholder');
     expect(styleSource).toContainSource('font-size: 0.8125rem;');
@@ -527,7 +486,7 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(editorHeaderSource).not.toContainSource('onDelete();');
     expect(editorHeaderSource).not.toContainSource('onToggleDeleteUnlocked();');
   });
-  it('adds character relationship as a first-class role field before status settings', async () => {
+  it('keeps character relationship as a first-class field with history and update policy', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const roleSettingFieldsSource = await readWorkbenchRoleSettingFieldsSource();
     const roleEditorSource = await readWorkbenchRoleEditorSource();
@@ -535,15 +494,11 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(panelSource).toContainSource('relationship: string;');
     expect(panelSource).toContainSource("relationship: parsed.relationship || '',");
     expect(panelSource).toContainSource("relationship: value.relationship || '',");
-    expect(panelSource).toContainSource('const relationshipWords = countTextWords(role.relationship);');
     expect(roleSettingFieldsSource).toContainSource(
       "type RoleStateUpdateChapterKey = RoleStateFieldKey | 'relationshipState';",
     );
-    expect(panelSource).toContainSource(
-      'const relationshipUpdateLabel = getRoleStateUpdateLabel(stateUpdateChapters.relationshipState);',
-    );
-    expect(panelSource).toContainSource('relationshipState: currentChapterNumber,');
-    expect(panelSource).toContainSource('const updateRelationshipState = (value: string) => {');
+    expect(roleEditorSource).toContainSource("key: 'relationshipState'");
+    expect(roleEditorSource).toContainSource('updateRelationshipState');
     expect(panelSource).toContainSource('人物关系');
     expect(panelSource).not.toContainSource(
       'AI 默认只读取，不直接覆盖。发现缺失时进入“基础设定补充建议”，由用户确认后写入。',
@@ -553,61 +508,10 @@ describe('WorkbenchLibraryPanel role library flows', () => {
       'placeholder="记录姓名、身份、外貌、角色定位、核心性格、人物背景、能力规则等低频变化内容。"',
     );
     expect(roleSettingFieldsSource).toContainSource("placeholder: '身形、容貌、衣着、气质、标志性细节。'");
-    expect(panelSource).toContainSource(
-      'placeholder="记录与主角、阵营、亲友、敌人、师徒、利益对象的关系。关系绑定人物，不绑定世界。"',
-    );
     expect(panelSource).toContainSource("wrapAiRequestTag('人物关系', truncateTextForAi(role.relationship, 700))");
-    expect(roleEditorSource).toContainSource("const roleSettingTabs = ['基础设定', '状态设定', '未确认'] as const;");
-    expect(roleEditorSource).toContainSource(
-      "const [activeRoleSettingTab, setActiveRoleSettingTab] = useState<(typeof roleSettingTabs)[number]>('基础设定');",
-    );
-    expect(roleEditorSource).toContainSource('<SettingSegmentedTabs');
-    expect(roleEditorSource).toContainSource('tabs={roleSettingTabs}');
-    expect(roleEditorSource).toContainSource('onChange={setActiveRoleSettingTab}');
-    const segmentedTabsSource = await readWorkbenchSettingSegmentedTabsSource();
-    const sharedSegmentedTabsSource = await readSharedSegmentedTabsSource();
-    expect(segmentedTabsSource).toContainSource("import { SegmentedTabs } from '@/shared/ui/SegmentedTabs';");
-    expect(sharedSegmentedTabsSource).toContainSource(
-      "className = 'flex h-10 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white'",
-    );
-    expect(sharedSegmentedTabsSource).toContainSource("'border-[#08AACE] bg-[#EAF9FD] text-[#078FAE]'");
-    expect(sharedSegmentedTabsSource).toContainSource(
-      "'bg-white text-slate-600 hover:bg-[#EAF9FD] hover:text-[#078FAE]'",
-    );
-    expect(roleEditorSource).toContainSource("activeRoleSettingTab === '状态设定'");
-    expect(roleEditorSource).toContainSource('updateRelationshipState(event.target.value)');
-    expect(roleEditorSource).toContainSource('{relationshipUpdateLabel}');
-    expect(roleEditorSource).toContainSource(
-      "stateUpdateChapters.relationshipState ? 'text-[#08AACE]' : 'text-red-500'",
-    );
-    expect(roleEditorSource).toContainSource('未确认更新');
-    expect(roleEditorSource).toContainSource('自动确认');
-    expect(roleEditorSource).toContainSource('一键确认');
-    expect(roleEditorSource).toContainSource("activeRoleSettingTab === '未确认' ? (");
-    expect(roleEditorSource).toContainSource(
-      'className="flex shrink-0 items-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-1.5"',
-    );
-    expect(roleEditorSource).not.toContainSource(
-      'className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-2.5"',
-    );
-    expect(roleEditorSource).not.toContainSource('AI 只更新状态设定，AI反馈先进入未确认区，确认后才写入状态设定。');
-    expect(roleEditorSource).not.toContainSource("自动确认 {autoConfirmRoleState ? '开启后自动写入状态设定' : '关闭'}");
-    expect(roleEditorSource).toContainSource('手动确认');
-    expect(roleEditorSource).toContainSource("beforeTitle: '人物关系未更新前'");
-    expect(roleEditorSource).toContainSource("afterTitle: '人物关系更新后'");
-    expect(roleEditorSource).toContainSource('item.beforeTitle');
-    expect(roleEditorSource).toContainSource('item.afterTitle');
-    expect(roleEditorSource).toContainSource('item.beforeValue');
-    expect(roleEditorSource).toContainSource('item.afterValue');
-    expect(roleEditorSource).toContainSource('className="grid gap-3 md:grid-cols-2"');
-    expect(roleEditorSource).not.toContainSource('正文中出现新的关系变化，建议确认后写入人物关系。');
-    expect(panelSource).toContainSource('grid-cols-1');
-    expect(panelSource).not.toContainSource('grid-cols-[minmax(280px,0.85fr)_minmax(260px,0.7fr)_minmax(380px,1.1fr)]');
+    expect(roleEditorSource).not.toContainSource('roleSettingTabs');
+    expect(roleEditorSource).toContainSource('查看轨迹 →');
+    expect(roleEditorSource).toContainSource('getSettingFieldPolicy');
     expect(roleEditorSource).not.toContainSource('<aside');
-
-    const relationshipIndex = roleEditorSource.indexOf('人物关系');
-    const statusIndex = roleEditorSource.indexOf('状态设定');
-    expect(relationshipIndex).toBeGreaterThan(-1);
-    expect(relationshipIndex).toBeGreaterThan(statusIndex);
   });
 });

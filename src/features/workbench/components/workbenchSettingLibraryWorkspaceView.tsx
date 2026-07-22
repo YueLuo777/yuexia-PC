@@ -177,6 +177,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
               roleLifeStatus={currentSelectedRoleLifeStatus}
               onTitleChange={(title: string) => updateEntry(currentSelectedEntry.id, { title })}
               onRoleChange={updateOutlineCharacterRole}
+              onOpenStatus={() => updateActiveTabConfig({ settingPanelMode: 'status' })}
             />
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-gray-400">
@@ -218,6 +219,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
             handleSettingSidebarScroll={handleSettingSidebarScroll}
             createEditableSettingEntry={createEditableSettingEntry}
             onSettingGroupChange={onSettingGroupChange}
+            onOpenStatus={() => updateActiveTabConfig({ settingPanelMode: 'status' })}
           />
         )}
       </main>

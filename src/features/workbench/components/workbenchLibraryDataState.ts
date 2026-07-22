@@ -82,6 +82,7 @@ export type LibraryTabConfig = {
   smartImportLocked?: boolean;
   settingPreviewFontSize?: number;
   roleTextFontSize?: number;
+  settingPanelMode?: 'setting' | 'status';
   detailOutlineFontSize?: number;
   detailOutlineStateFontSize?: number;
 };

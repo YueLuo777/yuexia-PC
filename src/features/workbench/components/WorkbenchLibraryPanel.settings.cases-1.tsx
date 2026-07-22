@@ -229,7 +229,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
     expect(panelSource).not.toContainSource(
       'scrollbar-scroll-only scrollbar-half-width mt-0.5 max-h-[760px] space-y-0.5 overflow-y-auto',
     );
-    expect(panelSource).toContainSource('scrollbar-scroll-only scrollbar-half-width text-sm leading-7 text-gray-700');
+    expect(panelSource).toContainSource('scrollbar-scroll-only scrollbar-half-width');
     expect(panelSource).toContainSource('onScroll={() => handleSettingSidebarScroll(`setting-textarea:');
     expect(styleSource).toContainSource('.xy-setting-sidebar-scrollbar::-webkit-scrollbar');
     expect(styleSource).toContainSource('.scrollbar-scroll-only.scrollbar-half-width::-webkit-scrollbar');
@@ -465,7 +465,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: '道具资源0' }));
-    fireEvent.click(screen.getByRole('button', { name: '设定' }));
+    fireEvent.click(screen.getAllByRole('button', { name: '设定' })[0]);
     fireEvent.change(screen.getByPlaceholderText('输入设定名字'), { target: { value: '测试装备设定' } });
     fireEvent.change(screen.getByLabelText('所属分组'), { target: { value: '物品装备' } });
     fireEvent.click(screen.getByRole('button', { name: '确认' }));
@@ -510,7 +510,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
 
     ensureLibraryGroupExpanded('核心设定2');
     fireEvent.click(screen.getByText('世界观').closest('button') as HTMLElement);
-    fireEvent.click(screen.getByRole('button', { name: '设定' }));
+    fireEvent.click(screen.getAllByRole('button', { name: '设定' })[0]);
 
     expect(screen.getByLabelText('所属分组')).toHaveValue('核心设定');
 

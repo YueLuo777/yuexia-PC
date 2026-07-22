@@ -15,7 +15,7 @@ describe('WorkbenchLibraryPanel structured setting flows', () => {
   beforeEach(() => {
     localStorage.clear();
   });
-  it('splits special resources into fixed settings, status settings, and confirmation tabs', async () => {
+  it('shows special-resource fixed and status fields together with confirmation on the right', async () => {
     const storageKey = 'workbench-special-resource-structured-preview-test';
     localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
     localStorage.setItem(
@@ -44,9 +44,8 @@ describe('WorkbenchLibraryPanel structured setting flows', () => {
     ensureLibraryGroupExpanded('特殊资源1');
     fireEvent.click(screen.getByText('龙脉权限').closest('button') as HTMLElement);
 
-    expect(screen.getByRole('button', { name: '基础设定' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '状态设定' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '确认' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '基础设定' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '状态设定' })).toBeInTheDocument();
     expect(screen.getByLabelText('基本信息')).toBeInTheDocument();
     expect(screen.getByLabelText('获取条件')).toBeInTheDocument();
     expect(screen.getByLabelText('使用规则')).toBeInTheDocument();
@@ -54,7 +53,6 @@ describe('WorkbenchLibraryPanel structured setting flows', () => {
     expect(screen.getByLabelText('失效条件')).toBeInTheDocument();
     expect(screen.getByLabelText('主线关联')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '状态设定' }));
     expect(screen.getByLabelText('当前归属')).toBeInTheDocument();
     expect(screen.getByLabelText('可用状态')).toBeInTheDocument();
     expect(screen.getByLabelText('剩余次数')).toBeInTheDocument();
@@ -62,9 +60,8 @@ describe('WorkbenchLibraryPanel structured setting flows', () => {
     expect(screen.getByLabelText('激活进度')).toBeInTheDocument();
     expect(screen.getByLabelText('最近触发')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '确认' }));
-    expect(screen.getByText('确认更新')).toBeInTheDocument();
-    expect(screen.getByText(/确认后才写入状态设定/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '状态 · 0' }));
+    expect(screen.getByText(/当前范围没有待确认更新/)).toBeInTheDocument();
   });
   it('splits plot planning previews into blueprint, volume, and payoff fields', async () => {
     const storageKey = 'workbench-plot-planning-structured-preview-test';

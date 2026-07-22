@@ -4,6 +4,14 @@ import {
   normalizeWorkbenchRoleType,
 } from '@/features/workbench/model/workbenchRoleTypes';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
+import {
+  normalizePendingSettingFieldUpdates,
+  normalizeSettingFieldHistory,
+  normalizeSettingFieldPolicies,
+  type PendingSettingFieldUpdate,
+  type SettingFieldHistoryEvent,
+  type SettingFieldUpdatePolicy,
+} from '@/features/workbench/model/workbenchSettingStatus';
 import { parseSectionedSettingBody } from './workbenchStructuredSettings';
 import {
   ROLE_BASE_SETTING_FIELD_DEFINITIONS,
@@ -25,6 +33,9 @@ export interface RoleContent {
   background: string;
   status: string;
   history?: RoleHistoryVersion[];
+  statusHistory?: SettingFieldHistoryEvent[];
+  pendingStatusUpdates?: PendingSettingFieldUpdate[];
+  fieldUpdatePolicies?: Record<string, SettingFieldUpdatePolicy>;
 }
 
 export interface RoleHistoryVersion {
@@ -151,6 +162,9 @@ export function parseRoleContent(content: string): RoleContent {
       background: parsed.background || baseSetting,
       status: parsed.status || buildRoleStateSettingsText(stateSettings),
       history: Array.isArray(parsed.history) ? parsed.history.slice(0, ROLE_HISTORY_LIMIT) : [],
+      statusHistory: normalizeSettingFieldHistory(parsed.statusHistory),
+      pendingStatusUpdates: normalizePendingSettingFieldUpdates(parsed.pendingStatusUpdates),
+      fieldUpdatePolicies: normalizeSettingFieldPolicies(parsed.fieldUpdatePolicies),
     };
   } catch {
     const stateSettings = createEmptyRoleStateSettings();
@@ -165,6 +179,9 @@ export function parseRoleContent(content: string): RoleContent {
       background: content || '',
       status: '',
       history: [],
+      statusHistory: [],
+      pendingStatusUpdates: [],
+      fieldUpdatePolicies: {},
     };
   }
 }

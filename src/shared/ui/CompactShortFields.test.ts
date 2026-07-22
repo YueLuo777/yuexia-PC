@@ -30,7 +30,7 @@ describe('compact short fields across formal pages', () => {
     const nameFieldSource = readSource('src/features/workbench/components/WorkbenchNameField.tsx');
     expect(brainstormSource).toContainSource('<span className="w-12 shrink-0">名称</span>');
     expect(brainstormSource).toContainSource('<span className="w-12 shrink-0 pt-2">说明</span>');
-    expect(settingSource.match(/<WorkbenchNameField/g)).toHaveLength(3);
+    expect(settingSource.match(/<WorkbenchNameField/g)).toHaveLength(2);
     expect(nameFieldSource).toContainSource('className="xy-workbench-name-field"');
     expect(nameFieldSource).toContainSource('className="xy-workbench-name-field-caption"');
     expect(settingSource).not.toContainSource('<span className="w-[64px] shrink-0">设定名</span>');

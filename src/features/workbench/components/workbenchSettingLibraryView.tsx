@@ -5,6 +5,10 @@ import {
   renderSettingLibraryAiConfigHeader,
   renderSettingLibraryWorkspace,
 } from './workbenchSettingLibraryWorkspaceView';
+import {
+  WorkbenchSettingPanelTabs,
+  WorkbenchSettingStatusPanel,
+} from './WorkbenchSettingStatusPanel';
 
 export function renderSettingLibraryView(scope: Record<string, any>) {
   const {
@@ -189,6 +193,10 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
     updateOutlineCharacterRole,
     updateStructuredSettingField,
   } = scope;
+  const showSettingStatusTabs = activeTab === SETTING_TAB && !activeIsBrainstorm;
+  const settingPanelMode = activeTabConfig.settingPanelMode === 'status' ? 'status' : 'setting';
+  const settingPendingStatusCount =
+    currentSelectedRole?.pendingStatusUpdates?.length ?? currentSelectedSetting?.pendingStatusUpdates?.length ?? 0;
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white" style={scaleStyle}>
       {libraryHeaderFontSizePortal}
@@ -232,8 +240,27 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
               className="min-w-0 flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 px-4 pb-4 pt-2"
               style={activeTab === SETTING_TAB && !activeIsBrainstorm ? { gridColumn: 5, gridRow: '1 / 3' } : undefined}
             >
-              {renderSettingLibraryAiConfigHeader(scope)}
-              {activeIsBrainstorm ? (
+              {showSettingStatusTabs ? (
+                <WorkbenchSettingPanelTabs
+                  mode={settingPanelMode}
+                  pendingCount={settingPendingStatusCount}
+                  onChange={(mode) => updateActiveTabConfig({ settingPanelMode: mode })}
+                />
+              ) : null}
+              {settingPanelMode !== 'status' || !showSettingStatusTabs ? renderSettingLibraryAiConfigHeader(scope) : null}
+              {settingPanelMode === 'status' && showSettingStatusTabs ? (
+                <WorkbenchSettingStatusPanel
+                  entry={currentSelectedEntry ?? null}
+                  role={currentSelectedRole ?? null}
+                  setting={currentSelectedRole ? null : (currentSelectedSetting ?? null)}
+                  structuredFieldSet={currentStructuredSettingFieldSet ?? null}
+                  onRoleChange={updateOutlineCharacterRole}
+                  onSettingChange={(nextSetting) => {
+                    if (!currentSelectedEntry) return;
+                    updateEntry(currentSelectedEntry.id, { content: stringifySettingContent(nextSetting) });
+                  }}
+                />
+              ) : activeIsBrainstorm ? (
                 <BrainstormQuestionPanel
                   draft={brainstormQuestionDraft}
                   isLoading={isLibraryAiLoading}

@@ -61,7 +61,7 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     expect(styleSource).toContainSource('.xy-floating-field .xy-floating-count.xy-floating-count-top-left::before');
     expect(styleSource).toContainSource('left: -1.2rem;');
     expect(styleSource).toContainSource('top: 0;');
-    expect(panelSource).toContainSource('xy-floating-count xy-floating-count-top-left');
+    expect(panelSource).toContainSource('<WordCountText value={countTextWords(value)} />');
     expect(panelSource).toContainSource(
       "<label className={isDetailOutlineTab ? 'xy-floating-title-count xy-detail-outline-title-count' : undefined}>",
     );
@@ -73,10 +73,7 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     );
     expect(panelSource).toContainSource('style={getFloatingTitleInputStyle(title, 3, 9)}');
     expect(panelSource).toContainSource('style={getFloatingTitleInputStyle(titleValue, 4, 12)}');
-    expect(panelSource).toContainSource('<label className="xy-floating-title-count">');
-    expect(panelSource).toContainSource(
-      '<WordCountText value={countTextWords(currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content)} />',
-    );
+    expect(panelSource).toContainSource('· 保留历史');
     expect(panelSource).toContainSource(
       'xy-floating-inline-title-tool xy-brainstorm-floating-title-tool xy-floating-title-count xy-border-embedded-transparent-backplate',
     );

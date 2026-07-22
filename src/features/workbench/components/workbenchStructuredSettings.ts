@@ -29,6 +29,11 @@ import {
 } from '@/features/workbench/model/workbenchSettingTaxonomy';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 import { ROLE_BASE_SETTING_FIELD_DEFINITIONS, ROLE_STATE_FIELD_DEFINITIONS } from './workbenchRoleSettingFields';
+import {
+  normalizePendingSettingFieldUpdates,
+  normalizeSettingFieldHistory,
+  normalizeSettingFieldPolicies,
+} from '@/features/workbench/model/workbenchSettingStatus';
 export function normalizeSettingType(value: string | undefined) {
   return value?.trim() || STRUCTURED_SETTING_UNCATEGORIZED_TYPE;
 }
@@ -41,11 +46,17 @@ export function parseSettingContent(content: string): SettingContent {
       body: parsed.body || '',
       structuredFieldSetId: typeof parsed.structuredFieldSetId === 'string' ? parsed.structuredFieldSetId : undefined,
       lockedDefaultEntryId: typeof parsed.lockedDefaultEntryId === 'string' ? parsed.lockedDefaultEntryId : undefined,
+      statusHistory: normalizeSettingFieldHistory(parsed.statusHistory),
+      pendingStatusUpdates: normalizePendingSettingFieldUpdates(parsed.pendingStatusUpdates),
+      fieldUpdatePolicies: normalizeSettingFieldPolicies(parsed.fieldUpdatePolicies),
     };
   } catch {
     return {
       type: '未分类',
       body: content || '',
+      statusHistory: [],
+      pendingStatusUpdates: [],
+      fieldUpdatePolicies: {},
     };
   }
 }
