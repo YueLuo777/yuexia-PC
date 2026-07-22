@@ -47,9 +47,9 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
 
     expect(constantsSource).toContainSource('export const SETTING_LIBRARY_LEFT_MIN_WIDTH = 180;');
     expect(constantsSource).toContainSource(
-      'export const SETTING_LIBRARY_LEFT_WIDTH = SETTING_LIBRARY_LEFT_MIN_WIDTH;',
+      'export const SETTING_LIBRARY_LEFT_WIDTH = 280;',
     );
-    expect(constantsSource).toContainSource('export const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 260;');
+    expect(constantsSource).toContainSource('export const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 280;');
     expect(constantsSource).not.toContainSource('const SETTING_LIBRARY_LEFT_WIDTH = 430;');
     expect(panelSource).toContainSource('readSettingLibraryLeftWidth(storageKey, activeTab, scale)');
   });
@@ -161,7 +161,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
       'const basePromptText = activeReviewPrompt?.content?.trim() || modeInstruction;',
     );
     expect(chapterEditorSource).toContainSource(
-      "const promptText = [basePromptText, compareInstruction].filter(Boolean).join('\\n\\n');",
+      "const promptText = auditPromptText || [basePromptText, compareInstruction].filter(Boolean).join('\\n\\n');",
     );
     expect(chapterEditorSource).toContainSource('const userRequirementText = reviewAiInput.trim();');
     expect(chapterEditorSource).toContainSource(
@@ -182,7 +182,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
     expect(chapterEditorSource).toContainSource('export function getReviewLogFillGroupWeights(options: {');
     expect(chapterEditorSource).toContainSource('hasOutline: boolean;');
     expect(chapterEditorSource).toContainSource('hasUser: boolean;');
-    expect(chapterEditorSource).toContainSource('original: 2,');
+    expect(chapterEditorSource).toContainSource('original: options.hasOutline ? 1 : 2,');
     expect(chapterEditorSource).toContainSource('fillSingleGroup');
     expect(chapterEditorSource).toContainSource('fillGroupWeights={getReviewLogFillGroupWeights');
     expect(chapterEditorSource).not.toContainSource(
@@ -257,12 +257,15 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
   it('keeps the other-setting link picker focused on the list and preview only', async () => {
     const modalSource = await readWorkbenchOtherSettingReaderModalSource();
 
-    expect(modalSource).toContainSource('grid-cols-[300px_minmax(0,1fr)]');
+    expect(modalSource).toContainSource('ASSOCIATION_READER_GRID_CLASS');
     expect(modalSource).toContainSource('已选 {draftEntries.length} 项');
     expect(modalSource).not.toContainSource('grid-cols-[300px_minmax(0,1fr)_280px]');
     expect(modalSource).not.toContainSource('本次将关联');
     expect(modalSource).not.toContainSource('还没有选择其他设定');
     expect(modalSource).not.toContainSource('确认后，这些条目会合并成“关联其他设定”上下文');
+    expect(modalSource).toContainSource('meta={`${entry.wordCount}字`}');
+    expect(modalSource).toContainSource('onPreview={() => onPreviewEntry(entry.id)}');
+    expect(modalSource).toContainSource('onToggle={() => onToggleEntry(entry.id)}');
   });
   it('uses the requested default tab even when the shared storage remembered another setting tab', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();

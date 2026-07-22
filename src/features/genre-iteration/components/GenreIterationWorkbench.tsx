@@ -13,11 +13,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 import { useModels } from '@/features/models/hooks/useModels';
-import {
-  GENRE_ITERATION_PROMPT_CATEGORY,
-  normalizePromptCategoryName,
-  usePrompts,
-} from '@/features/prompts/hooks/usePrompts';
+import { usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { GENRE_ITERATION_SAVE_DIRECTORY } from '@/features/genre-iteration/model/genreIterationDefaults';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 import { CHAPTER_NUMBER_GRID_STYLE, ChapterNumberButton } from '@/shared/ui/ChapterNumberButton';
@@ -68,10 +64,7 @@ export function GenreIterationWorkbench() {
     readStoredValue(GENRE_ITERATION_PROMPT_ID_STORAGE_KEY),
   );
 
-  const genreIterationPrompts = useMemo(
-    () => prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === GENRE_ITERATION_PROMPT_CATEGORY),
-    [prompts],
-  );
+  const genreIterationPrompts = prompts;
   const genreIterationModel = useMemo(
     () => models.find((model) => model.id === genreIterationModelId) ?? models[0] ?? null,
     [genreIterationModelId, models],
@@ -509,7 +502,7 @@ export function GenreIterationWorkbench() {
           onModelChange={setGenreIterationModelIdWithStorage}
           onPromptChange={setGenreIterationPromptIdWithStorage}
           onModelManage={() => navigate('/model-manage')}
-          onPromptManage={() => navigate(`/prompts?category=${encodeURIComponent(GENRE_ITERATION_PROMPT_CATEGORY)}`)}
+          onPromptManage={() => navigate('/prompts')}
         />
       </header>
 

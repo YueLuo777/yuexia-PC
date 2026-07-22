@@ -2,10 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildReviewTextDiff,
+  buildTextAuditRevisedText,
   extractReviewAnnotations,
   extractReviewModificationNotes,
   extractReviewRevisedText,
+  extractTextAuditParagraphChanges,
   getReviewAnnotationParagraphIndex,
+  getTextAuditResultSummary,
+  preserveReviewParagraphIndentation,
   splitReviewParagraphs,
   stripReviewThinkingBlock,
   type ReviewAnnotation,
@@ -33,10 +37,52 @@ describe('chapterReviewText', () => {
     expect(extractReviewRevisedText('【修改后全文】\n第一段\n第二段\n【修改说明】精简')).toBe('第一段\n第二段');
     expect(extractReviewRevisedText('```markdown\n备用正文\n```')).toBe('备用正文');
     expect(extractReviewRevisedText('只有审核说明')).toBe('');
+    expect(extractReviewRevisedText('【修改后全文】\n　　保留缩进\n【修改说明】无')).toBe('　　保留缩进');
   });
 
   it('normalizes line endings without removing empty review paragraphs', () => {
     expect(splitReviewParagraphs('第一段\r\n\r\n第三段')).toEqual(['第一段', '', '第三段']);
+  });
+
+  it('rebuilds a full comparison draft from changed text-audit paragraphs only', () => {
+    const output = `【文本审核结果】
+【结果】不通过
+【说明】发现两处问题。
+
+【修改段落】
+【段落序号】第1段
+【修改后段落】第一段已修正。
+【修改原因】修正病句。
+
+【修改段落】
+【段落序号】第3段
+【修改后段落】第三段已修正。
+【修改原因】修正错字。`;
+
+    expect(extractTextAuditParagraphChanges(output)).toEqual([
+      { paragraphIndex: 0, revisedText: '第一段已修正。', reason: '修正病句。' },
+      { paragraphIndex: 2, revisedText: '第三段已修正。', reason: '修正错字。' },
+    ]);
+    expect(buildTextAuditRevisedText(output, '　　第一段。\n第二段。\n　　第三段。')).toBe(
+      '　　第一段已修正。\n第二段。\n　　第三段已修正。',
+    );
+  });
+
+  it('extracts the text-audit result for the blue summary card', () => {
+    expect(
+      getTextAuditResultSummary(
+        '【剧情审核结论】通过\n【文本审核结果】\n【结果】通过\n【说明】未发现明确文本问题。',
+      ),
+    ).toEqual({ status: 'passed', label: '通过', description: '未发现明确文本问题。' });
+  });
+
+  it('restores original paragraph indentation without turning deleted paragraphs into spaces', () => {
+    expect(
+      preserveReviewParagraphIndentation(
+        ['　　第一段', '  第二段', '\t第三段'],
+        ['第一段修改', '　第二段修改', ''],
+      ),
+    ).toEqual(['　　第一段修改', '  第二段修改', '']);
   });
 
   it('extracts paragraph modification reasons and infers compact categories', () => {

@@ -83,6 +83,7 @@ interface CosObjectResult {
 
 interface WindowSettingsResult {
   rememberSize: boolean;
+  startMaximized: boolean;
   startupBounds: {
     width: number;
     height: number;
@@ -102,6 +103,8 @@ interface WindowSettingsResult {
 interface Window {
   xinyuexiaWindow?: {
     signalRendererReady(): Promise<boolean>;
+    confirmCloseCleanup(): Promise<boolean>;
+    onPrepareClose(callback: () => void): () => void;
     minimize(): Promise<void>;
     maximizeToggle(): Promise<boolean>;
     close(): Promise<void>;
@@ -110,6 +113,7 @@ interface Window {
     readSettings(): Promise<WindowSettingsResult>;
     updateSettings(settings: {
       rememberSize?: boolean;
+      startMaximized?: boolean;
       startupBounds?: { width: number; height: number };
     }): Promise<WindowSettingsResult>;
     resetBounds(): Promise<WindowSettingsResult>;

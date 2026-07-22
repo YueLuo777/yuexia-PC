@@ -37,7 +37,7 @@ import {
   parseSettingContent,
   parseStructuredSettingFields,
   resolveStructuredSettingDraftFields,
-  stringifySettingContent,
+  stringifySettingContent, resolveActiveSettingWorkspaceType,
   stringifyStructuredSettingFields,
   type SettingContent,
   type SettingImportFormatPreviewScope,
@@ -522,10 +522,10 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
     const latestUsefulAiOutput = activeIsBrainstorm ? getLatestUsefulAiText(aiResult || aiOutput) : aiOutput.trim();
     const smartImportLocked = activeTabConfig.smartImportLocked !== false;
     const activeSettingWorkspaceDomain = selectedSettingWorkspaceDomain;
-    const activeSettingWorkspaceType = selectedSettingWorkspaceType;
     const visibleSettingTypeOptions = activeSettingWorkspaceDomain
       ? activeSettingTypeOptions.filter((type) => getSettingTypeWorkspaceDomain(type) === activeSettingWorkspaceDomain)
       : activeSettingTypeOptions.filter((type) => !getSettingTypeWorkspaceDomain(type));
+    const activeSettingWorkspaceType = resolveActiveSettingWorkspaceType(currentSelectedSetting?.type, effectiveTabConfig.typeDraft, selectedSettingWorkspaceType, visibleSettingTypeOptions);
     const groupedSettingEntries = visibleSettingTypeOptions.map((type) => ({
       type,
       entries: currentEntries.filter((entry) => {
@@ -775,6 +775,7 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
       activeSettingLinkSource,
       activeSettingSidebarScrollKey,
       activeSettingWorkspaceType,
+      settingGroupOptions: visibleSettingTypeOptions,
       activeStructuredSettingTab,
       activeTab,
       activeTabConfig,

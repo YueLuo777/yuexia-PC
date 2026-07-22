@@ -1,12 +1,17 @@
-import { Folder, FolderOpen, X } from 'lucide-react';
-import { createPortal } from 'react-dom';
+import { Folder, FolderOpen } from 'lucide-react';
 
 import { WordCountText } from '@/shared/ui/WordCountText';
+import {
+  ASSOCIATION_READER_MODAL_HEIGHT_CLASS,
+  ASSOCIATION_READER_MODAL_WIDTH_CLASS,
+  AssociationReaderItemRow,
+} from './AssociationReaderItemRow';
 import {
   WORKBENCH_FOLDER_GROUP_BUTTON_CLASS,
   WORKBENCH_FOLDER_GROUP_COUNT_CLASS,
   WORKBENCH_FOLDER_GROUP_ICON_CLASS,
 } from './workbenchLibraryPanelConstants';
+import { WorkbenchModal } from './WorkbenchModal';
 
 export type DetailOutlineReaderTab = 'settings' | 'roles' | 'outlines';
 
@@ -81,29 +86,17 @@ export function DetailOutlineReaderModal({
 }: DetailOutlineReaderModalProps) {
   if (!isDetailOutlineReaderOpen || !isDetailOutlineTab) return null;
 
-  return createPortal(
-    <div
-      className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/35"
-      onClick={() => setIsDetailOutlineReaderOpen(false)}
+  return (
+    <WorkbenchModal
+      title="关联资料"
+      subtitle="勾选后会作为本次生成章纲的参考资料。"
+      isOpen={isDetailOutlineReaderOpen && isDetailOutlineTab}
+      onClose={() => setIsDetailOutlineReaderOpen(false)}
+      widthClass={ASSOCIATION_READER_MODAL_WIDTH_CLASS}
+      heightClass={ASSOCIATION_READER_MODAL_HEIGHT_CLASS}
+      storageId="detail_outline_reader"
+      panelClassName="adjustment-crisp text-slate-900"
     >
-      <div
-        className="modal-sharp adjustment-crisp flex h-[min(760px,90vh)] w-[min(1180px,94vw)] flex-col overflow-hidden rounded-2xl bg-white text-slate-900 shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-4">
-          <div className="min-w-0">
-            <h3 className="text-xl font-bold text-gray-900">关联资料</h3>
-            <p className="mt-1 text-xs text-gray-400">勾选后会作为本次生成章纲的参考资料。</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsDetailOutlineReaderOpen(false)}
-            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-            title="关闭"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
         <div className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-100 px-5">
           {(
             [
@@ -203,50 +196,20 @@ export function DetailOutlineReaderModal({
                                       ? draftDetailOutlineReaderRoleIds.has(item.id)
                                       : draftDetailOutlineReaderOutlineIds.has(item.id);
                             return (
-                              <button
+                              <AssociationReaderItemRow
                                 key={item.id}
-                                type="button"
-                                onClick={() => setDetailOutlineReaderPreviewId(item.id)}
-                                className={`flex h-10 w-full items-center gap-2 rounded-lg px-2 text-left text-[15px] font-black ${
-                                  checked
-                                    ? 'xy-selected-content-bg text-gray-900'
-                                    : 'bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-                                }`}
-                              >
-                                <span
-                                  role="checkbox"
-                                  aria-checked={checked}
-                                  tabIndex={0}
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    setDetailOutlineReaderPreviewId(item.id);
-                                    if (detailOutlineReaderTab === 'settings')
-                                      toggleDraftDetailOutlineReaderSetting(item.id);
-                                    else if (detailOutlineReaderTab === 'roles')
-                                      toggleDraftDetailOutlineReaderRole(item.id);
-                                    else toggleDraftDetailOutlineReaderOutline(item.id);
-                                  }}
-                                  onKeyDown={(event) => {
-                                    if (event.key !== 'Enter' && event.key !== ' ') return;
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    setDetailOutlineReaderPreviewId(item.id);
-                                    if (detailOutlineReaderTab === 'settings')
-                                      toggleDraftDetailOutlineReaderSetting(item.id);
-                                    else if (detailOutlineReaderTab === 'roles')
-                                      toggleDraftDetailOutlineReaderRole(item.id);
-                                    else toggleDraftDetailOutlineReaderOutline(item.id);
-                                  }}
-                                  className={`grid h-4 w-4 shrink-0 place-items-center rounded border text-[10px] ${
-                                    checked
-                                      ? 'border-[#08AACE] bg-[#08AACE] text-white'
-                                      : 'border-slate-300 bg-white text-transparent'
-                                  }`}
-                                >
-                                  ✓
-                                </span>
-                                <span className="min-w-0 truncate">{item.title}</span>
-                              </button>
+                                title={item.title}
+                                selected={activeDetailOutlineReaderPreviewItem?.id === item.id}
+                                checked={checked}
+                                onPreview={() => setDetailOutlineReaderPreviewId(item.id)}
+                                onToggle={() => {
+                                  if (detailOutlineReaderTab === 'settings')
+                                    toggleDraftDetailOutlineReaderSetting(item.id);
+                                  else if (detailOutlineReaderTab === 'roles')
+                                    toggleDraftDetailOutlineReaderRole(item.id);
+                                  else toggleDraftDetailOutlineReaderOutline(item.id);
+                                }}
+                              />
                             );
                           })}
                         </div>
@@ -259,14 +222,7 @@ export function DetailOutlineReaderModal({
           </aside>
           <main className="editor-scrollbar min-h-0 overflow-y-auto p-6">
             {activeDetailOutlineReaderPreviewItem ? (
-              <article
-                className={
-                  'flex min-h-full flex-col ' +
-                  (isActiveDetailOutlineReaderPreviewChecked
-                    ? 'xy-selected-content-bg text-slate-900'
-                    : 'text-gray-600')
-                }
-              >
+              <article className="flex min-h-full flex-col text-gray-600">
                 <div className="mb-4 flex shrink-0 items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="text-xs font-black text-[#08AACE]">
@@ -277,29 +233,9 @@ export function DetailOutlineReaderModal({
                           : '章纲'}{' '}
                       / {activeDetailOutlineReaderPreviewItem.group}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (detailOutlineReaderTab === 'settings')
-                            toggleDraftDetailOutlineReaderSetting(activeDetailOutlineReaderPreviewItem.id);
-                          else if (detailOutlineReaderTab === 'roles')
-                            toggleDraftDetailOutlineReaderRole(activeDetailOutlineReaderPreviewItem.id);
-                          else toggleDraftDetailOutlineReaderOutline(activeDetailOutlineReaderPreviewItem.id);
-                        }}
-                        className={
-                          'grid h-6 w-6 shrink-0 place-items-center rounded-md border text-xs font-black ' +
-                          (isActiveDetailOutlineReaderPreviewChecked
-                            ? 'border-[#08AACE] bg-[#08AACE] text-white'
-                            : 'border-slate-300 bg-white text-transparent')
-                        }
-                      >
-                        ✓
-                      </button>
-                      <h4 className="mt-1 truncate text-2xl font-black text-slate-900">
-                        {activeDetailOutlineReaderPreviewItem.title}
-                      </h4>
-                    </div>
+                    <h4 className="mt-1 truncate text-2xl font-black text-slate-900">
+                      {activeDetailOutlineReaderPreviewItem.title}
+                    </h4>
                   </div>
                   <span
                     className={`shrink-0 rounded-xl px-3 py-2 text-xs font-black ${
@@ -386,8 +322,6 @@ export function DetailOutlineReaderModal({
             </button>
           </div>
         </div>
-      </div>
-    </div>,
-    document.body,
+    </WorkbenchModal>
   );
 }

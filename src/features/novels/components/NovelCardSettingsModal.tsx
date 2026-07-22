@@ -1,4 +1,6 @@
-import { RefreshCw, X } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
+
+import { AppModalShell } from '@/shared/ui/AppModalShell';
 
 import {
   type FullCardSettings,
@@ -28,18 +30,15 @@ export function CardSettingsModal({
   while (slots.length < totalSlots) slots.push('');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="flex h-[580px] w-[720px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-3 shrink-0">
-          <div>
-            <h2 className="text-lg font-bold text-gray-900">作品卡片设置</h2>
-            <p className="mt-0.5 text-sm text-gray-400">调整尺寸、文字、按钮排列，实时预览效果</p>
-          </div>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
+    <AppModalShell
+      title="作品卡片设置"
+      subtitle="调整尺寸、文字、按钮排列，实时预览效果"
+      isOpen={isOpen}
+      onClose={onClose}
+      widthClass="w-[720px]"
+      heightClass="h-[580px] max-h-[90vh]"
+      storageId="novel_card_settings"
+    >
         <div className="flex flex-1 overflow-hidden">
           <div className="flex-1 space-y-4 overflow-y-auto border-r border-gray-100 p-5">
             <div>
@@ -268,7 +267,6 @@ export function CardSettingsModal({
             完成
           </button>
         </div>
-      </div>
-    </div>
+    </AppModalShell>
   );
 }

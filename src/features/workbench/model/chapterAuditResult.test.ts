@@ -53,5 +53,8 @@ describe('chapterAuditResult', () => {
     expect(isAuditOutputPassed('【剧情审核结论】通过\n【结果】通过')).toBe(true);
     expect(isAuditOutputPassed(auditOutput)).toBe(false);
     expect(isAuditOutputPassed('整体部分通过')).toBe(false);
+    expect(
+      isAuditOutputPassed('【剧情审核结论】通过\n【结果】通过\n【文本审核结果】\n【结果】不通过'),
+    ).toBe(true);
   });
 });

@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
 const root = path.resolve(import.meta.dirname, '..');
-const { getStartupWindowBounds } = require('./startupExperience.cjs');
+const { createStartupExperience, getStartupWindowBounds } = require('./startupExperience.cjs');
 
 function readWorkspaceFile(relativePath) {
   return readFileSync(path.join(root, relativePath), 'utf8');
@@ -47,13 +47,42 @@ describe('Electron startup experience', () => {
     expect(signalSource).toContainSource('window.xinyuexiaWindow?.signalRendererReady?.()');
   });
 
+  it('reveals the main window only once when renderer readiness repeats', () => {
+    let revealCount = 0;
+    const startup = createStartupExperience({
+      BrowserWindow: class {},
+      screen: {},
+      icon: null,
+      isHeadless: true,
+      log: () => undefined,
+      revealMainWindow: () => {
+        revealCount += 1;
+      },
+    });
+    const mainWindow = {
+      once: () => undefined,
+      webContents: { once: () => undefined },
+    };
+
+    startup.begin(mainWindow, {});
+    expect(startup.reveal('renderer-ready')).toBe(true);
+    expect(startup.reveal('renderer-ready')).toBe(false);
+    expect(startup.reveal('hot-reload')).toBe(false);
+    expect(revealCount).toBe(1);
+    startup.close();
+  });
+
   it('uses a branded local startup surface and a hidden VBS launch path', () => {
     const startupSource = readWorkspaceFile('electron/startupExperience.cjs');
+    const mainSource = readWorkspaceFile('electron/main.cjs');
     const startupHtml = readWorkspaceFile('electron/startup.html');
     const launcherSource = readWorkspaceFile('月下PC版.vbs');
 
     expect(startupSource).toContainSource("sandbox: true");
     expect(startupSource).toContainSource("setWindowOpenHandler(() => ({ action: 'deny' }))");
+    expect(startupSource).toContainSource('if (hasRevealedMainWindow)');
+    expect(mainSource).not.toContainSource('mainWindow.setAlwaysOnTop(true)');
+    expect(mainSource).not.toContainSource('mainWindow.moveTop()');
     expect(startupHtml).toContain('正在整理你的创作空间');
     expect(startupHtml).toContain('prefers-reduced-motion');
     expect(launcherSource).toContainSource('shell.Run command, 0, False');

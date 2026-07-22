@@ -37,6 +37,7 @@ import { defaultEntriesPart35 } from './errorLogDefaultEntries.part-35';
 import { defaultEntriesPart36 } from './errorLogDefaultEntries.part-36';
 import { defaultEntriesPart37 } from './errorLogDefaultEntries.part-37';
 import { defaultEntriesPart38 } from './errorLogDefaultEntries.part-38';
+import { defaultEntriesPart39 } from './errorLogDefaultEntries.part-39';
 export const defaultEntries: ErrorLogEntry[] = [
   ...defaultEntriesPart1,
   ...defaultEntriesPart2,
@@ -76,4 +77,5 @@ export const defaultEntries: ErrorLogEntry[] = [
   ...defaultEntriesPart36,
   ...defaultEntriesPart37,
   ...defaultEntriesPart38,
+  ...defaultEntriesPart39,
 ];

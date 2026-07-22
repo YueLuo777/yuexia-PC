@@ -26,6 +26,18 @@ export type ReviewModificationNote = {
   note: string;
 };
 
+export type TextAuditParagraphChange = {
+  paragraphIndex: number;
+  revisedText: string;
+  reason: string;
+};
+
+export type TextAuditResultSummary = {
+  status: 'passed' | 'failed';
+  label: string;
+  description: string;
+};
+
 const REVIEW_TEXT_DIFF_MAX_CELLS = 320_000;
 
 export function stripReviewThinkingBlock(content: string) {
@@ -37,16 +49,70 @@ export function stripReviewThinkingBlock(content: string) {
 export function extractReviewRevisedText(output: string) {
   const clean = stripReviewThinkingBlock(output);
   const marked = clean.match(
-    /【修改后全文】\s*([\s\S]*?)(?=\n?【(?:审核|点评|修改说明|问题|建议|原文|说明)[^】]*】|$)/,
+    /【修改后全文】[^\S\r\n]*(?:\r?\n)?([\s\S]*?)(?=\n?【(?:审核|点评|修改说明|问题|建议|原文|说明)[^】]*】|$)/,
   );
-  if (marked?.[1]?.trim()) return marked[1].trim();
-  const fenced = clean.match(/```(?:text|txt|markdown|md)?\s*([\s\S]*?)```/i);
-  if (fenced?.[1]?.trim()) return fenced[1].trim();
+  if (marked?.[1]?.trim()) return marked[1].trimEnd();
+  const fenced = clean.match(/```(?:text|txt|markdown|md)?[^\S\r\n]*(?:\r?\n)?([\s\S]*?)```/i);
+  if (fenced?.[1]?.trim()) return fenced[1].trimEnd();
   return '';
 }
 
 export function splitReviewParagraphs(text: string) {
   return text.replace(/\r\n/g, '\n').split('\n');
+}
+
+export function getTextAuditResultSummary(output: string): TextAuditResultSummary | null {
+  const clean = stripReviewThinkingBlock(output);
+  const section = clean.match(
+    /【文本审核结果】([\s\S]*?)(?=\n?【(?:修改段落|修改后全文|修改说明)】|$)/,
+  )?.[1];
+  if (!section) return null;
+  const label = section.match(/【结果】\s*([^\n\r]+)/)?.[1]?.trim() ?? '';
+  if (!label) return null;
+  const description = section.match(/【说明】\s*([\s\S]*?)(?=\n?【[^】]+】|$)/)?.[1]?.trim() ?? '';
+  return {
+    status: /不通过|未通过|失败/.test(label) ? 'failed' : 'passed',
+    label,
+    description,
+  };
+}
+
+export function preserveReviewParagraphIndentation(originalParagraphs: string[], revisedParagraphs: string[]) {
+  return revisedParagraphs.map((paragraph, index) => {
+    if (!paragraph.trim()) return '';
+    const originalIndent = originalParagraphs[index]?.match(/^[\t \u3000]*/)?.[0] ?? '';
+    return `${originalIndent}${paragraph.replace(/^[\t \u3000]*/, '')}`;
+  });
+}
+
+export function extractTextAuditParagraphChanges(output: string): TextAuditParagraphChange[] {
+  const clean = stripReviewThinkingBlock(output);
+  const changes: TextAuditParagraphChange[] = [];
+  const pattern =
+    /【修改段落】\s*【段落序号】[^\S\r\n]*第?\s*(\d+)\s*段?[^\S\r\n]*(?:\r?\n)?【修改后段落】[^\S\r\n]*(?:\r?\n)?([\s\S]*?)\r?\n【修改原因】[^\S\r\n]*([\s\S]*?)(?=\r?\n【修改段落】|$)/g;
+  for (const match of clean.matchAll(pattern)) {
+    const paragraphNumber = Number(match[1]);
+    const revisedText = match[2]?.trimEnd() ?? '';
+    const reason = match[3]?.trim() ?? '';
+    if (!Number.isInteger(paragraphNumber) || paragraphNumber < 1 || !revisedText || !reason) continue;
+    changes.push({ paragraphIndex: paragraphNumber - 1, revisedText, reason });
+  }
+  return changes;
+}
+
+export function buildTextAuditRevisedText(output: string, originalText: string) {
+  const changes = extractTextAuditParagraphChanges(output);
+  if (changes.length === 0) return '';
+  const originalParagraphs = splitReviewParagraphs(originalText);
+  const revisedParagraphs = [...originalParagraphs];
+  changes.forEach((change) => {
+    if (change.paragraphIndex < 0 || change.paragraphIndex >= originalParagraphs.length) return;
+    revisedParagraphs[change.paragraphIndex] = preserveReviewParagraphIndentation(
+      [originalParagraphs[change.paragraphIndex]],
+      [change.revisedText],
+    )[0];
+  });
+  return revisedParagraphs.join('\n');
 }
 
 function inferReviewModificationCategory(note: string) {
@@ -57,6 +123,14 @@ function inferReviewModificationCategory(note: string) {
 }
 
 export function extractReviewModificationNotes(output: string): ReviewModificationNote[] {
+  const paragraphChanges = extractTextAuditParagraphChanges(output);
+  if (paragraphChanges.length > 0) {
+    return paragraphChanges.map((change) => ({
+      paragraphIndex: change.paragraphIndex,
+      category: inferReviewModificationCategory(change.reason),
+      note: change.reason,
+    }));
+  }
   const clean = stripReviewThinkingBlock(output);
   const section = clean.match(/【修改说明】\s*([\s\S]*?)(?=\n?【[^】]+】|$)/)?.[1]?.trim() ?? '';
   if (!section) return [];

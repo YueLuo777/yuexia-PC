@@ -25,7 +25,9 @@ describe('genre iteration page integration', () => {
     expect(testCollection).toContainSource("case '/genre-iteration-test':");
     expect(page).toContainSource('GenreIterationWorkbench');
     expect(workbench).toContainSource('CombinedAiConfigSelect');
-    expect(workbench).toContainSource('GENRE_ITERATION_PROMPT_CATEGORY');
+    expect(workbench).not.toContainSource('GENRE_ITERATION_PROMPT_CATEGORY');
+    expect(workbench).toContainSource('const genreIterationPrompts = prompts;');
+    expect(workbench).toContainSource("onPromptManage={() => navigate('/prompts')}");
     expect(workbench).toContainSource("type CenterTab = 'detail' | 'reader'");
     expect(workbench).toContainSource('ChapterNumberButton');
     expect(workbench).toContainSource('CHAPTER_NUMBER_GRID_STYLE');

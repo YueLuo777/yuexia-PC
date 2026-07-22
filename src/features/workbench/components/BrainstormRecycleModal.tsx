@@ -1,5 +1,4 @@
-import { Lock, Pin, X } from 'lucide-react';
-import { createPortal } from 'react-dom';
+import { Lock, Pin } from 'lucide-react';
 
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
@@ -9,6 +8,7 @@ import { BRAINSTORM_QUESTION_FIELDS, type BrainstormQuestionDraft } from './work
 import { getBrainstormEntryBody } from './workbenchLibraryAiText';
 import { BRAINSTORM_TYPE } from './workbenchLibraryTabs';
 import { parseSettingContent } from './workbenchStructuredSettings';
+import { WorkbenchModal } from './WorkbenchModal';
 
 function countTextWords(content: string) {
   return content.replace(/\s/g, '').length;
@@ -48,42 +48,25 @@ export function BrainstormRecycleModal({
 }: BrainstormRecycleModalProps) {
   return (
     <>
-      {isOpen &&
-        createPortal(
-          <div
-            className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/35"
-            onClick={onClose}
+      <WorkbenchModal
+        title="脑洞回收站"
+        subtitle={`${entries.length} 个已删除脑洞，可以恢复或永久删除。`}
+        isOpen={isOpen}
+        onClose={onClose}
+        widthClass="w-[760px]"
+        heightClass="h-[min(720px,86vh)]"
+        storageId="brainstorm_recycle"
+        headerExtra={
+          <button
+            type="button"
+            onClick={onRequestClear}
+            disabled={entries.length === 0}
+            className="rounded-xl border border-red-100 bg-red-50 px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-300"
           >
-            <div
-              className="modal-sharp flex h-[min(720px,86vh)] w-[min(760px,92vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
-                <div className="min-w-0">
-                  <h3 className="text-xl font-bold text-gray-900">脑洞回收站</h3>
-                  <p className="mt-1 text-xs font-medium text-gray-400">
-                    {entries.length} 个已删除脑洞，可以恢复或永久删除。
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={onRequestClear}
-                    disabled={entries.length === 0}
-                    className="rounded-xl border border-red-100 bg-red-50 px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-100 disabled:cursor-not-allowed disabled:border-gray-100 disabled:bg-gray-50 disabled:text-gray-300"
-                  >
-                    清空回收站
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                    title="关闭"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
+            清空回收站
+          </button>
+        }
+      >
               <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto bg-gray-50 p-5">
                 {entries.length === 0 ? (
                   <div className="flex h-full min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-white text-sm font-bold text-gray-400">
@@ -136,10 +119,7 @@ export function BrainstormRecycleModal({
                   </div>
                 )}
               </div>
-            </div>
-          </div>,
-          document.body,
-        )}
+      </WorkbenchModal>
       <ConfirmDialog
         isOpen={isClearConfirmOpen}
         title="清空脑洞回收站"

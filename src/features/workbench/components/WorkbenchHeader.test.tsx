@@ -38,7 +38,7 @@ describe('WorkbenchHeader', () => {
     expect(creationButtons).toEqual(['脑洞', '设定', '章纲', '正文']);
     expect(creationButtons).not.toContainSource('剧情链');
     const reviewButtons = Array.from(capsuleGroups[2].querySelectorAll('button')).map((button) => button.textContent);
-    expect(reviewButtons).toEqual(['剧情审核', '文笔润色', '综合点评', '更新状态', '生成梗概']);
+    expect(reviewButtons).toEqual(['剧情审核', '更新状态', '生成梗概', '文笔润色', '综合点评']);
 
     for (const label of [
       '作品信息',

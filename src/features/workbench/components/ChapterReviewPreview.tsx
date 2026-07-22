@@ -10,6 +10,7 @@ import {
 } from '@/features/workbench/model/chapterAuditResult';
 import type { ReviewAnnotation } from '@/features/workbench/model/chapterReviewText';
 import type { ReviewMode } from '@/features/workbench/model/chapterReviewTaskState';
+import type { AuditTextStageState } from '@/features/workbench/model/chapterAuditWorkflow';
 import type { Chapter } from '@/features/workbench/model/workbenchTypes';
 import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
 import { WordCountText } from '@/shared/ui/WordCountText';
@@ -28,9 +29,10 @@ import {
   getReviewAnnotationNoteSpacingClass,
   getReviewSeverityClass,
   renderAnnotatedReviewParagraph,
-  renderTextAuditOriginalDiff,
 } from './chapterEditorPresentation';
 import { ChapterTextAuditContinuousReview } from './ChapterTextAuditContinuousReview';
+import { ChapterAuditTextStageCard } from './ChapterAuditTextStageCard';
+import { ChapterReviewOriginalBody } from './ChapterReviewOriginalBody';
 
 type ReviewScrollPane = 'outline' | 'original' | 'annotation' | null;
 
@@ -73,6 +75,12 @@ interface ChapterReviewPreviewProps {
   polishPreviewParagraphs: string[];
   auditParagraphCountMatches: boolean;
   auditOutputPassed: boolean;
+  auditTextStage: AuditTextStageState | null;
+  canRunTextAudit: boolean;
+  isReviewAiLoading: boolean;
+  onStartAuditTextReviewNow: () => void;
+  onCancelAuditTextReviewCountdown: () => void;
+  onRunAuditTextReviewManually: () => void;
   expandedAuditStructureItems: Set<string>;
   toggleAuditStructureItem: (item: string) => void;
   reviewAnnotationsByParagraph: Map<number, ReviewAnnotation[]>;
@@ -119,6 +127,12 @@ export function ChapterReviewPreview({
   polishPreviewParagraphs,
   auditParagraphCountMatches,
   auditOutputPassed,
+  auditTextStage,
+  canRunTextAudit,
+  isReviewAiLoading,
+  onStartAuditTextReviewNow,
+  onCancelAuditTextReviewCountdown,
+  onRunAuditTextReviewManually,
   expandedAuditStructureItems,
   toggleAuditStructureItem,
   reviewAnnotationsByParagraph,
@@ -216,7 +230,7 @@ export function ChapterReviewPreview({
             </span>
             <div
               ref={reviewOriginalPreviewPaneRef}
-              className={`scrollbar-scroll-only min-h-0 flex-1 overflow-y-auto bg-white p-5 text-sm leading-7 text-slate-700 ${activeReviewPreviewScrollPane === 'original' ? 'scrollbar-active' : ''}`}
+              className={`scrollbar-scroll-only min-h-0 flex-1 overflow-y-auto bg-white ${activeReviewPreviewScrollPane === 'original' ? 'scrollbar-active' : ''}`}
               onScroll={() => handleReviewPreviewScroll('original')}
               style={{ fontSize: reviewPreviewFontSize }}
             >
@@ -225,32 +239,15 @@ export function ChapterReviewPreview({
                   这里会显示所选章节正文。
                 </div>
               ) : (
-                <div className={REVIEW_PREVIEW_PARAGRAPH_LIST_CLASS}>
-                  {reviewOriginalParagraphs.map((paragraph, index) => {
-                    const selected = activeReviewParagraphIndex === index;
-                    const shouldShowTextAuditDiff = isAuditTextReview && Boolean(auditRevisedText.trim());
-                    return (
-                      <button
-                        ref={(node) => {
-                          reviewOriginalParagraphRefs.current[index] = node;
-                        }}
-                        key={`${index}-${paragraph.slice(0, 18)}`}
-                        type="button"
-                        onClick={() => selectReviewPreviewParagraph(index)}
-                        className={`relative block w-full text-left outline-none ${
-                          REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS
-                        } ${selected ? REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS : REVIEW_PREVIEW_PARAGRAPH_EMPTY_CLASS}`}
-                        style={{ fontSize: reviewPreviewFontSize }}
-                      >
-                        <span className="block whitespace-pre-wrap break-words">
-                          {shouldShowTextAuditDiff
-                            ? renderTextAuditOriginalDiff(paragraph, auditRevisedParagraphs[index])
-                            : paragraph}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <ChapterReviewOriginalBody
+                  paragraphs={reviewOriginalParagraphs}
+                  revisedParagraphs={auditRevisedParagraphs}
+                  activeParagraphIndex={activeReviewParagraphIndex}
+                  fontSize={reviewPreviewFontSize}
+                  showTextAuditDiff={isAuditTextReview && Boolean(auditRevisedText.trim())}
+                  paragraphRefs={reviewOriginalParagraphRefs}
+                  onSelectParagraph={selectReviewPreviewParagraph}
+                />
               )}
             </div>
           </section>
@@ -327,7 +324,9 @@ export function ChapterReviewPreview({
                             : 'border-amber-200 bg-amber-50 text-amber-700'
                         }`}
                       >
-                        <div className="text-sm font-black">{auditOutputPassed ? '通过' : '待确认 / 需处理'}</div>
+                        <div className="text-sm font-black">
+                          {auditOutputPassed ? '剧情审核 通过' : '剧情审核 待确认 / 需处理'}
+                        </div>
                         <div className="mt-1 text-xs font-bold">
                           {auditOutputPassed ? 'AI 剧情审核结论为通过。' : '请查看下方审核元素和 AI 说明。'}
                         </div>
@@ -406,6 +405,15 @@ export function ChapterReviewPreview({
                           );
                         })}
                       </div>
+                      <ChapterAuditTextStageCard
+                        stage={auditTextStage}
+                        canRunTextAudit={canRunTextAudit}
+                        disabled={isReviewAiLoading && auditTextStage?.status !== 'countdown'}
+                        reviewAiOutput={reviewAiOutput}
+                        onStartNow={onStartAuditTextReviewNow}
+                        onCancel={onCancelAuditTextReviewCountdown}
+                        onRunManually={onRunAuditTextReviewManually}
+                      />
                     </div>
                   ) : reviewOriginalParagraphs.length === 0 || !activeReviewContent.trim() ? (
                     <div className="flex h-full items-center justify-center text-sm font-bold text-slate-300">

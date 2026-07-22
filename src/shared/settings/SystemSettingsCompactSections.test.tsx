@@ -10,11 +10,13 @@ describe('WindowSettingsCompactSection', () => {
       <WindowSettingsCompactSection
         settings={{
           rememberSize: false,
+          startMaximized: false,
           startupBounds: { width: 1600, height: 900 },
           defaultBounds: { width: 1600, height: 900 },
           currentBounds: { x: 100, y: 80, width: 1602, height: 902 },
         }}
         onToggleRemember={vi.fn()}
+        onToggleStartMaximized={vi.fn()}
         onApplyStartupBounds={onApplyStartupBounds}
       />,
     );
@@ -41,11 +43,13 @@ describe('WindowSettingsCompactSection', () => {
       <WindowSettingsCompactSection
         settings={{
           rememberSize: true,
+          startMaximized: false,
           startupBounds: { width: 1600, height: 900 },
           defaultBounds: { width: 1600, height: 900 },
           currentBounds: { x: 100, y: 80, width: 1800, height: 1000 },
         }}
         onToggleRemember={vi.fn()}
+        onToggleStartMaximized={vi.fn()}
         onApplyStartupBounds={vi.fn()}
       />,
     );
@@ -53,5 +57,26 @@ describe('WindowSettingsCompactSection', () => {
     expect(screen.getByRole('checkbox', { name: '窗口大小记忆' })).toBeChecked();
     expect(screen.getByRole('group')).toBeDisabled();
     expect(screen.getByText('已由窗口大小记忆接管，此区域暂时失效。')).toBeInTheDocument();
+  });
+
+  it('disables fixed startup controls while start-maximized is enabled', () => {
+    render(
+      <WindowSettingsCompactSection
+        settings={{
+          rememberSize: false,
+          startMaximized: true,
+          startupBounds: { width: 1600, height: 900 },
+          defaultBounds: { width: 1600, height: 900 },
+          currentBounds: { x: 100, y: 80, width: 1800, height: 1000 },
+        }}
+        onToggleRemember={vi.fn()}
+        onToggleStartMaximized={vi.fn()}
+        onApplyStartupBounds={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('checkbox', { name: '启动时最大化' })).toBeChecked();
+    expect(screen.getByRole('group')).toBeDisabled();
+    expect(screen.getByText('启动时最大化已开启，此区域暂时失效。')).toBeInTheDocument();
   });
 });

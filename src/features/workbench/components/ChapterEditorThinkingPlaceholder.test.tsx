@@ -63,13 +63,10 @@ describe('ChapterEditor review thinking placeholder', () => {
   it('uses the marker-backed placeholder for both text and structure audit requests', () => {
     const source = readChapterEditorSource();
 
-    expect(source).toContainSource(
-      'return { promptText, userText, chapterContext, requestLog, isStructureAudit, isTextAudit };',
-    );
-    expect(source).toContainSource(
-      "const pendingOutput = isStructureAudit || isTextAudit ? createAiThinkingPlaceholder(0) : '正在思考...';",
-    );
+    expect(source).toContainSource('textAuditPrompt,');
+    expect(source).toContainSource('textAuditContext,');
+    expect(source).toContainSource('const pendingOutput = createAiThinkingPlaceholder(0);');
     expect(source).toContainSource('initialOutput: pendingOutput');
-    expect(source).toContainSource('output: pendingOutput');
+    expect(source).toContainSource('beginTaskState(requestMode, task.id, pendingOutput, payload.requestLog);');
   });
 });

@@ -1,5 +1,4 @@
-import { X } from 'lucide-react';
-import { createPortal } from 'react-dom';
+import { WorkbenchModal } from './WorkbenchModal';
 
 type RoleCreateDialogProps = {
   draft: string;
@@ -9,24 +8,17 @@ type RoleCreateDialogProps = {
 };
 
 export function RoleCreateDialog({ draft, onDraftChange, onClose, onConfirm }: RoleCreateDialogProps) {
-  return createPortal(
-    <div className="modal-sharp fixed inset-0 z-[280] flex items-center justify-center bg-black/35" onClick={onClose}>
-      <section
-        className="modal-sharp w-[min(420px,92vw)] rounded-xl border border-slate-200 bg-white p-5 shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4">
-          <h3 className="text-xl font-black text-slate-950">新建角色</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100"
-            aria-label="关闭"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
+  return (
+    <WorkbenchModal
+      title="新建角色"
+      isOpen
+      onClose={onClose}
+      widthClass="w-[420px]"
+      heightClass="h-auto"
+      storageId="role_create"
+      zIndexClass="z-[280]"
+      contentClassName="p-5"
+    >
         <label htmlFor="workbench-role-create-name" className="mt-7 block text-sm font-bold text-slate-700">
           角色名字
         </label>
@@ -60,8 +52,6 @@ export function RoleCreateDialog({ draft, onDraftChange, onClose, onConfirm }: R
             确认创建
           </button>
         </div>
-      </section>
-    </div>,
-    document.body,
+    </WorkbenchModal>
   );
 }

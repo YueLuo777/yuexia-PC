@@ -5,6 +5,7 @@ import { WordCountText } from '@/shared/ui/WordCountText';
 import type { WorkbenchFieldSizeSpec } from './workbenchFieldSizeSettings';
 import { DEFAULT_SETTING_ENTRY_TYPE } from './workbenchLibraryTabs';
 import { WorkbenchNameField } from './WorkbenchNameField';
+import { WorkbenchSettingGroupSelect } from './WorkbenchSettingGroupSelect';
 import { SettingSegmentedTabs } from './workbenchSettingSegmentedTabs';
 import {
   STRUCTURED_SETTING_TABS,
@@ -28,11 +29,13 @@ type WorkbenchSettingEditorProps = {
   activeSettingWorkspaceType: string | null;
   settingPreviewFontSize: number;
   settingNameFieldSpec: WorkbenchFieldSizeSpec;
+  settingGroupOptions: string[];
   setActiveLibraryFontTarget: (target: 'settingPreview') => void;
   updateEntry: (id: string, updates: SettingEntryUpdates) => void;
   updateStructuredSettingField: (key: string, value: string) => void;
   handleSettingSidebarScroll: (key: string) => void;
   createEditableSettingEntry: (updates: SettingEntryUpdates) => void;
+  onSettingGroupChange: (type: string) => void;
 };
 
 export function WorkbenchSettingEditor({
@@ -46,11 +49,13 @@ export function WorkbenchSettingEditor({
   activeSettingSidebarScrollKey,
   activeSettingWorkspaceType,
   settingPreviewFontSize,
+  settingGroupOptions,
   setActiveLibraryFontTarget,
   updateEntry,
   updateStructuredSettingField,
   handleSettingSidebarScroll,
   createEditableSettingEntry,
+  onSettingGroupChange,
 }: WorkbenchSettingEditorProps) {
   const currentStructuredTitleFieldLabel = currentStructuredSettingFieldSet
     ? (currentStructuredSettingFieldSet.titleFieldLabel ?? '\u8bbe\u5b9a\u540d')
@@ -69,15 +74,26 @@ export function WorkbenchSettingEditor({
   if (!currentSelectedEntry) {
     return (
       <div className="xy-setting-name-editor flex min-h-0 flex-1 flex-col px-5 py-3">
-        <div className="mb-6 flex shrink-0 items-start justify-between gap-4">
+        <div className="mb-6 flex shrink-0 items-start justify-start gap-4">
           <WorkbenchNameField
             label="设定名"
             value=""
             placeholder="输入设定名"
             onValueChange={(title) => {
                 if (!title.trim()) return;
-                createEditableSettingEntry({ title });
+                createEditableSettingEntry({
+                  title,
+                  content: stringifySettingContent({
+                    type: activeSettingWorkspaceType ?? DEFAULT_SETTING_ENTRY_TYPE,
+                    body: '',
+                  }),
+                });
             }}
+          />
+          <WorkbenchSettingGroupSelect
+            value={activeSettingWorkspaceType ?? settingGroupOptions[0] ?? DEFAULT_SETTING_ENTRY_TYPE}
+            options={settingGroupOptions}
+            onChange={onSettingGroupChange}
           />
         </div>
         <div className="relative min-h-0 flex-1">
@@ -126,6 +142,12 @@ export function WorkbenchSettingEditor({
               placeholder={currentStructuredTitleFieldLabel}
               title={currentSelectedSettingIsLockedDefault ? '默认设定条目已锁定，不能改名' : undefined}
             />
+            <WorkbenchSettingGroupSelect
+              value={currentSelectedSetting?.type ?? activeSettingWorkspaceType ?? settingGroupOptions[0] ?? ''}
+              options={settingGroupOptions}
+              disabled={currentSelectedSettingIsLockedDefault}
+              onChange={onSettingGroupChange}
+            />
             {currentStructuredSettingFieldSet?.headerFieldKeys?.map((fieldKey) => {
               const field = currentStructuredSettingFieldSet.fields.find((item) => item.key === fieldKey);
               if (!field) return null;
@@ -170,7 +192,7 @@ export function WorkbenchSettingEditor({
           ) : null}
         </header>
       ) : (
-        <div className="mb-6 flex shrink-0 items-start justify-between gap-4">
+        <div className="mb-6 flex shrink-0 items-start justify-start gap-4">
           <WorkbenchNameField
             label="设定名"
             value={currentSelectedEntry.title}
@@ -178,6 +200,12 @@ export function WorkbenchSettingEditor({
             onValueChange={(title) => updateEntry(currentSelectedEntry.id, { title })}
             placeholder="设定名"
             title={currentSelectedSettingIsLockedDefault ? '默认设定条目已锁定，不能改名' : undefined}
+          />
+          <WorkbenchSettingGroupSelect
+            value={currentSelectedSetting?.type ?? activeSettingWorkspaceType ?? settingGroupOptions[0] ?? ''}
+            options={settingGroupOptions}
+            disabled={currentSelectedSettingIsLockedDefault}
+            onChange={onSettingGroupChange}
           />
         </div>
       )}

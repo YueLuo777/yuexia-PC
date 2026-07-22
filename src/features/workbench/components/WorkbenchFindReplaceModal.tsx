@@ -1,11 +1,8 @@
-import { useEffect, useState, type CSSProperties } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useState } from 'react';
 
 import { readChapterContent } from '@/features/workbench/hooks/useWorkbenchData';
 import type { Volume } from '@/features/workbench/model/workbenchTypes';
-import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
-import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
-import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
+import { WorkbenchModal } from './WorkbenchModal';
 
 type FindScope = 'chapter' | 'book';
 
@@ -50,8 +47,6 @@ export function WorkbenchFindReplaceModal({
   onSelectChapter,
   onUpdateChapterContents,
 }: WorkbenchFindReplaceModalProps) {
-  const draggable = useDraggableModal(FIND_REPLACE_MODAL_STORAGE_ID, FIND_REPLACE_DEFAULT_GEOMETRY);
-  useTopModalEscape(true, onClose);
   const [scope, setScope] = useState<FindScope>('chapter');
   const [searchText, setSearchText] = useState('');
   const [replaceText, setReplaceText] = useState('');
@@ -123,35 +118,17 @@ export function WorkbenchFindReplaceModal({
     setStatus(targetScope === 'chapter' ? `本章已替换 ${count} 处` : `全书已替换 ${count} 处`);
   };
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[230] flex items-center justify-center bg-black/30 px-6 py-6"
-      style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+  return (
+    <WorkbenchModal
+      title="查找替换"
+      isOpen
+      onClose={onClose}
+      widthClass="w-[592px]"
+      heightClass="h-auto"
+      storageId={FIND_REPLACE_MODAL_STORAGE_ID}
+      defaultGeometry={FIND_REPLACE_DEFAULT_GEOMETRY}
+      zIndexClass="z-[230]"
     >
-      <section
-        data-draggable-managed="true"
-        className="relative w-[592px] max-w-[94vw] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]"
-        style={{ ...draggable.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <header
-          {...draggable.dragHandleProps}
-          className="flex h-11 cursor-move items-center justify-between border-b border-gray-100 px-4"
-          style={{ ...draggable.dragHandleProps.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
-        >
-          <h2 className="text-base font-bold text-gray-900">查找替换</h2>
-          <button
-            data-no-modal-drag="true"
-            onClick={onClose}
-            className="rounded-lg px-2.5 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-          >
-            关闭
-          </button>
-        </header>
-
         <div className="space-y-3 p-4">
           <div className="grid grid-cols-[48px_minmax(0,1fr)] items-center gap-3">
             <label className="text-sm font-medium text-gray-700">查找</label>
@@ -226,9 +203,6 @@ export function WorkbenchFindReplaceModal({
             {status || (scope === 'book' && total > 0 ? matches[safeActiveIndex]?.label : '')}
           </div>
         </div>
-        <ModalResizeHandles draggable={draggable} />
-      </section>
-    </div>,
-    document.body,
+    </WorkbenchModal>
   );
 }

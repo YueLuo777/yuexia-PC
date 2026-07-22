@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 export function readErrorLogDefaultEntriesSource() {
-  return Array.from({ length: 37 }, (_, index) =>
+  return Array.from({ length: 39 }, (_, index) =>
     readFileSync(
       resolve(
         process.cwd(),

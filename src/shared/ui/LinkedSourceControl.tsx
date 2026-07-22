@@ -5,6 +5,7 @@ type LinkedSourceControlProps = {
   linked: boolean;
   label: string;
   linkedLabel?: string;
+  prefixLabel?: string;
   onOpen: () => void;
   onClear?: () => void;
   clearOnLinkedClick?: boolean;
@@ -16,12 +17,14 @@ type LinkedSourceControlProps = {
   linkedButtonClassName?: string;
   clearButtonClassName?: string;
   metaClassName?: string;
+  prefixClassName?: string;
 };
 
 export function LinkedSourceControl({
   linked,
   label,
   linkedLabel = '已关联',
+  prefixLabel,
   onOpen,
   onClear,
   clearOnLinkedClick = false,
@@ -33,12 +36,36 @@ export function LinkedSourceControl({
   linkedButtonClassName = 'min-w-0 flex-1 whitespace-nowrap px-3 text-sm font-bold text-gray-700 hover:bg-gray-100',
   clearButtonClassName = 'flex h-full w-10 shrink-0 items-center justify-center border-l border-red-300 bg-red-500 text-white transition-colors hover:bg-red-600',
   metaClassName = 'text-xs font-black leading-5 text-[#08AACE]',
+  prefixClassName = 'grid w-14 shrink-0 place-items-center border-r border-[#08AACE]/30 bg-[#E9FAFE] text-sm font-black text-[#078BA9]',
 }: LinkedSourceControlProps) {
   const handleLinkedClick = clearOnLinkedClick && onClear ? onClear : onOpen;
 
   return (
     <div className={className}>
-      {linked ? (
+      {prefixLabel ? (
+        <div className={groupClassName}>
+          <span className={prefixClassName}>{prefixLabel}</span>
+          <button
+            type="button"
+            onClick={linked ? handleLinkedClick : onOpen}
+            className={linked ? linkedButtonClassName : buttonClassName}
+            title={title}
+          >
+            {linked ? linkedLabel : label}
+          </button>
+          {linked && onClear && !clearOnLinkedClick && (
+            <button
+              type="button"
+              onClick={onClear}
+              className={clearButtonClassName}
+              title="取消关联"
+              aria-label="取消关联"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      ) : linked ? (
         <div className={groupClassName}>
           <button type="button" onClick={handleLinkedClick} className={linkedButtonClassName} title={title}>
             {linkedLabel}

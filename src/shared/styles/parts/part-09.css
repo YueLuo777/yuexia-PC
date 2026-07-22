@@ -11,7 +11,7 @@
   display: block;
   width: 100%;
   box-sizing: border-box;
-  border: 1.5px solid #9e9e9e;
+  border: 1.5px solid #111827;
   border-radius: 1rem;
   background: #ffffff;
   padding: 1rem;
@@ -160,7 +160,7 @@
   border: 0;
   border-radius: 21px;
   background: transparent;
-  padding: 0 1rem 0 1.75rem;
+  padding: 0 1rem 0 1.5rem;
   color: #020617;
   font-family: inherit;
   font-size: 1rem;
@@ -304,6 +304,7 @@
   top: 0;
   left: 22px;
   transform: translateY(-50%) scale(1);
+  transition: none;
   background-color: #ffffff;
   padding: 0 0.35rem;
   color: #111827;
@@ -363,7 +364,7 @@
 }
 
 .xy-floating-field.xy-floating-outline-preview textarea {
-  border-color: #d9e2ea;
+  border-color: #111827;
   border-radius: 20px;
   background-color: #ffffff;
 }
@@ -374,7 +375,7 @@
 }
 
 .xy-floating-field.xy-floating-outline-preview .xy-floating-rich-preview {
-  border: 2px solid #d9e2ea;
+  border: 2px solid #111827;
   border-radius: 20px;
   background-color: #ffffff;
   padding: 1.35rem 1.25rem 3rem;

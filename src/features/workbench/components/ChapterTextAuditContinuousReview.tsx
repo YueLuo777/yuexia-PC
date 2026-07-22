@@ -5,8 +5,10 @@ import {
   extractReviewModificationNotes,
   type ReviewTextDiffSegment,
 } from '@/features/workbench/model/chapterReviewText';
+import { usePersistentState } from '@/shared/hooks/usePersistentState';
 
-type ContextRange = 1 | 2 | 'all';
+type ContextRange = 1 | 2 | 'all' | 'changes';
+const TEXT_AUDIT_CONTEXT_RANGE_KEY = 'xinyuexia_text_audit_context_range_v1';
 type ReviewDecision = 'pending' | 'accepted' | 'rejected' | 'edited';
 
 interface ReviewParagraphItem {
@@ -69,10 +71,16 @@ function DiffText({ segments, original }: { segments: ReviewTextDiffSegment[]; o
 
 function ParagraphMeta({ index, category }: { index: number; category: string }) {
   return (
-    <span className="float-left mr-3 inline-flex w-[76px] flex-col items-center text-center text-xs font-black leading-none">
-      <span className="inline-flex h-7 items-center justify-center text-slate-500">第 {index + 1} 段</span>
-      <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-slate-500">{category}</span>
-    </span>
+    <div
+      data-review-column="paragraph"
+      data-paragraph-meta={index + 1}
+      className="flex h-full min-h-14 flex-col items-center justify-center border-x border-slate-100 bg-slate-50/70 text-center text-xs font-black leading-none"
+    >
+      <span className="inline-flex h-7 items-center justify-center text-sm text-slate-500">第{index + 1}段</span>
+      <span className="inline-flex rounded-full border border-[#8FE4F2] bg-[#DDF8FC] px-1.5 py-1 text-[11px] text-[#057C99]">
+        {category}
+      </span>
+    </div>
   );
 }
 
@@ -104,14 +112,13 @@ export function ChapterTextAuditContinuousReview({
   }, [originalParagraphs, revisedParagraphs, reviewAiOutput]);
   const changedIndexes = useMemo(() => items.filter((item) => item.changed).map((item) => item.index), [items]);
   const [activeChangePosition, setActiveChangePosition] = useState(0);
-  const [contextRange, setContextRange] = useState<ContextRange>(1);
+  const [contextRange, setContextRange] = usePersistentState<ContextRange>(TEXT_AUDIT_CONTEXT_RANGE_KEY, 'all');
   const [decisions, setDecisions] = useState<Record<number, ReviewDecision>>({});
   const [editedTexts, setEditedTexts] = useState<Record<number, string>>({});
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setActiveChangePosition(Math.floor(changedIndexes.length / 2));
-    setContextRange(1);
     setDecisions({});
     setEditedTexts({});
     setEditingIndex(null);
@@ -119,7 +126,9 @@ export function ChapterTextAuditContinuousReview({
 
   const activeParagraphIndex = changedIndexes[activeChangePosition] ?? 0;
   const visibleItems = items.filter(
-    (item) => contextRange === 'all' || Math.abs(item.index - activeParagraphIndex) <= contextRange,
+    (item) =>
+      contextRange === 'all' ||
+      (contextRange === 'changes' ? item.changed : Math.abs(item.index - activeParagraphIndex) <= contextRange),
   );
   const displayGroups = groupReviewParagraphs(visibleItems);
   const acceptedCount = changedIndexes.filter((index) =>
@@ -166,8 +175,34 @@ export function ChapterTextAuditContinuousReview({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-white" data-testid="formal-text-audit-continuous-review">
+      <div className="shrink-0 bg-slate-50 px-3 py-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)] overflow-hidden rounded-lg border border-slate-200 bg-white text-xs font-black shadow-sm">
+          <div className="px-4 py-2 text-slate-500">原文</div>
+          <div className="border-x border-slate-100 px-2 py-2 text-center text-slate-400">段落</div>
+          <div className="px-4 py-2 text-[#078fb0]">审核后</div>
+        </div>
+      </div>
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-2">
-        <div className="flex items-center gap-2">
+        <div className="flex h-7 items-center rounded-md border border-slate-200 bg-white p-0.5">
+          {(
+            [
+              ['all', '完整章节'],
+              ['changes', '只显示修改'],
+              [1, '前后1段'],
+              [2, '前后2段'],
+            ] as const
+          ).map(([range, label]) => (
+            <button
+              key={String(range)}
+              type="button"
+              onClick={() => setContextRange(range)}
+              className={`h-6 rounded px-2.5 text-[11px] font-black ${contextRange === range ? 'bg-[#EAF9FD] text-[#078fb0]' : 'text-slate-500'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {contextRange !== 'changes' ? <div className="flex items-center gap-2">
           <button
             type="button"
             disabled={activeChangePosition === 0}
@@ -187,31 +222,7 @@ export function ChapterTextAuditContinuousReview({
           >
             下一处
           </button>
-        </div>
-        <div className="flex h-7 items-center rounded-md border border-slate-200 bg-white p-0.5">
-          {(
-            [
-              [1, '前后1段'],
-              [2, '前后2段'],
-              ['all', '完整章节'],
-            ] as const
-          ).map(([range, label]) => (
-            <button
-              key={String(range)}
-              type="button"
-              onClick={() => setContextRange(range)}
-              className={`h-6 rounded px-2.5 text-[11px] font-black ${contextRange === range ? 'bg-[#EAF9FD] text-[#078fb0]' : 'text-slate-500'}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="shrink-0 bg-slate-50 px-3 py-2">
-        <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-slate-200 bg-white text-xs font-black shadow-sm">
-          <div className="border-r border-slate-100 px-4 py-2 text-slate-500">原文</div>
-          <div className="px-4 py-2 text-[#078fb0]">审核后</div>
-        </div>
+        </div> : null}
       </div>
       <div className="scrollbar-scroll-only min-h-0 flex-1 overflow-y-auto bg-slate-50/40">
         {displayGroups.map((group) => {
@@ -219,9 +230,9 @@ export function ChapterTextAuditContinuousReview({
             return (
               <div
                 key={`unchanged-${group.items[0].index}-${group.items[group.items.length - 1].index}`}
-                className="grid grid-cols-2 border-b border-slate-100 bg-white"
+                className="grid grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)] border-b border-slate-100 bg-white"
               >
-                <div className="space-y-3 border-r border-slate-100 px-4 py-3 text-slate-600">
+                <div data-review-column="original" className="space-y-3 px-4 py-3 text-slate-600">
                   {group.items.map((item) => (
                     <p
                       key={item.index}
@@ -232,7 +243,14 @@ export function ChapterTextAuditContinuousReview({
                     </p>
                   ))}
                 </div>
-                <div className="space-y-3 px-4 py-3 text-slate-600">
+                <div data-review-column="paragraph" className="space-y-3 border-x border-slate-100 bg-slate-50/70 px-2 py-3 text-slate-400">
+                  {group.items.map((item) => (
+                    <p key={item.index} className="text-center text-sm font-black leading-7 text-slate-500">
+                      第{item.index + 1}段
+                    </p>
+                  ))}
+                </div>
+                <div data-review-column="revised" className="space-y-3 px-4 py-3 text-slate-600">
                   {group.items.map((item) => (
                     <p
                       key={item.index}
@@ -264,12 +282,12 @@ export function ChapterTextAuditContinuousReview({
                 data-resolution-state={decision}
                 className="mx-3 my-3 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
               >
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-2 text-slate-700">
-                  <p className="min-w-0 whitespace-pre-wrap break-words font-bold leading-7" style={{ fontSize }}>
-                    <ParagraphMeta index={item.index} category={item.category} />
+                <div className="grid grid-cols-[minmax(0,1fr)_72px_auto] items-stretch text-slate-700">
+                  <p className="min-w-0 whitespace-pre-wrap break-words px-4 py-2 font-bold leading-7" style={{ fontSize }}>
                     {resolvedText}
                   </p>
-                  <div className="flex items-center gap-2">
+                  <ParagraphMeta index={item.index} category={item.category} />
+                  <div className="flex items-center gap-2 px-4 py-2">
                     <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-black text-slate-500">
                       {resolvedLabel}
                     </span>
@@ -290,17 +308,19 @@ export function ChapterTextAuditContinuousReview({
           return (
             <div
               key={item.index}
-              className={`mx-3 my-3 overflow-hidden rounded-xl border bg-white shadow-sm ${item.index === activeParagraphIndex ? 'border-cyan-300' : 'border-slate-200'}`}
-              onClick={() => setActiveChangePosition(changedIndexes.indexOf(item.index))}
+              className={`mx-3 my-3 overflow-hidden rounded-xl border bg-white shadow-sm ${contextRange !== 'changes' && item.index === activeParagraphIndex ? 'border-cyan-300' : 'border-slate-200'}`}
+              onClick={() => {
+                if (contextRange !== 'changes') setActiveChangePosition(changedIndexes.indexOf(item.index));
+              }}
             >
-              <div className="grid grid-cols-2 bg-white">
-                <div className="border-r border-slate-100 px-4 py-2 text-slate-700">
+              <div className="grid grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)] bg-white">
+                <div data-review-column="original" className="px-4 py-2 text-slate-700">
                   <p className="whitespace-pre-wrap break-words font-bold leading-7" style={{ fontSize }}>
-                    <ParagraphMeta index={item.index} category={item.category} />
                     <DiffText segments={item.originalDiff} original />
                   </p>
                 </div>
-                <div className="px-4 py-2 text-slate-700">
+                <ParagraphMeta index={item.index} category={item.category} />
+                <div data-review-column="revised" className="px-4 py-2 text-slate-700">
                   {editing ? (
                     <textarea
                       autoFocus

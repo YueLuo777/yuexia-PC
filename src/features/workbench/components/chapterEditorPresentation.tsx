@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 
 import {
   AUDIT_PROMPT_CATEGORY,
-  AUDIT_PROMPT_SUBCATEGORIES,
   DEFAULT_AUDIT_PROMPT_SUBCATEGORY,
   normalizePromptSubcategory,
 } from '@/features/prompts/hooks/usePrompts';
 import { buildReviewTextDiff, stripReviewThinkingBlock } from '@/features/workbench/model/chapterReviewText';
+import { stripAuditTextStageMarkers } from '@/features/workbench/model/chapterAuditWorkflow';
 import type { ReviewAnnotation } from '@/features/workbench/model/chapterReviewText';
 import { REVIEW_MODE_TITLES } from '@/features/workbench/model/chapterReviewTaskState';
 import type { ReviewMode } from '@/features/workbench/model/chapterReviewTaskState';
@@ -91,7 +91,7 @@ function AiThinkingContent({
   );
 }
 
-export function renderAiThinkingContent(content: string) {
+function renderAiThinkingSection(content: string) {
   const thinkingMatch = content.match(
     /^\[\[THINKING seconds=(\d+) status=(thinking|done)\]\]\n([\s\S]*?)\n\[\[\/THINKING\]\]\n?\n?([\s\S]*)$/,
   );
@@ -101,6 +101,13 @@ export function renderAiThinkingContent(content: string) {
   const reasoning = thinkingMatch[3]?.trim() ?? '';
   const answer = thinkingMatch[4]?.trimStart() ?? '';
   return <AiThinkingContent answer={answer} done={done} reasoning={reasoning} seconds={seconds} />;
+}
+
+export function renderAiThinkingContent(content: string) {
+  const visibleContent = stripAuditTextStageMarkers(content);
+  const sections = visibleContent.split(/\n{2,}(?=\[\[THINKING seconds=)/).filter((section) => section.trim());
+  if (sections.length <= 1) return renderAiThinkingSection(visibleContent);
+  return <div className="space-y-4">{sections.map((section, index) => <div key={index}>{renderAiThinkingSection(section)}</div>)}</div>;
 }
 
 export function isReviewDetailOutlineEntry(entry: WorkbenchLibraryEntry) {
@@ -149,13 +156,12 @@ export function isStructureAuditPrompt(prompt?: { category: string; subCategory?
 }
 
 export function buildAuditPromptSelectOptions(
-  prompts: Array<{ id: string; name: string; category: string; subCategory?: string }>,
+  prompts: Array<{ id: string; name: string }>,
 ) {
-  return AUDIT_PROMPT_SUBCATEGORIES.flatMap((subCategory) => {
-    const items = prompts.filter((prompt) => getAuditPromptSubcategory(prompt) === subCategory);
-    const metaLabel = subCategory === '文本审核' ? '文本' : '剧情';
-    return items.map((prompt) => ({ value: prompt.id, label: prompt.name, metaLabel }));
-  });
+  return prompts.map((prompt) => ({
+    value: prompt.id,
+    label: prompt.name,
+  }));
 }
 
 export function getReviewSeverityClass(severity: string) {

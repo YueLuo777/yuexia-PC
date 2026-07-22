@@ -1,13 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import {
-  canCreateWorkbenchRoleInType,
-  isMaleProtagonistRoleType,
-  normalizeWorkbenchRoleType,
-} from '@/features/workbench/model/workbenchRoleTypes';
+import { isMaleProtagonistRoleType } from '@/features/workbench/model/workbenchRoleTypes';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
-import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
-
 import {
   buildRoleStateSettingsText,
   getRoleBaseSetting,
@@ -15,7 +9,6 @@ import {
   getRoleStateUpdateChapters,
   getRoleStateUpdateLabel,
   parseRoleBaseSettingFields,
-  parseRoleContent,
   stringifyRoleBaseSettingFields,
   type RoleContent,
 } from './workbenchRoleContent';
@@ -26,6 +19,9 @@ import {
   type RoleStateFieldKey,
 } from './workbenchRoleSettingFields';
 import { WorkbenchNameField } from './WorkbenchNameField';
+import { WorkbenchHeaderSelect } from './WorkbenchHeaderSelect';
+import { WorkbenchSurvivalStatusToggle } from './WorkbenchSurvivalStatusToggle';
+import { getRoleIdentityTypeOptions } from './workbenchRoleIdentityOptions';
 import { SettingSegmentedTabs } from './workbenchSettingSegmentedTabs';
 
 function countTextWords(content: string) {
@@ -47,7 +43,6 @@ type RoleBaseStateEditorProps = {
 export function RoleBaseStateEditor({
   entry,
   role,
-  roleEntries,
   roleTypeOptions,
   roleTextFontSize,
   currentChapterNumber,
@@ -64,6 +59,7 @@ export function RoleBaseStateEditor({
   const relationshipUpdateLabel = getRoleStateUpdateLabel(stateUpdateChapters.relationshipState);
   const stateWords = countTextWords(buildRoleStateSettingsText(stateSettings)) + relationshipWords;
   const roleIsMaleProtagonist = isMaleProtagonistRoleType(role.type);
+  const roleIdentityTypeOptions = getRoleIdentityTypeOptions(roleTypeOptions);
   const showRoleIdentityControls = !roleIsMaleProtagonist;
   const currentChapterLabel = currentChapterNumber ? `当前编辑：第${currentChapterNumber}章` : '当前编辑：未选择章节';
   const roleSettingTabs = ['基础设定', '状态设定', '未确认'] as const;
@@ -157,47 +153,21 @@ export function RoleBaseStateEditor({
                   placeholder="填写人物姓名"
                 />
                 {showRoleIdentityControls ? (
-                  <CapsuleSelect
-                    floatingLabel="身份定位"
-                    className="xy-role-identity-select w-[168px] shrink-0"
+                  <WorkbenchHeaderSelect
+                    label="身份定位"
+                    width={180}
                     value={role.type}
                     onChange={(value) => onRoleChange({ type: value })}
-                    options={roleTypeOptions.map((type) => ({
-                      value: type,
-                      label: type,
-                      disabled:
-                        role.type !== '男主角' &&
-                        normalizeWorkbenchRoleType(type) === '男主角' &&
-                        !canCreateWorkbenchRoleInType(
-                          roleEntries
-                            .filter((item) => item.id !== entry.id)
-                            .map((item) => parseRoleContent(item.content).type),
-                          type,
-                        ),
-                    }))}
-                    buttonClassName="h-[42px] px-3 text-sm"
+                    options={roleIdentityTypeOptions}
                   />
                 ) : (
-                  <div aria-hidden="true" className="h-[42px] min-w-[168px] shrink-0" />
+                  <div aria-hidden="true" className="h-[48px] min-w-[180px] shrink-0" />
                 )}
                 {showRoleIdentityControls ? (
-                  <div className="xy-role-life-toggle inline-flex h-[42px] w-[112px] shrink-0 items-center rounded-[21px] bg-slate-100 p-1">
-                    {(['存活', '死亡'] as const).map((status) => {
-                      const active = roleLifeStatus === status;
-                      return (
-                        <button
-                          key={status}
-                          type="button"
-                          onClick={() => onRoleChange({ lifeStatus: status })}
-                          className={`flex-1 rounded-2xl text-xs font-black transition-colors ${
-                            active ? 'bg-white text-[#08AACE] shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                          }`}
-                        >
-                          {status}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <WorkbenchSurvivalStatusToggle
+                    value={roleLifeStatus ?? '存活'}
+                    onChange={(lifeStatus) => onRoleChange({ lifeStatus })}
+                  />
                 ) : null}
               </div>
             </div>

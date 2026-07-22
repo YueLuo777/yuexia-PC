@@ -391,15 +391,6 @@
   background: transparent !important;
 }
 
-.xy-floating-field.xy-floating-outline-preview:focus-within textarea,
-.xy-floating-field.xy-floating-outline-preview.xy-outline-selected textarea {
-  border-color: #08aace;
-}
-
-.xy-floating-field.xy-floating-outline-preview.xy-outline-selected textarea {
-  box-shadow: 0 8px 18px rgba(8, 170, 206, 0.08);
-}
-
 .xy-floating-field .xy-floating-count {
   position: absolute;
   right: 1.55rem;

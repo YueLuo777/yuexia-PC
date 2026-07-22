@@ -1,5 +1,4 @@
-import { Lock, Pin, X } from 'lucide-react';
-import { createPortal } from 'react-dom';
+import { Lock, Pin } from 'lucide-react';
 
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
@@ -9,6 +8,7 @@ import { BRAINSTORM_QUESTION_FIELDS, type BrainstormQuestionDraft } from './work
 import { getBrainstormEntryBody } from './workbenchLibraryAiText';
 import { BRAINSTORM_TYPE } from './workbenchLibraryTabs';
 import { parseSettingContent } from './workbenchStructuredSettings';
+import { WorkbenchModal } from './WorkbenchModal';
 
 function countTextWords(content: string) {
   return content.replace(/\s/g, '').length;
@@ -44,25 +44,16 @@ export function BrainstormPromptManagerModal({
 }: BrainstormPromptManagerModalProps) {
   if (!isOpen) return null;
 
-  return createPortal(
-    <div className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/35" onClick={onClose}>
-      <div
-        className="modal-sharp flex h-[70vh] w-[min(880px,92vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">提示词管理</h3>
-            <p className="mt-1 text-xs text-gray-400">仅显示“脑洞”分类下的提示词。</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-            title="关闭"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+  return (
+    <WorkbenchModal
+      title="提示词管理"
+      subtitle="仅显示“脑洞”分类下的提示词。"
+      isOpen={isOpen}
+      onClose={onClose}
+      widthClass="w-[880px]"
+      heightClass="h-[70vh]"
+      storageId="brainstorm_prompt_manager"
+    >
         <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto bg-gray-50 p-5">
           <div className="flex flex-wrap gap-4">
             {prompts.length === 0 && (
@@ -134,9 +125,7 @@ export function BrainstormPromptManagerModal({
             </button>
           </div>
         </div>
-      </div>
-    </div>,
-    document.body,
+    </WorkbenchModal>
   );
 }
 

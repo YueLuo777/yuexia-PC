@@ -70,6 +70,16 @@ export function formatSettingLinkedContextForAi(context: {
   return wrapAiRequestTag(tagName, text, { 标题: title });
 }
 
+export function formatCurrentSettingLinkedText(title: string, body: string) {
+  const safeTitle = title.trim() || '当前设定';
+  return [`设定名：${safeTitle}`, body.trim()].filter(Boolean).join('\n');
+}
+
+export function buildCurrentSettingLinkSnapshot(entry: { title: string } | null, body: string) {
+  const title = entry?.title.trim() || '当前设定';
+  return { title, text: entry ? formatCurrentSettingLinkedText(title, body) : '' };
+}
+
 export function formatSettingUserRequirementForAi(userText: string) {
   const text = userText.trim();
   return wrapAiRequestTag('修改要求', text);

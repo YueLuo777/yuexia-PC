@@ -1,4 +1,5 @@
-import { Folder, FolderOpen, Trash2 } from 'lucide-react';
+import { Folder, FolderOpen, Search, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import type {
   CSSProperties,
   DragEvent as ReactDragEvent,
@@ -137,6 +138,8 @@ export function WorkbenchLibrarySidebar({
   openSettingCreateDialog,
   setIsBrainstormRecycleOpen,
 }: WorkbenchLibrarySidebarProps) {
+  const [search, setSearch] = useState('');
+  const normalizedSearch = search.trim().toLocaleLowerCase();
   const groups = activeIsSettingLike
     ? isOutlineCharacterScope
       ? (() => {
@@ -173,8 +176,18 @@ export function WorkbenchLibrarySidebar({
 
   return (
     <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-1 py-2" style={style}>
+      <label className="mx-1 flex h-9 shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3">
+        <Search className="h-4 w-4 shrink-0 text-slate-400" />
+        <input
+          aria-label="搜索资料"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="搜索资料..."
+          className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400"
+        />
+      </label>
       <div
-        className={`${activeIsBrainstorm ? 'mt-0' : 'mt-2'} xy-setting-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto space-y-1 ${
+        className={`mt-3 xy-setting-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto space-y-1 ${
           activeSettingSidebarScrollKey === 'setting-sidebar' ? 'scrollbar-active' : ''
         }`}
         onScroll={() => handleSettingSidebarScroll('setting-sidebar')}
@@ -184,7 +197,10 @@ export function WorkbenchLibrarySidebar({
             ? expandedRoleTypes.has(group.type)
             : expandedSettingTypes.has(group.type);
           const isDropTarget = libraryDropTarget?.tab === effectiveLibraryTab && libraryDropTarget.type === group.type;
-          const previewEntries = getPreviewedLibraryGroupEntries(group.entries, effectiveLibraryTab, group.type);
+          const allPreviewEntries = getPreviewedLibraryGroupEntries(group.entries, effectiveLibraryTab, group.type);
+          const previewEntries = normalizedSearch
+            ? allPreviewEntries.filter((entry) => entry.title.toLocaleLowerCase().includes(normalizedSearch))
+            : allPreviewEntries;
           const GroupFolderIcon = expanded ? FolderOpen : Folder;
           return (
             <div
@@ -286,7 +302,7 @@ export function WorkbenchLibrarySidebar({
                                 activeIsBrainstorm ? '' : 'pl-3'
                               }`}
                             >
-                              {entry.title}
+                              {activeTab === SETTING_TAB && !entry.title.trim() ? '暂无设定' : entry.title}
                             </span>
                             {isOutlineCharacterScope && isMaleProtagonistRoleType(parseRoleContent(entry.content).type) ? (
                               <span className="shrink-0 rounded-md bg-[#E7F8FD] px-1.5 py-0.5 text-xs font-black text-[#08AACE]">

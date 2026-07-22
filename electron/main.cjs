@@ -24,10 +24,13 @@ const DEFAULT_WINDOW_BOUNDS = {
 const MIN_WINDOW_WIDTH = 1100;
 const MIN_WINDOW_HEIGHT = 680;
 const IS_HEADLESS_SMOKE = process.env.XINYUEXIA_SMOKE_HEADLESS === '1';
+const BYPASS_CLOSE_HANDSHAKE = IS_HEADLESS_SMOKE && process.env.XINYUEXIA_SMOKE_CLOSE_HANDSHAKE !== '1';
 const MAIN_LOG_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'electron-main.log');
 const MODEL_SECRETS_FILE = path.join(app.getPath('appData'), SHARED_STATE_DIR_NAME, 'model-secrets.json');
 
 let mainWindow = null;
+let rendererCloseReady = false;
+let rendererCloseFallbackTimer = null;
 const modelSecretStore = createModelSecretStore({ safeStorage, filePath: MODEL_SECRETS_FILE });
 const appIconService = createAppIconService({
   app,
@@ -195,6 +198,9 @@ function updateWindowSettings(nextSettings) {
     ...previous,
     ...(nextSettings && typeof nextSettings === 'object' ? nextSettings : {}),
   });
+  if (next.startMaximized && mainWindow && !mainWindow.isDestroyed() && !mainWindow.isMaximized()) {
+    mainWindow.maximize();
+  }
   if (next.rememberSize) saveWindowState(mainWindow);
   return readWindowSettingsResult();
 }
@@ -207,7 +213,7 @@ function resetWindowBoundsToDefault() {
   }
 
   windowStateStore.clearState();
-  windowStateStore.persistSettings({ rememberSize: false, startupBounds: DEFAULT_WINDOW_BOUNDS });
+  windowStateStore.persistSettings({ rememberSize: false, startMaximized: false, startupBounds: DEFAULT_WINDOW_BOUNDS });
 
   return readWindowSettingsResult();
 }
@@ -217,6 +223,10 @@ async function applyWindowBoundsPreset(inputBounds) {
   const width = Number(inputBounds?.width);
   const height = Number(inputBounds?.height);
   if (!Number.isFinite(width) || !Number.isFinite(height)) return readWindowSettingsResult();
+  if (windowStateStore.readSettings().startMaximized) {
+    if (!mainWindow.isMaximized()) mainWindow.maximize();
+    return readWindowSettingsResult();
+  }
   const display = screen.getDisplayMatching(mainWindow.getBounds());
   if (mainWindow.isMaximized()) {
     const unmaximizeCompleted = new Promise((resolve) => mainWindow.once('unmaximize', resolve));
@@ -243,15 +253,9 @@ function focusMainWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   if (IS_HEADLESS_SMOKE) return;
   if (mainWindow.isMinimized()) mainWindow.restore();
-  mainWindow.setAlwaysOnTop(true);
   mainWindow.show();
   mainWindow.focus();
-  mainWindow.moveTop();
   writeMainLog('main window show/focus requested');
-  setTimeout(() => {
-    if (!mainWindow || mainWindow.isDestroyed()) return;
-    mainWindow.setAlwaysOnTop(false);
-  }, 800);
 }
 
 async function loadStartUrl(targetWindow, retries = 10) {
@@ -368,9 +372,23 @@ function createWindow() {
   applySavedWindowState(mainWindow, savedState);
   startupExperience.begin(mainWindow, savedState);
 
+  mainWindow.on('close', (event) => {
+    if (rendererCloseReady || BYPASS_CLOSE_HANDSHAKE) return;
+    event.preventDefault();
+    mainWindow.webContents.send('app:prepare-close');
+    if (rendererCloseFallbackTimer) clearTimeout(rendererCloseFallbackTimer);
+    rendererCloseFallbackTimer = setTimeout(() => {
+      rendererCloseReady = true;
+      mainWindow?.close();
+    }, 2000);
+  });
+
   mainWindow.on('closed', () => {
     writeMainLog('main window closed');
     startupExperience.close();
+    rendererCloseReady = false;
+    if (rendererCloseFallbackTimer) clearTimeout(rendererCloseFallbackTimer);
+    rendererCloseFallbackTimer = null;
     mainWindow = null;
   });
 
@@ -443,6 +461,13 @@ registerTrustedIpcHandler('window:maximize-toggle', () => {
 
 registerTrustedIpcHandler('window:close', () => {
   mainWindow?.close();
+});
+registerTrustedIpcHandler('app:close-ready', () => {
+  rendererCloseReady = true;
+  if (rendererCloseFallbackTimer) clearTimeout(rendererCloseFallbackTimer);
+  rendererCloseFallbackTimer = null;
+  mainWindow?.close();
+  return true;
 });
 
 registerTrustedIpcHandler('window:is-maximized', () => mainWindow?.isMaximized() ?? false);

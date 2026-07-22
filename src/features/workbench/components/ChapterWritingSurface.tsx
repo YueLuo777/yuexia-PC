@@ -149,7 +149,7 @@ export function ChapterWritingSurface({
           <button
             type="button"
             onClick={openTitleOptimize}
-            className="inline-flex flex-1 items-center justify-center whitespace-nowrap border-l border-brand bg-brand px-1.5 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
+            className="inline-flex flex-1 items-center justify-center whitespace-nowrap bg-brand px-1.5 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
           >
             优化
           </button>

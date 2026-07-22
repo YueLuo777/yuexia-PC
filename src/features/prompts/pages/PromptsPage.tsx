@@ -4,14 +4,12 @@ import { useSearchParams } from 'react-router-dom';
 
 import {
   AUDIT_PROMPT_CATEGORY,
-  AUDIT_PROMPT_SUBCATEGORIES,
-  DEFAULT_AUDIT_PROMPT_SUBCATEGORY,
   isDefaultPromptCategory,
   normalizePromptCategoryName,
-  normalizePromptSubcategory,
   usePrompts,
 } from '@/features/prompts/hooks/usePrompts';
 import { PromptCategoryCreateModal } from '@/features/prompts/components/PromptCategoryCreateModal';
+import { AuditPromptEditorModal } from '@/features/prompts/components/AuditPromptEditorModal';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { ActionButton } from '@/shared/ui/ActionButton';
@@ -54,7 +52,6 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
   } = usePrompts();
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [activeAuditSubcategory, setActiveAuditSubcategory] = useState(DEFAULT_AUDIT_PROMPT_SUBCATEGORY);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingItem, setEditingItem] = useState<PromptItem | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -65,10 +62,16 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
     null,
   );
   const [categoryDeleteTarget, setCategoryDeleteTarget] = useState<string | null>(null);
+  const isAuditEditor =
+    normalizePromptCategoryName(editingItem?.category ?? activeCategory ?? '') === AUDIT_PROMPT_CATEGORY;
 
   useEffect(() => {
     const rawCategory = initialCategory ?? searchParams.get('category');
-    const category = rawCategory ? normalizePromptCategoryName(rawCategory) : null;
+    const normalizedCategory = rawCategory ? normalizePromptCategoryName(rawCategory) : null;
+    const category =
+      normalizedCategory === '剧情审核' || normalizedCategory === '文本审核'
+        ? AUDIT_PROMPT_CATEGORY
+        : normalizedCategory;
     if (category && categories.includes(category)) {
       setActiveCategory(category);
     }
@@ -90,15 +93,13 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
     return prompts
       .filter((item) => {
         const matchCategory = !activeCategory || item.category === activeCategory;
-        const matchSubcategory =
-          activeCategory !== AUDIT_PROMPT_CATEGORY ||
-          normalizePromptSubcategory(item.category, item.subCategory) === activeAuditSubcategory;
         const matchKeyword =
           !keyword ||
           item.name.toLowerCase().includes(keyword) ||
           item.description.toLowerCase().includes(keyword) ||
-          item.content.toLowerCase().includes(keyword);
-        return matchCategory && matchSubcategory && matchKeyword;
+          item.content.toLowerCase().includes(keyword) ||
+          item.textAuditContent?.toLowerCase().includes(keyword);
+        return matchCategory && matchKeyword;
       })
       .sort((a, b) => {
         if (a.isFavorite !== b.isFavorite) return a.isFavorite ? -1 : 1;
@@ -107,7 +108,7 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
         }
         return 0;
       });
-  }, [activeAuditSubcategory, activeCategory, prompts, searchQuery]);
+  }, [activeCategory, prompts, searchQuery]);
 
   const openCreate = () => {
     setEditingItem(null);
@@ -124,17 +125,14 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
     name: string;
     description: string;
     content: string;
+    textAuditContent?: string;
+    textAuditEnabled?: boolean;
     category: string;
     subCategory?: string;
   }) => {
     if (editingItem) updatePrompt(editingItem.id, draft);
     else addPrompt({ ...draft, promptType: 'novel' });
     setActiveCategory(draft.category);
-    if (normalizePromptCategoryName(draft.category) === AUDIT_PROMPT_CATEGORY) {
-      setActiveAuditSubcategory(
-        normalizePromptSubcategory(draft.category, draft.subCategory) ?? DEFAULT_AUDIT_PROMPT_SUBCATEGORY,
-      );
-    }
     setSearchQuery('');
     setShowForm(false);
     setEditingItem(null);
@@ -204,7 +202,7 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
 
   return (
     <div className="flex h-full flex-col bg-slate-50">
-      <div className="flex-1 overflow-y-auto px-5 py-4">
+      <div className="shrink-0 px-5 pt-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <h1 className="text-base font-black text-slate-900">小说提示词</h1>
@@ -283,29 +281,13 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
           </div>
         ) : null}
 
-        {activeCategory === AUDIT_PROMPT_CATEGORY ? (
-          <div className="mb-4 flex items-center gap-3">
-            <span className="text-sm font-bold text-slate-400">审核二级分类</span>
-            <div className="grid w-[260px] grid-cols-2 overflow-hidden rounded-2xl border border-cyan-100 bg-white">
-              {AUDIT_PROMPT_SUBCATEGORIES.map((subCategory) => (
-                <button
-                  key={subCategory}
-                  type="button"
-                  onClick={() => setActiveAuditSubcategory(subCategory)}
-                  className={`h-9 text-sm font-bold transition-colors ${
-                    activeAuditSubcategory === subCategory
-                      ? 'bg-[#EAF9FD] text-[#078fb0]'
-                      : 'text-slate-500 hover:bg-slate-50'
-                  }`}
-                >
-                  {subCategory}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
+      </div>
 
-        <div className="flex flex-wrap gap-4">
+      <div
+        data-testid="prompt-card-scroll-region"
+        className="min-h-0 flex-1 overflow-y-auto px-5 pb-4 [scrollbar-gutter:stable]"
+      >
+        <div className="flex flex-wrap gap-4 pt-0.5">
           {filteredPrompts.length === 0 && (
             <div className="flex h-[247px] w-[255px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white">
               <Sparkles className="mb-3 h-10 w-10 text-slate-300" />
@@ -318,18 +300,11 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
               className="flex h-[247px] w-[255px] flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <h2 className="truncate text-[17px] font-bold text-slate-900">{prompt.name}</h2>
-                  <div className="mt-2 flex flex-col items-start gap-1">
-                    <span className="rounded-xl border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-500">
-                      {prompt.category}
-                    </span>
-                    {prompt.category === AUDIT_PROMPT_CATEGORY ? (
-                      <span className="rounded-xl border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-xs text-cyan-600">
-                        {normalizePromptSubcategory(prompt.category, prompt.subCategory)}
-                      </span>
-                    ) : null}
-                  </div>
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <h2 className="min-w-0 truncate text-[17px] font-bold text-slate-900">{prompt.name}</h2>
+                  <span className="shrink-0 rounded-xl border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-500">
+                    {prompt.category}
+                  </span>
                 </div>
                 <button
                   onClick={() => toggleLock(prompt.id)}
@@ -346,7 +321,21 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
               </div>
 
               <div className="mt-auto">
-                <p className="mb-2 text-left text-[13px] font-medium text-blue-500">{prompt.content.length} 字</p>
+                <div className="mb-2 flex items-center justify-between gap-2 text-left text-[13px] font-medium text-blue-500">
+                  <span>{prompt.content.length + (prompt.textAuditContent?.length ?? 0)} 字</span>
+                  {prompt.category === AUDIT_PROMPT_CATEGORY ? (
+                    <span
+                      className={
+                        prompt.textAuditEnabled !== false && prompt.textAuditContent?.trim()
+                          ? 'text-[#078fb0]'
+                          : 'text-slate-400'
+                      }
+                    >
+                      文本审核
+                      {prompt.textAuditEnabled !== false && prompt.textAuditContent?.trim() ? '已启用' : '已禁用'}
+                    </span>
+                  ) : null}
+                </div>
                 <div className="xy-capsule-group w-full">
                   <button
                     onClick={() => togglePin(prompt.id)}
@@ -383,8 +372,20 @@ export function PromptsPage({ initialCategory }: { initialCategory?: string } = 
         </div>
       </div>
 
+      <AuditPromptEditorModal
+        isOpen={showForm && isAuditEditor}
+        title={editingItem ? '编辑提示词' : '创建提示词'}
+        categories={categories}
+        initial={editingItem}
+        onClose={() => {
+          setShowForm(false);
+          setEditingItem(null);
+        }}
+        onSave={savePrompt}
+      />
+
       <PromptEditorModal
-        isOpen={showForm}
+        isOpen={showForm && !isAuditEditor}
         title={editingItem ? '编辑提示词' : '创建提示词'}
         categories={categories}
         defaultCategory={activeCategory}

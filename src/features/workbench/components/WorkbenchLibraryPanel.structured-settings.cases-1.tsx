@@ -8,7 +8,6 @@ import {
   readWorkbenchLibraryPanelSource,
   readWorkbenchSettingTaxonomySource,
   readWorkbenchStructuredSettingsSource,
-  readSharedStylesSource,
   readTestCollectionSource,
 } from './WorkbenchLibraryPanel.testUtils';
 describe('WorkbenchLibraryPanel structured setting flows', () => {
@@ -135,6 +134,66 @@ describe('WorkbenchLibraryPanel structured setting flows', () => {
       expect(JSON.parse(entry.content).body).toBe('');
     });
   });
+  it('shows the target group beside the name before creating an inline setting', () => {
+    const storageKey = 'workbench-inline-setting-group-picker-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '道具资源0' }));
+    expect(screen.getByLabelText('当前设定分组')).toHaveValue('功法能力');
+    fireEvent.change(screen.getByLabelText('当前设定分组'), { target: { value: '特殊资源' } });
+    fireEvent.change(screen.getByLabelText('设定名'), { target: { value: '稀有血脉' } });
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const createdEntry = storedEntries.find((entry: { title: string }) => entry.title === '稀有血脉');
+    expect(createdEntry).toBeTruthy();
+    expect(JSON.parse(createdEntry.content).type).toBe('特殊资源');
+  });
+  it('labels an unnamed setting and lets the editor move it to another visible group', () => {
+    const storageKey = 'workbench-unnamed-setting-group-switch-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify([
+        {
+          id: 'unnamed-setting',
+          tab: '大纲',
+          title: '',
+          content: JSON.stringify({ type: '功法能力', body: '' }),
+          updatedAt: '2026/7/22 12:00:00',
+        },
+      ]),
+    );
+
+    const { container } = render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '道具资源1' }));
+    ensureLibraryGroupExpanded('功法能力1');
+    fireEvent.click(container.querySelector('[data-library-entry-id="unnamed-setting"]') as HTMLElement);
+    expect(screen.getByLabelText('当前设定分组')).toHaveValue('功法能力');
+
+    fireEvent.change(screen.getByLabelText('当前设定分组'), { target: { value: '物品装备' } });
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    const movedEntry = storedEntries.find((entry: { id: string }) => entry.id === 'unnamed-setting');
+    expect(JSON.parse(movedEntry.content).type).toBe('物品装备');
+    expect(screen.getByRole('button', { name: '物品装备1' })).toBeInTheDocument();
+  });
   it('locks default setting groups and default setting entries from rename and delete actions', async () => {
     const storageKey = 'workbench-default-setting-entry-lock-test';
 
@@ -216,22 +275,13 @@ describe('WorkbenchLibraryPanel structured setting flows', () => {
     expect(structuredSettingsSource).toContainSource("id: 'foreshadow-main'");
     expect(structuredSettingsSource).toContainSource("id: 'foreshadow-character'");
     expect(panelSource).toContainSource('<header className="shrink-0 pb-3">');
-    expect(panelSource).toContainSource('testId="structured-title-field"');
-    expect(structuredSettingsSource).toContainSource(
-      "fieldClassName: 'xy-structured-header-field xy-foreshadow-code-field h-[48px] w-[176px] shrink-0'",
-    );
+    expect(panelSource).toContainSource('data-testid="structured-title-field"');
+    expect(panelSource).toContainSource('className={`${controlClassName} h-10 w-[176px]`}');
     expect(panelSource).not.toContainSource('headerWidth');
-    const styleSource = await readSharedStylesSource();
-    expect(styleSource).toContainSource(
-      '.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed input',
-    );
-    expect(styleSource).toContainSource('height: 48px;');
-    expect(styleSource).toContainSource('.xy-floating-field.xy-structured-header-field input::placeholder');
-    expect(styleSource).toContainSource('font-size: 0.8125rem;');
-    expect(styleSource).toContainSource('.xy-floating-field.xy-foreshadow-code-field');
-    expect(styleSource).toContainSource('width: 176px !important;');
+    expect(panelSource).toContainSource('placeholder:text-slate-400');
+    expect(panelSource).toContainSource('focus:border-[#08AACE]');
     expect(structuredSettingsSource).toContainSource("gridContentClassName: 'grid-rows-[150px_minmax(0,1fr)]'");
-    expect(structuredSettingsSource).toContainSource("fieldClassName: 'col-span-2 min-h-0'");
+    expect(panelSource).toContainSource("'foreshadowContent'");
     expect(structuredSettingsSource).toContainSource("title: '首次出现章节'");
     expect(structuredSettingsSource).toContainSource("title: '回收章节'");
     expect(panelSource).not.toContainSource("'setting:foreshadow': ['主线伏笔', '人物伏笔', '已回收伏笔']");

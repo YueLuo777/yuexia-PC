@@ -1,5 +1,12 @@
-import { Folder, Search, X } from 'lucide-react';
-import { createPortal } from 'react-dom';
+import { Folder, Search } from 'lucide-react';
+
+import {
+  ASSOCIATION_READER_GRID_CLASS,
+  ASSOCIATION_READER_MODAL_HEIGHT_CLASS,
+  ASSOCIATION_READER_MODAL_WIDTH_CLASS,
+  AssociationReaderItemRow,
+} from './AssociationReaderItemRow';
+import { WorkbenchModal } from './WorkbenchModal';
 
 export type OtherSettingLinkTabId = 'work' | 'roles' | 'factions' | 'items' | 'monsters' | 'foreshadow';
 export type OtherSettingLinkEntry = {
@@ -67,27 +74,16 @@ export function OtherSettingReaderModal({
 }: OtherSettingReaderModalProps) {
   if (!isOpen) return null;
 
-  return createPortal(
-    <div className="modal-sharp fixed inset-0 z-[260] flex items-center justify-center bg-black/35" onClick={onClose}>
-      <div
-        className="modal-sharp flex h-[min(760px,90vh)] w-[min(1180px,94vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">关联其他设定</h3>
-            <p className="mt-1 text-xs text-gray-400">
-              读取设定页面下所有设定条目，勾选后作为本次 AI 请求的参考上下文。
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-            title="关闭"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+  return (
+    <WorkbenchModal
+      title="关联其他设定"
+      subtitle="读取设定页面下所有设定条目，勾选后作为本次 AI 请求的参考上下文。"
+      isOpen={isOpen}
+      onClose={onClose}
+      widthClass={ASSOCIATION_READER_MODAL_WIDTH_CLASS}
+      heightClass={ASSOCIATION_READER_MODAL_HEIGHT_CLASS}
+      storageId="other_setting_reader"
+    >
 
         <div className="flex h-14 shrink-0 items-center gap-2 border-b border-gray-100 px-5">
           {tabs.map((tab) => (
@@ -123,7 +119,7 @@ export function OtherSettingReaderModal({
           </label>
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)]">
+        <div className={ASSOCIATION_READER_GRID_CLASS}>
           <aside className="editor-scrollbar min-h-0 overflow-y-auto border-r border-gray-100 bg-slate-50 px-1 py-2">
             {visibleGroups.length === 0 ? (
               <div className="flex h-full min-h-[260px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white text-sm font-bold text-gray-400">
@@ -151,35 +147,15 @@ export function OtherSettingReaderModal({
                       const selected = selectedEntry?.id === entry.id;
                       const linked = draftIds.has(entry.id);
                       return (
-                        <div
+                        <AssociationReaderItemRow
                           key={entry.id}
-                          className={`flex min-h-[38px] w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-sm font-black transition-colors ${
-                            selected
-                              ? 'border border-[#08AACE] bg-[#EAF9FD] text-[#078fb0]'
-                              : 'border border-transparent bg-white text-slate-700 hover:bg-[#EAF9FD] hover:text-[#08AACE]'
-                          }`}
-                        >
-                          <button
-                            type="button"
-                            aria-label={`${draftIds.has(entry.id) ? '取消选择' : '选择'}${entry.title}`}
-                            onClick={() => onToggleEntry(entry.id)}
-                            className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border text-sm font-black transition-colors ${
-                              linked
-                                ? 'border-[#08AACE] bg-[#08AACE] text-white'
-                                : 'border-slate-300 bg-white text-transparent hover:border-[#08AACE] hover:text-[#08AACE]'
-                            }`}
-                          >
-                            ✓
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onPreviewEntry(entry.id)}
-                            className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                          >
-                            <span className="min-w-0 flex-1 truncate">{entry.title}</span>
-                            <span className="shrink-0 text-xs text-[#08AACE]">{entry.wordCount}字</span>
-                          </button>
-                        </div>
+                          title={entry.title}
+                          selected={selected}
+                          checked={linked}
+                          meta={`${entry.wordCount}字`}
+                          onPreview={() => onPreviewEntry(entry.id)}
+                          onToggle={() => onToggleEntry(entry.id)}
+                        />
                       );
                     })}
                   </div>
@@ -245,8 +221,6 @@ export function OtherSettingReaderModal({
             </button>
           </div>
         </div>
-      </div>
-    </div>,
-    document.body,
+    </WorkbenchModal>
   );
 }

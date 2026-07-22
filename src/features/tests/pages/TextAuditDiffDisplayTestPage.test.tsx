@@ -63,9 +63,7 @@ describe('TextAuditDiffDisplayTestPage', () => {
     expect(source).toContainSource("? '文本审核'");
     expect(source).toContainSource(": '剧情审核'");
     expect(source).toContainSource('`第${activeReviewChapter.serialNumber}章 ${reviewPreviewAnnotationLabel}`');
-    expect(source).toContainSource(
-      "() => (isAuditTextReview ? reviewRevisedDraft.trim() || extractReviewRevisedText(reviewAiOutput) : '')",
-    );
+    expect(source).toContainSource('buildTextAuditRevisedText(reviewAiOutput, activeReviewContent)');
     expect(source).not.toContainSource("(isAuditTextReview ? auditVisibleOutput : '')");
   });
 });

@@ -46,9 +46,9 @@ const USER_SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
 ];
 
 const TEST_SETTINGS_NAV_ITEMS: SettingsNavItem[] = [
-  { id: 'theme', label: '主题颜色', description: '软件配色和主题色板' },
   { id: 'association', label: '关联设置', description: '控制关闭软件后是否保持关联' },
   { id: 'appIcon', label: '软件图标', description: '桌面图标切换与恢复' },
+  { id: 'theme', label: '主题颜色', description: '软件配色和主题色板' },
 ];
 
 const SETTINGS_NAV_GROUPS = [

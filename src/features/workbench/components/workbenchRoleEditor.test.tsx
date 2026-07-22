@@ -22,7 +22,13 @@ function createRoleEntry(role: RoleContent): WorkbenchLibraryEntry {
   };
 }
 
-function RoleEditorHarness({ initialRole }: { initialRole: RoleContent }) {
+function RoleEditorHarness({
+  initialRole,
+  roleTypeOptions = ['男主角', '女主角', '未分类'],
+}: {
+  initialRole: RoleContent;
+  roleTypeOptions?: string[];
+}) {
   const [entry, setEntry] = useState(() => createRoleEntry(initialRole));
   const role = parseRoleContent(entry.content);
 
@@ -32,7 +38,7 @@ function RoleEditorHarness({ initialRole }: { initialRole: RoleContent }) {
         entry={entry}
         role={role}
         roleEntries={[entry]}
-        roleTypeOptions={['男主角', '女主角', '未分类']}
+        roleTypeOptions={roleTypeOptions}
         roleTextFontSize={16}
         currentChapterNumber={1}
         roleLifeStatus={role.lifeStatus}
@@ -53,6 +59,48 @@ function RoleEditorHarness({ initialRole }: { initialRole: RoleContent }) {
 }
 
 describe('RoleBaseStateEditor', () => {
+  it('uses the current role groups for identity positioning without offering male protagonist', () => {
+    render(
+      <RoleEditorHarness
+        initialRole={{
+          type: '女主角',
+          lifeStatus: '存活',
+          baseSetting: '',
+          relationship: '',
+          stateSettings: {
+            currentSituation: '',
+            currentGoal: '',
+            abilityState: '',
+            resourceState: '',
+            otherState: '',
+          },
+          personality: '',
+          background: '',
+          status: '',
+          history: [],
+        }}
+        roleTypeOptions={['男主角', '女主角', '核心盟友', '幕后反派']}
+      />,
+    );
+
+    const identitySelect = screen.getByRole('combobox', { name: '身份定位' });
+    expect(identitySelect).toHaveValue('女主角');
+    expect(screen.queryByRole('option', { name: '男主角' })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '核心盟友' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '幕后反派' })).toBeInTheDocument();
+    fireEvent.change(identitySelect, { target: { value: '核心盟友' } });
+    expect(identitySelect).toHaveValue('核心盟友');
+    const lifeStatusGroup = screen.getByRole('group', { name: '生存状态' });
+    const aliveButton = screen.getByRole('button', { name: '存活' });
+    const deadButton = screen.getByRole('button', { name: '死亡' });
+    expect(lifeStatusGroup).toHaveClass('rounded-xl', 'border-2', 'border-slate-950');
+    expect(aliveButton).toHaveClass('bg-[#ECFEFF]');
+    fireEvent.click(deadButton);
+    expect(deadButton).toHaveAttribute('aria-pressed', 'true');
+    expect(deadButton).toHaveClass('bg-[#ECFEFF]');
+    expect(screen.getByTestId('saved-role-content')).toHaveTextContent('"lifeStatus":"死亡"');
+  });
+
   it('keeps typing visible after opening old orphan field labels', () => {
     render(
       <RoleEditorHarness

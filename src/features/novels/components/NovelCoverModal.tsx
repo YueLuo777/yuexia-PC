@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 
 import { useCoverLibrary } from '@/features/covers/hooks/useCoverLibrary';
 import type { Novel } from '@/features/novels/model/novelTypes';
+import { AppModalShell } from '@/shared/ui/AppModalShell';
 
 export function CoverModal({
   isOpen,
@@ -40,16 +41,15 @@ export function CoverModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div
-        className="flex h-[720px] w-[860px] max-w-[94vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="border-b border-gray-100 px-6 py-4">
-          <h2 className="text-base font-bold text-gray-900">设置封面</h2>
-          <p className="mt-0.5 text-xs text-gray-400">{novel.title}</p>
-        </div>
-
+    <AppModalShell
+      title="设置封面"
+      subtitle={novel.title}
+      isOpen={isOpen}
+      onClose={onClose}
+      widthClass="w-[860px]"
+      heightClass="h-[720px] max-h-[92vh]"
+      storageId="novel_cover"
+    >
         <div className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)] overflow-hidden">
           <aside className="border-r border-gray-100 bg-gray-50 p-5">
             <div className="aspect-[3/4] overflow-hidden rounded-2xl border border-gray-200 bg-white">
@@ -173,7 +173,6 @@ export function CoverModal({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </AppModalShell>
   );
 }

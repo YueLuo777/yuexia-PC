@@ -10,7 +10,7 @@ import {
   type ComponentProps,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import { WorkbenchCreationFlowContent } from '@/features/workbench/components/WorkbenchCreationFlowContent';
 import { WorkbenchWritingLayout } from '@/features/workbench/components/WorkbenchWritingLayout';
@@ -70,7 +70,6 @@ import { parseSettingContent } from '@/features/workbench/components/workbenchSt
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
 import { WordCountText } from '@/shared/ui/WordCountText';
-import type { Volume } from '@/features/workbench/model/workbenchTypes';
 import { countUnpolishedChapters } from '@/features/workbench/model/chapterPolishStatus';
 import {
   buildChapterExportDoc,
@@ -107,6 +106,8 @@ import {
   type ContextLibraryTab,
   LazyWorkbenchLibraryPanel,
   WorkbenchLibraryPanel,
+  WorkbenchNoNovelState,
+  getWorkbenchChapterHeaderStats,
   FIELD_SIZE_FLOW_IDS,
   type ContextColumn,
   type ContextChapterPair,
@@ -173,7 +174,7 @@ export function WorkbenchPage() {
   const [contextSearchText, setContextSearchText] = useState('');
   const [draftContextIds, setDraftContextIds] = useState<Set<string>>(() => new Set());
   const [linkedContextItems, setLinkedContextItems] = useState<WorkbenchLinkedContextItem[]>([]);
-  const [contextSelectionTouched, setContextSelectionTouched] = useState(false);
+  const [contextSelectionTouched, setContextSelectionTouched] = useState(() => localStorage.getItem('xinyuexia_keep_workbench_associations_v1') !== '1');
   const [publishConfirm, setPublishConfirm] = useState(() => localStorage.getItem(PUBLISH_CONFIRM_KEY) === 'true');
   const [showPublished, setShowPublished] = useState(false);
   const {
@@ -271,13 +272,13 @@ export function WorkbenchPage() {
     if (!currentNovelId) return;
     const storedItems = readWorkbenchLinkedContextItems(currentNovelId);
     setLinkedContextItems(storedItems);
-    setContextSelectionTouched(storedItems.length > 0);
+    setContextSelectionTouched(localStorage.getItem('xinyuexia_keep_workbench_associations_v1') !== '1' || storedItems.length > 0);
     setDraftContextIds(new Set());
     setIsContextLibraryOpen(false);
   }, [currentNovelId]);
 
   useEffect(() => {
-    setContextSelectionTouched(false);
+    setContextSelectionTouched(localStorage.getItem('xinyuexia_keep_workbench_associations_v1') !== '1');
     setDraftContextIds(new Set());
     setIsContextLibraryOpen(false);
   }, [selectedChapter?.chapter.id]);
@@ -314,29 +315,12 @@ export function WorkbenchPage() {
   });
 
   if (!currentNovel) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center bg-gray-50">
-        <div className="rounded-xl border border-gray-100 bg-white p-8 text-center shadow-sm">
-          <h1 className="text-lg font-bold text-gray-900">未选择作品</h1>
-          <p className="mt-2 text-sm text-gray-500">请先从作品列表选择一本小说或剧本。</p>
-          <Link
-            to="/novels"
-            className="mt-5 inline-flex rounded-md bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark"
-          >
-            返回我的小说
-          </Link>
-        </div>
-      </div>
-    );
+    return <WorkbenchNoNovelState />;
   }
 
-  const chapterCount = volumes.reduce((sum, volume) => sum + volume.chapters.length, 0);
-  const unpolishedChapterCount = countUnpolishedChapters(settingsStorageKey, volumes, (chapterId) =>
-    selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(currentNovel.id, chapterId),
+  const { chapterCount, unpolishedChapterCount, selectedVolumeName } = getWorkbenchChapterHeaderStats(
+    settingsStorageKey, volumes, selectedChapter, editorContent, currentNovel.id,
   );
-  const selectedVolumeName = selectedChapter
-    ? (volumes.find((volume) => volume.id === selectedChapter.volumeId)?.name ?? '未选择卷')
-    : '未选择卷';
 
   const settingContextEntries = orderContextEntriesByType(
     settingsEntries.filter((entry) => normalizeTabName(entry.tab) === SETTING_TAB),

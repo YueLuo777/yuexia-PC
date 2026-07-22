@@ -30,6 +30,8 @@ export const REVIEW_PREVIEW_TEXT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_r
 export const REVIEW_PREVIEW_WIDTH_MODE_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_width_mode';
 export const REVIEW_PREVIEW_OUTLINE_VISIBLE_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_outline_visible';
 export const REVIEW_PREVIEW_FONT_SIZE_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_font_size';
+export const REVIEW_PREVIEW_TYPOGRAPHY_VERSION_KEY = 'xinyuexia_chapter_editor_review_typography_version';
+export const REVIEW_PREVIEW_TYPOGRAPHY_VERSION = 'body-adapted-v1';
 export const REVIEW_PREVIEW_SEPARATOR_WIDTH = 7;
 export const STATUS_PAGE_LEFT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_status_left_width';
 export const STATUS_PAGE_RIGHT_WIDTH_STORAGE_KEY = WORKBENCH_SHARED_AI_RIGHT_WIDTH_STORAGE_KEY;
@@ -140,9 +142,17 @@ export function clampReviewPreviewFontSize(value: number) {
 export function readReviewPreviewFontSize() {
   try {
     const stored = localStorage.getItem(REVIEW_PREVIEW_FONT_SIZE_STORAGE_KEY);
-    return stored === null ? 14 : clampReviewPreviewFontSize(Number(stored));
+    const storedSize = stored === null ? null : clampReviewPreviewFontSize(Number(stored));
+    if (localStorage.getItem(REVIEW_PREVIEW_TYPOGRAPHY_VERSION_KEY) !== REVIEW_PREVIEW_TYPOGRAPHY_VERSION) {
+      localStorage.setItem(REVIEW_PREVIEW_TYPOGRAPHY_VERSION_KEY, REVIEW_PREVIEW_TYPOGRAPHY_VERSION);
+      if (storedSize === null || storedSize === 14) {
+        localStorage.setItem(REVIEW_PREVIEW_FONT_SIZE_STORAGE_KEY, '18');
+        return 18;
+      }
+    }
+    return storedSize ?? 18;
   } catch {
-    return 14;
+    return 18;
   }
 }
 

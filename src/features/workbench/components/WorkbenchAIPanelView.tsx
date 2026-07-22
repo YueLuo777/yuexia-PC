@@ -52,7 +52,6 @@ export function renderWorkbenchAIPanelView(scope: Record<string, any>) {
     sendMessage,
     sessions,
     setActiveSessionId,
-    setIsLoading,
     setIsRequestLogOpen,
     setIsSessionLimitConfirmOpen,
     setSelectedModelId,
@@ -60,7 +59,6 @@ export function renderWorkbenchAIPanelView(scope: Record<string, any>) {
     shouldShowActiveLinkStats,
     statusText,
     stopMessage,
-    stopSessionBackgroundTask,
     toggleChapterContext,
     updateActiveSession,
     visibleRequestLog,
@@ -113,11 +111,11 @@ export function renderWorkbenchAIPanelView(scope: Record<string, any>) {
           onDeleteSession={deleteSession}
           onResetSessions={resetSessions}
         />
-        <div className="mt-2 flex shrink-0 items-start justify-between gap-2 text-xs text-gray-400">
+        <div className="xy-ai-panel-link-row flex items-start justify-between gap-2 text-xs text-gray-400">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <div className="flex min-w-0 flex-nowrap items-center gap-2">
-              <div className="flex h-9 shrink-0 overflow-hidden rounded-xl border border-[#08B3D9] bg-white shadow-sm">
-                <div className="flex w-14 items-center justify-center border-r border-[#08B3D9]/30 bg-[#E9FAFE] text-sm font-black text-[#078BA9]">
+              <div className="flex h-10 shrink-0 overflow-hidden rounded-xl border border-[#08B3D9] bg-white shadow-sm">
+                <div className="flex w-12 items-center justify-center border-r border-[#08B3D9]/30 bg-[#E9FAFE] text-sm font-black text-[#078BA9]">
                   关联
                 </div>
                 <button
@@ -151,7 +149,7 @@ export function renderWorkbenchAIPanelView(scope: Record<string, any>) {
             </div>
           </div>
         </div>
-        <div className="mt-2 shrink-0">
+        <div className="xy-ai-panel-input-row">
           <AiInlineInput
             ref={inputTextareaRef}
             value={input}
@@ -171,49 +169,30 @@ export function renderWorkbenchAIPanelView(scope: Record<string, any>) {
             stopDisabled={!isLoading}
             placeholder="请输入你的要求..."
           />
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <div className="flex min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white">
-              <WorkbenchReplaceBodyButton
-                output={output}
-                onReplaceContent={onReplaceContent}
-                onReplaced={() => flashStatus('已智能排版并替换正文')}
-              />
-              <button
-                onClick={() => {
-                  onUndoReplace?.();
-                  flashStatus('已撤回替换');
-                }}
-                disabled={!canUndoReplace}
-                title="撤回上一次替换正文，恢复所选章节替换前的内容"
-                className="min-w-0 flex-1 border-l border-gray-200 bg-white px-2 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
-              >
-                撤回替换
-              </button>
-            </div>
-            <div className="flex min-w-0 overflow-hidden rounded-xl border border-gray-200 bg-white">
-              <button
-                onClick={copyOutput}
-                disabled={!output.trim()}
-                className="min-w-0 flex-1 bg-brand px-2 py-2 text-sm font-bold text-white hover:bg-brand-dark disabled:bg-gray-300"
-              >
-                复制内容
-              </button>
-              <button
-                onClick={() => {
-                  stopSessionBackgroundTask(activeSession);
-                  updateActiveSession({
-                    output: '',
-                    messages: [],
-                    backgroundTaskId: undefined,
-                    backgroundAssistantMessageId: undefined,
-                  });
-                  setIsLoading(false);
-                }}
-                className="min-w-0 flex-1 border-l border-red-200 bg-red-600 px-2 py-2 text-sm font-bold text-white hover:bg-red-700"
-              >
-                清空内容
-              </button>
-            </div>
+          <div className="xy-ai-panel-action-row flex overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <WorkbenchReplaceBodyButton
+              output={output}
+              onReplaceContent={onReplaceContent}
+              onReplaced={() => flashStatus('已智能排版并替换正文')}
+            />
+            <button
+              onClick={() => {
+                onUndoReplace?.();
+                flashStatus('已撤回替换');
+              }}
+              disabled={!canUndoReplace}
+              title="撤回上一次替换正文，恢复所选章节替换前的内容"
+              className="min-w-0 flex-1 border-l border-gray-200 bg-white px-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
+            >
+              撤回替换
+            </button>
+            <button
+              onClick={copyOutput}
+              disabled={!output.trim()}
+              className="min-w-0 flex-1 border-l border-gray-200 bg-white px-2 text-sm font-bold text-gray-600 hover:bg-gray-100 disabled:text-gray-300"
+            >
+              复制内容
+            </button>
           </div>
         </div>
       </section>

@@ -34,18 +34,50 @@ describe('SettingsPage hierarchy', () => {
     const testNavigation = screen.getByRole('navigation', { name: '测试设置顶部导航' });
     expect(testNavigation).toHaveTextContent('关联设置');
     expect(testNavigation).toHaveTextContent('软件图标');
+    expect(testNavigation.textContent?.indexOf('关联设置')).toBeLessThan(
+      testNavigation.textContent?.indexOf('软件图标') ?? -1,
+    );
+    expect(testNavigation.textContent?.indexOf('软件图标')).toBeLessThan(
+      testNavigation.textContent?.indexOf('主题颜色') ?? -1,
+    );
 
     fireEvent.click(screen.getByRole('button', { name: '关联设置' }));
     expect(screen.getByRole('heading', { name: '保持关联' })).toBeInTheDocument();
-    const keepAssociations = screen.getByRole('checkbox', { name: '保持关联' });
-    expect(keepAssociations).not.toBeChecked();
-    expect(screen.getByText('恢复未关联状态')).toBeInTheDocument();
+    const keepAssociations = screen.getByRole('button', { name: '启用保持关联' });
+    const keepAiOutputs = screen.getByRole('button', { name: '启用保持 AI 输出' });
+    expect(keepAssociations).toHaveAttribute('aria-pressed', 'false');
+    expect(keepAiOutputs).toHaveAttribute('aria-pressed', 'false');
+    expect(keepAssociations).toHaveClass('bg-slate-400');
+    expect(keepAiOutputs).toHaveClass('bg-slate-400');
+    expect(keepAssociations).toHaveClass('self-end');
+    expect(keepAiOutputs).toHaveClass('self-end');
+    expect(keepAssociations).toHaveTextContent('点击启用');
+    expect(keepAiOutputs).toHaveTextContent('点击启用');
+    expect(screen.getByText('两项设置分别生效')).toBeInTheDocument();
 
     fireEvent.click(keepAssociations);
 
-    expect(keepAssociations).toBeChecked();
+    expect(keepAssociations).toHaveAttribute('aria-pressed', 'true');
+    expect(keepAssociations).toHaveClass('bg-[#08AACE]');
+    expect(keepAssociations).toHaveTextContent('已启用');
     expect(localStorage.getItem('xinyuexia_keep_workbench_associations_v1')).toBe('1');
-    expect(screen.getByText('保留全部关联')).toBeInTheDocument();
+    fireEvent.click(keepAiOutputs);
+    expect(keepAiOutputs).toHaveAttribute('aria-pressed', 'true');
+    expect(keepAiOutputs).toHaveClass('bg-[#08AACE]');
+    expect(keepAiOutputs).toHaveTextContent('已启用');
+    expect(localStorage.getItem('xinyuexia_keep_workbench_ai_outputs_v1')).toBe('1');
+
+    localStorage.setItem('xinyuexia_workbench_linked_context_1', JSON.stringify({ items: [{ id: 'linked' }] }));
+    localStorage.setItem(
+      'xinyuexia_workbench_ai_sessions_1',
+      JSON.stringify({ sessions: [{ id: 1, output: 'old output' }] }),
+    );
+    fireEvent.click(keepAssociations);
+    fireEvent.click(keepAiOutputs);
+    expect(keepAssociations).toHaveAttribute('aria-pressed', 'false');
+    expect(keepAiOutputs).toHaveAttribute('aria-pressed', 'false');
+    expect(localStorage.getItem('xinyuexia_workbench_linked_context_1')).toBeNull();
+    expect(JSON.parse(localStorage.getItem('xinyuexia_workbench_ai_sessions_1') ?? '{}').sessions[0].output).toBe('');
   });
 
   it('shows five shortcut settings per row on wide screens', () => {

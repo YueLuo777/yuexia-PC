@@ -13,11 +13,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 import { useModels } from '@/features/models/hooks/useModels';
-import {
-  GENRE_ITERATION_PROMPT_CATEGORY,
-  normalizePromptCategoryName,
-  usePrompts,
-} from '@/features/prompts/hooks/usePrompts';
 import { GENRE_ITERATION_SAVE_DIRECTORY } from '@/features/genre-iteration/model/genreIterationDefaults';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 import { CHAPTER_NUMBER_GRID_STYLE, ChapterNumberButton } from '@/shared/ui/ChapterNumberButton';

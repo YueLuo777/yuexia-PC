@@ -59,6 +59,17 @@ export function stringifySettingContent(value: SettingContent) {
   });
 }
 
+export function resolveActiveSettingWorkspaceType(
+  currentType: string | undefined,
+  requestedType: unknown,
+  selectedType: string | null,
+  visibleTypes: string[],
+) {
+  if (currentType) return currentType;
+  if (typeof requestedType === 'string' && visibleTypes.includes(requestedType)) return requestedType;
+  return selectedType ?? visibleTypes[0] ?? null;
+}
+
 export function createEmptyStructuredSettingFields(fieldSet: StructuredSettingFieldSet) {
   return fieldSet.fields.reduce(
     (result, field) => {

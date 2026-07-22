@@ -1,6 +1,7 @@
-import { useEffect, type MutableRefObject } from 'react';
+import { useEffect, useRef, type MutableRefObject } from 'react';
 
 import { BRAINSTORM_TAB, ROLE_TAB, SETTING_TAB } from './workbenchLibraryTabs';
+import { useWorkbenchLibraryVisibility } from './workbenchLibraryVisibility';
 
 export type WorkbenchLibraryAiLogScope = 'library' | 'outline';
 
@@ -13,7 +14,7 @@ interface WorkbenchLibraryAiLogTriggerOptions {
   openLogSignal: number;
   lastOpenLogSignalRef: MutableRefObject<number>;
   onRegisterHeaderLog?: (handler: (() => void) | null) => void;
-  openLibraryAiLog: (scope: WorkbenchLibraryAiLogScope) => void;
+  openLibraryAiLog: (scope: WorkbenchLibraryAiLogScope, isOpen?: boolean) => void;
 }
 
 export function useWorkbenchLibraryAiLogTriggers({
@@ -23,11 +24,29 @@ export function useWorkbenchLibraryAiLogTriggers({
   onRegisterHeaderLog,
   openLibraryAiLog,
 }: WorkbenchLibraryAiLogTriggerOptions) {
+  const { isActive, activePageKey } = useWorkbenchLibraryVisibility();
+  const wasActiveRef = useRef(isActive);
+
   useEffect(() => {
+    if (!isActive) openLibraryAiLog('library', false);
+    return () => openLibraryAiLog('library', false);
+  }, [activePageKey, isActive, openLibraryAiLog]);
+
+  useEffect(() => {
+    const wasActive = wasActiveRef.current;
+    wasActiveRef.current = isActive;
+    if (!isActive) {
+      lastOpenLogSignalRef.current = openLogSignal;
+      return;
+    }
+    if (!wasActive) {
+      lastOpenLogSignalRef.current = openLogSignal;
+      return;
+    }
     if (openLogSignal <= 0 || openLogSignal === lastOpenLogSignalRef.current) return;
     lastOpenLogSignalRef.current = openLogSignal;
     openLibraryAiLog(getWorkbenchLibraryAiLogScope(activeTab));
-  }, [activeTab, lastOpenLogSignalRef, openLibraryAiLog, openLogSignal]);
+  }, [activeTab, isActive, lastOpenLogSignalRef, openLibraryAiLog, openLogSignal]);
 
   useEffect(() => {
     if (!onRegisterHeaderLog) return;

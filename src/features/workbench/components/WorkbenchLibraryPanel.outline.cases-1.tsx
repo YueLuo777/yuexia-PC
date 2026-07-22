@@ -73,7 +73,10 @@ describe('WorkbenchLibraryPanel outline flows', () => {
 
     expect(capsuleSource).toContainSource("controlHeight: 'h-[42px]'");
     expect(capsuleSource).toContainSource("disabled ? 'border-slate-200 bg-white text-slate-400' : 'border-[#08AACE]'");
-    expect(capsuleSource).toContainSource("${disabled ? 'bg-white' : 'bg-white'}");
+    expect(capsuleSource).toContainSource(
+      'xy-border-embedded-transparent-backplate pointer-events-none absolute left-5 top-0',
+    );
+    expect(capsuleSource).not.toContainSource("${disabled ? 'bg-white' : 'bg-white'}");
     expect(capsuleSource).not.toContainSource(
       "disabled ? 'border-slate-200 bg-slate-100 text-slate-400' : 'border-[#08AACE]'",
     );
@@ -434,7 +437,8 @@ describe('WorkbenchLibraryPanel outline flows', () => {
       "volumeIsSelected\n                                ? 'border-brand bg-brand text-white'",
     );
     expect(panelSource).toContainSource('xy-selected-mint-bg text-gray-900');
-    expect(panelSource).toContainSource('xy-selected-content-bg text-slate-900');
+    expect(panelSource).toContainSource('<AssociationReaderItemRow');
+    expect(panelSource).toContainSource('checked={checked}');
     expect(panelSource).not.toContainSource(
       'className="group flex h-[36px] items-center gap-1 rounded-md bg-brand-light px-2 py-1.5 transition-colors hover:bg-brand/10"',
     );

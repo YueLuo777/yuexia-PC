@@ -54,7 +54,7 @@ describe('window state storage isolation', () => {
       stateDir: isolatedStateDir,
     });
 
-    expect(store.readSettings()).toEqual({ rememberSize: false, startupBounds: { width: 1600, height: 900 } });
+    expect(store.readSettings()).toEqual({ rememberSize: false, startMaximized: false, startupBounds: { width: 1600, height: 900 } });
     mkdirSync(sharedStateDir, { recursive: true });
     writeFileSync(sharedStateFile, '{"width":2064,"height":1120}', { encoding: 'utf8', flag: 'wx' });
     expect(store.readState()).toEqual({ width: 1600, height: 900, isMaximized: false });
@@ -66,5 +66,24 @@ describe('window state storage isolation', () => {
     expect(JSON.parse(readFileSync(isolatedStateFile, 'utf8'))).toMatchObject({ width: 1374, height: 777 });
     expect(JSON.parse(readFileSync(sharedStateFile, 'utf8'))).toEqual({ width: 2064, height: 1120 });
     expect(existsSync(path.join(userDataDir, 'window-state.json'))).toBe(false);
+  });
+
+  it('uses startup maximized as the highest-priority launch mode', () => {
+    const stateDir = makeTempDir('xinyuexia-maximized-start-');
+    const app = { getPath: () => makeTempDir('xinyuexia-maximized-app-') };
+    const store = createWindowStateStore({
+      app,
+      sharedStateDirName: 'xinyuexia-desktop',
+      minWidth: 1100,
+      minHeight: 680,
+      defaultBounds: { width: 1600, height: 900 },
+      stateDir,
+    });
+
+    store.persistSettings({ rememberSize: false, startMaximized: true, startupBounds: { width: 1600, height: 900 } });
+    expect(store.readState()).toEqual({ width: 1600, height: 900, isMaximized: true });
+    store.persistState({ width: 1400, height: 800, isMaximized: false });
+    store.persistSettings({ rememberSize: true, startMaximized: true, startupBounds: { width: 1600, height: 900 } });
+    expect(store.readState()).toMatchObject({ width: 1400, height: 800, isMaximized: true });
   });
 });

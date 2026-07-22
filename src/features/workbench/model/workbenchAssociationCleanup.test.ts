@@ -5,6 +5,7 @@ import {
   KEEP_WORKBENCH_ASSOCIATIONS_KEY,
   WORKBENCH_ASSOCIATION_SESSION_RESET_KEY,
   bindWorkbenchAssociationCloseCleanup,
+  cleanupWorkbenchAssociationsOnClose,
   getWorkbenchAssociationRuntimeId,
   readWorkbenchLinkedContextItems,
   resetWorkbenchAssociationsForNewAppSession,
@@ -141,6 +142,11 @@ describe('workbench association session cleanup', () => {
           associationSessionId: 'older-runtime',
           loadedBrainstormId: 'brainstorm-1',
           linkedOtherSettingIds: ['setting-1'],
+          detailOutlineReaderSessionId: 'older-runtime',
+          detailOutlineReaderTouched: true,
+          detailOutlineReaderSettingIds: [],
+          detailOutlineReaderRoleIds: [],
+          detailOutlineReaderOutlineIds: ['outline-1'],
         },
       }),
     );
@@ -167,6 +173,8 @@ describe('workbench association session cleanup', () => {
     const configs = JSON.parse(localStorage.getItem('xinyuexia_workbench_settings_1_tab_configs_v1') ?? '{}');
     expect(envelope.associationSessionId).toBe(getWorkbenchAssociationRuntimeId());
     expect(configs.setting.associationSessionId).toBe(getWorkbenchAssociationRuntimeId());
+    expect(configs.setting.detailOutlineReaderSessionId).toBe(getWorkbenchAssociationRuntimeId());
+    expect(configs.setting.detailOutlineReaderOutlineIds).toEqual(['outline-1']);
     expect(JSON.parse(localStorage.getItem('xinyuexia_workbench_ai_sessions_1') ?? '{}').sessions[0]).toMatchObject({
       linkedItems: [{ id: 'ctx-1' }],
       linkChapter: true,
@@ -234,6 +242,17 @@ describe('workbench association session cleanup', () => {
 
     expect(JSON.parse(localStorage.getItem(ASSOCIATED_CHAPTERS_KEY) ?? '[]')).toEqual([1]);
     dispose();
+  });
+
+  it('clears associations synchronously before the desktop close command', () => {
+    localStorage.setItem(ASSOCIATED_CHAPTERS_KEY, JSON.stringify([1]));
+    cleanupWorkbenchAssociationsOnClose();
+    expect(localStorage.getItem(ASSOCIATED_CHAPTERS_KEY)).toBeNull();
+
+    writeKeepWorkbenchAssociations(true);
+    localStorage.setItem(ASSOCIATED_CHAPTERS_KEY, JSON.stringify([2]));
+    cleanupWorkbenchAssociationsOnClose();
+    expect(JSON.parse(localStorage.getItem(ASSOCIATED_CHAPTERS_KEY) ?? '[]')).toEqual([2]);
   });
 
   it('does not treat a temporarily hidden desktop window as closing the software', () => {

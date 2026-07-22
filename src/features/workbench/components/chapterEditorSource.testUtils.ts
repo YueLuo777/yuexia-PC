@@ -10,6 +10,7 @@ export const CHAPTER_EDITOR_SOURCE_FILES = [
   'src/features/workbench/components/ChapterStatusPanel.tsx',
   'src/features/workbench/components/ChapterReviewDirectory.tsx',
   'src/features/workbench/components/ChapterReviewPreview.tsx',
+  'src/features/workbench/components/ChapterReviewOriginalBody.tsx',
   'src/features/workbench/components/ChapterTextAuditContinuousReview.tsx',
   'src/features/workbench/components/ChapterReviewAiPanel.tsx',
   'src/features/workbench/components/ChapterReviewManagementModal.tsx',

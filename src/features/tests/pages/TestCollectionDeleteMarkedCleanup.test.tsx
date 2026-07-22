@@ -50,6 +50,8 @@ const removedMarkedTests = [
   ['/novel-library-toolbar-layout-test', 'NovelLibraryToolbarLayoutTestPage'],
   ['/text-audit-continuous-context-test', 'TextAuditContinuousContextTestPage'],
   ['/novel-card-menu-design-test', 'NovelCardMenuDesignTestPage'],
+  ['/audit-prompt-compact-editor-test', 'AuditPromptCompactEditorTestPage'],
+  ['/identity-position-variants-test', 'IdentityPositionVariantsTestPage'],
 ] as const;
 
 describe('TestCollectionPage delete marked cleanup', () => {

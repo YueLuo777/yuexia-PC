@@ -34,9 +34,10 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(roleEditorSource).toContainSource('<WorkbenchNameField');
     expect(roleEditorSource).toContainSource('label="人物姓名"');
     expect(roleEditorSource).toContainSource('className="flex h-[48px] items-start gap-3"');
-    expect(roleEditorSource).toContainSource('className="xy-role-identity-select w-[168px] shrink-0"');
-    expect(roleEditorSource).toContainSource('xy-role-life-toggle inline-flex h-[42px] w-[112px]');
-    expect(roleEditorSource).toContainSource("active ? 'bg-white text-[#08AACE] shadow-sm' : 'text-slate-500 hover:text-slate-700'");
+    expect(roleEditorSource).toContainSource('<WorkbenchHeaderSelect');
+    expect(roleEditorSource).toContainSource('label="身份定位"');
+    expect(roleEditorSource).toContainSource('<WorkbenchSurvivalStatusToggle');
+    expect(roleEditorSource).not.toContainSource('xy-role-life-toggle');
     expect(panelSource).toContainSource('aria-label={`${parseRoleContent(entry.content).lifeStatus}状态`}');
     expect(panelSource).toContainSource("parseRoleContent(entry.content).lifeStatus === '死亡'");
     expect(roleEditorSource).toContainSource('className="shrink-0 space-y-3"');
@@ -58,7 +59,7 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(stylesSource).toContainSource('padding: 0 4px;');
     expect(stylesSource).toContainSource('font-weight: 900;');
     expect(stylesSource).toContainSource('.xy-workbench-name-field-input {');
-    expect(stylesSource).toContainSource('padding: 0 1rem 0 1.75rem;');
+    expect(stylesSource).toContainSource('padding: 0 1rem 0 1.5rem;');
     expect(stylesSource).toContainSource('font-size: 1rem;');
     expect(stylesSource).toContainSource('transition: none;');
     expect(roleEditorSource).not.toContainSource(
@@ -71,7 +72,7 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(roleEditorSource).not.toContainSource(
       'className="h-full w-full bg-transparent text-xl font-black leading-7 text-slate-950 outline-none placeholder:text-slate-400"',
     );
-    expect(roleEditorSource).toContainSource('floatingLabel="身份定位"');
+    expect(roleEditorSource).toContainSource('label="身份定位"');
     expect(roleSettingFieldsSource).toContainSource("title: '外貌'");
     expect(roleSettingFieldsSource).toContainSource("title: '称号/外号/别称'");
     expect(roleSettingFieldsSource).not.toContainSource("title: '角色定位'");
@@ -127,7 +128,9 @@ describe('WorkbenchLibraryPanel role library flows', () => {
 
     expect(panelSource).toContainSource("if (mode === 'setting' && itemLabel === '角色')");
     expect(panelSource).toContainSource('<RoleCreateDialog');
-    expect(panelSource).toContainSource('w-[min(420px,92vw)] rounded-xl border border-slate-200 bg-white p-5 shadow-2xl');
+    expect(panelSource).toContainSource('<WorkbenchModal');
+    expect(panelSource).toContainSource('widthClass="w-[420px]"');
+    expect(panelSource).toContainSource('contentClassName="p-5"');
     expect(panelSource).toContainSource('新建角色');
     expect(panelSource).toContainSource('角色名字');
     expect(panelSource).toContainSource('placeholder="例如：萧炎"');

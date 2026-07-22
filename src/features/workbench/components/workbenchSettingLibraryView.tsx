@@ -242,7 +242,7 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                 />
               ) : (
                 <>
-                  <div className="relative mt-5 min-h-0 flex-1">
+                  <div className="xy-ai-panel-output-slot relative">
                     <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-outline-ai-output-frame xy-floating-fill h-full xy-has-value">
                       <label className="xy-floating-title-count xy-border-embedded-transparent-backplate">
                         生成设定
@@ -287,8 +287,8 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                   </div>
                   <>
                     {activeTab === SETTING_TAB && (
-                      <div className="mt-3 flex min-w-0 items-center gap-1.5">
-                        <div className="flex h-9 shrink-0 overflow-hidden rounded-xl border border-[#08B3D9] bg-white shadow-sm">
+                      <div className="xy-ai-panel-link-row flex min-w-0 items-center gap-1.5">
+                        <div className="flex h-10 shrink-0 overflow-hidden rounded-xl border border-[#08B3D9] bg-white shadow-sm">
                           <div className="flex w-12 items-center justify-center border-r border-[#08B3D9]/30 bg-[#E9FAFE] text-sm font-black text-[#078BA9]">
                             关联
                           </div>
@@ -333,14 +333,6 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                               >
                                 其他设定
                               </button>
-                              <button
-                                type="button"
-                                onClick={clearActiveLinkedOtherSettings}
-                                className="grid w-9 place-items-center bg-red-500 text-white transition-colors hover:bg-red-600"
-                                title="取消关联其他设定"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
                             </div>
                           ) : (
                             <button
@@ -365,14 +357,6 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                               >
                                 已关联脑洞
                               </button>
-                              <button
-                                type="button"
-                                onClick={clearActiveLinkedBrainstorm}
-                                className="grid w-9 place-items-center bg-red-500 text-white transition-colors hover:bg-red-600"
-                                title="取消关联脑洞"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
                             </div>
                           ) : (
                             <button
@@ -387,6 +371,20 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                               脑洞
                             </button>
                           )}
+                          {(activeSettingLinkSource === 'other' || activeSettingLinkSource === 'brainstorm') && (
+                            <button
+                              type="button"
+                              onClick={
+                                activeSettingLinkSource === 'other'
+                                  ? clearActiveLinkedOtherSettings
+                                  : clearActiveLinkedBrainstorm
+                              }
+                              className="grid w-9 shrink-0 place-items-center border-l border-[#08B3D9]/30 bg-red-500 text-white transition-colors hover:bg-red-600"
+                              title={activeSettingLinkSource === 'other' ? '取消关联其他设定' : '取消关联脑洞'}
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                         {activeSettingLinkSource && (
                           <span className="min-w-0 shrink whitespace-nowrap text-xs font-bold text-slate-400">
@@ -395,9 +393,43 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                         )}
                       </div>
                     )}
-                    <div className="mt-3 flex items-center gap-2">
-                      {activeTab === SETTING_TAB ? (
-                        <div className="flex h-10 w-44 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                    {activeTab !== SETTING_TAB && (
+                      <div className="mt-3 flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            if (!currentSelectedEntry) {
+                              addEntryToTab(activeTab, `新建${activeTab}`);
+                              return;
+                            }
+                            updateEntry(currentSelectedEntry.id, {
+                              title: currentSelectedEntry.title || `新建${activeTab}`,
+                            });
+                          }}
+                          className="h-10 w-1/3 rounded-lg border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 hover:bg-gray-100"
+                        >
+                          保存为新{activeTab}
+                        </button>
+                      </div>
+                    )}
+                    <div className="xy-ai-panel-input-row">
+                      <AiInlineInput
+                        ref={libraryAiInputRef}
+                        value={aiInput}
+                        onChange={(event) => {
+                          setAiInput(event.target.value);
+                          resizeFloatingAiTextarea(event.currentTarget);
+                        }}
+                        onKeyDown={handleLibraryAiInputKeyDown}
+                        onSend={() => void sendLibraryAiMessage()}
+                        onStop={stopLibraryAiMessage}
+                        sendDisabled={isLibraryAiLoading || !canSendLibraryAiMessage}
+                        stopDisabled={!isLibraryAiLoading}
+                        placeholder="输入对话指令..."
+                      />
+                    </div>
+                    {activeTab === SETTING_TAB && (
+                      <div className="xy-ai-panel-action-row flex items-center gap-2">
+                        <div className="flex h-10 w-44 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white">
                           <button
                             type="button"
                             onClick={smartImportSettings}
@@ -423,39 +455,8 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                             {smartImportLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                           </button>
                         </div>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            if (!currentSelectedEntry) {
-                              addEntryToTab(activeTab, `新建${activeTab}`);
-                              return;
-                            }
-                            updateEntry(currentSelectedEntry.id, {
-                              title: currentSelectedEntry.title || `新建${activeTab}`,
-                            });
-                          }}
-                          className="h-10 w-1/3 rounded-lg border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 hover:bg-gray-100"
-                        >
-                          保存为新{activeTab}
-                        </button>
-                      )}
-                    </div>
-                    <div className="mt-3">
-                      <AiInlineInput
-                        ref={libraryAiInputRef}
-                        value={aiInput}
-                        onChange={(event) => {
-                          setAiInput(event.target.value);
-                          resizeFloatingAiTextarea(event.currentTarget);
-                        }}
-                        onKeyDown={handleLibraryAiInputKeyDown}
-                        onSend={() => void sendLibraryAiMessage()}
-                        onStop={stopLibraryAiMessage}
-                        sendDisabled={isLibraryAiLoading || !canSendLibraryAiMessage}
-                        stopDisabled={!isLibraryAiLoading}
-                        placeholder="输入对话指令..."
-                      />
-                    </div>
+                      </div>
+                    )}
                   </>
                 </>
               )}

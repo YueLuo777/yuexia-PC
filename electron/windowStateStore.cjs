@@ -15,7 +15,7 @@ function createWindowStateStore({ app, sharedStateDirName, minWidth, minHeight, 
     width: Math.max(minWidth, Math.round(Number(defaultBounds?.width) || minWidth)),
     height: Math.max(minHeight, Math.round(Number(defaultBounds?.height) || minHeight)),
   };
-  const defaultSettings = { rememberSize: false, startupBounds: normalizedDefaultBounds };
+  const defaultSettings = { rememberSize: false, startMaximized: false, startupBounds: normalizedDefaultBounds };
 
   function normalizeBounds(input) {
     return {
@@ -49,6 +49,7 @@ function createWindowStateStore({ app, sharedStateDirName, minWidth, minHeight, 
     const settings = input && typeof input === 'object' ? input : {};
     return {
       rememberSize: settings.rememberSize === true,
+      startMaximized: settings.startMaximized === true,
       startupBounds: normalizeBounds(settings.startupBounds),
     };
   }
@@ -84,14 +85,17 @@ function createWindowStateStore({ app, sharedStateDirName, minWidth, minHeight, 
 
   function readState() {
     const settings = readSettings();
+    if (!settings.rememberSize && settings.startMaximized) {
+      return { ...settings.startupBounds, isMaximized: true };
+    }
     if (!settings.rememberSize) return { ...settings.startupBounds, isMaximized: false };
     for (const filePath of [stateFile, ...legacyStateFiles]) {
       const state = parseState(filePath);
       if (!state) continue;
       if (filePath !== stateFile) persistState(state);
-      return state;
+      return settings.startMaximized ? { ...state, isMaximized: true } : state;
     }
-    return null;
+    return settings.startMaximized ? { ...settings.startupBounds, isMaximized: true } : null;
   }
 
   function clearState() {

@@ -12,9 +12,9 @@ import { RendererReadySignal } from '@/app/RendererReadySignal';
 import { WorkspaceTabsProvider } from '@/shared/tabs/WorkspaceTabsContext';
 import {
   bindWorkbenchAssociationCloseCleanup,
-  resetWorkbenchAssociationsForNewAppSession,
 } from '@/features/workbench/model/workbenchAssociationCleanup';
 import { bindWorkbenchTransientAiCleanup } from '@/features/workbench/model/workbenchTransientAiCleanup';
+import { prepareWorkbenchForAppClose } from '@/features/workbench/model/workbenchAppCloseCleanup';
 import { areInternalRoutesEnabled } from '@/shared/featureFlags/internalRoutes';
 
 const TomatoGenreIterationTestPage = lazy(() =>
@@ -109,10 +109,17 @@ export default function App() {
   const showInternalRoutes = areInternalRoutesEnabled();
 
   useEffect(() => {
-    resetWorkbenchAssociationsForNewAppSession();
     const disposeAssociationCleanup = bindWorkbenchAssociationCloseCleanup();
-    bindWorkbenchTransientAiCleanup();
-    return disposeAssociationCleanup;
+    const disposeTransientAiCleanup = bindWorkbenchTransientAiCleanup();
+    const disposeDesktopClose = window.xinyuexiaWindow?.onPrepareClose(() => {
+      prepareWorkbenchForAppClose();
+      void window.xinyuexiaWindow?.confirmCloseCleanup();
+    });
+    return () => {
+      disposeAssociationCleanup();
+      disposeTransientAiCleanup();
+      disposeDesktopClose?.();
+    };
   }, []);
 
   return (

@@ -77,7 +77,7 @@ export function WorkbenchContextLibraryModal({
       title="关联资料"
       isOpen={open}
       onClose={onClose}
-      storageId="workbench_context_library"
+      storageId="workbench_context_library_centered_v2"
       widthClass="w-[min(1296px,94vw)]"
       heightClass="h-[min(820px,88vh)] min-h-[520px]"
       headerExtra={

@@ -8,7 +8,9 @@ import {
 import {
   extractReviewAnnotations,
   extractReviewRevisedText,
+  buildTextAuditRevisedText,
   getReviewAnnotationParagraphIndex,
+  preserveReviewParagraphIndentation,
   splitReviewParagraphs,
   type ReviewAnnotation,
 } from '@/features/workbench/model/chapterReviewText';
@@ -92,10 +94,18 @@ export function useChapterReviewPresentation(options: {
   const auditOutputPassed = isAuditOutputPassed(reviewAiOutput);
   const reviewOriginalParagraphs = useMemo(() => splitReviewParagraphs(activeReviewContent), [activeReviewContent]);
   const auditRevisedText = useMemo(
-    () => (isAuditTextReview ? reviewRevisedDraft.trim() || extractReviewRevisedText(reviewAiOutput) : ''),
-    [isAuditTextReview, reviewAiOutput, reviewRevisedDraft],
+    () =>
+      isAuditTextReview
+        ? reviewRevisedDraft.trimEnd() ||
+          extractReviewRevisedText(reviewAiOutput) ||
+          buildTextAuditRevisedText(reviewAiOutput, activeReviewContent)
+        : '',
+    [activeReviewContent, isAuditTextReview, reviewAiOutput, reviewRevisedDraft],
   );
-  const auditRevisedParagraphs = useMemo(() => splitReviewParagraphs(auditRevisedText), [auditRevisedText]);
+  const auditRevisedParagraphs = useMemo(
+    () => preserveReviewParagraphIndentation(reviewOriginalParagraphs, splitReviewParagraphs(auditRevisedText)),
+    [auditRevisedText, reviewOriginalParagraphs],
+  );
   const auditParagraphCountMatches = reviewOriginalParagraphs.length === auditRevisedParagraphs.length;
   const reviewAnnotations = useMemo(() => extractReviewAnnotations(reviewAiOutput), [reviewAiOutput]);
   const reviewAnnotationsByParagraph = useMemo(() => {

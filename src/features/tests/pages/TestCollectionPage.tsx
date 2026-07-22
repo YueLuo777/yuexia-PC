@@ -47,11 +47,6 @@ const SettingNameWidthDesignTestPage = lazy(() =>
     default: module.SettingNameWidthDesignTestPage,
   })),
 );
-const IdentityPositionVariantsTestPage = lazy(() =>
-  import('@/features/tests/pages/IdentityPositionVariantsTestPage').then((module) => ({
-    default: module.IdentityPositionVariantsTestPage,
-  })),
-);
 const SettingsHierarchyDesignTestPage = lazy(() =>
   import('@/features/tests/pages/SettingsHierarchyDesignTestPage').then((module) => ({
     default: module.SettingsHierarchyDesignTestPage,
@@ -65,6 +60,11 @@ const WorkbenchFlowTabsSpacingTestPage = lazy(() =>
 const UiConsistencyAuditTestPage = lazy(() =>
   import('@/features/tests/pages/UiConsistencyAuditTestPage').then((module) => ({
     default: module.UiConsistencyAuditTestPage,
+  })),
+);
+const AiPanelVisualConsistencyTestPage = lazy(() =>
+  import('@/features/tests/pages/AiPanelVisualConsistencyTestPage').then((module) => ({
+    default: module.AiPanelVisualConsistencyTestPage,
   })),
 );
 const ErrorLogPage = lazy(() =>
@@ -94,6 +94,14 @@ const TextAuditReviewWorkbenchTestPage = lazy(() =>
   import('@/features/tests/pages/TextAuditReviewWorkbenchTestPage').then((module) => ({
     default: module.TextAuditReviewWorkbenchTestPage,
   })),
+);
+const PostAuditStatusUpdateTestPage = lazy(() =>
+  import('@/features/tests/pages/PostAuditStatusUpdateTestPage').then((module) => ({
+    default: module.PostAuditStatusUpdateTestPage,
+  })),
+);
+const SettingStatusFusionTestPage = lazy(() =>
+  import('@/features/tests/pages/SettingStatusFusionTestPage').then((module) => ({ default: module.SettingStatusFusionTestPage })),
 );
 const TestBrowserPage = lazy(() =>
   import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })),
@@ -190,11 +198,11 @@ const testGroups = [
         badge: 'UI Audit',
       },
       {
-        title: '身份定位样式方案',
-        description: '比较身份定位与存活状态的四种组合方式，选择更自然的正式人物设定头部样式。',
-        path: '/identity-position-variants-test',
-        icon: Ruler,
-        badge: 'Role Header',
+        title: 'AI面板三页统一方案',
+        description: '并排查看设定、章纲、正文三种真实业务按钮在统一输出框、关联区、输入框和操作栏下的视觉效果。',
+        path: '/ai-panel-visual-consistency-test',
+        icon: Sparkles,
+        badge: 'AI Layout',
       },
     ],
   },
@@ -235,6 +243,20 @@ const testGroups = [
         path: '/text-audit-review-workbench-test',
         icon: NotebookText,
         badge: 'Audit Page',
+      },
+      {
+        title: '审核后状态更新工作台',
+        description: '测试AI识别正文对象、分类查询设定、未匹配对象新建确认、状态变化逐项确认和按段落依据写入的完整流程。',
+        path: '/post-audit-status-update-test',
+        icon: ListTree,
+        badge: 'Status Flow',
+      },
+      {
+        title: '设定与状态融合工作台',
+        description: '在同一页面体验完整当前设定、字段更新规则、待确认变化、字段历史和原文依据。',
+        path: '/setting-status-fusion-test',
+        icon: ListTree,
+        badge: 'Setting Status',
       },
     ],
   },
@@ -399,6 +421,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <TextAuditDiffDisplayTestPage />;
       case '/text-audit-review-workbench-test':
         return <TextAuditReviewWorkbenchTestPage />;
+      case '/post-audit-status-update-test':
+        return <PostAuditStatusUpdateTestPage />;
+      case '/setting-status-fusion-test':
+        return <SettingStatusFusionTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':
@@ -421,8 +447,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <WorkbenchFlowTabsSpacingTestPage />;
       case '/ui-consistency-audit-test':
         return <UiConsistencyAuditTestPage />;
-      case '/identity-position-variants-test':
-        return <IdentityPositionVariantsTestPage />;
+      case '/ai-panel-visual-consistency-test':
+        return <AiPanelVisualConsistencyTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':

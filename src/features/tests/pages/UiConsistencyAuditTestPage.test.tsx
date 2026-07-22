@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { UiConsistencyAuditTestPage } from './UiConsistencyAuditTestPage';
 
 const collectionPath = resolve(process.cwd(), 'src/features/tests/pages/TestCollectionPage.tsx');
+const previewsPath = resolve(process.cwd(), 'src/features/tests/pages/UiConsistencyAuditPreviews.tsx');
 
 describe('UiConsistencyAuditTestPage', () => {
   beforeEach(() => {
@@ -32,6 +33,18 @@ describe('UiConsistencyAuditTestPage', () => {
     expect(screen.getAllByText('综合点评').length).toBeGreaterThan(0);
     expect(screen.getAllByText('导航设置').length).toBeGreaterThan(0);
     expect(screen.getByLabelText('角色资料库版本现有界面粗略还原')).toBeInTheDocument();
+    expect(screen.getByTestId('reader-change-explainer')).toHaveTextContent('修改前：三套阅读器各自长得不一样');
+    expect(screen.getByTestId('reader-change-explainer')).toHaveTextContent('统一后：只保留一套固定操作顺序');
+    expect(screen.getByText('查看三套旧实现细节（只用于选择改造基础）').closest('details')).not.toHaveAttribute('open');
+    expect(screen.getByTestId('plain-language-explainer-4')).toHaveTextContent('“遮罩”就是弹窗后面那层半透明灰黑背景');
+    expect(screen.getByTestId('plain-language-explainer-6')).toHaveTextContent('不能三选一');
+    expect(screen.queryByRole('button', { name: /选择第6类版本/ })).not.toBeInTheDocument();
+  });
+
+  it('does not draw the standard modal footer divider through the description field', () => {
+    const source = readFileSync(previewsPath, 'utf8');
+    expect(source).not.toContainSource("handmade ? '' : 'border-t bg-slate-50'");
+    expect(source).toContainSource("handmade ? '' : 'bg-slate-50'");
   });
 
   it('selects, highlights, summarizes, and persists one version per UI family', () => {

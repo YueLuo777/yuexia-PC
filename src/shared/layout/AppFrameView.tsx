@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck -- AppFrame view receives its typed controller scope.
 import React from 'react';
+import { prepareWorkbenchForAppClose } from '@/features/workbench/model/workbenchAppCloseCleanup';
+import { AppModalShell } from '@/shared/ui/AppModalShell';
 export function renderAppFrameView(scope: Record<string, any>) {
   const {
     APP_SCALE_OPTIONS,
@@ -224,7 +226,10 @@ export function renderAppFrameView(scope: Record<string, any>) {
             <Square className="h-4 w-4" />
           </button>
           <button
-            onClick={() => void window.xinyuexiaWindow?.close()}
+            onClick={() => {
+              prepareWorkbenchForAppClose();
+              void window.xinyuexiaWindow?.close();
+            }}
             className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
             title="关闭"
           >
@@ -279,17 +284,15 @@ export function renderAppFrameView(scope: Record<string, any>) {
         </div>
       )}
       {showInternalTools && showTestCollection && TestCollectionPage && (
-        <div
-          className="fixed inset-0 z-[335] flex items-center justify-center bg-slate-950/45 p-5"
-          data-titlebar-no-drag="true"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setShowTestCollection(false);
-          }}
+        <AppModalShell
+          title="测试板块"
+          isOpen={showTestCollection}
+          onClose={() => setShowTestCollection(false)}
+          widthClass="w-[1180px]"
+          heightClass="h-[min(820px,90vh)]"
+          storageId="test_collection"
+          zIndexClass="z-[335]"
         >
-          <div
-            className="flex h-[min(820px,90vh)] w-[min(1180px,94vw)] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
             <Suspense
               fallback={
                 <div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">
@@ -299,21 +302,18 @@ export function renderAppFrameView(scope: Record<string, any>) {
             >
               <TestCollectionPage embedded onClose={() => setShowTestCollection(false)} />
             </Suspense>
-          </div>
-        </div>
+        </AppModalShell>
       )}
       {showInternalTools && showSoftwareUiCatalog && SoftwareUiCatalogPage && (
-        <div
-          className="fixed inset-0 z-[340] flex items-center justify-center bg-slate-950/45 p-5"
-          data-titlebar-no-drag="true"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setShowSoftwareUiCatalog(false);
-          }}
+        <AppModalShell
+          title="软件 UI 库"
+          isOpen={showSoftwareUiCatalog}
+          onClose={() => setShowSoftwareUiCatalog(false)}
+          widthClass="w-[1520px]"
+          heightClass="h-[min(900px,92vh)]"
+          storageId="software_ui_catalog"
+          zIndexClass="z-[340]"
         >
-          <div
-            className="flex h-[min(900px,92vh)] w-[min(1520px,96vw)] min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
             <Suspense
               fallback={
                 <div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">
@@ -323,8 +323,7 @@ export function renderAppFrameView(scope: Record<string, any>) {
             >
               <SoftwareUiCatalogPage embedded onClose={() => setShowSoftwareUiCatalog(false)} />
             </Suspense>
-          </div>
-        </div>
+        </AppModalShell>
       )}
     </div>
   );

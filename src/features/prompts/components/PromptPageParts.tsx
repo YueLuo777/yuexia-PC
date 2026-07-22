@@ -1,19 +1,14 @@
-import { Lock, Search, Sparkles, Trash2, Unlock, X } from 'lucide-react';
+import { Lock, Search, Sparkles, Trash2, Unlock } from 'lucide-react';
 import { type ChangeEvent, type MouseEvent as ReactMouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import {
-  AUDIT_PROMPT_CATEGORY,
-  AUDIT_PROMPT_SUBCATEGORIES,
-  DEFAULT_AUDIT_PROMPT_SUBCATEGORY,
   isDefaultPromptCategory,
-  normalizePromptCategoryName,
-  normalizePromptSubcategory,
   usePrompts,
 } from '@/features/prompts/hooks/usePrompts';
 import type { NewPromptInput, PromptItem } from '@/features/prompts/model/promptTypes';
-import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { ActionButton } from '@/shared/ui/ActionButton';
+import { AppModalShell } from '@/shared/ui/AppModalShell';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { RadialCreateButton } from '@/shared/ui/RadialCreateButton';
 
@@ -79,6 +74,9 @@ export function buildPromptExportText(items: PromptItem[]) {
       item.description,
       '内容:',
       item.content,
+      '文本审核内容:',
+      item.textAuditContent ?? '',
+      `文本审核状态: ${item.textAuditEnabled === false ? '禁用' : '启用'}`,
       '',
     );
   });
@@ -94,7 +92,7 @@ export function getPromptExportSection(block: string, label: string, nextLabel?:
   const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const escapedNextLabel = nextLabel?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const pattern = escapedNextLabel
-    ? new RegExp(`^${escapedLabel}:\\s*\\n([\\s\\S]*?)(?=^${escapedNextLabel}:\\s*$)`, 'm')
+    ? new RegExp(`^${escapedLabel}:\\s*\\n([\\s\\S]*?)(?=^${escapedNextLabel}:\\s*)`, 'm')
     : new RegExp(`^${escapedLabel}:\\s*\\n([\\s\\S]*)`, 'm');
   return pattern.exec(block)?.[1]?.trim() ?? '';
 }
@@ -125,16 +123,19 @@ export function parsePromptExportText(
     .split(PROMPT_EXPORT_BLOCK_SEPARATOR)
     .slice(1)
     .map((block) => {
+      const contentWithAuditBoundary = getPromptExportSection(block, '内容', '文本审核内容');
       return {
         name: getPromptExportField(block, '名称'),
         description: getPromptExportSection(block, '说明', '内容'),
-        content: getPromptExportSection(block, '内容'),
+        content: contentWithAuditBoundary || getPromptExportSection(block, '内容'),
+        textAuditContent: getPromptExportSection(block, '文本审核内容', '文本审核状态'),
+        textAuditEnabled: getPromptExportField(block, '文本审核状态') !== '禁用',
         category: getPromptExportField(block, '分类') || fallbackCategory,
         subCategory: getPromptExportField(block, '二级分类') || undefined,
         promptType: 'novel',
       } satisfies NewPromptInput;
     })
-    .filter((item) => item.name.trim() && item.content.trim());
+    .filter((item) => item.name.trim() && (item.content.trim() || item.textAuditContent?.trim()));
 }
 
 export function PromptEditorModal({
@@ -156,11 +157,12 @@ export function PromptEditorModal({
     name: string;
     description: string;
     content: string;
+    textAuditContent?: string;
+    textAuditEnabled?: boolean;
     category: string;
     subCategory?: string;
   }) => void;
 }) {
-  useTopModalEscape(isOpen, onClose);
   const fallbackCategory =
     defaultCategory && categories.includes(defaultCategory) ? defaultCategory : (categories[0] ?? '未分类');
   const [draft, setDraft] = useState({
@@ -168,7 +170,7 @@ export function PromptEditorModal({
     description: '',
     content: '',
     category: fallbackCategory,
-    subCategory: normalizePromptSubcategory(fallbackCategory),
+    subCategory: undefined,
   });
 
   useEffect(() => {
@@ -178,28 +180,22 @@ export function PromptEditorModal({
       description: initial?.description ?? '',
       content: initial?.content ?? '',
       category: initial?.category ?? fallbackCategory,
-      subCategory: normalizePromptSubcategory(initial?.category ?? fallbackCategory, initial?.subCategory),
+      subCategory: undefined,
     });
   }, [fallbackCategory, initial, isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="modal-sharp fixed inset-0 z-[290] flex items-center justify-center bg-transparent p-6">
-      <div
-        className="modal-sharp flex h-full max-h-[calc(100dvh-48px)] w-[980px] max-w-[94vw] flex-col overflow-hidden rounded-[28px] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-8 py-2">
-          <h2 className="text-[18px] font-bold text-slate-900">{title}</h2>
-          <button
-            onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
+    <AppModalShell
+      title={title}
+      isOpen={isOpen}
+      onClose={onClose}
+      widthClass="w-[980px]"
+      heightClass="h-full max-h-[calc(100dvh-48px)]"
+      storageId="prompt_editor"
+      zIndexClass="z-[290]"
+    >
         <div className="grid min-h-0 flex-1 grid-cols-[360px_minmax(0,1fr)] gap-6 px-8 py-7">
           <div className="min-h-0 space-y-5 overflow-y-auto pt-3 pr-1">
             <div className="xy-floating-field xy-floating-compact xy-has-value text-sm font-bold text-slate-600">
@@ -231,7 +227,7 @@ export function PromptEditorModal({
                       setDraft((prev) => ({
                         ...prev,
                         category,
-                        subCategory: normalizePromptSubcategory(category, prev.subCategory),
+                        subCategory: undefined,
                       }))
                     }
                     className={`rounded-2xl border px-4 py-2 text-sm transition-colors ${
@@ -245,40 +241,21 @@ export function PromptEditorModal({
                 ))}
               </div>
             </div>
-            {normalizePromptCategoryName(draft.category) === AUDIT_PROMPT_CATEGORY ? (
-              <div>
-                <label className="mb-3 block text-sm font-medium text-slate-600">审核二级分类</label>
-                <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-cyan-100 bg-white">
-                  {AUDIT_PROMPT_SUBCATEGORIES.map((subCategory) => (
-                    <button
-                      key={subCategory}
-                      type="button"
-                      onClick={() => setDraft((prev) => ({ ...prev, subCategory }))}
-                      className={`h-10 text-sm font-bold transition-colors ${
-                        normalizePromptSubcategory(draft.category, draft.subCategory) === subCategory
-                          ? 'bg-[#EAF9FD] text-[#078fb0]'
-                          : 'text-slate-500 hover:bg-slate-50'
-                      }`}
-                    >
-                      {subCategory}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
           </div>
 
-          <div
-            className={`xy-floating-field xy-floating-compact xy-floating-fill flex min-h-0 flex-col ${draft.content.trim() ? 'xy-has-value' : ''}`}
-          >
-            <textarea
-              value={draft.content}
-              onChange={(event) => setDraft((prev) => ({ ...prev, content: event.target.value }))}
-              placeholder="提示词内容"
-              rows={18}
-              className="xy-prompt-content-editor min-h-0 flex-1 font-sans text-[19px] font-medium leading-8 tracking-normal text-slate-950"
-            />
-            <label>提示词内容</label>
+          <div className="grid min-h-0 grid-cols-1 gap-5">
+            <div
+              className={`xy-floating-field xy-floating-compact xy-floating-fill flex min-h-0 flex-col ${draft.content.trim() ? 'xy-has-value' : ''}`}
+            >
+              <textarea
+                value={draft.content}
+                onChange={(event) => setDraft((prev) => ({ ...prev, content: event.target.value }))}
+                placeholder="提示词内容"
+                rows={18}
+                className="xy-prompt-content-editor min-h-0 flex-1 font-sans text-[19px] font-medium leading-8 tracking-normal text-slate-950"
+              />
+              <label>提示词内容</label>
+            </div>
           </div>
         </div>
 
@@ -290,8 +267,7 @@ export function PromptEditorModal({
             {initial ? '保存修改' : '创建提示词'}
           </ActionButton>
         </div>
-      </div>
-    </div>
+    </AppModalShell>
   );
 }
 
@@ -309,27 +285,19 @@ export function PromptRecycleModal({
   onPermanentDelete: (id: string) => void;
 }) {
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  useTopModalEscape(isOpen, onClose);
   if (!isOpen) return null;
 
   return (
-    <div className="modal-sharp fixed inset-0 z-[270] flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div
-        className="modal-sharp flex h-[560px] w-[680px] max-w-[94vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">回收站</h2>
-            <p className="mt-1 text-xs text-slate-400">可恢复误删提示词，彻底删除后无法找回。</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+    <AppModalShell
+      title="回收站"
+      subtitle="可恢复误删提示词，彻底删除后无法找回。"
+      isOpen={isOpen}
+      onClose={onClose}
+      widthClass="w-[680px]"
+      heightClass="h-[560px] max-h-[90vh]"
+      storageId="prompt_recycle"
+      zIndexClass="z-[270]"
+    >
         <div className="flex-1 overflow-y-auto p-5">
           {items.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 text-slate-400">
@@ -377,7 +345,6 @@ export function PromptRecycleModal({
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </AppModalShell>
   );
 }

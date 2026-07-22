@@ -12,7 +12,8 @@ describe('compact short fields across formal pages', () => {
     expect(source).toContainSource('<label>提示词说明</label>');
     expect(source).not.toContainSource('<span className="w-[84px] shrink-0">提示词名称</span>');
     expect(source).toContainSource('xy-prompt-content-editor min-h-0 flex-1 font-sans text-[19px]');
-    expect(source).toContainSource('border-b border-slate-100 px-8 py-2');
+    expect(source).toContainSource('<AppModalShell');
+    expect(source).toContainSource('heightClass="h-full max-h-[calc(100dvh-48px)]"');
   });
 
   it('keeps model metadata compact', () => {

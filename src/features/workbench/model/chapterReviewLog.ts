@@ -49,7 +49,7 @@ export function getReviewLogFillGroupWeights(options: {
   return {
     prompt: 1,
     ...(options.hasOutline ? { outline: 1 } : {}),
-    original: 2,
+    original: options.hasOutline ? 1 : 2,
     ...(options.hasUser ? { user: 1 } : {}),
   };
 }

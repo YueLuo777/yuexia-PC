@@ -4,6 +4,7 @@ import {
   getWorkbenchLibraryPhaseActions,
   registerWorkbenchLibraryPhaseActions,
 } from './workbenchLibraryPhaseActionsBridge';
+import { buildCurrentSettingLinkSnapshot } from '../components/workbenchLibraryRequestLog';
 export function useWorkbenchLibraryControllerPhase4(scope: Record<string, any>) {
   const phaseActionsRef = { current: getWorkbenchLibraryPhaseActions(scope.settingTypeOptionsRef) };
   const getRoleEntries = () => phaseActionsRef.current.roleEntries ?? [];
@@ -651,8 +652,7 @@ export function useWorkbenchLibraryControllerPhase4(scope: Record<string, any>) 
       const currentEntry = selectedEntry?.tab === SETTING_TAB ? selectedEntry : null;
       return {
         source,
-        title: currentEntry?.title ?? '当前设定',
-        text: getSettingEntryBody(currentEntry),
+        ...buildCurrentSettingLinkSnapshot(currentEntry, getSettingEntryBody(currentEntry)),
       };
     }
     if (source === 'brainstorm') {

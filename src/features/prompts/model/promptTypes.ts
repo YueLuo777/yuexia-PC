@@ -3,6 +3,8 @@ export interface PromptItem {
   name: string;
   description: string;
   content: string;
+  textAuditContent?: string;
+  textAuditEnabled?: boolean;
   category: string;
   subCategory?: string;
   promptType: 'novel' | 'default';
@@ -19,6 +21,8 @@ export interface NewPromptInput {
   name: string;
   description: string;
   content: string;
+  textAuditContent?: string;
+  textAuditEnabled?: boolean;
   category: string;
   subCategory?: string;
   promptType?: 'novel' | 'default';

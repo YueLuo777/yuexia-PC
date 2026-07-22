@@ -13,6 +13,7 @@ import type { Novel } from '@/features/novels/model/novelTypes';
 import { readWritingSummary, WRITING_STATS_UPDATED_EVENT } from '@/shared/stats/writingStats';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { AutoFitText } from '@/shared/ui/AutoFitText';
+import { AppModalShell } from '@/shared/ui/AppModalShell';
 
 import {
   type BtnColor,
@@ -380,13 +381,17 @@ export function NovelLibraryPage() {
         }}
       />
 
-      {renameTarget && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
-          onClick={() => setRenameTarget(null)}
-        >
-          <div className="w-[360px] rounded-xl bg-white p-6 shadow-xl" onClick={(event) => event.stopPropagation()}>
-            <h3 className="mb-4 text-base font-bold text-gray-900">修改作品名称</h3>
+      <AppModalShell
+        title="修改作品名称"
+        isOpen={renameTarget !== null}
+        onClose={() => setRenameTarget(null)}
+        widthClass="w-[360px]"
+        heightClass="h-auto"
+        storageId="novel_rename"
+        contentClassName="p-6"
+      >
+        {renameTarget ? (
+          <>
             <input
               value={renameTarget.title}
               onChange={(event) => setRenameTarget({ ...renameTarget, title: event.target.value })}
@@ -410,9 +415,9 @@ export function NovelLibraryPage() {
                 确认
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        ) : null}
+      </AppModalShell>
     </div>
   );
 }

@@ -48,6 +48,32 @@
   margin-bottom: 0.875rem;
 }
 
+.xy-ai-panel-output-slot {
+  min-height: 170px;
+  flex: 1 1 0%;
+  margin-top: 1.25rem;
+}
+
+.xy-ai-panel-output-slot.xy-floating-with-bottom-count {
+  margin-bottom: 0;
+}
+
+.xy-ai-panel-link-row,
+.xy-ai-panel-input-row,
+.xy-ai-panel-action-row {
+  flex-shrink: 0;
+  margin-top: 0.75rem;
+}
+
+.xy-ai-panel-link-row,
+.xy-ai-panel-action-row {
+  min-height: 2.5rem;
+}
+
+.xy-ai-panel-action-row {
+  height: 2.5rem;
+}
+
 .xy-floating-edge-tool {
   position: absolute;
   right: 1.1rem;
@@ -180,7 +206,7 @@
 }
 
 .xy-floating-field.xy-floating-with-inline-actions textarea {
-  border: 2px solid #08aace;
+  border: 2px solid #111827;
   border-radius: 1rem;
   padding-right: 6.25rem;
 }

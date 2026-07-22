@@ -39,11 +39,13 @@ describe('ChapterEditor grid line font setting', () => {
     const chapterNumberButtonSource = readSource('../../../shared/ui/ChapterNumberButton.tsx');
     const logLayoutSource = readSource('../../../shared/ui/AiRequestLogModalLayout.tsx');
     const reviewLayoutSource = readSource('ChapterReviewPanel.tsx');
+    const reviewOriginalBodySource = readSource('ChapterReviewOriginalBody.tsx');
     const reviewPanelStart = chapterEditorSource.indexOf('canRenderReviewPanel &&');
     const reviewPanelSource = [
       readSource('ChapterEditorView.tsx'),
       readSource('ChapterReviewDirectory.tsx'),
       readSource('ChapterReviewPreview.tsx'),
+      reviewOriginalBodySource,
     ].join('\n\n');
 
     expect(reviewPanelStart).toBeGreaterThan(-1);
@@ -317,7 +319,8 @@ describe('ChapterEditor grid line font setting', () => {
       'scrollReviewComparisonTargetIntoCenter(reviewAnnotationPreviewPaneRef.current, reviewAnnotationRefs.current[index]);',
     );
     expect(chapterEditorSource).not.toContainSource("scrollIntoView({ block: 'center', behavior: 'smooth' })");
-    expect(reviewPanelSource).toContainSource('reviewOriginalParagraphRefs.current[index] = node;');
+    expect(reviewPanelSource).toContainSource('paragraphRefs.current[index] = node;');
+    expect(reviewPanelSource).toContainSource('paragraphRefs={reviewOriginalParagraphRefs}');
     expect(reviewPanelSource).toContainSource('ref={reviewOriginalPreviewPaneRef}');
     expect(reviewPanelSource).toContainSource('ref={reviewAnnotationPreviewPaneRef}');
     expect(reviewPanelSource).not.toContainSource('快速定位');
@@ -346,7 +349,15 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterNumberButtonSource).toContainSource(
       "if (state === 'hasOutline') return 'xy-detail-outline-number-has-outline hover:border-[#08B3D9]';",
     );
-    expect(reviewPanelSource).toContainSource('className={`relative block w-full text-left outline-none ${');
+    expect(reviewPanelSource).toContainSource(
+      'className={`relative block min-h-[1.9em] w-full text-left outline-none ${',
+    );
+    expect(reviewPanelSource).toContainSource(
+      'absolute -left-4 top-[0.7em] h-2 w-2 rounded-full bg-[#08AACE]',
+    );
+    expect(reviewOriginalBodySource).not.toContainSource(
+      "selected ? REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS",
+    );
     expect(chapterEditorSource).toContainSource('className={`${REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS} ${');
     expect(reviewPanelSource).not.toContainSource("selected ? 'bg-[#EAF9FD] text-slate-900 ring-1 ring-[#9BEFFC]'");
     expect(reviewPanelSource).not.toContainSource('className={`rounded-xl border p-3 transition-colors ${');
@@ -369,9 +380,9 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterEditorSource).toContainSource(
       'const stored = localStorage.getItem(REVIEW_PREVIEW_FONT_SIZE_STORAGE_KEY);',
     );
-    expect(chapterEditorSource).toContainSource(
-      'return stored === null ? 14 : clampReviewPreviewFontSize(Number(stored));',
-    );
+    expect(chapterEditorSource).toContainSource("REVIEW_PREVIEW_TYPOGRAPHY_VERSION = 'body-adapted-v1';");
+    expect(chapterEditorSource).toContainSource("localStorage.setItem(REVIEW_PREVIEW_FONT_SIZE_STORAGE_KEY, '18');");
+    expect(chapterEditorSource).toContainSource('return storedSize ?? 18;');
     expect(chapterEditorSource).toContainSource(
       'const [reviewPreviewFontSize, setReviewPreviewFontSize] = useState(() => readReviewPreviewFontSize());',
     );
@@ -391,6 +402,11 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterEditorSource).toContainSource(
       "if (embeddedMode !== 'audit' && embeddedMode !== 'comment' && embeddedMode !== 'polish') return;",
     );
+    expect(chapterEditorSource.indexOf('lastOpenLogSignalRef.current = openLogSignal;')).toBeLessThan(
+      chapterEditorSource.indexOf(
+        "if (embeddedMode !== 'audit' && embeddedMode !== 'comment' && embeddedMode !== 'polish') return;",
+      ),
+    );
     expect(chapterEditorSource).toContainSource('setIsReviewLogOpen(true);');
     expect(chapterEditorSource).toContainSource('onRegisterHeaderLog?: (handler: (() => void) | null) => void;');
     expect(chapterEditorSource).toContainSource('onRegisterHeaderLog(() => setIsReviewLogOpen(true));');
@@ -402,7 +418,7 @@ describe('ChapterEditor grid line font setting', () => {
       'const basePromptText = activeReviewPrompt?.content?.trim() || modeInstruction;',
     );
     expect(chapterEditorSource).toContainSource(
-      "const promptText = [basePromptText, compareInstruction].filter(Boolean).join('\\n\\n');",
+      "const promptText = auditPromptText || [basePromptText, compareInstruction].filter(Boolean).join('\\n\\n');",
     );
     expect(chapterEditorSource).toContainSource('const userRequirementText = reviewAiInput.trim();');
     expect(chapterEditorSource).toContainSource(
@@ -437,7 +453,7 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterEditorSource).toContainSource('export function getReviewLogFillGroupWeights(options: {');
     expect(chapterEditorSource).toContainSource('hasOutline: boolean;');
     expect(chapterEditorSource).toContainSource('hasUser: boolean;');
-    expect(chapterEditorSource).toContainSource('original: 2,');
+    expect(chapterEditorSource).toContainSource('original: options.hasOutline ? 1 : 2,');
     expect(chapterEditorSource).toContainSource('fillSingleGroup');
     expect(chapterEditorSource).toContainSource('fillGroupWeights={getReviewLogFillGroupWeights');
     expect(chapterEditorSource).not.toContainSource(

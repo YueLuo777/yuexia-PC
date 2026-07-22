@@ -34,7 +34,7 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     expect(outlineRightPanelAnchor).toBeGreaterThan(-1);
     expect(outlineRightPanelStart).toBeGreaterThan(-1);
     expect(outlineRightPanelEnd).toBeGreaterThan(outlineRightPanelStart);
-    expect(outlineRightPanelSource).toContainSource('<div className="relative mt-5 min-h-[170px] flex-1">');
+    expect(outlineRightPanelSource).toContainSource('<div className="xy-ai-panel-output-slot relative">');
     expect(outlineRightPanelSource).toContainSource(
       'xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-outline-ai-output-frame xy-floating-fill xy-floating-with-bottom-count h-full',
     );
@@ -50,6 +50,10 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     expect(styleSource).toContainSource('border: 2px solid #111827;');
     expect(styleSource).toContainSource('.xy-floating-field.xy-outline-ai-output-frame label.xy-floating-title-count,');
     expect(styleSource).toContainSource('transform: translateY(-50%) scale(1);');
+    expect(styleSource).toContainSource('.xy-ai-panel-output-slot {');
+    expect(styleSource).toContainSource('min-height: 170px;');
+    expect(styleSource).toContainSource('margin-top: 1.25rem;');
+    expect(styleSource).toContainSource('margin-top: 0.75rem;');
     expect(panelSource).toContainSource('const shouldShowOutlineDraftWordCount = false;');
     expect(panelSource).toContainSource('if (isDetailOutlineLikeTab(activeTab)) return;');
     expect(panelSource).toContainSource(
@@ -70,12 +74,13 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     expect(outlineRightPanelSource).toContainSource('{shouldShowOutlineDraftWordCount && (');
     expect(panelSource).toContainSource(': `第${selectedOutlineChapter.chapter.serialNumber}章梗概`');
     expect(outlineRightPanelSource).toContainSource('{isDetailOutlineTab && (');
-    expect(outlineRightPanelSource).toContainSource('label="关联大纲"');
+    expect(outlineRightPanelSource).toContainSource('label="大纲"');
     expect(outlineRightPanelSource).toContainSource('linkedLabel="已关联大纲"');
+    expect(outlineRightPanelSource).toContainSource('prefixLabel="关联"');
     expect(outlineRightPanelSource).toContainSource('clearOnLinkedClick');
     expect(outlineRightPanelSource).toContainSource('onClear={clearDetailOutlineReaderSelection}');
     expect(outlineRightPanelSource).toContainSource(
-      'linkedButtonClassName="min-w-0 flex-1 whitespace-nowrap px-3 text-sm font-black text-white bg-red-500 hover:bg-red-600"',
+      'linkedButtonClassName="min-w-0 flex-1 whitespace-nowrap bg-[#08AACE] px-3 text-sm font-black text-white hover:bg-[#0796B8]"',
     );
     expect(outlineRightPanelSource).not.toContainSource(
       'clearButtonClassName="flex h-full w-9 shrink-0 items-center justify-center border-l border-red-300 bg-red-500 text-white transition-colors hover:bg-red-600"',
@@ -83,12 +88,13 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     expect(outlineRightPanelSource).toContainSource(
       'meta={<>关联 <WordCountText value={detailOutlineReaderWordCount} compact /></>}',
     );
-    expect(outlineRightPanelSource).toContainSource('className="mt-3 flex items-center gap-2"');
+    expect(outlineRightPanelSource).toContainSource('className="xy-ai-panel-link-row flex items-center gap-2"');
     expect(outlineRightPanelSource).toContainSource(
-      'groupClassName="flex h-10 w-[132px] shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white"',
+      'groupClassName="flex h-10 w-[134px] shrink-0 overflow-hidden rounded-xl border border-[#08AACE] bg-white shadow-sm"',
     );
+    expect(outlineRightPanelSource).toContainSource('prefixClassName="grid w-12 shrink-0 place-items-center');
     expect(outlineRightPanelSource).toContainSource(
-      'buttonClassName="h-10 w-[132px] whitespace-nowrap rounded-xl border border-[#08AACE] bg-white px-3 text-sm font-black text-[#08AACE] hover:bg-[#EAF9FD]"',
+      'buttonClassName="min-w-0 flex-1 whitespace-nowrap bg-white px-3 text-sm font-bold text-slate-600 hover:bg-[#E9FAFD]"',
     );
     expect(panelSource).toContainSource("readerTitle: '关联资料'");
     expect(panelSource).toContainSource("readerEmptyText: '未关联章纲、设定或角色'");
@@ -225,10 +231,6 @@ describe('WorkbenchLibraryPanel outline flows', () => {
       '<WordCountText value={countTextWords(detailOutlineParts.stateExpectation)} />',
     );
     expect(labelSource).not.toContainSource('章纲：');
-    const rightPreviewStart = panelSource.indexOf('<div className="relative mt-5 min-h-[170px] flex-1">');
-    const rightPreviewEnd = panelSource.indexOf('{isDetailOutlineTab && (', rightPreviewStart);
-    const rightPreviewSource = panelSource.slice(rightPreviewStart, rightPreviewEnd);
-
     expect(panelSource).toContainSource('const clearOutlineAiOutputDraft = () => {');
     expect(panelSource).toContainSource('onClick={clearOutlineAiOutputDraft}');
     expect(panelSource).toContainSource('const renderDetailOutlineDraftClearButton = () => {');
@@ -239,7 +241,7 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     expect(cardSource).not.toContainSource(
       'xy-floating-outline-clear-button xy-border-embedded-transparent-backplate xy-floating-outline-card-clear-tool absolute z-30 px-1',
     );
-    expect(rightPreviewSource).toContainSource('{renderDetailOutlineDraftClearButton()}');
+    expect(panelSource).toContainSource('{renderDetailOutlineDraftClearButton()}');
     const clearOutputStart = panelSource.indexOf('const clearOutlineAiOutputDraft = () => {');
     const clearOutputEnd = panelSource.indexOf('const renderDetailOutlineDraftClearButton = () => {', clearOutputStart);
     const clearOutputSource = panelSource.slice(clearOutputStart, clearOutputEnd);
@@ -347,7 +349,7 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     const styleSource = await readSharedStylesSource();
     const outputFrameAnchor = panelSource.indexOf('xy-outline-ai-output-frame xy-floating-fill h-full');
     const outputAreaAnchor = panelSource.indexOf('生成设定', outputFrameAnchor);
-    const outputAreaStart = panelSource.lastIndexOf('<div className="relative mt-5 min-h-0 flex-1">', outputAreaAnchor);
+    const outputAreaStart = panelSource.lastIndexOf('<div className="xy-ai-panel-output-slot relative">', outputAreaAnchor);
     const outputAreaEnd = panelSource.indexOf('{activeTab === SETTING_TAB && (', outputAreaAnchor);
     const outputAreaSource = panelSource.slice(outputAreaStart, outputAreaEnd);
 
@@ -388,7 +390,8 @@ describe('WorkbenchLibraryPanel outline flows', () => {
 
     expect(readerAsideStart).toBeGreaterThan(-1);
     expect(readerAsideEnd).toBeGreaterThan(readerAsideStart);
-    expect(modalHeaderSource).toContainSource('<h3 className="text-xl font-bold text-gray-900">关联资料</h3>');
+    expect(modalHeaderSource).toContainSource('<WorkbenchModal');
+    expect(modalHeaderSource).toContainSource('title="关联资料"');
     expect(modalHeaderSource).toContainSource('grid-cols-[300px_minmax(0,1fr)_280px]');
     expect(modalHeaderSource).toContainSource('本次将读取');
     expect(modalHeaderSource).toContainSource('draftDetailOutlineReaderItems.map((entry) => (');

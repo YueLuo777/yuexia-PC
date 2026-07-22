@@ -17,8 +17,9 @@ describe('ChapterEditor review preview annotation sync', () => {
       'scrollReviewComparisonTargetIntoCenter(reviewAnnotationPreviewPaneRef.current, reviewAnnotationRefs.current[index]);',
     );
     expect(source).not.toContainSource("scrollIntoView({ block: 'center', behavior: 'smooth' })");
-    expect(source).toContainSource('onClick={() => selectReviewPreviewParagraph(index)}');
-    expect(source).toContainSource('activeReviewParagraphIndex === index');
+    expect(source).toContainSource('onSelectParagraph={selectReviewPreviewParagraph}');
+    expect(source).toContainSource('onClick={() => onSelectParagraph(index)}');
+    expect(source).toContainSource('activeParagraphIndex === index');
     expect(source).toContainSource('getReviewAnnotationNoteSpacingClass');
     expect(source).toContainSource('className="space-y-3"');
     expect(source).not.toContainSource('className="space-y-8"');

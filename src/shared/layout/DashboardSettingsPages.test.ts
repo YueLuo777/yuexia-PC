@@ -77,6 +77,12 @@ describe('dashboard unified settings page', () => {
     expect(settingsPage).toContainSource("{ id: 'theme', label: '主题颜色'");
     expect(settingsPage).toContainSource("{ id: 'association', label: '关联设置'");
     expect(settingsPage).toContainSource("{ id: 'appIcon', label: '软件图标'");
+    const testSettingsSource = settingsPage.slice(
+      settingsPage.indexOf('const TEST_SETTINGS_NAV_ITEMS'),
+      settingsPage.indexOf('const SETTINGS_NAV_GROUPS'),
+    );
+    expect(testSettingsSource.indexOf("id: 'association'")).toBeLessThan(testSettingsSource.indexOf("id: 'appIcon'"));
+    expect(testSettingsSource.indexOf("id: 'appIcon'")).toBeLessThan(testSettingsSource.indexOf("id: 'theme'"));
     expect(settingsPage).toContainSource('variant="embedded"');
     expect(settingsPage).toContainSource('border-b border-slate-100 bg-white px-6 pt-4');
     expect(settingsPage).toContainSource('overflow-y-auto bg-white px-6 py-3');
@@ -156,7 +162,9 @@ describe('dashboard unified settings page', () => {
     expect(compactSections).toContainSource('const currentBounds = settings?.currentBounds ?? defaultBounds;');
     expect(compactSections).toContainSource('const startupBounds = settings?.startupBounds ?? defaultBounds;');
     expect(compactSections).toContainSource('aria-label="窗口大小记忆"');
-    expect(compactSections).toContainSource('<fieldset disabled={rememberSize}');
+    expect(compactSections).toContainSource('aria-label="启动时最大化"');
+    expect(compactSections).toContainSource('startMaximized');
+    expect(compactSections).toContainSource('<fieldset disabled={rememberSize || startMaximized}');
     expect(compactSections).toContainSource('应用并预览');
     expect(compactSections).toContainSource('{ width: 2064, height: 1120 }');
     expect(systemSettings).toContainSource(
@@ -168,12 +176,14 @@ describe('dashboard unified settings page', () => {
     expect(electronMain).toContainSource("registerTrustedIpcHandler('window-settings:update'");
     expect(electronMain).toContainSource("registerTrustedIpcHandler('window-settings:apply-bounds-preset'");
     expect(electronMain).toContainSource('windowStateStore.readSettings().rememberSize');
+    expect(electronMain).toContainSource('next.startMaximized');
     expect(electronMain).toContainSource('fitStartupBoundsToWorkArea');
     expect(electronMain).toContainSource('fitWindowBoundsToWorkArea(requestedBounds, display.workArea)');
     expect(electronMain).not.toContainSource('STARTUP_MAX_WORK_AREA_HEIGHT_RATIO');
     expect(windowBounds).toContainSource('const width = Math.min(requestedWidth');
     expect(windowBounds).toContainSource('const height = Math.min(requestedHeight');
     expect(windowStateStore).toContainSource('if (!settings.rememberSize) return { ...settings.startupBounds, isMaximized: false };');
+    expect(windowStateStore).toContainSource('if (!settings.rememberSize && settings.startMaximized)');
 
     expect(shortcutSettings).toContainSource("variant?: 'modal' | 'page' | 'embedded'");
     expect(navSettings).toContainSource("variant?: 'modal' | 'page' | 'embedded'");

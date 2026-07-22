@@ -341,10 +341,11 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     );
     expect(panelSource).toContainSource('const showRoleIdentityControls = !roleIsMaleProtagonist;');
     expect(panelSource).toContainSource('{showRoleIdentityControls ? (');
-    expect(panelSource).toContainSource('<div aria-hidden="true" className="h-[42px] min-w-[168px] shrink-0" />');
-    expect(panelSource).toContainSource('xy-role-life-toggle inline-flex h-[42px] w-[112px]');
-    expect(panelSource).toContainSource('buttonClassName="h-[42px] px-3 text-sm"');
-    expect(panelSource).toContainSource('className="xy-role-identity-select w-[168px] shrink-0"');
+    expect(panelSource).toContainSource('<div aria-hidden="true" className="h-[48px] min-w-[180px] shrink-0" />');
+    expect(panelSource).toContainSource('label="身份定位"');
+    expect(panelSource).toContainSource('<WorkbenchSurvivalStatusToggle');
+    expect(panelSource).toContainSource("value={roleLifeStatus ?? '存活'}");
+    expect(panelSource).not.toContainSource('xy-role-life-toggle');
   });
   it('splits protagonist cheat advantage preview into the approved five fields', async () => {
     const storageKey = 'workbench-cheat-advantage-structured-preview-test';

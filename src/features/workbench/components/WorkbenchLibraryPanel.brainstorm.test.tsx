@@ -90,8 +90,8 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
       "title={isOutlineCharacterScope ? '关联当前人物设定' : '关联当前选中的设定预览'}",
     );
     const linkControlSource = panelSource.slice(
-      panelSource.lastIndexOf('<div className="mt-3 flex min-w-0 items-center gap-1.5">', linkControlStart),
-      panelSource.indexOf('<div className="mt-3 flex items-center gap-2">', linkControlStart),
+      panelSource.lastIndexOf('<div className="xy-ai-panel-link-row flex min-w-0 items-center gap-1.5">', linkControlStart),
+      panelSource.indexOf('<div className="xy-ai-panel-input-row">', linkControlStart),
     );
 
     expect(linkControlStart).toBeGreaterThan(-1);
@@ -109,7 +109,9 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     );
     expect(panelSource).toContainSource("source === 'current'");
     expect(panelSource).toContainSource("source === 'other'");
-    expect(panelSource).toContainSource('text: getSettingEntryBody(currentEntry)');
+    expect(panelSource).toContainSource(
+      '...buildCurrentSettingLinkSnapshot(currentEntry, getSettingEntryBody(currentEntry))',
+    );
     expect(panelSource).toContainSource(
       'text: currentRoleEntry && currentRole ? buildRoleReaderContent(currentRoleEntry, currentRole) :',
     );
@@ -124,6 +126,17 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(linkControlSource).toContainSource("activeSettingLinkSource === 'current'");
     expect(linkControlSource).toContainSource("activeSettingLinkSource === 'other'");
     expect(linkControlSource).toContainSource("activeSettingLinkSource === 'brainstorm'");
+    const brainstormControlIndex = linkControlSource.indexOf(
+      "title={isOutlineCharacterScope ? '关联脑洞库内容到人物设定' : '关联脑洞库内容'}",
+    );
+    const trailingClearIndex = linkControlSource.indexOf(
+      "(activeSettingLinkSource === 'other' || activeSettingLinkSource === 'brainstorm')",
+    );
+    expect(brainstormControlIndex).toBeGreaterThan(-1);
+    expect(trailingClearIndex).toBeGreaterThan(brainstormControlIndex);
+    expect(linkControlSource).toContainSource(
+      "title={activeSettingLinkSource === 'other' ? '取消关联其他设定' : '取消关联脑洞'}",
+    );
     expect(linkControlSource).toContainSource(
       'updateActiveTabConfig({ associationSessionId: null, settingLinkSource: null, promptDisabled: false })',
     );
@@ -146,8 +159,8 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(otherSettingModalSource).toContainSource('toggleVisibleOtherSettingLinkGroupSelection');
     expect(panelSource).toContainSource('关联所有');
     expect(panelSource).toContainSource('全选');
-    expect(panelSource).toContainSource("aria-label={`${draftIds.has(entry.id) ? '取消选择' : '选择'}${entry.title}`}");
-    expect(panelSource).toContainSource('onToggleEntry(entry.id)');
+    expect(panelSource).toContainSource('<AssociationReaderItemRow');
+    expect(panelSource).toContainSource('onToggle={() => onToggleEntry(entry.id)}');
     expect(panelSource).toContainSource("draftIds.has(selectedEntry.id) ? '已勾选' : '未勾选'");
     expect(otherSettingModalSource).not.toContainSource('关联此项');
     expect(otherSettingModalSource).not.toContainSource('selectedOtherSettingLinkEntry.tabTitle');

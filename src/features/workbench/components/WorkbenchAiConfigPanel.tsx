@@ -36,7 +36,7 @@ export function WorkbenchAiConfigPanel({
     ) : null;
   return (
     <div className="w-full shrink-0 overflow-visible">
-      <div className="max-w-full">
+      <div className="relative max-w-full">
         <CombinedAiConfigSelect
           className="w-full"
           modelValue={model?.id ?? modelId}
@@ -56,7 +56,7 @@ export function WorkbenchAiConfigPanel({
           onModelManage={onModelManage}
           onPromptManage={onPromptManage}
         />
-        {status ? <div className="mt-1 flex h-4 justify-end text-xs font-bold">{status}</div> : null}
+        {status ? <div className="absolute right-2 top-0 z-20 flex h-4 items-center text-xs font-bold">{status}</div> : null}
       </div>
     </div>
   );

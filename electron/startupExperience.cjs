@@ -27,6 +27,7 @@ function getStartupWindowBounds(screen, savedState) {
 function createStartupExperience({ BrowserWindow, screen, icon, isHeadless, log, revealMainWindow }) {
   let splashWindow = null;
   let revealTimer = null;
+  let hasRevealedMainWindow = false;
 
   function closeSplash() {
     if (revealTimer) {
@@ -42,13 +43,20 @@ function createStartupExperience({ BrowserWindow, screen, icon, isHeadless, log,
   }
 
   function reveal(reason) {
+    if (hasRevealedMainWindow) {
+      log(`main window reveal ignored reason=${reason}`);
+      return false;
+    }
+    hasRevealedMainWindow = true;
     log(`main window reveal reason=${reason}`);
     closeSplash();
     revealMainWindow();
+    return true;
   }
 
   function begin(mainWindow, savedState) {
     closeSplash();
+    hasRevealedMainWindow = false;
     mainWindow.once('ready-to-show', () => log('main window first paint ready'));
     mainWindow.webContents.once('did-finish-load', () => log('main window document loaded'));
 

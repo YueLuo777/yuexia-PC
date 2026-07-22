@@ -68,6 +68,8 @@ export const readWorkbenchLibraryPanelSource = async () => {
     'workbenchRoleSidebar.tsx',
     'WorkbenchNameField.tsx',
     'workbenchSettingEditor.tsx',
+    'StructuredSettingCompactFields.tsx',
+    'workbenchStructuredSettingCompactLayout.ts',
     'workbenchSimpleLibraryView.tsx',
     '../hooks/useWorkbenchLibraryFieldSizes.ts',
     '../hooks/useWorkbenchLibraryFontSizes.ts',

@@ -3942,21 +3942,15 @@ export function WorkbenchLibraryPanel({
           <WorkbenchRoleSidebar
             roleTab={ROLE_TAB}
             roleSearch={roleSearch}
-            roleTypeDraft={roleTypeDraft}
-            roleNameDraft={roleNameDraft}
             groupedRoles={groupedRoles}
             expandedRoleTypes={expandedRoleTypes}
             libraryDropTarget={libraryDropTarget}
             draggingLibraryEntry={draggingLibraryEntry}
             selectedEntryId={selectedEntry?.id}
-            fieldSizeSpecs={fieldSizeSpecs}
             libraryPointerSuppressClickRef={libraryPointerSuppressClickRef}
-            getFieldSizeStyle={getFieldSizeStyle}
             getPreviewedLibraryGroupEntries={getPreviewedLibraryGroupEntries}
             setExpandedRoleTypes={setExpandedRoleTypes}
             setRoleSearch={setRoleSearch}
-            setRoleTypeDraft={setRoleTypeDraft}
-            setRoleNameDraft={setRoleNameDraft}
             setSelectedId={setSelectedId}
             openCategoryMenu={openCategoryMenu}
             openEntryMenu={openEntryMenu}
@@ -3972,9 +3966,7 @@ export function WorkbenchLibraryPanel({
             finishLibraryEntryPointerDrag={finishLibraryEntryPointerDrag}
             shouldShowRolePinAction={shouldShowRolePinAction}
             toggleRolePinned={toggleRolePinned}
-            addRoleType={addRoleType}
-            addRole={addRole}
-            getDefaultRoleCreateType={getDefaultRoleCreateType}
+            openSettingCreateDialog={openSettingCreateDialog}
           />
         }
         leftResizeHandle={leftResizeHandle}
@@ -4270,6 +4262,7 @@ export function WorkbenchLibraryPanel({
       emptyText={emptyText}
       entries={visibleEntries}
       selectedEntry={selectedEntry}
+      sidebarWidth={settingLibraryLeftWidth}
       onAddEntry={addEntry}
       onSelectEntry={setSelectedId}
       onUpdateEntry={updateEntry}

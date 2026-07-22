@@ -983,9 +983,9 @@ export function useWorkbenchLibraryControllerPhase6(scope: Record<string, any>) 
     />
   );
   const openLibraryAiLog = useCallback(
-    (scope: 'library' | 'outline') => {
+    (scope: 'library' | 'outline', isOpen = true) => {
       setLibraryAiLogScope(scope);
-      setIsLibraryAiLogOpen(true);
+      setIsLibraryAiLogOpen(isOpen);
     },
     [setIsLibraryAiLogOpen, setLibraryAiLogScope],
   );

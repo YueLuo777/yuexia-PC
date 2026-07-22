@@ -4,6 +4,8 @@ import {
   UiConsistencyAuditPreview,
   type UiAuditPreviewKind,
 } from '@/features/tests/pages/UiConsistencyAuditPreviews';
+import { UiConsistencyReaderExplainer } from '@/features/tests/pages/UiConsistencyReaderExplainer';
+import { UiConsistencyPlainLanguageExplainer } from '@/features/tests/pages/UiConsistencyPlainLanguageExplainers';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
 
 const UI_AUDIT_SELECTIONS_KEY = 'xinyuexia_ui_consistency_audit_selections_v1';
@@ -202,6 +204,60 @@ export function UiConsistencyAuditTestPage() {
     setSelections((current) => ({ ...current, [String(groupNumber)]: variantIndex }));
   };
 
+  const renderVariantGrid = (group: AuditGroup, wrapperClass = 'p-5') => (
+    <div className={`grid gap-4 ${wrapperClass} ${group.variants.length >= 3 ? 'xl:grid-cols-3' : 'xl:grid-cols-2'}`}>
+      {group.variants.map((variant, index) => {
+        const selected = selections[String(group.number)] === index;
+        return (
+          <article
+            key={variant.name}
+            className={`rounded-xl border p-4 transition-colors ${selected ? 'border-[#08AACE] bg-[#F8FDFF] ring-2 ring-[#08AACE]/20' : 'border-slate-200 bg-white'}`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-black text-slate-900">版本 {index + 1}：{variant.name}</h3>
+              {selected ? <CheckCircle2 className="h-5 w-5 shrink-0 text-[#08AACE]" /> : <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />}
+            </div>
+            <div className="mt-3" aria-label={`${variant.name}现有界面粗略还原`}>
+              <UiConsistencyAuditPreview kind={variant.preview} />
+            </div>
+            <div className="mt-3 space-y-2 text-xs leading-5">
+              <div className="flex items-start gap-2 text-slate-600">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#08AACE]" />
+                <span><strong className="text-slate-800">软件位置：</strong>{variant.entry}</span>
+              </div>
+              <div className="rounded-lg bg-slate-950 px-3 py-2 font-mono text-[11px] text-slate-200">{variant.source}</div>
+              <div className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 font-bold text-amber-900">
+                <ArrowRight className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{variant.difference}</span>
+              </div>
+            </div>
+            {group.number === 6 ? (
+              <div className="mt-3 rounded-lg bg-slate-100 px-3 py-2 text-center text-xs font-black text-slate-600">
+                这是需要单独统一的问题类型，不是候选版本
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => selectVariant(group.number, index)}
+                aria-label={`选择第${group.number}类版本${index + 1}：${variant.name}`}
+                aria-pressed={selected}
+                className={`mt-3 h-9 w-full rounded-md text-sm font-black transition-colors ${
+                  selected
+                    ? 'border border-[#08AACE] bg-[#EAF9FD] text-[#078FAE]'
+                    : 'bg-[#08AACE] text-white hover:bg-[#0798b8]'
+                }`}
+              >
+                {group.number >= 2
+                  ? selected ? '已选为改造基础' : '以此旧版为改造基础'
+                  : selected ? '已选择此版本' : '选择此版本'}
+              </button>
+            )}
+          </article>
+        );
+      })}
+    </div>
+  );
+
   return (
     <main className="min-h-full bg-slate-50 px-5 py-6 text-slate-800">
       <div className="mx-auto max-w-[1380px]">
@@ -284,49 +340,27 @@ export function UiConsistencyAuditTestPage() {
                 </div>
               </div>
 
-              <div className={`grid gap-4 p-5 ${group.variants.length >= 3 ? 'xl:grid-cols-3' : 'xl:grid-cols-2'}`}>
-                {group.variants.map((variant, index) => {
-                  const selected = selections[String(group.number)] === index;
-                  return (
-                  <article
-                    key={variant.name}
-                    className={`rounded-xl border p-4 transition-colors ${selected ? 'border-[#08AACE] bg-[#F8FDFF] ring-2 ring-[#08AACE]/20' : 'border-slate-200 bg-white'}`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="font-black text-slate-900">版本 {index + 1}：{variant.name}</h3>
-                      {selected ? <CheckCircle2 className="h-5 w-5 shrink-0 text-[#08AACE]" /> : <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />}
-                    </div>
-                    <div className="mt-3" aria-label={`${variant.name}现有界面粗略还原`}>
-                      <UiConsistencyAuditPreview kind={variant.preview} />
-                    </div>
-                    <div className="mt-3 space-y-2 text-xs leading-5">
-                      <div className="flex items-start gap-2 text-slate-600">
-                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#08AACE]" />
-                        <span><strong className="text-slate-800">软件位置：</strong>{variant.entry}</span>
-                      </div>
-                      <div className="rounded-lg bg-slate-950 px-3 py-2 font-mono text-[11px] text-slate-200">{variant.source}</div>
-                      <div className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 font-bold text-amber-900">
-                        <ArrowRight className="mt-0.5 h-4 w-4 shrink-0" />
-                        <span>{variant.difference}</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => selectVariant(group.number, index)}
-                      aria-label={`选择第${group.number}类版本${index + 1}：${variant.name}`}
-                      aria-pressed={selected}
-                      className={`mt-3 h-9 w-full rounded-md text-sm font-black transition-colors ${
-                        selected
-                          ? 'border border-[#08AACE] bg-[#EAF9FD] text-[#078FAE]'
-                          : 'bg-[#08AACE] text-white hover:bg-[#0798b8]'
-                      }`}
-                    >
-                      {selected ? '已选择此版本' : '选择此版本'}
-                    </button>
-                  </article>
-                  );
-                })}
-              </div>
+              {group.number === 2 ? (
+                <div className="p-5">
+                  <UiConsistencyReaderExplainer />
+                  <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <summary className="cursor-pointer text-sm font-black text-slate-700">
+                      查看三套旧实现细节（只用于选择改造基础）
+                    </summary>
+                    {renderVariantGrid(group, 'pt-4')}
+                  </details>
+                </div>
+              ) : group.number >= 3 ? (
+                <div className="p-5">
+                  <UiConsistencyPlainLanguageExplainer groupNumber={group.number as 3 | 4 | 5 | 6} />
+                  <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <summary className="cursor-pointer text-sm font-black text-slate-700">
+                      {group.number === 6 ? '查看当前三种问题类型的旧界面' : '查看旧版本界面和源码位置'}
+                    </summary>
+                    {renderVariantGrid(group, 'pt-4')}
+                  </details>
+                </div>
+              ) : renderVariantGrid(group)}
             </section>
           ))}
         </div>

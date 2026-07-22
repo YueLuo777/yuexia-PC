@@ -8,6 +8,7 @@ import {
   normalizePromptSubcategory,
 } from '@/features/prompts/hooks/usePrompts';
 import { isChapterContentPolished } from '@/features/workbench/model/chapterPolishStatus';
+import { getAuditTextStageState } from '@/features/workbench/model/chapterAuditWorkflow';
 import {
   AUDIT_OUTLINE_FIT_ITEM,
   AUDIT_STRUCTURE_CHECK_ITEMS,
@@ -195,7 +196,7 @@ export function ChapterEditor({
     statusPrompts,
     activeStatusPromptId,
     setStatusPromptId,
-  } = useChapterReviewPrompts({ reviewMode, clearReviewAiOutput });
+  } = useChapterReviewPrompts({ reviewMode, clearReviewAiOutput, reviewAiOutput });
   const canShowReviewOutline = reviewMode !== 'polish';
   const {
     reviewPageLeftWidth,
@@ -278,8 +279,8 @@ export function ChapterEditor({
 
   useEffect(() => {
     if (openLogSignal <= 0 || openLogSignal === lastOpenLogSignalRef.current) return;
-    if (embeddedMode !== 'audit' && embeddedMode !== 'comment' && embeddedMode !== 'polish') return;
     lastOpenLogSignalRef.current = openLogSignal;
+    if (embeddedMode !== 'audit' && embeddedMode !== 'comment' && embeddedMode !== 'polish') return;
     setIsReviewLogOpen(true);
   }, [embeddedMode, openLogSignal, setIsReviewLogOpen]);
 
@@ -446,7 +447,7 @@ export function ChapterEditor({
     }
   }, [embeddedMode, activeChapterId, openReviewPanel]);
 
-  const { sendReviewAiMessage, stopReviewAiMessage } = useChapterReviewRequest({
+  const reviewRequest = useChapterReviewRequest({
     reviewMode,
     activeReviewState,
     updateReviewModeState,
@@ -477,11 +478,18 @@ export function ChapterEditor({
   }
 
   const editorSettingsModal = (
-    <ChapterEditorSettingsModal isOpen={isEditorSettingsOpen} onClose={() => setIsEditorSettingsOpen(false)} />
+    <ChapterEditorSettingsModal
+      isOpen={isEditorSettingsOpen}
+      onClose={() => setIsEditorSettingsOpen(false)}
+      isAuditMode={reviewMode === 'audit'}
+    />
   );
 
   const isEmbeddedReviewMode = embeddedMode === 'audit' || embeddedMode === 'comment' || embeddedMode === 'polish';
   const activeReviewModeTitle = REVIEW_MODE_TITLES[reviewMode];
+  const auditTextStage = getAuditTextStageState(reviewAiOutput);
+  const canRunTextAudit =
+    activeReviewPrompt?.textAuditEnabled !== false && Boolean(activeReviewPrompt?.textAuditContent?.trim());
   const showStatusUpdatePanel = embeddedMode ? embeddedMode === 'status' : isStatusUpdateOpen;
   const showReviewPanel = embeddedMode ? isEmbeddedReviewMode : isReviewOpen;
   const reviewPortalTarget = isEmbeddedReviewMode ? embeddedPortalElement : document.body;
@@ -527,6 +535,8 @@ export function ChapterEditor({
     auditParagraphCountMatches,
     auditRevisedParagraphs,
     auditRevisedText,
+    auditTextStage,
+    canRunTextAudit,
     canRenderReviewPanel,
     canShowReviewOutline,
     chapter,
@@ -617,7 +627,11 @@ export function ChapterEditor({
     selectReviewPreviewParagraph,
     selectStatusChapter,
     selectedStatusTargets,
-    sendReviewAiMessage,
+    cancelAuditTextReviewCountdown: reviewRequest.cancelAuditTextReviewCountdown,
+    runAuditTextReviewManually: reviewRequest.runAuditTextReviewManually,
+    sendReviewAiMessage: reviewRequest.sendReviewAiMessage,
+    startAuditTextReviewNow: reviewRequest.startAuditTextReviewNow,
+    stopReviewAiMessage: reviewRequest.stopReviewAiMessage,
     serialValue,
     setCopyToast,
     setEditorScrollTop,
@@ -663,7 +677,6 @@ export function ChapterEditor({
     statusTargetEntries,
     statusTargetIds,
     statusUpdatedChapterIds,
-    stopReviewAiMessage,
     textareaRef,
     titleCount,
     toggleAuditStructureItem,

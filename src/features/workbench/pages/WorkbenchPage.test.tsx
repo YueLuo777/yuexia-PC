@@ -35,6 +35,7 @@ describe('Workbench library loading', () => {
   it('loads the large library panel lazily and keeps the setting instance prepared', async () => {
     const source = await readSource('WorkbenchPage.tsx');
     const managementModalSource = await readSource('../components/WorkbenchManagementModal.tsx');
+    const logTriggerSource = await readSource('../components/workbenchLibraryAiLogTriggers.ts');
 
     expect(source).toContainSource('const LazyWorkbenchLibraryPanel = lazy(() =>');
     expect(source).toContainSource("import('@/features/workbench/components/WorkbenchLibraryPanel')");
@@ -54,11 +55,18 @@ describe('Workbench library loading', () => {
     expect(source).toContainSource('!previous.cacheVisible&&!next.cacheVisible');
     expect(source).toContainSource('cacheVisible={chapterOutlineVisible}');
     expect(source).toContainSource('cacheVisible={summaryVisible}');
+    expect(source).toContainSource(
+      '<WorkbenchLibraryVisibilityProvider isActive={cacheVisible} activePageKey={activePageKey}>',
+    );
+    expect(source).toContainSource('activePageKey={activeFlow}');
     expect(source).toContainSource("defaultActiveTab={activeFlow==='outline'?'大纲':'脑洞'}");
     expect(source).not.toContainSource('<LibraryPanel key={activeFlow}');
     expect(source).not.toContainSource('key="chapterOutline"');
     expect(source).not.toContainSource('key="summary"');
     expect(source).toContainSource('showInlineFieldSizeButton:!visible');
+    expect(logTriggerSource).toContainSource("if (!isActive) openLibraryAiLog('library', false);");
+    expect(logTriggerSource).toContainSource("return () => openLibraryAiLog('library', false);");
+    expect(logTriggerSource).toContainSource('[activePageKey, isActive, openLibraryAiLog]');
   });
 });
 
@@ -143,9 +151,9 @@ describe('Workbench find replace modal placement', () => {
       "import { WorkbenchFindReplaceModal } from '@/features/workbench/components/WorkbenchFindReplaceModal';",
     );
     expect(modalSource).toContainSource("const FIND_REPLACE_MODAL_STORAGE_ID = 'workbench_find_replace_centered_v2';");
-    expect(modalSource).toContainSource('return createPortal(');
-    expect(modalSource).toContainSource('document.body');
-    expect(modalSource).toContainSource('WebkitAppRegion');
+    expect(modalSource).toContainSource('<WorkbenchModal');
+    expect(modalSource).toContainSource('defaultGeometry={FIND_REPLACE_DEFAULT_GEOMETRY}');
+    expect(modalSource).not.toContainSource('fixed inset-0');
   });
 
   it('keeps centered draggable geometry inside the viewport before saving', async () => {
@@ -181,20 +189,16 @@ describe('Workbench find replace modal placement', () => {
     expect(source).toContainSource('saveGeometry(storageKey, next);');
   });
 
-  it('renders top-level prompt and model management modals fixed in the body portal', async () => {
+  it('renders top-level prompt and model management through the workbench modal shell', async () => {
     const modalSource = await readSource('../components/WorkbenchManagementModal.tsx');
 
-    expect(modalSource).toContainSource('return createPortal(');
+    expect(modalSource).toContainSource('<WorkbenchModal');
     expect(modalSource).toContainSource('WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS');
-    expect(modalSource).toContainSource('document.body');
-    expect(modalSource).toContainSource('data-global-modal-static="true"');
-    expect(modalSource).toContainSource('items-center justify-center');
+    expect(modalSource).toContainSource('PROMPT_MANAGEMENT_MODAL_WIDTH_CLASS');
+    expect(modalSource).toContainSource('storageId={`workbench_management_${type}`}');
     expect(modalSource).toContainSource('<LazyModelManagePage embedded onClose={onClose} />');
     expect(modalSource).toContainSource('<LazyPromptsPage />');
-    expect(modalSource).not.toContainSource('useDraggableModal');
-    expect(modalSource).not.toContainSource('data-draggable-managed');
-    expect(modalSource).not.toContainSource('ModalResizeHandles');
-    expect(modalSource).not.toContainSource('headerDragHandleProps');
+    expect(modalSource).not.toContainSource('fixed inset-0');
     expect(modalSource).not.toContainSource('WORKBENCH_MANAGEMENT_MODAL_SIZE_CLASS');
   });
 });
@@ -318,6 +322,20 @@ describe('Workbench library snapshots', () => {
     expect(source).toContainSource('reviewLibraryEntries, getChapterContent');
   });
 
+  it('does not recreate automatic linked context after a non-persistent app restart', async () => {
+    const source = await readSource('WorkbenchPage.tsx');
+    expect(source).toContainSource(
+      "setContextSelectionTouched(localStorage.getItem('xinyuexia_keep_workbench_associations_v1') !== '1' || storedItems.length > 0);",
+    );
+    expect(source).toContainSource(
+      "setContextSelectionTouched(localStorage.getItem('xinyuexia_keep_workbench_associations_v1') !== '1');",
+    );
+    expect(source).toContainSource(
+      "useState(() => localStorage.getItem('xinyuexia_keep_workbench_associations_v1') !== '1')",
+    );
+    expect(source).not.toContainSource('setContextSelectionTouched(false);');
+  });
+
   it('normalizes legacy setting and brainstorm tabs before building parent context stats', async () => {
     const source = await readSource('WorkbenchPage.tsx');
 
@@ -408,14 +426,16 @@ describe('ChapterEditor prompt snapshots', () => {
     expect(source).toContainSource('comment: COMMENT_PROMPT_CATEGORY');
     expect(source).toContainSource('polish: POLISH_PROMPT_CATEGORY');
     expect(source).toContainSource('const reviewAuditPrompts = useMemo(');
-    expect(source).toContainSource('normalizePromptCategoryName(prompt.category) === AUDIT_PROMPT_CATEGORY');
+    expect(source).toContainSource('isAuditPromptCategory(prompt.category, prompt.subCategory)');
     expect(source).toContainSource('const reviewCommentPrompts = useMemo(');
     expect(source).toContainSource('normalizePromptCategoryName(prompt.category) === COMMENT_PROMPT_CATEGORY');
     expect(source).toContainSource('const reviewPolishPrompts = useMemo(');
     expect(source).toContainSource('normalizePromptCategoryName(prompt.category) === POLISH_PROMPT_CATEGORY');
     expect(source).toContainSource('const activeReviewPromptOptions =');
     expect(source).toContainSource('? buildAuditPromptSelectOptions(reviewAuditPrompts)');
-    expect(source).toContainSource('const activeReviewPromptCategory = REVIEW_MODE_PROMPT_CATEGORIES[reviewMode];');
+    expect(source).toContainSource(
+      "reviewMode === 'audit' ? AUDIT_PROMPT_CATEGORY : REVIEW_MODE_PROMPT_CATEGORIES[reviewMode]",
+    );
     expect(source).not.toContainSource('const activeReviewPromptOptions = bodyPrompts;');
     expect(source).not.toContainSource('const activeReviewPromptCategory = BODY_PROMPT_CATEGORY;');
   });
@@ -437,7 +457,7 @@ describe('ChapterEditor prompt snapshots', () => {
       'else if (storedTaskIds[mode]) writeReviewBackgroundTaskId(settingsStorageKey, chapterId, mode, undefined);',
     );
     expect(source).toContainSource(
-      'writeReviewBackgroundTaskId(settingsStorageKey, activeReviewChapter.id, requestMode, task.id);',
+      'writeReviewBackgroundTaskId(settingsStorageKey, activeReviewChapter?.id ?? null, mode, taskId);',
     );
     expect(source).toContainSource(
       'isReviewBackgroundTaskForChapter(task, settingsStorageKey, activeReviewChapterId, mode)',
@@ -462,8 +482,9 @@ describe('ChapterEditor prompt snapshots', () => {
     expect(source).toContainSource(') : reviewOriginalParagraphs.length === 0 || !activeReviewContent.trim() ? (');
   });
 
-  it('keeps review prompt and model management modals fixed at 80 percent', async () => {
+  it('keeps model management at 80 percent and prompt management at four-card width', async () => {
     const source = readChapterEditorSource();
+    const modalSizeSource = await readSource('../components/workbenchManagementModalSize.ts');
 
     expect(source).toContainSource('const REVIEW_MANAGEMENT_MODAL_SIZE_CLASS =');
     expect(source).toContainSource(
@@ -473,11 +494,11 @@ describe('ChapterEditor prompt snapshots', () => {
     expect(source).toContainSource('const reviewManagementModalSizeClass = isEmbeddedReviewMode');
     expect(source).toContainSource('? REVIEW_MANAGEMENT_MODAL_SIZE_CLASS');
     expect(source).toContainSource(': REVIEW_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS;');
-    expect(source).toContainSource(
-      'className={`flex ${REVIEW_MANAGEMENT_MODAL_SIZE_CLASS} flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl`}',
-    );
-    expect(source).toContainSource(
-      'className={`flex ${reviewManagementModalSizeClass} flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl`}',
+    expect(source).toContainSource('<WorkbenchModal');
+    expect(source).toContainSource("widthClass={`${REVIEW_MANAGEMENT_MODAL_SIZE_CLASS} ${mode === 'prompts' ? PROMPT_MANAGEMENT_MODAL_WIDTH_CLASS : ''}`}");
+    expect(source).toContainSource("widthClass={`${reviewManagementModalSizeClass} ${mode === 'prompts' ? PROMPT_MANAGEMENT_MODAL_WIDTH_CLASS : ''}`}");
+    expect(modalSizeSource).toContainSource(
+      "PROMPT_MANAGEMENT_MODAL_WIDTH_CLASS = '!w-[1128px] !max-w-[calc(100vw-48px)]'",
     );
     expect(source).not.toContainSource("from '@/features/workbench/components/workbenchManagementModalSize';");
   });
@@ -486,6 +507,7 @@ describe('ChapterEditor prompt snapshots', () => {
     const source = readChapterEditorSource();
     const auditResultSource = await readSource('../model/chapterAuditResult.ts');
     const reviewTextSource = await readSource('../model/chapterReviewText.ts');
+    const auditWorkflowSource = await readSource('../model/chapterAuditWorkflow.ts');
 
     expect(source).toContainSource("from '@/features/workbench/model/chapterAuditResult';");
     expect(auditResultSource).toContainSource("export const AUDIT_OUTLINE_FIT_ITEM = '章纲贴合度';");
@@ -503,10 +525,8 @@ describe('ChapterEditor prompt snapshots', () => {
     expect(source).toContainSource('【剧情审核结论】通过 / 不通过');
     expect(source).toContainSource('不要新增、删除、改名审核项');
     expect(source).toContainSource('function buildAuditPromptSelectOptions');
-    expect(source).toContainSource("const metaLabel = subCategory === '文本审核' ? '文本' : '剧情';");
-    expect(source).toContainSource(
-      'return items.map((prompt) => ({ value: prompt.id, label: prompt.name, metaLabel }));',
-    );
+    expect(source).not.toContainSource("metaLabel: '双审核'");
+    expect(source).not.toContainSource("metaLabel: '仅剧情'");
     expect(source).not.toContainSource('value: `__audit_group_${subCategory}`');
     expect(source).not.toContainSource("variant: 'groupedOption' as const");
     expect(auditResultSource).toContainSource(
@@ -529,12 +549,20 @@ describe('ChapterEditor prompt snapshots', () => {
       'function isStructureAuditPrompt(prompt?: { category: string; subCategory?: string } | null) {',
     );
     expect(source).toContainSource("return getAuditPromptSubcategory(prompt) === '剧情审核';");
-    expect(source).toContainSource('const isAuditTextReview = reviewMode ===');
-    expect(source).toContainSource('const isAuditStructureReview = reviewMode ===');
+    expect(source).toContainSource("const isAuditTextReview = reviewMode === 'audit' && hasTextAuditOutput");
+    expect(source).toContainSource("const isAuditStructureReview = reviewMode === 'audit' && !hasTextAuditOutput");
+    expect(source).toContainSource('本次请求只执行剧情审核，不得分析、生成或输出任何文本审核内容');
+    expect(source).toContainSource('waitForAuditTextCountdown({');
+    expect(source).toContainSource('buildTextAuditStagePrompt(textAuditPromptText)');
+    expect(source).toContainSource("activeReviewPrompt?.textAuditEnabled !== false");
     expect(source).toContainSource('const auditRevisedText = useMemo(');
-    expect(source).toContainSource('reviewRevisedDraft.trim() ||');
-    expect(source).toContainSource(
-      "() => (isAuditTextReview ? reviewRevisedDraft.trim() || extractReviewRevisedText(reviewAiOutput) : '')",
+    expect(source).toContainSource('reviewRevisedDraft.trimEnd() ||');
+    expect(source).toContainSource('buildTextAuditRevisedText(reviewAiOutput, activeReviewContent)');
+    expect(source).toContainSource('preserveReviewParagraphIndentation(reviewOriginalParagraphs, splitReviewParagraphs(auditRevisedText))');
+    expect(source).toContainSource('const originalText = activeReviewContent.trimEnd();');
+    expect(source).toContainSource('{ preserveLeadingWhitespace: true }');
+    expect(auditWorkflowSource).toContainSource(
+      '段首全角空格、半角空格、制表符和空行属于排版，不是文本问题',
     );
     expect(source).toContainSource("from '@/features/workbench/model/chapterReviewText';");
     expect(reviewTextSource).toContainSource(
@@ -551,7 +579,7 @@ describe('ChapterEditor prompt snapshots', () => {
     expect(source).toContainSource('className="font-black text-red-500"');
     expect(source).toContainSource('整段已删除');
     expect(source).toContainSource('审核后缺少本段，请让 AI 保留段落位置。');
-    expect(source).toContainSource('renderTextAuditOriginalDiff(paragraph, auditRevisedParagraphs[index])');
+    expect(source).toContainSource('renderTextAuditOriginalDiff(displayParagraph, displayRevised)');
     expect(source).toContainSource('const showContinuousTextAudit =');
     expect(source).toContainSource('const showContinuousTextAudit = isAuditTextReview && Boolean(auditRevisedText.trim());');
     expect(source).toContainSource('<ChapterTextAuditContinuousReview');
@@ -560,11 +588,11 @@ describe('ChapterEditor prompt snapshots', () => {
     expect(source).toContainSource('修改后采用');
     expect(source).toContainSource('重新修改');
     expect(source).toContainSource('应用已接受修改（{acceptedCount}）');
-    expect(source).toContainSource('如果认为某一整段应删除，请保留该段位置为空段，不要让后续段落前移；');
-    expect(source).toContainSource(
-      '软件会自动把审核后新增或改写的字句标成红色，请不要自行添加 HTML、Markdown 标记或颜色说明。',
+    expect(auditWorkflowSource).toContainSource('不得合并、拆分、调换或删除段落');
+    expect(auditWorkflowSource).toContainSource('不要输出无问题段落，不要输出修改后全文');
+    expect(auditWorkflowSource).toContainSource(
+      '【修改段落】\\n【段落序号】第N段\\n【修改后段落】该段修改后的完整内容\\n【修改原因】简要原因',
     );
-    expect(source).toContainSource('每个被修改段落单独一行，格式为“第N段｜修改类型：修改原因”');
     expect(source).not.toContainSource("(isAuditTextReview ? auditVisibleOutput : '')");
     expect(source).toContainSource(
       'const auditParagraphCountMatches = reviewOriginalParagraphs.length === auditRevisedParagraphs.length;',

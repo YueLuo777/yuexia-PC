@@ -192,12 +192,22 @@ export function SystemSettingsModal({
     );
   };
 
+  const updateStartMaximized = async (startMaximized: boolean) => {
+    if (!window.xinyuexiaWindow?.updateSettings) {
+      setStatus('当前运行环境不支持启动时最大化设置。');
+      return;
+    }
+    const result = await window.xinyuexiaWindow.updateSettings({ startMaximized });
+    setWindowSettings(result);
+    setStatus(startMaximized ? '已开启启动时最大化，当前窗口也已最大化。' : '已关闭启动时最大化，下次将按普通窗口设置打开。');
+  };
+
   const applyStartupWindowBounds = async (bounds: { width: number; height: number }) => {
     if (!window.xinyuexiaWindow?.updateSettings || !window.xinyuexiaWindow.applyBoundsPreset) {
       setStatus('当前运行环境不支持固定启动分辨率。');
       return;
     }
-    await window.xinyuexiaWindow.updateSettings({ rememberSize: false, startupBounds: bounds });
+    await window.xinyuexiaWindow.updateSettings({ rememberSize: false, startMaximized: false, startupBounds: bounds });
     const result = await window.xinyuexiaWindow.applyBoundsPreset(bounds);
     setWindowSettings(result);
     setStatus(`启动分辨率已设为 ${bounds.width} × ${bounds.height}，并已应用到当前窗口。`);
@@ -324,6 +334,7 @@ export function SystemSettingsModal({
               <WindowSettingsCompactSection
                 settings={windowSettings}
                 onToggleRemember={() => void updateRememberWindowSize(!(windowSettings?.rememberSize ?? false))}
+                onToggleStartMaximized={() => void updateStartMaximized(!(windowSettings?.startMaximized ?? false))}
                 onApplyStartupBounds={(bounds) => void applyStartupWindowBounds(bounds)}
               />
             )}

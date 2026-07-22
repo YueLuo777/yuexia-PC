@@ -44,10 +44,15 @@ describe('chapterReviewLog', () => {
 
   it('adjusts fill weights only for optional populated groups', () => {
     expect(getReviewLogFillGroupWeights({ hasOutline: false, hasUser: false })).toEqual({ prompt: 1, original: 2 });
+    expect(getReviewLogFillGroupWeights({ hasOutline: true, hasUser: false })).toEqual({
+      prompt: 1,
+      outline: 1,
+      original: 1,
+    });
     expect(getReviewLogFillGroupWeights({ hasOutline: true, hasUser: true })).toEqual({
       prompt: 1,
       outline: 1,
-      original: 2,
+      original: 1,
       user: 1,
     });
   });

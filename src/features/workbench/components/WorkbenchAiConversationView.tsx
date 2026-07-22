@@ -27,7 +27,7 @@ export function WorkbenchAiConversationView({
   onResetSessions: () => void;
 }) {
   return (
-    <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-with-bottom-count xy-floating-chat-shell mt-5 min-h-0 flex-1">
+    <div className="xy-ai-panel-output-slot xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-with-bottom-count xy-floating-chat-shell">
       <div className="xy-floating-rich-preview xy-floating-chat-history editor-scrollbar h-full overflow-y-auto">
         {activeSession.messages.length ? (
           <div className="flex flex-col gap-3">

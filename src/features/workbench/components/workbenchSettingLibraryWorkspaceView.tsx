@@ -92,6 +92,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
     setIsBrainstormRecycleOpen,
     setSelectedIdForTab,
     settingLibraryMode,
+    settingGroupOptions,
     settingPreviewFontSize,
     settingWorkspaceTopTabs,
     showBrainstormOutputSelection,
@@ -99,10 +100,23 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
     stringifySettingContent,
     toggleBrainstormOutputPreviewSelected,
     updateEntry,
+    updateActiveTabConfig,
     updateLibraryEntryPointerPreview,
     updateOutlineCharacterRole,
     updateStructuredSettingField,
   } = scope;
+
+  const onSettingGroupChange = (type: string) => {
+    if (!settingGroupOptions.includes(type)) return;
+    if (currentSelectedEntry && currentSelectedSetting) {
+      updateEntry(currentSelectedEntry.id, {
+        content: stringifySettingContent({ ...currentSelectedSetting, type }),
+      });
+      setExpandedSettingTypes((current: Set<string>) => new Set(current).add(type));
+      return;
+    }
+    updateActiveTabConfig({ typeDraft: type });
+  };
 
   return (
     <>
@@ -195,6 +209,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
             setActiveStructuredSettingTab={setActiveStructuredSettingTab}
             activeSettingSidebarScrollKey={activeSettingSidebarScrollKey}
             activeSettingWorkspaceType={activeSettingWorkspaceType}
+            settingGroupOptions={settingGroupOptions}
             settingPreviewFontSize={settingPreviewFontSize}
             settingNameFieldSpec={fieldSizeSpecs.settingName}
             setActiveLibraryFontTarget={setActiveLibraryFontTarget}
@@ -202,6 +217,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
             updateStructuredSettingField={updateStructuredSettingField}
             handleSettingSidebarScroll={handleSettingSidebarScroll}
             createEditableSettingEntry={createEditableSettingEntry}
+            onSettingGroupChange={onSettingGroupChange}
           />
         )}
       </main>

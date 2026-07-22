@@ -1,5 +1,4 @@
-import { Lock, Pin, X } from 'lucide-react';
-import { createPortal } from 'react-dom';
+import { Lock, Pin } from 'lucide-react';
 
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
@@ -9,6 +8,7 @@ import { BRAINSTORM_QUESTION_FIELDS, type BrainstormQuestionDraft } from './work
 import { getBrainstormEntryBody } from './workbenchLibraryAiText';
 import { BRAINSTORM_TYPE } from './workbenchLibraryTabs';
 import { parseSettingContent } from './workbenchStructuredSettings';
+import { WorkbenchModal } from './WorkbenchModal';
 
 function countTextWords(content: string) {
   return content.replace(/\s/g, '').length;
@@ -43,25 +43,17 @@ export function BrainstormPromptEditModal({
 }: BrainstormPromptEditModalProps) {
   if (!isOpen) return null;
 
-  return createPortal(
-    <div className="modal-sharp fixed inset-0 z-[290] flex items-center justify-center bg-black/35" onClick={onClose}>
-      <div
-        className="modal-sharp flex h-[min(820px,92vh)] w-[min(960px,94vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">{isCreating ? '创建提示词' : '编辑提示词'}</h3>
-            <p className="mt-1 text-xs text-gray-400">只会保存到“脑洞”分类下。</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-            title="关闭"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+  return (
+    <WorkbenchModal
+      title={isCreating ? '创建提示词' : '编辑提示词'}
+      subtitle="只会保存到“脑洞”分类下。"
+      isOpen={isOpen}
+      onClose={onClose}
+      widthClass="w-[960px]"
+      heightClass="h-[min(820px,92vh)]"
+      storageId="brainstorm_prompt_editor"
+      zIndexClass="z-[290]"
+    >
         <div className="editor-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
           <label className="flex items-center gap-3 text-sm font-bold text-slate-600">
             <span className="w-12 shrink-0">名称</span>
@@ -108,9 +100,7 @@ export function BrainstormPromptEditModal({
             保存
           </button>
         </div>
-      </div>
-    </div>,
-    document.body,
+    </WorkbenchModal>
   );
 }
 

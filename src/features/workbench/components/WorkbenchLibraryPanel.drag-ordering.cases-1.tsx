@@ -193,7 +193,7 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const constantsSource = await readWorkbenchLibraryPanelConstantsSource();
 
-    expect(constantsSource).toContainSource('export const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 260;');
+    expect(constantsSource).toContainSource('export const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 280;');
     expect(constantsSource).toContainSource('export const OUTLINE_LEFT_MAX_DISPLAY_WIDTH = 560;');
     expect(panelSource).toContainSource('function getSettingLibraryLeftMaxWidth(tab: string, scaleValue = 1)');
     expect(panelSource).toContainSource('const isSettingTab = tab === SETTING_TAB;');
@@ -393,7 +393,9 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     expect(styleSource).toContainSource(
       '.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral.xy-floating-with-inline-actions textarea',
     );
-    expect(styleSource).toContainSource('border-color: #d7dee8;');
+    expect(styleSource).toContainSource(
+      '.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral.xy-floating-with-inline-actions textarea {\n  border-color: #111827;',
+    );
     expect(styleSource).toContainSource(
       '.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral .xy-ai-inline-send',
     );

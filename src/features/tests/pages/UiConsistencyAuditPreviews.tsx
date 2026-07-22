@@ -141,7 +141,7 @@ function ModalPreview({ handmade }: { handmade: boolean }) {
       <div className={`${handmade ? 'rounded-2xl' : 'rounded-xl'} mx-auto w-[88%] overflow-hidden bg-white shadow-xl`}>
         <div className={`${handmade ? 'px-4 py-3' : 'border-b px-3 py-2'} flex items-center justify-between`}><div><strong className={handmade ? 'text-[12px]' : ''}>{handmade ? '小说封面' : '新建作品'}</strong>{!handmade ? <div className="text-[7px] text-slate-400">填写作品基本信息</div> : null}</div><span className={handmade ? 'text-slate-400' : 'grid h-5 w-5 place-items-center rounded border text-slate-400'}><X className="h-3 w-3" /></span></div>
         <div className="grid h-24 grid-cols-[35%_65%] gap-2 p-3"><div className={`${handmade ? 'rounded-xl bg-slate-200' : 'rounded-md border border-dashed'} grid place-items-center text-slate-400`}>{handmade ? '封面预览' : '上传封面'}</div><div className="space-y-2"><div className="rounded-md border p-2">作品名称</div><div className="rounded-md border p-2">作品简介</div></div></div>
-        <div className={`${handmade ? '' : 'border-t bg-slate-50'} flex justify-end gap-1 px-3 py-2`}><span className={lightButton}>取消</span><span className={cyanButton}>{handmade ? '保存封面' : '创建作品'}</span></div>
+        <div className={`${handmade ? '' : 'bg-slate-50'} flex justify-end gap-1 px-3 py-2`}><span className={lightButton}>取消</span><span className={cyanButton}>{handmade ? '保存封面' : '创建作品'}</span></div>
       </div>
     </div>
   );
