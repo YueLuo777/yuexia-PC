@@ -54,7 +54,7 @@ export const AiInlineInput = forwardRef<HTMLTextAreaElement, AiInlineInputProps>
         className={textareaClassName}
         aria-label={ariaLabel}
       />
-      <label>{label}</label>
+      <label className="xy-border-embedded-transparent-backplate">{label}</label>
       <div className="xy-ai-inline-actions">
         <button type="button" onClick={onSend} disabled={sendDisabled} className="xy-ai-inline-send">
           <span className="xy-ai-inline-send-icon">

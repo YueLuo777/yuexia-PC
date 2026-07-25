@@ -38,6 +38,26 @@ import { defaultEntriesPart36 } from './errorLogDefaultEntries.part-36';
 import { defaultEntriesPart37 } from './errorLogDefaultEntries.part-37';
 import { defaultEntriesPart38 } from './errorLogDefaultEntries.part-38';
 import { defaultEntriesPart39 } from './errorLogDefaultEntries.part-39';
+import { defaultEntriesPart40 } from './errorLogDefaultEntries.part-40';
+import { defaultEntriesPart41 } from './errorLogDefaultEntries.part-41';
+import { defaultEntriesPart42 } from './errorLogDefaultEntries.part-42';
+import { defaultEntriesPart43 } from './errorLogDefaultEntries.part-43';
+import { defaultEntriesPart44 } from './errorLogDefaultEntries.part-44';
+import { defaultEntriesPart45 } from './errorLogDefaultEntries.part-45';
+import { defaultEntriesPart46 } from './errorLogDefaultEntries.part-46';
+import { defaultEntriesPart47 } from './errorLogDefaultEntries.part-47';
+import { defaultEntriesPart48 } from './errorLogDefaultEntries.part-48';
+import { defaultEntriesPart49 } from './errorLogDefaultEntries.part-49';
+import { defaultEntriesPart50 } from './errorLogDefaultEntries.part-50';
+import { defaultEntriesPart51 } from './errorLogDefaultEntries.part-51';
+import { defaultEntriesPart52 } from './errorLogDefaultEntries.part-52';
+import { defaultEntriesPart53 } from './errorLogDefaultEntries.part-53';
+import { defaultEntriesPart54 } from './errorLogDefaultEntries.part-54';
+import { defaultEntriesPart55 } from './errorLogDefaultEntries.part-55';
+import { defaultEntriesPart56 } from './errorLogDefaultEntries.part-56';
+import { defaultEntriesPart57 } from './errorLogDefaultEntries.part-57';
+import { defaultEntriesPart58 } from './errorLogDefaultEntries.part-58';
+import { defaultEntriesPart59 } from './errorLogDefaultEntries.part-59';
 export const defaultEntries: ErrorLogEntry[] = [
   ...defaultEntriesPart1,
   ...defaultEntriesPart2,
@@ -78,4 +98,24 @@ export const defaultEntries: ErrorLogEntry[] = [
   ...defaultEntriesPart37,
   ...defaultEntriesPart38,
   ...defaultEntriesPart39,
+  ...defaultEntriesPart40,
+  ...defaultEntriesPart41,
+  ...defaultEntriesPart42,
+  ...defaultEntriesPart43,
+  ...defaultEntriesPart44,
+  ...defaultEntriesPart45,
+  ...defaultEntriesPart46,
+  ...defaultEntriesPart47,
+  ...defaultEntriesPart48,
+  ...defaultEntriesPart49,
+  ...defaultEntriesPart50,
+  ...defaultEntriesPart51,
+  ...defaultEntriesPart52,
+  ...defaultEntriesPart53,
+  ...defaultEntriesPart54,
+  ...defaultEntriesPart55,
+  ...defaultEntriesPart56,
+  ...defaultEntriesPart57,
+  ...defaultEntriesPart58,
+  ...defaultEntriesPart59,
 ];

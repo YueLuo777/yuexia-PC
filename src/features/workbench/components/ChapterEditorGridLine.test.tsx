@@ -349,15 +349,16 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterNumberButtonSource).toContainSource(
       "if (state === 'hasOutline') return 'xy-detail-outline-number-has-outline hover:border-[#08B3D9]';",
     );
-    expect(reviewPanelSource).toContainSource(
-      'className={`relative block min-h-[1.9em] w-full text-left outline-none ${',
+    expect(reviewOriginalBodySource).toContainSource('REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS');
+    expect(reviewOriginalBodySource).toContainSource(
+      'selected ? REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS : REVIEW_PREVIEW_PARAGRAPH_EMPTY_CLASS',
     );
-    expect(reviewPanelSource).toContainSource(
-      'absolute -left-4 top-[0.7em] h-2 w-2 rounded-full bg-[#08AACE]',
-    );
-    expect(reviewOriginalBodySource).not.toContainSource(
-      "selected ? REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS",
-    );
+    expect(reviewOriginalBodySource).not.toContainSource("selected ? 'bg-[#08AACE]' : 'bg-slate-300'");
+    expect(reviewOriginalBodySource).toContainSource('{index + 1}');
+    expect(reviewOriginalBodySource).not.toContainSource('当前选中');
+    expect(reviewOriginalBodySource).not.toContainSource("selected ? 'pr-20' : ''");
+    expect(reviewOriginalBodySource).not.toContainSource('shadow-[');
+    expect(reviewOriginalBodySource).not.toContainSource('ring-1');
     expect(chapterEditorSource).toContainSource('className={`${REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS} ${');
     expect(reviewPanelSource).not.toContainSource("selected ? 'bg-[#EAF9FD] text-slate-900 ring-1 ring-[#9BEFFC]'");
     expect(reviewPanelSource).not.toContainSource('className={`rounded-xl border p-3 transition-colors ${');
@@ -371,7 +372,7 @@ describe('ChapterEditor grid line font setting', () => {
     );
     expect(chapterEditorSource).not.toContainSource('<span className="text-[#08AACE]">审核提示词</span>');
     expect(chapterEditorSource).not.toContainSource('<span className="text-slate-400">一级分类：审核</span>');
-    expect(reviewPanelSource).toContainSource('未找到第${activeReviewChapter.serialNumber}章章纲。');
+    expect(reviewPanelSource).toContainSource('未找到第${activeReviewChapter.serialNumber}章 章纲。');
     expect(chapterEditorSource).toContainSource("import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';");
     expect(chapterEditorSource).toContainSource(
       "const REVIEW_PREVIEW_FONT_SIZE_STORAGE_KEY = 'xinyuexia_chapter_editor_review_preview_font_size';",
@@ -466,17 +467,24 @@ describe('ChapterEditor grid line font setting', () => {
     expect(reviewPanelSource).toContainSource('style={{ fontSize: reviewPreviewFontSize }}');
     expect(reviewPanelSource).not.toContainSource('xy-selected-orange-bg');
     expect(reviewPanelSource).not.toContainSource('grid min-h-0 flex-1 grid-cols-2 divide-x divide-slate-100');
-    expect(chapterEditorSource).toContainSource("const REVIEW_PREVIEW_PARAGRAPH_LIST_CLASS = 'space-y-3';");
+    expect(chapterEditorSource).toContainSource("const REVIEW_PREVIEW_PARAGRAPH_LIST_CLASS = 'space-y-0';");
     expect(chapterEditorSource).toContainSource(
-      "const REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS = 'border-l-2 px-3 py-1.5 leading-7 transition-colors';",
+      "'relative overflow-hidden rounded-xl border px-4 py-0 text-[15px] font-medium leading-8 transition-[background-color,border-color,color,opacity]'",
     );
     expect(chapterEditorSource).toContainSource(
-      "const REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS = 'border-[#08AACE] bg-[#EAF9FD] text-slate-900';",
+      "const REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS = 'border-[#08AACE] bg-[#DDF5FA] text-slate-950';",
     );
+    expect(chapterEditorSource).toContainSource(
+      "'border-transparent bg-white text-slate-300 opacity-80 hover:bg-slate-50 hover:text-slate-500'",
+    );
+    expect(chapterEditorSource).not.toContainSource('shadow-[0_10px_24px_rgba(8,170,206,0.14)]');
+    expect(chapterEditorSource).not.toContainSource('ring-1 ring-[#08AACE]/20');
     expect(reviewPanelSource).toContainSource('className={REVIEW_PREVIEW_PARAGRAPH_LIST_CLASS}');
     expect(reviewPanelSource).toContainSource('REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS');
     expect(reviewPanelSource).toContainSource('REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS');
     expect(reviewPanelSource).toContainSource('REVIEW_PREVIEW_PARAGRAPH_EMPTY_CLASS');
+    expect(reviewPanelSource).toContainSource('{index + 1}');
+    expect(reviewPanelSource).not.toContainSource('当前选中');
     expect(reviewPanelSource).not.toContainSource('border-l-2 border-emerald-300 bg-emerald-50/35 px-3 py-1.5');
     expect(reviewPanelSource).not.toContainSource('<span className="font-black text-slate-800">当前章节：</span>');
     expect(reviewPanelSource).not.toContainSource('<span className="font-black text-slate-800">正文字数：</span>');
@@ -494,6 +502,28 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterEditorSource).toContainSource('const STATUS_PAGE_LEFT_WIDTH_LIMIT = { min: 190, max: 360 };');
     expect(chapterEditorSource).not.toContainSource('const REVIEW_PAGE_LEFT_WIDTH = 220;');
     expect(chapterEditorSource).not.toContainSource('const STATUS_PAGE_LEFT_WIDTH = 230;');
+  });
+
+  it('uses the same draggable modal shell behavior for the standalone status workflow', () => {
+    const chapterEditorEntrySource = readSource('ChapterEditor.tsx');
+    const chapterEditorViewSource = readSource('ChapterEditorView.tsx');
+    const statusPanelSource = readSource('ChapterStatusPanel.tsx');
+
+    expect(chapterEditorEntrySource).toContainSource(
+      "const statusModalDraggable = useDraggableModal('chapter_status_panel');",
+    );
+    expect(chapterEditorEntrySource).toContainSource('statusModalDraggable,');
+    expect(chapterEditorViewSource).toContainSource('statusModalDraggable,');
+    expect(chapterEditorViewSource).toContainSource('statusModalDraggable={statusModalDraggable}');
+    expect(statusPanelSource).toContainSource('data-draggable-managed="true"');
+    expect(statusPanelSource).toContainSource('data-global-modal-static="true"');
+    expect(statusPanelSource).toContainSource('statusModalDraggable.dragHandleProps');
+    expect(statusPanelSource).toContainSource("statusModalDraggable.getResizeHandleProps('top')");
+    expect(statusPanelSource).toContainSource("statusModalDraggable.getResizeHandleProps('bottom')");
+    expect(statusPanelSource).toContainSource("statusModalDraggable.getResizeHandleProps('left')");
+    expect(statusPanelSource).toContainSource("statusModalDraggable.getResizeHandleProps('right')");
+    expect(statusPanelSource).toContainSource('statusModalDraggable.resizeHandleProps');
+    expect(statusPanelSource).not.toContainSource('w-[min(1280px,94vw)]');
   });
 
   it('keeps the editor paper line mode in the real chapter editor font settings', () => {
@@ -609,7 +639,7 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterEditorSource).toContainSource('placeholder=""');
     expect(chapterEditorSource).not.toContainSource('placeholder="从这里开始写..."');
     expect(chapterEditorSource).toContainSource(
-      "const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] xy-flow-group-bg",
+      "const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#AEE7F1] bg-[#CDEFF6]",
     );
     expect(chapterEditorSource).toContainSource(
       "const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';",

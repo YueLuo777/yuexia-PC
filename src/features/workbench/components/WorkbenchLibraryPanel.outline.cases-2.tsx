@@ -50,6 +50,12 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     expect(styleSource).toContainSource('border: 2px solid #111827;');
     expect(styleSource).toContainSource('.xy-floating-field.xy-outline-ai-output-frame label.xy-floating-title-count,');
     expect(styleSource).toContainSource('transform: translateY(-50%) scale(1);');
+    expect(styleSource).toContainSource('.xy-ai-panel-output-slot .xy-outline-ai-output-frame > label,');
+    expect(styleSource).toContainSource('.xy-brainstorm-output-title-tool .xy-floating-title-input {');
+    expect(styleSource).toContainSource('font-family: "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;');
+    expect(styleSource).toContainSource('font-size: 1rem !important;');
+    expect(styleSource).toContainSource('font-weight: 900 !important;');
+    expect(styleSource).toContainSource('line-height: 24px !important;');
     expect(styleSource).toContainSource('.xy-ai-panel-output-slot {');
     expect(styleSource).toContainSource('min-height: 170px;');
     expect(styleSource).toContainSource('margin-top: 1.25rem;');
@@ -74,28 +80,18 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     expect(outlineRightPanelSource).toContainSource('{shouldShowOutlineDraftWordCount && (');
     expect(panelSource).toContainSource(': `第${selectedOutlineChapter.chapter.serialNumber}章梗概`');
     expect(outlineRightPanelSource).toContainSource('{isDetailOutlineTab && (');
-    expect(outlineRightPanelSource).toContainSource('label="大纲"');
-    expect(outlineRightPanelSource).toContainSource('linkedLabel="已关联大纲"');
-    expect(outlineRightPanelSource).toContainSource('prefixLabel="关联"');
-    expect(outlineRightPanelSource).toContainSource('clearOnLinkedClick');
-    expect(outlineRightPanelSource).toContainSource('onClear={clearDetailOutlineReaderSelection}');
-    expect(outlineRightPanelSource).toContainSource(
-      'linkedButtonClassName="min-w-0 flex-1 whitespace-nowrap bg-[#08AACE] px-3 text-sm font-black text-white hover:bg-[#0796B8]"',
+    expect(outlineRightPanelSource).toContainSource('<OutlineAssociationControl');
+    expect(outlineRightPanelSource).toMatch(
+      /linked=\{selectedDetailOutlineReader(?:Items\.length|Count) > 0\}/,
     );
+    expect(outlineRightPanelSource).toContainSource('wordCount={detailOutlineReaderWordCount}');
+    expect(outlineRightPanelSource).toContainSource('onOpen={openDetailOutlineReader}');
+    expect(outlineRightPanelSource).toContainSource('onClear={clearDetailOutlineReaderSelection}');
     expect(outlineRightPanelSource).not.toContainSource(
       'clearButtonClassName="flex h-full w-9 shrink-0 items-center justify-center border-l border-red-300 bg-red-500 text-white transition-colors hover:bg-red-600"',
     );
-    expect(outlineRightPanelSource).toContainSource(
-      'meta={<>关联 <WordCountText value={detailOutlineReaderWordCount} compact /></>}',
-    );
-    expect(outlineRightPanelSource).toContainSource('className="xy-ai-panel-link-row flex items-center gap-2"');
-    expect(outlineRightPanelSource).toContainSource(
-      'groupClassName="flex h-10 w-[134px] shrink-0 overflow-hidden rounded-xl border border-[#08AACE] bg-white shadow-sm"',
-    );
-    expect(outlineRightPanelSource).toContainSource('prefixClassName="grid w-12 shrink-0 place-items-center');
-    expect(outlineRightPanelSource).toContainSource(
-      'buttonClassName="min-w-0 flex-1 whitespace-nowrap bg-white px-3 text-sm font-bold text-slate-600 hover:bg-[#E9FAFD]"',
-    );
+    expect(outlineRightPanelSource).not.toContainSource('linkedLabel="已关联大纲"');
+    expect(outlineRightPanelSource).not.toContainSource('groupClassName="flex h-10 w-[134px]');
     expect(panelSource).toContainSource("readerTitle: '关联资料'");
     expect(panelSource).toContainSource("readerEmptyText: '未关联章纲、设定或角色'");
     expect(panelSource).toContainSource("if (isDetailOutlineTab) return wrapAiRequestTag('本章要求', userText);");
@@ -205,15 +201,20 @@ describe('WorkbenchLibraryPanel outline flows', () => {
       '<DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.stateExpectation)} />',
     );
     expect(labelSource).toContainSource('xy-detail-outline-title-count');
-    expect(labelSource).toContainSource('xy-floating-title-text xy-detail-outline-heading-title');
+    expect(labelSource).toContainSource(
+      'xy-floating-title-text xy-detail-outline-heading-title xy-detail-outline-heading-with-count xy-border-embedded-transparent-backplate',
+    );
     expect(labelSource).toContainSource('{outlineCardTitle}');
     expect(labelSource).toContainSource(
-      '<DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.outline)} spacingClassName="ml-[2ch]" />',
+      '<DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.outline)} />',
     );
     expect(panelSource).toContainSource(
-      'className={`${spacingClassName} xy-detail-outline-title-word-count xy-border-embedded-transparent-backplate whitespace-nowrap`}',
+      'className="xy-detail-outline-title-word-count whitespace-nowrap"',
     );
-    expect(panelSource).toContainSource('spacingClassName="ml-[2ch]"');
+    expect(panelSource).not.toContainSource(
+      'xy-detail-outline-title-word-count xy-border-embedded-transparent-backplate',
+    );
+    expect(panelSource).not.toContainSource('spacingClassName="ml-[2ch]"');
     expect(panelSource).toContainSource('className="text-brand">{value}</span>');
     expect(panelSource).toContainSource('className="text-slate-400">字</span>');
     expect(styleSource).toContainSource(
@@ -221,6 +222,10 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     );
     expect(styleSource).toContainSource('height: 1.76rem;');
     expect(styleSource).toContainSource('border-radius: 0;');
+    expect(styleSource).toContainSource('.xy-detail-outline-heading-with-count {');
+    expect(styleSource).toContainSource('display: inline-flex;');
+    expect(styleSource).toContainSource('align-items: baseline;');
+    expect(styleSource).toContainSource('gap: 2ch;');
     expect(panelSource).toContainSource('className="flex h-full min-h-0 flex-col gap-6"');
     expect(panelSource).toContainSource('absolute right-9 top-1 z-[60] -translate-y-1/2');
     expect(styleSource).toContainSource('isolation: isolate;');
@@ -529,13 +534,11 @@ describe('WorkbenchLibraryPanel outline flows', () => {
       "const [outlineSettingScope, setOutlineSettingScope] = useState<'work' | 'character'>('work')",
     );
     expect(panelSource).not.toContainSource('{false && activeTab === SETTING_TAB');
-    expect(panelSource).toContainSource('const visibleWorkSettingCount = settingEntries.filter');
-    expect(panelSource).toContainSource('const visibleRoleCount = roleEntries.filter');
     expect(panelSource).toContainSource(
-      "{ id: 'work', label: '作品设定', count: visibleWorkSettingCount, type: null }",
+      "{ id: 'work', label: '作品设定', settingDomain: null }",
     );
-    expect(panelSource).toContainSource("{ id: 'character', label: '人物设定', count: visibleRoleCount, type: null }");
-    expect(panelSource).toContainSource('settingWorkspaceTopTabs');
+    expect(panelSource).toContainSource("{ id: 'character', label: '人物设定', settingDomain: null }");
+    expect(panelSource).toContainSource('<WorkbenchSettingTreeSidebar');
     expect(panelSource).toContainSource('const effectiveLibraryTab = isOutlineCharacterScope ? ROLE_TAB : activeTab');
     expect(panelSource).toContainSource(
       'const activeSettingTypeOptions = activeIsBrainstorm ? [BRAINSTORM_TYPE] : isOutlineCharacterScope ? roleTypeOptions : settingTypeOptions',
@@ -549,6 +552,6 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     expect(panelSource).toContainSource('stateSettings: RoleStateSettings;');
     expect(panelSource).toContainSource('>基础设定<');
     expect(panelSource).toContainSource('>状态设定<');
-    expect(panelSource).toContainSource('style={{ fontSize: roleTextFontSize }}');
+    expect(panelSource).toContainSource('roleTextFontSize={roleTextFontSize}');
   });
 });

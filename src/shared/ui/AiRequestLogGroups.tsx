@@ -100,7 +100,7 @@ export function AiRequestLogGroups({
         const fillGroupWeight = fillGroupWeights?.[group.id];
         const shouldFillWeightedGroup = typeof fillGroupWeight === 'number' && fillGroupWeight > 0 && !collapsed;
         const shouldFillGroup =
-          shouldFillSingleGroup ||
+          (shouldFillSingleGroup && !collapsed) ||
           (fillGroupId === group.id && !collapsed) ||
           (fillLastGroupIndex === groupIndex && !collapsed) ||
           shouldFillWeightedGroup;

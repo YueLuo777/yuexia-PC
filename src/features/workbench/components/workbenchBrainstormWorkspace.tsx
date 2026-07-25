@@ -272,14 +272,14 @@ export function BrainstormQuestionPanel({ draft, isLoading, onFieldChange, onGen
                     return (
                       <div
                         key={pairedField.key}
-                        className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${draft[pairedField.key].trim() ? 'xy-has-value' : ''}`}
+                        className={`xy-floating-field xy-brainstorm-question-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${draft[pairedField.key].trim() ? 'xy-has-value' : ''}`}
                       >
                         <textarea
                           value={draft[pairedField.key]}
                           onChange={(event) => onFieldChange(pairedField.key, event.target.value)}
                           placeholder={pairedField.placeholder}
                           rows={1}
-                          className="font-bold leading-5"
+                          className="font-medium leading-5"
                           style={{ height: `${Math.max(52, pairedRows * 20 + 32)}px`, overflowY: 'hidden' }}
                         />
                         <label>{pairedField.label}</label>
@@ -292,14 +292,14 @@ export function BrainstormQuestionPanel({ draft, isLoading, onFieldChange, onGen
             return (
               <div key={field.key} className="block shrink-0 text-sm font-bold text-gray-700">
                 <div
-                  className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${draft[field.key].trim() ? 'xy-has-value' : ''}`}
+                  className={`xy-floating-field xy-brainstorm-question-field xy-floating-outline-fixed xy-floating-outline-compact-textarea xy-floating-visible-placeholder ${draft[field.key].trim() ? 'xy-has-value' : ''}`}
                 >
                   <textarea
                     value={draft[field.key]}
                     onChange={(event) => onFieldChange(field.key, event.target.value)}
                     placeholder={field.placeholder}
                     rows={1}
-                    className={`font-bold leading-5 ${isLastField ? 'min-h-0 flex-1' : ''}`}
+                    className={`font-medium leading-5 ${isLastField ? 'min-h-0 flex-1' : ''}`}
                     style={
                       isLastField
                         ? {

@@ -17,6 +17,10 @@ export const PROMPT_CATEGORY_CONTEXT_MENU_PADDING = 8;
 export const PROMPT_EXPORT_HEADER = '月下提示词导出 v1';
 export const PROMPT_EXPORT_BLOCK_SEPARATOR = '--- 提示词 ---';
 
+export function trimPromptEditorLeadingBlankLines(value: string) {
+  return value.replace(/^(?:[\t ]*\r?\n)+/, '');
+}
+
 export function clampPromptCategoryContextMenu(left: number, top: number, width: number, height: number) {
   return {
     x: Math.max(
@@ -177,8 +181,8 @@ export function PromptEditorModal({
     if (!isOpen) return;
     setDraft({
       name: initial?.name ?? '',
-      description: initial?.description ?? '',
-      content: initial?.content ?? '',
+      description: trimPromptEditorLeadingBlankLines(initial?.description ?? ''),
+      content: trimPromptEditorLeadingBlankLines(initial?.content ?? ''),
       category: initial?.category ?? fallbackCategory,
       subCategory: undefined,
     });
@@ -192,30 +196,44 @@ export function PromptEditorModal({
       isOpen={isOpen}
       onClose={onClose}
       widthClass="w-[980px]"
-      heightClass="h-full max-h-[calc(100dvh-48px)]"
-      storageId="prompt_editor"
+      heightClass="h-[min(680px,78dvh)] max-h-[calc(100dvh-48px)]"
+      storageId="prompt_editor_centered_v2"
       zIndexClass="z-[290]"
+      defaultGeometry={{ x: 0, y: 0, width: 980, height: 680 }}
+      centerOnOpen
+      panelClassName="xy-prompt-editor-modal"
     >
-        <div className="grid min-h-0 flex-1 grid-cols-[360px_minmax(0,1fr)] gap-6 px-8 py-7">
+        <div className="grid min-h-0 flex-1 grid-cols-[360px_minmax(0,1fr)] gap-6 px-8 pb-7 pt-4">
           <div className="min-h-0 space-y-5 overflow-y-auto pt-3 pr-1">
-            <div className="xy-floating-field xy-floating-compact xy-has-value text-sm font-bold text-slate-600">
+            <div className="xy-prompt-meta-field bg-white">
+              <span aria-hidden="true" className="absolute xy-border-embedded-transparent-backplate xy-workbench-name-field-caption">
+                <span>提示词名称</span>
+              </span>
               <input
+                aria-label="提示词名称"
                 value={draft.name}
                 onChange={(event) => setDraft((prev) => ({ ...prev, name: event.target.value }))}
                 placeholder="提示词名称"
-                className="font-medium text-slate-700"
+                className="xy-workbench-name-field-input"
               />
-              <label>提示词名称</label>
             </div>
-            <div className="xy-floating-field xy-floating-compact xy-has-value text-sm font-bold text-slate-600">
+            <div className="xy-prompt-meta-field xy-prompt-meta-field-multiline h-[180px] shrink-0 bg-white">
+              <span aria-hidden="true" className="absolute xy-border-embedded-transparent-backplate xy-workbench-name-field-caption">
+                <span>提示词说明</span>
+              </span>
               <textarea
+                aria-label="提示词说明"
                 value={draft.description}
-                onChange={(event) => setDraft((prev) => ({ ...prev, description: event.target.value }))}
+                onChange={(event) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    description: trimPromptEditorLeadingBlankLines(event.target.value),
+                  }))
+                }
                 placeholder="提示词说明"
                 rows={3}
-                className="h-20 font-medium leading-5 text-slate-700"
+                className="xy-prompt-meta-field-textarea"
               />
-              <label>提示词说明</label>
             </div>
             <div>
               <label className="mb-3 block text-sm font-medium text-slate-600">分类</label>
@@ -243,18 +261,23 @@ export function PromptEditorModal({
             </div>
           </div>
 
-          <div className="grid min-h-0 grid-cols-1 gap-5">
-            <div
-              className={`xy-floating-field xy-floating-compact xy-floating-fill flex min-h-0 flex-col ${draft.content.trim() ? 'xy-has-value' : ''}`}
-            >
+          <div className="grid min-h-0 grid-cols-1 gap-5 pt-3">
+            <div className="xy-prompt-meta-field xy-prompt-content-field relative flex min-h-0 flex-col bg-white">
+              <span aria-hidden="true" className="absolute xy-border-embedded-transparent-backplate xy-workbench-name-field-caption">
+                <span>提示词内容</span>
+              </span>
               <textarea
+                aria-label="提示词内容"
                 value={draft.content}
-                onChange={(event) => setDraft((prev) => ({ ...prev, content: event.target.value }))}
-                placeholder="提示词内容"
+                onChange={(event) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    content: trimPromptEditorLeadingBlankLines(event.target.value),
+                  }))
+                }
                 rows={18}
-                className="xy-prompt-content-editor min-h-0 flex-1 font-sans text-[19px] font-medium leading-8 tracking-normal text-slate-950"
+                className="xy-prompt-content-editor min-h-0 w-full flex-1 resize-none border-0 bg-transparent px-6 pb-5 pt-3 font-sans text-[19px] font-medium leading-8 tracking-normal text-slate-950 outline-none"
               />
-              <label>提示词内容</label>
             </div>
           </div>
         </div>
@@ -263,7 +286,16 @@ export function PromptEditorModal({
           <ActionButton onClick={onClose} variant="secondary">
             取消
           </ActionButton>
-          <ActionButton onClick={() => onSave(draft)} disabled={!draft.name.trim() || !draft.content.trim()}>
+          <ActionButton
+            onClick={() =>
+              onSave({
+                ...draft,
+                description: trimPromptEditorLeadingBlankLines(draft.description),
+                content: trimPromptEditorLeadingBlankLines(draft.content),
+              })
+            }
+            disabled={!draft.name.trim() || !draft.content.trim()}
+          >
             {initial ? '保存修改' : '创建提示词'}
           </ActionButton>
         </div>

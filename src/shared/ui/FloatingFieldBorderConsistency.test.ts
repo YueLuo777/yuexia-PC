@@ -34,7 +34,7 @@ describe('floating field border consistency', () => {
     );
     const fixedLabelStyles = baseStyles.slice(
       baseStyles.indexOf('.xy-floating-field.xy-floating-outline-fixed label,'),
-      baseStyles.indexOf('.xy-floating-field.xy-floating-outline-compact input'),
+      baseStyles.indexOf('.xy-floating-field.xy-floating-outline-compact-textarea textarea'),
     );
 
     expect(fixedLabelStyles).toContainSource('top: 0;');

@@ -26,11 +26,12 @@ import { getTabConfigsStorageKey } from './workbenchLibraryStorageState';
 import { BRAINSTORM_TAB, ROLE_TAB, SETTING_TAB, normalizeTabName } from './workbenchLibraryTabs';
 import { createEmptyRoleStateSettings, parseRoleContent, stringifyRoleContent } from './workbenchRoleContent';
 import {
-  getStructuredSettingFieldSetByDefaultTitle,
+  getSettingImportFormatFieldSet,
   normalizeSettingType,
   parseSettingContent,
   stringifySettingContent,
 } from './workbenchStructuredSettings';
+import { migratePromptBasedSettingTaxonomy } from './workbenchPromptTaxonomyMigration';
 
 export const DEFAULT_ROLE_TYPES = DEFAULT_WORKBENCH_ROLE_TYPES;
 export const DEFAULT_MALE_PROTAGONIST_ROLE_TYPE = '男主角';
@@ -170,7 +171,8 @@ export function getHiddenRoleTypesStorageKey(storageKey: string) {
 }
 
 export const ROLE_TAXONOMY_DEFAULTS_VERSION = '2026-07-20-role-groups-v4';
-export const SETTING_TAXONOMY_DEFAULTS_VERSION = '2026-06-18-setting-tabs-groups-v3';
+export const SETTING_TAXONOMY_DEFAULTS_VERSION = '2026-07-24-prompt-taxonomy-v1';
+const RETIRED_SETTING_TYPES = new Set(['世界地图', '怪物列表', '资源体系', '书写规则', '世界规则']);
 
 export function getRoleTaxonomyDefaultsVersionStorageKey(storageKey: string) {
   return `${storageKey}_role_taxonomy_defaults_version`;
@@ -252,7 +254,9 @@ export function readHiddenSettingTypes(storageKey: string) {
   ) {
     return Array.from(new Set(hidden));
   }
-  const next = Array.from(new Set(hidden.filter((type) => !DEFAULT_SETTING_TYPES.includes(type))));
+  const next = Array.from(
+    new Set(hidden.filter((type) => !DEFAULT_SETTING_TYPES.includes(type) && !RETIRED_SETTING_TYPES.has(type))),
+  );
   localStorage.setItem(getHiddenSettingTypesStorageKey(storageKey), JSON.stringify(next));
   localStorage.setItem(getSettingTaxonomyDefaultsVersionStorageKey(storageKey), SETTING_TAXONOMY_DEFAULTS_VERSION);
   return next;
@@ -279,7 +283,7 @@ export function getDefaultWorkSettingStarterVersionStorageKey(storageKey: string
 }
 
 export function createDefaultWorkSettingStarterEntry(item: (typeof DEFAULT_WORK_SETTING_STARTER_ENTRIES)[number]) {
-  const structuredFieldSet = getStructuredSettingFieldSetByDefaultTitle(item.type, item.title);
+  const structuredFieldSet = getSettingImportFormatFieldSet(item.type, item.title);
   return {
     ...createWorkbenchLibraryEntry(SETTING_TAB, item.title),
     content: stringifySettingContent({
@@ -296,12 +300,15 @@ export function isObsoleteAutoCreatedDefaultEntry(entry: WorkbenchLibraryEntry) 
   const setting = parseSettingContent(entry.content);
   const normalizedType = normalizeSettingType(setting.type);
   return (
-    !setting.body.trim() && entry.title.trim() === normalizedType && DEFAULT_SETTING_TYPES.includes(normalizedType)
+    !setting.body.trim() &&
+    ((entry.title.trim() === normalizedType && DEFAULT_SETTING_TYPES.includes(normalizedType)) ||
+      (entry.title.trim() === '世界地图' && normalizedType === '其他地点') ||
+      (entry.title.trim() === '怪物列表' && normalizedType === '常见怪物'))
   );
 }
 
 export function isObsoleteDefaultInstructionEntry(entry: WorkbenchLibraryEntry) {
-  if (entry.tab !== SETTING_TAB || isLockedDefaultSettingEntry(entry)) return false;
+  if (entry.tab !== SETTING_TAB) return false;
   const setting = parseSettingContent(entry.content);
   return setting.body.trim().startsWith('填写说明：');
 }
@@ -407,12 +414,13 @@ export function withDefaultMaleProtagonistRoleEntry(entries: WorkbenchLibraryEnt
 
 export function readNormalizedEntriesWithVisibleDefaults(storageKey: string, tabs: string[]) {
   const entries = readNormalizedEntriesWithGlobalBrainstorm(storageKey);
-  const withSettingDefaults = tabs.includes(SETTING_TAB)
-    ? withDefaultWorkSettingStarterEntries(entries, storageKey)
-    : entries;
-  const nextEntries = tabs.includes(ROLE_TAB)
-    ? withDefaultMaleProtagonistRoleEntry(withSettingDefaults)
-    : withSettingDefaults;
+  const withRoleDefaults = tabs.includes(ROLE_TAB) ? withDefaultMaleProtagonistRoleEntry(entries) : entries;
+  const migratedEntries = tabs.includes(SETTING_TAB)
+    ? migratePromptBasedSettingTaxonomy(withRoleDefaults)
+    : withRoleDefaults;
+  const nextEntries = tabs.includes(SETTING_TAB)
+    ? withDefaultWorkSettingStarterEntries(migratedEntries, storageKey)
+    : migratedEntries;
   if (nextEntries !== entries) {
     writeWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey, nextEntries);
   }
@@ -437,9 +445,7 @@ export function writeBrainstormRecycleEntries(storageKey: string, entries: Workb
 export function isLockedDefaultSettingEntry(entry: WorkbenchLibraryEntry) {
   if (entry.tab !== SETTING_TAB) return false;
   const setting = parseSettingContent(entry.content);
-  const defaultEntryId = getDefaultWorkSettingEntryId(setting.type, entry.title);
   return Boolean(
-    (setting.lockedDefaultEntryId && DEFAULT_WORK_SETTING_STARTER_ENTRY_IDS.has(setting.lockedDefaultEntryId)) ||
-    DEFAULT_WORK_SETTING_STARTER_ENTRY_IDS.has(defaultEntryId),
+    setting.lockedDefaultEntryId && DEFAULT_WORK_SETTING_STARTER_ENTRY_IDS.has(setting.lockedDefaultEntryId),
   );
 }

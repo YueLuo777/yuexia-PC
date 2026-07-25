@@ -109,11 +109,15 @@ describe('writer workspace chrome styling', () => {
     expect(appFrame).not.toContainSource('function rememberHomeRoute(pathname: string)');
   });
 
-  it('names the test navigation entry as test section', async () => {
+  it('opens the test section as a full page instead of a modal', async () => {
     const appFrame = await readSource('AppFrame.tsx');
 
     expect(appFrame).toContainSource('title="测试板块"');
     expect(appFrame).not.toContainSource('title="测试"');
+    expect(appFrame).toContainSource("navigate('/test-collection');");
+    expect(appFrame).not.toContainSource('setShowTestCollection');
+    expect(appFrame).not.toContainSource('showTestCollection');
+    expect(appFrame).not.toContainSource('storageId="test_collection"');
   });
 
   it('exposes default, shuimo, shuimo2 and clean as selectable app theme modes', async () => {
@@ -288,7 +292,7 @@ describe('writer workspace chrome styling', () => {
 
     expect(styles).toContainSource('.theme-shuimo2 .xy-floating-field.xy-floating-outline-fixed label');
     expect(styles).toContainSource('.theme-shuimo2 .xy-floating-field.xy-floating-outline-fixed.xy-has-value label');
-    expect(styles).toContainSource('.theme-shuimo2 .xy-capsule-custom-field-size legend');
+    expect(styles).toContainSource('.theme-shuimo2 .xy-floating-title-count');
     expect(styles).toContainSource('background-color: #FFF8EC !important;');
     expect(styles).toContainSource('border-color: #CDAF87 !important;');
     expect(styles).toContainSource('box-shadow: 0 0 0 1px #FFF8EC;');

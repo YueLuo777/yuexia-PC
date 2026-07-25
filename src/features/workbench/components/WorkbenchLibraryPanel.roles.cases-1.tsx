@@ -4,6 +4,7 @@ import { WorkbenchLibraryPanel } from './WorkbenchLibraryPanel';
 import {
   TEST_WORK_SETTING_STARTER_VERSION,
   unlockSmartImportSettings,
+  ensureLibraryDomainExpanded,
   ensureLibraryGroupExpanded,
   readWorkbenchLibraryPanelSource,
   readWorkbenchStructuredSettingsSource,
@@ -12,7 +13,6 @@ import {
   readWorkbenchFieldSizeSettingsSource,
   readWorkbenchSettingSegmentedTabsSource,
   readSharedSegmentedTabsSource,
-  readSharedStylesSource,
   readTestCollectionSource,
 } from './WorkbenchLibraryPanel.testUtils';
 describe('WorkbenchLibraryPanel role library flows', () => {
@@ -114,7 +114,7 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     const storedSettings = storedEntries.filter((entry: { tab: string }) => entry.tab === '大纲');
     const storedRoles = storedEntries.filter((entry: { tab: string }) => entry.tab === '角色');
     expect(storedSettings.map((entry: { title: string }) => entry.title)).toEqual([
-      '基础设定',
+      '作品定位',
       '世界架构',
       '青云宗',
       '黑玉令',
@@ -123,10 +123,10 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     ]);
     expect(storedSettings.map((entry: { content: string }) => JSON.parse(entry.content).type)).toEqual([
       '核心设定',
-      '世界地图',
+      '世界总览',
       '正派势力',
       '物品装备',
-      '怪物列表',
+      '常见怪物',
       '主线伏笔',
     ]);
     expect(storedRoles).toHaveLength(2);
@@ -134,7 +134,7 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     const importedRole = JSON.parse(storedRoles[0].content);
     expect(importedRole.type).toBe('男主角');
     expect(importedRole.baseSetting).toContainSource('【外貌】：\n黑衣少年，目光冷静。');
-    expect(importedRole.baseSetting).toContainSource('【核心性格】：\n果断但不滥杀。');
+    expect(importedRole.baseSetting).toContainSource('【性格】：\n果断但不滥杀。');
   });
   it('supports clearing character settings from the setting page without clearing work settings', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
@@ -254,31 +254,33 @@ describe('WorkbenchLibraryPanel role library flows', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: '核心设定3' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '核心设定4' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '世界规则1' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '剧情规划3' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '世界地图2' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '创作规范4' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '剧情时间线1' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '资源体系1' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '书写规则2' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '人物设定2' }));
+    ensureLibraryDomainExpanded('人物设定2');
     expect(screen.getByRole('button', { name: '男女主2' })).toBeInTheDocument();
-    ['核心配角', '正派角色', '反派角色', '中立角色', '龙套角色'].forEach((group) => {
+    ['重要配角', '反派', '其他角色'].forEach((group) => {
       expect(screen.getByRole('button', { name: `${group}0` })).toBeInTheDocument();
     });
     expect(screen.queryByRole('button', { name: '未分类0' })).not.toBeInTheDocument();
 
     const groupsByTab = [
-      { tab: '势力设定0', groups: ['正派势力', '反派势力', '中立势力', '其他势力'], count: 0 },
-      { tab: '道具资源0', groups: ['功法能力', '物品装备', '特殊资源'], count: 0 },
-      { tab: '怪物图鉴0', groups: ['怪物列表'], count: 0 },
-      { tab: '伏笔线索2', groups: ['主线伏笔', '人物伏笔'], count: 1 },
+      { tab: '地点地图2', groups: ['世界总览', '国家区域', '城池宗门', '建筑地点', '秘境遗迹', '危险区域', '其他地点'], populated: ['世界总览', '危险区域'] },
+      { tab: '势力设定1', groups: ['正派势力', '反派势力', '中立势力', '其他势力'], populated: ['正派势力'] },
+      { tab: '道具资源4', groups: ['功法能力', '物品装备', '特殊资源', '资源货币'], populated: ['功法能力', '物品装备', '特殊资源', '资源货币'] },
+      { tab: '伏笔线索4', groups: ['主线伏笔', '人物伏笔', '世界伏笔', '其他线索'], populated: ['主线伏笔', '人物伏笔', '世界伏笔', '其他线索'] },
+      { tab: '怪物图鉴1', groups: ['常见怪物', '精英怪物', '首领怪物', '特殊生命'], populated: ['常见怪物'] },
     ];
 
-    groupsByTab.forEach(({ tab, groups, count }) => {
+    groupsByTab.forEach(({ tab, groups, populated }) => {
       fireEvent.click(screen.getByRole('button', { name: tab }));
       groups.forEach((group) => {
-        expect(screen.getByRole('button', { name: `${group}${count}` })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: `${group}${populated.includes(group) ? 1 : 0}` })).toBeInTheDocument();
       });
     });
     expect(JSON.parse(localStorage.getItem(`${storageKey}_hidden_role_types`) ?? '[]')).toEqual([]);
@@ -298,12 +300,15 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     );
 
     expect(screen.getByRole('button', { name: '人物设定2' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '人物设定2' }));
+    ensureLibraryDomainExpanded('人物设定2');
     expect(screen.getByRole('button', { name: '男女主2' })).toBeInTheDocument();
-    expect(screen.getByDisplayValue('男主角')).toBeInTheDocument();
-    expect(screen.queryByText('身份定位')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '存活' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '死亡' })).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: '人物姓名' })).toHaveValue('男主角');
+    expect(screen.getByRole('combobox', { name: '身份定位' })).toHaveValue('男主角');
+    expect(screen.getByRole('combobox', { name: '身份定位' })).toBeDisabled();
+    expect(screen.getByRole('group', { name: '生存状态' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '存活' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '死亡' })).toBeDisabled();
+    expect(screen.queryByRole('combobox', { name: '状态标签' })).not.toBeInTheDocument();
 
     const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
     const roleEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '角色');
@@ -339,20 +344,18 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(panelSource).toContainSource(
       'disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent',
     );
-    expect(panelSource).toContainSource('const showRoleIdentityControls = !isMaleProtagonistRoleType(role.type);');
-    expect(panelSource).toContainSource('{showRoleIdentityControls ? (');
-    expect(panelSource).toContainSource('<div aria-hidden="true" className="h-[48px] min-w-[180px] shrink-0" />');
+    expect(panelSource).toContainSource('const roleIsMaleProtagonist = isMaleProtagonistRoleType(role.type);');
+    expect(panelSource).toContainSource('const roleIdentityOptionsForCurrentRole = roleIsMaleProtagonist ? [role.type] : roleIdentityTypeOptions;');
     expect(panelSource).toContainSource('label="身份定位"');
+    expect(panelSource).toContainSource('disabled={roleIsMaleProtagonist}');
+    expect(panelSource).toContainSource('options={roleIdentityOptionsForCurrentRole}');
     expect(panelSource).toContainSource('<WorkbenchSurvivalStatusToggle');
     expect(panelSource).toContainSource("value={roleLifeStatus ?? '存活'}");
+    expect(panelSource).toContainSource('disabled={roleIsMaleProtagonist}');
     expect(panelSource).not.toContainSource('xy-role-life-toggle');
   });
-  it('splits protagonist cheat advantage preview into the approved five fields', async () => {
+  it('moves protagonist cheat advantage fields into the male role editor', async () => {
     const storageKey = 'workbench-cheat-advantage-structured-preview-test';
-    const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
-    const cheatSetStart = structuredSettingsSource.indexOf("id: 'work-core-cheat-advantage'");
-    const cheatSetEnd = structuredSettingsSource.indexOf("id: 'faction-righteous-no-1'", cheatSetStart);
-    const cheatSetSource = structuredSettingsSource.slice(cheatSetStart, cheatSetEnd);
 
     render(
       <WorkbenchLibraryPanel
@@ -363,33 +366,16 @@ describe('WorkbenchLibraryPanel role library flows', () => {
       />,
     );
 
-    ensureLibraryGroupExpanded('核心设定3');
-    fireEvent.click(screen.getByText('主角金手指/优势').closest('button') as HTMLElement);
+    ensureLibraryDomainExpanded('人物设定2');
+    expect(screen.getByRole('textbox', { name: '人物姓名' })).toHaveValue('男主角');
 
-    expect(screen.getByDisplayValue('主角金手指/优势')).toBeInTheDocument();
-    expect(cheatSetSource).toContainSource("gridColumnsClassName: 'grid-cols-2'");
-    expect(cheatSetSource).not.toContainSource("gridColumnsClassName: 'grid-cols-5'");
-    expect(screen.getByLabelText('能力来源')).toBeInTheDocument();
-    expect(screen.getByLabelText('核心功能')).toBeInTheDocument();
-    expect(screen.getByLabelText('升级方式')).toBeInTheDocument();
-    expect(screen.getByLabelText('使用限制')).toBeInTheDocument();
-    expect(screen.getByLabelText('隐藏真相')).toBeInTheDocument();
-    expect(screen.queryByText('设定预览')).not.toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText('能力来源'), { target: { value: '主角误入旧神遗迹后绑定残缺系统。' } });
-    fireEvent.change(screen.getByLabelText('核心功能'), { target: { value: '吞噬遗物并提取其中的能力碎片。' } });
-    fireEvent.change(screen.getByLabelText('升级方式'), { target: { value: '通过完成遗迹任务解锁新模块。' } });
-    fireEvent.change(screen.getByLabelText('使用限制'), { target: { value: '短时间内吞噬过量会污染神魂。' } });
-    fireEvent.change(screen.getByLabelText('隐藏真相'), { target: { value: '系统其实是旧神复苏前留下的筛选器。' } });
-
-    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
-    const cheatEntry = storedEntries.find((entry: { title: string }) => entry.title === '主角金手指/优势');
-    const body = JSON.parse(cheatEntry.content).body;
-    expect(body).toContainSource('【能力来源】：\n主角误入旧神遗迹后绑定残缺系统。');
-    expect(body).toContainSource('【核心功能】：\n吞噬遗物并提取其中的能力碎片。');
-    expect(body).toContainSource('【升级方式】：\n通过完成遗迹任务解锁新模块。');
-    expect(body).toContainSource('【使用限制】：\n短时间内吞噬过量会污染神魂。');
-    expect(body).toContainSource('【隐藏真相】：\n系统其实是旧神复苏前留下的筛选器。');
+    expect(screen.getByText('金手指')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('金手指目前能做什么。')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('金手指从哪里来，主角为什么获得。')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('金手指如何进阶和强化。')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('金手指在什么条件下不能使用。')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('金手指真正从何而来。')).toBeInTheDocument();
+    expect(screen.queryByText('主角金手指/优势')).not.toBeInTheDocument();
   });
   it('shows righteous faction fixed and status fields together with status history on the right', async () => {
     const storageKey = 'workbench-righteous-faction-structured-preview-test';
@@ -417,12 +403,12 @@ describe('WorkbenchLibraryPanel role library flows', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '势力设定1' }));
+    ensureLibraryDomainExpanded('势力设定1');
     ensureLibraryGroupExpanded('正派势力1');
     fireEvent.click(screen.getByText('1号势力').closest('button') as HTMLElement);
 
-    expect(screen.getByRole('heading', { name: '基础设定' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: '状态设定' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '基础设定' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: '状态设定' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '基础设定' })).not.toBeInTheDocument();
     expect(screen.getByLabelText('势力名')).toHaveValue('1号势力');
     expect(screen.getByTestId('structured-title-field')).toContainElement(screen.getByLabelText('势力名'));
@@ -430,45 +416,43 @@ describe('WorkbenchLibraryPanel role library flows', () => {
       expect(group).not.toContainElement(screen.getByLabelText('势力名'));
     });
     expect(screen.queryByText('设定名')).not.toBeInTheDocument();
-    expect(panelSource).toContainSource('当前设定完整显示');
+    expect(panelSource).not.toContainSource('当前设定完整显示');
     expect(panelSource).toContainSource('testId="structured-title-field"');
-    expect(screen.getByLabelText('基本信息')).toBeInTheDocument();
-    expect(screen.getByLabelText('势力特点')).toBeInTheDocument();
+    expect(screen.getByLabelText('势力类型')).toBeInTheDocument();
+    expect(screen.getByLabelText('核心优势')).toBeInTheDocument();
     expect(screen.getByLabelText('组织架构')).toBeInTheDocument();
     expect(screen.getByLabelText('主要人物')).toBeInTheDocument();
     expect(screen.getByLabelText('势力关系')).toBeInTheDocument();
-    expect(screen.getByLabelText('对主角策略')).toBeInTheDocument();
-    expect(screen.getByLabelText('核心问题/矛盾')).toBeInTheDocument();
+    expect(screen.getByLabelText('对主角行动')).toBeInTheDocument();
+    expect(screen.getByLabelText('当前问题')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText('势力名'), { target: { value: '青云宗' } });
-    fireEvent.change(screen.getByLabelText('基本信息'), { target: { value: '青云宗，东洲正道宗门。' } });
+    fireEvent.change(screen.getByLabelText('势力类型'), { target: { value: '东洲正道宗门。' } });
 
     fireEvent.change(screen.getByLabelText('势力关系'), { target: { value: '暂时与主角合作，暗中防备魔道。' } });
-    fireEvent.change(screen.getByLabelText('对主角策略'), { target: { value: '先保护主角，再观察其金手指来源。' } });
-    fireEvent.change(screen.getByLabelText('核心问题/矛盾'), { target: { value: '内部长老对是否支持主角存在分歧。' } });
+    fireEvent.change(screen.getByLabelText('对主角行动'), { target: { value: '先保护主角，再观察其金手指来源。' } });
+    fireEvent.change(screen.getByLabelText('当前问题'), { target: { value: '内部长老对是否支持主角存在分歧。' } });
 
-    fireEvent.click(screen.getByRole('button', { name: '状态 · 0' }));
+    fireEvent.click(screen.getByRole('button', { name: '更新状态 · 0' }));
     expect(screen.getByText(/当前范围没有待确认更新/)).toBeInTheDocument();
 
     const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
-    const factionEntry = storedEntries.find((entry: { title: string }) => entry.title === '青云宗');
+    const factionEntry = storedEntries.find((entry: { title: string }) => entry.title === '1号势力');
     const body = JSON.parse(factionEntry.content).body;
-    expect(body).toContainSource('【基本信息】：\n青云宗，东洲正道宗门。');
+    expect(body).toContainSource('【势力类型】：\n东洲正道宗门。');
     expect(body).toContainSource('【势力关系】：\n暂时与主角合作，暗中防备魔道。');
-    expect(body).toContainSource('【对主角策略】：\n先保护主角，再观察其金手指来源。');
-    expect(body).toContainSource('【核心问题/矛盾】：\n内部长老对是否支持主角存在分歧。');
+    expect(body).toContainSource('【对主角行动】：\n先保护主角，再观察其金手指来源。');
+    expect(body).toContainSource('【当前问题】：\n内部长老对是否支持主角存在分歧。');
   });
   it('keeps structured settings in continuous black-frame groups with smaller placeholders', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
-    const styleSource = await readSharedStylesSource();
-
     expect(structuredSettingsSource).toContainSource("groups: [");
     expect(panelSource).toContainSource('groups.map((group)');
-    expect(panelSource).toContainSource('border-2 border-slate-950');
-    expect(panelSource).toContainSource('xy-structured-setting-field');
-    expect(styleSource).toContainSource('.xy-floating-field.xy-structured-setting-field textarea::placeholder');
-    expect(styleSource).toContainSource('font-size: 0.8125rem;');
+    expect(panelSource).toContainSource('rounded-[22px] border-2 border-slate-950');
+    expect(panelSource).toContainSource('resize-none border-0 bg-transparent');
+    expect(panelSource).toContainSource('placeholder:font-semibold placeholder:text-slate-400');
+    expect(panelSource).not.toContainSource('xy-structured-setting-field');
+    expect(panelSource).not.toContainSource('getSettingFieldPolicy');
   });
   it('removes the role editor delete button because protagonist settings are renamed instead of deleted', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
@@ -487,31 +471,24 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(editorHeaderSource).not.toContainSource('onToggleDeleteUnlocked();');
   });
   it('keeps character relationship as a first-class field with history and update policy', async () => {
-    const panelSource = await readWorkbenchLibraryPanelSource();
     const roleSettingFieldsSource = await readWorkbenchRoleSettingFieldsSource();
     const roleEditorSource = await readWorkbenchRoleEditorSource();
 
-    expect(panelSource).toContainSource('relationship: string;');
-    expect(panelSource).toContainSource("relationship: parsed.relationship || '',");
-    expect(panelSource).toContainSource("relationship: value.relationship || '',");
     expect(roleSettingFieldsSource).toContainSource(
       "type RoleStateUpdateChapterKey = RoleStateFieldKey | 'relationshipState';",
     );
-    expect(roleEditorSource).toContainSource("key: 'relationshipState'");
-    expect(roleEditorSource).toContainSource('updateRelationshipState');
-    expect(panelSource).toContainSource('人物关系');
-    expect(panelSource).not.toContainSource(
-      'AI 默认只读取，不直接覆盖。发现缺失时进入“基础设定补充建议”，由用户确认后写入。',
-    );
-    expect(panelSource).not.toContainSource('只写这个人物自己的关系；全局关系网仍放到作品设定的“人物关系”分类。');
-    expect(panelSource).not.toContainSource(
-      'placeholder="记录姓名、身份、外貌、角色定位、核心性格、人物背景、能力规则等低频变化内容。"',
-    );
-    expect(roleSettingFieldsSource).toContainSource("placeholder: '身形、容貌、衣着、气质、标志性细节。'");
-    expect(panelSource).toContainSource("wrapAiRequestTag('人物关系', truncateTextForAi(role.relationship, 700))");
+    expect(roleEditorSource).toContainSource("field.label === '人物关系'");
+    expect(roleEditorSource).toContainSource('relationship: value');
+    expect(roleEditorSource).toContainSource('relationshipState: currentChapterNumber');
     expect(roleEditorSource).not.toContainSource('roleSettingTabs');
-    expect(roleEditorSource).toContainSource('查看轨迹 →');
-    expect(roleEditorSource).toContainSource('getSettingFieldPolicy');
+    expect(roleEditorSource).toContainSource("import { History } from 'lucide-react';");
+    expect(roleEditorSource).toContainSource('title="字段记录"');
+    expect(roleEditorSource).toContainSource('right-5 top-0 z-10 grid h-6 w-6 -translate-y-1/2');
+    expect(roleEditorSource).toContainSource('text-[#08AACE]');
+    expect(roleEditorSource).toContainSource('<History className="h-4 w-4" />');
+    expect(roleEditorSource).not.toContainSource('字段记录 →');
+    expect(roleEditorSource).toContainSource('<WorkbenchFieldRecordModal');
+    expect(roleEditorSource).not.toContainSource('getSettingFieldPolicy');
     expect(roleEditorSource).not.toContainSource('<aside');
   });
 });

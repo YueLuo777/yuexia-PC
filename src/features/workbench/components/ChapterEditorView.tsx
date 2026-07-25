@@ -77,10 +77,12 @@ export function renderChapterEditorView(scope: Record<string, any>) {
     isSmartFormatOpen,
     isSymbolReplaceOpen,
     isTitleOptimizeOpen,
+    saveStatus,
     lastSavedAt,
     onDeleteChapter,
     onOpenFind,
     onRenameChapter,
+    onRetrySave,
     onUpdateSerialNumber,
     polishPreviewParagraphs,
     polishPreviewText,
@@ -159,6 +161,7 @@ export function renderChapterEditorView(scope: Record<string, any>) {
     showStatusUpdatePanel,
     statusDraft,
     statusLeftResizeHandle,
+    statusModalDraggable,
     statusPageLeftWidth,
     statusPageRightWidth,
     statusPreviewChapters,
@@ -193,6 +196,7 @@ export function renderChapterEditorView(scope: Record<string, any>) {
           titleCount={titleCount}
           content={content}
           wordCount={wordCount}
+          saveStatus={saveStatus}
           lastSavedAt={lastSavedAt}
           associatedCount={associatedCount}
           isFindOpen={isFindOpen}
@@ -228,6 +232,7 @@ export function renderChapterEditorView(scope: Record<string, any>) {
           handleContentChange={handleContentChange}
           handleKeyDown={handleKeyDown}
           handlePaste={handlePaste}
+          onRetrySave={onRetrySave}
         />
       )}
 
@@ -268,6 +273,7 @@ export function renderChapterEditorView(scope: Record<string, any>) {
           statusPageLeftWidth={statusPageLeftWidth}
           statusPageRightWidth={statusPageRightWidth}
           statusLeftResizeHandle={statusLeftResizeHandle}
+          statusModalDraggable={statusModalDraggable}
           statusRightResizeHandle={statusRightResizeHandle}
           chapterDirectoryGroups={chapterDirectoryGroups}
           expandedStatusVolumeIds={expandedStatusVolumeIds}

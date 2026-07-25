@@ -6,6 +6,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { trimPromptEditorLeadingBlankLines } from '../components/PromptPageParts';
 import { PromptsPage } from './PromptsPage';
 
 const readPromptsPageSource = () =>
@@ -196,14 +197,31 @@ describe('PromptsPage modal layering', () => {
     expect(source).toContainSource('heightClass="h-[calc(90dvh-43px)] max-h-[calc(100dvh-48px)]"');
     expect(source).toContainSource('widthClass="w-[1280px] max-w-[calc(100vw-48px)]"');
     expect(source).not.toContainSource('w-[1600px]');
-    expect(source).toContainSource('heightClass="h-full max-h-[calc(100dvh-48px)]"');
+    expect(source).toContainSource('heightClass="h-[min(680px,78dvh)] max-h-[calc(100dvh-48px)]"');
     expect(source).toContainSource('widthClass="w-[980px]"');
+    expect(source).toContainSource('defaultGeometry={{ x: 0, y: 0, width: 980, height: 680 }}');
+    expect(source).toContainSource('panelClassName="xy-prompt-editor-modal"');
+    expect(source).toContainSource('gap-6 px-8 pb-7 pt-4');
+    expect(source).toContainSource('min-h-0 space-y-5 overflow-y-auto pt-3 pr-1');
+    expect(source).toContainSource('grid min-h-0 grid-cols-1 gap-5 pt-3');
+    expect(source).toContainSource('xy-prompt-meta-field-multiline h-[180px] shrink-0 bg-white');
+    expect(source.match(/className="absolute xy-border-embedded-transparent-backplate xy-workbench-name-field-caption"/g)).toHaveLength(3);
+    expect(source).toContainSource('.xy-prompt-editor-modal .xy-workbench-name-field-caption::before');
+    expect(source).toContainSource('.xy-prompt-editor-modal .xy-workbench-name-field-caption > span');
+    expect(source.match(/<span>提示词(?:名称|说明|内容)<\/span>/g)).toHaveLength(3);
+    expect(source).toContainSource('px-6 pb-5 pt-3 font-sans text-[19px]');
+    expect(source).toContainSource('.xy-prompt-editor-modal .xy-prompt-meta-field-textarea');
+    expect(source).toContainSource('padding-top: 12px;');
+    expect(source).toContainSource('xy-prompt-meta-field xy-prompt-content-field relative flex min-h-0 flex-col bg-white');
+    expect(source).toContainSource('aria-label="提示词内容"');
+    expect(source).not.toContainSource('<label>提示词内容</label>');
     expect(source).not.toContainSource('isAuditDraft');
     expect(source).toContainSource('<AuditPromptEditorFields categories={categories} draft={draft} setDraft={setDraft} />');
     expect(source).toContainSource('label="剧情审核提示词"');
     expect(source).toContainSource('label="文本审核提示词"');
     expect(source).toContainSource("{disabled ? '启用' : '禁用'}");
-    expect(source).toContainSource('absolute -top-px left-5 z-10 flex h-5 -translate-y-1/2');
+    expect(source).toContainSource('absolute -top-px left-5 z-10 flex h-6 -translate-y-1/2');
+    expect(source).toContainSource('items-center text-base font-black leading-6 tracking-normal');
     expect(source).toContainSource('absolute -top-px right-5 z-10 flex h-5 -translate-y-1/2');
     expect(source).not.toContainSource('.xy-audit-prompt-content-field:focus-within > span');
     expect(source).not.toContainSource('<fieldset');
@@ -212,10 +230,10 @@ describe('PromptsPage modal layering', () => {
     const descriptionPosition = source.indexOf('label="提示词说明"');
     expect(descriptionPosition).toBeGreaterThan(namePosition);
     expect(source).toContainSource('flex h-full min-w-0 flex-col gap-3 rounded-2xl');
-    expect(source).toContainSource('xy-audit-meta-field min-w-0 bg-white');
-    expect(source).toContainSource('className="xy-workbench-name-field-caption"');
+    expect(source).toContainSource('xy-audit-meta-field xy-prompt-meta-field min-w-0 bg-white');
+    expect(source).toContainSource('className="xy-border-embedded-transparent-backplate xy-workbench-name-field-caption"');
     expect(source).toContainSource('className="xy-workbench-name-field-input"');
-    expect(source).toContainSource('className="xy-audit-meta-field-textarea"');
+    expect(source).toContainSource('className="xy-prompt-meta-field-textarea"');
     expect(source).toContainSource('placeholder=""');
     expect(source).toContainSource('className="w-[220px] max-w-full"');
     expect(source).toContainSource('grid min-h-[216px] shrink-0 grid-cols-2 gap-5');
@@ -235,6 +253,12 @@ describe('PromptsPage modal layering', () => {
     expect(source).toContainSource('.xy-audit-prompt-content-editor:focus');
     expect(source).toContainSource('<div className="flex min-w-0 flex-1 items-center gap-2">');
     expect(source).toContainSource('{prompt.category}');
+  });
+
+  it('removes leading blank lines from prompt descriptions and content', () => {
+    expect(trimPromptEditorLeadingBlankLines('\n\n提示词正文')).toBe('提示词正文');
+    expect(trimPromptEditorLeadingBlankLines('  \n\t\n提示词说明')).toBe('提示词说明');
+    expect(trimPromptEditorLeadingBlankLines('第一行\n\n第二行')).toBe('第一行\n\n第二行');
   });
 
   it('disables and restores the text-audit prompt without deleting its content', () => {

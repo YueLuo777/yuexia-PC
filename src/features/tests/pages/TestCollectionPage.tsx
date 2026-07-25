@@ -1,22 +1,24 @@
 import {
   ArrowLeft,
+  BookOpenText,
   Check,
   EyeOff,
   FolderTree,
   Globe,
-  ListTree,
   NotebookText,
   Moon,
   Palette,
-  Ruler,
   Search,
   Sparkles,
+  Workflow,
   X,
 } from 'lucide-react';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { TEST_COLLECTION_SHOW_INDEX_EVENT } from '@/features/tests/model/testCollectionEvents';
+import { useTestCollectionTestedState } from '@/features/tests/hooks/useTestCollectionTestedState';
+import type { TestGroup } from '@/features/tests/pages/testCollectionTypes';
 
 const HiddenPagesTestPage = lazy(() =>
   import('@/features/tests/pages/HiddenPagesTestPage').then((module) => ({ default: module.HiddenPagesTestPage })),
@@ -32,41 +34,25 @@ const Shuimo2DeepPalettePreviewTestPage = lazy(() =>
     default: module.Shuimo2DeepPalettePreviewTestPage,
   })),
 );
-const NavigationContextMenuPrototypeTestPage = lazy(() =>
-  import('@/features/tests/pages/NavigationContextMenuPrototypeTestPage').then((module) => ({
-    default: module.NavigationContextMenuPrototypeTestPage,
+const WorkSettingTaxonomyProposalTestPage = lazy(() =>
+  import('@/features/tests/pages/WorkSettingTaxonomyProposalTestPage').then((module) => ({
+    default: module.WorkSettingTaxonomyProposalTestPage,
   })),
 );
-const CompactLibraryFormTestPage = lazy(() =>
-  import('@/features/tests/pages/CompactLibraryFormTestPage').then((module) => ({
-    default: module.CompactLibraryFormTestPage,
+const SettingAiReadyTaxonomyTestPage = lazy(() =>
+  import('@/features/tests/pages/SettingAiReadyTaxonomyTestPage').then((module) => ({
+    default: module.SettingAiReadyTaxonomyTestPage,
   })),
 );
-const SettingNameWidthDesignTestPage = lazy(() =>
-  import('@/features/tests/pages/SettingNameWidthDesignTestPage').then((module) => ({
-    default: module.SettingNameWidthDesignTestPage,
+const PromptDrivenNovelWorkspaceTestPage = lazy(() =>
+  import('@/features/tests/pages/PromptDrivenNovelWorkspaceTestPage').then((module) => ({ default: module.PromptDrivenNovelWorkspaceTestPage })),
+);
+const AiThinkingShellVariantsTestPage = lazy(() =>
+  import('@/features/tests/pages/AiThinkingShellVariantsTestPage').then((module) => ({
+    default: module.AiThinkingShellVariantsTestPage,
   })),
 );
-const SettingsHierarchyDesignTestPage = lazy(() =>
-  import('@/features/tests/pages/SettingsHierarchyDesignTestPage').then((module) => ({
-    default: module.SettingsHierarchyDesignTestPage,
-  })),
-);
-const WorkbenchFlowTabsSpacingTestPage = lazy(() =>
-  import('@/features/tests/pages/WorkbenchFlowTabsSpacingTestPage').then((module) => ({
-    default: module.WorkbenchFlowTabsSpacingTestPage,
-  })),
-);
-const UiConsistencyAuditTestPage = lazy(() =>
-  import('@/features/tests/pages/UiConsistencyAuditTestPage').then((module) => ({
-    default: module.UiConsistencyAuditTestPage,
-  })),
-);
-const AiPanelVisualConsistencyTestPage = lazy(() =>
-  import('@/features/tests/pages/AiPanelVisualConsistencyTestPage').then((module) => ({
-    default: module.AiPanelVisualConsistencyTestPage,
-  })),
-);
+const UiConsistencyComparisonTestPage = lazy(() => import('@/features/tests/pages/UiConsistencyComparisonTestPage'));
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
 );
@@ -80,40 +66,16 @@ const PromptWorkflowPreviewTestPage = lazy(() =>
     default: module.PromptWorkflowPreviewTestPage,
   })),
 );
-const AuditPromptSelectSoftGroupingTestPage = lazy(() =>
-  import('@/features/tests/pages/AuditPromptSelectSoftGroupingTestPage').then((module) => ({
-    default: module.AuditPromptSelectSoftGroupingTestPage,
-  })),
-);
-const TextAuditDiffDisplayTestPage = lazy(() =>
-  import('@/features/tests/pages/TextAuditDiffDisplayTestPage').then((module) => ({
-    default: module.TextAuditDiffDisplayTestPage,
-  })),
-);
-const TextAuditReviewWorkbenchTestPage = lazy(() =>
-  import('@/features/tests/pages/TextAuditReviewWorkbenchTestPage').then((module) => ({
-    default: module.TextAuditReviewWorkbenchTestPage,
-  })),
-);
-const PostAuditStatusUpdateTestPage = lazy(() =>
-  import('@/features/tests/pages/PostAuditStatusUpdateTestPage').then((module) => ({
-    default: module.PostAuditStatusUpdateTestPage,
-  })),
-);
 const TestBrowserPage = lazy(() =>
   import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })),
-);
-const GenreIterationPage = lazy(() =>
-  import('@/features/genre-iteration/pages/GenreIterationPage').then((module) => ({
-    default: module.GenreIterationPage,
-  })),
 );
 const TomatoGenreIterationTestPage = lazy(() =>
   import('@/features/tests/pages/TomatoGenreIterationTestPage').then((module) => ({
     default: module.TomatoGenreIterationTestPage,
   })),
 );
-const testGroups = [
+
+const testGroups: TestGroup[] = [
   {
     title: 'UI 与主题',
     items: [
@@ -153,53 +115,40 @@ const testGroups = [
         badge: 'Shuimo2',
       },
       {
-        title: '导航右键菜单原型',
-        description: '测试导航项右键重命名/隐藏、空白处恢复隐藏导航、分割线删除和拖拽排序。',
-        path: '/navigation-context-menu-prototype-test',
-        icon: ListTree,
-        badge: 'Nav Menu',
+        title: '作品设定命名与主角能力归属模拟',
+        description:
+          '按正式设定页模拟作品和人物设定；所有角色将背景目标并入基础档案，并统一境界、功法、战斗和其他技能。',
+        path: '/work-setting-taxonomy-proposal-test',
+        icon: BookOpenText,
+        badge: 'Setting Plan',
       },
       {
-        title: '资料库紧凑行式表单',
-        description: '使用正常尺寸验证短字段按内容宽度、标签与输入同行、短字段并排和长文本压缩高度。',
-        path: '/compact-library-form-test',
+        title: 'AI可执行设定分类模拟',
+        description: '在16号结构上补充力量规则、人设约束、知情边界、动态状态、成长变化与反派计划，模拟AI实际读取效果。',
+        path: '/setting-ai-ready-taxonomy-test',
         icon: Sparkles,
-        badge: 'Compact Form',
+        badge: 'AI Ready',
       },
       {
-        title: '设定页面完整复原（图1表单）',
-        description: '原08号测试：完整复刻正式设定页的流程栏、分类栏、资料目录、编辑器和右侧 AI 区，并按内容分配字段宽度。',
-        path: '/setting-name-width-design-test',
-        icon: Ruler,
-        badge: 'Setting Form',
+        title: '提示词设定与AI创作流程模拟',
+        description: '根据提示词文件夹整理设定页面，并把白皮书、档案、细纲、续写、审核、发布和状态更新串成一条AI创作流程。',
+        path: '/prompt-driven-novel-workspace-test',
+        icon: Workflow,
+        badge: 'Prompt Workflow',
       },
       {
-        title: '软件设置入口多方案',
-        description: '对比全顶部导航、图标窄栏、卡片逐级进入、搜索优先和单页折叠五种设置布局。',
-        path: '/settings-hierarchy-design-test',
-        icon: ListTree,
-        badge: 'Settings UI',
-      },
-      {
-        title: '顶部工作流按钮栏间距测试',
-        description: '对比脑洞、设定、章纲等顶部按钮栏的底部留白、分组间距和流程层次。',
-        path: '/workbench-flow-tabs-spacing-test',
-        icon: Ruler,
-        badge: 'Flow Tabs',
-      },
-      {
-        title: '同类 UI 一致性审查',
-        description: '按实际软件入口列出六类同用途 UI 的并存版本、具体差异、源码位置和建议统一方向。',
-        path: '/ui-consistency-audit-test',
-        icon: ListTree,
-        badge: 'UI Audit',
-      },
-      {
-        title: 'AI面板三页统一方案',
-        description: '并排查看设定、章纲、正文三种真实业务按钮在统一输出框、关联区、输入框和操作栏下的视觉效果。',
-        path: '/ai-panel-visual-consistency-test',
+        title: '思考框外层样式对比',
+        description: '用同一段思考内容对比双层框、单层蓝框、蓝色消息块和紧凑折叠条四种版本。',
+        path: '/ai-thinking-shell-variants-test',
         icon: Sparkles,
-        badge: 'AI Layout',
+        badge: 'Thinking UI',
+      },
+      {
+        title: '全项目同功能样式对比',
+        description: '把空状态、弹窗外壳、分段切换、选中颜色和资料选择行的正式页面现状并排展示。',
+        path: '/ui-consistency-comparison-test',
+        icon: Palette,
+        badge: 'UI Compare',
       },
     ],
   },
@@ -220,34 +169,6 @@ const testGroups = [
         icon: FolderTree,
         badge: 'Prompt View',
       },
-      {
-        title: '审核提示词轻量下拉方案',
-        description: '对比标签、轻分隔、顶部筛选和双列分类，降低审核提示词下拉的切换感。',
-        path: '/audit-prompt-select-soft-grouping-test',
-        icon: ListTree,
-        badge: 'Audit Prompt',
-      },
-      {
-        title: '文本审核差异显示方案',
-        description: '对比审核后正文红字、左右对照、段落卡片和改动清单几种文本审核结果显示方式。',
-        path: '/text-audit-diff-display-test',
-        icon: NotebookText,
-        badge: 'Text Audit',
-      },
-      {
-        title: '文本审核逐段审阅工作台',
-        description: '在接近正式审核页面的章节目录、正文预览和 AI 配置三栏中，测试逐段接受、保留和编辑后采用。',
-        path: '/text-audit-review-workbench-test',
-        icon: NotebookText,
-        badge: 'Audit Page',
-      },
-      {
-        title: '审核后状态更新工作台',
-        description: '测试AI识别正文对象、分类查询设定、未匹配对象新建确认、状态变化逐项确认和按段落依据写入的完整流程。',
-        path: '/post-audit-status-update-test',
-        icon: ListTree,
-        badge: 'Status Flow',
-      },
     ],
   },
   {
@@ -267,40 +188,16 @@ const testGroups = [
         icon: Globe,
         badge: 'Tomato',
       },
-      {
-        title: '题材迭代',
-        description: '从正式导航移入测试板块的题材迭代工作台，用于继续验证小说读取、爽点提炼和题材迁移流程。',
-        path: '/genre-iteration-test',
-        icon: Sparkles,
-        badge: 'Genre',
-      },
     ],
   },
 ];
+
 const testNumberByPath = new Map(
   testGroups.flatMap((group) => group.items).map((item, index) => [item.path, index + 1] as const),
 );
 const validTestPaths = new Set(testNumberByPath.keys());
 
-const TEST_COLLECTION_TESTED_PATHS_KEY = 'xinyuexia_test_collection_tested_paths_v1';
-
 type CollectionTab = 'untested' | 'tested';
-
-function readTestedTestPaths() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(TEST_COLLECTION_TESTED_PATHS_KEY) ?? '[]') as unknown;
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    const validPaths = parsed.filter((item): item is string => typeof item === 'string' && validTestPaths.has(item));
-    if (validPaths.length !== parsed.length) {
-      localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(validPaths));
-    }
-    return validPaths;
-  } catch {
-    return [];
-  }
-}
 
 function formatTestNumber(path: string) {
   return String(testNumberByPath.get(path) ?? 0).padStart(2, '0');
@@ -316,21 +213,12 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
   const [search, setSearch] = useState('');
   const [activePath, setActivePath] = useState<string | null>(null);
   const [collectionTab, setCollectionTab] = useState<CollectionTab>('untested');
-  const [testedTestPaths, setTestedTestPaths] = useState<Set<string>>(() => new Set(readTestedTestPaths()));
+  const { testedTestPaths, toggleTestedTest } = useTestCollectionTestedState(validTestPaths);
 
   useEffect(() => {
     const showIndex = () => setActivePath(null);
     window.addEventListener(TEST_COLLECTION_SHOW_INDEX_EVENT, showIndex);
     return () => window.removeEventListener(TEST_COLLECTION_SHOW_INDEX_EVENT, showIndex);
-  }, []);
-
-  useEffect(() => {
-    setTestedTestPaths((current) => {
-      const next = new Set(Array.from(current).filter((path) => validTestPaths.has(path)));
-      if (next.size === current.size) return current;
-      localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(Array.from(next)));
-      return next;
-    });
   }, []);
 
   const activeItem = useMemo(
@@ -357,20 +245,6 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
 
   const openTestPage = (path: string) => {
     setActivePath(path);
-  };
-
-  const toggleTestedTest = (path: string) => {
-    const willBeTested = !testedTestPaths.has(path);
-    setTestedTestPaths((current) => {
-      const next = new Set(current);
-      if (willBeTested) {
-        next.add(path);
-      } else {
-        next.delete(path);
-      }
-      localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(Array.from(next)));
-      return next;
-    });
   };
 
   const visibleGroups = useMemo(() => {
@@ -405,14 +279,6 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <PromptLibraryStructureTestPage />;
       case '/prompt-workflow-preview-test':
         return <PromptWorkflowPreviewTestPage />;
-      case '/audit-prompt-select-soft-grouping-test':
-        return <AuditPromptSelectSoftGroupingTestPage />;
-      case '/text-audit-diff-display-test':
-        return <TextAuditDiffDisplayTestPage />;
-      case '/text-audit-review-workbench-test':
-        return <TextAuditReviewWorkbenchTestPage />;
-      case '/post-audit-status-update-test':
-        return <PostAuditStatusUpdateTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':
@@ -423,26 +289,20 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
       case '/shuimo2-deep-palette-preview-test':
         return <Shuimo2DeepPalettePreviewTestPage />;
-      case '/navigation-context-menu-prototype-test':
-        return <NavigationContextMenuPrototypeTestPage />;
-      case '/compact-library-form-test':
-        return <CompactLibraryFormTestPage />;
-      case '/settings-hierarchy-design-test':
-        return <SettingsHierarchyDesignTestPage />;
-      case '/setting-name-width-design-test':
-        return <SettingNameWidthDesignTestPage />;
-      case '/workbench-flow-tabs-spacing-test':
-        return <WorkbenchFlowTabsSpacingTestPage />;
-      case '/ui-consistency-audit-test':
-        return <UiConsistencyAuditTestPage />;
-      case '/ai-panel-visual-consistency-test':
-        return <AiPanelVisualConsistencyTestPage />;
+      case '/work-setting-taxonomy-proposal-test':
+        return <WorkSettingTaxonomyProposalTestPage />;
+      case '/setting-ai-ready-taxonomy-test':
+        return <SettingAiReadyTaxonomyTestPage />;
+      case '/prompt-driven-novel-workspace-test':
+        return <PromptDrivenNovelWorkspaceTestPage />;
+      case '/ai-thinking-shell-variants-test':
+        return <AiThinkingShellVariantsTestPage />;
+      case '/ui-consistency-comparison-test':
+        return <UiConsistencyComparisonTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':
         return <TomatoGenreIterationTestPage />;
-      case '/genre-iteration-test':
-        return <GenreIterationPage />;
       default:
         return null;
     }

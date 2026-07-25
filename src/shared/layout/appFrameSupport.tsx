@@ -106,8 +106,3 @@ export const SoftwareUiCatalogPage = INTERNAL_ROUTE_MODULES_BUNDLED
       })),
     )
   : null;
-export const TestCollectionPage = INTERNAL_ROUTE_MODULES_BUNDLED
-  ? lazy(() =>
-      import('@/features/tests/pages/TestCollectionPage').then((module) => ({ default: module.TestCollectionPage })),
-    )
-  : null;

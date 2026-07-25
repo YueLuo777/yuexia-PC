@@ -161,15 +161,15 @@ describe('Workbench find replace modal placement', () => {
 
     expect(source).toContainSource("const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';");
     expect(source).toContainSource('const APP_SCALE_ROOT_SELECTOR = \'[data-capsule-select-portal-root="true"]\';');
-    expect(source).toContainSource('const MAX_MODAL_VIEWPORT_RATIO = 0.8;');
+    expect(source).toContainSource('const MAX_MODAL_VIEWPORT_RATIO = 0.96;');
     expect(source).toContainSource('const RESIZE_ACTIVATION_DISTANCE_PX = 8;');
     expect(source).toContainSource('function getEffectiveModalScale()');
     expect(source).toContainSource('function getModalScaleContext(element?: HTMLElement | null)');
     expect(source).toContainSource(
       'const scaleRoot = element?.closest(APP_SCALE_ROOT_SELECTOR) as HTMLElement | null;',
     );
-    expect(source).toContainSource('const visualViewportWidth = window.innerWidth / scale;');
-    expect(source).toContainSource('const visualViewportHeight = window.innerHeight / scale;');
+    expect(source).toContainSource('const { viewportWidth, viewportHeight } = getModalScaleContext(element);');
+    expect(source).toContainSource('getModalScaleContext(drag.element)');
     expect(source).toContainSource('Math.floor(viewportWidth * MAX_MODAL_VIEWPORT_RATIO)');
     expect(source).toContainSource('Math.floor(viewportHeight * MAX_MODAL_VIEWPORT_RATIO)');
     expect(source).toContainSource('(rect.left - originLeft) / scale');
@@ -183,9 +183,9 @@ describe('Workbench find replace modal placement', () => {
     expect(source).toContainSource('const rect = element.getBoundingClientRect();');
     expect(source).toContainSource('rect.bottom > visualBottom - visualPadding');
     expect(source).toContainSource('const centeredWidth = Number.isFinite(next.width) ? Number(next.width) : 0;');
-    expect(source).toContainSource('(visualViewportWidth - centeredWidth) / 2 - VIEWPORT_PADDING / 2');
+    expect(source).toContainSource('(viewportWidth - centeredWidth) / 2 - VIEWPORT_PADDING / 2');
     expect(source).toContainSource('next = clampFixedGeometryToVisualViewport(resize.element, next);');
-    expect(source).toContainSource('const next = normalizeGeometryToViewport(rawNext);');
+    expect(source).toContainSource('const next = normalizeGeometryToViewport(rawNext, element);');
     expect(source).toContainSource('saveGeometry(storageKey, next);');
   });
 
@@ -239,8 +239,7 @@ describe('Workbench splitters', () => {
     expect(chapterContextSource).toContainSource('disabled={!canPickChapter}');
     expect(chapterContextSource).toContainSource('disabled={!canPickSummary}');
     expect(source).toContainSource('if (!hasContextContent(item)) return;');
-    expect(source).toContainSource('&& draftContextWordCount > 0');
-    expect(source).toContainSource('&& selectedDraftContextItems.every(hasContextContent);');
+    expect(source).toContainSource('draftContextWordCount > 0 && selectedDraftContextItems.every(hasContextContent)');
     expect(source).toContainSource("const contextLibraryConfirmTitle = canConfirmContextLibrary ? '确认关联资料'");
     expect(source).toContainSource("'请选择至少一项有内容的资料';");
   });
@@ -340,7 +339,7 @@ describe('Workbench library snapshots', () => {
     const source = await readSource('WorkbenchPage.tsx');
 
     expect(source).toContainSource(
-      "BRAINSTORM_TAB, BRAINSTORM_TYPE, ROLE_TAB, SETTING_TAB, UNCATEGORIZED_TYPE, normalizeTabName",
+      'BRAINSTORM_TAB, BRAINSTORM_TYPE, ROLE_TAB, SETTING_TAB, UNCATEGORIZED_TYPE, normalizeTabName',
     );
     expect(source).toContainSource('settingsEntries.filter((entry) => normalizeTabName(entry.tab) === SETTING_TAB)');
     expect(source).toContainSource(
@@ -393,7 +392,7 @@ describe('Workbench linked context clearing', () => {
     expect(chapterContextSource).toContainSource(
       '<ContextSelectionDot checked={selectedOutline} disabled locked={outlineLocked} />',
     );
-    expect(chapterContextSource).toContainSource('label={`第${row.serialNumber}章章纲`}');
+    expect(chapterContextSource).toContainSource('label={`第${row.serialNumber}章 章纲`}');
     expect(source).toContainSource('const rowIds = [row.chapterItem.id, row.summaryItem?.id].filter(');
     expect(source).not.toContainSource('row.isCurrent ? null : row.outlineItem.id');
     expect(source).not.toContainSource(
@@ -495,8 +494,12 @@ describe('ChapterEditor prompt snapshots', () => {
     expect(source).toContainSource('? REVIEW_MANAGEMENT_MODAL_SIZE_CLASS');
     expect(source).toContainSource(': REVIEW_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS;');
     expect(source).toContainSource('<WorkbenchModal');
-    expect(source).toContainSource("widthClass={`${REVIEW_MANAGEMENT_MODAL_SIZE_CLASS} ${mode === 'prompts' ? PROMPT_MANAGEMENT_MODAL_WIDTH_CLASS : ''}`}");
-    expect(source).toContainSource("widthClass={`${reviewManagementModalSizeClass} ${mode === 'prompts' ? PROMPT_MANAGEMENT_MODAL_WIDTH_CLASS : ''}`}");
+    expect(source).toContainSource(
+      "widthClass={`${REVIEW_MANAGEMENT_MODAL_SIZE_CLASS} ${mode === 'prompts' ? PROMPT_MANAGEMENT_MODAL_WIDTH_CLASS : ''}`}",
+    );
+    expect(source).toContainSource(
+      "widthClass={`${reviewManagementModalSizeClass} ${mode === 'prompts' ? PROMPT_MANAGEMENT_MODAL_WIDTH_CLASS : ''}`}",
+    );
     expect(modalSizeSource).toContainSource(
       "PROMPT_MANAGEMENT_MODAL_WIDTH_CLASS = '!w-[1128px] !max-w-[calc(100vw-48px)]'",
     );
@@ -554,16 +557,16 @@ describe('ChapterEditor prompt snapshots', () => {
     expect(source).toContainSource('本次请求只执行剧情审核，不得分析、生成或输出任何文本审核内容');
     expect(source).toContainSource('waitForAuditTextCountdown({');
     expect(source).toContainSource('buildTextAuditStagePrompt(textAuditPromptText)');
-    expect(source).toContainSource("activeReviewPrompt?.textAuditEnabled !== false");
+    expect(source).toContainSource('activeReviewPrompt?.textAuditEnabled !== false');
     expect(source).toContainSource('const auditRevisedText = useMemo(');
     expect(source).toContainSource('reviewRevisedDraft.trimEnd() ||');
     expect(source).toContainSource('buildTextAuditRevisedText(reviewAiOutput, activeReviewContent)');
-    expect(source).toContainSource('preserveReviewParagraphIndentation(reviewOriginalParagraphs, splitReviewParagraphs(auditRevisedText))');
+    expect(source).toContainSource(
+      'preserveReviewParagraphIndentation(reviewOriginalParagraphs, splitReviewParagraphs(auditRevisedText))',
+    );
     expect(source).toContainSource('const originalText = activeReviewContent.trimEnd();');
     expect(source).toContainSource('{ preserveLeadingWhitespace: true }');
-    expect(auditWorkflowSource).toContainSource(
-      '段首全角空格、半角空格、制表符和空行属于排版，不是文本问题',
-    );
+    expect(auditWorkflowSource).toContainSource('段首全角空格、半角空格、制表符和空行属于排版，不是文本问题');
     expect(source).toContainSource("from '@/features/workbench/model/chapterReviewText';");
     expect(reviewTextSource).toContainSource(
       'export function buildReviewTextDiff(originalText: string, revisedText: string): ReviewTextDiff {',
@@ -581,13 +584,18 @@ describe('ChapterEditor prompt snapshots', () => {
     expect(source).toContainSource('审核后缺少本段，请让 AI 保留段落位置。');
     expect(source).toContainSource('renderTextAuditOriginalDiff(displayParagraph, displayRevised)');
     expect(source).toContainSource('const showContinuousTextAudit =');
-    expect(source).toContainSource('const showContinuousTextAudit = isAuditTextReview && Boolean(auditRevisedText.trim());');
+    expect(source).toContainSource(
+      'const showContinuousTextAudit = isAuditTextReview && Boolean(auditRevisedText.trim());',
+    );
     expect(source).toContainSource('<ChapterTextAuditContinuousReview');
     expect(source).toContainSource('data-testid="formal-text-audit-continuous-review"');
     expect(source).toContainSource('接受修改');
     expect(source).toContainSource('修改后采用');
     expect(source).toContainSource('重新修改');
     expect(source).toContainSource('应用已接受修改（{acceptedCount}）');
+    expect(source).toContainSource('onUpdateChapterContent(activeReviewChapter.id, nextContent);');
+    expect(source).toContainSource('clearReviewAiOutput();');
+    expect(source).not.toContainSource('setReviewRevisedDraft(nextContent);');
     expect(auditWorkflowSource).toContainSource('不得合并、拆分、调换或删除段落');
     expect(auditWorkflowSource).toContainSource('不要输出无问题段落，不要输出修改后全文');
     expect(auditWorkflowSource).toContainSource(

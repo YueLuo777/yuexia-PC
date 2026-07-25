@@ -20,14 +20,8 @@ import { ChapterSidebar } from '@/features/workbench/components/ChapterSidebar';
 import { PublishedSidebar } from '@/features/workbench/components/PublishedSidebar';
 import { WorkbenchAIPanel, type WorkbenchLinkedContextItem } from '@/features/workbench/components/WorkbenchAIPanel';
 import { WorkbenchHeader, type WorkbenchHeaderFlowStats } from '@/features/workbench/components/WorkbenchHeader';
-import {
-  WorkbenchContextSelectionColumn,
-  type WorkbenchContextColumn,
-} from '@/features/workbench/components/WorkbenchContextSelectionColumn';
-import {
-  WorkbenchContextChapterSummaryList,
-  type WorkbenchContextChapterPair,
-} from '@/features/workbench/components/WorkbenchContextChapterSummaryList';
+import { WorkbenchContextSelectionColumn } from '@/features/workbench/components/WorkbenchContextSelectionColumn';
+import { WorkbenchContextChapterSummaryList } from '@/features/workbench/components/WorkbenchContextChapterSummaryList';
 import { type WorkbenchManagementModalKey } from '@/features/workbench/components/WorkbenchManagementModal';
 import { readChapterContent, useWorkbenchData } from '@/features/workbench/hooks/useWorkbenchData';
 import { useWorkbenchLibrarySnapshots } from '@/features/workbench/hooks/useWorkbenchLibrarySnapshots';
@@ -111,7 +105,6 @@ import {
   getWorkbenchChapterHeaderStats,
   FIELD_SIZE_FLOW_IDS,
   type ContextColumn,
-  type ContextChapterPair,
   AI_PANEL_MIN_WIDTH,
   AI_PANEL_DEFAULT_WIDTH,
   CHAPTER_SIDEBAR_MIN_WIDTH,
@@ -145,6 +138,7 @@ import {
   readMemoItems,
 } from '@/features/workbench/components/workbenchPageSupport';
 import { buildWorkbenchContextLibrary } from '../hooks/useWorkbenchContextLibrary';
+import { buildWorkbenchPageChapterContext } from './workbenchPageChapterContext';
 
 export function WorkbenchPage() {
   const navigate = useNavigate();
@@ -176,7 +170,9 @@ export function WorkbenchPage() {
   const [contextSearchText, setContextSearchText] = useState('');
   const [draftContextIds, setDraftContextIds] = useState<Set<string>>(() => new Set());
   const [linkedContextItems, setLinkedContextItems] = useState<WorkbenchLinkedContextItem[]>([]);
-  const [contextSelectionTouched, setContextSelectionTouched] = useState(() => localStorage.getItem('xinyuexia_keep_workbench_associations_v1') !== '1');
+  const [contextSelectionTouched, setContextSelectionTouched] = useState(
+    () => localStorage.getItem('xinyuexia_keep_workbench_associations_v1') !== '1',
+  );
   const [publishConfirm, setPublishConfirm] = useState(() => localStorage.getItem(PUBLISH_CONFIRM_KEY) === 'true');
   const [showPublished, setShowPublished] = useState(false);
   const {
@@ -197,7 +193,7 @@ export function WorkbenchPage() {
     selectedChapter,
     editorContent,
     sortAsc,
-    lastSavedAt,
+    chapterSaveProps,
     selectChapter,
     toggleVolume,
     toggleSort,
@@ -274,7 +270,9 @@ export function WorkbenchPage() {
     if (!currentNovelId) return;
     const storedItems = readWorkbenchLinkedContextItems(currentNovelId);
     setLinkedContextItems(storedItems);
-    setContextSelectionTouched(localStorage.getItem('xinyuexia_keep_workbench_associations_v1') !== '1' || storedItems.length > 0);
+    setContextSelectionTouched(
+      localStorage.getItem('xinyuexia_keep_workbench_associations_v1') !== '1' || storedItems.length > 0,
+    );
     setDraftContextIds(new Set());
     setIsContextLibraryOpen(false);
   }, [currentNovelId]);
@@ -321,7 +319,11 @@ export function WorkbenchPage() {
   }
 
   const { chapterCount, unpolishedChapterCount, selectedVolumeName } = getWorkbenchChapterHeaderStats(
-    settingsStorageKey, volumes, selectedChapter, editorContent, currentNovel.id,
+    settingsStorageKey,
+    volumes,
+    selectedChapter,
+    editorContent,
+    currentNovel.id,
   );
 
   const settingContextEntries = orderContextEntriesByType(
@@ -413,13 +415,15 @@ export function WorkbenchPage() {
       meta: `${settingsEntries.filter((entry) => normalizeTabName(entry.tab) === BRAINSTORM_TAB).length}个脑洞`,
     },
     outline: {
-      meta: `${settingsEntries.filter((entry) => {
-        const normalizedTab = normalizeTabName(entry.tab);
-        if (normalizedTab === ROLE_TAB) return true;
-        if (normalizedTab !== SETTING_TAB) return false;
-        const settingType = parseSettingContent(entry.content).type;
-        return settingType !== BRAINSTORM_TYPE && settingType !== UNCATEGORIZED_TYPE;
-      }).length}个设定`,
+      meta: `${
+        settingsEntries.filter((entry) => {
+          const normalizedTab = normalizeTabName(entry.tab);
+          if (normalizedTab === ROLE_TAB) return true;
+          if (normalizedTab !== SETTING_TAB) return false;
+          const settingType = parseSettingContent(entry.content).type;
+          return settingType !== BRAINSTORM_TYPE && settingType !== UNCATEGORIZED_TYPE;
+        }).length
+      }个设定`,
     },
     chapterOutline: { meta: `${outlineContextItems.length}章` },
     writing: { meta: `${chapterCount}章` },
@@ -429,62 +433,13 @@ export function WorkbenchPage() {
     status: { meta: `${chapterCount}章未更新`, tone: 'warning' },
     summary: { meta: `${summaryChapterCount}章`, tone: summaryChapterCount < chapterCount ? 'warning' : 'normal' },
   };
-  const selectedChapterSerialNumber = selectedChapter?.chapter.serialNumber ?? Number.POSITIVE_INFINITY;
-  const chapterContextItems: WorkbenchLinkedContextItem[] = volumes.flatMap((volume) =>
-    volume.chapters
-      .filter((chapter) => chapter.serialNumber <= selectedChapterSerialNumber)
-      .map((chapter) => ({
-        id: `chapter:${chapter.id}`,
-        source: 'chapter' as const,
-        group: volume.name,
-        title: chapter.title || `第${chapter.serialNumber}章`,
-        content: readChapterContent(currentNovel.id, chapter.id),
-      })),
-  );
-  const outlineItemBySerial = new Map<number, WorkbenchLinkedContextItem>();
-  outlineContextItems.forEach((item) => {
-    const serial = getContextEntrySerial(item.title);
-    if (serial && !outlineItemBySerial.has(serial)) outlineItemBySerial.set(serial, item);
+  const { chapterContextItems, contextChapterRows, selectedChapterSerialNumber } = buildWorkbenchPageChapterContext({
+    volumes,
+    selectedChapter,
+    outlineContextItems,
+    summaryContextItems,
+    readContent: (chapterId) => readChapterContent(currentNovel.id, chapterId),
   });
-  const summaryItemBySerial = new Map<number, WorkbenchLinkedContextItem>();
-  summaryContextItems.forEach((item) => {
-    const serial = getContextEntrySerial(item.title);
-    if (serial && !summaryItemBySerial.has(serial)) summaryItemBySerial.set(serial, item);
-  });
-  const contextChapterRows: ContextChapterPair[] = volumes
-    .flatMap((volume) =>
-      [...volume.chapters]
-        .filter((chapter) => chapter.serialNumber <= selectedChapterSerialNumber)
-        .sort((a, b) => b.serialNumber - a.serialNumber)
-        .map((chapter) => {
-          const chapterItem = chapterContextItems.find((item) => item.id === `chapter:${chapter.id}`) ?? {
-            id: `chapter:${chapter.id}`,
-            source: 'chapter' as const,
-            group: volume.name,
-            title: chapter.title || `第${chapter.serialNumber}章`,
-            content: readChapterContent(currentNovel.id, chapter.id),
-          };
-          const outlineItem = outlineItemBySerial.get(chapter.serialNumber) ?? {
-            id: `outline:chapter:${chapter.id}`,
-            source: 'outline' as const,
-            group: volume.name,
-            title: `第${chapter.serialNumber}章章纲`,
-            content: '',
-          };
-          return {
-            volumeId: volume.id,
-            volumeName: volume.name,
-            chapterId: chapter.id,
-            serialNumber: chapter.serialNumber,
-            title: chapter.title,
-            isCurrent: chapter.id === selectedChapter?.chapter.id,
-            chapterItem,
-            outlineItem,
-            summaryItem: summaryItemBySerial.get(chapter.serialNumber) ?? null,
-          };
-        }),
-    )
-    .sort((a, b) => b.serialNumber - a.serialNumber);
   const otherContextColumns: ContextColumn[] = [
     { source: 'setting', title: '大纲设定', subtitle: '读取大纲里的设定分类和卡片', items: settingContextItems },
   ];
@@ -533,7 +488,6 @@ export function WorkbenchPage() {
     requiredContextIds,
     requiredContextItems,
     selectRecentChapterContexts,
-    selectedDraftContextItems,
     shouldAttachRequiredContext,
     toggleChapterContextRow,
     toggleDraftContext,
@@ -566,7 +520,7 @@ export function WorkbenchPage() {
     chapter: selectedChapter?.chapter ?? null,
     volumeName: selectedVolumeName,
     content: editorContent,
-    lastSavedAt,
+    ...chapterSaveProps,
     allChapters: volumes.flatMap((volume) => volume.chapters),
     volumes,
     settingsStorageKey,
@@ -710,7 +664,6 @@ export function WorkbenchPage() {
           selectedIds: draftContextIds as Set<string>,
           lockedIds: requiredContextIds as Set<string>,
           searchText: contextSearchText,
-          selectedItems: selectedDraftContextItems,
           chapterWords: draftChapterWordCount,
           summaryWords: draftSummaryWordCount,
           outlineWords: draftOutlineWordCount,

@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { useEffect, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
@@ -28,6 +28,7 @@ interface AppModalShellProps {
   contentClassName?: string;
   portalTarget?: Element | DocumentFragment;
   defaultGeometry?: ModalGeometry;
+  centerOnOpen?: boolean;
 }
 
 export function AppModalShell({
@@ -50,9 +51,17 @@ export function AppModalShell({
   contentClassName = 'flex min-h-0 flex-1 flex-col overflow-hidden',
   portalTarget,
   defaultGeometry,
+  centerOnOpen = false,
 }: AppModalShellProps) {
-  const draggable = useDraggableModal(storageId ?? `app_modal_${title}`, defaultGeometry);
+  const draggable = useDraggableModal(storageId ?? `app_modal_${title}`, defaultGeometry, centerOnOpen);
+  const { resetToDefault } = draggable;
+  const wasOpenRef = useRef(false);
   useTopModalEscape(isOpen, onClose);
+
+  useEffect(() => {
+    if (isOpen && centerOnOpen && !wasOpenRef.current) resetToDefault();
+    wasOpenRef.current = isOpen;
+  }, [centerOnOpen, isOpen, resetToDefault]);
 
   useEffect(() => {
     if (!isOpen || !closeOnFloatingShortcut) return;
@@ -86,7 +95,7 @@ export function AppModalShell({
         onClick={(event) => event.stopPropagation()}
       >
         <header
-          className="group flex min-h-14 shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-3"
+          className="group flex min-h-14 shrink-0 cursor-move items-center justify-between gap-4 border-b border-gray-100 px-5 py-3 active:cursor-grabbing"
           {...draggable.dragHandleProps}
           style={{ ...draggable.dragHandleProps.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
         >

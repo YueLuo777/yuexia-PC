@@ -3,6 +3,7 @@ import type { Dispatch, RefObject, SetStateAction } from 'react';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 import {
   createWorkbenchLibraryEntry,
+  getDefaultWorkbenchLibraryEntryTitle,
   writeWorkbenchLibraryEntries,
   writeWorkbenchLibraryEntriesWithGlobalBrainstorm,
 } from '@/features/workbench/model/workbenchLibraryStorage';
@@ -101,7 +102,7 @@ export function useWorkbenchLibraryEntryActions({
     writeWorkbenchLibraryEntries(outlineStorageKey, normalized);
   };
   const addEntry = () => {
-    const entry = createWorkbenchLibraryEntry(activeTab, `新建${activeTab}`);
+    const entry = createWorkbenchLibraryEntry(activeTab, getDefaultWorkbenchLibraryEntryTitle(activeTab));
     persist([entry, ...entries]);
     setSelectedId(entry.id);
   };
@@ -165,7 +166,9 @@ export function useWorkbenchLibraryEntryActions({
     return options.includes(selectedType) ? selectedType : getValidSettingCreateType();
   };
   const addSetting = (tab = SETTING_TAB, titleDraft = settingTitleDraft, typeDraft?: string) => {
-    const title = titleDraft.trim() || `新建${tab}`;
+    const title =
+      titleDraft.trim() ||
+      getDefaultWorkbenchLibraryEntryTitle(tab);
     const selectedType = typeDraft ?? getSelectedSettingWorkspaceType();
     const entry = {
       ...createWorkbenchLibraryEntry(tab, title),

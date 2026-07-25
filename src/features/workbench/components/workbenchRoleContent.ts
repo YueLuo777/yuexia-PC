@@ -271,12 +271,24 @@ export function createEmptyRoleBaseSettingFields() {
   );
 }
 
+const ROLE_BASE_SETTING_FIELD_ALIASES: Partial<Record<RoleBaseSettingFieldKey, string[]>> = {
+  corePersonality: ['核心性格'],
+};
+
+function getRoleBaseSettingSection(sections: Record<string, string>, field: { key: RoleBaseSettingFieldKey; title: string }) {
+  return [field.title, ...(ROLE_BASE_SETTING_FIELD_ALIASES[field.key] ?? [])]
+    .map((title) => sections[title])
+    .find((value) => value !== undefined);
+}
+
 export function parseRoleBaseSettingFields(body: string) {
   const sections = parseSectionedSettingBody(body);
   const fields = createEmptyRoleBaseSettingFields();
-  const hasSectionedContent = ROLE_BASE_SETTING_FIELD_DEFINITIONS.some((field) => sections[field.title] !== undefined);
+  const hasSectionedContent = ROLE_BASE_SETTING_FIELD_DEFINITIONS.some(
+    (field) => getRoleBaseSettingSection(sections, field) !== undefined,
+  );
   ROLE_BASE_SETTING_FIELD_DEFINITIONS.forEach((field) => {
-    fields[field.key] = sections[field.title] ?? '';
+    fields[field.key] = getRoleBaseSettingSection(sections, field) ?? '';
   });
   if (!hasSectionedContent && body.trim()) {
     fields.background = body;

@@ -36,7 +36,8 @@ describe('WorkbenchSettingStatusPanel', () => {
   it('switches between setting and status modes with a pending count', () => {
     const onChange = vi.fn();
     render(<WorkbenchSettingPanelTabs mode="setting" pendingCount={2} onChange={onChange} />);
-    fireEvent.click(screen.getByRole('button', { name: '状态 · 2' }));
+    expect(screen.getByRole('button', { name: '切换设定' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '更新状态 · 2' }));
     expect(onChange).toHaveBeenCalledWith('status');
   });
 
@@ -61,7 +62,7 @@ describe('WorkbenchSettingStatusPanel', () => {
     expect(update.statusHistory?.[0]).toMatchObject({ fieldKey: 'appearance', chapter: 12, paragraph: 4 });
   });
 
-  it('shows migrated legacy chapter history without inventing paragraph evidence', () => {
+  it('does not show the old history status section in the right panel', () => {
     const role = createRole();
     role.pendingStatusUpdates = [];
     render(
@@ -75,9 +76,10 @@ describe('WorkbenchSettingStatusPanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /第11章 · 当前处境/ }));
-    expect(screen.getByText('旧记录没有保存具体原文段落。')).toBeInTheDocument();
-    expect(screen.getByText(/旧版“更新至章节”记录迁移/)).toBeInTheDocument();
+    expect(screen.queryByText('历史状态')).not.toBeInTheDocument();
+    expect(screen.queryByText(/历史变化/)).not.toBeInTheDocument();
+    expect(screen.queryByText('当前字段暂无历史变化')).not.toBeInTheDocument();
+    expect(screen.getByText('点击待确认更新后，在这里查看原文依据，不离开设定页面。')).toBeInTheDocument();
   });
 
   it('opens the existing chapter status workflow from the setting page', () => {

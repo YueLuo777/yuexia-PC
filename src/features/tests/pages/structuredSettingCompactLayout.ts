@@ -1,4 +1,5 @@
 import type { StructuredSettingFieldSet } from '@/features/workbench/components/workbenchStructuredSettings';
+import { PROMPT_BASED_SETTING_DOMAINS } from '@/features/workbench/model/promptBasedSettingTaxonomyData';
 import {
   ROLE_BASE_SETTING_FIELD_DEFINITIONS,
   ROLE_STATE_FIELD_DEFINITIONS,
@@ -45,10 +46,24 @@ export const ROLE_PREVIEW_FIELD_SET: StructuredSettingFieldSet = {
   ],
 };
 
-export const STRUCTURED_SETTING_PREVIEW_GROUPS: readonly StructuredSettingPreviewGroup[] = [
+const getPromptDomainFieldSetIds = (domainId: string) =>
+  PROMPT_BASED_SETTING_DOMAINS.find((domain) => domain.id === domainId)?.groups.flatMap((group) =>
+    group.entries.map((entry) => `prompt-${entry.id}`),
+  ) ?? [];
+
+const FORMAL_SETTING_PREVIEW_GROUPS: readonly StructuredSettingPreviewGroup[] = [
+  { id: 'work', title: '作品设定', fieldSetIds: getPromptDomainFieldSetIds('work') },
+  { id: 'location', title: '地点地图', fieldSetIds: getPromptDomainFieldSetIds('location') },
+  { id: 'faction', title: '势力设定', fieldSetIds: getPromptDomainFieldSetIds('faction') },
+  { id: 'resource', title: '道具资源', fieldSetIds: getPromptDomainFieldSetIds('resource') },
+  { id: 'foreshadow', title: '伏笔线索', fieldSetIds: getPromptDomainFieldSetIds('foreshadow') },
+  { id: 'monster', title: '怪物图鉴', fieldSetIds: getPromptDomainFieldSetIds('monster') },
+];
+
+const LEGACY_SETTING_PREVIEW_GROUPS: readonly StructuredSettingPreviewGroup[] = [
   {
-    id: 'work',
-    title: '作品与剧情',
+    id: 'legacy-work',
+    title: '旧版作品与剧情对比',
     fieldSetIds: [
       'work-core-basic',
       'work-core-world-view',
@@ -59,26 +74,32 @@ export const STRUCTURED_SETTING_PREVIEW_GROUPS: readonly StructuredSettingPrevie
     ],
   },
   {
-    id: 'faction',
-    title: '势力与地图',
+    id: 'legacy-faction',
+    title: '旧版势力与地图对比',
     fieldSetIds: ['faction-righteous-no-1', 'faction-world-map', 'faction-danger-zone'],
   },
   {
-    id: 'item',
-    title: '能力与资源',
+    id: 'legacy-item',
+    title: '旧版能力与资源对比',
     fieldSetIds: ['item-ability', 'item-resource-currency', 'item-special-resource', 'item-equipment'],
   },
-  { id: 'monster', title: '怪物图鉴', fieldSetIds: ['monster-list'] },
-  { id: 'foreshadow', title: '伏笔线索', fieldSetIds: ['foreshadow-main', 'foreshadow-character'] },
+  { id: 'legacy-monster', title: '旧版怪物图鉴对比', fieldSetIds: ['monster-list'] },
+  { id: 'legacy-foreshadow', title: '旧版伏笔线索对比', fieldSetIds: ['foreshadow-main', 'foreshadow-character'] },
+];
+
+export const STRUCTURED_SETTING_PREVIEW_GROUPS: readonly StructuredSettingPreviewGroup[] = [
+  ...FORMAL_SETTING_PREVIEW_GROUPS,
+  ...LEGACY_SETTING_PREVIEW_GROUPS,
 ];
 
 export const STRUCTURED_SETTING_REPLICA_DOMAINS: readonly StructuredSettingReplicaDomain[] = [
-  { id: 'work', title: '作品设定', count: 6, fieldSetIds: STRUCTURED_SETTING_PREVIEW_GROUPS[0].fieldSetIds },
+  { id: 'work', title: '作品设定', count: 12, fieldSetIds: FORMAL_SETTING_PREVIEW_GROUPS[0].fieldSetIds },
   { id: 'character', title: '人物设定', count: 1, fieldSetIds: [ROLE_PREVIEW_FIELD_SET.id] },
-  { id: 'faction', title: '势力设定', count: 3, fieldSetIds: STRUCTURED_SETTING_PREVIEW_GROUPS[1].fieldSetIds },
-  { id: 'item', title: '道具资源', count: 4, fieldSetIds: STRUCTURED_SETTING_PREVIEW_GROUPS[2].fieldSetIds },
-  { id: 'monster', title: '怪物图鉴', count: 1, fieldSetIds: STRUCTURED_SETTING_PREVIEW_GROUPS[3].fieldSetIds },
-  { id: 'foreshadow', title: '伏笔线索', count: 2, fieldSetIds: STRUCTURED_SETTING_PREVIEW_GROUPS[4].fieldSetIds },
+  { id: 'location', title: '地点地图', count: 7, fieldSetIds: FORMAL_SETTING_PREVIEW_GROUPS[1].fieldSetIds },
+  { id: 'faction', title: '势力设定', count: 4, fieldSetIds: FORMAL_SETTING_PREVIEW_GROUPS[2].fieldSetIds },
+  { id: 'resource', title: '道具资源', count: 4, fieldSetIds: FORMAL_SETTING_PREVIEW_GROUPS[3].fieldSetIds },
+  { id: 'foreshadow', title: '伏笔线索', count: 4, fieldSetIds: FORMAL_SETTING_PREVIEW_GROUPS[4].fieldSetIds },
+  { id: 'monster', title: '怪物图鉴', count: 4, fieldSetIds: FORMAL_SETTING_PREVIEW_GROUPS[5].fieldSetIds },
 ];
 
 export {

@@ -41,9 +41,9 @@ function AuditMetaField({
 }) {
   return (
     <div
-      className={`xy-audit-meta-field min-w-0 bg-white ${multiline ? 'xy-audit-meta-field-multiline' : ''} ${className}`}
+      className={`xy-audit-meta-field xy-prompt-meta-field min-w-0 bg-white ${multiline ? 'xy-prompt-meta-field-multiline' : ''} ${className}`}
     >
-      <span aria-hidden="true" className="xy-workbench-name-field-caption">
+      <span aria-hidden="true" className="xy-border-embedded-transparent-backplate xy-workbench-name-field-caption">
         {label}
       </span>
       {multiline ? (
@@ -52,7 +52,7 @@ function AuditMetaField({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder=""
-          className="xy-audit-meta-field-textarea"
+          className="xy-prompt-meta-field-textarea"
         />
       ) : (
         <input
@@ -89,7 +89,7 @@ function AuditPromptContentField({
       }`}
     >
       <span
-        className={`xy-border-embedded-transparent-backplate absolute -top-px left-5 z-10 flex h-5 -translate-y-1/2 items-center text-sm font-black leading-none tracking-normal ${
+        className={`xy-border-embedded-transparent-backplate absolute -top-px left-5 z-10 flex h-6 -translate-y-1/2 items-center text-base font-black leading-6 tracking-normal ${
           disabled ? 'text-slate-400 [--xy-floating-backplate-bg:#f8fafc]' : 'text-slate-800'
         }`}
       >

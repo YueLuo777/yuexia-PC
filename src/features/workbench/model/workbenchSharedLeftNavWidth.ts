@@ -2,8 +2,8 @@ export const WORKBENCH_SHARED_LEFT_NAV_WIDTH_STORAGE_KEY = 'xinyuexia_workbench_
 export const WORKBENCH_SHARED_LEFT_NAV_WIDTH_ENABLED_KEY = 'xinyuexia_workbench_left_nav_width_unified';
 export const WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT = 'xinyuexia:workbench-shared-left-nav-width';
 export const WORKBENCH_SHARED_LEFT_NAV_WIDTH_DEFAULT = 200;
-export const WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN = 180;
-export const WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX = 640;
+export const WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN = 200;
+export const WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX = 360;
 
 export function normalizeSharedWorkbenchLeftNavWidth(
   value: number,
@@ -11,7 +11,9 @@ export function normalizeSharedWorkbenchLeftNavWidth(
   minWidth = WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN,
 ) {
   const effectiveMax =
-    Number.isFinite(maxWidth) && maxWidth > 0 ? Math.round(maxWidth) : WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX;
+    Number.isFinite(maxWidth) && maxWidth > 0
+      ? Math.min(WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX, Math.round(maxWidth))
+      : WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX;
   const effectiveMin = Math.min(Math.max(WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN, Math.round(minWidth)), effectiveMax);
   if (!Number.isFinite(value))
     return Math.min(Math.max(WORKBENCH_SHARED_LEFT_NAV_WIDTH_DEFAULT, effectiveMin), effectiveMax);
@@ -55,10 +57,24 @@ export function readSharedWorkbenchLeftNavWidthEnabled() {
   }
 }
 
-export function writeSharedWorkbenchLeftNavWidthEnabled(enabled: boolean) {
+export function writeSharedWorkbenchLeftNavWidthEnabled(
+  enabled: boolean,
+  options?: { width?: number; maxWidth?: number; minWidth?: number },
+) {
+  const nextWidth =
+    enabled && typeof options?.width === 'number'
+      ? normalizeSharedWorkbenchLeftNavWidth(options.width, options.maxWidth, options.minWidth)
+      : undefined;
+  if (typeof nextWidth === 'number') {
+    localStorage.setItem(WORKBENCH_SHARED_LEFT_NAV_WIDTH_STORAGE_KEY, String(nextWidth));
+  }
   localStorage.setItem(WORKBENCH_SHARED_LEFT_NAV_WIDTH_ENABLED_KEY, String(enabled));
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent(WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT, { detail: { enabled } }));
+    window.dispatchEvent(
+      new CustomEvent(WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT, {
+        detail: typeof nextWidth === 'number' ? { enabled, width: nextWidth } : { enabled },
+      }),
+    );
   }
   return enabled;
 }

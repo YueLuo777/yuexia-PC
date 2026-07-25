@@ -6,32 +6,26 @@ import {
 } from '../model/workbenchSharedAiRightWidth';
 import {
   WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT,
+  normalizeSharedWorkbenchLeftNavWidth,
   readSharedWorkbenchLeftNavWidthEnabled,
   writeSharedWorkbenchLeftNavWidth,
 } from '../model/workbenchSharedLeftNavWidth';
 import {
   CHAPTER_SIDEBAR_MIN_WIDTH,
-  PUBLISHED_SIDEBAR_DEFAULT_WIDTH,
   getAiPanelMaxWidth,
   getChapterSidebarMaxWidth,
   normalizeAiPanelWidth,
   normalizeChapterSidebarWidth,
   normalizePublishedSidebarWidth,
   readWorkbenchChapterSidebarWidth,
+  readWorkbenchPublishedSidebarWidth,
 } from '../components/workbenchPageSupport';
 
 export function useWorkbenchLayoutWidths() {
   const [navigationWidthUnified, setNavigationWidthUnified] = useState(readSharedWorkbenchLeftNavWidthEnabled);
   const [aiPanelWidth, setAiPanelWidth] = useState(() => readSharedWorkbenchAiRightWidth(getAiPanelMaxWidth()));
   const [chapterSidebarWidth, setChapterSidebarWidth] = useState(readWorkbenchChapterSidebarWidth);
-  const [publishedSidebarWidth, setPublishedSidebarWidth] = useState(() =>
-    normalizePublishedSidebarWidth(
-      Number.parseInt(
-        localStorage.getItem('xinyuexia_published_sidebar_width') ?? String(PUBLISHED_SIDEBAR_DEFAULT_WIDTH),
-        10,
-      ),
-    ),
-  );
+  const [publishedSidebarWidth, setPublishedSidebarWidth] = useState(readWorkbenchPublishedSidebarWidth);
   const [dragging, setDragging] = useState<'ai' | 'chapter' | 'published' | null>(null);
   const startX = useRef(0),
     startWidth = useRef(290);
@@ -49,7 +43,10 @@ export function useWorkbenchLayoutWidths() {
     const sync = () => {
       const enabled = readSharedWorkbenchLeftNavWidthEnabled();
       setNavigationWidthUnified(enabled);
-      if (enabled) setChapterSidebarWidth(readWorkbenchChapterSidebarWidth());
+      if (enabled) {
+        setChapterSidebarWidth(readWorkbenchChapterSidebarWidth());
+        setPublishedSidebarWidth(readWorkbenchPublishedSidebarWidth());
+      }
     };
     window.addEventListener(WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT, sync);
     return () => window.removeEventListener(WORKBENCH_SHARED_LEFT_NAV_WIDTH_EVENT, sync);
@@ -60,12 +57,18 @@ export function useWorkbenchLayoutWidths() {
     else localStorage.setItem('xinyuexia_chapter_sidebar_width', String(chapterSidebarWidth));
   }, [chapterSidebarWidth, navigationWidthUnified]);
   useEffect(() => {
-    localStorage.setItem('xinyuexia_published_sidebar_width', String(publishedSidebarWidth));
-  }, [publishedSidebarWidth]);
+    if (!navigationWidthUnified) localStorage.setItem('xinyuexia_published_sidebar_width', String(publishedSidebarWidth));
+  }, [navigationWidthUnified, publishedSidebarWidth]);
   useEffect(() => {
     const resize = () => {
       setAiPanelWidth((v) => normalizeAiPanelWidth(v));
-      setChapterSidebarWidth((v) => normalizeChapterSidebarWidth(v));
+      if (readSharedWorkbenchLeftNavWidthEnabled()) {
+        setChapterSidebarWidth(readWorkbenchChapterSidebarWidth());
+        setPublishedSidebarWidth(readWorkbenchPublishedSidebarWidth());
+      } else {
+        setChapterSidebarWidth((v) => normalizeChapterSidebarWidth(v));
+        setPublishedSidebarWidth((v) => normalizePublishedSidebarWidth(v));
+      }
     };
     window.addEventListener('resize', resize);
     resize();
@@ -85,9 +88,20 @@ export function useWorkbenchLayoutWidths() {
     const move = (event: MouseEvent) => {
       const delta = event.clientX - startX.current;
       if (dragging === 'ai') setAiPanelWidth(normalizeAiPanelWidth(startWidth.current - delta));
-      if (dragging === 'chapter') setChapterSidebarWidth(normalizeChapterSidebarWidth(startWidth.current + delta));
-      if (dragging === 'published')
-        setPublishedSidebarWidth(normalizePublishedSidebarWidth(startWidth.current + delta));
+      if (dragging === 'chapter') {
+        const nextWidth = navigationWidthUnified
+          ? normalizeSharedWorkbenchLeftNavWidth(startWidth.current + delta, getChapterSidebarMaxWidth(), CHAPTER_SIDEBAR_MIN_WIDTH)
+          : normalizeChapterSidebarWidth(startWidth.current + delta);
+        setChapterSidebarWidth(nextWidth);
+        if (navigationWidthUnified) setPublishedSidebarWidth(normalizePublishedSidebarWidth(nextWidth));
+      }
+      if (dragging === 'published') {
+        const nextWidth = navigationWidthUnified
+          ? normalizeSharedWorkbenchLeftNavWidth(startWidth.current + delta)
+          : normalizePublishedSidebarWidth(startWidth.current + delta);
+        setPublishedSidebarWidth(normalizePublishedSidebarWidth(nextWidth));
+        if (navigationWidthUnified) setChapterSidebarWidth(normalizeChapterSidebarWidth(nextWidth));
+      }
     };
     const up = () => {
       setDragging(null);
@@ -100,7 +114,7 @@ export function useWorkbenchLayoutWidths() {
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', up);
     };
-  }, [dragging]);
+  }, [dragging, navigationWidthUnified]);
   return {
     aiPanelWidth,
     chapterSidebarWidth,

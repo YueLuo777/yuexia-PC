@@ -1,45 +1,98 @@
-import { useEffect, useMemo, useState } from 'react';
+import { History } from 'lucide-react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import type { SettingFieldUpdatePolicy } from '@/features/workbench/model/workbenchSettingStatus';
-import { getSettingFieldPolicy } from '@/features/workbench/model/workbenchSettingStatus';
-import { selectWorkbenchSettingStatusField } from '@/features/workbench/model/workbenchSettingStatusSelection';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 import { isMaleProtagonistRoleType } from '@/features/workbench/model/workbenchRoleTypes';
 
+import { WorkbenchFieldRecordModal } from './WorkbenchFieldRecordModal';
 import { WorkbenchHeaderSelect } from './WorkbenchHeaderSelect';
 import { WorkbenchNameField } from './WorkbenchNameField';
 import { WorkbenchSurvivalStatusToggle } from './WorkbenchSurvivalStatusToggle';
 import {
-  buildRoleStateSettingsText,
-  getRoleBaseSetting,
+  WORKBENCH_SETTING_EDITOR_HEADER_CLASS,
+  WORKBENCH_SETTING_EDITOR_HEADER_ROW_CLASS,
+  WORKBENCH_SETTING_EDITOR_SCROLL_CLASS,
+  WORKBENCH_SETTING_EDITOR_SHELL_CLASS,
+  WORKBENCH_SETTING_EDITOR_STACK_CLASS,
+  WORKBENCH_SETTING_EDITOR_TWO_COLUMN_GRID_CLASS,
+} from './workbenchSettingEditorLayout';
+import {
   getRoleStateSettings,
   getRoleStateUpdateChapters,
-  getRoleStateUpdateLabel,
-  parseRoleBaseSettingFields,
-  stringifyRoleBaseSettingFields,
   type RoleContent,
 } from './workbenchRoleContent';
 import { getRoleIdentityTypeOptions } from './workbenchRoleIdentityOptions';
 import {
-  ROLE_BASE_SETTING_FIELD_DEFINITIONS,
-  ROLE_STATE_FIELD_DEFINITIONS,
-  type RoleBaseSettingFieldKey,
-  type RoleStateFieldKey,
-} from './workbenchRoleSettingFields';
+  getPromptRoleFieldSections,
+  getPromptRoleStateKey,
+  parsePromptRoleFields,
+  stringifyPromptRoleBaseFields,
+  type PromptRoleField,
+} from './workbenchPromptRoleFields';
 
-const BASE_FIELD_GROUPS: Array<{ title: string; keys: RoleBaseSettingFieldKey[] }> = [
-  { title: '外貌与称号', keys: ['appearance', 'aliasName'] },
-  { title: '性格与背景', keys: ['corePersonality', 'background'] },
-  { title: '能力与限制', keys: ['abilityRules'] },
-];
+const ROLE_FIELD_CONTENT_CLASS = 'text-base font-medium leading-8 text-slate-950 outline-none placeholder:font-semibold placeholder:text-slate-400';
+const ROLE_FIELD_TEXTAREA_LINE_HEIGHT = 32;
+const ROLE_FIELD_MAX_ROWS = 10;
+const ROLE_FIELD_STANDARD_MIN_ROWS = 3;
+const ROLE_FIELD_COMPACT_MIN_ROWS = 2;
 
-const policyClasses: Record<SettingFieldUpdatePolicy, string> = {
-  锁定: 'bg-slate-100 text-slate-500',
-  谨慎更新: 'bg-violet-50 text-violet-600',
-  变化时检测: 'bg-sky-50 text-sky-600',
-  每章检测: 'bg-emerald-50 text-emerald-600',
-  关键变化: 'bg-amber-50 text-amber-700',
+type RoleFieldRenderOptions = {
+  key: string;
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+  wide?: boolean;
 };
+
+function RoleAutoSizeTextarea({
+  value,
+  placeholder,
+  fontSize,
+  minRows,
+  onChange,
+}: {
+  value: string;
+  placeholder: string;
+  fontSize: number;
+  minRows: number;
+  onChange: (value: string) => void;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const minHeight = minRows * ROLE_FIELD_TEXTAREA_LINE_HEIGHT;
+  const maxHeight = ROLE_FIELD_MAX_ROWS * ROLE_FIELD_TEXTAREA_LINE_HEIGHT;
+
+  const syncHeight = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    const nextHeight = Math.min(maxHeight, Math.max(minHeight, textarea.scrollHeight));
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+  }, [maxHeight, minHeight]);
+
+  useLayoutEffect(() => {
+    syncHeight();
+  }, [fontSize, minRows, syncHeight, value]);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      data-no-modal-drag="true"
+      value={value}
+      rows={minRows}
+      onChange={(event) => onChange(event.target.value)}
+      placeholder={placeholder}
+      className={`editor-scrollbar w-full resize-none border-0 bg-transparent pb-2 [scrollbar-gutter:stable] ${ROLE_FIELD_CONTENT_CLASS}`}
+      style={{
+        fontSize,
+        lineHeight: `${ROLE_FIELD_TEXTAREA_LINE_HEIGHT}px`,
+        minHeight,
+        maxHeight,
+      }}
+    />
+  );
+}
 
 type RoleBaseStateEditorProps = {
   entry: WorkbenchLibraryEntry;
@@ -51,7 +104,6 @@ type RoleBaseStateEditorProps = {
   roleLifeStatus: '存活' | '死亡' | undefined;
   onTitleChange: (title: string) => void;
   onRoleChange: (updates: Partial<RoleContent>) => void;
-  onOpenStatus?: () => void;
 };
 
 export function RoleBaseStateEditor({
@@ -63,115 +115,128 @@ export function RoleBaseStateEditor({
   roleLifeStatus,
   onTitleChange,
   onRoleChange,
-  onOpenStatus,
 }: RoleBaseStateEditorProps) {
-  const baseSetting = getRoleBaseSetting(role);
-  const parsedBaseSettingFields = useMemo(() => parseRoleBaseSettingFields(baseSetting), [baseSetting]);
-  const [baseSettingFieldDrafts, setBaseSettingFieldDrafts] = useState(parsedBaseSettingFields);
+  const parsedPromptRoleFields = useMemo(() => parsePromptRoleFields(role), [role]);
+  const [promptRoleFieldDrafts, setPromptRoleFieldDrafts] = useState(parsedPromptRoleFields);
+  const promptRoleSections = useMemo(() => getPromptRoleFieldSections(role.type), [role.type]);
   const stateSettings = getRoleStateSettings(role);
   const stateUpdateChapters = getRoleStateUpdateChapters(role);
   const roleIdentityTypeOptions = getRoleIdentityTypeOptions(roleTypeOptions);
-  const showRoleIdentityControls = !isMaleProtagonistRoleType(role.type);
+  const roleIsMaleProtagonist = isMaleProtagonistRoleType(role.type);
+  const roleIdentityOptionsForCurrentRole = roleIsMaleProtagonist ? [role.type] : roleIdentityTypeOptions;
   const pendingKeys = new Set((role.pendingStatusUpdates ?? []).map((update) => update.fieldKey));
+  const [fieldRecord, setFieldRecord] = useState<{ key: string; label: string } | null>(null);
 
   useEffect(() => {
-    setBaseSettingFieldDrafts(parsedBaseSettingFields);
-  }, [parsedBaseSettingFields]);
+    setPromptRoleFieldDrafts(parsedPromptRoleFields);
+  }, [parsedPromptRoleFields]);
 
-  const updateRoleBaseSettingField = (key: RoleBaseSettingFieldKey, value: string) => {
-    const nextFields = { ...baseSettingFieldDrafts, [key]: value };
-    setBaseSettingFieldDrafts(nextFields);
-    const nextBaseSetting = stringifyRoleBaseSettingFields(nextFields);
-    onRoleChange({ baseSetting: nextBaseSetting, background: nextBaseSetting, personality: '' });
+  const updatePromptRoleField = (field: PromptRoleField, value: string) => {
+    const nextFields = { ...promptRoleFieldDrafts, [field.key]: value };
+    setPromptRoleFieldDrafts(nextFields);
+    const stateKey = getPromptRoleStateKey(field.label);
+    if (stateKey) {
+      onRoleChange({
+        stateSettings: { ...stateSettings, [stateKey]: value },
+        stateUpdateChapters: currentChapterNumber
+          ? { ...stateUpdateChapters, [stateKey]: currentChapterNumber }
+          : stateUpdateChapters,
+      });
+      return;
+    }
+    if (field.label === '人物关系') {
+      onRoleChange({
+        relationship: value,
+        stateUpdateChapters: currentChapterNumber
+          ? { ...stateUpdateChapters, relationshipState: currentChapterNumber }
+          : stateUpdateChapters,
+      });
+      return;
+    }
+    const baseSetting = stringifyPromptRoleBaseFields(role.type, nextFields);
+    onRoleChange({ baseSetting, background: baseSetting, personality: '' });
   };
 
-  const updateStateField = (key: RoleStateFieldKey, value: string) => {
-    const nextStateSettings = { ...stateSettings, [key]: value };
-    onRoleChange({
-      stateSettings: nextStateSettings,
-      stateUpdateChapters: currentChapterNumber ? { ...stateUpdateChapters, [key]: currentChapterNumber } : stateUpdateChapters,
-      status: buildRoleStateSettingsText(nextStateSettings),
-    });
-  };
-
-  const updateRelationshipState = (value: string) => {
-    onRoleChange({
-      relationship: value,
-      stateUpdateChapters: currentChapterNumber
-        ? { ...stateUpdateChapters, relationshipState: currentChapterNumber }
-        : stateUpdateChapters,
-    });
-  };
-
-  const openFieldStatus = (fieldKey: string, fieldLabel: string) => {
-    selectWorkbenchSettingStatusField({ entryId: entry.id, fieldKey, fieldLabel });
-    onOpenStatus?.();
-  };
-
-  const renderFieldCard = (options: {
-    key: string;
-    label: string;
-    value: string;
-    placeholder: string;
-    updateLabel: string;
-    onChange: (value: string) => void;
-  }) => {
-    const policy = getSettingFieldPolicy(role.fieldUpdatePolicies, options.key, options.label);
+  const renderFieldCard = (options: RoleFieldRenderOptions) => {
+    const minRows = ROLE_FIELD_STANDARD_MIN_ROWS;
     return (
-      <article key={options.key} className="relative flex min-h-[150px] flex-col rounded-[22px] border-2 border-slate-950 bg-white p-4 pt-5">
+      <article
+        key={options.key}
+        className={`relative flex h-full min-h-[122px] flex-col rounded-[22px] border-2 border-slate-950 bg-white px-5 pb-4 pt-2 ${options.wide ? 'col-span-2' : ''}`}
+        data-role-field-key={options.key}
+      >
         <div className="xy-border-embedded-transparent-backplate absolute left-5 top-0 z-10 -translate-y-1/2 pr-2 text-base font-black leading-6 text-slate-950">{options.label}</div>
-        <div className="absolute right-3 top-3 flex items-center gap-1.5">
-          {pendingKeys.has(options.key) ? <span className="rounded-md bg-red-50 px-2 py-1 text-[9px] font-black text-red-600">待确认</span> : null}
-          <span className={`rounded-md px-2 py-1 text-[9px] font-black ${policyClasses[policy]}`}>{policy}</span>
-        </div>
-        <textarea data-no-modal-drag="true" value={options.value} onChange={(event) => options.onChange(event.target.value)} placeholder={options.placeholder} className="editor-scrollbar mt-6 min-h-[76px] flex-1 resize-none bg-transparent text-sm leading-7 text-slate-700 outline-none placeholder:text-slate-400" style={{ fontSize: roleTextFontSize }} />
-        <div className="mt-2 flex items-center justify-between gap-3 text-[10px] font-bold text-slate-400">
-          <span>{options.updateLabel}</span>
-          <button type="button" onClick={() => openFieldStatus(options.key, options.label)} className="font-black text-[#078fb0]">查看轨迹 →</button>
-        </div>
+        {pendingKeys.has(options.key) ? <span className="xy-border-embedded-transparent-backplate absolute right-14 top-0 z-10 -translate-y-1/2 text-[10px] font-black text-red-600">待确认</span> : null}
+        <RoleAutoSizeTextarea
+          value={options.value}
+          placeholder={options.placeholder}
+          fontSize={roleTextFontSize}
+          minRows={minRows}
+          onChange={options.onChange}
+        />
+        <button type="button" onClick={() => setFieldRecord({ key: options.key, label: options.label })} className="xy-border-embedded-transparent-backplate xy-field-record-icon-button absolute right-5 top-0 z-10 grid h-6 w-6 -translate-y-1/2 place-items-center text-[#08AACE] hover:text-[#078fb0]" title="字段记录" aria-label={`${options.label}字段记录`}>
+          <History className="h-4 w-4" />
+        </button>
       </article>
     );
   };
 
+  const renderPromptField = (field: PromptRoleField) => renderFieldCard({
+    key: field.key,
+    label: field.label,
+    value: promptRoleFieldDrafts[field.key] ?? '',
+    placeholder: field.placeholder,
+    wide: field.wide,
+    onChange: (value) => updatePromptRoleField(field, value),
+  });
+
   return (
     <div className="relative flex min-h-0 flex-1 flex-col bg-white">
-      <div className="xy-setting-name-editor flex min-h-0 flex-1 flex-col px-5 py-3">
-        <header className="shrink-0 space-y-3">
-          <div className="flex min-h-[48px] flex-wrap items-start gap-3">
+      <div className={WORKBENCH_SETTING_EDITOR_SHELL_CLASS}>
+        <header className={WORKBENCH_SETTING_EDITOR_HEADER_CLASS}>
+          <div className={WORKBENCH_SETTING_EDITOR_HEADER_ROW_CLASS}>
             <WorkbenchNameField label="人物姓名" value={entry.title} onValueChange={onTitleChange} placeholder="填写人物姓名" />
-            {showRoleIdentityControls ? (
-              <WorkbenchHeaderSelect label="身份定位" width={180} value={role.type} onChange={(value) => onRoleChange({ type: value })} options={roleIdentityTypeOptions} />
-            ) : <div aria-hidden="true" className="h-[48px] min-w-[180px] shrink-0" />}
-            {showRoleIdentityControls ? <WorkbenchSurvivalStatusToggle value={roleLifeStatus ?? '存活'} onChange={(lifeStatus) => onRoleChange({ lifeStatus })} /> : null}
-          </div>
-          <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-3">
-            <p className="text-xs font-black text-slate-600">当前设定完整显示 · 每个字段独立控制更新规则</p>
-            <p className="shrink-0 text-xs font-black text-slate-400">{currentChapterNumber ? `当前编辑：第${currentChapterNumber}章` : '未选择章节'} · 待确认 {(role.pendingStatusUpdates ?? []).length}</p>
+            <WorkbenchHeaderSelect
+              label="身份定位"
+              width={180}
+              value={role.type}
+              disabled={roleIsMaleProtagonist}
+              onChange={(value) => onRoleChange({ type: value })}
+              options={roleIdentityOptionsForCurrentRole}
+            />
+            <WorkbenchSurvivalStatusToggle
+              value={roleLifeStatus ?? '存活'}
+              disabled={roleIsMaleProtagonist}
+              onChange={(lifeStatus) => onRoleChange({ lifeStatus })}
+            />
           </div>
         </header>
-        <section className="editor-scrollbar min-h-0 flex-1 overflow-y-auto px-1 pb-1 pr-2 pt-4">
-          <div className="space-y-6">
-            {BASE_FIELD_GROUPS.map((group) => (
-              <section key={group.title}>
-                <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-black text-slate-900">{group.title}</h2><span className="text-[10px] font-bold text-slate-400">{group.keys.length}个字段</span></div>
-                <div className="grid grid-cols-2 gap-3">
-                  {group.keys.map((key) => {
-                    const field = ROLE_BASE_SETTING_FIELD_DEFINITIONS.find((item) => item.key === key)!;
-                    return renderFieldCard({ key, label: field.title, value: baseSettingFieldDrafts[key], placeholder: field.placeholder, updateLabel: '设定字段 · 保留历史', onChange: (value) => updateRoleBaseSettingField(key, value) });
-                  })}
+        <section className={WORKBENCH_SETTING_EDITOR_SCROLL_CLASS}>
+          <div className={WORKBENCH_SETTING_EDITOR_STACK_CLASS}>
+            {promptRoleSections.map((section) => (
+              <section key={section.title} className="space-y-4" data-role-layout-section={section.title}>
+                <div className="flex items-center gap-3">
+                  <h2 className="shrink-0 text-sm font-black text-slate-800">{section.title}</h2>
+                  <div className="h-px flex-1 bg-slate-200" />
+                </div>
+                <div className={WORKBENCH_SETTING_EDITOR_TWO_COLUMN_GRID_CLASS}>
+                  {section.fields.map(renderPromptField)}
                 </div>
               </section>
             ))}
-            <section>
-              <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-black text-slate-900">当前状态</h2><span className="text-[10px] font-bold text-slate-400">{ROLE_STATE_FIELD_DEFINITIONS.length + 1}个字段</span></div>
-              <div className="grid grid-cols-2 gap-3">
-                {renderFieldCard({ key: 'relationshipState', label: '人物关系', value: role.relationship, placeholder: '记录与主角、阵营、亲友、敌人、师徒、利益对象的关系。', updateLabel: getRoleStateUpdateLabel(stateUpdateChapters.relationshipState), onChange: updateRelationshipState })}
-                {ROLE_STATE_FIELD_DEFINITIONS.map((field) => renderFieldCard({ key: field.key, label: field.title, value: stateSettings[field.key], placeholder: `记录${field.title}`, updateLabel: getRoleStateUpdateLabel(stateUpdateChapters[field.key]), onChange: (value) => updateStateField(field.key, value) }))}
-              </div>
-            </section>
           </div>
         </section>
       </div>
+      {fieldRecord ? (
+        <WorkbenchFieldRecordModal
+          entryTitle={entry.title}
+          fieldKey={fieldRecord.key}
+          fieldLabel={fieldRecord.label}
+          history={role.statusHistory ?? []}
+          pending={role.pendingStatusUpdates ?? []}
+          onClose={() => setFieldRecord(null)}
+        />
+      ) : null}
     </div>
   );
 }

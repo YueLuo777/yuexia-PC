@@ -13,7 +13,7 @@ import type { Chapter } from '@/features/workbench/model/workbenchTypes';
 export const FLOATING_AI_TEXTAREA_MIN_HEIGHT = 46;
 export const FLOATING_AI_TEXTAREA_MAX_HEIGHT = 150;
 export const SPLIT_BUTTON_OUTLINE_GROUP_CLASS =
-  'flex h-8 items-stretch overflow-hidden rounded-md border border-brand bg-white shadow-none';
+  'xy-chapter-editor-deep-outline flex h-8 items-stretch overflow-hidden rounded-md border border-brand bg-white shadow-none';
 export const SPLIT_BUTTON_OUTLINE_ACTION_CLASS =
   'inline-flex flex-1 items-center justify-center whitespace-nowrap px-1.5 text-sm font-medium text-brand transition-colors hover:bg-brand-light';
 export const REVIEW_PAGE_LEFT_WIDTH = 180;
@@ -36,7 +36,7 @@ export const REVIEW_PREVIEW_SEPARATOR_WIDTH = 7;
 export const STATUS_PAGE_LEFT_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_editor_status_left_width';
 export const STATUS_PAGE_RIGHT_WIDTH_STORAGE_KEY = WORKBENCH_SHARED_AI_RIGHT_WIDTH_STORAGE_KEY;
 export const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS =
-  'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] xy-flow-group-bg px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors';
+  'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#AEE7F1] bg-[#CDEFF6] px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors hover:bg-[#BFEAF3]';
 export const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';
 export const WORKBENCH_FOLDER_GROUP_COUNT_CLASS =
   'rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#6f7e90]';
@@ -53,10 +53,16 @@ export const REVIEW_MANAGEMENT_MODAL_SIZE_CLASS =
 export const REVIEW_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS = 'h-[80vh] w-[80vw]';
 export const REVIEW_PREVIEW_MIN_FONT_SIZE = 12;
 export const REVIEW_PREVIEW_MAX_FONT_SIZE = 28;
-export const REVIEW_PREVIEW_PARAGRAPH_LIST_CLASS = 'space-y-3';
-export const REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS = 'border-l-2 px-3 py-1.5 leading-7 transition-colors';
-export const REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS = 'border-[#08AACE] bg-[#EAF9FD] text-slate-900';
-export const REVIEW_PREVIEW_PARAGRAPH_EMPTY_CLASS = 'border-transparent bg-white text-slate-700 hover:bg-slate-50';
+export const REVIEW_PREVIEW_PARAGRAPH_LIST_CLASS = 'space-y-0';
+export const REVIEW_PREVIEW_PARAGRAPH_ROW_CLASS =
+  'relative block w-full text-left';
+export const REVIEW_PREVIEW_PARAGRAPH_GUTTER_CLASS =
+  'pointer-events-none absolute right-full top-1/2 mr-1.5 inline-flex min-w-[1.2em] -translate-y-1/2 justify-end text-[13px] font-black leading-4';
+export const REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS =
+  'relative overflow-hidden rounded-xl border px-4 py-0 text-[15px] font-medium leading-8 transition-[background-color,border-color,color,opacity]';
+export const REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS = 'border-[#08AACE] bg-[#DDF5FA] text-slate-950';
+export const REVIEW_PREVIEW_PARAGRAPH_EMPTY_CLASS =
+  'border-transparent bg-white text-slate-300 opacity-80 hover:bg-slate-50 hover:text-slate-500';
 export type ReviewPreviewWidthMode = 'locked' | 'free';
 export type CenteredReviewComparisonScrollMetrics = {
   containerClientHeight: number;

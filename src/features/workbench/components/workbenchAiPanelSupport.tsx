@@ -22,6 +22,10 @@ import {
 import { APP_EVENTS } from '@/shared/events/appEvents';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
 import { AiInlineInput } from '@/shared/ui/AiInlineInput';
+import {
+  WORKBENCH_AI_THINKING_SURFACE_CLASS,
+  WORKBENCH_AI_THINKING_TITLE_CLASS,
+} from './workbenchAiThinkingStyles';
 import { AiRequestLogModalLayout } from '@/shared/ui/AiRequestLogModalLayout';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
@@ -119,17 +123,7 @@ export function getTextWordCount(text: string) {
   return text.replace(/\s/g, '').length;
 }
 
-export function formatAiThinkingResponse(content: string, reasoning: string, seconds: number, done: boolean) {
-  const reasoningText = reasoning.trim();
-  const body = content.trimStart();
-  if (!reasoningText) return body || (done ? '' : '正在思考...');
-  return [
-    `[[THINKING seconds=${Math.max(0, seconds)} status=${done ? 'done' : 'thinking'}]]`,
-    reasoningText,
-    '[[/THINKING]]',
-    body,
-  ].join('\n');
-}
+export { formatAiThinkingResponse } from '@/features/workbench/model/workbenchAiThinkingProtocol';
 
 export function stripAiThinkingBlock(content: string) {
   return content
@@ -155,8 +149,8 @@ export function renderAiChatContent(content: string) {
     const answer = thinkingMatch[4]?.trimStart() ?? '';
     return (
       <div className="space-y-3">
-        <div className="rounded-xl border border-[#08AACE]/25 bg-[#EAF9FD] p-3 text-xs leading-6 text-slate-600">
-          <div className="mb-1 flex items-center justify-between font-black text-[#078fb0]">
+        <div className={`${WORKBENCH_AI_THINKING_SURFACE_CLASS} p-3 text-xs leading-6`}>
+          <div className={`mb-1 flex items-center justify-between ${WORKBENCH_AI_THINKING_TITLE_CLASS}`}>
             <span>{done ? `已思考（用时 ${seconds} 秒）` : `正在思考（${seconds} 秒）`}</span>
           </div>
           {reasoning && <div className="max-h-36 overflow-y-auto whitespace-pre-wrap break-words">{reasoning}</div>}

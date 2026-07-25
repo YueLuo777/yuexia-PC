@@ -5,6 +5,43 @@
   max-width: 176px !important;
 }
 
+.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed input {
+  height: 48px;
+  border-radius: 0.75rem;
+  padding-right: 1rem;
+  padding-left: 1rem;
+}
+
+.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed,
+.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed input {
+  border-radius: 0.75rem;
+}
+
+.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed label,
+.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed:has(input) label,
+.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed:focus-within label,
+.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed.xy-has-value label {
+  left: 16px;
+  padding: 0 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+
+.xy-floating-field.xy-structured-header-field input::placeholder {
+  font-size: 0.8125rem;
+  line-height: 1.65;
+}
+
+.xy-setting-workspace-typography,
+.xy-setting-workspace-typography button,
+.xy-setting-workspace-typography input,
+.xy-setting-workspace-typography textarea,
+.xy-setting-workspace-typography select {
+  font-family: "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  font-synthesis: none;
+}
+
 .xy-floating-field.xy-floating-outline-preview label.xy-floating-title-count,
 .xy-floating-field.xy-floating-outline-preview:focus-within label.xy-floating-title-count,
 .xy-floating-field.xy-floating-outline-preview.xy-has-value label.xy-floating-title-count,
@@ -49,6 +86,12 @@
   line-height: 1.25rem;
   -webkit-text-stroke: 0;
   paint-order: normal;
+}
+
+.xy-detail-outline-heading-with-count {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2ch;
 }
 
 .xy-floating-title-input {
@@ -112,8 +155,17 @@
   max-width: var(--xy-floating-title-input-width, auto) !important;
   height: 20px !important;
   min-height: 0 !important;
+  font-family: inherit !important;
   font-size: inherit !important;
   font-weight: inherit !important;
+  line-height: 20px !important;
+}
+
+.xy-brainstorm-floating-title-tool .xy-floating-title-input,
+.xy-brainstorm-output-title-tool .xy-floating-title-input {
+  font-family: inherit !important;
+  font-size: 1rem !important;
+  font-weight: 900 !important;
   line-height: 20px !important;
 }
 

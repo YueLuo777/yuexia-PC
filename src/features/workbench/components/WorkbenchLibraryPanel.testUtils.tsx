@@ -2,7 +2,7 @@ import { fireEvent, screen } from '@testing-library/react';
 
 import { readChapterEditorSource as readChapterEditorSourceFiles } from './chapterEditorSource.testUtils';
 
-export const TEST_WORK_SETTING_STARTER_VERSION = '2026-06-25-foreshadow-fields-v1';
+export { DEFAULT_WORK_SETTING_STARTER_VERSION as TEST_WORK_SETTING_STARTER_VERSION } from '@/features/workbench/model/workbenchSettingTaxonomy';
 
 export const unlockSmartImportSettings = () => {
   fireEvent.click(screen.getByTitle('解锁智能导入设定'));
@@ -14,6 +14,8 @@ export const ensureLibraryGroupExpanded = (name: string | RegExp) => {
   return button;
 };
 
+export const ensureLibraryDomainExpanded = ensureLibraryGroupExpanded;
+
 export const readWorkbenchLibraryPanelSource = async () => {
   const { readFileSync } = await import('node:fs');
   const { fileURLToPath } = await import('node:url');
@@ -24,6 +26,7 @@ export const readWorkbenchLibraryPanelSource = async () => {
     'workbenchSettingLibraryBranch.tsx',
     'workbenchSettingLibraryView.tsx',
     'workbenchSettingLibraryWorkspaceView.tsx',
+    'WorkbenchSettingTreeSidebar.tsx',
     'workbenchOutlineLibraryBranch.tsx',
     'OutlineWorkspaceView.tsx',
     'DetailOutlineBorderFontTool.tsx',
@@ -57,6 +60,7 @@ export const readWorkbenchLibraryPanelSource = async () => {
     'workbenchLibraryMenuPosition.ts',
     '../model/workbenchLibraryPanelModel.ts',
     'workbenchLibraryRequestLog.tsx',
+    'workbenchSettingLinkedContext.ts',
     'workbenchLibraryResizeHandles.tsx',
     'workbenchLibraryStorageState.ts',
     'workbenchLibraryTabs.ts',
@@ -84,6 +88,22 @@ export const readWorkbenchLibraryPanelSource = async () => {
   ];
 
   return files.map((file) => readFileSync(join(baseDir, file), 'utf8').replace(/\r\n?/g, '\n')).join('\n\n');
+};
+
+export const readWorkbenchRoleSidebarSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'workbenchRoleSidebar.tsx'), 'utf8');
+};
+
+export const readWorkbenchSettingTreeSidebarSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchSettingTreeSidebar.tsx'), 'utf8');
 };
 
 export const readWorkbenchLibraryPanelEntrySource = async () => {
@@ -329,6 +349,14 @@ export const readPublishedSidebarSource = async () => {
   const { dirname, join } = await import('node:path');
 
   return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'PublishedSidebar.tsx'), 'utf8');
+};
+
+export const readChapterNavigationStylesSource = async () => {
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const { dirname, join } = await import('node:path');
+
+  return readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'chapterNavigationStyles.ts'), 'utf8');
 };
 
 export const readWorkbenchAiPanelSource = async () => {

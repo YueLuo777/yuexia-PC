@@ -15,7 +15,6 @@ export function renderAppFrameView(scope: Record<string, any>) {
     Square,
     Suspense,
     THEME_OPTIONS,
-    TestCollectionPage,
     X,
     activateTab,
     activeTabId,
@@ -32,16 +31,15 @@ export function renderAppFrameView(scope: Record<string, any>) {
     mouseGestureDirectionLabel,
     mouseGesturePath,
     mouseGesturePreview,
+    navigate,
     renderThemeOption,
     routePath,
     setAppScale,
     setIsScaleMenuOpen,
     setIsThemeMenuOpen,
     setShowSoftwareUiCatalog,
-    setShowTestCollection,
     showInternalTools,
     showSoftwareUiCatalog,
-    showTestCollection,
     tabs,
     themeClassName,
     themeMenuRef,
@@ -119,7 +117,7 @@ export function renderAppFrameView(scope: Record<string, any>) {
               <button
                 onClick={() => {
                   setShowSoftwareUiCatalog(false);
-                  setShowTestCollection(true);
+                  navigate('/test-collection');
                 }}
                 className="xy-wa-icon-button"
                 title="测试板块"
@@ -128,7 +126,6 @@ export function renderAppFrameView(scope: Record<string, any>) {
               </button>
               <button
                 onClick={() => {
-                  setShowTestCollection(false);
                   setShowSoftwareUiCatalog(true);
                 }}
                 className="xy-wa-icon-button"
@@ -282,27 +279,6 @@ export function renderAppFrameView(scope: Record<string, any>) {
             </span>
           </div>
         </div>
-      )}
-      {showInternalTools && showTestCollection && TestCollectionPage && (
-        <AppModalShell
-          title="测试板块"
-          isOpen={showTestCollection}
-          onClose={() => setShowTestCollection(false)}
-          widthClass="w-[1180px]"
-          heightClass="h-[min(820px,90vh)]"
-          storageId="test_collection"
-          zIndexClass="z-[335]"
-        >
-            <Suspense
-              fallback={
-                <div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">
-                  正在打开测试...
-                </div>
-              }
-            >
-              <TestCollectionPage embedded onClose={() => setShowTestCollection(false)} />
-            </Suspense>
-        </AppModalShell>
       )}
       {showInternalTools && showSoftwareUiCatalog && SoftwareUiCatalogPage && (
         <AppModalShell

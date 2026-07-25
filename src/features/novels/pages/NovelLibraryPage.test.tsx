@@ -27,6 +27,22 @@ describe('NovelLibraryPage search styling', () => {
       '.xy-ui132-search.xy-novel-search input,\n.xy-ui132-search.xy-novel-search input:focus,\n.xy-ui132-search.xy-novel-search input:hover {\n  background-color: #F5F6F6;\n}',
     );
   });
+
+  it('renders category filters as one filled segmented group without inner divider lines', () => {
+    const pageSource = readSource('NovelLibraryPage.tsx');
+    const styles = readFileSync(resolve(process.cwd(), 'src/shared/styles/parts/part-08.css'), 'utf8');
+    const groupStart = styles.indexOf('.xy-novel-category-capsules {');
+    const groupEnd = styles.indexOf('.xy-category-capsule-delete', groupStart);
+    const groupStyles = styles.slice(groupStart, groupEnd);
+
+    expect(pageSource).toContainSource('className="xy-category-capsules xy-novel-category-capsules min-w-0"');
+    expect(groupStyles).toContainSource('gap: 0;');
+    expect(groupStyles).toContainSource('border: 1px solid #d8e1ec;');
+    expect(groupStyles).toContainSource('border-radius: 9px;');
+    expect(groupStyles).toContainSource('background: var(--xy-custom-flow-group-bg);');
+    expect(groupStyles).toContainSource('color: var(--xy-wa-blue);');
+    expect(groupStyles).not.toContainSource('border-left');
+  });
 });
 
 describe('NovelLibraryPage summary cards', () => {

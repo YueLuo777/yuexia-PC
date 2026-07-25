@@ -283,6 +283,20 @@ export function normalizePublishedSidebarWidth(value: number) {
   return Math.max(PUBLISHED_SIDEBAR_MIN_WIDTH, Math.min(PUBLISHED_SIDEBAR_MAX_WIDTH, value));
 }
 
+export function readWorkbenchPublishedSidebarWidth() {
+  if (readSharedWorkbenchLeftNavWidthEnabled()) {
+    return normalizePublishedSidebarWidth(
+      readSharedWorkbenchLeftNavWidth(PUBLISHED_SIDEBAR_MAX_WIDTH, PUBLISHED_SIDEBAR_MIN_WIDTH),
+    );
+  }
+  return normalizePublishedSidebarWidth(
+    Number.parseInt(
+      localStorage.getItem('xinyuexia_published_sidebar_width') ?? String(PUBLISHED_SIDEBAR_DEFAULT_WIDTH),
+      10,
+    ),
+  );
+}
+
 export function formatMemoTime() {
   const date = new Date();
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;

@@ -20,6 +20,7 @@ import { WordCountText } from '@/shared/ui/WordCountText';
 import { DEFAULT_WORKBENCH_ROLE_TYPES, isMaleProtagonistRoleType } from '@/features/workbench/model/workbenchRoleTypes';
 
 import type { LibraryEntryDragState } from './workbenchLibraryDrag';
+import { isLockedDefaultSettingEntry } from './workbenchLibraryDataState';
 import {
   WORKBENCH_FOLDER_GROUP_BUTTON_CLASS,
   WORKBENCH_FOLDER_GROUP_COUNT_CLASS,
@@ -29,6 +30,8 @@ import {
 } from './workbenchLibraryPanelConstants';
 import { SETTING_TAB, UNCATEGORIZED_TYPE } from './workbenchLibraryTabs';
 import { parseRoleContent } from './workbenchRoleContent';
+
+const LOCKED_DEFAULT_SETTING_TOOLTIP = '内置设定，无法删除';
 
 type LibraryGroup = {
   type: string;
@@ -259,6 +262,7 @@ export function WorkbenchLibrarySidebar({
                     previewEntries.map((entry, previewIndex) => {
                       const entryWordCount = getEntryWordCount(entry);
                       const entryType = getEntryType(entry, group.type);
+                      const lockedDefaultSetting = isLockedDefaultSettingEntry(entry);
                       return (
                         <button
                           key={entry.id}
@@ -266,6 +270,7 @@ export function WorkbenchLibrarySidebar({
                           data-library-entry-tab={effectiveLibraryTab}
                           data-library-entry-type={entryType}
                           data-library-entry-preview-index={previewIndex}
+                          title={lockedDefaultSetting ? LOCKED_DEFAULT_SETTING_TOOLTIP : undefined}
                           onDragStart={(event) => handleLibraryEntryDragStart(event, entry, entryType)}
                           onDragOver={(event) => handleLibraryEntryDragOver(event, entry, entryType, previewIndex)}
                           onDrop={(event) => handleLibraryEntryDrop(event, entry, entryType, previewIndex)}

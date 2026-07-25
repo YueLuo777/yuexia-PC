@@ -40,4 +40,11 @@ describe('formal modal shell consistency', () => {
     expect(read('features/workbench/components/workbenchRoleHistoryModal.tsx')).toContain('<WorkbenchModal');
     expect(read('features/novels/components/NovelDeleteConfirmModal.tsx')).toContain('<ConfirmDialog');
   });
+
+  it('shows the drag cursor across the full shared modal title bar', () => {
+    const source = readFileSync(join(srcRoot, 'shared/ui/AppModalShell.tsx'), 'utf8');
+
+    expect(source).toContain('min-h-14 shrink-0 cursor-move');
+    expect(source).toContain('active:cursor-grabbing');
+  });
 });

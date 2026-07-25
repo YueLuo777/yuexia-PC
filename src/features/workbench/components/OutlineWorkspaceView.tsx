@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck -- pure outline view adapter.
-import { DetailOutlineBorderFontTool, DetailOutlineTitleWordCount, normalizeDetailOutlineFontSize } from './DetailOutlineBorderFontTool';
+import { DetailOutlineBorderFontTool, DetailOutlineTitleWordCount } from './DetailOutlineBorderFontTool';
+import { OutlineAssociationControl } from './OutlineAssociationControl';
+import { normalizeDetailOutlineFontSize } from './detailOutlineFontSize';
 export function renderOutlineWorkspaceView(scope: Record<string, any>) {
   const {
     AiInlineInput,
@@ -19,7 +21,6 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
     Folder,
     FolderOpen,
     LibraryManagementModal,
-    LinkedSourceControl,
     OUTLINE_LIBRARY_TAB,
     WORKBENCH_FOLDER_GROUP_BUTTON_CLASS,
     WORKBENCH_FOLDER_GROUP_COUNT_CLASS,
@@ -208,7 +209,6 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                     const VolumeFolderIcon = expanded ? FolderOpen : Folder;
                     const volumeIsSelected =
                       safeOutlineSelectionType === 'volume' && selectedOutlineVolume?.id === volume.id;
-
                     return (
                       <div key={volume.id} className="mb-1">
                         <div
@@ -460,8 +460,8 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                         }}
                       />
                       <label className="xy-floating-title-count xy-detail-outline-title-count">
-                        <span className="xy-floating-title-text xy-detail-outline-heading-title">
-                          {outlineCardTitle}<DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.outline)} spacingClassName="ml-[2ch]" />
+                        <span className="xy-floating-title-text xy-detail-outline-heading-title xy-detail-outline-heading-with-count xy-border-embedded-transparent-backplate">
+                          {outlineCardTitle}<DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.outline)} />
                         </span>
                       </label>
                       <DetailOutlineBorderFontTool
@@ -490,7 +490,7 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                         }}
                       />
                       <label className="xy-floating-title-count xy-detail-outline-title-count">
-                        <span className="xy-floating-title-text xy-detail-outline-heading-title">
+                        <span className="xy-floating-title-text xy-detail-outline-heading-title xy-detail-outline-heading-with-count xy-border-embedded-transparent-backplate">
                           状态变化<DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.stateExpectation)} />
                         </span>
                       </label>
@@ -554,11 +554,11 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                       >
                         <span
                           className={
-                            isDetailOutlineTab ? 'xy-floating-title-text xy-detail-outline-heading-title' : undefined
+                            isDetailOutlineTab ? 'xy-floating-title-text xy-detail-outline-heading-title xy-detail-outline-heading-with-count xy-border-embedded-transparent-backplate' : undefined
                           }
                         >
                           {outlineCardTitle}
-                          {isDetailOutlineTab && <DetailOutlineTitleWordCount value={countTextWords(outlineCardContent)} spacingClassName="ml-[2ch]" />}
+                          {isDetailOutlineTab && <DetailOutlineTitleWordCount value={countTextWords(outlineCardContent)} />}
                         </span>
                       </label>
                       {!isDetailOutlineTab && (
@@ -656,20 +656,11 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
             )}
           </div>
           {isDetailOutlineTab && (
-            <LinkedSourceControl
+            <OutlineAssociationControl
               linked={selectedDetailOutlineReaderItems.length > 0}
-              label="大纲"
-              linkedLabel="已关联大纲"
-              prefixLabel="关联"
+              wordCount={detailOutlineReaderWordCount}
               onOpen={openDetailOutlineReader}
               onClear={clearDetailOutlineReaderSelection}
-              clearOnLinkedClick
-              meta={<>关联 <WordCountText value={detailOutlineReaderWordCount} compact /></>}
-              className="xy-ai-panel-link-row flex items-center gap-2"
-              groupClassName="flex h-10 w-[134px] shrink-0 overflow-hidden rounded-xl border border-[#08AACE] bg-white shadow-sm"
-              prefixClassName="grid w-12 shrink-0 place-items-center border-r border-[#08AACE]/30 bg-[#E9FAFE] text-sm font-black text-[#078BA9]"
-              buttonClassName="min-w-0 flex-1 whitespace-nowrap bg-white px-3 text-sm font-bold text-slate-600 hover:bg-[#E9FAFD]"
-              linkedButtonClassName="min-w-0 flex-1 whitespace-nowrap bg-[#08AACE] px-3 text-sm font-black text-white hover:bg-[#0796B8]"
             />
           )}
           <div className="xy-ai-panel-input-row">

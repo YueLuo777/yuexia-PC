@@ -32,6 +32,7 @@ interface UseChapterEditorInputOptions {
   findText: string;
   replaceText: string;
   onChangeContent: (content: string) => void;
+  onFlushSave: () => boolean;
   onOpenFind: () => void;
   onToast: (text: string) => void;
   setIsSymbolReplaceOpen: Dispatch<SetStateAction<boolean>>;
@@ -45,6 +46,7 @@ export function useChapterEditorInput({
   findText,
   replaceText,
   onChangeContent,
+  onFlushSave,
   onOpenFind,
   onToast,
   setIsSymbolReplaceOpen,
@@ -124,13 +126,12 @@ export function useChapterEditorInput({
         commitContent(applyFormat(content, getStoredFormatSettings()));
         onToast('已自动排版');
       } else if (action.detail?.id === 'save_chapter') {
-        onChangeContent(content);
-        onToast('已保存');
+        onToast(onFlushSave() ? '已保存' : '保存失败，请重试');
       }
     };
     window.addEventListener(SHORTCUT_ACTION_EVENT, handleShortcut);
     return () => window.removeEventListener(SHORTCUT_ACTION_EVENT, handleShortcut);
-  }, [chapter, commitContent, content, onChangeContent, onToast, setShowDeleteConfirm]);
+  }, [chapter, commitContent, content, onFlushSave, onToast, setShowDeleteConfirm]);
 
   useEffect(() => {
     const handleFindShortcut = (event: globalThis.KeyboardEvent) => {

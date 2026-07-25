@@ -47,12 +47,13 @@ export function createOutlineControllerPhase3(scope: Record<string, any>) {
     );
     setIsLibraryAiLoading(true);
     setOutlineAiInput('');
-    setOutlinePreviewDraft('正在思考...');
+    const pendingOutput = formatAiThinkingResponse('', '', 0, false);
+    setOutlinePreviewDraft(pendingOutput);
     const task = startBackgroundAiTask({
       kind: isDetailOutlineTab ? 'detailOutline' : 'summary',
       title: isDetailOutlineTab ? '生成章纲' : '生成梗概',
       input: requestText,
-      initialOutput: '正在思考...',
+      initialOutput: pendingOutput,
       progressLabel: '正在生成',
       meta: {
         target: 'workbenchOutlineAi',

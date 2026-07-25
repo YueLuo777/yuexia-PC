@@ -859,10 +859,11 @@ export function useWorkbenchLibraryControllerPhase6(scope: Record<string, any>) 
       }
       const domainByTabId: Partial<Record<OtherSettingLinkTabId, string | null>> = {
         work: null,
+        locations: 'setting:location',
         factions: 'setting:faction',
         items: 'setting:item',
-        monsters: 'setting:monster',
         foreshadow: 'setting:foreshadow',
+        monsters: 'setting:monster',
       };
       return {
         ...tab,

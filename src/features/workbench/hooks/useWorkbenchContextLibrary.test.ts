@@ -55,4 +55,69 @@ describe('buildWorkbenchContextLibrary', () => {
     expect(context.shouldAttachRequiredContext).toBe(true);
     expect(context.effectiveLinkedContextItems).toEqual([outlineItem]);
   });
+
+  it('allows selected chapter content to be confirmed when the current chapter has no outline', () => {
+    const previousChapterItem = {
+      id: 'chapter-1',
+      source: 'chapter' as const,
+      group: '正文',
+      title: '第1章',
+      content: '上一章正文内容',
+    };
+    const emptyCurrentOutline = {
+      ...outlineItem,
+      id: 'outline-2',
+      title: '第2章',
+      content: '',
+    };
+    const setLinkedContextItems = vi.fn();
+    const context = buildWorkbenchContextLibrary({
+      contextChapterRows: [
+        {
+          volumeId: 1,
+          volumeName: '第一卷',
+          chapterId: 1,
+          title: '第1章',
+          chapterItem: previousChapterItem,
+          outlineItem,
+          summaryItem: null,
+          serialNumber: 1,
+          isCurrent: false,
+        },
+        {
+          volumeId: 1,
+          volumeName: '第一卷',
+          chapterId: 2,
+          title: '第2章',
+          chapterItem: { ...previousChapterItem, id: 'chapter-2', title: '第2章', content: '' },
+          outlineItem: emptyCurrentOutline,
+          summaryItem: null,
+          serialNumber: 2,
+          isCurrent: true,
+        },
+      ],
+      contextSelectionTouched: true,
+      currentNovelId: null,
+      draftContextIds: new Set([previousChapterItem.id]),
+      linkedContextItems: [],
+      outlineContextItems: [outlineItem],
+      roleContextItems: [],
+      selectedChapterSerialNumber: 2,
+      setContextLibraryTab: vi.fn(),
+      setContextSelectionTouched: vi.fn(),
+      setDraftContextIds: vi.fn(),
+      setIsContextLibraryOpen: vi.fn(),
+      setLinkedContextItems,
+      settingContextItems: [],
+      statusContextItems: [],
+      summaryContextItems: [],
+    });
+
+    expect(context.requiredContextItems).toEqual([]);
+    expect(context.canConfirmContextLibrary).toBe(true);
+    expect(context.contextLibraryConfirmTitle).toBe('确认关联资料');
+
+    context.confirmContextLibrary();
+    expect(setLinkedContextItems).toHaveBeenCalledWith([previousChapterItem]);
+  });
 });

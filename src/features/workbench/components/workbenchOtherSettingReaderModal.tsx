@@ -8,7 +8,14 @@ import {
 } from './AssociationReaderItemRow';
 import { WorkbenchModal } from './WorkbenchModal';
 
-export type OtherSettingLinkTabId = 'work' | 'roles' | 'factions' | 'items' | 'monsters' | 'foreshadow';
+export type OtherSettingLinkTabId =
+  | 'work'
+  | 'roles'
+  | 'locations'
+  | 'factions'
+  | 'items'
+  | 'foreshadow'
+  | 'monsters';
 export type OtherSettingLinkEntry = {
   id: string;
   entryId: string;

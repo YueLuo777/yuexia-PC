@@ -1,14 +1,18 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck -- view adapter receives the typed controller scope.
 import React from 'react';
+import { isAiThinkingContent } from '@/features/workbench/model/workbenchAiThinkingProtocol';
 import {
   renderSettingLibraryAiConfigHeader,
   renderSettingLibraryWorkspace,
 } from './workbenchSettingLibraryWorkspaceView';
-import {
-  WorkbenchSettingPanelTabs,
-  WorkbenchSettingStatusPanel,
-} from './WorkbenchSettingStatusPanel';
+import { WorkbenchSettingStatusPanel } from './WorkbenchSettingStatusPanel';
+
+function getLibraryAiTurnFrameClass(role: 'user' | 'ai', content: string) {
+  if (role === 'user') return 'max-w-[82%] rounded-2xl bg-brand px-4 py-3 text-white';
+  if (isAiThinkingContent(content)) return 'max-w-[96%]';
+  return 'max-w-[96%] rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-800';
+}
 
 export function renderSettingLibraryView(scope: Record<string, any>) {
   const {
@@ -104,6 +108,7 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
     getLibrarySidebarEntryWordCount,
     getPreviewedLibraryGroupEntries,
     getTemporaryBrainstormTitle,
+    getDefaultWorkbenchLibraryEntryTitle,
     getWorkbenchAssociationRuntimeId,
     groupedSettingEntries,
     handleBrainstormOutputTextareaScroll,
@@ -176,7 +181,6 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
     settingLibraryMode,
     settingLibraryRightWidth,
     settingPreviewFontSize,
-    settingWorkspaceTopTabs,
     showBrainstormOutputSelection,
     showHeaderLibraryAiLogButton,
     showInlineLibraryAiLogButton,
@@ -195,8 +199,6 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
   } = scope;
   const showSettingStatusTabs = activeTab === SETTING_TAB && !activeIsBrainstorm;
   const settingPanelMode = activeTabConfig.settingPanelMode === 'status' ? 'status' : 'setting';
-  const settingPendingStatusCount =
-    currentSelectedRole?.pendingStatusUpdates?.length ?? currentSelectedSetting?.pendingStatusUpdates?.length ?? 0;
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white" style={scaleStyle}>
       {libraryHeaderFontSizePortal}
@@ -221,9 +223,9 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
       {settingCreateModal}
       {categoryRenameModal}
       <div
-        className="grid h-full min-h-0 flex-1 overflow-hidden bg-white"
+        className={`grid h-full min-h-0 flex-1 overflow-hidden bg-white ${activeTab === SETTING_TAB && !activeIsBrainstorm ? 'xy-setting-workspace-typography' : ''}`}
         style={{
-          gridTemplateRows: activeTab === SETTING_TAB && !activeIsBrainstorm ? 'auto minmax(0,1fr)' : undefined,
+          gridTemplateRows: activeTab === SETTING_TAB && !activeIsBrainstorm ? 'minmax(0,1fr)' : undefined,
           gridTemplateColumns: activeIsBrainstorm
             ? `${brainstormLayoutLeftWidth}px 0px ${brainstormLayoutPreviewWidth}px 0px minmax(${BRAINSTORM_LAYOUT_OUTPUT_MIN_WIDTH}px,1fr) 0px ${brainstormLayoutRightWidth}px`
             : settingLibraryMode === 'advanced'
@@ -238,15 +240,8 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
             {rightResizeHandle}
             <aside
               className="min-w-0 flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 px-4 pb-4 pt-2"
-              style={activeTab === SETTING_TAB && !activeIsBrainstorm ? { gridColumn: 5, gridRow: '1 / 3' } : undefined}
+              style={activeTab === SETTING_TAB && !activeIsBrainstorm ? { gridColumn: 5, gridRow: 1 } : undefined}
             >
-              {showSettingStatusTabs ? (
-                <WorkbenchSettingPanelTabs
-                  mode={settingPanelMode}
-                  pendingCount={settingPendingStatusCount}
-                  onChange={(mode) => updateActiveTabConfig({ settingPanelMode: mode })}
-                />
-              ) : null}
               {settingPanelMode !== 'status' || !showSettingStatusTabs ? renderSettingLibraryAiConfigHeader(scope) : null}
               {settingPanelMode === 'status' && showSettingStatusTabs ? (
                 <WorkbenchSettingStatusPanel
@@ -297,11 +292,7 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                                 className={`flex ${turn.role === 'user' ? 'justify-end' : 'justify-start'}`}
                               >
                                 <div
-                                  className={`whitespace-pre-wrap break-words rounded-2xl px-4 py-3 ${
-                                    turn.role === 'user'
-                                      ? 'max-w-[82%] bg-brand text-white'
-                                      : 'max-w-[96%] border border-gray-200 bg-gray-50 text-gray-800'
-                                  }`}
+                                  className={`whitespace-pre-wrap break-words ${getLibraryAiTurnFrameClass(turn.role, turn.content)}`}
                                 >
                                   {renderAiChatContent(turn.content)}
                                 </div>
@@ -425,11 +416,11 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                         <button
                           onClick={() => {
                             if (!currentSelectedEntry) {
-                              addEntryToTab(activeTab, `新建${activeTab}`);
+                              addEntryToTab(activeTab, getDefaultWorkbenchLibraryEntryTitle(activeTab));
                               return;
                             }
                             updateEntry(currentSelectedEntry.id, {
-                              title: currentSelectedEntry.title || `新建${activeTab}`,
+                              title: currentSelectedEntry.title || getDefaultWorkbenchLibraryEntryTitle(activeTab),
                             });
                           }}
                           className="h-10 w-1/3 rounded-lg border border-gray-200 bg-white px-3 text-sm font-bold text-gray-700 hover:bg-gray-100"

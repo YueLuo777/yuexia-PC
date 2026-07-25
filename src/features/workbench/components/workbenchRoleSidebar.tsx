@@ -206,7 +206,7 @@ export function WorkbenchRoleSidebar({
                         }}
                         className={`${WORKBENCH_LIBRARY_ENTRY_BUTTON_CLASS} flex items-center gap-2 ${
                           selectedEntryId === entry.id
-                            ? 'border-transparent xy-selected-mint-bg text-gray-900'
+                            ? 'border-2 border-[#078FAE] bg-white text-gray-600'
                             : 'border-transparent bg-white text-gray-600 hover:border-gray-200'
                         } ${draggingLibraryEntry?.entryId === entry.id ? 'cursor-grabbing scale-[0.99] opacity-80 ring-2 ring-[#08AACE]/35 shadow-sm' : ''}`}
                       >

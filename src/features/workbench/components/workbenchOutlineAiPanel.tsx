@@ -5,9 +5,9 @@ import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import { countTextWords } from '@/features/workbench/model/workbenchLibraryPanelModel';
 import { AiInlineInput } from '@/shared/ui/AiInlineInput';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
-import { LinkedSourceControl } from '@/shared/ui/LinkedSourceControl';
 import { WordCountText } from '@/shared/ui/WordCountText';
 
+import { OutlineAssociationControl } from './OutlineAssociationControl';
 import { resizeFloatingAiTextarea } from './workbenchFloatingAiTextarea';
 import { renderAiChatContent } from './workbenchLibraryRequestLog';
 import { stripAiThinkingBlock } from './workbenchLibraryAiText';
@@ -162,20 +162,11 @@ export function WorkbenchOutlineAiPanel({
         )}
       </div>
       {isDetailOutlineTab && (
-        <LinkedSourceControl
+        <OutlineAssociationControl
           linked={selectedDetailOutlineReaderCount > 0}
-          label="大纲"
-          linkedLabel="已关联大纲"
-          prefixLabel="关联"
+          wordCount={detailOutlineReaderWordCount}
           onOpen={openDetailOutlineReader}
           onClear={clearDetailOutlineReaderSelection}
-          clearOnLinkedClick
-          meta={<>关联 <WordCountText value={detailOutlineReaderWordCount} compact /></>}
-          className="xy-ai-panel-link-row flex items-center gap-2"
-          groupClassName="flex h-10 w-[134px] shrink-0 overflow-hidden rounded-xl border border-[#08AACE] bg-white shadow-sm"
-          prefixClassName="grid w-12 shrink-0 place-items-center border-r border-[#08AACE]/30 bg-[#E9FAFE] text-sm font-black text-[#078BA9]"
-          buttonClassName="min-w-0 flex-1 whitespace-nowrap bg-white px-3 text-sm font-bold text-slate-600 hover:bg-[#E9FAFD]"
-          linkedButtonClassName="min-w-0 flex-1 whitespace-nowrap bg-[#08AACE] px-3 text-sm font-black text-white hover:bg-[#0796B8]"
         />
       )}
       <div className="xy-ai-panel-input-row">

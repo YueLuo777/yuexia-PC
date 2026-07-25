@@ -36,10 +36,11 @@ export function FieldSizeSettingsModal({
       subtitle="只显示当前页面可调字段，调整后会自动保存。"
       isOpen
       onClose={onClose}
-      widthClass="w-full max-w-3xl"
-      heightClass="h-auto max-h-[86vh]"
-      storageId="workbench_field_size_settings"
+      widthClass="w-[min(980px,calc(100vw-4rem))]"
+      heightClass="h-auto max-h-[82vh]"
+      storageId="workbench_field_size_settings_compact_v2"
       zIndexClass="z-[280]"
+      defaultGeometry={{ x: 0, y: 0, width: 980, height: 560 }}
     >
         <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto p-5">
           <div className="mb-3">
@@ -51,7 +52,7 @@ export function FieldSizeSettingsModal({
               return (
                 <article
                   key={key}
-                  className="grid gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 lg:grid-cols-[130px_repeat(3,minmax(0,1fr))_220px] lg:items-center"
+                  className="grid gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 lg:grid-cols-[112px_repeat(3,minmax(90px,1fr))_188px] lg:items-center"
                 >
                   <div className="text-sm font-black text-slate-900">{getWorkbenchFieldSizeLabel(key)}</div>
                   <FieldSizeNumberInput

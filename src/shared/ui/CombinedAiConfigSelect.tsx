@@ -174,7 +174,7 @@ export function CombinedAiConfigSelect({
 
   return (
     <div ref={rootRef} style={style} className={`relative min-w-0 pt-3 ${className}`}>
-      <div className="grid h-11 min-w-0 grid-cols-2 overflow-visible rounded-xl border-2 border-[#08AACE] bg-white shadow-[0_8px_18px_rgba(8,170,206,0.08)]">
+      <div className="xy-combined-ai-config-frame grid h-11 min-w-0 grid-cols-2 overflow-visible rounded-xl border-2 bg-white shadow-[0_8px_18px_rgba(8,170,206,0.08)]">
         <div className="relative min-w-0 border-r border-[#08AACE]/25">
           <button
             type="button"

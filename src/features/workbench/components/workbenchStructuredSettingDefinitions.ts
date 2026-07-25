@@ -11,10 +11,19 @@ import type {
 } from '@/features/workbench/model/workbenchSettingStatus';
 
 import { ROLE_BASE_SETTING_FIELD_DEFINITIONS, ROLE_STATE_FIELD_DEFINITIONS } from './workbenchRoleSettingFields';
+import { PROMPT_BASED_STRUCTURED_SETTING_FIELD_SETS } from './workbenchPromptStructuredSettingDefinitions';
 
 export const STRUCTURED_SETTING_UNCATEGORIZED_TYPE = '\u672a\u5206\u7c7b';
 export const DEFAULT_MALE_PROTAGONIST_ROLE_TITLE = '\u7537\u4e3b\u89d2';
-export const SETTING_IMPORT_FORMAT_TAB_IDS = ['work', 'roles', 'factions', 'items', 'monsters', 'foreshadow'] as const;
+export const SETTING_IMPORT_FORMAT_TAB_IDS = [
+  'work',
+  'roles',
+  'locations',
+  'factions',
+  'items',
+  'foreshadow',
+  'monsters',
+] as const;
 export type SettingImportFormatTabId = (typeof SETTING_IMPORT_FORMAT_TAB_IDS)[number];
 export const SETTING_IMPORT_FORMAT_PREVIEW_SCOPES = ['设定条目', '分组', '标签'] as const;
 export type SettingImportFormatPreviewScope = (typeof SETTING_IMPORT_FORMAT_PREVIEW_SCOPES)[number];
@@ -68,6 +77,8 @@ export type StructuredSettingFieldDefinition = {
   control?: 'input' | 'textarea';
   maxLength?: number;
   fieldClassName?: string;
+  displaySize?: 'compact' | 'standard' | 'expanded';
+  legacyTitles?: readonly string[];
 };
 
 export type StructuredSettingFieldGroup = {
@@ -164,7 +175,7 @@ export const FORESHADOW_SETTING_FIELDS: readonly StructuredSettingFieldDefinitio
     fieldClassName: 'col-span-2 min-h-0',
   },
 ];
-export const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[] = [
+const LEGACY_STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[] = [
   {
     id: 'work-core-basic',
     entryType: BASIC_SETTING_ENTRY_TYPE,
@@ -463,4 +474,9 @@ export const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[]
       { key: 'payoffPace', title: '爽点节奏', placeholder: '小爽点、中爽点、大爆点分别多久出现一次。' },
     ],
   },
+];
+
+export const STRUCTURED_SETTING_FIELD_SETS: readonly StructuredSettingFieldSet[] = [
+  ...PROMPT_BASED_STRUCTURED_SETTING_FIELD_SETS,
+  ...LEGACY_STRUCTURED_SETTING_FIELD_SETS,
 ];

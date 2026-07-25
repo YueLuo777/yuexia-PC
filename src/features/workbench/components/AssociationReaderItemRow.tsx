@@ -20,10 +20,10 @@ export function AssociationSelectionBox({ checked, label, onToggle }: Associatio
       className={`grid h-6 w-6 shrink-0 place-items-center rounded-[3px] border text-sm font-black transition-colors ${
         checked
           ? 'border-[#08AACE] bg-[#08AACE] text-white'
-          : 'border-slate-300 bg-white text-transparent hover:border-[#08AACE] hover:text-[#08AACE]'
+          : 'border-slate-300 bg-white hover:border-[#08AACE]'
       }`}
     >
-      ✓
+      {checked ? '✓' : null}
     </button>
   );
 }

@@ -54,6 +54,7 @@ export function useWorkbenchLibraryControllerPhase5(scope: Record<string, any>) 
     GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY,
     WORKBENCH_LIBRARY_UPDATED_EVENT,
     createWorkbenchLibraryEntry,
+    getDefaultWorkbenchLibraryEntryTitle,
     readWorkbenchLibraryEntries,
     readWorkbenchLibraryEntriesWithGlobalBrainstorm,
     writeWorkbenchLibraryEntries,
@@ -691,7 +692,7 @@ export function useWorkbenchLibraryControllerPhase5(scope: Record<string, any>) 
   };
   registerWorkbenchLibraryPhaseActions(scope.settingTypeOptionsRef, { updateEntry });
   const createEditableSettingEntry = (updates: Partial<Pick<WorkbenchLibraryEntry, 'title' | 'content'>>) => {
-    const title = updates.title?.trim() || `新建${activeTab}`;
+    const title = updates.title?.trim() || getDefaultWorkbenchLibraryEntryTitle(activeTab);
     const selectedSettingWorkspaceType = getSelectedSettingWorkspaceType();
     const defaultType =
       activeTab === SETTING_TAB ? (selectedSettingWorkspaceType ?? DEFAULT_SETTING_ENTRY_TYPE) : UNCATEGORIZED_TYPE;

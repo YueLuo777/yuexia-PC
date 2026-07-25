@@ -1,6 +1,7 @@
 export * from './draggableModalGeometry';
 import {
   useEffect,
+  useCallback,
   useMemo,
   useRef,
   useState,
@@ -22,14 +23,13 @@ import {
   readGeometry,
   saveGeometry,
   isSameGeometry,
-  getEffectiveModalScale,
   getModalScaleContext,
   getViewportBounds,
   normalizeGeometryToViewport,
   getSafeFixedGeometryFromRect,
   clampFixedGeometryToVisualViewport,
 } from './draggableModalGeometry';
-export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
+export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry, centerOnOpen = false) {
   const storageKey = `xinyuexia_modal_position_${id}`;
   const defaultX = defaultGeometry?.x;
   const defaultY = defaultGeometry?.y;
@@ -39,13 +39,14 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
   const defaultHeight = defaultGeometry?.height;
   const hasDefaultGeometry = Boolean(defaultGeometry);
   const [geometry, setGeometry] = useState<ModalGeometry>(() =>
-    normalizeGeometryToViewport(readGeometry(storageKey, defaultGeometry)),
+    normalizeGeometryToViewport(centerOnOpen ? (defaultGeometry ?? { x: 0, y: 0 }) : readGeometry(storageKey, defaultGeometry)),
   );
   const geometryRef = useRef(geometry);
   const dragRef = useRef<{
     pointerId: number;
     startX: number;
     startY: number;
+    element: HTMLElement | null;
     origin: ModalGeometry;
   } | null>(null);
   const resizeRef = useRef<{
@@ -82,10 +83,19 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
           height: defaultHeight,
         }
       : undefined;
-    const next = normalizeGeometryToViewport(readGeometry(storageKey, fallback));
+    const next = normalizeGeometryToViewport(
+      centerOnOpen ? (fallback ?? { x: 0, y: 0 }) : readGeometry(storageKey, fallback),
+    );
     geometryRef.current = next;
     setGeometry((current) => (isSameGeometry(current, next) ? current : next));
-  }, [defaultHeight, defaultLeft, defaultTop, defaultWidth, defaultX, defaultY, hasDefaultGeometry, storageKey]);
+  }, [centerOnOpen, defaultHeight, defaultLeft, defaultTop, defaultWidth, defaultX, defaultY, hasDefaultGeometry, storageKey]);
+
+  const resetToDefault = useCallback(() => {
+    const next = normalizeGeometryToViewport(defaultGeometry ?? { x: 0, y: 0 });
+    localStorage.removeItem(storageKey);
+    geometryRef.current = next;
+    setGeometry(next);
+  }, [defaultGeometry, storageKey]);
 
   useEffect(() => {
     geometryRef.current = geometry;
@@ -126,7 +136,7 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
       const resize = resizeRef.current;
       if (drag && drag.pointerId === event.pointerId) {
         event.preventDefault();
-        const scale = getEffectiveModalScale();
+        const { scale } = getModalScaleContext(drag.element);
         const deltaX = (event.clientX - drag.startX) / scale;
         const deltaY = (event.clientY - drag.startY) / scale;
         const isFixed = Number.isFinite(drag.origin.left) && Number.isFinite(drag.origin.top);
@@ -218,7 +228,7 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
       const resize = resizeRef.current;
       if (drag && drag.pointerId === event.pointerId) {
         dragRef.current = null;
-        const next = normalizeGeometryToViewport(geometryRef.current);
+        const next = normalizeGeometryToViewport(geometryRef.current, drag.element);
         geometryRef.current = next;
         setGeometry(next);
         saveGeometry(storageKey, next);
@@ -258,14 +268,23 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
     } catch {
       // Window-level listeners keep dragging alive if pointer capture is unavailable.
     }
+    const element = event.currentTarget.closest('[data-draggable-managed="true"]') as HTMLElement | null;
+    const rect = element?.getBoundingClientRect();
+    const origin = element && rect ? getSafeFixedGeometryFromRect(rect, element) : geometryRef.current;
+    if (element && rect) {
+      geometryRef.current = origin;
+      applyFixedGeometry(element, origin);
+      setGeometry(origin);
+    }
     dragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
+      element,
       origin: {
-        ...geometryRef.current,
-        left: Number.isFinite(geometryRef.current.left) ? geometryRef.current.left : undefined,
-        top: Number.isFinite(geometryRef.current.top) ? geometryRef.current.top : undefined,
+        ...origin,
+        left: Number.isFinite(origin.left) ? origin.left : undefined,
+        top: Number.isFinite(origin.top) ? origin.top : undefined,
       },
     };
   };
@@ -273,7 +292,8 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
   const onPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
-    const scale = getEffectiveModalScale();
+    const element = event.currentTarget.closest('[data-draggable-managed="true"]') as HTMLElement | null;
+    const { scale } = getModalScaleContext(element);
     const deltaX = (event.clientX - drag.startX) / scale;
     const deltaY = (event.clientY - drag.startY) / scale;
     const isFixed = Number.isFinite(drag.origin.left) && Number.isFinite(drag.origin.top);
@@ -290,7 +310,7 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
           x: drag.origin.x + deltaX,
           y: drag.origin.y + deltaY,
         };
-    const next = normalizeGeometryToViewport(rawNext);
+    const next = normalizeGeometryToViewport(rawNext, element);
     geometryRef.current = next;
     setGeometry(next);
   };
@@ -298,7 +318,8 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
   const onPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
-    const scale = getEffectiveModalScale();
+    const element = event.currentTarget.closest('[data-draggable-managed="true"]') as HTMLElement | null;
+    const { scale } = getModalScaleContext(element);
     const deltaX = (event.clientX - drag.startX) / scale;
     const deltaY = (event.clientY - drag.startY) / scale;
     const isFixed = Number.isFinite(drag.origin.left) && Number.isFinite(drag.origin.top);
@@ -315,7 +336,7 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
           x: drag.origin.x + deltaX,
           y: drag.origin.y + deltaY,
         };
-    const next = normalizeGeometryToViewport(rawNext);
+    const next = normalizeGeometryToViewport(rawNext, element);
     dragRef.current = null;
     geometryRef.current = next;
     setGeometry(next);
@@ -360,6 +381,7 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry) {
 
   return {
     style,
+    resetToDefault,
     dragHandleProps: {
       onPointerDown,
       onPointerMove,

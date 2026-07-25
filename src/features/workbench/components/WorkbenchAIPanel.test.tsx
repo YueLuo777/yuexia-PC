@@ -15,6 +15,10 @@ const readSource = (fileName: string) => {
     readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchAiConfigPanel.tsx'), 'utf8'),
     readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchAIPanelView.tsx'), 'utf8'),
     readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchReplaceBodyButton.tsx'), 'utf8'),
+    readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../../../shared/ui/AssociationSegmentedControl.tsx'),
+      'utf8',
+    ),
     readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../model/workbenchReplaceBodyWarning.ts'), 'utf8'),
   ].join('\n');
 };
@@ -58,10 +62,11 @@ describe('WorkbenchAIPanel linked context controls', () => {
       'utf8',
     );
 
-    expect(source).toContainSource('className="xy-ai-panel-link-row flex items-start justify-between gap-2 text-xs text-gray-400"');
+    expect(source).toContainSource('<AssociationSegmentedControl');
     expect(source).toContainSource('className="flex h-10 shrink-0 overflow-hidden rounded-xl border border-[#08B3D9]');
-    expect(source).toContainSource('className="flex w-12 items-center justify-center border-r border-[#08B3D9]/30');
-    expect(source).not.toContainSource('className="flex w-14 items-center justify-center border-r border-[#08B3D9]/30');
+    expect(source).toContainSource('className="grid w-12 shrink-0 place-items-center border-r border-[#08B3D9]/30');
+    expect(source).not.toContainSource('grid w-14 shrink-0 place-items-center border-r border-[#08B3D9]/30');
+    expect(source).toContainSource("minWidthClassName: 'w-28'");
     expect(source).toContainSource('className="xy-ai-panel-input-row"');
     expect(source).toContainSource('className="xy-ai-panel-action-row flex overflow-hidden rounded-xl border border-gray-200 bg-white"');
     expect(source).toContainSource('xy-ai-panel-output-slot xy-floating-field');

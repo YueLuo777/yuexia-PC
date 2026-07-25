@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { WorkbenchLibraryPanel } from './WorkbenchLibraryPanel';
 import {
   TEST_WORK_SETTING_STARTER_VERSION,
+  ensureLibraryDomainExpanded,
   ensureLibraryGroupExpanded,
   readWorkbenchLibraryPanelSource,
   readWorkbenchStructuredSettingsSource,
@@ -84,7 +85,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
 
     expect(screen.getByRole('button', { name: '作品设定5' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '作品设定48' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '人物设定5' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: '人物设定5' }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: '测试隐藏组' })).not.toBeInTheDocument();
   });
   it('removes the old right-click unlock flow from clear settings', async () => {
@@ -440,7 +441,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '势力设定0' }));
+    ensureLibraryDomainExpanded('势力设定0');
     fireEvent.click(screen.getByRole('button', { name: '分组' }));
     fireEvent.change(screen.getByPlaceholderText('输入分组名字'), { target: { value: '宗门势力' } });
     fireEvent.click(screen.getByRole('button', { name: '确认' }));
@@ -464,7 +465,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '道具资源0' }));
+    ensureLibraryDomainExpanded('道具资源0');
     fireEvent.click(screen.getAllByRole('button', { name: '设定' })[0]);
     fireEvent.change(screen.getByPlaceholderText('输入设定名字'), { target: { value: '测试装备设定' } });
     fireEvent.change(screen.getByLabelText('所属分组'), { target: { value: '物品装备' } });
@@ -509,7 +510,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
     );
 
     ensureLibraryGroupExpanded('核心设定2');
-    fireEvent.click(screen.getByText('世界观').closest('button') as HTMLElement);
+    fireEvent.click(screen.getByText('世界背景').closest('button') as HTMLElement);
     fireEvent.click(screen.getAllByRole('button', { name: '设定' })[0]);
 
     expect(screen.getByLabelText('所属分组')).toHaveValue('核心设定');
@@ -531,6 +532,17 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
     expect(entryListStart).toBeGreaterThan(-1);
     expect(entryListEnd).toBeGreaterThan(entryListStart);
     expect(entryListSource).not.toContainSource('GripVertical');
+  });
+  it('keeps locked built-in setting entry hover help in the legacy setting sidebar', async () => {
+    const sidebarSource = await readWorkbenchLibrarySidebarSource();
+    const entryListStart = sidebarSource.indexOf('previewEntries.map((entry, previewIndex) => {');
+    const entryListEnd = sidebarSource.indexOf('</button>', entryListStart);
+    const entryListSource = sidebarSource.slice(entryListStart, entryListEnd);
+
+    expect(sidebarSource).toContainSource("import { isLockedDefaultSettingEntry } from './workbenchLibraryDataState';");
+    expect(sidebarSource).toContainSource("const LOCKED_DEFAULT_SETTING_TOOLTIP = '内置设定，无法删除';");
+    expect(entryListSource).toContainSource('const lockedDefaultSetting = isLockedDefaultSettingEntry(entry);');
+    expect(entryListSource).toContainSource('title={lockedDefaultSetting ? LOCKED_DEFAULT_SETTING_TOOLTIP : undefined}');
   });
   it('keeps the normal arrow cursor on setting entry rows', async () => {
     const sidebarSource = await readWorkbenchLibrarySidebarSource();

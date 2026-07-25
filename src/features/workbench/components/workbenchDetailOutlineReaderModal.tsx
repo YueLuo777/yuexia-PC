@@ -132,15 +132,6 @@ export function DetailOutlineReaderModal({
         </div>
         <div className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)_280px] bg-white">
           <aside className="editor-scrollbar min-h-0 overflow-y-auto border-r border-gray-100 bg-slate-50 px-1 py-2">
-            <div className="mb-2 flex items-center justify-between gap-2 px-2">
-              <div className="min-w-0 truncate text-[15px] font-black text-slate-400">
-                {detailOutlineReaderTab === 'settings'
-                  ? '设定导航'
-                  : detailOutlineReaderTab === 'roles'
-                    ? '角色导航'
-                    : '前文章纲'}
-              </div>
-            </div>
             <div className="editor-scrollbar h-full space-y-1 overflow-y-auto pb-8">
               {detailOutlineReaderNavGroups.length === 0 ? (
                 <div className="rounded-xl bg-white px-3 py-4 text-xs font-bold leading-5 text-slate-400">

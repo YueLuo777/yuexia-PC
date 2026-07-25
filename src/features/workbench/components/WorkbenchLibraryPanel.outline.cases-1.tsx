@@ -12,6 +12,7 @@ import {
   readCapsuleSelectSource,
   readChapterEditorSource,
   readChapterSidebarSource,
+  readChapterNavigationStylesSource,
   readPublishedSidebarSource,
   readTestCollectionSource,
 } from './WorkbenchLibraryPanel.testUtils';
@@ -65,7 +66,7 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     const storedEntries = JSON.parse(localStorage.getItem('workbench-outline-empty-preview-edit-test') ?? '[]');
     const storedSettingEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '大纲');
     expect(storedSettingEntries).toHaveLength(1);
-    expect(storedSettingEntries[0]).toMatchObject({ tab: '大纲', title: '新建大纲' });
+    expect(storedSettingEntries[0]).toMatchObject({ tab: '大纲', title: '新建设定' });
     expect(JSON.parse(storedSettingEntries[0].content)).toMatchObject({ type: '核心设定', body: '测试设定正文' });
   });
   it('keeps disabled floating capsule selects outlined instead of filled', async () => {
@@ -392,22 +393,35 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     expect(chapterEditorSource).not.toContainSource('AI 返回“原文标注”JSON 后，这里会高亮问题片段并显示审核说明。');
     expect(chapterEditorSource).toContainSource('renderAnnotatedReviewParagraph(paragraph, paragraphAnnotations)');
   });
-  it('syncs published and library group rows to the body folder navigation style', async () => {
+  it('uses the setting-style hierarchy for body chapters while keeping other folder groups stable', async () => {
     const chapterSidebarSource = await readChapterSidebarSource();
+    const chapterNavigationStylesSource = await readChapterNavigationStylesSource();
     const publishedSidebarSource = await readPublishedSidebarSource();
     const panelSource = await readWorkbenchLibraryPanelSource();
     const chapterEditorSource = await readChapterEditorSource();
     const constantsSource = await readWorkbenchLibraryPanelConstantsSource();
     const testCollectionSource = await readTestCollectionSource();
 
-    for (const source of [chapterSidebarSource, publishedSidebarSource, panelSource, chapterEditorSource]) {
+    for (const source of [panelSource, chapterEditorSource]) {
       expect(source).toContainSource('WORKBENCH_FOLDER_GROUP');
       expect(source).toContainSource('WORKBENCH_FOLDER_GROUP_ICON_CLASS');
       expect(source).toContainSource('WORKBENCH_FOLDER_GROUP_COUNT_CLASS');
       expect(source).toContainSource('FolderOpen');
       expect(source).toContainSource('Folder');
     }
-    expect(constantsSource).toContainSource('border-[#BDEEF7] xy-flow-group-bg');
+    for (const source of [chapterSidebarSource, publishedSidebarSource]) {
+      expect(source).toContainSource('CHAPTER_NAV_VOLUME_ROW_CLASS');
+      expect(source).toContainSource('CHAPTER_NAV_TREE_CLASS');
+      expect(source).toContainSource('CHAPTER_NAV_ROW_SELECTED_CLASS');
+      expect(source).toContainSource('ChevronDown');
+      expect(source).toContainSource('ChevronRight');
+      expect(source).not.toContainSource('xy-selected-mint-bg');
+    }
+    expect(chapterNavigationStylesSource).toContainSource('border-[#AEE7F1] bg-[#CDEFF6]');
+    expect(chapterNavigationStylesSource).toContainSource('${CHAPTER_NAV_SELECTED_BORDER_CLASS} bg-white');
+    expect(chapterNavigationStylesSource).toContainSource('before:bg-[#7DCDDC]');
+    expect(constantsSource).toContainSource('border-[#AEE7F1] bg-[#CDEFF6]');
+    expect(constantsSource).toContainSource('hover:bg-[#BFEAF3]');
     expect(constantsSource).toContainSource(
       "export const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';",
     );
@@ -416,11 +430,11 @@ describe('WorkbenchLibraryPanel outline flows', () => {
       "export const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#6f7e90]';",
     );
 
-    expect(chapterSidebarSource).toContainSource('const VolumeFolderIcon = volume.isExpanded ? FolderOpen : Folder;');
-    expect(chapterSidebarSource).toContainSource('<VolumeFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />');
-    expect(publishedSidebarSource).toContainSource('const VolumeFolderIcon = expanded ? FolderOpen : Folder;');
+    expect(chapterSidebarSource).toContainSource('<ChevronDown className={CHAPTER_NAV_VOLUME_OPEN_ICON_CLASS} />');
+    expect(publishedSidebarSource).toContainSource('<ChevronDown className={CHAPTER_NAV_VOLUME_OPEN_ICON_CLASS} />');
     expect(publishedSidebarSource).toContainSource('aria-expanded={expanded}');
-    expect(publishedSidebarSource).toContainSource("chapter.isSelected ? 'border-transparent xy-selected-mint-bg'");
+    expect(publishedSidebarSource).toContainSource('chapter.isSelected');
+    expect(publishedSidebarSource).toContainSource('? CHAPTER_NAV_ROW_SELECTED_CLASS');
     expect(publishedSidebarSource).not.toContainSource('volumeHasSelectedChapter');
     expect(publishedSidebarSource).not.toContainSource('border-orange-400 bg-orange-50');
     expect(publishedSidebarSource).not.toContainSource('text-orange-600');

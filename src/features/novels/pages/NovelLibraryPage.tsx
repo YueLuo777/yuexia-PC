@@ -13,7 +13,7 @@ import type { Novel } from '@/features/novels/model/novelTypes';
 import { readWritingSummary, WRITING_STATS_UPDATED_EVENT } from '@/shared/stats/writingStats';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { AutoFitText } from '@/shared/ui/AutoFitText';
-import { AppModalShell } from '@/shared/ui/AppModalShell';
+import { FormDialog } from '@/shared/ui/FormDialog';
 
 import {
   type BtnColor,
@@ -242,7 +242,7 @@ export function NovelLibraryPage() {
         )}
 
         <div className="mb-7 mt-7 flex items-center justify-between gap-4">
-          <div className="xy-category-capsules min-w-0">
+          <div className="xy-category-capsules xy-novel-category-capsules min-w-0">
             {filters.map((filter) => (
               <button
                 key={filter}
@@ -381,43 +381,19 @@ export function NovelLibraryPage() {
         }}
       />
 
-      <AppModalShell
+      <FormDialog
         title="修改作品名称"
         isOpen={renameTarget !== null}
         onClose={() => setRenameTarget(null)}
+        onConfirm={confirmRename}
+        label="作品名称"
+        value={renameTarget?.title ?? ''}
+        onValueChange={(title) => renameTarget && setRenameTarget({ ...renameTarget, title })}
+        inputId="novel-rename-title"
+        confirmDisabled={!renameTarget?.title.trim()}
         widthClass="w-[360px]"
-        heightClass="h-auto"
         storageId="novel_rename"
-        contentClassName="p-6"
-      >
-        {renameTarget ? (
-          <>
-            <input
-              value={renameTarget.title}
-              onChange={(event) => setRenameTarget({ ...renameTarget, title: event.target.value })}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') confirmRename();
-              }}
-              className="mb-5 w-full rounded-md border border-gray-200 px-3 py-2 text-sm transition-colors focus:border-brand"
-              autoFocus
-            />
-            <div className="flex items-center justify-end gap-3">
-              <button
-                onClick={() => setRenameTarget(null)}
-                className="px-4 py-2 text-sm text-gray-500 transition-colors hover:text-gray-700"
-              >
-                取消
-              </button>
-              <button
-                onClick={confirmRename}
-                className="rounded-lg bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark"
-              >
-                确认
-              </button>
-            </div>
-          </>
-        ) : null}
-      </AppModalShell>
+      />
     </div>
   );
 }

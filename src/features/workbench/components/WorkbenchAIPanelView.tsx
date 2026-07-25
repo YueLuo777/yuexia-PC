@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck -- pure extracted view.
 import React from 'react';
+import { AssociationSegmentedControl } from '@/shared/ui/AssociationSegmentedControl';
 import { WorkbenchReplaceBodyButton } from './WorkbenchReplaceBodyButton';
 export function renderWorkbenchAIPanelView(scope: Record<string, any>) {
   const {
@@ -111,44 +112,31 @@ export function renderWorkbenchAIPanelView(scope: Record<string, any>) {
           onDeleteSession={deleteSession}
           onResetSessions={resetSessions}
         />
-        <div className="xy-ai-panel-link-row flex items-start justify-between gap-2 text-xs text-gray-400">
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <div className="flex min-w-0 flex-nowrap items-center gap-2">
-              <div className="flex h-10 shrink-0 overflow-hidden rounded-xl border border-[#08B3D9] bg-white shadow-sm">
-                <div className="flex w-12 items-center justify-center border-r border-[#08B3D9]/30 bg-[#E9FAFE] text-sm font-black text-[#078BA9]">
-                  关联
-                </div>
-                <button
-                  type="button"
-                  onClick={toggleChapterContext}
-                  className={`w-24 px-2 text-sm font-bold transition-colors ${
-                    hasLinkedChapter
-                      ? 'bg-[#08B3D9] text-white'
-                      : 'bg-white text-gray-600 hover:bg-[#E9FAFE] hover:text-[#08B3D9]'
-                  }`}
-                >
-                  {hasLinkedChapter ? `已关联${chapterContextLabel}` : chapterContextLabel}
-                </button>
-                <button
-                  type="button"
-                  onClick={openLinkedContextLibrary}
-                  className={`w-28 border-l border-[#08B3D9]/30 px-2 text-sm font-bold transition-colors ${
-                    hasLinkedContext
-                      ? 'bg-[#08B3D9] text-white'
-                      : 'bg-white text-gray-600 hover:bg-[#E9FAFE] hover:text-[#08B3D9]'
-                  }`}
-                >
-                  {hasLinkedContext ? '已关联资料' : '资料'}
-                </button>
-              </div>
-              {shouldShowActiveLinkStats && (
-                <span className="min-w-0 shrink text-sm font-bold text-slate-400">
-                  关联 <WordCountText value={activeLinkWordCount} compact />
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
+        <AssociationSegmentedControl
+          segments={[
+            {
+              id: 'chapter',
+              label: hasLinkedChapter ? `已关联${chapterContextLabel}` : chapterContextLabel,
+              active: hasLinkedChapter,
+              onClick: toggleChapterContext,
+              minWidthClassName: 'w-24',
+            },
+            {
+              id: 'materials',
+              label: hasLinkedContext ? '已关联资料' : '资料',
+              active: hasLinkedContext,
+              onClick: openLinkedContextLibrary,
+              minWidthClassName: 'w-28',
+            },
+          ]}
+          meta={
+            shouldShowActiveLinkStats ? (
+              <>
+                关联 <WordCountText value={activeLinkWordCount} compact />
+              </>
+            ) : undefined
+          }
+        />
         <div className="xy-ai-panel-input-row">
           <AiInlineInput
             ref={inputTextareaRef}

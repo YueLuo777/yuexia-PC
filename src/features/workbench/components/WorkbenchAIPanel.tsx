@@ -12,6 +12,7 @@ import {
 } from '@/features/prompts/hooks/usePrompts';
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import { joinAiRequestSections, wrapAiRequestTag } from '@/features/workbench/model/workbenchAiRequestTagPolicy';
+import { createAiThinkingPlaceholder } from '@/features/workbench/model/workbenchAiThinkingProtocol';
 import {
   getBackgroundAiTask,
   startBackgroundAiTask,
@@ -369,12 +370,13 @@ export function WorkbenchAIPanel({
       role: 'user',
       content: text || `使用${contextTitle || '关联内容'}生成正文`,
     };
-    const assistantMessage: AiMessage = { id: nextMessageIdRef.current++, role: 'assistant', content: '正在生成...' };
+    const pendingOutput = createAiThinkingPlaceholder(0);
+    const assistantMessage: AiMessage = { id: nextMessageIdRef.current++, role: 'assistant', content: pendingOutput };
     const nextMessages = [...activeSession.messages, userMessage, assistantMessage];
     updateSession(sessionId, {
       input: '',
       messages: nextMessages,
-      output: '正在思考...',
+      output: pendingOutput,
       hasSentChapterContext: activeSession.hasSentChapterContext || Boolean(shouldAttachChapter),
     });
 
@@ -393,7 +395,7 @@ export function WorkbenchAIPanel({
       kind: 'chapterDraft',
       title: '作品编辑器 AI',
       input: userTextForAi,
-      initialOutput: '正在思考...',
+      initialOutput: pendingOutput,
       progressLabel: '正在生成',
       meta: {
         target: 'workbenchAiPanel',

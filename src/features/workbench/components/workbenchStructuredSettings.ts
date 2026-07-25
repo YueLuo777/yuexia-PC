@@ -123,7 +123,10 @@ export function parseStructuredSettingFields(body: string, fieldSet: StructuredS
   const sections = parseSectionedSettingBody(body);
   const fields = createEmptyStructuredSettingFields(fieldSet);
   fieldSet.fields.forEach((field) => {
-    fields[field.key] = sections[field.title] ?? '';
+    fields[field.key] =
+      sections[field.title] ??
+      field.legacyTitles?.map((title) => sections[title]).find((value) => value !== undefined) ??
+      '';
   });
   return fields;
 }
@@ -170,6 +173,11 @@ export function getStructuredSettingFieldSet(entry: WorkbenchLibraryEntry, setti
     const fieldSet = STRUCTURED_SETTING_FIELD_SETS.find((item) => item.id === setting.structuredFieldSetId);
     if (fieldSet) return fieldSet;
   }
+  const promptTypeMatchedFieldSet = STRUCTURED_SETTING_FIELD_SETS.find(
+    (fieldSet) =>
+      fieldSet.id.startsWith('prompt-') && fieldSet.matchAllTitles && setting?.type === fieldSet.entryType,
+  );
+  if (promptTypeMatchedFieldSet) return promptTypeMatchedFieldSet;
   const titleMatchedFieldSet = STRUCTURED_SETTING_FIELD_SETS.find(
     (fieldSet) => setting?.type === fieldSet.entryType && entry.title.trim() === fieldSet.entryTitle,
   );
@@ -183,7 +191,12 @@ export function getStructuredSettingFieldSet(entry: WorkbenchLibraryEntry, setti
     return (
       STRUCTURED_SETTING_FIELD_SETS.find(
         (fieldSet) =>
-          setting.type === fieldSet.entryType && fieldSet.fields.some((field) => sections[field.title] !== undefined),
+          setting.type === fieldSet.entryType &&
+          fieldSet.fields.some(
+            (field) =>
+              sections[field.title] !== undefined ||
+              field.legacyTitles?.some((title) => sections[title] !== undefined),
+          ),
       ) ?? null
     );
   }
@@ -202,12 +215,16 @@ export function getStructuredSettingFieldSetByDefaultTitle(type: string, title: 
 }
 
 export function getSettingImportFormatFieldSet(type: string, title: string) {
+  const normalizedType = normalizeSettingType(type);
+  const promptTypeFieldSet = STRUCTURED_SETTING_FIELD_SETS.find(
+    (fieldSet) =>
+      fieldSet.id.startsWith('prompt-') &&
+      fieldSet.matchAllTitles &&
+      normalizeSettingType(fieldSet.entryType) === normalizedType,
+  );
+  if (promptTypeFieldSet) return promptTypeFieldSet;
   const directFieldSet = getStructuredSettingFieldSetByDefaultTitle(type, title);
   if (directFieldSet) return directFieldSet;
-  const normalizedType = normalizeSettingType(type);
-  if (['正派势力', '反派势力', '中立势力', '其他势力'].includes(normalizedType)) {
-    return STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => fieldSet.id === 'faction-righteous-no-1') ?? null;
-  }
   if (normalizedType === '世界地图' && title.trim() === '危险区域') {
     return STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => fieldSet.id === 'faction-danger-zone') ?? null;
   }
@@ -315,10 +332,11 @@ export function buildSettingImportFormatTabs(options: BuildSettingImportFormatTa
     },
     ...(
       [
+        ['locations', '地点地图', 'setting:location'],
         ['factions', '势力设定', 'setting:faction'],
         ['items', '道具资源', 'setting:item'],
-        ['monsters', '怪物图鉴', 'setting:monster'],
         ['foreshadow', '伏笔线索', 'setting:foreshadow'],
+        ['monsters', '怪物图鉴', 'setting:monster'],
       ] as const
     ).map(([tabId, tabTitle, domain]) => ({
       id: tabId,

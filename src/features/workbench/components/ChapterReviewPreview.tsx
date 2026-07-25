@@ -20,7 +20,9 @@ import {
   REVIEW_PREVIEW_MIN_FONT_SIZE,
   REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS,
   REVIEW_PREVIEW_PARAGRAPH_EMPTY_CLASS,
+  REVIEW_PREVIEW_PARAGRAPH_GUTTER_CLASS,
   REVIEW_PREVIEW_PARAGRAPH_LIST_CLASS,
+  REVIEW_PREVIEW_PARAGRAPH_ROW_CLASS,
   REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS,
 } from './chapterEditorLayout';
 import type { ReviewPreviewWidthMode } from './chapterEditorLayout';
@@ -216,7 +218,7 @@ export function ChapterReviewPreview({
                 ) : (
                   <div className="flex h-full items-center justify-center px-6 text-center text-sm font-bold leading-6 text-slate-300">
                     {activeReviewChapter
-                      ? `未找到第${activeReviewChapter.serialNumber}章章纲。`
+                      ? `未找到第${activeReviewChapter.serialNumber}章 章纲。`
                       : '未选择章节，无法读取章纲。'}
                   </div>
                 )}
@@ -430,38 +432,49 @@ export function ChapterReviewPreview({
                               reviewAnnotationRefs.current[index] = node;
                             }}
                             key={`${index}-${paragraph.slice(0, 18)}`}
-                            className={`${REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS} ${
-                              selected
-                                ? REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS
-                                : paragraphAnnotations.length > 0
-                                  ? 'border-amber-300 bg-amber-50/30'
-                                  : REVIEW_PREVIEW_PARAGRAPH_EMPTY_CLASS
-                            }`}
+                            className={REVIEW_PREVIEW_PARAGRAPH_ROW_CLASS}
                           >
-                            <p className="whitespace-pre-wrap break-words" style={{ fontSize: reviewPreviewFontSize }}>
-                              {renderAnnotatedReviewParagraph(paragraph, paragraphAnnotations)}
-                            </p>
-                            {paragraphAnnotations.length > 0 ? (
-                              <div className={`${getReviewAnnotationNoteSpacingClass(paragraph)} space-y-2`}>
-                                {paragraphAnnotations.map((annotation) => (
-                                  <div
-                                    key={annotation.id}
-                                    className={`rounded-lg border px-3 py-2 text-xs font-bold leading-5 ${getReviewSeverityClass(annotation.severity)}`}
-                                  >
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <span className="font-black">{annotation.id}</span>
-                                      <span>{annotation.severity}</span>
-                                      <span>{annotation.type}</span>
-                                      <span>{annotation.action}</span>
+                            <span aria-hidden="true" className={REVIEW_PREVIEW_PARAGRAPH_GUTTER_CLASS}>
+                              <span className={selected ? 'text-[#078fb0]' : 'text-slate-300'}>{index + 1}</span>
+                            </span>
+                            <div
+                              data-review-paragraph-card="true"
+                              className={`${REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS} ${
+                                selected
+                                  ? REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS
+                                  : REVIEW_PREVIEW_PARAGRAPH_EMPTY_CLASS
+                              }`}
+                            >
+                              <p
+                                className="whitespace-pre-wrap break-words"
+                                style={{ fontSize: reviewPreviewFontSize }}
+                              >
+                                {renderAnnotatedReviewParagraph(paragraph, paragraphAnnotations)}
+                              </p>
+                              {paragraphAnnotations.length > 0 ? (
+                                <div className={`${getReviewAnnotationNoteSpacingClass(paragraph)} space-y-2`}>
+                                  {paragraphAnnotations.map((annotation) => (
+                                    <div
+                                      key={annotation.id}
+                                      className={`rounded-lg border px-3 py-2 text-xs font-bold leading-5 ${getReviewSeverityClass(annotation.severity)}`}
+                                    >
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <span className="font-black">{annotation.id}</span>
+                                        <span>{annotation.severity}</span>
+                                        <span>{annotation.type}</span>
+                                        <span>{annotation.action}</span>
+                                      </div>
+                                      {annotation.problem ? (
+                                        <div className="mt-1">问题：{annotation.problem}</div>
+                                      ) : null}
+                                      {annotation.suggestion ? (
+                                        <div className="mt-1">建议：{annotation.suggestion}</div>
+                                      ) : null}
                                     </div>
-                                    {annotation.problem ? <div className="mt-1">问题：{annotation.problem}</div> : null}
-                                    {annotation.suggestion ? (
-                                      <div className="mt-1">建议：{annotation.suggestion}</div>
-                                    ) : null}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : null}
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
                           </div>
                         );
                       })}

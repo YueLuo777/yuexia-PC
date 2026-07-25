@@ -66,6 +66,8 @@ export function AuditPromptEditorModal({
       zIndexClass="z-[290]"
       panelClassName="xy-audit-prompt-editor-modal"
       portalTarget={portalTarget}
+      defaultGeometry={{ x: 0, y: 0 }}
+      centerOnOpen
     >
         <AuditPromptEditorFields categories={categories} draft={draft} setDraft={setDraft} />
 

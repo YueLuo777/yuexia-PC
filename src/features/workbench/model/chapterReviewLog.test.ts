@@ -61,7 +61,9 @@ describe('chapterReviewLog', () => {
     expect(formatAiThinkingResponse('答案', '推理', -2, false)).toBe(
       '[[THINKING seconds=0 status=thinking]]\n推理\n[[/THINKING]]\n答案',
     );
-    expect(formatAiThinkingResponse('', '', 3, false)).toBe('正在思考...');
+    expect(formatAiThinkingResponse('', '', 3, false)).toBe(
+      '[[THINKING seconds=3 status=thinking]]\n\n[[/THINKING]]',
+    );
     expect(formatAiThinkingResponse('', '', 3, true)).toBe('');
   });
 

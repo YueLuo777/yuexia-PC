@@ -19,4 +19,11 @@ describe('AiRequestLogGroups', () => {
     expect(groupsSource).not.toContainSource('localStorage.setItem(storageKey');
     expect(layoutSource).toContainSource('defaultCollapsed={false}');
   });
+
+  it('collapses the whole log section instead of only clearing its content', () => {
+    const groupsSource = readSource('AiRequestLogGroups.tsx');
+
+    expect(groupsSource).toContainSource('(shouldFillSingleGroup && !collapsed)');
+    expect(groupsSource).toContainSource('className={`overflow-hidden rounded-2xl border border-slate-200 bg-white ${shouldFillGroup ?');
+  });
 });

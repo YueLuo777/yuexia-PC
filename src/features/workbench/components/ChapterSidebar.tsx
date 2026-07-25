@@ -1,8 +1,23 @@
-import { ChevronRight, Folder, FolderOpen } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react';
 
 import type { Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+
+import {
+  CHAPTER_NAV_ROW_BASE_CLASS,
+  CHAPTER_NAV_ROW_DEFAULT_CLASS,
+  CHAPTER_NAV_ROW_SELECTED_CLASS,
+  CHAPTER_NAV_SELECTED_PATH_CLASS,
+  CHAPTER_NAV_TREE_CLASS,
+  CHAPTER_NAV_VOLUME_CLOSED_ICON_CLASS,
+  CHAPTER_NAV_VOLUME_COUNT_CLASS,
+  CHAPTER_NAV_VOLUME_OPEN_ICON_CLASS,
+  CHAPTER_NAV_VOLUME_ROW_CLASS,
+  CHAPTER_SIDEBAR_HEADER_ACTION_CLASS,
+  getChapterConnectorHorizontalClass,
+  getChapterSelectedPathHeight,
+} from './chapterNavigationStyles';
 
 interface ChapterSidebarProps {
   volumes: Volume[];
@@ -47,11 +62,6 @@ const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 200;
 const CHAPTER_SIDEBAR_BOTTOM_ROW_CLASS = 'flex items-center gap-1.5 border-t border-[#e6e8ec] px-2 py-2';
 const CHAPTER_SIDEBAR_BOTTOM_BUTTON_CLASS =
   'flex h-8 min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-md px-1.5 text-sm leading-none text-white transition-colors';
-const WORKBENCH_FOLDER_GROUP_BUTTON_BASE_CLASS =
-  'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors';
-const WORKBENCH_FOLDER_GROUP_DEFAULT_TONE_CLASS = 'border-[#BDEEF7] xy-flow-group-bg';
-const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';
-const WORKBENCH_FOLDER_GROUP_COUNT_CLASS = 'rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#6f7e90]';
 const CHAPTER_CONTEXT_MENU_CLASS =
   'fixed z-[100] w-[136px] overflow-visible rounded-[8px] border border-[#e5e7eb] bg-white py-1 shadow-[0_10px_28px_rgba(15,23,42,0.14)]';
 const CHAPTER_CONTEXT_MENU_ITEM_CLASS =
@@ -163,7 +173,7 @@ export function ChapterSidebar({
           {workType !== 'script' && (
             <button
               onClick={onTogglePublished}
-              className="flex h-8 items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-2 text-sm text-white transition-colors hover:bg-[#0798b8]"
+              className={CHAPTER_SIDEBAR_HEADER_ACTION_CLASS}
               title="已发布"
             >
               {showPublished ? '收回已发布' : '展开已发布'}
@@ -175,11 +185,11 @@ export function ChapterSidebar({
       <div className="editor-scrollbar flex-1 overflow-y-auto px-1 py-2">
         {volumes.map((volume) => {
           const chapters = sortedUnpublishedChapters(volume);
-          const VolumeFolderIcon = volume.isExpanded ? FolderOpen : Folder;
+          const selectedChapterIndex = chapters.findIndex((chapter) => chapter.isSelected);
           return (
             <div key={volume.id} className="mb-1">
               <div
-                className={`${WORKBENCH_FOLDER_GROUP_BUTTON_BASE_CLASS} ${WORKBENCH_FOLDER_GROUP_DEFAULT_TONE_CLASS}`}
+                className={CHAPTER_NAV_VOLUME_ROW_CLASS}
                 onContextMenu={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
@@ -191,9 +201,13 @@ export function ChapterSidebar({
                   className="flex min-w-0 flex-1 items-center gap-2 text-left"
                   aria-expanded={volume.isExpanded}
                 >
-                  <VolumeFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
+                  {volume.isExpanded ? (
+                    <ChevronDown className={CHAPTER_NAV_VOLUME_OPEN_ICON_CLASS} />
+                  ) : (
+                    <ChevronRight className={CHAPTER_NAV_VOLUME_CLOSED_ICON_CLASS} />
+                  )}
                   <span className="min-w-0 flex-1 truncate leading-none">{volume.name}</span>
-                  <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>
+                  <span className={CHAPTER_NAV_VOLUME_COUNT_CLASS}>
                     {volume.chapters.length}
                     {chapterUnit}
                   </span>
@@ -212,10 +226,19 @@ export function ChapterSidebar({
               </div>
 
               {volume.isExpanded && (
-                <div className="mt-0.5 space-y-0.5">
+                <div className={CHAPTER_NAV_TREE_CLASS}>
+                  {selectedChapterIndex >= 0 ? (
+                    <span
+                      aria-hidden="true"
+                      data-chapter-selected-path="true"
+                      className={CHAPTER_NAV_SELECTED_PATH_CLASS}
+                      style={{ height: getChapterSelectedPathHeight(selectedChapterIndex) }}
+                    />
+                  ) : null}
                   {chapters.map((chapter) => (
                     <div
                       key={chapter.id}
+                      aria-current={chapter.isSelected ? 'page' : undefined}
                       onClick={() => onSelectChapter(volume.id, chapter.id)}
                       onContextMenu={(event) => {
                         event.preventDefault();
@@ -227,13 +250,17 @@ export function ChapterSidebar({
                           chapterId: chapter.id,
                         });
                       }}
-                      className={`xy-chapter-sidebar-row group relative flex w-full cursor-pointer items-center gap-2 rounded-[8px] border px-1 py-1 text-left transition-colors ${
+                      className={`xy-chapter-sidebar-row ${CHAPTER_NAV_ROW_BASE_CLASS} ${
                         chapter.isSelected
-                          ? 'border-transparent xy-selected-mint-bg'
-                          : 'border-transparent hover:bg-gray-50'
+                          ? CHAPTER_NAV_ROW_SELECTED_CLASS
+                          : CHAPTER_NAV_ROW_DEFAULT_CLASS
                       }`}
                     >
-                      <span className="flex-1 truncate whitespace-nowrap text-sm font-black text-gray-700">
+                      <span
+                        aria-hidden="true"
+                        className={getChapterConnectorHorizontalClass(chapter.isSelected)}
+                      />
+                      <span className="flex-1 truncate whitespace-nowrap text-sm font-black text-inherit">
                         第{chapter.serialNumber}
                         {chapterUnit}
                         {chapter.title ? ` ${chapter.title}` : ''}

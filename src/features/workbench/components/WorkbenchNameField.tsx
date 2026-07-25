@@ -5,6 +5,7 @@ type WorkbenchNameFieldProps = {
   disabled?: boolean;
   title?: string;
   testId?: string;
+  width?: number;
   onValueChange: (value: string) => void;
 };
 
@@ -15,11 +16,17 @@ export function WorkbenchNameField({
   disabled = false,
   title,
   testId,
+  width,
   onValueChange,
 }: WorkbenchNameFieldProps) {
   return (
-    <div data-testid={testId} className="xy-workbench-name-field">
-      <span aria-hidden="true" className="xy-workbench-name-field-caption">
+    <div
+      data-testid={testId}
+      data-workbench-header-control="true"
+      className="xy-workbench-name-field"
+      style={width ? { flexBasis: width, width, minWidth: width, maxWidth: width } : undefined}
+    >
+      <span aria-hidden="true" className="xy-border-embedded-transparent-backplate xy-workbench-name-field-caption">
         {label}
       </span>
       <input

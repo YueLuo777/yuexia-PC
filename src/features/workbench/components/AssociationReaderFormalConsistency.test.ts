@@ -24,5 +24,8 @@ describe('formal association reader consistency', () => {
     }
     expect(detailOutline).not.toContain('role="checkbox"');
     expect(detailOutline).not.toContain('setDetailOutlineReaderPreviewId(item.id);\n                                    if');
+    expect(detailOutline).not.toContain("? '设定导航'");
+    expect(detailOutline).not.toContain("? '角色导航'");
+    expect(detailOutline).not.toContain(": '前文章纲'}");
   });
 });

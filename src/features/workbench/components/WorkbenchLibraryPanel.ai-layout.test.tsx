@@ -109,17 +109,30 @@ describe('WorkbenchLibraryPanel AI and shared layout contracts', () => {
     expect(panelSource).toContainSource('【参考资料结束：用户关联脑洞】');
     expect(panelSource).toContainSource('function formatSettingLinkedContextForAi');
     expect(panelSource).toContainSource(
-      "if (context.source === 'brainstorm') return formatBrainstormReferenceForAi(context.title, text);",
+      "if (context.source === 'brainstorm') return formatBrainstormReferenceForAi(context.title, context.text);",
     );
-    expect(panelSource).not.toContainSource(
-      "const tagName = context.source === 'brainstorm' ? '关联脑洞' : '待处理设定';",
-    );
+    expect(panelSource).toContainSource("usage: '本次处理对象' | '参考资料';");
+    expect(panelSource).toContainSource("'<关联设定>'");
+    expect(panelSource).toContainSource('`<设定 用途="${item.usage}" 路径="${path}">`');
+    expect(panelSource).toContainSource('function formatSettingLinkedContextForDisplay');
+    expect(panelSource).not.toContainSource("wrapAiRequestTag('待处理设定'");
     expect(panelSource).not.toContainSource("wrapAiRequestTag('关联脑洞'");
-    expect(panelSource).toContainSource('return wrapAiRequestTag(tagName, text, { 标题: title });');
     expect(panelSource).toContainSource('function formatSettingUserRequirementForAi');
     expect(panelSource).toContainSource("return wrapAiRequestTag('修改要求', text);");
     expect(settingRequestSource).toContainSource(
-      'const linkedSettingContext = formatSettingLinkedContextForAi(getActiveLinkedSettingSnapshot());',
+      'const linkedSettingContext = buildSettingLinkedContextPayload(getActiveLinkedSettingSnapshot()).aiText;',
+    );
+    expect(panelSource).toContainSource(
+      'const linkedSettingWordCount = countSettingLinkedContextWords(currentLinkedSettingContext);',
+    );
+    expect(panelSource).toContainSource(
+      'contextWordCount: hasLinkedSettingContext ? linkedSettingPayload.wordCount : 0,',
+    );
+    expect(panelSource).not.toContainSource(
+      "contextWordCount: countTextWords(hasLinkedSettingContext ? linkedSettingContext.text : ''),",
+    );
+    expect(panelSource).toContainSource(
+      "contextText: hasLinkedSettingContext ? linkedSettingPayload.displayText : '',",
     );
     expect(settingRequestSource).toContainSource(
       'const userRequirement = formatSettingUserRequirementForAi(userText);',
@@ -176,7 +189,7 @@ describe('WorkbenchLibraryPanel AI and shared layout contracts', () => {
       "const shouldFillWeightedGroup = typeof fillGroupWeight === 'number' && fillGroupWeight > 0 && !collapsed;",
     );
     expect(logGroupsSource).toContainSource(
-      'const shouldFillGroup = shouldFillSingleGroup || (fillGroupId === group.id && !collapsed) || (fillLastGroupIndex === groupIndex && !collapsed) || shouldFillWeightedGroup;',
+      'const shouldFillGroup = (shouldFillSingleGroup && !collapsed) || (fillGroupId === group.id && !collapsed) || (fillLastGroupIndex === groupIndex && !collapsed) || shouldFillWeightedGroup;',
     );
     expect(logGroupsSource).toContainSource('style={fillGroupStyle}');
     expect(logGroupsSource).toContainSource(

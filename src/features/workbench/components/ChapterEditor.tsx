@@ -124,6 +124,7 @@ export function ChapterEditor({
   chapter,
   volumeName,
   content,
+  saveStatus = 'idle',
   lastSavedAt,
   allChapters,
   volumes = [],
@@ -134,6 +135,8 @@ export function ChapterEditor({
   onUpdateChapterContent,
   onRenameChapter,
   onChangeContent,
+  onFlushSave = () => true,
+  onRetrySave = () => undefined,
   onUpdateSerialNumber,
   onDeleteChapter,
   onOpenFind,
@@ -251,6 +254,7 @@ export function ChapterEditor({
     findText,
     replaceText,
     onChangeContent,
+    onFlushSave,
     onOpenFind,
     onToast: showToast,
     setIsSymbolReplaceOpen,
@@ -269,6 +273,7 @@ export function ChapterEditor({
   const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;
   const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;
   const reviewModalDraggable = useDraggableModal('chapter_review_panel');
+  const statusModalDraggable = useDraggableModal('chapter_status_panel');
   useTopModalEscape(isReviewLogOpen, () => setIsReviewLogOpen(false));
   useTopModalEscape(Boolean(reviewManagementModal), () => setReviewManagementModal(null));
   useTopModalEscape(!embeddedMode && isReviewOpen && !isReviewLogOpen && !reviewManagementModal, () =>
@@ -406,7 +411,7 @@ export function ChapterEditor({
   const applyTextAuditContent = useApplyTextAuditContent({
     activeReviewChapter,
     onUpdateChapterContent,
-    setReviewRevisedDraft,
+    clearReviewAiOutput,
     onToast: setCopyToast,
   });
   const setReviewModelIdWithStorage = (nextModelId: string) => {
@@ -583,9 +588,11 @@ export function ChapterEditor({
     isSmartFormatOpen,
     isSymbolReplaceOpen,
     isTitleOptimizeOpen,
+    saveStatus,
     lastSavedAt,
     onDeleteChapter,
     onOpenFind,
+    onRetrySave,
     onRenameChapter,
     onUpdateSerialNumber,
     polishPreviewParagraphs,
@@ -667,6 +674,7 @@ export function ChapterEditor({
     showStatusUpdatePanel,
     statusDraft,
     statusLeftResizeHandle,
+    statusModalDraggable,
     statusPageLeftWidth,
     statusPageRightWidth,
     statusPreviewChapters,

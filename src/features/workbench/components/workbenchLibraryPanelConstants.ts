@@ -4,7 +4,7 @@ import {
 } from '@/features/workbench/model/workbenchSharedAiRightWidth';
 
 export const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS =
-  'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] xy-flow-group-bg px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors';
+  'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#AEE7F1] bg-[#CDEFF6] px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors hover:bg-[#BFEAF3]';
 export const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';
 export const WORKBENCH_FOLDER_GROUP_COUNT_CLASS =
   'rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#6f7e90]';

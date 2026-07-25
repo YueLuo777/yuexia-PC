@@ -27,19 +27,7 @@ export function parseAiChatTurns(content: string) {
   return turns;
 }
 
-export function formatAiThinkingResponse(content: string, reasoning: string, seconds: number, done: boolean) {
-  const reasoningText = reasoning.trim();
-  const body = content.trimStart();
-  if (!reasoningText) return body || (done ? '' : '正在思考...');
-  return [
-    `[[THINKING seconds=${Math.max(0, seconds)} status=${done ? 'done' : 'thinking'}]]`,
-    reasoningText,
-    '[[/THINKING]]',
-    body ? `\n${body}` : '',
-  ]
-    .join('\n')
-    .trimEnd();
-}
+export { formatAiThinkingResponse } from '@/features/workbench/model/workbenchAiThinkingProtocol';
 
 export function stripAiThinkingBlock(content: string) {
   return content
