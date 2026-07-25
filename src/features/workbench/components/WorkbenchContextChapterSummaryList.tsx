@@ -338,7 +338,7 @@ export function WorkbenchContextChapterSummaryList({
                                 />
                                 <ContextSelectionDot checked={selectedOutline} disabled locked={outlineLocked} />
                                 <ContextSourceRowWordStatus
-                                  label={`第${row.serialNumber}章章纲`}
+                                  label={`第${row.serialNumber}章 章纲`}
                                   value={outlineWordCount}
                                   muted={!outlineLocked}
                                 />

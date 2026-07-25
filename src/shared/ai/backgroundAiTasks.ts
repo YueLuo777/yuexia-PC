@@ -178,6 +178,14 @@ export function getBackgroundAiTasksSnapshot() {
   return tasks;
 }
 
+export function clearBackgroundAiTaskHistory() {
+  controllers.forEach((controller) => controller.abort());
+  controllers.clear();
+  tasks = [];
+  flushPersistTasks();
+  listeners.forEach((listener) => listener());
+}
+
 export function getBackgroundAiTask(taskId: string) {
   return tasks.find((task) => task.id === taskId) ?? null;
 }

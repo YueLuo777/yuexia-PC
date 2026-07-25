@@ -283,7 +283,7 @@ export function CapsuleSelect({
         >
           {floatingLabel && (
             <span
-              className={`pointer-events-none absolute left-5 top-0 z-20 max-w-[128px] -translate-y-1/2 px-1 text-[12px] font-black leading-none text-slate-800 ${disabled ? 'bg-slate-100' : 'bg-white'}`}
+              className={`xy-border-embedded-transparent-backplate pointer-events-none absolute left-5 top-0 z-20 max-w-[128px] -translate-y-1/2 text-[12px] font-black leading-none text-slate-800 ${disabled ? '[--xy-floating-backplate-bg:#f1f5f9]' : ''}`}
             >
               {floatingLabel}
             </span>
@@ -359,7 +359,7 @@ export function CapsuleSelect({
           } ${connectedDropdownOpen ? `${inlineActionShape.connectedControlRadius} border-b-transparent` : ''}`}
         >
           <span
-            className={`pointer-events-none absolute left-5 top-0 z-20 max-w-[128px] -translate-y-1/2 px-1 text-[12px] font-black leading-none text-slate-800 ${disabled ? 'bg-white' : 'bg-white'}`}
+            className="xy-border-embedded-transparent-backplate pointer-events-none absolute left-5 top-0 z-20 max-w-[128px] -translate-y-1/2 text-[12px] font-black leading-none text-slate-800"
           >
             {floatingLabel}
           </span>

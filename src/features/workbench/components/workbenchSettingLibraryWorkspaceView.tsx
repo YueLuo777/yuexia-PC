@@ -1,4 +1,7 @@
 import React from 'react';
+import { EmptyState } from '@/shared/ui/EmptyState';
+
+import { WorkbenchSettingPanelTabs } from './WorkbenchSettingStatusPanel';
 
 type ViewScope = Record<string, unknown>;
 
@@ -11,6 +14,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
     RoleBaseStateEditor,
     SETTING_TAB,
     WorkbenchLibrarySidebar,
+    WorkbenchSettingTreeSidebar,
     WorkbenchSettingEditor,
     activeBrainstormOutputScrollIndex,
     activeIsBrainstorm,
@@ -19,6 +23,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
     activeSettingWorkspaceType,
     activeStructuredSettingTab,
     activeTab,
+    activeTabConfig,
     aiInput,
     beginLibraryEntryPointerDrag,
     brainstormOutputFontSize,
@@ -55,6 +60,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
     getPreviewedLibraryGroupEntries,
     getTemporaryBrainstormTitle,
     groupedSettingEntries,
+    getSettingTypeWorkspaceDomain,
     handleBrainstormOutputTextareaScroll,
     handleLibraryAiInputKeyDown,
     handleLibraryCategoryDragLeave,
@@ -74,6 +80,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
     openCategoryMenu,
     openEntryMenu,
     openSettingCreateDialog,
+    outlineSettingDomain,
     roleEntries,
     roleTextFontSize,
     roleTypeOptions,
@@ -92,22 +99,79 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
     setIsBrainstormRecycleOpen,
     setSelectedIdForTab,
     settingLibraryMode,
+    settingGroupOptions,
+    settingEntries,
+    settingTreeDomains,
+    settingTypeOptions,
     settingPreviewFontSize,
-    settingWorkspaceTopTabs,
+    selectSettingWorkspaceDomain,
     showBrainstormOutputSelection,
     stopLibraryAiMessage,
     stringifySettingContent,
     toggleBrainstormOutputPreviewSelected,
     updateEntry,
+    updateActiveTabConfig,
     updateLibraryEntryPointerPreview,
     updateOutlineCharacterRole,
     updateStructuredSettingField,
   } = scope;
 
+  const showFormalSettingTree = activeTab === SETTING_TAB && !activeIsBrainstorm;
+  const settingPanelMode = activeTabConfig.settingPanelMode === 'status' ? 'status' : 'setting';
+  const settingPendingStatusCount =
+    currentSelectedRole?.pendingStatusUpdates?.length ?? currentSelectedSetting?.pendingStatusUpdates?.length ?? 0;
+
+  const onSettingGroupChange = (type: string) => {
+    if (!settingGroupOptions.includes(type)) return;
+    if (currentSelectedEntry && currentSelectedSetting) {
+      updateEntry(currentSelectedEntry.id, {
+        content: stringifySettingContent({ ...currentSelectedSetting, type }),
+      });
+      setExpandedSettingTypes((current: Set<string>) => new Set(current).add(type));
+      return;
+    }
+    updateActiveTabConfig({ typeDraft: type });
+  };
+
   return (
     <>
-      {settingWorkspaceTopTabs}
-      <WorkbenchLibrarySidebar
+      {showFormalSettingTree ? (
+        <WorkbenchSettingTreeSidebar
+          domains={settingTreeDomains}
+          activeDomainId={outlineSettingDomain}
+          settingEntries={settingEntries}
+          roleEntries={roleEntries}
+          settingTypeOptions={settingTypeOptions}
+          roleTypeOptions={roleTypeOptions}
+          selectedEntryId={currentSelectedEntry?.id}
+          expandedSettingTypes={expandedSettingTypes}
+          expandedRoleTypes={expandedRoleTypes}
+          setExpandedSettingTypes={setExpandedSettingTypes}
+          setExpandedRoleTypes={setExpandedRoleTypes}
+          getSettingTypeWorkspaceDomain={getSettingTypeWorkspaceDomain}
+          onSelectDomain={selectSettingWorkspaceDomain}
+          onSelectEntry={setSelectedIdForTab}
+          onOpenCategoryMenu={openCategoryMenu}
+          onOpenEntryMenu={openEntryMenu}
+          onOpenCreateDialog={openSettingCreateDialog}
+          onScroll={() => handleSettingSidebarScroll('setting-sidebar')}
+          scrollActive={activeSettingSidebarScrollKey === 'setting-sidebar'}
+          libraryDropTarget={libraryDropTarget}
+          draggingLibraryEntry={draggingLibraryEntry}
+          libraryPointerSuppressClickRef={libraryPointerSuppressClickRef}
+          getPreviewedGroupEntries={getPreviewedLibraryGroupEntries}
+          onCategoryDragOver={handleLibraryCategoryDragOver}
+          onCategoryDragLeave={handleLibraryCategoryDragLeave}
+          onCategoryDrop={handleLibraryCategoryDrop}
+          onEntryDragStart={handleLibraryEntryDragStart}
+          onEntryDragOver={handleLibraryEntryDragOver}
+          onEntryDrop={handleLibraryEntryDrop}
+          onEntryDragEnd={handleLibraryEntryDragEnd}
+          onEntryPointerDown={beginLibraryEntryPointerDrag}
+          onEntryPointerMove={updateLibraryEntryPointerPreview}
+          onEntryPointerUp={finishLibraryEntryPointerDrag}
+        />
+      ) : <WorkbenchLibrarySidebar
         activeTab={activeTab}
         effectiveLibraryTab={effectiveLibraryTab}
         activeIsSettingLike={activeIsSettingLike}
@@ -123,7 +187,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
         currentSelectedEntryId={currentSelectedEntry?.id}
         brainstormRecycleCount={brainstormRecycleEntries.length}
         libraryPointerSuppressClickRef={libraryPointerSuppressClickRef}
-        style={activeTab === SETTING_TAB && !activeIsBrainstorm ? { gridColumn: 1, gridRow: 2 } : undefined}
+        style={undefined}
         getPreviewedLibraryGroupEntries={getPreviewedLibraryGroupEntries}
         getEntryWordCount={getLibrarySidebarEntryWordCount}
         getEntryType={getLibrarySidebarEntryType}
@@ -145,12 +209,21 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
         finishLibraryEntryPointerDrag={finishLibraryEntryPointerDrag}
         openSettingCreateDialog={openSettingCreateDialog}
         setIsBrainstormRecycleOpen={setIsBrainstormRecycleOpen}
-      />
+      />}
       {leftResizeHandle}
       <main
         className={`min-w-0 flex min-h-0 flex-col bg-white ${settingLibraryMode === 'advanced' ? 'border-r border-gray-100' : ''}`}
-        style={activeTab === SETTING_TAB && !activeIsBrainstorm ? { gridColumn: 3, gridRow: 2 } : undefined}
+        style={showFormalSettingTree ? { gridColumn: 3, gridRow: 1 } : undefined}
       >
+        {showFormalSettingTree ? (
+          <div className="flex h-12 shrink-0 items-center justify-end border-b border-slate-100 px-4">
+            <WorkbenchSettingPanelTabs
+              mode={settingPanelMode}
+              pendingCount={settingPendingStatusCount}
+              onChange={(mode) => updateActiveTabConfig({ settingPanelMode: mode })}
+            />
+          </div>
+        ) : null}
         {isOutlineCharacterScope ? (
           currentSelectedEntry && currentSelectedRole ? (
             <RoleBaseStateEditor
@@ -165,9 +238,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
               onRoleChange={updateOutlineCharacterRole}
             />
           ) : (
-            <div className="flex h-full items-center justify-center text-sm text-gray-400">
-              点击左侧“新建角色”开始创建角色
-            </div>
+            <EmptyState title="暂无角色" description="点击左侧“新建角色”开始创建角色" />
           )
         ) : activeIsBrainstorm ? (
           <BrainstormPreviewEditor
@@ -195,6 +266,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
             setActiveStructuredSettingTab={setActiveStructuredSettingTab}
             activeSettingSidebarScrollKey={activeSettingSidebarScrollKey}
             activeSettingWorkspaceType={activeSettingWorkspaceType}
+            settingGroupOptions={settingGroupOptions}
             settingPreviewFontSize={settingPreviewFontSize}
             settingNameFieldSpec={fieldSizeSpecs.settingName}
             setActiveLibraryFontTarget={setActiveLibraryFontTarget}
@@ -202,6 +274,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
             updateStructuredSettingField={updateStructuredSettingField}
             handleSettingSidebarScroll={handleSettingSidebarScroll}
             createEditableSettingEntry={createEditableSettingEntry}
+            onSettingGroupChange={onSettingGroupChange}
           />
         )}
       </main>

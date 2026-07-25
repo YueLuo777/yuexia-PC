@@ -91,6 +91,23 @@ export function SystemSettingsModal({
     void refreshWindowSettings();
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen || selectedTab !== 'window') return;
+    let refreshTimer = 0;
+    const refreshCurrentBounds = () => {
+      window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(async () => {
+        const result = await window.xinyuexiaWindow?.readSettings();
+        if (result) setWindowSettings(result);
+      }, 80);
+    };
+    window.addEventListener('resize', refreshCurrentBounds);
+    return () => {
+      window.clearTimeout(refreshTimer);
+      window.removeEventListener('resize', refreshCurrentBounds);
+    };
+  }, [isOpen, selectedTab]);
+
   if (!isOpen) return null;
 
   const selectIcon = async () => {
@@ -163,19 +180,37 @@ export function SystemSettingsModal({
       setStatus('当前运行环境不支持窗口大小记忆设置。');
       return;
     }
-    const result = await window.xinyuexiaWindow.updateSettings({ rememberSize });
+    let result = await window.xinyuexiaWindow.updateSettings({ rememberSize });
+    if (!rememberSize && window.xinyuexiaWindow.applyBoundsPreset) {
+      result = await window.xinyuexiaWindow.applyBoundsPreset(result.startupBounds);
+    }
     setWindowSettings(result);
-    setStatus(rememberSize ? '已开启窗口大小记忆。' : '已关闭窗口大小记忆，下次启动会使用默认大小。');
+    setStatus(
+      rememberSize
+        ? '窗口大小记忆已开启，固定启动分辨率暂时失效。'
+        : `窗口大小记忆已关闭，下次将使用 ${result.startupBounds.width} × ${result.startupBounds.height}。`,
+    );
   };
 
-  const resetWindowBounds = async () => {
-    if (!window.xinyuexiaWindow?.resetBounds) {
-      setStatus('当前运行环境不支持恢复默认窗口大小。');
+  const updateStartMaximized = async (startMaximized: boolean) => {
+    if (!window.xinyuexiaWindow?.updateSettings) {
+      setStatus('当前运行环境不支持启动时最大化设置。');
       return;
     }
-    const result = await window.xinyuexiaWindow.resetBounds();
+    const result = await window.xinyuexiaWindow.updateSettings({ startMaximized });
     setWindowSettings(result);
-    setStatus('已恢复默认窗口大小。');
+    setStatus(startMaximized ? '已开启启动时最大化，当前窗口也已最大化。' : '已关闭启动时最大化，下次将按普通窗口设置打开。');
+  };
+
+  const applyStartupWindowBounds = async (bounds: { width: number; height: number }) => {
+    if (!window.xinyuexiaWindow?.updateSettings || !window.xinyuexiaWindow.applyBoundsPreset) {
+      setStatus('当前运行环境不支持固定启动分辨率。');
+      return;
+    }
+    await window.xinyuexiaWindow.updateSettings({ rememberSize: false, startMaximized: false, startupBounds: bounds });
+    const result = await window.xinyuexiaWindow.applyBoundsPreset(bounds);
+    setWindowSettings(result);
+    setStatus(`启动分辨率已设为 ${bounds.width} × ${bounds.height}，并已应用到当前窗口。`);
   };
 
   return (
@@ -298,8 +333,9 @@ export function SystemSettingsModal({
             {selectedTab === 'window' && (
               <WindowSettingsCompactSection
                 settings={windowSettings}
-                onToggleRemember={() => void updateRememberWindowSize(!(windowSettings?.rememberSize ?? true))}
-                onResetBounds={() => void resetWindowBounds()}
+                onToggleRemember={() => void updateRememberWindowSize(!(windowSettings?.rememberSize ?? false))}
+                onToggleStartMaximized={() => void updateStartMaximized(!(windowSettings?.startMaximized ?? false))}
+                onApplyStartupBounds={(bounds) => void applyStartupWindowBounds(bounds)}
               />
             )}
 

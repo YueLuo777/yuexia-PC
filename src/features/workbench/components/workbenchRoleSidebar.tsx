@@ -1,6 +1,5 @@
-import { Folder, FolderOpen } from 'lucide-react';
+import { Folder, FolderOpen, Search } from 'lucide-react';
 import type {
-  CSSProperties,
   DragEvent as ReactDragEvent,
   MouseEvent,
   MutableRefObject,
@@ -9,33 +8,32 @@ import type {
 } from 'react';
 
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
+import { DEFAULT_WORKBENCH_ROLE_TYPES, isMaleProtagonistRoleType } from '@/features/workbench/model/workbenchRoleTypes';
 
-import type { WorkbenchFieldSizeKey, WorkbenchFieldSizeSpec } from './workbenchFieldSizeSettings';
 import type { LibraryEntryDragState } from './workbenchLibraryDrag';
+import { parseRoleContent } from './workbenchRoleContent';
 import {
   WORKBENCH_FOLDER_GROUP_BUTTON_CLASS,
   WORKBENCH_FOLDER_GROUP_COUNT_CLASS,
   WORKBENCH_FOLDER_GROUP_ICON_CLASS,
+  WORKBENCH_LIBRARY_ENTRY_BUTTON_CLASS,
 } from './workbenchLibraryPanelConstants';
 
 type RoleGroup = {
   type: string;
+  label?: string;
   entries: WorkbenchLibraryEntry[];
 };
 
 type WorkbenchRoleSidebarProps = {
   roleTab: string;
   roleSearch: string;
-  roleTypeDraft: string;
-  roleNameDraft: string;
   groupedRoles: RoleGroup[];
   expandedRoleTypes: Set<string>;
   libraryDropTarget: { tab: string; type: string } | null;
   draggingLibraryEntry: LibraryEntryDragState;
   selectedEntryId?: string;
-  fieldSizeSpecs: Record<WorkbenchFieldSizeKey, WorkbenchFieldSizeSpec>;
   libraryPointerSuppressClickRef: MutableRefObject<boolean>;
-  getFieldSizeStyle: (key: WorkbenchFieldSizeKey) => CSSProperties;
   getPreviewedLibraryGroupEntries: (
     entries: WorkbenchLibraryEntry[],
     tab: string,
@@ -43,8 +41,6 @@ type WorkbenchRoleSidebarProps = {
   ) => WorkbenchLibraryEntry[];
   setExpandedRoleTypes: (value: SetStateAction<Set<string>>) => void;
   setRoleSearch: (value: string) => void;
-  setRoleTypeDraft: (value: string) => void;
-  setRoleNameDraft: (value: string) => void;
   setSelectedId: (id: string) => void;
   openCategoryMenu: (event: MouseEvent<HTMLButtonElement>, kind: 'role', type: string) => void;
   openEntryMenu: (event: MouseEvent<HTMLElement>, entry: WorkbenchLibraryEntry) => void;
@@ -79,29 +75,21 @@ type WorkbenchRoleSidebarProps = {
   finishLibraryEntryPointerDrag: (event: ReactPointerEvent<HTMLElement>) => void;
   shouldShowRolePinAction: (type: string) => boolean;
   toggleRolePinned: (entry: WorkbenchLibraryEntry) => void;
-  addRoleType: () => void;
-  addRole: (type: string) => void;
-  getDefaultRoleCreateType: () => string;
+  openSettingCreateDialog: (mode: 'category' | 'setting') => void;
 };
 
 export function WorkbenchRoleSidebar({
   roleTab,
   roleSearch,
-  roleTypeDraft,
-  roleNameDraft,
   groupedRoles,
   expandedRoleTypes,
   libraryDropTarget,
   draggingLibraryEntry,
   selectedEntryId,
-  fieldSizeSpecs,
   libraryPointerSuppressClickRef,
-  getFieldSizeStyle,
   getPreviewedLibraryGroupEntries,
   setExpandedRoleTypes,
   setRoleSearch,
-  setRoleTypeDraft,
-  setRoleNameDraft,
   setSelectedId,
   openCategoryMenu,
   openEntryMenu,
@@ -117,31 +105,42 @@ export function WorkbenchRoleSidebar({
   finishLibraryEntryPointerDrag,
   shouldShowRolePinAction,
   toggleRolePinned,
-  addRoleType,
-  addRole,
-  getDefaultRoleCreateType,
+  openSettingCreateDialog,
 }: WorkbenchRoleSidebarProps) {
-  return (
-    <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-4 pb-3 pt-2">
-      <div className="flex shrink-0 gap-2">
-        <div
-          className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact xy-floating-outline-role-compact xy-floating-custom-field-size min-w-0 ${roleSearch.trim() ? 'xy-has-value' : ''}`}
-          style={{ ...getFieldSizeStyle('roleSearch'), flex: `0 1 ${fieldSizeSpecs.roleSearch.width}px` }}
-        >
-          <input
-            value={roleSearch}
-            onChange={(event) => setRoleSearch(event.target.value)}
-            placeholder="鎼滅储瑙掕壊..."
-          />
-          <label>鎼滅储瑙掕壊</label>
-        </div>
-        <button className="h-11 min-w-[64px] shrink-0 whitespace-nowrap rounded-2xl bg-brand px-4 text-sm font-bold text-white">
-          鎼滅储
-        </button>
-      </div>
+  const groupByType = new Map(groupedRoles.map((group) => [group.type, group]));
+  const neutralType = String.fromCharCode(20013, 31435, 35282, 33394);
+  const usedTypes = new Set<string>();
+  const makeGroup = (label: string, types: string[], fallbackType: string): RoleGroup => {
+    const matched = types.map((type) => groupByType.get(type)).filter(Boolean) as RoleGroup[];
+    types.forEach((type) => usedTypes.add(type));
+    return { type: matched[0]?.type ?? fallbackType, label, entries: matched.flatMap((group) => group.entries) };
+  };
+  const defaults = DEFAULT_WORKBENCH_ROLE_TYPES;
+  const displayGroups = [
+    makeGroup(String.fromCharCode(30007, 22899, 20027), defaults.slice(0, 2), defaults[0]),
+    makeGroup(String.fromCharCode(26680, 24515, 37197, 35282), [defaults[2], defaults[4]], defaults[2]),
+    makeGroup(String.fromCharCode(27491, 27966, 35282, 33394), [defaults[3]], defaults[3]),
+    makeGroup(String.fromCharCode(21453, 27966, 35282, 33394), [defaults[5]], defaults[5]),
+    makeGroup(String.fromCharCode(20013, 31435, 35282, 33394), [neutralType], neutralType),
+    makeGroup(String.fromCharCode(40857, 22871, 35282, 33394), [defaults[6]], defaults[6]),
+    ...groupedRoles.filter((group) => !usedTypes.has(group.type)),
+  ];
 
-      <div className="mt-5 min-h-0 flex-1 space-y-2 overflow-y-auto">
-        {groupedRoles.map((group) => {
+  return (
+    <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-1 py-2">
+      <label className="mx-1 flex h-9 shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3">
+        <Search className="h-4 w-4 shrink-0 text-slate-400" />
+        <input
+          aria-label="搜索人物"
+          value={roleSearch}
+          onChange={(event) => setRoleSearch(event.target.value)}
+          placeholder="搜索人物..."
+          className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400"
+        />
+      </label>
+
+      <div className="editor-scrollbar mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto">
+        {displayGroups.map((group) => {
           const expanded = expandedRoleTypes.has(group.type);
           const isDropTarget = libraryDropTarget?.tab === roleTab && libraryDropTarget.type === group.type;
           const previewEntries = getPreviewedLibraryGroupEntries(group.entries, roleTab, group.type);
@@ -173,7 +172,7 @@ export function WorkbenchRoleSidebar({
                   aria-expanded={expanded}
                 >
                   <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
-                  <span className="min-w-0 flex-1 truncate leading-none">{group.type}</span>
+                  <span className="min-w-0 flex-1 truncate leading-none">{group.label ?? group.type}</span>
                   <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{previewEntries.length}</span>
                 </button>
               </div>
@@ -205,13 +204,29 @@ export function WorkbenchRoleSidebar({
                           }
                           setSelectedId(entry.id);
                         }}
-                        className={`flex w-full cursor-default select-none items-center gap-2 rounded-xl border px-4 py-2 text-left text-sm font-black transition-[background-color,border-color,box-shadow,opacity,transform] duration-150 ${
+                        className={`${WORKBENCH_LIBRARY_ENTRY_BUTTON_CLASS} flex items-center gap-2 ${
                           selectedEntryId === entry.id
-                            ? 'border-transparent xy-selected-mint-bg text-gray-900'
+                            ? 'border-2 border-[#078FAE] bg-white text-gray-600'
                             : 'border-transparent bg-white text-gray-600 hover:border-gray-200'
                         } ${draggingLibraryEntry?.entryId === entry.id ? 'cursor-grabbing scale-[0.99] opacity-80 ring-2 ring-[#08AACE]/35 shadow-sm' : ''}`}
                       >
-                        <span className="min-w-0 flex-1 truncate">{entry.title}</span>
+                        <span className="flex min-w-0 flex-1 items-center gap-2">
+                          <span className="min-w-0 truncate">{entry.title}</span>
+                          <span
+                            aria-label={`${parseRoleContent(entry.content).lifeStatus}状态`}
+                            className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                              parseRoleContent(entry.content).lifeStatus === '死亡'
+                                ? 'bg-red-500'
+                                : 'bg-emerald-500'
+                            }`}
+                            title={parseRoleContent(entry.content).lifeStatus}
+                          />
+                        </span>
+                        {isMaleProtagonistRoleType(parseRoleContent(entry.content).type) ? (
+                          <span className="shrink-0 rounded-md bg-[#E7F8FD] px-1.5 py-0.5 text-xs font-black text-[#08AACE]">
+                            男主
+                          </span>
+                        ) : null}
                         {showPinAction && (
                           <button
                             type="button"
@@ -240,51 +255,24 @@ export function WorkbenchRoleSidebar({
         })}
       </div>
 
-      <div className="mt-3 flex shrink-0 flex-col gap-2">
-        <div className="flex gap-2">
-          <div
-            className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact xy-floating-outline-role-compact xy-floating-custom-field-size min-w-0 ${roleTypeDraft.trim() ? 'xy-has-value' : ''}`}
-            style={{ ...getFieldSizeStyle('roleSearch'), flex: `0 1 ${fieldSizeSpecs.roleSearch.width}px` }}
-          >
-            <input
-              value={roleTypeDraft}
-              onChange={(event) => setRoleTypeDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') addRoleType();
-              }}
-              placeholder="鍒嗙被鍚嶅瓧"
-            />
-            <label>鍒嗙被鍚嶅瓧</label>
-          </div>
-          <button
-            onClick={addRoleType}
-            className="h-11 shrink-0 rounded-2xl bg-brand px-3 text-sm font-bold text-white hover:bg-brand-dark"
-          >
-            鏂板缓鍒嗙被
-          </button>
-        </div>
-        <div className="flex gap-2">
-          <div
-            className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-compact xy-floating-outline-role-compact xy-floating-custom-field-size min-w-0 ${roleNameDraft.trim() ? 'xy-has-value' : ''}`}
-            style={{ ...getFieldSizeStyle('roleSearch'), flex: `0 1 ${fieldSizeSpecs.roleSearch.width}px` }}
-          >
-            <input
-              value={roleNameDraft}
-              onChange={(event) => setRoleNameDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') addRole(getDefaultRoleCreateType());
-              }}
-              placeholder="瑙掕壊鍚嶅瓧"
-            />
-            <label>瑙掕壊鍚嶅瓧</label>
-          </div>
-          <button
-            onClick={() => addRole(getDefaultRoleCreateType())}
-            className="h-11 shrink-0 rounded-2xl bg-brand px-3 text-sm font-bold text-white hover:bg-brand-dark"
-          >
-            鏂板缓瑙掕壊
-          </button>
-        </div>
+      <div className="mt-3 grid h-11 shrink-0 grid-cols-3 overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm">
+        <span className="flex items-center justify-center border-r border-slate-200 bg-[#DFF7FC] text-sm font-black text-[#08AACE]">
+          新建
+        </span>
+        <button
+          type="button"
+          onClick={() => openSettingCreateDialog('category')}
+          className="border-r border-slate-200 text-sm font-black text-slate-700 hover:bg-[#EAF9FD] hover:text-[#08AACE]"
+        >
+          分组
+        </button>
+        <button
+          type="button"
+          onClick={() => openSettingCreateDialog('setting')}
+          className="text-sm font-black text-slate-700 hover:bg-[#EAF9FD] hover:text-[#08AACE]"
+        >
+          人物
+        </button>
       </div>
     </aside>
   );

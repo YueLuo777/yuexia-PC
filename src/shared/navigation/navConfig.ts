@@ -104,26 +104,18 @@ const REMOVED_ROUTES = new Set([
   '/hidden-content',
   '/concept-library',
   '/genre-iteration',
+  '/scripts',
+  '/script-editor-v2',
+  '/library',
 ]);
 const REMOVED_GROUP_TITLES = new Set(['首页专区', '隐藏专区', '功能专区']);
 const NORMALIZED_ROUTE_LABELS: Record<string, string> = {
-  '/library': '资料库',
   '/test-collection': '测试板块',
   '/tomato-browser': '番茄浏览器',
 };
 
 function cloneDefaultConfig() {
   return JSON.parse(JSON.stringify(DEFAULT_NAV_CONFIG)) as NavGroupConfig[];
-}
-
-function moveRouteAfter(items: NavItemConfig[], route: string, afterRoute: string) {
-  const itemIndex = items.findIndex((item) => item.to === route);
-  const afterIndex = items.findIndex((item) => item.to === afterRoute);
-  if (itemIndex === -1 || afterIndex === -1 || itemIndex === afterIndex + 1) return;
-
-  const [item] = items.splice(itemIndex, 1);
-  const nextAfterIndex = items.findIndex((candidate) => candidate.to === afterRoute);
-  items.splice(nextAfterIndex + 1, 0, item);
 }
 
 function flattenNavConfig(config: NavGroupConfig[]) {
@@ -147,8 +139,6 @@ function flattenNavConfig(config: NavGroupConfig[]) {
       });
     }
   }
-  moveRouteAfter(items, '/tomato-browser', '/scripts');
-
   const visibleItemRoutes = new Set(items.filter((item) => !item.hidden).map((item) => item.to));
   const fallbackDividerAfterItemTos =
     DEFAULT_NAV_CONFIG[0].dividerAfterItemTos ??

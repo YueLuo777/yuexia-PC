@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck -- pure outline view adapter.
-import React from 'react';
+import { DetailOutlineBorderFontTool, DetailOutlineTitleWordCount } from './DetailOutlineBorderFontTool';
+import { OutlineAssociationControl } from './OutlineAssociationControl';
+import { normalizeDetailOutlineFontSize } from './detailOutlineFontSize';
 export function renderOutlineWorkspaceView(scope: Record<string, any>) {
   const {
     AiInlineInput,
@@ -19,7 +21,6 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
     Folder,
     FolderOpen,
     LibraryManagementModal,
-    LinkedSourceControl,
     OUTLINE_LIBRARY_TAB,
     WORKBENCH_FOLDER_GROUP_BUTTON_CLASS,
     WORKBENCH_FOLDER_GROUP_COUNT_CLASS,
@@ -113,9 +114,13 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
     updateVolumeSummary,
     volumes,
   } = scope;
+  const detailOutlineStateFontSize = normalizeDetailOutlineFontSize(
+    activeTabConfig.detailOutlineStateFontSize,
+    detailOutlineFontSize,
+  );
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-white" style={scaleStyle}>
-      {libraryHeaderFontSizePortal}
+      {!isDetailOutlineTab && libraryHeaderFontSizePortal}
       {(activeTab === OUTLINE_LIBRARY_TAB || activeTab === DETAIL_OUTLINE_TAB) &&
         renderTopTabs()}
       {deleteConfirmDialog}
@@ -204,7 +209,6 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                     const VolumeFolderIcon = expanded ? FolderOpen : Folder;
                     const volumeIsSelected =
                       safeOutlineSelectionType === 'volume' && selectedOutlineVolume?.id === volume.id;
-
                     return (
                       <div key={volume.id} className="mb-1">
                         <div
@@ -433,10 +437,10 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                     ref={(element) => {
                       outlinePreviewRefs.current[chapter.id] = element;
                     }}
-                    className="flex h-full min-h-0 flex-col gap-4"
+                    className="flex h-full min-h-0 flex-col gap-6"
                   >
                     <section
-                      className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-[0_0_62%] ${detailOutlineParts.outline.trim() ? 'xy-has-value' : ''}`}
+                      className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill min-h-0 flex-[0_0_62%] ${detailOutlineParts.outline.trim() ? 'xy-has-value' : ''}`}
                     >
                       <textarea
                         data-no-modal-drag="true"
@@ -456,19 +460,18 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                         }}
                       />
                       <label className="xy-floating-title-count xy-detail-outline-title-count">
-                        <span className="xy-floating-title-text xy-detail-outline-heading-title">
-                          {outlineCardTitle}
+                        <span className="xy-floating-title-text xy-detail-outline-heading-title xy-detail-outline-heading-with-count xy-border-embedded-transparent-backplate">
+                          {outlineCardTitle}<DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.outline)} />
                         </span>
                       </label>
-                      <span className="xy-floating-outline-chapter-meta xy-border-embedded-transparent-backplate absolute right-9 top-0 z-20 max-w-[44%] -translate-y-1/2 truncate text-sm font-black leading-5 text-slate-950">
-                        {`第${getVolumeDisplayIndex(volume.id)}卷 · ${chapter.title.trim() || '未命名章节'}`}
-                      </span>
-                      <span className="xy-floating-count">
-                        <WordCountText value={countTextWords(detailOutlineParts.outline)} />
-                      </span>
+                      <DetailOutlineBorderFontTool
+                        value={detailOutlineFontSize}
+                        onChange={(value) => updateActiveTabConfig({ detailOutlineFontSize: value })}
+                        ariaLabel="章纲字号"
+                      />
                     </section>
                     <section
-                      className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill xy-floating-with-bottom-count min-h-0 flex-1 ${detailOutlineParts.stateExpectation.trim() ? 'xy-has-value' : ''}`}
+                      className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill min-h-0 flex-1 ${detailOutlineParts.stateExpectation.trim() ? 'xy-has-value' : ''}`}
                     >
                       <textarea
                         data-no-modal-drag="true"
@@ -483,15 +486,19 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                         style={{
                           height: '100%',
                           overflowY: 'auto',
-                          fontSize: detailOutlineFontSize,
+                          fontSize: detailOutlineStateFontSize,
                         }}
                       />
                       <label className="xy-floating-title-count xy-detail-outline-title-count">
-                        <span className="xy-floating-title-text xy-detail-outline-heading-title">状态变化</span>
+                        <span className="xy-floating-title-text xy-detail-outline-heading-title xy-detail-outline-heading-with-count xy-border-embedded-transparent-backplate">
+                          状态变化<DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.stateExpectation)} />
+                        </span>
                       </label>
-                      <span className="xy-floating-count">
-                        <WordCountText value={countTextWords(detailOutlineParts.stateExpectation)} />
-                      </span>
+                      <DetailOutlineBorderFontTool
+                        value={detailOutlineStateFontSize}
+                        onChange={(value) => updateActiveTabConfig({ detailOutlineStateFontSize: value })}
+                        ariaLabel="状态变化字号"
+                      />
                     </section>
                   </div>
                 );
@@ -500,7 +507,6 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
               <div className="grid grid-cols-1 gap-3">
                 {outlineChapters.map(({ volume, chapter }) => {
                   const entry = getChapterSummaryEntry(chapter.serialNumber);
-                  const selected = effectiveSelectedOutlineChapterId === chapter.id;
                   const outlineCardTitle = getOutlineChapterFrameTitle(volume, chapter);
                   const outlineCardContent = entry?.content ?? '';
                   const detailOutlineHeight = isDetailOutlineTab ? getDetailOutlinePreviewHeight() : undefined;
@@ -510,7 +516,7 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                       ref={(element) => {
                         outlinePreviewRefs.current[chapter.id] = element;
                       }}
-                      className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-with-bottom-count ${selected ? 'xy-outline-selected xy-has-value' : outlineCardContent.trim() ? 'xy-has-value' : ''}`}
+                      className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-with-bottom-count ${outlineCardContent.trim() ? 'xy-has-value' : ''}`}
                     >
                       <textarea
                         data-no-modal-drag="true"
@@ -548,25 +554,19 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                       >
                         <span
                           className={
-                            isDetailOutlineTab ? 'xy-floating-title-text xy-detail-outline-heading-title' : undefined
+                            isDetailOutlineTab ? 'xy-floating-title-text xy-detail-outline-heading-title xy-detail-outline-heading-with-count xy-border-embedded-transparent-backplate' : undefined
                           }
                         >
                           {outlineCardTitle}
+                          {isDetailOutlineTab && <DetailOutlineTitleWordCount value={countTextWords(outlineCardContent)} />}
                         </span>
                       </label>
-                      <span className="xy-floating-outline-chapter-meta xy-border-embedded-transparent-backplate absolute right-9 top-0 z-20 max-w-[44%] -translate-y-1/2 truncate text-sm font-black leading-5 text-slate-950">
-                        {isDetailOutlineTab ? (
-                          `第${getVolumeDisplayIndex(volume.id)}卷 · ${chapter.title.trim() || '未命名章节'}`
-                        ) : (
+                      {!isDetailOutlineTab && (
+                        <span className="xy-floating-outline-chapter-meta xy-border-embedded-transparent-backplate absolute right-9 top-0 z-20 max-w-[44%] -translate-y-1/2 truncate text-sm font-black leading-5 text-slate-950">
                           <>
                             第{chapter.serialNumber}章 {chapter.title.trim() || '未命名章节'}{' '}
                             <WordCountText value={chapter.wordCount} compact />
                           </>
-                        )}
-                      </span>
-                      {isDetailOutlineTab && (
-                        <span className="xy-floating-count">
-                          <WordCountText value={countTextWords(outlineCardContent)} />
                         </span>
                       )}
                     </section>
@@ -602,7 +602,7 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
               />
             </div>
           </div>
-          <div className="relative mt-5 min-h-[170px] flex-1">
+          <div className="xy-ai-panel-output-slot relative">
             {outlinePreviewDraft.startsWith('[[THINKING') ? (
               <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-outline-ai-output-frame xy-floating-with-bottom-count h-full xy-has-value">
                 <div
@@ -656,25 +656,14 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
             )}
           </div>
           {isDetailOutlineTab && (
-            <LinkedSourceControl
+            <OutlineAssociationControl
               linked={selectedDetailOutlineReaderItems.length > 0}
-              label="关联大纲"
-              linkedLabel="已关联大纲"
+              wordCount={detailOutlineReaderWordCount}
               onOpen={openDetailOutlineReader}
               onClear={clearDetailOutlineReaderSelection}
-              clearOnLinkedClick
-              meta={
-                <>
-                  关联 <WordCountText value={detailOutlineReaderWordCount} compact />
-                </>
-              }
-              className="mt-3 flex items-center gap-2"
-              groupClassName="flex h-10 w-[132px] shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white"
-              buttonClassName="h-10 w-[132px] whitespace-nowrap rounded-xl border border-[#08AACE] bg-white px-3 text-sm font-black text-[#08AACE] hover:bg-[#EAF9FD]"
-              linkedButtonClassName="min-w-0 flex-1 whitespace-nowrap px-3 text-sm font-black text-white bg-red-500 hover:bg-red-600"
             />
           )}
-          <div className="mt-3">
+          <div className="xy-ai-panel-input-row">
             <AiInlineInput
               value={outlineAiInput}
               onChange={(event) => {
@@ -698,7 +687,7 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
               textareaClassName="editor-scrollbar"
             />
           </div>
-          <div className="mt-3 flex overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <div className="xy-ai-panel-action-row flex overflow-hidden rounded-xl border border-gray-200 bg-white">
             <button
               onClick={saveOutlinePreviewDraft}
               disabled={!stripAiThinkingBlock(outlinePreviewDraft).trim()}

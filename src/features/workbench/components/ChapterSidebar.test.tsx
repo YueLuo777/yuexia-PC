@@ -9,6 +9,10 @@ import type { Volume } from '@/features/workbench/model/workbenchTypes';
 
 import { ChapterSidebar } from './ChapterSidebar';
 import { readChapterEditorSource } from './chapterEditorSource.testUtils';
+import {
+  getChapterConnectorHorizontalClass,
+  getChapterSelectedPathHeight,
+} from './chapterNavigationStyles';
 
 const volumes: Volume[] = [
   {
@@ -74,6 +78,7 @@ describe('ChapterSidebar', () => {
   it('keeps volume and chapter labels visually aligned near the left edge', () => {
     const chapterSidebarSource = readSource('ChapterSidebar.tsx');
     const publishedSidebarSource = readSource('PublishedSidebar.tsx');
+    const navigationStylesSource = readSource('chapterNavigationStyles.ts');
 
     expect(chapterSidebarSource).toContainSource('const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 200;');
     expect(chapterSidebarSource).toContainSource('width = CHAPTER_SIDEBAR_DEFAULT_WIDTH');
@@ -81,29 +86,22 @@ describe('ChapterSidebar', () => {
     expect(chapterSidebarSource).not.toContainSource('const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 300;');
     expect(publishedSidebarSource).not.toContainSource('width = 190,');
 
-    expect(chapterSidebarSource).toContainSource(
-      'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border px-1 text-left text-[14px]',
+    expect(navigationStylesSource).toContainSource(
+      'group flex h-10 w-full cursor-pointer items-center gap-2 rounded-xl border border-[#AEE7F1] bg-[#CDEFF6]',
     );
-    expect(chapterSidebarSource).toContainSource(
-      "const WORKBENCH_FOLDER_GROUP_DEFAULT_TONE_CLASS = 'border-[#BDEEF7] xy-flow-group-bg';",
+    expect(navigationStylesSource).toContainSource(
+      "relative mt-1 space-y-px pl-6 before:absolute before:bottom-5 before:left-3 before:top-0",
     );
 
-    for (const source of [publishedSidebarSource]) {
-      expect(source).toContainSource(
-        'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border px-1 text-left text-[14px]',
-      );
-      expect(source).toContainSource(
-        "const WORKBENCH_FOLDER_GROUP_DEFAULT_TONE_CLASS = 'border-[#BDEEF7] xy-flow-group-bg';",
-      );
+    for (const source of [chapterSidebarSource, publishedSidebarSource]) {
+      expect(source).toContainSource('className={CHAPTER_NAV_VOLUME_ROW_CLASS}');
+      expect(source).toContainSource('className={CHAPTER_NAV_TREE_CLASS}');
       expect(source).toContainSource('overflow-y-auto px-1 py-2');
-      expect(source).toContainSource('className="mt-0.5 space-y-0.5"');
       expect(source).not.toContainSource('className="ml-1 mt-0.5 space-y-0.5"');
     }
-    expect(chapterSidebarSource).toContainSource('overflow-y-auto px-1 py-2');
-    expect(chapterSidebarSource).toContainSource('className="mt-0.5 space-y-0.5"');
-    expect(chapterSidebarSource).not.toContainSource('className="ml-1 mt-0.5 space-y-0.5"');
-    expect(chapterSidebarSource).toContainSource('rounded-[8px] border px-1 py-1');
-    expect(publishedSidebarSource).toContainSource('border-l-[3px] px-1 py-1');
+    expect(navigationStylesSource).toContainSource(
+      'group relative flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-md border-2 px-3 py-2',
+    );
     expect(chapterSidebarSource).toContainSource(
       'className="ml-auto shrink-0 text-[11px] font-black text-gray-400 transition-opacity group-hover:opacity-0"',
     );
@@ -127,7 +125,7 @@ describe('ChapterSidebar', () => {
       'className="flex h-12 shrink-0 items-center gap-2 border-b border-[#e6e8ec] bg-white px-4"',
     );
     expect(chapterSidebarSource).toContainSource(
-      'className="flex h-8 items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-2 text-sm text-white transition-colors hover:bg-[#0798b8]"',
+      'className={CHAPTER_SIDEBAR_HEADER_ACTION_CLASS}',
     );
     expect(chapterSidebarSource).not.toContainSource(
       'className="flex h-[42px] shrink-0 items-center justify-between border-b border-[#e6e8ec] bg-[#fbfbfc] px-3 py-2.5"',
@@ -148,33 +146,20 @@ describe('ChapterSidebar', () => {
     );
   });
 
-  it('only changes the selected chapter background in the body chapter list', () => {
+  it('uses an outline-only selected chapter state in both body chapter lists', () => {
     const chapterSidebarSource = readSource('ChapterSidebar.tsx');
-    const sharedStylesSource = Array.from({ length: 12 }, (_, index) =>
-      readFileSync(
-        join(
-          dirname(fileURLToPath(import.meta.url)),
-          '../../../shared/styles/parts',
-          `part-${String(index + 1).padStart(2, '0')}.css`,
-        ),
-        'utf8',
-      ),
-    ).join('\n');
+    const publishedSidebarSource = readSource('PublishedSidebar.tsx');
+    const navigationStylesSource = readSource('chapterNavigationStyles.ts');
 
-    expect(chapterSidebarSource).toContainSource("? 'border-transparent xy-selected-mint-bg'");
+    expect(navigationStylesSource).toContainSource("CHAPTER_NAV_SELECTED_BORDER_CLASS = 'border-[#078FAE]'");
+    expect(navigationStylesSource).toContainSource("CHAPTER_NAV_SELECTED_LINE_CLASS = 'bg-[#078FAE]'");
+    expect(navigationStylesSource).toContainSource("'border-transparent bg-white/70 text-slate-600");
     expect(chapterSidebarSource).toContainSource('xy-chapter-sidebar-row');
-    expect(sharedStylesSource).toContainSource('.theme-shuimo .xy-chapter-sidebar-row.xy-selected-mint-bg::before');
-    expect(sharedStylesSource).toContainSource('content: none;');
-    expect(chapterSidebarSource).toContainSource(
-      'className="flex-1 truncate whitespace-nowrap text-sm font-black text-gray-700"',
-    );
-    expect(chapterSidebarSource).toContainSource(
-      'className="ml-auto shrink-0 text-[11px] font-black text-gray-400 transition-opacity group-hover:opacity-0"',
-    );
-    expect(chapterSidebarSource).not.toContainSource("? 'border-[#FDBA74] bg-[#FFF7ED]'");
-    expect(chapterSidebarSource).not.toContainSource("? 'text-[#F97316]' : 'text-gray-700'");
-    expect(chapterSidebarSource).not.toContainSource("? 'text-[#2563EB]' : 'text-gray-400'");
-    expect(chapterSidebarSource).not.toContainSource("? 'border-[#BDEEF7] bg-[#E7F8FD]'");
+    for (const source of [chapterSidebarSource, publishedSidebarSource]) {
+      expect(source).toContainSource('? CHAPTER_NAV_ROW_SELECTED_CLASS');
+      expect(source).toContainSource(': CHAPTER_NAV_ROW_DEFAULT_CLASS');
+      expect(source).not.toContainSource('xy-selected-mint-bg');
+    }
   });
 
   it('shows chapter titles in the published chapter list after publishing', () => {
@@ -199,33 +184,70 @@ describe('ChapterSidebar', () => {
     expect(publishedSidebarSource).not.toContainSource('bg-gray-400 px-2 py-1 text-xs');
   });
 
-  it('keeps volume rows in the default folder color while selected chapters use mint green', () => {
+  it('keeps volume rows cyan while selected chapters use the shared blue outline', () => {
     const chapterSidebarSource = readSource('ChapterSidebar.tsx');
     const publishedSidebarSource = readSource('PublishedSidebar.tsx');
-    const sharedStylesSource = Array.from({ length: 12 }, (_, index) =>
-      readFileSync(
-        join(
-          dirname(fileURLToPath(import.meta.url)),
-          '../../../shared/styles/parts',
-          `part-${String(index + 1).padStart(2, '0')}.css`,
-        ),
-        'utf8',
-      ),
-    ).join('\n');
+    const navigationStylesSource = readSource('chapterNavigationStyles.ts');
 
-    expect(chapterSidebarSource).toContainSource(
-      'className={`${WORKBENCH_FOLDER_GROUP_BUTTON_BASE_CLASS} ${WORKBENCH_FOLDER_GROUP_DEFAULT_TONE_CLASS}`',
+    expect(navigationStylesSource).toContainSource('bg-[#CDEFF6]');
+    expect(navigationStylesSource).toContainSource('${CHAPTER_NAV_SELECTED_BORDER_CLASS} bg-white');
+    for (const source of [chapterSidebarSource, publishedSidebarSource]) {
+      expect(source).toContainSource('CHAPTER_NAV_VOLUME_ROW_CLASS');
+      expect(source).toContainSource('CHAPTER_NAV_ROW_SELECTED_CLASS');
+      expect(source).not.toContainSource('WORKBENCH_FOLDER_GROUP_SELECTED_TONE_CLASS');
+    }
+  });
+
+  it('uses the published toggle button frame for the published chapter sort control', () => {
+    const chapterSidebarSource = readSource('ChapterSidebar.tsx');
+    const publishedSidebarSource = readSource('PublishedSidebar.tsx');
+    const navigationStylesSource = readSource('chapterNavigationStyles.ts');
+
+    expect(navigationStylesSource).toContainSource(
+      "export const CHAPTER_SIDEBAR_HEADER_ACTION_CLASS =",
     );
-    expect(publishedSidebarSource).toContainSource(
-      'className={`${WORKBENCH_FOLDER_GROUP_BUTTON_BASE_CLASS} ${WORKBENCH_FOLDER_GROUP_DEFAULT_TONE_CLASS}`',
+    expect(navigationStylesSource).toContainSource(
+      "flex h-8 shrink-0 items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-2 text-sm text-white",
     );
-    expect(chapterSidebarSource).toContainSource('font-black text-[#1f2933]');
-    expect(sharedStylesSource).toContainSource('.xy-selected-mint-bg,');
-    expect(sharedStylesSource).toContainSource('background-color: var(--xy-custom-content-selected-bg) !important;');
-    expect(chapterSidebarSource).not.toContainSource('volumeHasSelectedChapter');
-    expect(publishedSidebarSource).not.toContainSource('volumeHasSelectedChapter');
-    expect(chapterSidebarSource).not.toContainSource('WORKBENCH_FOLDER_GROUP_SELECTED_TONE_CLASS');
-    expect(publishedSidebarSource).not.toContainSource('WORKBENCH_FOLDER_GROUP_SELECTED_TONE_CLASS');
+    for (const source of [chapterSidebarSource, publishedSidebarSource]) {
+      expect(source).toContainSource('className={CHAPTER_SIDEBAR_HEADER_ACTION_CLASS}');
+    }
+    expect(publishedSidebarSource).not.toContainSource(
+      'rounded-md px-2 py-1 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700',
+    );
+  });
+
+  it('stops chapter tree connectors at the last row center and outside the row border', () => {
+    const chapterSidebarSource = readSource('ChapterSidebar.tsx');
+    const publishedSidebarSource = readSource('PublishedSidebar.tsx');
+    const navigationStylesSource = readSource('chapterNavigationStyles.ts');
+
+    expect(navigationStylesSource).toContainSource('before:bottom-5');
+    expect(navigationStylesSource).toContainSource(
+      "'pointer-events-none absolute left-[-14px] top-1/2 h-px w-3'",
+    );
+    expect(navigationStylesSource).not.toContainSource('getChapterConnectorVerticalClass');
+    for (const source of [chapterSidebarSource, publishedSidebarSource]) {
+      expect(source).not.toContainSource('getChapterConnectorVerticalClass');
+      expect(source).toContainSource('className={getChapterConnectorHorizontalClass(chapter.isSelected)}');
+    }
+  });
+
+  it('colors the connector path through the selected chapter with the selected outline color', () => {
+    const chapterSidebarSource = readSource('ChapterSidebar.tsx');
+    const publishedSidebarSource = readSource('PublishedSidebar.tsx');
+
+    expect(getChapterSelectedPathHeight(0)).toBe(20);
+    expect(getChapterSelectedPathHeight(1)).toBe(61);
+    expect(getChapterSelectedPathHeight(2)).toBe(102);
+    expect(getChapterConnectorHorizontalClass(false)).toContain('bg-[#9ADFEA]');
+    expect(getChapterConnectorHorizontalClass(true)).toContain('bg-[#078FAE]');
+
+    for (const source of [chapterSidebarSource, publishedSidebarSource]) {
+      expect(source).toContainSource('data-chapter-selected-path="true"');
+      expect(source).toContainSource('className={CHAPTER_NAV_SELECTED_PATH_CLASS}');
+      expect(source).toContainSource('style={{ height: getChapterSelectedPathHeight(selectedChapterIndex) }}');
+    }
   });
 
   it('uses the reference popup style for chapter context menus with a placeholder group submenu', () => {

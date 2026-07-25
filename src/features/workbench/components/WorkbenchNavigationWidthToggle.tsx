@@ -6,6 +6,21 @@ import {
   writeSharedWorkbenchLeftNavWidthEnabled,
 } from '@/features/workbench/model/workbenchSharedLeftNavWidth';
 
+const CHAPTER_SIDEBAR_WIDTH_STORAGE_KEY = 'xinyuexia_chapter_sidebar_width';
+const CHAPTER_SIDEBAR_DEFAULT_WIDTH = 200;
+const CHAPTER_SIDEBAR_MIN_WIDTH = 200;
+const CHAPTER_SIDEBAR_MAX_WIDTH = 420;
+
+function readStoredChapterSidebarWidth() {
+  try {
+    const stored = Number(localStorage.getItem(CHAPTER_SIDEBAR_WIDTH_STORAGE_KEY));
+    if (!Number.isFinite(stored) || stored <= 0) return CHAPTER_SIDEBAR_DEFAULT_WIDTH;
+    return Math.min(CHAPTER_SIDEBAR_MAX_WIDTH, Math.max(CHAPTER_SIDEBAR_MIN_WIDTH, Math.round(stored)));
+  } catch {
+    return CHAPTER_SIDEBAR_DEFAULT_WIDTH;
+  }
+}
+
 export function WorkbenchNavigationWidthToggle() {
   const [enabled, setEnabled] = useState(() => readSharedWorkbenchLeftNavWidthEnabled());
 
@@ -16,7 +31,16 @@ export function WorkbenchNavigationWidthToggle() {
   }, []);
 
   const updateEnabled = (checked: boolean) => {
-    writeSharedWorkbenchLeftNavWidthEnabled(checked);
+    writeSharedWorkbenchLeftNavWidthEnabled(
+      checked,
+      checked
+        ? {
+            width: readStoredChapterSidebarWidth(),
+            maxWidth: CHAPTER_SIDEBAR_MAX_WIDTH,
+            minWidth: CHAPTER_SIDEBAR_MIN_WIDTH,
+          }
+        : undefined,
+    );
     setEnabled(checked);
   };
 

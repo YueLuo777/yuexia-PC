@@ -28,7 +28,7 @@ export type ResizeDirection = 'left' | 'right' | 'top' | 'bottom' | 'bottom-righ
 export const MIN_MODAL_WIDTH = 360;
 export const MIN_MODAL_HEIGHT = 260;
 export const VIEWPORT_PADDING = 32;
-export const MAX_MODAL_VIEWPORT_RATIO = 0.8;
+export const MAX_MODAL_VIEWPORT_RATIO = 0.96;
 export const RESIZE_ACTIVATION_DISTANCE_PX = 8;
 export const APP_EFFECTIVE_SCALE_CSS_VAR = '--xinyuexia-effective-scale';
 export const APP_SCALE_ROOT_SELECTOR = '[data-capsule-select-portal-root="true"]';
@@ -132,45 +132,40 @@ export function getViewportBounds(element?: HTMLElement | null) {
   };
 }
 
-export function normalizeGeometryToViewport(geometry: ModalGeometry): ModalGeometry {
-  const { maxWidth, maxHeight } = getViewportBounds();
+export function normalizeGeometryToViewport(geometry: ModalGeometry, element?: HTMLElement | null): ModalGeometry {
+  const { maxWidth, maxHeight } = getViewportBounds(element);
+  const { viewportWidth, viewportHeight } = getModalScaleContext(element);
   const next: ModalGeometry = { ...geometry };
   if (Number.isFinite(next.width)) next.width = clamp(Number(next.width), MIN_MODAL_WIDTH, maxWidth);
   if (Number.isFinite(next.height)) next.height = clamp(Number(next.height), MIN_MODAL_HEIGHT, maxHeight);
 
   const fixed = Number.isFinite(next.left) && Number.isFinite(next.top);
   if (fixed && typeof window !== 'undefined') {
-    const scale = getEffectiveModalScale();
-    const visualViewportWidth = window.innerWidth / scale;
-    const visualViewportHeight = window.innerHeight / scale;
-    const width = next.width ?? Math.min(maxWidth, Math.max(MIN_MODAL_WIDTH, visualViewportWidth * 0.72));
-    const height = next.height ?? Math.min(maxHeight, Math.max(MIN_MODAL_HEIGHT, visualViewportHeight * 0.72));
+    const width = next.width ?? Math.min(maxWidth, Math.max(MIN_MODAL_WIDTH, viewportWidth * 0.72));
+    const height = next.height ?? Math.min(maxHeight, Math.max(MIN_MODAL_HEIGHT, viewportHeight * 0.72));
     next.left = clamp(
       Number(next.left),
       VIEWPORT_PADDING / 2,
-      Math.max(VIEWPORT_PADDING / 2, visualViewportWidth - width - VIEWPORT_PADDING / 2),
+      Math.max(VIEWPORT_PADDING / 2, viewportWidth - width - VIEWPORT_PADDING / 2),
     );
     next.top = clamp(
       Number(next.top),
       VIEWPORT_PADDING / 2,
-      Math.max(VIEWPORT_PADDING / 2, visualViewportHeight - height - VIEWPORT_PADDING / 2),
+      Math.max(VIEWPORT_PADDING / 2, viewportHeight - height - VIEWPORT_PADDING / 2),
     );
     next.x = 0;
     next.y = 0;
   } else if (typeof window !== 'undefined') {
-    const scale = getEffectiveModalScale();
-    const visualViewportWidth = window.innerWidth / scale;
-    const visualViewportHeight = window.innerHeight / scale;
     const centeredWidth = Number.isFinite(next.width) ? Number(next.width) : 0;
     const centeredHeight = Number.isFinite(next.height) ? Number(next.height) : 0;
     const maxX =
       centeredWidth > 0
-        ? Math.max(0, (visualViewportWidth - centeredWidth) / 2 - VIEWPORT_PADDING / 2)
-        : Math.max(0, visualViewportWidth / 2 - VIEWPORT_PADDING);
+        ? Math.max(0, (viewportWidth - centeredWidth) / 2 - VIEWPORT_PADDING / 2)
+        : Math.max(0, viewportWidth / 2 - VIEWPORT_PADDING);
     const maxY =
       centeredHeight > 0
-        ? Math.max(0, (visualViewportHeight - centeredHeight) / 2 - VIEWPORT_PADDING / 2)
-        : Math.max(0, visualViewportHeight / 2 - VIEWPORT_PADDING);
+        ? Math.max(0, (viewportHeight - centeredHeight) / 2 - VIEWPORT_PADDING / 2)
+        : Math.max(0, viewportHeight / 2 - VIEWPORT_PADDING);
     next.x = clamp(Number.isFinite(next.x) ? Number(next.x) : 0, -maxX, maxX);
     next.y = clamp(Number.isFinite(next.y) ? Number(next.y) : 0, -maxY, maxY);
   }

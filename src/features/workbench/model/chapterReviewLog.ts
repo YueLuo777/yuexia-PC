@@ -49,25 +49,12 @@ export function getReviewLogFillGroupWeights(options: {
   return {
     prompt: 1,
     ...(options.hasOutline ? { outline: 1 } : {}),
-    original: 2,
+    original: options.hasOutline ? 1 : 2,
     ...(options.hasUser ? { user: 1 } : {}),
   };
 }
 
-export function createAiThinkingPlaceholder(seconds = 0) {
-  return `[[THINKING seconds=${Math.max(0, seconds)} status=thinking]]\n\n[[/THINKING]]`;
-}
-
-export function formatAiThinkingResponse(content: string, reasoning: string, seconds: number, done: boolean) {
-  const reasoningText = reasoning.trim();
-  const body = content.trimStart();
-  if (!reasoningText) return body || (done ? '' : '正在思考...');
-  return [
-    `[[THINKING seconds=${Math.max(0, seconds)} status=${done ? 'done' : 'thinking'}]]`,
-    reasoningText,
-    '[[/THINKING]]',
-    body,
-  ]
-    .join('\n')
-    .trimEnd();
-}
+export {
+  createAiThinkingPlaceholder,
+  formatAiThinkingResponse,
+} from './workbenchAiThinkingProtocol';

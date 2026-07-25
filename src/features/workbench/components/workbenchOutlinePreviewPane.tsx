@@ -157,14 +157,13 @@ export function WorkbenchOutlinePreviewPane({
     <div className="grid grid-cols-1 gap-3">
       {outlineChapters.map(({ volume, chapter }) => {
         const outlineCardContent = getChapterSummaryEntry(chapter.serialNumber)?.content ?? '';
-        const selected = effectiveSelectedOutlineChapterId === chapter.id;
         return (
           <section
             key={chapter.id}
             ref={(element) => {
               outlinePreviewRefs.current[chapter.id] = element;
             }}
-            className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-with-bottom-count ${selected ? 'xy-outline-selected xy-has-value' : outlineCardContent.trim() ? 'xy-has-value' : ''}`}
+            className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-with-bottom-count ${outlineCardContent.trim() ? 'xy-has-value' : ''}`}
           >
             <textarea
               data-no-modal-drag="true"

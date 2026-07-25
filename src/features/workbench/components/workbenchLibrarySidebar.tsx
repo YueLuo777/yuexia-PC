@@ -1,4 +1,5 @@
-import { Folder, FolderOpen, Trash2 } from 'lucide-react';
+import { Folder, FolderOpen, Search, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import type {
   CSSProperties,
   DragEvent as ReactDragEvent,
@@ -16,8 +17,10 @@ import {
   type WorkbenchLibraryEntry,
 } from '@/features/workbench/model/workbenchLibraryStorage';
 import { WordCountText } from '@/shared/ui/WordCountText';
+import { DEFAULT_WORKBENCH_ROLE_TYPES, isMaleProtagonistRoleType } from '@/features/workbench/model/workbenchRoleTypes';
 
 import type { LibraryEntryDragState } from './workbenchLibraryDrag';
+import { isLockedDefaultSettingEntry } from './workbenchLibraryDataState';
 import {
   WORKBENCH_FOLDER_GROUP_BUTTON_CLASS,
   WORKBENCH_FOLDER_GROUP_COUNT_CLASS,
@@ -26,9 +29,13 @@ import {
   WORKBENCH_LIBRARY_ENTRY_EMPTY_CLASS,
 } from './workbenchLibraryPanelConstants';
 import { SETTING_TAB, UNCATEGORIZED_TYPE } from './workbenchLibraryTabs';
+import { parseRoleContent } from './workbenchRoleContent';
+
+const LOCKED_DEFAULT_SETTING_TOOLTIP = '内置设定，无法删除';
 
 type LibraryGroup = {
   type: string;
+  displayType?: string;
   entries: WorkbenchLibraryEntry[];
 };
 
@@ -134,12 +141,56 @@ export function WorkbenchLibrarySidebar({
   openSettingCreateDialog,
   setIsBrainstormRecycleOpen,
 }: WorkbenchLibrarySidebarProps) {
-  const groups = activeIsSettingLike ? groupedSettingEntries : [{ type: UNCATEGORIZED_TYPE, entries: currentEntries }];
+  const [search, setSearch] = useState('');
+  const normalizedSearch = search.trim().toLocaleLowerCase();
+  const groups = activeIsSettingLike
+    ? isOutlineCharacterScope
+      ? (() => {
+          const groupByType = new Map(groupedSettingEntries.map((group) => [group.type, group]));
+          const neutralType = String.fromCharCode(20013, 31435, 35282, 33394);
+          const usedTypes = new Set<string>();
+          const makeGroup = (label: string, types: string[], fallbackType: string) => {
+            const matched = types.map((type) => groupByType.get(type)).filter(Boolean) as LibraryGroup[];
+            types.forEach((type) => usedTypes.add(type));
+            return {
+              type: matched[0]?.type ?? fallbackType,
+              displayType: label,
+              entries: matched.flatMap((group) => group.entries),
+            };
+          };
+          const defaults = DEFAULT_WORKBENCH_ROLE_TYPES;
+          const nextGroups = [
+            makeGroup(String.fromCharCode(30007, 22899, 20027), defaults.slice(0, 2), defaults[0]),
+            makeGroup(String.fromCharCode(26680, 24515, 37197, 35282), [defaults[2], defaults[4]], defaults[2]),
+            makeGroup(String.fromCharCode(27491, 27966, 35282, 33394), [defaults[3]], defaults[3]),
+            makeGroup(String.fromCharCode(21453, 27966, 35282, 33394), [defaults[5]], defaults[5]),
+            makeGroup(String.fromCharCode(20013, 31435, 35282, 33394), [neutralType], neutralType),
+            makeGroup(String.fromCharCode(40857, 22871, 35282, 33394), [defaults[6]], defaults[6]),
+          ];
+          groupedSettingEntries.forEach((group) => {
+            if (!usedTypes.has(group.type)) {
+              nextGroups.push({ ...group, displayType: group.displayType ?? group.type });
+            }
+          });
+          return nextGroups;
+        })()
+      : groupedSettingEntries
+    : [{ type: UNCATEGORIZED_TYPE, entries: currentEntries }];
 
   return (
     <aside className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-1 py-2" style={style}>
+      <label className="mx-1 flex h-9 shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3">
+        <Search className="h-4 w-4 shrink-0 text-slate-400" />
+        <input
+          aria-label="搜索资料"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="搜索资料..."
+          className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400"
+        />
+      </label>
       <div
-        className={`${activeIsBrainstorm ? 'mt-0' : 'mt-2'} xy-setting-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto space-y-1 ${
+        className={`mt-3 xy-setting-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto space-y-1 ${
           activeSettingSidebarScrollKey === 'setting-sidebar' ? 'scrollbar-active' : ''
         }`}
         onScroll={() => handleSettingSidebarScroll('setting-sidebar')}
@@ -149,7 +200,10 @@ export function WorkbenchLibrarySidebar({
             ? expandedRoleTypes.has(group.type)
             : expandedSettingTypes.has(group.type);
           const isDropTarget = libraryDropTarget?.tab === effectiveLibraryTab && libraryDropTarget.type === group.type;
-          const previewEntries = getPreviewedLibraryGroupEntries(group.entries, effectiveLibraryTab, group.type);
+          const allPreviewEntries = getPreviewedLibraryGroupEntries(group.entries, effectiveLibraryTab, group.type);
+          const previewEntries = normalizedSearch
+            ? allPreviewEntries.filter((entry) => entry.title.toLocaleLowerCase().includes(normalizedSearch))
+            : allPreviewEntries;
           const GroupFolderIcon = expanded ? FolderOpen : Folder;
           return (
             <div
@@ -190,7 +244,7 @@ export function WorkbenchLibrarySidebar({
                   aria-expanded={expanded}
                 >
                   <GroupFolderIcon className={WORKBENCH_FOLDER_GROUP_ICON_CLASS} />
-                  <span className="min-w-0 flex-1 truncate leading-none">{group.type}</span>
+                  <span className="min-w-0 flex-1 truncate leading-none">{group.displayType ?? group.type}</span>
                   <span className={WORKBENCH_FOLDER_GROUP_COUNT_CLASS}>{previewEntries.length}</span>
                 </button>
               </div>
@@ -208,6 +262,7 @@ export function WorkbenchLibrarySidebar({
                     previewEntries.map((entry, previewIndex) => {
                       const entryWordCount = getEntryWordCount(entry);
                       const entryType = getEntryType(entry, group.type);
+                      const lockedDefaultSetting = isLockedDefaultSettingEntry(entry);
                       return (
                         <button
                           key={entry.id}
@@ -215,6 +270,7 @@ export function WorkbenchLibrarySidebar({
                           data-library-entry-tab={effectiveLibraryTab}
                           data-library-entry-type={entryType}
                           data-library-entry-preview-index={previewIndex}
+                          title={lockedDefaultSetting ? LOCKED_DEFAULT_SETTING_TOOLTIP : undefined}
                           onDragStart={(event) => handleLibraryEntryDragStart(event, entry, entryType)}
                           onDragOver={(event) => handleLibraryEntryDragOver(event, entry, entryType, previewIndex)}
                           onDrop={(event) => handleLibraryEntryDrop(event, entry, entryType, previewIndex)}
@@ -251,8 +307,13 @@ export function WorkbenchLibrarySidebar({
                                 activeIsBrainstorm ? '' : 'pl-3'
                               }`}
                             >
-                              {entry.title}
+                              {activeTab === SETTING_TAB && !entry.title.trim() ? '暂无设定' : entry.title}
                             </span>
+                            {isOutlineCharacterScope && isMaleProtagonistRoleType(parseRoleContent(entry.content).type) ? (
+                              <span className="shrink-0 rounded-md bg-[#E7F8FD] px-1.5 py-0.5 text-xs font-black text-[#08AACE]">
+                                男主
+                              </span>
+                            ) : null}
                             <span className="ml-auto shrink-0 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-black text-[#08AACE]">
                               <WordCountText value={entryWordCount} compact />
                             </span>

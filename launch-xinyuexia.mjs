@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { rotateLogFile } from './scripts/logRotation.mjs';
+import { inspectViteOptimizedDeps } from './scripts/viteOptimizedDepsHealth.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const mode = process.argv[2] ?? 'desktop';
@@ -17,6 +18,7 @@ const electronLogFile = path.join(root, 'electron-dev.log');
 const pidFile = path.join(root, 'dev-server.pid');
 const devServerFingerprintFile = path.join(root, '.dev-server-fingerprint');
 const viteEntry = path.join(root, 'node_modules', 'vite', 'bin', 'vite.js');
+const viteOptimizedDepsDir = path.join(root, 'node_modules', '.vite');
 const electronExe = path.join(root, 'node_modules', 'electron', 'dist', 'electron.exe');
 const electronInstaller = path.join(root, 'node_modules', 'electron', 'install.js');
 const electronMain = path.join(root, 'electron', 'main.cjs');
@@ -237,6 +239,15 @@ async function isReady(url) {
   }
 }
 
+async function areOptimizedDepsHealthy() {
+  const result = await inspectViteOptimizedDeps({ baseUrl });
+  if (result.healthy) return true;
+  log(
+    `vite optimized dep check failed status=${result.status} ${result.statusText} url=${result.failedUrl} checked=${result.checkedDependencyCount}`,
+  );
+  return false;
+}
+
 async function wait(ms) {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -340,11 +351,17 @@ async function ensureDevServer() {
   cleanupPidFile();
 
   if (await isReady(baseUrl)) {
-    if (isDevServerFingerprintCurrent()) {
+    const fingerprintCurrent = isDevServerFingerprintCurrent();
+    if (fingerprintCurrent && (await areOptimizedDepsHealthy())) {
       log('dev server already ready');
       return;
     }
-    log('dev server dependency fingerprint changed; restarting');
+    if (fingerprintCurrent) {
+      log('dev server ready but optimized deps are stale; restarting');
+      removeIfExists(viteOptimizedDepsDir);
+    } else {
+      log('dev server dependency fingerprint changed; restarting');
+    }
     cleanupProjectViteProcesses();
     for (let attempt = 0; attempt < 30 && (await isReady(baseUrl)); attempt += 1) {
       await wait(100);

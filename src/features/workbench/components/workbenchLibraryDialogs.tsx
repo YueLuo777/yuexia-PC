@@ -1,5 +1,6 @@
-import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
+import { RoleCreateDialog } from './RoleCreateDialog';
+import { WorkbenchModal } from './WorkbenchModal';
 
 export type PromptDisableMenu = {
   tab: string;
@@ -35,29 +36,28 @@ export function SettingCreateDialog({
 }: SettingCreateDialogProps) {
   if (!mode) return null;
 
-  return createPortal(
-    <div className="modal-sharp fixed inset-0 z-[280] flex items-center justify-center bg-black/35" onClick={onClose}>
-      <div
-        className="modal-sharp flex w-[min(460px,92vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">{mode === 'category' ? '新建分组' : `新建${itemLabel}`}</h3>
-            <p className="mt-1 text-xs text-gray-400">
-              {mode === 'category'
-                ? '输入分组名称，确认后会显示在左侧分组里。'
-                : `选择所属分组，确认后会创建新的${itemLabel}。`}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-            title="关闭"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+  if (mode === 'setting' && itemLabel === '角色') {
+    return (
+      <RoleCreateDialog
+        draft={draft}
+        onDraftChange={onDraftChange}
+        onClose={onClose}
+        onConfirm={onConfirm}
+      />
+    );
+  }
+
+  return (
+    <WorkbenchModal
+      title={mode === 'category' ? '新建分组' : `新建${itemLabel}`}
+      subtitle={mode === 'category' ? '输入分组名称，确认后会显示在左侧分组里。' : `选择所属分组，确认后会创建新的${itemLabel}。`}
+      isOpen={mode !== null}
+      onClose={onClose}
+      widthClass="w-[460px]"
+      heightClass="h-auto"
+      storageId={`setting_create_${mode}`}
+      zIndexClass="z-[280]"
+    >
         <div className="p-5">
           <div className={`xy-floating-field xy-floating-outline-fixed ${draft.trim() ? 'xy-has-value' : ''}`}>
             <input
@@ -70,7 +70,7 @@ export function SettingCreateDialog({
               }}
               placeholder={mode === 'category' ? '输入分组名字' : `输入${itemLabel}名字`}
             />
-            <label>{mode === 'category' ? '分组名字' : `${itemLabel}名字`}</label>
+              <label>{mode === 'category' ? '分组名字' : `${itemLabel}名字`}</label>
           </div>
           {mode === 'setting' && (
             <label className="mt-4 block text-sm font-black text-slate-700">
@@ -104,9 +104,7 @@ export function SettingCreateDialog({
             确认
           </button>
         </div>
-      </div>
-    </div>,
-    document.body,
+    </WorkbenchModal>
   );
 }
 
@@ -121,25 +119,17 @@ type CategoryRenameDialogProps = {
 export function CategoryRenameDialog({ isOpen, draft, onDraftChange, onClose, onConfirm }: CategoryRenameDialogProps) {
   if (!isOpen) return null;
 
-  return createPortal(
-    <div className="modal-sharp fixed inset-0 z-[280] flex items-center justify-center bg-black/35" onClick={onClose}>
-      <div
-        className="modal-sharp flex w-[min(420px,92vw)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-5 py-4">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">重命名分组</h3>
-            <p className="mt-1 text-xs text-gray-400">默认分组不会进入这里，自建分组改名后，分组下内容会一起移动。</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
-            title="关闭"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+  return (
+    <WorkbenchModal
+      title="重命名分组"
+      subtitle="默认分组不会进入这里，自建分组改名后，分组下内容会一起移动。"
+      isOpen={isOpen}
+      onClose={onClose}
+      widthClass="w-[420px]"
+      heightClass="h-auto"
+      storageId="category_rename"
+      zIndexClass="z-[280]"
+    >
         <div className="p-5">
           <div className={`xy-floating-field xy-floating-outline-fixed ${draft.trim() ? 'xy-has-value' : ''}`}>
             <input
@@ -170,9 +160,7 @@ export function CategoryRenameDialog({ isOpen, draft, onDraftChange, onClose, on
             确认
           </button>
         </div>
-      </div>
-    </div>,
-    document.body,
+    </WorkbenchModal>
   );
 }
 
@@ -187,30 +175,17 @@ type EntryRenameDialogProps = {
 export function EntryRenameDialog({ isOpen, draft, onDraftChange, onClose, onConfirm }: EntryRenameDialogProps) {
   if (!isOpen) return null;
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[10020] flex items-center justify-center bg-slate-950/35 p-5"
-      data-titlebar-no-drag="true"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+  return (
+    <WorkbenchModal
+      title="重命名"
+      isOpen={isOpen}
+      onClose={onClose}
+      widthClass="w-[420px]"
+      heightClass="h-auto"
+      storageId="entry_rename"
+      zIndexClass="z-[10020]"
+      contentClassName="p-5"
     >
-      <section
-        className="w-[min(420px,92vw)] rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl"
-        data-no-modal-drag="true"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-base font-black text-slate-900">重命名</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:border-red-200 hover:text-red-500"
-            title="关闭"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
         <input
           data-no-modal-drag="true"
           value={draft}
@@ -239,9 +214,7 @@ export function EntryRenameDialog({ isOpen, draft, onDraftChange, onClose, onCon
             保存
           </button>
         </div>
-      </section>
-    </div>,
-    document.body,
+    </WorkbenchModal>
   );
 }
 

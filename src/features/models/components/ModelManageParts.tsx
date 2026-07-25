@@ -1,4 +1,4 @@
-import { AlertCircle, Eye, EyeOff, Settings, X } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Settings } from 'lucide-react';
 import type { HTMLAttributes } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -343,32 +343,17 @@ export function ModelManageSettingsModal({
   onChange: (value: ModelCardsPerRow) => void;
   onClose: () => void;
 }) {
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="modal-sharp fixed inset-0 z-[265] flex items-center justify-center bg-black/35 px-6"
-      onClick={onClose}
+    <AppModalShell
+      title="模型管理设置"
+      isOpen={isOpen}
+      onClose={onClose}
+      widthClass="w-[420px]"
+      heightClass="h-auto"
+      storageId="model_manage_settings"
+      zIndexClass="z-[265]"
+      headerExtra={<Settings className="h-5 w-5 text-brand" />}
     >
-      <div
-        className="modal-sharp w-[420px] max-w-[92vw] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-light text-brand">
-              <Settings className="h-5 w-5" />
-            </div>
-            <h2 className="text-base font-bold text-slate-900">模型管理设置</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
         <div className="px-6 py-5">
           <div className="mb-3 text-sm font-bold text-slate-700">模型卡片布局</div>
           <div className="grid grid-cols-1 gap-3">
@@ -391,7 +376,6 @@ export function ModelManageSettingsModal({
             })}
           </div>
         </div>
-      </div>
-    </div>
+    </AppModalShell>
   );
 }

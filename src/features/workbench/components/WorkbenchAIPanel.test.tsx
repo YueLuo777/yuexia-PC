@@ -15,6 +15,10 @@ const readSource = (fileName: string) => {
     readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchAiConfigPanel.tsx'), 'utf8'),
     readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchAIPanelView.tsx'), 'utf8'),
     readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'WorkbenchReplaceBodyButton.tsx'), 'utf8'),
+    readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../../../shared/ui/AssociationSegmentedControl.tsx'),
+      'utf8',
+    ),
     readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../model/workbenchReplaceBodyWarning.ts'), 'utf8'),
   ].join('\n');
 };
@@ -49,6 +53,31 @@ describe('WorkbenchAIPanel linked context controls', () => {
     expect(source).toContainSource('sendDisabled={isLoading || !canSendMessage}');
     expect(source).not.toContainSource('if (!text || isLoading) return;');
     expect(source).not.toContainSource('sendDisabled={isLoading || !input.trim()}');
+  });
+
+  it('uses the approved unified spacing and one-row body result actions', () => {
+    const source = readSource('WorkbenchAIPanel.tsx');
+    const styles = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '../../../shared/styles/parts/part-11.css'),
+      'utf8',
+    );
+
+    expect(source).toContainSource('<AssociationSegmentedControl');
+    expect(source).toContainSource('className="flex h-10 shrink-0 overflow-hidden rounded-xl border border-[#08B3D9]');
+    expect(source).toContainSource('className="grid w-12 shrink-0 place-items-center border-r border-[#08B3D9]/30');
+    expect(source).not.toContainSource('grid w-14 shrink-0 place-items-center border-r border-[#08B3D9]/30');
+    expect(source).toContainSource("minWidthClassName: 'w-28'");
+    expect(source).toContainSource('className="xy-ai-panel-input-row"');
+    expect(source).toContainSource('className="xy-ai-panel-action-row flex overflow-hidden rounded-xl border border-gray-200 bg-white"');
+    expect(source).toContainSource('xy-ai-panel-output-slot xy-floating-field');
+    expect(styles).toContainSource('.xy-ai-panel-output-slot.xy-floating-with-bottom-count {\n  margin-bottom: 0;');
+    expect(styles).toContainSource('.xy-ai-panel-link-row,\n.xy-ai-panel-input-row,\n.xy-ai-panel-action-row {');
+    expect(styles).toContainSource('margin-top: 0.75rem;');
+    expect(source).not.toContainSource('className="mt-2 grid grid-cols-2 gap-2"');
+    expect(source).not.toContainSource('清空内容');
+    expect(source).toContainSource('onResetSessions');
+    expect(source).toContainSource('清空');
+    expect(source).toContainSource('className="absolute right-2 top-0 z-20 flex h-4 items-center text-xs font-bold"');
   });
 
   it('auto formats AI output before replacing chapter body', () => {

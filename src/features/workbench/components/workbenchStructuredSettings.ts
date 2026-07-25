@@ -29,6 +29,11 @@ import {
 } from '@/features/workbench/model/workbenchSettingTaxonomy';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 import { ROLE_BASE_SETTING_FIELD_DEFINITIONS, ROLE_STATE_FIELD_DEFINITIONS } from './workbenchRoleSettingFields';
+import {
+  normalizePendingSettingFieldUpdates,
+  normalizeSettingFieldHistory,
+  normalizeSettingFieldPolicies,
+} from '@/features/workbench/model/workbenchSettingStatus';
 export function normalizeSettingType(value: string | undefined) {
   return value?.trim() || STRUCTURED_SETTING_UNCATEGORIZED_TYPE;
 }
@@ -41,11 +46,17 @@ export function parseSettingContent(content: string): SettingContent {
       body: parsed.body || '',
       structuredFieldSetId: typeof parsed.structuredFieldSetId === 'string' ? parsed.structuredFieldSetId : undefined,
       lockedDefaultEntryId: typeof parsed.lockedDefaultEntryId === 'string' ? parsed.lockedDefaultEntryId : undefined,
+      statusHistory: normalizeSettingFieldHistory(parsed.statusHistory),
+      pendingStatusUpdates: normalizePendingSettingFieldUpdates(parsed.pendingStatusUpdates),
+      fieldUpdatePolicies: normalizeSettingFieldPolicies(parsed.fieldUpdatePolicies),
     };
   } catch {
     return {
       type: '未分类',
       body: content || '',
+      statusHistory: [],
+      pendingStatusUpdates: [],
+      fieldUpdatePolicies: {},
     };
   }
 }
@@ -57,6 +68,17 @@ export function stringifySettingContent(value: SettingContent) {
     structuredFieldSetId: value.structuredFieldSetId || undefined,
     lockedDefaultEntryId: value.lockedDefaultEntryId || undefined,
   });
+}
+
+export function resolveActiveSettingWorkspaceType(
+  currentType: string | undefined,
+  requestedType: unknown,
+  selectedType: string | null,
+  visibleTypes: string[],
+) {
+  if (currentType) return currentType;
+  if (typeof requestedType === 'string' && visibleTypes.includes(requestedType)) return requestedType;
+  return selectedType ?? visibleTypes[0] ?? null;
 }
 
 export function createEmptyStructuredSettingFields(fieldSet: StructuredSettingFieldSet) {
@@ -101,9 +123,19 @@ export function parseStructuredSettingFields(body: string, fieldSet: StructuredS
   const sections = parseSectionedSettingBody(body);
   const fields = createEmptyStructuredSettingFields(fieldSet);
   fieldSet.fields.forEach((field) => {
-    fields[field.key] = sections[field.title] ?? '';
+    fields[field.key] =
+      sections[field.title] ??
+      field.legacyTitles?.map((title) => sections[title]).find((value) => value !== undefined) ??
+      '';
   });
   return fields;
+}
+
+export function getStructuredSettingWordCountSource(entry: WorkbenchLibraryEntry, setting: SettingContent) {
+  const fieldSet = getStructuredSettingFieldSet(entry, setting);
+  if (!fieldSet) return setting.body;
+  const fields = parseStructuredSettingFields(setting.body, fieldSet);
+  return Object.values(fields).join('');
 }
 
 export function stringifyStructuredSettingFields(fields: Record<string, string>, fieldSet: StructuredSettingFieldSet) {
@@ -141,6 +173,11 @@ export function getStructuredSettingFieldSet(entry: WorkbenchLibraryEntry, setti
     const fieldSet = STRUCTURED_SETTING_FIELD_SETS.find((item) => item.id === setting.structuredFieldSetId);
     if (fieldSet) return fieldSet;
   }
+  const promptTypeMatchedFieldSet = STRUCTURED_SETTING_FIELD_SETS.find(
+    (fieldSet) =>
+      fieldSet.id.startsWith('prompt-') && fieldSet.matchAllTitles && setting?.type === fieldSet.entryType,
+  );
+  if (promptTypeMatchedFieldSet) return promptTypeMatchedFieldSet;
   const titleMatchedFieldSet = STRUCTURED_SETTING_FIELD_SETS.find(
     (fieldSet) => setting?.type === fieldSet.entryType && entry.title.trim() === fieldSet.entryTitle,
   );
@@ -154,7 +191,12 @@ export function getStructuredSettingFieldSet(entry: WorkbenchLibraryEntry, setti
     return (
       STRUCTURED_SETTING_FIELD_SETS.find(
         (fieldSet) =>
-          setting.type === fieldSet.entryType && fieldSet.fields.some((field) => sections[field.title] !== undefined),
+          setting.type === fieldSet.entryType &&
+          fieldSet.fields.some(
+            (field) =>
+              sections[field.title] !== undefined ||
+              field.legacyTitles?.some((title) => sections[title] !== undefined),
+          ),
       ) ?? null
     );
   }
@@ -173,12 +215,16 @@ export function getStructuredSettingFieldSetByDefaultTitle(type: string, title: 
 }
 
 export function getSettingImportFormatFieldSet(type: string, title: string) {
+  const normalizedType = normalizeSettingType(type);
+  const promptTypeFieldSet = STRUCTURED_SETTING_FIELD_SETS.find(
+    (fieldSet) =>
+      fieldSet.id.startsWith('prompt-') &&
+      fieldSet.matchAllTitles &&
+      normalizeSettingType(fieldSet.entryType) === normalizedType,
+  );
+  if (promptTypeFieldSet) return promptTypeFieldSet;
   const directFieldSet = getStructuredSettingFieldSetByDefaultTitle(type, title);
   if (directFieldSet) return directFieldSet;
-  const normalizedType = normalizeSettingType(type);
-  if (['正派势力', '反派势力', '中立势力', '其他势力'].includes(normalizedType)) {
-    return STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => fieldSet.id === 'faction-righteous-no-1') ?? null;
-  }
   if (normalizedType === '世界地图' && title.trim() === '危险区域') {
     return STRUCTURED_SETTING_FIELD_SETS.find((fieldSet) => fieldSet.id === 'faction-danger-zone') ?? null;
   }
@@ -286,10 +332,11 @@ export function buildSettingImportFormatTabs(options: BuildSettingImportFormatTa
     },
     ...(
       [
+        ['locations', '地点地图', 'setting:location'],
         ['factions', '势力设定', 'setting:faction'],
         ['items', '道具资源', 'setting:item'],
-        ['monsters', '怪物图鉴', 'setting:monster'],
         ['foreshadow', '伏笔线索', 'setting:foreshadow'],
+        ['monsters', '怪物图鉴', 'setting:monster'],
       ] as const
     ).map(([tabId, tabTitle, domain]) => ({
       id: tabId,

@@ -4,10 +4,14 @@ import {
   getWorkbenchLibraryPhaseActions,
   registerWorkbenchLibraryPhaseActions,
 } from './workbenchLibraryPhaseActionsBridge';
+import {
+  buildCurrentSettingLinkedContext,
+  buildOtherSettingLinkedContext,
+  buildSettingLinkedContextPayload,
+} from '../components/workbenchSettingLinkedContext';
 export function useWorkbenchLibraryControllerPhase4(scope: Record<string, any>) {
   const phaseActionsRef = { current: getWorkbenchLibraryPhaseActions(scope.settingTypeOptionsRef) };
   const getRoleEntries = () => phaseActionsRef.current.roleEntries ?? [];
-  const getActiveOtherSettingLinkEntries = () => phaseActionsRef.current.activeOtherSettingLinkEntries ?? [];
   const {
     settingTypeOptionsRef,
     ChevronDown,
@@ -153,7 +157,6 @@ export function useWorkbenchLibraryControllerPhase4(scope: Record<string, any>) 
     buildRequestLogPlainPreview,
     compactTextForAi,
     escapeXmlAttribute,
-    formatSettingLinkedContextForAi,
     formatSettingUserRequirementForAi,
     getBrainstormQuestionRows,
     renderAiChatContent,
@@ -634,26 +637,30 @@ export function useWorkbenchLibraryControllerPhase4(scope: Record<string, any>) 
     getActiveLinkedBrainstormSnapshot,
     getActiveSettingLinkSource,
   } = scope;
-  const getActiveLinkedSettingSnapshot = (): { source: SettingLinkSource; title: string; text: string } => {
+  const getActiveLinkedSettingSnapshot = () => {
     const source = getActiveSettingLinkSource();
     if (source === 'current') {
       if (outlineSettingScope === 'character') {
         const currentRoleId = tabConfigs[ROLE_TAB]?.selectedId ?? null;
-        const roleEntries = getRoleEntries();
-        const currentRoleEntry = roleEntries.find((entry) => entry.id === currentRoleId) ?? roleEntries[0] ?? null;
+        const currentRoleEntry = getRoleEntries().find((entry) => entry.id === currentRoleId) ?? getRoleEntries()[0] ?? null;
         const currentRole = currentRoleEntry ? parseRoleContent(currentRoleEntry.content) : null;
-        return {
-          source,
-          title: currentRoleEntry?.title ?? '当前人物设定',
-          text: currentRoleEntry && currentRole ? buildRoleReaderContent(currentRoleEntry, currentRole) : '',
-        };
+        return buildCurrentSettingLinkedContext({
+          entry: currentRoleEntry,
+          body: currentRoleEntry && currentRole ? buildRoleReaderContent(currentRoleEntry, currentRole) : '',
+          source: 'role',
+          fallbackPath: ['人物设定', currentRole?.type ?? '人物设定', currentRoleEntry?.title ?? '当前人物设定'],
+          allEntries: phaseActionsRef.current.otherSettingLinkFlatEntries ?? [],
+        });
       }
       const currentEntry = selectedEntry?.tab === SETTING_TAB ? selectedEntry : null;
-      return {
-        source,
-        title: currentEntry?.title ?? '当前设定',
-        text: getSettingEntryBody(currentEntry),
-      };
+      const currentSettingType = currentEntry ? parseSettingContent(currentEntry.content).type : '';
+      return buildCurrentSettingLinkedContext({
+        entry: currentEntry,
+        body: getSettingEntryBody(currentEntry),
+        source: 'setting',
+        fallbackPath: ['作品设定', currentSettingType, currentEntry?.title ?? '当前设定'],
+        allEntries: phaseActionsRef.current.otherSettingLinkFlatEntries ?? [],
+      });
     }
     if (source === 'brainstorm') {
       const linkedBrainstorm = getActiveLinkedBrainstormSnapshot();
@@ -664,21 +671,13 @@ export function useWorkbenchLibraryControllerPhase4(scope: Record<string, any>) 
       };
     }
     if (source === 'other') {
-      const linkedEntries = getActiveOtherSettingLinkEntries();
-      return {
-        source,
-        title: linkedEntries.length > 0 ? `其他设定 ${linkedEntries.length} 项` : '其他设定',
-        text: linkedEntries
-          .map((entry) =>
-            [`【${entry.tabTitle} / ${entry.groupName} / ${entry.title}】`, entry.text].filter(Boolean).join('\n'),
-          )
-          .join('\n\n'),
-      };
+      return buildOtherSettingLinkedContext(phaseActionsRef.current.activeOtherSettingLinkEntries ?? []);
     }
     return {
       source: null,
       title: '',
       text: '',
+      items: [],
     };
   };
   useEffect(() => {
@@ -777,7 +776,7 @@ export function useWorkbenchLibraryControllerPhase4(scope: Record<string, any>) 
   };
   const buildSettingLibraryRequestText = (promptText: string, userText: string) => {
     const parts = [promptText.trim()].filter(Boolean);
-    const linkedSettingContext = formatSettingLinkedContextForAi(getActiveLinkedSettingSnapshot());
+    const linkedSettingContext = buildSettingLinkedContextPayload(getActiveLinkedSettingSnapshot()).aiText;
     if (linkedSettingContext) {
       parts.push(linkedSettingContext);
     }
@@ -816,9 +815,9 @@ export function useWorkbenchLibraryControllerPhase4(scope: Record<string, any>) 
           ? [baseModelPrompt, BRAINSTORM_OUTPUT_ONLY_INSTRUCTION].filter(Boolean).join('\n\n')
           : baseModelPrompt;
     const linkedSettingContext = getActiveLinkedSettingSnapshot();
-    const hasLinkedSettingContext = activeTab === SETTING_TAB && Boolean(linkedSettingContext.text.trim());
+    const linkedSettingPayload = buildSettingLinkedContextPayload(linkedSettingContext);
+    const hasLinkedSettingContext = activeTab === SETTING_TAB && linkedSettingPayload.hasContext;
     const hasLinkedBrainstorm = hasLinkedSettingContext && linkedSettingContext.source === 'brainstorm';
-    const linkedSettingContextForAi = formatSettingLinkedContextForAi(linkedSettingContext);
     const settingUserRequirementForAi = formatSettingUserRequirementForAi(text);
     const requestText =
       activeTab === SETTING_TAB && overrideText === undefined
@@ -840,8 +839,8 @@ export function useWorkbenchLibraryControllerPhase4(scope: Record<string, any>) 
         systemPrompt: activeTab === SETTING_TAB ? baseModelPrompt : modelPrompt,
         userContent: activeTab === SETTING_TAB ? settingUserRequirementForAi : requestText,
         contextTitle: hasLinkedSettingContext ? linkedSettingContext.title : '',
-        contextText: hasLinkedSettingContext ? linkedSettingContextForAi : '',
-        contextWordCount: countTextWords(hasLinkedSettingContext ? linkedSettingContext.text : ''),
+        contextText: hasLinkedSettingContext ? linkedSettingPayload.displayText : '',
+        contextWordCount: hasLinkedSettingContext ? linkedSettingPayload.wordCount : 0,
       } satisfies LibraryAiRequestLog,
     };
   };
@@ -877,9 +876,9 @@ export function useWorkbenchLibraryControllerPhase4(scope: Record<string, any>) 
       });
     }
     const visibleUserText = (options.visibleText ?? text).trim();
-    const pendingOutput = `${aiOutput.trim() ? `${aiOutput.trim()}\n\n` : ''}[[USER]]\n${visibleUserText}\n\n[[AI]]\n正在生成...`;
-    const replacePendingOutput = (content: string) =>
-      pendingOutput.replace(/\[\[AI\]\]\n正在生成\.\.\.$/, `[[AI]]\n${content}`);
+    const pendingAiPrefix = `${aiOutput.trim() ? `${aiOutput.trim()}\n\n` : ''}[[USER]]\n${visibleUserText}\n\n[[AI]]\n`;
+    const pendingOutput = `${pendingAiPrefix}${formatAiThinkingResponse('', '', 0, false)}`;
+    const replacePendingOutput = (content: string) => `${pendingAiPrefix}${content}`;
     setAiOutput(pendingOutput);
     const shouldStream = targetTab === SETTING_TAB || (targetTab === BRAINSTORM_TAB && brainstormStreamEnabled);
     const shouldGenerateBrainstormSequentially =

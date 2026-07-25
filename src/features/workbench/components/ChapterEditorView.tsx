@@ -28,10 +28,13 @@ export function renderChapterEditorView(scope: Record<string, any>) {
     auditParagraphCountMatches,
     auditRevisedParagraphs,
     auditRevisedText,
+    auditTextStage,
+    canRunTextAudit,
     canRenderReviewPanel,
     canShowReviewOutline,
     chapter,
     chapterDirectoryGroups,
+    cancelAuditTextReviewCountdown,
     clearReviewAiOutput,
     commitContent,
     content,
@@ -74,15 +77,18 @@ export function renderChapterEditorView(scope: Record<string, any>) {
     isSmartFormatOpen,
     isSymbolReplaceOpen,
     isTitleOptimizeOpen,
+    saveStatus,
     lastSavedAt,
     onDeleteChapter,
     onOpenFind,
     onRenameChapter,
+    onRetrySave,
     onUpdateSerialNumber,
     polishPreviewParagraphs,
     polishPreviewText,
     replaceAll,
     replaceText,
+    runAuditTextReviewManually,
     reviewAiInput,
     reviewAiOutput,
     reviewAnnotationPreviewPaneRef,
@@ -119,6 +125,7 @@ export function renderChapterEditorView(scope: Record<string, any>) {
     selectStatusChapter,
     selectedStatusTargets,
     sendReviewAiMessage,
+    startAuditTextReviewNow,
     serialValue,
     setCopyToast,
     setEditorScrollTop,
@@ -154,6 +161,7 @@ export function renderChapterEditorView(scope: Record<string, any>) {
     showStatusUpdatePanel,
     statusDraft,
     statusLeftResizeHandle,
+    statusModalDraggable,
     statusPageLeftWidth,
     statusPageRightWidth,
     statusPreviewChapters,
@@ -188,6 +196,7 @@ export function renderChapterEditorView(scope: Record<string, any>) {
           titleCount={titleCount}
           content={content}
           wordCount={wordCount}
+          saveStatus={saveStatus}
           lastSavedAt={lastSavedAt}
           associatedCount={associatedCount}
           isFindOpen={isFindOpen}
@@ -223,6 +232,7 @@ export function renderChapterEditorView(scope: Record<string, any>) {
           handleContentChange={handleContentChange}
           handleKeyDown={handleKeyDown}
           handlePaste={handlePaste}
+          onRetrySave={onRetrySave}
         />
       )}
 
@@ -263,6 +273,7 @@ export function renderChapterEditorView(scope: Record<string, any>) {
           statusPageLeftWidth={statusPageLeftWidth}
           statusPageRightWidth={statusPageRightWidth}
           statusLeftResizeHandle={statusLeftResizeHandle}
+          statusModalDraggable={statusModalDraggable}
           statusRightResizeHandle={statusRightResizeHandle}
           chapterDirectoryGroups={chapterDirectoryGroups}
           expandedStatusVolumeIds={expandedStatusVolumeIds}
@@ -354,6 +365,12 @@ export function renderChapterEditorView(scope: Record<string, any>) {
             polishPreviewParagraphs,
             auditParagraphCountMatches,
             auditOutputPassed,
+            auditTextStage,
+            canRunTextAudit,
+            isReviewAiLoading,
+            onStartAuditTextReviewNow: startAuditTextReviewNow,
+            onCancelAuditTextReviewCountdown: cancelAuditTextReviewCountdown,
+            onRunAuditTextReviewManually: runAuditTextReviewManually,
             expandedAuditStructureItems,
             toggleAuditStructureItem,
             reviewAnnotationsByParagraph,

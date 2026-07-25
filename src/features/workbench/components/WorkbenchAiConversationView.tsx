@@ -1,5 +1,12 @@
+import { isAiThinkingContent } from '@/features/workbench/model/workbenchAiThinkingProtocol';
 import { WordCountText } from '@/shared/ui/WordCountText';
 import { renderAiChatContent, type AiSession } from './workbenchAiPanelSupport';
+
+function getMessageFrameClass(role: 'user' | 'assistant', content: string) {
+  if (role === 'user') return 'max-w-[82%] rounded-2xl rounded-br-md bg-brand px-3 py-2 text-white shadow-sm';
+  if (isAiThinkingContent(content)) return 'max-w-[82%]';
+  return 'max-w-[82%] rounded-2xl rounded-bl-md border border-gray-200 bg-white px-3 py-2 text-gray-700 shadow-sm';
+}
 
 export function WorkbenchAiConversationView({
   sessions,
@@ -27,14 +34,14 @@ export function WorkbenchAiConversationView({
   onResetSessions: () => void;
 }) {
   return (
-    <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-with-bottom-count xy-floating-chat-shell mt-5 min-h-0 flex-1">
+    <div className="xy-ai-panel-output-slot xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-with-bottom-count xy-floating-chat-shell">
       <div className="xy-floating-rich-preview xy-floating-chat-history editor-scrollbar h-full overflow-y-auto">
         {activeSession.messages.length ? (
           <div className="flex flex-col gap-3">
             {activeSession.messages.map((message) => (
               <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div
-                  className={`max-w-[82%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 leading-7 shadow-sm ${message.role === 'user' ? 'rounded-br-md bg-brand text-white' : 'rounded-bl-md border border-gray-200 bg-white text-gray-700'}`}
+                  className={`whitespace-pre-wrap break-words leading-7 ${getMessageFrameClass(message.role, message.content)}`}
                   style={{ fontSize: outputFontSize }}
                 >
                   {isLoading && message.role === 'assistant' && message.content === '正在生成...'

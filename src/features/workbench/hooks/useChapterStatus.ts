@@ -7,10 +7,12 @@ import {
 } from '@/features/workbench/model/workbenchLibraryStorage';
 import type { Chapter } from '@/features/workbench/model/workbenchTypes';
 import {
-  getExistingStatusForChapter,
   isStatusTargetEntry,
-  upsertEntryStatus,
 } from '@/features/workbench/components/chapterEditorPresentation';
+import {
+  getExistingWorkbenchEntryStatus,
+  upsertWorkbenchEntryStatus,
+} from '@/features/workbench/components/workbenchEntryStatusRecord';
 
 type ChapterDirectoryGroup = {
   id: number;
@@ -88,7 +90,7 @@ export function useChapterStatus({
       new Set(
         sortedChapters
           .filter((item) =>
-            statusUpdateSourceEntries.some((entry) => getExistingStatusForChapter(entry.content, item.serialNumber)),
+            statusUpdateSourceEntries.some((entry) => getExistingWorkbenchEntryStatus(entry.content, item.serialNumber)),
           )
           .map((item) => item.id),
       ),
@@ -103,7 +105,7 @@ export function useChapterStatus({
     setStatusEntries(entries);
     setStatusTargetIds(firstTarget ? new Set([firstTarget.id]) : new Set());
     setStatusDraft(
-      firstTarget && nextChapter ? getExistingStatusForChapter(firstTarget.content, nextChapter.serialNumber) : '',
+      firstTarget && nextChapter ? getExistingWorkbenchEntryStatus(firstTarget.content, nextChapter.serialNumber) : '',
     );
     setStatusChapterId(nextChapter?.id ?? null);
     setIsStatusUpdateOpen(true);
@@ -122,7 +124,7 @@ export function useChapterStatus({
         const selectedId = Array.from(next)[0];
         const selected = statusTargetEntries.find((item) => item.id === selectedId);
         if (selected && activeStatusChapter) {
-          setStatusDraft(getExistingStatusForChapter(selected.content, activeStatusChapter.serialNumber));
+          setStatusDraft(getExistingWorkbenchEntryStatus(selected.content, activeStatusChapter.serialNumber));
         }
       }
       return next;
@@ -134,7 +136,7 @@ export function useChapterStatus({
     setStatusChapterId(nextChapterId);
     if (statusTargetIds.size === 1 && nextChapter) {
       const selected = statusTargetEntries.find((item) => statusTargetIds.has(item.id));
-      setStatusDraft(selected ? getExistingStatusForChapter(selected.content, nextChapter.serialNumber) : '');
+      setStatusDraft(selected ? getExistingWorkbenchEntryStatus(selected.content, nextChapter.serialNumber) : '');
     }
   };
 
@@ -144,7 +146,7 @@ export function useChapterStatus({
       statusTargetIds.has(entry.id)
         ? {
             ...entry,
-            content: upsertEntryStatus(entry.content, activeStatusChapter, statusDraft),
+            content: upsertWorkbenchEntryStatus(entry.content, activeStatusChapter, statusDraft),
             updatedAt: new Date().toLocaleString('zh-CN'),
           }
         : entry,

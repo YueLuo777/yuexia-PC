@@ -1,24 +1,30 @@
 import { lazy, memo, Suspense, type ComponentProps } from 'react';
 import { ChapterEditor } from './ChapterEditor';
+import { WorkbenchLibraryVisibilityProvider } from './workbenchLibraryVisibility';
 import type { WorkbenchCreationFlowPageKey } from '../model/workbenchCreationFlow';
 
 const LazyWorkbenchLibraryPanel = lazy(() =>
   import('./WorkbenchLibraryPanel').then((module) => ({ default: module.WorkbenchLibraryPanel })),
 );
 const SETTING_LIBRARY_FLOW_TABS = ['大纲', '角色', '脑洞'];
-type CachedLibraryPanelProps = ComponentProps<typeof LazyWorkbenchLibraryPanel> & { cacheVisible: boolean };
+type CachedLibraryPanelProps = ComponentProps<typeof LazyWorkbenchLibraryPanel> & {
+  cacheVisible: boolean;
+  activePageKey: string;
+};
 const LibraryPanel = memo(
-  function LibraryPanel({ cacheVisible: _, ...props }: CachedLibraryPanelProps) {
+  function LibraryPanel({ cacheVisible, activePageKey, ...props }: CachedLibraryPanelProps) {
     return (
-      <Suspense
-        fallback={
-          <div className="flex h-full min-h-[240px] items-center justify-center bg-white text-sm font-bold text-slate-400">
-            正在加载资料库…
-          </div>
-        }
-      >
-        <LazyWorkbenchLibraryPanel {...props} />
-      </Suspense>
+      <WorkbenchLibraryVisibilityProvider isActive={cacheVisible} activePageKey={activePageKey}>
+        <Suspense
+          fallback={
+            <div className="flex h-full min-h-[240px] items-center justify-center bg-white text-sm font-bold text-slate-400">
+              正在加载资料库…
+            </div>
+          }
+        >
+          <LazyWorkbenchLibraryPanel {...props} />
+        </Suspense>
+      </WorkbenchLibraryVisibilityProvider>
     );
   },
   (previous, next) =>
@@ -59,8 +65,8 @@ export function WorkbenchCreationFlowContent({
   const chapterOutlineVisible = activeFlow === 'chapterOutline';
   const summaryVisible = activeFlow === 'summary';
   const getCachedLibrarySignals = (visible: boolean) => ({
-    fieldSizeOpenSignal: visible ? fieldSizeOpenSignal : 0,
-    openLogSignal: visible ? aiLogOpenSignal : 0,
+    fieldSizeOpenSignal,
+    openLogSignal: aiLogOpenSignal,
     onRegisterHeaderLog: undefined,
     showInlineFieldSizeButton: !visible,
   });
@@ -73,6 +79,7 @@ export function WorkbenchCreationFlowContent({
       >
         <LibraryPanel
           cacheVisible={settingLibraryVisible}
+          activePageKey={activeFlow}
           {...getCachedLibrarySignals(settingLibraryVisible)}
           storageKey={settingsStorageKey}
           outlineStorageKey={outlineStorageKey}
@@ -89,6 +96,7 @@ export function WorkbenchCreationFlowContent({
       >
         <LibraryPanel
           cacheVisible={chapterOutlineVisible}
+          activePageKey={activeFlow}
           {...getCachedLibrarySignals(chapterOutlineVisible)}
           storageKey={settingsStorageKey}
           outlineStorageKey={outlineStorageKey}
@@ -102,6 +110,7 @@ export function WorkbenchCreationFlowContent({
       <div className={summaryVisible ? 'flex h-full min-h-0 min-w-0 flex-1' : 'hidden'} data-summary-library-cache>
         <LibraryPanel
           cacheVisible={summaryVisible}
+          activePageKey={activeFlow}
           {...getCachedLibrarySignals(summaryVisible)}
           storageKey={outlineStorageKey}
           outlineStorageKey={outlineStorageKey}

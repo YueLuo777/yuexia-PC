@@ -77,9 +77,14 @@ export function escapeAiRequestTagAttribute(value: string) {
   return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-export function wrapAiRequestTag(tagName: string, content: string, attributes?: Record<string, string>) {
-  const text = content.trim();
-  if (!text) return '';
+export function wrapAiRequestTag(
+  tagName: string,
+  content: string,
+  attributes?: Record<string, string>,
+  options?: { preserveLeadingWhitespace?: boolean },
+) {
+  const text = options?.preserveLeadingWhitespace ? content.trimEnd() : content.trim();
+  if (!text.trim()) return '';
   const attrs = attributes
     ? Object.entries(attributes)
         .filter(([, value]) => value.trim())

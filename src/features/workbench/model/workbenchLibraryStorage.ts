@@ -111,3 +111,9 @@ export function createWorkbenchLibraryEntry(tab: string, title: string, content 
     updatedAt: new Date().toLocaleString('zh-CN'),
   };
 }
+
+export function getDefaultWorkbenchLibraryEntryTitle(tab: string) {
+  if (tab === '大纲' || tab === '设定') return '新建设定';
+  if (tab === '角色') return '新建角色';
+  return `新建${tab}`;
+}

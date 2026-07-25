@@ -26,10 +26,11 @@ describe('workbenchLibraryPanelModel', () => {
     expect(OTHER_SETTING_LINK_TABS.map((tab) => tab.id)).toEqual([
       'work',
       'roles',
+      'locations',
       'factions',
       'items',
-      'monsters',
       'foreshadow',
+      'monsters',
     ]);
   });
 

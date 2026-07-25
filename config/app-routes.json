@@ -10,28 +10,12 @@
       "nav": { "iconName": "BookOpen", "label": "我的小说" }
     },
     {
-      "id": "scripts",
-      "path": "/scripts",
-      "component": "novelLibrary",
-      "dashboard": true,
-      "smoke": true,
-      "nav": { "iconName": "Film", "label": "我的剧本" }
-    },
-    {
       "id": "tomatoBrowser",
       "path": "/tomato-browser",
       "component": "tomatoGenreIteration",
       "dashboard": true,
       "smoke": true,
       "nav": { "iconName": "Globe", "label": "番茄浏览器" }
-    },
-    {
-      "id": "library",
-      "path": "/library",
-      "component": "libraryHub",
-      "dashboard": true,
-      "smoke": true,
-      "nav": { "iconName": "Library", "label": "资料库" }
     },
     {
       "id": "prompts",
@@ -63,13 +47,6 @@
       "dashboard": true,
       "smoke": true,
       "nav": { "iconName": "BarChart3", "label": "Token用量" }
-    },
-    {
-      "id": "scriptEditor",
-      "path": "/script-editor-v2",
-      "component": "scriptEditor",
-      "dashboard": false,
-      "smoke": true
     },
     {
       "id": "workbench",
@@ -118,7 +95,6 @@
     }
   ],
   "legacyRedirects": [
-    { "path": "/concept-library", "to": "/library" },
     { "path": "/db-settings", "to": "/settings?section=backup" },
     { "path": "/system-settings", "to": "/settings?section=system" },
     { "path": "/shortcut-settings", "to": "/settings?section=shortcuts" },

@@ -120,18 +120,17 @@ describe('ModelManagePage drag sorting', () => {
     expect(sizeSource).toContainSource("WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS = 'h-[80vh] w-[80vw]'");
     expect(workbenchPageSource).toContainSource('WorkbenchManagementModal');
     expect(workbenchManagementModalSource).toContainSource('WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS');
-    expect(workbenchManagementModalSource).toContainSource('return createPortal(');
-    expect(workbenchManagementModalSource).toContainSource('document.body');
-    expect(workbenchManagementModalSource).toContainSource('data-global-modal-static="true"');
+    expect(workbenchManagementModalSource).toContainSource('<WorkbenchModal');
+    expect(workbenchManagementModalSource).toContainSource('storageId={`workbench_management_${type}`}');
     expect(libraryModalSource).toContainSource('WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS');
-    expect(libraryModalSource).toContainSource('data-global-modal-static="true"');
+    expect(libraryModalSource).toContainSource('<WorkbenchModal');
     expect(chapterEditorSource).toContainSource(
       "const REVIEW_MANAGEMENT_MODAL_SIZE_CLASS = 'h-[calc(80vh/var(--xinyuexia-effective-scale,1))] w-[calc(80vw/var(--xinyuexia-effective-scale,1))]';",
     );
     expect(chapterEditorSource).toContainSource(
       "const REVIEW_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS = 'h-[80vh] w-[80vw]';",
     );
-    expect(chapterEditorSource).toContainSource('data-global-modal-static="true"');
+    expect(chapterEditorSource).toContainSource('<WorkbenchModal');
     expect(libraryModalSource).toContainSource('max-w-[80vw]');
     expect(libraryModalSource).not.toContainSource('w-[min(1200px,94vw)]');
     expect(`${libraryModalSource}\n${sizeSource}`).not.toContainSource('94vw');

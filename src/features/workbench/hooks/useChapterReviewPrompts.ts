@@ -4,25 +4,26 @@ import {
   AUDIT_PROMPT_CATEGORY,
   COMMENT_PROMPT_CATEGORY,
   STATUS_PROMPT_CATEGORY,
+  isAuditPromptCategory,
   normalizePromptCategoryName,
   usePrompts,
 } from '@/features/prompts/hooks/usePrompts';
 import type { ReviewMode } from '@/features/workbench/model/chapterReviewTaskState';
+import { extractReviewRevisedText, extractTextAuditParagraphChanges } from '@/features/workbench/model/chapterReviewText';
+import { getAuditTextStageState } from '@/features/workbench/model/chapterAuditWorkflow';
 
 import { POLISH_PROMPT_CATEGORY, REVIEW_MODE_PROMPT_CATEGORIES } from '../components/chapterEditorReviewConfig';
 import {
   buildAuditPromptSelectOptions,
-  getAuditPromptSubcategory,
-  isStructureAuditPrompt,
-  isTextAuditPrompt,
 } from '../components/chapterEditorPresentation';
 
 interface UseChapterReviewPromptsOptions {
   reviewMode: ReviewMode;
   clearReviewAiOutput: () => void;
+  reviewAiOutput?: string;
 }
 
-export function useChapterReviewPrompts({ reviewMode, clearReviewAiOutput }: UseChapterReviewPromptsOptions) {
+export function useChapterReviewPrompts({ reviewMode, clearReviewAiOutput, reviewAiOutput = '' }: UseChapterReviewPromptsOptions) {
   const [reviewAuditPromptId, setReviewAuditPromptId] = useState('');
   const [reviewCommentPromptId, setReviewCommentPromptId] = useState('');
   const [reviewPolishPromptId, setReviewPolishPromptId] = useState('');
@@ -30,7 +31,7 @@ export function useChapterReviewPrompts({ reviewMode, clearReviewAiOutput }: Use
   const { prompts } = usePrompts();
 
   const reviewAuditPrompts = useMemo(
-    () => prompts.filter((prompt) => normalizePromptCategoryName(prompt.category) === AUDIT_PROMPT_CATEGORY),
+    () => prompts.filter((prompt) => isAuditPromptCategory(prompt.category, prompt.subCategory)),
     [prompts],
   );
   const reviewCommentPrompts = useMemo(
@@ -72,18 +73,26 @@ export function useChapterReviewPrompts({ reviewMode, clearReviewAiOutput }: Use
       : reviewMode === 'comment'
         ? setReviewCommentPromptId
         : setReviewPolishPromptId;
-  const activeReviewPromptCategory = REVIEW_MODE_PROMPT_CATEGORIES[reviewMode];
-  const isAuditTextReview = reviewMode === 'audit' && isTextAuditPrompt(activeReviewPrompt);
-  const isAuditStructureReview = reviewMode === 'audit' && isStructureAuditPrompt(activeReviewPrompt);
+  const activeReviewPromptCategory =
+    reviewMode === 'audit' ? AUDIT_PROMPT_CATEGORY : REVIEW_MODE_PROMPT_CATEGORIES[reviewMode];
+  const auditTextStage = getAuditTextStageState(reviewAiOutput);
+  const hasPartialTextAuditOutput =
+    extractTextAuditParagraphChanges(reviewAiOutput).length > 0 &&
+    (!auditTextStage || auditTextStage.status === 'complete');
+  const hasTextAuditOutput =
+    reviewMode === 'audit' &&
+    activeReviewPrompt?.textAuditEnabled !== false &&
+    Boolean(activeReviewPrompt?.textAuditContent?.trim()) &&
+    Boolean(extractReviewRevisedText(reviewAiOutput) || hasPartialTextAuditOutput);
+  const isAuditTextReview = reviewMode === 'audit' && hasTextAuditOutput;
+  const isAuditStructureReview = reviewMode === 'audit' && !hasTextAuditOutput;
   const activeStatusPromptId = statusPrompts.some((prompt) => prompt.id === statusPromptId)
     ? statusPromptId
     : (statusPrompts[0]?.id ?? '');
 
   const handleActiveReviewPromptChange = (nextPromptId: string) => {
-    const previousAuditType = reviewMode === 'audit' ? getAuditPromptSubcategory(activeReviewPrompt) : undefined;
-    const nextPrompt = reviewMode === 'audit' ? reviewAuditPrompts.find((prompt) => prompt.id === nextPromptId) : null;
     setActiveReviewPromptId(nextPromptId);
-    if (reviewMode === 'audit' && nextPrompt && getAuditPromptSubcategory(nextPrompt) !== previousAuditType) {
+    if (reviewMode === 'audit' && nextPromptId !== activeReviewPrompt?.id) {
       clearReviewAiOutput();
     }
   };

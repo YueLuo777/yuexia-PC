@@ -37,7 +37,7 @@ import {
   parseSettingContent,
   parseStructuredSettingFields,
   resolveStructuredSettingDraftFields,
-  stringifySettingContent,
+  stringifySettingContent, resolveActiveSettingWorkspaceType,
   stringifyStructuredSettingFields,
   type SettingContent,
   type SettingImportFormatPreviewScope,
@@ -45,6 +45,8 @@ import {
   type StructuredSettingFieldDraft,
   type StructuredSettingTab,
 } from './workbenchStructuredSettings';
+import { getWorkbenchSidebarWordCountSource } from './workbenchLibrarySidebarWordCount';
+import { getDefaultWorkbenchLibraryEntryTitle } from '@/features/workbench/model/workbenchLibraryStorage';
 import {
   DEFAULT_ROLE_TYPES,
   ROLE_TAXONOMY_DEFAULTS_VERSION,
@@ -119,7 +121,6 @@ import {
   type WorkbenchLibraryPanelProps,
 } from '@/features/workbench/model/workbenchLibraryPanelModel';
 import {
-  BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH,
   BRAINSTORM_LAYOUT_OUTPUT_MIN_WIDTH,
   BRAINSTORM_LAYOUT_PREVIEW_MAX_WIDTH,
   BRAINSTORM_LAYOUT_RIGHT_MAX_WIDTH,
@@ -145,6 +146,7 @@ import {
   WORKBENCH_LIBRARY_ENTRY_BUTTON_CLASS,
   WORKBENCH_LIBRARY_ENTRY_EMPTY_CLASS,
 } from './workbenchLibraryPanelConstants';
+import { resolveBrainstormLibraryLeftWidth } from './workbenchLibraryStorageState';
 import {
   BRAINSTORM_OTHER_REQUIREMENTS_HEADER,
   BRAINSTORM_REQUEST_HEADER,
@@ -187,6 +189,7 @@ import {
   buildLibraryLogGroups,
   buildRequestLogPlainPreview,
   compactTextForAi,
+  countSettingLinkedContextWords,
   escapeXmlAttribute,
   formatSettingLinkedContextForAi,
   formatSettingUserRequirementForAi,
@@ -197,6 +200,7 @@ import {
 import { LibraryAiLogModal, type LibraryAiLogViewTab } from './workbenchLibraryAiLogModal';
 import { LibraryManagementModal, type LibraryManagementModalState } from './workbenchLibraryManagementModal';
 import { WorkbenchLibrarySidebar } from './workbenchLibrarySidebar';
+import { WorkbenchSettingTreeSidebar } from './WorkbenchSettingTreeSidebar';
 import { RoleBaseStateEditor } from './workbenchRoleEditor';
 import {
   BrainstormOutputWorkspace,
@@ -505,7 +509,7 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
         : settingTypeOptions;
     const currentBrainstormBody = activeIsBrainstorm ? (currentSelectedSetting?.body ?? '') : '';
     const currentBrainstormPreviewWordCount = activeIsBrainstorm ? countTextWords(currentBrainstormBody) : 0;
-    const brainstormLayoutLeftWidth = Math.min(settingLibraryLeftWidth, BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH);
+    const brainstormLayoutLeftWidth = resolveBrainstormLibraryLeftWidth(settingLibraryLeftWidth);
     const brainstormLayoutPreviewWidth = Math.min(brainstormPreviewWidth, BRAINSTORM_LAYOUT_PREVIEW_MAX_WIDTH);
     const brainstormLayoutRightWidth = Math.max(
       BRAINSTORM_LAYOUT_RIGHT_MIN_WIDTH,
@@ -513,7 +517,7 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
     );
     const activeSettingLinkSource = getActiveSettingLinkSource();
     const currentLinkedSettingContext = getActiveLinkedSettingSnapshot();
-    const linkedSettingWordCount = countTextWords(currentLinkedSettingContext.text);
+    const linkedSettingWordCount = countSettingLinkedContextWords(currentLinkedSettingContext);
     const effectivePromptDisabled =
       activeTab === SETTING_TAB
         ? !isOutlineCharacterScope && activeSettingLinkSource === 'current'
@@ -521,10 +525,10 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
     const latestUsefulAiOutput = activeIsBrainstorm ? getLatestUsefulAiText(aiResult || aiOutput) : aiOutput.trim();
     const smartImportLocked = activeTabConfig.smartImportLocked !== false;
     const activeSettingWorkspaceDomain = selectedSettingWorkspaceDomain;
-    const activeSettingWorkspaceType = selectedSettingWorkspaceType;
     const visibleSettingTypeOptions = activeSettingWorkspaceDomain
       ? activeSettingTypeOptions.filter((type) => getSettingTypeWorkspaceDomain(type) === activeSettingWorkspaceDomain)
       : activeSettingTypeOptions.filter((type) => !getSettingTypeWorkspaceDomain(type));
+    const activeSettingWorkspaceType = resolveActiveSettingWorkspaceType(currentSelectedSetting?.type, effectiveTabConfig.typeDraft, selectedSettingWorkspaceType, visibleSettingTypeOptions);
     const groupedSettingEntries = visibleSettingTypeOptions.map((type) => ({
       type,
       entries: currentEntries.filter((entry) => {
@@ -539,67 +543,20 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
       const role = isOutlineCharacterScope ? getParsedRoleEntry(entry) : null;
       return role?.type ?? parsed?.type ?? fallbackType;
     };
-    const getLibrarySidebarEntryWordCount = (entry: WorkbenchLibraryEntry) => {
-      const parsed = activeIsSettingLike ? getParsedSettingEntry(entry) : null;
-      const role = isOutlineCharacterScope ? getParsedRoleEntry(entry) : null;
-      return countTextWords(role ? getRoleReadableContent(role) : parsed ? parsed.body : entry.content);
-    };
-    const visibleWorkSettingTypes = new Set(settingTypeOptions.filter((type) => !getSettingTypeWorkspaceDomain(type)));
-    const visibleRoleTypes = new Set(roleTypeOptions);
-    const visibleWorkSettingCount = settingEntries.filter((entry) =>
-      visibleWorkSettingTypes.has(getParsedSettingEntry(entry).type),
-    ).length;
-    const visibleRoleCount = roleEntries.filter((entry) => visibleRoleTypes.has(getParsedRoleEntry(entry).type)).length;
-    const settingWorkspaceDomainTabs = [
-      { id: 'work', label: '作品设定', count: visibleWorkSettingCount, type: null },
-      { id: 'character', label: '人物设定', count: visibleRoleCount, type: null },
-      { id: 'setting:faction', label: '势力设定', type: 'setting:faction' },
-      { id: 'setting:item', label: '道具资源', type: 'setting:item' },
-      { id: 'setting:monster', label: '怪物图鉴', type: 'setting:monster' },
-      { id: 'setting:foreshadow', label: '伏笔线索', type: 'setting:foreshadow' },
+    const getLibrarySidebarEntryWordCount = (entry: WorkbenchLibraryEntry) => countTextWords(getWorkbenchSidebarWordCountSource(entry, activeIsSettingLike ? getParsedSettingEntry(entry) : null, isOutlineCharacterScope ? getParsedRoleEntry(entry) : null));
+    const settingTreeDomains = [
+      { id: 'work', label: '作品设定', settingDomain: null },
+      { id: 'character', label: '人物设定', settingDomain: null },
+      { id: 'setting:location', label: '地点地图', settingDomain: 'setting:location' },
+      { id: 'setting:faction', label: '势力设定', settingDomain: 'setting:faction' },
+      { id: 'setting:item', label: '道具资源', settingDomain: 'setting:item' },
+      { id: 'setting:foreshadow', label: '伏笔线索', settingDomain: 'setting:foreshadow' },
+      { id: 'setting:monster', label: '怪物图鉴', settingDomain: 'setting:monster' },
     ];
-    const getSettingWorkspaceTabCount = (type: string | null, fallback?: number) =>
-      type
-        ? settingEntries.filter((entry) => getSettingTypeWorkspaceDomain(getParsedSettingEntry(entry).type) === type)
-            .length
-        : (fallback ?? 0);
     const selectSettingWorkspaceDomain = (id: string) => {
       setOutlineSettingDomain(id);
       setOutlineSettingScope(id === 'character' ? 'character' : 'work');
     };
-    const settingWorkspaceTopTabs =
-      activeTab === SETTING_TAB && !activeIsBrainstorm ? (
-        <div
-          className="min-w-0 overflow-hidden border-b border-slate-100 bg-white px-4 py-3"
-          style={{ gridColumn: '1 / 4', gridRow: 1 }}
-        >
-          <div className="scrollbar-hidden flex min-w-0 items-center gap-2 overflow-x-auto">
-            {settingWorkspaceDomainTabs.map((tab) => {
-              const active = outlineSettingDomain === tab.id;
-              const count = getSettingWorkspaceTabCount(tab.type, 'count' in tab ? tab.count : undefined);
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => selectSettingWorkspaceDomain(tab.id)}
-                  className={`flex h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-black transition-colors ${
-                    active
-                      ? 'border-[#08AACE] bg-[#EAF9FD] text-[#078FAE] shadow-sm'
-                      : 'border-slate-200 bg-white text-slate-600 hover:border-[#08AACE]/50 hover:text-[#078FAE]'
-                  }`}
-                >
-                  <span>{tab.label}</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs ${active ? 'bg-white text-[#078FAE]' : 'bg-slate-100 text-slate-400'}`}
-                  >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null;
     const activeTabDisplayLabel = getWorkbenchTabDisplayLabel(activeTab);
     const panelTitle = `${activeTabDisplayLabel}生成`;
     const promptCategory =
@@ -769,6 +726,7 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
       Unlock,
       WordCountText,
       WorkbenchLibrarySidebar,
+      WorkbenchSettingTreeSidebar,
       WorkbenchSettingEditor,
       X,
       activeBrainstormOutputScrollIndex,
@@ -778,6 +736,7 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
       activeSettingLinkSource,
       activeSettingSidebarScrollKey,
       activeSettingWorkspaceType,
+      settingGroupOptions: visibleSettingTypeOptions,
       activeStructuredSettingTab,
       activeTab,
       activeTabConfig,
@@ -843,8 +802,10 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
       getLibrarySidebarEntryWordCount,
       getPreviewedLibraryGroupEntries,
       getTemporaryBrainstormTitle,
+      getDefaultWorkbenchLibraryEntryTitle,
       getWorkbenchAssociationRuntimeId,
       groupedSettingEntries,
+      getSettingTypeWorkspaceDomain,
       handleBrainstormOutputTextareaScroll,
       handleLibraryAiInputKeyDown,
       handleLibraryAiOutputScroll,
@@ -911,11 +872,15 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
       setSelectedBrainstormReaderId,
       setSelectedIdForTab,
       settingCreateModal,
+      settingEntries,
       settingLibraryLeftWidth,
       settingLibraryMode,
       settingLibraryRightWidth,
       settingPreviewFontSize,
-      settingWorkspaceTopTabs,
+      settingTreeDomains,
+      settingTypeOptions,
+      outlineSettingDomain,
+      selectSettingWorkspaceDomain,
       showBrainstormOutputSelection,
       showHeaderLibraryAiLogButton,
       showInlineLibraryAiLogButton,

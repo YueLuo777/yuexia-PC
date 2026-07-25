@@ -4,7 +4,7 @@ import {
 } from '@/features/workbench/model/workbenchSharedAiRightWidth';
 
 export const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS =
-  'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#BDEEF7] xy-flow-group-bg px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors';
+  'group flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border border-[#AEE7F1] bg-[#CDEFF6] px-1 text-left text-[14px] font-black text-[#1f2933] shadow-sm transition-colors hover:bg-[#BFEAF3]';
 export const WORKBENCH_FOLDER_GROUP_ICON_CLASS = 'h-[17px] w-[17px] shrink-0 text-[#08AACE]';
 export const WORKBENCH_FOLDER_GROUP_COUNT_CLASS =
   'rounded-full bg-white/70 px-2 py-0.5 text-xs font-black text-[#6f7e90]';
@@ -25,8 +25,8 @@ export const DETAIL_OUTLINE_VOLUME_TITLE_CLASS = 'min-w-0 flex-1 truncate leadin
 export const DETAIL_OUTLINE_VOLUME_COUNT_CLASS = WORKBENCH_FOLDER_GROUP_COUNT_CLASS;
 
 export const SETTING_LIBRARY_LEFT_MIN_WIDTH = 180;
-export const SETTING_LIBRARY_LEFT_WIDTH = SETTING_LIBRARY_LEFT_MIN_WIDTH;
-export const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 260;
+export const SETTING_LIBRARY_LEFT_WIDTH = 280;
+export const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 280;
 export const SETTING_LIBRARY_LEFT_MAX_WIDTH = 640;
 export const OUTLINE_LEFT_MAX_DISPLAY_WIDTH = 560;
 export const SETTING_LIBRARY_RIGHT_WIDTH = WORKBENCH_SHARED_AI_RIGHT_WIDTH_DEFAULT;

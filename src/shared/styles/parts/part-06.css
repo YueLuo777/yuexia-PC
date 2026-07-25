@@ -117,24 +117,20 @@
 .theme-shuimo2 .xy-floating-field.xy-floating-outline-fixed label,
 .theme-shuimo2 .xy-floating-field.xy-floating-outline-fixed:has(input) label,
 .theme-shuimo2 .xy-floating-field.xy-floating-outline-fixed:focus-within label,
-.theme-shuimo2 .xy-floating-field.xy-floating-outline-fixed.xy-has-value label,
-.theme-shuimo2 .xy-floating-field.xy-floating-label-fixed label {
+.theme-shuimo2 .xy-floating-field.xy-floating-outline-fixed.xy-has-value label {
   background-color: #fff8ec !important;
   color: #2d241a !important;
   box-shadow: 0 0 0 1px #fff8ec;
 }
 
 .theme-shuimo2 .xy-floating-title-count,
-.theme-shuimo2 .xy-floating-title-count span,
-.theme-shuimo2 .xy-capsule-custom-field-size legend,
-.theme-shuimo2 .xy-capsule-custom-field-size [data-capsule-control] > span {
+.theme-shuimo2 .xy-floating-title-count span {
   background-color: #fff8ec !important;
   color: #5d4a35 !important;
   box-shadow: 0 0 0 1px #fff8ec;
 }
 
-.theme-shuimo2 .xy-floating-title-count span,
-.theme-shuimo2 .xy-capsule-custom-field-size legend span {
+.theme-shuimo2 .xy-floating-title-count span {
   color: #7c5732 !important;
 }
 

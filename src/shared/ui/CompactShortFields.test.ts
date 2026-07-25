@@ -7,12 +7,21 @@ const readSource = (path: string) => readFileSync(resolve(process.cwd(), path), 
 describe('compact short fields across formal pages', () => {
   it('embeds prompt metadata labels and enlarges the content editor text', () => {
     const source = readSource('src/features/prompts/components/PromptPageParts.tsx');
-    expect(source.match(/xy-floating-field xy-floating-compact xy-has-value text-sm font-bold text-slate-600/g)).toHaveLength(2);
-    expect(source).toContainSource('<label>提示词名称</label>');
-    expect(source).toContainSource('<label>提示词说明</label>');
+    expect(source.match(/xy-prompt-meta-field/g)).toHaveLength(5);
+    expect(source).toContainSource('xy-border-embedded-transparent-backplate xy-workbench-name-field-caption');
+    expect(source).toContainSource('aria-label="提示词名称"');
+    expect(source).toContainSource('aria-label="提示词说明"');
+    expect(source).toContainSource('className="xy-workbench-name-field-input"');
+    expect(source).toContainSource('className="xy-prompt-meta-field-textarea"');
     expect(source).not.toContainSource('<span className="w-[84px] shrink-0">提示词名称</span>');
-    expect(source).toContainSource('xy-prompt-content-editor min-h-0 flex-1 font-sans text-[19px]');
-    expect(source).toContainSource('border-b border-slate-100 px-8 py-2');
+    expect(source).toContainSource('xy-prompt-meta-field xy-prompt-content-field relative flex min-h-0 flex-col bg-white');
+    expect(source).toContainSource('aria-label="提示词内容"');
+    expect(source).toContainSource('xy-prompt-content-editor min-h-0 w-full flex-1 resize-none border-0 bg-transparent');
+    expect(source).not.toContainSource('<label>提示词内容</label>');
+    expect(source).toContainSource('<AppModalShell');
+    expect(source).toContainSource('heightClass="h-[min(680px,78dvh)] max-h-[calc(100dvh-48px)]"');
+    expect(source).toContainSource('defaultGeometry={{ x: 0, y: 0, width: 980, height: 680 }}');
+    expect(source).toContainSource('centerOnOpen');
   });
 
   it('keeps model metadata compact', () => {
@@ -26,9 +35,19 @@ describe('compact short fields across formal pages', () => {
   it('keeps brainstorm prompt metadata and setting names compact', () => {
     const brainstormSource = readSource('src/features/workbench/components/BrainstormPromptEditModal.tsx');
     const settingSource = readSource('src/features/workbench/components/workbenchSettingEditor.tsx');
-    expect(brainstormSource).toContainSource('<span className="w-12 shrink-0">名称</span>');
-    expect(brainstormSource).toContainSource('<span className="w-12 shrink-0 pt-2">说明</span>');
-    expect(settingSource).toContainSource('<span className="w-[64px] shrink-0">设定名</span>');
-    expect(settingSource).not.toContainSource('xy-floating-outline-setting-name');
+    const nameFieldSource = readSource('src/features/workbench/components/WorkbenchNameField.tsx');
+    expect(brainstormSource).toContainSource('<span className="w-14 shrink-0">名称</span>');
+    expect(brainstormSource).toContainSource('<span className="w-14 shrink-0 pt-2">说明</span>');
+    expect(brainstormSource).toContainSource('heightClass="h-[min(620px,78vh)]"');
+    expect(brainstormSource).toContainSource('storageId="brainstorm_prompt_editor_centered_v3"');
+    expect(brainstormSource).toContainSource('defaultGeometry={{ x: 0, y: 0, width: 960, height: 620 }}');
+    expect(brainstormSource).toContainSource('xy-prompt-meta-field xy-prompt-content-field relative flex min-h-[160px] flex-1 flex-col bg-white');
+    expect(brainstormSource).toContainSource('className="xy-border-embedded-transparent-backplate xy-workbench-name-field-caption"');
+    expect(brainstormSource).toContainSource('aria-label="提示词内容"');
+    expect(settingSource.match(/<WorkbenchNameField/g)).toHaveLength(2);
+    expect(nameFieldSource).toContainSource('className="xy-workbench-name-field"');
+    expect(nameFieldSource).toContainSource('data-workbench-header-control="true"');
+    expect(nameFieldSource).toContainSource('className="xy-border-embedded-transparent-backplate xy-workbench-name-field-caption"');
+    expect(settingSource).not.toContainSource('<span className="w-[64px] shrink-0">设定名</span>');
   });
 });

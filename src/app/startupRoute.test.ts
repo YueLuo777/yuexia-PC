@@ -43,6 +43,11 @@ describe('startup routing', () => {
     expect(launcher).toContainSource('dev server dependency fingerprint changed; restarting');
     expect(launcher).toContainSource('cleanupProjectViteProcesses');
     expect(launcher).toContainSource('writeDevServerFingerprint');
+    expect(launcher).toContainSource("import { inspectViteOptimizedDeps } from './scripts/viteOptimizedDepsHealth.mjs'");
+    expect(launcher).toContainSource("const viteOptimizedDepsDir = path.join(root, 'node_modules', '.vite')");
+    expect(launcher).toContainSource('fingerprintCurrent && (await areOptimizedDepsHealthy())');
+    expect(launcher).toContainSource('dev server ready but optimized deps are stale; restarting');
+    expect(launcher).toContainSource('removeIfExists(viteOptimizedDepsDir)');
     expect(launcher).toContainSource(
       "const electronInstaller = path.join(root, 'node_modules', 'electron', 'install.js')",
     );

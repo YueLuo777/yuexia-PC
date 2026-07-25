@@ -24,9 +24,7 @@ describe('application route registry', () => {
     expect(STARTUP_ROUTE_PATH).toBe(APP_ROUTE_PATHS.novels);
     expect(DEFAULT_NAV_ROUTE_ITEMS.map((item) => item.to)).toEqual([
       '/novels',
-      '/scripts',
       '/tomato-browser',
-      '/library',
       '/prompts',
       '/model-manage',
       '/token-usage',
@@ -34,6 +32,10 @@ describe('application route registry', () => {
     ]);
     expect(INTERNAL_ROUTE_PATHS).toEqual(INTERNAL_ROUTE_DEFINITIONS.map((route) => route.path));
     expect(FORMAL_SMOKE_ROUTE_PATHS).toContain('/tomato-browser');
+    expect(APP_ROUTE_PATHS).not.toHaveProperty('scripts');
+    expect(APP_ROUTE_PATHS).not.toHaveProperty('scriptEditor');
+    expect(FORMAL_SMOKE_ROUTE_PATHS).not.toContain('/scripts');
+    expect(FORMAL_SMOKE_ROUTE_PATHS).not.toContain('/script-editor-v2');
     expect(FORMAL_SMOKE_ROUTE_PATHS).toEqual(
       FORMAL_ROUTE_DEFINITIONS.filter((route) => route.smoke).map((route) => route.path),
     );
@@ -59,7 +61,8 @@ describe('application route registry', () => {
     expect(formalPaths).not.toContain('/concept-library');
     expect(formalPaths).not.toContain('/db-settings');
     expect(formalPaths).not.toContain('/text-overrides');
-    expect(redirects['/concept-library']).toBe('/library');
+    expect(redirects).not.toHaveProperty('/concept-library');
+    expect(APP_ROUTE_PATHS).not.toHaveProperty('library');
     expect(redirects['/db-settings']).toBe('/settings?section=backup');
     expect(APP_ROUTE_PATHS).not.toHaveProperty('conceptLibrary');
     expect(APP_ROUTE_PATHS).not.toHaveProperty('dbSettings');

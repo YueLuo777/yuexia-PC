@@ -5,6 +5,7 @@ import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 import { AiInlineInput } from '@/shared/ui/AiInlineInput';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
+import { EmptyState } from '@/shared/ui/EmptyState';
 import { WordCountText } from '@/shared/ui/WordCountText';
 
 import type { RoleContent } from './workbenchRoleContent';
@@ -134,9 +135,7 @@ export function WorkbenchRoleLibraryView({
               onRoleChange={onRoleChange}
             />
           ) : (
-            <div className="m-5 flex h-full items-center justify-center rounded-xl border border-dashed border-gray-200 text-sm text-gray-400">
-              点击左侧“新建角色”开始创建角色
-            </div>
+            <EmptyState className="m-5" title="暂无角色" description="点击左侧“新建角色”开始创建角色" />
           )}
         </main>
 

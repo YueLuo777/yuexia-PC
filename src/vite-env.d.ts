@@ -83,6 +83,11 @@ interface CosObjectResult {
 
 interface WindowSettingsResult {
   rememberSize: boolean;
+  startMaximized: boolean;
+  startupBounds: {
+    width: number;
+    height: number;
+  };
   defaultBounds: {
     width: number;
     height: number;
@@ -97,14 +102,22 @@ interface WindowSettingsResult {
 
 interface Window {
   xinyuexiaWindow?: {
+    signalRendererReady(): Promise<boolean>;
+    confirmCloseCleanup(): Promise<boolean>;
+    onPrepareClose(callback: () => void): () => void;
     minimize(): Promise<void>;
     maximizeToggle(): Promise<boolean>;
     close(): Promise<void>;
     isMaximized(): Promise<boolean>;
     reload(): Promise<void>;
     readSettings(): Promise<WindowSettingsResult>;
-    updateSettings(settings: { rememberSize?: boolean }): Promise<WindowSettingsResult>;
+    updateSettings(settings: {
+      rememberSize?: boolean;
+      startMaximized?: boolean;
+      startupBounds?: { width: number; height: number };
+    }): Promise<WindowSettingsResult>;
     resetBounds(): Promise<WindowSettingsResult>;
+    applyBoundsPreset(bounds: { width: number; height: number }): Promise<WindowSettingsResult>;
     onMaximizedChange(callback: (isMaximized: boolean) => void): () => void;
   };
   xinyuexiaModel?: {

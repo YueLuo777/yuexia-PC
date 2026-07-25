@@ -1,6 +1,6 @@
 import { AlertTriangle, Image as ImageIcon, RefreshCw, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import { ImportModal } from '@/features/novels/components/ImportModal';
 import { useCoverLibrary } from '@/features/covers/hooks/useCoverLibrary';
@@ -9,10 +9,11 @@ import { NovelCard, type NovelCardSettings } from '@/features/novels/components/
 import { RecycleBinModal } from '@/features/novels/components/RecycleBinModal';
 import { useNovelLibrary } from '@/features/novels/hooks/useNovelLibrary';
 import { useDefaultNovelCover } from '@/features/novels/hooks/useDefaultNovelCover';
-import type { Novel, WorkType } from '@/features/novels/model/novelTypes';
+import type { Novel } from '@/features/novels/model/novelTypes';
 import { readWritingSummary, WRITING_STATS_UPDATED_EVENT } from '@/shared/stats/writingStats';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { AutoFitText } from '@/shared/ui/AutoFitText';
+import { FormDialog } from '@/shared/ui/FormDialog';
 
 import {
   type BtnColor,
@@ -36,11 +37,10 @@ import {
 } from '@/features/novels/components/NovelLibraryParts';
 
 export function NovelLibraryPage() {
-  const location = useLocation();
   const navigate = useNavigate();
   const { openWorkTab } = useWorkspaceTabs();
-  const workType: WorkType = location.pathname === '/scripts' ? 'script' : 'novel';
-  const typeLabel = workType === 'novel' ? '小说' : '剧本';
+  const workType = 'novel' as const;
+  const typeLabel = '小说';
   const { selectedCover: defaultNovelCover } = useDefaultNovelCover();
 
   const {
@@ -73,18 +73,8 @@ export function NovelLibraryPage() {
   const [notice, setNotice] = useState('');
   const [writingSummary, setWritingSummary] = useState(readWritingSummary);
   useEffect(() => {
-    setIsNewOpen(false);
-    setIsImportOpen(false);
-    setIsRecycleOpen(false);
-    setRenameTarget(null);
-    setCoverTargetId(null);
-    setDeleteTargetId(null);
-    setNotice('');
-  }, [workType]);
-
-  useEffect(() => {
-    void preloadEditorPage(workType);
-  }, [workType]);
+    void preloadEditorPage();
+  }, []);
 
   const sourceNovels = getNovelsByType(workType);
   const totalWorkWords = sourceNovels.reduce((sum, novel) => sum + novel.wordCount, 0);
@@ -120,16 +110,17 @@ export function NovelLibraryPage() {
 
   const handlePrepareOpen = (id: number) => {
     const novel = novels.find((item) => item.id === id);
-    if (!novel) return;
-    void preloadEditorPage(novel.type);
+    if (novel?.type !== 'novel') return;
+    void preloadEditorPage();
   };
 
   const handleOpen = (id: number) => {
     const novel = novels.find((item) => item.id === id);
     if (!novel) return;
-    void preloadEditorPage(novel.type);
+    if (novel.type !== 'novel') return;
+    void preloadEditorPage();
     selectNovel(id);
-    const path = novel.type === 'script' ? '/script-editor-v2' : '/workbench';
+    const path = '/workbench';
     openWorkTab({
       workId: novel.id,
       workType: novel.type,
@@ -251,7 +242,7 @@ export function NovelLibraryPage() {
         )}
 
         <div className="mb-7 mt-7 flex items-center justify-between gap-4">
-          <div className="xy-category-capsules min-w-0">
+          <div className="xy-category-capsules xy-novel-category-capsules min-w-0">
             {filters.map((filter) => (
               <button
                 key={filter}
@@ -390,39 +381,19 @@ export function NovelLibraryPage() {
         }}
       />
 
-      {renameTarget && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
-          onClick={() => setRenameTarget(null)}
-        >
-          <div className="w-[360px] rounded-xl bg-white p-6 shadow-xl" onClick={(event) => event.stopPropagation()}>
-            <h3 className="mb-4 text-base font-bold text-gray-900">修改作品名称</h3>
-            <input
-              value={renameTarget.title}
-              onChange={(event) => setRenameTarget({ ...renameTarget, title: event.target.value })}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') confirmRename();
-              }}
-              className="mb-5 w-full rounded-md border border-gray-200 px-3 py-2 text-sm transition-colors focus:border-brand"
-              autoFocus
-            />
-            <div className="flex items-center justify-end gap-3">
-              <button
-                onClick={() => setRenameTarget(null)}
-                className="px-4 py-2 text-sm text-gray-500 transition-colors hover:text-gray-700"
-              >
-                取消
-              </button>
-              <button
-                onClick={confirmRename}
-                className="rounded-lg bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark"
-              >
-                确认
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <FormDialog
+        title="修改作品名称"
+        isOpen={renameTarget !== null}
+        onClose={() => setRenameTarget(null)}
+        onConfirm={confirmRename}
+        label="作品名称"
+        value={renameTarget?.title ?? ''}
+        onValueChange={(title) => renameTarget && setRenameTarget({ ...renameTarget, title })}
+        inputId="novel-rename-title"
+        confirmDisabled={!renameTarget?.title.trim()}
+        widthClass="w-[360px]"
+        storageId="novel_rename"
+      />
     </div>
   );
 }

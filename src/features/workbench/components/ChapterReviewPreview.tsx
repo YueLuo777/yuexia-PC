@@ -10,6 +10,7 @@ import {
 } from '@/features/workbench/model/chapterAuditResult';
 import type { ReviewAnnotation } from '@/features/workbench/model/chapterReviewText';
 import type { ReviewMode } from '@/features/workbench/model/chapterReviewTaskState';
+import type { AuditTextStageState } from '@/features/workbench/model/chapterAuditWorkflow';
 import type { Chapter } from '@/features/workbench/model/workbenchTypes';
 import { FontSizeStepper } from '@/shared/ui/FontSizeStepper';
 import { WordCountText } from '@/shared/ui/WordCountText';
@@ -19,7 +20,9 @@ import {
   REVIEW_PREVIEW_MIN_FONT_SIZE,
   REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS,
   REVIEW_PREVIEW_PARAGRAPH_EMPTY_CLASS,
+  REVIEW_PREVIEW_PARAGRAPH_GUTTER_CLASS,
   REVIEW_PREVIEW_PARAGRAPH_LIST_CLASS,
+  REVIEW_PREVIEW_PARAGRAPH_ROW_CLASS,
   REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS,
 } from './chapterEditorLayout';
 import type { ReviewPreviewWidthMode } from './chapterEditorLayout';
@@ -28,9 +31,10 @@ import {
   getReviewAnnotationNoteSpacingClass,
   getReviewSeverityClass,
   renderAnnotatedReviewParagraph,
-  renderTextAuditOriginalDiff,
 } from './chapterEditorPresentation';
 import { ChapterTextAuditContinuousReview } from './ChapterTextAuditContinuousReview';
+import { ChapterAuditTextStageCard } from './ChapterAuditTextStageCard';
+import { ChapterReviewOriginalBody } from './ChapterReviewOriginalBody';
 
 type ReviewScrollPane = 'outline' | 'original' | 'annotation' | null;
 
@@ -73,6 +77,12 @@ interface ChapterReviewPreviewProps {
   polishPreviewParagraphs: string[];
   auditParagraphCountMatches: boolean;
   auditOutputPassed: boolean;
+  auditTextStage: AuditTextStageState | null;
+  canRunTextAudit: boolean;
+  isReviewAiLoading: boolean;
+  onStartAuditTextReviewNow: () => void;
+  onCancelAuditTextReviewCountdown: () => void;
+  onRunAuditTextReviewManually: () => void;
   expandedAuditStructureItems: Set<string>;
   toggleAuditStructureItem: (item: string) => void;
   reviewAnnotationsByParagraph: Map<number, ReviewAnnotation[]>;
@@ -119,13 +129,19 @@ export function ChapterReviewPreview({
   polishPreviewParagraphs,
   auditParagraphCountMatches,
   auditOutputPassed,
+  auditTextStage,
+  canRunTextAudit,
+  isReviewAiLoading,
+  onStartAuditTextReviewNow,
+  onCancelAuditTextReviewCountdown,
+  onRunAuditTextReviewManually,
   expandedAuditStructureItems,
   toggleAuditStructureItem,
   reviewAnnotationsByParagraph,
   reviewAnnotationRefs,
   onApplyTextAuditContent,
 }: ChapterReviewPreviewProps) {
-  const showContinuousTextAudit = isAuditTextReview && Boolean(auditRevisedText.trim()) && auditParagraphCountMatches;
+  const showContinuousTextAudit = isAuditTextReview && Boolean(auditRevisedText.trim());
   return (
     <main className="min-h-0 bg-white">
       <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
@@ -202,7 +218,7 @@ export function ChapterReviewPreview({
                 ) : (
                   <div className="flex h-full items-center justify-center px-6 text-center text-sm font-bold leading-6 text-slate-300">
                     {activeReviewChapter
-                      ? `未找到第${activeReviewChapter.serialNumber}章章纲。`
+                      ? `未找到第${activeReviewChapter.serialNumber}章 章纲。`
                       : '未选择章节，无法读取章纲。'}
                   </div>
                 )}
@@ -216,7 +232,7 @@ export function ChapterReviewPreview({
             </span>
             <div
               ref={reviewOriginalPreviewPaneRef}
-              className={`scrollbar-scroll-only min-h-0 flex-1 overflow-y-auto bg-white p-5 text-sm leading-7 text-slate-700 ${activeReviewPreviewScrollPane === 'original' ? 'scrollbar-active' : ''}`}
+              className={`scrollbar-scroll-only min-h-0 flex-1 overflow-y-auto bg-white ${activeReviewPreviewScrollPane === 'original' ? 'scrollbar-active' : ''}`}
               onScroll={() => handleReviewPreviewScroll('original')}
               style={{ fontSize: reviewPreviewFontSize }}
             >
@@ -225,32 +241,15 @@ export function ChapterReviewPreview({
                   这里会显示所选章节正文。
                 </div>
               ) : (
-                <div className={REVIEW_PREVIEW_PARAGRAPH_LIST_CLASS}>
-                  {reviewOriginalParagraphs.map((paragraph, index) => {
-                    const selected = activeReviewParagraphIndex === index;
-                    const shouldShowTextAuditDiff = isAuditTextReview && Boolean(auditRevisedText.trim());
-                    return (
-                      <button
-                        ref={(node) => {
-                          reviewOriginalParagraphRefs.current[index] = node;
-                        }}
-                        key={`${index}-${paragraph.slice(0, 18)}`}
-                        type="button"
-                        onClick={() => selectReviewPreviewParagraph(index)}
-                        className={`relative block w-full text-left outline-none ${
-                          REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS
-                        } ${selected ? REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS : REVIEW_PREVIEW_PARAGRAPH_EMPTY_CLASS}`}
-                        style={{ fontSize: reviewPreviewFontSize }}
-                      >
-                        <span className="block whitespace-pre-wrap break-words">
-                          {shouldShowTextAuditDiff
-                            ? renderTextAuditOriginalDiff(paragraph, auditRevisedParagraphs[index])
-                            : paragraph}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <ChapterReviewOriginalBody
+                  paragraphs={reviewOriginalParagraphs}
+                  revisedParagraphs={auditRevisedParagraphs}
+                  activeParagraphIndex={activeReviewParagraphIndex}
+                  fontSize={reviewPreviewFontSize}
+                  showTextAuditDiff={isAuditTextReview && Boolean(auditRevisedText.trim())}
+                  paragraphRefs={reviewOriginalParagraphRefs}
+                  onSelectParagraph={selectReviewPreviewParagraph}
+                />
               )}
             </div>
           </section>
@@ -316,7 +315,7 @@ export function ChapterReviewPreview({
                     <div className="flex h-full items-center justify-center px-6 text-center text-sm font-bold leading-6 text-amber-600">
                       {auditRevisedText.trim()
                         ? `原文 ${reviewOriginalParagraphs.length} 段，审核后 ${auditRevisedParagraphs.length} 段。段落数量不一致，请让 AI 按原文段落重新输出。`
-                        : '未识别到【修改后全文】，请让 AI 按文本审核格式输出修改后正文。'}
+                        : 'AI正在思考，请稍后……'}
                     </div>
                   ) : isAuditStructureReview ? (
                     <div className="space-y-3">
@@ -327,7 +326,9 @@ export function ChapterReviewPreview({
                             : 'border-amber-200 bg-amber-50 text-amber-700'
                         }`}
                       >
-                        <div className="text-sm font-black">{auditOutputPassed ? '通过' : '待确认 / 需处理'}</div>
+                        <div className="text-sm font-black">
+                          {auditOutputPassed ? '剧情审核 通过' : '剧情审核 待确认 / 需处理'}
+                        </div>
                         <div className="mt-1 text-xs font-bold">
                           {auditOutputPassed ? 'AI 剧情审核结论为通过。' : '请查看下方审核元素和 AI 说明。'}
                         </div>
@@ -406,6 +407,15 @@ export function ChapterReviewPreview({
                           );
                         })}
                       </div>
+                      <ChapterAuditTextStageCard
+                        stage={auditTextStage}
+                        canRunTextAudit={canRunTextAudit}
+                        disabled={isReviewAiLoading && auditTextStage?.status !== 'countdown'}
+                        reviewAiOutput={reviewAiOutput}
+                        onStartNow={onStartAuditTextReviewNow}
+                        onCancel={onCancelAuditTextReviewCountdown}
+                        onRunManually={onRunAuditTextReviewManually}
+                      />
                     </div>
                   ) : reviewOriginalParagraphs.length === 0 || !activeReviewContent.trim() ? (
                     <div className="flex h-full items-center justify-center text-sm font-bold text-slate-300">
@@ -422,38 +432,49 @@ export function ChapterReviewPreview({
                               reviewAnnotationRefs.current[index] = node;
                             }}
                             key={`${index}-${paragraph.slice(0, 18)}`}
-                            className={`${REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS} ${
-                              selected
-                                ? REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS
-                                : paragraphAnnotations.length > 0
-                                  ? 'border-amber-300 bg-amber-50/30'
-                                  : REVIEW_PREVIEW_PARAGRAPH_EMPTY_CLASS
-                            }`}
+                            className={REVIEW_PREVIEW_PARAGRAPH_ROW_CLASS}
                           >
-                            <p className="whitespace-pre-wrap break-words" style={{ fontSize: reviewPreviewFontSize }}>
-                              {renderAnnotatedReviewParagraph(paragraph, paragraphAnnotations)}
-                            </p>
-                            {paragraphAnnotations.length > 0 ? (
-                              <div className={`${getReviewAnnotationNoteSpacingClass(paragraph)} space-y-2`}>
-                                {paragraphAnnotations.map((annotation) => (
-                                  <div
-                                    key={annotation.id}
-                                    className={`rounded-lg border px-3 py-2 text-xs font-bold leading-5 ${getReviewSeverityClass(annotation.severity)}`}
-                                  >
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <span className="font-black">{annotation.id}</span>
-                                      <span>{annotation.severity}</span>
-                                      <span>{annotation.type}</span>
-                                      <span>{annotation.action}</span>
+                            <span aria-hidden="true" className={REVIEW_PREVIEW_PARAGRAPH_GUTTER_CLASS}>
+                              <span className={selected ? 'text-[#078fb0]' : 'text-slate-300'}>{index + 1}</span>
+                            </span>
+                            <div
+                              data-review-paragraph-card="true"
+                              className={`${REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS} ${
+                                selected
+                                  ? REVIEW_PREVIEW_PARAGRAPH_SELECTED_CLASS
+                                  : REVIEW_PREVIEW_PARAGRAPH_EMPTY_CLASS
+                              }`}
+                            >
+                              <p
+                                className="whitespace-pre-wrap break-words"
+                                style={{ fontSize: reviewPreviewFontSize }}
+                              >
+                                {renderAnnotatedReviewParagraph(paragraph, paragraphAnnotations)}
+                              </p>
+                              {paragraphAnnotations.length > 0 ? (
+                                <div className={`${getReviewAnnotationNoteSpacingClass(paragraph)} space-y-2`}>
+                                  {paragraphAnnotations.map((annotation) => (
+                                    <div
+                                      key={annotation.id}
+                                      className={`rounded-lg border px-3 py-2 text-xs font-bold leading-5 ${getReviewSeverityClass(annotation.severity)}`}
+                                    >
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <span className="font-black">{annotation.id}</span>
+                                        <span>{annotation.severity}</span>
+                                        <span>{annotation.type}</span>
+                                        <span>{annotation.action}</span>
+                                      </div>
+                                      {annotation.problem ? (
+                                        <div className="mt-1">问题：{annotation.problem}</div>
+                                      ) : null}
+                                      {annotation.suggestion ? (
+                                        <div className="mt-1">建议：{annotation.suggestion}</div>
+                                      ) : null}
                                     </div>
-                                    {annotation.problem ? <div className="mt-1">问题：{annotation.problem}</div> : null}
-                                    {annotation.suggestion ? (
-                                      <div className="mt-1">建议：{annotation.suggestion}</div>
-                                    ) : null}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : null}
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
                           </div>
                         );
                       })}

@@ -22,7 +22,13 @@ function createRoleEntry(role: RoleContent): WorkbenchLibraryEntry {
   };
 }
 
-function RoleEditorHarness({ initialRole }: { initialRole: RoleContent }) {
+function RoleEditorHarness({
+  initialRole,
+  roleTypeOptions = ['男主角', '女主角', '未分类'],
+}: {
+  initialRole: RoleContent;
+  roleTypeOptions?: string[];
+}) {
   const [entry, setEntry] = useState(() => createRoleEntry(initialRole));
   const role = parseRoleContent(entry.content);
 
@@ -32,7 +38,7 @@ function RoleEditorHarness({ initialRole }: { initialRole: RoleContent }) {
         entry={entry}
         role={role}
         roleEntries={[entry]}
-        roleTypeOptions={['男主角', '女主角', '未分类']}
+        roleTypeOptions={roleTypeOptions}
         roleTextFontSize={16}
         currentChapterNumber={1}
         roleLifeStatus={role.lifeStatus}
@@ -53,6 +59,49 @@ function RoleEditorHarness({ initialRole }: { initialRole: RoleContent }) {
 }
 
 describe('RoleBaseStateEditor', () => {
+  it('uses the current role groups for identity positioning without offering male protagonist', () => {
+    render(
+      <RoleEditorHarness
+        initialRole={{
+          type: '女主角',
+          lifeStatus: '存活',
+          baseSetting: '',
+          relationship: '',
+          stateSettings: {
+            currentSituation: '',
+            currentGoal: '',
+            abilityState: '',
+            resourceState: '',
+            otherState: '',
+          },
+          personality: '',
+          background: '',
+          status: '',
+          history: [],
+        }}
+        roleTypeOptions={['男主角', '女主角', '核心盟友', '幕后反派']}
+      />,
+    );
+
+    const identitySelect = screen.getByRole('combobox', { name: '身份定位' });
+    expect(identitySelect).toHaveValue('女主角');
+    expect(screen.queryByRole('option', { name: '男主角' })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '核心盟友' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '幕后反派' })).toBeInTheDocument();
+    fireEvent.change(identitySelect, { target: { value: '核心盟友' } });
+    expect(identitySelect).toHaveValue('核心盟友');
+    const lifeStatusGroup = screen.getByRole('group', { name: '生存状态' });
+    const aliveButton = screen.getByRole('button', { name: '存活' });
+    const deadButton = screen.getByRole('button', { name: '死亡' });
+    expect(lifeStatusGroup).toHaveClass('rounded-xl', 'border', 'border-slate-200', 'bg-slate-100/80');
+    expect(aliveButton).toHaveClass('bg-white', 'text-emerald-700');
+    expect(screen.queryByRole('combobox', { name: '状态标签' })).not.toBeInTheDocument();
+    fireEvent.click(deadButton);
+    expect(deadButton).toHaveAttribute('aria-pressed', 'true');
+    expect(deadButton).toHaveClass('bg-white', 'text-slate-500');
+    expect(screen.getByTestId('saved-role-content')).toHaveTextContent('"lifeStatus":"死亡"');
+  });
+
   it('keeps typing visible after opening old orphan field labels', () => {
     render(
       <RoleEditorHarness
@@ -79,11 +128,82 @@ describe('RoleBaseStateEditor', () => {
       />,
     );
 
-    const appearanceInput = screen.getByPlaceholderText('身形、容貌、衣着、气质、标志性细节。');
+    const appearanceInput = screen.getByPlaceholderText('身形、容貌、衣着、气质和辨识特征。');
     fireEvent.change(appearanceInput, { target: { value: '黑' } });
 
     expect(appearanceInput).toHaveValue('黑');
     const savedRole = parseRoleContent(screen.getByTestId('saved-role-content').textContent ?? '');
     expect(parseRoleBaseSettingFields(savedRole.baseSetting).appearance).toBe('黑');
+  });
+
+  it('shows locked identity and status controls for the male protagonist', () => {
+    render(
+      <RoleEditorHarness
+        initialRole={{
+          type: '男主角',
+          lifeStatus: '存活',
+          baseSetting: '',
+          relationship: '',
+          stateSettings: {
+            currentSituation: '',
+            currentGoal: '',
+            abilityState: '',
+            resourceState: '',
+            otherState: '',
+          },
+          stateUpdateChapters: {},
+          personality: '',
+          background: '',
+          status: '',
+          history: [],
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('combobox', { name: '身份定位' })).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: '身份定位' })).toHaveValue('男主角');
+    expect(screen.getByRole('group', { name: '生存状态' })).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: '状态标签' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '死亡' }));
+    expect(screen.getByTestId('saved-role-content')).toHaveTextContent('"lifeStatus":"存活"');
+  });
+
+  it('lets long role fields grow beyond the default compact height', () => {
+    const originalScrollHeight = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'scrollHeight');
+    Object.defineProperty(HTMLTextAreaElement.prototype, 'scrollHeight', {
+      configurable: true,
+      get: () => 192,
+    });
+
+    try {
+      render(
+        <RoleEditorHarness
+          initialRole={{
+            type: '男主角',
+            lifeStatus: '存活',
+            baseSetting: '',
+            relationship: '',
+            stateSettings: {
+              currentSituation: '',
+              currentGoal: '',
+              abilityState: '',
+              resourceState: '',
+              otherState: '',
+            },
+            stateUpdateChapters: {},
+            personality: '',
+            background: '',
+            status: '',
+            history: [],
+          }}
+        />,
+      );
+
+      expect(screen.getByPlaceholderText('身形、容貌、衣着、气质和辨识特征。')).toHaveStyle({ height: '192px' });
+    } finally {
+      if (originalScrollHeight) {
+        Object.defineProperty(HTMLTextAreaElement.prototype, 'scrollHeight', originalScrollHeight);
+      }
+    }
   });
 });

@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useWorkbenchChapterActions } from './useWorkbenchChapterActions';
+import { useWorkbenchChapterContentPersistence } from './useWorkbenchChapterContentPersistence';
 
 import { applyFormat, getStoredFormatSettings, saveSnapshot } from '@/features/workbench/components/EditorToolModals';
 import type { Chapter, RecycledChapter, Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
+import type { WorkbenchSaveStatus } from '@/features/workbench/model/workbenchSaveStatus';
 import { countWords, ensureOneSelected, getSelectedChapter } from '@/features/workbench/model/workbenchRules';
 import {
   cancelScheduledWorkbenchJsonWrite,
+  flushWorkbenchWrites,
   scheduleWorkbenchJsonWrite,
 } from '@/features/workbench/model/workbenchPersistenceQueue';
 import {
@@ -68,6 +71,7 @@ export function useWorkbenchData() {
   const [sortAsc, setSortAsc] = useState(() => localStorage.getItem(SORT_KEY) !== 'false');
   const [editorContent, setEditorContent] = useState('');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<WorkbenchSaveStatus>('idle');
 
   const currentNovel = useMemo(() => {
     if (!currentNovelId) return null;
@@ -88,6 +92,7 @@ export function useWorkbenchData() {
   const selectedChapterId = selectedChapter?.chapter.id ?? null;
 
   const setCurrentNovel = useCallback((novelId: number | null) => {
+    if (flushWorkbenchWrites().failedKeys.length > 0) return;
     setCurrentNovelIdState(novelId);
     if (novelId === null) {
       localStorage.removeItem(CURRENT_ID_KEY);
@@ -132,7 +137,21 @@ export function useWorkbenchData() {
       return;
     }
     setEditorContent(readChapterContent(currentNovelId, selectedChapterId));
+    setLastSavedAt(null);
+    setSaveStatus('idle');
   }, [currentNovelId, selectedChapterId]);
+
+  const contentPersistence = useWorkbenchChapterContentPersistence({
+    novels,
+    currentNovelId,
+    volumesMap,
+    selectedChapter,
+    setNovels,
+    setVolumesMap,
+    setEditorContent,
+    setLastSavedAt,
+    setSaveStatus,
+  });
 
   const actions = useWorkbenchChapterActions({
     novels,
@@ -161,7 +180,12 @@ export function useWorkbenchData() {
     selectedChapter,
     editorContent,
     sortAsc,
-    lastSavedAt,
+    chapterSaveProps: {
+      saveStatus,
+      lastSavedAt,
+      onFlushSave: contentPersistence.flushPendingSave,
+      onRetrySave: contentPersistence.retryPendingSave,
+    },
     setCurrentNovel,
     selectChapter: actions.selectChapter,
     toggleVolume: actions.toggleVolume,
@@ -176,7 +200,7 @@ export function useWorkbenchData() {
     deleteChapter: actions.deleteChapter,
     restoreChapter: actions.restoreChapter,
     permanentDeleteChapter: actions.permanentDeleteChapter,
-    saveContent: actions.saveContent,
+    saveContent: contentPersistence.saveContent,
     updateChapterContents: actions.updateChapterContents,
     updateNovelChapterContent: actions.updateNovelChapterContent,
     getChapterWordCount: (chapterId: number) => {

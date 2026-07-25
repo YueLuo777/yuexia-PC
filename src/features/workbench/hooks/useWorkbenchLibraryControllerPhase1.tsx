@@ -406,7 +406,7 @@ export function useWorkbenchLibraryControllerPhase1(scope: Record<string, any>) 
   const [isClearSettingsConfirmOpen, setIsClearSettingsConfirmOpen] = useState(false);
   const [clearSettingsConfirmTarget, setClearSettingsConfirmTarget] = useState<ClearSettingsTarget>('settingEntries');
   const [clearSettingsConfirmStep, setClearSettingsConfirmStep] = useState<1 | 2>(1);
-  const [activeStructuredSettingTab, setActiveStructuredSettingTab] = useState<StructuredSettingTab>('固定设定');
+  const [activeStructuredSettingTab, setActiveStructuredSettingTab] = useState<StructuredSettingTab>('基础设定');
   const [promptDisableMenu, setPromptDisableMenu] = useState<PromptDisableMenu>(null);
   const [managementModal, setManagementModal] = useState<LibraryManagementModalState>(null);
   const [roleHistoryEntryId, setRoleHistoryEntryId] = useState<string | null>(null);

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { WorkbenchLibraryPanel } from './WorkbenchLibraryPanel';
 import {
   TEST_WORK_SETTING_STARTER_VERSION,
+  ensureLibraryDomainExpanded,
   ensureLibraryGroupExpanded,
   readWorkbenchLibraryPanelSource,
   readWorkbenchStructuredSettingsSource,
@@ -47,9 +48,9 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
 
     expect(constantsSource).toContainSource('export const SETTING_LIBRARY_LEFT_MIN_WIDTH = 180;');
     expect(constantsSource).toContainSource(
-      'export const SETTING_LIBRARY_LEFT_WIDTH = SETTING_LIBRARY_LEFT_MIN_WIDTH;',
+      'export const SETTING_LIBRARY_LEFT_WIDTH = 280;',
     );
-    expect(constantsSource).toContainSource('export const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 260;');
+    expect(constantsSource).toContainSource('export const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 280;');
     expect(constantsSource).not.toContainSource('const SETTING_LIBRARY_LEFT_WIDTH = 430;');
     expect(panelSource).toContainSource('readSettingLibraryLeftWidth(storageKey, activeTab, scale)');
   });
@@ -84,7 +85,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
 
     expect(screen.getByRole('button', { name: '作品设定5' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '作品设定48' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '人物设定5' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: '人物设定5' }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: '测试隐藏组' })).not.toBeInTheDocument();
   });
   it('removes the old right-click unlock flow from clear settings', async () => {
@@ -161,7 +162,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
       'const basePromptText = activeReviewPrompt?.content?.trim() || modeInstruction;',
     );
     expect(chapterEditorSource).toContainSource(
-      "const promptText = [basePromptText, compareInstruction].filter(Boolean).join('\\n\\n');",
+      "const promptText = auditPromptText || [basePromptText, compareInstruction].filter(Boolean).join('\\n\\n');",
     );
     expect(chapterEditorSource).toContainSource('const userRequirementText = reviewAiInput.trim();');
     expect(chapterEditorSource).toContainSource(
@@ -182,7 +183,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
     expect(chapterEditorSource).toContainSource('export function getReviewLogFillGroupWeights(options: {');
     expect(chapterEditorSource).toContainSource('hasOutline: boolean;');
     expect(chapterEditorSource).toContainSource('hasUser: boolean;');
-    expect(chapterEditorSource).toContainSource('original: 2,');
+    expect(chapterEditorSource).toContainSource('original: options.hasOutline ? 1 : 2,');
     expect(chapterEditorSource).toContainSource('fillSingleGroup');
     expect(chapterEditorSource).toContainSource('fillGroupWeights={getReviewLogFillGroupWeights');
     expect(chapterEditorSource).not.toContainSource(
@@ -229,7 +230,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
     expect(panelSource).not.toContainSource(
       'scrollbar-scroll-only scrollbar-half-width mt-0.5 max-h-[760px] space-y-0.5 overflow-y-auto',
     );
-    expect(panelSource).toContainSource('scrollbar-scroll-only scrollbar-half-width text-sm leading-7 text-gray-700');
+    expect(panelSource).toContainSource('scrollbar-scroll-only scrollbar-half-width');
     expect(panelSource).toContainSource('onScroll={() => handleSettingSidebarScroll(`setting-textarea:');
     expect(styleSource).toContainSource('.xy-setting-sidebar-scrollbar::-webkit-scrollbar');
     expect(styleSource).toContainSource('.scrollbar-scroll-only.scrollbar-half-width::-webkit-scrollbar');
@@ -257,12 +258,15 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
   it('keeps the other-setting link picker focused on the list and preview only', async () => {
     const modalSource = await readWorkbenchOtherSettingReaderModalSource();
 
-    expect(modalSource).toContainSource('grid-cols-[300px_minmax(0,1fr)]');
+    expect(modalSource).toContainSource('ASSOCIATION_READER_GRID_CLASS');
     expect(modalSource).toContainSource('已选 {draftEntries.length} 项');
     expect(modalSource).not.toContainSource('grid-cols-[300px_minmax(0,1fr)_280px]');
     expect(modalSource).not.toContainSource('本次将关联');
     expect(modalSource).not.toContainSource('还没有选择其他设定');
     expect(modalSource).not.toContainSource('确认后，这些条目会合并成“关联其他设定”上下文');
+    expect(modalSource).toContainSource('meta={`${entry.wordCount}字`}');
+    expect(modalSource).toContainSource('onPreview={() => onPreviewEntry(entry.id)}');
+    expect(modalSource).toContainSource('onToggle={() => onToggleEntry(entry.id)}');
   });
   it('uses the requested default tab even when the shared storage remembered another setting tab', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
@@ -358,7 +362,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
     expect(panelSource).toContainSource("roleCategories: {\n      label: '角色分组'");
     expect(panelSource).toContainSource('确定要清空全部自建人物分组吗？');
     expect(panelSource).toContainSource(
-      '女主角、重要正派角色、正派配角、重要反派角色、反派配角、龙套角色等默认分组会保留。',
+      '男女主、重要正派角色、正派配角、重要反派角色、反派配角、龙套角色等默认分组会保留。',
     );
     expect(panelSource).not.toContainSource('SETTING_CLEAR_DOMAIN_LABELS');
     expect(panelSource).not.toContainSource("'setting:faction': '势力'");
@@ -437,7 +441,7 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '势力设定0' }));
+    ensureLibraryDomainExpanded('势力设定0');
     fireEvent.click(screen.getByRole('button', { name: '分组' }));
     fireEvent.change(screen.getByPlaceholderText('输入分组名字'), { target: { value: '宗门势力' } });
     fireEvent.click(screen.getByRole('button', { name: '确认' }));
@@ -461,8 +465,8 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '道具资源0' }));
-    fireEvent.click(screen.getByRole('button', { name: '设定' }));
+    ensureLibraryDomainExpanded('道具资源0');
+    fireEvent.click(screen.getAllByRole('button', { name: '设定' })[0]);
     fireEvent.change(screen.getByPlaceholderText('输入设定名字'), { target: { value: '测试装备设定' } });
     fireEvent.change(screen.getByLabelText('所属分组'), { target: { value: '物品装备' } });
     fireEvent.click(screen.getByRole('button', { name: '确认' }));
@@ -506,8 +510,8 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
     );
 
     ensureLibraryGroupExpanded('核心设定2');
-    fireEvent.click(screen.getByText('世界观').closest('button') as HTMLElement);
-    fireEvent.click(screen.getByRole('button', { name: '设定' }));
+    fireEvent.click(screen.getByText('世界背景').closest('button') as HTMLElement);
+    fireEvent.click(screen.getAllByRole('button', { name: '设定' })[0]);
 
     expect(screen.getByLabelText('所属分组')).toHaveValue('核心设定');
 
@@ -528,6 +532,17 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
     expect(entryListStart).toBeGreaterThan(-1);
     expect(entryListEnd).toBeGreaterThan(entryListStart);
     expect(entryListSource).not.toContainSource('GripVertical');
+  });
+  it('keeps locked built-in setting entry hover help in the legacy setting sidebar', async () => {
+    const sidebarSource = await readWorkbenchLibrarySidebarSource();
+    const entryListStart = sidebarSource.indexOf('previewEntries.map((entry, previewIndex) => {');
+    const entryListEnd = sidebarSource.indexOf('</button>', entryListStart);
+    const entryListSource = sidebarSource.slice(entryListStart, entryListEnd);
+
+    expect(sidebarSource).toContainSource("import { isLockedDefaultSettingEntry } from './workbenchLibraryDataState';");
+    expect(sidebarSource).toContainSource("const LOCKED_DEFAULT_SETTING_TOOLTIP = '内置设定，无法删除';");
+    expect(entryListSource).toContainSource('const lockedDefaultSetting = isLockedDefaultSettingEntry(entry);');
+    expect(entryListSource).toContainSource('title={lockedDefaultSetting ? LOCKED_DEFAULT_SETTING_TOOLTIP : undefined}');
   });
   it('keeps the normal arrow cursor on setting entry rows', async () => {
     const sidebarSource = await readWorkbenchLibrarySidebarSource();

@@ -79,6 +79,46 @@
   opacity: 0.72;
 }
 
+.xy-novel-category-capsules {
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid #d8e1ec;
+  border-radius: 9px;
+  background: #ffffff;
+}
+
+.xy-novel-category-capsules .xy-category-capsule {
+  min-width: 5rem;
+  height: 2.5rem;
+  border-radius: 0;
+  background: #ffffff;
+  padding: 0 0.85rem;
+  color: #1f2933;
+  font-size: 0.8125rem;
+  font-weight: 900;
+  box-shadow: none;
+}
+
+.xy-novel-category-capsules .xy-category-capsule:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+.xy-novel-category-capsules .xy-category-capsule:last-child {
+  border-radius: 0 8px 8px 0;
+}
+
+.xy-novel-category-capsules .xy-category-capsule:hover {
+  background: var(--xy-wa-active-soft);
+  color: var(--xy-wa-blue);
+}
+
+.xy-novel-category-capsules .xy-category-capsule.xy-active {
+  background: var(--xy-custom-flow-group-bg);
+  color: var(--xy-wa-blue);
+}
+
 .xy-category-capsule-delete {
   display: inline-flex;
   width: 0.8rem;

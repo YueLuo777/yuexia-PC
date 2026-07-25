@@ -6,9 +6,17 @@ contextBridge.exposeInMainWorld('xinyuexiaWindow', {
   close: () => ipcRenderer.invoke('window:close'),
   isMaximized: () => ipcRenderer.invoke('window:is-maximized'),
   reload: () => ipcRenderer.invoke('window:reload'),
+  signalRendererReady: () => ipcRenderer.invoke('app:renderer-ready'),
+  confirmCloseCleanup: () => ipcRenderer.invoke('app:close-ready'),
+  onPrepareClose: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on('app:prepare-close', listener);
+    return () => ipcRenderer.removeListener('app:prepare-close', listener);
+  },
   readSettings: () => ipcRenderer.invoke('window-settings:read'),
   updateSettings: (settings) => ipcRenderer.invoke('window-settings:update', settings),
   resetBounds: () => ipcRenderer.invoke('window-settings:reset-bounds'),
+  applyBoundsPreset: (bounds) => ipcRenderer.invoke('window-settings:apply-bounds-preset', bounds),
   onMaximizedChange: (callback) => {
     const listener = (_event, value) => callback(Boolean(value));
     ipcRenderer.on('window:maximized-change', listener);

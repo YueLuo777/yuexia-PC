@@ -1,9 +1,11 @@
 import { Folder, FolderOpen } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import type { ReactNode } from 'react';
 
 import { STATUS_PROMPT_CATEGORY } from '@/features/prompts/hooks/usePrompts';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 import type { Chapter } from '@/features/workbench/model/workbenchTypes';
+import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
 import {
   ChapterNumberButton,
   CHAPTER_NUMBER_GRID_STYLE as WORKBENCH_CHAPTER_NUMBER_GRID_STYLE,
@@ -17,6 +19,8 @@ import {
   WORKBENCH_FOLDER_GROUP_ICON_CLASS,
 } from './chapterEditorLayout';
 import { countCompactWords, getStatusTargetLabel } from './chapterEditorPresentation';
+
+type StatusModalDraggable = ReturnType<typeof useDraggableModal>;
 
 type StatusDirectoryGroup = {
   id: number;
@@ -35,6 +39,7 @@ interface ChapterStatusPanelProps {
   statusPageLeftWidth: number;
   statusPageRightWidth: number;
   statusLeftResizeHandle: ReactNode;
+  statusModalDraggable: StatusModalDraggable;
   statusRightResizeHandle: ReactNode;
   chapterDirectoryGroups: StatusDirectoryGroup[];
   expandedStatusVolumeIds: Set<number>;
@@ -68,6 +73,7 @@ export function ChapterStatusPanel({
   statusPageLeftWidth,
   statusPageRightWidth,
   statusLeftResizeHandle,
+  statusModalDraggable,
   statusRightResizeHandle,
   chapterDirectoryGroups,
   expandedStatusVolumeIds,
@@ -106,15 +112,30 @@ export function ChapterStatusPanel({
       }}
     >
       <section
+        data-draggable-managed="true"
+        data-global-modal-static="true"
+        style={
+          {
+            ...(embedded ? {} : statusModalDraggable.style),
+            WebkitAppRegion: 'no-drag',
+          } as CSSProperties
+        }
         className={
           embedded
             ? 'flex h-full min-h-0 w-full flex-col overflow-hidden bg-white'
-            : 'flex h-[78vh] max-h-[820px] w-[min(1280px,94vw)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'
+            : 'relative flex h-[min(720px,82vh)] w-[min(1180px,92vw)] max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl'
         }
         onClick={(event) => event.stopPropagation()}
       >
         <header
-          className={`${embedded ? 'hidden' : 'flex'} h-14 shrink-0 items-center justify-between border-b border-slate-100 px-5`}
+          className={`${embedded ? 'hidden' : 'flex'} h-14 shrink-0 items-center justify-between border-b border-slate-100 px-5 ${embedded ? '' : 'cursor-move'}`}
+          {...(embedded ? {} : statusModalDraggable.dragHandleProps)}
+          style={
+            {
+              touchAction: embedded ? undefined : 'none',
+              WebkitAppRegion: 'no-drag',
+            } as CSSProperties
+          }
         >
           <div>
             <h2 className="text-lg font-black text-slate-900">更新状态</h2>
@@ -125,6 +146,7 @@ export function ChapterStatusPanel({
           {!embedded && (
             <button
               type="button"
+              data-no-modal-drag="true"
               onClick={() => onClose()}
               className="rounded-lg px-3 py-1.5 text-sm font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700"
             >
@@ -296,6 +318,33 @@ export function ChapterStatusPanel({
               保存状态到第{activeStatusChapter?.serialNumber ?? '-'}章
             </button>
           </aside>
+        </div>
+        <div
+          data-no-modal-drag="true"
+          {...statusModalDraggable.getResizeHandleProps('top')}
+          className={`${embedded ? 'hidden' : ''} absolute left-4 right-4 top-0 z-20 h-2 cursor-ns-resize`}
+        />
+        <div
+          data-no-modal-drag="true"
+          {...statusModalDraggable.getResizeHandleProps('bottom')}
+          className={`${embedded ? 'hidden' : ''} absolute bottom-0 left-4 right-4 z-20 h-2 cursor-ns-resize`}
+        />
+        <div
+          data-no-modal-drag="true"
+          {...statusModalDraggable.getResizeHandleProps('left')}
+          className={`${embedded ? 'hidden' : ''} absolute bottom-4 left-0 top-4 z-20 w-2 cursor-ew-resize`}
+        />
+        <div
+          data-no-modal-drag="true"
+          {...statusModalDraggable.getResizeHandleProps('right')}
+          className={`${embedded ? 'hidden' : ''} absolute bottom-4 right-0 top-4 z-20 w-2 cursor-ew-resize`}
+        />
+        <div
+          data-no-modal-drag="true"
+          {...statusModalDraggable.resizeHandleProps}
+          className={`${embedded ? 'hidden' : ''} absolute bottom-0 right-0 z-20 h-5 w-5 cursor-nwse-resize`}
+        >
+          <div className="absolute bottom-1 right-1 h-3 w-3 rounded-br-lg border-b-2 border-r-2 border-gray-300" />
         </div>
       </section>
     </div>

@@ -2,6 +2,11 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 
 import { wrapAiRequestTag } from '@/features/workbench/model/workbenchAiRequestTagPolicy';
 import type { AiRequestLogGroup } from '@/shared/ui/AiRequestLogGroups';
+import {
+  WORKBENCH_AI_THINKING_ICON_CLASS,
+  WORKBENCH_AI_THINKING_SURFACE_CLASS,
+  WORKBENCH_AI_THINKING_TITLE_CLASS,
+} from './workbenchAiThinkingStyles';
 
 export type LibraryAiRequestLog = {
   createdAt: string;
@@ -55,19 +60,98 @@ export function formatBrainstormReferenceForAi(title: string, text: string) {
   ].join('\n');
 }
 
-export function formatSettingLinkedContextForAi(context: {
+export type SettingLinkedContextItem = {
+  usage: '本次处理对象' | '参考资料';
+  path: string;
+  text: string;
+};
+
+export type SettingLinkedContext = {
   source: 'current' | 'other' | 'brainstorm' | null;
   title: string;
   text: string;
-}) {
-  const text = context.text.trim();
-  if (!context.source || !text) return '';
-  if (context.source === 'brainstorm') return formatBrainstormReferenceForAi(context.title, text);
-  if (context.source === 'other')
-    return wrapAiRequestTag('关联其他设定', text, { 标题: context.title.trim() || '其他设定' });
-  const tagName = '待处理设定';
-  const title = context.title.trim() || '当前设定';
-  return wrapAiRequestTag(tagName, text, { 标题: title });
+  items?: SettingLinkedContextItem[];
+};
+
+function getSettingLinkedContextItems(context: SettingLinkedContext) {
+  if (context.items?.length) return context.items;
+  if (context.source !== 'current' && context.source !== 'other') return [];
+  if (!context.text.trim()) return [];
+  return [
+    {
+      usage: context.source === 'current' ? ('本次处理对象' as const) : ('参考资料' as const),
+      path: context.title.trim() || (context.source === 'current' ? '当前设定' : '其他设定'),
+      text: context.text,
+    },
+  ];
+}
+
+export function hasSettingLinkedContext(context: SettingLinkedContext) {
+  if (!context.source) return false;
+  if (context.source === 'brainstorm') return Boolean(context.text.trim());
+  return getSettingLinkedContextItems(context).length > 0;
+}
+
+export function countSettingLinkedContextWords(context: SettingLinkedContext) {
+  if (context.source === 'brainstorm') return countTextWords(context.text);
+  return getSettingLinkedContextItems(context).reduce((total, item) => total + countTextWords(item.text), 0);
+}
+
+export function formatSettingLinkedContextForAi(context: SettingLinkedContext) {
+  if (!hasSettingLinkedContext(context)) return '';
+  if (context.source === 'brainstorm') return formatBrainstormReferenceForAi(context.title, context.text);
+  const settings = getSettingLinkedContextItems(context).map((item) => {
+    const path = escapeXmlAttribute(item.path.trim() || '未分类设定');
+    const content = item.text.trim() || '当前内容为空';
+    return [
+      `<设定 用途="${item.usage}" 路径="${path}">`,
+      '<当前内容>',
+      content,
+      '</当前内容>',
+      '</设定>',
+    ].join('\n');
+  });
+  return [
+    '<关联设定>',
+    '处理规则：仅修改用途为“本次处理对象”的设定；用途为“参考资料”的设定只用于保持一致，不得改写。',
+    ...settings,
+    '</关联设定>',
+  ].join('\n');
+}
+
+export function formatSettingLinkedContextForDisplay(context: SettingLinkedContext) {
+  if (!hasSettingLinkedContext(context)) return '';
+  if (context.source === 'brainstorm') {
+    return ['资料类型：脑洞', `资料标题：${context.title.trim() || '脑洞'}`, '当前内容：', context.text.trim()].join(
+      '\n',
+    );
+  }
+  return getSettingLinkedContextItems(context)
+    .map((item) =>
+      [
+        `分类路径：${item.path.split('/').join(' ＞ ')}`,
+        `用途：${item.usage}`,
+        '当前内容：',
+        item.text.trim() || '当前内容为空',
+      ].join('\n'),
+    )
+    .join('\n\n');
+}
+
+export function buildCurrentSettingLinkSnapshot(
+  entry: { title: string } | null,
+  body: string,
+  path?: string,
+) {
+  const title = entry?.title.trim() || '当前设定';
+  const text = entry ? body.trim() : '';
+  return {
+    title,
+    text,
+    items: entry
+      ? [{ usage: '本次处理对象' as const, path: path?.trim() || title, text }]
+      : [],
+  };
 }
 
 export function formatSettingUserRequirementForAi(userText: string) {
@@ -168,18 +252,18 @@ export function renderAiChatContent(content: string, options: { hideReasoningBod
     return (
       <div className="space-y-3">
         {options.hideReasoningBody ? (
-          <div className="flex items-center gap-2 rounded-xl border border-gray-100 bg-white/80 px-3 py-2 text-sm font-medium text-gray-600">
-            {done ? <ChevronDown className="h-4 w-4 text-brand" /> : <ChevronRight className="h-4 w-4 text-brand" />}
-            <span>{thinkingLabel}</span>
+          <div className={`${WORKBENCH_AI_THINKING_SURFACE_CLASS} flex items-center gap-2 px-3 py-2 text-sm`}>
+            {done ? <ChevronDown className={`h-4 w-4 ${WORKBENCH_AI_THINKING_ICON_CLASS}`} /> : <ChevronRight className={`h-4 w-4 ${WORKBENCH_AI_THINKING_ICON_CLASS}`} />}
+            <span className={WORKBENCH_AI_THINKING_TITLE_CLASS}>{thinkingLabel}</span>
           </div>
         ) : (
-          <details open={!done} className="group rounded-xl border border-gray-100 bg-white/80 px-3 py-2 text-gray-600">
-            <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-gray-600">
-              {done ? <ChevronDown className="h-4 w-4 text-brand" /> : <ChevronRight className="h-4 w-4 text-brand" />}
+          <details open={!done} className={`${WORKBENCH_AI_THINKING_SURFACE_CLASS} group px-3 py-2`}>
+            <summary className={`flex cursor-pointer list-none items-center gap-2 text-sm ${WORKBENCH_AI_THINKING_TITLE_CLASS}`}>
+              {done ? <ChevronDown className={`h-4 w-4 ${WORKBENCH_AI_THINKING_ICON_CLASS}`} /> : <ChevronRight className={`h-4 w-4 ${WORKBENCH_AI_THINKING_ICON_CLASS}`} />}
               <span>{thinkingLabel}</span>
             </summary>
             {reasoning && (
-              <div className="mt-2 border-l-2 border-gray-200 pl-3 text-sm leading-7 text-gray-500">{reasoning}</div>
+              <div className="mt-2 border-l-2 border-[#08AACE]/25 pl-3 text-sm leading-7 text-slate-600">{reasoning}</div>
             )}
           </details>
         )}

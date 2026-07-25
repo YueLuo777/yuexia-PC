@@ -216,11 +216,7 @@ export function useWorkbenchLibraryControllerPhase2(scope: Record<string, any>) 
     if (!requestedTab || requestedTab === activeTab || !normalizedTabs.includes(requestedTab)) return;
     setRememberedActiveTab(requestedTab);
   }, [activeTab, defaultActiveTab, normalizeTabName, normalizedTabs, setRememberedActiveTab]);
-  const {
-    leftResizeHandle,
-    rightResizeHandle,
-    brainstormPreviewResizeHandle,
-  } = useWorkbenchLibraryResizeHandles({
+  const { leftResizeHandle, rightResizeHandle, brainstormPreviewResizeHandle } = useWorkbenchLibraryResizeHandles({
     activeTab,
     storageKey,
     scale,
@@ -590,7 +586,7 @@ export function useWorkbenchLibraryControllerPhase2(scope: Record<string, any>) 
       : `第${chapter?.serialNumber ?? ''}章梗概`;
     const legacyChapterTitle = `第${chapter?.serialNumber ?? ''}章摘要`;
     const olderLegacyChapterTitle = `第${chapter?.serialNumber ?? ''}章概要`;
-    const chapterDisplayTitle = isDetailOutlineTab ? `第${chapter?.serialNumber ?? ''}章章纲` : chapterTitle;
+    const chapterDisplayTitle = isDetailOutlineTab ? `第${chapter?.serialNumber ?? ''}章 章纲` : chapterTitle;
     const content =
       currentOutlineEntries.find(
         (entry) =>

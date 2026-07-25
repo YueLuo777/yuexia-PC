@@ -66,7 +66,10 @@ export function buildWorkbenchContextLibrary({
     ...statusContextItems,
   ];
   const contextItemById = new Map(allContextItems.map((item) => [item.id, item]));
-  const requiredContextItems = contextChapterRows.filter((row) => row.isCurrent).map((row) => row.outlineItem);
+  const requiredContextItems = contextChapterRows
+    .filter((row) => row.isCurrent)
+    .map((row) => row.outlineItem)
+    .filter(hasContextContent);
   const requiredContextIds = new Set(requiredContextItems.map((item) => item.id));
   const previousContextRow =
     contextChapterRows.find((row) => !row.isCurrent && row.serialNumber < selectedChapterSerialNumber) ?? null;
@@ -97,15 +100,10 @@ export function buildWorkbenchContextLibrary({
   const draftOutlineWordCount = getContextItemsWordCount(selectedDraftContextItems, 'outline');
   const draftSummaryWordCount = getContextItemsWordCount(selectedDraftContextItems, 'summary');
   const canConfirmContextLibrary =
-    requiredContextItems.length > 0 &&
-    requiredContextItems.every(hasContextContent) &&
-    draftContextWordCount > 0 &&
-    selectedDraftContextItems.every(hasContextContent);
+    draftContextWordCount > 0 && selectedDraftContextItems.every(hasContextContent);
   const contextLibraryConfirmTitle = canConfirmContextLibrary
     ? '确认关联资料'
-    : requiredContextItems.length === 0 || !requiredContextItems.every(hasContextContent)
-      ? '当前章节没有章纲，无法确认关联'
-      : '请选择至少一项有内容的资料';
+    : '请选择至少一项有内容的资料';
   const updateLinkedContextItems = (items: WorkbenchLinkedContextItem[]) => {
     setLinkedContextItems(items);
     if (!currentNovelId) return;

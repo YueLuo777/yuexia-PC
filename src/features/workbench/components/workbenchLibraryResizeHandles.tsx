@@ -1,6 +1,10 @@
 import type { CSSProperties, PointerEvent as ReactPointerEvent, PointerEventHandler } from 'react';
 
-import { readSharedWorkbenchLeftNavWidthEnabled } from '@/features/workbench/model/workbenchSharedLeftNavWidth';
+import {
+  WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX,
+  WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN,
+  readSharedWorkbenchLeftNavWidthEnabled,
+} from '@/features/workbench/model/workbenchSharedLeftNavWidth';
 import {
   BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH,
   BRAINSTORM_LAYOUT_PREVIEW_MAX_WIDTH,
@@ -111,11 +115,16 @@ export function useWorkbenchLibraryResizeHandles({
   const startLeftWidthResize = (event: ReactPointerEvent<HTMLDivElement>) => {
     const { eventScale, startX } = prepareResize(event, scale);
     const isBrainstormTab = activeTab === BRAINSTORM_TAB;
-    const minWidth = getSettingLibraryLeftMinWidth(activeTab, eventScale, readSharedWorkbenchLeftNavWidthEnabled());
-    const maxWidth = Math.max(
-      minWidth,
-      isBrainstormTab ? BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH : getSettingLibraryLeftMaxWidth(activeTab, eventScale),
-    );
+    const sharedNavigationWidth = readSharedWorkbenchLeftNavWidthEnabled();
+    const minWidth = sharedNavigationWidth
+      ? WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN
+      : getSettingLibraryLeftMinWidth(activeTab, eventScale);
+    const maxWidth = sharedNavigationWidth
+      ? WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX
+      : Math.max(
+          minWidth,
+          isBrainstormTab ? BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH : getSettingLibraryLeftMaxWidth(activeTab, eventScale),
+        );
     const startWidth = Math.min(maxWidth, Math.max(minWidth, settingLibraryLeftWidth));
 
     const handleMove = (moveEvent: PointerEvent) => {
@@ -172,7 +181,7 @@ export function useWorkbenchLibraryResizeHandles({
     leftResizeHandle: (
       <WorkbenchLibraryResizeHandle
         onPointerDown={startLeftWidthResize}
-        style={activeTab === SETTING_TAB ? { gridColumn: 2, gridRow: 2 } : undefined}
+        style={activeTab === SETTING_TAB ? { gridColumn: 2, gridRow: 1 } : undefined}
         title="拖拽调整左侧宽度"
         zClass="z-50"
       />

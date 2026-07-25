@@ -119,6 +119,40 @@ export function WorkbenchLibraryPanel(props: ComponentProps<typeof LazyWorkbench
   );
 }
 
+export function WorkbenchNoNovelState() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center bg-gray-50">
+      <div className="rounded-xl border border-gray-100 bg-white p-8 text-center shadow-sm">
+        <h1 className="text-lg font-bold text-gray-900">未选择作品</h1>
+        <p className="mt-2 text-sm text-gray-500">请先从作品列表选择一本小说或剧本。</p>
+        <Link
+          to="/novels"
+          className="mt-5 inline-flex rounded-md bg-brand px-4 py-2 text-sm text-white transition-colors hover:bg-brand-dark"
+        >
+          返回我的小说
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+export function getWorkbenchChapterHeaderStats(
+  settingsStorageKey: string,
+  volumes: Volume[],
+  selectedChapter: { volumeId: number; chapter: { id: number } } | null,
+  editorContent: string,
+  novelId: number,
+) {
+  const chapterCount = volumes.reduce((sum, volume) => sum + volume.chapters.length, 0);
+  const unpolishedChapterCount = countUnpolishedChapters(settingsStorageKey, volumes, (chapterId) =>
+    selectedChapter?.chapter.id === chapterId ? editorContent : readChapterContent(novelId, chapterId),
+  );
+  const selectedVolumeName = selectedChapter
+    ? (volumes.find((volume) => volume.id === selectedChapter.volumeId)?.name ?? '未选择卷')
+    : '未选择卷';
+  return { chapterCount, unpolishedChapterCount, selectedVolumeName };
+}
+
 export const FIELD_SIZE_FLOW_IDS = new Set<WorkbenchCreationFlowPageKey>([
   'brainstorm',
   'outline',
@@ -247,6 +281,20 @@ export function readWorkbenchChapterSidebarWidth() {
 export function normalizePublishedSidebarWidth(value: number) {
   if (!Number.isFinite(value)) return PUBLISHED_SIDEBAR_DEFAULT_WIDTH;
   return Math.max(PUBLISHED_SIDEBAR_MIN_WIDTH, Math.min(PUBLISHED_SIDEBAR_MAX_WIDTH, value));
+}
+
+export function readWorkbenchPublishedSidebarWidth() {
+  if (readSharedWorkbenchLeftNavWidthEnabled()) {
+    return normalizePublishedSidebarWidth(
+      readSharedWorkbenchLeftNavWidth(PUBLISHED_SIDEBAR_MAX_WIDTH, PUBLISHED_SIDEBAR_MIN_WIDTH),
+    );
+  }
+  return normalizePublishedSidebarWidth(
+    Number.parseInt(
+      localStorage.getItem('xinyuexia_published_sidebar_width') ?? String(PUBLISHED_SIDEBAR_DEFAULT_WIDTH),
+      10,
+    ),
+  );
 }
 
 export function formatMemoTime() {

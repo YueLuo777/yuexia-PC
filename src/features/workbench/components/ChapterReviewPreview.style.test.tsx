@@ -8,6 +8,11 @@ const source = readFileSync(resolve(process.cwd(), 'src/features/workbench/compo
 );
 
 describe('ChapterReviewPreview detail labels', () => {
+  it('names the plot-audit summary instead of showing an ambiguous passed label', () => {
+    expect(source).toContain("auditOutputPassed ? '剧情审核 通过' : '剧情审核 待确认 / 需处理'");
+    expect(source).not.toContain("auditOutputPassed ? '通过' : '待确认 / 需处理'");
+  });
+
   it('styles both detail labels like the passed status pill', () => {
     const pillClass =
       'mb-1 w-fit rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-black text-emerald-700';

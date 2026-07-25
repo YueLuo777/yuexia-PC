@@ -25,7 +25,7 @@ function getReviewVisibleOutput(output: string) {
 }
 
 export function isAuditOutputPassed(output: string) {
-  const clean = getReviewVisibleOutput(output);
+  const clean = getReviewVisibleOutput(output).split('【文本审核结果】')[0];
   const conclusionMatch = clean.match(/【剧情审核结论】\s*(不通过|通过)/);
   if (conclusionMatch) return conclusionMatch[1] === '通过' && !/【结果】\s*不通过/.test(clean);
   return /通过/.test(clean) && !/部分通过|不通过|未通过|不合格|失败/.test(clean);

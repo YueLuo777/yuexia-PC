@@ -8,21 +8,19 @@ import {
   type FormalRouteComponentKey,
 } from '@/app/routeRegistry';
 import { AppFrame } from '@/shared/layout/AppFrame';
+import { RendererReadySignal } from '@/app/RendererReadySignal';
 import { WorkspaceTabsProvider } from '@/shared/tabs/WorkspaceTabsContext';
 import {
   bindWorkbenchAssociationCloseCleanup,
-  resetWorkbenchAssociationsForNewAppSession,
 } from '@/features/workbench/model/workbenchAssociationCleanup';
 import { bindWorkbenchTransientAiCleanup } from '@/features/workbench/model/workbenchTransientAiCleanup';
+import { prepareWorkbenchForAppClose } from '@/features/workbench/model/workbenchAppCloseCleanup';
 import { areInternalRoutesEnabled } from '@/shared/featureFlags/internalRoutes';
 
 const TomatoGenreIterationTestPage = lazy(() =>
   import('@/features/tests/pages/TomatoGenreIterationTestPage').then((module) => ({
     default: module.TomatoGenreIterationTestPage,
   })),
-);
-const LibraryHubPage = lazy(() =>
-  import('@/features/library-hub/pages/LibraryHubPage').then((module) => ({ default: module.LibraryHubPage })),
 );
 const ModelManagePage = lazy(() =>
   import('@/features/models/pages/ModelManagePage').then((module) => ({ default: module.ModelManagePage })),
@@ -33,7 +31,6 @@ const NovelLibraryPage = lazy(() =>
 const PromptsPage = lazy(() =>
   import('@/features/prompts/pages/PromptsPage').then((module) => ({ default: module.PromptsPage })),
 );
-const ScriptEditorPage = lazy(() => import('@/features/script-editor/pages/ScriptEditorPage'));
 const WorkbenchPage = lazy(() =>
   import('@/features/workbench/pages/WorkbenchPage').then((module) => ({ default: module.WorkbenchPage })),
 );
@@ -50,11 +47,9 @@ const InternalRoutesPage = INTERNAL_ROUTE_MODULES_BUNDLED
   : null;
 
 const FORMAL_ROUTE_COMPONENTS = {
-  libraryHub: LibraryHubPage,
   modelManage: ModelManagePage,
   novelLibrary: NovelLibraryPage,
   prompts: PromptsPage,
-  scriptEditor: ScriptEditorPage,
   settings: SettingsPage,
   tokenUsage: TokenUsagePage,
   tomatoGenreIteration: TomatoGenreIterationTestPage,
@@ -114,10 +109,17 @@ export default function App() {
   const showInternalRoutes = areInternalRoutesEnabled();
 
   useEffect(() => {
-    resetWorkbenchAssociationsForNewAppSession();
     const disposeAssociationCleanup = bindWorkbenchAssociationCloseCleanup();
-    bindWorkbenchTransientAiCleanup();
-    return disposeAssociationCleanup;
+    const disposeTransientAiCleanup = bindWorkbenchTransientAiCleanup();
+    const disposeDesktopClose = window.xinyuexiaWindow?.onPrepareClose(() => {
+      prepareWorkbenchForAppClose();
+      void window.xinyuexiaWindow?.confirmCloseCleanup();
+    });
+    return () => {
+      disposeAssociationCleanup();
+      disposeTransientAiCleanup();
+      disposeDesktopClose?.();
+    };
   }, []);
 
   return (
@@ -143,6 +145,7 @@ export default function App() {
               })}
               <Route path="*" element={<Navigate to={STARTUP_ROUTE_PATH} replace />} />
             </Routes>
+            <RendererReadySignal />
           </Suspense>
         </AppErrorBoundary>
       </AppFrame>

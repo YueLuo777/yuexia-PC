@@ -4,6 +4,11 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const collectionPagePath = resolve(process.cwd(), 'src/features/tests/pages/TestCollectionPage.tsx');
+const testedStateHookPath = resolve(
+  process.cwd(),
+  'src/features/tests/hooks/useTestCollectionTestedState.ts',
+);
+const testedStatePath = resolve(process.cwd(), 'src/features/tests/model/testCollectionTestedState.ts');
 
 const removedMarkedTests = [
   ['/border-backplate-application-test', 'BorderBackplateApplicationTestPage'],
@@ -50,6 +55,35 @@ const removedMarkedTests = [
   ['/novel-library-toolbar-layout-test', 'NovelLibraryToolbarLayoutTestPage'],
   ['/text-audit-continuous-context-test', 'TextAuditContinuousContextTestPage'],
   ['/novel-card-menu-design-test', 'NovelCardMenuDesignTestPage'],
+  ['/audit-prompt-compact-editor-test', 'AuditPromptCompactEditorTestPage'],
+  ['/identity-position-variants-test', 'IdentityPositionVariantsTestPage'],
+  ['/setting-tree-navigation-test', 'SettingTreeNavigationTestPage'],
+  ['/ui-consistency-audit-test', 'UiConsistencyAuditTestPage'],
+  ['/setting-embedded-text-sync-candidates-test', 'SettingEmbeddedTextSyncCandidatesTestPage'],
+  ['/brainstorm-typography-consistency-test', 'BrainstormTypographyConsistencyTestPage'],
+  ['/setting-editor-top-spacing-test', 'SettingEditorTopSpacingTestPage'],
+  ['/role-tree-outline-selection-test', 'RoleTreeOutlineSelectionTestPage'],
+  ['/text-audit-paragraph-selection-test', 'TextAuditParagraphSelectionTestPage'],
+  ['/setting-editor-five-pixel-lift-test', 'SettingEditorFivePixelLiftTestPage'],
+  ['/chapter-navigation-hierarchy-test', 'ChapterNavigationHierarchyTestPage'],
+  ['/review-paragraph-spacing-test', 'ReviewParagraphSpacingTestPage'],
+  ['/setting-navigation-sticky-hierarchy-test', 'SettingNavigationStickyHierarchyTestPage'],
+  ['/prompt-based-setting-taxonomy-test', 'PromptBasedSettingTaxonomyTestPage'],
+  ['/audit-prompt-select-soft-grouping-test', 'AuditPromptSelectSoftGroupingTestPage'],
+  ['/workbench-flow-tabs-spacing-test', 'WorkbenchFlowTabsSpacingTestPage'],
+  ['/settings-hierarchy-design-test', 'SettingsHierarchyDesignTestPage'],
+  ['/genre-iteration-test', 'GenreIterationPage'],
+  ['/ai-panel-visual-consistency-test', 'AiPanelVisualConsistencyTestPage'],
+  ['/compact-library-form-test', 'CompactLibraryFormTestPage'],
+  ['/setting-name-width-design-test', 'SettingNameWidthDesignTestPage'],
+  ['/role-field-sizing-layout-test', 'RoleFieldSizingLayoutTestPage'],
+  ['/setting-embedded-border-original-compare-test', 'SettingEmbeddedBorderOriginalCompareTestPage'],
+  ['/role-survival-status-design-test', 'RoleSurvivalStatusDesignTestPage'],
+  ['/setting-field-history-actions-layout-test', 'SettingFieldHistoryActionsLayoutTestPage'],
+  ['/navigation-context-menu-prototype-test', 'NavigationContextMenuPrototypeTestPage'],
+  ['/post-audit-status-update-test', 'PostAuditStatusUpdateTestPage'],
+  ['/text-audit-review-workbench-test', 'TextAuditReviewWorkbenchTestPage'],
+  ['/text-audit-diff-display-test', 'TextAuditDiffDisplayTestPage'],
 ] as const;
 
 describe('TestCollectionPage delete marked cleanup', () => {
@@ -64,6 +98,9 @@ describe('TestCollectionPage delete marked cleanup', () => {
 
   it('keeps the completed-test bucket for checked test entries', async () => {
     const source = await readFile(collectionPagePath, 'utf8');
+    const testedStateHookSource = await readFile(testedStateHookPath, 'utf8');
+    const testedStateSource = await readFile(testedStatePath, 'utf8');
+    const combinedSource = `${source}\n${testedStateHookSource}\n${testedStateSource}`;
 
     [
       ['ReviewPreviewAnnotationSync', 'TestPage'].join(''),
@@ -82,13 +119,14 @@ describe('TestCollectionPage delete marked cleanup', () => {
       '\u5f85\u6d4b\u8bd5',
       '\u6807\u8bb0\u5df2\u6d4b\u8bd5',
     ].forEach((requiredText) => {
-      expect(source).toContainSource(requiredText);
+      expect(combinedSource).toContainSource(requiredText);
     });
   });
 
   it('keeps the current test page and collection tab when marking a test as completed', async () => {
-    const source = await readFile(collectionPagePath, 'utf8');
-    const toggleBody = source.match(/const toggleTestedTest = \(path: string\) => \{([\s\S]*?)\n {2}\};/)?.[1] ?? '';
+    const testedStateHookSource = await readFile(testedStateHookPath, 'utf8');
+    const toggleBody =
+      testedStateHookSource.match(/const toggleTestedTest = \(path: string\) => \{([\s\S]*?)\n {2}\};/)?.[1] ?? '';
 
     expect(toggleBody).toContainSource('setTestedTestPaths');
     expect(toggleBody).not.toContainSource('setActivePath(null)');
@@ -105,15 +143,15 @@ describe('TestCollectionPage delete marked cleanup', () => {
 
   it('prunes deleted test paths from the completed-test bucket', async () => {
     const source = await readFile(collectionPagePath, 'utf8');
+    const testedStateHookSource = await readFile(testedStateHookPath, 'utf8');
+    const testedStateSource = await readFile(testedStatePath, 'utf8');
 
     expect(source).toContainSource('const validTestPaths = new Set(testNumberByPath.keys());');
-    expect(source).toContainSource('validTestPaths.has(item)');
-    expect(source).toContainSource(
-      'localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(validPaths));',
+    expect(testedStateSource).toContainSource('validPaths.has(item)');
+    expect(testedStateSource).toContainSource('writeTestedTestPaths(paths)');
+    expect(testedStateHookSource).toContainSource(
+      'Array.from(current).filter((path) => validTestPaths.has(path))',
     );
-    expect(source).toContainSource('Array.from(current).filter((path) => validTestPaths.has(path))');
-    expect(source).toContainSource(
-      'localStorage.setItem(TEST_COLLECTION_TESTED_PATHS_KEY, JSON.stringify(Array.from(next)));',
-    );
+    expect(testedStateHookSource).toContainSource('writeTestedTestPaths(next)');
   });
 });

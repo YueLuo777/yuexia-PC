@@ -1,0 +1,109 @@
+import type { StructuredSettingFieldSet } from '@/features/workbench/components/workbenchStructuredSettings';
+import { PROMPT_BASED_SETTING_DOMAINS } from '@/features/workbench/model/promptBasedSettingTaxonomyData';
+import {
+  ROLE_BASE_SETTING_FIELD_DEFINITIONS,
+  ROLE_STATE_FIELD_DEFINITIONS,
+} from '@/features/workbench/components/workbenchRoleSettingFields';
+
+export type StructuredSettingPreviewGroup = {
+  id: string;
+  title: string;
+  fieldSetIds: readonly string[];
+};
+
+export type StructuredSettingReplicaDomain = {
+  id: string;
+  title: string;
+  count: number;
+  fieldSetIds: readonly string[];
+};
+
+export const ROLE_PREVIEW_FIELD_SET: StructuredSettingFieldSet = {
+  id: 'role-main-preview',
+  entryType: '人物设定',
+  entryTitle: '男主角',
+  titleFieldLabel: '人物姓名',
+  gridColumnsClassName: 'grid-cols-2',
+  groups: [
+    {
+      title: '基础设定',
+      description: '人物长期稳定的身份、外貌、性格、背景和能力规则。',
+      fieldKeys: ROLE_BASE_SETTING_FIELD_DEFINITIONS.map((field) => field.key),
+    },
+    {
+      title: '状态设定',
+      description: '随章节推进持续变化的处境、目标、能力和资源状态。',
+      fieldKeys: ROLE_STATE_FIELD_DEFINITIONS.map((field) => field.key),
+    },
+  ],
+  fields: [
+    ...ROLE_BASE_SETTING_FIELD_DEFINITIONS,
+    ...ROLE_STATE_FIELD_DEFINITIONS.map((field) => ({
+      key: field.key,
+      title: field.title,
+      placeholder: `填写人物的${field.title}，更新频率：${field.level}。`,
+    })),
+  ],
+};
+
+const getPromptDomainFieldSetIds = (domainId: string) =>
+  PROMPT_BASED_SETTING_DOMAINS.find((domain) => domain.id === domainId)?.groups.flatMap((group) =>
+    group.entries.map((entry) => `prompt-${entry.id}`),
+  ) ?? [];
+
+const FORMAL_SETTING_PREVIEW_GROUPS: readonly StructuredSettingPreviewGroup[] = [
+  { id: 'work', title: '作品设定', fieldSetIds: getPromptDomainFieldSetIds('work') },
+  { id: 'location', title: '地点地图', fieldSetIds: getPromptDomainFieldSetIds('location') },
+  { id: 'faction', title: '势力设定', fieldSetIds: getPromptDomainFieldSetIds('faction') },
+  { id: 'resource', title: '道具资源', fieldSetIds: getPromptDomainFieldSetIds('resource') },
+  { id: 'foreshadow', title: '伏笔线索', fieldSetIds: getPromptDomainFieldSetIds('foreshadow') },
+  { id: 'monster', title: '怪物图鉴', fieldSetIds: getPromptDomainFieldSetIds('monster') },
+];
+
+const LEGACY_SETTING_PREVIEW_GROUPS: readonly StructuredSettingPreviewGroup[] = [
+  {
+    id: 'legacy-work',
+    title: '旧版作品与剧情对比',
+    fieldSetIds: [
+      'work-core-basic',
+      'work-core-world-view',
+      'work-core-cheat-advantage',
+      'work-plot-blueprint',
+      'work-plot-volume',
+      'work-plot-payoff',
+    ],
+  },
+  {
+    id: 'legacy-faction',
+    title: '旧版势力与地图对比',
+    fieldSetIds: ['faction-righteous-no-1', 'faction-world-map', 'faction-danger-zone'],
+  },
+  {
+    id: 'legacy-item',
+    title: '旧版能力与资源对比',
+    fieldSetIds: ['item-ability', 'item-resource-currency', 'item-special-resource', 'item-equipment'],
+  },
+  { id: 'legacy-monster', title: '旧版怪物图鉴对比', fieldSetIds: ['monster-list'] },
+  { id: 'legacy-foreshadow', title: '旧版伏笔线索对比', fieldSetIds: ['foreshadow-main', 'foreshadow-character'] },
+];
+
+export const STRUCTURED_SETTING_PREVIEW_GROUPS: readonly StructuredSettingPreviewGroup[] = [
+  ...FORMAL_SETTING_PREVIEW_GROUPS,
+  ...LEGACY_SETTING_PREVIEW_GROUPS,
+];
+
+export const STRUCTURED_SETTING_REPLICA_DOMAINS: readonly StructuredSettingReplicaDomain[] = [
+  { id: 'work', title: '作品设定', count: 12, fieldSetIds: FORMAL_SETTING_PREVIEW_GROUPS[0].fieldSetIds },
+  { id: 'character', title: '人物设定', count: 1, fieldSetIds: [ROLE_PREVIEW_FIELD_SET.id] },
+  { id: 'location', title: '地点地图', count: 7, fieldSetIds: FORMAL_SETTING_PREVIEW_GROUPS[1].fieldSetIds },
+  { id: 'faction', title: '势力设定', count: 4, fieldSetIds: FORMAL_SETTING_PREVIEW_GROUPS[2].fieldSetIds },
+  { id: 'resource', title: '道具资源', count: 4, fieldSetIds: FORMAL_SETTING_PREVIEW_GROUPS[3].fieldSetIds },
+  { id: 'foreshadow', title: '伏笔线索', count: 4, fieldSetIds: FORMAL_SETTING_PREVIEW_GROUPS[4].fieldSetIds },
+  { id: 'monster', title: '怪物图鉴', count: 4, fieldSetIds: FORMAL_SETTING_PREVIEW_GROUPS[5].fieldSetIds },
+];
+
+export {
+  getCompactStructuredFieldLayout as getCompactFieldLayout,
+  getCompactStructuredTitleWidth as getCompactTitleWidth,
+  getCompactStructuredVisibleFieldKeys as getVisibleFieldKeys,
+} from '@/features/workbench/components/workbenchStructuredSettingCompactLayout';

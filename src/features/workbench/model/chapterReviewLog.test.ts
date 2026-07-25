@@ -44,10 +44,15 @@ describe('chapterReviewLog', () => {
 
   it('adjusts fill weights only for optional populated groups', () => {
     expect(getReviewLogFillGroupWeights({ hasOutline: false, hasUser: false })).toEqual({ prompt: 1, original: 2 });
+    expect(getReviewLogFillGroupWeights({ hasOutline: true, hasUser: false })).toEqual({
+      prompt: 1,
+      outline: 1,
+      original: 1,
+    });
     expect(getReviewLogFillGroupWeights({ hasOutline: true, hasUser: true })).toEqual({
       prompt: 1,
       outline: 1,
-      original: 2,
+      original: 1,
       user: 1,
     });
   });
@@ -56,7 +61,9 @@ describe('chapterReviewLog', () => {
     expect(formatAiThinkingResponse('答案', '推理', -2, false)).toBe(
       '[[THINKING seconds=0 status=thinking]]\n推理\n[[/THINKING]]\n答案',
     );
-    expect(formatAiThinkingResponse('', '', 3, false)).toBe('正在思考...');
+    expect(formatAiThinkingResponse('', '', 3, false)).toBe(
+      '[[THINKING seconds=3 status=thinking]]\n\n[[/THINKING]]',
+    );
     expect(formatAiThinkingResponse('', '', 3, true)).toBe('');
   });
 

@@ -1,8 +1,9 @@
 import { X } from 'lucide-react';
-import { useEffect, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
+import type { ModalGeometry } from '@/shared/hooks/draggableModalGeometry';
 import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
 import { SHORTCUT_ACTION_EVENT } from '@/shared/shortcuts/shortcutConfig';
 import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
@@ -22,8 +23,12 @@ interface AppModalShellProps {
   closeOnFloatingShortcut?: boolean;
   zIndexClass?: string;
   backdropClassName?: string;
+  backdropPaddingClassName?: string;
   panelClassName?: string;
   contentClassName?: string;
+  portalTarget?: Element | DocumentFragment;
+  defaultGeometry?: ModalGeometry;
+  centerOnOpen?: boolean;
 }
 
 export function AppModalShell({
@@ -41,11 +46,22 @@ export function AppModalShell({
   closeOnFloatingShortcut = true,
   zIndexClass = 'z-[220]',
   backdropClassName = 'bg-black/40',
+  backdropPaddingClassName = 'p-4',
   panelClassName = '',
   contentClassName = 'flex min-h-0 flex-1 flex-col overflow-hidden',
+  portalTarget,
+  defaultGeometry,
+  centerOnOpen = false,
 }: AppModalShellProps) {
-  const draggable = useDraggableModal(storageId ?? `app_modal_${title}`);
+  const draggable = useDraggableModal(storageId ?? `app_modal_${title}`, defaultGeometry, centerOnOpen);
+  const { resetToDefault } = draggable;
+  const wasOpenRef = useRef(false);
   useTopModalEscape(isOpen, onClose);
+
+  useEffect(() => {
+    if (isOpen && centerOnOpen && !wasOpenRef.current) resetToDefault();
+    wasOpenRef.current = isOpen;
+  }, [centerOnOpen, isOpen, resetToDefault]);
 
   useEffect(() => {
     if (!isOpen || !closeOnFloatingShortcut) return;
@@ -63,18 +79,23 @@ export function AppModalShell({
 
   return createPortal(
     <div
-      className={`fixed inset-0 ${zIndexClass} flex items-center justify-center ${backdropClassName}`}
+      className={`modal-sharp fixed inset-0 ${zIndexClass} flex items-center justify-center ${backdropClassName} ${backdropPaddingClassName}`}
+      data-app-modal-backdrop="true"
       style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
       onClick={closeOnBackdrop ? onClose : undefined}
     >
       <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className={`relative flex ${heightClass} ${widthClass} max-w-[96vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl ${panelClassName}`}
+        data-app-modal-panel="true"
         data-draggable-managed="true"
         style={{ ...draggable.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
         onClick={(event) => event.stopPropagation()}
       >
         <header
-          className="group flex min-h-14 shrink-0 items-center justify-between gap-4 border-b border-gray-100 px-5 py-3"
+          className="group flex min-h-14 shrink-0 cursor-move items-center justify-between gap-4 border-b border-gray-100 px-5 py-3 active:cursor-grabbing"
           {...draggable.dragHandleProps}
           style={{ ...draggable.dragHandleProps.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
         >
@@ -106,6 +127,6 @@ export function AppModalShell({
         <ModalResizeHandles draggable={draggable} />
       </section>
     </div>,
-    document.body,
+    portalTarget ?? document.body,
   );
 }

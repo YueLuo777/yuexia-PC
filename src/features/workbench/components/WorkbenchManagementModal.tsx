@@ -1,9 +1,10 @@
 import { lazy, Suspense } from 'react';
-import { createPortal } from 'react-dom';
 
-import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
-
-import { WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS } from './workbenchManagementModalSize';
+import {
+  PROMPT_MANAGEMENT_MODAL_WIDTH_CLASS,
+  WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS,
+} from './workbenchManagementModalSize';
+import { WorkbenchModal } from './WorkbenchModal';
 
 export type WorkbenchManagementModalKey = 'models' | 'agents';
 
@@ -20,32 +21,17 @@ type WorkbenchManagementModalProps = {
 };
 
 export function WorkbenchManagementModal({ type, onClose }: WorkbenchManagementModalProps) {
-  useTopModalEscape(true, onClose);
   const title = type === 'models' ? '模型管理' : '提示词管理';
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[220] flex items-center justify-center bg-black/35 px-8 py-8"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+  return (
+    <WorkbenchModal
+      title={title}
+      isOpen
+      onClose={onClose}
+      widthClass={`${WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS} ${type === 'agents' ? PROMPT_MANAGEMENT_MODAL_WIDTH_CLASS : ''}`}
+      heightClass=""
+      storageId={`workbench_management_${type}`}
     >
-      <section
-        data-global-modal-static="true"
-        className={`relative flex ${WORKBENCH_MANAGEMENT_PORTAL_MODAL_SIZE_CLASS} flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.28)]`}
-      >
-        {type === 'agents' ? (
-          <header className="flex h-11 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">
-            <h2 className="text-sm font-bold text-slate-900">{title}</h2>
-            <button
-              onClick={onClose}
-              className="rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
-              title="关闭"
-            >
-              关闭
-            </button>
-          </header>
-        ) : null}
         <div className="min-h-0 flex-1 overflow-hidden">
           <Suspense
             fallback={
@@ -57,8 +43,6 @@ export function WorkbenchManagementModal({ type, onClose }: WorkbenchManagementM
             {type === 'models' ? <LazyModelManagePage embedded onClose={onClose} /> : <LazyPromptsPage />}
           </Suspense>
         </div>
-      </section>
-    </div>,
-    document.body,
+    </WorkbenchModal>
   );
 }

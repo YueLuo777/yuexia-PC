@@ -31,7 +31,11 @@ describe('CombinedAiConfigSelect dropdown design', () => {
 
     expect(container.firstElementChild).toHaveClass('pt-3');
     expect(container.firstElementChild).not.toHaveClass('bg-[#F4F8FA]', 'rounded-2xl');
-    expect(container.querySelector('.grid.h-11')).toHaveClass('border-2', 'border-[#08AACE]');
+    expect(container.querySelector('.grid.h-11')).toHaveClass(
+      'xy-combined-ai-config-frame',
+      'border-2',
+    );
+    expect(container.querySelector('.grid.h-11')).not.toHaveClass('border-[#08AACE]');
     fireEvent.click(screen.getByRole('button', { name: 'DeepSeek' }));
     expect(container.querySelector('.top-\\[calc\\(100\\%\\+0\\.5rem\\)\\]')).toHaveClass(
       'rounded-2xl',

@@ -12,6 +12,10 @@ import {
 import { ROLE_TAB, isSettingLikeTab, normalizeTabName } from './workbenchLibraryTabs';
 import { parseSettingContent, stringifySettingContent } from './workbenchStructuredSettings';
 
+function isProtagonistGroupType(type: string) {
+  return type === String.fromCharCode(30007, 20027, 35282) || type === String.fromCharCode(30007, 22899, 20027);
+}
+
 function prepareEntryForType(
   entries: WorkbenchLibraryEntry[],
   entry: WorkbenchLibraryEntry,
@@ -23,17 +27,19 @@ function prepareEntryForType(
   if (entry.tab !== normalizedTargetTab) return null;
   if (normalizedTargetTab === ROLE_TAB) {
     const role = parseRoleContent(entry.content);
-    if (isMaleProtagonistRoleTypeChangeLocked(role.type, targetType)) return null;
+    const preserveFemaleProtagonist =
+      isProtagonistGroupType(targetType) && role.type === String.fromCharCode(22899, 20027, 35282);
+    if (!preserveFemaleProtagonist && isMaleProtagonistRoleTypeChangeLocked(role.type, targetType)) return null;
     if (
       !canCreateWorkbenchRoleInType(
         entries
           .filter((item) => item.id !== entry.id && item.tab === ROLE_TAB)
           .map((item) => parseRoleContent(item.content).type),
-        targetType,
+        preserveFemaleProtagonist ? role.type : targetType,
       )
     )
       return null;
-    if (role.type === targetType) return entry;
+    if (preserveFemaleProtagonist || role.type === targetType) return entry;
     return {
       ...entry,
       content: stringifyRoleContent({
@@ -72,7 +78,15 @@ export function moveLibraryEntryToTypeInList(
   const targetTypeLastIndex = nextEntries.reduce((lastIndex, entry, index) => {
     if (entry.tab !== normalizedTargetTab) return lastIndex;
     if (normalizedTargetTab === ROLE_TAB) {
-      return parseRoleContent(entry.content).type === targetType ? index : lastIndex;
+      return isProtagonistGroupType(targetType)
+        ? [String.fromCharCode(30007, 20027, 35282), String.fromCharCode(22899, 20027, 35282)].includes(
+            parseRoleContent(entry.content).type,
+          )
+          ? index
+          : lastIndex
+        : parseRoleContent(entry.content).type === targetType
+          ? index
+          : lastIndex;
     }
     if (isSettingLikeTab(normalizedTargetTab)) {
       return parseSettingContent(entry.content).type === targetType ? index : lastIndex;
@@ -115,7 +129,12 @@ export function getLibraryEntriesForType(entries: WorkbenchLibraryEntry[], tab: 
   const normalizedTab = normalizeTabName(tab);
   return entries.filter((entry) => {
     if (entry.tab !== normalizedTab) return false;
-    if (normalizedTab === ROLE_TAB) return parseRoleContent(entry.content).type === type;
+    if (normalizedTab === ROLE_TAB) {
+      const roleType = parseRoleContent(entry.content).type;
+      return isProtagonistGroupType(type)
+        ? [String.fromCharCode(30007, 20027, 35282), String.fromCharCode(22899, 20027, 35282)].includes(roleType)
+        : roleType === type;
+    }
     if (isSettingLikeTab(normalizedTab)) return parseSettingContent(entry.content).type === type;
     return false;
   });

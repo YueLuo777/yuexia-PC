@@ -7,14 +7,16 @@ import type { ContextLibraryTab } from './workbenchPageSupport';
 import { WordCountText } from '@/shared/ui/WordCountText';
 import { WorkbenchModal } from './WorkbenchModal';
 
-function SourceStatus({ label, value }: { label: string; value: number }) {
-  return value <= 0 ? (
-    <span className="font-black text-red-500">无{label}</span>
-  ) : (
-    <>
-      <span className="shrink-0">{label}</span>
-      <WordCountText value={value} compact />
-    </>
+function ContextMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1">
+      <span>{label}</span>
+      {value <= 0 ? (
+        <span className="font-black text-red-500">无</span>
+      ) : (
+        <WordCountText value={value} compact />
+      )}
+    </span>
   );
 }
 export function WorkbenchContextLibraryModal({
@@ -25,7 +27,6 @@ export function WorkbenchContextLibraryModal({
   selectedIds,
   lockedIds,
   searchText,
-  selectedItems,
   chapterWords,
   summaryWords,
   outlineWords,
@@ -49,7 +50,6 @@ export function WorkbenchContextLibraryModal({
   selectedIds: Set<string>;
   lockedIds: Set<string>;
   searchText: string;
-  selectedItems: WorkbenchLinkedContextItem[];
   chapterWords: number;
   summaryWords: number;
   outlineWords: number;
@@ -77,7 +77,7 @@ export function WorkbenchContextLibraryModal({
       title="关联资料"
       isOpen={open}
       onClose={onClose}
-      storageId="workbench_context_library"
+      storageId="workbench_context_library_centered_v2"
       widthClass="w-[min(1296px,94vw)]"
       heightClass="h-[min(820px,88vh)] min-h-[520px]"
       headerExtra={
@@ -122,25 +122,24 @@ export function WorkbenchContextLibraryModal({
             ))}
           </main>
         )}
-        <div className="mt-4 flex shrink-0 items-center justify-between gap-4 border-t border-gray-100 bg-white px-5 py-4">
-          <div className="min-w-0 space-y-1 text-sm font-bold text-gray-500">
-            <div>将读取 {selectedItems.length} 项</div>
-            <div>
-              正文：
-              <SourceStatus label="正文" value={chapterWords} />
-            </div>
-            <div>
-              梗概：
-              <SourceStatus label="梗概" value={summaryWords} />
-            </div>
-            <div>
-              章纲：
-              <SourceStatus label="章纲" value={outlineWords} />
-            </div>
-            <div>
-              共多少字：
-              <WordCountText value={totalWords} />
-            </div>
+        <div
+          data-testid="context-library-footer"
+          className="mt-3 flex shrink-0 items-center justify-between gap-4 border-t border-gray-100 bg-white py-3"
+        >
+          <div
+            data-testid="context-library-summary"
+            className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-sm font-bold text-gray-500"
+          >
+            <ContextMetric label="正文" value={chapterWords} />
+            <span aria-hidden className="h-4 w-px shrink-0 bg-slate-200" />
+            <ContextMetric label="梗概" value={summaryWords} />
+            <span aria-hidden className="h-4 w-px shrink-0 bg-slate-200" />
+            <ContextMetric label="章纲" value={outlineWords} />
+            <span aria-hidden className="h-4 w-px shrink-0 bg-slate-200" />
+            <span className="inline-flex shrink-0 items-center gap-1 font-black text-slate-700">
+              合计
+              <WordCountText value={totalWords} compact />
+            </span>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button

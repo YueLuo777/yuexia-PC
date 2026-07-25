@@ -134,7 +134,7 @@ export function createOutlineControllerPhase1(scope: Record<string, any>) {
   const getLegacyChapterSummaryTitle = (serialNumber: number) => `第${serialNumber}章摘要`;
   const getOlderLegacyChapterSummaryTitle = (serialNumber: number) => `第${serialNumber}章概要`;
   const getChapterSummaryDisplayTitle = (serialNumber: number) =>
-    isDetailOutlineTab ? `第${serialNumber}章章纲` : getChapterSummaryTitle(serialNumber);
+    isDetailOutlineTab ? `第${serialNumber}章 章纲` : getChapterSummaryTitle(serialNumber);
   const getVolumeSummaryTitle = (volumeName: string) => `${volumeName}梗概`;
   const getLegacyVolumeSummaryTitle = (volumeName: string) => `${volumeName}摘要`;
   const getOlderLegacyVolumeSummaryTitle = (volumeName: string) => `${volumeName}概要`;
@@ -163,7 +163,7 @@ export function createOutlineControllerPhase1(scope: Record<string, any>) {
   };
   const getOutlineChapterFrameTitle = (volume: Volume, chapter: Chapter) =>
     isDetailOutlineTab
-      ? `第${chapter.serialNumber}章章纲`
+      ? `第${chapter.serialNumber}章 章纲`
       : `第${chapter.serialNumber}章梗概（第${getVolumeDisplayIndex(volume.id)}卷）`;
   const updateChapterSummary = (serialNumber: number, content: string) => {
     const title = getChapterSummaryTitle(serialNumber);
@@ -383,7 +383,7 @@ export function createOutlineControllerPhase1(scope: Record<string, any>) {
       const entry = getChapterSummaryEntry(chapter.serialNumber);
       return {
         id: String(chapter.id),
-        title: `第${chapter.serialNumber}章章纲`,
+        title: `第${chapter.serialNumber}章 章纲`,
         group: volume.name,
         content: entry?.content ?? '',
       };

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { WorkbenchLibraryPanel } from './WorkbenchLibraryPanel';
+import { ensureLibraryDomainExpanded } from './WorkbenchLibraryPanel.testUtils';
 
 describe('WorkbenchLibraryPanel split phase action links', () => {
   beforeEach(() => {
@@ -19,15 +20,15 @@ describe('WorkbenchLibraryPanel split phase action links', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '人物设定1' }));
+    ensureLibraryDomainExpanded('人物设定2');
     fireEvent.click(screen.getByRole('button', { name: '角色' }));
-    fireEvent.change(screen.getByPlaceholderText('输入角色名字'), { target: { value: '测试女主角' } });
-    fireEvent.click(screen.getByRole('button', { name: '确认' }));
+    fireEvent.change(screen.getByPlaceholderText('例如：萧炎'), { target: { value: '测试女主角' } });
+    fireEvent.click(screen.getByRole('button', { name: '确认创建' }));
 
     const roleEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]').filter(
       (entry: { tab: string }) => entry.tab === '角色',
     );
-    expect(roleEntries).toHaveLength(2);
+    expect(roleEntries).toHaveLength(3);
     expect(roleEntries.find((entry: { title: string }) => entry.title === '测试女主角')).toBeTruthy();
     expect(roleEntries.map((entry: { content: string }) => JSON.parse(entry.content).type)).toEqual(
       expect.arrayContaining(['男主角', '女主角']),

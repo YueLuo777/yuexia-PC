@@ -17,6 +17,7 @@ import {
   WORKBENCH_FIELD_SIZE_KEYS_BY_TAB,
   getWorkbenchFieldSizeTabLabel,
 } from '../components/workbenchLibraryTabs';
+import { useWorkbenchLibraryVisibility } from '../components/workbenchLibraryVisibility';
 
 interface UseWorkbenchLibraryFieldSizesOptions {
   activeTab: string;
@@ -29,8 +30,10 @@ export function useWorkbenchLibraryFieldSizes({
   fieldSizeOpenSignal,
   showInlineFieldSizeButton,
 }: UseWorkbenchLibraryFieldSizesOptions) {
+  const { isActive } = useWorkbenchLibraryVisibility();
   const [isFieldSizeSettingsOpen, setIsFieldSizeSettingsOpen] = useState(false);
   const lastFieldSizeOpenSignalRef = useRef(fieldSizeOpenSignal);
+  const wasActiveRef = useRef(isActive);
   const [fieldSizeSpecs, setFieldSizeSpecs] = useState<Record<WorkbenchFieldSizeKey, WorkbenchFieldSizeSpec>>(() =>
     readWorkbenchFieldSizeSpecs(),
   );
@@ -38,10 +41,21 @@ export function useWorkbenchLibraryFieldSizes({
   const fieldSizeTabLabel = getWorkbenchFieldSizeTabLabel(activeTab);
 
   useEffect(() => {
+    const wasActive = wasActiveRef.current;
+    wasActiveRef.current = isActive;
+    if (!isActive) {
+      lastFieldSizeOpenSignalRef.current = fieldSizeOpenSignal;
+      setIsFieldSizeSettingsOpen(false);
+      return;
+    }
+    if (!wasActive) {
+      lastFieldSizeOpenSignalRef.current = fieldSizeOpenSignal;
+      return;
+    }
     if (fieldSizeOpenSignal <= 0 || fieldSizeOpenSignal === lastFieldSizeOpenSignalRef.current) return;
     lastFieldSizeOpenSignalRef.current = fieldSizeOpenSignal;
     setIsFieldSizeSettingsOpen(true);
-  }, [fieldSizeOpenSignal]);
+  }, [fieldSizeOpenSignal, isActive]);
 
   const updateFieldSizeSpec = (key: WorkbenchFieldSizeKey, prop: WorkbenchFieldSizeProp, value: number) => {
     setFieldSizeSpecs((prev) => {

@@ -3,7 +3,10 @@ import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import { applyFormat, getStoredFormatSettings, saveSnapshot } from '@/features/workbench/components/EditorToolModals';
 import type { Chapter, RecycledChapter, Volume, WorkbenchNovel } from '@/features/workbench/model/workbenchTypes';
 import { countWords, ensureOneSelected } from '@/features/workbench/model/workbenchRules';
-import { scheduleWorkbenchJsonWrite } from '@/features/workbench/model/workbenchPersistenceQueue';
+import {
+  flushWorkbenchWrites,
+  scheduleWorkbenchJsonWrite,
+} from '@/features/workbench/model/workbenchPersistenceQueue';
 import { recordWritingWords } from '@/shared/stats/writingStats';
 import {
   NOVELS_KEY,
@@ -129,6 +132,7 @@ export function useWorkbenchChapterActions(args: {
 
   const selectChapter = useCallback(
     (volumeId: number, chapterId: number) => {
+      if (flushWorkbenchWrites().failedKeys.length > 0) return;
       const formatted = formatChapterOnSelect(chapterId);
       persistVolumes((prev) =>
         prev.map((volume) => ({
@@ -364,46 +368,6 @@ export function useWorkbenchChapterActions(args: {
     [persistRecycled],
   );
 
-  const saveContent = useCallback(
-    (content: string) => {
-      setEditorContent(content);
-      if (!currentNovelId || !selectedChapter) return;
-      writeChapterContent(currentNovelId, selectedChapter.chapter.id, content);
-      const wordCount = countWords(content);
-      recordWritingWords(wordCount - selectedChapter.chapter.wordCount);
-      const nextVolumes = volumes.map((volume) => ({
-        ...volume,
-        chapters: volume.chapters.map((chapter) =>
-          chapter.id === selectedChapter.chapter.id ? { ...chapter, wordCount } : chapter,
-        ),
-      }));
-      const nextMap = { ...volumesMap, [currentNovelId]: nextVolumes };
-      const wordCountTotal = nextVolumes.reduce(
-        (sum, volume) => sum + volume.chapters.reduce((chapterSum, chapter) => chapterSum + chapter.wordCount, 0),
-        0,
-      );
-      const nextNovels = novels.map((novel) =>
-        novel.id === currentNovelId ? { ...novel, wordCount: wordCountTotal, lastModifiedAt: formatDate() } : novel,
-      );
-      setVolumesMap(nextMap);
-      setNovels(nextNovels);
-      scheduleWorkbenchJsonWrite(VOLUMES_KEY, nextMap);
-      scheduleWorkbenchJsonWrite(NOVELS_KEY, nextNovels);
-      setLastSavedAt(new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-    },
-    [
-      currentNovelId,
-      novels,
-      selectedChapter,
-      setEditorContent,
-      setLastSavedAt,
-      setNovels,
-      setVolumesMap,
-      volumes,
-      volumesMap,
-    ],
-  );
-
   const updateChapterContents = useCallback(
     (updates: Record<number, string>) => {
       if (!currentNovelId) return;
@@ -507,7 +471,6 @@ export function useWorkbenchChapterActions(args: {
     deleteChapter,
     restoreChapter,
     permanentDeleteChapter,
-    saveContent,
     updateChapterContents,
     updateNovelChapterContent,
   };

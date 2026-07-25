@@ -345,14 +345,23 @@ export function loadSnapshots() {
   return readJson<Record<string, HistorySnapshot[]>>(HISTORY_KEY, {});
 }
 
+const SNAPSHOT_INTERVAL_MS = 5 * 60 * 1000;
+const latestSnapshotAtByChapter = new Map<number, number>();
+
 export function saveSnapshot(chapterId: number, content: string) {
   if (!content.trim()) return;
+  const now = Date.now();
+  const cachedLatestAt = latestSnapshotAtByChapter.get(chapterId);
+  if (cachedLatestAt !== undefined && now - cachedLatestAt < SNAPSHOT_INTERVAL_MS) return;
+
   const all = loadSnapshots();
   const key = String(chapterId);
   const list = all[key] ?? [];
-  const now = Date.now();
   const last = list[list.length - 1];
-  if (last && now - Number(last.id) < 5 * 60 * 1000) return;
+  const latestAt = last ? Number(last.id) : 0;
+  if (Number.isFinite(latestAt) && latestAt > 0) latestSnapshotAtByChapter.set(chapterId, latestAt);
+  if (latestAt > 0 && now - latestAt < SNAPSHOT_INTERVAL_MS) return;
+
   const date = new Date(now);
   const timestamp = date.toLocaleString('zh-CN', { hour12: false });
   const snapshot: HistorySnapshot = {
@@ -365,4 +374,9 @@ export function saveSnapshot(chapterId: number, content: string) {
   };
   all[key] = [...list, snapshot].slice(-20);
   writeJson(HISTORY_KEY, all);
+  latestSnapshotAtByChapter.set(chapterId, now);
+}
+
+export function resetSnapshotIntervalCacheForTests() {
+  latestSnapshotAtByChapter.clear();
 }

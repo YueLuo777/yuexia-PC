@@ -22,11 +22,14 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     const source = await readCombinedAiConfigSelectSource();
     const styleSource = await readSharedStylesSource();
 
-    expect(source).toContainSource('grid h-11 min-w-0 grid-cols-2 overflow-visible rounded-xl border-2 border-[#08AACE]');
+    expect(source).toContainSource('xy-combined-ai-config-frame grid h-11 min-w-0 grid-cols-2 overflow-visible rounded-xl border-2 bg-white');
+    expect(source).not.toContainSource('xy-combined-ai-config-frame grid h-11 min-w-0 grid-cols-2 overflow-visible rounded-xl border-2 border-[#08AACE]');
     expect(source).toContainSource('<Settings className="h-3.5 w-3.5" />');
     expect(source).toContainSource('xy-combined-ai-config-label');
     expect(source).not.toContainSource('bg-[#F4F8FA] p-2');
     expect(styleSource).toContainSource('.xy-combined-ai-config-label,');
+    expect(styleSource).toContainSource('.xy-combined-ai-config-frame {');
+    expect(styleSource).toContainSource('border-color: #08aace !important;');
   });
   it('keeps model and prompt dropdowns flush with their selectors', async () => {
     const capsuleSource = await readCapsuleSelectSource();
@@ -49,7 +52,7 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     expect(combinedSource).not.toContainSource('top-[calc(100%+6px)]');
     expect(combinedSource).not.toContainSource('rounded-xl border border-slate-200 bg-white py-1 shadow-2xl');
   });
-  it('places preview word counts on the top-left border beside frame titles', async () => {
+  it('keeps preview title tools while removing word counts from setting fields', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const styleSource = await readSharedStylesSource();
 
@@ -61,7 +64,7 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     expect(styleSource).toContainSource('.xy-floating-field .xy-floating-count.xy-floating-count-top-left::before');
     expect(styleSource).toContainSource('left: -1.2rem;');
     expect(styleSource).toContainSource('top: 0;');
-    expect(panelSource).toContainSource('xy-floating-count xy-floating-count-top-left');
+    expect(panelSource).not.toContainSource('<WordCountText value={countTextWords(value)} />');
     expect(panelSource).toContainSource(
       "<label className={isDetailOutlineTab ? 'xy-floating-title-count xy-detail-outline-title-count' : undefined}>",
     );
@@ -73,10 +76,11 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     );
     expect(panelSource).toContainSource('style={getFloatingTitleInputStyle(title, 3, 9)}');
     expect(panelSource).toContainSource('style={getFloatingTitleInputStyle(titleValue, 4, 12)}');
-    expect(panelSource).toContainSource('<label className="xy-floating-title-count">');
-    expect(panelSource).toContainSource(
-      '<WordCountText value={countTextWords(currentSelectedSetting ? currentSelectedSetting.body : currentSelectedEntry.content)} />',
-    );
+    expect(panelSource).toContainSource('title="字段记录"');
+    expect(panelSource).toContainSource('text-[#08AACE]');
+    expect(panelSource).not.toContainSource('字段记录 →');
+    expect(panelSource).not.toContainSource('>保留历史</span>');
+    expect(panelSource).not.toContainSource('· 保留历史');
     expect(panelSource).toContainSource(
       'xy-floating-inline-title-tool xy-brainstorm-floating-title-tool xy-floating-title-count xy-border-embedded-transparent-backplate',
     );
@@ -193,7 +197,7 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const constantsSource = await readWorkbenchLibraryPanelConstantsSource();
 
-    expect(constantsSource).toContainSource('export const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 260;');
+    expect(constantsSource).toContainSource('export const SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH = 280;');
     expect(constantsSource).toContainSource('export const OUTLINE_LEFT_MAX_DISPLAY_WIDTH = 560;');
     expect(panelSource).toContainSource('function getSettingLibraryLeftMaxWidth(tab: string, scaleValue = 1)');
     expect(panelSource).toContainSource('const isSettingTab = tab === SETTING_TAB;');
@@ -206,8 +210,9 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     );
     expect(panelSource).toContainSource('return Math.max(SETTING_LIBRARY_LEFT_MIN_WIDTH, viewportEighthWidth);');
     expect(panelSource).toContainSource(
-      'if (tab === SETTING_TAB) return sharedNavigationWidth ? SETTING_LIBRARY_LEFT_MIN_WIDTH : SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH;',
+      'if (sharedNavigationWidth) return WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN;',
     );
+    expect(panelSource).toContainSource('if (tab === SETTING_TAB) return SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH;');
     expect(panelSource).toContainSource('return tab === DETAIL_OUTLINE_TAB || tab === OUTLINE_LIBRARY_TAB');
     expect(panelSource).toContainSource(
       'const isOutlineActionTab = tab === DETAIL_OUTLINE_TAB || tab === OUTLINE_LIBRARY_TAB;',
@@ -221,14 +226,19 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     expect(panelSource).toContainSource('isOutlineActionTab');
     expect(panelSource).toContainSource('Math.min(fixedMaxWidth, viewportLimitWidth)');
     expect(panelSource).toContainSource(
-      'const minWidth = getSettingLibraryLeftMinWidth(activeTab, eventScale, readSharedWorkbenchLeftNavWidthEnabled());',
+      'const sharedNavigationWidth = readSharedWorkbenchLeftNavWidthEnabled();',
     );
+    expect(panelSource).toContainSource('? WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN');
+    expect(panelSource).toContainSource('? WORKBENCH_SHARED_LEFT_NAV_WIDTH_MAX');
     expect(panelSource).toContainSource(
       'const maxWidth = Math.max(minWidth, getSettingLibraryLeftMaxWidth(tab, scaleValue));',
     );
     expect(panelSource).toContainSource('readSettingLibraryLeftWidth(storageKey, activeTab, scale)');
     expect(panelSource).toContainSource(
       'isBrainstormTab ? BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH : getSettingLibraryLeftMaxWidth(activeTab, eventScale),',
+    );
+    expect(panelSource).toContainSource(
+      'const brainstormLayoutLeftWidth = resolveBrainstormLibraryLeftWidth(settingLibraryLeftWidth);',
     );
     expect(panelSource).toContainSource('const outlineSidebarWidth = settingLibraryLeftWidth;');
     expect(panelSource).toContainSource('gridTemplateColumns: isDetailOutlineTab && showDetailOutlinePublished');
@@ -393,7 +403,9 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     expect(styleSource).toContainSource(
       '.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral.xy-floating-with-inline-actions textarea',
     );
-    expect(styleSource).toContainSource('border-color: #d7dee8;');
+    expect(styleSource).toContainSource(
+      '.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral.xy-floating-with-inline-actions textarea {\n  border-color: #111827;',
+    );
     expect(styleSource).toContainSource(
       '.writer-assistant-theme .xy-floating-field.xy-ai-inline-neutral .xy-ai-inline-send',
     );

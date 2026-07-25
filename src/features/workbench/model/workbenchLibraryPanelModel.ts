@@ -33,10 +33,11 @@ export type PendingEntryRename = Pick<WorkbenchLibraryEntry, 'id' | 'title' | 't
 export const OTHER_SETTING_LINK_TABS = [
   { id: 'work', title: '作品设定' },
   { id: 'roles', title: '人物设定' },
+  { id: 'locations', title: '地点地图' },
   { id: 'factions', title: '势力设定' },
   { id: 'items', title: '道具资源' },
-  { id: 'monsters', title: '怪物图鉴' },
   { id: 'foreshadow', title: '伏笔线索' },
+  { id: 'monsters', title: '怪物图鉴' },
 ] as const;
 
 export type SettingLinkSource = 'current' | 'other' | 'brainstorm' | null;

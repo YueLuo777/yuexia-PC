@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { clearWorkbenchTransientAiDrafts } from './workbenchTransientAiCleanup';
+import {
+  cleanupWorkbenchTransientAiDraftsOnClose,
+  clearWorkbenchTransientAiDrafts,
+  resetWorkbenchTransientAiDraftsForNewAppSession,
+  writeKeepWorkbenchAiOutputs,
+} from './workbenchTransientAiCleanup';
 
 describe('clearWorkbenchTransientAiDrafts', () => {
   beforeEach(() => {
@@ -83,5 +88,31 @@ describe('clearWorkbenchTransientAiDrafts', () => {
     expect(stored.sessions[0].messages).toEqual([]);
     expect(stored.sessions[0].linkChapter).toBe(true);
     expect(stored.sessions[0].backgroundTaskId).toBeUndefined();
+  });
+
+  it('keeps AI output on close only when the user enables it', () => {
+    const storageKey = 'xinyuexia_workbench_settings_1_tab_configs_v1';
+    const seed = () =>
+      localStorage.setItem(storageKey, JSON.stringify({ setting: { aiOutput: 'AI output', aiResult: 'result' } }));
+
+    seed();
+    cleanupWorkbenchTransientAiDraftsOnClose();
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').setting.aiOutput).toBe('');
+
+    seed();
+    writeKeepWorkbenchAiOutputs(true);
+    cleanupWorkbenchTransientAiDraftsOnClose();
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').setting.aiOutput).toBe('AI output');
+  });
+
+  it('clears stale AI output before the React tree reads persisted state', () => {
+    const storageKey = 'xinyuexia_workbench_ai_sessions_1';
+    localStorage.setItem(storageKey, JSON.stringify({ sessions: [{ id: 1, output: 'stale output' }] }));
+    localStorage.setItem('xinyuexia_background_ai_tasks_v1', JSON.stringify([{ id: 'task-1', output: 'stale' }]));
+    localStorage.setItem('xinyuexia_workbench_settings_1_review_background_tasks_v2', JSON.stringify({ 1: { audit: 'task-1' } }));
+    resetWorkbenchTransientAiDraftsForNewAppSession();
+    expect(JSON.parse(localStorage.getItem(storageKey) ?? '{}').sessions[0].output).toBe('');
+    expect(JSON.parse(localStorage.getItem('xinyuexia_background_ai_tasks_v1') ?? '[]')).toEqual([]);
+    expect(localStorage.getItem('xinyuexia_workbench_settings_1_review_background_tasks_v2')).toBeNull();
   });
 });

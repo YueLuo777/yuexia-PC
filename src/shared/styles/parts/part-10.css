@@ -1,3 +1,47 @@
+.xy-floating-field.xy-foreshadow-code-field {
+  flex: 0 0 176px;
+  width: 176px !important;
+  min-width: 176px !important;
+  max-width: 176px !important;
+}
+
+.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed input {
+  height: 48px;
+  border-radius: 0.75rem;
+  padding-right: 1rem;
+  padding-left: 1rem;
+}
+
+.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed,
+.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed input {
+  border-radius: 0.75rem;
+}
+
+.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed label,
+.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed:has(input) label,
+.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed:focus-within label,
+.xy-floating-field.xy-structured-header-field.xy-floating-outline-fixed.xy-has-value label {
+  left: 16px;
+  padding: 0 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+
+.xy-floating-field.xy-structured-header-field input::placeholder {
+  font-size: 0.8125rem;
+  line-height: 1.65;
+}
+
+.xy-setting-workspace-typography,
+.xy-setting-workspace-typography button,
+.xy-setting-workspace-typography input,
+.xy-setting-workspace-typography textarea,
+.xy-setting-workspace-typography select {
+  font-family: "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  font-synthesis: none;
+}
+
 .xy-floating-field.xy-floating-outline-preview label.xy-floating-title-count,
 .xy-floating-field.xy-floating-outline-preview:focus-within label.xy-floating-title-count,
 .xy-floating-field.xy-floating-outline-preview.xy-has-value label.xy-floating-title-count,
@@ -42,6 +86,12 @@
   line-height: 1.25rem;
   -webkit-text-stroke: 0;
   paint-order: normal;
+}
+
+.xy-detail-outline-heading-with-count {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2ch;
 }
 
 .xy-floating-title-input {
@@ -105,8 +155,17 @@
   max-width: var(--xy-floating-title-input-width, auto) !important;
   height: 20px !important;
   min-height: 0 !important;
+  font-family: inherit !important;
   font-size: inherit !important;
   font-weight: inherit !important;
+  line-height: 20px !important;
+}
+
+.xy-brainstorm-floating-title-tool .xy-floating-title-input,
+.xy-brainstorm-output-title-tool .xy-floating-title-input {
+  font-family: inherit !important;
+  font-size: 1rem !important;
+  font-weight: 900 !important;
   line-height: 20px !important;
 }
 
@@ -164,7 +223,8 @@
 }
 
 .xy-floating-field .xy-floating-border-font-tool .xy-font-size-stepper,
-.xy-floating-field .xy-floating-chat-font-tool .xy-font-size-stepper {
+.xy-floating-field .xy-floating-chat-font-tool .xy-font-size-stepper,
+.xy-floating-field .xy-detail-outline-border-font-tool .xy-font-size-stepper {
   width: 5.52rem;
   height: 1.76rem;
   font-size: 14px;
@@ -172,19 +232,22 @@
 }
 
 .xy-floating-field .xy-floating-border-font-tool .xy-font-size-stepper-button,
-.xy-floating-field .xy-floating-chat-font-tool .xy-font-size-stepper-button {
+.xy-floating-field .xy-floating-chat-font-tool .xy-font-size-stepper-button,
+.xy-floating-field .xy-detail-outline-border-font-tool .xy-font-size-stepper-button {
   width: 1.76rem;
   height: 1.76rem;
 }
 
 .xy-floating-field .xy-floating-border-font-tool .xy-font-size-stepper-icon,
-.xy-floating-field .xy-floating-chat-font-tool .xy-font-size-stepper-icon {
+.xy-floating-field .xy-floating-chat-font-tool .xy-font-size-stepper-icon,
+.xy-floating-field .xy-detail-outline-border-font-tool .xy-font-size-stepper-icon {
   width: 0.48rem;
   height: 0.48rem;
 }
 
 .xy-floating-field .xy-floating-border-font-tool .xy-font-size-stepper-input,
-.xy-floating-field .xy-floating-chat-font-tool .xy-font-size-stepper-input {
+.xy-floating-field .xy-floating-chat-font-tool .xy-font-size-stepper-input,
+.xy-floating-field .xy-detail-outline-border-font-tool .xy-font-size-stepper-input {
   width: 2rem;
   height: 1.76rem;
   border: 1px solid #d1d5db;
@@ -196,6 +259,17 @@
   font-size: 0.875rem;
   line-height: 1;
   box-shadow: none;
+}
+
+.xy-floating-field .xy-detail-outline-border-font-tool {
+  isolation: isolate;
+  pointer-events: auto;
+  line-height: 1;
+  -webkit-text-stroke: 0;
+}
+
+.xy-floating-field .xy-detail-outline-border-font-tool * {
+  -webkit-text-stroke: 0;
 }
 
 .xy-floating-border-stream-tool {
@@ -367,15 +441,6 @@
 
 .xy-floating-edge-tool.xy-floating-chat-session-tool .scrollbar-hidden {
   background: transparent !important;
-}
-
-.xy-floating-field.xy-floating-outline-preview:focus-within textarea,
-.xy-floating-field.xy-floating-outline-preview.xy-outline-selected textarea {
-  border-color: #08aace;
-}
-
-.xy-floating-field.xy-floating-outline-preview.xy-outline-selected textarea {
-  box-shadow: 0 8px 18px rgba(8, 170, 206, 0.08);
 }
 
 .xy-floating-field .xy-floating-count {

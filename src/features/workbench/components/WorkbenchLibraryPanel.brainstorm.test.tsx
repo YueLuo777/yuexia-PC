@@ -26,6 +26,10 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
       join(dirname(fileURLToPath(import.meta.url)), 'ChapterSidebar.tsx'),
       'utf8',
     );
+    const chapterNavigationStylesSource = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'chapterNavigationStyles.ts'),
+      'utf8',
+    );
     const settingSidebarStart = sidebarSource.indexOf(
       'className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-gray-50 px-1 py-2"',
     );
@@ -40,8 +44,9 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     );
     expect(settingSidebarSource).toContainSource('className="mt-0.5 space-y-0.5"');
     expect(chapterSidebarSource).toContainSource('className="editor-scrollbar flex-1 overflow-y-auto px-1 py-2"');
-    expect(chapterSidebarSource).toContainSource(
-      'className={`xy-chapter-sidebar-row group relative flex w-full cursor-pointer items-center gap-2 rounded-[8px] border px-1 py-1 text-left transition-colors',
+    expect(chapterSidebarSource).toContainSource('className={`xy-chapter-sidebar-row ${CHAPTER_NAV_ROW_BASE_CLASS}');
+    expect(chapterNavigationStylesSource).toContainSource(
+      'group relative flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-md border-2 px-3 py-2',
     );
     expect(constantsSource).toContainSource(
       "export const WORKBENCH_FOLDER_GROUP_BUTTON_CLASS = 'group flex h-9 w-full",
@@ -90,8 +95,8 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
       "title={isOutlineCharacterScope ? '关联当前人物设定' : '关联当前选中的设定预览'}",
     );
     const linkControlSource = panelSource.slice(
-      panelSource.lastIndexOf('<div className="mt-3 flex min-w-0 items-center gap-1.5">', linkControlStart),
-      panelSource.indexOf('<div className="mt-3 flex items-center gap-2">', linkControlStart),
+      panelSource.lastIndexOf('<div className="xy-ai-panel-link-row flex min-w-0 items-center gap-1.5">', linkControlStart),
+      panelSource.indexOf('<div className="xy-ai-panel-input-row">', linkControlStart),
     );
 
     expect(linkControlStart).toBeGreaterThan(-1);
@@ -104,14 +109,12 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(panelSource).toContainSource('promptDisabled: false');
     expect(panelSource).toContainSource("settingLinkSource: 'current'");
     expect(panelSource).toContainSource("settingLinkSource: selectedIds.length > 0 ? 'other' : null");
-    expect(panelSource).toContainSource(
-      'const getActiveLinkedSettingSnapshot = (): { source: SettingLinkSource; title: string; text: string } => {',
-    );
+    expect(panelSource).toContainSource('const getActiveLinkedSettingSnapshot = () => {');
     expect(panelSource).toContainSource("source === 'current'");
     expect(panelSource).toContainSource("source === 'other'");
-    expect(panelSource).toContainSource('text: getSettingEntryBody(currentEntry)');
+    expect(panelSource).toContainSource('buildCurrentSettingLinkedContext({');
     expect(panelSource).toContainSource(
-      'text: currentRoleEntry && currentRole ? buildRoleReaderContent(currentRoleEntry, currentRole) :',
+      'body: currentRoleEntry && currentRole ? buildRoleReaderContent(currentRoleEntry, currentRole) :',
     );
     expect(linkControlSource).toContainSource('关联');
     expect(linkControlSource).toContainSource('当前设定');
@@ -124,6 +127,17 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(linkControlSource).toContainSource("activeSettingLinkSource === 'current'");
     expect(linkControlSource).toContainSource("activeSettingLinkSource === 'other'");
     expect(linkControlSource).toContainSource("activeSettingLinkSource === 'brainstorm'");
+    const brainstormControlIndex = linkControlSource.indexOf(
+      "title={isOutlineCharacterScope ? '关联脑洞库内容到人物设定' : '关联脑洞库内容'}",
+    );
+    const trailingClearIndex = linkControlSource.indexOf(
+      "(activeSettingLinkSource === 'other' || activeSettingLinkSource === 'brainstorm')",
+    );
+    expect(brainstormControlIndex).toBeGreaterThan(-1);
+    expect(trailingClearIndex).toBeGreaterThan(brainstormControlIndex);
+    expect(linkControlSource).toContainSource(
+      "title={activeSettingLinkSource === 'other' ? '取消关联其他设定' : '取消关联脑洞'}",
+    );
     expect(linkControlSource).toContainSource(
       'updateActiveTabConfig({ associationSessionId: null, settingLinkSource: null, promptDisabled: false })',
     );
@@ -146,8 +160,8 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(otherSettingModalSource).toContainSource('toggleVisibleOtherSettingLinkGroupSelection');
     expect(panelSource).toContainSource('关联所有');
     expect(panelSource).toContainSource('全选');
-    expect(panelSource).toContainSource("aria-label={`${draftIds.has(entry.id) ? '取消选择' : '选择'}${entry.title}`}");
-    expect(panelSource).toContainSource('onToggleEntry(entry.id)');
+    expect(panelSource).toContainSource('<AssociationReaderItemRow');
+    expect(panelSource).toContainSource('onToggle={() => onToggleEntry(entry.id)}');
     expect(panelSource).toContainSource("draftIds.has(selectedEntry.id) ? '已勾选' : '未勾选'");
     expect(otherSettingModalSource).not.toContainSource('关联此项');
     expect(otherSettingModalSource).not.toContainSource('selectedOtherSettingLinkEntry.tabTitle');
@@ -159,7 +173,7 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(panelSource).toContainSource('道具资源');
     expect(panelSource).toContainSource('怪物图鉴');
     expect(panelSource).toContainSource('伏笔线索');
-    expect(panelSource).toContainSource("wrapAiRequestTag('关联其他设定'");
+    expect(panelSource).toContainSource("usage: '参考资料'");
     expect(panelSource).toContainSource('const isPromptDisabledForRequest = activeTab === SETTING_TAB');
     expect(panelSource).toContainSource(
       "outlineSettingScope !== 'character' && getActiveSettingLinkSource() === 'current'",
@@ -257,6 +271,29 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(styleSource).toContainSource('.xy-brainstorm-output-preview-list {');
     expect(styleSource).toContainSource('padding-bottom: 0.25rem;');
     expect(styleSource).not.toContainSource('padding-bottom: 1.25rem;');
+  });
+
+  it('uses setting-name typography for brainstorm question fields and titles', async () => {
+    const workspaceSource = await readWorkbenchLibraryPanelSource();
+    const styleSource = await readSharedStylesSource();
+    const testCollectionSource = await readTestCollectionSource();
+
+    expect(workspaceSource).toContainSource('xy-brainstorm-question-field');
+    expect(styleSource).toContainSource('.xy-floating-field.xy-brainstorm-question-field textarea {');
+    expect(styleSource).toContainSource('font-size: 1rem !important;');
+    expect(styleSource).toContainSource('font-weight: 500 !important;');
+    expect(styleSource).toContainSource('.xy-floating-field.xy-brainstorm-question-field textarea::placeholder {');
+    expect(styleSource).toContainSource('color: #020617;');
+    expect(styleSource).toContainSource('opacity: 1;');
+    expect(workspaceSource).toContainSource('className="font-medium leading-5"');
+    expect(workspaceSource).not.toContainSource('className="font-bold leading-5"');
+    expect(styleSource).toContainSource('.xy-brainstorm-floating-title-tool .xy-floating-title-input,');
+    expect(styleSource).toContainSource('font-weight: 900 !important;');
+    expect(styleSource).toContainSource('.xy-combined-ai-config-frame {');
+    expect(styleSource).toContainSource('border-color: #08aace !important;');
+    expect(testCollectionSource).not.toContainSource('BrainstormTypographyConsistencyTestPage');
+    expect(testCollectionSource).not.toContainSource('/brainstorm-typography-consistency-test');
+    expect(testCollectionSource).not.toContainSource('16号测试：脑洞页面字体统一');
   });
 
   it('does not render brainstorm session controls on the output frame', () => {

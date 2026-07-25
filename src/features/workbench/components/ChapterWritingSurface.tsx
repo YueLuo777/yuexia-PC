@@ -16,8 +16,10 @@ import {
   stripLineIndents,
   type FontSettings,
 } from '@/features/workbench/components/EditorToolModals';
+import type { WorkbenchSaveStatus } from '@/features/workbench/model/workbenchSaveStatus';
 import type { Chapter } from '@/features/workbench/model/workbenchTypes';
 
+import { ChapterSaveStatus } from './ChapterSaveStatus';
 import { SPLIT_BUTTON_OUTLINE_ACTION_CLASS, SPLIT_BUTTON_OUTLINE_GROUP_CLASS } from './chapterEditorLayout';
 
 interface ChapterWritingSurfaceProps {
@@ -27,6 +29,7 @@ interface ChapterWritingSurfaceProps {
   titleCount: number;
   content: string;
   wordCount: number;
+  saveStatus: WorkbenchSaveStatus;
   lastSavedAt: string | null;
   associatedCount: number;
   isFindOpen: boolean;
@@ -62,6 +65,7 @@ interface ChapterWritingSurfaceProps {
   handleContentChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
   handleKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   handlePaste: (event: ClipboardEvent<HTMLTextAreaElement>) => void;
+  onRetrySave: () => void;
 }
 
 export function ChapterWritingSurface({
@@ -71,6 +75,7 @@ export function ChapterWritingSurface({
   titleCount,
   content,
   wordCount,
+  saveStatus,
   lastSavedAt,
   associatedCount,
   isFindOpen,
@@ -98,6 +103,7 @@ export function ChapterWritingSurface({
   handleSymbolReplaceNow,
   handleSymbolAutoEnabled,
   openSymbolReplaceSettings,
+  onRetrySave,
   openHistory,
   onOpenFind,
   openDeleteConfirm,
@@ -149,7 +155,7 @@ export function ChapterWritingSurface({
           <button
             type="button"
             onClick={openTitleOptimize}
-            className="inline-flex flex-1 items-center justify-center whitespace-nowrap border-l border-brand bg-brand px-1.5 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
+            className="inline-flex flex-1 items-center justify-center whitespace-nowrap bg-brand px-1.5 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
           >
             优化
           </button>
@@ -159,15 +165,15 @@ export function ChapterWritingSurface({
       <div className="flex items-center gap-2 border-b border-[#e1e5eb] bg-white px-4 py-2">
         <button
           onClick={openFontSettings}
-          className="rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light"
+          className="xy-chapter-editor-deep-outline rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light"
         >
           字体设置
         </button>
-        <div className="flex items-center overflow-hidden rounded-md border border-brand">
+        <div className="xy-chapter-editor-deep-outline flex items-center overflow-hidden rounded-md border border-brand">
           <button onClick={handleSmartFormatNow} className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
             智能排版
           </button>
-          <div className="h-4 w-px bg-brand/30" />
+          <div className="xy-chapter-editor-deep-divider h-4 w-px bg-brand/30" />
           <button
             onClick={openSmartFormatSettings}
             className="px-2 py-1.5 text-brand hover:bg-brand-light"
@@ -176,24 +182,24 @@ export function ChapterWritingSurface({
             <Settings className="h-4 w-4 text-brand" />
           </button>
         </div>
-        <div className="flex items-center overflow-hidden rounded-md border border-brand">
+        <div className="xy-chapter-editor-deep-outline flex items-center overflow-hidden rounded-md border border-brand">
           <button onClick={openHighFreqSettings} className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
             词语高亮
           </button>
-          <div className="h-4 w-px bg-brand/30" />
+          <div className="xy-chapter-editor-deep-divider h-4 w-px bg-brand/30" />
           <HighFreqToggle />
         </div>
         <div className={SPLIT_BUTTON_OUTLINE_GROUP_CLASS}>
           <button onClick={handleSymbolReplaceNow} className={SPLIT_BUTTON_OUTLINE_ACTION_CLASS}>
             文字替换
           </button>
-          <div className="inline-flex items-center border-l border-brand/30">
+          <div className="xy-chapter-editor-deep-divider inline-flex items-center border-l border-brand/30">
             <SymbolReplaceToggle onEnable={handleSymbolAutoEnabled} />
           </div>
           <button
             type="button"
             onClick={openSymbolReplaceSettings}
-            className="inline-flex w-9 items-center justify-center border-l border-brand/30 text-brand transition-colors hover:bg-brand-light"
+            className="xy-chapter-editor-deep-divider inline-flex w-9 items-center justify-center border-l border-brand/30 text-brand transition-colors hover:bg-brand-light"
             title="词语替换设置"
             aria-label="词语替换设置"
           >
@@ -204,13 +210,13 @@ export function ChapterWritingSurface({
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={() => void copyText(stripLineIndents(content), '已复制正文')}
-            className="rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light"
+            className="xy-chapter-editor-deep-outline rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light"
           >
             复制正文
           </button>
           <button
             onClick={openHistory}
-            className="rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light"
+            className="xy-chapter-editor-deep-outline rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light"
           >
             历史
           </button>
@@ -294,7 +300,7 @@ export function ChapterWritingSurface({
         )}
         <span className="ml-auto">
           字数 <span className="font-medium text-brand">{wordCount || chapter.wordCount}</span> ·{' '}
-          {lastSavedAt ? `已保存 ${lastSavedAt}` : '自动保存'}
+          <ChapterSaveStatus status={saveStatus} lastSavedAt={lastSavedAt} onRetry={onRetrySave} />
         </span>
       </div>
     </>

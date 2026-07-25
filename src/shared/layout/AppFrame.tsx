@@ -50,7 +50,6 @@ import {
   type AppFrameProps,
   INTERNAL_ROUTE_MODULES_BUNDLED,
   SoftwareUiCatalogPage,
-  TestCollectionPage,
 } from './appFrameSupport';
 import { renderAppFrameView } from './AppFrameView';
 import { useAppFrameNavigationEffects } from './useAppFrameNavigationEffects';
@@ -66,7 +65,6 @@ export function AppFrame({ children }: AppFrameProps) {
   const [themeMode, setThemeMode] = useState<AppThemeMode>(loadThemeMode);
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
-  const [showTestCollection, setShowTestCollection] = useState(false);
   const [showSoftwareUiCatalog, setShowSoftwareUiCatalog] = useState(false);
   const [shortcutBindings, setShortcutBindings] = useState(loadShortcutBindings);
   const [mouseGestureSettings, setMouseGestureSettings] = useState(loadMouseGestureSettings);
@@ -77,7 +75,6 @@ export function AppFrame({ children }: AppFrameProps) {
   const activeTheme = THEME_OPTIONS.find((option) => option.key === themeMode) ?? THEME_OPTIONS[0];
   const themeClassName = themeMode === 'light' ? '' : `theme-${themeMode}`;
 
-  useTopModalEscape(showInternalTools && showTestCollection, () => setShowTestCollection(false));
   useTopModalEscape(showInternalTools && showSoftwareUiCatalog, () => setShowSoftwareUiCatalog(false));
 
   const { activateHomeTab } = useAppFrameNavigationEffects({
@@ -576,7 +573,7 @@ export function AppFrame({ children }: AppFrameProps) {
   }, [activateHomeTab, activeTabId, closeTab, navigate, selectNovel, setActiveTabId, shortcutBindings, tabs]);
 
   useEffect(() => {
-    if (location.pathname !== '/workbench' && location.pathname !== '/script-editor-v2') {
+    if (location.pathname !== '/workbench') {
       setActiveTabId(HOME_TAB.id);
       return;
     }
@@ -587,8 +584,8 @@ export function AppFrame({ children }: AppFrameProps) {
 
     const work = novels.find((item) => item.id === workId);
     if (!work) return;
-    const path = work.type === 'script' ? '/script-editor-v2' : '/workbench';
-    if (path !== location.pathname) return;
+    if (work.type !== 'novel') return;
+    const path = '/workbench';
 
     openWorkTab({
       workId: work.id,
@@ -671,7 +668,6 @@ export function AppFrame({ children }: AppFrameProps) {
     Square,
     Suspense,
     THEME_OPTIONS,
-    TestCollectionPage,
     X,
     activateTab,
     activeTabId,
@@ -689,15 +685,14 @@ export function AppFrame({ children }: AppFrameProps) {
     mouseGestureDirectionLabel,
     mouseGesturePath,
     mouseGesturePreview,
+    navigate,
     renderThemeOption,
     setAppScale,
     setIsScaleMenuOpen,
     setIsThemeMenuOpen,
     setShowSoftwareUiCatalog,
-    setShowTestCollection,
     showInternalTools,
     showSoftwareUiCatalog,
-    showTestCollection,
     tabs,
     themeClassName,
     themeMenuRef,

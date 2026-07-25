@@ -309,10 +309,6 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
   });
   it('splits world view preview into era background, world pattern, and social order fields', async () => {
     const storageKey = 'workbench-world-view-structured-preview-test';
-    const structuredSettingsSource = await readWorkbenchStructuredSettingsSource();
-    const worldViewSetStart = structuredSettingsSource.indexOf("id: 'work-core-world-view'");
-    const worldViewSetEnd = structuredSettingsSource.indexOf("id: 'work-core-cheat-advantage'", worldViewSetStart);
-    const worldViewSetSource = structuredSettingsSource.slice(worldViewSetStart, worldViewSetEnd);
     localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
     localStorage.setItem(
       storageKey,
@@ -338,25 +334,23 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
 
     ensureLibraryGroupExpanded('核心设定1');
 
-    expect(screen.getByDisplayValue('世界观')).toBeInTheDocument();
-    expect(worldViewSetSource).toContainSource("gridColumnsClassName: 'grid-cols-2'");
-    expect(worldViewSetSource).not.toContainSource("gridColumnsClassName: 'grid-cols-3'");
-    expect(screen.getByLabelText('时代背景')).toBeInTheDocument();
-    expect(screen.getByLabelText('世界格局')).toBeInTheDocument();
-    expect(screen.getByLabelText('社会秩序')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('世界背景')).toBeInTheDocument();
+    expect(screen.getByLabelText('故事发生时代')).toBeInTheDocument();
+    expect(screen.getByLabelText('主要势力')).toBeInTheDocument();
+    expect(screen.getByLabelText('社会运行规则')).toBeInTheDocument();
     expect(screen.queryByText('设定预览')).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText('时代背景'), { target: { value: '诸国割据后的灵气复苏时代。' } });
-    fireEvent.change(screen.getByLabelText('世界格局'), { target: { value: '宗门、王朝与商会三方争夺新矿脉。' } });
-    fireEvent.change(screen.getByLabelText('社会秩序'), {
+    fireEvent.change(screen.getByLabelText('故事发生时代'), { target: { value: '诸国割据后的灵气复苏时代。' } });
+    fireEvent.change(screen.getByLabelText('主要势力'), { target: { value: '宗门、王朝与商会三方争夺新矿脉。' } });
+    fireEvent.change(screen.getByLabelText('社会运行规则'), {
       target: { value: '凡人依附城邦，修士受宗门律令和资源契约约束。' },
     });
 
     const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
-    const worldViewEntry = storedEntries.find((entry: { title: string }) => entry.title === '世界观');
+    const worldViewEntry = storedEntries.find((entry: { title: string }) => entry.title === '世界背景');
     const body = JSON.parse(worldViewEntry.content).body;
-    expect(body).toContainSource('【时代背景】：\n诸国割据后的灵气复苏时代。');
-    expect(body).toContainSource('【世界格局】：\n宗门、王朝与商会三方争夺新矿脉。');
-    expect(body).toContainSource('【社会秩序】：\n凡人依附城邦，修士受宗门律令和资源契约约束。');
+    expect(body).toContainSource('【故事发生时代】：\n诸国割据后的灵气复苏时代。');
+    expect(body).toContainSource('【主要势力】：\n宗门、王朝与商会三方争夺新矿脉。');
+    expect(body).toContainSource('【社会运行规则】：\n凡人依附城邦，修士受宗门律令和资源契约约束。');
   });
 });

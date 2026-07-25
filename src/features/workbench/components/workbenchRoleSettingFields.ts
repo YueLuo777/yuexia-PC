@@ -26,7 +26,7 @@ export const ROLE_BASE_SETTING_FIELD_DEFINITIONS: Array<{
 }> = [
   { key: 'appearance', title: '外貌', placeholder: '身形、容貌、衣着、气质、标志性细节。' },
   { key: 'aliasName', title: '称号/外号/别称', placeholder: '江湖称号、常用外号、化名、别称或他人称呼。' },
-  { key: 'corePersonality', title: '核心性格', placeholder: '稳定性格、行事原则、情绪底色和关键弱点。' },
+  { key: 'corePersonality', title: '性格', placeholder: '稳定性格、行事原则、情绪底色和关键弱点。' },
   { key: 'background', title: '人物背景', placeholder: '出身、经历、秘密、创伤、目标来源。' },
   { key: 'abilityRules', title: '金手指/能力', placeholder: '能力来源、边界、代价、限制和成长规则。' },
 ];

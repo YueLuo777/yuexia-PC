@@ -11,10 +11,10 @@ describe('WORKBENCH_HEADER_FLOW_ITEMS', () => {
       'chapterOutline',
       'writing',
       'audit',
-      'polish',
-      'comment',
       'status',
       'summary',
+      'polish',
+      'comment',
     ]);
     expect(WORKBENCH_HEADER_FLOW_ITEMS.map((item) => item.id)).not.toContain('plotChain');
   });

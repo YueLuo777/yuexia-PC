@@ -1,11 +1,9 @@
 import routeRegistry from '../../config/app-routes.json';
 
 export type FormalRouteComponentKey =
-  | 'libraryHub'
   | 'modelManage'
   | 'novelLibrary'
   | 'prompts'
-  | 'scriptEditor'
   | 'settings'
   | 'tokenUsage'
   | 'tomatoGenreIteration'

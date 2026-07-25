@@ -42,4 +42,25 @@ describe('workbench legacy selected style residue', () => {
     expect(usedNumberRule).not.toContainSource('#f97316');
     expect(usedNumberRule).not.toContainSource('249, 115, 22');
   });
+
+  it('keeps retired setting and role field selectors out of production styles', () => {
+    const styles = Array.from({ length: 12 }, (_, index) =>
+      readSource(`src/shared/styles/parts/part-${String(index + 1).padStart(2, '0')}.css`),
+    ).join('\n');
+    const retiredSelectors = [
+      'xy-floating-label-fixed',
+      'xy-structured-title-field',
+      'xy-role-identity-select',
+      'xy-role-life-toggle',
+      'xy-floating-outline-setting-name',
+      'xy-role-name-compact-field',
+      'xy-capsule-custom-field-size',
+      'xy-floating-outline-role-compact',
+    ];
+
+    for (const selector of retiredSelectors) {
+      expect(styles, selector).not.toContainSource(selector);
+    }
+    expect(styles).not.toMatch(/\.xy-floating-field\.xy-floating-outline-compact(?:[\s:{.,]|$)/);
+  });
 });

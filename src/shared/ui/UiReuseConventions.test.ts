@@ -13,11 +13,12 @@ describe('shared UI reuse conventions', () => {
     const capsuleSelectSource = readSource('CapsuleSelect.tsx');
     const combinedAiConfigSelectSource = readSource('CombinedAiConfigSelect.tsx');
     const buttonClassesSource = readSource('actionButtonClasses.ts');
+    const formDialogSource = readSource('FormDialog.tsx');
+    const emptyStateSource = readSource('EmptyState.tsx');
     const settingsSurfaceSource = readSource('SettingsSurface.tsx');
     const settingsPageSource = readSource('../settings/SettingsPage.tsx');
     const testCollectionSource = readSource('../../features/tests/pages/TestCollectionPage.tsx');
     const aiConfigConsumers = [
-      '../../features/concept-library/components/ConceptInspirationForm.tsx',
       '../../features/genre-iteration/components/GenreIterationWorkbench.tsx',
       '../../features/workbench/components/ChapterReviewAiPanel.tsx',
       '../../features/workbench/components/ChapterStatusPanel.tsx',
@@ -36,6 +37,19 @@ describe('shared UI reuse conventions', () => {
     expect(buttonClassesSource).toContainSource('DANGER_TEXT_BUTTON_CLASS');
     expect(buttonClassesSource).toContainSource('GHOST_TEXT_BUTTON_CLASS');
     expect(buttonClassesSource).toContainSource('ICON_BUTTON_CLASS');
+    expect(formDialogSource).toContainSource("import { AppModalShell } from '@/shared/ui/AppModalShell';");
+    expect(formDialogSource).toContainSource("import { ActionButton } from '@/shared/ui/ActionButton';");
+    expect(formDialogSource).toContainSource('const isImeComposing = event.nativeEvent.isComposing || event.keyCode === 229;');
+    expect(emptyStateSource).toContainSource('export function EmptyState');
+    [
+      '../../features/prompts/components/PromptCategoryCreateModal.tsx',
+      '../../features/workbench/components/RoleCreateDialog.tsx',
+      '../../features/novels/pages/NovelLibraryPage.tsx',
+    ].forEach((path) => expect(readSource(path)).toContainSource("import { FormDialog } from '@/shared/ui/FormDialog';"));
+    [
+      '../../features/workbench/components/workbenchRoleLibraryView.tsx',
+      '../../features/workbench/components/workbenchSettingLibraryWorkspaceView.tsx',
+    ].forEach((path) => expect(readSource(path)).toContainSource("import { EmptyState } from '@/shared/ui/EmptyState';"));
     expect(capsuleSelectSource).toContainSource('const displayedOption = current ?? options[0] ?? null;');
     expect(capsuleSelectSource).toContainSource(
       'const selected = !option.disabled && displayedValue === option.value;',
@@ -53,7 +67,7 @@ describe('shared UI reuse conventions', () => {
     expect(combinedAiConfigSelectSource).toContainSource("const isGroupedOption = option.variant === 'groupedOption';");
     expect(combinedAiConfigSelectSource).toContainSource('const hasMetaLabel = !isGroup && Boolean(option.metaLabel);');
     expect(combinedAiConfigSelectSource).toContainSource('option.count');
-    expect(combinedAiConfigSelectSource).toContainSource('border-2 border-[#08AACE]');
+    expect(combinedAiConfigSelectSource).toContainSource('xy-combined-ai-config-frame');
     expect(combinedAiConfigSelectSource).toContainSource('xy-combined-ai-config-label');
     expect(combinedAiConfigSelectSource).toContainSource('<Settings className="h-3.5 w-3.5" />');
     expect(combinedAiConfigSelectSource).toContainSource('rounded-2xl border border-white bg-white p-1.5');

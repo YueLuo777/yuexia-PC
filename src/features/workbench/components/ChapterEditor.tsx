@@ -8,6 +8,7 @@ import {
   normalizePromptSubcategory,
 } from '@/features/prompts/hooks/usePrompts';
 import { isChapterContentPolished } from '@/features/workbench/model/chapterPolishStatus';
+import { getAuditTextStageState } from '@/features/workbench/model/chapterAuditWorkflow';
 import {
   AUDIT_OUTLINE_FIT_ITEM,
   AUDIT_STRUCTURE_CHECK_ITEMS,
@@ -123,6 +124,7 @@ export function ChapterEditor({
   chapter,
   volumeName,
   content,
+  saveStatus = 'idle',
   lastSavedAt,
   allChapters,
   volumes = [],
@@ -133,6 +135,8 @@ export function ChapterEditor({
   onUpdateChapterContent,
   onRenameChapter,
   onChangeContent,
+  onFlushSave = () => true,
+  onRetrySave = () => undefined,
   onUpdateSerialNumber,
   onDeleteChapter,
   onOpenFind,
@@ -195,7 +199,7 @@ export function ChapterEditor({
     statusPrompts,
     activeStatusPromptId,
     setStatusPromptId,
-  } = useChapterReviewPrompts({ reviewMode, clearReviewAiOutput });
+  } = useChapterReviewPrompts({ reviewMode, clearReviewAiOutput, reviewAiOutput });
   const canShowReviewOutline = reviewMode !== 'polish';
   const {
     reviewPageLeftWidth,
@@ -250,6 +254,7 @@ export function ChapterEditor({
     findText,
     replaceText,
     onChangeContent,
+    onFlushSave,
     onOpenFind,
     onToast: showToast,
     setIsSymbolReplaceOpen,
@@ -268,6 +273,7 @@ export function ChapterEditor({
   const editorTextPaddingLeft = `${EDITOR_GRID_LINE_LEFT_OFFSET_PX}px`;
   const editorTextPaddingRight = `${EDITOR_GRID_LINE_RIGHT_OFFSET_PX}px`;
   const reviewModalDraggable = useDraggableModal('chapter_review_panel');
+  const statusModalDraggable = useDraggableModal('chapter_status_panel');
   useTopModalEscape(isReviewLogOpen, () => setIsReviewLogOpen(false));
   useTopModalEscape(Boolean(reviewManagementModal), () => setReviewManagementModal(null));
   useTopModalEscape(!embeddedMode && isReviewOpen && !isReviewLogOpen && !reviewManagementModal, () =>
@@ -278,8 +284,8 @@ export function ChapterEditor({
 
   useEffect(() => {
     if (openLogSignal <= 0 || openLogSignal === lastOpenLogSignalRef.current) return;
-    if (embeddedMode !== 'audit' && embeddedMode !== 'comment' && embeddedMode !== 'polish') return;
     lastOpenLogSignalRef.current = openLogSignal;
+    if (embeddedMode !== 'audit' && embeddedMode !== 'comment' && embeddedMode !== 'polish') return;
     setIsReviewLogOpen(true);
   }, [embeddedMode, openLogSignal, setIsReviewLogOpen]);
 
@@ -405,7 +411,7 @@ export function ChapterEditor({
   const applyTextAuditContent = useApplyTextAuditContent({
     activeReviewChapter,
     onUpdateChapterContent,
-    setReviewRevisedDraft,
+    clearReviewAiOutput,
     onToast: setCopyToast,
   });
   const setReviewModelIdWithStorage = (nextModelId: string) => {
@@ -446,7 +452,7 @@ export function ChapterEditor({
     }
   }, [embeddedMode, activeChapterId, openReviewPanel]);
 
-  const { sendReviewAiMessage, stopReviewAiMessage } = useChapterReviewRequest({
+  const reviewRequest = useChapterReviewRequest({
     reviewMode,
     activeReviewState,
     updateReviewModeState,
@@ -477,11 +483,18 @@ export function ChapterEditor({
   }
 
   const editorSettingsModal = (
-    <ChapterEditorSettingsModal isOpen={isEditorSettingsOpen} onClose={() => setIsEditorSettingsOpen(false)} />
+    <ChapterEditorSettingsModal
+      isOpen={isEditorSettingsOpen}
+      onClose={() => setIsEditorSettingsOpen(false)}
+      isAuditMode={reviewMode === 'audit'}
+    />
   );
 
   const isEmbeddedReviewMode = embeddedMode === 'audit' || embeddedMode === 'comment' || embeddedMode === 'polish';
   const activeReviewModeTitle = REVIEW_MODE_TITLES[reviewMode];
+  const auditTextStage = getAuditTextStageState(reviewAiOutput);
+  const canRunTextAudit =
+    activeReviewPrompt?.textAuditEnabled !== false && Boolean(activeReviewPrompt?.textAuditContent?.trim());
   const showStatusUpdatePanel = embeddedMode ? embeddedMode === 'status' : isStatusUpdateOpen;
   const showReviewPanel = embeddedMode ? isEmbeddedReviewMode : isReviewOpen;
   const reviewPortalTarget = isEmbeddedReviewMode ? embeddedPortalElement : document.body;
@@ -527,6 +540,8 @@ export function ChapterEditor({
     auditParagraphCountMatches,
     auditRevisedParagraphs,
     auditRevisedText,
+    auditTextStage,
+    canRunTextAudit,
     canRenderReviewPanel,
     canShowReviewOutline,
     chapter,
@@ -573,9 +588,11 @@ export function ChapterEditor({
     isSmartFormatOpen,
     isSymbolReplaceOpen,
     isTitleOptimizeOpen,
+    saveStatus,
     lastSavedAt,
     onDeleteChapter,
     onOpenFind,
+    onRetrySave,
     onRenameChapter,
     onUpdateSerialNumber,
     polishPreviewParagraphs,
@@ -617,7 +634,11 @@ export function ChapterEditor({
     selectReviewPreviewParagraph,
     selectStatusChapter,
     selectedStatusTargets,
-    sendReviewAiMessage,
+    cancelAuditTextReviewCountdown: reviewRequest.cancelAuditTextReviewCountdown,
+    runAuditTextReviewManually: reviewRequest.runAuditTextReviewManually,
+    sendReviewAiMessage: reviewRequest.sendReviewAiMessage,
+    startAuditTextReviewNow: reviewRequest.startAuditTextReviewNow,
+    stopReviewAiMessage: reviewRequest.stopReviewAiMessage,
     serialValue,
     setCopyToast,
     setEditorScrollTop,
@@ -653,6 +674,7 @@ export function ChapterEditor({
     showStatusUpdatePanel,
     statusDraft,
     statusLeftResizeHandle,
+    statusModalDraggable,
     statusPageLeftWidth,
     statusPageRightWidth,
     statusPreviewChapters,
@@ -663,7 +685,6 @@ export function ChapterEditor({
     statusTargetEntries,
     statusTargetIds,
     statusUpdatedChapterIds,
-    stopReviewAiMessage,
     textareaRef,
     titleCount,
     toggleAuditStructureItem,

@@ -11,20 +11,26 @@ const UNCATEGORIZED = '未分类';
 export const AUDIT_PROMPT_CATEGORY = '审核';
 export const DEFAULT_AUDIT_PROMPT_SUBCATEGORY = '剧情审核';
 export const AUDIT_PROMPT_SUBCATEGORIES = ['剧情审核', '文本审核'] as const;
-export const COMMENT_PROMPT_CATEGORY = '综合点评';
+// 仅用于读取旧版本数据；正式分类统一显示为“审核”。
+export const PLOT_AUDIT_PROMPT_CATEGORY = '剧情审核';
+export const TEXT_AUDIT_PROMPT_CATEGORY = '文本审核';
+export const COMMENT_PROMPT_CATEGORY = '点评';
 export const BODY_PROMPT_CATEGORY = '正文';
-export const STATUS_PROMPT_CATEGORY = '更新状态';
-export const SUMMARY_PROMPT_CATEGORY = '生成梗概';
-export const GENRE_ITERATION_PROMPT_CATEGORY = '题材迭代';
+export const STATUS_PROMPT_CATEGORY = '状态';
+export const SUMMARY_PROMPT_CATEGORY = '梗概';
 const PROMPT_CATEGORY_ALIASES: Record<string, string> = {
   大纲: '设定',
   细纲: '章纲',
   章节细纲: '章纲',
   剧情链: '章纲',
-  热点分析: GENRE_ITERATION_PROMPT_CATEGORY,
+  题材迭代: UNCATEGORIZED,
+  热点分析: UNCATEGORIZED,
+  综合点评: COMMENT_PROMPT_CATEGORY,
   点评: COMMENT_PROMPT_CATEGORY,
+  更新状态: STATUS_PROMPT_CATEGORY,
   更新: STATUS_PROMPT_CATEGORY,
   状态: STATUS_PROMPT_CATEGORY,
+  生成梗概: SUMMARY_PROMPT_CATEGORY,
   摘要: SUMMARY_PROMPT_CATEGORY,
   章节摘要: SUMMARY_PROMPT_CATEGORY,
   卷摘要: SUMMARY_PROMPT_CATEGORY,
@@ -59,12 +65,11 @@ export const DEFAULT_PROMPT_CATEGORIES = [
   '设定',
   '章纲',
   BODY_PROMPT_CATEGORY,
-  '审核',
+  AUDIT_PROMPT_CATEGORY,
   COMMENT_PROMPT_CATEGORY,
   '润色',
   STATUS_PROMPT_CATEGORY,
   SUMMARY_PROMPT_CATEGORY,
-  GENRE_ITERATION_PROMPT_CATEGORY,
   UNCATEGORIZED,
 ];
 
@@ -78,7 +83,10 @@ export function isDefaultPromptCategory(category: string) {
 }
 
 export function normalizePromptSubcategory(category: string, subCategory?: string) {
-  if (normalizePromptCategoryName(category) !== AUDIT_PROMPT_CATEGORY) return undefined;
+  const normalizedCategory = normalizePromptCategoryName(category);
+  if (normalizedCategory === PLOT_AUDIT_PROMPT_CATEGORY) return PLOT_AUDIT_PROMPT_CATEGORY;
+  if (normalizedCategory === TEXT_AUDIT_PROMPT_CATEGORY) return TEXT_AUDIT_PROMPT_CATEGORY;
+  if (normalizedCategory !== AUDIT_PROMPT_CATEGORY) return undefined;
   const trimmed = subCategory?.trim() ?? '';
   const normalized = trimmed === '结构审核' ? DEFAULT_AUDIT_PROMPT_SUBCATEGORY : trimmed;
   return AUDIT_PROMPT_SUBCATEGORIES.includes(normalized as (typeof AUDIT_PROMPT_SUBCATEGORIES)[number])
@@ -86,36 +94,73 @@ export function normalizePromptSubcategory(category: string, subCategory?: strin
     : DEFAULT_AUDIT_PROMPT_SUBCATEGORY;
 }
 
+export function isAuditPromptCategory(category: string, subCategory?: string) {
+  return normalizePromptSubcategory(category, subCategory) !== undefined;
+}
+
+export function normalizePromptRecord(prompt: PromptItem): PromptItem {
+  const rawCategory = normalizePromptCategoryName(prompt.category ?? UNCATEGORIZED);
+  const legacyAuditType = normalizePromptSubcategory(rawCategory, prompt.subCategory);
+  if (legacyAuditType) {
+    const isLegacyTextRecord =
+      rawCategory === TEXT_AUDIT_PROMPT_CATEGORY ||
+      (rawCategory === AUDIT_PROMPT_CATEGORY && prompt.subCategory === TEXT_AUDIT_PROMPT_CATEGORY);
+    const textAuditContent = isLegacyTextRecord
+      ? prompt.textAuditContent?.trim() || prompt.content
+      : prompt.textAuditContent ?? '';
+    return {
+      ...prompt,
+      content: isLegacyTextRecord ? '' : prompt.content,
+      textAuditContent,
+      textAuditEnabled: Boolean(textAuditContent.trim()) && prompt.textAuditEnabled !== false,
+      category: AUDIT_PROMPT_CATEGORY,
+      subCategory: undefined,
+    };
+  }
+  return {
+    ...prompt,
+    category: rawCategory,
+    subCategory: undefined,
+    textAuditContent: undefined,
+    textAuditEnabled: undefined,
+  };
+}
+
 const PROMPTS_UPDATED_EVENT = APP_EVENTS.promptsUpdated;
 
 const promptsStorage = createJsonStorage<PromptItem[]>(PROMPTS_KEY, [], {
   normalize: (value) =>
     Array.isArray(value)
-      ? (value as PromptItem[]).map((prompt) => ({
-          ...prompt,
-          promptType: prompt.promptType === 'default' ? 'default' : 'novel',
-          category: normalizePromptCategoryName(prompt.category ?? UNCATEGORIZED),
-          subCategory: normalizePromptSubcategory(prompt.category ?? UNCATEGORIZED, prompt.subCategory),
-        }))
+      ? (value as PromptItem[]).map((prompt) =>
+          normalizePromptRecord({
+            ...prompt,
+            promptType: prompt.promptType === 'default' ? 'default' : 'novel',
+          }),
+        )
       : [],
   eventName: PROMPTS_UPDATED_EVENT,
 });
 const promptRecycleStorage = createJsonStorage<PromptItem[]>(PROMPT_RECYCLE_KEY, [], {
   normalize: (value) =>
     Array.isArray(value)
-      ? (value as PromptItem[]).map((prompt) => ({
-          ...prompt,
-          promptType: prompt.promptType === 'default' ? 'default' : 'novel',
-          category: normalizePromptCategoryName(prompt.category ?? UNCATEGORIZED),
-          subCategory: normalizePromptSubcategory(prompt.category ?? UNCATEGORIZED, prompt.subCategory),
-        }))
+      ? (value as PromptItem[]).map((prompt) =>
+          normalizePromptRecord({
+            ...prompt,
+            promptType: prompt.promptType === 'default' ? 'default' : 'novel',
+          }),
+        )
       : [],
   eventName: PROMPTS_UPDATED_EVENT,
 });
 function orderCategories(value: string[]) {
   const seen = new Set<string>();
   const cleaned = value
-    .map((item) => normalizePromptCategoryName(item))
+    .map((item) => {
+      const normalized = normalizePromptCategoryName(item);
+      return normalized === PLOT_AUDIT_PROMPT_CATEGORY || normalized === TEXT_AUDIT_PROMPT_CATEGORY
+        ? AUDIT_PROMPT_CATEGORY
+        : normalized;
+    })
     .filter((item) => item.length > 0 && item !== '全部');
   const custom = cleaned.filter((item) => !DEFAULT_PROMPT_CATEGORIES.includes(item));
   return [...DEFAULT_PROMPT_CATEGORIES.slice(0, -1), ...custom, UNCATEGORIZED].filter((item) => {
@@ -207,14 +252,19 @@ export function usePrompts() {
   };
 
   const addPrompt = (input: NewPromptInput) => {
-    const category = normalizeCategory(input.category);
+    const normalized = normalizePromptRecord({
+      ...input,
+      category: normalizeCategory(input.category),
+    } as PromptItem);
     const item: PromptItem = {
       id: createId(),
       name: input.name.trim(),
       description: input.description.trim(),
-      content: input.content.trim(),
-      category,
-      subCategory: normalizePromptSubcategory(category, input.subCategory),
+      content: normalized.content.trim(),
+      textAuditContent: normalized.textAuditContent?.trim() || undefined,
+      textAuditEnabled: normalized.category === AUDIT_PROMPT_CATEGORY ? normalized.textAuditEnabled : undefined,
+      category: normalized.category,
+      subCategory: undefined,
       promptType: input.promptType ?? 'novel',
       usageCount: 0,
       isFavorite: false,
@@ -228,14 +278,19 @@ export function usePrompts() {
   const addPrompts = (inputs: NewPromptInput[]) => {
     const items = inputs
       .map((input) => {
-        const category = normalizeCategory(input.category);
+        const normalized = normalizePromptRecord({
+          ...input,
+          category: normalizeCategory(input.category),
+        } as PromptItem);
         return {
           id: createId(),
           name: input.name.trim(),
           description: input.description.trim(),
-          content: input.content.trim(),
-          category,
-          subCategory: normalizePromptSubcategory(category, input.subCategory),
+          content: normalized.content.trim(),
+          textAuditContent: normalized.textAuditContent?.trim() || undefined,
+          textAuditEnabled: normalized.category === AUDIT_PROMPT_CATEGORY ? normalized.textAuditEnabled : undefined,
+          category: normalized.category,
+          subCategory: undefined,
           promptType: input.promptType ?? 'novel',
           usageCount: 0,
           isFavorite: false,
@@ -244,7 +299,7 @@ export function usePrompts() {
           updatedAt: nowText(),
         } satisfies PromptItem;
       })
-      .filter((item) => item.name && item.content);
+      .filter((item) => item.name && (item.content || item.textAuditContent));
     if (items.length === 0) return [];
     persistCategories([...categories, ...items.map((item) => item.category)]);
     persistPrompts([...items, ...prompts]);
@@ -255,12 +310,20 @@ export function usePrompts() {
     persistPrompts(
       prompts.map((prompt) => {
         if (prompt.id !== id) return prompt;
-        const category = normalizeCategory(updates.category ?? prompt.category);
+        const normalized = normalizePromptRecord({
+          ...prompt,
+          ...updates,
+          category: normalizeCategory(updates.category ?? prompt.category),
+          subCategory: updates.subCategory ?? prompt.subCategory,
+        });
         return {
           ...prompt,
           ...updates,
-          category,
-          subCategory: normalizePromptSubcategory(category, updates.subCategory ?? prompt.subCategory),
+          content: normalized.content.trim(),
+          textAuditContent: normalized.textAuditContent?.trim() || undefined,
+          textAuditEnabled: normalized.category === AUDIT_PROMPT_CATEGORY ? normalized.textAuditEnabled : undefined,
+          category: normalized.category,
+          subCategory: undefined,
           updatedAt: nowText(),
         };
       }),

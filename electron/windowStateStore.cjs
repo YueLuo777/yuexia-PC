@@ -1,14 +1,28 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-function createWindowStateStore({ app, sharedStateDirName, minWidth, minHeight }) {
-  const stateFile = path.join(app.getPath('appData'), sharedStateDirName, 'window-state.json');
-  const settingsFile = path.join(app.getPath('appData'), sharedStateDirName, 'window-settings.json');
-  const legacyStateFiles = [
-    path.join(app.getPath('userData'), 'window-state.json'),
-    path.join(app.getPath('appData'), 'xinyuexia-desktop-dev', 'window-state.json'),
-  ];
-  const defaultSettings = { rememberSize: true };
+function createWindowStateStore({ app, sharedStateDirName, minWidth, minHeight, defaultBounds, stateDir }) {
+  const storageDir = stateDir || path.join(app.getPath('appData'), sharedStateDirName);
+  const stateFile = path.join(storageDir, 'window-state.json');
+  const settingsFile = path.join(storageDir, 'window-settings.json');
+  const legacyStateFiles = stateDir
+    ? []
+    : [
+        path.join(app.getPath('userData'), 'window-state.json'),
+        path.join(app.getPath('appData'), 'xinyuexia-desktop-dev', 'window-state.json'),
+      ];
+  const normalizedDefaultBounds = {
+    width: Math.max(minWidth, Math.round(Number(defaultBounds?.width) || minWidth)),
+    height: Math.max(minHeight, Math.round(Number(defaultBounds?.height) || minHeight)),
+  };
+  const defaultSettings = { rememberSize: false, startMaximized: false, startupBounds: normalizedDefaultBounds };
+
+  function normalizeBounds(input) {
+    return {
+      width: Math.max(minWidth, Math.round(Number(input?.width) || normalizedDefaultBounds.width)),
+      height: Math.max(minHeight, Math.round(Number(input?.height) || normalizedDefaultBounds.height)),
+    };
+  }
 
   function parseState(filePath) {
     try {
@@ -33,7 +47,11 @@ function createWindowStateStore({ app, sharedStateDirName, minWidth, minHeight }
 
   function normalizeSettings(input) {
     const settings = input && typeof input === 'object' ? input : {};
-    return { rememberSize: settings.rememberSize !== false };
+    return {
+      rememberSize: settings.rememberSize === true,
+      startMaximized: settings.startMaximized === true,
+      startupBounds: normalizeBounds(settings.startupBounds),
+    };
   }
 
   function readSettings() {
@@ -66,14 +84,18 @@ function createWindowStateStore({ app, sharedStateDirName, minWidth, minHeight }
   }
 
   function readState() {
-    if (!readSettings().rememberSize) return null;
+    const settings = readSettings();
+    if (!settings.rememberSize && settings.startMaximized) {
+      return { ...settings.startupBounds, isMaximized: true };
+    }
+    if (!settings.rememberSize) return { ...settings.startupBounds, isMaximized: false };
     for (const filePath of [stateFile, ...legacyStateFiles]) {
       const state = parseState(filePath);
       if (!state) continue;
       if (filePath !== stateFile) persistState(state);
-      return state;
+      return settings.startMaximized ? { ...state, isMaximized: true } : state;
     }
-    return null;
+    return settings.startMaximized ? { ...settings.startupBounds, isMaximized: true } : null;
   }
 
   function clearState() {

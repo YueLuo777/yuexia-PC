@@ -4,11 +4,13 @@ import {
   writeSharedWorkbenchAiRightWidth,
 } from '@/features/workbench/model/workbenchSharedAiRightWidth';
 import {
+  WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN,
   readSharedWorkbenchLeftNavWidth,
   readSharedWorkbenchLeftNavWidthEnabled,
   writeSharedWorkbenchLeftNavWidth,
 } from '@/features/workbench/model/workbenchSharedLeftNavWidth';
 import {
+  BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH,
   BRAINSTORM_PREVIEW_MAX_WIDTH,
   BRAINSTORM_PREVIEW_MIN_WIDTH,
   BRAINSTORM_PREVIEW_WIDTH,
@@ -158,8 +160,9 @@ export function getDetailOutlineLeftMinWidth(scaleValue = 1) {
 }
 
 export function getSettingLibraryLeftMinWidth(tab: string, scaleValue = 1, sharedNavigationWidth = false) {
+  if (sharedNavigationWidth) return WORKBENCH_SHARED_LEFT_NAV_WIDTH_MIN;
   if (tab === SETTING_TAB)
-    return sharedNavigationWidth ? SETTING_LIBRARY_LEFT_MIN_WIDTH : SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH;
+    return SETTING_LIBRARY_SETTING_LEFT_MIN_WIDTH;
   return tab === DETAIL_OUTLINE_TAB || tab === OUTLINE_LIBRARY_TAB
     ? getDetailOutlineLeftMinWidth(scaleValue)
     : SETTING_LIBRARY_LEFT_MIN_WIDTH;
@@ -178,11 +181,7 @@ export function clampSettingLibraryLeftWidth(
 
 export function readSettingLibraryLeftWidth(storageKey: string, tab: string, scaleValue = 1) {
   const fallbackWidth = clampSettingLibraryLeftWidth(SETTING_LIBRARY_LEFT_WIDTH, tab, scaleValue);
-  if (readSharedWorkbenchLeftNavWidthEnabled()) {
-    const minWidth = getSettingLibraryLeftMinWidth(tab, scaleValue, true);
-    const maxWidth = getSettingLibraryLeftMaxWidth(tab, scaleValue);
-    return clampSettingLibraryLeftWidth(readSharedWorkbenchLeftNavWidth(maxWidth, minWidth), tab, scaleValue, true);
-  }
+  if (readSharedWorkbenchLeftNavWidthEnabled()) return readSharedWorkbenchLeftNavWidth();
   try {
     const value = Number(
       localStorage.getItem(getSettingLibraryWidthStorageKey(storageKey, tab, 'left')) ?? SETTING_LIBRARY_LEFT_WIDTH,
@@ -192,6 +191,10 @@ export function readSettingLibraryLeftWidth(storageKey: string, tab: string, sca
   } catch {
     return fallbackWidth;
   }
+}
+
+export function resolveBrainstormLibraryLeftWidth(width: number) {
+  return readSharedWorkbenchLeftNavWidthEnabled() ? width : Math.min(width, BRAINSTORM_LAYOUT_LEFT_MAX_WIDTH);
 }
 
 export function readSettingLibraryRightWidth(storageKey: string, tab: string) {
@@ -232,11 +235,7 @@ export function persistSettingLibraryWidth(
     return;
   }
   if (side === 'left' && readSharedWorkbenchLeftNavWidthEnabled()) {
-    writeSharedWorkbenchLeftNavWidth(
-      value,
-      getSettingLibraryLeftMaxWidth(tab),
-      getSettingLibraryLeftMinWidth(tab, 1, true),
-    );
+    writeSharedWorkbenchLeftNavWidth(value);
     return;
   }
   localStorage.setItem(getSettingLibraryWidthStorageKey(storageKey, tab, side), String(value));

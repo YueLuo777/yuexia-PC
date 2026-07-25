@@ -5,9 +5,9 @@ import type { PromptItem } from '@/features/prompts/model/promptTypes';
 import { countTextWords } from '@/features/workbench/model/workbenchLibraryPanelModel';
 import { AiInlineInput } from '@/shared/ui/AiInlineInput';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
-import { LinkedSourceControl } from '@/shared/ui/LinkedSourceControl';
 import { WordCountText } from '@/shared/ui/WordCountText';
 
+import { OutlineAssociationControl } from './OutlineAssociationControl';
 import { resizeFloatingAiTextarea } from './workbenchFloatingAiTextarea';
 import { renderAiChatContent } from './workbenchLibraryRequestLog';
 import { stripAiThinkingBlock } from './workbenchLibraryAiText';
@@ -108,7 +108,7 @@ export function WorkbenchOutlineAiPanel({
           />
         </div>
       </div>
-      <div className="relative mt-5 min-h-[170px] flex-1">
+      <div className="xy-ai-panel-output-slot relative">
         {outlinePreviewDraft.startsWith('[[THINKING') ? (
           <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-outline-ai-output-frame xy-floating-with-bottom-count h-full xy-has-value">
             <div
@@ -162,25 +162,14 @@ export function WorkbenchOutlineAiPanel({
         )}
       </div>
       {isDetailOutlineTab && (
-        <LinkedSourceControl
+        <OutlineAssociationControl
           linked={selectedDetailOutlineReaderCount > 0}
-          label="关联大纲"
-          linkedLabel="已关联大纲"
+          wordCount={detailOutlineReaderWordCount}
           onOpen={openDetailOutlineReader}
           onClear={clearDetailOutlineReaderSelection}
-          clearOnLinkedClick
-          meta={
-            <>
-              关联 <WordCountText value={detailOutlineReaderWordCount} compact />
-            </>
-          }
-          className="mt-3 flex items-center gap-2"
-          groupClassName="flex h-10 w-[132px] shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white"
-          buttonClassName="h-10 w-[132px] whitespace-nowrap rounded-xl border border-[#08AACE] bg-white px-3 text-sm font-black text-[#08AACE] hover:bg-[#EAF9FD]"
-          linkedButtonClassName="min-w-0 flex-1 whitespace-nowrap px-3 text-sm font-black text-white bg-red-500 hover:bg-red-600"
         />
       )}
-      <div className="mt-3">
+      <div className="xy-ai-panel-input-row">
         <AiInlineInput
           value={outlineAiInput}
           onChange={(event) => {
@@ -204,7 +193,7 @@ export function WorkbenchOutlineAiPanel({
           textareaClassName="editor-scrollbar"
         />
       </div>
-      <div className="mt-3 flex overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <div className="xy-ai-panel-action-row flex overflow-hidden rounded-xl border border-gray-200 bg-white">
         <button
           onClick={saveOutlinePreviewDraft}
           disabled={!cleanDraft.trim()}
