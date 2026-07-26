@@ -92,6 +92,13 @@ export const testGroups: TestGroup[] = [
         icon: BookOpenText,
         badge: 'Mode Switch',
       },
+      {
+        title: '标准模式精简创作工作台',
+        description: '复刻脑洞到综合点评的九个正式功能页面，移除独立AI配置栏，并把每步操作收进页面底部。',
+        path: '/simplified-standard-mode-workbench-test',
+        icon: Workflow,
+        badge: 'Simple Mode',
+      },
     ],
   },
   {
