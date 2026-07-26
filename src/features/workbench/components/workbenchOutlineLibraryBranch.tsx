@@ -551,11 +551,7 @@ export function renderOutlineLibraryBranch(scope: Record<string, any>) {
       updateActiveTabConfig,
       wrapAiRequestTag,
     });
-    const {
-      clearOutlinePreviewDraft,
-      sendOutlineAiMessage,
-      stopOutlineAiMessage,
-    } = createOutlineControllerPhase3({
+    const { clearOutlinePreviewDraft, sendOutlineAiMessage, stopOutlineAiMessage } = createOutlineControllerPhase3({
       DOMException,
       activeOutlinePrompt,
       activeTab,
@@ -639,10 +635,10 @@ export function renderOutlineLibraryBranch(scope: Record<string, any>) {
                       chapterContentWordCount > 0 ? 'used' : hasSummary ? 'hasOutline' : 'empty';
                     const outlineButtonClass = `relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
                       selected
-                        ? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'
+                        ? 'border-[#08AACE] bg-[#EAF9FD] text-[#078fb0]'
                         : hasSummary
-                          ? 'border-[#08B3D9] bg-[#E1F3F7] text-[#08AACE] hover:border-[#067B96] hover:bg-[#D3EEF5]'
-                          : 'border-slate-200 bg-white text-slate-900 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
+                          ? 'border-[#08AACE] bg-[#E1F3F7] text-[#08AACE] hover:border-[#067B96] hover:bg-[#D3EEF5]'
+                          : 'border-slate-200 bg-white text-slate-900 hover:border-[#08AACE] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
                     }`;
                     if (isDetailOutlineTab) {
                       return (

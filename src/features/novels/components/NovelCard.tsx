@@ -32,13 +32,13 @@ interface NovelCardProps {
   onDelete: (id: number) => void;
 }
 
-const widthMap = {
+export const NOVEL_CARD_WIDTHS = {
   small: 156,
   medium: 178,
   large: 200,
 } as const;
 
-const coverHeightMap = {
+export const NOVEL_COVER_HEIGHTS = {
   small: 192,
   medium: 208,
   large: 236,
@@ -148,12 +148,12 @@ export function NovelCard({
         onOpen(novel.id);
       }}
       className="group relative flex cursor-pointer flex-col outline-none focus-visible:ring-2 focus-visible:ring-[#1e71ef]/35"
-      style={{ width: widthMap[settings.cardWidth] }}
+      style={{ width: NOVEL_CARD_WIDTHS[settings.cardWidth] }}
     >
       <div
         className={`xy-wa-book-cover ${coverSrc ? 'xy-wa-book-cover-image' : 'xy-wa-book-cover-empty'} relative flex shrink-0 flex-col items-center justify-center overflow-hidden rounded-[4px] border border-[#d8dde6] shadow-[0_2px_8px_rgba(15,23,42,0.12)] transition group-hover:border-[#9ebcf6]`}
         style={{
-          height: coverHeightMap[settings.coverHeight],
+          height: NOVEL_COVER_HEIGHTS[settings.coverHeight],
         }}
       >
         {coverSrc ? (

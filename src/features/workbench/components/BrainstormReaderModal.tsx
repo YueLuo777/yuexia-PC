@@ -27,6 +27,9 @@ type BrainstormReaderModalProps = {
   onSelect: (id: string | null) => void;
   onClose: () => void;
   onConfirm: () => void;
+  title?: string;
+  subtitle?: string;
+  confirmText?: string;
 };
 
 export function BrainstormReaderModal({
@@ -36,6 +39,9 @@ export function BrainstormReaderModal({
   onSelect,
   onClose,
   onConfirm,
+  title = '关联脑洞',
+  subtitle = '每个脑洞都是可独立成书的候选项目；左侧切换预览，右侧确认关联。',
+  confirmText = '关联脑洞',
 }: BrainstormReaderModalProps) {
   const [previewId, setPreviewId] = useState(selectedId ?? entries[0]?.id ?? '');
   const {
@@ -59,8 +65,8 @@ export function BrainstormReaderModal({
 
   return (
     <WorkbenchModal
-      title="关联脑洞"
-      subtitle="每个脑洞都是可独立成书的候选项目；左侧切换预览，右侧确认关联。"
+      title={title}
+      subtitle={subtitle}
       isOpen={isOpen}
       onClose={onClose}
       widthClass={ASSOCIATION_READER_MODAL_WIDTH_CLASS}
@@ -174,7 +180,7 @@ export function BrainstormReaderModal({
               disabled={!linkedEntry}
               className="rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-gray-300"
             >
-              关联脑洞
+              {confirmText}
             </button>
           </div>
         </div>

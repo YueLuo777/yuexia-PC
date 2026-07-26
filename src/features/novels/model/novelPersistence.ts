@@ -52,6 +52,7 @@ export function removeNovelScopedStorage(novelId: number, volumes: Volume[]) {
     `xinyuexia_workbench_notes_${novelId}`,
     `xinyuexia_workbench_notes_list_v1_${novelId}`,
     `xinyuexia_workbench_active_flow_page_${novelId}`,
+    `xinyuexia_standard_setting_template_${novelId}`,
     `${SCRIPT_LINK_STORAGE_PREFIX}${novelId}`,
     `xinyuexia_chapter_polish_status_v1:${settingsStorageKey}`,
   ]);

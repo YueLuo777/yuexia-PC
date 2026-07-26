@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck -- AppFrame view receives its typed controller scope.
 import React from 'react';
+import { OwnerTestModeToggle } from '@/features/owner-test-mode/components/OwnerTestModeToggle';
 import { prepareWorkbenchForAppClose } from '@/features/workbench/model/workbenchAppCloseCleanup';
+import { ApplicationModeToggle } from '@/shared/layout/ApplicationModeToggle';
 import { AppModalShell } from '@/shared/ui/AppModalShell';
 export function renderAppFrameView(scope: Record<string, any>) {
   const {
@@ -112,6 +114,8 @@ export function renderAppFrameView(scope: Record<string, any>) {
           data-titlebar-no-drag="true"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
         >
+          {showInternalTools ? <OwnerTestModeToggle /> : null}
+          <ApplicationModeToggle />
           {showInternalTools && (
             <>
               <button

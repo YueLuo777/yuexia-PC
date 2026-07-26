@@ -61,7 +61,9 @@ let workbenchPagePreload: Promise<unknown> | null = null;
 let workbenchLibraryPanelPreload: Promise<unknown> | null = null;
 
 export function preloadEditorPage() {
-  workbenchPagePreload ??= import('@/features/workbench/pages/WorkbenchPage');
+  workbenchPagePreload ??= import('@/features/workbench/pages/ModeAwareWorkbenchPage').then((module) =>
+    module.preloadModeAwareWorkbenchPage(),
+  );
   workbenchLibraryPanelPreload ??= import('@/features/workbench/components/WorkbenchLibraryPanel');
   return Promise.all([workbenchPagePreload, workbenchLibraryPanelPreload]);
 }

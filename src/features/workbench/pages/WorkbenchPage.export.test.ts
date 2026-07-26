@@ -51,9 +51,10 @@ describe('buildChapterExportText', () => {
     const source = await readWorkbenchPageSource();
 
     expect(source).toContainSource(
-      "const [activeCreationFlow, setActiveCreationFlow] = useState<WorkbenchCreationFlowPageKey>('writing');",
+      "const [internalCreationFlow, setInternalCreationFlow] = useState<WorkbenchCreationFlowPageKey>('writing');",
     );
-    expect(source).toContainSource("setActiveCreationFlow('writing');");
+    expect(source).toContainSource('const activeCreationFlow = fixedFlow ?? internalCreationFlow;');
+    expect(source).toContainSource("setInternalCreationFlow('writing');");
     expect(source).not.toContainSource('getStoredCreationFlowPage');
     expect(source).not.toContainSource('xinyuexia_workbench_active_flow_page_');
   });

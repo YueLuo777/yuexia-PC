@@ -7,6 +7,7 @@ type WorkbenchNameFieldProps = {
   testId?: string;
   width?: number;
   onValueChange: (value: string) => void;
+  onBlur?: () => void;
 };
 
 export function WorkbenchNameField({
@@ -18,6 +19,7 @@ export function WorkbenchNameField({
   testId,
   width,
   onValueChange,
+  onBlur,
 }: WorkbenchNameFieldProps) {
   return (
     <div
@@ -35,6 +37,7 @@ export function WorkbenchNameField({
         value={value}
         disabled={disabled}
         onChange={(event) => onValueChange(event.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         title={title}
         className="xy-workbench-name-field-input"

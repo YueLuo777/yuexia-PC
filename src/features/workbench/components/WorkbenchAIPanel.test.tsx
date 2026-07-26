@@ -63,12 +63,14 @@ describe('WorkbenchAIPanel linked context controls', () => {
     );
 
     expect(source).toContainSource('<AssociationSegmentedControl');
-    expect(source).toContainSource('className="flex h-10 shrink-0 overflow-hidden rounded-xl border border-[#08B3D9]');
-    expect(source).toContainSource('className="grid w-12 shrink-0 place-items-center border-r border-[#08B3D9]/30');
-    expect(source).not.toContainSource('grid w-14 shrink-0 place-items-center border-r border-[#08B3D9]/30');
+    expect(source).toContainSource('className="flex h-10 shrink-0 overflow-hidden rounded-xl border border-[#08AACE]');
+    expect(source).toContainSource('className="grid w-12 shrink-0 place-items-center border-r border-[#08AACE]/30');
+    expect(source).not.toContainSource('grid w-14 shrink-0 place-items-center border-r border-[#08AACE]/30');
     expect(source).toContainSource("minWidthClassName: 'w-28'");
     expect(source).toContainSource('className="xy-ai-panel-input-row"');
-    expect(source).toContainSource('className="xy-ai-panel-action-row flex overflow-hidden rounded-xl border border-gray-200 bg-white"');
+    expect(source).toContainSource(
+      'className="xy-ai-panel-action-row flex overflow-hidden rounded-xl border border-gray-200 bg-white"',
+    );
     expect(source).toContainSource('xy-ai-panel-output-slot xy-floating-field');
     expect(styles).toContainSource('.xy-ai-panel-output-slot.xy-floating-with-bottom-count {\n  margin-bottom: 0;');
     expect(styles).toContainSource('.xy-ai-panel-link-row,\n.xy-ai-panel-input-row,\n.xy-ai-panel-action-row {');

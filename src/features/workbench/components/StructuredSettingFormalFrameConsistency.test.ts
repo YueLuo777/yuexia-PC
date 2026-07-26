@@ -10,6 +10,7 @@ describe('formal structured-setting frame consistency', () => {
   it('keeps compact gray forms out of the formal editor and uses embedded black frames for every domain', () => {
     const editorSource = readFileSync(join(baseDir, 'workbenchSettingEditor.tsx'), 'utf8');
     const roleEditorSource = readFileSync(join(baseDir, 'workbenchRoleEditor.tsx'), 'utf8');
+    const standardEditorSource = readFileSync(join(baseDir, 'StandardModeSettingEditor.tsx'), 'utf8');
     const editorLayoutSource = readFileSync(join(baseDir, 'workbenchSettingEditorLayout.ts'), 'utf8');
     const definitionSource = readFileSync(join(baseDir, 'workbenchStructuredSettingDefinitions.ts'), 'utf8');
 
@@ -52,5 +53,14 @@ describe('formal structured-setting frame consistency', () => {
     expect(definitionSource).toContain("id: 'item-ability'");
     expect(definitionSource).toContain("id: 'foreshadow-main'");
     expect(definitionSource).toContain('fieldClassName?: string;');
+
+    expect(standardEditorSource).toContain('WORKBENCH_SETTING_EDITOR_SHELL_CLASS');
+    expect(standardEditorSource).toContain('WORKBENCH_SETTING_EDITOR_HEADER_ROW_CLASS');
+    expect(standardEditorSource).toContain('WORKBENCH_SETTING_EDITOR_TWO_COLUMN_GRID_CLASS');
+    expect(standardEditorSource).toContain("'relative flex flex-col rounded-[20px] border-2 border-slate-950 bg-white px-6 pb-2 pt-2'");
+    expect(standardEditorSource).toContain("compact: 'min-h-[96px]'");
+    expect(standardEditorSource).toContain("standard: 'min-h-[132px]'");
+    expect(standardEditorSource).toContain("expanded: 'min-h-[158px]'");
+    expect(standardEditorSource).toContain('<RoleAutoSizeTextarea');
   });
 });

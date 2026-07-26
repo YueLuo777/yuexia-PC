@@ -15,8 +15,8 @@ export const CHAPTER_NUMBER_BASE_CLASS =
 
 function getChapterNumberStateClass(state: ChapterNumberButtonState) {
   if (state === 'used') return 'xy-detail-outline-number-used hover:border-[#067B96] hover:bg-[#D3EEF5]';
-  if (state === 'hasOutline') return 'xy-detail-outline-number-has-outline hover:border-[#08B3D9]';
-  return 'xy-detail-outline-number-no-outline hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]';
+  if (state === 'hasOutline') return 'xy-detail-outline-number-has-outline hover:border-[#08AACE]';
+  return 'xy-detail-outline-number-no-outline hover:border-[#08AACE] hover:bg-[#EAF9FD] hover:text-[#078fb0]';
 }
 
 export function ChapterNumberButton({

@@ -11,6 +11,7 @@ const testedStateHookPath = resolve(
 const testedStatePath = resolve(process.cwd(), 'src/features/tests/model/testCollectionTestedState.ts');
 
 const removedMarkedTests = [
+  ['/mode-switch-novel-library-test', 'ModeSwitchNovelLibraryTestPage'],
   ['/border-backplate-application-test', 'BorderBackplateApplicationTestPage'],
   ['/workbench-soft-cyan-button-style-test', 'WorkbenchSoftCyanButtonStyleTestPage'],
   ['/workbench-surface-color-style-test', 'WorkbenchSurfaceColorStyleTestPage'],
@@ -84,6 +85,7 @@ const removedMarkedTests = [
   ['/post-audit-status-update-test', 'PostAuditStatusUpdateTestPage'],
   ['/text-audit-review-workbench-test', 'TextAuditReviewWorkbenchTestPage'],
   ['/text-audit-diff-display-test', 'TextAuditDiffDisplayTestPage'],
+  ['/standard-mode-smart-setting-flow-test', 'StandardModeSmartSettingFlowTestPage'],
 ] as const;
 
 describe('TestCollectionPage delete marked cleanup', () => {

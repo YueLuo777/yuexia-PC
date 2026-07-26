@@ -324,7 +324,7 @@
 }
 
 .writer-assistant-theme .text-\[\#08AACE\],
-.writer-assistant-theme .text-\[\#08B3D9\],
+.writer-assistant-theme .text-\[\#08AACE\],
 .writer-assistant-theme .text-\[\#078fb0\],
 .writer-assistant-theme .text-\[\#078BA9\],
 .writer-assistant-theme .text-\[\#078FAE\],
@@ -335,7 +335,7 @@
 }
 
 .writer-assistant-theme .hover\:text-\[\#08AACE\]:hover,
-.writer-assistant-theme .hover\:text-\[\#08B3D9\]:hover,
+.writer-assistant-theme .hover\:text-\[\#08AACE\]:hover,
 .writer-assistant-theme .hover\:text-\[\#078fb0\]:hover,
 .writer-assistant-theme .hover\:text-\[\#057F9B\]:hover,
 .writer-assistant-theme .hover\:text-\[\#056b84\]:hover,
@@ -344,7 +344,7 @@
 }
 
 .writer-assistant-theme .bg-\[\#08AACE\],
-.writer-assistant-theme .bg-\[\#08B3D9\],
+.writer-assistant-theme .bg-\[\#08AACE\],
 .writer-assistant-theme .hover\:bg-\[\#0798b8\]:hover,
 .writer-assistant-theme .hover\:bg-\[\#078fb0\]:hover,
 .writer-assistant-theme .hover\:bg-\[\#0695B5\]:hover,
@@ -353,7 +353,7 @@
 }
 
 .writer-assistant-theme .hover\:bg-\[\#08AACE\]:hover,
-.writer-assistant-theme .hover\:bg-\[\#08B3D9\]:hover {
+.writer-assistant-theme .hover\:bg-\[\#08AACE\]:hover {
   background-color: var(--xy-wa-blue-hover) !important;
 }
 
@@ -428,15 +428,15 @@
 }
 
 .writer-assistant-theme .border-\[\#08AACE\],
-.writer-assistant-theme .border-\[\#08B3D9\],
+.writer-assistant-theme .border-\[\#08AACE\],
 .writer-assistant-theme .border-\[\#08AACE\]\/25,
 .writer-assistant-theme .border-\[\#08AACE\]\/30,
-.writer-assistant-theme .border-\[\#08B3D9\]\/30,
+.writer-assistant-theme .border-\[\#08AACE\]\/30,
 .writer-assistant-theme .focus\:border-\[\#08AACE\]:focus,
 .writer-assistant-theme .focus\:border-\[\#08AACE\]\/50:focus,
 .writer-assistant-theme .hover\:border-\[\#08AACE\]:hover,
 .writer-assistant-theme .hover\:border-\[\#08AACE\]\/30:hover,
-.writer-assistant-theme .hover\:border-\[\#08B3D9\]:hover,
+.writer-assistant-theme .hover\:border-\[\#08AACE\]:hover,
 .writer-assistant-theme .hover\:border-\[\#067B96\]:hover {
   border-color: var(--xy-wa-accent-border) !important;
 }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { RecycledNovel, WorkType } from '@/features/novels/model/novelTypes';
 import { ActionButton } from '@/shared/ui/ActionButton';
 import { AppModalShell } from '@/shared/ui/AppModalShell';
+import { EmptyState } from '@/shared/ui/EmptyState';
 
 interface RecycleBinModalProps {
   isOpen: boolean;
@@ -47,11 +48,7 @@ export function RecycleBinModal({ isOpen, type, items, onClose, onRestore, onPer
 
       <div className="flex-1 overflow-y-auto p-5">
         {filtered.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-gray-200">
-            <Trash2 className="mb-3 h-10 w-10 text-gray-300" />
-            <p className="mb-1 text-sm text-gray-500">回收站为空</p>
-            <p className="text-xs text-gray-400">删除后的{typeLabel}会显示在这里。</p>
-          </div>
+          <EmptyState title="回收站为空" description={`删除后的${typeLabel}会显示在这里。`} />
         ) : (
           <div className="space-y-3">
             {filtered.map((novel) => (

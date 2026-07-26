@@ -22,10 +22,7 @@ import {
 import { APP_EVENTS } from '@/shared/events/appEvents';
 import { usePersistentState } from '@/shared/hooks/usePersistentState';
 import { AiInlineInput } from '@/shared/ui/AiInlineInput';
-import {
-  WORKBENCH_AI_THINKING_SURFACE_CLASS,
-  WORKBENCH_AI_THINKING_TITLE_CLASS,
-} from './workbenchAiThinkingStyles';
+import { WorkbenchAiThinkingShell } from './WorkbenchAiThinkingShell';
 import { AiRequestLogModalLayout } from '@/shared/ui/AiRequestLogModalLayout';
 import { CombinedAiConfigSelect } from '@/shared/ui/CombinedAiConfigSelect';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
@@ -149,12 +146,13 @@ export function renderAiChatContent(content: string) {
     const answer = thinkingMatch[4]?.trimStart() ?? '';
     return (
       <div className="space-y-3">
-        <div className={`${WORKBENCH_AI_THINKING_SURFACE_CLASS} p-3 text-xs leading-6`}>
-          <div className={`mb-1 flex items-center justify-between ${WORKBENCH_AI_THINKING_TITLE_CLASS}`}>
-            <span>{done ? `已思考（用时 ${seconds} 秒）` : `正在思考（${seconds} 秒）`}</span>
-          </div>
-          {reasoning && <div className="max-h-36 overflow-y-auto whitespace-pre-wrap break-words">{reasoning}</div>}
-        </div>
+        <WorkbenchAiThinkingShell
+          label={done ? `已思考（用时 ${seconds} 秒）` : `正在思考（${seconds} 秒）`}
+          open={!done}
+          bodyClassName="max-h-36 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-6"
+        >
+          {reasoning || undefined}
+        </WorkbenchAiThinkingShell>
         {answer && <div className="whitespace-pre-wrap break-words">{answer}</div>}
       </div>
     );

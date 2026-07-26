@@ -32,7 +32,9 @@ const PromptsPage = lazy(() =>
   import('@/features/prompts/pages/PromptsPage').then((module) => ({ default: module.PromptsPage })),
 );
 const WorkbenchPage = lazy(() =>
-  import('@/features/workbench/pages/WorkbenchPage').then((module) => ({ default: module.WorkbenchPage })),
+  import('@/features/workbench/pages/ModeAwareWorkbenchPage').then((module) => ({
+    default: module.ModeAwareWorkbenchPage,
+  })),
 );
 const TokenUsagePage = lazy(() => import('@/pages/TokenUsagePage'));
 const DashboardLayout = lazy(() =>

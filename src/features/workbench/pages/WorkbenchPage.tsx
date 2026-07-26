@@ -140,15 +140,28 @@ import {
 import { buildWorkbenchContextLibrary } from '../hooks/useWorkbenchContextLibrary';
 import { buildWorkbenchPageChapterContext } from './workbenchPageChapterContext';
 
-export function WorkbenchPage() {
+export interface WorkbenchPageProps {
+  experience?: 'professional' | 'standard';
+  fixedFlow?: Extract<WorkbenchCreationFlowPageKey, 'chapterOutline' | 'writing'>;
+}
+
+export function WorkbenchPage({ experience = 'professional', fixedFlow }: WorkbenchPageProps = {}) {
   const navigate = useNavigate();
   const [isRecycleOpen, setIsRecycleOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isFindOpen, setIsFindOpen] = useState(false);
   const [isEditorSettingsOpen, setIsEditorSettingsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalKey | null>(null);
-  const [activeCreationFlow, setActiveCreationFlow] = useState<WorkbenchCreationFlowPageKey>('writing');
-  useWorkbenchStatusFlowNavigation(setActiveCreationFlow);
+  const [internalCreationFlow, setInternalCreationFlow] = useState<WorkbenchCreationFlowPageKey>('writing');
+  const activeCreationFlow = fixedFlow ?? internalCreationFlow;
+  const switchCreationFlow = useCallback(
+    (flow: WorkbenchCreationFlowPageKey) => {
+      if (fixedFlow) return;
+      setInternalCreationFlow(flow);
+    },
+    [fixedFlow],
+  );
+  useWorkbenchStatusFlowNavigation(switchCreationFlow);
   const [managementModal, setManagementModal] = useState<WorkbenchManagementModalKey | null>(null);
   const [fieldSizeOpenSignal, setFieldSizeOpenSignal] = useState(0);
   const [aiLogOpenSignal, setAiLogOpenSignal] = useState(0);
@@ -257,7 +270,7 @@ export function WorkbenchPage() {
 
   useEffect(() => {
     if (!currentNovelType) return;
-    setActiveCreationFlow('writing');
+    setInternalCreationFlow('writing');
     if (currentNovelType === 'script') {
       setShowPublished(false);
       return;
@@ -511,8 +524,6 @@ export function WorkbenchPage() {
     summaryContextItems,
   });
 
-  const switchCreationFlow = setActiveCreationFlow;
-
   const showFieldSizeButton = activeCreationFlow === 'writing' || FIELD_SIZE_FLOW_IDS.has(activeCreationFlow);
   const showHeaderLogButton = true;
 
@@ -554,26 +565,32 @@ export function WorkbenchPage() {
   );
 
   return (
-    <div className="relative flex h-full flex-col bg-[#f5f5f7]">
-      <WorkbenchHeader
-        workTitle={currentNovel.title}
-        flowItems={WORKBENCH_HEADER_FLOW_ITEMS}
-        activeFlow={activeCreationFlow}
-        flowStats={flowStats}
-        fieldSizeVisible={showFieldSizeButton}
-        logVisible={showHeaderLogButton}
-        extraTools={<div id="workbench-header-extra-tools" className="inline-flex items-center gap-2" />}
-        onOpenFieldSize={() => {
-          if (activeCreationFlow === 'writing') {
-            setIsEditorSettingsOpen(true);
-            return;
-          }
-          setFieldSizeOpenSignal((value) => value + 1);
-        }}
-        onOpenLog={openHeaderLog}
-        onSelectFlow={switchCreationFlow}
-        onOpenWorkInfo={() => setActiveModal('workInfo')}
-      />
+    <div
+      className="relative flex h-full flex-col bg-[#f5f5f7]"
+      data-workbench-experience={experience}
+      data-workbench-flow={activeCreationFlow}
+    >
+      {experience === 'professional' ? (
+        <WorkbenchHeader
+          workTitle={currentNovel.title}
+          flowItems={WORKBENCH_HEADER_FLOW_ITEMS}
+          activeFlow={activeCreationFlow}
+          flowStats={flowStats}
+          fieldSizeVisible={showFieldSizeButton}
+          logVisible={showHeaderLogButton}
+          extraTools={<div id="workbench-header-extra-tools" className="inline-flex items-center gap-2" />}
+          onOpenFieldSize={() => {
+            if (activeCreationFlow === 'writing') {
+              setIsEditorSettingsOpen(true);
+              return;
+            }
+            setFieldSizeOpenSignal((value) => value + 1);
+          }}
+          onOpenLog={openHeaderLog}
+          onSelectFlow={switchCreationFlow}
+          onOpenWorkInfo={() => setActiveModal('workInfo')}
+        />
+      ) : null}
 
       <div className="flex flex-1 overflow-hidden">
         <WorkbenchWritingLayout

@@ -17,7 +17,7 @@ describe('OutlineAssociationControl', () => {
 
     rerender(<OutlineAssociationControl linked wordCount={315} onOpen={onOpen} onClear={onClear} />);
     const linkedButton = screen.getByRole('button', { name: '已关联大纲' });
-    expect(linkedButton).toHaveClass('w-28', 'bg-[#08B3D9]');
+    expect(linkedButton).toHaveClass('w-28', 'bg-[#08AACE]');
 
     fireEvent.click(linkedButton);
     expect(onClear).toHaveBeenCalledTimes(1);

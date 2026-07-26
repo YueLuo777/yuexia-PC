@@ -54,7 +54,7 @@ describe('ChapterEditor grid line font setting', () => {
     );
     expect(chapterEditorSource).toContainSource('ChapterNumberButton,');
     expect(chapterNumberButtonSource).toContainSource(
-      "return 'xy-detail-outline-number-no-outline hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]';",
+      "return 'xy-detail-outline-number-no-outline hover:border-[#08AACE] hover:bg-[#EAF9FD] hover:text-[#078fb0]';",
     );
     expect(chapterNumberButtonSource).toContainSource("selected ? 'xy-detail-outline-number-selected' : ''");
     expect(reviewPanelSource).toContainSource('flex h-full min-h-0 flex-col overflow-hidden bg-white');
@@ -347,7 +347,7 @@ describe('ChapterEditor grid line font setting', () => {
     expect(chapterEditorSource).not.toContainSource('markChapterContentPolished');
     expect(chapterNumberButtonSource).toContainSource("selected ? 'xy-detail-outline-number-selected' : ''");
     expect(chapterNumberButtonSource).toContainSource(
-      "if (state === 'hasOutline') return 'xy-detail-outline-number-has-outline hover:border-[#08B3D9]';",
+      "if (state === 'hasOutline') return 'xy-detail-outline-number-has-outline hover:border-[#08AACE]';",
     );
     expect(reviewOriginalBodySource).toContainSource('REVIEW_PREVIEW_PARAGRAPH_BASE_CLASS');
     expect(reviewOriginalBodySource).toContainSource(

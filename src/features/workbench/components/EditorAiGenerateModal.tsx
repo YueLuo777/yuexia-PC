@@ -40,11 +40,7 @@ import {
 } from './editorToolState';
 import type { FontSettings, FormatOptions, GenerateMode } from './editorToolState';
 import { ToggleRow } from './EditorReplaceTools';
-import {
-  WORKBENCH_AI_THINKING_ICON_CLASS,
-  WORKBENCH_AI_THINKING_SURFACE_CLASS,
-  WORKBENCH_AI_THINKING_TITLE_CLASS,
-} from './workbenchAiThinkingStyles';
+import { WorkbenchAiThinkingShell } from './WorkbenchAiThinkingShell';
 
 interface GeneratedCard {
   id: number;
@@ -291,17 +287,10 @@ export function AIGenerateModal({
                 cards.map((card) => (
                   <div
                     key={card.id}
-                    className={
-                      card.status === 'thinking'
-                        ? `${WORKBENCH_AI_THINKING_SURFACE_CLASS} p-4`
-                        : 'rounded-lg border border-gray-100 p-4'
-                    }
+                    className={card.status === 'thinking' ? 'space-y-3' : 'rounded-lg border border-gray-100 p-4'}
                   >
                     {card.status === 'thinking' ? (
-                      <div className="mb-3 flex items-center gap-2">
-                        <Loader2 className={`h-4 w-4 animate-spin ${WORKBENCH_AI_THINKING_ICON_CLASS}`} />
-                        <span className={`text-sm ${WORKBENCH_AI_THINKING_TITLE_CLASS}`}>思考中...</span>
-                      </div>
+                      <WorkbenchAiThinkingShell label="思考中..." icon={Loader2} iconClassName="animate-spin" />
                     ) : (
                       <p className="mb-3 whitespace-pre-wrap text-sm leading-6 text-gray-700">{card.content}</p>
                     )}

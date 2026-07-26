@@ -30,7 +30,7 @@
     drop-shadow(0 0 1px var(--xy-floating-backplate-bg, #ffffff));
 }
 
-.writer-assistant-theme .ring-\[\#08B3D9\],
+.writer-assistant-theme .ring-\[\#08AACE\],
 .writer-assistant-theme .focus\:ring-\[\#08AACE\]\/20:focus {
   --tw-ring-color: color-mix(in srgb, var(--xy-wa-blue) 72%, transparent) !important;
 }

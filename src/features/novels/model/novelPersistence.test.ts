@@ -21,6 +21,8 @@ describe('novel persistence safety', () => {
     localStorage.setItem('xinyuexia_workbench_outline_7', 'outline');
     localStorage.setItem('xinyuexia_workbench_ai_sessions_7', 'sessions');
     localStorage.setItem('xinyuexia_workbench_notes_list_v1_7', 'notes');
+    localStorage.setItem('xinyuexia_standard_setting_template_7', 'template');
+    localStorage.setItem('xinyuexia_standard_setting_template_8', 'keep-template');
     localStorage.setItem('xinyuexia_chapter_polish_status_v1:xinyuexia_workbench_settings_7', 'polish');
     localStorage.setItem('xinyuexia_novel_7_chapter_70', 'content');
     localStorage.setItem('xinyuexia_script_editor_linked_novel_v2_3', '7');
@@ -51,6 +53,8 @@ describe('novel persistence safety', () => {
     expect(localStorage.getItem('xinyuexia_workbench_outline_7')).toBeNull();
     expect(localStorage.getItem('xinyuexia_workbench_ai_sessions_7')).toBeNull();
     expect(localStorage.getItem('xinyuexia_workbench_notes_list_v1_7')).toBeNull();
+    expect(localStorage.getItem('xinyuexia_standard_setting_template_7')).toBeNull();
+    expect(localStorage.getItem('xinyuexia_standard_setting_template_8')).toBe('keep-template');
     expect(localStorage.getItem('xinyuexia_novel_7_chapter_70')).toBeNull();
     expect(localStorage.getItem('xinyuexia_script_editor_linked_novel_v2_3')).toBeNull();
     expect(localStorage.getItem('xinyuexia_script_editor_linked_novel_v2_4')).toBe('8');

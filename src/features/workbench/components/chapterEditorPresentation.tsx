@@ -13,10 +13,7 @@ import type { ReviewMode } from '@/features/workbench/model/chapterReviewTaskSta
 import type { BackgroundAiTask } from '@/shared/ai/backgroundAiTasks';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 import type { Chapter } from '@/features/workbench/model/workbenchTypes';
-import {
-  WORKBENCH_AI_THINKING_SURFACE_CLASS,
-  WORKBENCH_AI_THINKING_TITLE_CLASS,
-} from './workbenchAiThinkingStyles';
+import { WorkbenchAiThinkingShell } from './WorkbenchAiThinkingShell';
 
 export function getStatusTargetLabel(entry: WorkbenchLibraryEntry) {
   return `${entry.tab}${entry.type ? ` / ${entry.type}` : ''}`;
@@ -76,20 +73,14 @@ function AiThinkingContent({
 
   return (
     <div className="space-y-3">
-      <div className={`${WORKBENCH_AI_THINKING_SURFACE_CLASS} px-3 py-2 text-xs leading-6`}>
-        <button
-          type="button"
-          aria-expanded={isReasoningExpanded}
-          onClick={() => setIsReasoningExpanded((expanded) => !expanded)}
-          className={`block w-full truncate text-left ${WORKBENCH_AI_THINKING_TITLE_CLASS}`}
-          title={isReasoningExpanded ? '折叠思考过程' : '展开思考过程'}
-        >
-          {thinkingLabel}
-        </button>
-        {isReasoningExpanded && reasoning ? (
-          <div className="mt-1 max-h-36 overflow-y-auto whitespace-pre-wrap break-words">{reasoning}</div>
-        ) : null}
-      </div>
+      <WorkbenchAiThinkingShell
+        label={thinkingLabel}
+        open={reasoning ? isReasoningExpanded : undefined}
+        onOpenChange={reasoning ? setIsReasoningExpanded : undefined}
+        bodyClassName="max-h-36 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-6"
+      >
+        {reasoning || undefined}
+      </WorkbenchAiThinkingShell>
       {answer && <div className="whitespace-pre-wrap break-words">{answer}</div>}
     </div>
   );

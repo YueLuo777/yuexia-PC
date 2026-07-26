@@ -45,18 +45,24 @@ type RoleFieldRenderOptions = {
   wide?: boolean;
 };
 
-function RoleAutoSizeTextarea({
+export function RoleAutoSizeTextarea({
   value,
   placeholder,
   fontSize,
   minRows,
   onChange,
+  inputRef,
+  id,
+  ariaLabel,
 }: {
   value: string;
   placeholder: string;
   fontSize: number;
   minRows: number;
   onChange: (value: string) => void;
+  inputRef?: (node: HTMLTextAreaElement | null) => void;
+  id?: string;
+  ariaLabel?: string;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const minHeight = minRows * ROLE_FIELD_TEXTAREA_LINE_HEIGHT;
@@ -77,8 +83,13 @@ function RoleAutoSizeTextarea({
 
   return (
     <textarea
-      ref={textareaRef}
+      ref={(node) => {
+        textareaRef.current = node;
+        inputRef?.(node);
+      }}
       data-no-modal-drag="true"
+      id={id}
+      aria-label={ariaLabel}
       value={value}
       rows={minRows}
       onChange={(event) => onChange(event.target.value)}

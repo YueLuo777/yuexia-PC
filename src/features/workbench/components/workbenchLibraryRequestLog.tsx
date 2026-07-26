@@ -1,12 +1,6 @@
-import { ChevronDown, ChevronRight } from 'lucide-react';
-
 import { wrapAiRequestTag } from '@/features/workbench/model/workbenchAiRequestTagPolicy';
 import type { AiRequestLogGroup } from '@/shared/ui/AiRequestLogGroups';
-import {
-  WORKBENCH_AI_THINKING_ICON_CLASS,
-  WORKBENCH_AI_THINKING_SURFACE_CLASS,
-  WORKBENCH_AI_THINKING_TITLE_CLASS,
-} from './workbenchAiThinkingStyles';
+import { WorkbenchAiThinkingShell } from './WorkbenchAiThinkingShell';
 
 export type LibraryAiRequestLog = {
   createdAt: string;
@@ -252,20 +246,15 @@ export function renderAiChatContent(content: string, options: { hideReasoningBod
     return (
       <div className="space-y-3">
         {options.hideReasoningBody ? (
-          <div className={`${WORKBENCH_AI_THINKING_SURFACE_CLASS} flex items-center gap-2 px-3 py-2 text-sm`}>
-            {done ? <ChevronDown className={`h-4 w-4 ${WORKBENCH_AI_THINKING_ICON_CLASS}`} /> : <ChevronRight className={`h-4 w-4 ${WORKBENCH_AI_THINKING_ICON_CLASS}`} />}
-            <span className={WORKBENCH_AI_THINKING_TITLE_CLASS}>{thinkingLabel}</span>
-          </div>
+          <WorkbenchAiThinkingShell label={thinkingLabel} />
         ) : (
-          <details open={!done} className={`${WORKBENCH_AI_THINKING_SURFACE_CLASS} group px-3 py-2`}>
-            <summary className={`flex cursor-pointer list-none items-center gap-2 text-sm ${WORKBENCH_AI_THINKING_TITLE_CLASS}`}>
-              {done ? <ChevronDown className={`h-4 w-4 ${WORKBENCH_AI_THINKING_ICON_CLASS}`} /> : <ChevronRight className={`h-4 w-4 ${WORKBENCH_AI_THINKING_ICON_CLASS}`} />}
-              <span>{thinkingLabel}</span>
-            </summary>
-            {reasoning && (
-              <div className="mt-2 border-l-2 border-[#08AACE]/25 pl-3 text-sm leading-7 text-slate-600">{reasoning}</div>
-            )}
-          </details>
+          <WorkbenchAiThinkingShell
+            label={thinkingLabel}
+            open={!done}
+            bodyClassName="whitespace-pre-wrap break-words text-sm leading-7 text-slate-600"
+          >
+            {reasoning || undefined}
+          </WorkbenchAiThinkingShell>
         )}
         {answer && <div>{answer}</div>}
       </div>

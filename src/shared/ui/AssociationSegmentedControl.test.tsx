@@ -22,12 +22,8 @@ describe('AssociationSegmentedControl', () => {
       />,
     );
 
-    expect(screen.getByText('关联', { selector: 'span' })).toHaveClass('w-12', 'border-[#08B3D9]/30');
-    expect(screen.getByRole('button', { name: '已关联大纲' })).toHaveClass(
-      'w-28',
-      'bg-[#08B3D9]',
-      'text-white',
-    );
+    expect(screen.getByText('关联', { selector: 'span' })).toHaveClass('w-12', 'border-[#08AACE]/30');
+    expect(screen.getByRole('button', { name: '已关联大纲' })).toHaveClass('w-28', 'bg-[#08AACE]', 'text-white');
     expect(screen.getByText('关联 315 字')).toHaveClass('text-sm', 'text-slate-400');
 
     fireEvent.click(screen.getByRole('button', { name: '已关联大纲' }));
@@ -45,10 +41,6 @@ describe('AssociationSegmentedControl', () => {
     );
 
     expect(screen.getByRole('button', { name: '本章' })).toHaveClass('w-24', 'bg-white');
-    expect(screen.getByRole('button', { name: '已关联资料' })).toHaveClass(
-      'w-28',
-      'border-l',
-      'bg-[#08B3D9]',
-    );
+    expect(screen.getByRole('button', { name: '已关联资料' })).toHaveClass('w-28', 'border-l', 'bg-[#08AACE]');
   });
 });

@@ -21,6 +21,7 @@ import {
 
 import { CapsuleSelect } from '@/shared/ui/CapsuleSelect';
 import { WordCountText } from '@/shared/ui/WordCountText';
+import { EmptyState } from '@/shared/ui/EmptyState';
 
 import { ModalShell } from './EditorToolModalShell';
 import { ASSOCIATED_CHAPTERS_KEY, loadSnapshots, readJson, writeJson } from './editorToolState';
@@ -55,10 +56,11 @@ export function HistoryModal({
       </div>
       <div className="max-h-[520px] space-y-2 overflow-y-auto p-4">
         {snapshots.length === 0 ? (
-          <div className="py-12 text-center">
-            <RotateCcw className="mx-auto mb-3 h-8 w-8 text-gray-300" />
-            <p className="text-sm text-gray-400">暂无历史快照</p>
-          </div>
+          <EmptyState
+            className="min-h-[180px]"
+            title="暂无历史快照"
+            description="产生新的自动保存记录后，将在这里显示。"
+          />
         ) : (
           [...snapshots].reverse().map((snapshot) => (
             <div

@@ -3,6 +3,7 @@
 import { DetailOutlineBorderFontTool, DetailOutlineTitleWordCount } from './DetailOutlineBorderFontTool';
 import { OutlineAssociationControl } from './OutlineAssociationControl';
 import { normalizeDetailOutlineFontSize } from './detailOutlineFontSize';
+import { EmptyState } from '@/shared/ui/EmptyState';
 export function renderOutlineWorkspaceView(scope: Record<string, any>) {
   const {
     AiInlineInput,
@@ -121,8 +122,7 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-white" style={scaleStyle}>
       {!isDetailOutlineTab && libraryHeaderFontSizePortal}
-      {(activeTab === OUTLINE_LIBRARY_TAB || activeTab === DETAIL_OUTLINE_TAB) &&
-        renderTopTabs()}
+      {(activeTab === OUTLINE_LIBRARY_TAB || activeTab === DETAIL_OUTLINE_TAB) && renderTopTabs()}
       {deleteConfirmDialog}
       {fieldSizeSettingsModal}
       {managementModal && <LibraryManagementModal modal={managementModal} onClose={() => setManagementModal(null)} />}
@@ -281,10 +281,10 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                                   chapterContentWordCount > 0 ? 'used' : hasSummary ? 'hasOutline' : 'empty';
                                 const outlineButtonClass = `relative h-9 min-w-9 rounded-lg border px-2 text-sm font-black transition-colors ${
                                   selected
-                                    ? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'
+                                    ? 'border-[#08AACE] bg-[#EAF9FD] text-[#078fb0]'
                                     : hasSummary
-                                      ? 'border-[#08B3D9] bg-[#E1F3F7] text-[#08AACE] hover:border-[#067B96] hover:bg-[#D3EEF5]'
-                                      : 'border-slate-200 bg-white text-slate-900 hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
+                                      ? 'border-[#08AACE] bg-[#E1F3F7] text-[#08AACE] hover:border-[#067B96] hover:bg-[#D3EEF5]'
+                                      : 'border-slate-200 bg-white text-slate-900 hover:border-[#08AACE] hover:bg-[#EAF9FD] hover:text-[#078fb0]'
                                 }`;
                                 if (isDetailOutlineTab) {
                                   return (
@@ -380,7 +380,11 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
               {volumes.length === 0 ? (
-                <p className="pt-10 text-center text-xs text-gray-400">暂无已发布章纲</p>
+                <EmptyState
+                  className="mx-2 min-h-[150px] px-3"
+                  title="暂无已发布章纲"
+                  description="发布章纲后，将在这里显示。"
+                />
               ) : (
                 renderDetailOutlineVolumeTree(detailOutlinePublishedVolumes, true)
               )}
@@ -461,7 +465,8 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                       />
                       <label className="xy-floating-title-count xy-detail-outline-title-count">
                         <span className="xy-floating-title-text xy-detail-outline-heading-title xy-detail-outline-heading-with-count xy-border-embedded-transparent-backplate">
-                          {outlineCardTitle}<DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.outline)} />
+                          {outlineCardTitle}
+                          <DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.outline)} />
                         </span>
                       </label>
                       <DetailOutlineBorderFontTool
@@ -491,7 +496,8 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                       />
                       <label className="xy-floating-title-count xy-detail-outline-title-count">
                         <span className="xy-floating-title-text xy-detail-outline-heading-title xy-detail-outline-heading-with-count xy-border-embedded-transparent-backplate">
-                          状态变化<DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.stateExpectation)} />
+                          状态变化
+                          <DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.stateExpectation)} />
                         </span>
                       </label>
                       <DetailOutlineBorderFontTool
@@ -554,11 +560,15 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                       >
                         <span
                           className={
-                            isDetailOutlineTab ? 'xy-floating-title-text xy-detail-outline-heading-title xy-detail-outline-heading-with-count xy-border-embedded-transparent-backplate' : undefined
+                            isDetailOutlineTab
+                              ? 'xy-floating-title-text xy-detail-outline-heading-title xy-detail-outline-heading-with-count xy-border-embedded-transparent-backplate'
+                              : undefined
                           }
                         >
                           {outlineCardTitle}
-                          {isDetailOutlineTab && <DetailOutlineTitleWordCount value={countTextWords(outlineCardContent)} />}
+                          {isDetailOutlineTab && (
+                            <DetailOutlineTitleWordCount value={countTextWords(outlineCardContent)} />
+                          )}
                         </span>
                       </label>
                       {!isDetailOutlineTab && (
@@ -635,9 +645,9 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                   onFocus={() => setActiveLibraryFontTarget(isDetailOutlineTab ? 'detailOutline' : 'settingPreview')}
                   onChange={(event) => setOutlinePreviewDraft(event.target.value)}
                   placeholder={
-                isDetailOutlineTab
-                        ? '生成后的章纲会显示在这里，也可以手动编辑后替换所选章纲。'
-                        : '生成后的梗概会显示在这里，也可以手动编辑后保存。'
+                    isDetailOutlineTab
+                      ? '生成后的章纲会显示在这里，也可以手动编辑后替换所选章纲。'
+                      : '生成后的梗概会显示在这里，也可以手动编辑后保存。'
                   }
                   className="editor-scrollbar text-sm leading-6 text-gray-700 outline-none placeholder:text-slate-500 placeholder:font-semibold"
                   style={isDetailOutlineTab ? { fontSize: detailOutlineFontSize } : undefined}

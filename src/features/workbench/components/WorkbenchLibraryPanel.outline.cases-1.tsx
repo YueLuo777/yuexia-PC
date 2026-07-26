@@ -143,7 +143,7 @@ describe('WorkbenchLibraryPanel outline flows', () => {
 
     expect(chapterEditorSource).toContainSource("} from '@/shared/ui/ChapterNumberButton';");
     expect(chapterNumberButtonSource).toContainSource(
-      "return 'xy-detail-outline-number-no-outline hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]';",
+      "return 'xy-detail-outline-number-no-outline hover:border-[#08AACE] hover:bg-[#EAF9FD] hover:text-[#078fb0]';",
     );
     expect(panelSource).not.toContainSource('repeating-linear-gradient(135deg, #f8fafc 0');
     expect(chapterEditorSource).not.toContainSource('repeating-linear-gradient(135deg, #f8fafc 0');
@@ -212,7 +212,7 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     );
     expect(chapterNumberButtonSource).toContainSource("selected ? 'xy-detail-outline-number-selected' : ''");
     expect(chapterNumberButtonSource).toContainSource(
-      "'xy-detail-outline-number-no-outline hover:border-[#08B3D9] hover:bg-[#EAF9FD] hover:text-[#078fb0]'",
+      "'xy-detail-outline-number-no-outline hover:border-[#08AACE] hover:bg-[#EAF9FD] hover:text-[#078fb0]'",
     );
     expect(chapterEditorSource).not.toContainSource(
       "'border-transparent xy-detail-outline-number-selected xy-selected-orange-bg text-slate-900'",
@@ -226,7 +226,7 @@ describe('WorkbenchLibraryPanel outline flows', () => {
       '<span className="text-sm font-black text-slate-900">章节位置</span>',
     );
     expect(chapterEditorSource).not.toContainSource(
-      '<span className="inline-flex items-center gap-1"><i className="h-3 w-3 rounded bg-[#08B3D9]" />已更新</span>',
+      '<span className="inline-flex items-center gap-1"><i className="h-3 w-3 rounded bg-[#08AACE]" />已更新</span>',
     );
     expect(chapterEditorSource).not.toContainSource(
       '<span className="inline-flex items-center gap-1"><i className="h-3 w-3 rounded border border-slate-200 bg-slate-50" />未更新</span>',
@@ -243,7 +243,7 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     );
     expect(summaryChapterButtonSources.length).toBeGreaterThanOrEqual(2);
     summaryChapterButtonSources.forEach((buttonSource) => {
-      expect(buttonSource).toContainSource("? 'border-[#08B3D9] bg-[#EAF9FD] text-[#078fb0]'");
+      expect(buttonSource).toContainSource("? 'border-[#08AACE] bg-[#EAF9FD] text-[#078fb0]'");
       expect(buttonSource).not.toContainSource("? 'border-transparent xy-selected-orange-bg text-slate-900'");
     });
     expect(panelSource).toContainSource('if (isDetailOutlineTab) {');

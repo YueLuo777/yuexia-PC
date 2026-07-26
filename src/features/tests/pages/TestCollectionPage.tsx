@@ -3,6 +3,7 @@ import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { TEST_COLLECTION_SHOW_INDEX_EVENT } from '@/features/tests/model/testCollectionEvents';
+import { buildTestNumberByPath, formatTestSerial } from '@/features/tests/model/testCollectionNumbering';
 import { useTestCollectionTestedState } from '@/features/tests/hooks/useTestCollectionTestedState';
 import { testGroups } from '@/features/tests/pages/testCollectionGroups';
 
@@ -35,21 +36,21 @@ const PromptDrivenNovelWorkspaceTestPage = lazy(() =>
     default: module.PromptDrivenNovelWorkspaceTestPage,
   })),
 );
-const AiThinkingShellVariantsTestPage = lazy(() =>
-  import('@/features/tests/pages/AiThinkingShellVariantsTestPage').then((module) => ({
-    default: module.AiThinkingShellVariantsTestPage,
-  })),
-);
 const UiConsistencyComparisonTestPage = lazy(() => import('@/features/tests/pages/UiConsistencyComparisonTestPage'));
 const StandardModeWorkbenchTestPage = lazy(() => import('@/features/tests/pages/StandardModeWorkbenchTestPage'));
-const ModeSwitchNovelLibraryTestPage = lazy(() =>
-  import('@/features/tests/pages/ModeSwitchNovelLibraryTestPage').then((module) => ({
-    default: module.ModeSwitchNovelLibraryTestPage,
-  })),
-);
 const ProfessionalWorkbenchBaselineTestPage = lazy(() =>
   import('@/features/tests/pages/ProfessionalWorkbenchBaselineTestPage').then((module) => ({
     default: module.ProfessionalWorkbenchBaselineTestPage,
+  })),
+);
+const StandardModeFourStageWorkbenchTestPage = lazy(() =>
+  import('@/features/tests/pages/StandardModeFourStageWorkbenchTestPage').then((module) => ({
+    default: module.StandardModeFourStageWorkbenchTestPage,
+  })),
+);
+const StandardModeSettingTemplateChoiceTestPage = lazy(() =>
+  import('@/features/tests/pages/StandardModeSettingTemplateChoiceTestPage').then((module) => ({
+    default: module.StandardModeSettingTemplateChoiceTestPage,
   })),
 );
 const ErrorLogPage = lazy(() =>
@@ -73,16 +74,19 @@ const TomatoGenreIterationTestPage = lazy(() =>
     default: module.TomatoGenreIterationTestPage,
   })),
 );
-
-const testNumberByPath = new Map(
-  testGroups.flatMap((group) => group.items).map((item, index) => [item.path, index + 1] as const),
+const BuiltInAiProductIdeaTestPage = lazy(() =>
+  import('@/features/tests/pages/BuiltInAiProductIdeaTestPage').then((module) => ({
+    default: module.BuiltInAiProductIdeaTestPage,
+  })),
 );
+
+const testNumberByPath = buildTestNumberByPath(testGroups);
 const validTestPaths = new Set(testNumberByPath.keys());
 
 type CollectionTab = 'untested' | 'tested';
 
 function formatTestNumber(path: string) {
-  return String(testNumberByPath.get(path) ?? 0).padStart(2, '0');
+  return formatTestSerial(testNumberByPath.get(path));
 }
 
 type TestCollectionPageProps = {
@@ -177,20 +181,22 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <SettingAiReadyTaxonomyTestPage />;
       case '/prompt-driven-novel-workspace-test':
         return <PromptDrivenNovelWorkspaceTestPage />;
-      case '/ai-thinking-shell-variants-test':
-        return <AiThinkingShellVariantsTestPage />;
       case '/ui-consistency-comparison-test':
         return <UiConsistencyComparisonTestPage />;
       case '/standard-mode-workbench-test':
         return <StandardModeWorkbenchTestPage />;
-      case '/mode-switch-novel-library-test':
-        return <ModeSwitchNovelLibraryTestPage />;
       case '/professional-workbench-baseline-test':
         return <ProfessionalWorkbenchBaselineTestPage />;
+      case '/standard-mode-four-stage-workbench-test':
+        return <StandardModeFourStageWorkbenchTestPage />;
+      case '/standard-mode-setting-template-choice-test':
+        return <StandardModeSettingTemplateChoiceTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':
         return <TomatoGenreIterationTestPage />;
+      case '/built-in-ai-product-idea-test':
+        return <BuiltInAiProductIdeaTestPage />;
       default:
         return null;
     }

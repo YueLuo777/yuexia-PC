@@ -7,12 +7,16 @@ import { useCoverLibrary } from '@/features/covers/hooks/useCoverLibrary';
 import { NewNovelModal } from '@/features/novels/components/NewNovelModal';
 import { NovelCard, type NovelCardSettings } from '@/features/novels/components/NovelCard';
 import { RecycleBinModal } from '@/features/novels/components/RecycleBinModal';
+import { StandardModeNovelCard } from '@/features/novels/components/StandardModeNovelCard';
 import { useNovelLibrary } from '@/features/novels/hooks/useNovelLibrary';
 import { useDefaultNovelCover } from '@/features/novels/hooks/useDefaultNovelCover';
 import type { Novel } from '@/features/novels/model/novelTypes';
+import { readStandardModeNovelCardStats } from '@/features/novels/model/standardModeNovelCardStats';
 import { readWritingSummary, WRITING_STATS_UPDATED_EVENT } from '@/shared/stats/writingStats';
+import { useApplicationMode } from '@/shared/mode/applicationMode';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { AutoFitText } from '@/shared/ui/AutoFitText';
+import { EmptyState } from '@/shared/ui/EmptyState';
 import { FormDialog } from '@/shared/ui/FormDialog';
 
 import {
@@ -42,6 +46,7 @@ export function NovelLibraryPage() {
   const workType = 'novel' as const;
   const typeLabel = '小说';
   const { selectedCover: defaultNovelCover } = useDefaultNovelCover();
+  const applicationMode = useApplicationMode();
 
   const {
     novels,
@@ -301,27 +306,50 @@ export function NovelLibraryPage() {
         </div>
 
         {filteredNovels.length === 0 ? (
-          <div className="flex h-[360px] flex-col items-center justify-center rounded-[8px] border border-dashed border-[#d7dce4] bg-[#fbfbfc]">
-            <p className="text-3xl text-gray-500">暂无{typeLabel}</p>
-          </div>
+          <EmptyState
+            className="h-[360px] rounded-[8px] bg-[#fbfbfc]"
+            title={`暂无${typeLabel}`}
+            description={`创建第一本${typeLabel}后，将在这里显示。`}
+            action={
+              <button
+                type="button"
+                onClick={() => setIsNewOpen(true)}
+                className="h-9 rounded-md bg-[#08AACE] px-4 text-sm font-bold text-white transition-colors hover:bg-[#0798B8]"
+              >
+                新建{typeLabel}
+              </button>
+            }
+          />
         ) : (
           <div className="flex flex-wrap gap-x-16 gap-y-14">
-            {filteredNovels.map((novel) => (
-              <NovelCard
-                key={novel.id}
-                novel={novel}
-                settings={cardSettings}
-                defaultCoverSrc={defaultNovelCover.src}
-                categories={categories}
-                onPrepareOpen={handlePrepareOpen}
-                onOpen={handleOpen}
-                onRename={(id, currentTitle) => setRenameTarget({ id, title: currentTitle })}
-                onCover={(id) => setCoverTargetId(id)}
-                onExport={handleExportNovel}
-                onMoveToCategory={updateCategory}
-                onDelete={(id) => setDeleteTargetId(id)}
-              />
-            ))}
+            {filteredNovels.map((novel) =>
+              applicationMode === 'standard' ? (
+                <StandardModeNovelCard
+                  key={novel.id}
+                  novel={novel}
+                  settings={cardSettings}
+                  stats={readStandardModeNovelCardStats(novel)}
+                  defaultCoverSrc={defaultNovelCover.src}
+                  onPrepareOpen={handlePrepareOpen}
+                  onOpenWorkbench={handleOpen}
+                />
+              ) : (
+                <NovelCard
+                  key={novel.id}
+                  novel={novel}
+                  settings={cardSettings}
+                  defaultCoverSrc={defaultNovelCover.src}
+                  categories={categories}
+                  onPrepareOpen={handlePrepareOpen}
+                  onOpen={handleOpen}
+                  onRename={(id, currentTitle) => setRenameTarget({ id, title: currentTitle })}
+                  onCover={(id) => setCoverTargetId(id)}
+                  onExport={handleExportNovel}
+                  onMoveToCategory={updateCategory}
+                  onDelete={(id) => setDeleteTargetId(id)}
+                />
+              ),
+            )}
           </div>
         )}
       </main>

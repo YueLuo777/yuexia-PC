@@ -24,8 +24,8 @@ export function AssociationSegmentedControl({
 }: AssociationSegmentedControlProps) {
   return (
     <div className={className}>
-      <div className="flex h-10 shrink-0 overflow-hidden rounded-xl border border-[#08B3D9] bg-white shadow-sm">
-        <span className="grid w-12 shrink-0 place-items-center border-r border-[#08B3D9]/30 bg-[#E9FAFE] text-sm font-black text-[#078BA9]">
+      <div className="flex h-10 shrink-0 overflow-hidden rounded-xl border border-[#08AACE] bg-white shadow-sm">
+        <span className="grid w-12 shrink-0 place-items-center border-r border-[#08AACE]/30 bg-[#E9FAFE] text-sm font-black text-[#078BA9]">
           {prefixLabel}
         </span>
         {segments.map((segment, index) => (
@@ -35,11 +35,11 @@ export function AssociationSegmentedControl({
             onClick={segment.onClick}
             title={segment.title}
             className={`${segment.minWidthClassName ?? 'min-w-28'} whitespace-nowrap px-3 text-sm font-bold transition-colors ${
-              index > 0 ? 'border-l border-[#08B3D9]/30' : ''
+              index > 0 ? 'border-l border-[#08AACE]/30' : ''
             } ${
               segment.active
-                ? 'bg-[#08B3D9] font-black text-white hover:bg-[#079AB9]'
-                : 'bg-white text-slate-600 hover:bg-[#E9FAFE] hover:text-[#08B3D9]'
+                ? 'bg-[#08AACE] font-black text-white hover:bg-[#079AB9]'
+                : 'bg-white text-slate-600 hover:bg-[#E9FAFE] hover:text-[#08AACE]'
             }`}
           >
             {segment.label}

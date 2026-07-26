@@ -242,7 +242,9 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
               className="min-w-0 flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 px-4 pb-4 pt-2"
               style={activeTab === SETTING_TAB && !activeIsBrainstorm ? { gridColumn: 5, gridRow: 1 } : undefined}
             >
-              {settingPanelMode !== 'status' || !showSettingStatusTabs ? renderSettingLibraryAiConfigHeader(scope) : null}
+              {settingPanelMode !== 'status' || !showSettingStatusTabs
+                ? renderSettingLibraryAiConfigHeader(scope)
+                : null}
               {settingPanelMode === 'status' && showSettingStatusTabs ? (
                 <WorkbenchSettingStatusPanel
                   entry={currentSelectedEntry ?? null}
@@ -306,8 +308,8 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                   <>
                     {activeTab === SETTING_TAB && (
                       <div className="xy-ai-panel-link-row flex min-w-0 items-center gap-1.5">
-                        <div className="flex h-10 shrink-0 overflow-hidden rounded-xl border border-[#08B3D9] bg-white shadow-sm">
-                          <div className="flex w-12 items-center justify-center border-r border-[#08B3D9]/30 bg-[#E9FAFE] text-sm font-black text-[#078BA9]">
+                        <div className="flex h-10 shrink-0 overflow-hidden rounded-xl border border-[#08AACE] bg-white shadow-sm">
+                          <div className="flex w-12 items-center justify-center border-r border-[#08AACE]/30 bg-[#E9FAFE] text-sm font-black text-[#078BA9]">
                             关联
                           </div>
                           <button
@@ -334,19 +336,19 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                             disabled={!currentSelectedEntry}
                             className={`w-[86px] px-2 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-300 ${
                               activeSettingLinkSource === 'current'
-                                ? 'bg-[#08B3D9] text-white'
-                                : 'bg-white text-gray-600 hover:bg-[#E9FAFE] hover:text-[#08B3D9]'
+                                ? 'bg-[#08AACE] text-white'
+                                : 'bg-white text-gray-600 hover:bg-[#E9FAFE] hover:text-[#08AACE]'
                             }`}
                             title={isOutlineCharacterScope ? '关联当前人物设定' : '关联当前选中的设定预览'}
                           >
                             当前设定
                           </button>
                           {activeSettingLinkSource === 'other' ? (
-                            <div className="flex border-l border-[#08B3D9]/30">
+                            <div className="flex border-l border-[#08AACE]/30">
                               <button
                                 type="button"
                                 onClick={openOtherSettingReader}
-                                className="w-[96px] px-1.5 text-sm font-bold text-gray-700 transition-colors hover:bg-[#E9FAFE] hover:text-[#08B3D9]"
+                                className="w-[96px] px-1.5 text-sm font-bold text-gray-700 transition-colors hover:bg-[#E9FAFE] hover:text-[#08AACE]"
                                 title="重新选择关联其他设定"
                               >
                                 其他设定
@@ -356,21 +358,21 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                             <button
                               type="button"
                               onClick={openOtherSettingReader}
-                              className="w-[86px] border-l border-[#08B3D9]/30 bg-white px-2 text-sm font-bold text-gray-600 transition-colors hover:bg-[#E9FAFE] hover:text-[#08B3D9]"
+                              className="w-[86px] border-l border-[#08AACE]/30 bg-white px-2 text-sm font-bold text-gray-600 transition-colors hover:bg-[#E9FAFE] hover:text-[#08AACE]"
                               title="关联其他设定"
                             >
                               其他设定
                             </button>
                           )}
                           {activeSettingLinkSource === 'brainstorm' ? (
-                            <div className="flex border-l border-[#08B3D9]/30">
+                            <div className="flex border-l border-[#08AACE]/30">
                               <button
                                 type="button"
                                 onClick={() => {
                                   setSelectedBrainstormReaderId(activeTabConfig.loadedBrainstormId ?? null);
                                   setIsBrainstormReaderOpen(true);
                                 }}
-                                className="w-[90px] px-1.5 text-sm font-bold text-gray-700 transition-colors hover:bg-[#E9FAFE] hover:text-[#08B3D9]"
+                                className="w-[90px] px-1.5 text-sm font-bold text-gray-700 transition-colors hover:bg-[#E9FAFE] hover:text-[#08AACE]"
                                 title="重新选择关联脑洞"
                               >
                                 已关联脑洞
@@ -383,7 +385,7 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                                 setSelectedBrainstormReaderId(activeTabConfig.loadedBrainstormId ?? null);
                                 setIsBrainstormReaderOpen(true);
                               }}
-                              className="w-[68px] border-l border-[#08B3D9]/30 bg-white px-2 text-sm font-bold text-gray-600 transition-colors hover:bg-[#E9FAFE] hover:text-[#08B3D9]"
+                              className="w-[68px] border-l border-[#08AACE]/30 bg-white px-2 text-sm font-bold text-gray-600 transition-colors hover:bg-[#E9FAFE] hover:text-[#08AACE]"
                               title={isOutlineCharacterScope ? '关联脑洞库内容到人物设定' : '关联脑洞库内容'}
                             >
                               脑洞
@@ -397,7 +399,7 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                                   ? clearActiveLinkedOtherSettings
                                   : clearActiveLinkedBrainstorm
                               }
-                              className="grid w-9 shrink-0 place-items-center border-l border-[#08B3D9]/30 bg-red-500 text-white transition-colors hover:bg-red-600"
+                              className="grid w-9 shrink-0 place-items-center border-l border-[#08AACE]/30 bg-red-500 text-white transition-colors hover:bg-red-600"
                               title={activeSettingLinkSource === 'other' ? '取消关联其他设定' : '取消关联脑洞'}
                             >
                               <X className="h-4 w-4" />

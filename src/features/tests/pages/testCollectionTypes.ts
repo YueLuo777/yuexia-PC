@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 
 export type TestItem = {
+  serial: number;
   title: string;
   description: string;
   path: string;

@@ -206,7 +206,7 @@ html.theme-shuimo2 body,
 .theme-shuimo2 [class*='bg-sky-500'],
 .theme-shuimo2 [class*='bg-cyan-500'],
 .theme-shuimo2 [class*='bg-[#08AACE]'],
-.theme-shuimo2 [class*='bg-[#08B3D9]'],
+.theme-shuimo2 [class*='bg-[#08AACE]'],
 .theme-shuimo2 [class*='hover:bg-[#0798b8]']:hover,
 .theme-shuimo2 [class*='hover:bg-[#078fb0]']:hover {
   background-color: #7c5732 !important;
@@ -259,7 +259,7 @@ html.theme-shuimo2 body,
 .theme-shuimo2 [class*='border-sky'],
 .theme-shuimo2 [class*='border-cyan'],
 .theme-shuimo2 [class*='border-[#08AACE]'],
-.theme-shuimo2 [class*='border-[#08B3D9]'],
+.theme-shuimo2 [class*='border-[#08AACE]'],
 .theme-shuimo2 [class*='border-[#bdeef7]'],
 .theme-shuimo2 [class*='border-[#9DEBFA]'] {
   border-color: #cdaf87 !important;
