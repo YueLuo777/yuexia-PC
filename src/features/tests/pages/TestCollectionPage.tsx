@@ -47,9 +47,9 @@ const ModeSwitchNovelLibraryTestPage = lazy(() =>
     default: module.ModeSwitchNovelLibraryTestPage,
   })),
 );
-const SimplifiedStandardModeWorkbenchTestPage = lazy(() =>
-  import('@/features/tests/pages/SimplifiedStandardModeWorkbenchTestPage').then((module) => ({
-    default: module.SimplifiedStandardModeWorkbenchTestPage,
+const ProfessionalWorkbenchBaselineTestPage = lazy(() =>
+  import('@/features/tests/pages/ProfessionalWorkbenchBaselineTestPage').then((module) => ({
+    default: module.ProfessionalWorkbenchBaselineTestPage,
   })),
 );
 const ErrorLogPage = lazy(() =>
@@ -185,8 +185,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <StandardModeWorkbenchTestPage />;
       case '/mode-switch-novel-library-test':
         return <ModeSwitchNovelLibraryTestPage />;
-      case '/simplified-standard-mode-workbench-test':
-        return <SimplifiedStandardModeWorkbenchTestPage />;
+      case '/professional-workbench-baseline-test':
+        return <ProfessionalWorkbenchBaselineTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':
