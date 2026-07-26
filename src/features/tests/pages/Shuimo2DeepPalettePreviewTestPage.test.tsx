@@ -3,8 +3,9 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { readTestCollectionSource } from './testCollectionSource.testUtils';
+
 const testPagePath = resolve(process.cwd(), 'src/features/tests/pages/Shuimo2DeepPalettePreviewTestPage.tsx');
-const collectionPagePath = resolve(process.cwd(), 'src/features/tests/pages/TestCollectionPage.tsx');
 
 describe('Shuimo2DeepPalettePreviewTestPage', () => {
   it('defines deeper shuimo2 palette proposals for the screenshot problem areas', async () => {
@@ -32,7 +33,7 @@ describe('Shuimo2DeepPalettePreviewTestPage', () => {
   });
 
   it('keeps the deep shuimo2 palette preview in the UI test collection', async () => {
-    const source = await readFile(collectionPagePath, 'utf8');
+    const source = readTestCollectionSource();
 
     expect(source).toContainSource('Shuimo2DeepPalettePreviewTestPage');
     expect(source).toContainSource('/shuimo2-deep-palette-preview-test');

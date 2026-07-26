@@ -1,14 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { SettingAiReadyTaxonomyTestPage } from './SettingAiReadyTaxonomyTestPage';
 import { AI_READY_ENTRIES, AI_READY_PROFILES } from './settingAiReadyTaxonomyData';
+import { readTestCollectionSource } from './testCollectionSource.testUtils';
 
-const collectionSource = () =>
-  readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'TestCollectionPage.tsx'), 'utf8');
+const collectionSource = readTestCollectionSource;
 
 describe('SettingAiReadyTaxonomyTestPage', () => {
   it('renders a separate formal-layout simulation with selectable work and role previews', () => {

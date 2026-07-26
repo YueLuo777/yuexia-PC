@@ -117,16 +117,13 @@ export function useModels() {
 
       const status = await bridge.status();
       if (cancelled || !status.ok) return;
-      setModels((current) => {
-        const next = current.map((model) => {
-          const secretId = getModelSecretId(model);
-          const hasApiKey = Boolean(status.secrets[secretId] || migratedSecretIds.has(secretId));
-          if (model.apiKey.trim() && !hasApiKey) return model;
-          return { ...model, apiKey: '', hasApiKey };
-        });
-        writeModels(next);
-        return next;
+      const next = readModels().map((model) => {
+        const secretId = getModelSecretId(model);
+        const hasApiKey = Boolean(status.secrets[secretId] || migratedSecretIds.has(secretId));
+        if (model.apiKey.trim() && !hasApiKey) return model;
+        return { ...model, apiKey: '', hasApiKey };
       });
+      writeModels(next);
     };
 
     void migrateAndRefreshSecretStatus();

@@ -1,13 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { UiConsistencyComparisonTestPage } from './UiConsistencyComparisonTestPage';
+import { readTestCollectionSource } from './testCollectionSource.testUtils';
 
 describe('UiConsistencyComparisonTestPage', () => {
   it('is registered at the end of the UI group and exposes all five comparisons', () => {
-    const collection = readFileSync(resolve(process.cwd(), 'src/features/tests/pages/TestCollectionPage.tsx'), 'utf8');
+    const collection = readTestCollectionSource();
     expect(collection).toContain("path: '/ui-consistency-comparison-test'");
     expect(collection.indexOf("path: '/ai-thinking-shell-variants-test'")).toBeLessThan(
       collection.indexOf("path: '/ui-consistency-comparison-test'"),

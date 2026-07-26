@@ -3,15 +3,16 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { readTestCollectionSource } from './testCollectionSource.testUtils';
+
 const testPagePath = resolve(process.cwd(), 'src/features/tests/pages/PromptWorkflowPreviewTestPage.tsx');
-const collectionPagePath = resolve(process.cwd(), 'src/features/tests/pages/TestCollectionPage.tsx');
 
 async function readTestPageSource() {
   return readFile(testPagePath, 'utf8');
 }
 
 async function readCollectionPageSource() {
-  return readFile(collectionPagePath, 'utf8');
+  return readTestCollectionSource();
 }
 
 describe('PromptWorkflowPreviewTestPage', () => {

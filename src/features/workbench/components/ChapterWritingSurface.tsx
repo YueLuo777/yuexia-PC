@@ -173,7 +173,7 @@ export function ChapterWritingSurface({
           <button onClick={handleSmartFormatNow} className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
             智能排版
           </button>
-          <div className="xy-chapter-editor-deep-divider h-4 w-px bg-brand/30" />
+          <div className="xy-chapter-editor-deep-divider xy-chapter-editor-deep-divider-line h-4 w-px bg-brand/30" />
           <button
             onClick={openSmartFormatSettings}
             className="px-2 py-1.5 text-brand hover:bg-brand-light"
@@ -186,7 +186,7 @@ export function ChapterWritingSurface({
           <button onClick={openHighFreqSettings} className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
             词语高亮
           </button>
-          <div className="xy-chapter-editor-deep-divider h-4 w-px bg-brand/30" />
+          <div className="xy-chapter-editor-deep-divider xy-chapter-editor-deep-divider-line h-4 w-px bg-brand/30" />
           <HighFreqToggle />
         </div>
         <div className={SPLIT_BUTTON_OUTLINE_GROUP_CLASS}>

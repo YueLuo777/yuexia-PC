@@ -1,7 +1,9 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { render, renderHook, waitFor } from '@testing-library/react';
+import { createElement, useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { readModelSnapshot, useModels } from './useModels';
+import { APP_EVENTS } from '@/shared/events/appEvents';
 
 const ORIGINAL_PINAI_ENV = {
   apiKey: import.meta.env.VITE_PINAI_API_KEY,
@@ -74,5 +76,58 @@ describe('useModels storage', () => {
     await waitFor(() => expect(result.current.models[0]).toMatchObject({ apiKey: '', hasApiKey: true }));
     expect(setSecret).toHaveBeenCalledWith('model-instance-1', 'sk-legacy-plaintext');
     expect(localStorage.getItem('xinyuexia_api_settings_v1')).not.toContain('sk-legacy-plaintext');
+  });
+
+  it('notifies sibling model consumers outside the useModels state updater', async () => {
+    localStorage.setItem(
+      'xinyuexia_api_settings_v1',
+      JSON.stringify({
+        models: [
+          {
+            id: 'model-1',
+            instanceId: 'model-instance-1',
+            name: '模型一',
+            enabled: true,
+            baseUrl: 'https://example.test/v1',
+            apiKey: '',
+            model: 'model-1',
+          },
+        ],
+      }),
+    );
+    window.xinyuexiaModelSecrets = {
+      status: vi.fn().mockResolvedValue({
+        ok: true,
+        encryptionAvailable: true,
+        secrets: { 'model-instance-1': true },
+      }),
+      get: vi.fn(),
+      set: vi.fn(),
+      remove: vi.fn(),
+    };
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    function ModelEventConsumer() {
+      const [updates, setUpdates] = useState(0);
+      useEffect(() => {
+        const onUpdate = () => setUpdates((value) => value + 1);
+        window.addEventListener(APP_EVENTS.modelsUpdated, onUpdate);
+        return () => window.removeEventListener(APP_EVENTS.modelsUpdated, onUpdate);
+      }, []);
+      return createElement('span', { 'data-testid': 'model-update-count' }, updates);
+    }
+
+    function ModelHookConsumer() {
+      useModels();
+      return null;
+    }
+
+    const view = render(
+      createElement('div', null, createElement(ModelEventConsumer), createElement(ModelHookConsumer)),
+    );
+
+    await waitFor(() => expect(view.getByTestId('model-update-count')).toHaveTextContent('1'));
+    expect(consoleError.mock.calls.flat().join(' ')).not.toContain('Cannot update a component');
+    consoleError.mockRestore();
   });
 });

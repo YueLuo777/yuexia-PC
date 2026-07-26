@@ -14,7 +14,8 @@ describe('ChapterWritingSurface outlined controls', () => {
     const styles = readSource('../../../shared/styles/parts/part-12.css');
 
     expect(surface.match(/xy-chapter-editor-deep-outline/g)).toHaveLength(5);
-    expect(surface.match(/xy-chapter-editor-deep-divider/g)).toHaveLength(4);
+    expect(surface.match(/xy-chapter-editor-deep-divider/g)).toHaveLength(6);
+    expect(surface.match(/xy-chapter-editor-deep-divider-line/g)).toHaveLength(2);
     expect(layout).toContainSource(
       "'xy-chapter-editor-deep-outline flex h-8 items-stretch overflow-hidden rounded-md border border-brand",
     );
@@ -22,7 +23,10 @@ describe('ChapterWritingSurface outlined controls', () => {
       '.xy-chapter-editor-deep-outline.xy-chapter-editor-deep-outline {\n  border-color: #08aace !important;\n}',
     );
     expect(styles).toContainSource(
-      '.xy-chapter-editor-deep-divider.xy-chapter-editor-deep-divider {\n  border-color: #08aace !important;\n  background-color: #08aace !important;\n}',
+      '.xy-chapter-editor-deep-divider.xy-chapter-editor-deep-divider {\n  border-color: #08aace !important;\n}',
+    );
+    expect(styles).toContainSource(
+      '.xy-chapter-editor-deep-divider-line.xy-chapter-editor-deep-divider-line {\n  background-color: #08aace !important;\n}',
     );
   });
 

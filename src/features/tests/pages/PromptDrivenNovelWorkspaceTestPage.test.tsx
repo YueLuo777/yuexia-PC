@@ -1,13 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { PromptDrivenNovelWorkspaceTestPage } from './PromptDrivenNovelWorkspaceTestPage';
 import { PROMPT_NOVEL_WORKFLOW, PROMPT_WORKSPACE_SECTIONS } from './PromptDrivenNovelWorkspaceData';
+import { readTestCollectionSource } from './testCollectionSource.testUtils';
 
-const collectionSource = () => readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'TestCollectionPage.tsx'), 'utf8');
+const collectionSource = readTestCollectionSource;
 
 describe('PromptDrivenNovelWorkspaceTestPage', () => {
   it('shows prompt-derived setting sections and keeps workflow details out of the setting list', () => {

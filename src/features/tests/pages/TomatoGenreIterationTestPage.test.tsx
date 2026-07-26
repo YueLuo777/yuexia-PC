@@ -2,12 +2,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { readTestCollectionSource } from './testCollectionSource.testUtils';
+
 const root = process.cwd();
 const readSource = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
 
 describe('tomato genre iteration test page', () => {
   it('adds the tomato genre iteration prototype to the test collection tools group', () => {
-    const collection = readSource('src/features/tests/pages/TestCollectionPage.tsx');
+    const collection = readTestCollectionSource();
 
     expect(collection).toContainSource('TomatoGenreIterationTestPage');
     expect(collection).toContainSource('/tomato-genre-iteration-test');

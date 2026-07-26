@@ -1,15 +1,11 @@
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { WorkSettingTaxonomyProposalTestPage } from './WorkSettingTaxonomyProposalTestPage';
 import { ROLE_PROFILES, STANDARD_ROLE_SECTION_TITLES } from './workSettingTaxonomyProposalData';
+import { readTestCollectionSource } from './testCollectionSource.testUtils';
 
-const readCollectionSource = () =>
-  readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'TestCollectionPage.tsx'), 'utf8');
+const readCollectionSource = readTestCollectionSource;
 
 describe('WorkSettingTaxonomyProposalTestPage', () => {
   it('renders test 16 as a formal setting-page simulation', () => {
