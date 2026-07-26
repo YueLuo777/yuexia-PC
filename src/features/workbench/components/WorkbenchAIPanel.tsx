@@ -68,6 +68,7 @@ export type {
 } from '@/features/workbench/components/workbenchAiPanelSupport';
 
 export function WorkbenchAIPanel({
+  standardMode = false,
   activeTool,
   workId,
   selectedChapterContent,
@@ -547,6 +548,7 @@ export function WorkbenchAIPanel({
     WorkbenchAiConfigPanel,
     WorkbenchAiConversationView,
     WorkbenchAiRequestLogModal,
+    standardMode,
     activeLinkWordCount,
     activeSession,
     activeSessionId,

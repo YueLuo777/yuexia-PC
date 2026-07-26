@@ -24,6 +24,14 @@ function renderPage(overrides: Partial<React.ComponentProps<typeof StandardModeS
 describe('StandardModeSettingPage', () => {
   beforeEach(() => localStorage.clear());
 
+  it('shows a compact setting-check explanation before the first check', async () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '确认模板并创建设定' }));
+    await waitFor(() => expect(screen.getByText('设定检查')).toBeInTheDocument());
+    expect(screen.getByText('点击下方按钮，检查所有设定中还没有填写的内容。')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '一键检查' })).toBeInTheDocument();
+  });
+
   it('recommends xianxia and opens the first domain automatically', () => {
     renderPage();
     expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠' })).toHaveAttribute('aria-pressed', 'true');
@@ -48,7 +56,7 @@ describe('StandardModeSettingPage', () => {
     fireEvent.change(screen.getByRole('textbox', { name: '新节点名称' }), {
       target: { value: '补充要求' },
     });
-    fireEvent.click(screen.getByRole('button', { name: '新建同级分类' }));
+    fireEvent.click(screen.getByRole('button', { name: '新增同级分类' }));
     expect(screen.getByRole('button', { name: '模板节点：补充要求' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '确认模板并创建设定' }));

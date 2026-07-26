@@ -1,6 +1,5 @@
 import { ChevronDown, ChevronRight, Folder, FolderOpen, Lock, Pin, Square, Unlock, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from 'react';
-import type { CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type SetStateAction } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -374,7 +373,7 @@ export function WorkbenchLibraryPanel({
   showInlineFieldSizeButton = true,
   openLogSignal = 0,
   onRegisterHeaderLog,
-  toolbarPortalId,
+  toolbarPortalId, standardMode = false,
 }: WorkbenchLibraryPanelProps) {
   const {
     settingTypeOptionsRef,
@@ -4176,6 +4175,7 @@ export function WorkbenchLibraryPanel({
   if (renderedSettingLibraryBranch) return renderedSettingLibraryBranch;
 
   const renderedOutlineLibraryBranch = renderOutlineLibraryBranch({
+    standardMode,
     DOMException,
     activeDetailOutlineScrollId,
     activeTab,

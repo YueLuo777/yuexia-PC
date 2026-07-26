@@ -8,6 +8,7 @@ export function renderChapterEditorView(scope: Record<string, any>) {
     ChapterStatusManagementModal,
     ChapterStatusPanel,
     ChapterWritingSurface,
+    standardMode,
     activeReviewChapter,
     activeReviewContent,
     activeReviewDetailOutlineText,
@@ -190,6 +191,7 @@ export function renderChapterEditorView(scope: Record<string, any>) {
       )}
       {!embeddedMode && (
         <ChapterWritingSurface
+          standardMode={standardMode}
           chapter={chapter}
           safeVolumeName={safeVolumeName}
           serialValue={serialValue}

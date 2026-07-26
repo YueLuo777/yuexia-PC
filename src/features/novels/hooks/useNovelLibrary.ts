@@ -212,6 +212,7 @@ export function useNovelLibrary() {
         title: input.title.trim(),
         type: input.type,
         category: input.category,
+        channel: input.channel,
         synopsis: input.synopsis?.trim(),
         cover: input.cover,
         wordCount: 0,

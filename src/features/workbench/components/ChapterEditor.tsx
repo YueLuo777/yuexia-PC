@@ -116,6 +116,7 @@ import type { ReviewPreviewWidthMode } from './chapterEditorLayout';
 import { renderChapterEditorView } from './ChapterEditorView';
 
 export function ChapterEditor({
+  standardMode = false,
   embeddedMode,
   fieldSizeOpenSignal = 0,
   showInlineFieldSizeButton = true,
@@ -520,6 +521,7 @@ export function ChapterEditor({
     ChapterStatusManagementModal,
     ChapterStatusPanel,
     ChapterWritingSurface,
+    standardMode,
     activeReviewChapter,
     activeReviewContent,
     activeReviewDetailOutlineText,

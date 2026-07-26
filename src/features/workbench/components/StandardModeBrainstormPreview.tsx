@@ -1,4 +1,4 @@
-import { type FocusEvent, type KeyboardEvent } from 'react';
+import { useState, type FocusEvent, type KeyboardEvent } from 'react';
 
 import { WorkbenchNameField } from '@/features/workbench/components/WorkbenchNameField';
 import { countTextWords } from '@/features/workbench/model/workbenchLibraryPanelModel';
@@ -7,6 +7,7 @@ import {
   type StandardBrainstormVersion,
 } from '@/features/workbench/model/standardModeBrainstormModel';
 import { AiInlineInput } from '@/shared/ui/AiInlineInput';
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 interface StandardModeBrainstormPreviewProps {
   activeVersion: StandardBrainstormVersion | null;
@@ -22,6 +23,8 @@ interface StandardModeBrainstormPreviewProps {
   onStop: () => void;
   onDelete: () => void;
   onCopy: () => void;
+  onSave: () => void;
+  generationMode: boolean;
 }
 
 export function StandardModeBrainstormPreview({
@@ -38,7 +41,10 @@ export function StandardModeBrainstormPreview({
   onStop,
   onDelete,
   onCopy,
+  onSave,
+  generationMode,
 }: StandardModeBrainstormPreviewProps) {
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const content = activeVersion?.content ?? '';
   const handleRevisionKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
@@ -50,8 +56,8 @@ export function StandardModeBrainstormPreview({
   const titleFieldWidth = getBrainstormTitleFieldCharacterWidth(activeVersion?.title ?? '') * 16 + 52;
 
   return (
-    <section className="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)_auto_auto] gap-2.5 border-r border-[#dce1e8] bg-white p-4">
-      <div className="flex min-w-0 items-center gap-3">
+    <section className="grid min-h-0 min-w-0 grid-rows-[auto_minmax(260px,1fr)_150px_auto] gap-2.5 border-r border-[#dce1e8] bg-white p-4">
+      <div className="flex min-w-0 items-start gap-3">
         <WorkbenchNameField
           label="脑洞名"
           value={activeVersion?.title ?? ''}
@@ -61,14 +67,28 @@ export function StandardModeBrainstormPreview({
           onValueChange={onTitleChange}
           onBlur={handleTitleBlur}
         />
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={!activeVersion || busy}
-          className="h-9 shrink-0 rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-red-300"
-        >
-          删除该脑洞
-        </button>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          {!generationMode ? (
+            <button
+              type="button"
+              onClick={onCopy}
+              disabled={!content.trim()}
+              className="h-9 rounded-md border border-[#dce1e8] bg-white px-3 text-sm font-semibold text-[#657180] hover:border-[#8fd8e7] hover:text-[#078FAB] disabled:cursor-not-allowed disabled:text-[#b8c0ca]"
+            >
+              复制脑洞
+            </button>
+          ) : null}
+          {!generationMode ? (
+            <button
+              type="button"
+              onClick={() => setDeleteConfirmOpen(true)}
+              disabled={!activeVersion || busy}
+              className="h-9 rounded-md border border-red-200 bg-white px-3 text-sm font-semibold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-red-300"
+            >
+              删除该脑洞
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="relative min-h-0">
@@ -91,18 +111,7 @@ export function StandardModeBrainstormPreview({
         </div>
       </div>
 
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={onCopy}
-          disabled={!content.trim()}
-          className="h-9 rounded-md border border-[#dce1e8] bg-white px-3 text-sm font-semibold text-[#657180] hover:border-[#8fd8e7] hover:text-[#078FAB] disabled:cursor-not-allowed disabled:text-[#b8c0ca]"
-        >
-          复制脑洞
-        </button>
-      </div>
-
-      <div className="space-y-2.5">
+      <div className="min-h-0 space-y-2.5">
         <AiInlineInput
           value={revisionInput}
           onChange={(event) => onRevisionInputChange(event.target.value)}
@@ -114,7 +123,9 @@ export function StandardModeBrainstormPreview({
           label="修改要求"
           placeholder="输入你希望这个脑洞怎样修改"
           aria-label="脑洞修改要求"
-          className="xy-brainstorm-ai-input"
+          className="xy-brainstorm-ai-input min-h-[140px]"
+          textareaClassName="editor-scrollbar min-h-[120px] resize-none text-sm font-medium leading-6"
+          rows={5}
         />
 
         {notice && (
@@ -123,6 +134,41 @@ export function StandardModeBrainstormPreview({
           </div>
         )}
       </div>
+
+      {generationMode ? (
+        <div className="flex justify-end gap-2 border-t border-[#edf0f3] pt-2.5">
+          <button
+            type="button"
+            onClick={onCopy}
+            disabled={!content.trim()}
+            className="h-9 rounded-md border border-[#dce1e8] bg-white px-4 text-sm font-semibold text-[#657180] disabled:text-[#b8c0ca]"
+          >
+            复制脑洞
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={!content.trim() || busy}
+            className="h-9 rounded-md bg-[#08AACE] px-5 text-sm font-bold text-white disabled:bg-[#b9dce4]"
+          >
+            保存脑洞
+          </button>
+        </div>
+      ) : <div />}
+
+      <ConfirmDialog
+        isOpen={deleteConfirmOpen}
+        title="删除这个脑洞？"
+        description="删除后会移入脑洞回收站，并自动显示下一个脑洞。"
+        confirmText="确认删除"
+        cancelText="取消"
+        confirmVariant="danger"
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={() => {
+          setDeleteConfirmOpen(false);
+          onDelete();
+        }}
+      />
     </section>
   );
 }

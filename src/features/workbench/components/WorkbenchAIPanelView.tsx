@@ -12,6 +12,7 @@ export function renderWorkbenchAIPanelView(scope: Record<string, any>) {
     WorkbenchAiConfigPanel,
     WorkbenchAiConversationView,
     WorkbenchAiRequestLogModal,
+    standardMode,
     activeLinkWordCount,
     activeSession,
     activeSessionId,
@@ -87,18 +88,20 @@ export function renderWorkbenchAIPanelView(scope: Record<string, any>) {
       ) : null}
 
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-2">
-        <WorkbenchAiConfigPanel
-          model={selectedModel}
-          modelId={selectedModelId}
-          prompt={selectedPrompt}
-          promptId={selectedPromptId}
-          models={enabledModels}
-          prompts={chatPrompts}
-          onModelChange={setSelectedModelId}
-          onPromptChange={setSelectedPromptId}
-          onModelManage={() => onOpenModelManage?.()}
-          onPromptManage={() => onOpenAgentManage?.()}
-        />
+        {!standardMode ? (
+          <WorkbenchAiConfigPanel
+            model={selectedModel}
+            modelId={selectedModelId}
+            prompt={selectedPrompt}
+            promptId={selectedPromptId}
+            models={enabledModels}
+            prompts={chatPrompts}
+            onModelChange={setSelectedModelId}
+            onPromptChange={setSelectedPromptId}
+            onModelManage={() => onOpenModelManage?.()}
+            onPromptManage={() => onOpenAgentManage?.()}
+          />
+        ) : null}
         <WorkbenchAiConversationView
           sessions={sessions}
           activeSession={activeSession}

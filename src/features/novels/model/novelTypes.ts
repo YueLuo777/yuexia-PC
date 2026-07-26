@@ -1,10 +1,12 @@
 export type WorkType = 'novel' | 'script';
+export type NovelChannel = 'male' | 'female';
 
 export interface Novel {
   id: number;
   title: string;
   type: WorkType;
   category: string;
+  channel?: NovelChannel;
   wordCount: number;
   createdAt: string;
   lastModifiedAt: string;
@@ -21,6 +23,7 @@ export interface NewNovelInput {
   title: string;
   type: WorkType;
   category: string;
+  channel?: NovelChannel;
   synopsis?: string;
   cover?: string;
 }

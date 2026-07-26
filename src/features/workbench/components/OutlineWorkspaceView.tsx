@@ -106,6 +106,7 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
     showDetailOutlinePublished,
     splitDetailOutlineStateExpectation,
     stopOutlineAiMessage,
+    standardMode,
     stripAiThinkingBlock,
     toggleOutlineVolume,
     undoDetailOutlineReplacement,
@@ -163,8 +164,8 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
         style={{
           gridTemplateColumns:
             isDetailOutlineTab && showDetailOutlinePublished
-              ? `${outlineSidebarWidth}px 0px 190px minmax(0,1fr) 0px ${settingLibraryRightWidth}px`
-              : `${outlineSidebarWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px`,
+              ? `${standardMode ? 280 : outlineSidebarWidth}px 0px 190px minmax(0,1fr) 0px ${standardMode ? 390 : settingLibraryRightWidth}px`
+              : `${standardMode ? 280 : outlineSidebarWidth}px 0px minmax(0,1fr) 0px ${standardMode ? 390 : settingLibraryRightWidth}px`,
         }}
       >
         <aside
@@ -475,9 +476,18 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                         ariaLabel="章纲字号"
                       />
                     </section>
-                    <section
-                      className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill min-h-0 flex-1 ${detailOutlineParts.stateExpectation.trim() ? 'xy-has-value' : ''}`}
+                    <details
+                      open={standardMode ? undefined : true}
+                      className={standardMode ? 'group shrink-0' : 'min-h-0 flex-1'}
                     >
+                      <summary className={standardMode ? 'flex h-10 cursor-pointer list-none items-center justify-between rounded-md border border-[#dce1e8] bg-white px-3 text-sm font-bold text-[#657180]' : 'hidden'}>
+                        <span>状态变化 {countTextWords(detailOutlineParts.stateExpectation)}字</span>
+                        <span className="text-xs text-[#078FAB] group-open:hidden">展开</span>
+                        <span className="hidden text-xs text-[#078FAB] group-open:inline">收起</span>
+                      </summary>
+                      <section
+                        className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill min-h-0 ${standardMode ? 'mt-2 h-[190px]' : 'h-full'} ${detailOutlineParts.stateExpectation.trim() ? 'xy-has-value' : ''}`}
+                      >
                       <textarea
                         data-no-modal-drag="true"
                         value={detailOutlineParts.stateExpectation}
@@ -505,7 +515,8 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                         onChange={(value) => updateActiveTabConfig({ detailOutlineStateFontSize: value })}
                         ariaLabel="状态变化字号"
                       />
-                    </section>
+                      </section>
+                    </details>
                   </div>
                 );
               })()
@@ -589,7 +600,7 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
 
         {rightResizeHandle}
         <aside className="min-w-0 flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 px-4 pb-4 pt-2">
-          <div className="shrink-0 space-y-3">
+          {!standardMode ? <div className="shrink-0 space-y-3">
             <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-2 text-sm text-gray-500">
               <CombinedAiConfigSelect
                 style={getEmbeddedConfigSelectStyle(getFieldSizeStyle(outlineModelFieldSizeKey))}
@@ -611,8 +622,8 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                 onPromptManage={() => setManagementModal({ type: 'prompts', category: outlinePromptCategory })}
               />
             </div>
-          </div>
-          <div className="xy-ai-panel-output-slot relative">
+          </div> : null}
+          <div className={`xy-ai-panel-output-slot relative ${standardMode && !outlinePreviewDraft.trim() ? '!min-h-[150px] !flex-none' : ''}`}>
             {outlinePreviewDraft.startsWith('[[THINKING') ? (
               <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-outline-ai-output-frame xy-floating-with-bottom-count h-full xy-has-value">
                 <div

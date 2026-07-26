@@ -1,7 +1,7 @@
 import { Image } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import type { NewNovelInput, WorkType } from '@/features/novels/model/novelTypes';
+import type { NewNovelInput, NovelChannel, WorkType } from '@/features/novels/model/novelTypes';
 import { AppModalShell } from '@/shared/ui/AppModalShell';
 import { ActionButton } from '@/shared/ui/ActionButton';
 
@@ -16,6 +16,7 @@ interface NewNovelModalProps {
 export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: NewNovelModalProps) {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState(categories[0] ?? '未分类');
+  const [channel, setChannel] = useState<NovelChannel>('male');
   const [synopsis, setSynopsis] = useState('');
   const [cover, setCover] = useState<string | undefined>();
 
@@ -23,6 +24,7 @@ export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: N
     if (!isOpen) return;
     setTitle(type === 'novel' ? '默认小说' : '默认剧本');
     setCategory(categories[0] ?? '未分类');
+    setChannel('male');
     setSynopsis('');
     setCover(undefined);
   }, [categories, isOpen, type]);
@@ -34,7 +36,7 @@ export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: N
   const handleSubmit = () => {
     const trimmed = title.trim();
     if (!trimmed) return;
-    onCreate({ title: trimmed, category, synopsis, type, cover });
+    onCreate({ title: trimmed, category, channel: type === 'novel' ? channel : undefined, synopsis, type, cover });
     onClose();
   };
 
@@ -66,7 +68,33 @@ export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: N
         autoFocus
       />
 
-      <label className="mb-1.5 block text-xs font-medium text-gray-600">分类</label>
+      {type === 'novel' ? (
+        <>
+          <label className="mb-1.5 block text-xs font-medium text-gray-600">频道</label>
+          <div className="mb-4 grid grid-cols-2 overflow-hidden rounded-md border border-gray-200 bg-white">
+            {([
+              { value: 'male', label: '男频' },
+              { value: 'female', label: '女频' },
+            ] as const).map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                aria-pressed={channel === item.value}
+                onClick={() => setChannel(item.value)}
+                className={`h-9 text-sm font-semibold transition-colors ${
+                  channel === item.value
+                    ? 'border-[#08AACE] bg-[#EAF9FD] text-[#078FAB] shadow-[inset_0_0_0_1px_#08AACE]'
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
+
+      <label className="mb-1.5 block text-xs font-medium text-gray-600">题材类型</label>
       <select
         value={category}
         onChange={(event) => setCategory(event.target.value)}

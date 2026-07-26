@@ -25,17 +25,7 @@ export function StandardModeBrainstormSidebar({
 
   return (
     <aside className="flex min-h-0 flex-col border-r border-[#dce1e8] bg-[#f8fafc] p-3">
-      <label className="flex h-10 shrink-0 items-center gap-2 rounded-md border border-[#dce1e8] bg-white px-3 text-[#8a95a2] focus-within:border-[#8fd8e7]">
-        <Search className="h-4 w-4 shrink-0" />
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="搜索脑洞"
-          className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#1f2933] outline-none placeholder:text-[#9aa3af]"
-        />
-      </label>
-
-      <div className="mt-3 flex h-10 shrink-0 items-center justify-between rounded-md border border-[#bde7ef] bg-[#CDEFF6] px-3">
+      <div className="flex h-10 shrink-0 items-center justify-between rounded-md border border-[#bde7ef] bg-[#CDEFF6] px-3">
         <span className="text-sm font-bold text-[#1f2933]">脑洞库</span>
         <span className="text-xs font-bold text-[#078FAB]">{entries.length}</span>
       </div>
@@ -72,6 +62,15 @@ export function StandardModeBrainstormSidebar({
           </div>
         )}
       </div>
+      <label className="mt-3 flex h-10 shrink-0 items-center gap-2 rounded-md border border-[#dce1e8] bg-white px-3 text-[#8a95a2] focus-within:border-[#8fd8e7]">
+        <Search className="h-4 w-4 shrink-0" />
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="搜索脑洞"
+          className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#1f2933] outline-none placeholder:text-[#9aa3af]"
+        />
+      </label>
     </aside>
   );
 }

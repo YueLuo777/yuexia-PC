@@ -38,7 +38,7 @@ function resolveSelectedNode(structure: TemplateStructure, selection: TemplateMi
   if (!domain) return resolveSelectedNode(structure, { kind: 'root' });
   if (selection.kind === 'domain') {
     return {
-      title: domain.title, path: ['设定', domain.title], siblingLabel: '新建同级设定', childLabel: '新建下级设定',
+      title: domain.title, path: ['设定', domain.title], siblingLabel: '新增同级分类', childLabel: '新增分组',
       childDescription: `当前包含 ${domain.groups.length} 个分组`,
     };
   }
@@ -46,7 +46,7 @@ function resolveSelectedNode(structure: TemplateStructure, selection: TemplateMi
   if (!group) return resolveSelectedNode(structure, { kind: 'domain', domainId: domain.id });
   if (selection.kind === 'group') {
     return {
-      title: group.title, path: ['设定', domain.title, group.title], siblingLabel: '新建同级设定', childLabel: '新建下级设定',
+      title: group.title, path: ['设定', domain.title, group.title], siblingLabel: '新增同级分组', childLabel: '新增设定',
       childDescription: `当前包含 ${group.entries.length} 个设定`,
     };
   }
@@ -54,7 +54,7 @@ function resolveSelectedNode(structure: TemplateStructure, selection: TemplateMi
   if (!entry) return resolveSelectedNode(structure, { kind: 'group', domainId: domain.id, groupId: group.id });
   if (selection.kind === 'entry') {
     return {
-      title: entry.title, path: ['设定', domain.title, group.title, entry.title], siblingLabel: '新建同级设定', childLabel: '新建内部分类',
+      title: entry.title, path: ['设定', domain.title, group.title, entry.title], siblingLabel: '新增同级设定', childLabel: '新增内部分类',
       childDescription: `当前包含 ${entry.sections.length} 个内部分类`,
     };
   }
@@ -66,8 +66,8 @@ function resolveSelectedNode(structure: TemplateStructure, selection: TemplateMi
     return {
       title: section.title,
       path: ['设定', domain.title, group.title, entry.title, section.title],
-      siblingLabel: '新建同级分类',
-      childLabel: '新建子设定',
+      siblingLabel: '新增同级分类',
+      childLabel: '新增子设定',
       childDescription: `当前分类包含 ${section.fields.length} 个子设定`,
     };
   }
@@ -80,7 +80,7 @@ function resolveSelectedNode(structure: TemplateStructure, selection: TemplateMi
   return {
     title: field.title,
     path: ['设定', domain.title, group.title, entry.title, section.title, field.title],
-    siblingLabel: '新建同级设定',
+    siblingLabel: '新增同级子设定',
     childLabel: null,
     childDescription: '子设定是模板的最后一级',
   };
@@ -107,12 +107,12 @@ export function StandardModeTemplateNodeWorkbench({
 
   if (selection.kind === 'root') {
     return (
-      <aside aria-label="未选择设定" className="min-h-0 w-[320px] shrink-0 border-l border-slate-200 bg-white" data-testid="template-node-workbench" />
+      <aside aria-label="未选择设定" className="min-h-0 w-[390px] shrink-0 border-l border-slate-200 bg-white" data-testid="template-node-workbench" />
     );
   }
 
   return (
-    <aside className="flex min-h-0 w-[320px] shrink-0 flex-col border-l border-slate-200 bg-white" data-testid="template-node-workbench">
+    <aside className="flex min-h-0 w-[390px] shrink-0 flex-col border-l border-slate-200 bg-white" data-testid="template-node-workbench">
       <div className="border-b border-slate-200 px-5 py-4">
         <h2 className="text-sm font-bold text-slate-800">当前选中：{details.title}</h2>
         <div className="mt-2 break-words text-xs font-semibold leading-5 text-slate-500">{details.path.join(' > ')}</div>

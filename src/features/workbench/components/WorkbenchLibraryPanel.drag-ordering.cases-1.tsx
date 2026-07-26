@@ -243,10 +243,10 @@ describe('WorkbenchLibraryPanel entry ordering behavior', () => {
     expect(panelSource).toContainSource('const outlineSidebarWidth = settingLibraryLeftWidth;');
     expect(panelSource).toContainSource('gridTemplateColumns: isDetailOutlineTab && showDetailOutlinePublished');
     expect(panelSource).toContainSource(
-      '`${outlineSidebarWidth}px 0px 190px minmax(0,1fr) 0px ${settingLibraryRightWidth}px`',
+      '`${standardMode ? 280 : outlineSidebarWidth}px 0px 190px minmax(0,1fr) 0px ${standardMode ? 390 : settingLibraryRightWidth}px`',
     );
     expect(panelSource).toContainSource(
-      '`${outlineSidebarWidth}px 0px minmax(0,1fr) 0px ${settingLibraryRightWidth}px`',
+      '`${standardMode ? 280 : outlineSidebarWidth}px 0px minmax(0,1fr) 0px ${standardMode ? 390 : settingLibraryRightWidth}px`',
     );
     expect(panelSource).toContainSource(
       "style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(32px, max-content))' }}",

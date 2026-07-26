@@ -1,4 +1,5 @@
 import { Settings } from 'lucide-react';
+import { useState } from 'react';
 import type {
   ChangeEvent,
   ClipboardEvent,
@@ -23,6 +24,7 @@ import { ChapterSaveStatus } from './ChapterSaveStatus';
 import { SPLIT_BUTTON_OUTLINE_ACTION_CLASS, SPLIT_BUTTON_OUTLINE_GROUP_CLASS } from './chapterEditorLayout';
 
 interface ChapterWritingSurfaceProps {
+  standardMode?: boolean;
   chapter: Chapter;
   safeVolumeName: string;
   serialValue: number;
@@ -69,6 +71,7 @@ interface ChapterWritingSurfaceProps {
 }
 
 export function ChapterWritingSurface({
+  standardMode = false,
   chapter,
   safeVolumeName,
   serialValue,
@@ -113,6 +116,11 @@ export function ChapterWritingSurface({
   handleKeyDown,
   handlePaste,
 }: ChapterWritingSurfaceProps) {
+  const [advancedToolsOpen, setAdvancedToolsOpen] = useState(false);
+  const runAdvancedAction = (action: () => void) => {
+    setAdvancedToolsOpen(false);
+    action();
+  };
   return (
     <>
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-[#e6e8ec] bg-white px-4">
@@ -163,49 +171,45 @@ export function ChapterWritingSurface({
       </div>
 
       <div className="flex items-center gap-2 border-b border-[#e1e5eb] bg-white px-4 py-2">
-        <button
-          onClick={openFontSettings}
-          className="xy-chapter-editor-deep-outline rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light"
-        >
-          字体设置
-        </button>
-        <div className="xy-chapter-editor-deep-outline flex items-center overflow-hidden rounded-md border border-brand">
-          <button onClick={handleSmartFormatNow} className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
-            智能排版
-          </button>
-          <div className="xy-chapter-editor-deep-divider xy-chapter-editor-deep-divider-line h-4 w-px bg-brand/30" />
-          <button
-            onClick={openSmartFormatSettings}
-            className="px-2 py-1.5 text-brand hover:bg-brand-light"
-            title="智能排版设置"
-          >
-            <Settings className="h-4 w-4 text-brand" />
-          </button>
-        </div>
-        <div className="xy-chapter-editor-deep-outline flex items-center overflow-hidden rounded-md border border-brand">
-          <button onClick={openHighFreqSettings} className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light">
-            词语高亮
-          </button>
-          <div className="xy-chapter-editor-deep-divider xy-chapter-editor-deep-divider-line h-4 w-px bg-brand/30" />
-          <HighFreqToggle />
-        </div>
-        <div className={SPLIT_BUTTON_OUTLINE_GROUP_CLASS}>
-          <button onClick={handleSymbolReplaceNow} className={SPLIT_BUTTON_OUTLINE_ACTION_CLASS}>
-            文字替换
-          </button>
-          <div className="xy-chapter-editor-deep-divider inline-flex items-center border-l border-brand/30">
-            <SymbolReplaceToggle onEnable={handleSymbolAutoEnabled} />
+        {standardMode ? (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setAdvancedToolsOpen((open) => !open)}
+              aria-expanded={advancedToolsOpen}
+              className="rounded-md border border-brand px-4 py-1.5 text-sm font-semibold text-brand hover:bg-brand-light"
+            >
+              更多
+            </button>
+            {advancedToolsOpen ? (
+              <div className="absolute left-0 top-[calc(100%+6px)] z-40 grid w-32 overflow-hidden rounded-md border border-[#dce1e8] bg-white p-1 shadow-lg">
+                <button type="button" onClick={() => runAdvancedAction(openFontSettings)} className="h-8 rounded px-2 text-left text-sm text-[#657180] hover:bg-[#f3f6f8]">字体设置</button>
+                <button type="button" onClick={() => runAdvancedAction(handleSmartFormatNow)} className="h-8 rounded px-2 text-left text-sm text-[#657180] hover:bg-[#f3f6f8]">智能排版</button>
+                <button type="button" onClick={() => runAdvancedAction(openHighFreqSettings)} className="h-8 rounded px-2 text-left text-sm text-[#657180] hover:bg-[#f3f6f8]">词语高亮</button>
+                <button type="button" onClick={() => runAdvancedAction(handleSymbolReplaceNow)} className="h-8 rounded px-2 text-left text-sm text-[#657180] hover:bg-[#f3f6f8]">文字替换</button>
+              </div>
+            ) : null}
           </div>
-          <button
-            type="button"
-            onClick={openSymbolReplaceSettings}
-            className="xy-chapter-editor-deep-divider inline-flex w-9 items-center justify-center border-l border-brand/30 text-brand transition-colors hover:bg-brand-light"
-            title="词语替换设置"
-            aria-label="词语替换设置"
-          >
-            <Settings className="h-4 w-4" />
-          </button>
-        </div>
+        ) : (
+          <>
+            <button onClick={openFontSettings} className="xy-chapter-editor-deep-outline rounded-md border border-brand px-3 py-1.5 text-sm text-brand hover:bg-brand-light">字体设置</button>
+            <div className="xy-chapter-editor-deep-outline flex items-center overflow-hidden rounded-md border border-brand">
+              <button onClick={handleSmartFormatNow} className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light">智能排版</button>
+              <div className="xy-chapter-editor-deep-divider xy-chapter-editor-deep-divider-line h-4 w-px bg-brand/30" />
+              <button onClick={openSmartFormatSettings} className="px-2 py-1.5 text-brand hover:bg-brand-light" title="智能排版设置"><Settings className="h-4 w-4 text-brand" /></button>
+            </div>
+            <div className="xy-chapter-editor-deep-outline flex items-center overflow-hidden rounded-md border border-brand">
+              <button onClick={openHighFreqSettings} className="px-3 py-1.5 text-sm text-brand hover:bg-brand-light">词语高亮</button>
+              <div className="xy-chapter-editor-deep-divider xy-chapter-editor-deep-divider-line h-4 w-px bg-brand/30" />
+              <HighFreqToggle />
+            </div>
+            <div className={SPLIT_BUTTON_OUTLINE_GROUP_CLASS}>
+              <button onClick={handleSymbolReplaceNow} className={SPLIT_BUTTON_OUTLINE_ACTION_CLASS}>文字替换</button>
+              <div className="xy-chapter-editor-deep-divider inline-flex items-center border-l border-brand/30"><SymbolReplaceToggle onEnable={handleSymbolAutoEnabled} /></div>
+              <button type="button" onClick={openSymbolReplaceSettings} className="xy-chapter-editor-deep-divider inline-flex w-9 items-center justify-center border-l border-brand/30 text-brand transition-colors hover:bg-brand-light" title="词语替换设置" aria-label="词语替换设置"><Settings className="h-4 w-4" /></button>
+            </div>
+          </>
+        )}
         <div className="mx-1 h-5 w-px bg-gray-200" />
         <div className="ml-auto flex items-center gap-2">
           <button

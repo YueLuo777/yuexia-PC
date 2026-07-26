@@ -88,6 +88,7 @@ export interface WorkbenchAiRequestLog {
 }
 
 export interface WorkbenchAIPanelProps {
+  standardMode?: boolean;
   activeTool: WorkbenchAITool;
   workId: number | string;
   selectedChapterContent: string;

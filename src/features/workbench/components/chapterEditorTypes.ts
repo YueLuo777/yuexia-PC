@@ -4,6 +4,7 @@ import type { WorkbenchSaveStatus } from '@/features/workbench/model/workbenchSa
 import type { ChapterEditorEmbeddedMode } from './chapterEditorReviewConfig';
 
 export interface ChapterEditorProps {
+  standardMode?: boolean;
   embeddedMode?: ChapterEditorEmbeddedMode;
   fieldSizeOpenSignal?: number;
   showInlineFieldSizeButton?: boolean;

@@ -182,6 +182,10 @@ describe('NovelLibraryPage import flow', () => {
     expect(recycleModalSource).toContainSource("import { AppModalShell } from '@/shared/ui/AppModalShell';");
     expect(combinedSource).toContainSource("import { ActionButton } from '@/shared/ui/ActionButton';");
     expect(combinedSource).not.toContainSource('fixed inset-0 z-50 flex items-center justify-center');
+    expect(newNovelModalSource).toContainSource("const [channel, setChannel] = useState<NovelChannel>('male');");
+    expect(newNovelModalSource).toContainSource("{ value: 'male', label: '男频' }");
+    expect(newNovelModalSource).toContainSource("{ value: 'female', label: '女频' }");
+    expect(newNovelModalSource).toContainSource('channel: type === \'novel\' ? channel : undefined');
   });
 
   it('uses the page library state when importing so the new work appears immediately', () => {

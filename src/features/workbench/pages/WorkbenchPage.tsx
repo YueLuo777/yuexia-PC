@@ -142,7 +142,7 @@ import { buildWorkbenchPageChapterContext } from './workbenchPageChapterContext'
 
 export interface WorkbenchPageProps {
   experience?: 'professional' | 'standard';
-  fixedFlow?: Extract<WorkbenchCreationFlowPageKey, 'chapterOutline' | 'writing'>;
+  fixedFlow?: Extract<WorkbenchCreationFlowPageKey, 'chapterOutline' | 'writing' | 'audit' | 'status' | 'summary'>;
 }
 
 export function WorkbenchPage({ experience = 'professional', fixedFlow }: WorkbenchPageProps = {}) {
@@ -561,6 +561,7 @@ export function WorkbenchPage({ experience = 'professional', fixedFlow }: Workbe
       onRegisterHeaderLog={registerHeaderLogOpenHandler}
       getChapterContent={chapterEditorProps.getChapterContent}
       chapterEditorProps={chapterEditorProps}
+      standardMode={experience === 'standard'}
     />
   );
 
@@ -597,13 +598,13 @@ export function WorkbenchPage({ experience = 'professional', fixedFlow }: Workbe
           writing={activeCreationFlow === 'writing'}
           content={creationFlowContent}
           showPublished={showPublished}
-          aiPanelWidth={aiPanelWidth}
+          aiPanelWidth={experience === 'standard' ? 390 : aiPanelWidth}
           onChapterResize={handleChapterSidebarDragStart}
           onPublishedResize={handlePublishedSidebarDragStart}
           onAiResize={handlePanelDragStart}
           chapterSidebarProps={{
             volumes,
-            width: chapterSidebarWidth,
+            width: experience === 'standard' ? 280 : chapterSidebarWidth,
             sortAsc,
             recycledCount: recycledChapters.length,
             workType: currentNovel.type,
@@ -624,7 +625,7 @@ export function WorkbenchPage({ experience = 'professional', fixedFlow }: Workbe
           }}
           publishedSidebarProps={{
             volumes,
-            width: publishedSidebarWidth,
+            width: experience === 'standard' ? 280 : publishedSidebarWidth,
             onSelectChapter: selectChapter,
             onEditChapter: selectChapter,
             onUnpublishChapter: (chapterId) => setChapterPublished(chapterId, false),
@@ -632,6 +633,7 @@ export function WorkbenchPage({ experience = 'professional', fixedFlow }: Workbe
             getChapterWordCount,
           }}
           aiPanelProps={{
+            standardMode: experience === 'standard',
             activeTool: 'ai',
             workId: currentNovel.id,
             selectedChapterContent: editorContent,

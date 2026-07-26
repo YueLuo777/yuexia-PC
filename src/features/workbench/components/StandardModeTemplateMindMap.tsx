@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
@@ -62,33 +62,30 @@ export function StandardModeTemplateMindMap({
 
   const activeDomain = structure.find((domain) => domain.id === activeDomainId);
 
-  useLayoutEffect(() => {
+  const fitCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     const content = contentRef.current;
     if (!canvas || !content) return;
+    const widthZoom = (canvas.clientWidth - 56) / Math.max(1, content.scrollWidth);
+    const heightZoom = (canvas.clientHeight - 48) / Math.max(1, content.scrollHeight);
+    const targetZoom = activeDomain ? Math.max(0.45, Math.min(1, widthZoom, heightZoom)) : 1;
+    zoomRef.current = targetZoom;
+    setZoom(targetZoom);
+    setPan({
+      x: canvas.clientWidth / 2 - content.scrollWidth * targetZoom / 2,
+      y: Math.max(12, canvas.clientHeight / 2 - content.scrollHeight * targetZoom / 2),
+    });
+  }, [activeDomain]);
 
-    const alignVisiblePath = () => {
-      const targetZoom = activeDomain
-        ? Math.max(0.45, Math.min(1, (canvas.clientWidth - 48) / content.scrollWidth))
-        : 1;
-      zoomRef.current = targetZoom;
-      setZoom(targetZoom);
-      setPan({
-        x: canvas.clientWidth / 2 - content.scrollWidth * targetZoom / 2,
-        y: activeDomain ? 16 : 0,
-      });
-    };
-
-    alignVisiblePath();
-    const frame = window.requestAnimationFrame(alignVisiblePath);
-    const settledLayoutTimer = window.setTimeout(() => {
-      alignVisiblePath();
-    }, 120);
+  useLayoutEffect(() => {
+    fitCanvas();
+    const frame = window.requestAnimationFrame(fitCanvas);
+    const settledLayoutTimer = window.setTimeout(fitCanvas, 120);
     return () => {
       window.cancelAnimationFrame(frame);
       window.clearTimeout(settledLayoutTimer);
     };
-  }, [activeDomain, activeDomainId, structure]);
+  }, [activeDomain, activeDomainId, fitCanvas, structure]);
 
   const requestDelete = (nextSelection: PendingDelete['selection'], title: string) => {
     setPendingDelete({ selection: nextSelection, title });
@@ -355,19 +352,24 @@ export function StandardModeTemplateMindMap({
           </div>
           </div>
 
-          <button
-            type="button"
-            data-canvas-control="true"
-            title="恢复画布大小和位置"
-            onClick={() => {
-              setPan({ x: 0, y: 0 });
-              zoomRef.current = 1;
-              setZoom(1);
-            }}
-            className="absolute bottom-4 right-4 h-8 rounded-md border border-slate-200 bg-white px-3 text-xs font-bold text-slate-500 shadow-sm"
-          >
-            {Math.round(zoom * 100)}%
-          </button>
+          <div className="absolute bottom-4 right-4 flex overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+            <button type="button" data-canvas-control="true" title="适应当前分类" onClick={fitCanvas} className="h-8 border-r border-slate-200 px-3 text-xs font-bold text-slate-500">
+              适应画布
+            </button>
+            <button
+              type="button"
+              data-canvas-control="true"
+              title="恢复100%大小"
+              onClick={() => {
+                setPan({ x: 16, y: 16 });
+                zoomRef.current = 1;
+                setZoom(1);
+              }}
+              className="h-8 px-3 text-xs font-bold text-slate-500"
+            >
+              {Math.round(zoom * 100)}%
+            </button>
+          </div>
         </div>
       </div>
 

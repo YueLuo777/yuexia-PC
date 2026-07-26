@@ -14,18 +14,17 @@ interface StandardModeBrainstormGeneratorProps {
   onStop: () => void;
 }
 
-const INPUT_FIELDS: Array<{
+const GENERATION_FIELDS: Array<{
   key: Exclude<keyof StandardBrainstormGenerationDraft, 'otherRequirements'>;
   label: string;
   placeholder: string;
+  options: string[];
 }> = [
-  { key: 'workType', label: '作品类型', placeholder: '如都市、玄幻' },
-  { key: 'genre', label: '作品流派', placeholder: '如系统流、凡人流、天才流' },
-  { key: 'expectedLength', label: '预计篇幅', placeholder: '如100万、200万' },
-  { key: 'protagonistCheat', label: '主角金手指', placeholder: '如吞噬系统、神豪系统' },
+  { key: 'workType', label: '作品类型', placeholder: '也可以自行输入', options: ['玄幻', '仙侠', '都市', '科幻', '末世'] },
+  { key: 'genre', label: '作品流派', placeholder: '也可以自行输入', options: ['系统流', '凡人流', '天才流', '争霸流'] },
+  { key: 'expectedLength', label: '预计篇幅', placeholder: '如150万字', options: ['50万字', '100万字', '200万字'] },
+  { key: 'protagonistCheat', label: '主角金手指', placeholder: '如吞噬系统，也可留空', options: ['系统', '重生', '传承', '无金手指'] },
 ];
-
-const INPUT_ROWS = [INPUT_FIELDS.slice(0, 2), INPUT_FIELDS.slice(2, 4)];
 
 export const StandardModeBrainstormGenerator = forwardRef<HTMLInputElement, StandardModeBrainstormGeneratorProps>(
   function StandardModeBrainstormGenerator(
@@ -35,43 +34,51 @@ export const StandardModeBrainstormGenerator = forwardRef<HTMLInputElement, Stan
     return (
       <aside className="flex min-h-0 flex-col bg-[#fbfdff] p-4">
         <div className="border-b border-[#dce1e8] pb-3">
-          <h2 className="text-base font-bold text-[#1f2933]">脑洞生成</h2>
-          <p className="mt-1 text-xs font-medium text-[#8a95a2]">填写基础方向，软件会自动使用当前AI配置。</p>
+          <h2 className="text-base font-bold text-[#1f2933]">生成条件</h2>
+          <p className="mt-1 text-xs font-medium text-[#8a95a2]">先选常用方向，需要时再补充自己的要求。</p>
         </div>
 
-        <div className="editor-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto px-0.5 py-4">
-          {INPUT_ROWS.map((row, rowIndex) => (
-            <div key={rowIndex} className="grid grid-cols-2 gap-3">
-              {row.map((field, fieldIndex) => (
-                <div
-                  key={field.key}
-                  className={`xy-floating-field xy-floating-outline-fixed xy-floating-visible-placeholder ${
-                    draft[field.key].trim() ? 'xy-has-value' : ''
-                  }`}
-                >
-                  <input
-                    ref={rowIndex === 0 && fieldIndex === 0 ? firstInputRef : undefined}
-                    value={draft[field.key]}
-                    onChange={(event) => onFieldChange(field.key, event.target.value)}
-                    placeholder={field.placeholder}
-                    className="h-10 text-sm font-medium placeholder:text-[13px] placeholder:font-medium"
-                  />
-                  <label className="xy-border-embedded-transparent-backplate">{field.label}</label>
-                </div>
-              ))}
-            </div>
+        <div className="editor-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto px-0.5 py-4">
+          {GENERATION_FIELDS.map((field, fieldIndex) => (
+            <section key={field.key}>
+              <div className="mb-2 text-xs font-bold text-[#657180]">{field.label}</div>
+              <div className="flex flex-wrap gap-1.5">
+                {field.options.map((option) => {
+                  const selected = draft[field.key] === option;
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => onFieldChange(field.key, selected ? '' : option)}
+                      className={`h-8 rounded-md border px-2.5 text-xs font-semibold ${
+                        selected
+                          ? 'border-[#08AACE] bg-[#EAF9FD] text-[#078FAB]'
+                          : 'border-[#dce1e8] bg-white text-[#657180] hover:border-[#8fd8e7]'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  );
+                })}
+              </div>
+              <input
+                ref={fieldIndex === 0 ? firstInputRef : undefined}
+                value={draft[field.key]}
+                onChange={(event) => onFieldChange(field.key, event.target.value)}
+                placeholder={field.placeholder}
+                aria-label={`${field.label}自定义输入`}
+                className="mt-2 h-9 w-full rounded-md border border-[#dce1e8] bg-white px-3 text-sm font-medium outline-none placeholder:text-xs placeholder:text-[#9aa3af] focus:border-[#08AACE]"
+              />
+            </section>
           ))}
 
-          <div
-            className={`xy-floating-field xy-floating-outline-fixed xy-floating-visible-placeholder ${
-              draft.otherRequirements.trim() ? 'xy-has-value' : ''
-            }`}
-          >
+          <div className={`xy-floating-field xy-floating-outline-fixed xy-floating-visible-placeholder ${draft.otherRequirements.trim() ? 'xy-has-value' : ''}`}>
             <textarea
               value={draft.otherRequirements}
               onChange={(event) => onFieldChange('otherRequirements', event.target.value)}
-              placeholder="可补充主角特点、故事背景、核心冲突、希望避开的内容等"
-              className="editor-scrollbar min-h-[150px] resize-none text-sm font-medium leading-6 placeholder:text-[13px] placeholder:font-medium"
+              placeholder="可补充主角特点、故事背景、核心冲突和希望避开的内容"
+              className="editor-scrollbar min-h-[130px] resize-none text-sm font-medium leading-6 placeholder:text-xs placeholder:font-medium"
               aria-label="其他要求"
             />
             <label className="xy-border-embedded-transparent-backplate">其他要求</label>

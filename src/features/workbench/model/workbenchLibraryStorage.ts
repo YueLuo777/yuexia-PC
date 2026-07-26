@@ -4,6 +4,7 @@ export interface WorkbenchLibraryEntry {
   title: string;
   type?: string;
   content: string;
+  createdAt?: string;
   updatedAt: string;
   pinnedAt?: number;
   deletedAt?: string;
@@ -103,12 +104,14 @@ export function writeWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey: str
 }
 
 export function createWorkbenchLibraryEntry(tab: string, title: string, content = ''): WorkbenchLibraryEntry {
+  const now = new Date().toLocaleString('zh-CN');
   return {
     id: `entry-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     tab,
     title,
     content,
-    updatedAt: new Date().toLocaleString('zh-CN'),
+    createdAt: now,
+    updatedAt: now,
   };
 }
 

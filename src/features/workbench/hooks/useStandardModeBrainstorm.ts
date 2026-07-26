@@ -78,7 +78,12 @@ export function useStandardModeBrainstorm() {
     [brainstormPrompt],
   );
   const activeVersion = versions[activeVersionIndex] ?? null;
+  const selectedEntry = entries.find((entry) => entry.id === selectedEntryId) ?? null;
   const busy = isGenerating || isRevising;
+  const entriesRef = useRef(entries);
+  const activeVersionRef = useRef(activeVersion);
+  entriesRef.current = entries;
+  activeVersionRef.current = activeVersion;
 
   useEffect(() => {
     const syncEntries = (event?: Event) => {
@@ -163,6 +168,20 @@ export function useStandardModeBrainstorm() {
 
   const stopRequest = useCallback(() => requestAbortRef.current?.abort(), []);
 
+  const prepareGeneration = useCallback(() => {
+    setSelectedEntryId(null);
+    setVersions([createEmptyGeneratedVersion()]);
+    setActiveVersionIndex(0);
+    setRevisionInput('');
+    setNotice('');
+  }, []);
+
+  const prepareLibrary = useCallback(() => {
+    const currentEntries = entriesRef.current;
+    if (activeVersionRef.current?.sourceEntryId || currentEntries.length === 0) return;
+    selectEntry(currentEntries[0]);
+  }, [selectEntry]);
+
   const generateBrainstorm = useCallback(async () => {
     if (busy) return;
     if (!selectedModel) {
@@ -194,17 +213,11 @@ export function useStandardModeBrainstorm() {
       });
       const content = stripAiThinkingBlock(result).trim();
       setVersionContent(content, 0);
-      const entry = createSavedBrainstormEntry(entries, generatedVersion.title, content);
-      const nextEntries = persistEntries([entry, ...entries]);
-      selectEntry(nextEntries.find((item) => item.id === entry.id) ?? entry);
-      setNotice('脑洞已生成并自动保存到脑洞库。');
+      setNotice('脑洞已生成，确认内容后点击保存脑洞。');
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         if (streamed.trim()) {
-          const entry = createSavedBrainstormEntry(entries, generatedVersion.title, streamed);
-          const nextEntries = persistEntries([entry, ...entries]);
-          selectEntry(nextEntries.find((item) => item.id === entry.id) ?? entry);
-          setNotice('已停止生成，已输出的内容已保存到脑洞库。');
+          setNotice('已停止生成，已输出内容仍保留，确认后可保存到脑洞库。');
         } else {
           setNotice('已停止生成。');
         }
@@ -216,7 +229,30 @@ export function useStandardModeBrainstorm() {
       setGenerationProgress('');
       setIsGenerating(false);
     }
-  }, [busy, entries, generationDraft, persistEntries, selectEntry, selectedModel, setVersionContent, systemPrompt]);
+  }, [busy, generationDraft, selectedModel, setVersionContent, systemPrompt]);
+
+  const saveActiveVersion = useCallback(() => {
+    const content = activeVersion?.content.trim() ?? '';
+    if (!activeVersion || !content) return;
+    if (activeVersion.sourceEntryId) {
+      persistContent(activeVersion.sourceEntryId, content);
+      setNotice('当前脑洞已保存。');
+      return;
+    }
+    const entry = createSavedBrainstormEntry(entries, activeVersion.title, content);
+    const nextEntries = persistEntries([entry, ...entries]);
+    selectEntry(nextEntries.find((item) => item.id === entry.id) ?? entry);
+    setNotice('脑洞已保存到脑洞库。');
+  }, [activeVersion, entries, persistContent, persistEntries, selectEntry]);
+
+  const duplicateActiveVersion = useCallback(() => {
+    const content = activeVersion?.content.trim() ?? '';
+    if (!activeVersion || !content) return;
+    const entry = createSavedBrainstormEntry(entries, `${activeVersion.title || '未命名脑洞'} 副本`, content);
+    const nextEntries = persistEntries([entry, ...entries]);
+    selectEntry(nextEntries.find((item) => item.id === entry.id) ?? entry);
+    setNotice('已复制为新的脑洞。');
+  }, [activeVersion, entries, persistEntries, selectEntry]);
 
   const reviseActiveVersion = useCallback(async () => {
     const requirement = revisionInput.trim();
@@ -306,6 +342,7 @@ export function useStandardModeBrainstorm() {
   return {
     entries,
     selectedEntryId,
+    selectedEntry,
     activeVersion,
     generationDraft,
     revisionInput,
@@ -323,7 +360,12 @@ export function useStandardModeBrainstorm() {
     generateBrainstorm,
     reviseActiveVersion,
     stopRequest,
+    prepareGeneration,
+    prepareLibrary,
     deleteActiveVersion,
     copyActiveVersion,
+    saveActiveVersion,
+    duplicateActiveVersion,
+    showNotice: setNotice,
   };
 }

@@ -6,7 +6,18 @@ const SharedWorkbenchPage = lazy(() =>
   import('@/features/workbench/pages/WorkbenchPage').then((module) => ({ default: module.WorkbenchPage })),
 );
 
-type SharedCreationAction = Extract<StandardStageAction, 'chapterOutline' | 'writing'>;
+type SharedCreationAction = Extract<
+  StandardStageAction,
+  'chapterOutline' | 'writing' | 'storyAudit' | 'statusUpdate' | 'summary'
+>;
+
+const FLOW_BY_ACTION = {
+  chapterOutline: 'chapterOutline',
+  writing: 'writing',
+  storyAudit: 'audit',
+  statusUpdate: 'status',
+  summary: 'summary',
+} as const;
 
 export function StandardModeSharedCreationPage({ action }: { action: SharedCreationAction }) {
   return (
@@ -17,7 +28,7 @@ export function StandardModeSharedCreationPage({ action }: { action: SharedCreat
         </div>
       }
     >
-      <SharedWorkbenchPage experience="standard" fixedFlow={action} />
+      <SharedWorkbenchPage experience="standard" fixedFlow={FLOW_BY_ACTION[action]} />
     </Suspense>
   );
 }

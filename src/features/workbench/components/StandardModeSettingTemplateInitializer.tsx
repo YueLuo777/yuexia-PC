@@ -84,7 +84,7 @@ export function StandardModeSettingTemplateInitializer({
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-[250px_minmax(0,1fr)]">
+      <div className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)]">
         <aside className="min-h-0 overflow-y-auto border-r border-slate-200 bg-[#F7F9FB] p-4">
           <div className="mb-3 text-sm font-bold">推荐模板</div>
           <div className="space-y-2">

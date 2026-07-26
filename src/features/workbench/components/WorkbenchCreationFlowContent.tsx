@@ -44,6 +44,7 @@ export function WorkbenchCreationFlowContent({
   onRegisterHeaderLog,
   getChapterContent,
   chapterEditorProps,
+  standardMode = false,
 }: {
   activeFlow: WorkbenchCreationFlowPageKey;
   settingsStorageKey: string;
@@ -54,6 +55,7 @@ export function WorkbenchCreationFlowContent({
   onRegisterHeaderLog: (handler: (() => void) | null) => void;
   getChapterContent: (chapterId: number) => string;
   chapterEditorProps: ComponentProps<typeof ChapterEditor>;
+  standardMode?: boolean;
 }) {
   const shared = {
     fieldSizeOpenSignal,
@@ -95,6 +97,7 @@ export function WorkbenchCreationFlowContent({
         data-chapter-outline-library-cache
       >
         <LibraryPanel
+          standardMode={standardMode}
           cacheVisible={chapterOutlineVisible}
           activePageKey={activeFlow}
           {...getCachedLibrarySignals(chapterOutlineVisible)}
@@ -124,7 +127,7 @@ export function WorkbenchCreationFlowContent({
       {(activeFlow === 'audit' || activeFlow === 'comment' || activeFlow === 'polish' || activeFlow === 'status') && (
         <ChapterEditor {...chapterEditorProps} {...shared} embeddedMode={activeFlow} />
       )}
-      {activeFlow === 'writing' && <ChapterEditor {...chapterEditorProps} />}
+      {activeFlow === 'writing' && <ChapterEditor {...chapterEditorProps} standardMode={standardMode} />}
     </>
   );
 }

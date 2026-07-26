@@ -10,13 +10,23 @@ type StandardModeSettingCheckPanelProps = {
 
 export function StandardModeSettingCheckPanel({ results, onCheck, onJump }: StandardModeSettingCheckPanelProps) {
   return (
-    <aside className="flex min-h-0 w-[360px] shrink-0 flex-col border-l border-gray-100 bg-gray-50 px-4 pb-4 pt-3">
+    <aside className="flex min-h-0 w-[390px] shrink-0 flex-col border-l border-gray-100 bg-gray-50 px-4 pb-4 pt-3">
       <div
         data-setting-check-scroll-region="true"
-        className="min-h-0 flex-1 overflow-y-auto rounded-[20px] border-2 border-slate-950 bg-white [scrollbar-gutter:stable]"
+        className={`min-h-0 overflow-y-auto rounded-md border bg-white [scrollbar-gutter:stable] ${
+          results === null ? 'shrink-0 border-[#dce1e8]' : 'flex-1 border-slate-300'
+        }`}
       >
-        <div data-setting-check-content="true" className="min-h-full p-4" aria-live="polite">
-          {results === null ? null : results.length === 0 ? (
+        <div data-setting-check-content="true" className={results === null ? 'p-4' : 'min-h-full p-4'} aria-live="polite">
+          {results === null ? (
+            <div className="flex items-start gap-3">
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-[#bde7ef] bg-[#EAF9FD] text-sm font-black text-[#078FAB]">检</div>
+              <div>
+                <strong className="text-sm font-bold text-slate-800">设定检查</strong>
+                <p className="mt-1 text-xs font-medium leading-5 text-slate-500">点击下方按钮，检查所有设定中还没有填写的内容。</p>
+              </div>
+            </div>
+          ) : results.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <CheckCircle2 className="h-10 w-10 text-emerald-500" />
               <strong className="mt-3 text-base font-bold text-slate-800">所有设定都已填写</strong>

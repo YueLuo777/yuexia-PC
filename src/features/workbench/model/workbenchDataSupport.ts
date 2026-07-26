@@ -83,6 +83,7 @@ export function normalizeWorkbenchNovels(value: unknown): WorkbenchNovel[] {
       title: normalizeString(item.title, `作品${index + 1}`),
       type: item.type === 'script' ? 'script' : 'novel',
       ...(typeof item.category === 'string' ? { category: item.category } : {}),
+      ...(item.channel === 'male' || item.channel === 'female' ? { channel: item.channel } : {}),
       ...(typeof item.synopsis === 'string' ? { synopsis: item.synopsis } : {}),
       ...(typeof item.wordCount === 'number' ? { wordCount: item.wordCount } : {}),
       ...(typeof item.createdAt === 'string' ? { createdAt: item.createdAt } : {}),

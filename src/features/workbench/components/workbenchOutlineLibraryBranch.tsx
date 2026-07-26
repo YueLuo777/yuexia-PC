@@ -307,6 +307,7 @@ export function renderOutlineLibraryBranch(scope: Record<string, any>) {
     showDetailOutlinePublished,
     showInlineFieldSizeButton,
     storageKey,
+    standardMode,
     suppressNextOutlinePreviewSyncRef,
     tabs,
     updateActiveTabConfig,
@@ -721,6 +722,7 @@ export function renderOutlineLibraryBranch(scope: Record<string, any>) {
       </div>
     );
     return renderOutlineWorkspaceView({
+      standardMode,
       AiInlineInput,
       ChapterNumberButton,
       CombinedAiConfigSelect,

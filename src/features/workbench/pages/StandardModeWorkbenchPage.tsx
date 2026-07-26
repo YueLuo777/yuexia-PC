@@ -69,6 +69,12 @@ const PROCESS_STEPS: Array<{
   },
 ];
 
+function getNovelChannelLabel(channel: 'male' | 'female' | undefined, category = '') {
+  if (channel === 'female') return '女频';
+  if (channel === 'male') return '男频';
+  return /(女频|总裁|甜宠|古言|现言|豪门)/.test(category) ? '女频' : '男频';
+}
+
 export function StandardModeWorkbenchPage() {
   const ownerTestMode = useOwnerTestMode();
   const [activeStage, setActiveStage] = useState<StandardStage | null>(null);
@@ -115,12 +121,20 @@ export function StandardModeWorkbenchPage() {
   ];
   const isBrainstormPage = activeAction === 'brainstormLibrary' || activeAction === 'generateBrainstorm';
   const isSettingPage = activeAction === 'createSettings' || activeAction === 'settingsList';
-  const isSharedCreationPage = activeAction === 'chapterOutline' || activeAction === 'writing';
+  const isSharedCreationPage =
+    activeAction === 'chapterOutline' ||
+    activeAction === 'writing' ||
+    activeAction === 'storyAudit' ||
+    activeAction === 'statusUpdate' ||
+    activeAction === 'summary';
+  const channelLabel = getNovelChannelLabel(currentNovel.channel, currentNovel.category);
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-[#f5f5f7]" data-standard-mode-workbench="true">
       <StandardModeWorkbenchNavigation
         title={currentNovel.title}
+        channelLabel={channelLabel}
+        categoryLabel={currentNovel.category || '未分类'}
         activeStage={activeStage}
         activeAction={activeAction}
         workInfoOpen={isWorkInfoOpen}
@@ -142,7 +156,14 @@ export function StandardModeWorkbenchPage() {
 
       {isBrainstormPage ? (
         <main className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
-          <StandardModeBrainstormPage focusGeneration={activeAction === 'generateBrainstorm'} />
+          <StandardModeBrainstormPage
+            focusGeneration={activeAction === 'generateBrainstorm'}
+            novelId={String(currentNovel.id)}
+            onCreateSettings={() => {
+              setActiveStage('settings');
+              setActiveAction('createSettings');
+            }}
+          />
         </main>
       ) : isSettingPage ? (
         <main className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden">
@@ -242,6 +263,8 @@ export function StandardModeWorkbenchPage() {
           <dd className="font-semibold text-[#1f2933]">{currentNovel.title}</dd>
           <dt className="font-semibold text-[#7b8794]">小说类型</dt>
           <dd className="font-semibold text-[#1f2933]">{currentNovel.category || '未分类'}</dd>
+          <dt className="font-semibold text-[#7b8794]">作品频道</dt>
+          <dd className="font-semibold text-[#1f2933]">{channelLabel}</dd>
           <dt className="font-semibold text-[#7b8794]">创建时间</dt>
           <dd className="font-semibold text-[#1f2933]">{currentNovel.createdAt || '暂无记录'}</dd>
           <dt className="font-semibold text-[#7b8794]">最近编辑</dt>

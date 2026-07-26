@@ -82,6 +82,7 @@ describe('StandardModeBrainstormPage', () => {
 
     expect(screen.getByLabelText('脑洞预览内容')).toHaveValue('第一个脑洞的正文');
     fireEvent.click(screen.getByRole('button', { name: '删除该脑洞' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认删除' }));
 
     expect(readWorkbenchLibraryEntries(GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY)).toHaveLength(1);
     expect(readBrainstormRecycleEntries(GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY)[0]?.id).toBe(FIRST_ENTRY.id);
@@ -89,12 +90,13 @@ describe('StandardModeBrainstormPage', () => {
   });
 
   it('uses compact grouped questions and one large other-requirements field', () => {
-    render(<StandardModeBrainstormPage />);
+    render(<StandardModeBrainstormPage focusGeneration />);
 
-    expect(screen.getByPlaceholderText('如都市、玄幻')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('如系统流、凡人流、天才流')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('如100万、200万')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('如吞噬系统、神豪系统')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '玄幻' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '系统流' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '100万字' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '无金手指' })).toBeInTheDocument();
+    expect(screen.getByLabelText('作品类型自定义输入')).toBeInTheDocument();
     expect(screen.getByLabelText('其他要求')).toBeInTheDocument();
     expect(screen.queryByLabelText('一次生成版本数')).not.toBeInTheDocument();
     expect(screen.queryByText('一次性生成X版脑洞')).not.toBeInTheDocument();
@@ -102,13 +104,12 @@ describe('StandardModeBrainstormPage', () => {
     expect(screen.queryByText('保存为新脑洞')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('新脑洞名称')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '版本1' })).not.toBeInTheDocument();
-    expect(screen.getByPlaceholderText('如都市、玄幻').closest('[class*="grid-cols-2"]')).toBeTruthy();
-    expect(screen.getByPlaceholderText('如都市、玄幻')).toHaveClass('placeholder:text-[13px]');
-    expect(screen.getByLabelText('其他要求')).toHaveClass('placeholder:text-[13px]');
+    expect(screen.getByLabelText('作品类型自定义输入')).toHaveClass('placeholder:text-xs');
+    expect(screen.getByLabelText('其他要求')).toHaveClass('placeholder:text-xs');
   });
 
-  it('generates one brainstorm, includes other requirements, and saves it automatically', async () => {
-    render(<StandardModeBrainstormPage />);
+  it('generates one brainstorm, keeps it as a preview, and saves after confirmation', async () => {
+    render(<StandardModeBrainstormPage focusGeneration />);
 
     fireEvent.change(screen.getByLabelText('其他要求'), { target: { value: '开局冲突要明确' } });
     fireEvent.click(screen.getByRole('button', { name: '开始生成脑洞' }));
@@ -116,10 +117,12 @@ describe('StandardModeBrainstormPage', () => {
     await waitFor(() => expect(callModelStreamMock).toHaveBeenCalledTimes(1));
     expect(callModelStreamMock.mock.calls[0][0].userContent).toContain('其他要求：开局冲突要明确');
     expect(screen.getByLabelText('脑洞预览内容')).toHaveValue('AI生成的完整脑洞');
+    expect(readWorkbenchLibraryEntries(GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY)).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: '保存脑洞' }));
     const generatedEntry = readWorkbenchLibraryEntries(GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY)[0];
     expect(generatedEntry?.title).toBe('未命名脑洞');
     expect(generatedEntry && getBrainstormEntryBody(generatedEntry)).toBe('AI生成的完整脑洞');
-    expect(screen.getByRole('status')).toHaveTextContent('自动保存');
+    expect(screen.getByRole('status')).toHaveTextContent('保存到脑洞库');
   });
 
   it('revises the selected brainstorm and keeps only the new content', async () => {

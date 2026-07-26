@@ -17,6 +17,7 @@ export interface WorkbenchLibraryPanelProps {
   openLogSignal?: number;
   onRegisterHeaderLog?: (handler: (() => void) | null) => void;
   toolbarPortalId?: string;
+  standardMode?: boolean;
 }
 
 export type PendingCategoryRename = {

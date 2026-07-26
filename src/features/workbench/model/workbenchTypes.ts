@@ -27,6 +27,7 @@ export interface WorkbenchNovel {
   title: string;
   type: 'novel' | 'script';
   category?: string;
+  channel?: 'male' | 'female';
   synopsis?: string;
   wordCount?: number;
   createdAt?: string;

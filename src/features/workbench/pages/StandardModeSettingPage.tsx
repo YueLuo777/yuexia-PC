@@ -69,7 +69,7 @@ export function StandardModeSettingPage({
 
   return (
     <div
-      className="flex h-full min-h-0 min-w-[1180px] overflow-hidden bg-white xy-setting-workspace-typography"
+      className="flex h-full min-h-0 min-w-[1240px] overflow-hidden bg-white xy-setting-workspace-typography"
       data-standard-mode-setting-page="true"
       data-template-mode={settings.template.templateId}
     >
