@@ -1,14 +1,4 @@
-import {
-  BookOpenText,
-  EyeOff,
-  FolderTree,
-  Globe,
-  Moon,
-  NotebookText,
-  Palette,
-  Sparkles,
-  Workflow,
-} from 'lucide-react';
+import { BookOpenText, EyeOff, FolderTree, Globe, Moon, NotebookText, Palette, Sparkles, Workflow } from 'lucide-react';
 
 import type { TestGroup } from '@/features/tests/pages/testCollectionTypes';
 
@@ -68,7 +58,8 @@ export const testGroups: TestGroup[] = [
       },
       {
         title: '提示词设定与AI创作流程模拟',
-        description: '根据提示词文件夹整理设定页面，并把白皮书、档案、细纲、续写、审核、发布和状态更新串成一条AI创作流程。',
+        description:
+          '根据提示词文件夹整理设定页面，并把白皮书、档案、细纲、续写、审核、发布和状态更新串成一条AI创作流程。',
         path: '/prompt-driven-novel-workspace-test',
         icon: Workflow,
         badge: 'Prompt Workflow',
@@ -93,6 +84,13 @@ export const testGroups: TestGroup[] = [
         path: '/standard-mode-workbench-test',
         icon: Workflow,
         badge: 'Standard Mode',
+      },
+      {
+        title: '专业与标准模式首页切换',
+        description: '保持正式左侧导航和首页公共区域不变，仅对比两种模式下的书籍卡片及创作工作台入口。',
+        path: '/mode-switch-novel-library-test',
+        icon: BookOpenText,
+        badge: 'Mode Switch',
       },
     ],
   },

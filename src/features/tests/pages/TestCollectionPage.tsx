@@ -1,9 +1,4 @@
-import {
-  ArrowLeft,
-  Check,
-  Search,
-  X,
-} from 'lucide-react';
+import { ArrowLeft, Check, Search, X } from 'lucide-react';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -36,7 +31,9 @@ const SettingAiReadyTaxonomyTestPage = lazy(() =>
   })),
 );
 const PromptDrivenNovelWorkspaceTestPage = lazy(() =>
-  import('@/features/tests/pages/PromptDrivenNovelWorkspaceTestPage').then((module) => ({ default: module.PromptDrivenNovelWorkspaceTestPage })),
+  import('@/features/tests/pages/PromptDrivenNovelWorkspaceTestPage').then((module) => ({
+    default: module.PromptDrivenNovelWorkspaceTestPage,
+  })),
 );
 const AiThinkingShellVariantsTestPage = lazy(() =>
   import('@/features/tests/pages/AiThinkingShellVariantsTestPage').then((module) => ({
@@ -45,6 +42,11 @@ const AiThinkingShellVariantsTestPage = lazy(() =>
 );
 const UiConsistencyComparisonTestPage = lazy(() => import('@/features/tests/pages/UiConsistencyComparisonTestPage'));
 const StandardModeWorkbenchTestPage = lazy(() => import('@/features/tests/pages/StandardModeWorkbenchTestPage'));
+const ModeSwitchNovelLibraryTestPage = lazy(() =>
+  import('@/features/tests/pages/ModeSwitchNovelLibraryTestPage').then((module) => ({
+    default: module.ModeSwitchNovelLibraryTestPage,
+  })),
+);
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
 );
@@ -176,6 +178,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <UiConsistencyComparisonTestPage />;
       case '/standard-mode-workbench-test':
         return <StandardModeWorkbenchTestPage />;
+      case '/mode-switch-novel-library-test':
+        return <ModeSwitchNovelLibraryTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':
