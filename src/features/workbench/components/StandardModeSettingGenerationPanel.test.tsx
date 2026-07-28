@@ -42,6 +42,12 @@ describe('StandardModeSettingGenerationPanel', () => {
     const stepGenerateButtons = screen.getAllByRole('button', { name: '生成' });
     expect(stepGenerateButtons).toHaveLength(1);
     expect(stepGenerateButtons[0]).toBeEnabled();
+    const stepCards = screen.getAllByText('未生成').map((status) => status.closest('[data-standard-setting-step]'));
+    stepCards.forEach((card) => {
+      expect(card).not.toBeNull();
+      expect(card?.querySelector('[data-standard-setting-action-slot="true"]')).toHaveClass('w-16');
+    });
+    expect(stepCards.slice(1).every((card) => card?.querySelector('[data-standard-setting-action-slot="true"]')?.childElementCount === 0)).toBe(true);
   });
 
   it('uses the built-in prompt and user requirement when starting the workflow', () => {

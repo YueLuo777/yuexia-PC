@@ -320,16 +320,22 @@ export function StandardModeSettingGenerationPanel({
                           >
                             {statusText}
                           </span>
-                          {unlocked && !isGenerating ? (
-                            <button
-                              type="button"
-                              onClick={() => runStep(index, false)}
-                              className="h-7 min-w-14 rounded-md border border-[#08AACE] bg-white px-2 text-xs font-bold text-[#078FAB] hover:bg-[#E9FAFE]"
-                              title={`${completed ? '重新生成' : '生成'}${step.name}`}
-                            >
-                              {completed ? '重新生成' : '生成'}
-                            </button>
-                          ) : null}
+                          <span
+                            aria-hidden={unlocked && !isGenerating ? undefined : true}
+                            className="flex h-7 w-16 shrink-0 items-center justify-center"
+                            data-standard-setting-action-slot="true"
+                          >
+                            {unlocked && !isGenerating ? (
+                              <button
+                                type="button"
+                                onClick={() => runStep(index, false)}
+                                className="h-7 w-full rounded-md border border-[#08AACE] bg-white px-2 text-xs font-bold text-[#078FAB] hover:bg-[#E9FAFE]"
+                                title={`${completed ? '重新生成' : '生成'}${step.name}`}
+                              >
+                                {completed ? '重新生成' : '生成'}
+                              </button>
+                            ) : null}
+                          </span>
                         </span>
                       </span>
                       <span className="mt-1 block text-xs font-medium leading-5 text-[#7b8794]">{step.scope}</span>
