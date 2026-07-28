@@ -3,8 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { countTextWords } from '@/features/workbench/model/workbenchLibraryPanelModel';
-import { parseRoleContent } from '@/features/workbench/components/workbenchRoleContent';
-import { parseSettingContent } from '@/features/workbench/components/workbenchStructuredSettings';
+import { createEmptyRoleStateSettings, parseRoleContent, stringifyRoleContent } from '@/features/workbench/components/workbenchRoleContent';
+import { parseSettingContent, stringifySettingContent } from '@/features/workbench/components/workbenchStructuredSettings';
 import { normalizeImportedSettingKey } from '@/features/workbench/components/workbenchSmartImport';
 import {
   clearStandardModeBrainstormLinkFromSettingsKey,
@@ -85,6 +85,7 @@ type StandardModeSettingGenerationPanelProps = {
   onGenerate: (request: string, visibleText: string) => void;
   onStop: () => void;
   onImport: (allowedEntryIds: string[]) => boolean;
+  onUpdateEntries?: (updates: Array<{ id: string; content: string }>) => void;
   onJumpToEmptyField: (result: StandardSettingEmptyField) => void;
 };
 
@@ -95,6 +96,7 @@ export function StandardModeSettingGenerationPanel({
   isGenerating,
   onGenerate,
   onImport,
+  onUpdateEntries = () => undefined,
   onJumpToEmptyField,
 }: StandardModeSettingGenerationPanelProps) {
   const { prompts } = usePrompts();
@@ -113,11 +115,13 @@ export function StandardModeSettingGenerationPanel({
   const generationObservedRef = useRef(false);
   const generationVisualSnapshotRef = useRef<StandardSettingGenerationState | null>(null);
   const generationTargetEntryIdsRef = useRef<string[]>([]);
+  const generationPreviousContentRef = useRef<Array<{ id: string; content: string }> | null>(null);
 
   useEffect(() => {
     setFlow(readStandardSettingGenerationState(settingsStorageKey));
     generationVisualSnapshotRef.current = null;
     generationTargetEntryIdsRef.current = [];
+    generationPreviousContentRef.current = null;
     setQueuedStepIndex(null);
     setPanelMode('generate');
     setCheckResults(null);
@@ -135,6 +139,7 @@ export function StandardModeSettingGenerationPanel({
       generationObservedRef.current = false;
       generationVisualSnapshotRef.current = null;
       generationTargetEntryIdsRef.current = [];
+      generationPreviousContentRef.current = null;
     });
   }, [settingsStorageKey]);
 
@@ -166,6 +171,26 @@ export function StandardModeSettingGenerationPanel({
       generationObservedRef.current = false;
       generationVisualSnapshotRef.current ??= flow;
       generationTargetEntryIdsRef.current = targets.map((target) => target.id);
+      generationPreviousContentRef.current = targets
+        .map((target) => entries.find((entry) => entry.id === target.id))
+        .filter((entry): entry is WorkbenchLibraryEntry => Boolean(entry))
+        .map((entry) => ({ id: entry.id, content: entry.content }));
+      onUpdateEntries(targets.flatMap((target) => {
+        const entry = entries.find((candidate) => candidate.id === target.id);
+        if (!entry) return [];
+        if (target.sourceKind === 'role') {
+          const role = parseRoleContent(entry.content);
+          return [{ id: entry.id, content: stringifyRoleContent({
+            ...role, baseSetting: '', relationship: '', personality: '', background: '', status: '',
+            stateSettings: createEmptyRoleStateSettings(), stateUpdateChapters: {}, history: [],
+            statusHistory: [], pendingStatusUpdates: [], fieldUpdatePolicies: {},
+          }) }];
+        }
+        const setting = parseSettingContent(entry.content);
+        return [{ id: entry.id, content: stringifySettingContent({
+          ...setting, body: '', statusHistory: [], pendingStatusUpdates: [], fieldUpdatePolicies: {},
+        }) }];
+      }));
       setFlow((current) => ({
         ...current,
         currentStepIndex: stepIndex,
@@ -175,7 +200,7 @@ export function StandardModeSettingGenerationPanel({
       }));
       onGenerate(request, `生成设定：${step.name}`);
     },
-    [entries, flow, isGenerating, linkedBrainstorm, onGenerate, prompts, settingsStorageKey],
+    [entries, flow, isGenerating, linkedBrainstorm, onGenerate, onUpdateEntries, prompts, settingsStorageKey],
   );
 
   useEffect(() => {
@@ -187,11 +212,15 @@ export function StandardModeSettingGenerationPanel({
     if (!generationObservedRef.current) return;
     generationObservedRef.current = false;
     if (!latestOutput.trim() || latestOutput.includes('【错误】')) {
+      if (generationPreviousContentRef.current) onUpdateEntries(generationPreviousContentRef.current);
+      generationPreviousContentRef.current = null;
       generationVisualSnapshotRef.current = null;
       setFlow((current) => ({ ...current, status: 'failed', error: '本步骤生成失败，请重试。' }));
       return;
     }
     if (!onImport(generationTargetEntryIdsRef.current)) {
+      if (generationPreviousContentRef.current) onUpdateEntries(generationPreviousContentRef.current);
+      generationPreviousContentRef.current = null;
       generationVisualSnapshotRef.current = null;
       setFlow((current) => ({
         ...current,
@@ -201,6 +230,7 @@ export function StandardModeSettingGenerationPanel({
       return;
     }
     const completedStep = STANDARD_SETTING_GENERATION_STEPS[flow.currentStepIndex];
+    generationPreviousContentRef.current = null;
     const completedStepIds = Array.from(new Set([...flow.completedStepIds, completedStep.id]));
     const nextIndex = flow.currentStepIndex + 1;
     const finished = nextIndex >= STANDARD_SETTING_GENERATION_STEPS.length;
@@ -221,6 +251,7 @@ export function StandardModeSettingGenerationPanel({
     isGenerating,
     latestOutput,
     onImport,
+    onUpdateEntries,
   ]);
 
   useEffect(() => {
