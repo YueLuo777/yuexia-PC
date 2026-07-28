@@ -103,7 +103,7 @@ export function StandardModeWorkbenchNavigation({
       inert={locked ? true : undefined}
       aria-disabled={locked || undefined}
       data-standard-navigation-locked={locked ? 'true' : undefined}
-      className={`h-12 shrink-0 overflow-x-auto overflow-y-hidden border-b border-[#dce1e8] bg-white transition-opacity ${locked ? 'pointer-events-none opacity-60' : ''}`}
+      className={`h-12 shrink-0 overflow-x-auto overflow-y-hidden border-b border-[#dce1e8] bg-white ${locked ? 'pointer-events-none' : ''}`}
     >
       <nav
         aria-label="标准模式创作导航"

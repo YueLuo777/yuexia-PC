@@ -220,7 +220,7 @@ describe('StandardModeSettingGenerationPanel', () => {
     });
   });
 
-  it('streams partial AI output into the setting importer while generation is running', async () => {
+  it('keeps the panel visually stable and imports only after silent generation finishes', async () => {
     const onImport = vi.fn(() => true);
     const view = render(
       <StandardModeSettingGenerationPanel
@@ -240,7 +240,7 @@ describe('StandardModeSettingGenerationPanel', () => {
       <StandardModeSettingGenerationPanel
         settingsStorageKey="settings-stream"
         entries={[]}
-        latestOutput="<作品设定>\n<核心设定>"
+        latestOutput="[[THINKING seconds=15 status=thinking]]\n内部推理过程\n[[/THINKING]]\n<作品设定>\n<核心设定>"
         isGenerating
         onGenerate={vi.fn()}
         onStop={vi.fn()}
@@ -249,10 +249,30 @@ describe('StandardModeSettingGenerationPanel', () => {
       />,
     );
 
-    await waitFor(() => expect(onImport).toHaveBeenCalled());
-    expect(screen.getByText('生成中')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^(生成|重新生成)$/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '暂停生成' })).toBeInTheDocument();
+    expect(onImport).not.toHaveBeenCalled();
+    expect(screen.queryByText('生成中')).not.toBeInTheDocument();
+    expect(screen.queryByText('最近生成结果')).not.toBeInTheDocument();
+    expect(screen.queryByText(/status=thinking/)).not.toBeInTheDocument();
+    expect(screen.getAllByText('未生成')).toHaveLength(5);
+    expect(view.container.querySelector('.animate-spin')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^(生成|重新生成)$/ })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: '一键生成全部' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '暂停生成' })).not.toBeInTheDocument();
+
+    view.rerender(
+      <StandardModeSettingGenerationPanel
+        settingsStorageKey="settings-stream"
+        entries={[]}
+        latestOutput="<作品设定>\n<核心设定>"
+        isGenerating={false}
+        onGenerate={vi.fn()}
+        onStop={vi.fn()}
+        onImport={onImport}
+        onJumpToEmptyField={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => expect(onImport).toHaveBeenCalledOnce());
   });
 
   it('does not treat the visible user request as a completed AI response', () => {
@@ -284,7 +304,7 @@ describe('StandardModeSettingGenerationPanel', () => {
       />,
     );
 
-    expect(screen.getByText('生成中')).toBeInTheDocument();
+    expect(screen.queryByText('生成中')).not.toBeInTheDocument();
     expect(screen.queryByText('生成失败')).not.toBeInTheDocument();
     expect(onImport).not.toHaveBeenCalled();
   });

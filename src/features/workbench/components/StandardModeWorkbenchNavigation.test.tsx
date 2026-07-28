@@ -121,7 +121,8 @@ describe('StandardModeWorkbenchNavigation', () => {
 
     expect(screen.getByRole('banner')).toHaveAttribute('inert');
     expect(screen.getByRole('banner')).toHaveAttribute('data-standard-navigation-locked', 'true');
-    expect(screen.getByRole('banner')).toHaveClass('pointer-events-none', 'opacity-60');
+    expect(screen.getByRole('banner')).toHaveClass('pointer-events-none');
+    expect(screen.getByRole('banner')).not.toHaveClass('opacity-60');
   });
 
   it('defaults each opened book to writing and maps every navigation entry to the formal page', () => {

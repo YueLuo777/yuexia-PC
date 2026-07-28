@@ -389,7 +389,7 @@ export function WorkbenchSettingTreeSidebar({
       inert={locked ? true : undefined}
       aria-disabled={locked || undefined}
       data-setting-generation-locked={locked ? 'true' : undefined}
-      className={`min-w-0 flex min-h-0 flex-col border-r border-slate-200 bg-[#F7F9FB] px-1 py-2 transition-opacity ${locked ? 'pointer-events-none opacity-60' : ''}`}
+      className={`min-w-0 flex min-h-0 flex-col border-r border-slate-200 bg-[#F7F9FB] px-1 py-2 ${locked ? 'pointer-events-none' : ''}`}
       style={{ gridColumn: 1, gridRow: 1 }}
     >
       <label className="mx-1 flex h-9 shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3">

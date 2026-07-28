@@ -1,5 +1,5 @@
-import { Check, Circle, LoaderCircle } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Check, Circle } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { countTextWords } from '@/features/workbench/model/workbenchLibraryPanelModel';
@@ -75,7 +75,6 @@ export function StandardModeSettingGenerationPanel({
   latestOutput,
   isGenerating,
   onGenerate,
-  onStop,
   onImport,
   onJumpToEmptyField,
 }: StandardModeSettingGenerationPanelProps) {
@@ -93,11 +92,11 @@ export function StandardModeSettingGenerationPanel({
   const [selectedBrainstormId, setSelectedBrainstormId] = useState<string | null>(null);
   const [isBrainstormReaderOpen, setIsBrainstormReaderOpen] = useState(false);
   const generationObservedRef = useRef(false);
-  const lastStreamImportAtRef = useRef(0);
-  const currentStep = STANDARD_SETTING_GENERATION_STEPS[flow.currentStepIndex];
+  const generationVisualSnapshotRef = useRef<StandardSettingGenerationState | null>(null);
 
   useEffect(() => {
     setFlow(readStandardSettingGenerationState(settingsStorageKey));
+    generationVisualSnapshotRef.current = null;
     setQueuedStepIndex(null);
     setPanelMode('generate');
     setCheckResults(null);
@@ -131,6 +130,7 @@ export function StandardModeSettingGenerationPanel({
         promptContent: prompt?.content ?? FALLBACK_SETTING_PROMPT,
       });
       generationObservedRef.current = false;
+      generationVisualSnapshotRef.current ??= flow;
       setFlow((current) => ({
         ...current,
         currentStepIndex: stepIndex,
@@ -140,7 +140,7 @@ export function StandardModeSettingGenerationPanel({
       }));
       onGenerate(request, `生成设定：${step.name}`);
     },
-    [entries, flow.requirement, isGenerating, linkedBrainstorm, onGenerate, prompts],
+    [entries, flow, isGenerating, linkedBrainstorm, onGenerate, prompts],
   );
 
   useEffect(() => {
@@ -152,10 +152,12 @@ export function StandardModeSettingGenerationPanel({
     if (!generationObservedRef.current) return;
     generationObservedRef.current = false;
     if (!latestOutput.trim() || latestOutput.includes('【错误】')) {
+      generationVisualSnapshotRef.current = null;
       setFlow((current) => ({ ...current, status: 'failed', error: '本步骤生成失败，请重试。' }));
       return;
     }
     if (!onImport()) {
+      generationVisualSnapshotRef.current = null;
       setFlow((current) => ({
         ...current,
         status: 'failed',
@@ -167,6 +169,7 @@ export function StandardModeSettingGenerationPanel({
     const completedStepIds = Array.from(new Set([...flow.completedStepIds, completedStep.id]));
     const nextIndex = flow.currentStepIndex + 1;
     const finished = nextIndex >= STANDARD_SETTING_GENERATION_STEPS.length;
+    if (finished || !flow.autoContinue) generationVisualSnapshotRef.current = null;
     setFlow((current) => ({
       ...current,
       completedStepIds,
@@ -186,19 +189,6 @@ export function StandardModeSettingGenerationPanel({
   ]);
 
   useEffect(() => {
-    if (!isGenerating || flow.status !== 'running' || !latestOutput.trim()) return;
-    const elapsed = Date.now() - lastStreamImportAtRef.current;
-    const timer = window.setTimeout(
-      () => {
-        lastStreamImportAtRef.current = Date.now();
-        onImport();
-      },
-      Math.max(0, 120 - elapsed),
-    );
-    return () => window.clearTimeout(timer);
-  }, [flow.status, isGenerating, latestOutput, onImport]);
-
-  useEffect(() => {
     if (queuedStepIndex === null) return;
     const timer = window.setTimeout(() => {
       const nextIndex = queuedStepIndex;
@@ -208,12 +198,10 @@ export function StandardModeSettingGenerationPanel({
     return () => window.clearTimeout(timer);
   }, [queuedStepIndex, runStep]);
 
-  const outputPreview = useMemo(
-    () => flow.status !== 'idle' || flow.completedStepIds.length > 0
-      ? latestOutput.trim().slice(-1600)
-      : '',
-    [flow.completedStepIds.length, flow.status, latestOutput],
-  );
+  const generationInteractionLocked = isGenerating || flow.status === 'running' || queuedStepIndex !== null;
+  const visibleFlow = generationInteractionLocked && generationVisualSnapshotRef.current
+    ? generationVisualSnapshotRef.current
+    : flow;
   const checkSettings = () => {
     const emptyFields = findEmptyStandardSettingFields(readDefaultStandardSettingEntries(settingsStorageKey));
     setCheckResults(emptyFields);
@@ -252,7 +240,7 @@ export function StandardModeSettingGenerationPanel({
       <div className="grid shrink-0 grid-cols-2 overflow-hidden rounded-md border border-[#BFC8D2] bg-white p-0.5">
         <button
           type="button"
-          disabled={isGenerating}
+          disabled={generationInteractionLocked}
           aria-pressed={panelMode === 'generate'}
           onClick={() => setPanelMode('generate')}
           className={`h-8 rounded text-xs font-bold ${panelMode === 'generate' ? 'bg-[#08AACE] text-white' : 'text-[#52606d] hover:bg-[#EAF9FD]'}`}
@@ -261,7 +249,7 @@ export function StandardModeSettingGenerationPanel({
         </button>
         <button
           type="button"
-          disabled={isGenerating}
+          disabled={generationInteractionLocked}
           aria-pressed={panelMode === 'check'}
           onClick={() => setPanelMode('check')}
           className={`h-8 rounded text-xs font-bold ${panelMode === 'check' ? 'bg-[#08AACE] text-white' : 'text-[#52606d] hover:bg-[#EAF9FD]'}`}
@@ -274,26 +262,23 @@ export function StandardModeSettingGenerationPanel({
         <div className="editor-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto py-3 pr-1">
           <ol className="shrink-0 space-y-2" aria-label="作品设定生成步骤">
             {STANDARD_SETTING_GENERATION_STEPS.map((step, index) => {
-              const completed = flow.completedStepIds.includes(step.id);
-              const active = index === flow.currentStepIndex;
-              const running = active && flow.status === 'running';
-              const failed = active && flow.status === 'failed';
-              const paused = active && flow.status === 'paused';
+              const completed = visibleFlow.completedStepIds.includes(step.id);
+              const active = index === visibleFlow.currentStepIndex;
+              const failed = active && visibleFlow.status === 'failed';
+              const paused = active && visibleFlow.status === 'paused';
               const unlocked =
                 index === 0 ||
                 STANDARD_SETTING_GENERATION_STEPS.slice(0, index).every((previousStep) =>
-                  flow.completedStepIds.includes(previousStep.id),
+                  visibleFlow.completedStepIds.includes(previousStep.id),
                 );
-              const statusText = running
-                ? '生成中'
-                : failed
+              const statusText = failed
                   ? '生成失败'
                   : paused
                     ? '已暂停'
                     : completed
                       ? '已生成'
                       : '未生成';
-              const Icon = running ? LoaderCircle : completed ? Check : Circle;
+              const Icon = completed ? Check : Circle;
               return (
                 <li key={step.id}>
                   <div
@@ -307,7 +292,7 @@ export function StandardModeSettingGenerationPanel({
                     }`}
                   >
                     <Icon
-                      className={`mt-0.5 h-4 w-4 shrink-0 ${running ? 'animate-spin text-[#08AACE]' : completed ? 'text-emerald-600' : 'text-slate-400'}`}
+                      className={`mt-0.5 h-4 w-4 shrink-0 ${completed ? 'text-emerald-600' : 'text-slate-400'}`}
                     />
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center justify-between gap-3">
@@ -316,18 +301,19 @@ export function StandardModeSettingGenerationPanel({
                         </strong>
                         <span className="flex shrink-0 items-center gap-2">
                           <span
-                            className={`text-xs font-bold ${completed ? 'text-emerald-600' : running ? 'text-[#078FAB]' : failed ? 'text-red-600' : paused ? 'text-amber-600' : 'text-slate-400'}`}
+                            className={`text-xs font-bold ${completed ? 'text-emerald-600' : failed ? 'text-red-600' : paused ? 'text-amber-600' : 'text-slate-400'}`}
                           >
                             {statusText}
                           </span>
                           <span
-                            aria-hidden={unlocked && !isGenerating ? undefined : true}
+                            aria-hidden={unlocked ? undefined : true}
                             className="flex h-7 w-16 shrink-0 items-center justify-center"
                             data-standard-setting-action-slot="true"
                           >
-                            {unlocked && !isGenerating ? (
+                            {unlocked ? (
                               <button
                                 type="button"
+                                disabled={generationInteractionLocked}
                                 onClick={() => runStep(index, false)}
                                 className="h-7 w-full rounded-md border border-[#08AACE] bg-white px-2 text-xs font-bold text-[#078FAB] hover:bg-[#E9FAFE]"
                                 title={`${completed ? '重新生成' : '生成'}${step.name}`}
@@ -351,16 +337,16 @@ export function StandardModeSettingGenerationPanel({
             <textarea
               aria-label="作品设定用户要求"
               value={flow.requirement}
-              disabled={isGenerating}
+              disabled={generationInteractionLocked}
               onChange={(event) => setFlow((current) => ({ ...current, requirement: event.target.value }))}
               placeholder="例如：世界观偏黑暗，主角做事果断"
-              className="min-h-[120px] w-full flex-1 resize-none rounded-md border border-[#BFC8D2] bg-white p-3 text-sm font-medium leading-6 text-[#1f2933] outline-none placeholder:text-xs placeholder:text-[#9aa3af] focus:border-[#08AACE] disabled:bg-slate-50"
+              className="min-h-[120px] w-full flex-1 resize-none rounded-md border border-[#BFC8D2] bg-white p-3 text-sm font-medium leading-6 text-[#1f2933] outline-none placeholder:text-xs placeholder:text-[#9aa3af] focus:border-[#08AACE]"
             />
           </label>
 
           <div
-            inert={isGenerating ? true : undefined}
-            className={isGenerating ? 'pointer-events-none opacity-70' : undefined}
+            inert={generationInteractionLocked ? true : undefined}
+            className={generationInteractionLocked ? 'pointer-events-none' : undefined}
           >
             <LinkedSourceControl
               linked={Boolean(linkedBrainstorm)}
@@ -381,20 +367,9 @@ export function StandardModeSettingGenerationPanel({
             />
           </div>
 
-          {flow.status === 'running' || outputPreview ? (
-            <section className="mt-4 rounded-md border border-[#D2D8E0] bg-white p-3">
-              <div className="text-xs font-bold text-[#52606d]">
-                {flow.status === 'running' ? `正在生成：${currentStep.name}` : '最近生成结果'}
-              </div>
-              <div className="editor-scrollbar mt-2 max-h-36 overflow-y-auto whitespace-pre-wrap text-xs font-medium leading-5 text-[#7b8794]">
-                {outputPreview || '正在等待AI返回内容…'}
-              </div>
-            </section>
-          ) : null}
-
-          {flow.error ? (
+          {visibleFlow.error ? (
             <p role="alert" className="mt-3 text-xs font-semibold leading-5 text-red-600">
-              {flow.error}
+              {visibleFlow.error}
             </p>
           ) : null}
         </div>
@@ -408,39 +383,29 @@ export function StandardModeSettingGenerationPanel({
       )}
 
       <footer className="shrink-0 space-y-2 border-t border-[#D2D8E0] pt-3">
-        {panelMode === 'generate' && isGenerating ? (
+        {panelMode === 'generate' ? (
           <button
             type="button"
-            onClick={() => {
-              onStop();
-              setFlow((current) => ({ ...current, status: 'paused' }));
-            }}
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-md border border-red-300 bg-white text-sm font-bold text-red-600 hover:bg-red-50"
-          >
-            暂停生成
-          </button>
-        ) : panelMode === 'generate' ? (
-          <button
-            type="button"
+            disabled={generationInteractionLocked}
             onClick={() => runStep(flow.currentStepIndex, true)}
             className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#08AACE] text-sm font-bold text-white hover:bg-[#0797B8]"
           >
-            {flow.status === 'failed'
+            {visibleFlow.status === 'failed'
               ? '重试当前步骤'
-              : flow.status === 'paused'
+              : visibleFlow.status === 'paused'
                 ? '继续当前步骤'
-                : flow.status === 'completed'
+                : visibleFlow.status === 'completed'
                   ? '重新生成当前步骤'
-                  : flow.completedStepIds.length
+                  : visibleFlow.completedStepIds.length
                     ? '继续生成'
                     : '一键生成全部'}
           </button>
         ) : null}
         <button
           type="button"
-          disabled={isGenerating}
+          disabled={generationInteractionLocked}
           onClick={checkSettings}
-          className="h-10 w-full rounded-md border border-[#BFC8D2] bg-white text-sm font-bold text-[#52606d] hover:border-[#63C6D9] hover:text-[#078FAB] disabled:text-slate-300"
+          className="h-10 w-full rounded-md border border-[#BFC8D2] bg-white text-sm font-bold text-[#52606d] hover:border-[#63C6D9] hover:text-[#078FAB]"
         >
           {panelMode === 'check' ? '重新检查' : '一键检查'}
         </button>

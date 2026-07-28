@@ -57,6 +57,7 @@ describe('standard mode shared chapter creation pages', () => {
   it('replaces only the standard setting AI selectors with the five-step generation panel', () => {
     const settingView = readFileSync(join(directory, 'workbenchSettingLibraryView.tsx'), 'utf8');
     const settingWorkspace = readFileSync(join(directory, 'workbenchSettingLibraryWorkspaceView.tsx'), 'utf8');
+    const settingBranch = readFileSync(join(directory, 'workbenchSettingLibraryBranch.tsx'), 'utf8');
     const generationPanel = readFileSync(join(directory, 'StandardModeSettingGenerationPanel.tsx'), 'utf8');
     const libraryPanel = readFileSync(join(directory, 'WorkbenchLibraryPanel.tsx'), 'utf8');
 
@@ -66,11 +67,16 @@ describe('standard mode shared chapter creation pages', () => {
     expect(generationPanel).toContain('STANDARD_SETTING_GENERATION_STEPS.map');
     expect(generationPanel).toContain('onClick={() => runStep(index, false)}');
     expect(generationPanel).toContain('slice(0, index)');
-    expect(generationPanel).toContain('onImport();');
+    expect(generationPanel).toContain('if (!onImport())');
+    expect(generationPanel).not.toContain('lastStreamImportAtRef');
+    expect(settingBranch).toContain(
+      'getLatestUsefulAiText(activeIsBrainstorm ? aiResult || aiOutput : aiOutput)',
+    );
     expect(generationPanel).toContain('publishStandardSettingGenerationLock(isGenerating)');
     expect(generationPanel).not.toContain('<CombinedAiConfigSelect');
     expect(settingWorkspace).toContain('data-setting-generation-locked');
-    expect(settingWorkspace).toContain('AI正在生成，设定区已锁定');
+    expect(settingWorkspace).not.toContain('data-setting-generation-lock-indicator');
+    expect(settingWorkspace).not.toContain('AI正在生成，设定区已锁定');
     expect(libraryPanel).toContain('renderSettingLibraryBranch({\n    storageKey,');
   });
 });

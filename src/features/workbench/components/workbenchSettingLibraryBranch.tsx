@@ -522,7 +522,7 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
       activeTab === SETTING_TAB
         ? !isOutlineCharacterScope && activeSettingLinkSource === 'current'
         : Boolean(activeTabConfig.promptDisabled);
-    const latestUsefulAiOutput = activeIsBrainstorm ? getLatestUsefulAiText(aiResult || aiOutput) : aiOutput.trim();
+    const latestUsefulAiOutput = getLatestUsefulAiText(activeIsBrainstorm ? aiResult || aiOutput : aiOutput);
     const smartImportLocked = activeTabConfig.smartImportLocked !== false;
     const activeSettingWorkspaceDomain = selectedSettingWorkspaceDomain;
     const visibleSettingTypeOptions = activeSettingWorkspaceDomain
