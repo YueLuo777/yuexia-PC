@@ -256,7 +256,10 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                   entries={entries}
                   latestOutput={latestUsefulAiOutput}
                   isGenerating={isLibraryAiLoading}
-                  onGenerate={(request, visibleText) => void sendLibraryAiMessage(request, { visibleText })}
+                  onGenerate={(request, visibleText) => void sendLibraryAiMessage(request, {
+                    visibleText,
+                    silentDuringRun: true,
+                  })}
                   onStop={stopLibraryAiMessage}
                   onImport={(allowedEntryIds) => smartImportSettings({ force: true, allowedEntryIds })}
                   onJumpToEmptyField={(result) => {

@@ -63,6 +63,7 @@ describe('standard mode shared chapter creation pages', () => {
 
     expect(settingView).toContain('standardMode && activeTab === SETTING_TAB');
     expect(settingView).toContain('<StandardModeSettingGenerationPanel');
+    expect(settingView).toContain('silentDuringRun: true');
     expect(settingView).toContain('renderSettingLibraryAiConfigHeader(scope)');
     expect(generationPanel).toContain('STANDARD_SETTING_GENERATION_STEPS.map');
     expect(generationPanel).toContain('onClick={() => runStep(index, false)}');

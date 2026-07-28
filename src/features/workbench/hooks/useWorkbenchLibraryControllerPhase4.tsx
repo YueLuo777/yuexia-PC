@@ -846,7 +846,7 @@ export function useWorkbenchLibraryControllerPhase4(scope: Record<string, any>) 
   };
   const sendLibraryAiMessage = async (
     overrideText?: string,
-    options: { visibleText?: string; previewCount?: number } = {},
+    options: { visibleText?: string; previewCount?: number; silentDuringRun?: boolean } = {},
   ) => {
     const text = (overrideText ?? aiInput).trim();
     if (isLibraryAiLoading || (!text && activeTab !== SETTING_TAB)) return;
@@ -880,7 +880,7 @@ export function useWorkbenchLibraryControllerPhase4(scope: Record<string, any>) 
     const pendingOutput = `${pendingAiPrefix}${formatAiThinkingResponse('', '', 0, false)}`;
     const replacePendingOutput = (content: string) => `${pendingAiPrefix}${content}`;
     setAiOutput(pendingOutput);
-    const shouldStream = targetTab === SETTING_TAB || (targetTab === BRAINSTORM_TAB && brainstormStreamEnabled);
+    const shouldStream = !options.silentDuringRun && (targetTab === SETTING_TAB || (targetTab === BRAINSTORM_TAB && brainstormStreamEnabled));
     const shouldGenerateBrainstormSequentially =
       targetTab === BRAINSTORM_TAB &&
       typeof targetBrainstormPreviewCount === 'number' &&

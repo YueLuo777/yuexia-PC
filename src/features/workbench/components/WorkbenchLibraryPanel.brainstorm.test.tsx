@@ -468,7 +468,9 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(panelSource).toContainSource(
       "? [baseModelPrompt, BRAINSTORM_OUTPUT_ONLY_INSTRUCTION].filter(Boolean).join('\\n\\n')",
     );
-    expect(panelSource).toContainSource('options: { visibleText?: string; previewCount?: number } = {},');
+    expect(panelSource).toContainSource(
+      'options: { visibleText?: string; previewCount?: number; silentDuringRun?: boolean } = {},',
+    );
     expect(panelSource).toContainSource('const visibleUserText = (options.visibleText ?? text).trim();');
     expect(panelSource).toContainSource('const visibleText = stripBrainstormRequestHeader(promptText);');
     expect(panelSource).toContainSource('void sendLibraryAiMessage(promptText, { visibleText, previewCount });');
@@ -545,6 +547,16 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(sendSource).toContainSource(
       'return replacePendingOutput(formatSequentialBrainstormOutput(completedItems));',
     );
+  });
+
+  it('does not stream hidden standard-setting output through the whole workbench', async () => {
+    const panelSource = await readWorkbenchLibraryPanelSource();
+    const sendStart = panelSource.indexOf('const sendLibraryAiMessage = async (');
+    const sendEnd = panelSource.indexOf('const stopLibraryAiMessage = () => {', sendStart);
+    const sendSource = panelSource.slice(sendStart, sendEnd);
+
+    expect(sendSource).toContainSource('silentDuringRun?: boolean');
+    expect(sendSource).toContainSource('const shouldStream = !options.silentDuringRun &&');
   });
 
   it('keeps linked brainstorm preview focused on the item content without redundant metadata cards', async () => {
