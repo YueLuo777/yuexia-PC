@@ -43,7 +43,7 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(stylesSource).toContainSource('min-width: 232px;');
     expect(stylesSource).toContainSource('height: 48px;');
     expect(stylesSource).toContainSource('.xy-setting-name-editor.xy-setting-editor-content-offset {');
-    expect(stylesSource).toContainSource('padding-top: 23px;');
+    expect(stylesSource).toContainSource('padding-top: calc(23px + 2.25rem);');
     expect(stylesSource).toContainSource('.xy-workbench-name-field-caption {');
     expect(stylesSource).toContainSource('border-radius: 0.75rem;');
     expect(stylesSource).toContainSource('left: 24px;');

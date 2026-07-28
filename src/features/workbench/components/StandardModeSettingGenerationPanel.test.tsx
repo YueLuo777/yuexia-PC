@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/features/prompts/hooks/usePrompts', () => ({
@@ -40,9 +40,8 @@ describe('StandardModeSettingGenerationPanel', () => {
     expect(screen.queryByText('0/5')).not.toBeInTheDocument();
     expect(screen.getAllByText('未生成')).toHaveLength(5);
     const stepGenerateButtons = screen.getAllByRole('button', { name: '生成' });
-    expect(stepGenerateButtons).toHaveLength(5);
+    expect(stepGenerateButtons).toHaveLength(1);
     expect(stepGenerateButtons[0]).toBeEnabled();
-    stepGenerateButtons.slice(1).forEach((button) => expect(button).toBeDisabled());
   });
 
   it('uses the built-in prompt and user requirement when starting the workflow', () => {
@@ -246,6 +245,7 @@ describe('StandardModeSettingGenerationPanel', () => {
 
     await waitFor(() => expect(onImport).toHaveBeenCalled());
     expect(screen.getByText('生成中')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^(生成|重新生成)$/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '暂停生成' })).toBeInTheDocument();
   });
 
@@ -304,10 +304,13 @@ describe('StandardModeSettingGenerationPanel', () => {
     );
 
     const stepGenerateButtons = screen.getAllByRole('button', { name: /^(生成|重新生成)$/ });
+    expect(stepGenerateButtons).toHaveLength(2);
     expect(stepGenerateButtons[0]).toHaveTextContent('重新生成');
     expect(stepGenerateButtons[0]).toBeEnabled();
     expect(stepGenerateButtons[1]).toBeEnabled();
-    stepGenerateButtons.slice(2, 5).forEach((button) => expect(button).toBeDisabled());
+    const thirdStep = screen.getByText('3. 主要人物').closest('[data-standard-setting-step]');
+    expect(thirdStep).not.toBeNull();
+    expect(within(thirdStep as HTMLElement).queryByRole('button')).not.toBeInTheDocument();
   });
 
   it('clears check results when the panel is recreated', () => {

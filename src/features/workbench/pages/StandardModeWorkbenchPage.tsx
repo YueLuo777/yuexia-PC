@@ -122,6 +122,7 @@ export function StandardModeWorkbenchPage() {
     <div className="flex h-full min-h-0 flex-col bg-[#f5f5f7]" data-standard-mode-workbench="true">
       <StandardModeWorkbenchNavigation
         locked={settingGenerationLocked}
+        bookTitle={currentNovel.title}
         activeAction={activeAction}
         onSelectAction={(_group, action) => {
           if (action === 'settingsList') {

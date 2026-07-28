@@ -48,12 +48,14 @@ const TOOL_ACTIONS: NavigationAction[] = [
 
 interface StandardModeWorkbenchNavigationProps {
   locked?: boolean;
+  bookTitle: string;
   activeAction: StandardStageAction;
   onSelectAction: (group: StandardNavigationGroup, action: StandardStageAction) => void;
 }
 
 export function StandardModeWorkbenchNavigation({
   locked = false,
+  bookTitle,
   activeAction,
   onSelectAction,
 }: StandardModeWorkbenchNavigationProps) {
@@ -63,12 +65,21 @@ export function StandardModeWorkbenchNavigation({
     actions: NavigationAction[],
   ) => (
     <section
-      aria-label={label}
+      aria-label={group === 'creationFlow' ? `书名：${label}` : label}
       data-standard-navigation-group={group}
+      data-standard-navigation-boundary={group === 'creationFlow' ? 'review-right-edge' : undefined}
       className="xy-capsule-group xy-flow-status-group shrink-0"
     >
-      <div className="flex min-h-8 shrink-0 items-center border-r border-[#dce1e8] px-3 text-xs font-bold text-[#657180]">
-        {label}
+      <div
+        data-standard-navigation-book-title={group === 'creationFlow' ? 'true' : undefined}
+        className={
+          group === 'creationFlow'
+            ? 'flex min-h-8 w-fit min-w-28 max-w-[calc(15.5em+2rem)] shrink-0 items-center justify-center border-r border-[#dce1e8] px-4 text-center text-[15px] font-black tracking-wide text-[#087A96]'
+            : 'flex min-h-8 shrink-0 items-center border-r border-[#dce1e8] px-3 text-xs font-bold text-[#657180]'
+        }
+        title={group === 'creationFlow' ? label : undefined}
+      >
+        <span className={group === 'creationFlow' ? 'min-w-0 w-full truncate text-center' : undefined}>{label}</span>
       </div>
       {actions.map((action) => {
         const active = (action.activeActions ?? [action.id]).includes(activeAction);
@@ -96,9 +107,9 @@ export function StandardModeWorkbenchNavigation({
     >
       <nav
         aria-label="标准模式创作导航"
-        className="flex h-full min-w-max items-center justify-center gap-4 px-4"
+        className="flex h-full min-w-max items-center justify-start gap-10 px-4"
       >
-        {renderGroup('creationFlow', '创作流程', CREATION_FLOW_ACTIONS)}
+        {renderGroup('creationFlow', bookTitle.trim() || '未命名作品', CREATION_FLOW_ACTIONS)}
         {renderGroup('tools', '功能栏', TOOL_ACTIONS)}
       </nav>
     </header>

@@ -177,15 +177,18 @@ describe('formal setting tree migration', () => {
     expect(roleEditor).not.toContainSource('className="editor-scrollbar mt-2 min-h-[76px]');
   });
 
-  it('moves every formal setting editor below the mode tabs with an explicit shared offset', async () => {
+  it('aligns every formal setting editor below a search-row-height gutter', async () => {
     const styles = await readSource('src/shared/styles/parts/part-09.css');
     const settingEditor = await readSource('src/features/workbench/components/workbenchSettingEditor.tsx');
     const roleEditor = await readSource('src/features/workbench/components/workbenchRoleEditor.tsx');
     const editorLayout = await readSource('src/features/workbench/components/workbenchSettingEditorLayout.ts');
+    const tree = await readSource('src/features/workbench/components/WorkbenchSettingTreeSidebar.tsx');
 
     expect(styles).toContainSource('.xy-setting-name-editor.xy-setting-editor-content-offset {');
-    expect(styles).toContainSource('padding-top: 23px;');
+    expect(styles).toContainSource('padding-top: calc(23px + 2.25rem);');
+    expect(styles).not.toContainSource('padding-top: 23px;');
     expect(styles).not.toContainSource('padding-top: 12px !important;');
+    expect(tree).toContainSource('flex h-9 shrink-0 items-center');
     expect(editorLayout.match(/xy-setting-editor-content-offset/g)).toHaveLength(1);
     expect(settingEditor).toContainSource('WORKBENCH_SETTING_EDITOR_SHELL_CLASS');
     expect(roleEditor).toContainSource('WORKBENCH_SETTING_EDITOR_SHELL_CLASS');

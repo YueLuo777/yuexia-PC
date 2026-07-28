@@ -366,5 +366,5 @@
   isolation: isolate;
 }
 .xy-setting-name-editor.xy-setting-editor-content-offset {
-  padding-top: 23px;
+  padding-top: calc(23px + 2.25rem);
 }
