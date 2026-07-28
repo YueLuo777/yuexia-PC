@@ -28,7 +28,7 @@ describe('test collection numbering', () => {
     expect(registry.has('/creation-guide-variants-test')).toBe(false);
     expect(RETIRED_TEST_SERIALS).toContainEqual({ serial: 27, path: '/creation-guide-variants-test' });
     expect(registry.get('/standard-mode-guided-navigation-test')).toBe(28);
-    expect(getNextTestSerial(testGroups)).toBe(30);
+    expect(getNextTestSerial(testGroups)).toBe(29);
     expect(testGroups.find((group) => group.title === '未做')?.items.some((item) => item.serial === 19)).toBe(true);
   });
 

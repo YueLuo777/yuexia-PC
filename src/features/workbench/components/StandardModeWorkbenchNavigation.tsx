@@ -49,7 +49,6 @@ const TOOL_ACTIONS: NavigationAction[] = [
 interface StandardModeWorkbenchNavigationProps {
   locked?: boolean;
   bookTitle: string;
-  bookTitleColor?: string;
   activeAction: StandardStageAction;
   onSelectAction: (group: StandardNavigationGroup, action: StandardStageAction) => void;
 }
@@ -57,7 +56,6 @@ interface StandardModeWorkbenchNavigationProps {
 export function StandardModeWorkbenchNavigation({
   locked = false,
   bookTitle,
-  bookTitleColor,
   activeAction,
   onSelectAction,
 }: StandardModeWorkbenchNavigationProps) {
@@ -76,10 +74,9 @@ export function StandardModeWorkbenchNavigation({
         data-standard-navigation-book-title={group === 'creationFlow' ? 'true' : undefined}
         className={
           group === 'creationFlow'
-            ? 'flex min-h-8 w-fit min-w-28 max-w-[calc(15.5em+2rem)] shrink-0 items-center justify-center border-r border-[#dce1e8] px-4 text-center text-[15px] font-black tracking-wide text-[#087A96]'
+            ? 'flex min-h-8 w-fit min-w-28 max-w-[calc(15.5em+2rem)] shrink-0 items-center justify-center border-r border-[#dce1e8] px-4 text-center text-[15px] font-black tracking-wide text-[#078FAB]'
             : 'flex min-h-8 shrink-0 items-center border-r border-[#dce1e8] px-3 text-xs font-bold text-[#657180]'
         }
-        style={group === 'creationFlow' && bookTitleColor ? { color: bookTitleColor } : undefined}
         title={group === 'creationFlow' ? label : undefined}
       >
         <span className={group === 'creationFlow' ? 'min-w-0 w-full truncate text-center' : undefined}>{label}</span>

@@ -52,7 +52,7 @@ describe('StandardModeWorkbenchNavigation', () => {
       'text-[15px]',
       'font-black',
       'tracking-wide',
-      'text-[#087A96]',
+      'text-[#078FAB]',
       'max-w-[calc(15.5em+2rem)]',
     );
     expect(title?.querySelector('span')).toHaveClass('min-w-0', 'w-full', 'truncate', 'text-center');

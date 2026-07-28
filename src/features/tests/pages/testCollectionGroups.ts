@@ -155,14 +155,6 @@ export const testGroups: TestGroup[] = [
         icon: Workflow,
         badge: 'Guided Nav',
       },
-      {
-        serial: 29,
-        title: '标准模式书名颜色十方案',
-        description: '在正式组合导航中对比深靛蓝、午夜蓝、黛青、墨绿、紫罗兰等十种书名颜色，并提供推荐理由。',
-        path: '/standard-mode-book-title-color-test',
-        icon: Palette,
-        badge: 'Title Color',
-      },
     ],
   },
   {
