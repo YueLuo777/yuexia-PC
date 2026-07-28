@@ -73,6 +73,11 @@ const StandardModeGuidedNavigationTestPage = lazy(() =>
     default: module.StandardModeGuidedNavigationTestPage,
   })),
 );
+const StandardModeBookTitleColorTestPage = lazy(() =>
+  import('@/features/tests/pages/StandardModeBookTitleColorTestPage').then((module) => ({
+    default: module.StandardModeBookTitleColorTestPage,
+  })),
+);
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
 );
@@ -219,6 +224,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <StandardModeProjectProgressTestPage />;
       case '/standard-mode-guided-navigation-test':
         return <StandardModeGuidedNavigationTestPage />;
+      case '/standard-mode-book-title-color-test':
+        return <StandardModeBookTitleColorTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':

@@ -6,15 +6,17 @@ import { testGroups } from './testCollectionGroups';
 import { readTestCollectionSource } from './testCollectionSource.testUtils';
 
 describe('StandardModeGuidedNavigationTestPage', () => {
-  it('registers the new prototypes at the end of the workbench test group', () => {
+  it('keeps the guided navigation prototypes registered before the newer title color test', () => {
     const group = testGroups.find((item) => item.title === 'UI 与主题');
-    const entry = group?.items.at(-1);
+    const entryIndex = group?.items.findIndex((item) => item.path === '/standard-mode-guided-navigation-test') ?? -1;
+    const entry = group?.items[entryIndex];
 
     expect(entry).toMatchObject({
       serial: 28,
       path: '/standard-mode-guided-navigation-test',
       title: '标准模式导航与创作指导新方案',
     });
+    expect(group?.items[entryIndex + 1]?.path).toBe('/standard-mode-book-title-color-test');
     const collectionSource = readTestCollectionSource();
     expect(collectionSource).toContain("const StandardModeGuidedNavigationTestPage = lazy(() =>");
     expect(collectionSource).toContain("case '/standard-mode-guided-navigation-test':");
