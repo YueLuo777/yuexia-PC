@@ -2,6 +2,17 @@ import type { ErrorLogEntry } from './errorLogEntryTypes';
 
 export const defaultEntriesPart60: ErrorLogEntry[] = [
   {
+    id: 'standard-setting-generation-reset-and-step-target-001',
+    title: '重新生成误启动剧情规划且清空后步骤状态未复位',
+    area: '标准模式 / 作品设定 / 分步生成状态',
+    symptom: '点击基础设定的重新生成后，仍启动了剧情规划；清空设定后，右侧步骤继续显示已生成或停留在后续步骤。',
+    cause: '自动连续生成留下的排队步骤没有在手动重新生成时取消；生成面板未订阅设定清空事件，只重新读取了编辑内容。',
+    solution: '手动重新生成任一步骤时清除待执行的自动步骤；生成面板监听 settings-cleared 事件，重置当前步骤、已完成步骤、错误和检查面板状态。',
+    prevention: '回归测试覆盖手动重新生成目标、自动步骤队列取消和清空后的第 1 步初始状态，状态持久化与界面状态必须同时复位。',
+    keywords: ['作品设定', '重新生成', '剧情规划', '清空设定', '步骤复位', '自动队列'],
+    updatedAt: '2026-07-29',
+  },
+  {
     id: 'standard-setting-generation-editor-lock-feedback-001',
     title: '设定生成期间编辑区未锁定且缺少生成反馈',
     area: '标准模式 / 作品设定 / 分步生成交互',

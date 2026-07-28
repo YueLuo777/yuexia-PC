@@ -11,11 +11,13 @@ import {
   readStandardModeBrainstormLinkFromSettingsKey,
   writeStandardModeBrainstormLinkFromSettingsKey,
 } from '@/features/workbench/model/standardModeBrainstormLink';
+import { subscribeStandardModeSettingNavigationAction } from '@/features/workbench/model/standardModeSettingNavigationEvents';
 import { createVersionFromBrainstormEntry } from '@/features/workbench/model/standardModeBrainstormModel';
 import { readDefaultStandardSettingEntries } from '@/features/workbench/model/standardModeDefaultSettingAdapter';
 import {
   STANDARD_SETTING_GENERATION_STEPS,
   buildStandardSettingStepRequest,
+  createStandardSettingGenerationState,
   findBuiltInSettingPrompt,
   readStandardSettingGenerationState,
   writeStandardSettingGenerationState,
@@ -124,6 +126,19 @@ export function StandardModeSettingGenerationPanel({
   }, [settingsStorageKey]);
 
   useEffect(() => {
+    return subscribeStandardModeSettingNavigationAction((event) => {
+      if (event.storageKey !== settingsStorageKey || event.action !== 'settings-cleared') return;
+      setFlow(createStandardSettingGenerationState());
+      setQueuedStepIndex(null);
+      setPanelMode('generate');
+      setCheckResults(null);
+      generationObservedRef.current = false;
+      generationVisualSnapshotRef.current = null;
+      generationTargetEntryIdsRef.current = [];
+    });
+  }, [settingsStorageKey]);
+
+  useEffect(() => {
     writeStandardSettingGenerationState(settingsStorageKey, flow);
   }, [flow, settingsStorageKey]);
 
@@ -131,6 +146,7 @@ export function StandardModeSettingGenerationPanel({
     (stepIndex: number, autoContinue: boolean) => {
       const step = STANDARD_SETTING_GENERATION_STEPS[stepIndex];
       if (!step || isGenerating) return;
+      if (!autoContinue) setQueuedStepIndex(null);
       const targets = readStandardSettingGenerationTargets(settingsStorageKey, step);
       if (targets.length === 0) {
         setFlow((current) => ({ ...current, status: 'failed', error: '当前模板在本步骤中没有可写入的原有设定。' }));

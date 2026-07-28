@@ -12,6 +12,7 @@ import {
   createStandardSettingGenerationState,
   writeStandardSettingGenerationState,
 } from '@/features/workbench/model/standardModeSettingGenerationFlow';
+import { publishStandardModeSettingNavigationAction } from '@/features/workbench/model/standardModeSettingNavigationEvents';
 
 describe('StandardModeSettingGenerationPanel', () => {
   beforeEach(() => localStorage.clear());
@@ -48,6 +49,34 @@ describe('StandardModeSettingGenerationPanel', () => {
       expect(card?.querySelector('[data-standard-setting-action-slot="true"]')).toHaveClass('w-16');
     });
     expect(stepCards.slice(1).every((card) => card?.querySelector('[data-standard-setting-action-slot="true"]')?.childElementCount === 0)).toBe(true);
+  });
+
+  it('resets the visible generation steps when setting content is cleared', async () => {
+    writeStandardSettingGenerationState('settings-clear-flow', {
+      ...createStandardSettingGenerationState(),
+      currentStepIndex: 1,
+      completedStepIds: ['world-foundation'],
+    });
+    render(
+      <StandardModeSettingGenerationPanel
+        settingsStorageKey="settings-clear-flow"
+        entries={[]}
+        latestOutput=""
+        isGenerating={false}
+        onGenerate={vi.fn()}
+        onStop={vi.fn()}
+        onImport={() => true}
+        onJumpToEmptyField={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('已生成')).toBeInTheDocument();
+    publishStandardModeSettingNavigationAction({ action: 'settings-cleared', storageKey: 'settings-clear-flow' });
+
+    await waitFor(() => {
+      expect(screen.getAllByText('未生成')).toHaveLength(5);
+      expect(screen.queryByText('已生成')).not.toBeInTheDocument();
+    });
   });
 
   it('uses the built-in prompt and user requirement when starting the workflow', () => {
