@@ -42,6 +42,7 @@ const stats = {
 function renderPage({
   onSave = vi.fn(),
   onOpenBrainstorm = vi.fn(),
+  onOpenBrainstormLibrary = vi.fn(),
   onOpenSettings = vi.fn(),
   onOpenOutline = vi.fn(),
   onOpenWriting = vi.fn(),
@@ -54,6 +55,7 @@ function renderPage({
   return {
     onSave,
     onOpenBrainstorm,
+    onOpenBrainstormLibrary,
     onOpenSettings,
     onOpenOutline,
     onOpenWriting,
@@ -68,6 +70,7 @@ function renderPage({
         onExternalAiOptimizerClose={onExternalAiOptimizerClose}
         onSave={onSave}
         onOpenBrainstorm={onOpenBrainstorm}
+        onOpenBrainstormLibrary={onOpenBrainstormLibrary}
         onOpenSettings={onOpenSettings}
         onOpenOutline={onOpenOutline}
         onOpenWriting={onOpenWriting}
@@ -207,12 +210,14 @@ describe('StandardModeWorkDetailsPage', () => {
 
   it('guides the complete creation flow and opens every formal step directly', () => {
     const onOpenBrainstorm = vi.fn();
+    const onOpenBrainstormLibrary = vi.fn();
     const onOpenSettings = vi.fn();
     const onOpenOutline = vi.fn();
     const onOpenWriting = vi.fn();
     const onOpenAudit = vi.fn();
     renderPage({
       onOpenBrainstorm,
+      onOpenBrainstormLibrary,
       onOpenSettings,
       onOpenOutline,
       onOpenWriting,
@@ -223,6 +228,9 @@ describe('StandardModeWorkDetailsPage', () => {
     ['查看准备脑洞', '查看建立设定', '查看生成章纲', '查看生成正文', '查看完成检查'].forEach((label) => {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
     });
+    const brainstormActions = document.querySelector('[data-guide-brainstorm-actions="true"]');
+    expect([...brainstormActions!.children].map((button) => button.textContent?.trim())).toEqual(['查看脑洞', '生成脑洞']);
+    fireEvent.click(screen.getByRole('button', { name: '查看脑洞' }));
     fireEvent.click(screen.getByRole('button', { name: '生成脑洞' }));
     fireEvent.click(screen.getByRole('button', { name: '查看建立设定' }));
     fireEvent.click(screen.getByRole('button', { name: '开始设定' }));
@@ -235,6 +243,7 @@ describe('StandardModeWorkDetailsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '审核剧情' }));
 
     expect(onOpenBrainstorm).toHaveBeenCalledTimes(1);
+    expect(onOpenBrainstormLibrary).toHaveBeenCalledTimes(1);
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
     expect(onOpenOutline).toHaveBeenCalledTimes(1);
     expect(onOpenWriting).toHaveBeenCalledTimes(1);

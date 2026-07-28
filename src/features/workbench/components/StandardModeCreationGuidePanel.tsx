@@ -19,6 +19,7 @@ type StandardModeCreationGuidePanelProps = {
   hasSettings: boolean;
   stats: StandardModeWorkbenchStats;
   onOpenBrainstorm: () => void;
+  onOpenBrainstormLibrary: () => void;
   onOpenSettings: () => void;
   onOpenOutline: () => void;
   onOpenWriting: () => void;
@@ -30,6 +31,7 @@ export function StandardModeCreationGuidePanel({
   hasSettings,
   stats,
   onOpenBrainstorm,
+  onOpenBrainstormLibrary,
   onOpenSettings,
   onOpenOutline,
   onOpenWriting,
@@ -42,7 +44,7 @@ export function StandardModeCreationGuidePanel({
       shortTitle: '脑洞',
       purpose: '确定题材、主角、卖点和故事方向',
       complete: hasBrainstorm,
-      action: hasBrainstorm ? '查看脑洞' : '生成脑洞',
+      action: '生成脑洞',
       onOpen: onOpenBrainstorm,
       progress: `脑洞库：${stats.brainstormCount} 个${hasBrainstorm ? '，当前作品已关联 1 个' : ''}`,
     },
@@ -156,13 +158,32 @@ export function StandardModeCreationGuidePanel({
         >
           {activeStep.progress}
         </div>
-        <button
-          type="button"
-          onClick={activeStep.onOpen}
-          className="mt-4 h-10 w-full rounded-md bg-[#08AACE] text-sm font-bold text-white hover:bg-[#0797b8] focus-visible:outline-none"
-        >
-          {activeStep.action}
-        </button>
+        {activeStep.id === 'brainstorm' ? (
+          <div className="mt-4 grid grid-cols-2 gap-2" data-guide-brainstorm-actions="true">
+            <button
+              type="button"
+              onClick={onOpenBrainstormLibrary}
+              className="h-10 rounded-md border border-[#08AACE] bg-white text-sm font-bold text-[#078FAB] hover:bg-[#EAF9FD] focus-visible:outline-none"
+            >
+              查看脑洞
+            </button>
+            <button
+              type="button"
+              onClick={activeStep.onOpen}
+              className="h-10 rounded-md bg-[#08AACE] text-sm font-bold text-white hover:bg-[#0797b8] focus-visible:outline-none"
+            >
+              生成脑洞
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={activeStep.onOpen}
+            className="mt-4 h-10 w-full rounded-md bg-[#08AACE] text-sm font-bold text-white hover:bg-[#0797b8] focus-visible:outline-none"
+          >
+            {activeStep.action}
+          </button>
+        )}
       </section>
 
       <section className="mt-4 border-t border-[#dce1e8] pt-4">

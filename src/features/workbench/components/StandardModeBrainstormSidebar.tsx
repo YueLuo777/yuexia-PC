@@ -8,6 +8,7 @@ import {
 } from '@/features/workbench/model/standardModeBrainstormCategories';
 import { getBrainstormEntryBody } from '@/features/workbench/components/workbenchLibraryAiText';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
+import { sortBrainstormEntriesBySerial } from '@/features/workbench/model/standardModeBrainstormModel';
 import { countTextWords } from '@/features/workbench/model/workbenchLibraryPanelModel';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { FormDialog } from '@/shared/ui/FormDialog';
@@ -88,12 +89,7 @@ export function StandardModeBrainstormSidebar({
   const [dragOverCategoryId, setDragOverCategoryId] = useState<string | null>(null);
 
   const visibleEntries = useMemo(() => {
-    return [...entries]
-      .sort((left, right) => {
-        const leftSerial = left.brainstormSerialNumber ?? Number.MAX_SAFE_INTEGER;
-        const rightSerial = right.brainstormSerialNumber ?? Number.MAX_SAFE_INTEGER;
-        return leftSerial - rightSerial;
-      });
+    return sortBrainstormEntriesBySerial(entries);
   }, [entries]);
   const groupedEntries = useMemo(() => {
     const groups = new Map(categories.map((category) => [category.id, [] as WorkbenchLibraryEntry[]]));

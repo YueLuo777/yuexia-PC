@@ -82,6 +82,46 @@ describe('AssociationReaderItemRow', () => {
     expect(onSelect).toHaveBeenCalledWith('idea-2');
   });
 
+  it('orders brainstorms by their library serial and labels the candidate area as a brainstorm list', () => {
+    render(
+      <BrainstormReaderModal
+        isOpen
+        entries={[
+          {
+            id: 'idea-2',
+            tab: '脑洞',
+            title: '第二个脑洞',
+            content: '第二份内容',
+            updatedAt: '2026-07-22',
+            brainstormSerialNumber: 2,
+          },
+          {
+            id: 'idea-1',
+            tab: '脑洞',
+            title: '第一个脑洞',
+            content: '第一份内容',
+            updatedAt: '2026-07-22',
+            brainstormSerialNumber: 1,
+          },
+        ]}
+        selectedId={null}
+        onSelect={vi.fn()}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('脑洞列表')).toBeInTheDocument();
+    expect(screen.queryByText('候选书单')).not.toBeInTheDocument();
+    const brainstormList = within(screen.getByTestId('brainstorm-reader-list'));
+    const firstButton = brainstormList.getByText('第一个脑洞').closest('button')!;
+    const secondButton = brainstormList.getByText('第二个脑洞').closest('button')!;
+    expect(firstButton.compareDocumentPosition(secondButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(
+      [...document.querySelectorAll('[data-association-reader-serial="true"]')].map((item) => item.textContent),
+    ).toEqual(['1', '2']);
+  });
+
   it('keeps long brainstorm names and metadata in one adaptive heading above a resizable split', () => {
     window.localStorage.clear();
     const longTitle = '万界吞噬之从边荒小城一路修炼到九重天巅峰';
@@ -119,7 +159,7 @@ describe('AssociationReaderItemRow', () => {
     expect(previewContent).not.toHaveClass('p-5');
 
     const grid = screen.getByTestId('brainstorm-reader-grid');
-    const splitter = screen.getByRole('separator', { name: '调整候选书单宽度' });
+    const splitter = screen.getByRole('separator', { name: '调整脑洞列表宽度' });
     expect(grid).toHaveStyle({ gridTemplateColumns: '300px 8px minmax(0, 1fr)' });
     expect(splitter).toHaveAttribute('aria-valuenow', '300');
 

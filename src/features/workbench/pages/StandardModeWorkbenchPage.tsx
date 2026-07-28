@@ -153,6 +153,9 @@ export function StandardModeWorkbenchPage() {
           onOpenBrainstorm={() => {
             setActiveAction('generateBrainstorm');
           }}
+          onOpenBrainstormLibrary={() => {
+            setActiveAction('brainstormLibrary');
+          }}
           onOpenSettings={() => {
             setActiveAction(hasSettings ? 'settingsList' : 'createSettings');
           }}

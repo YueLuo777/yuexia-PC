@@ -1,6 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
+import {
+  normalizeBrainstormEntries,
+  sortBrainstormEntriesBySerial,
+} from '@/features/workbench/model/standardModeBrainstormModel';
 import { WordCountText } from '@/shared/ui/WordCountText';
 import {
   ASSOCIATION_READER_GRID_CLASS,
@@ -43,7 +47,11 @@ export function BrainstormReaderModal({
   subtitle = '每个脑洞都是可独立成书的候选项目；左侧切换预览，右侧确认关联。',
   confirmText = '关联脑洞',
 }: BrainstormReaderModalProps) {
-  const [previewId, setPreviewId] = useState(selectedId ?? entries[0]?.id ?? '');
+  const orderedEntries = useMemo(
+    () => sortBrainstormEntriesBySerial(normalizeBrainstormEntries(entries)),
+    [entries],
+  );
+  const [previewId, setPreviewId] = useState(selectedId ?? orderedEntries[0]?.id ?? '');
   const {
     candidateWidth,
     candidateMaxWidth,
@@ -55,12 +63,14 @@ export function BrainstormReaderModal({
   useEffect(() => {
     if (!isOpen) return;
     setPreviewId((current) =>
-      entries.some((entry) => entry.id === current) ? current : (selectedId ?? entries[0]?.id ?? ''),
+      orderedEntries.some((entry) => entry.id === current)
+        ? current
+        : (selectedId ?? orderedEntries[0]?.id ?? ''),
     );
-  }, [entries, isOpen, selectedId]);
+  }, [isOpen, orderedEntries, selectedId]);
   if (!isOpen) return null;
-  const previewEntry = entries.find((entry) => entry.id === previewId) ?? null;
-  const linkedEntry = entries.find((entry) => entry.id === selectedId) ?? null;
+  const previewEntry = orderedEntries.find((entry) => entry.id === previewId) ?? null;
+  const linkedEntry = orderedEntries.find((entry) => entry.id === selectedId) ?? null;
   const previewText = getBrainstormEntryBody(previewEntry);
 
   return (
@@ -81,24 +91,28 @@ export function BrainstormReaderModal({
         >
           <aside className="flex min-h-0 flex-col bg-slate-50 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <h4 className="text-sm font-black text-gray-900">候选书单</h4>
+              <h4 className="text-sm font-black text-gray-900">脑洞列表</h4>
               <span className="rounded-full bg-[#EAF9FD] px-2.5 py-1 text-xs font-black text-[#08AACE]">
-                {entries.length}
+                {orderedEntries.length}
               </span>
             </div>
-            <div className="editor-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-              {entries.length === 0 && (
+            <div
+              data-testid="brainstorm-reader-list"
+              className="editor-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto pr-1"
+            >
+              {orderedEntries.length === 0 && (
                 <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 text-sm text-gray-400">
                   暂无脑洞
                 </div>
               )}
-              {entries.map((entry) => {
+              {orderedEntries.map((entry, index) => {
                 const contentText = parseSettingContent(entry.content).body || entry.content || '';
                 const active = previewId === entry.id;
                 return (
                   <AssociationReaderItemRow
                     key={entry.id}
                     title={entry.title}
+                    serialNumber={entry.brainstormSerialNumber ?? index + 1}
                     selected={active}
                     checked={selectedId === entry.id}
                     meta={<WordCountText value={countTextWords(contentText)} compact />}
@@ -112,7 +126,7 @@ export function BrainstormReaderModal({
           <div
             data-no-modal-drag="true"
             role="separator"
-            aria-label="调整候选书单宽度"
+            aria-label="调整脑洞列表宽度"
             aria-orientation="vertical"
             aria-valuemin={BRAINSTORM_READER_CANDIDATE_MIN_WIDTH}
             aria-valuemax={candidateMaxWidth}
@@ -120,7 +134,7 @@ export function BrainstormReaderModal({
             tabIndex={0}
             onPointerDown={onSplitterPointerDown}
             onKeyDown={onSplitterKeyDown}
-            title="拖拽调整候选书单与预览宽度"
+            title="拖拽调整脑洞列表与预览宽度"
             className="group relative z-10 flex h-full w-full cursor-ew-resize touch-none items-stretch justify-center bg-transparent outline-none"
           >
             <div className="h-full w-px bg-slate-200 transition-all group-hover:w-[2px] group-hover:bg-[#08AACE] group-focus-visible:w-[2px] group-focus-visible:bg-[#08AACE]" />

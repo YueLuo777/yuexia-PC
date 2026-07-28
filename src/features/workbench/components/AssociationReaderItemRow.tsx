@@ -30,6 +30,7 @@ export function AssociationSelectionBox({ checked, label, onToggle }: Associatio
 
 type AssociationReaderItemRowProps = {
   title: string;
+  serialNumber?: number;
   selected: boolean;
   checked: boolean;
   meta?: ReactNode;
@@ -39,6 +40,7 @@ type AssociationReaderItemRowProps = {
 
 export function AssociationReaderItemRow({
   title,
+  serialNumber,
   selected,
   checked,
   meta,
@@ -54,6 +56,14 @@ export function AssociationReaderItemRow({
       }`}
     >
       <button type="button" onClick={onPreview} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+        {serialNumber ? (
+          <span
+            className="w-5 shrink-0 text-center text-xs font-bold text-[#08AACE]"
+            data-association-reader-serial="true"
+          >
+            {serialNumber}
+          </span>
+        ) : null}
         <span className="min-w-0 flex-1 truncate">{title}</span>
         {meta ? <span className="shrink-0 text-xs text-[#08AACE]">{meta}</span> : null}
       </button>

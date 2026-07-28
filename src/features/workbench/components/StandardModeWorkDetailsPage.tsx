@@ -38,6 +38,7 @@ type StandardModeWorkDetailsPageProps = {
   onExternalAiOptimizerClose?: () => void;
   onSave: (details: StandardModeWorkDetailsUpdate) => void;
   onOpenBrainstorm: () => void;
+  onOpenBrainstormLibrary: () => void;
   onOpenSettings: () => void;
   onOpenOutline: () => void;
   onOpenWriting: () => void;
@@ -107,6 +108,7 @@ export function StandardModeWorkDetailsPage({
   onExternalAiOptimizerClose,
   onSave,
   onOpenBrainstorm,
+  onOpenBrainstormLibrary,
   onOpenSettings,
   onOpenOutline,
   onOpenWriting,
@@ -435,6 +437,7 @@ export function StandardModeWorkDetailsPage({
         hasSettings={hasSettings}
         stats={stats}
         onOpenBrainstorm={onOpenBrainstorm}
+        onOpenBrainstormLibrary={onOpenBrainstormLibrary}
         onOpenSettings={onOpenSettings}
         onOpenOutline={onOpenOutline}
         onOpenWriting={onOpenWriting}

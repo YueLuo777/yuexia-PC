@@ -75,6 +75,14 @@ export function normalizeBrainstormEntries(entries: WorkbenchLibraryEntry[]) {
   return ensureBrainstormSerialNumbers(entries.filter((entry) => entry.tab === '脑洞' && !entry.deletedAt));
 }
 
+export function sortBrainstormEntriesBySerial(entries: WorkbenchLibraryEntry[]) {
+  return [...entries].sort((left, right) => {
+    const leftSerial = left.brainstormSerialNumber ?? Number.MAX_SAFE_INTEGER;
+    const rightSerial = right.brainstormSerialNumber ?? Number.MAX_SAFE_INTEGER;
+    return leftSerial - rightSerial;
+  });
+}
+
 export function buildStandardBrainstormGenerationRequest(
   draft: StandardBrainstormGenerationDraft,
 ) {
