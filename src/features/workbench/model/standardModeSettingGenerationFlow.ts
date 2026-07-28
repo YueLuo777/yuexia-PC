@@ -1,4 +1,9 @@
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
+import {
+  buildStandardSettingGenerationOutputTemplate,
+  formatStandardSettingGenerationTargets,
+  type StandardSettingGenerationTarget,
+} from './standardModeSettingGenerationTargets';
 
 export type StandardSettingGenerationStep = {
   id: string;
@@ -122,12 +127,14 @@ export function buildStandardSettingStepRequest({
   brainstorm,
   existingSettings,
   promptContent,
+  targets,
 }: {
   step: StandardSettingGenerationStep;
   requirement: string;
   brainstorm: string;
   existingSettings: string;
   promptContent: string;
+  targets: StandardSettingGenerationTarget[];
 }) {
   return [
     promptContent.trim(),
@@ -135,11 +142,16 @@ export function buildStandardSettingStepRequest({
     step.name,
     '【本步只生成】',
     step.scope,
+    '以下写入规则优先级最高；如果前面的提示词要求新建设定、自由命名或改变分组，以这里的规则为准。',
+    '【本步骤只能写入以下原有设定】',
+    formatStandardSettingGenerationTargets(targets),
     brainstorm.trim() ? `【关联脑洞】\n${brainstorm.trim()}` : '',
     existingSettings.trim() ? `【已经完成的设定】\n${existingSettings.trim()}` : '',
     requirement.trim() ? `【用户补充要求】\n${requirement.trim()}` : '',
     '【输出要求】',
-    '只输出本步骤对应的设定，不要重复已经完成的内容。严格使用软件可智能导入的设定标签格式：<分组名>、*设定名*：、【子设定名】：、设定内容。每个名称必须与当前模板一致。只写用户可见的中文设定内容，禁止输出JSON、Markdown代码块以及type、body、structuredFieldSetId、lockedDefaultEntryId等软件内部字段。不要解释，不要寒暄。',
+    '你是在填写软件中已经存在的设定，不是在创建设定。只能输出上面列出的原有设定，设定名、所属分组和字段名必须逐字一致；禁止新增、改名、合并或在设定名后追加内容。每个设定只能出现一次，必须填写到对应的原有字段中。严格照下面的标签骨架输出，把“填写该字段内容”替换成完整设定正文；不要输出骨架之外的任何内容。',
+    buildStandardSettingGenerationOutputTemplate(targets),
+    '只写用户可见的中文设定内容，禁止输出JSON、Markdown代码块以及type、body、structuredFieldSetId、lockedDefaultEntryId等软件内部字段。不要解释，不要寒暄。',
   ]
     .filter(Boolean)
     .join('\n\n');

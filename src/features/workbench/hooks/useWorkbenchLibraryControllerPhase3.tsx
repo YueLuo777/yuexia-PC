@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck -- controller phase keeps the original top-level statement order intact.
 import { getWorkbenchLibraryPhaseActions } from './workbenchLibraryPhaseActionsBridge';
-import { takeCanonicalImportedSettingEntry } from '../components/workbenchSmartImport';
+import { filterStandardGenerationDuplicateEntries, takeCanonicalImportedSettingEntry } from '../components/workbenchSmartImport';
 export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) {
   const phaseActionsRef = { current: getWorkbenchLibraryPhaseActions(scope.settingTypeOptionsRef) };
   const {
@@ -644,8 +644,9 @@ export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) 
     setSettingCreateContextKind(null);
     setSettingCreateDialog(kind);
   };
-  const smartImportSettings = (options: { force?: boolean } = {}) => {
+  const smartImportSettings = (options: { force?: boolean; allowedEntryIds?: string[] } = {}) => {
     if (!options.force && activeTabConfig.smartImportLocked !== false) return false;
+    const allowedEntryIds = options.allowedEntryIds ? new Set(options.allowedEntryIds) : undefined;
     const sourceText = stripAiThinkingBlock(
       getLatestUsefulAiText(activeTab === SETTING_TAB ? aiOutput : aiResult || aiOutput),
     );
@@ -668,17 +669,14 @@ export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) 
     const importedRoleTypes = new Set<string>();
     segments.forEach((segment) => {
       const type = normalizeSettingType(normalizeImportedSettingKey(segment.type));
-      if (type !== UNCATEGORIZED_TYPE && type !== BRAINSTORM_TYPE) {
-        importedSettingTypes.add(type);
-      }
-      if (type !== UNCATEGORIZED_TYPE && type !== BRAINSTORM_TYPE && !resolvedSettingTypes.has(type)) {
-        importedCustomTypes.add(type);
-      }
       const titleKey = normalizeImportedSettingKey(segment.title);
       const typeKey = normalizeImportedSettingKey(type);
       const body = normalizeImportedSettingBody(segment.body, segment.title);
       if (!titleKey || !body) return;
-      const existingEntry = takeCanonicalImportedSettingEntry(remainingEntries, titleKey, typeKey);
+      const existingEntry = takeCanonicalImportedSettingEntry(remainingEntries, titleKey, typeKey, allowedEntryIds);
+      if (!existingEntry && allowedEntryIds) return;
+      if (type !== UNCATEGORIZED_TYPE && type !== BRAINSTORM_TYPE) importedSettingTypes.add(type);
+      if (type !== UNCATEGORIZED_TYPE && type !== BRAINSTORM_TYPE && !resolvedSettingTypes.has(type)) importedCustomTypes.add(type);
       if (existingEntry) {
         const existingSetting = parseSettingContent(existingEntry.content);
         importedEntries.push({
@@ -704,7 +702,7 @@ export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) 
       const importedType = getImportedRoleSection(sections, ['身份定位', '角色定位', '人物定位', '身份', '类型']);
       const shouldMatchMaleProtagonist = isMaleProtagonistRoleType(importedType) || /男主角|主角/.test(segment.title);
       const existingIndex = remainingEntries.findIndex((entry) => {
-        if (entry.tab !== ROLE_TAB) return false;
+        if (entry.tab !== ROLE_TAB || (allowedEntryIds && !allowedEntryIds.has(entry.id))) return false;
         const role = parseRoleContent(entry.content);
         const importedTitle = buildImportedRoleEntryTitle(segment, shouldMatchMaleProtagonist ? entry.title : '');
         return (
@@ -716,7 +714,7 @@ export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) 
       if (existingIndex >= 0) {
         const [existingEntry] = remainingEntries.splice(existingIndex, 1);
         const existingRole = parseRoleContent(existingEntry.content);
-        const nextTitle = buildImportedRoleEntryTitle(segment, existingEntry.title);
+        const nextTitle = allowedEntryIds ? existingEntry.title : buildImportedRoleEntryTitle(segment, existingEntry.title);
         const nextRole = createImportedRoleContent(segment, existingRole);
         importedRoleTypes.add(nextRole.type);
         importedRoleEntries.push({
@@ -728,6 +726,7 @@ export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) 
         return;
       }
 
+      if (allowedEntryIds) return;
       const nextTitle = buildImportedRoleEntryTitle(segment);
       const nextRole = createImportedRoleContent(segment);
       importedRoleTypes.add(nextRole.type);
@@ -736,7 +735,8 @@ export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) 
         content: stringifyRoleContent(nextRole),
       });
     });
-    persist([...importedEntries, ...importedRoleEntries, ...remainingEntries]);
+    if (importedEntries.length === 0 && importedRoleEntries.length === 0) return false;
+    persist([...importedEntries, ...importedRoleEntries, ...filterStandardGenerationDuplicateEntries(remainingEntries, entries, allowedEntryIds)]);
     if (importedCustomTypes.size > 0) {
       setCustomSettingTypes((prev) => {
         const next = Array.from(new Set([...prev, ...importedCustomTypes]));

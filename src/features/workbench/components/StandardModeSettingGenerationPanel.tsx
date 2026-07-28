@@ -5,6 +5,7 @@ import { usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { countTextWords } from '@/features/workbench/model/workbenchLibraryPanelModel';
 import { parseRoleContent } from '@/features/workbench/components/workbenchRoleContent';
 import { parseSettingContent } from '@/features/workbench/components/workbenchStructuredSettings';
+import { normalizeImportedSettingKey } from '@/features/workbench/components/workbenchSmartImport';
 import {
   clearStandardModeBrainstormLinkFromSettingsKey,
   readStandardModeBrainstormLinkFromSettingsKey,
@@ -22,6 +23,7 @@ import {
 } from '@/features/workbench/model/standardModeSettingGenerationFlow';
 import { findEmptyStandardSettingFields } from '@/features/workbench/model/standardModeSettingModel';
 import type { StandardSettingEmptyField } from '@/features/workbench/model/standardModeSettingModel';
+import { readStandardSettingGenerationTargets } from '@/features/workbench/model/standardModeSettingGenerationTargets';
 import { publishStandardSettingGenerationLock } from '@/features/workbench/model/standardModeSettingGenerationRuntime';
 import {
   GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY,
@@ -35,9 +37,24 @@ import { BrainstormReaderModal } from './BrainstormReaderModal';
 const FALLBACK_SETTING_PROMPT =
   '你是专业网文设定策划。根据当前模板生成具体、前后一致、可直接用于后续章纲和正文创作的设定。';
 
-function buildExistingSettingContext(entries: WorkbenchLibraryEntry[]) {
+function buildExistingSettingContext(
+  entries: WorkbenchLibraryEntry[],
+  targets: Array<{ id: string; title: string }>,
+) {
+  const targetIds = new Set(targets.map((target) => target.id));
+  const normalizedTargetTitles = targets.map((target) => normalizeImportedSettingKey(target.title));
   return entries
     .filter((entry) => entry.tab === '大纲' || entry.tab === '角色')
+    .filter((entry) => {
+      if (/^<[^<>]+>$/.test(entry.title.trim())) return false;
+      const title = normalizeImportedSettingKey(entry.title);
+      const matchesTargetTitle = normalizedTargetTitles.some((targetTitle) =>
+        title === targetTitle || title.startsWith(`${targetTitle}：`) || title.startsWith(`${targetTitle}:`),
+      );
+      if (!matchesTargetTitle || targetIds.has(entry.id) || entry.tab === '角色') return true;
+      const setting = parseSettingContent(entry.content);
+      return Boolean(setting.lockedDefaultEntryId || setting.structuredFieldSetId);
+    })
     .map((entry) => {
       if (entry.tab === '角色') {
         const role = parseRoleContent(entry.content);
@@ -49,11 +66,12 @@ function buildExistingSettingContext(entries: WorkbenchLibraryEntry[]) {
         ]
           .filter(Boolean)
           .join('\n');
-        return `【${role.type} / ${entry.title}】${body ? `\n${body}` : ''}`;
+        return body ? `【${role.type} / ${entry.title}】\n${body}` : '';
       }
       const setting = parseSettingContent(entry.content);
-      return `【${setting.type} / ${entry.title}】${setting.body.trim() ? `\n${setting.body.trim()}` : ''}`;
+      return setting.body.trim() ? `【${setting.type} / ${entry.title}】\n${setting.body.trim()}` : '';
     })
+    .filter(Boolean)
     .join('\n\n')
     .slice(0, 12000);
 }
@@ -65,7 +83,7 @@ type StandardModeSettingGenerationPanelProps = {
   isGenerating: boolean;
   onGenerate: (request: string, visibleText: string) => void;
   onStop: () => void;
-  onImport: () => boolean;
+  onImport: (allowedEntryIds: string[]) => boolean;
   onJumpToEmptyField: (result: StandardSettingEmptyField) => void;
 };
 
@@ -93,10 +111,12 @@ export function StandardModeSettingGenerationPanel({
   const [isBrainstormReaderOpen, setIsBrainstormReaderOpen] = useState(false);
   const generationObservedRef = useRef(false);
   const generationVisualSnapshotRef = useRef<StandardSettingGenerationState | null>(null);
+  const generationTargetEntryIdsRef = useRef<string[]>([]);
 
   useEffect(() => {
     setFlow(readStandardSettingGenerationState(settingsStorageKey));
     generationVisualSnapshotRef.current = null;
+    generationTargetEntryIdsRef.current = [];
     setQueuedStepIndex(null);
     setPanelMode('generate');
     setCheckResults(null);
@@ -119,6 +139,11 @@ export function StandardModeSettingGenerationPanel({
     (stepIndex: number, autoContinue: boolean) => {
       const step = STANDARD_SETTING_GENERATION_STEPS[stepIndex];
       if (!step || isGenerating) return;
+      const targets = readStandardSettingGenerationTargets(settingsStorageKey, step);
+      if (targets.length === 0) {
+        setFlow((current) => ({ ...current, status: 'failed', error: '当前模板在本步骤中没有可写入的原有设定。' }));
+        return;
+      }
       const prompt = findBuiltInSettingPrompt(prompts, step);
       const request = buildStandardSettingStepRequest({
         step,
@@ -126,11 +151,13 @@ export function StandardModeSettingGenerationPanel({
         brainstorm: linkedBrainstorm
           ? [linkedBrainstorm.title, linkedBrainstorm.content].filter(Boolean).join('\n')
           : '',
-        existingSettings: buildExistingSettingContext(entries),
+        existingSettings: buildExistingSettingContext(entries, targets),
         promptContent: prompt?.content ?? FALLBACK_SETTING_PROMPT,
+        targets,
       });
       generationObservedRef.current = false;
       generationVisualSnapshotRef.current ??= flow;
+      generationTargetEntryIdsRef.current = targets.map((target) => target.id);
       setFlow((current) => ({
         ...current,
         currentStepIndex: stepIndex,
@@ -140,7 +167,7 @@ export function StandardModeSettingGenerationPanel({
       }));
       onGenerate(request, `生成设定：${step.name}`);
     },
-    [entries, flow, isGenerating, linkedBrainstorm, onGenerate, prompts],
+    [entries, flow, isGenerating, linkedBrainstorm, onGenerate, prompts, settingsStorageKey],
   );
 
   useEffect(() => {
@@ -156,7 +183,7 @@ export function StandardModeSettingGenerationPanel({
       setFlow((current) => ({ ...current, status: 'failed', error: '本步骤生成失败，请重试。' }));
       return;
     }
-    if (!onImport()) {
+    if (!onImport(generationTargetEntryIdsRef.current)) {
       generationVisualSnapshotRef.current = null;
       setFlow((current) => ({
         ...current,

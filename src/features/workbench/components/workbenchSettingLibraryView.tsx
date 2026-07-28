@@ -258,7 +258,7 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                   isGenerating={isLibraryAiLoading}
                   onGenerate={(request, visibleText) => void sendLibraryAiMessage(request, { visibleText })}
                   onStop={stopLibraryAiMessage}
-                  onImport={() => smartImportSettings({ force: true })}
+                  onImport={(allowedEntryIds) => smartImportSettings({ force: true, allowedEntryIds })}
                   onJumpToEmptyField={(result) => {
                     const descriptor = readDefaultStandardSettingEntries(storageKey)
                       .find((entry) => entry.id === result.entryId);

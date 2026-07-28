@@ -67,8 +67,9 @@ describe('standard mode shared chapter creation pages', () => {
     expect(generationPanel).toContain('STANDARD_SETTING_GENERATION_STEPS.map');
     expect(generationPanel).toContain('onClick={() => runStep(index, false)}');
     expect(generationPanel).toContain('slice(0, index)');
-    expect(generationPanel).toContain('if (!onImport())');
+    expect(generationPanel).toContain('if (!onImport(generationTargetEntryIdsRef.current))');
     expect(generationPanel).not.toContain('lastStreamImportAtRef');
+    expect(settingView).toContain('smartImportSettings({ force: true, allowedEntryIds })');
     expect(settingBranch).toContain(
       'getLatestUsefulAiText(activeIsBrainstorm ? aiResult || aiOutput : aiOutput)',
     );

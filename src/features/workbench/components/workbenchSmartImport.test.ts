@@ -3,16 +3,54 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 import { parsePromptRoleFields } from './workbenchPromptRoleFields';
 import {
   createImportedRoleContent,
   createSmartSettingSegments,
   createTaggedSettingSegments,
+  filterStandardGenerationDuplicateEntries,
   normalizeImportedSettingBody,
   normalizeImportedSettingKey,
+  takeCanonicalImportedSettingEntry,
 } from './workbenchSmartImport';
 
 describe('workbench role smart import', () => {
+  it('limits standard generation matching to the original allowed entry', () => {
+    const entries: WorkbenchLibraryEntry[] = [
+      { id: 'generated', tab: '大纲', title: '作品定位', content: JSON.stringify({ type: '核心设定', body: '错误副本' }), updatedAt: '' },
+      { id: 'original', tab: '大纲', title: '作品定位', content: JSON.stringify({ type: '核心设定', body: '' }), updatedAt: '' },
+    ];
+
+    const matched = takeCanonicalImportedSettingEntry(
+      entries,
+      '作品定位',
+      '核心设定',
+      new Set(['original']),
+    );
+
+    expect(matched?.id).toBe('original');
+    expect(entries.map((entry) => entry.id)).toEqual(['generated']);
+  });
+
+  it('removes only malformed duplicates of standard generation targets after a successful import', () => {
+    const originalEntries: WorkbenchLibraryEntry[] = [
+      { id: 'original', tab: '大纲', title: '世界背景', content: '{}', updatedAt: '' },
+    ];
+    const remainingEntries: WorkbenchLibraryEntry[] = [
+      { id: 'bad-group', tab: '大纲', title: '<基础设定>', content: '{}', updatedAt: '' },
+      { id: 'bad-title', tab: '大纲', title: '世界背景：世界名为九州', content: '{}', updatedAt: '' },
+      { id: 'bad-exact', tab: '大纲', title: '世界背景', content: '{}', updatedAt: '' },
+      { id: 'user-entry', tab: '大纲', title: '九州风土', content: '{}', updatedAt: '' },
+    ];
+
+    expect(filterStandardGenerationDuplicateEntries(
+      remainingEntries,
+      originalEntries,
+      new Set(['original']),
+    ).map((entry) => entry.id)).toEqual(['user-entry']);
+  });
+
   it('matches decorative setting titles and unwraps leaked internal JSON', () => {
     expect(normalizeImportedSettingKey('【作品定位】')).toBe('作品定位');
     expect(normalizeImportedSettingKey('*作品定位*：')).toBe('作品定位');

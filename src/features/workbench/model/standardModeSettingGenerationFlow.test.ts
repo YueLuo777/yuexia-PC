@@ -48,6 +48,15 @@ describe('standard mode setting generation flow', () => {
       brainstorm: '少年获得古镜',
       existingSettings: '世界背景：九州',
       promptContent: '内置提示词正文',
+      targets: [{
+        id: 'plot-overview',
+        title: '整体剧情',
+        domainId: 'work',
+        domainTitle: '作品设定',
+        groupTitle: '剧情规划',
+        sourceKind: 'setting',
+        fieldTitles: ['开局事件', '全书主线目标'],
+      }],
     });
 
     expect(request).toContain('剧情规划');
@@ -57,5 +66,9 @@ describe('standard mode setting generation flow', () => {
     expect(request).toContain('只写用户可见的中文设定内容');
     expect(request).toContain('禁止输出JSON');
     expect(request).toContain('structuredFieldSetId');
+    expect(request).toContain('只能写入以下原有设定');
+    expect(request).toContain('*整体剧情*：');
+    expect(request).toContain('【开局事件】：填写该字段内容');
+    expect(request).toContain('禁止新增、改名、合并');
   });
 });

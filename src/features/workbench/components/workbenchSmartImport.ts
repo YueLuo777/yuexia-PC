@@ -156,10 +156,12 @@ export function takeCanonicalImportedSettingEntry(
   entries: WorkbenchLibraryEntry[],
   titleKey: string,
   typeKey: string,
+  allowedEntryIds?: ReadonlySet<string>,
 ) {
   const matches = (entry: WorkbenchLibraryEntry) => {
     const setting = parseSettingContent(entry.content);
-    return entry.tab === '大纲' && normalizeImportedSettingKey(entry.title) === titleKey
+    return (!allowedEntryIds || allowedEntryIds.has(entry.id))
+      && entry.tab === '大纲' && normalizeImportedSettingKey(entry.title) === titleKey
       && normalizeImportedSettingKey(setting.type) === typeKey;
   };
   const matchingIndexes = entries.flatMap((entry, index) => (matches(entry) ? [index] : []));
@@ -172,6 +174,26 @@ export function takeCanonicalImportedSettingEntry(
     if (matches(entries[index])) entries.splice(index, 1);
   }
   return winner;
+}
+
+export function filterStandardGenerationDuplicateEntries(
+  remainingEntries: WorkbenchLibraryEntry[],
+  originalEntries: WorkbenchLibraryEntry[],
+  allowedEntryIds?: ReadonlySet<string>,
+) {
+  if (!allowedEntryIds) return remainingEntries;
+  const allowedTitles = originalEntries
+    .filter((entry) => allowedEntryIds.has(entry.id) && entry.tab === '大纲')
+    .map((entry) => normalizeImportedSettingKey(entry.title));
+  return remainingEntries.filter((entry) => {
+    if (entry.tab !== '大纲' || allowedEntryIds.has(entry.id)) return true;
+    const rawTitle = entry.title.trim();
+    if (/^<[^<>]+>$/.test(rawTitle)) return false;
+    const title = normalizeImportedSettingKey(rawTitle);
+    return !allowedTitles.some((allowedTitle) =>
+      title === allowedTitle || title.startsWith(`${allowedTitle}：`) || title.startsWith(`${allowedTitle}:`),
+    );
+  });
 }
 
 export function classifySettingText(text: string) {
