@@ -250,11 +250,12 @@ describe('StandardModeSettingGenerationPanel', () => {
     );
 
     expect(onImport).not.toHaveBeenCalled();
-    expect(screen.queryByText('生成中')).not.toBeInTheDocument();
+    expect(screen.getByText('生成中')).toBeInTheDocument();
     expect(screen.queryByText('最近生成结果')).not.toBeInTheDocument();
     expect(screen.queryByText(/status=thinking/)).not.toBeInTheDocument();
-    expect(screen.getAllByText('未生成')).toHaveLength(5);
-    expect(view.container.querySelector('.animate-spin')).not.toBeInTheDocument();
+    expect(screen.getAllByText('未生成')).toHaveLength(4);
+    expect(view.container.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: '作品设定用户要求' })).toBeDisabled();
     expect(screen.getAllByRole('button', { name: /^(生成|重新生成)$/ })).toHaveLength(1);
     expect(screen.getByRole('button', { name: '一键生成全部' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '暂停生成' })).not.toBeInTheDocument();

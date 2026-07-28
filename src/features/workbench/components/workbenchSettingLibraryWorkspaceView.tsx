@@ -120,6 +120,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
   } = scope;
 
   const showFormalSettingTree = activeTab === SETTING_TAB && !activeIsBrainstorm;
+  const settingWorkspaceLocked = showFormalSettingTree && standardMode && isLibraryAiLoading;
   const settingPanelMode = !standardMode && activeTabConfig.settingPanelMode === 'status' ? 'status' : 'setting';
   const settingPendingStatusCount =
     currentSelectedRole?.pendingStatusUpdates?.length ?? currentSelectedSetting?.pendingStatusUpdates?.length ?? 0;
@@ -216,7 +217,10 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
       />}
       {leftResizeHandle}
       <main
-        className={`relative min-w-0 flex min-h-0 flex-col bg-white ${settingLibraryMode === 'advanced' ? 'border-r border-gray-100' : ''}`}
+        inert={settingWorkspaceLocked ? true : undefined}
+        aria-busy={settingWorkspaceLocked || undefined}
+        data-setting-generation-locked={settingWorkspaceLocked ? 'true' : undefined}
+        className={`relative min-w-0 flex min-h-0 flex-col bg-white ${settingLibraryMode === 'advanced' ? 'border-r border-gray-100' : ''} ${settingWorkspaceLocked ? 'pointer-events-none' : ''}`}
         style={showFormalSettingTree ? { gridColumn: 3, gridRow: 1 } : undefined}
       >
         {showFormalSettingTree && !standardMode ? (

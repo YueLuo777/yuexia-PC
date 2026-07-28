@@ -1,4 +1,4 @@
-import { Check, Circle } from 'lucide-react';
+import { Check, Circle, LoaderCircle } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { usePrompts } from '@/features/prompts/hooks/usePrompts';
@@ -283,6 +283,7 @@ export function StandardModeSettingGenerationPanel({
             {STANDARD_SETTING_GENERATION_STEPS.map((step, index) => {
               const completed = visibleFlow.completedStepIds.includes(step.id);
               const active = index === visibleFlow.currentStepIndex;
+              const generating = isGenerating && active;
               const failed = active && visibleFlow.status === 'failed';
               const paused = active && visibleFlow.status === 'paused';
               const unlocked =
@@ -290,14 +291,16 @@ export function StandardModeSettingGenerationPanel({
                 STANDARD_SETTING_GENERATION_STEPS.slice(0, index).every((previousStep) =>
                   visibleFlow.completedStepIds.includes(previousStep.id),
                 );
-              const statusText = failed
+              const statusText = generating
+                ? '生成中'
+                : failed
                   ? '生成失败'
                   : paused
                     ? '已暂停'
                     : completed
                       ? '已生成'
                       : '未生成';
-              const Icon = completed ? Check : Circle;
+              const Icon = generating ? LoaderCircle : completed ? Check : Circle;
               return (
                 <li key={step.id}>
                   <div
@@ -311,7 +314,7 @@ export function StandardModeSettingGenerationPanel({
                     }`}
                   >
                     <Icon
-                      className={`mt-0.5 h-4 w-4 shrink-0 ${completed ? 'text-emerald-600' : 'text-slate-400'}`}
+                      className={`mt-0.5 h-4 w-4 shrink-0 ${generating ? 'animate-spin text-[#08AACE]' : completed ? 'text-emerald-600' : 'text-slate-400'}`}
                     />
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center justify-between gap-3">
@@ -320,7 +323,8 @@ export function StandardModeSettingGenerationPanel({
                         </strong>
                         <span className="flex shrink-0 items-center gap-2">
                           <span
-                            className={`text-xs font-bold ${completed ? 'text-emerald-600' : failed ? 'text-red-600' : paused ? 'text-amber-600' : 'text-slate-400'}`}
+                            aria-live={generating ? 'polite' : undefined}
+                            className={`text-xs font-bold ${generating ? 'text-[#078FAB]' : completed ? 'text-emerald-600' : failed ? 'text-red-600' : paused ? 'text-amber-600' : 'text-slate-400'}`}
                           >
                             {statusText}
                           </span>

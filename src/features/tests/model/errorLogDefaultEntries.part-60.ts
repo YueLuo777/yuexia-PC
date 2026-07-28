@@ -2,6 +2,17 @@ import type { ErrorLogEntry } from './errorLogEntryTypes';
 
 export const defaultEntriesPart60: ErrorLogEntry[] = [
   {
+    id: 'standard-setting-generation-editor-lock-feedback-001',
+    title: '设定生成期间编辑区未锁定且缺少生成反馈',
+    area: '标准模式 / 作品设定 / 分步生成交互',
+    symptom: '点击基础设定右侧生成后，中间设定编辑框仍可输入，右侧步骤没有明确的生成中反馈，用户容易误以为软件卡住或误改内容。',
+    cause: '生成状态只用于阻止右侧重复提交，没有映射到中间编辑区；步骤状态仍显示未生成，缺少可见的进行中状态。',
+    solution: '生成期间仅对标准模式中间设定编辑区设置 inert、aria-busy 和指针禁用，左侧目录与顶部导航保持可操作；当前步骤显示旋转图标和“生成中”，用户要求输入框同步禁用。',
+    prevention: '回归测试必须同时检查局部编辑区锁定、导航不锁定、输入框 disabled 和生成中可见反馈，禁止恢复全局工作台锁。',
+    keywords: ['作品设定', '编辑区锁定', '生成中', '用户反馈', '局部交互锁'],
+    updatedAt: '2026-07-29',
+  },
+  {
     id: 'role-header-short-select-six-character-width-001',
     title: '人物身份定位与生存状态短字段宽度及箭头留白应统一',
     area: '工作台 / 人物设定 / 顶部短字段',

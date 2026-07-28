@@ -76,8 +76,12 @@ describe('standard mode shared chapter creation pages', () => {
     );
     expect(generationPanel).not.toContain('publishStandardSettingGenerationLock(isGenerating)');
     expect(generationPanel).not.toContain('<CombinedAiConfigSelect');
-    expect(settingWorkspace).not.toContain('data-setting-generation-locked');
-    expect(settingWorkspace).not.toContain('pointer-events-none');
+    expect(settingWorkspace).toContain(
+      'const settingWorkspaceLocked = showFormalSettingTree && standardMode && isLibraryAiLoading',
+    );
+    expect(settingWorkspace).toContain("data-setting-generation-locked={settingWorkspaceLocked ? 'true' : undefined}");
+    expect(settingWorkspace).toContain("settingWorkspaceLocked ? 'pointer-events-none' : ''");
+    expect(settingWorkspace).not.toContain('<WorkbenchSettingTreeSidebar\n          inert=');
     expect(settingWorkspace).not.toContain('data-setting-generation-lock-indicator');
     expect(settingWorkspace).not.toContain('AI正在生成，设定区已锁定');
     expect(libraryPanel).toContain('renderSettingLibraryBranch({\n    storageKey,');
