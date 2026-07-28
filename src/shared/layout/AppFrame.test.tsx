@@ -35,12 +35,13 @@ describe('writer workspace chrome styling', () => {
     );
   });
 
-  it('locks app tabs and tools while standard settings are generating', async () => {
+  it('keeps app tabs and tools usable while standard settings generate in the background', async () => {
     const appFrame = await readSource('AppFrame.tsx');
 
-    expect(appFrame).toContainSource('subscribeStandardSettingGenerationLock(setAppInteractionLocked)');
-    expect(appFrame).toContainSource('data-app-tabs-locked={appInteractionLocked');
-    expect(appFrame).toContainSource('data-app-tools-locked={appInteractionLocked');
+    expect(appFrame).not.toContainSource('subscribeStandardSettingGenerationLock');
+    expect(appFrame).not.toContainSource('data-app-tabs-locked');
+    expect(appFrame).not.toContainSource('data-app-tools-locked');
+    expect(appFrame).not.toContainSource('appInteractionLocked');
   });
 
   it('lets confirmed custom theme colors override fixed selected and dark-theme chrome styles', async () => {

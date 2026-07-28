@@ -14,7 +14,6 @@ import {
   replaceProfessionalSettingEntriesFromTemplate,
 } from '@/features/workbench/model/standardModeDefaultSettingAdapter';
 import { readStandardSettingTemplateState } from '@/features/workbench/model/standardModeSettingModel';
-import { subscribeStandardSettingGenerationLock } from '@/features/workbench/model/standardModeSettingGenerationRuntime';
 import { subscribeStandardModeSettingNavigationAction } from '@/features/workbench/model/standardModeSettingNavigationEvents';
 import { buildStandardModeWorkbenchStats } from '@/features/workbench/model/standardModeWorkbenchStats';
 import { readWorkbenchLibraryEntries } from '@/features/workbench/model/workbenchLibraryStorage';
@@ -29,7 +28,6 @@ import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 export function StandardModeWorkbenchPage() {
   const [activeAction, setActiveAction] = useState<StandardStageAction>('writing');
   const [templateChangeWarningOpen, setTemplateChangeWarningOpen] = useState(false);
-  const [settingGenerationLocked, setSettingGenerationLocked] = useState(false);
   const [, setSettingsMigrationRevision] = useState(0);
   const { tabs, activeTabId } = useWorkspaceTabs();
   const { currentNovel, currentNovelId, volumes, setCurrentNovel, updateCurrentNovelDetails } = useWorkbenchData();
@@ -49,13 +47,8 @@ export function StandardModeWorkbenchPage() {
   }, [activeTabId, currentNovelId, setCurrentNovel, tabs]);
 
   useEffect(() => {
-    return subscribeStandardSettingGenerationLock(setSettingGenerationLocked);
-  }, []);
-
-  useEffect(() => {
     setActiveAction('writing');
     setTemplateChangeWarningOpen(false);
-    setSettingGenerationLocked(false);
   }, [currentNovelId]);
 
   useEffect(
@@ -121,7 +114,6 @@ export function StandardModeWorkbenchPage() {
   return (
     <div className="flex h-full min-h-0 flex-col bg-[#f5f5f7]" data-standard-mode-workbench="true">
       <StandardModeWorkbenchNavigation
-        locked={settingGenerationLocked}
         bookTitle={currentNovel.title}
         activeAction={activeAction}
         onSelectAction={(_group, action) => {

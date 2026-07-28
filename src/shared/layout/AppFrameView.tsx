@@ -20,7 +20,6 @@ export function renderAppFrameView(scope: Record<string, any>) {
     X,
     activateTab,
     activeTabId,
-    appInteractionLocked,
     appScale,
     children,
     effectiveScale,
@@ -59,10 +58,7 @@ export function renderAppFrameView(scope: Record<string, any>) {
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
         <nav
-          inert={appInteractionLocked ? true : undefined}
-          aria-disabled={appInteractionLocked || undefined}
-          data-app-tabs-locked={appInteractionLocked ? 'true' : undefined}
-          className={`flex h-full min-w-0 flex-1 items-center overflow-x-auto transition-opacity ${appInteractionLocked ? 'pointer-events-none opacity-60' : ''}`}
+          className="flex h-full min-w-0 flex-1 items-center overflow-x-auto"
           style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
         >
           <div
@@ -119,10 +115,7 @@ export function renderAppFrameView(scope: Record<string, any>) {
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
         >
           <div
-            inert={appInteractionLocked ? true : undefined}
-            aria-disabled={appInteractionLocked || undefined}
-            data-app-tools-locked={appInteractionLocked ? 'true' : undefined}
-            className={`flex shrink-0 items-center gap-1.5 transition-opacity ${appInteractionLocked ? 'pointer-events-none opacity-60' : ''}`}
+            className="flex shrink-0 items-center gap-1.5"
           >
             {showInternalTools ? <BuiltInPromptManagerLauncher /> : null}
             <ApplicationModeToggle />

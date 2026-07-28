@@ -24,7 +24,6 @@ import {
 import { findEmptyStandardSettingFields } from '@/features/workbench/model/standardModeSettingModel';
 import type { StandardSettingEmptyField } from '@/features/workbench/model/standardModeSettingModel';
 import { readStandardSettingGenerationTargets } from '@/features/workbench/model/standardModeSettingGenerationTargets';
-import { publishStandardSettingGenerationLock } from '@/features/workbench/model/standardModeSettingGenerationRuntime';
 import {
   GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY,
   readWorkbenchLibraryEntries,
@@ -127,13 +126,6 @@ export function StandardModeSettingGenerationPanel({
   useEffect(() => {
     writeStandardSettingGenerationState(settingsStorageKey, flow);
   }, [flow, settingsStorageKey]);
-
-  useEffect(() => {
-    publishStandardSettingGenerationLock(isGenerating);
-    return () => {
-      if (isGenerating) publishStandardSettingGenerationLock(false);
-    };
-  }, [isGenerating]);
 
   const runStep = useCallback(
     (stepIndex: number, autoContinue: boolean) => {
