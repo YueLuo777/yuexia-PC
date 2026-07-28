@@ -66,7 +66,7 @@ export function StandardModeWorkbenchPage() {
         return;
       }
       setSettingsMigrationRevision((revision) => revision + 1);
-      setActiveAction('createSettings');
+      setActiveAction('settingsList');
     }),
     [settingsStorageKey],
   );

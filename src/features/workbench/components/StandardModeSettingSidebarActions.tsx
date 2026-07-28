@@ -41,8 +41,8 @@ export function StandardModeSettingSidebarActions({
       </div>
       <ConfirmDialog
         isOpen={clearConfirmOpen}
-        title="清空全部设定？"
-        description="将清空当前书籍的作品设定、人物设定、地点、势力、道具、伏笔和怪物内容。脑洞、章纲、正文及其他书籍不会受到影响。清空后无法恢复。"
+        title="清空所有设定内容？"
+        description="将清空当前书籍所有设定字段中已填写的内容，但会保留当前模板、设定分组、设定名和字段结构。关联脑洞、章纲、正文及其他书籍不会受到影响。清空后无法恢复。"
         confirmText="确认清空"
         cancelText="取消"
         confirmVariant="danger"

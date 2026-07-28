@@ -223,6 +223,22 @@ describe('StandardModeSettingPage', () => {
     expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠');
   });
 
+  it('clears filled values without leaving the current template or removing its setting structure', async () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '确认模板并创建设定' }));
+    await waitFor(() => expect(screen.getByLabelText('小说类型')).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('小说类型'), { target: { value: '东方玄幻' } });
+
+    fireEvent.click(screen.getByRole('button', { name: '清空设定' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认清空' }));
+
+    await waitFor(() => expect(screen.getByLabelText('小说类型')).toHaveValue(''));
+    expect(screen.getByRole('navigation', { name: '设定目录' })).toBeInTheDocument();
+    expect(screen.getByLabelText('设定名')).toHaveValue('作品定位');
+    expect(screen.queryByRole('button', { name: '确认模板并创建设定' })).not.toBeInTheDocument();
+    expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠');
+  });
+
   it('requires confirmation before rebuilding an existing book template', async () => {
     writeStandardSettingTemplateState('novel-a', {
       version: 2,

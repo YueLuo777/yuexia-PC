@@ -1,8 +1,10 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { writeStandardSettingTemplateState } from '@/features/workbench/model/standardModeSettingModel';
-import { buildDefaultTemplateStructure } from '@/features/workbench/model/standardModeTemplateModel';
+import {
+  readStandardSettingTemplateState,
+  writeStandardSettingTemplateState,
+} from '@/features/workbench/model/standardModeSettingModel';
 
 import { StandardModeSettingSidebarActions } from './StandardModeSettingSidebarActions';
 
@@ -31,19 +33,43 @@ describe('StandardModeSettingSidebarActions', () => {
       mode: 'template',
       templateId: 'existing',
       templateName: '旧模板',
-      structure: buildDefaultTemplateStructure(),
+      structure: [{
+        id: 'work',
+        title: '作品设定',
+        enabled: true,
+        groups: [{
+          id: 'world',
+          title: '世界观',
+          enabled: true,
+          entries: [{
+            id: 'background',
+            title: '世界背景',
+            enabled: true,
+            sections: [{
+              id: 'base',
+              title: '基础',
+              enabled: true,
+              fields: [{ id: 'era', title: '时代背景', enabled: true, value: '旧内容' }],
+            }],
+          }],
+        }],
+      }],
     });
     render(<StandardModeSettingSidebarActions storageKey={storageKey} />);
 
     fireEvent.click(screen.getByRole('button', { name: '清空设定' }));
-    expect(screen.getByRole('dialog', { name: '清空全部设定？' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: '清空所有设定内容？' })).toBeInTheDocument();
+    expect(screen.getByText(/保留当前模板、设定分组、设定名和字段结构/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '取消' })).toHaveFocus();
     fireEvent.click(screen.getByRole('button', { name: '取消' }));
     expect(localStorage.getItem('xinyuexia_standard_setting_template_novel-a')).not.toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: '清空设定' }));
     fireEvent.click(screen.getByRole('button', { name: '确认清空' }));
-    expect(localStorage.getItem('xinyuexia_standard_setting_template_novel-a')).toBeNull();
-    expect(screen.queryByRole('dialog', { name: '清空全部设定？' })).not.toBeInTheDocument();
+    const savedTemplate = readStandardSettingTemplateState('novel-a');
+    expect(savedTemplate?.templateId).toBe('existing');
+    expect(savedTemplate?.structure[0].groups[0].entries[0].title).toBe('世界背景');
+    expect(savedTemplate?.structure[0].groups[0].entries[0].sections[0].fields[0].value).toBe('');
+    expect(screen.queryByRole('dialog', { name: '清空所有设定内容？' })).not.toBeInTheDocument();
   });
 });

@@ -65,13 +65,13 @@ export function useStandardModeSettings(novelId: string, settingsStorageKey: str
   useEffect(
     () => subscribeStandardModeSettingNavigationAction((event) => {
       if (event.storageKey !== settingsStorageKey || event.action !== 'settings-cleared') return;
-      setTemplate(null);
-      setHasExistingSettings(false);
-      setSelectedEntryId(null);
+      const saved = readStandardSettingTemplateState(novelId);
+      setTemplate(saved);
+      setHasExistingSettings(Boolean(saved) || hasStandardModeSettingEntries(settingsStorageKey));
       setCheckResults(null);
       setFocusTarget(null);
     }),
-    [settingsStorageKey],
+    [novelId, settingsStorageKey],
   );
 
   const entries = useMemo(() => template ? buildTemplateSettingEntries(template.structure) : [], [template]);
