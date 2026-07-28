@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,86 +7,107 @@ import { describe, expect, it } from 'vitest';
 
 import {
   StandardModeWorkbenchNavigation,
-  type StandardStage,
+  type StandardNavigationGroup,
   type StandardStageAction,
 } from './StandardModeWorkbenchNavigation';
 
-function NavigationHarness() {
-  const [stage, setStage] = useState<StandardStage | null>(null);
-  const [action, setAction] = useState<StandardStageAction | null>(null);
+function NavigationHarness({ locked = false }: { locked?: boolean }) {
+  const [action, setAction] = useState<StandardStageAction>('writing');
+  const [group, setGroup] = useState<StandardNavigationGroup>('creationFlow');
   return (
-    <StandardModeWorkbenchNavigation
-      title="九重天劫"
-      channelLabel="男频"
-      categoryLabel="玄幻"
-      activeStage={stage}
-      activeAction={action}
-      workInfoOpen={false}
-      onSelectHome={() => {
-        setStage(null);
-        setAction(null);
-      }}
-      onSelectStage={(nextStage) => {
-        setStage(nextStage);
-        setAction(null);
-      }}
-      onSelectAction={(nextStage, nextAction) => {
-        setStage(nextStage);
-        setAction(nextAction);
-      }}
-      onOpenWorkInfo={() => undefined}
-      endAction={<button type="button">设定生成流程</button>}
-    />
+    <>
+      <StandardModeWorkbenchNavigation
+        locked={locked}
+        activeAction={action}
+        onSelectAction={(nextGroup, nextAction) => {
+          setGroup(nextGroup);
+          setAction(nextAction);
+        }}
+      />
+      <output data-testid="selected-group">{group}</output>
+    </>
   );
 }
 
 describe('StandardModeWorkbenchNavigation', () => {
-  it('renders the four bordered stages and their requested branch actions', () => {
+  it('renders the two requested compact capsule groups in a single row', () => {
     render(<NavigationHarness />);
 
-    expect(screen.getByRole('banner')).toHaveClass('overflow-x-auto', 'overflow-y-hidden');
-    ['准备阶段', '设定阶段', '创作阶段', '检查阶段'].forEach((label) => {
-      expect(screen.getByRole('button', { name: new RegExp(label) }).closest('section')).toHaveClass('border');
-    });
-    ['脑洞库', '生成脑洞', '新建设定', '设定列表', '章纲', '正文', '审核剧情', '更新状态', '生成梗概'].forEach(
-      (label) => expect(screen.getByRole('button', { name: label })).toBeInTheDocument(),
-    );
-    expect(screen.queryByRole('button', { name: '完善设定' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '工作台首页' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('button', { name: '工作台首页' })).toHaveClass('h-10');
-    expect(screen.getByRole('button', { name: '工作台首页' })).not.toHaveClass('mt-0.5');
-    expect(screen.getByRole('button', { name: /准备阶段/ })).toHaveClass('border-b');
-    expect(screen.getByRole('button', { name: '设定生成流程' })).toBeInTheDocument();
-    expect(screen.getByText('九重天劫')).toBeInTheDocument();
-    expect(screen.getByText('男频')).toBeInTheDocument();
-    expect(screen.getByText('玄幻')).toBeInTheDocument();
+    expect(screen.getByRole('banner')).toHaveClass('h-12', 'overflow-x-auto', 'overflow-y-hidden');
+    const navigation = screen.getByRole('navigation', { name: '标准模式创作导航' });
+    expect(navigation).toHaveClass('min-w-max', 'justify-center');
+    const creation = screen.getByRole('region', { name: '创作流程' });
+    const tools = screen.getByRole('region', { name: '功能栏' });
+    expect(creation).toHaveClass('xy-capsule-group');
+    expect(tools).toHaveClass('xy-capsule-group');
+    expect(within(creation).getAllByRole('button').map((button) => button.textContent)).toEqual([
+      '作品详情',
+      '作品设定',
+      '生成正文',
+      '审核检查',
+    ]);
+    expect(within(tools).getAllByRole('button').map((button) => button.textContent)).toEqual([
+      '生成脑洞',
+      '取名',
+      '生成章纲',
+      '更新状态',
+      '生成梗概',
+    ]);
+    expect(document.querySelectorAll('[data-stage-flow-arrow="true"]')).toHaveLength(0);
+    expect(screen.queryByText('开书阶段')).not.toBeInTheDocument();
+    expect(screen.queryByText('更换设定模板')).not.toBeInTheDocument();
+    expect(screen.queryByText('脑洞库')).not.toBeInTheDocument();
   });
 
-  it('selects a branch action together with its parent stage', () => {
+  it('selects actions independently across the creation flow and tool groups', () => {
     render(<NavigationHarness />);
+
+    expect(screen.getByRole('button', { name: '生成正文' })).toHaveAttribute('aria-current', 'page');
+    fireEvent.click(screen.getByRole('button', { name: '审核检查' }));
+    expect(screen.getByRole('button', { name: '审核检查' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByTestId('selected-group')).toHaveTextContent('creationFlow');
 
     fireEvent.click(screen.getByRole('button', { name: '更新状态' }));
-
-    expect(screen.getByRole('button', { name: /检查阶段/ }))
-      .toHaveAttribute('aria-current', 'step');
-    expect(screen.getByRole('button', { name: /检查阶段/ }).closest('section'))
-      .toHaveClass('border-[#08AACE]', 'bg-[#F3FCFE]');
-    expect(screen.getByRole('button', { name: '更新状态' }))
-      .toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('button', { name: '更新状态' }))
-      .toHaveClass('border-[#08AACE]', 'bg-[#DFF6FB]');
-    expect(screen.getByRole('button', { name: '工作台首页' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('button', { name: '更新状态' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('button', { name: '审核检查' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByTestId('selected-group')).toHaveTextContent('tools');
   });
 
-  it('routes create settings to template selection and setting list to the initialized workspace', () => {
+  it('keeps indirect settings and brainstorm pages highlighted under their public entry', () => {
+    const { rerender } = render(
+      <StandardModeWorkbenchNavigation activeAction="createSettings" onSelectAction={() => {}} />,
+    );
+    expect(screen.getByRole('button', { name: '作品设定' })).toHaveAttribute('aria-current', 'page');
+
+    rerender(<StandardModeWorkbenchNavigation activeAction="changeSettingTemplate" onSelectAction={() => {}} />);
+    expect(screen.getByRole('button', { name: '作品设定' })).toHaveAttribute('aria-current', 'page');
+
+    rerender(<StandardModeWorkbenchNavigation activeAction="brainstormLibrary" onSelectAction={() => {}} />);
+    expect(screen.getByRole('button', { name: '生成脑洞' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('locks every navigation action during setting generation', () => {
+    render(<NavigationHarness locked />);
+
+    expect(screen.getByRole('banner')).toHaveAttribute('inert');
+    expect(screen.getByRole('banner')).toHaveAttribute('data-standard-navigation-locked', 'true');
+    expect(screen.getByRole('banner')).toHaveClass('pointer-events-none', 'opacity-60');
+  });
+
+  it('defaults each opened book to writing and maps every navigation entry to the formal page', () => {
     const source = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../pages/StandardModeWorkbenchPage.tsx'),
       'utf8',
     );
 
-    expect(source).toContain("activeAction === 'createSettings' || activeAction === 'settingsList'");
-    expect(source).toContain("forceTemplateSelection={activeAction === 'createSettings'}");
-    expect(source).toContain("setActiveAction('settingsList')");
-    expect(source).toContain("ownerTestMode && activeAction === 'settingsList'");
+    expect(source).toContain("useState<StandardStageAction>('writing')");
+    expect(source).toContain("setActiveAction('writing')");
+    expect(source).toContain("setActiveAction(hasSettings ? 'settingsList' : 'createSettings')");
+    expect(source).toContain("activeAction === 'workDetails' || activeAction === 'naming'");
+    expect(source).toContain("externalAiOptimizerTarget={activeAction === 'naming' ? 'both' : null}");
+    expect(source).toContain("activeAction === 'storyAudit'");
+    expect(source).toContain("activeAction === 'statusUpdate'");
+    expect(source).toContain("activeAction === 'summary'");
+    expect(source).not.toContain('PROCESS_STEPS');
   });
 });

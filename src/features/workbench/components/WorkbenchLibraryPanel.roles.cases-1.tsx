@@ -305,10 +305,9 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(screen.getByRole('textbox', { name: '人物姓名' })).toHaveValue('男主角');
     expect(screen.getByRole('combobox', { name: '身份定位' })).toHaveValue('男主角');
     expect(screen.getByRole('combobox', { name: '身份定位' })).toBeDisabled();
-    expect(screen.getByRole('group', { name: '生存状态' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '存活' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: '死亡' })).toBeDisabled();
-    expect(screen.queryByRole('combobox', { name: '状态标签' })).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: '生存状态' })).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: '生存状态' })).toHaveValue('存活');
+    expect(screen.queryByRole('option', { name: '死亡' })).not.toBeInTheDocument();
 
     const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
     const roleEntries = storedEntries.filter((entry: { tab: string }) => entry.tab === '角色');
@@ -350,7 +349,7 @@ describe('WorkbenchLibraryPanel role library flows', () => {
     expect(panelSource).toContainSource('disabled={roleIsMaleProtagonist}');
     expect(panelSource).toContainSource('options={roleIdentityOptionsForCurrentRole}');
     expect(panelSource).toContainSource('<WorkbenchSurvivalStatusToggle');
-    expect(panelSource).toContainSource("value={roleLifeStatus ?? '存活'}");
+    expect(panelSource).toContainSource("value={roleIsMaleProtagonist ? '存活' : roleLifeStatus ?? '存活'}");
     expect(panelSource).toContainSource('disabled={roleIsMaleProtagonist}');
     expect(panelSource).not.toContainSource('xy-role-life-toggle');
   });

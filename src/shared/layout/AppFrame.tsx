@@ -27,6 +27,7 @@ import { hasTopModalEscapeHandler, useTopModalEscape } from '@/shared/hooks/useT
 import { HOME_TAB, useWorkspaceTabs, type WorkspaceTab } from '@/shared/tabs/WorkspaceTabsContext';
 import { applyCustomThemeColors } from '@/features/theme/model/customThemeColors';
 import { areInternalRoutesEnabled } from '@/shared/featureFlags/internalRoutes';
+import { subscribeStandardSettingGenerationLock } from '@/features/workbench/model/standardModeSettingGenerationRuntime';
 
 import {
   APP_SCALE_KEY,
@@ -69,6 +70,7 @@ export function AppFrame({ children }: AppFrameProps) {
   const [shortcutBindings, setShortcutBindings] = useState(loadShortcutBindings);
   const [mouseGestureSettings, setMouseGestureSettings] = useState(loadMouseGestureSettings);
   const [mouseGesturePreview, setMouseGesturePreview] = useState<MouseGesturePreview | null>(null);
+  const [appInteractionLocked, setAppInteractionLocked] = useState(false);
   const showInternalTools = areInternalRoutesEnabled();
 
   const effectiveScale = useMemo(() => Number(appScale.toFixed(3)), [appScale]);
@@ -76,6 +78,8 @@ export function AppFrame({ children }: AppFrameProps) {
   const themeClassName = themeMode === 'light' ? '' : `theme-${themeMode}`;
 
   useTopModalEscape(showInternalTools && showSoftwareUiCatalog, () => setShowSoftwareUiCatalog(false));
+
+  useEffect(() => subscribeStandardSettingGenerationLock(setAppInteractionLocked), []);
 
   const { activateHomeTab } = useAppFrameNavigationEffects({
     appScale,
@@ -671,6 +675,7 @@ export function AppFrame({ children }: AppFrameProps) {
     X,
     activateTab,
     activeTabId,
+    appInteractionLocked,
     appScale,
     children,
     effectiveScale,

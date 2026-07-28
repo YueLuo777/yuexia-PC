@@ -9,6 +9,7 @@ export interface WorkbenchLibraryEntry {
   pinnedAt?: number;
   deletedAt?: string;
   brainstormSerialNumber?: number;
+  brainstormCategoryId?: string;
 }
 
 export const WORKBENCH_LIBRARY_UPDATED_EVENT = 'xinyuexia_workbench_library_updated';
@@ -69,6 +70,22 @@ function mergeEntriesById(primary: WorkbenchLibraryEntry[], fallback: WorkbenchL
     seen.add(entry.id);
     return true;
   });
+}
+
+export function readWorkbenchLibraryEntriesWithGlobalBrainstormSnapshot(
+  storageKey: string,
+): WorkbenchLibraryEntry[] {
+  const localEntries = readWorkbenchLibraryEntries(storageKey);
+  const globalBrainstormEntries = readWorkbenchLibraryEntries(GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY).filter(
+    isBrainstormEntry,
+  );
+  if (storageKey === GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY) return globalBrainstormEntries;
+  const localBrainstormEntries = localEntries.filter(isBrainstormEntry);
+  const localNonBrainstormEntries = localEntries.filter((entry) => !isBrainstormEntry(entry));
+  return [
+    ...localNonBrainstormEntries,
+    ...mergeEntriesById(localBrainstormEntries, globalBrainstormEntries),
+  ];
 }
 
 export function readWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey: string): WorkbenchLibraryEntry[] {

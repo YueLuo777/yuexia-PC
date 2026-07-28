@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 const baseDir = dirname(fileURLToPath(import.meta.url));
 
 describe('formal structured-setting frame consistency', () => {
-  it('keeps compact gray forms out of the formal editor and uses embedded black frames for every domain', () => {
+  it('keeps professional editors on embedded black frames and standard mode on its normal form', () => {
     const editorSource = readFileSync(join(baseDir, 'workbenchSettingEditor.tsx'), 'utf8');
     const roleEditorSource = readFileSync(join(baseDir, 'workbenchRoleEditor.tsx'), 'utf8');
     const standardEditorSource = readFileSync(join(baseDir, 'StandardModeSettingEditor.tsx'), 'utf8');
@@ -17,7 +17,7 @@ describe('formal structured-setting frame consistency', () => {
     expect(editorSource).not.toContain("from './StructuredSettingCompactFields'");
     expect(editorSource).toContain('<WorkbenchNameField');
     expect(editorSource).toContain('rounded-[20px] border-2 border-slate-950');
-    expect(editorSource).toContain('px-6 pb-2 pt-2');
+    expect(editorSource).toContain('px-6 pb-2 pt-4');
     expect(editorSource).toContain('WORKBENCH_SETTING_EDITOR_TWO_COLUMN_GRID_CLASS');
     expect(editorLayoutSource).toContain('grid grid-cols-2 items-stretch gap-3');
     expect(editorSource).toContain(
@@ -54,13 +54,11 @@ describe('formal structured-setting frame consistency', () => {
     expect(definitionSource).toContain("id: 'foreshadow-main'");
     expect(definitionSource).toContain('fieldClassName?: string;');
 
-    expect(standardEditorSource).toContain('WORKBENCH_SETTING_EDITOR_SHELL_CLASS');
-    expect(standardEditorSource).toContain('WORKBENCH_SETTING_EDITOR_HEADER_ROW_CLASS');
-    expect(standardEditorSource).toContain('WORKBENCH_SETTING_EDITOR_TWO_COLUMN_GRID_CLASS');
-    expect(standardEditorSource).toContain("'relative flex flex-col rounded-[20px] border-2 border-slate-950 bg-white px-6 pb-2 pt-2'");
-    expect(standardEditorSource).toContain("compact: 'min-h-[96px]'");
-    expect(standardEditorSource).toContain("standard: 'min-h-[132px]'");
-    expect(standardEditorSource).toContain("expanded: 'min-h-[158px]'");
-    expect(standardEditorSource).toContain('<RoleAutoSizeTextarea');
+    expect(standardEditorSource).toContain('data-standard-setting-editor-style="normal-form"');
+    expect(standardEditorSource).toContain("const CONTROL_BORDER = '#BFC8D2'");
+    expect(standardEditorSource).toContain('grid grid-cols-2 items-start gap-x-4 gap-y-4');
+    expect(standardEditorSource).toContain("'editor-scrollbar h-[132px] w-full resize-none rounded-md border bg-white");
+    expect(standardEditorSource).not.toContain('border-2 border-slate-950');
+    expect(standardEditorSource).not.toContain('<RoleAutoSizeTextarea');
   });
 });

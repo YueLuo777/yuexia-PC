@@ -395,7 +395,7 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
 
         <main className="min-w-0 flex min-h-0 flex-col border-r border-gray-100 bg-white p-5">
           <div
-            className={`editor-scrollbar min-h-0 flex-1 overflow-y-auto ${isDetailOutlineTab ? '-mr-4 pr-4 pt-2.5' : '-mr-4 pr-4 pt-5'}`}
+            className={`editor-scrollbar min-h-0 flex-1 overflow-y-auto ${isDetailOutlineTab ? '-mr-4 flex flex-col pr-4 pt-2.5' : '-mr-4 pr-4 pt-5'}`}
           >
             {outlineChapters.length === 0 ? (
               <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-gray-200 text-sm text-gray-400">
@@ -436,16 +436,55 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                     ),
                   );
                 };
+                const stateExpectationFrame = (
+                  <section
+                    data-detail-outline-state-frame="true"
+                    className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill h-full min-h-0 ${detailOutlineParts.stateExpectation.trim() ? 'xy-has-value' : ''}`}
+                  >
+                    <textarea
+                      data-no-modal-drag="true"
+                      value={detailOutlineParts.stateExpectation}
+                      onChange={(event) => updateDetailOutlinePart('stateExpectation', event.target.value)}
+                      onFocus={() => {
+                        setActiveLibraryFontTarget('detailOutline');
+                        selectOutlineChapter(chapter.id, chapter.serialNumber);
+                      }}
+                      placeholder="按人物状态、道具状态、势力状态、关系状态、线索/信息记录本章预计变化。"
+                      className="w-full resize-none text-sm leading-6 text-gray-700 outline-none scrollbar-scroll-only"
+                      style={{
+                        height: '100%',
+                        overflowY: 'auto',
+                        fontSize: detailOutlineStateFontSize,
+                      }}
+                    />
+                    <label className="xy-floating-title-count xy-detail-outline-title-count">
+                      <span className="xy-floating-title-text xy-detail-outline-heading-title xy-detail-outline-heading-with-count xy-border-embedded-transparent-backplate">
+                        状态变化
+                        <DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.stateExpectation)} />
+                      </span>
+                    </label>
+                    <DetailOutlineBorderFontTool
+                      value={detailOutlineStateFontSize}
+                      onChange={(value) => updateActiveTabConfig({ detailOutlineStateFontSize: value })}
+                      ariaLabel="状态变化字号"
+                    />
+                  </section>
+                );
                 return (
                   <div
                     key={chapter.id}
                     ref={(element) => {
                       outlinePreviewRefs.current[chapter.id] = element;
                     }}
-                    className="flex h-full min-h-0 flex-col gap-6"
+                    data-detail-outline-layout={standardMode ? 'collapsible' : 'fill-to-bottom'}
+                    className={
+                      standardMode
+                        ? 'flex min-h-0 flex-1 flex-col gap-6'
+                        : 'grid min-h-0 flex-1 grid-rows-[minmax(0,62fr)_minmax(0,38fr)] gap-6'
+                    }
                   >
                     <section
-                      className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill min-h-0 flex-[0_0_62%] ${detailOutlineParts.outline.trim() ? 'xy-has-value' : ''}`}
+                      className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill min-h-0 ${standardMode ? 'flex-[0_0_62%]' : 'h-full'} ${detailOutlineParts.outline.trim() ? 'xy-has-value' : ''}`}
                     >
                       <textarea
                         data-no-modal-drag="true"
@@ -476,47 +515,18 @@ export function renderOutlineWorkspaceView(scope: Record<string, any>) {
                         ariaLabel="章纲字号"
                       />
                     </section>
-                    <details
-                      open={standardMode ? undefined : true}
-                      className={standardMode ? 'group shrink-0' : 'min-h-0 flex-1'}
-                    >
-                      <summary className={standardMode ? 'flex h-10 cursor-pointer list-none items-center justify-between rounded-md border border-[#dce1e8] bg-white px-3 text-sm font-bold text-[#657180]' : 'hidden'}>
+                    {standardMode ? (
+                      <details className="group shrink-0">
+                        <summary className="flex h-10 cursor-pointer list-none items-center justify-between rounded-md border border-[#dce1e8] bg-white px-3 text-sm font-bold text-[#657180]">
                         <span>状态变化 {countTextWords(detailOutlineParts.stateExpectation)}字</span>
                         <span className="text-xs text-[#078FAB] group-open:hidden">展开</span>
                         <span className="hidden text-xs text-[#078FAB] group-open:inline">收起</span>
-                      </summary>
-                      <section
-                        className={`xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill min-h-0 ${standardMode ? 'mt-2 h-[190px]' : 'h-full'} ${detailOutlineParts.stateExpectation.trim() ? 'xy-has-value' : ''}`}
-                      >
-                      <textarea
-                        data-no-modal-drag="true"
-                        value={detailOutlineParts.stateExpectation}
-                        onChange={(event) => updateDetailOutlinePart('stateExpectation', event.target.value)}
-                        onFocus={() => {
-                          setActiveLibraryFontTarget('detailOutline');
-                          selectOutlineChapter(chapter.id, chapter.serialNumber);
-                        }}
-                        placeholder="按人物状态、道具状态、势力状态、关系状态、线索/信息记录本章预计变化。"
-                        className="w-full resize-none text-sm leading-6 text-gray-700 outline-none scrollbar-scroll-only"
-                        style={{
-                          height: '100%',
-                          overflowY: 'auto',
-                          fontSize: detailOutlineStateFontSize,
-                        }}
-                      />
-                      <label className="xy-floating-title-count xy-detail-outline-title-count">
-                        <span className="xy-floating-title-text xy-detail-outline-heading-title xy-detail-outline-heading-with-count xy-border-embedded-transparent-backplate">
-                          状态变化
-                          <DetailOutlineTitleWordCount value={countTextWords(detailOutlineParts.stateExpectation)} />
-                        </span>
-                      </label>
-                      <DetailOutlineBorderFontTool
-                        value={detailOutlineStateFontSize}
-                        onChange={(value) => updateActiveTabConfig({ detailOutlineStateFontSize: value })}
-                        ariaLabel="状态变化字号"
-                      />
-                      </section>
-                    </details>
+                        </summary>
+                        <div className="mt-2 h-[190px]">{stateExpectationFrame}</div>
+                      </details>
+                    ) : (
+                      stateExpectationFrame
+                    )}
                   </div>
                 );
               })()

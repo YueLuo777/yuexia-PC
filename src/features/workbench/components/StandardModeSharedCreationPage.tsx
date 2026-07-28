@@ -8,10 +8,11 @@ const SharedWorkbenchPage = lazy(() =>
 
 type SharedCreationAction = Extract<
   StandardStageAction,
-  'chapterOutline' | 'writing' | 'storyAudit' | 'statusUpdate' | 'summary'
+  'settingsList' | 'chapterOutline' | 'writing' | 'storyAudit' | 'statusUpdate' | 'summary'
 >;
 
 const FLOW_BY_ACTION = {
+  settingsList: 'outline',
   chapterOutline: 'chapterOutline',
   writing: 'writing',
   storyAudit: 'audit',
@@ -28,7 +29,11 @@ export function StandardModeSharedCreationPage({ action }: { action: SharedCreat
         </div>
       }
     >
-      <SharedWorkbenchPage experience="standard" fixedFlow={FLOW_BY_ACTION[action]} />
+      <SharedWorkbenchPage
+        experience="standard"
+        contentExperience="professional"
+        fixedFlow={FLOW_BY_ACTION[action]}
+      />
     </Suspense>
   );
 }

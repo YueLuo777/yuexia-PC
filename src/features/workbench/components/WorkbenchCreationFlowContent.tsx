@@ -45,6 +45,7 @@ export function WorkbenchCreationFlowContent({
   getChapterContent,
   chapterEditorProps,
   standardMode = false,
+  standardSettingMode = false,
 }: {
   activeFlow: WorkbenchCreationFlowPageKey;
   settingsStorageKey: string;
@@ -56,6 +57,7 @@ export function WorkbenchCreationFlowContent({
   getChapterContent: (chapterId: number) => string;
   chapterEditorProps: ComponentProps<typeof ChapterEditor>;
   standardMode?: boolean;
+  standardSettingMode?: boolean;
 }) {
   const shared = {
     fieldSizeOpenSignal,
@@ -80,6 +82,7 @@ export function WorkbenchCreationFlowContent({
         data-setting-library-cache
       >
         <LibraryPanel
+          standardMode={standardSettingMode}
           cacheVisible={settingLibraryVisible}
           activePageKey={activeFlow}
           {...getCachedLibrarySignals(settingLibraryVisible)}

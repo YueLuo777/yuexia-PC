@@ -4023,8 +4023,9 @@ export function WorkbenchLibraryPanel({
       />
     );
   }
-
   const renderedSettingLibraryBranch = renderSettingLibraryBranch({
+    storageKey,
+    standardMode,
     activeBrainstormAiSession,
     activeBrainstormOutputScrollIndex,
     activeSettingSidebarScrollKey,
@@ -4173,7 +4174,6 @@ export function WorkbenchLibraryPanel({
     updateLibraryEntryPointerPreview,
   });
   if (renderedSettingLibraryBranch) return renderedSettingLibraryBranch;
-
   const renderedOutlineLibraryBranch = renderOutlineLibraryBranch({
     standardMode,
     DOMException,

@@ -17,6 +17,7 @@ import {
   ensureBrainstormSerialNumbers,
   readWorkbenchLibraryEntries,
   readWorkbenchLibraryEntriesWithGlobalBrainstorm,
+  readWorkbenchLibraryEntriesWithGlobalBrainstormSnapshot,
   writeWorkbenchLibraryEntries,
   writeWorkbenchLibraryEntriesWithGlobalBrainstorm,
   type WorkbenchLibraryEntry,
@@ -323,7 +324,11 @@ export function removeObsoleteDefaultSettingEntries(entries: WorkbenchLibraryEnt
   return changed ? nextEntries : entries;
 }
 
-export function withDefaultWorkSettingStarterEntries(entries: WorkbenchLibraryEntry[], storageKey: string) {
+export function withDefaultWorkSettingStarterEntries(
+  entries: WorkbenchLibraryEntry[],
+  storageKey: string,
+  markVersion = true,
+) {
   const cleanedEntries = removeObsoleteDefaultSettingEntries(entries);
   if (
     localStorage.getItem(getDefaultWorkSettingStarterVersionStorageKey(storageKey)) ===
@@ -342,7 +347,9 @@ export function withDefaultWorkSettingStarterEntries(entries: WorkbenchLibraryEn
   const missingEntries = DEFAULT_WORK_SETTING_STARTER_ENTRIES.filter(
     (item) => !existingKeys.has(`${item.type}::${item.title}`),
   ).map(createDefaultWorkSettingStarterEntry);
-  localStorage.setItem(getDefaultWorkSettingStarterVersionStorageKey(storageKey), DEFAULT_WORK_SETTING_STARTER_VERSION);
+  if (markVersion) {
+    localStorage.setItem(getDefaultWorkSettingStarterVersionStorageKey(storageKey), DEFAULT_WORK_SETTING_STARTER_VERSION);
+  }
   return missingEntries.length > 0 ? [...missingEntries, ...cleanedEntries] : cleanedEntries;
 }
 
@@ -425,6 +432,17 @@ export function readNormalizedEntriesWithVisibleDefaults(storageKey: string, tab
     writeWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey, nextEntries);
   }
   return nextEntries;
+}
+
+export function previewNormalizedEntriesWithVisibleDefaults(storageKey: string, tabs: string[]) {
+  const entries = normalizeEntries(readWorkbenchLibraryEntriesWithGlobalBrainstormSnapshot(storageKey));
+  const withRoleDefaults = tabs.includes(ROLE_TAB) ? withDefaultMaleProtagonistRoleEntry(entries) : entries;
+  const migratedEntries = tabs.includes(SETTING_TAB)
+    ? migratePromptBasedSettingTaxonomy(withRoleDefaults)
+    : withRoleDefaults;
+  return tabs.includes(SETTING_TAB)
+    ? withDefaultWorkSettingStarterEntries(migratedEntries, storageKey, false)
+    : migratedEntries;
 }
 
 export function getBrainstormRecycleStorageKey(storageKey: string) {

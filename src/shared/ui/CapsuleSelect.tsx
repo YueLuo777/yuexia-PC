@@ -15,6 +15,7 @@ type CapsuleSelectProps = {
   value: string;
   options: CapsuleSelectOption[];
   onChange: (value: string) => void;
+  ariaLabel?: string;
   disabled?: boolean;
   disabledLabel?: string;
   title?: string;
@@ -22,6 +23,7 @@ type CapsuleSelectProps = {
   className?: string;
   style?: CSSProperties;
   buttonClassName?: string;
+  dropdownClassName?: string;
   actionLabel?: string;
   onActionClick?: () => void;
   floatingLabel?: string;
@@ -101,6 +103,7 @@ export function CapsuleSelect({
   value,
   options,
   onChange,
+  ariaLabel,
   disabled = false,
   disabledLabel,
   title,
@@ -108,6 +111,7 @@ export function CapsuleSelect({
   className = '',
   style,
   buttonClassName = '',
+  dropdownClassName = '',
   actionLabel,
   onActionClick,
   floatingLabel,
@@ -189,7 +193,7 @@ export function CapsuleSelect({
     open && !disabled ? (
       <div
         ref={dropdownRef}
-        className={`${shouldRenderLocalDropdown ? `absolute left-0 right-0 top-[calc(100%-2px)] ${inlineActionShape.connectedDropdownRadius} border-2 border-t-0 border-[#08AACE] shadow-[0_18px_34px_rgba(8,170,206,0.14)]` : `${dropdownRect.fixed ? 'fixed' : 'absolute'} rounded-xl border border-slate-200 shadow-2xl`} z-[10050] max-h-[240px] overflow-y-auto bg-white py-1`}
+        className={`${shouldRenderLocalDropdown ? `absolute left-0 right-0 top-[calc(100%-2px)] ${inlineActionShape.connectedDropdownRadius} border-2 border-t-0 border-[#08AACE] shadow-[0_18px_34px_rgba(8,170,206,0.14)]` : `${dropdownRect.fixed ? 'fixed' : 'absolute'} rounded-xl border border-slate-200 shadow-2xl`} z-[10050] max-h-[240px] overflow-y-auto bg-white py-1 ${dropdownClassName}`}
         style={
           shouldRenderLocalDropdown
             ? undefined
@@ -295,6 +299,7 @@ export function CapsuleSelect({
               ref={buttonRef}
               id={id}
               type="button"
+              aria-label={ariaLabel}
               disabled={disabled}
               onClick={toggleOpen}
               className={`flex min-w-0 flex-1 items-center text-left text-sm font-black leading-none transition-colors hover:bg-sky-50/40 disabled:cursor-not-allowed disabled:text-slate-400 ${buttonClassName} !h-full !rounded-none !py-0 ${floatingLabel ? '!pl-6 !pr-1' : '!px-4'}`}
@@ -368,6 +373,7 @@ export function CapsuleSelect({
               ref={buttonRef}
               id={id}
               type="button"
+              aria-label={ariaLabel}
               disabled={disabled}
               onClick={toggleOpen}
               className={`flex h-full min-w-0 flex-1 items-center bg-transparent text-left text-sm font-black leading-none text-slate-900 transition-colors hover:bg-sky-50/40 disabled:cursor-not-allowed disabled:text-slate-400 ${buttonClassName} !h-full !rounded-none !py-0 !pl-6 !pr-1`}
@@ -414,6 +420,7 @@ export function CapsuleSelect({
         ref={buttonRef}
         id={id}
         type="button"
+        aria-label={ariaLabel}
         disabled={disabled}
         onClick={toggleOpen}
         className={`flex h-12 w-full items-center justify-between gap-3 rounded-2xl border border-[#08AACE] bg-white px-5 text-left text-base font-black text-slate-900 shadow-[0_8px_18px_rgba(8,170,206,0.08)] transition-colors hover:bg-sky-50/40 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 ${buttonClassName}`}

@@ -103,6 +103,21 @@ export function useWorkbenchData() {
     emitWorkspaceNovelSelected(novelId);
   }, []);
 
+  const updateCurrentNovelDetails = useCallback((details: Partial<Pick<WorkbenchNovel,
+    'title' | 'category' | 'channel' | 'synopsis' | 'cover' | 'creationStatus' | 'targetWordCount'
+  >>) => {
+    if (!currentNovelId) return;
+    setNovels((current) => {
+      const next = current.map((novel) =>
+        novel.id === currentNovelId
+          ? { ...novel, ...details, title: details.title?.trim() || novel.title, lastModifiedAt: formatDate() }
+          : novel,
+      );
+      writeJson(NOVELS_KEY, next);
+      return next;
+    });
+  }, [currentNovelId]);
+
   useEffect(() => {
     setNovels(readJson<WorkbenchNovel[]>(NOVELS_KEY, [], normalizeWorkbenchNovels));
     const raw = localStorage.getItem(CURRENT_ID_KEY);
@@ -187,6 +202,7 @@ export function useWorkbenchData() {
       onRetrySave: contentPersistence.retryPendingSave,
     },
     setCurrentNovel,
+    updateCurrentNovelDetails,
     selectChapter: actions.selectChapter,
     toggleVolume: actions.toggleVolume,
     toggleSort: actions.toggleSort,

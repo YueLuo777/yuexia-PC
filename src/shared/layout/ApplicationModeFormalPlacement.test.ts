@@ -7,8 +7,9 @@ describe('formal application mode placement', () => {
     const frame = readFileSync(resolve(process.cwd(), 'src/shared/layout/AppFrameView.tsx'), 'utf8');
     const library = readFileSync(resolve(process.cwd(), 'src/features/novels/pages/NovelLibraryPage.tsx'), 'utf8');
 
-    expect(frame.indexOf('<OwnerTestModeToggle />')).toBeGreaterThan(-1);
-    expect(frame.indexOf('<OwnerTestModeToggle />')).toBeLessThan(frame.indexOf('<ApplicationModeToggle />'));
+    expect(frame).not.toContain('<OwnerTestModeToggle />');
+    expect(frame.indexOf('<BuiltInPromptManagerLauncher />')).toBeGreaterThan(-1);
+    expect(frame.indexOf('<BuiltInPromptManagerLauncher />')).toBeLessThan(frame.indexOf('<ApplicationModeToggle />'));
     expect(frame.indexOf('<ApplicationModeToggle />')).toBeGreaterThan(-1);
     expect(frame.indexOf('<ApplicationModeToggle />')).toBeLessThan(frame.indexOf('{showInternalTools && ('));
     expect(library).toContain("applicationMode === 'standard'");

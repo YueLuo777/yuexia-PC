@@ -186,6 +186,9 @@ describe('NovelLibraryPage import flow', () => {
     expect(newNovelModalSource).toContainSource("{ value: 'male', label: '男频' }");
     expect(newNovelModalSource).toContainSource("{ value: 'female', label: '女频' }");
     expect(newNovelModalSource).toContainSource('channel: type === \'novel\' ? channel : undefined');
+    expect(newNovelModalSource).toContainSource('作品名称<span aria-hidden="true"');
+    expect(newNovelModalSource).toContainSource('作品频道<span aria-hidden="true"');
+    expect(newNovelModalSource).toContainSource('作品题材<span aria-hidden="true"');
   });
 
   it('uses the page library state when importing so the new work appears immediately', () => {

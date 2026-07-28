@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 
 import type { StandardSettingEntryDescriptor } from '@/features/workbench/model/standardModeSettingModel';
 
@@ -7,6 +8,7 @@ type StandardModeSettingSidebarProps = {
   entries: StandardSettingEntryDescriptor[];
   selectedEntryId: string | null;
   onSelectEntry: (entryId: string) => void;
+  footerActions?: ReactNode;
 };
 
 type SidebarGroup = {
@@ -50,6 +52,7 @@ export function StandardModeSettingSidebar({
   entries,
   selectedEntryId,
   onSelectEntry,
+  footerActions,
 }: StandardModeSettingSidebarProps) {
   const [query, setQuery] = useState('');
   const domains = useMemo(() => buildSidebarDomains(entries), [entries]);
@@ -179,6 +182,7 @@ export function StandardModeSettingSidebar({
           className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400"
         />
       </label>
+      {footerActions}
     </aside>
   );
 }

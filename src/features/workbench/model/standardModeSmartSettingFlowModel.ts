@@ -27,6 +27,7 @@ export type SmartTemplatePreset = {
   id: string;
   title: string;
   channel: BookChannel;
+  genreCategory: string;
   keywords: string[];
   description: string;
   structure: TemplateStructure;
@@ -213,6 +214,7 @@ export const SMART_TEMPLATE_PRESETS: SmartTemplatePreset[] = [
     id: 'female-ceo',
     title: '现代总裁',
     channel: 'female',
+    genreCategory: '现代言情',
     keywords: ['总裁', '豪门', '现代言情', '职场恋爱'],
     description: '突出感情发展、豪门关系、职场冲突和男女主成长。',
     structure: FEMALE_CEO_STRUCTURE,
@@ -221,6 +223,7 @@ export const SMART_TEMPLATE_PRESETS: SmartTemplatePreset[] = [
     id: 'female-sweet',
     title: '甜宠',
     channel: 'female',
+    genreCategory: '现代言情',
     keywords: ['甜宠'],
     description: '突出关系升温、日常互动、情绪满足和轻冲突。',
     structure: FEMALE_SWEET_STRUCTURE,
@@ -229,6 +232,7 @@ export const SMART_TEMPLATE_PRESETS: SmartTemplatePreset[] = [
     id: 'female-ancient',
     title: '古言',
     channel: 'female',
+    genreCategory: '古代言情',
     keywords: ['古言', '宫斗', '宅斗'],
     description: '包含家族身份、婚姻礼法、朝堂关系和古代生活规则。',
     structure: FEMALE_ANCIENT_STRUCTURE,
@@ -237,6 +241,7 @@ export const SMART_TEMPLATE_PRESETS: SmartTemplatePreset[] = [
     id: 'male-fantasy-xianxia',
     title: '玄幻仙侠',
     channel: 'male',
+    genreCategory: '玄幻仙侠',
     keywords: ['玄幻', '仙侠', '修仙', '宗门', '凡人流'],
     description: '保留玄幻仙侠创作必需的世界、修炼、人物和剧情结构，合并重复字段并删除过程记录。',
     structure: MALE_FANTASY_XIANXIA_STRUCTURE,
@@ -245,6 +250,7 @@ export const SMART_TEMPLATE_PRESETS: SmartTemplatePreset[] = [
     id: 'male-urban-no-cultivation',
     title: '都市（无修炼）',
     channel: 'male',
+    genreCategory: '都市',
     keywords: ['都市（无修炼）', '都市现实', '商战', '职场'],
     description: '聚焦事业、商业竞争、现实资源和城市人际关系，不包含修炼体系。',
     structure: MALE_URBAN_NO_CULTIVATION_STRUCTURE,
@@ -253,6 +259,7 @@ export const SMART_TEMPLATE_PRESETS: SmartTemplatePreset[] = [
     id: 'male-urban-cultivation',
     title: '都市（有修炼）',
     channel: 'male',
+    genreCategory: '都市',
     keywords: ['都市（修炼）', '都市修炼', '都市异能'],
     description: '在都市现实结构上增加修炼体系、隐藏势力、秘境、修炼资源和异兽。',
     structure: MALE_URBAN_CULTIVATION_STRUCTURE,
@@ -261,6 +268,7 @@ export const SMART_TEMPLATE_PRESETS: SmartTemplatePreset[] = [
     id: 'suspense',
     title: '悬疑推理',
     channel: 'general',
+    genreCategory: '悬疑',
     keywords: ['悬疑', '推理', '案件', '刑侦'],
     description: '突出案件结构、嫌疑人、证据、误导线索和真相揭露。',
     structure: SUSPENSE_STRUCTURE,
@@ -269,6 +277,7 @@ export const SMART_TEMPLATE_PRESETS: SmartTemplatePreset[] = [
     id: 'general',
     title: '通用小说基础',
     channel: 'general',
+    genreCategory: '通用',
     keywords: ['通用', '其他'],
     description: '保留作品、人物、地点、势力和伏笔等通用结构。',
     structure: GENERAL_STRUCTURE,
@@ -358,12 +367,29 @@ export function cloneSmartTemplateStructure(structure: TemplateStructure): Templ
   return cloneTemplateStructure(structure);
 }
 
-export function recommendTemplateForNovelCategory(category: string) {
+export function getRecommendedTemplatesForNovelCategory(category: string, selectedChannel?: BookChannel) {
+  const normalized = category.trim();
+  const channel = selectedChannel ?? (/(总裁|言情|甜宠|古言|女频)/.test(normalized) ? 'female' : 'male');
+  if (channel === 'male' && (normalized === '都市' || normalized.startsWith('都市（'))) {
+    return SMART_TEMPLATE_PRESETS.filter((preset) => preset.genreCategory === '都市');
+  }
+  const selectedOption = BOOK_GENRE_OPTIONS[channel].find((item) => item.label === normalized);
+  const selectedPreset = SMART_TEMPLATE_PRESETS.find((preset) => preset.id === selectedOption?.templateId);
+  if (selectedPreset) return [selectedPreset];
+  const keyword = normalized.toLowerCase();
+  const matched = SMART_TEMPLATE_PRESETS.find((preset) =>
+    (preset.channel === channel || preset.channel === 'general')
+    && preset.keywords.some((item) => keyword.includes(item.toLowerCase()) || item.toLowerCase().includes(keyword)),
+  );
+  return [matched ?? SMART_TEMPLATE_PRESETS.find((preset) => preset.id === 'general')!];
+}
+
+export function recommendTemplateForNovelCategory(category: string, selectedChannel?: BookChannel) {
   const normalized = category.trim();
   const setup: SmartBookSetup = {
     title: '',
     source: 'blank',
-    channel: /(总裁|言情|甜宠|古言|女频)/.test(normalized) ? 'female' : 'male',
+    channel: selectedChannel ?? (/(总裁|言情|甜宠|古言|女频)/.test(normalized) ? 'female' : 'male'),
     genreType: normalized || '玄幻',
     protagonistName: '',
     protagonistRole: '',
@@ -373,7 +399,7 @@ export function recommendTemplateForNovelCategory(category: string) {
     brainstormContent: '',
     brainstormReadMode: 'smart',
   };
-  return recommendSmartTemplate(setup);
+  return getRecommendedTemplatesForNovelCategory(normalized, setup.channel)[0] ?? recommendSmartTemplate(setup);
 }
 
 export function recommendSmartTemplate(setup: SmartBookSetup) {

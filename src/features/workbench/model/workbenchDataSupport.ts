@@ -85,6 +85,13 @@ export function normalizeWorkbenchNovels(value: unknown): WorkbenchNovel[] {
       ...(typeof item.category === 'string' ? { category: item.category } : {}),
       ...(item.channel === 'male' || item.channel === 'female' ? { channel: item.channel } : {}),
       ...(typeof item.synopsis === 'string' ? { synopsis: item.synopsis } : {}),
+      ...(typeof item.cover === 'string' ? { cover: item.cover } : {}),
+      ...(item.creationStatus === 'planning' || item.creationStatus === 'serializing' || item.creationStatus === 'completed'
+        ? { creationStatus: item.creationStatus }
+        : {}),
+      ...(typeof item.targetWordCount === 'number' && Number.isFinite(item.targetWordCount)
+        ? { targetWordCount: Math.max(0, item.targetWordCount) }
+        : {}),
       ...(typeof item.wordCount === 'number' ? { wordCount: item.wordCount } : {}),
       ...(typeof item.createdAt === 'string' ? { createdAt: item.createdAt } : {}),
       ...(typeof item.lastModifiedAt === 'string' ? { lastModifiedAt: item.lastModifiedAt } : {}),

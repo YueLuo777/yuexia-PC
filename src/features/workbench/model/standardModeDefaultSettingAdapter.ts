@@ -5,11 +5,18 @@ import {
   getRoleTaxonomyDefaultsVersionStorageKey,
   getRoleTypesStorageKey,
   getSettingTaxonomyDefaultsVersionStorageKey,
+  DEFAULT_ROLE_TYPES,
+  ROLE_TAXONOMY_DEFAULTS_VERSION,
+  SETTING_TAXONOMY_DEFAULTS_VERSION,
   getSettingTypeDomainsStorageKey,
   getSettingTypesStorageKey,
   readNormalizedEntriesWithVisibleDefaults,
 } from '@/features/workbench/components/workbenchLibraryDataState';
 import { ROLE_TAB, SETTING_TAB, normalizeTabName } from '@/features/workbench/components/workbenchLibraryTabs';
+import {
+  normalizeImportedSettingBody,
+  normalizeImportedSettingKey,
+} from '@/features/workbench/components/workbenchSmartImport';
 import {
   getPromptRoleFieldSections,
   getPromptRoleStateKey,
@@ -17,11 +24,13 @@ import {
   stringifyPromptRoleBaseFields,
 } from '@/features/workbench/components/workbenchPromptRoleFields';
 import {
+  createEmptyRoleStateSettings,
   getRoleStateSettings,
   parseRoleContent,
   stringifyRoleContent,
 } from '@/features/workbench/components/workbenchRoleContent';
 import {
+  getSettingImportFormatFieldSet,
   getStructuredSettingFieldSet,
   parseSettingContent,
   parseStructuredSettingFields,
@@ -30,18 +39,20 @@ import {
 } from '@/features/workbench/components/workbenchStructuredSettings';
 import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbenchLibraryStorage';
 import {
+  createWorkbenchLibraryEntry,
   readWorkbenchLibraryEntriesWithGlobalBrainstorm,
   writeWorkbenchLibraryEntriesWithGlobalBrainstorm,
 } from '@/features/workbench/model/workbenchLibraryStorage';
 import {
+  DEFAULT_SETTING_TYPES,
+  DEFAULT_SETTING_TYPE_DOMAINS,
+  DEFAULT_WORK_SETTING_STARTER_VERSION,
   DEFAULT_WORK_SETTING_TYPES,
   SETTING_WORKSPACE_DOMAIN_GROUPS,
 } from '@/features/workbench/model/workbenchSettingTaxonomy';
 
-import type {
-  StandardSettingEntryDescriptor,
-  StandardSettingSectionDescriptor,
-} from './standardModeSettingModel';
+import type { StandardSettingEntryDescriptor, StandardSettingSectionDescriptor } from './standardModeSettingModel';
+import type { TemplateStructure } from './standardModeTemplateModel';
 
 const DOMAIN_TITLES: Record<string, string> = {
   work: '作品设定',
@@ -52,7 +63,15 @@ const DOMAIN_TITLES: Record<string, string> = {
   'setting:foreshadow': '伏笔线索',
   'setting:monster': '怪物图鉴',
 };
-const DOMAIN_ORDER = ['work', 'character', 'setting:location', 'setting:faction', 'setting:item', 'setting:foreshadow', 'setting:monster'];
+const DOMAIN_ORDER = [
+  'work',
+  'character',
+  'setting:location',
+  'setting:faction',
+  'setting:item',
+  'setting:foreshadow',
+  'setting:monster',
+];
 
 const SETTING_DOMAIN_BY_TYPE = new Map(
   Object.entries(SETTING_WORKSPACE_DOMAIN_GROUPS).flatMap(([domainId, groups]) =>
@@ -168,11 +187,191 @@ export function resetStandardModeSettingEntries(storageKey: string) {
   ].forEach((key) => localStorage.removeItem(key));
 }
 
+function getEnabledTemplateFields(structure: TemplateStructure) {
+  return structure
+    .filter((domain) => domain.enabled)
+    .flatMap((domain) =>
+      domain.groups
+        .filter((group) => group.enabled)
+        .flatMap((group) =>
+          group.entries
+            .filter((entry) => entry.enabled)
+            .map((entry) => ({
+              domain,
+              group,
+              entry,
+              fields: entry.sections
+                .filter((section) => section.enabled)
+                .flatMap((section) => section.fields.filter((field) => field.enabled)),
+            })),
+        ),
+    );
+}
+
+function createRoleEntryFromTemplate(item: ReturnType<typeof getEnabledTemplateFields>[number]): WorkbenchLibraryEntry {
+  const roleType = item.entry.title.trim() || '未分类';
+  const stateSettings = createEmptyRoleStateSettings();
+  let relationship = '';
+  const baseFields: string[] = [];
+
+  item.fields.forEach((field) => {
+    const value = field.value?.trim() ?? '';
+    const stateKey = getPromptRoleStateKey(field.title);
+    if (stateKey) {
+      stateSettings[stateKey] = value;
+    } else if (field.title === '人物关系') {
+      relationship = value;
+    } else {
+      baseFields.push(`【${field.title}】：\n${value}`);
+    }
+  });
+
+  return {
+    ...createWorkbenchLibraryEntry(ROLE_TAB, item.entry.title.trim() || roleType),
+    id: item.entry.id,
+    content: stringifyRoleContent({
+      type: roleType,
+      lifeStatus: '存活',
+      baseSetting: baseFields.join('\n\n'),
+      relationship,
+      stateSettings,
+      stateUpdateChapters: {},
+      personality: '',
+      background: '',
+      status: '',
+      history: [],
+    }),
+  };
+}
+
+function createSettingEntryFromTemplate(
+  item: ReturnType<typeof getEnabledTemplateFields>[number],
+): WorkbenchLibraryEntry {
+  const settingType = item.group.title.trim() || '未分类';
+  const title = item.entry.title.trim() || '新建设定';
+  const fieldSet = getSettingImportFormatFieldSet(settingType, title);
+  const templateFieldTitles = item.fields.map((field) => field.title);
+  const fieldSetMatches = Boolean(
+    fieldSet &&
+    fieldSet.fields.length === templateFieldTitles.length &&
+    fieldSet.fields.every((field, index) => field.title === templateFieldTitles[index]),
+  );
+  const body = item.fields.map((field) => `【${field.title}】：\n${field.value?.trim() ?? ''}`).join('\n\n');
+
+  return {
+    ...createWorkbenchLibraryEntry(SETTING_TAB, title),
+    id: item.entry.id,
+    content: stringifySettingContent({
+      type: settingType,
+      body,
+      ...(fieldSetMatches && fieldSet ? { structuredFieldSetId: fieldSet.id } : {}),
+    }),
+  };
+}
+
+export function replaceProfessionalSettingEntriesFromTemplate(storageKey: string, structure: TemplateStructure) {
+  resetStandardModeSettingEntries(storageKey);
+  const enabledItems = getEnabledTemplateFields(structure);
+  const roleItems = enabledItems.filter((item) => item.domain.title === '人物设定');
+  const settingItems = enabledItems.filter((item) => item.domain.title !== '人物设定');
+  const roleTypes = Array.from(new Set(roleItems.map((item) => item.entry.title.trim()).filter(Boolean)));
+  const settingTypes = Array.from(new Set(settingItems.map((item) => item.group.title.trim()).filter(Boolean)));
+  const customSettingTypeDomains = Object.fromEntries(
+    settingItems
+      .filter((item) => item.group.title.trim())
+      .map((item) => [item.group.title.trim(), item.domain.id === 'work' ? 'work' : item.domain.id]),
+  );
+
+  localStorage.setItem(
+    getRoleTypesStorageKey(storageKey),
+    JSON.stringify(roleTypes.filter((type) => !DEFAULT_ROLE_TYPES.includes(type))),
+  );
+  localStorage.setItem(
+    getHiddenRoleTypesStorageKey(storageKey),
+    JSON.stringify(DEFAULT_ROLE_TYPES.filter((type) => !roleTypes.includes(type))),
+  );
+  localStorage.setItem(getRoleTaxonomyDefaultsVersionStorageKey(storageKey), ROLE_TAXONOMY_DEFAULTS_VERSION);
+  localStorage.setItem(
+    getSettingTypesStorageKey(storageKey),
+    JSON.stringify(settingTypes.filter((type) => !DEFAULT_SETTING_TYPES.includes(type))),
+  );
+  localStorage.setItem(
+    getHiddenSettingTypesStorageKey(storageKey),
+    JSON.stringify(DEFAULT_SETTING_TYPES.filter((type) => !settingTypes.includes(type))),
+  );
+  localStorage.setItem(
+    getSettingTypeDomainsStorageKey(storageKey),
+    JSON.stringify({ ...DEFAULT_SETTING_TYPE_DOMAINS, ...customSettingTypeDomains }),
+  );
+  localStorage.setItem(getSettingTaxonomyDefaultsVersionStorageKey(storageKey), SETTING_TAXONOMY_DEFAULTS_VERSION);
+  localStorage.setItem(getDefaultWorkSettingStarterVersionStorageKey(storageKey), DEFAULT_WORK_SETTING_STARTER_VERSION);
+
+  const preservedEntries = readWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey).filter((entry) => {
+    const tab = normalizeTabName(entry.tab);
+    return tab !== ROLE_TAB && tab !== SETTING_TAB;
+  });
+  writeWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey, [
+    ...roleItems.map(createRoleEntryFromTemplate),
+    ...settingItems.map(createSettingEntryFromTemplate),
+    ...preservedEntries,
+  ]);
+}
+
 export function hasStandardModeSettingEntries(storageKey: string) {
   return readWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey).some((entry) => {
     const tab = normalizeTabName(entry.tab);
     return tab === ROLE_TAB || tab === SETTING_TAB;
   });
+}
+
+export function repairStandardModeGeneratedSettingEntries(storageKey: string) {
+  const entries = readWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey);
+  const settingGroups = new Map<string, WorkbenchLibraryEntry[]>();
+
+  entries.forEach((entry) => {
+    if (normalizeTabName(entry.tab) !== SETTING_TAB) return;
+    const setting = parseSettingContent(entry.content);
+    const cleanTitle = normalizeImportedSettingKey(entry.title);
+    const key = `${normalizeImportedSettingKey(setting.type)}::${cleanTitle}`;
+    settingGroups.set(key, [...(settingGroups.get(key) ?? []), entry]);
+  });
+
+  let changed = false;
+  const repairedByWinnerId = new Map<string, WorkbenchLibraryEntry>();
+  const droppedIds = new Set<string>();
+  Array.from(settingGroups.values()).forEach((group) => {
+    const winner =
+      group.find((entry) => Boolean(parseSettingContent(entry.content).lockedDefaultEntryId)) ??
+      group.find((entry) => entry.title.trim() === normalizeImportedSettingKey(entry.title)) ??
+      group[0];
+    const winnerSetting = parseSettingContent(winner.content);
+    const winnerBody = normalizeImportedSettingBody(winnerSetting.body, winner.title);
+    const duplicateContentSource = group
+      .filter((entry) => entry.id !== winner.id)
+      .map((entry) => ({ entry, setting: parseSettingContent(entry.content) }))
+      .map(({ entry, setting }) => ({
+        entry,
+        setting,
+        body: normalizeImportedSettingBody(setting.body, entry.title),
+      }))
+      .find(({ body }) => body.trim());
+    const cleanTitle = normalizeImportedSettingKey(winner.title);
+    const body = winnerBody.trim() ? winnerBody : (duplicateContentSource?.body ?? '');
+    const content = stringifySettingContent({ ...winnerSetting, body });
+    if (group.length > 1 || cleanTitle !== winner.title || content !== winner.content) changed = true;
+    repairedByWinnerId.set(winner.id, { ...winner, title: cleanTitle, content });
+    group.forEach((entry) => {
+      if (entry.id !== winner.id) droppedIds.add(entry.id);
+    });
+  });
+
+  if (!changed) return false;
+  const repairedEntries = entries.flatMap((entry) => {
+    if (droppedIds.has(entry.id)) return [];
+    return [repairedByWinnerId.get(entry.id) ?? entry];
+  });
+  writeWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey, repairedEntries);
+  return true;
 }
 
 function updateRoleField(entry: WorkbenchLibraryEntry, fieldKey: string, fieldTitle: string, value: string) {

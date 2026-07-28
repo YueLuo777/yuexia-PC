@@ -16,7 +16,19 @@ describe('test collection numbering', () => {
     expect(RETIRED_TEST_SERIALS).toContainEqual({ serial: 15, path: '/standard-mode-smart-setting-flow-test' });
     expect(registry.get('/professional-workbench-baseline-test')).toBe(12);
     expect(registry.get('/tomato-genre-iteration-test')).toBe(19);
-    expect(getNextTestSerial(testGroups)).toBe(21);
+    expect(registry.get('/standard-mode-creation-pages-design-test')).toBe(21);
+    expect(registry.has('/standard-mode-details-settings-redesign-test')).toBe(false);
+    expect(RETIRED_TEST_SERIALS).toContainEqual({ serial: 22, path: '/standard-mode-details-settings-redesign-test' });
+    expect(registry.get('/standard-mode-compact-setting-workspace-test')).toBe(23);
+    expect(registry.has('/standard-mode-compact-navigation-test')).toBe(false);
+    expect(RETIRED_TEST_SERIALS).toContainEqual({ serial: 24, path: '/standard-mode-compact-navigation-test' });
+    expect(registry.get('/standard-mode-project-progress-test')).toBe(25);
+    expect(registry.has('/template-node-workbench-layout-test')).toBe(false);
+    expect(RETIRED_TEST_SERIALS).toContainEqual({ serial: 26, path: '/template-node-workbench-layout-test' });
+    expect(registry.has('/creation-guide-variants-test')).toBe(false);
+    expect(RETIRED_TEST_SERIALS).toContainEqual({ serial: 27, path: '/creation-guide-variants-test' });
+    expect(registry.get('/standard-mode-guided-navigation-test')).toBe(28);
+    expect(getNextTestSerial(testGroups)).toBe(29);
     expect(testGroups.find((group) => group.title === '未做')?.items.some((item) => item.serial === 19)).toBe(true);
   });
 

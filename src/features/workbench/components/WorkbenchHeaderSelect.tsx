@@ -1,5 +1,7 @@
 import { ChevronDown } from 'lucide-react';
 
+export const WORKBENCH_SHORT_SELECT_WIDTH = 140;
+
 type WorkbenchHeaderSelectProps = {
   label: string;
   ariaLabel?: string;
@@ -38,7 +40,7 @@ export function WorkbenchHeaderSelect({
         disabled={disabled}
         title={title}
         onChange={(event) => onChange(event.target.value)}
-        className="absolute inset-x-0 bottom-0 h-9 w-full cursor-pointer appearance-none rounded-xl border-0 bg-transparent px-6 pb-0 pr-12 text-base font-medium leading-[34px] text-slate-950 outline-none disabled:cursor-not-allowed disabled:text-slate-950 disabled:opacity-100"
+        className="absolute inset-x-0 bottom-0 h-9 w-full cursor-pointer appearance-none rounded-xl border-0 bg-transparent px-6 pb-0 pr-9 text-base font-medium leading-[34px] text-slate-950 outline-none disabled:cursor-not-allowed disabled:text-slate-950 disabled:opacity-100"
       >
         {options.map((option) => (
           <option key={option} value={option}>
@@ -46,7 +48,7 @@ export function WorkbenchHeaderSelect({
           </option>
         ))}
       </select>
-      <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-6 h-4 w-4 text-slate-950" />
+      <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 h-4 w-4 text-slate-950" />
     </div>
   );
 }

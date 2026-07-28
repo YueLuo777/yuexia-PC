@@ -7,6 +7,8 @@ import {
   renderSettingLibraryWorkspace,
 } from './workbenchSettingLibraryWorkspaceView';
 import { WorkbenchSettingStatusPanel } from './WorkbenchSettingStatusPanel';
+import { StandardModeSettingGenerationPanel } from './StandardModeSettingGenerationPanel';
+import { readDefaultStandardSettingEntries } from '@/features/workbench/model/standardModeDefaultSettingAdapter';
 
 function getLibraryAiTurnFrameClass(role: 'user' | 'ai', content: string) {
   if (role === 'user') return 'max-w-[82%] rounded-2xl bg-brand px-4 py-3 text-white';
@@ -29,6 +31,7 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
     Lock,
     PROMPT_DISABLE_CONTEXT_MENU_SIZE,
     PROMPT_SETTING_CATEGORY,
+    ROLE_TAB,
     RoleBaseStateEditor,
     SETTING_TAB,
     Unlock,
@@ -95,6 +98,7 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
     draggingLibraryEntry,
     effectiveLibraryTab,
     effectivePromptDisabled,
+    entries,
     entryContextMenu,
     entryRenameDialog,
     expandedRoleTypes,
@@ -124,6 +128,7 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
     handleSettingSidebarScroll,
     hasLibraryAiContent,
     isLibraryAiLoading,
+    latestUsefulAiOutput,
     isOutlineCharacterScope,
     leftResizeHandle,
     libraryAiInputRef,
@@ -176,6 +181,7 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
     setPromptDisableMenu,
     setSelectedBrainstormReaderId,
     setSelectedIdForTab,
+    selectSettingWorkspaceDomain,
     settingCreateModal,
     settingLibraryLeftWidth,
     settingLibraryMode,
@@ -188,6 +194,8 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
     showPromptDisableButton,
     smartImportLocked,
     smartImportSettings,
+    standardMode,
+    storageKey,
     stopLibraryAiMessage,
     stringifySettingContent,
     toggleBrainstormOutputPreviewSelected,
@@ -197,8 +205,8 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
     updateOutlineCharacterRole,
     updateStructuredSettingField,
   } = scope;
-  const showSettingStatusTabs = activeTab === SETTING_TAB && !activeIsBrainstorm;
-  const settingPanelMode = activeTabConfig.settingPanelMode === 'status' ? 'status' : 'setting';
+  const showSettingStatusTabs = !standardMode && activeTab === SETTING_TAB && !activeIsBrainstorm;
+  const settingPanelMode = showSettingStatusTabs && activeTabConfig.settingPanelMode === 'status' ? 'status' : 'setting';
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white" style={scaleStyle}>
       {libraryHeaderFontSizePortal}
@@ -242,10 +250,39 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
               className="min-w-0 flex min-h-0 flex-col border-l border-gray-100 bg-gray-50 px-4 pb-4 pt-2"
               style={activeTab === SETTING_TAB && !activeIsBrainstorm ? { gridColumn: 5, gridRow: 1 } : undefined}
             >
-              {settingPanelMode !== 'status' || !showSettingStatusTabs
-                ? renderSettingLibraryAiConfigHeader(scope)
-                : null}
-              {settingPanelMode === 'status' && showSettingStatusTabs ? (
+              {standardMode && activeTab === SETTING_TAB ? (
+                <StandardModeSettingGenerationPanel
+                  settingsStorageKey={storageKey}
+                  entries={entries}
+                  latestOutput={latestUsefulAiOutput}
+                  isGenerating={isLibraryAiLoading}
+                  onGenerate={(request, visibleText) => void sendLibraryAiMessage(request, { visibleText })}
+                  onStop={stopLibraryAiMessage}
+                  onImport={() => smartImportSettings({ force: true })}
+                  onJumpToEmptyField={(result) => {
+                    const descriptor = readDefaultStandardSettingEntries(storageKey)
+                      .find((entry) => entry.id === result.entryId);
+                    if (!descriptor) return;
+                    selectSettingWorkspaceDomain(descriptor.domainId);
+                    setSelectedIdForTab(descriptor.sourceKind === 'role' ? ROLE_TAB : SETTING_TAB, result.entryId);
+                    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+                      const target = Array.from(document.querySelectorAll<HTMLElement>('[data-setting-field-key], [data-role-field-key]'))
+                        .find((element) =>
+                          element.dataset.settingFieldKey === result.fieldKey
+                          || element.dataset.roleFieldKey === result.fieldKey,
+                        );
+                      if (!target) return;
+                      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      target.querySelector<HTMLElement>('input, textarea')?.focus();
+                    }));
+                  }}
+                />
+              ) : (
+                <>
+                  {settingPanelMode !== 'status' || !showSettingStatusTabs
+                    ? renderSettingLibraryAiConfigHeader(scope)
+                    : null}
+                  {settingPanelMode === 'status' && showSettingStatusTabs ? (
                 <WorkbenchSettingStatusPanel
                   entry={currentSelectedEntry ?? null}
                   role={currentSelectedRole ?? null}
@@ -257,14 +294,14 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                     updateEntry(currentSelectedEntry.id, { content: stringifySettingContent(nextSetting) });
                   }}
                 />
-              ) : activeIsBrainstorm ? (
+                  ) : activeIsBrainstorm ? (
                 <BrainstormQuestionPanel
                   draft={brainstormQuestionDraft}
                   isLoading={isLibraryAiLoading}
                   onFieldChange={setBrainstormQuestionField}
                   onGenerate={openBrainstormGenerateConfirm}
                 />
-              ) : (
+                  ) : (
                 <>
                   <div className="xy-ai-panel-output-slot relative">
                     <div className="xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-outline-ai-output-frame xy-floating-fill h-full xy-has-value">
@@ -452,7 +489,7 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                         <div className="flex h-10 w-44 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white">
                           <button
                             type="button"
-                            onClick={smartImportSettings}
+                            onClick={() => smartImportSettings()}
                             disabled={smartImportLocked}
                             className={`min-w-0 flex-1 whitespace-nowrap px-3 text-sm font-bold transition-colors ${
                               smartImportLocked
@@ -478,6 +515,8 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                       </div>
                     )}
                   </>
+                </>
+                  )}
                 </>
               )}
             </aside>

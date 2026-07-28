@@ -164,7 +164,8 @@ describe('WorkbenchLibraryPanel outline flows', () => {
   it('removes the duplicate chapter meta and embeds independent font controls in both detail outline frames', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const cardMetaStart = panelSource.indexOf('const { volume, chapter } = selectedOutlineChapter;');
-    const cardMetaEnd = panelSource.indexOf('</section>', cardMetaStart);
+    const outlineFrameStart = panelSource.indexOf('value={detailOutlineParts.outline}', cardMetaStart);
+    const cardMetaEnd = panelSource.indexOf('</section>', outlineFrameStart);
     const cardMetaSource = panelSource.slice(cardMetaStart, cardMetaEnd);
 
     expect(cardMetaStart).toBeGreaterThan(-1);
@@ -186,7 +187,11 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     const cardSourceStart = panelSource.indexOf('const { volume, chapter } = selectedOutlineChapter;');
     const cardSourceEnd = panelSource.indexOf('\n  }\n\n  return (', cardSourceStart);
     const cardSource = panelSource.slice(cardSourceStart, cardSourceEnd);
-    const labelStart = cardSource.indexOf('<label className="xy-floating-title-count xy-detail-outline-title-count">');
+    const outlineTitleIndex = cardSource.indexOf('{outlineCardTitle}');
+    const labelStart = cardSource.lastIndexOf(
+      '<label className="xy-floating-title-count xy-detail-outline-title-count">',
+      outlineTitleIndex,
+    );
     const labelEnd = cardSource.indexOf('</label>', labelStart);
     const labelSource = cardSource.slice(labelStart, labelEnd);
 
@@ -226,7 +231,9 @@ describe('WorkbenchLibraryPanel outline flows', () => {
     expect(styleSource).toContainSource('display: inline-flex;');
     expect(styleSource).toContainSource('align-items: baseline;');
     expect(styleSource).toContainSource('gap: 2ch;');
-    expect(panelSource).toContainSource('className="flex h-full min-h-0 flex-col gap-6"');
+    expect(panelSource).toContainSource(
+      "'grid min-h-0 flex-1 grid-rows-[minmax(0,62fr)_minmax(0,38fr)] gap-6'",
+    );
     expect(panelSource).toContainSource('absolute right-9 top-1 z-[60] -translate-y-1/2');
     expect(styleSource).toContainSource('isolation: isolate;');
     expect(panelSource).toContainSource('? `第${chapter.serialNumber}章 章纲`');
@@ -282,7 +289,8 @@ describe('WorkbenchLibraryPanel outline flows', () => {
   it('keeps general library font controls in the header while moving detail outline controls into their frames', async () => {
     const panelSource = await readWorkbenchLibraryPanelSource();
     const cardSourceStart = panelSource.indexOf('const { volume, chapter } = selectedOutlineChapter;');
-    const cardSourceEnd = panelSource.indexOf('</section>', cardSourceStart);
+    const outlineFrameStart = panelSource.indexOf('value={detailOutlineParts.outline}', cardSourceStart);
+    const cardSourceEnd = panelSource.indexOf('</section>', outlineFrameStart);
     const cardSource = panelSource.slice(cardSourceStart, cardSourceEnd);
     const settingPreviewStart = panelSource.indexOf('placeholder="这里显示选中的设定内容，也可以直接编辑。"');
     const settingPreviewEnd = panelSource.indexOf(

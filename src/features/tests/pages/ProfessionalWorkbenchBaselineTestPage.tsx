@@ -39,8 +39,19 @@ const FLOW_STATS: WorkbenchHeaderFlowStats = {
   comment: { meta: '1章待点评', tone: 'warning' },
 };
 
-export function ProfessionalWorkbenchBaselineTestPage() {
-  const [activeFlow, setActiveFlow] = useState<WorkbenchCreationFlowPageKey>('brainstorm');
+type ProfessionalWorkbenchBaselineTestPageProps = {
+  experience?: 'professional' | 'standard';
+  fixedFlow?: Extract<WorkbenchCreationFlowPageKey, 'outline' | 'chapterOutline' | 'writing' | 'audit'>;
+  showHeader?: boolean;
+};
+
+export function ProfessionalWorkbenchBaselineTestPage({
+  experience = 'professional',
+  fixedFlow,
+  showHeader = experience === 'professional',
+}: ProfessionalWorkbenchBaselineTestPageProps = {}) {
+  const [internalActiveFlow, setInternalActiveFlow] = useState<WorkbenchCreationFlowPageKey>('brainstorm');
+  const activeFlow = fixedFlow ?? internalActiveFlow;
   const [chapters, setChapters] = useState(INITIAL_CHAPTERS);
   const [selectedChapterId, setSelectedChapterId] = useState(INITIAL_CHAPTERS[0].id);
   const [contentByChapter, setContentByChapter] = useState(INITIAL_CONTENT);
@@ -88,7 +99,9 @@ export function ProfessionalWorkbenchBaselineTestPage() {
       ),
     onDeleteChapter: () => undefined,
     onOpenFind: () => undefined,
-    onOpenSummaryLibrary: () => setActiveFlow('summary'),
+    onOpenSummaryLibrary: () => {
+      if (!fixedFlow) setInternalActiveFlow('summary');
+    },
   };
 
   const content = (
@@ -102,37 +115,45 @@ export function ProfessionalWorkbenchBaselineTestPage() {
       onRegisterHeaderLog={() => undefined}
       getChapterContent={chapterEditorProps.getChapterContent}
       chapterEditorProps={chapterEditorProps}
+      standardMode={experience === 'standard'}
     />
   );
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col bg-[#f5f5f7]" data-testid="professional-workbench-baseline">
-      <WorkbenchHeader
-        workTitle="九重天劫"
-        flowItems={WORKBENCH_HEADER_FLOW_ITEMS}
-        activeFlow={activeFlow}
-        flowStats={FLOW_STATS}
-        fieldSizeVisible={activeFlow === 'writing' || FIELD_SIZE_FLOW_IDS.has(activeFlow)}
-        logVisible
-        extraTools={<div id="professional-baseline-header-extra-tools" className="inline-flex items-center gap-2" />}
-        onOpenFieldSize={() => undefined}
-        onOpenLog={() => undefined}
-        onSelectFlow={setActiveFlow}
-        onOpenWorkInfo={() => undefined}
-      />
+    <div
+      className="relative flex h-full min-h-0 flex-col bg-[#f5f5f7]"
+      data-testid="professional-workbench-baseline"
+      data-workbench-experience={experience}
+      data-workbench-flow={activeFlow}
+    >
+      {showHeader ? (
+        <WorkbenchHeader
+          workTitle="九重天劫"
+          flowItems={WORKBENCH_HEADER_FLOW_ITEMS}
+          activeFlow={activeFlow}
+          flowStats={FLOW_STATS}
+          fieldSizeVisible={activeFlow === 'writing' || FIELD_SIZE_FLOW_IDS.has(activeFlow)}
+          logVisible
+          extraTools={<div id="professional-baseline-header-extra-tools" className="inline-flex items-center gap-2" />}
+          onOpenFieldSize={() => undefined}
+          onOpenLog={() => undefined}
+          onSelectFlow={setInternalActiveFlow}
+          onOpenWorkInfo={() => undefined}
+        />
+      ) : null}
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <WorkbenchWritingLayout
           writing={activeFlow === 'writing'}
           content={content}
           showPublished={false}
-          aiPanelWidth={360}
+          aiPanelWidth={experience === 'standard' ? 390 : 360}
           onChapterResize={() => undefined}
           onPublishedResize={() => undefined}
           onAiResize={() => undefined}
           chapterSidebarProps={{
             volumes,
-            width: 220,
+            width: experience === 'standard' ? 280 : 220,
             sortAsc: true,
             recycledCount: 0,
             workType: 'novel',
@@ -161,6 +182,7 @@ export function ProfessionalWorkbenchBaselineTestPage() {
             getChapterWordCount: (chapterId) => chapters.find((chapter) => chapter.id === chapterId)?.wordCount ?? 0,
           }}
           aiPanelProps={{
+            standardMode: experience === 'standard',
             activeTool: 'ai',
             workId: 'professional-workbench-baseline-test',
             selectedChapterContent: editorContent,

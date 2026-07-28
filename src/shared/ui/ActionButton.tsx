@@ -2,13 +2,14 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 import {
   DANGER_TEXT_BUTTON_CLASS,
+  DANGER_OUTLINE_TEXT_BUTTON_CLASS,
   GHOST_TEXT_BUTTON_CLASS,
   INLINE_PRIMARY_TEXT_BUTTON_CLASS,
   PRIMARY_TEXT_BUTTON_CLASS,
   SECONDARY_TEXT_BUTTON_CLASS,
 } from '@/shared/ui/actionButtonClasses';
 
-export type ActionButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
+export type ActionButtonVariant = 'primary' | 'secondary' | 'danger' | 'dangerOutline' | 'ghost';
 export type ActionButtonSize = 'sm' | 'md';
 
 interface ActionButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className'> {
@@ -22,6 +23,7 @@ const VARIANT_CLASS: Record<ActionButtonVariant, string> = {
   primary: PRIMARY_TEXT_BUTTON_CLASS,
   secondary: SECONDARY_TEXT_BUTTON_CLASS,
   danger: DANGER_TEXT_BUTTON_CLASS,
+  dangerOutline: DANGER_OUTLINE_TEXT_BUTTON_CLASS,
   ghost: GHOST_TEXT_BUTTON_CLASS,
 };
 

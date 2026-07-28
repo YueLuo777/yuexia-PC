@@ -53,6 +53,26 @@ const StandardModeSettingTemplateChoiceTestPage = lazy(() =>
     default: module.StandardModeSettingTemplateChoiceTestPage,
   })),
 );
+const StandardModeCreationPagesDesignTestPage = lazy(() =>
+  import('@/features/tests/pages/StandardModeCreationPagesDesignTestPage').then((module) => ({
+    default: module.StandardModeCreationPagesDesignTestPage,
+  })),
+);
+const StandardModeCompactSettingWorkspaceTestPage = lazy(() =>
+  import('@/features/tests/pages/StandardModeCompactSettingWorkspaceTestPage').then((module) => ({
+    default: module.StandardModeCompactSettingWorkspaceTestPage,
+  })),
+);
+const StandardModeProjectProgressTestPage = lazy(() =>
+  import('@/features/tests/pages/StandardModeProjectProgressTestPage').then((module) => ({
+    default: module.StandardModeProjectProgressTestPage,
+  })),
+);
+const StandardModeGuidedNavigationTestPage = lazy(() =>
+  import('@/features/tests/pages/StandardModeGuidedNavigationTestPage').then((module) => ({
+    default: module.StandardModeGuidedNavigationTestPage,
+  })),
+);
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
 );
@@ -191,6 +211,14 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <StandardModeFourStageWorkbenchTestPage />;
       case '/standard-mode-setting-template-choice-test':
         return <StandardModeSettingTemplateChoiceTestPage />;
+      case '/standard-mode-creation-pages-design-test':
+        return <StandardModeCreationPagesDesignTestPage />;
+      case '/standard-mode-compact-setting-workspace-test':
+        return <StandardModeCompactSettingWorkspaceTestPage />;
+      case '/standard-mode-project-progress-test':
+        return <StandardModeProjectProgressTestPage />;
+      case '/standard-mode-guided-navigation-test':
+        return <StandardModeGuidedNavigationTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':

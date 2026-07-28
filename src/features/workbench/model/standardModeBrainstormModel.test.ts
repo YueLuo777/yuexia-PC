@@ -25,7 +25,7 @@ describe('standardModeBrainstormModel', () => {
     expect(request).toContain('主角金手指：吞噬系统');
     expect(request).toContain('其他要求：开局冲突要明确，避免无意义的谜语设定。');
     expect(request).not.toContain('版本');
-    expect(createEmptyGeneratedVersion().title).toBe('未命名脑洞');
+    expect(createEmptyGeneratedVersion().title).toBe('未命名');
     expect(getBrainstormTitleFieldCharacterWidth('短名')).toBe(6);
     expect(getBrainstormTitleFieldCharacterWidth('一二三四五六七八九')).toBe(9);
     expect(getBrainstormTitleFieldCharacterWidth('一二三四五六七八九十一二三四五六七八')).toBe(15);
@@ -36,7 +36,8 @@ describe('standardModeBrainstormModel', () => {
     const unnamed = createSavedBrainstormEntry([named], '  ', '另一版内容');
 
     expect(named.title).toBe('新脑洞');
-    expect(unnamed.title).toBe('未命名脑洞');
+    expect(unnamed.title).toBe('未命名');
+    expect(unnamed.brainstormCategoryId).toBe('brainstorm-category-uncategorized');
     expect(parseSettingContent(named.content).body).toBe('完整脑洞内容');
     expect(unnamed.brainstormSerialNumber).toBe(2);
     expect(buildStandardBrainstormRevisionRequest('旧内容', '强化冲突')).toContain('强化冲突');

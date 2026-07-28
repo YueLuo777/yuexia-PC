@@ -142,10 +142,18 @@ import { buildWorkbenchPageChapterContext } from './workbenchPageChapterContext'
 
 export interface WorkbenchPageProps {
   experience?: 'professional' | 'standard';
-  fixedFlow?: Extract<WorkbenchCreationFlowPageKey, 'chapterOutline' | 'writing' | 'audit' | 'status' | 'summary'>;
+  contentExperience?: 'professional' | 'standard';
+  fixedFlow?: Extract<
+    WorkbenchCreationFlowPageKey,
+    'outline' | 'chapterOutline' | 'writing' | 'audit' | 'status' | 'summary'
+  >;
 }
 
-export function WorkbenchPage({ experience = 'professional', fixedFlow }: WorkbenchPageProps = {}) {
+export function WorkbenchPage({
+  experience = 'professional',
+  contentExperience = experience,
+  fixedFlow,
+}: WorkbenchPageProps = {}) {
   const navigate = useNavigate();
   const [isRecycleOpen, setIsRecycleOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -561,7 +569,8 @@ export function WorkbenchPage({ experience = 'professional', fixedFlow }: Workbe
       onRegisterHeaderLog={registerHeaderLogOpenHandler}
       getChapterContent={chapterEditorProps.getChapterContent}
       chapterEditorProps={chapterEditorProps}
-      standardMode={experience === 'standard'}
+      standardMode={contentExperience === 'standard'}
+      standardSettingMode={experience === 'standard'}
     />
   );
 

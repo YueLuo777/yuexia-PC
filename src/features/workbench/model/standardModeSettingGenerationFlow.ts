@@ -1,0 +1,146 @@
+import type { PromptItem } from '@/features/prompts/model/promptTypes';
+
+export type StandardSettingGenerationStep = {
+  id: string;
+  name: string;
+  scope: string;
+  promptName: string;
+};
+
+export type StandardSettingGenerationStatus = 'idle' | 'running' | 'paused' | 'failed' | 'completed';
+
+export type StandardSettingGenerationState = {
+  version: 1;
+  currentStepIndex: number;
+  completedStepIds: string[];
+  status: StandardSettingGenerationStatus;
+  autoContinue: boolean;
+  requirement: string;
+  error: string;
+};
+
+export const STANDARD_SETTING_GENERATION_STEPS: StandardSettingGenerationStep[] = [
+  {
+    id: 'world-foundation',
+    name: '基础设定',
+    scope: '作品定位、世界背景、力量体系、设定红线',
+    promptName: '作品设定生成-世界基础',
+  },
+  {
+    id: 'plot-planning',
+    name: '剧情规划',
+    scope: '整体剧情、第一卷、爽点设计、创作规范、剧情时间线',
+    promptName: '作品设定生成-剧情规划',
+  },
+  {
+    id: 'main-characters',
+    name: '主要人物',
+    scope: '男主角或女主角、重要配角、人物关系与当前目标',
+    promptName: '作品设定生成-主要人物',
+  },
+  {
+    id: 'places-and-factions',
+    name: '地点与势力',
+    scope: '地点地图、主要势力、势力关系与活动范围',
+    promptName: '作品设定生成-地点与势力',
+  },
+  {
+    id: 'creation-supplements',
+    name: '创作补充',
+    scope: '道具资源、伏笔线索、怪物图鉴及前面遗漏的必要设定',
+    promptName: '作品设定生成-创作补充',
+  },
+];
+
+export function createStandardSettingGenerationState(): StandardSettingGenerationState {
+  return {
+    version: 1,
+    currentStepIndex: 0,
+    completedStepIds: [],
+    status: 'idle',
+    autoContinue: false,
+    requirement: '',
+    error: '',
+  };
+}
+
+export function getStandardSettingGenerationStorageKey(settingsStorageKey: string) {
+  return `xinyuexia_standard_setting_generation_v1:${settingsStorageKey}`;
+}
+
+export function readStandardSettingGenerationState(settingsStorageKey: string) {
+  const fallback = createStandardSettingGenerationState();
+  if (typeof localStorage === 'undefined' || !settingsStorageKey) return fallback;
+  try {
+    const parsed = JSON.parse(
+      localStorage.getItem(getStandardSettingGenerationStorageKey(settingsStorageKey)) ?? 'null',
+    ) as Partial<StandardSettingGenerationState> | null;
+    if (!parsed) return fallback;
+    const completedStepIds = Array.isArray(parsed.completedStepIds)
+      ? parsed.completedStepIds.filter((id): id is string => typeof id === 'string')
+      : [];
+    const currentStepIndex = Math.max(
+      0,
+      Math.min(STANDARD_SETTING_GENERATION_STEPS.length - 1, Number(parsed.currentStepIndex) || 0),
+    );
+    return {
+      version: 1,
+      currentStepIndex,
+      completedStepIds,
+      status: parsed.status === 'running' ? 'paused' : (parsed.status ?? 'idle'),
+      autoContinue: parsed.autoContinue !== false,
+      requirement: typeof parsed.requirement === 'string' ? parsed.requirement : '',
+      error: typeof parsed.error === 'string' ? parsed.error : '',
+    } satisfies StandardSettingGenerationState;
+  } catch {
+    return fallback;
+  }
+}
+
+export function writeStandardSettingGenerationState(settingsStorageKey: string, state: StandardSettingGenerationState) {
+  if (!settingsStorageKey) return;
+  localStorage.setItem(getStandardSettingGenerationStorageKey(settingsStorageKey), JSON.stringify(state));
+}
+
+export function clearStandardSettingGenerationState(settingsStorageKey: string) {
+  if (!settingsStorageKey) return;
+  localStorage.removeItem(getStandardSettingGenerationStorageKey(settingsStorageKey));
+}
+
+export function findBuiltInSettingPrompt(prompts: PromptItem[], step: StandardSettingGenerationStep) {
+  const candidates = prompts.filter((prompt) => prompt.category === '内置' && prompt.content.trim());
+  return (
+    candidates.find((prompt) => prompt.name.trim() === step.promptName) ??
+    candidates.find((prompt) => prompt.name.trim() === '作品设定生成') ??
+    null
+  );
+}
+
+export function buildStandardSettingStepRequest({
+  step,
+  requirement,
+  brainstorm,
+  existingSettings,
+  promptContent,
+}: {
+  step: StandardSettingGenerationStep;
+  requirement: string;
+  brainstorm: string;
+  existingSettings: string;
+  promptContent: string;
+}) {
+  return [
+    promptContent.trim(),
+    '【当前生成步骤】',
+    step.name,
+    '【本步只生成】',
+    step.scope,
+    brainstorm.trim() ? `【关联脑洞】\n${brainstorm.trim()}` : '',
+    existingSettings.trim() ? `【已经完成的设定】\n${existingSettings.trim()}` : '',
+    requirement.trim() ? `【用户补充要求】\n${requirement.trim()}` : '',
+    '【输出要求】',
+    '只输出本步骤对应的设定，不要重复已经完成的内容。严格使用软件可智能导入的设定标签格式：<分组名>、*设定名*：、【子设定名】：、设定内容。每个名称必须与当前模板一致。只写用户可见的中文设定内容，禁止输出JSON、Markdown代码块以及type、body、structuredFieldSetId、lockedDefaultEntryId等软件内部字段。不要解释，不要寒暄。',
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+}

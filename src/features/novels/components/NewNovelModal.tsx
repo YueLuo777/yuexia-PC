@@ -2,6 +2,7 @@ import { Image } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import type { NewNovelInput, NovelChannel, WorkType } from '@/features/novels/model/novelTypes';
+import { BOOK_GENRE_OPTIONS } from '@/features/workbench/model/standardModeSmartSettingFlowModel';
 import { AppModalShell } from '@/shared/ui/AppModalShell';
 import { ActionButton } from '@/shared/ui/ActionButton';
 
@@ -13,9 +14,13 @@ interface NewNovelModalProps {
   onCreate: (input: NewNovelInput) => void;
 }
 
+function getAvailableCategories(type: WorkType, categories: string[], channel: NovelChannel) {
+  return type === 'novel' ? BOOK_GENRE_OPTIONS[channel].map((option) => option.label) : categories;
+}
+
 export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: NewNovelModalProps) {
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState(categories[0] ?? '未分类');
+  const [category, setCategory] = useState(() => getAvailableCategories(type, categories, 'male')[0] ?? '未分类');
   const [channel, setChannel] = useState<NovelChannel>('male');
   const [synopsis, setSynopsis] = useState('');
   const [cover, setCover] = useState<string | undefined>();
@@ -23,7 +28,7 @@ export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: N
   useEffect(() => {
     if (!isOpen) return;
     setTitle(type === 'novel' ? '默认小说' : '默认剧本');
-    setCategory(categories[0] ?? '未分类');
+    setCategory(getAvailableCategories(type, categories, 'male')[0] ?? '未分类');
     setChannel('male');
     setSynopsis('');
     setCover(undefined);
@@ -32,6 +37,7 @@ export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: N
   if (!isOpen) return null;
 
   const typeLabel = type === 'novel' ? '小说' : '剧本';
+  const availableCategories = getAvailableCategories(type, categories, channel);
 
   const handleSubmit = () => {
     const trimmed = title.trim();
@@ -57,7 +63,9 @@ export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: N
       zIndexClass="z-50"
       contentClassName="p-5"
     >
-      <label className="mb-1.5 block text-xs font-medium text-gray-600">作品名称</label>
+      <label className="mb-1.5 block text-xs font-medium text-gray-600">
+        作品名称<span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
+      </label>
       <input
         value={title}
         onChange={(event) => setTitle(event.target.value)}
@@ -70,7 +78,9 @@ export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: N
 
       {type === 'novel' ? (
         <>
-          <label className="mb-1.5 block text-xs font-medium text-gray-600">频道</label>
+          <label className="mb-1.5 block text-xs font-medium text-gray-600">
+            作品频道<span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
+          </label>
           <div className="mb-4 grid grid-cols-2 overflow-hidden rounded-md border border-gray-200 bg-white">
             {([
               { value: 'male', label: '男频' },
@@ -80,7 +90,11 @@ export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: N
                 key={item.value}
                 type="button"
                 aria-pressed={channel === item.value}
-                onClick={() => setChannel(item.value)}
+                onClick={() => {
+                  setChannel(item.value);
+                  const nextCategories = getAvailableCategories(type, categories, item.value);
+                  setCategory((current) => nextCategories.includes(current) ? current : nextCategories[0] ?? '未分类');
+                }}
                 className={`h-9 text-sm font-semibold transition-colors ${
                   channel === item.value
                     ? 'border-[#08AACE] bg-[#EAF9FD] text-[#078FAB] shadow-[inset_0_0_0_1px_#08AACE]'
@@ -94,13 +108,16 @@ export function NewNovelModal({ isOpen, type, categories, onClose, onCreate }: N
         </>
       ) : null}
 
-      <label className="mb-1.5 block text-xs font-medium text-gray-600">题材类型</label>
+      <label className="mb-1.5 block text-xs font-medium text-gray-600">
+        作品题材<span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
+      </label>
       <select
+        aria-label="作品题材"
         value={category}
         onChange={(event) => setCategory(event.target.value)}
         className="mb-4 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm transition-colors focus:border-brand"
       >
-        {categories.map((item) => (
+        {availableCategories.map((item) => (
           <option key={item} value={item}>
             {item}
           </option>

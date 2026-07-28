@@ -90,15 +90,13 @@ describe('RoleBaseStateEditor', () => {
     expect(screen.getByRole('option', { name: '幕后反派' })).toBeInTheDocument();
     fireEvent.change(identitySelect, { target: { value: '核心盟友' } });
     expect(identitySelect).toHaveValue('核心盟友');
-    const lifeStatusGroup = screen.getByRole('group', { name: '生存状态' });
-    const aliveButton = screen.getByRole('button', { name: '存活' });
-    const deadButton = screen.getByRole('button', { name: '死亡' });
-    expect(lifeStatusGroup).toHaveClass('rounded-xl', 'border', 'border-slate-200', 'bg-slate-100/80');
-    expect(aliveButton).toHaveClass('bg-white', 'text-emerald-700');
-    expect(screen.queryByRole('combobox', { name: '状态标签' })).not.toBeInTheDocument();
-    fireEvent.click(deadButton);
-    expect(deadButton).toHaveAttribute('aria-pressed', 'true');
-    expect(deadButton).toHaveClass('bg-white', 'text-slate-500');
+    const lifeStatusSelect = screen.getByRole('combobox', { name: '生存状态' });
+    expect(identitySelect.parentElement).toHaveStyle({ width: '140px' });
+    expect(lifeStatusSelect.parentElement).toHaveStyle({ width: '140px' });
+    expect(lifeStatusSelect.parentElement).toHaveClass('rounded-xl', 'border-2', 'border-slate-950', 'bg-white');
+    expect(lifeStatusSelect).toHaveValue('存活');
+    fireEvent.change(lifeStatusSelect, { target: { value: '死亡' } });
+    expect(lifeStatusSelect).toHaveValue('死亡');
     expect(screen.getByTestId('saved-role-content')).toHaveTextContent('"lifeStatus":"死亡"');
   });
 
@@ -162,9 +160,11 @@ describe('RoleBaseStateEditor', () => {
 
     expect(screen.getByRole('combobox', { name: '身份定位' })).toBeDisabled();
     expect(screen.getByRole('combobox', { name: '身份定位' })).toHaveValue('男主角');
-    expect(screen.getByRole('group', { name: '生存状态' })).toBeInTheDocument();
-    expect(screen.queryByRole('combobox', { name: '状态标签' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '死亡' }));
+    const lifeStatusSelect = screen.getByRole('combobox', { name: '生存状态' });
+    expect(lifeStatusSelect).toBeDisabled();
+    expect(lifeStatusSelect).toHaveValue('存活');
+    expect(screen.queryByRole('option', { name: '死亡' })).not.toBeInTheDocument();
+    fireEvent.change(lifeStatusSelect, { target: { value: '死亡' } });
     expect(screen.getByTestId('saved-role-content')).toHaveTextContent('"lifeStatus":"存活"');
   });
 

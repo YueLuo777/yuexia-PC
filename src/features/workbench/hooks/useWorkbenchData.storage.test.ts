@@ -143,4 +143,35 @@ describe('useWorkbenchData storage normalization', () => {
     expect(localStorage.getItem('xinyuexia_novel_1_chapter_101')).toBeNull();
     expect(result.current.recycledChapters[0]).toMatchObject({ id: 101, content: '正文内容' });
   });
+
+  it('persists work details so they survive a remount', () => {
+    localStorage.setItem(
+      'xinyuexia_novels_v1',
+      JSON.stringify([{ id: 1, title: '旧书名', type: 'novel', category: '玄幻', wordCount: 0 }]),
+    );
+    localStorage.setItem('xinyuexia_current_novel_id', '1');
+
+    const first = renderHook(() => useWorkbenchData());
+    act(() => first.result.current.updateCurrentNovelDetails({
+      title: '新书名',
+      category: '仙侠',
+      channel: 'female',
+      synopsis: '新简介',
+      creationStatus: 'serializing',
+      targetWordCount: 1_200_000,
+      cover: 'data:image/webp;base64,cover',
+    }));
+    first.unmount();
+
+    const second = renderHook(() => useWorkbenchData());
+    expect(second.result.current.currentNovel).toMatchObject({
+      title: '新书名',
+      category: '仙侠',
+      channel: 'female',
+      synopsis: '新简介',
+      creationStatus: 'serializing',
+      targetWordCount: 1_200_000,
+      cover: 'data:image/webp;base64,cover',
+    });
+  });
 });

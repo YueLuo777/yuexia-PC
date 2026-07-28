@@ -5,15 +5,15 @@ import { getBrainstormEntryBody } from './workbenchLibraryAiText';
 type StandardModeBrainstormActionsProps = {
   entry: WorkbenchLibraryEntry | null;
   onCreateSettings: () => void;
+  onCopy: () => void;
   onDuplicate: () => void;
-  onAssociate: () => void;
 };
 
 export function StandardModeBrainstormActions({
   entry,
   onCreateSettings,
+  onCopy,
   onDuplicate,
-  onAssociate,
 }: StandardModeBrainstormActionsProps) {
   const content = entry ? getBrainstormEntryBody(entry) : '';
   return (
@@ -25,7 +25,7 @@ export function StandardModeBrainstormActions({
 
       {entry ? (
         <div className="min-h-0 flex-1 py-4">
-          <dl className="grid grid-cols-[80px_minmax(0,1fr)] gap-x-3 gap-y-3 rounded-md border border-[#dce1e8] bg-white p-4 text-sm">
+          <dl className="grid grid-cols-[80px_minmax(0,1fr)] gap-x-3 gap-y-3 rounded-md border border-[#BFC8D2] bg-white p-4 text-sm">
             <dt className="font-semibold text-[#8a95a2]">脑洞名称</dt>
             <dd className="truncate font-bold text-[#1f2933]" title={entry.title}>{entry.title}</dd>
             <dt className="font-semibold text-[#8a95a2]">内容字数</dt>
@@ -43,15 +43,15 @@ export function StandardModeBrainstormActions({
       )}
 
       <div className="shrink-0 space-y-2 border-t border-[#dce1e8] pt-3">
-        <button type="button" disabled={!entry} onClick={onCreateSettings} className="h-10 w-full rounded-md bg-[#08AACE] text-sm font-bold text-white disabled:bg-[#b9dce4]">
+        <button type="button" disabled={!entry} onClick={onCreateSettings} className="h-10 w-full rounded-md border border-[#0799B8] bg-[#08AACE] text-sm font-bold text-white disabled:border-[#A8D3DD] disabled:bg-[#b9dce4]">
           根据此脑洞生成设定
         </button>
-        <div className="grid grid-cols-2 gap-2">
-          <button type="button" disabled={!entry} onClick={onDuplicate} className="h-9 rounded-md border border-[#dce1e8] bg-white text-sm font-semibold text-[#657180] disabled:text-[#b8c0ca]">
-            复制为新脑洞
+        <div className="grid grid-cols-2 gap-2" data-brainstorm-library-copy-actions="true">
+          <button type="button" disabled={!entry || !content.trim()} onClick={onCopy} className="h-9 min-w-0 rounded-md border border-[#BFC8D2] bg-white px-2 text-sm font-semibold text-[#657180] disabled:text-[#b8c0ca]">
+            复制脑洞
           </button>
-          <button type="button" disabled={!entry} onClick={onAssociate} className="h-9 rounded-md border border-[#8fd8e7] bg-white text-sm font-semibold text-[#078FAB] disabled:border-[#dce1e8] disabled:text-[#b8c0ca]">
-            关联到当前作品
+          <button type="button" disabled={!entry} onClick={onDuplicate} className="h-9 min-w-0 rounded-md border border-[#BFC8D2] bg-white px-2 text-sm font-semibold text-[#657180] disabled:text-[#b8c0ca]">
+            创建脑洞副本
           </button>
         </div>
       </div>

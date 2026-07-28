@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck -- controller phase keeps the original top-level statement order intact.
 import { getWorkbenchLibraryPhaseActions } from './workbenchLibraryPhaseActionsBridge';
+import { takeCanonicalImportedSettingEntry } from '../components/workbenchSmartImport';
 export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) {
   const phaseActionsRef = { current: getWorkbenchLibraryPhaseActions(scope.settingTypeOptionsRef) };
   const {
@@ -643,8 +644,8 @@ export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) 
     setSettingCreateContextKind(null);
     setSettingCreateDialog(kind);
   };
-  const smartImportSettings = () => {
-    if (activeTabConfig.smartImportLocked !== false) return;
+  const smartImportSettings = (options: { force?: boolean } = {}) => {
+    if (!options.force && activeTabConfig.smartImportLocked !== false) return false;
     const sourceText = stripAiThinkingBlock(
       getLatestUsefulAiText(activeTab === SETTING_TAB ? aiOutput : aiResult || aiOutput),
     );
@@ -658,7 +659,7 @@ export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) 
         ? markdownSegments
         : createSmartSettingSegments(sourceText);
     const roleSegments = hasTaggedSegments ? taggedSegments.roleSegments : [];
-    if (segments.length === 0 && roleSegments.length === 0) return;
+    if (segments.length === 0 && roleSegments.length === 0) return false;
     const remainingEntries = [...entries];
     const importedEntries: WorkbenchLibraryEntry[] = [];
     const importedRoleEntries: WorkbenchLibraryEntry[] = [];
@@ -666,7 +667,7 @@ export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) 
     const importedSettingTypes = new Set<string>();
     const importedRoleTypes = new Set<string>();
     segments.forEach((segment) => {
-      const type = normalizeSettingType(segment.type);
+      const type = normalizeSettingType(normalizeImportedSettingKey(segment.type));
       if (type !== UNCATEGORIZED_TYPE && type !== BRAINSTORM_TYPE) {
         importedSettingTypes.add(type);
       }
@@ -675,24 +676,17 @@ export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) 
       }
       const titleKey = normalizeImportedSettingKey(segment.title);
       const typeKey = normalizeImportedSettingKey(type);
-      const body = normalizeImportedSettingBody(segment.body);
-      const existingIndex = remainingEntries.findIndex((entry) => {
-        if (entry.tab !== SETTING_TAB) return false;
-        const setting = parseSettingContent(entry.content);
-        return (
-          normalizeImportedSettingKey(entry.title) === titleKey && normalizeImportedSettingKey(setting.type) === typeKey
-        );
-      });
-
-      if (existingIndex >= 0) {
-        const [existingEntry] = remainingEntries.splice(existingIndex, 1);
+      const body = normalizeImportedSettingBody(segment.body, segment.title);
+      if (!titleKey || !body) return;
+      const existingEntry = takeCanonicalImportedSettingEntry(remainingEntries, titleKey, typeKey);
+      if (existingEntry) {
         const existingSetting = parseSettingContent(existingEntry.content);
         importedEntries.push({
           ...existingEntry,
           content:
             normalizeImportedSettingBody(existingSetting.body) === body
               ? existingEntry.content
-              : stringifySettingContent({ type, body }),
+              : stringifySettingContent({ ...existingSetting, type, body }),
           updatedAt:
             normalizeImportedSettingBody(existingSetting.body) === body
               ? existingEntry.updatedAt
@@ -700,9 +694,8 @@ export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) 
         });
         return;
       }
-
       importedEntries.push({
-        ...createWorkbenchLibraryEntry(SETTING_TAB, segment.title),
+        ...createWorkbenchLibraryEntry(SETTING_TAB, titleKey),
         content: stringifySettingContent({ type, body }),
       });
     });
@@ -767,12 +760,13 @@ export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) 
     if (importedRoleEntries.length > 0) setSelectedIdForTab(ROLE_TAB, importedRoleEntries[0]?.id ?? null);
     setExpandedSettingTypes((prev) => {
       const next = new Set(prev);
-      segments.forEach((segment) => next.add(normalizeSettingType(segment.type)));
+      segments.forEach((segment) => next.add(normalizeSettingType(normalizeImportedSettingKey(segment.type))));
       return next;
     });
     if (importedRoleTypes.size > 0) {
       setExpandedRoleTypes((prev) => new Set([...prev, ...importedRoleTypes]));
     }
+    return true;
   };
   const isSettingTypeInActiveClearDomain = (type: string) => {
     const domain = getSelectedSettingWorkspaceDomain();

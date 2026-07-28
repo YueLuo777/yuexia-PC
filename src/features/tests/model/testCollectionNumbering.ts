@@ -8,6 +8,10 @@ export type RetiredTestSerial = {
 export const RETIRED_TEST_SERIALS: RetiredTestSerial[] = [
   { serial: 11, path: '/mode-switch-novel-library-test' },
   { serial: 15, path: '/standard-mode-smart-setting-flow-test' },
+  { serial: 22, path: '/standard-mode-details-settings-redesign-test' },
+  { serial: 24, path: '/standard-mode-compact-navigation-test' },
+  { serial: 26, path: '/template-node-workbench-layout-test' },
+  { serial: 27, path: '/creation-guide-variants-test' },
 ];
 
 export function buildTestNumberByPath(groups: TestGroup[]) {

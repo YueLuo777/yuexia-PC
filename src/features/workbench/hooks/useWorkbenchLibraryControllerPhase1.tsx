@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck -- controller phase keeps the original top-level statement order intact.
 import { useWorkbenchLibraryControllerPhase1Actions } from './useWorkbenchLibraryControllerPhase1Actions';
+import { previewNormalizedEntriesWithVisibleDefaults } from '../components/workbenchLibraryDataState';
 
 export function useWorkbenchLibraryControllerPhase1(scope: Record<string, any>) {
   const {
@@ -315,8 +316,11 @@ export function useWorkbenchLibraryControllerPhase1(scope: Record<string, any>) 
     [SETTING_LIBRARY_TABS, normalizedTabs],
   );
   const [entries, setEntries] = useState<WorkbenchLibraryEntry[]>(() =>
-    readNormalizedEntriesWithVisibleDefaults(storageKey, normalizedTabs),
+    previewNormalizedEntriesWithVisibleDefaults(storageKey, normalizedTabs),
   );
+  useEffect(() => {
+    setEntries(readNormalizedEntriesWithVisibleDefaults(storageKey, normalizedTabs));
+  }, [normalizedTabs, readNormalizedEntriesWithVisibleDefaults, storageKey]);
   const [brainstormRecycleEntries, setBrainstormRecycleEntries] = useState<WorkbenchLibraryEntry[]>(() =>
     readBrainstormRecycleEntries(storageKey),
   );

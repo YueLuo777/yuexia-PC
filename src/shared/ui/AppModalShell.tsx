@@ -56,6 +56,12 @@ export function AppModalShell({
   const draggable = useDraggableModal(storageId ?? `app_modal_${title}`, defaultGeometry, centerOnOpen);
   const { resetToDefault } = draggable;
   const wasOpenRef = useRef(false);
+  const centerOnInitialRender = isOpen && centerOnOpen && !wasOpenRef.current;
+  const centeredOpeningStyle: CSSProperties = {
+    transform: 'translate(0px, 0px)',
+    ...(defaultGeometry?.width ? { width: defaultGeometry.width } : null),
+    ...(defaultGeometry?.height ? { height: defaultGeometry.height } : null),
+  };
   useTopModalEscape(isOpen, onClose);
 
   useEffect(() => {
@@ -91,7 +97,10 @@ export function AppModalShell({
         className={`relative flex ${heightClass} ${widthClass} max-w-[96vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl ${panelClassName}`}
         data-app-modal-panel="true"
         data-draggable-managed="true"
-        style={{ ...draggable.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
+        style={{
+          ...(centerOnInitialRender ? centeredOpeningStyle : draggable.style),
+          WebkitAppRegion: 'no-drag',
+        } as CSSProperties}
         onClick={(event) => event.stopPropagation()}
       >
         <header

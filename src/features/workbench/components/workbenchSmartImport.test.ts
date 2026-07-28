@@ -4,9 +4,38 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { parsePromptRoleFields } from './workbenchPromptRoleFields';
-import { createImportedRoleContent, createTaggedSettingSegments } from './workbenchSmartImport';
+import {
+  createImportedRoleContent,
+  createSmartSettingSegments,
+  createTaggedSettingSegments,
+  normalizeImportedSettingBody,
+  normalizeImportedSettingKey,
+} from './workbenchSmartImport';
 
 describe('workbench role smart import', () => {
+  it('matches decorative setting titles and unwraps leaked internal JSON', () => {
+    expect(normalizeImportedSettingKey('【作品定位】')).toBe('作品定位');
+    expect(normalizeImportedSettingKey('*作品定位*：')).toBe('作品定位');
+    expect(
+      normalizeImportedSettingBody(
+        '【作品定位】\n{"type":"核心设定","body":"只保留这段设定内容","structuredFieldSetId":"internal-id"}',
+        '【作品定位】',
+      ),
+    ).toBe('只保留这段设定内容');
+  });
+
+  it('splits adjacent bracket-titled settings even when streaming output has only one line break', () => {
+    const segments = createSmartSettingSegments(
+      '【作品定位】\n{"type":"核心设定","body":"定位内容"}\n【世界背景】\n{"type":"核心设定","body":"背景内容"}',
+    );
+
+    expect(segments.map((segment) => normalizeImportedSettingKey(segment.title))).toEqual(['作品定位', '世界背景']);
+    expect(segments.map((segment) => normalizeImportedSettingBody(segment.body, segment.title))).toEqual([
+      '定位内容',
+      '背景内容',
+    ]);
+  });
+
   it('splits multiple people from the fixed person setting tag', () => {
     const parsed = createTaggedSettingSegments(`<人物设定>
 *林刻*：

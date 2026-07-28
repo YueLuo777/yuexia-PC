@@ -1,11 +1,7 @@
-import { AlertTriangle, Trash2, X } from 'lucide-react';
-import type { CSSProperties } from 'react';
-import { createPortal } from 'react-dom';
+import { AlertTriangle, Trash2 } from 'lucide-react';
 
-import { useDraggableModal } from '@/shared/hooks/useDraggableModal';
-import { useTopModalEscape } from '@/shared/hooks/useTopModalEscape';
-import { ActionButton } from '@/shared/ui/ActionButton';
-import { ModalResizeHandles } from '@/shared/ui/ModalResizeHandles';
+import { ActionButton, type ActionButtonVariant } from '@/shared/ui/ActionButton';
+import { AppModalShell } from '@/shared/ui/AppModalShell';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -14,6 +10,10 @@ interface ConfirmDialogProps {
   confirmText?: string;
   cancelText?: string;
   confirmVariant?: 'danger' | 'warning' | 'primary';
+  cancelVariant?: ActionButtonVariant;
+  destructiveActionSecondary?: boolean;
+  confirmFirst?: boolean;
+  initialFocus?: 'confirm' | 'cancel' | 'none';
   showCancel?: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -26,15 +26,14 @@ export function ConfirmDialog({
   confirmText = '确认',
   cancelText = '取消',
   confirmVariant = 'danger',
+  cancelVariant = 'secondary',
+  destructiveActionSecondary = false,
+  confirmFirst = false,
+  initialFocus = 'none',
   showCancel = true,
   onClose,
   onConfirm,
 }: ConfirmDialogProps) {
-  const draggable = useDraggableModal(`confirm_${title}`);
-  useTopModalEscape(isOpen, onClose);
-
-  if (!isOpen) return null;
-
   const iconClass =
     confirmVariant === 'primary'
       ? 'bg-brand/10 text-brand'
@@ -42,57 +41,51 @@ export function ConfirmDialog({
         ? 'bg-amber-50 text-amber-500'
         : 'bg-red-50 text-red-500';
 
-  const confirmButtonVariant = confirmVariant === 'primary' ? 'primary' : 'danger';
+  const confirmButtonVariant = destructiveActionSecondary
+    ? 'dangerOutline'
+    : confirmVariant === 'primary'
+      ? 'primary'
+      : 'danger';
 
   const Icon = confirmVariant === 'danger' ? Trash2 : AlertTriangle;
-
-  return createPortal(
-    <div
-      className="modal-sharp fixed inset-0 z-[300] flex items-center justify-center bg-black/40"
-      style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
-      onClick={onClose}
+  const cancelAction = showCancel ? (
+    <ActionButton key="cancel" autoFocus={initialFocus === 'cancel'} onClick={onClose} variant={cancelVariant}>
+      {cancelText}
+    </ActionButton>
+  ) : null;
+  const confirmAction = (
+    <ActionButton
+      key="confirm"
+      autoFocus={initialFocus === 'confirm'}
+      onClick={onConfirm}
+      variant={confirmButtonVariant}
     >
-      <div
-        className="modal-sharp relative w-[460px] max-w-[92vw] rounded-xl bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
-        data-draggable-managed="true"
-        style={{ ...draggable.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div
-          className="flex cursor-default items-start justify-between px-7 py-6"
-          {...draggable.dragHandleProps}
-          style={{ ...draggable.dragHandleProps.style, WebkitAppRegion: 'no-drag' } as CSSProperties}
-        >
-          <div className="flex items-start gap-4">
-            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${iconClass}`}>
-              <Icon className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-[28px] font-bold leading-none text-slate-900">{title}</h3>
-              <p className="mt-6 whitespace-pre-wrap text-[15px] leading-7 text-slate-600">{description}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            data-no-modal-drag="true"
-            className="grid h-8 w-8 place-items-center rounded-md border border-slate-200 bg-white text-slate-500 transition-colors hover:border-[#08AACE]/50 hover:bg-[#EAF9FD] hover:text-[#078fb0] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FE4F2]"
-          >
-            <X className="h-5 w-5" />
-          </button>
+      {confirmText}
+    </ActionButton>
+  );
+
+  return (
+    <AppModalShell
+      title={title}
+      isOpen={isOpen}
+      onClose={onClose}
+      widthClass="w-[460px]"
+      heightClass="h-auto"
+      storageId={`confirm_${title}`}
+      zIndexClass="z-[300]"
+      contentClassName="flex min-h-0 flex-col"
+      centerOnOpen
+    >
+      <div className="flex items-start gap-4 px-6 py-5">
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${iconClass}`}>
+          <Icon className="h-5 w-5" />
         </div>
-        <div className="flex items-center justify-end gap-3 px-7 pb-7">
-          {showCancel ? (
-            <ActionButton onClick={onClose} variant="secondary">
-              {cancelText}
-            </ActionButton>
-          ) : null}
-          <ActionButton onClick={onConfirm} variant={confirmButtonVariant}>
-            {confirmText}
-          </ActionButton>
-        </div>
-        <ModalResizeHandles draggable={draggable} />
+        <p className="whitespace-pre-wrap pt-0.5 text-sm font-medium leading-7 text-slate-600">{description}</p>
       </div>
-    </div>,
-    document.body,
+      <footer className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+        {confirmFirst ? confirmAction : cancelAction}
+        {confirmFirst ? cancelAction : confirmAction}
+      </footer>
+    </AppModalShell>
   );
 }

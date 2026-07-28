@@ -76,7 +76,17 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
     expect(sidebarSource).toContainSource('className="-ml-1 shrink-0 text-sm font-black text-[#08AACE]"');
     expect(sidebarSource).toContainSource('脑洞排序');
     expect(sidebarSource).toContainSource('resequenceBrainstormEntries(brainstormEntries)');
-    expect(sidebarSource.indexOf('脑洞排序')).toBeLessThan(sidebarSource.indexOf('脑洞回收站'));
+    expect(sidebarSource).toContainSource("import { BrainstormRecycleButton } from './BrainstormRecycleButton';");
+    expect(sidebarSource.indexOf('脑洞排序')).toBeLessThan(sidebarSource.indexOf('<BrainstormRecycleButton'));
+    const { readFileSync } = await import('node:fs');
+    const { fileURLToPath } = await import('node:url');
+    const { dirname, join } = await import('node:path');
+    const recycleButtonSource = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'BrainstormRecycleButton.tsx'),
+      'utf8',
+    );
+    expect(recycleButtonSource).toContainSource('脑洞回收站');
+    expect(recycleButtonSource).toContainSource('border-red-100 bg-red-50');
     expect(panelSource).toContainSource('brainstormSerialNumberIsUsed');
     expect(panelSource).toContainSource('nextBrainstormSerialNumber');
   });
@@ -671,19 +681,22 @@ describe('WorkbenchLibraryPanel brainstorm flows', () => {
 
   it('uses the selected danger recycle button style for the brainstorm recycle entry', async () => {
     const sidebarSource = await readWorkbenchLibrarySidebarSource();
-    const recycleButtonAnchor = sidebarSource.indexOf('setIsBrainstormRecycleOpen(true)');
-    const recycleButtonStart = sidebarSource.lastIndexOf('<button', recycleButtonAnchor);
-    const recycleButtonEnd = sidebarSource.indexOf('</button>', recycleButtonAnchor);
-    const recycleButtonSource = sidebarSource.slice(recycleButtonStart, recycleButtonEnd);
+    const { readFileSync } = await import('node:fs');
+    const { fileURLToPath } = await import('node:url');
+    const { dirname, join } = await import('node:path');
+    const recycleButtonSource = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), 'BrainstormRecycleButton.tsx'),
+      'utf8',
+    );
 
-    expect(recycleButtonAnchor).toBeGreaterThan(-1);
-    expect(recycleButtonStart).toBeGreaterThan(-1);
-    expect(recycleButtonEnd).toBeGreaterThan(recycleButtonStart);
+    expect(sidebarSource).toContainSource('<BrainstormRecycleButton');
+    expect(sidebarSource).toContainSource('count={brainstormRecycleCount}');
+    expect(sidebarSource).toContainSource('onClick={() => setIsBrainstormRecycleOpen(true)}');
     expect(recycleButtonSource).toContainSource('border border-red-100 bg-red-50');
     expect(recycleButtonSource).toContainSource('hover:border-red-200 hover:bg-red-100');
     expect(recycleButtonSource).toContainSource('<Trash2 className="h-4 w-4" />');
     expect(recycleButtonSource).toContainSource('bg-white text-red-500');
-    expect(recycleButtonSource).toContainSource('{brainstormRecycleCount}');
+    expect(recycleButtonSource).toContainSource('{count}');
     expect(recycleButtonSource).not.toContainSource('打开');
     expect(recycleButtonSource).not.toContainSource('个已删除脑洞');
   });

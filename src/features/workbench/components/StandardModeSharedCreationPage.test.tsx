@@ -14,20 +14,63 @@ describe('standard mode shared chapter creation pages', () => {
     const writingSurface = readFileSync(join(directory, 'ChapterWritingSurface.tsx'), 'utf8');
 
     expect(adapter).toContain("import('@/features/workbench/pages/WorkbenchPage')");
-    expect(adapter).toContain('<SharedWorkbenchPage experience="standard" fixedFlow={FLOW_BY_ACTION[action]} />');
+    expect(adapter).toContain('contentExperience="professional"');
+    expect(adapter).toContain("settingsList: 'outline'");
     expect(adapter).toContain("storyAudit: 'audit'");
     expect(adapter).toContain("statusUpdate: 'status'");
     expect(standardPage).toContain("activeAction === 'chapterOutline'");
+    expect(standardPage).toContain("activeAction === 'settingsList'");
     expect(standardPage).toContain('<StandardModeSharedCreationPage action={activeAction} />');
     expect(workbenchPage).toContain("experience?: 'professional' | 'standard'");
-    expect(workbenchPage).toContain("'chapterOutline' | 'writing' | 'audit' | 'status' | 'summary'");
+    expect(workbenchPage).toContain("'outline' | 'chapterOutline' | 'writing'");
     expect(workbenchPage).toContain("experience === 'professional' ? (");
     expect(workbenchPage).toContain('<WorkbenchHeader');
     expect(workbenchPage).toContain("experience === 'standard' ? 280 : chapterSidebarWidth");
     expect(workbenchPage).toContain("experience === 'standard' ? 390 : aiPanelWidth");
-    expect(outlineView).toContain("open={standardMode ? undefined : true}");
+    expect(outlineView).toContain('data-detail-outline-layout={standardMode ? \'collapsible\' : \'fill-to-bottom\'}');
+    expect(outlineView).toContain('data-detail-outline-state-frame="true"');
     expect(outlineView).toContain('状态变化 {countTextWords(detailOutlineParts.stateExpectation)}字');
     expect(writingSurface).toContain('standardMode ? (');
     expect(writingSurface).toContain('更多');
+  });
+
+  it('keeps status updating as a tool and removes the redundant setting-page switch in standard mode', () => {
+    const adapter = readFileSync(join(directory, 'StandardModeSharedCreationPage.tsx'), 'utf8');
+    const workbenchPage = readFileSync(join(directory, '../pages/WorkbenchPage.tsx'), 'utf8');
+    const creationFlow = readFileSync(join(directory, 'WorkbenchCreationFlowContent.tsx'), 'utf8');
+    const settingView = readFileSync(join(directory, 'workbenchSettingLibraryView.tsx'), 'utf8');
+    const settingWorkspace = readFileSync(join(directory, 'workbenchSettingLibraryWorkspaceView.tsx'), 'utf8');
+
+    expect(adapter).toContain("statusUpdate: 'status'");
+    expect(workbenchPage).toContain("standardSettingMode={experience === 'standard'}");
+    expect(creationFlow).toContain('standardMode={standardSettingMode}');
+    expect(settingView).toContain('const showSettingStatusTabs = !standardMode');
+    expect(settingView).toContain("showSettingStatusTabs && activeTabConfig.settingPanelMode === 'status'");
+    expect(settingWorkspace).toContain('showFormalSettingTree && !standardMode');
+    expect(settingWorkspace).toContain("!standardMode && activeTabConfig.settingPanelMode === 'status'");
+    expect(settingWorkspace).toContain('<WorkbenchSettingPanelTabs');
+    expect(settingWorkspace).toContain(
+      'footerActions={standardMode ? <StandardModeSettingSidebarActions storageKey={storageKey} /> : null}',
+    );
+  });
+
+  it('replaces only the standard setting AI selectors with the five-step generation panel', () => {
+    const settingView = readFileSync(join(directory, 'workbenchSettingLibraryView.tsx'), 'utf8');
+    const settingWorkspace = readFileSync(join(directory, 'workbenchSettingLibraryWorkspaceView.tsx'), 'utf8');
+    const generationPanel = readFileSync(join(directory, 'StandardModeSettingGenerationPanel.tsx'), 'utf8');
+    const libraryPanel = readFileSync(join(directory, 'WorkbenchLibraryPanel.tsx'), 'utf8');
+
+    expect(settingView).toContain('standardMode && activeTab === SETTING_TAB');
+    expect(settingView).toContain('<StandardModeSettingGenerationPanel');
+    expect(settingView).toContain('renderSettingLibraryAiConfigHeader(scope)');
+    expect(generationPanel).toContain('STANDARD_SETTING_GENERATION_STEPS.map');
+    expect(generationPanel).toContain('onClick={() => runStep(index, false)}');
+    expect(generationPanel).toContain('slice(0, index)');
+    expect(generationPanel).toContain('onImport();');
+    expect(generationPanel).toContain('publishStandardSettingGenerationLock(isGenerating)');
+    expect(generationPanel).not.toContain('<CombinedAiConfigSelect');
+    expect(settingWorkspace).toContain('data-setting-generation-locked');
+    expect(settingWorkspace).toContain('AI正在生成，设定区已锁定');
+    expect(libraryPanel).toContain('renderSettingLibraryBranch({\n    storageKey,');
   });
 });

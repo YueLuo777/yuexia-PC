@@ -25,7 +25,7 @@ import {
 
 type SettingEntryUpdates = Partial<Pick<WorkbenchLibraryEntry, 'title' | 'content'>>;
 
-const SETTING_FIELD_CARD_CLASS = 'relative flex flex-col rounded-[20px] border-2 border-slate-950 bg-white px-6 pb-2 pt-2';
+const SETTING_FIELD_CARD_CLASS = 'relative flex flex-col rounded-[20px] border-2 border-slate-950 bg-white px-6 pb-2 pt-4';
 const SETTING_FIELD_SIZE_CLASS = {
   compact: 'min-h-[96px]',
   standard: 'min-h-[132px]',
@@ -111,6 +111,7 @@ export function WorkbenchSettingEditor({
     return (
       <article
         key={field.key}
+        data-setting-field-key={field.key}
         data-field-size={field.displaySize ?? 'standard'}
         className={`${SETTING_FIELD_CARD_CLASS} ${SETTING_FIELD_SIZE_CLASS[field.displaySize ?? 'standard']} ${field.fieldClassName ?? ''}`}
       >
@@ -141,7 +142,7 @@ export function WorkbenchSettingEditor({
           <WorkbenchNameField testId="structured-title-field" label={titleFieldLabel} value={currentSelectedEntry.title} width={settingNameFieldSpec.width} disabled={currentSelectedSettingIsLockedDefault} onValueChange={(title) => updateEntry(currentSelectedEntry.id, { title })} placeholder={titleFieldLabel} title={currentSelectedSettingIsLockedDefault ? '默认设定条目已锁定，不能改名' : undefined} />
           <WorkbenchSettingGroupSelect value={currentSelectedSetting?.type ?? activeSettingWorkspaceType ?? settingGroupOptions[0] ?? ''} options={settingGroupOptions} disabled={currentSelectedSettingIsLockedDefault} title={currentSelectedSettingIsLockedDefault ? LOCKED_DEFAULT_SETTING_TOOLTIP : undefined} onChange={onSettingGroupChange} />
           {currentStructuredSettingFieldSet?.fields.filter((field) => headerFieldKeys.has(field.key)).map((field) => (
-            <div key={field.key} data-workbench-header-control="true" className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-visible-placeholder ${field.fieldClassName ?? 'h-[48px] w-[150px] shrink-0'}`}>
+            <div key={field.key} data-setting-field-key={field.key} data-workbench-header-control="true" className={`xy-floating-field xy-floating-outline-fixed xy-floating-fill xy-floating-visible-placeholder ${field.fieldClassName ?? 'h-[48px] w-[150px] shrink-0'}`}>
               <input data-no-modal-drag="true" aria-label={field.title} value={currentStructuredSettingFields[field.key] ?? ''} maxLength={field.maxLength} onChange={(event) => updateStructuredSettingField(field.key, event.target.value)} placeholder={field.placeholder} />
               <label className="xy-floating-title-count">{field.title}</label>
             </div>

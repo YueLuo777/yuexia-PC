@@ -27,12 +27,18 @@ type StandardModeTemplateMindMapProps = {
   structure: TemplateStructure;
   onChange: (structure: TemplateStructure) => void;
   initialActiveDomainId?: string;
+  saveName: string;
+  onSaveNameChange: (title: string) => void;
+  onSaveTemplate: () => void;
 };
 
 export function StandardModeTemplateMindMap({
   structure,
   onChange,
   initialActiveDomainId = '',
+  saveName,
+  onSaveNameChange,
+  onSaveTemplate,
 }: StandardModeTemplateMindMapProps) {
   const initialDomainId = initialActiveDomainId || structure[0]?.id || '';
   const [selection, setSelection] = useState<TemplateMindMapSelection>(() => initialDomainId
@@ -376,10 +382,13 @@ export function StandardModeTemplateMindMap({
       <StandardModeTemplateNodeWorkbench
         structure={structure}
         selection={selection}
+        saveName={saveName}
         onRename={renameSelectedNode}
         onAddSibling={addSiblingNode}
         onAddChild={addChildNode}
         onDelete={requestSelectedDelete}
+        onSaveNameChange={onSaveNameChange}
+        onSaveTemplate={onSaveTemplate}
       />
 
       <ConfirmDialog

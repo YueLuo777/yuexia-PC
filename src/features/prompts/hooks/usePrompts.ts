@@ -18,6 +18,7 @@ export const COMMENT_PROMPT_CATEGORY = '点评';
 export const BODY_PROMPT_CATEGORY = '正文';
 export const STATUS_PROMPT_CATEGORY = '状态';
 export const SUMMARY_PROMPT_CATEGORY = '梗概';
+export const BUILT_IN_PROMPT_CATEGORY = '内置';
 const PROMPT_CATEGORY_ALIASES: Record<string, string> = {
   大纲: '设定',
   细纲: '章纲',
@@ -70,6 +71,7 @@ export const DEFAULT_PROMPT_CATEGORIES = [
   '润色',
   STATUS_PROMPT_CATEGORY,
   SUMMARY_PROMPT_CATEGORY,
+  BUILT_IN_PROMPT_CATEGORY,
   UNCATEGORIZED,
 ];
 

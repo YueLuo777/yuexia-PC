@@ -135,7 +135,7 @@ describe('formal setting tree migration', () => {
     const roleEditor = await readSource('src/features/workbench/components/workbenchRoleEditor.tsx');
     const editorLayout = await readSource('src/features/workbench/components/workbenchSettingEditorLayout.ts');
 
-    expect(settingEditor).toContainSource("const SETTING_FIELD_CARD_CLASS = 'relative flex flex-col rounded-[20px] border-2 border-slate-950 bg-white px-6 pb-2 pt-2';");
+    expect(settingEditor).toContainSource("const SETTING_FIELD_CARD_CLASS = 'relative flex flex-col rounded-[20px] border-2 border-slate-950 bg-white px-6 pb-2 pt-4';");
     expect(settingEditor).toContainSource("compact: 'min-h-[96px]'");
     expect(settingEditor).toContainSource("standard: 'min-h-[132px]'");
     expect(settingEditor).toContainSource("expanded: 'min-h-[158px]'");

@@ -44,6 +44,7 @@ describe('buildStandardModeWorkbenchStats', () => {
       ],
       reviewTasks: [reviewTask('a', 11), reviewTask('b', 11), reviewTask('c', 99)],
       settingsStorageKey: 'settings-9',
+      settingTemplateState: null,
       readChapterContent: (chapterId) => (chapterId === 11 ? '正文内容' : ''),
     });
 
@@ -52,7 +53,9 @@ describe('buildStandardModeWorkbenchStats', () => {
       outlineCount: 1,
       draftCount: 1,
       reviewedChapterCount: 1,
+      brainstormCount: 0,
+      settingTotalCount: 0,
+      settingCompletedCount: 0,
     });
   });
 });
-

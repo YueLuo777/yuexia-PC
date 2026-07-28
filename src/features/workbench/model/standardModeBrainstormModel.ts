@@ -6,6 +6,7 @@ import {
 import { getBrainstormEntryBody } from '@/features/workbench/components/workbenchLibraryAiText';
 import { BRAINSTORM_TYPE } from '@/features/workbench/components/workbenchLibraryTabs';
 import { stringifySettingContent } from '@/features/workbench/components/workbenchStructuredSettings';
+import { BRAINSTORM_UNCATEGORIZED_ID } from '@/features/workbench/model/standardModeBrainstormCategories';
 
 export interface StandardBrainstormVersion {
   id: string;
@@ -47,7 +48,7 @@ export function createVersionFromBrainstormEntry(entry: WorkbenchLibraryEntry): 
 export function createEmptyGeneratedVersion(): StandardBrainstormVersion {
   return {
     id: `generated-${Date.now()}`,
-    title: '未命名脑洞',
+    title: '未命名',
     content: '',
   };
 }
@@ -57,7 +58,7 @@ export function createSavedBrainstormEntry(
   requestedTitle: string,
   content: string,
 ) {
-  const title = requestedTitle.trim() || '未命名脑洞';
+  const title = requestedTitle.trim() || '未命名';
   const maxSerial = entries.reduce(
     (max, entry) => Math.max(max, Number(entry.brainstormSerialNumber) || 0),
     0,
@@ -66,6 +67,7 @@ export function createSavedBrainstormEntry(
     ...createWorkbenchLibraryEntry('脑洞', title),
     content: stringifySettingContent({ type: BRAINSTORM_TYPE, body: content.trim() }),
     brainstormSerialNumber: maxSerial + 1,
+    brainstormCategoryId: BRAINSTORM_UNCATEGORIZED_ID,
   } satisfies WorkbenchLibraryEntry;
 }
 

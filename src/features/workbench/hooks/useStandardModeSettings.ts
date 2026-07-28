@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   hasStandardModeSettingEntries,
-  resetStandardModeSettingEntries,
+  replaceProfessionalSettingEntriesFromTemplate,
 } from '@/features/workbench/model/standardModeDefaultSettingAdapter';
 import {
   buildTemplateSettingEntries,
@@ -13,6 +13,7 @@ import {
   type StandardSettingEmptyField,
   type StandardSettingTemplateState,
 } from '@/features/workbench/model/standardModeSettingModel';
+import { subscribeStandardModeSettingNavigationAction } from '@/features/workbench/model/standardModeSettingNavigationEvents';
 import {
   cloneTemplateStructure,
   type TemplateStructure,
@@ -61,6 +62,18 @@ export function useStandardModeSettings(novelId: string, settingsStorageKey: str
     setFocusTarget(null);
   }, [novelId, settingsStorageKey]);
 
+  useEffect(
+    () => subscribeStandardModeSettingNavigationAction((event) => {
+      if (event.storageKey !== settingsStorageKey || event.action !== 'settings-cleared') return;
+      setTemplate(null);
+      setHasExistingSettings(false);
+      setSelectedEntryId(null);
+      setCheckResults(null);
+      setFocusTarget(null);
+    }),
+    [settingsStorageKey],
+  );
+
   const entries = useMemo(() => template ? buildTemplateSettingEntries(template.structure) : [], [template]);
 
   useEffect(() => {
@@ -74,8 +87,8 @@ export function useStandardModeSettings(novelId: string, settingsStorageKey: str
   }, [entries, selectedEntryId]);
 
   const initializeTemplate = useCallback((templateId: string, templateName: string, structure: TemplateStructure) => {
-    resetStandardModeSettingEntries(settingsStorageKey);
     const next = createBookTemplateState(templateId, templateName, structure);
+    replaceProfessionalSettingEntriesFromTemplate(settingsStorageKey, next.structure);
     writeStandardSettingTemplateState(novelId, next);
     setTemplate(next);
     setHasExistingSettings(true);

@@ -136,8 +136,9 @@ export function normalizeGeometryToViewport(geometry: ModalGeometry, element?: H
   const { maxWidth, maxHeight } = getViewportBounds(element);
   const { viewportWidth, viewportHeight } = getModalScaleContext(element);
   const next: ModalGeometry = { ...geometry };
-  if (Number.isFinite(next.width)) next.width = clamp(Number(next.width), MIN_MODAL_WIDTH, maxWidth);
-  if (Number.isFinite(next.height)) next.height = clamp(Number(next.height), MIN_MODAL_HEIGHT, maxHeight);
+  // Viewport normalization keeps the rendered size. Resize handlers enforce the interactive minimums.
+  if (Number.isFinite(next.width)) next.width = clamp(Number(next.width), 1, maxWidth);
+  if (Number.isFinite(next.height)) next.height = clamp(Number(next.height), 1, maxHeight);
 
   const fixed = Number.isFinite(next.left) && Number.isFinite(next.top);
   if (fixed && typeof window !== 'undefined') {
@@ -172,21 +173,27 @@ export function normalizeGeometryToViewport(geometry: ModalGeometry, element?: H
   return next;
 }
 
-export function getSafeFixedGeometryFromRect(rect: DOMRect, element?: HTMLElement | null): ModalGeometry {
+export function getSafeFixedGeometryFromRect(
+  rect: DOMRect,
+  element?: HTMLElement | null,
+  enforceMinimumSize = true,
+): ModalGeometry {
+  const minimumWidth = enforceMinimumSize ? MIN_MODAL_WIDTH : 1;
+  const minimumHeight = enforceMinimumSize ? MIN_MODAL_HEIGHT : 1;
   if (typeof window === 'undefined') {
     return {
       x: 0,
       y: 0,
       left: Math.round(rect.left),
       top: Math.round(rect.top),
-      width: Math.round(Math.max(MIN_MODAL_WIDTH, rect.width)),
-      height: Math.round(Math.max(MIN_MODAL_HEIGHT, rect.height)),
+      width: Math.round(Math.max(minimumWidth, rect.width)),
+      height: Math.round(Math.max(minimumHeight, rect.height)),
     };
   }
   const { maxWidth, maxHeight } = getViewportBounds(element);
   const { scale, originLeft, originTop, viewportWidth, viewportHeight } = getModalScaleContext(element);
-  const width = Math.round(clamp(rect.width / scale, MIN_MODAL_WIDTH, maxWidth));
-  const height = Math.round(clamp(rect.height / scale, MIN_MODAL_HEIGHT, maxHeight));
+  const width = Math.round(clamp(rect.width / scale, minimumWidth, maxWidth));
+  const height = Math.round(clamp(rect.height / scale, minimumHeight, maxHeight));
   const maxLeft = Math.max(VIEWPORT_PADDING / 2, viewportWidth - width - VIEWPORT_PADDING / 2);
   const maxTop = Math.max(VIEWPORT_PADDING / 2, viewportHeight - height - VIEWPORT_PADDING / 2);
   return {

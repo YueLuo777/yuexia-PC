@@ -29,6 +29,9 @@ export interface WorkbenchNovel {
   category?: string;
   channel?: 'male' | 'female';
   synopsis?: string;
+  cover?: string;
+  creationStatus?: 'planning' | 'serializing' | 'completed';
+  targetWordCount?: number;
   wordCount?: number;
   createdAt?: string;
   lastModifiedAt?: string;

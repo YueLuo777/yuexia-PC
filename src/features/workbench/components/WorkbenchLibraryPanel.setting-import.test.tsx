@@ -18,6 +18,71 @@ describe('WorkbenchLibraryPanel setting import flows', () => {
     localStorage.clear();
   });
 
+  it('updates the canonical template entry without duplicating bracket titles or displaying internal JSON', () => {
+    const storageKey = 'workbench-smart-import-canonical-template-test';
+    localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify([
+        {
+          id: 'canonical-positioning',
+          tab: '大纲',
+          title: '作品定位',
+          content: JSON.stringify({
+            type: '核心设定',
+            body: '',
+            structuredFieldSetId: 'prompt-work-positioning',
+            lockedDefaultEntryId: '核心设定::作品定位',
+          }),
+          updatedAt: '2026/7/27',
+        },
+        {
+          id: 'accidental-duplicate',
+          tab: '大纲',
+          title: '【作品定位】',
+          content: JSON.stringify({ type: '核心设定', body: '错误重复内容' }),
+          updatedAt: '2026/7/27',
+        },
+      ]),
+    );
+    localStorage.setItem(
+      `${storageKey}_tab_configs_v1`,
+      JSON.stringify({
+        大纲: {
+          aiOutput:
+            '【作品定位】\n{"type":"核心设定","body":"《万界吞噬》主打吞噬升级。","structuredFieldSetId":"prompt-work-positioning","lockedDefaultEntryId":"核心设定::作品定位"}',
+        },
+      }),
+    );
+
+    render(
+      <WorkbenchLibraryPanel
+        storageKey={storageKey}
+        tabs={['大纲', '角色', '脑洞']}
+        emptyText="暂无设定"
+        defaultActiveTab="大纲"
+      />,
+    );
+
+    unlockSmartImportSettings();
+    fireEvent.click(screen.getByRole('button', { name: '智能导入设定' }));
+
+    const storedEntries = JSON.parse(localStorage.getItem(storageKey) ?? '[]') as Array<{
+      id: string;
+      title: string;
+      content: string;
+    }>;
+    const positioningEntries = storedEntries.filter((entry) => entry.title.replace(/[【】]/g, '') === '作品定位');
+    expect(positioningEntries).toHaveLength(1);
+    expect(positioningEntries[0].id).toBe('canonical-positioning');
+    expect(JSON.parse(positioningEntries[0].content)).toMatchObject({
+      body: '《万界吞噬》主打吞噬升级。',
+      structuredFieldSetId: 'prompt-work-positioning',
+      lockedDefaultEntryId: '核心设定::作品定位',
+    });
+    expect(positioningEntries[0].content).not.toContain('"body":"{');
+  });
+
   it('smart-imports bracket subsections inside one tagged setting', async () => {
     const storageKey = 'workbench-smart-import-new-group-test';
     localStorage.setItem(`${storageKey}_work_setting_starter_version`, TEST_WORK_SETTING_STARTER_VERSION);

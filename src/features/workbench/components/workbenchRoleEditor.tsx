@@ -5,7 +5,7 @@ import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbench
 import { isMaleProtagonistRoleType } from '@/features/workbench/model/workbenchRoleTypes';
 
 import { WorkbenchFieldRecordModal } from './WorkbenchFieldRecordModal';
-import { WorkbenchHeaderSelect } from './WorkbenchHeaderSelect';
+import { WORKBENCH_SHORT_SELECT_WIDTH, WorkbenchHeaderSelect } from './WorkbenchHeaderSelect';
 import { WorkbenchNameField } from './WorkbenchNameField';
 import { WorkbenchSurvivalStatusToggle } from './WorkbenchSurvivalStatusToggle';
 import {
@@ -209,14 +209,14 @@ export function RoleBaseStateEditor({
             <WorkbenchNameField label="人物姓名" value={entry.title} onValueChange={onTitleChange} placeholder="填写人物姓名" />
             <WorkbenchHeaderSelect
               label="身份定位"
-              width={180}
+              width={WORKBENCH_SHORT_SELECT_WIDTH}
               value={role.type}
               disabled={roleIsMaleProtagonist}
               onChange={(value) => onRoleChange({ type: value })}
               options={roleIdentityOptionsForCurrentRole}
             />
             <WorkbenchSurvivalStatusToggle
-              value={roleLifeStatus ?? '存活'}
+              value={roleIsMaleProtagonist ? '存活' : roleLifeStatus ?? '存活'}
               disabled={roleIsMaleProtagonist}
               onChange={(lifeStatus) => onRoleChange({ lifeStatus })}
             />

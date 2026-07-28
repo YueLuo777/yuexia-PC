@@ -47,4 +47,11 @@ describe('formal modal shell consistency', () => {
     expect(source).toContain('min-h-14 shrink-0 cursor-move');
     expect(source).toContain('active:cursor-grabbing');
   });
+
+  it('centers center-on-open dialogs on their first visible render', () => {
+    const source = readFileSync(join(srcRoot, 'shared/ui/AppModalShell.tsx'), 'utf8');
+
+    expect(source).toContain('const centerOnInitialRender = isOpen && centerOnOpen && !wasOpenRef.current;');
+    expect(source).toContain('centerOnInitialRender ? centeredOpeningStyle : draggable.style');
+  });
 });

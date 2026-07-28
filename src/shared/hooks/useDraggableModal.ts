@@ -270,7 +270,8 @@ export function useDraggableModal(id: string, defaultGeometry?: ModalGeometry, c
     }
     const element = event.currentTarget.closest('[data-draggable-managed="true"]') as HTMLElement | null;
     const rect = element?.getBoundingClientRect();
-    const origin = element && rect ? getSafeFixedGeometryFromRect(rect, element) : geometryRef.current;
+    // Moving must preserve compact auto-sized dialogs; minimum dimensions only apply to resizing.
+    const origin = element && rect ? getSafeFixedGeometryFromRect(rect, element, false) : geometryRef.current;
     if (element && rect) {
       geometryRef.current = origin;
       applyFixedGeometry(element, origin);

@@ -15,7 +15,8 @@ import {
   getPromptRoleStateKey,
   stringifyPromptRoleBaseFields,
 } from './workbenchPromptRoleFields';
-import { normalizeSettingType, parseSectionedSettingBody } from './workbenchStructuredSettings';
+import type { WorkbenchLibraryEntry } from '../model/workbenchLibraryStorage';
+import { normalizeSettingType, parseSectionedSettingBody, parseSettingContent } from './workbenchStructuredSettings';
 
 const DEFAULT_MALE_PROTAGONIST_ROLE_TYPE = '男主角';
 const DEFAULT_MALE_PROTAGONIST_ROLE_TITLE = '男主角';
@@ -109,11 +110,68 @@ export function createImportedRoleContent(segment: SmartImportRoleSegment, exist
 }
 
 export function normalizeImportedSettingKey(value: string) {
-  return value.trim().replace(/\s+/g, ' ');
+  return value
+    .trim()
+    .replace(/[：:]\s*$/, '')
+    .replace(/^\s*[#*_`]+|[#*_`]+\s*$/g, '')
+    .replace(/^\s*[【\[（(《〈「『]+/, '')
+    .replace(/[】\]）)》〉」』]+\s*$/, '')
+    .trim()
+    .replace(/\s+/g, ' ');
 }
 
-export function normalizeImportedSettingBody(value: string) {
-  return value.replace(/\r\n/g, '\n').trim();
+export function normalizeImportedSettingBody(value: string, title = '') {
+  let normalized = value.replace(/\r\n/g, '\n').trim();
+  normalized = normalized
+    .replace(/^```(?:json)?\s*\n?/i, '')
+    .replace(/\n?```\s*$/, '')
+    .trim();
+
+  const [firstLine = '', ...remainingLines] = normalized.split('\n');
+  if (title && normalizeImportedSettingKey(firstLine) === normalizeImportedSettingKey(title)) {
+    normalized = remainingLines.join('\n').trim();
+  }
+
+  for (let depth = 0; depth < 2 && normalized; depth += 1) {
+    try {
+      const parsed = JSON.parse(normalized) as unknown;
+      if (typeof parsed === 'string') {
+        normalized = parsed.trim();
+        continue;
+      }
+      if (parsed && typeof parsed === 'object' && typeof (parsed as { body?: unknown }).body === 'string') {
+        normalized = (parsed as { body: string }).body.trim();
+        continue;
+      }
+    } catch {
+      // Plain setting text is already the desired visible body.
+    }
+    break;
+  }
+
+  return normalized.trim();
+}
+
+export function takeCanonicalImportedSettingEntry(
+  entries: WorkbenchLibraryEntry[],
+  titleKey: string,
+  typeKey: string,
+) {
+  const matches = (entry: WorkbenchLibraryEntry) => {
+    const setting = parseSettingContent(entry.content);
+    return entry.tab === '大纲' && normalizeImportedSettingKey(entry.title) === titleKey
+      && normalizeImportedSettingKey(setting.type) === typeKey;
+  };
+  const matchingIndexes = entries.flatMap((entry, index) => (matches(entry) ? [index] : []));
+  const winnerIndex = matchingIndexes.find((index) => parseSettingContent(entries[index].content).lockedDefaultEntryId)
+    ?? matchingIndexes.find((index) => entries[index].title.trim() === titleKey)
+    ?? matchingIndexes[0];
+  if (winnerIndex === undefined) return null;
+  const winner = entries[winnerIndex];
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    if (matches(entries[index])) entries.splice(index, 1);
+  }
+  return winner;
 }
 
 export function classifySettingText(text: string) {
@@ -234,7 +292,7 @@ export function createSmartSettingSegments(text: string) {
   if (!normalized) return [];
   const rawBlocks = normalized
     .split(
-      /\n{2,}|(?=\n\s*(?:第[一二三四五六七八九十百千万\d]+[章节卷]|[一二三四五六七八九十]+[、.．]|[0-9]+[、.．]|[-*]\s+))/,
+      /\n{2,}|\n(?=\s*【[^】\n]+】\s*(?:\n|$))|(?=\n\s*(?:第[一二三四五六七八九十百千万\d]+[章节卷]|[一二三四五六七八九十]+[、.．]|[0-9]+[、.．]|[-*]\s+))/,
     )
     .map((item) => item.replace(/^\s*[-*]\s*/, '').trim())
     .filter(Boolean);

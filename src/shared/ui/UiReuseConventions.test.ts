@@ -31,10 +31,11 @@ describe('shared UI reuse conventions', () => {
     ];
 
     expect(actionButtonSource).toContainSource(
-      "export type ActionButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';",
+      "export type ActionButtonVariant = 'primary' | 'secondary' | 'danger' | 'dangerOutline' | 'ghost';",
     );
     expect(actionButtonSource).toContainSource("export type ActionButtonSize = 'sm' | 'md';");
     expect(buttonClassesSource).toContainSource('DANGER_TEXT_BUTTON_CLASS');
+    expect(buttonClassesSource).toContainSource('DANGER_OUTLINE_TEXT_BUTTON_CLASS');
     expect(buttonClassesSource).toContainSource('GHOST_TEXT_BUTTON_CLASS');
     expect(buttonClassesSource).toContainSource('ICON_BUTTON_CLASS');
     expect(formDialogSource).toContainSource("import { AppModalShell } from '@/shared/ui/AppModalShell';");

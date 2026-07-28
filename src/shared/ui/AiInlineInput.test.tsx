@@ -16,5 +16,7 @@ describe('AiInlineInput', () => {
     );
 
     expect(screen.getByText('请输入要求')).toHaveClass('xy-border-embedded-transparent-backplate');
+    expect(screen.getByRole('button', { name: '发送给AI' })).toHaveAttribute('title', '发送给AI');
+    expect(screen.getByRole('button', { name: '停止生成' })).toHaveAttribute('title', '停止生成');
   });
 });

@@ -4,15 +4,23 @@ import { StandardModeBrainstormGenerator } from '@/features/workbench/components
 import { StandardModeBrainstormActions } from '@/features/workbench/components/StandardModeBrainstormActions';
 import { StandardModeBrainstormPreview } from '@/features/workbench/components/StandardModeBrainstormPreview';
 import { StandardModeBrainstormSidebar } from '@/features/workbench/components/StandardModeBrainstormSidebar';
+import { BrainstormRecycleModal } from '@/features/workbench/components/BrainstormRecycleModal';
 import { useStandardModeBrainstorm } from '@/features/workbench/hooks/useStandardModeBrainstorm';
+import { writeStandardModeBrainstormLink } from '@/features/workbench/model/standardModeBrainstormLink';
 
 interface StandardModeBrainstormPageProps {
   focusGeneration?: boolean;
   novelId?: string;
   onCreateSettings?: () => void;
+  onOpenLibrary?: () => void;
 }
 
-export function StandardModeBrainstormPage({ focusGeneration = false, novelId = '', onCreateSettings = () => undefined }: StandardModeBrainstormPageProps) {
+export function StandardModeBrainstormPage({
+  focusGeneration = false,
+  novelId = '',
+  onCreateSettings = () => undefined,
+  onOpenLibrary = () => undefined,
+}: StandardModeBrainstormPageProps) {
   const generationInputRef = useRef<HTMLInputElement>(null);
   const brainstorm = useStandardModeBrainstorm();
   const { prepareGeneration, prepareLibrary } = brainstorm;
@@ -27,30 +35,49 @@ export function StandardModeBrainstormPage({ focusGeneration = false, novelId = 
   }, [focusGeneration, prepareGeneration, prepareLibrary]);
 
   return (
-    <div
-      data-standard-mode-brainstorm-page="true"
-      className="grid h-full min-h-0 min-w-[1240px] grid-cols-[280px_minmax(560px,1fr)_390px] overflow-hidden bg-white"
-    >
+    <>
+      <div
+        data-standard-mode-brainstorm-page="true"
+        className="grid h-full min-h-0 min-w-[1240px] grid-cols-[280px_minmax(560px,1fr)_390px] overflow-hidden bg-white"
+      >
       <StandardModeBrainstormSidebar
         entries={brainstorm.entries}
+        categories={brainstorm.categories}
         selectedEntryId={brainstorm.selectedEntryId}
-        onSelect={brainstorm.selectEntry}
+        recycleCount={brainstorm.recycleEntries.length}
+        onSelect={(entry) => {
+          brainstorm.selectEntry(entry);
+          if (focusGeneration) onOpenLibrary();
+        }}
+        onAddCategory={brainstorm.addCategory}
+        onRenameCategory={brainstorm.renameCategory}
+        onToggleCategory={brainstorm.toggleCategory}
+        onDeleteCategory={brainstorm.deleteCategory}
+        onMoveEntry={brainstorm.moveEntryToCategory}
+        onDeleteSelected={brainstorm.deleteActiveVersion}
+        onOpenRecycle={brainstorm.openRecycle}
       />
       <StandardModeBrainstormPreview
         activeVersion={brainstorm.activeVersion}
         revisionInput={brainstorm.revisionInput}
+        revisionSourceContent={brainstorm.revisionSourceContent}
+        revisionDraft={brainstorm.revisionDraft}
         notice={brainstorm.notice}
         isRevising={brainstorm.isRevising}
         busy={brainstorm.busy}
+        previewFontSize={brainstorm.previewFontSize}
         onTitleChange={brainstorm.updateActiveVersionTitle}
         onTitleBlur={brainstorm.normalizeActiveVersionTitle}
         onContentChange={brainstorm.updateActiveVersionContent}
         onRevisionInputChange={brainstorm.setRevisionInput}
+        onRevisionDraftChange={brainstorm.setRevisionDraft}
         onRevise={brainstorm.reviseActiveVersion}
+        onApplyRevision={brainstorm.applyRevision}
+        onDiscardRevision={brainstorm.discardRevision}
         onStop={brainstorm.stopRequest}
-        onDelete={brainstorm.deleteActiveVersion}
         onCopy={brainstorm.copyActiveVersion}
         onSave={brainstorm.saveActiveVersion}
+        onPreviewFontSizeChange={brainstorm.updatePreviewFontSize}
         generationMode={focusGeneration}
       />
       {focusGeneration ? (
@@ -68,18 +95,26 @@ export function StandardModeBrainstormPage({ focusGeneration = false, novelId = 
           entry={brainstorm.selectedEntry}
           onCreateSettings={() => {
             if (brainstorm.activeVersion) {
-              localStorage.setItem(`xinyuexia_standard_brainstorm_link_${novelId}`, JSON.stringify(brainstorm.activeVersion));
+              writeStandardModeBrainstormLink(novelId, brainstorm.activeVersion);
             }
             onCreateSettings();
           }}
+          onCopy={brainstorm.copyActiveVersion}
           onDuplicate={brainstorm.duplicateActiveVersion}
-          onAssociate={() => {
-            if (!brainstorm.activeVersion) return;
-            localStorage.setItem(`xinyuexia_standard_brainstorm_link_${novelId}`, JSON.stringify(brainstorm.activeVersion));
-            brainstorm.showNotice('当前脑洞已关联到这本作品。');
-          }}
         />
       )}
-    </div>
+      </div>
+      <BrainstormRecycleModal
+        isOpen={brainstorm.isRecycleOpen}
+        entries={brainstorm.recycleEntries}
+        isClearConfirmOpen={brainstorm.isClearRecycleConfirmOpen}
+        onClose={brainstorm.closeRecycle}
+        onRequestClear={brainstorm.requestClearRecycle}
+        onCancelClear={brainstorm.cancelClearRecycle}
+        onConfirmClear={brainstorm.clearRecycle}
+        onRestore={brainstorm.restoreRecycleEntry}
+        onPermanentDelete={brainstorm.permanentlyDeleteRecycleEntry}
+      />
+    </>
   );
 }

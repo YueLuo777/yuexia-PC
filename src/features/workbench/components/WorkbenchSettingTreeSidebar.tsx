@@ -8,6 +8,7 @@ import {
   type MouseEvent,
   type MutableRefObject,
   type PointerEvent,
+  type ReactNode,
   type SetStateAction,
 } from 'react';
 
@@ -41,6 +42,7 @@ type SettingTreeGroup = {
 };
 
 type WorkbenchSettingTreeSidebarProps = {
+  locked?: boolean;
   domains: SettingTreeDomain[];
   activeDomainId: string;
   settingEntries: WorkbenchLibraryEntry[];
@@ -74,6 +76,7 @@ type WorkbenchSettingTreeSidebarProps = {
   onEntryPointerDown: (event: PointerEvent<HTMLElement>, entry: WorkbenchLibraryEntry, type: string) => void;
   onEntryPointerMove: (event: PointerEvent<HTMLElement>) => void;
   onEntryPointerUp: (event: PointerEvent<HTMLElement>) => void;
+  footerActions?: ReactNode;
 };
 
 type TreeDomain = SettingTreeDomain & {
@@ -98,6 +101,7 @@ const DOMAIN_ORDER: Record<string, number> = {
 const LOCKED_DEFAULT_SETTING_TOOLTIP = '内置设定，无法删除';
 
 export function WorkbenchSettingTreeSidebar({
+  locked = false,
   domains,
   activeDomainId,
   settingEntries,
@@ -131,6 +135,7 @@ export function WorkbenchSettingTreeSidebar({
   onEntryPointerDown,
   onEntryPointerMove,
   onEntryPointerUp,
+  footerActions,
 }: WorkbenchSettingTreeSidebarProps) {
   const [query, setQuery] = useState('');
   const [expandedDomainIds, setExpandedDomainIds] = useState(() => new Set([activeDomainId]));
@@ -380,7 +385,13 @@ export function WorkbenchSettingTreeSidebar({
   };
 
   return (
-    <aside className="min-w-0 flex min-h-0 flex-col border-r border-slate-200 bg-[#F7F9FB] px-1 py-2" style={{ gridColumn: 1, gridRow: 1 }}>
+    <aside
+      inert={locked ? true : undefined}
+      aria-disabled={locked || undefined}
+      data-setting-generation-locked={locked ? 'true' : undefined}
+      className={`min-w-0 flex min-h-0 flex-col border-r border-slate-200 bg-[#F7F9FB] px-1 py-2 transition-opacity ${locked ? 'pointer-events-none opacity-60' : ''}`}
+      style={{ gridColumn: 1, gridRow: 1 }}
+    >
       <label className="mx-1 flex h-9 shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3">
         <Search className="h-4 w-4 shrink-0 text-slate-400" />
         <input aria-label="搜索设定资料" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索资料..." className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400" />
@@ -442,6 +453,7 @@ export function WorkbenchSettingTreeSidebar({
         <button type="button" onClick={() => onOpenCreateDialog('category')} className="border-r border-slate-200 px-2 text-sm font-black text-slate-700 hover:bg-[#EAF9FD] hover:text-[#08AACE]">分组</button>
         <button type="button" onClick={() => onOpenCreateDialog('setting')} className="px-2 text-sm font-black text-slate-700 hover:bg-[#EAF9FD] hover:text-[#08AACE]">{activeDomainId === 'character' ? '角色' : '设定'}</button>
       </div>
+      {footerActions}
     </aside>
   );
 }

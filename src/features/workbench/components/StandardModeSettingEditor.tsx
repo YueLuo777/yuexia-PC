@@ -2,39 +2,18 @@ import { useEffect, useRef } from 'react';
 
 import type { StandardSettingEntryDescriptor } from '@/features/workbench/model/standardModeSettingModel';
 
-import { WorkbenchNameField } from './WorkbenchNameField';
-import { RoleAutoSizeTextarea } from './workbenchRoleEditor';
-import { WorkbenchSettingGroupSelect } from './WorkbenchSettingGroupSelect';
-import {
-  WORKBENCH_SETTING_EDITOR_HEADER_CLASS,
-  WORKBENCH_SETTING_EDITOR_HEADER_ROW_CLASS,
-  WORKBENCH_SETTING_EDITOR_SCROLL_CLASS,
-  WORKBENCH_SETTING_EDITOR_SHELL_CLASS,
-  WORKBENCH_SETTING_EDITOR_STACK_CLASS,
-  WORKBENCH_SETTING_EDITOR_TWO_COLUMN_GRID_CLASS,
-} from './workbenchSettingEditorLayout';
-
 type StandardModeSettingEditorProps = {
   entry: StandardSettingEntryDescriptor | null;
   focusTarget: { entryId: string; fieldKey: string; nonce: number } | null;
   onFieldChange: (entryId: string, fieldKey: string, fieldTitle: string, value: string) => void;
 };
 
-const settingFieldCardClass =
-  'relative flex flex-col rounded-[20px] border-2 border-slate-950 bg-white px-6 pb-2 pt-2';
-const settingFieldSizeClass = {
-  compact: 'min-h-[96px]',
-  standard: 'min-h-[132px]',
-  expanded: 'min-h-[158px]',
-} as const;
-const roleFieldCardClass =
-  'relative flex h-full min-h-[122px] flex-col rounded-[22px] border-2 border-slate-950 bg-white px-5 pb-4 pt-2';
-const settingFieldLabelClass =
-  'xy-border-embedded-transparent-backplate absolute left-6 top-0 z-10 -translate-y-1/2 pr-2 text-base font-black leading-6 text-slate-950';
-const roleFieldLabelClass =
-  'xy-border-embedded-transparent-backplate absolute left-5 top-0 z-10 -translate-y-1/2 pr-2 text-base font-black leading-6 text-slate-950';
-const settingFieldContentClass =
-  'text-base font-medium leading-7 text-slate-950 outline-none placeholder:font-black placeholder:leading-6 placeholder:text-slate-400';
+const CONTROL_BORDER = '#BFC8D2';
+const FIELD_LABEL_CLASS = 'mb-1.5 block text-xs font-bold text-[#657180]';
+const INPUT_CLASS =
+  'h-9 rounded-md border bg-white px-3 text-sm font-semibold text-[#1f2933] outline-none placeholder:text-[#9aa3af] focus:border-[#08AACE]';
+const TEXTAREA_CLASS =
+  'editor-scrollbar h-[132px] w-full resize-none rounded-md border bg-white p-3 text-sm font-medium leading-6 text-[#1f2933] outline-none placeholder:text-[#9aa3af] focus:border-[#08AACE]';
 
 export function StandardModeSettingEditor({ entry, focusTarget, onFieldChange }: StandardModeSettingEditorProps) {
   const fieldRefs = useRef(new Map<string, HTMLInputElement | HTMLTextAreaElement>());
@@ -57,109 +36,87 @@ export function StandardModeSettingEditor({ entry, focusTarget, onFieldChange }:
     );
   }
 
+  const titleCharacters = Math.min(15, Math.max(6, Array.from(entry.title).length));
+
   return (
-    <section className="flex min-h-0 min-w-[560px] flex-1 bg-white" data-standard-setting-editor="true">
-      <div className={WORKBENCH_SETTING_EDITOR_SHELL_CLASS}>
-        <header className={WORKBENCH_SETTING_EDITOR_HEADER_CLASS}>
-          <div className={`${WORKBENCH_SETTING_EDITOR_HEADER_ROW_CLASS} overflow-visible`}>
-            <WorkbenchNameField
-              label="设定名"
-              value={entry.title}
-              width={250}
-              disabled
-              onValueChange={() => undefined}
-              placeholder="设定名"
-            />
-            <WorkbenchSettingGroupSelect
-              value={entry.groupTitle}
-              options={[entry.groupTitle]}
-              disabled
-              onChange={() => undefined}
-            />
-          </div>
-        </header>
-        <div className={WORKBENCH_SETTING_EDITOR_SCROLL_CLASS}>
-          <div className={WORKBENCH_SETTING_EDITOR_STACK_CLASS}>
-            {entry.sections.map((section) => (
-              <section
-                key={section.id}
-                className={entry.sourceKind === 'role' ? 'space-y-4' : 'space-y-3'}
-                data-setting-field-group={section.title}
-              >
-                {entry.sections.length > 1 || section.title !== entry.title ? (
-                  <div className={`flex items-center gap-3 ${entry.sourceKind === 'role' ? '' : 'px-1'}`}>
-                    <h3 className="shrink-0 text-sm font-black text-slate-700">{section.title}</h3>
-                    <span
-                      className={`h-px min-w-0 flex-1 ${entry.sourceKind === 'role' ? 'bg-slate-200' : 'bg-[#CDEFF6]'}`}
-                      aria-hidden="true"
-                    />
-                  </div>
-                ) : null}
-                <div className={WORKBENCH_SETTING_EDITOR_TWO_COLUMN_GRID_CLASS}>
-                  {section.fields.map((field) => {
-                    const fieldId = `standard-setting-${entry.id}-${field.key}`;
-                    const registerField = (node: HTMLInputElement | HTMLTextAreaElement | null) => {
-                      if (node) fieldRefs.current.set(field.key, node);
-                      else fieldRefs.current.delete(field.key);
-                    };
-                    if (entry.sourceKind === 'role') {
-                      return (
-                        <article
-                          key={field.key}
-                          className={`${roleFieldCardClass} ${field.wide ? 'col-span-2' : ''}`}
-                          data-role-field-key={field.key}
-                        >
-                          <label htmlFor={fieldId} className={roleFieldLabelClass}>{field.title}</label>
-                          <RoleAutoSizeTextarea
-                            value={field.value}
-                            placeholder={field.placeholder}
-                            fontSize={16}
-                            minRows={3}
-                            inputRef={registerField}
-                            id={fieldId}
-                            ariaLabel={field.title}
-                            onChange={(value) => onFieldChange(entry.id, field.key, field.title, value)}
-                          />
-                        </article>
-                      );
-                    }
-                    return (
-                      <article
-                        key={field.key}
-                        data-field-size={field.displaySize ?? 'standard'}
-                        className={`${settingFieldCardClass} ${settingFieldSizeClass[field.displaySize ?? 'standard']} ${field.fieldClassName ?? ''} ${field.wide ? 'col-span-2' : ''}`}
-                      >
-                        <label htmlFor={fieldId} className={settingFieldLabelClass}>{field.title}</label>
-                        {field.control === 'input' ? (
-                          <input
-                            ref={registerField}
-                            id={fieldId}
-                            aria-label={field.title}
-                            value={field.value}
-                            maxLength={field.maxLength}
-                            onChange={(event) => onFieldChange(entry.id, field.key, field.title, event.target.value)}
-                            placeholder={field.placeholder}
-                            className={`min-h-10 w-full border-0 bg-transparent ${settingFieldContentClass}`}
-                          />
-                        ) : (
-                          <textarea
-                            ref={registerField}
-                            id={fieldId}
-                            aria-label={field.title}
-                            value={field.value}
-                            onChange={(event) => onFieldChange(entry.id, field.key, field.title, event.target.value)}
-                            placeholder={field.placeholder}
-                            className={`scrollbar-scroll-only scrollbar-half-width min-h-[72px] w-full flex-1 resize-none border-0 bg-transparent pb-1 [scrollbar-gutter:stable] ${settingFieldContentClass}`}
-                          />
-                        )}
-                      </article>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-          </div>
-        </div>
+    <section
+      className="flex min-h-0 min-w-[620px] flex-1 flex-col overflow-hidden bg-white p-5"
+      data-standard-setting-editor="true"
+      data-standard-setting-editor-style="normal-form"
+    >
+      <header className="flex shrink-0 items-end gap-4 border-b border-[#dce1e8] pb-4">
+        <label>
+          <span className={FIELD_LABEL_CLASS}>设定名</span>
+          <input
+            aria-label="设定名"
+            value={entry.title}
+            readOnly
+            className={INPUT_CLASS}
+            style={{ width: `calc(${titleCharacters}em + 24px)`, borderColor: CONTROL_BORDER }}
+            data-setting-title-width-characters={titleCharacters}
+          />
+        </label>
+        <label>
+          <span className={FIELD_LABEL_CLASS}>所属分组</span>
+          <input
+            aria-label="所属分组"
+            value={entry.groupTitle}
+            readOnly
+            className={`${INPUT_CLASS} w-[180px]`}
+            style={{ borderColor: CONTROL_BORDER }}
+          />
+        </label>
+      </header>
+
+      <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto pt-5 [scrollbar-gutter:stable]">
+        {entry.sections.map((section) => (
+          <section key={section.id} className="mb-5" data-setting-field-group={section.title}>
+            {entry.sections.length > 1 || section.title !== entry.title ? (
+              <div className="mb-3 flex items-center gap-3">
+                <h3 className="shrink-0 text-sm font-bold text-[#657180]">{section.title}</h3>
+                <span className="h-px min-w-0 flex-1 bg-[#dce1e8]" aria-hidden="true" />
+              </div>
+            ) : null}
+            <div className="grid grid-cols-2 items-start gap-x-4 gap-y-4">
+              {section.fields.map((field) => {
+                const fieldId = `standard-setting-${entry.id}-${field.key}`;
+                const registerField = (node: HTMLInputElement | HTMLTextAreaElement | null) => {
+                  if (node) fieldRefs.current.set(field.key, node);
+                  else fieldRefs.current.delete(field.key);
+                };
+                return (
+                  <label key={field.key} className={field.wide ? 'col-span-2' : ''} data-field-size={field.displaySize ?? 'standard'}>
+                    <span className={FIELD_LABEL_CLASS}>{field.title}</span>
+                    {field.control === 'input' ? (
+                      <input
+                        ref={registerField}
+                        id={fieldId}
+                        aria-label={field.title}
+                        value={field.value}
+                        maxLength={field.maxLength}
+                        onChange={(event) => onFieldChange(entry.id, field.key, field.title, event.target.value)}
+                        placeholder={field.placeholder}
+                        className={`${INPUT_CLASS} w-full`}
+                        style={{ borderColor: CONTROL_BORDER }}
+                      />
+                    ) : (
+                      <textarea
+                        ref={registerField}
+                        id={fieldId}
+                        aria-label={field.title}
+                        value={field.value}
+                        onChange={(event) => onFieldChange(entry.id, field.key, field.title, event.target.value)}
+                        placeholder={field.placeholder}
+                        className={TEXTAREA_CLASS}
+                        style={{ borderColor: CONTROL_BORDER }}
+                      />
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+          </section>
+        ))}
       </div>
     </section>
   );

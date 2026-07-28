@@ -8,6 +8,7 @@ import {
   AUDIT_PROMPT_CATEGORY,
   AUDIT_PROMPT_SUBCATEGORIES,
   BODY_PROMPT_CATEGORY,
+  BUILT_IN_PROMPT_CATEGORY,
   COMMENT_PROMPT_CATEGORY,
   DEFAULT_PROMPT_CATEGORIES,
   DEFAULT_AUDIT_PROMPT_SUBCATEGORY,
@@ -34,6 +35,7 @@ describe('usePrompts categories', () => {
       '润色',
       STATUS_PROMPT_CATEGORY,
       SUMMARY_PROMPT_CATEGORY,
+      BUILT_IN_PROMPT_CATEGORY,
       '未分类',
     ]);
     expect(DEFAULT_PROMPT_CATEGORIES.indexOf(BODY_PROMPT_CATEGORY)).toBeLessThan(
@@ -52,6 +54,7 @@ describe('usePrompts categories', () => {
     expect(DEFAULT_PROMPT_CATEGORIES).not.toContainSource('更新');
     expect(isDefaultPromptCategory('设定')).toBe(true);
     expect(isDefaultPromptCategory('章纲')).toBe(true);
+    expect(isDefaultPromptCategory(BUILT_IN_PROMPT_CATEGORY)).toBe(true);
     expect(normalizePromptCategoryName('题材迭代')).toBe('未分类');
     expect(normalizePromptCategoryName('热点分析')).toBe('未分类');
     expect(isDefaultPromptCategory('更新状态')).toBe(true);

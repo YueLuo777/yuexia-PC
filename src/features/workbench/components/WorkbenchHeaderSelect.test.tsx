@@ -21,9 +21,9 @@ describe('WorkbenchHeaderSelect', () => {
     expect(select.parentElement).toHaveAttribute('data-workbench-header-control', 'true');
     expect(container.querySelector('span')).toHaveClass('left-6', 'text-base', 'font-black', 'leading-6');
     expect(container.querySelector('span')).not.toHaveClass('text-sm', 'font-medium', 'leading-5');
-    expect(select).toHaveClass('absolute', 'bottom-0', 'h-9', 'px-6', 'pr-12', 'text-base', 'font-medium', 'leading-[34px]');
+    expect(select).toHaveClass('absolute', 'bottom-0', 'h-9', 'px-6', 'pr-9', 'text-base', 'font-medium', 'leading-[34px]');
     expect(select).toHaveClass('disabled:text-slate-950', 'disabled:opacity-100');
-    expect(container.querySelector('svg')).toHaveClass('right-6');
+    expect(container.querySelector('svg')).toHaveClass('right-3');
     fireEvent.change(select, { target: { value: '世界观' } });
     expect(onChange).toHaveBeenCalledWith('世界观');
   });

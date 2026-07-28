@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck -- AppFrame view receives its typed controller scope.
 import React from 'react';
-import { OwnerTestModeToggle } from '@/features/owner-test-mode/components/OwnerTestModeToggle';
+import { BuiltInPromptManagerLauncher } from '@/features/prompts/components/BuiltInPromptManagerLauncher';
 import { prepareWorkbenchForAppClose } from '@/features/workbench/model/workbenchAppCloseCleanup';
 import { ApplicationModeToggle } from '@/shared/layout/ApplicationModeToggle';
 import { AppModalShell } from '@/shared/ui/AppModalShell';
@@ -20,6 +20,7 @@ export function renderAppFrameView(scope: Record<string, any>) {
     X,
     activateTab,
     activeTabId,
+    appInteractionLocked,
     appScale,
     children,
     effectiveScale,
@@ -58,7 +59,10 @@ export function renderAppFrameView(scope: Record<string, any>) {
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
         <nav
-          className="flex h-full min-w-0 flex-1 items-center overflow-x-auto"
+          inert={appInteractionLocked ? true : undefined}
+          aria-disabled={appInteractionLocked || undefined}
+          data-app-tabs-locked={appInteractionLocked ? 'true' : undefined}
+          className={`flex h-full min-w-0 flex-1 items-center overflow-x-auto transition-opacity ${appInteractionLocked ? 'pointer-events-none opacity-60' : ''}`}
           style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
         >
           <div
@@ -114,103 +118,111 @@ export function renderAppFrameView(scope: Record<string, any>) {
           data-titlebar-no-drag="true"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
         >
-          {showInternalTools ? <OwnerTestModeToggle /> : null}
-          <ApplicationModeToggle />
-          {showInternalTools && (
-            <>
+          <div
+            inert={appInteractionLocked ? true : undefined}
+            aria-disabled={appInteractionLocked || undefined}
+            data-app-tools-locked={appInteractionLocked ? 'true' : undefined}
+            className={`flex shrink-0 items-center gap-1.5 transition-opacity ${appInteractionLocked ? 'pointer-events-none opacity-60' : ''}`}
+          >
+            {showInternalTools ? <BuiltInPromptManagerLauncher /> : null}
+            <ApplicationModeToggle />
+            {showInternalTools && (
+              <>
+                <button
+                  onClick={() => {
+                    setShowSoftwareUiCatalog(false);
+                    navigate('/test-collection');
+                  }}
+                  className="xy-wa-icon-button"
+                  title="测试板块"
+                >
+                  <FlaskConical className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSoftwareUiCatalog(true);
+                  }}
+                  className="xy-wa-icon-button"
+                  title="UI库"
+                >
+                  <BookOpen className="h-4 w-4" />
+                </button>
+              </>
+            )}
+            <div ref={themeMenuRef} className="relative mr-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsScaleMenuOpen(false);
+                  setIsThemeMenuOpen((prev) => !prev);
+                }}
+                className={`xy-theme-trigger-button xy-${themeMode}-active`}
+                title="主题"
+                aria-haspopup="menu"
+                aria-expanded={isThemeMenuOpen}
+              >
+                <span className="xy-theme-trigger-label">主题</span>
+              </button>
+              {isThemeMenuOpen && (
+                <div className="xy-theme-menu absolute right-0 top-10 z-[90] w-52 p-1.5" role="menu" aria-label="主题">
+                  {THEME_OPTIONS.map(renderThemeOption)}
+                </div>
+              )}
+            </div>
+            <div className="relative ml-1">
               <button
                 onClick={() => {
-                  setShowSoftwareUiCatalog(false);
-                  navigate('/test-collection');
+                  setIsThemeMenuOpen(false);
+                  setIsScaleMenuOpen((prev) => !prev);
                 }}
-                className="xy-wa-icon-button"
-                title="测试板块"
+                className="h-8 min-w-[70px] rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800"
+                title="界面比例"
               >
-                <FlaskConical className="h-4 w-4" />
+                {getScaleLabel(appScale)}%
               </button>
-              <button
-                onClick={() => {
-                  setShowSoftwareUiCatalog(true);
-                }}
-                className="xy-wa-icon-button"
-                title="UI库"
-              >
-                <BookOpen className="h-4 w-4" />
-              </button>
-            </>
-          )}
-          <div ref={themeMenuRef} className="relative mr-2">
-            <button
-              type="button"
-              onClick={() => {
-                setIsScaleMenuOpen(false);
-                setIsThemeMenuOpen((prev) => !prev);
-              }}
-              className={`xy-theme-trigger-button xy-${themeMode}-active`}
-              title="主题"
-              aria-haspopup="menu"
-              aria-expanded={isThemeMenuOpen}
-            >
-              <span className="xy-theme-trigger-label">主题</span>
-            </button>
-            {isThemeMenuOpen && (
-              <div className="xy-theme-menu absolute right-0 top-10 z-[90] w-52 p-1.5" role="menu" aria-label="主题">
-                {THEME_OPTIONS.map(renderThemeOption)}
+              {isScaleMenuOpen && (
+                <div className="absolute right-0 top-10 z-[80] w-[104px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                  {APP_SCALE_OPTIONS.map((option) => {
+                    const isSelected = Math.abs(appScale - option.effectiveScale) < 0.001;
+                    return (
+                      <button
+                        key={option.labelScale}
+                        onClick={() => {
+                          setAppScale(option.effectiveScale);
+                          setIsScaleMenuOpen(false);
+                        }}
+                        className={`grid h-9 w-full grid-cols-[22px_1fr] items-center px-3 text-left text-sm transition-colors ${
+                          isSelected ? 'bg-slate-100 font-semibold text-slate-900' : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="text-center text-base leading-none">{isSelected ? '✓' : ''}</span>
+                        <span>{Math.round(option.labelScale * 100)}%</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <div className="hidden">
+                <button
+                  onClick={() => setAppScale((prev) => Math.max(0.8, Number((prev - 0.1).toFixed(1))))}
+                  className="px-2.5 py-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                  title="缩小 10%"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="min-w-[48px] text-center text-xs text-slate-500">{Math.round(appScale * 100)}%</span>
+                <button
+                  onClick={() => setAppScale((prev) => Math.min(1.5, Number((prev + 0.1).toFixed(1))))}
+                  className="px-2.5 py-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                  title="放大 10%"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
               </div>
-            )}
-          </div>
-          <div className="relative ml-1">
-            <button
-              onClick={() => {
-                setIsThemeMenuOpen(false);
-                setIsScaleMenuOpen((prev) => !prev);
-              }}
-              className="h-8 min-w-[70px] rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800"
-              title="界面比例"
-            >
-              {getScaleLabel(appScale)}%
-            </button>
-            {isScaleMenuOpen && (
-              <div className="absolute right-0 top-10 z-[80] w-[104px] rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
-                {APP_SCALE_OPTIONS.map((option) => {
-                  const isSelected = Math.abs(appScale - option.effectiveScale) < 0.001;
-                  return (
-                    <button
-                      key={option.labelScale}
-                      onClick={() => {
-                        setAppScale(option.effectiveScale);
-                        setIsScaleMenuOpen(false);
-                      }}
-                      className={`grid h-9 w-full grid-cols-[22px_1fr] items-center px-3 text-left text-sm transition-colors ${
-                        isSelected ? 'bg-slate-100 font-semibold text-slate-900' : 'text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      <span className="text-center text-base leading-none">{isSelected ? '✓' : ''}</span>
-                      <span>{Math.round(option.labelScale * 100)}%</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            <div className="hidden">
-              <button
-                onClick={() => setAppScale((prev) => Math.max(0.8, Number((prev - 0.1).toFixed(1))))}
-                className="px-2.5 py-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
-                title="缩小 10%"
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="min-w-[48px] text-center text-xs text-slate-500">{Math.round(appScale * 100)}%</span>
-              <button
-                onClick={() => setAppScale((prev) => Math.min(1.5, Number((prev + 0.1).toFixed(1))))}
-                className="px-2.5 py-2 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
-                title="放大 10%"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
             </div>
           </div>
           <button
+            data-window-control="minimize"
             onClick={() => void window.xinyuexiaWindow?.minimize()}
             className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
             title="最小化"
@@ -218,6 +230,7 @@ export function renderAppFrameView(scope: Record<string, any>) {
             <Minus className="h-4 w-4" />
           </button>
           <button
+            data-window-control="maximize"
             onClick={async () => {
               await toggleMaximizeWindow();
             }}
@@ -227,6 +240,7 @@ export function renderAppFrameView(scope: Record<string, any>) {
             <Square className="h-4 w-4" />
           </button>
           <button
+            data-window-control="close"
             onClick={() => {
               prepareWorkbenchForAppClose();
               void window.xinyuexiaWindow?.close();
@@ -294,15 +308,15 @@ export function renderAppFrameView(scope: Record<string, any>) {
           storageId="software_ui_catalog"
           zIndexClass="z-[340]"
         >
-            <Suspense
-              fallback={
-                <div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">
-                  正在打开 UI库...
-                </div>
-              }
-            >
-              <SoftwareUiCatalogPage embedded onClose={() => setShowSoftwareUiCatalog(false)} />
-            </Suspense>
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">
+                正在打开 UI库...
+              </div>
+            }
+          >
+            <SoftwareUiCatalogPage embedded onClose={() => setShowSoftwareUiCatalog(false)} />
+          </Suspense>
         </AppModalShell>
       )}
     </div>

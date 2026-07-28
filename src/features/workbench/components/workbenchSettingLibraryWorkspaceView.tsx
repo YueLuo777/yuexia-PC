@@ -1,6 +1,8 @@
 import React from 'react';
+import { Lock } from 'lucide-react';
 import { EmptyState } from '@/shared/ui/EmptyState';
 
+import { StandardModeSettingSidebarActions } from './StandardModeSettingSidebarActions';
 import { WorkbenchSettingPanelTabs } from './WorkbenchSettingStatusPanel';
 
 type ViewScope = Record<string, unknown>;
@@ -106,6 +108,8 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
     settingPreviewFontSize,
     selectSettingWorkspaceDomain,
     showBrainstormOutputSelection,
+    standardMode,
+    storageKey,
     stopLibraryAiMessage,
     stringifySettingContent,
     toggleBrainstormOutputPreviewSelected,
@@ -117,7 +121,8 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
   } = scope;
 
   const showFormalSettingTree = activeTab === SETTING_TAB && !activeIsBrainstorm;
-  const settingPanelMode = activeTabConfig.settingPanelMode === 'status' ? 'status' : 'setting';
+  const settingWorkspaceLocked = Boolean(standardMode && showFormalSettingTree && isLibraryAiLoading);
+  const settingPanelMode = !standardMode && activeTabConfig.settingPanelMode === 'status' ? 'status' : 'setting';
   const settingPendingStatusCount =
     currentSelectedRole?.pendingStatusUpdates?.length ?? currentSelectedSetting?.pendingStatusUpdates?.length ?? 0;
 
@@ -137,6 +142,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
     <>
       {showFormalSettingTree ? (
         <WorkbenchSettingTreeSidebar
+          locked={settingWorkspaceLocked}
           domains={settingTreeDomains}
           activeDomainId={outlineSettingDomain}
           settingEntries={settingEntries}
@@ -170,6 +176,7 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
           onEntryPointerDown={beginLibraryEntryPointerDrag}
           onEntryPointerMove={updateLibraryEntryPointerPreview}
           onEntryPointerUp={finishLibraryEntryPointerDrag}
+          footerActions={standardMode ? <StandardModeSettingSidebarActions storageKey={storageKey} /> : null}
         />
       ) : <WorkbenchLibrarySidebar
         activeTab={activeTab}
@@ -210,12 +217,21 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
         openSettingCreateDialog={openSettingCreateDialog}
         setIsBrainstormRecycleOpen={setIsBrainstormRecycleOpen}
       />}
-      {leftResizeHandle}
+      {!settingWorkspaceLocked && leftResizeHandle}
       <main
-        className={`min-w-0 flex min-h-0 flex-col bg-white ${settingLibraryMode === 'advanced' ? 'border-r border-gray-100' : ''}`}
+        inert={settingWorkspaceLocked ? true : undefined}
+        aria-busy={settingWorkspaceLocked || undefined}
+        data-setting-generation-locked={settingWorkspaceLocked ? 'true' : undefined}
+        className={`relative min-w-0 flex min-h-0 flex-col bg-white ${settingLibraryMode === 'advanced' ? 'border-r border-gray-100' : ''} ${settingWorkspaceLocked ? 'pointer-events-none' : ''}`}
         style={showFormalSettingTree ? { gridColumn: 3, gridRow: 1 } : undefined}
       >
-        {showFormalSettingTree ? (
+        {settingWorkspaceLocked ? (
+          <div className="pointer-events-none absolute right-4 top-3 z-30 flex h-8 items-center gap-2 rounded-md border border-[#8FD8E7] bg-[#EAF9FD]/95 px-3 text-xs font-bold text-[#078FAB] shadow-sm" data-setting-generation-lock-indicator="true">
+            <Lock className="h-3.5 w-3.5" />
+            AI正在生成，设定区已锁定
+          </div>
+        ) : null}
+        {showFormalSettingTree && !standardMode ? (
           <div className="flex h-12 shrink-0 items-center justify-end border-b border-slate-100 px-4">
             <WorkbenchSettingPanelTabs
               mode={settingPanelMode}

@@ -708,6 +708,10 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
         />
       ) : null;
     return renderSettingLibraryView({
+      standardMode: Boolean(scope.standardMode),
+      storageKey: scope.storageKey,
+      entries,
+      latestUsefulAiOutput,
       AiInlineInput,
       BRAINSTORM_LAYOUT_OUTPUT_MIN_WIDTH,
       BRAINSTORM_TAB,
@@ -721,6 +725,7 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
       Lock,
       PROMPT_DISABLE_CONTEXT_MENU_SIZE,
       PROMPT_SETTING_CATEGORY,
+      ROLE_TAB,
       RoleBaseStateEditor,
       SETTING_TAB,
       Unlock,

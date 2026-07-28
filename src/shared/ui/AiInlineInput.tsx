@@ -9,6 +9,8 @@ type AiInlineInputProps = {
   onStop: () => void;
   sendDisabled?: boolean;
   stopDisabled?: boolean;
+  sendLabel?: string;
+  stopLabel?: string;
   label?: string;
   placeholder?: string;
   className?: string;
@@ -26,6 +28,8 @@ export const AiInlineInput = forwardRef<HTMLTextAreaElement, AiInlineInputProps>
     onStop,
     sendDisabled = false,
     stopDisabled = false,
+    sendLabel = '发送给AI',
+    stopLabel = '停止生成',
     label = '请输入要求',
     placeholder,
     className = '',
@@ -56,12 +60,26 @@ export const AiInlineInput = forwardRef<HTMLTextAreaElement, AiInlineInputProps>
       />
       <label className="xy-border-embedded-transparent-backplate">{label}</label>
       <div className="xy-ai-inline-actions">
-        <button type="button" onClick={onSend} disabled={sendDisabled} className="xy-ai-inline-send">
+        <button
+          type="button"
+          onClick={onSend}
+          disabled={sendDisabled}
+          className="xy-ai-inline-send"
+          aria-label={sendLabel}
+          title={sendLabel}
+        >
           <span className="xy-ai-inline-send-icon">
             <Send className="h-6 w-6 stroke-[1.9]" />
           </span>
         </button>
-        <button type="button" onClick={onStop} disabled={stopDisabled} className="xy-ai-inline-stop">
+        <button
+          type="button"
+          onClick={onStop}
+          disabled={stopDisabled}
+          className="xy-ai-inline-stop"
+          aria-label={stopLabel}
+          title={stopLabel}
+        >
           <Square className="h-[18px] w-[18px] fill-current stroke-[1.9]" />
         </button>
       </div>

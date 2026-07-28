@@ -140,6 +140,11 @@ export function writeStandardSettingTemplateState(novelId: string, state: Standa
   localStorage.setItem(getStandardSettingTemplateStorageKey(novelId), JSON.stringify(state));
 }
 
+export function clearStandardSettingTemplateState(novelId: string) {
+  if (!novelId) return;
+  localStorage.removeItem(getStandardSettingTemplateStorageKey(novelId));
+}
+
 export function validateCustomSettingGroups(groups: StandardSettingCustomGroup[]) {
   if (groups.length === 0) return '至少创建一个设定分组。';
   for (const group of groups) {
