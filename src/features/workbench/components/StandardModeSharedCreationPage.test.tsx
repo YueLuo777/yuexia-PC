@@ -83,8 +83,8 @@ describe('standard mode shared chapter creation pages', () => {
     expect(settingWorkspace).toContain("data-setting-generation-locked={settingWorkspaceLocked ? 'true' : undefined}");
     expect(settingWorkspace).toContain("settingWorkspaceLocked ? 'pointer-events-none' : ''");
     expect(settingWorkspace).not.toContain('<WorkbenchSettingTreeSidebar\n          inert=');
-    expect(settingWorkspace).not.toContain('data-setting-generation-lock-indicator');
-    expect(settingWorkspace).not.toContain('AI正在生成，设定区已锁定');
+    expect(settingWorkspace).toContain('data-setting-generation-lock-indicator');
+    expect(settingWorkspace).toContain('AI正在生成，设定编辑区已锁定');
     expect(libraryPanel).toContain('renderSettingLibraryBranch({\n    storageKey,');
   });
 });

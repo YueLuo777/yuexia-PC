@@ -2,6 +2,17 @@ import type { ErrorLogEntry } from './errorLogEntryTypes';
 
 export const defaultEntriesPart60: ErrorLogEntry[] = [
   {
+    id: 'standard-setting-generation-lock-message-restored-001',
+    title: '设定生成期间缺少编辑区锁定提示',
+    area: '标准模式 / 作品设定 / 生成锁定反馈',
+    symptom: '生成设定时中间编辑区已经无法输入，但页面没有说明锁定原因，用户只能看到输入无效，容易误认为界面异常。',
+    cause: '此前移除全局生成锁时，同时删除了中间编辑区右上角的局部锁定提示，没有保留提示与全局锁之间的边界。',
+    solution: '恢复中间编辑区右上角的局部状态提示“AI正在生成，设定编辑区已锁定”，仅在标准设定生成期间显示；顶部导航和左侧目录仍保持可操作。',
+    prevention: '移除全局交互限制时，应分别审查锁定作用域和解释性反馈；局部 inert 必须配套可见状态提示与回归断言。',
+    keywords: ['作品设定', '生成锁定', '局部提示', '编辑区', '用户反馈'],
+    updatedAt: '2026-07-29',
+  },
+  {
     id: 'standard-setting-generation-progress-and-button-wrap-001',
     title: '设定生成缺少进度反馈且重新生成按钮换行',
     area: '标准模式 / 作品设定 / 生成面板',
