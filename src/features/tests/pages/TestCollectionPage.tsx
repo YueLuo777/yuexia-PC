@@ -123,6 +123,11 @@ const MultiAiWritingIdeaTestPage = lazy(() =>
     default: module.MultiAiWritingIdeaTestPage,
   })),
 );
+const AiRankingBookSearchIdeaTestPage = lazy(() =>
+  import('@/features/tests/pages/AiRankingBookSearchIdeaTestPage').then((module) => ({
+    default: module.AiRankingBookSearchIdeaTestPage,
+  })),
+);
 
 const testNumberByPath = buildTestNumberByPath(testGroups);
 const validTestPaths = new Set(testNumberByPath.keys());
@@ -257,6 +262,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <BuiltInAiProductIdeaTestPage />;
       case '/multi-ai-writing-idea-test':
         return <MultiAiWritingIdeaTestPage />;
+      case '/ai-ranking-book-search-idea-test':
+        return <AiRankingBookSearchIdeaTestPage />;
       default:
         return null;
     }

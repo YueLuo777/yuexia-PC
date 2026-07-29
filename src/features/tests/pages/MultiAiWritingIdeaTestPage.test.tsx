@@ -5,11 +5,11 @@ import { MultiAiWritingIdeaTestPage } from '@/features/tests/pages/MultiAiWritin
 import { testGroups } from '@/features/tests/pages/testCollectionGroups';
 
 describe('MultiAiWritingIdeaTestPage', () => {
-  it('registers the idea at the end of the unfinished group', () => {
+  it('keeps the idea registered in the unfinished group', () => {
     const unfinishedGroup = testGroups.at(-1);
 
     expect(unfinishedGroup?.title).toBe('未做');
-    expect(unfinishedGroup?.items.at(-1)).toMatchObject({
+    expect(unfinishedGroup?.items.find((item) => item.serial === 33)).toMatchObject({
       serial: 33,
       title: '多 AI 一键生成正文',
       path: '/multi-ai-writing-idea-test',

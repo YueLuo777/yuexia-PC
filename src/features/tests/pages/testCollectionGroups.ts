@@ -7,6 +7,7 @@ import {
   Moon,
   NotebookText,
   Palette,
+  Search,
   Sparkles,
   Workflow,
 } from 'lucide-react';
@@ -241,6 +242,14 @@ export const testGroups: TestGroup[] = [
         path: '/multi-ai-writing-idea-test',
         icon: Sparkles,
         badge: 'Multi AI',
+      },
+      {
+        serial: 34,
+        title: 'AI 排行榜找书',
+        description: '记录用户输入找书要求后，由 AI 搜索公开小说排行榜、核对来源并整理匹配书单的待实现想法。',
+        path: '/ai-ranking-book-search-idea-test',
+        icon: Search,
+        badge: 'Book Search',
       },
     ],
   },
