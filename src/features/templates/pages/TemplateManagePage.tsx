@@ -14,7 +14,7 @@ import {
   type SavedSettingTemplate,
   type TemplateStructure,
 } from '@/features/workbench/model/standardModeTemplateModel';
-import { StandardModeTemplateMindMap } from '@/features/workbench/components/StandardModeTemplateMindMap';
+import { ManagedTemplateDiyEditor } from '@/features/templates/components/ManagedTemplateDiyEditor';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 type TemplateSource =
@@ -117,7 +117,7 @@ export function TemplateManagePage() {
 
   const selectSaved = (template: SavedSettingTemplate) => {
     setSource({ kind: 'saved', id: template.id });
-    setStructure(ensureManagedTemplateDomains(cloneTemplateStructure(template.structure)));
+    setStructure(cloneTemplateStructure(template.structure));
     setSaveName(template.name);
     setNotice('');
   };
@@ -255,10 +255,9 @@ export function TemplateManagePage() {
           </div>
         </aside>
 
-        <StandardModeTemplateMindMap
+        <ManagedTemplateDiyEditor
           key={sourceKey}
-          structure={structure}
-          initialActiveDomainId={structure[0]?.id}
+          initialStructure={structure}
           onChange={setStructure}
           saveName={saveName}
           onSaveNameChange={setSaveName}

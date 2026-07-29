@@ -65,4 +65,58 @@ describe('TemplateManagePage', () => {
 
     expect(JSON.parse(localStorage.getItem(SAVED_SETTING_TEMPLATES_STORAGE_KEY) ?? '[]')).toEqual([]);
   });
+
+  it('edits all four levels with deletion locks and persists the exact DIY structure', () => {
+    const { unmount } = render(<TemplateManagePage />);
+    const editor = screen.getByRole('region', { name: '四栏DIY模板编辑器' });
+    const monsterDelete = within(editor).getByRole('button', { name: '删除一级分类：怪物图鉴' });
+    expect(monsterDelete).toBeDisabled();
+
+    fireEvent.click(within(editor).getByRole('button', { name: '一级删除已锁定，点击解锁' }));
+    fireEvent.click(monsterDelete);
+    expect(editor).toHaveAttribute('data-domain-count', '6');
+
+    const domainColumn = within(editor).getByRole('region', { name: 'DIY一级分类' });
+    fireEvent.change(within(domainColumn).getByRole('textbox', { name: '输入一级分类名称' }), {
+      target: { value: 'A' },
+    });
+    fireEvent.click(within(domainColumn).getByRole('button', { name: '新增' }));
+
+    const groupColumn = within(editor).getByRole('region', { name: 'DIY二级分组' });
+    fireEvent.change(within(groupColumn).getByRole('textbox', { name: '输入二级分组名称' }), {
+      target: { value: 'A分组' },
+    });
+    fireEvent.click(within(groupColumn).getByRole('button', { name: '新增' }));
+
+    const entryColumn = within(editor).getByRole('region', { name: 'DIY三级设定' });
+    fireEvent.change(within(entryColumn).getByRole('textbox', { name: '输入三级设定名称' }), {
+      target: { value: 'A设定' },
+    });
+    fireEvent.click(within(entryColumn).getByRole('button', { name: '新增' }));
+
+    const fieldColumn = within(editor).getByRole('region', { name: 'DIY四级设定' });
+    fireEvent.change(within(fieldColumn).getByRole('textbox', { name: '输入四级设定名称' }), {
+      target: { value: 'A字段' },
+    });
+    fireEvent.click(within(fieldColumn).getByRole('button', { name: '新增' }));
+
+    fireEvent.change(within(editor).getByRole('textbox', { name: '保存模板名称' }), {
+      target: { value: '正式DIY模板' },
+    });
+    fireEvent.click(within(editor).getByRole('button', { name: '保存到我的模板' }));
+
+    const saved = JSON.parse(localStorage.getItem(SAVED_SETTING_TEMPLATES_STORAGE_KEY) ?? '[]');
+    expect(saved).toHaveLength(1);
+    expect(saved[0].structure.some((domain: { title: string }) => domain.title === '怪物图鉴')).toBe(false);
+    expect(saved[0].structure.find((domain: { title: string }) => domain.title === 'A')
+      .groups[0].entries[0].sections[0].fields[0].title).toBe('A字段');
+
+    unmount();
+    render(<TemplateManagePage />);
+    fireEvent.click(screen.getByRole('tab', { name: '我的模板' }));
+    fireEvent.click(screen.getByRole('button', { name: /正式DIY模板/ }));
+    const restoredEditor = screen.getByRole('region', { name: '四栏DIY模板编辑器' });
+    expect(within(restoredEditor).getByRole('button', { name: 'A' })).toBeInTheDocument();
+    expect(within(restoredEditor).queryByRole('button', { name: '怪物图鉴' })).not.toBeInTheDocument();
+  });
 });
