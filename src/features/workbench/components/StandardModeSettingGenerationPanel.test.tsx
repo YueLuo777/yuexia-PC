@@ -41,6 +41,7 @@ describe('StandardModeSettingGenerationPanel', () => {
     expect(screen.queryByText('0/5')).not.toBeInTheDocument();
     expect(screen.getAllByText('未生成')).toHaveLength(5);
     expect(screen.getByRole('progressbar', { name: '作品设定生成进度' })).toHaveAttribute('aria-valuenow', '0');
+    expect(screen.getByRole('textbox', { name: '作品设定用户要求' })).toHaveClass('h-24', 'flex-none');
     const stepGenerateButtons = screen.getAllByRole('button', { name: '生成' });
     expect(stepGenerateButtons).toHaveLength(1);
     expect(stepGenerateButtons[0]).toBeEnabled();

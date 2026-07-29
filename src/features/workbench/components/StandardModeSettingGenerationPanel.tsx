@@ -435,7 +435,7 @@ export function StandardModeSettingGenerationPanel({
             </div>
           </section>
 
-          <label className="mt-4 flex min-h-[120px] flex-1 flex-col">
+          <label className="mt-4 flex shrink-0 flex-col">
             <span className="mb-2 block text-sm font-bold text-[#52606d]">用户要求</span>
             <textarea
               aria-label="作品设定用户要求"
@@ -443,13 +443,13 @@ export function StandardModeSettingGenerationPanel({
               disabled={generationInteractionLocked}
               onChange={(event) => setFlow((current) => ({ ...current, requirement: event.target.value }))}
               placeholder="例如：世界观偏黑暗，主角做事果断"
-              className="min-h-[120px] w-full flex-1 resize-none rounded-md border border-[#BFC8D2] bg-white p-3 text-sm font-medium leading-6 text-[#1f2933] outline-none placeholder:text-xs placeholder:text-[#9aa3af] focus:border-[#08AACE]"
+              className="h-24 min-h-24 w-full flex-none resize-none rounded-md border border-[#BFC8D2] bg-white p-3 text-sm font-medium leading-6 text-[#1f2933] outline-none placeholder:text-xs placeholder:text-[#9aa3af] focus:border-[#08AACE]"
             />
           </label>
 
           <div
             inert={generationInteractionLocked ? true : undefined}
-            className={generationInteractionLocked ? 'pointer-events-none' : undefined}
+            className={`shrink-0 ${generationInteractionLocked ? 'pointer-events-none' : ''}`}
           >
             <LinkedSourceControl
               linked={Boolean(linkedBrainstorm)}

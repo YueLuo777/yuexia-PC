@@ -2,6 +2,17 @@ import type { ErrorLogEntry } from './errorLogEntryTypes';
 
 export const defaultEntriesPart60: ErrorLogEntry[] = [
   {
+    id: 'standard-setting-progress-linked-control-overlap-001',
+    title: '新增生成进度后关联按钮遮挡用户要求输入框',
+    area: '标准模式 / 作品设定 / 右侧生成面板布局',
+    symptom: '加入生成进度条后，右栏纵向空间减少，关联脑洞按钮压在用户要求输入框底部，边框和按钮区域发生重叠。',
+    cause: '用户要求区域同时使用 flex-1 和较大的最小高度，在窄窗口及110%缩放下不能合理收缩；关联区外层也没有独立的 shrink 约束。',
+    solution: '将用户要求输入框改为96像素固定高度并取消弹性占满，关联区固定为独立的不可收缩行，保证进度、输入框、关联按钮和底部操作区顺序排列。',
+    prevention: '右侧固定面板新增纵向模块时必须覆盖110%缩放和短窗口布局；相邻固定操作区不得依赖 flex-1 输入框自动让位。',
+    keywords: ['作品设定', '用户要求', '关联脑洞', '进度条', '遮挡', '110%缩放'],
+    updatedAt: '2026-07-29',
+  },
+  {
     id: 'standard-setting-generation-lock-message-restored-001',
     title: '设定生成期间缺少编辑区锁定提示',
     area: '标准模式 / 作品设定 / 生成锁定反馈',
