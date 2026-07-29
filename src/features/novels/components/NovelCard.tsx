@@ -151,7 +151,7 @@ export function NovelCard({
       style={{ width: NOVEL_CARD_WIDTHS[settings.cardWidth] }}
     >
       <div
-        className={`xy-wa-book-cover ${coverSrc ? 'xy-wa-book-cover-image' : 'xy-wa-book-cover-empty'} relative flex shrink-0 flex-col items-center justify-center overflow-hidden rounded-[4px] border border-[#d8dde6] shadow-[0_2px_8px_rgba(15,23,42,0.12)] transition group-hover:border-[#9ebcf6]`}
+        className={`xy-wa-book-cover group/cover ${coverSrc ? 'xy-wa-book-cover-image' : 'xy-wa-book-cover-empty'} relative flex shrink-0 flex-col items-center justify-center overflow-hidden rounded-[4px] border border-[#d8dde6] shadow-[0_2px_8px_rgba(15,23,42,0.12)] transition group-hover:border-[#9ebcf6]`}
         style={{
           height: NOVEL_COVER_HEIGHTS[settings.coverHeight],
         }}
@@ -164,6 +164,21 @@ export function NovelCard({
             strokeWidth={1.7}
           />
         )}
+        <div
+          data-professional-workbench-overlay="true"
+          className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/10 opacity-0 transition-opacity duration-150 group-hover/cover:pointer-events-auto group-hover/cover:opacity-100 group-focus-within/cover:pointer-events-auto group-focus-within/cover:opacity-100"
+        >
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpen(novel.id);
+            }}
+            className="h-10 rounded-md border border-[#08AACE] bg-white/95 px-5 text-sm font-bold text-[#078FAB] shadow-[0_6px_18px_rgba(15,23,42,0.18)] transition-colors hover:bg-[#EAF9FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#08AACE]/40"
+          >
+            进入工作台
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col px-0.5 pb-1 pt-3">

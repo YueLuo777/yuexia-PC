@@ -27,6 +27,36 @@ describe('NovelCard cover and menu behavior', () => {
     expect(cardSource).not.toContainSource('绉佸瘑');
   });
 
+  it('opens the professional workbench from the cover hover button', () => {
+    const onOpen = vi.fn();
+    render(
+      <NovelCard
+        novel={{
+          id: 11,
+          title: '吞噬系统',
+          type: 'novel',
+          category: '玄幻',
+          wordCount: 0,
+          createdAt: '2026/7/29',
+          lastModifiedAt: '2026/7/29',
+        }}
+        settings={{ cardWidth: 'medium', coverHeight: 'medium' }}
+        categories={['未分类', '玄幻']}
+        onOpen={onOpen}
+        onRename={vi.fn()}
+        onCover={vi.fn()}
+        onExport={vi.fn()}
+        onMoveToCategory={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    const button = screen.getByRole('button', { name: '进入工作台' });
+    expect(button.closest('[data-professional-workbench-overlay="true"]')).toHaveClass('opacity-0');
+    fireEvent.click(button);
+    expect(onOpen).toHaveBeenCalledWith(11);
+  });
+
   it('closes the more menu when the user clicks outside the card', () => {
     const cardSource = readSource('NovelCard.tsx');
 

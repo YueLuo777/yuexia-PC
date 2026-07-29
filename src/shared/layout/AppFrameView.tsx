@@ -3,7 +3,6 @@
 import React from 'react';
 import { BuiltInPromptManagerLauncher } from '@/features/prompts/components/BuiltInPromptManagerLauncher';
 import { prepareWorkbenchForAppClose } from '@/features/workbench/model/workbenchAppCloseCleanup';
-import { ApplicationModeToggle } from '@/shared/layout/ApplicationModeToggle';
 import { AppModalShell } from '@/shared/ui/AppModalShell';
 export function renderAppFrameView(scope: Record<string, any>) {
   const {
@@ -118,7 +117,6 @@ export function renderAppFrameView(scope: Record<string, any>) {
             className="flex shrink-0 items-center gap-1.5"
           >
             {showInternalTools ? <BuiltInPromptManagerLauncher /> : null}
-            <ApplicationModeToggle />
             {showInternalTools && (
               <>
                 <button

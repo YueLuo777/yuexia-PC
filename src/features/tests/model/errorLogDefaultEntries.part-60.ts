@@ -2,6 +2,17 @@ import type { ErrorLogEntry } from './errorLogEntryTypes';
 
 export const defaultEntriesPart60: ErrorLogEntry[] = [
   {
+    id: 'professional-cover-hover-workbench-entry-001',
+    title: '模式切换入口暂时隐藏后专业作品封面缺少明确的工作台入口',
+    area: '全局标题栏 / 我的小说 / 专业模式作品卡片',
+    symptom: '标题栏持续显示标准模式和专业模式切换入口；专业模式小说卡片只能点击整张卡片进入，封面区域没有用户期望的“进入工作台”明确按钮。',
+    cause: '模式切换组件一直在全局标题栏渲染，专业卡片沿用整卡点击交互，没有在封面悬停状态提供可见的主操作。',
+    solution: '暂时停止在标题栏渲染模式切换组件，但保留组件、模式数据和两套卡片分支；专业模式封面悬停或键盘聚焦时显示居中的“进入工作台”文字按钮，点击沿用原工作台打开流程。',
+    prevention: '临时下线入口时只移除正式渲染，不删除底层状态和路由；作品卡片新增主操作必须同时覆盖鼠标悬停、键盘聚焦、事件冒泡和原有整卡点击。',
+    keywords: ['标准模式', '专业模式', '暂时隐藏', '封面悬停', '进入工作台', '作品卡片'],
+    updatedAt: '2026-07-29',
+  },
+  {
     id: 'template-management-channel-tabs-001',
     title: '模板管理内置模板未按男频和女频分开查看',
     area: '主页导航 / 模板管理 / 模板来源标签',
