@@ -224,15 +224,22 @@ export function renderSettingLibraryWorkspace(rawScope: ViewScope) {
         className={`relative min-w-0 flex min-h-0 flex-col bg-white ${settingLibraryMode === 'advanced' ? 'border-r border-gray-100' : ''} ${settingWorkspaceLocked ? 'pointer-events-none' : ''}`}
         style={showFormalSettingTree ? { gridColumn: 3, gridRow: 1 } : undefined}
       >
-        {settingWorkspaceLocked ? (
+        {showFormalSettingTree && standardMode ? (
           <div
-            className="pointer-events-none absolute right-4 top-3 z-30 flex h-8 items-center gap-2 rounded-md border border-[#8FD8E7] bg-[#EAF9FD]/95 px-3 text-xs font-bold text-[#078FAB] shadow-sm"
-            data-setting-generation-lock-indicator="true"
-            role="status"
-            aria-live="polite"
+            className="pointer-events-none absolute inset-x-0 top-0 z-20 flex h-12 items-center justify-end border-b border-slate-100 px-4"
+            data-standard-setting-editor-header="true"
           >
-            <Lock className="h-3.5 w-3.5" />
-            AI正在生成，设定编辑区已锁定
+            {settingWorkspaceLocked ? (
+              <div
+                className="pointer-events-none flex h-8 items-center gap-2 rounded-md border border-[#8FD8E7] bg-[#EAF9FD] px-3 text-xs font-bold text-[#078FAB] shadow-sm"
+                data-setting-generation-lock-indicator="true"
+                role="status"
+                aria-live="polite"
+              >
+                <Lock className="h-3.5 w-3.5" />
+                AI正在生成，设定编辑区已锁定
+              </div>
+            ) : null}
           </div>
         ) : null}
         {showFormalSettingTree && !standardMode ? (
