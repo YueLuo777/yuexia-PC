@@ -2,11 +2,12 @@ import { useState } from 'react';
 
 import { ProfessionalSettingCardsVariant } from './ProfessionalSettingCardsVariant';
 import { ProfessionalSettingColumnsVariant } from './ProfessionalSettingColumnsVariant';
+import { ProfessionalSettingDiyColumnsVariant } from './ProfessionalSettingDiyColumnsVariant';
 import { ProfessionalSettingMatrixVariant } from './ProfessionalSettingMatrixVariant';
 import { ProfessionalSettingTreeVariant } from './ProfessionalSettingTreeVariant';
 import { professionalFieldPaths } from './professionalTemplateHierarchyModel';
 
-type VariantId = 'tree' | 'columns' | 'matrix' | 'cards';
+type VariantId = 'tree' | 'columns' | 'matrix' | 'cards' | 'diy';
 
 const VARIANTS: Array<{
   id: VariantId;
@@ -18,10 +19,11 @@ const VARIANTS: Array<{
   { id: 'columns', title: 'B · 四栏联动', recommendation: '推荐：快速定位', description: '一级到四级逐列深入' },
   { id: 'matrix', title: 'C · 路径矩阵', recommendation: '推荐：批量删减', description: '完整路径逐行对齐' },
   { id: 'cards', title: 'D · 结构卡片', recommendation: '推荐：视觉浏览', description: '分区卡片直接铺字段' },
+  { id: 'diy', title: 'E · DIY四栏', recommendation: '推荐：自由搭建', description: '每一级均可新增或删除' },
 ];
 
 export function ProfessionalTemplateHierarchyVariantsTestPage() {
-  const [variantId, setVariantId] = useState<VariantId>('tree');
+  const [variantId, setVariantId] = useState<VariantId>('diy');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     () => new Set(professionalFieldPaths.map((item) => item.id)),
   );
@@ -66,7 +68,7 @@ export function ProfessionalTemplateHierarchyVariantsTestPage() {
           <h1 className="text-base font-black">专业模板层级设计</h1>
           <p className="mt-1 text-xs font-semibold text-slate-400">不替用户做推荐，只负责把结构讲清楚</p>
         </div>
-        <div className="grid min-w-0 flex-1 grid-cols-4 gap-2" aria-label="专业模板层级方案">
+        <div className="grid min-w-0 flex-1 grid-cols-5 gap-2" aria-label="专业模板层级方案">
           {VARIANTS.map((variant) => {
             const active = variant.id === variantId;
             return (
@@ -97,55 +99,58 @@ export function ProfessionalTemplateHierarchyVariantsTestPage() {
         {variantId === 'columns' ? <ProfessionalSettingColumnsVariant {...variantProps} /> : null}
         {variantId === 'matrix' ? <ProfessionalSettingMatrixVariant {...variantProps} /> : null}
         {variantId === 'cards' ? <ProfessionalSettingCardsVariant {...variantProps} /> : null}
+        {variantId === 'diy' ? <ProfessionalSettingDiyColumnsVariant /> : null}
       </div>
 
-      <footer className="flex h-16 shrink-0 items-center justify-between gap-4 border-t border-slate-200 bg-white px-5">
-        <div className="min-w-0">
-          <div className="flex items-center gap-3 text-sm font-black">
-            <span>
-              保留 {selectedIds.size}/{professionalFieldPaths.length} 项
-            </span>
-            <span
-              className={`rounded px-2 py-1 text-xs ${removedCount > 0 ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-500'}`}
+      {variantId !== 'diy' ? (
+        <footer className="flex h-16 shrink-0 items-center justify-between gap-4 border-t border-slate-200 bg-white px-5">
+          <div className="min-w-0">
+            <div className="flex items-center gap-3 text-sm font-black">
+              <span>
+                保留 {selectedIds.size}/{professionalFieldPaths.length} 项
+              </span>
+              <span
+                className={`rounded px-2 py-1 text-xs ${removedCount > 0 ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-500'}`}
+              >
+                已移除 {removedCount} 项
+              </span>
+            </div>
+            <div className="mt-1 truncate text-xs font-semibold text-[#078FAB]" aria-live="polite">
+              {feedback}
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedIds(new Set());
+                setFeedback('已把全部设定标记为移除，可逐项重新加入。');
+              }}
+              className="h-10 rounded-md border border-slate-200 bg-white px-4 text-sm font-bold text-slate-500 hover:border-amber-300 hover:text-amber-700"
             >
-              已移除 {removedCount} 项
-            </span>
+              全部移除
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedIds(new Set(professionalFieldPaths.map((item) => item.id)));
+                setFeedback('已恢复完整四级结构。');
+              }}
+              className="h-10 rounded-md border border-[#9DDFEA] bg-white px-4 text-sm font-bold text-[#078FAB] hover:bg-[#F1FBFD]"
+            >
+              恢复完整结构
+            </button>
+            <button
+              type="button"
+              disabled={selectedIds.size === 0}
+              onClick={() => setFeedback(`当前专业模板已确认：保留 ${selectedIds.size} 项，移除 ${removedCount} 项。`)}
+              className="h-10 rounded-md bg-[#08AACE] px-5 text-sm font-black text-white hover:bg-[#0798B8] disabled:bg-slate-200 disabled:text-slate-400"
+            >
+              确认当前结构
+            </button>
           </div>
-          <div className="mt-1 truncate text-xs font-semibold text-[#078FAB]" aria-live="polite">
-            {feedback}
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedIds(new Set());
-              setFeedback('已把全部设定标记为移除，可逐项重新加入。');
-            }}
-            className="h-10 rounded-md border border-slate-200 bg-white px-4 text-sm font-bold text-slate-500 hover:border-amber-300 hover:text-amber-700"
-          >
-            全部移除
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedIds(new Set(professionalFieldPaths.map((item) => item.id)));
-              setFeedback('已恢复完整四级结构。');
-            }}
-            className="h-10 rounded-md border border-[#9DDFEA] bg-white px-4 text-sm font-bold text-[#078FAB] hover:bg-[#F1FBFD]"
-          >
-            恢复完整结构
-          </button>
-          <button
-            type="button"
-            disabled={selectedIds.size === 0}
-            onClick={() => setFeedback(`当前专业模板已确认：保留 ${selectedIds.size} 项，移除 ${removedCount} 项。`)}
-            className="h-10 rounded-md bg-[#08AACE] px-5 text-sm font-black text-white hover:bg-[#0798B8] disabled:bg-slate-200 disabled:text-slate-400"
-          >
-            确认当前结构
-          </button>
-        </div>
-      </footer>
+        </footer>
+      ) : null}
     </div>
   );
 }
