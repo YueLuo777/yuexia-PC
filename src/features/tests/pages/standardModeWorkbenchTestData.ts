@@ -9,9 +9,6 @@ export interface StandardModeNovel {
   category: string;
   chapters: number;
   words: string;
-  progress: number;
-  lastChapter: string;
-  nextAction: string;
 }
 
 export type StandardModeWorkbenchTool =

@@ -94,7 +94,7 @@ export const testGroups: TestGroup[] = [
       {
         serial: 10,
         title: '标准模式创作工作台模拟',
-        description: '模拟点击书籍直达正文，以及从书籍底部进入创作工作台后按步骤完成新书准备和日常章节创作。',
+        description: '比较标准与专业工作台双入口，并保留书籍管理菜单、新书准备和日常章节创作流程。',
         path: '/standard-mode-workbench-test',
         icon: Workflow,
         badge: 'Standard Mode',

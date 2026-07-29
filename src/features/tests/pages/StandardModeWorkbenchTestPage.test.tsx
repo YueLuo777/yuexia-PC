@@ -27,13 +27,37 @@ describe('StandardModeWorkbenchTestPage', () => {
     );
   });
 
-  it('opens the shared professional editor when the user clicks a novel body', () => {
+  it('offers separate standard and professional workbench buttons without progress guidance', () => {
     render(<StandardModeWorkbenchTestPage />);
 
-    fireEvent.click(screen.getByRole('button', { name: '打开《九重天劫》正文' }));
+    expect(screen.getByRole('button', { name: '进入《九重天劫》标准工作台' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '进入《九重天劫》专业工作台' })).toBeInTheDocument();
+    expect(screen.queryByText(/下一步/)).not.toBeInTheDocument();
+    expect(screen.queryByText('玄幻升级')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '进入《九重天劫》专业工作台' }));
 
     expect(screen.getByTestId('professional-mode-editor-preview')).toBeInTheDocument();
     expect(screen.getByText('共用专业模式正文页')).toBeInTheDocument();
+  });
+
+  it('opens the standard workbench from the cover and keeps the full novel menu', () => {
+    render(<StandardModeWorkbenchTestPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: '《九重天劫》更多操作' }));
+    const menu = screen.getByRole('menu', { name: '《九重天劫》作品操作菜单' });
+    expect(menu).toHaveTextContent('最近更新：2026/7/28');
+    expect(menu).toHaveTextContent('当前分类：玄幻升级');
+    expect(within(menu).getByRole('menuitem', { name: '重命名' })).toBeInTheDocument();
+    expect(within(menu).getByRole('menuitem', { name: '书封管理' })).toBeInTheDocument();
+    expect(within(menu).getByRole('menuitem', { name: '导出' })).toBeInTheDocument();
+    expect(within(menu).getByRole('menuitem', { name: '移入分类' })).toBeInTheDocument();
+    expect(within(menu).getByRole('menuitem', { name: '移入回收站' })).toBeInTheDocument();
+    fireEvent.click(within(menu).getByRole('menuitem', { name: '重命名' }));
+    expect(screen.getByText('已打开《九重天劫》重命名')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '点击《九重天劫》封面进入标准工作台' }));
+    expect(screen.getByTestId('standard-mode-workbench')).toBeInTheDocument();
   });
 
   it('creates a blank novel and starts from brainstorm generation', () => {
@@ -79,7 +103,7 @@ describe('StandardModeWorkbenchTestPage', () => {
 
   it('uses the left directory, center workspace, right console, and clickable workflow stages', () => {
     render(<StandardModeWorkbenchTestPage />);
-    fireEvent.click(screen.getByRole('button', { name: '进入《九重天劫》创作工作台' }));
+    fireEvent.click(screen.getByRole('button', { name: '进入《九重天劫》标准工作台' }));
 
     const left = screen.getByRole('complementary', { name: '创作功能区' });
     const center = screen.getByTestId('standard-mode-center-content');
@@ -110,7 +134,7 @@ describe('StandardModeWorkbenchTestPage', () => {
 
   it('switches all brainstorm child functions and reports button actions', () => {
     render(<StandardModeWorkbenchTestPage />);
-    fireEvent.click(screen.getByRole('button', { name: '进入《万界商途》创作工作台' }));
+    fireEvent.click(screen.getByRole('button', { name: '进入《万界商途》标准工作台' }));
 
     const left = screen.getByRole('complementary', { name: '创作功能区' });
     const brainstormShortcuts = within(left).getByTestId('brainstorm-shortcuts');
