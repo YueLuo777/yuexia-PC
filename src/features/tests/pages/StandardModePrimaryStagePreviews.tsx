@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import type { StandardModeBrainstormView } from './standardModeWorkbenchTestData';
+type StandardModeBrainstormView = 'generate' | 'library' | 'link';
 
 function StageHeader({ title, description }: { title: string; description: string }) {
   return (

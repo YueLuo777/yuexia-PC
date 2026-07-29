@@ -92,14 +92,6 @@ export const testGroups: TestGroup[] = [
         badge: 'UI Compare',
       },
       {
-        serial: 10,
-        title: '标准模式创作工作台模拟',
-        description: '比较标准与专业工作台双入口，并保留书籍管理菜单、新书准备和日常章节创作流程。',
-        path: '/standard-mode-workbench-test',
-        icon: Workflow,
-        badge: 'Standard Mode',
-      },
-      {
         serial: 12,
         title: '专业模式九页原样基线',
         description: '直接复用脑洞到综合点评的正式页面、正式导航和正式AI区域，作为后续逐项删减的对照基线。',

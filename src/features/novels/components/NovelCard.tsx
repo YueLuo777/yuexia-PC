@@ -2,6 +2,10 @@ import { Check, ChevronRight, Feather, MoreHorizontal } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 
 import type { Novel } from '@/features/novels/model/novelTypes';
+import {
+  formatNovelCardStatValue,
+  type StandardModeNovelCardStats,
+} from '@/features/novels/model/standardModeNovelCardStats';
 
 export interface NovelCardSettings {
   cardWidth: 'small' | 'medium' | 'large';
@@ -22,6 +26,7 @@ interface NovelCardProps {
   novel: Novel;
   settings: NovelCardSettings;
   defaultCoverSrc?: string;
+  stats: StandardModeNovelCardStats;
   categories: string[];
   onPrepareOpen?: (id: number) => void;
   onPrepareStandardWorkbench?: (id: number) => void;
@@ -35,9 +40,9 @@ interface NovelCardProps {
 }
 
 export const NOVEL_CARD_WIDTHS = {
-  small: 156,
-  medium: 178,
-  large: 200,
+  small: 224,
+  medium: 240,
+  large: 260,
 } as const;
 
 export const NOVEL_COVER_HEIGHTS = {
@@ -62,6 +67,7 @@ export function NovelCard({
   novel,
   settings,
   defaultCoverSrc,
+  stats,
   categories,
   onPrepareOpen,
   onPrepareStandardWorkbench,
@@ -136,26 +142,17 @@ export function NovelCard({
   return (
     <article
       ref={cardRef}
-      tabIndex={0}
-      onPointerEnter={() => onPrepareOpen?.(novel.id)}
-      onPointerDown={() => onPrepareOpen?.(novel.id)}
-      onFocus={() => onPrepareOpen?.(novel.id)}
-      onClick={() => {
-        setIsMenuOpen(false);
-        setIsMoveMenuOpen(false);
-        onOpen(novel.id);
-      }}
-      onKeyDown={(event) => {
-        if (event.target !== event.currentTarget) return;
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        onOpen(novel.id);
-      }}
-      className="group relative flex cursor-pointer flex-col outline-none focus-visible:ring-2 focus-visible:ring-[#1e71ef]/35"
+      className="group relative flex flex-col rounded-[6px] border border-[#d8dde6] bg-white shadow-[0_2px_8px_rgba(15,23,42,0.10)] transition-colors hover:border-[#9DDFEA]"
       style={{ width: NOVEL_CARD_WIDTHS[settings.cardWidth] }}
     >
-      <div
-        className={`xy-wa-book-cover group/cover ${coverSrc ? 'xy-wa-book-cover-image' : 'xy-wa-book-cover-empty'} relative flex shrink-0 flex-col items-center justify-center overflow-hidden rounded-[4px] border border-[#d8dde6] shadow-[0_2px_8px_rgba(15,23,42,0.12)] transition group-hover:border-[#9ebcf6]`}
+      <button
+        type="button"
+        aria-label={`点击《${novel.title}》封面进入标准工作台`}
+        onClick={() => onOpenStandardWorkbench(novel.id)}
+        onPointerEnter={() => onPrepareStandardWorkbench?.(novel.id)}
+        onPointerDown={() => onPrepareStandardWorkbench?.(novel.id)}
+        onFocus={() => onPrepareStandardWorkbench?.(novel.id)}
+        className={`xy-wa-book-cover ${coverSrc ? 'xy-wa-book-cover-image' : 'xy-wa-book-cover-empty'} relative flex shrink-0 flex-col items-center justify-center overflow-hidden rounded-t-[5px] border-b border-[#d8dde6] bg-[#f4f7fb] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#08AACE]/40`}
         style={{
           height: NOVEL_COVER_HEIGHTS[settings.coverHeight],
         }}
@@ -168,28 +165,11 @@ export function NovelCard({
             strokeWidth={1.7}
           />
         )}
-        <div
-          data-professional-workbench-overlay="true"
-          onPointerEnter={() => onPrepareStandardWorkbench?.(novel.id)}
-          className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/10 opacity-0 transition-opacity duration-150 group-hover/cover:pointer-events-auto group-hover/cover:opacity-100 group-focus-within/cover:pointer-events-auto group-focus-within/cover:opacity-100"
-        >
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onOpenStandardWorkbench(novel.id);
-            }}
-            onFocus={() => onPrepareStandardWorkbench?.(novel.id)}
-            className="h-10 rounded-md border border-[#08AACE] bg-white/95 px-5 text-sm font-bold text-[#078FAB] shadow-[0_6px_18px_rgba(15,23,42,0.18)] transition-colors hover:bg-[#EAF9FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#08AACE]/40"
-          >
-            进入工作台
-          </button>
-        </div>
-      </div>
+      </button>
 
-      <div className="flex flex-col px-0.5 pb-1 pt-3">
+      <div className="flex flex-col px-3 pb-3 pt-2.5">
         <div className="flex min-w-0 items-center gap-2">
-          <h3 className="min-w-0 flex-1 truncate text-[15px] font-medium leading-5 text-[#1f2933]" title={novel.title}>
+          <h3 className="min-w-0 flex-1 truncate text-[15px] font-semibold leading-5 text-[#1f2933]" title={novel.title}>
             {novel.title}
           </h3>
           <button
@@ -207,14 +187,41 @@ export function NovelCard({
             <MoreHorizontal className="h-4 w-4" />
           </button>
         </div>
-        <div className={`mt-1 truncate text-[#9aa3af] ${statFont}`}>{novel.wordCount} 字</div>
+        <div className={`mt-2 flex items-center justify-between font-bold text-[#9aa3af] ${statFont}`} aria-label="作品统计">
+          <span>{stats.chapterCount}章</span>
+          <span>{formatNovelCardStatValue(stats.wordCount)}字</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 overflow-hidden rounded-b-[5px] border-t border-slate-200">
+        <button
+          type="button"
+          aria-label={`进入《${novel.title}》标准工作台`}
+          onClick={() => onOpenStandardWorkbench(novel.id)}
+          onPointerEnter={() => onPrepareStandardWorkbench?.(novel.id)}
+          onFocus={() => onPrepareStandardWorkbench?.(novel.id)}
+          className="h-10 whitespace-nowrap bg-slate-50 text-[11px] font-bold text-[#078FAB] transition-colors hover:bg-[#EAF9FD]"
+        >
+          进入标准工作台
+        </button>
+        <button
+          type="button"
+          aria-label={`进入《${novel.title}》专业工作台`}
+          onClick={() => onOpen(novel.id)}
+          onPointerEnter={() => onPrepareOpen?.(novel.id)}
+          onFocus={() => onPrepareOpen?.(novel.id)}
+          className="h-10 whitespace-nowrap border-l border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-600 transition-colors hover:bg-slate-100"
+        >
+          进入专业工作台
+        </button>
       </div>
 
       {isMenuOpen ? (
         <div
           role="menu"
           aria-label="作品操作菜单"
-          className="absolute right-0 top-[calc(100%-36px)] z-20 w-[222px] rounded-xl border border-slate-100 bg-white py-2 shadow-[0_14px_35px_rgba(15,23,42,0.16)]"
+          className="absolute left-0 z-20 w-[222px] rounded-xl border border-slate-100 bg-white py-2 shadow-[0_14px_35px_rgba(15,23,42,0.16)]"
+          style={{ top: NOVEL_COVER_HEIGHTS[settings.coverHeight] + 42 }}
           onClick={(event) => event.stopPropagation()}
         >
           <div className="px-3 pb-2 pt-1">

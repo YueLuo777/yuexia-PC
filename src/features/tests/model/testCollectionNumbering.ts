@@ -6,6 +6,7 @@ export type RetiredTestSerial = {
 };
 
 export const RETIRED_TEST_SERIALS: RetiredTestSerial[] = [
+  { serial: 10, path: '/standard-mode-workbench-test' },
   { serial: 11, path: '/mode-switch-novel-library-test' },
   { serial: 15, path: '/standard-mode-smart-setting-flow-test' },
   { serial: 22, path: '/standard-mode-details-settings-redesign-test' },

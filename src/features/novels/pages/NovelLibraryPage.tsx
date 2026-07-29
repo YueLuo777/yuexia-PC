@@ -7,13 +7,11 @@ import { useCoverLibrary } from '@/features/covers/hooks/useCoverLibrary';
 import { NewNovelModal } from '@/features/novels/components/NewNovelModal';
 import { NovelCard, type NovelCardSettings } from '@/features/novels/components/NovelCard';
 import { RecycleBinModal } from '@/features/novels/components/RecycleBinModal';
-import { StandardModeNovelCard } from '@/features/novels/components/StandardModeNovelCard';
 import { useNovelLibrary } from '@/features/novels/hooks/useNovelLibrary';
 import { useDefaultNovelCover } from '@/features/novels/hooks/useDefaultNovelCover';
 import type { Novel } from '@/features/novels/model/novelTypes';
 import { readStandardModeNovelCardStats } from '@/features/novels/model/standardModeNovelCardStats';
 import { readWritingSummary, WRITING_STATS_UPDATED_EVENT } from '@/shared/stats/writingStats';
-import { useApplicationMode } from '@/shared/mode/applicationMode';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 import { AutoFitText } from '@/shared/ui/AutoFitText';
 import { EmptyState } from '@/shared/ui/EmptyState';
@@ -46,7 +44,6 @@ export function NovelLibraryPage() {
   const workType = 'novel' as const;
   const typeLabel = '小说';
   const { selectedCover: defaultNovelCover } = useDefaultNovelCover();
-  const applicationMode = useApplicationMode();
 
   const {
     novels,
@@ -113,13 +110,17 @@ export function NovelLibraryPage() {
     };
   }, []);
 
-  const handlePrepareOpen = (id: number, experience = applicationMode) => {
+  const handlePrepareOpen = (id: number, experience: 'professional' | 'standard' = 'professional') => {
     const novel = novels.find((item) => item.id === id);
     if (novel?.type !== 'novel') return;
     void preloadEditorPage(experience);
   };
 
-  const openNovelWorkbench = (id: number, path: string, experience = applicationMode) => {
+  const openNovelWorkbench = (
+    id: number,
+    path: string,
+    experience: 'professional' | 'standard' = 'professional',
+  ) => {
     const novel = novels.find((item) => item.id === id);
     if (!novel) return;
     if (novel.type !== 'novel') return;
@@ -325,36 +326,25 @@ export function NovelLibraryPage() {
           />
         ) : (
           <div className="flex flex-wrap gap-x-16 gap-y-14">
-            {filteredNovels.map((novel) =>
-              applicationMode === 'standard' ? (
-                <StandardModeNovelCard
-                  key={novel.id}
-                  novel={novel}
-                  settings={cardSettings}
-                  stats={readStandardModeNovelCardStats(novel)}
-                  defaultCoverSrc={defaultNovelCover.src}
-                  onPrepareOpen={handlePrepareOpen}
-                  onOpenWorkbench={handleOpen}
-                />
-              ) : (
-                <NovelCard
-                  key={novel.id}
-                  novel={novel}
-                  settings={cardSettings}
-                  defaultCoverSrc={defaultNovelCover.src}
-                  categories={categories}
-                  onPrepareOpen={handlePrepareOpen}
-                  onPrepareStandardWorkbench={(id) => handlePrepareOpen(id, 'standard')}
-                  onOpen={handleOpen}
-                  onOpenStandardWorkbench={handleOpenStandardWorkbench}
-                  onRename={(id, currentTitle) => setRenameTarget({ id, title: currentTitle })}
-                  onCover={(id) => setCoverTargetId(id)}
-                  onExport={handleExportNovel}
-                  onMoveToCategory={updateCategory}
-                  onDelete={(id) => setDeleteTargetId(id)}
-                />
-              ),
-            )}
+            {filteredNovels.map((novel) => (
+              <NovelCard
+                key={novel.id}
+                novel={novel}
+                settings={cardSettings}
+                stats={readStandardModeNovelCardStats(novel)}
+                defaultCoverSrc={defaultNovelCover.src}
+                categories={categories}
+                onPrepareOpen={handlePrepareOpen}
+                onPrepareStandardWorkbench={(id) => handlePrepareOpen(id, 'standard')}
+                onOpen={handleOpen}
+                onOpenStandardWorkbench={handleOpenStandardWorkbench}
+                onRename={(id, currentTitle) => setRenameTarget({ id, title: currentTitle })}
+                onCover={(id) => setCoverTargetId(id)}
+                onExport={handleExportNovel}
+                onMoveToCategory={updateCategory}
+                onDelete={(id) => setDeleteTargetId(id)}
+              />
+            ))}
           </div>
         )}
       </main>

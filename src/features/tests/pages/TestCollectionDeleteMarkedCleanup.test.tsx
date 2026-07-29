@@ -11,6 +11,7 @@ const testedStateHookPath = resolve(
 const testedStatePath = resolve(process.cwd(), 'src/features/tests/model/testCollectionTestedState.ts');
 
 const removedMarkedTests = [
+  ['/standard-mode-workbench-test', 'StandardModeWorkbenchTestPage'],
   ['/mode-switch-novel-library-test', 'ModeSwitchNovelLibraryTestPage'],
   ['/border-backplate-application-test', 'BorderBackplateApplicationTestPage'],
   ['/workbench-soft-cyan-button-style-test', 'WorkbenchSoftCyanButtonStyleTestPage'],

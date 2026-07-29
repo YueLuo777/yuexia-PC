@@ -37,7 +37,6 @@ const PromptDrivenNovelWorkspaceTestPage = lazy(() =>
   })),
 );
 const UiConsistencyComparisonTestPage = lazy(() => import('@/features/tests/pages/UiConsistencyComparisonTestPage'));
-const StandardModeWorkbenchTestPage = lazy(() => import('@/features/tests/pages/StandardModeWorkbenchTestPage'));
 const ProfessionalWorkbenchBaselineTestPage = lazy(() =>
   import('@/features/tests/pages/ProfessionalWorkbenchBaselineTestPage').then((module) => ({
     default: module.ProfessionalWorkbenchBaselineTestPage,
@@ -228,8 +227,6 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <PromptDrivenNovelWorkspaceTestPage />;
       case '/ui-consistency-comparison-test':
         return <UiConsistencyComparisonTestPage />;
-      case '/standard-mode-workbench-test':
-        return <StandardModeWorkbenchTestPage />;
       case '/professional-workbench-baseline-test':
         return <ProfessionalWorkbenchBaselineTestPage />;
       case '/standard-mode-four-stage-workbench-test':

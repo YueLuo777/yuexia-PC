@@ -12,6 +12,8 @@ describe('test collection numbering', () => {
     const registry = buildTestNumberByPath(testGroups);
 
     expect(registry.has('/mode-switch-novel-library-test')).toBe(false);
+    expect(registry.has('/standard-mode-workbench-test')).toBe(false);
+    expect(RETIRED_TEST_SERIALS).toContainEqual({ serial: 10, path: '/standard-mode-workbench-test' });
     expect(RETIRED_TEST_SERIALS).toContainEqual({ serial: 11, path: '/mode-switch-novel-library-test' });
     expect(RETIRED_TEST_SERIALS).toContainEqual({ serial: 15, path: '/standard-mode-smart-setting-flow-test' });
     expect(registry.get('/professional-workbench-baseline-test')).toBe(12);

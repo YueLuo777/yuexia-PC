@@ -169,13 +169,16 @@ describe('NovelLibraryPage summary cards', () => {
     );
   });
 
-  it('opens the cover hover action in standard workbench without changing the professional card click', () => {
+  it('wires the unified card to explicit standard and professional workbench targets', () => {
     const pageSource = readSource('NovelLibraryPage.tsx');
 
     expect(pageSource).toContainSource("openNovelWorkbench(id, '/workbench?experience=standard', 'standard')");
     expect(pageSource).toContainSource("const handleOpen = (id: number) => openNovelWorkbench(id, '/workbench');");
     expect(pageSource).toContainSource('onOpenStandardWorkbench={handleOpenStandardWorkbench}');
     expect(pageSource).toContainSource("onPrepareStandardWorkbench={(id) => handlePrepareOpen(id, 'standard')}");
+    expect(pageSource).toContainSource('onOpen={handleOpen}');
+    expect(pageSource).toContainSource('stats={readStandardModeNovelCardStats(novel)}');
+    expect(pageSource).not.toContainSource("applicationMode === 'standard'");
   });
 });
 

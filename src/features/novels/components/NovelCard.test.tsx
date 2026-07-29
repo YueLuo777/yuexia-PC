@@ -5,12 +5,22 @@ import { fileURLToPath } from 'node:url';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { NovelCard } from './NovelCard';
+import { NovelCard, NOVEL_CARD_WIDTHS } from './NovelCard';
 
 const readSource = (relativePath: string) =>
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
 
 describe('NovelCard cover and menu behavior', () => {
+  it('keeps every card width large enough for two single-line workbench actions', () => {
+    expect(NOVEL_CARD_WIDTHS.small).toBeGreaterThanOrEqual(224);
+    expect(NOVEL_CARD_WIDTHS.medium).toBeGreaterThan(NOVEL_CARD_WIDTHS.small);
+    expect(NOVEL_CARD_WIDTHS.large).toBeGreaterThan(NOVEL_CARD_WIDTHS.medium);
+
+    const cardSource = readSource('NovelCard.tsx');
+    expect(cardSource).toContainSource('grid grid-cols-2');
+    expect(cardSource.match(/whitespace-nowrap/g)).toHaveLength(2);
+  });
+
   it('uses the configured moon cover for novels without a custom cover', () => {
     const cardSource = readSource('NovelCard.tsx');
 
@@ -27,7 +37,7 @@ describe('NovelCard cover and menu behavior', () => {
     expect(cardSource).not.toContainSource('绉佸瘑');
   });
 
-  it('opens the professional workbench from the cover hover button', () => {
+  it('opens the standard workbench from the cover or left button and the professional workbench from the right button', () => {
     const onOpen = vi.fn();
     const onOpenStandardWorkbench = vi.fn();
     render(
@@ -42,6 +52,7 @@ describe('NovelCard cover and menu behavior', () => {
           lastModifiedAt: '2026/7/29',
         }}
         settings={{ cardWidth: 'medium', coverHeight: 'medium' }}
+        stats={{ outlineCount: 0, chapterCount: 18, wordCount: 68000 }}
         categories={['未分类', '玄幻']}
         onOpen={onOpen}
         onOpenStandardWorkbench={onOpenStandardWorkbench}
@@ -53,13 +64,19 @@ describe('NovelCard cover and menu behavior', () => {
       />,
     );
 
-    const button = screen.getByRole('button', { name: '进入工作台' });
-    expect(button.closest('[data-professional-workbench-overlay="true"]')).toHaveClass('opacity-0');
-    fireEvent.click(button);
+    expect(screen.queryByText(/下一步/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByText('18章')).toBeInTheDocument();
+    expect(screen.getByText('6.8万字')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '点击《吞噬系统》封面进入标准工作台' }));
     expect(onOpenStandardWorkbench).toHaveBeenCalledWith(11);
     expect(onOpen).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('heading', { name: '吞噬系统' }).closest('article')!);
+    fireEvent.click(screen.getByRole('button', { name: '进入《吞噬系统》标准工作台' }));
+    expect(onOpenStandardWorkbench).toHaveBeenCalledTimes(2);
+
+    fireEvent.click(screen.getByRole('button', { name: '进入《吞噬系统》专业工作台' }));
     expect(onOpen).toHaveBeenCalledWith(11);
   });
 
@@ -82,6 +99,8 @@ describe('NovelCard cover and menu behavior', () => {
 
     expect(cardSource).toContainSource('aria-label="作品操作菜单"');
     expect(cardSource).toContainSource('w-[222px] rounded-xl');
+    expect(cardSource).toContainSource('absolute left-0 z-20 w-[222px]');
+    expect(cardSource).not.toContainSource('absolute right-0 z-20 w-[222px]');
     expect(cardSource).toContainSource("最近更新：{novel.lastModifiedAt || '暂无记录'}");
     expect(cardSource).toContainSource('getMenuLabel');
     expect(cardSource).toContainSource('left-[calc(100%-1px)] top-0');
@@ -99,6 +118,7 @@ describe('NovelCard cover and menu behavior', () => {
           lastModifiedAt: '2026/7/19',
         }}
         settings={{ cardWidth: 'medium', coverHeight: 'medium' }}
+        stats={{ outlineCount: 0, chapterCount: 2, wordCount: 1200 }}
         categories={['未分类', '玄幻', '都市', '仙侠']}
         onOpen={vi.fn()}
         onOpenStandardWorkbench={vi.fn()}
