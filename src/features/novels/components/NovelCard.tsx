@@ -24,7 +24,9 @@ interface NovelCardProps {
   defaultCoverSrc?: string;
   categories: string[];
   onPrepareOpen?: (id: number) => void;
+  onPrepareStandardWorkbench?: (id: number) => void;
   onOpen: (id: number) => void;
+  onOpenStandardWorkbench: (id: number) => void;
   onRename: (id: number, title: string) => void;
   onCover: (id: number) => void;
   onExport: (id: number) => void;
@@ -62,7 +64,9 @@ export function NovelCard({
   defaultCoverSrc,
   categories,
   onPrepareOpen,
+  onPrepareStandardWorkbench,
   onOpen,
+  onOpenStandardWorkbench,
   onRename,
   onCover,
   onExport,
@@ -166,14 +170,16 @@ export function NovelCard({
         )}
         <div
           data-professional-workbench-overlay="true"
+          onPointerEnter={() => onPrepareStandardWorkbench?.(novel.id)}
           className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/10 opacity-0 transition-opacity duration-150 group-hover/cover:pointer-events-auto group-hover/cover:opacity-100 group-focus-within/cover:pointer-events-auto group-focus-within/cover:opacity-100"
         >
           <button
             type="button"
             onClick={(event) => {
               event.stopPropagation();
-              onOpen(novel.id);
+              onOpenStandardWorkbench(novel.id);
             }}
+            onFocus={() => onPrepareStandardWorkbench?.(novel.id)}
             className="h-10 rounded-md border border-[#08AACE] bg-white/95 px-5 text-sm font-bold text-[#078FAB] shadow-[0_6px_18px_rgba(15,23,42,0.18)] transition-colors hover:bg-[#EAF9FD] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#08AACE]/40"
           >
             进入工作台

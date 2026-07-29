@@ -113,19 +113,18 @@ export function NovelLibraryPage() {
     };
   }, []);
 
-  const handlePrepareOpen = (id: number) => {
+  const handlePrepareOpen = (id: number, experience = applicationMode) => {
     const novel = novels.find((item) => item.id === id);
     if (novel?.type !== 'novel') return;
-    void preloadEditorPage();
+    void preloadEditorPage(experience);
   };
 
-  const handleOpen = (id: number) => {
+  const openNovelWorkbench = (id: number, path: string, experience = applicationMode) => {
     const novel = novels.find((item) => item.id === id);
     if (!novel) return;
     if (novel.type !== 'novel') return;
-    void preloadEditorPage();
+    void preloadEditorPage(experience);
     selectNovel(id);
-    const path = '/workbench';
     openWorkTab({
       workId: novel.id,
       workType: novel.type,
@@ -134,6 +133,10 @@ export function NovelLibraryPage() {
     });
     navigate(path);
   };
+
+  const handleOpen = (id: number) => openNovelWorkbench(id, '/workbench');
+  const handleOpenStandardWorkbench = (id: number) =>
+    openNovelWorkbench(id, '/workbench?experience=standard', 'standard');
 
   const confirmRename = () => {
     if (!renameTarget?.title.trim()) return;
@@ -341,7 +344,9 @@ export function NovelLibraryPage() {
                   defaultCoverSrc={defaultNovelCover.src}
                   categories={categories}
                   onPrepareOpen={handlePrepareOpen}
+                  onPrepareStandardWorkbench={(id) => handlePrepareOpen(id, 'standard')}
                   onOpen={handleOpen}
+                  onOpenStandardWorkbench={handleOpenStandardWorkbench}
                   onRename={(id, currentTitle) => setRenameTarget({ id, title: currentTitle })}
                   onCover={(id) => setCoverTargetId(id)}
                   onExport={handleExportNovel}

@@ -168,6 +168,15 @@ describe('NovelLibraryPage summary cards', () => {
       [...[searchIndex, recycleIndex, settingsIndex, importIndex, createIndex]].sort((left, right) => left - right),
     );
   });
+
+  it('opens the cover hover action in standard workbench without changing the professional card click', () => {
+    const pageSource = readSource('NovelLibraryPage.tsx');
+
+    expect(pageSource).toContainSource("openNovelWorkbench(id, '/workbench?experience=standard', 'standard')");
+    expect(pageSource).toContainSource("const handleOpen = (id: number) => openNovelWorkbench(id, '/workbench');");
+    expect(pageSource).toContainSource('onOpenStandardWorkbench={handleOpenStandardWorkbench}');
+    expect(pageSource).toContainSource("onPrepareStandardWorkbench={(id) => handlePrepareOpen(id, 'standard')}");
+  });
 });
 
 describe('NovelLibraryPage import flow', () => {

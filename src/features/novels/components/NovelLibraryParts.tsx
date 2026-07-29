@@ -19,6 +19,7 @@ import { NovelCard, type NovelCardSettings } from '@/features/novels/components/
 import { RecycleBinModal } from '@/features/novels/components/RecycleBinModal';
 import { useNovelLibrary } from '@/features/novels/hooks/useNovelLibrary';
 import type { Novel, WorkType } from '@/features/novels/model/novelTypes';
+import { readApplicationMode, type ApplicationMode } from '@/shared/mode/applicationMode';
 import { readWritingSummary, WRITING_STATS_UPDATED_EVENT } from '@/shared/stats/writingStats';
 import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 
@@ -57,15 +58,15 @@ export const defaultCardSettings: FullCardSettings = {
   btnColors: { ...defaultBtnColors },
 };
 
-let workbenchPagePreload: Promise<unknown> | null = null;
+const workbenchPagePreloads: Partial<Record<ApplicationMode, Promise<unknown>>> = {};
 let workbenchLibraryPanelPreload: Promise<unknown> | null = null;
 
-export function preloadEditorPage() {
-  workbenchPagePreload ??= import('@/features/workbench/pages/ModeAwareWorkbenchPage').then((module) =>
-    module.preloadModeAwareWorkbenchPage(),
+export function preloadEditorPage(experience: ApplicationMode = readApplicationMode()) {
+  workbenchPagePreloads[experience] ??= import('@/features/workbench/pages/ModeAwareWorkbenchPage').then((module) =>
+    module.preloadModeAwareWorkbenchPage(experience),
   );
   workbenchLibraryPanelPreload ??= import('@/features/workbench/components/WorkbenchLibraryPanel');
-  return Promise.all([workbenchPagePreload, workbenchLibraryPanelPreload]);
+  return Promise.all([workbenchPagePreloads[experience], workbenchLibraryPanelPreload]);
 }
 
 export function formatWords(value: number) {

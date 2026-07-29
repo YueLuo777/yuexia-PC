@@ -31,7 +31,6 @@ function subscribeApplicationMode(listener: () => void) {
   };
 }
 
-export function useApplicationMode() {
+export function useApplicationMode(): ApplicationMode {
   return useSyncExternalStore(subscribeApplicationMode, readApplicationMode, () => 'professional');
 }
-

@@ -29,6 +29,7 @@ describe('NovelCard cover and menu behavior', () => {
 
   it('opens the professional workbench from the cover hover button', () => {
     const onOpen = vi.fn();
+    const onOpenStandardWorkbench = vi.fn();
     render(
       <NovelCard
         novel={{
@@ -43,6 +44,7 @@ describe('NovelCard cover and menu behavior', () => {
         settings={{ cardWidth: 'medium', coverHeight: 'medium' }}
         categories={['未分类', '玄幻']}
         onOpen={onOpen}
+        onOpenStandardWorkbench={onOpenStandardWorkbench}
         onRename={vi.fn()}
         onCover={vi.fn()}
         onExport={vi.fn()}
@@ -54,6 +56,10 @@ describe('NovelCard cover and menu behavior', () => {
     const button = screen.getByRole('button', { name: '进入工作台' });
     expect(button.closest('[data-professional-workbench-overlay="true"]')).toHaveClass('opacity-0');
     fireEvent.click(button);
+    expect(onOpenStandardWorkbench).toHaveBeenCalledWith(11);
+    expect(onOpen).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('heading', { name: '吞噬系统' }).closest('article')!);
     expect(onOpen).toHaveBeenCalledWith(11);
   });
 
@@ -95,6 +101,7 @@ describe('NovelCard cover and menu behavior', () => {
         settings={{ cardWidth: 'medium', coverHeight: 'medium' }}
         categories={['未分类', '玄幻', '都市', '仙侠']}
         onOpen={vi.fn()}
+        onOpenStandardWorkbench={vi.fn()}
         onRename={vi.fn()}
         onCover={vi.fn()}
         onExport={vi.fn()}
