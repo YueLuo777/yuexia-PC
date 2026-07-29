@@ -17,6 +17,7 @@ describe('navigation config without zones', () => {
       '/novels',
       '/tomato-browser',
       '/prompts',
+      '/template-manage',
       '/model-manage',
       '/token-usage',
       '/test-collection',
@@ -112,10 +113,11 @@ describe('navigation config without zones', () => {
       },
     ]);
 
-    expect(normalized[0].items.map((item) => item.to).slice(0, 4)).toEqual([
+    expect(normalized[0].items.map((item) => item.to).slice(0, 5)).toEqual([
       '/novels',
       '/tomato-browser',
       '/prompts',
+      '/template-manage',
       '/model-manage',
     ]);
   });
@@ -134,10 +136,11 @@ describe('navigation config without zones', () => {
       },
     ]);
 
-    expect(normalized[0].items.map((item) => item.to).slice(0, 4)).toEqual([
+    expect(normalized[0].items.map((item) => item.to).slice(0, 5)).toEqual([
       '/novels',
       '/tomato-browser',
       '/prompts',
+      '/template-manage',
       '/model-manage',
     ]);
     expect(normalized[0].items.find((item) => item.to === '/tomato-browser')).toMatchObject({
@@ -148,7 +151,15 @@ describe('navigation config without zones', () => {
   });
 
   it('preserves the exact custom order selected in navigation settings', () => {
-    const customOrder = ['/prompts', '/novels', '/model-manage', '/tomato-browser', '/token-usage', '/test-collection'];
+    const customOrder = [
+      '/prompts',
+      '/template-manage',
+      '/novels',
+      '/model-manage',
+      '/tomato-browser',
+      '/token-usage',
+      '/test-collection',
+    ];
     const itemsByRoute = new Map(DEFAULT_NAV_CONFIG[0].items.map((item) => [item.to, item]));
     const normalized = normalizeNavConfig([
       {

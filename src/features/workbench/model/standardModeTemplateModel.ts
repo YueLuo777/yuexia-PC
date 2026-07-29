@@ -290,16 +290,35 @@ export function readSavedSettingTemplates(): SavedSettingTemplate[] {
   }
 }
 
-export function saveSettingTemplate(name: string, structure: TemplateStructure) {
+function writeSavedSettingTemplates(templates: SavedSettingTemplate[]) {
+  localStorage.setItem(SAVED_SETTING_TEMPLATES_STORAGE_KEY, JSON.stringify(templates));
+  return templates;
+}
+
+export function saveSettingTemplateById(
+  templateId: string | null,
+  name: string,
+  structure: TemplateStructure,
+) {
   const templates = readSavedSettingTemplates();
-  const existing = templates.find((template) => template.name === name);
+  const normalizedName = name.trim() || '未命名模板';
   const saved: SavedSettingTemplate = {
-    id: existing?.id ?? `setting-template-${Date.now()}`,
-    name,
+    id: templateId ?? `setting-template-${Date.now()}`,
+    name: normalizedName,
     updatedAt: new Date().toLocaleString('zh-CN'),
     structure: cloneTemplateStructure(structure),
   };
-  const next = [saved, ...templates.filter((template) => template.id !== saved.id)];
-  localStorage.setItem(SAVED_SETTING_TEMPLATES_STORAGE_KEY, JSON.stringify(next));
-  return next;
+  return writeSavedSettingTemplates([saved, ...templates.filter((template) => template.id !== saved.id)]);
+}
+
+export function saveSettingTemplate(name: string, structure: TemplateStructure) {
+  const templates = readSavedSettingTemplates();
+  const existing = templates.find((template) => template.name === name);
+  return saveSettingTemplateById(existing?.id ?? null, name, structure);
+}
+
+export function deleteSavedSettingTemplate(templateId: string) {
+  return writeSavedSettingTemplates(
+    readSavedSettingTemplates().filter((template) => template.id !== templateId),
+  );
 }

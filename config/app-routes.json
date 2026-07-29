@@ -26,6 +26,14 @@
       "nav": { "iconName": "Tag", "label": "提示词管理" }
     },
     {
+      "id": "templateManage",
+      "path": "/template-manage",
+      "component": "templateManage",
+      "dashboard": true,
+      "smoke": true,
+      "nav": { "iconName": "LayoutTemplate", "label": "模板管理" }
+    },
+    {
       "id": "modelManage",
       "path": "/model-manage",
       "component": "modelManage",

@@ -26,6 +26,7 @@ describe('application route registry', () => {
       '/novels',
       '/tomato-browser',
       '/prompts',
+      '/template-manage',
       '/model-manage',
       '/token-usage',
       '/test-collection',

@@ -5,6 +5,7 @@ export type FormalRouteComponentKey =
   | 'novelLibrary'
   | 'prompts'
   | 'settings'
+  | 'templateManage'
   | 'tokenUsage'
   | 'tomatoGenreIteration'
   | 'workbench';
