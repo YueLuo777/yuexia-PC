@@ -268,6 +268,13 @@ export function StandardModeSettingGenerationPanel({
   const visibleFlow = generationInteractionLocked && generationVisualSnapshotRef.current
     ? generationVisualSnapshotRef.current
     : flow;
+  const regeneratingCompletedStep = isGenerating
+    && visibleFlow.completedStepIds.includes(STANDARD_SETTING_GENERATION_STEPS[flow.currentStepIndex]?.id ?? '');
+  const completedProgressCount = visibleFlow.completedStepIds.length - (regeneratingCompletedStep ? 1 : 0);
+  const progressPercent = Math.min(
+    100,
+    Math.round(((completedProgressCount + (isGenerating ? 0.5 : 0)) / STANDARD_SETTING_GENERATION_STEPS.length) * 100),
+  );
   const checkSettings = () => {
     const emptyFields = findEmptyStandardSettingFields(readDefaultStandardSettingEntries(settingsStorageKey));
     setCheckResults(emptyFields);
@@ -377,7 +384,7 @@ export function StandardModeSettingGenerationPanel({
                           </span>
                           <span
                             aria-hidden={unlocked ? undefined : true}
-                            className="flex h-7 w-16 shrink-0 items-center justify-center"
+                            className="flex h-7 w-20 shrink-0 items-center justify-center"
                             data-standard-setting-action-slot="true"
                           >
                             {unlocked ? (
@@ -385,7 +392,7 @@ export function StandardModeSettingGenerationPanel({
                                 type="button"
                                 disabled={generationInteractionLocked}
                                 onClick={() => runStep(index, false)}
-                                className="h-7 w-full rounded-md border border-[#08AACE] bg-white px-2 text-xs font-bold text-[#078FAB] hover:bg-[#E9FAFE]"
+                                className="h-7 w-full whitespace-nowrap rounded-md border border-[#08AACE] bg-white px-2 text-xs font-bold text-[#078FAB] hover:bg-[#E9FAFE]"
                                 title={`${completed ? '重新生成' : '生成'}${step.name}`}
                               >
                                 {completed ? '重新生成' : '生成'}
@@ -401,6 +408,32 @@ export function StandardModeSettingGenerationPanel({
               );
             })}
           </ol>
+
+          <section className="mt-4 shrink-0" aria-label="作品设定生成进度" aria-live="polite">
+            <div className="mb-1.5 flex items-center justify-between gap-3 text-xs font-bold">
+              <span className="truncate text-[#52606d]">
+                {isGenerating
+                  ? `正在生成：${STANDARD_SETTING_GENERATION_STEPS[flow.currentStepIndex]?.name ?? '作品设定'}`
+                  : visibleFlow.status === 'completed'
+                    ? '作品设定生成完成'
+                    : '作品设定生成进度'}
+              </span>
+              <span className="shrink-0 tabular-nums text-[#078FAB]">{progressPercent}%</span>
+            </div>
+            <div
+              role="progressbar"
+              aria-label="作品设定生成进度"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progressPercent}
+              className="h-2.5 overflow-hidden rounded-full border border-[#B9E8F1] bg-[#EAF9FD]"
+            >
+              <div
+                className={`h-full rounded-full bg-[#08AACE] transition-[width] duration-500 ease-out ${isGenerating ? 'animate-pulse' : ''}`}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </section>
 
           <label className="mt-4 flex min-h-[120px] flex-1 flex-col">
             <span className="mb-2 block text-sm font-bold text-[#52606d]">用户要求</span>

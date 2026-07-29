@@ -40,15 +40,17 @@ describe('StandardModeSettingGenerationPanel', () => {
     expect(screen.queryByText('后台按五步生成并写入左侧设定')).not.toBeInTheDocument();
     expect(screen.queryByText('0/5')).not.toBeInTheDocument();
     expect(screen.getAllByText('未生成')).toHaveLength(5);
+    expect(screen.getByRole('progressbar', { name: '作品设定生成进度' })).toHaveAttribute('aria-valuenow', '0');
     const stepGenerateButtons = screen.getAllByRole('button', { name: '生成' });
     expect(stepGenerateButtons).toHaveLength(1);
     expect(stepGenerateButtons[0]).toBeEnabled();
     const stepCards = screen.getAllByText('未生成').map((status) => status.closest('[data-standard-setting-step]'));
     stepCards.forEach((card) => {
       expect(card).not.toBeNull();
-      expect(card?.querySelector('[data-standard-setting-action-slot="true"]')).toHaveClass('w-16');
+      expect(card?.querySelector('[data-standard-setting-action-slot="true"]')).toHaveClass('w-20');
     });
     expect(stepCards.slice(1).every((card) => card?.querySelector('[data-standard-setting-action-slot="true"]')?.childElementCount === 0)).toBe(true);
+    expect(stepGenerateButtons[0]).toHaveClass('whitespace-nowrap');
   });
 
   it('resets the visible generation steps when setting content is cleared', async () => {
@@ -280,6 +282,8 @@ describe('StandardModeSettingGenerationPanel', () => {
 
     expect(onImport).not.toHaveBeenCalled();
     expect(screen.getByText('生成中')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: '作品设定生成进度' })).toHaveAttribute('aria-valuenow', '10');
+    expect(screen.getByText('10%')).toBeInTheDocument();
     expect(screen.queryByText('最近生成结果')).not.toBeInTheDocument();
     expect(screen.queryByText(/status=thinking/)).not.toBeInTheDocument();
     expect(screen.getAllByText('未生成')).toHaveLength(4);

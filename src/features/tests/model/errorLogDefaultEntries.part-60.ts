@@ -2,6 +2,17 @@ import type { ErrorLogEntry } from './errorLogEntryTypes';
 
 export const defaultEntriesPart60: ErrorLogEntry[] = [
   {
+    id: 'standard-setting-generation-progress-and-button-wrap-001',
+    title: '设定生成缺少进度反馈且重新生成按钮换行',
+    area: '标准模式 / 作品设定 / 生成面板',
+    symptom: '生成设定时只能看到步骤状态，没有整体进度条和百分比；右栏较窄时“重新生成”按钮被挤成两行。',
+    cause: '生成面板没有把五步完成状态汇总成可见进度，操作列宽度不足且按钮未禁止文字换行。',
+    solution: '在步骤列表与用户要求之间增加五步整体进度条、百分比和当前步骤文案；生成中增加动态填充反馈，并扩大操作列、强制按钮单行显示。',
+    prevention: '窄侧栏按钮必须使用稳定宽度和 whitespace-nowrap；多步骤生成流程应提供可访问的 progressbar、百分比和当前步骤回归断言。',
+    keywords: ['作品设定', '生成进度', '百分比', '进度条', '重新生成', '按钮换行'],
+    updatedAt: '2026-07-29',
+  },
+  {
     id: 'standard-setting-generation-reset-and-step-target-001',
     title: '重新生成误启动剧情规划且清空后步骤状态未复位',
     area: '标准模式 / 作品设定 / 分步生成状态',
