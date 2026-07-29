@@ -38,7 +38,7 @@ export function AiRequestLogModalLayout({
 
   return (
     <div className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] overflow-hidden">
-      <aside className="border-r border-slate-100 bg-slate-50 p-4 text-sm">
+      <aside className="editor-scrollbar min-h-0 overflow-y-auto border-r border-slate-100 bg-slate-50 p-4 text-sm [scrollbar-gutter:stable]">
         <div className="space-y-3">
           {visibleMetaItems.map((item) => (
             <div key={item.id} className="rounded-xl bg-white p-3">
@@ -67,7 +67,7 @@ export function AiRequestLogModalLayout({
             </div>
           )
         ) : (
-          <div className="ai-request-log-text min-h-0 flex-1 whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-700">
+          <div className="ai-request-log-text editor-scrollbar min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-700 [scrollbar-gutter:stable]">
             {plainPreview.trim() ? <AiRequestLogContent content={plainPreview} /> : emptyText}
           </div>
         )}

@@ -139,7 +139,7 @@ export function AiRequestLogGroups({
                 className={`border-t border-slate-100 bg-slate-50/60 p-3 ${shouldFillGroup ? 'flex min-h-0 flex-1 flex-col' : ''}`}
               >
                 <div
-                  className={`ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 ${group.contentClassName ?? (shouldFillGroup ? 'min-h-0 flex-1 overflow-y-auto' : 'max-h-[360px] overflow-y-auto')}`}
+                  className={`ai-request-log-text editor-scrollbar whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 [scrollbar-gutter:stable] ${group.contentClassName ?? (shouldFillGroup ? 'min-h-0 flex-1 overflow-y-auto' : 'max-h-[360px] overflow-y-auto')}`}
                 >
                   <AiRequestLogContent content={content} />
                 </div>

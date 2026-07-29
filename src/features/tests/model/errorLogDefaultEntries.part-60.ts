@@ -386,4 +386,15 @@ export const defaultEntriesPart60: ErrorLogEntry[] = [
     keywords: ['标准模式', '基础设定', '流式生成', '高频重渲染', '本地存储', '性能卡顿'],
     updatedAt: '2026-07-29',
   },
+  {
+    id: 'ai-request-log-scrollbar-missing-001',
+    title: '输出日志长内容无法滚动查看底部',
+    area: '作品编辑器 / 输出日志 / 作品设定',
+    symptom: '输出日志中的修改要求和请求正文超过弹窗高度后，下方内容被截断，界面没有可见滚动条，用户无法检查完整请求。',
+    cause: '共用日志布局只给部分内容声明了 overflow-y-auto，但没有使用项目统一的 editor-scrollbar 样式；左侧元信息栏也没有独立的高度收缩和滚动规则。',
+    solution: '为左侧元信息栏、右侧纯文本预览和折叠分组正文统一增加独立纵向滚动、可见滚动条及稳定滚动条占位，长内容可以分别滚动到最底部。',
+    prevention: '日志弹窗新增长文本区域时必须同时具备 min-h-0、overflow-y-auto、editor-scrollbar 和滚动条占位，并用源码回归测试锁定左右两侧滚动容器。',
+    keywords: ['输出日志', '滚动条', '长内容', '修改要求', 'AI请求', 'AiRequestLogModalLayout'],
+    updatedAt: '2026-07-29',
+  },
 ];

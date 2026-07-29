@@ -26,4 +26,20 @@ describe('AiRequestLogGroups', () => {
     expect(groupsSource).toContainSource('(shouldFillSingleGroup && !collapsed)');
     expect(groupsSource).toContainSource('className={`overflow-hidden rounded-2xl border border-slate-200 bg-white ${shouldFillGroup ?');
   });
+
+  it('keeps long log metadata and request content independently scrollable with a visible scrollbar', () => {
+    const groupsSource = readSource('AiRequestLogGroups.tsx');
+    const layoutSource = readSource('AiRequestLogModalLayout.tsx');
+
+    expect(layoutSource).toContainSource(
+      'className="editor-scrollbar min-h-0 overflow-y-auto border-r border-slate-100',
+    );
+    expect(layoutSource).toContainSource(
+      'className="ai-request-log-text editor-scrollbar min-h-0 flex-1 overflow-y-auto',
+    );
+    expect(groupsSource).toContainSource(
+      'className={`ai-request-log-text editor-scrollbar whitespace-pre-wrap',
+    );
+    expect(groupsSource).toContainSource('[scrollbar-gutter:stable]');
+  });
 });

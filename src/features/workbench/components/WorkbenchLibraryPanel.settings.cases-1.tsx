@@ -138,7 +138,9 @@ describe('WorkbenchLibraryPanel setting library flows', () => {
     expect(logLayoutSource).toContainSource(
       'className="grid min-h-0 flex-1 grid-cols-[260px_minmax(0,1fr)] overflow-hidden"',
     );
-    expect(logLayoutSource).toContainSource('className="border-r border-slate-100 bg-slate-50 p-4 text-sm"');
+    expect(logLayoutSource).toContainSource(
+      'className="editor-scrollbar min-h-0 overflow-y-auto border-r border-slate-100 bg-slate-50 p-4 text-sm [scrollbar-gutter:stable]"',
+    );
     expect(chapterEditorSource).toContainSource('value: `作品编辑器 ${activeReviewModeTitle}`');
     expect(chapterEditorSource).toContainSource("value: activeReviewModel?.name ?? '未选择模型'");
     expect(chapterEditorSource).toContainSource("value: activeReviewPrompt?.name ?? '默认提示词'");

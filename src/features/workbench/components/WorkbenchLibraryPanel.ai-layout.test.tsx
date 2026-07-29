@@ -193,10 +193,10 @@ describe('WorkbenchLibraryPanel AI and shared layout contracts', () => {
     );
     expect(logGroupsSource).toContainSource('style={fillGroupStyle}');
     expect(logGroupsSource).toContainSource(
-      'ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4',
+      'ai-request-log-text editor-scrollbar whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 [scrollbar-gutter:stable]',
     );
     expect(logGroupsSource).not.toContainSource(
-      'ai-request-log-text whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 text-xs leading-5',
+      'ai-request-log-text editor-scrollbar whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-4 [scrollbar-gutter:stable] text-xs leading-5',
     );
   });
 });
