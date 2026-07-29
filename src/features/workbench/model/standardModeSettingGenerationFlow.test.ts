@@ -8,7 +8,9 @@ import {
   readStandardSettingGenerationState,
   readStandardSettingLastRequest,
   writeStandardSettingLastRequest,
+  writeStandardSettingGenerationSnapshot,
   writeStandardSettingGenerationState,
+  readStandardSettingGenerationSnapshot,
 } from './standardModeSettingGenerationFlow';
 
 describe('standard mode setting generation flow', () => {
@@ -46,6 +48,18 @@ describe('standard mode setting generation flow', () => {
       stepName: '主要人物',
       promptName: '作品设定生成-主要人物',
       userContent: '完整发送内容',
+    });
+  });
+
+  it('keeps the interrupted character transaction available for safe restoration', () => {
+    writeStandardSettingGenerationSnapshot('character-snapshot-test', {
+      stepId: 'main-characters',
+      targetEntryIds: ['male', 'female'],
+    });
+
+    expect(readStandardSettingGenerationSnapshot('character-snapshot-test')).toMatchObject({
+      stepId: 'main-characters',
+      targetEntryIds: ['male', 'female'],
     });
   });
 
@@ -88,5 +102,34 @@ describe('standard mode setting generation flow', () => {
     expect(request).toContain('*整体剧情*：');
     expect(request).toContain('【开局事件】：填写该字段内容');
     expect(request).toContain('禁止新增、改名、合并');
+  });
+
+  it('uses a create-and-name contract for the character step instead of the existing-only contract', () => {
+    const request = buildStandardSettingStepRequest({
+      step: STANDARD_SETTING_GENERATION_STEPS[2],
+      requirement: '',
+      brainstorm: '都市异能题材',
+      existingSettings: '前两步设定',
+      promptContent: '人物提示词',
+      targets: [{
+        id: 'male-placeholder',
+        title: '男主角',
+        domainId: 'character',
+        domainTitle: '人物设定',
+        groupTitle: '男女主',
+        sourceKind: 'role',
+        fieldTitles: ['人物姓名', '身份定位'],
+      }],
+    });
+
+    expect(request).toContain('本步骤不是填写固定人物占位条目，而是创建完整的人物设定');
+    expect(request).toContain('条目名与【人物姓名】必须完全一致');
+    expect(request).toContain('重要正派角色、正派配角、重要反派角色、反派配角和龙套角色');
+    expect(request).toContain('*真实姓名*：');
+    expect(request).toContain('【人物出身】：具体内容');
+    expect(request).toContain('【行为原则】：具体内容');
+    expect(request).not.toContain('本步骤只能写入以下原有设定');
+    expect(request).not.toContain('禁止新增、改名、合并');
+    expect(request).not.toContain('*男主角*：');
   });
 });

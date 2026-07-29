@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck -- controller phase keeps the original top-level statement order intact.
 import { getWorkbenchLibraryPhaseActions } from './workbenchLibraryPhaseActionsBridge';
-import { filterStandardGenerationDuplicateEntries, takeCanonicalImportedSettingEntry } from '../components/workbenchSmartImport';
+import { buildScopedImportedRoleEntryTitle, filterPreviouslyGeneratedRoleEntries, filterStandardGenerationDuplicateEntries, hasRequiredStandardGeneratedRoleTypes, isGeneratedRolePlaceholderTitle, matchesStandardGeneratedProtagonistSlot, takeCanonicalImportedSettingEntry } from '../components/workbenchSmartImport';
 export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) {
   const phaseActionsRef = { current: getWorkbenchLibraryPhaseActions(scope.settingTypeOptionsRef) };
   const {
@@ -644,9 +644,10 @@ export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) 
     setSettingCreateContextKind(null);
     setSettingCreateDialog(kind);
   };
-  const smartImportSettings = (options: { force?: boolean; allowedEntryIds?: string[] } = {}) => {
+  const smartImportSettings = (options: { force?: boolean; allowedEntryIds?: string[]; standardGenerationStepId?: string } = {}) => {
     if (!options.force && activeTabConfig.smartImportLocked !== false) return false;
     const allowedEntryIds = options.allowedEntryIds ? new Set(options.allowedEntryIds) : undefined;
+    const importsGeneratedCharacters = options.standardGenerationStepId === 'main-characters';
     const sourceText = stripAiThinkingBlock(
       getLatestUsefulAiText(activeTab === SETTING_TAB ? aiOutput : aiResult || aiOutput),
     );
@@ -661,7 +662,7 @@ export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) 
         : createSmartSettingSegments(sourceText);
     const roleSegments = hasTaggedSegments ? taggedSegments.roleSegments : [];
     if (segments.length === 0 && roleSegments.length === 0) return false;
-    const remainingEntries = [...entries];
+    const remainingEntries = filterPreviouslyGeneratedRoleEntries(entries, allowedEntryIds, options.standardGenerationStepId);
     const importedEntries: WorkbenchLibraryEntry[] = [];
     const importedRoleEntries: WorkbenchLibraryEntry[] = [];
     const importedCustomTypes = new Set<string>();
@@ -707,34 +708,38 @@ export function useWorkbenchLibraryControllerPhase3(scope: Record<string, any>) 
         const importedTitle = buildImportedRoleEntryTitle(segment, shouldMatchMaleProtagonist ? entry.title : '');
         return (
           normalizeImportedSettingKey(entry.title) === normalizeImportedSettingKey(importedTitle) ||
-          (shouldMatchMaleProtagonist && isMaleProtagonistRoleType(role.type))
+          (shouldMatchMaleProtagonist && isMaleProtagonistRoleType(role.type)) ||
+          matchesStandardGeneratedProtagonistSlot(importsGeneratedCharacters, importedType, role.type)
         );
       });
-
       if (existingIndex >= 0) {
         const [existingEntry] = remainingEntries.splice(existingIndex, 1);
         const existingRole = parseRoleContent(existingEntry.content);
-        const nextTitle = allowedEntryIds ? existingEntry.title : buildImportedRoleEntryTitle(segment, existingEntry.title);
+        const nextTitle = buildScopedImportedRoleEntryTitle(segment, existingEntry.title, Boolean(allowedEntryIds && !importsGeneratedCharacters));
+        if (importsGeneratedCharacters && isGeneratedRolePlaceholderTitle(nextTitle)) return;
         const nextRole = createImportedRoleContent(segment, existingRole);
         importedRoleTypes.add(nextRole.type);
         importedRoleEntries.push({
           ...existingEntry,
           title: nextTitle,
           content: stringifyRoleContent(nextRole),
+          standardGenerationStepId: options.standardGenerationStepId,
           updatedAt: new Date().toLocaleString('zh-CN'),
         });
         return;
       }
-
-      if (allowedEntryIds) return;
+      if (allowedEntryIds && !importsGeneratedCharacters) return;
       const nextTitle = buildImportedRoleEntryTitle(segment);
+      if (importsGeneratedCharacters && isGeneratedRolePlaceholderTitle(nextTitle)) return;
       const nextRole = createImportedRoleContent(segment);
       importedRoleTypes.add(nextRole.type);
       importedRoleEntries.push({
         ...createWorkbenchLibraryEntry(ROLE_TAB, nextTitle),
         content: stringifyRoleContent(nextRole),
+        standardGenerationStepId: options.standardGenerationStepId,
       });
     });
+    if (importsGeneratedCharacters && !hasRequiredStandardGeneratedRoleTypes(importedRoleTypes)) return false;
     if (importedEntries.length === 0 && importedRoleEntries.length === 0) return false;
     persist([...importedEntries, ...importedRoleEntries, ...filterStandardGenerationDuplicateEntries(remainingEntries, entries, allowedEntryIds)]);
     if (importedCustomTypes.size > 0) {

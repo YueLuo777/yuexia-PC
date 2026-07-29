@@ -261,8 +261,11 @@ export function renderSettingLibraryView(scope: Record<string, any>) {
                     silentDuringRun: true,
                   })}
                   onStop={stopLibraryAiMessage}
-                  onImport={(allowedEntryIds) => smartImportSettings({ force: true, allowedEntryIds })}
-                  onUpdateEntries={(updates) => updates.forEach((update) => updateEntry(update.id, { content: update.content }))}
+                  onImport={(allowedEntryIds, standardGenerationStepId) => smartImportSettings({
+                    force: true,
+                    allowedEntryIds,
+                    standardGenerationStepId,
+                  })}
                   onJumpToEmptyField={(result) => {
                     const descriptor = readDefaultStandardSettingEntries(storageKey)
                       .find((entry) => entry.id === result.entryId);

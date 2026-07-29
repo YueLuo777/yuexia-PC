@@ -10,6 +10,7 @@ export interface WorkbenchLibraryEntry {
   deletedAt?: string;
   brainstormSerialNumber?: number;
   brainstormCategoryId?: string;
+  standardGenerationStepId?: string;
 }
 
 export const WORKBENCH_LIBRARY_UPDATED_EVENT = 'xinyuexia_workbench_library_updated';

@@ -60,18 +60,24 @@ describe('standard mode shared chapter creation pages', () => {
     const settingBranch = readFileSync(join(directory, 'workbenchSettingLibraryBranch.tsx'), 'utf8');
     const generationPanel = readFileSync(join(directory, 'StandardModeSettingGenerationPanel.tsx'), 'utf8');
     const libraryPanel = readFileSync(join(directory, 'WorkbenchLibraryPanel.tsx'), 'utf8');
+    const controllerPhase = readFileSync(join(directory, '../hooks/useWorkbenchLibraryControllerPhase3.tsx'), 'utf8');
 
     expect(settingView).toContain('standardMode && activeTab === SETTING_TAB');
     expect(settingView).toContain('<StandardModeSettingGenerationPanel');
     expect(settingView).toContain('silentDuringRun: true');
-    expect(settingView).toContain('onUpdateEntries={(updates) => updates.forEach');
+    expect(settingView).toContain('standardGenerationStepId,');
     expect(settingView).toContain('renderSettingLibraryAiConfigHeader(scope)');
     expect(generationPanel).toContain('STANDARD_SETTING_GENERATION_STEPS.map');
     expect(generationPanel).toContain('onClick={() => runStep(index, false)}');
     expect(generationPanel).toContain('slice(0, index)');
-    expect(generationPanel).toContain('if (!onImport(generationTargetEntryIdsRef.current))');
+    expect(generationPanel).toContain('completedStep.id');
     expect(generationPanel).not.toContain('lastStreamImportAtRef');
-    expect(settingView).toContain('smartImportSettings({ force: true, allowedEntryIds })');
+    expect(settingView).toContain('standardGenerationStepId,');
+    expect(controllerPhase).toContain("options.standardGenerationStepId === 'main-characters'");
+    expect(controllerPhase).toContain('matchesStandardGeneratedProtagonistSlot');
+    expect(controllerPhase).toContain('if (allowedEntryIds && !importsGeneratedCharacters) return;');
+    expect(controllerPhase).toContain('standardGenerationStepId: options.standardGenerationStepId');
+    expect(controllerPhase).toContain('hasRequiredStandardGeneratedRoleTypes(importedRoleTypes)');
     expect(settingBranch).toContain(
       'getLatestUsefulAiText(activeIsBrainstorm ? aiResult || aiOutput : aiOutput)',
     );

@@ -7,9 +7,13 @@ import type { WorkbenchLibraryEntry } from '@/features/workbench/model/workbench
 import { parsePromptRoleFields } from './workbenchPromptRoleFields';
 import {
   createImportedRoleContent,
+  hasRequiredStandardGeneratedRoleTypes,
+  isGeneratedRolePlaceholderTitle,
+  matchesStandardGeneratedProtagonistSlot,
   createSmartSettingSegments,
   createTaggedSettingSegments,
   filterStandardGenerationDuplicateEntries,
+  filterPreviouslyGeneratedRoleEntries,
   normalizeImportedSettingBody,
   normalizeImportedSettingKey,
   takeCanonicalImportedSettingEntry,
@@ -138,6 +142,59 @@ describe('workbench role smart import', () => {
       'prompt:protagonist:金手指当前功能': '能够识别功法缺陷。',
       'prompt:protagonist:当前境界': '炼气六层。',
     });
+  });
+
+  it('normalizes AI-friendly character groups into the formal sidebar role types', () => {
+    expect(createImportedRoleContent({
+      title: '韩镇',
+      body: '【人物姓名】：韩镇\n【身份定位】：重要配角\n【性格】：忠诚果断',
+    }).type).toBe('重要正派角色');
+    expect(createImportedRoleContent({
+      title: '薛无痕',
+      body: '【人物姓名】：薛无痕\n【身份定位】：反派\n【性格】：阴狠多疑',
+    }).type).toBe('重要反派角色');
+    expect(createImportedRoleContent({
+      title: '店小二',
+      body: '【人物姓名】：店小二\n【身份定位】：其他角色',
+    }).type).toBe('龙套角色');
+  });
+
+  it('maps generic generated character fields into the protagonist-specific editor fields', () => {
+    const role = createImportedRoleContent({
+      title: '林渊',
+      body: '【身份定位】：男主角\n【核心动机】：保护家人\n【行为原则】：先查明事实\n【境界修为】：一阶觉醒\n【身体状态】：轻伤',
+    });
+    const fields = parsePromptRoleFields(role);
+
+    expect(fields['prompt:protagonist:主角核心动机']).toBe('保护家人');
+    expect(fields['prompt:protagonist:主角行为原则']).toBe('先查明事实');
+    expect(fields['prompt:protagonist:当前境界']).toBe('一阶觉醒');
+    expect(fields['prompt:protagonist:伤势状态']).toBe('轻伤');
+  });
+
+  it('validates real names and all required character groups before accepting a standard character generation', () => {
+    expect(isGeneratedRolePlaceholderTitle('男主角')).toBe(true);
+    expect(isGeneratedRolePlaceholderTitle('林渊')).toBe(false);
+    expect(matchesStandardGeneratedProtagonistSlot(true, '女主角', '女主角')).toBe(true);
+    expect(matchesStandardGeneratedProtagonistSlot(true, '女主角', '男主角')).toBe(false);
+    expect(hasRequiredStandardGeneratedRoleTypes(new Set([
+      '男主角', '女主角', '重要正派角色', '重要反派角色',
+    ]))).toBe(true);
+    expect(hasRequiredStandardGeneratedRoleTypes(new Set(['男主角', '女主角']))).toBe(false);
+  });
+
+  it('removes only roles created by the previous character generation when regeneration succeeds', () => {
+    const entries = [
+      { id: 'male-template', tab: '角色', title: '旧男主', content: '{}', updatedAt: '', standardGenerationStepId: 'main-characters' },
+      { id: 'old-support', tab: '角色', title: '旧配角', content: '{}', updatedAt: '', standardGenerationStepId: 'main-characters' },
+      { id: 'user-role', tab: '角色', title: '用户人物', content: '{}', updatedAt: '' },
+    ];
+
+    expect(filterPreviouslyGeneratedRoleEntries(
+      entries,
+      new Set(['male-template']),
+      'main-characters',
+    ).map((entry) => entry.id)).toEqual(['male-template', 'user-role']);
   });
 
   it('imports supporting and antagonist specific fields and keeps the prompt format aligned', () => {

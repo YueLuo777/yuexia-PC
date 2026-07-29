@@ -10,6 +10,8 @@ vi.mock('@/features/prompts/hooks/usePrompts', () => ({
 import { StandardModeSettingGenerationPanel } from './StandardModeSettingGenerationPanel';
 import {
   createStandardSettingGenerationState,
+  readStandardSettingGenerationState,
+  writeStandardSettingGenerationSnapshot,
   writeStandardSettingGenerationState,
 } from '@/features/workbench/model/standardModeSettingGenerationFlow';
 import { publishStandardModeSettingNavigationAction } from '@/features/workbench/model/standardModeSettingNavigationEvents';
@@ -449,5 +451,55 @@ describe('StandardModeSettingGenerationPanel', () => {
     expect(screen.getAllByText('已生成')).toHaveLength(2);
     expect(screen.getByText('已暂停')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '继续当前步骤' })).toBeInTheDocument();
+    expect(screen.getByText(/上次生成因页面关闭、切换或软件退出而中断/)).toBeInTheDocument();
+  });
+
+  it('reattaches to an active character request after the panel is rebuilt instead of pausing it', async () => {
+    writeStandardSettingGenerationState('settings-character-reattach', {
+      ...createStandardSettingGenerationState(),
+      currentStepIndex: 2,
+      completedStepIds: ['world-foundation', 'plot-planning'],
+      status: 'running',
+    });
+    writeStandardSettingGenerationSnapshot('settings-character-reattach', {
+      stepId: 'main-characters',
+      targetEntryIds: ['male-role', 'female-role'],
+    });
+    const onImport = vi.fn(() => true);
+    const view = render(
+      <StandardModeSettingGenerationPanel
+        settingsStorageKey="settings-character-reattach"
+        entries={[]}
+        latestOutput=""
+        isGenerating
+        onGenerate={vi.fn()}
+        onStop={vi.fn()}
+        onImport={onImport}
+        onJumpToEmptyField={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByText('生成中')).toBeInTheDocument());
+    expect(screen.queryByText('已暂停')).not.toBeInTheDocument();
+
+    view.rerender(
+      <StandardModeSettingGenerationPanel
+        settingsStorageKey="settings-character-reattach"
+        entries={[]}
+        latestOutput="<人物设定>*林渊*：【人物姓名】：林渊</人物设定>"
+        isGenerating={false}
+        onGenerate={vi.fn()}
+        onStop={vi.fn()}
+        onImport={onImport}
+        onJumpToEmptyField={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => expect(onImport).toHaveBeenCalledWith(
+      ['male-role', 'female-role'],
+      'main-characters',
+    ));
+    await waitFor(() => expect(readStandardSettingGenerationState('settings-character-reattach').completedStepIds)
+      .toContain('main-characters'));
   });
 });

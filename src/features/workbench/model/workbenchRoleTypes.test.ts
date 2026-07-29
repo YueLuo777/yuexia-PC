@@ -41,6 +41,9 @@ describe('workbenchRoleTypes', () => {
     expect(normalizeWorkbenchRoleType('男女主')).toBe('男主角');
     expect(normalizeWorkbenchRoleType('男主')).toBe('男主角');
     expect(normalizeWorkbenchRoleType('女主')).toBe('女主角');
+    expect(normalizeWorkbenchRoleType('重要配角')).toBe('重要正派角色');
+    expect(normalizeWorkbenchRoleType('反派')).toBe('重要反派角色');
+    expect(normalizeWorkbenchRoleType('其他角色')).toBe('龙套角色');
     expect(normalizeWorkbenchRoleType('未分类')).toBe('龙套角色');
     expect(normalizeWorkbenchRoleType('')).toBe('龙套角色');
   });

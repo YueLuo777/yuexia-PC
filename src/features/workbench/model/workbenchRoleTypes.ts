@@ -13,7 +13,11 @@ export function normalizeWorkbenchRoleType(value?: string | null) {
   if (!trimmed || trimmed === '未分类') return '龙套角色';
   if (trimmed === '男女主' || trimmed === '男主') return '男主角';
   if (trimmed === '女主') return '女主角';
+  if (trimmed === '重要配角' || trimmed === '正派重要角色') return '重要正派角色';
+  if (trimmed === '普通配角') return '正派配角';
   if (trimmed === '重要反派') return '重要反派角色';
+  if (trimmed === '反派') return '重要反派角色';
+  if (trimmed === '其他角色') return '龙套角色';
   if (trimmed === '龙套') return '龙套角色';
   return trimmed;
 }

@@ -16,6 +16,7 @@ import {
   stringifyPromptRoleBaseFields,
 } from './workbenchPromptRoleFields';
 import type { WorkbenchLibraryEntry } from '../model/workbenchLibraryStorage';
+import { normalizeWorkbenchRoleType } from '../model/workbenchRoleTypes';
 import { normalizeSettingType, parseSectionedSettingBody, parseSettingContent } from './workbenchStructuredSettings';
 
 const DEFAULT_MALE_PROTAGONIST_ROLE_TYPE = '男主角';
@@ -36,6 +37,22 @@ export function getImportedRoleSection(sections: Record<string, string>, names: 
   return '';
 }
 
+export function isGeneratedRolePlaceholderTitle(title: string) {
+  return /^(?:男主角|女主角|主角|重要配角|反派|其他角色|真实姓名)$/u.test(title.trim());
+}
+
+export function matchesStandardGeneratedProtagonistSlot(enabled: boolean, importedType: string, existingType: string) {
+  const normalizedType = normalizeWorkbenchRoleType(importedType);
+  return enabled && (normalizedType === '男主角' || normalizedType === '女主角')
+    && normalizeWorkbenchRoleType(existingType) === normalizedType;
+}
+
+export function hasRequiredStandardGeneratedRoleTypes(types: ReadonlySet<string>) {
+  return types.has('男主角') && types.has('女主角')
+    && Array.from(types).some((type) => type === '重要正派角色' || type === '正派配角')
+    && Array.from(types).some((type) => type === '重要反派角色' || type === '反派配角');
+}
+
 export function buildImportedRoleEntryTitle(segment: SmartImportRoleSegment, existingRoleTitle = '') {
   const sections = parseSectionedSettingBody(segment.body);
   const explicitName = getImportedRoleSection(sections, ['人物姓名', '姓名', '角色姓名', '名字']);
@@ -44,13 +61,22 @@ export function buildImportedRoleEntryTitle(segment: SmartImportRoleSegment, exi
   return segment.title.replace(/设定$/, '').trim() || DEFAULT_MALE_PROTAGONIST_ROLE_TITLE;
 }
 
+export function buildScopedImportedRoleEntryTitle(
+  segment: SmartImportRoleSegment,
+  existingRoleTitle: string,
+  preserveExistingTitle: boolean,
+) {
+  return preserveExistingTitle ? existingRoleTitle : buildImportedRoleEntryTitle(segment, existingRoleTitle);
+}
+
 export function createImportedRoleContent(segment: SmartImportRoleSegment, existingRole?: RoleContent): RoleContent {
   const sections = parseSectionedSettingBody(segment.body);
   const importedType = getImportedRoleSection(sections, ['身份定位', '角色定位', '人物定位', '身份', '类型']);
-  const type =
+  const type = normalizeWorkbenchRoleType(
     importedType ||
     existingRole?.type ||
-    (/男主角|主角/.test(segment.title) ? DEFAULT_MALE_PROTAGONIST_ROLE_TYPE : '未分类');
+    (/男主角|主角/.test(segment.title) ? DEFAULT_MALE_PROTAGONIST_ROLE_TYPE : '未分类'),
+  );
   const promptFields = Object.fromEntries(
     getPromptRoleFieldSections(type)
       .flatMap((section) => section.fields)
@@ -60,6 +86,19 @@ export function createImportedRoleContent(segment: SmartImportRoleSegment, exist
           称号: ['称号/外号/别称', '外号'],
           别名: ['化名', '别称'],
           人物经历: ['人物背景', '背景', '经历', '身世'],
+          主角核心动机: ['核心动机'],
+          主角行为原则: ['行为原则'],
+          主角行为底线: ['行为底线'],
+          主角语言习惯: ['语言习惯'],
+          主角标志动作: ['标志动作'],
+          主角已知信息: ['角色已知信息', '已知信息'],
+          主角错误认知: ['角色错误认知', '错误认知'],
+          当前境界: ['境界修为'],
+          当前修炼功法: ['功法体系'],
+          当前战斗技能: ['战斗技能'],
+          当前其他技能: ['其他技能'],
+          可战胜敌人层级: ['战力范围'],
+          伤势状态: ['身体状态'],
           金手指当前功能: ['金手指/能力', '金手指', '能力规则', '能力'],
         };
         return [field.key, getImportedRoleSection(sections, [field.label, ...(aliases[field.label] ?? [])])];
@@ -194,6 +233,16 @@ export function filterStandardGenerationDuplicateEntries(
       title === allowedTitle || title.startsWith(`${allowedTitle}：`) || title.startsWith(`${allowedTitle}:`),
     );
   });
+}
+
+export function filterPreviouslyGeneratedRoleEntries(
+  entries: WorkbenchLibraryEntry[],
+  allowedEntryIds: ReadonlySet<string> | undefined,
+  stepId: string | undefined,
+) {
+  return entries.filter((entry) => stepId !== 'main-characters'
+    || entry.standardGenerationStepId !== stepId
+    || Boolean(allowedEntryIds?.has(entry.id)));
 }
 
 export function classifySettingText(text: string) {
