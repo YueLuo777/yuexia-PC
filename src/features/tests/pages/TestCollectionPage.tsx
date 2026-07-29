@@ -119,6 +119,11 @@ const BuiltInAiProductIdeaTestPage = lazy(() =>
     default: module.BuiltInAiProductIdeaTestPage,
   })),
 );
+const MultiAiWritingIdeaTestPage = lazy(() =>
+  import('@/features/tests/pages/MultiAiWritingIdeaTestPage').then((module) => ({
+    default: module.MultiAiWritingIdeaTestPage,
+  })),
+);
 
 const testNumberByPath = buildTestNumberByPath(testGroups);
 const validTestPaths = new Set(testNumberByPath.keys());
@@ -253,6 +258,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <TomatoGenreIterationTestPage />;
       case '/built-in-ai-product-idea-test':
         return <BuiltInAiProductIdeaTestPage />;
+      case '/multi-ai-writing-idea-test':
+        return <MultiAiWritingIdeaTestPage />;
       default:
         return null;
     }

@@ -5,14 +5,14 @@ import { BuiltInAiProductIdeaTestPage } from '@/features/tests/pages/BuiltInAiPr
 import { testGroups } from '@/features/tests/pages/testCollectionGroups';
 
 describe('BuiltInAiProductIdeaTestPage', () => {
-  it('keeps the built-in AI idea in the final unfinished group', () => {
+  it('keeps the built-in AI idea in the unfinished group before later recorded ideas', () => {
     const unfinishedGroup = testGroups.at(-1);
 
     expect(unfinishedGroup?.title).toBe('未做');
-    expect(unfinishedGroup?.items.at(-1)).toMatchObject({
+    expect(unfinishedGroup?.items).toContainEqual(expect.objectContaining({
       title: '月下写作内置免费 AI 方案',
       path: '/built-in-ai-product-idea-test',
-    });
+    }));
   });
 
   it('records the recommendation, installation, operation, and safety boundaries', () => {

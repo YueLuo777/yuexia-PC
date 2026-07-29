@@ -242,6 +242,14 @@ export const testGroups: TestGroup[] = [
         icon: BrainCircuit,
         badge: 'Idea',
       },
+      {
+        serial: 33,
+        title: '多 AI 一键生成正文',
+        description: '记录一次选择 GPT、Kimi、DeepSeek 等多个模型并行生成正文，再集中对比和选择采用版本的待实现方案。',
+        path: '/multi-ai-writing-idea-test',
+        icon: Sparkles,
+        badge: 'Multi AI',
+      },
     ],
   },
 ];
