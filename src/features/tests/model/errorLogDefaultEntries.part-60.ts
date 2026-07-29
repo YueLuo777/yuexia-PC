@@ -2,6 +2,17 @@ import type { ErrorLogEntry } from './errorLogEntryTypes';
 
 export const defaultEntriesPart60: ErrorLogEntry[] = [
   {
+    id: 'template-management-channel-tabs-001',
+    title: '模板管理内置模板未按男频和女频分开查看',
+    area: '主页导航 / 模板管理 / 模板来源标签',
+    symptom: '模板管理左栏只有“内置模板”和“我的模板”，男频与女频模板混在同一长列表中，用户不能按创作频道快速切换。',
+    cause: '管理页最初只区分模板来源，没有复用作品设定中已经存在的男频、女频频道属性；通用模板也没有明确的跨频道展示规则。',
+    solution: '将顶部来源切换改为“男频、女频、我的模板”三个等宽标签；男频和女频分别显示对应频道模板，同时都保留悬疑推理和通用小说基础等通用模板，新建或保存后自动进入我的模板。',
+    prevention: '新增带频道属性的模板时必须回归检查男频和女频列表隔离、通用模板双侧可见、默认男频选中以及我的模板保存和删除链路。',
+    keywords: ['模板管理', '男频', '女频', '我的模板', '频道切换', '通用模板'],
+    updatedAt: '2026-07-29',
+  },
+  {
     id: 'vbs-stale-vite-source-fingerprint-001',
     title: 'VBS 启动后仍显示新增页面之前的旧界面',
     area: '桌面启动器 / VBS / Vite 开发服务',

@@ -22,6 +22,8 @@ type TemplateSource =
   | { kind: 'saved'; id: string }
   | { kind: 'new' };
 
+type TemplateListMode = 'male' | 'female' | 'saved';
+
 const CHANNEL_LABELS = {
   male: '男频',
   female: '女频',
@@ -41,7 +43,7 @@ function ensureManagedTemplateDomains(structure: TemplateStructure) {
 }
 
 function getInitialTemplate() {
-  const preset = SMART_TEMPLATE_PRESETS.find((item) => item.id === 'general') ?? SMART_TEMPLATE_PRESETS[0];
+  const preset = SMART_TEMPLATE_PRESETS.find((item) => item.channel === 'male') ?? SMART_TEMPLATE_PRESETS[0];
   return {
     source: { kind: 'builtIn', id: preset.id } as TemplateSource,
     structure: ensureManagedTemplateDomains(cloneSmartTemplateStructure(preset.structure)),
@@ -88,7 +90,7 @@ function TemplateListButton({
 
 export function TemplateManagePage() {
   const initial = useMemo(getInitialTemplate, []);
-  const [listMode, setListMode] = useState<'builtIn' | 'saved'>('builtIn');
+  const [listMode, setListMode] = useState<TemplateListMode>('male');
   const [source, setSource] = useState<TemplateSource>(initial.source);
   const [structure, setStructure] = useState<TemplateStructure>(initial.structure);
   const [saveName, setSaveName] = useState(initial.saveName);
@@ -96,6 +98,13 @@ export function TemplateManagePage() {
   const [pendingDelete, setPendingDelete] = useState<SavedSettingTemplate | null>(null);
   const [notice, setNotice] = useState('');
   const summary = useMemo(() => summarizeTemplate(structure), [structure]);
+  const visibleBuiltInTemplates = useMemo(
+    () =>
+      listMode === 'saved'
+        ? []
+        : SMART_TEMPLATE_PRESETS.filter((preset) => preset.channel === listMode || preset.channel === 'general'),
+    [listMode],
+  );
 
   const selectBuiltIn = (presetId: string) => {
     const preset = SMART_TEMPLATE_PRESETS.find((item) => item.id === presetId);
@@ -174,15 +183,24 @@ export function TemplateManagePage() {
 
       <div className="grid min-h-0 flex-1 grid-cols-[300px_minmax(0,1fr)] overflow-hidden">
         <aside className="flex min-h-0 flex-col border-r border-slate-200 bg-[#F7F9FB] p-4">
-          <div role="tablist" aria-label="模板来源" className="grid shrink-0 grid-cols-2 rounded-md border border-slate-300 bg-white p-0.5">
+          <div role="tablist" aria-label="模板来源" className="grid shrink-0 grid-cols-3 rounded-md border border-slate-300 bg-white p-0.5">
             <button
               type="button"
               role="tab"
-              aria-selected={listMode === 'builtIn'}
-              onClick={() => setListMode('builtIn')}
-              className={`h-9 rounded text-sm font-bold ${listMode === 'builtIn' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'}`}
+              aria-selected={listMode === 'male'}
+              onClick={() => setListMode('male')}
+              className={`h-9 rounded text-sm font-bold ${listMode === 'male' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'}`}
             >
-              内置模板
+              男频
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={listMode === 'female'}
+              onClick={() => setListMode('female')}
+              className={`h-9 rounded text-sm font-bold ${listMode === 'female' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'}`}
+            >
+              女频
             </button>
             <button
               type="button"
@@ -191,13 +209,13 @@ export function TemplateManagePage() {
               onClick={() => setListMode('saved')}
               className={`h-9 rounded text-sm font-bold ${listMode === 'saved' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'}`}
             >
-              我的模板 ({savedTemplates.length})
+              我的模板
             </button>
           </div>
 
           <div className="editor-scrollbar mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
-            {listMode === 'builtIn' ? (
-              SMART_TEMPLATE_PRESETS.map((preset) => (
+            {listMode !== 'saved' ? (
+              visibleBuiltInTemplates.map((preset) => (
                 <TemplateListButton
                   key={preset.id}
                   title={preset.title}
@@ -230,7 +248,7 @@ export function TemplateManagePage() {
               <div className="rounded-md border border-dashed border-slate-300 bg-white px-4 py-8 text-center">
                 <strong className="block text-sm text-slate-600">还没有自定义模板</strong>
                 <span className="mt-2 block text-xs font-semibold leading-5 text-slate-400">
-                  可以新建空白模板，也可以选择内置模板修改后保存。
+                  可以新建空白模板，也可以从男频或女频模板修改后保存。
                 </span>
               </div>
             )}
