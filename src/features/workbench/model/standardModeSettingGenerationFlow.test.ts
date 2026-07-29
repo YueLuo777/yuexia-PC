@@ -6,6 +6,8 @@ import {
   createStandardSettingGenerationState,
   findBuiltInSettingPrompt,
   readStandardSettingGenerationState,
+  readStandardSettingLastRequest,
+  writeStandardSettingLastRequest,
   writeStandardSettingGenerationState,
 } from './standardModeSettingGenerationFlow';
 
@@ -29,6 +31,22 @@ describe('standard mode setting generation flow', () => {
     });
 
     expect(readStandardSettingGenerationState(key)).toMatchObject({ currentStepIndex: 2, status: 'paused' });
+  });
+
+  it('keeps the exact last setting request available after the generation panel is rebuilt', () => {
+    writeStandardSettingLastRequest('setting-request-log-test', {
+      createdAt: '2026-07-29',
+      stepName: '主要人物',
+      promptName: '作品设定生成-主要人物',
+      userContent: '完整发送内容',
+    });
+
+    expect(readStandardSettingLastRequest('setting-request-log-test')).toEqual({
+      createdAt: '2026-07-29',
+      stepName: '主要人物',
+      promptName: '作品设定生成-主要人物',
+      userContent: '完整发送内容',
+    });
   });
 
   it('prefers a step prompt and falls back to the generic built-in setting prompt', () => {

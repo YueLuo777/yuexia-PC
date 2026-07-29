@@ -112,6 +112,31 @@ export function clearStandardSettingGenerationState(settingsStorageKey: string) 
   localStorage.removeItem(getStandardSettingGenerationStorageKey(settingsStorageKey));
 }
 
+export type StandardSettingLastRequest = {
+  createdAt: string;
+  stepName: string;
+  promptName: string;
+  userContent: string;
+};
+
+function getStandardSettingLastRequestStorageKey(settingsStorageKey: string) {
+  return `xinyuexia_standard_setting_last_request_v1:${settingsStorageKey}`;
+}
+
+export function writeStandardSettingLastRequest(settingsStorageKey: string, request: StandardSettingLastRequest) {
+  if (!settingsStorageKey || typeof localStorage === 'undefined') return;
+  localStorage.setItem(getStandardSettingLastRequestStorageKey(settingsStorageKey), JSON.stringify(request));
+}
+
+export function readStandardSettingLastRequest(settingsStorageKey: string) {
+  if (!settingsStorageKey || typeof localStorage === 'undefined') return null;
+  try {
+    return JSON.parse(localStorage.getItem(getStandardSettingLastRequestStorageKey(settingsStorageKey)) ?? 'null') as StandardSettingLastRequest | null;
+  } catch {
+    return null;
+  }
+}
+
 export function findBuiltInSettingPrompt(prompts: PromptItem[], step: StandardSettingGenerationStep) {
   const candidates = prompts.filter((prompt) => prompt.category === '内置' && prompt.content.trim());
   return (

@@ -199,6 +199,7 @@ import {
   type LibraryAiRequestLog,
 } from './workbenchLibraryRequestLog';
 import { LibraryAiLogModal, type LibraryAiLogViewTab } from './workbenchLibraryAiLogModal';
+import { readStandardSettingLastRequest } from '../model/standardModeSettingGenerationFlow';
 import { LibraryManagementModal, type LibraryManagementModalState } from './workbenchLibraryManagementModal';
 import { WorkbenchLibrarySidebar } from './workbenchLibrarySidebar';
 import { WorkbenchSettingTreeSidebar } from './WorkbenchSettingTreeSidebar';
@@ -650,9 +651,23 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
         ? buildLibraryAiRequestPayload(previewAiRequestText, activeIsBrainstorm ? previewAiRequestText : undefined).log
         : null;
     const persistedActivePageAiRequestLog = readWorkbenchPageAiRequestLog(scope.storageKey, activeTab);
+    const standardSettingLastRequest = showStandardSettingPageLog
+      ? readStandardSettingLastRequest(scope.storageKey)
+      : null;
+    const recoveredStandardSettingRequestLog = standardSettingLastRequest ? {
+      createdAt: standardSettingLastRequest.createdAt,
+      tab: activeTab,
+      modelName: '当前页面模型',
+      promptName: standardSettingLastRequest.promptName,
+      hasLinkedBrainstorm: false,
+      linkedBrainstormTitle: '',
+      visibleUserText: `生成设定：${standardSettingLastRequest.stepName}`,
+      systemPrompt: '',
+      userContent: standardSettingLastRequest.userContent,
+    } satisfies LibraryAiRequestLog : null;
     const activePageLastRequestLog = lastLibraryAiRequestLog?.tab === activeTab
       ? lastLibraryAiRequestLog
-      : persistedActivePageAiRequestLog;
+      : persistedActivePageAiRequestLog ?? recoveredStandardSettingRequestLog;
     const visibleAiRequestLog = previewAiRequestLog ?? activePageLastRequestLog;
     const visibleAiRequestLogGroups = visibleAiRequestLog
       ? buildLibraryLogGroups(visibleAiRequestLog, {

@@ -291,8 +291,8 @@ describe('StandardModeSettingGenerationPanel', () => {
     expect(view.container.querySelector('.animate-spin')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: '作品设定用户要求' })).toBeDisabled();
     expect(screen.getAllByRole('button', { name: /^(生成|重新生成)$/ })).toHaveLength(1);
-    expect(screen.getByRole('button', { name: '一键生成全部' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '暂停生成' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '一键生成全部' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '暂停生成' })).toBeInTheDocument();
 
     view.rerender(
       <StandardModeSettingGenerationPanel

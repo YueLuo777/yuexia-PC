@@ -20,6 +20,7 @@ import {
   createStandardSettingGenerationState,
   findBuiltInSettingPrompt,
   readStandardSettingGenerationState,
+  writeStandardSettingLastRequest,
   writeStandardSettingGenerationState,
   type StandardSettingGenerationState,
 } from '@/features/workbench/model/standardModeSettingGenerationFlow';
@@ -95,6 +96,7 @@ export function StandardModeSettingGenerationPanel({
   latestOutput,
   isGenerating,
   onGenerate,
+  onStop,
   onImport,
   onUpdateEntries = () => undefined,
   onJumpToEmptyField,
@@ -198,6 +200,12 @@ export function StandardModeSettingGenerationPanel({
         autoContinue,
         error: '',
       }));
+      writeStandardSettingLastRequest(settingsStorageKey, {
+        createdAt: new Date().toLocaleString('zh-CN'),
+        stepName: step.name,
+        promptName: prompt?.name ?? '内置作品设定生成提示词',
+        userContent: request,
+      });
       onGenerate(request, `生成设定：${step.name}`);
     },
     [entries, flow, isGenerating, linkedBrainstorm, onGenerate, onUpdateEntries, prompts, settingsStorageKey],
@@ -279,6 +287,15 @@ export function StandardModeSettingGenerationPanel({
     const emptyFields = findEmptyStandardSettingFields(readDefaultStandardSettingEntries(settingsStorageKey));
     setCheckResults(emptyFields);
     setPanelMode('check');
+  };
+  const pauseGeneration = () => {
+    setQueuedStepIndex(null);
+    generationObservedRef.current = false;
+    generationVisualSnapshotRef.current = null;
+    if (generationPreviousContentRef.current) onUpdateEntries(generationPreviousContentRef.current);
+    generationPreviousContentRef.current = null;
+    setFlow((current) => ({ ...current, status: 'paused', autoContinue: false, error: '' }));
+    onStop();
   };
   const openBrainstormReader = () => {
     const nextEntries = readWorkbenchLibraryEntries(GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY);
@@ -487,22 +504,32 @@ export function StandardModeSettingGenerationPanel({
 
       <footer className="shrink-0 space-y-2 border-t border-[#D2D8E0] pt-3">
         {panelMode === 'generate' ? (
-          <button
-            type="button"
-            disabled={generationInteractionLocked}
-            onClick={() => runStep(flow.currentStepIndex, true)}
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#08AACE] text-sm font-bold text-white hover:bg-[#0797B8]"
-          >
-            {visibleFlow.status === 'failed'
-              ? '重试当前步骤'
-              : visibleFlow.status === 'paused'
-                ? '继续当前步骤'
-                : visibleFlow.status === 'completed'
-                  ? '重新生成当前步骤'
-                  : visibleFlow.completedStepIds.length
-                    ? '继续生成'
-                    : '一键生成全部'}
-          </button>
+          isGenerating ? (
+            <button
+              type="button"
+              onClick={pauseGeneration}
+              className="flex h-10 w-full items-center justify-center rounded-md border border-amber-300 bg-amber-50 text-sm font-bold text-amber-700 hover:bg-amber-100"
+            >
+              暂停生成
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={generationInteractionLocked}
+              onClick={() => runStep(flow.currentStepIndex, true)}
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#08AACE] text-sm font-bold text-white hover:bg-[#0797B8]"
+            >
+              {visibleFlow.status === 'failed'
+                ? '重试当前步骤'
+                : visibleFlow.status === 'paused'
+                  ? '继续当前步骤'
+                  : visibleFlow.status === 'completed'
+                    ? '重新生成当前步骤'
+                    : visibleFlow.completedStepIds.length
+                      ? '继续生成'
+                      : '一键生成全部'}
+            </button>
+          )
         ) : null}
         <button
           type="button"

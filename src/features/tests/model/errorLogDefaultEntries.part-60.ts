@@ -2,6 +2,17 @@ import type { ErrorLogEntry } from './errorLogEntryTypes';
 
 export const defaultEntriesPart60: ErrorLogEntry[] = [
   {
+    id: 'standard-setting-paused-log-and-stop-control-001',
+    title: '设定生成暂停后日志为空且生成中缺少暂停按钮',
+    area: '标准模式 / 作品设定 / 生成控制与AI日志',
+    symptom: '第三步显示已暂停时日志弹窗没有请求内容；生成过程中底部只有禁用的继续按钮，用户无法主动暂停任务。',
+    cause: '标准页日志此前只保存在共享的最后请求状态，页面重建后无法可靠恢复；生成面板虽然接收停止回调，但没有渲染暂停入口，也没有把主动停止转换为暂停状态。',
+    solution: '请求发起时按书籍和页面持久化完整模型请求；生成期间把主操作切换为“暂停生成”，暂停时停止后台任务、取消自动队列、恢复生成前内容并保存可继续的暂停状态。',
+    prevention: '长时AI任务必须同时具备请求日志、主动停止入口和明确的暂停恢复语义；回归测试覆盖生成中按钮、页面重建后的日志和暂停后继续。',
+    keywords: ['作品设定', 'AI日志', '已暂停', '暂停生成', '后台任务', '请求持久化'],
+    updatedAt: '2026-07-29',
+  },
+  {
     id: 'standard-setting-page-independent-ai-request-log-001',
     title: '标准作品设定缺少独立AI请求日志',
     area: '标准模式 / 作品设定 / AI日志',
