@@ -147,12 +147,14 @@ export interface WorkbenchPageProps {
     WorkbenchCreationFlowPageKey,
     'outline' | 'chapterOutline' | 'writing' | 'audit' | 'status' | 'summary'
   >;
+  externalAiLogOpenSignal?: number;
 }
 
 export function WorkbenchPage({
   experience = 'professional',
   contentExperience = experience,
   fixedFlow,
+  externalAiLogOpenSignal,
 }: WorkbenchPageProps = {}) {
   const navigate = useNavigate();
   const [isRecycleOpen, setIsRecycleOpen] = useState(false);
@@ -173,6 +175,12 @@ export function WorkbenchPage({
   const [managementModal, setManagementModal] = useState<WorkbenchManagementModalKey | null>(null);
   const [fieldSizeOpenSignal, setFieldSizeOpenSignal] = useState(0);
   const [aiLogOpenSignal, setAiLogOpenSignal] = useState(0);
+  const lastExternalAiLogOpenSignalRef = useRef(externalAiLogOpenSignal);
+  useEffect(() => {
+    if (externalAiLogOpenSignal === undefined || externalAiLogOpenSignal === lastExternalAiLogOpenSignalRef.current) return;
+    lastExternalAiLogOpenSignalRef.current = externalAiLogOpenSignal;
+    setAiLogOpenSignal((value) => value + 1);
+  }, [externalAiLogOpenSignal]);
   const headerLogOpenHandlerRef = useRef<HeaderLogOpenHandler | null>(null);
   const registerHeaderLogOpenHandler = useCallback((handler: HeaderLogOpenHandler | null) => {
     headerLogOpenHandlerRef.current = handler;

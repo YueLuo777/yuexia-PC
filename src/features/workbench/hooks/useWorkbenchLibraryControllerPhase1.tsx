@@ -2,6 +2,7 @@
 // @ts-nocheck -- controller phase keeps the original top-level statement order intact.
 import { useWorkbenchLibraryControllerPhase1Actions } from './useWorkbenchLibraryControllerPhase1Actions';
 import { previewNormalizedEntriesWithVisibleDefaults } from '../components/workbenchLibraryDataState';
+import { writeWorkbenchPageAiRequestLog, type LibraryAiRequestLog } from '../components/workbenchLibraryRequestLog';
 
 export function useWorkbenchLibraryControllerPhase1(scope: Record<string, any>) {
   const {
@@ -462,7 +463,11 @@ export function useWorkbenchLibraryControllerPhase1(scope: Record<string, any>) 
   const [settingImportFormatPreviewScope, setSettingImportFormatPreviewScope] =
     useState<SettingImportFormatPreviewScope>('设定条目');
   const [structuredSettingFieldDraft, setStructuredSettingFieldDraft] = useState<StructuredSettingFieldDraft>(null);
-  const [lastLibraryAiRequestLog, setLastLibraryAiRequestLog] = useState<LibraryAiRequestLog | null>(null);
+  const [lastLibraryAiRequestLog, setLastLibraryAiRequestLogState] = useState<LibraryAiRequestLog | null>(null);
+  const setLastLibraryAiRequestLog = useCallback((log: LibraryAiRequestLog | null) => {
+    setLastLibraryAiRequestLogState(log);
+    if (log) writeWorkbenchPageAiRequestLog(storageKey, log.tab, log);
+  }, [storageKey]);
   const suppressNextOutlinePreviewSyncRef = useRef(false);
   const [activeLibraryFontTarget, setActiveLibraryFontTarget] = useState<LibraryFontTarget>('brainstormOutput');
   const [lastOutlineAiRequestLog, setLastOutlineAiRequestLog] = useState<LibraryAiRequestLog | null>(null);

@@ -20,7 +20,13 @@ const FLOW_BY_ACTION = {
   summary: 'summary',
 } as const;
 
-export function StandardModeSharedCreationPage({ action }: { action: SharedCreationAction }) {
+export function StandardModeSharedCreationPage({
+  action,
+  aiLogOpenSignal,
+}: {
+  action: SharedCreationAction;
+  aiLogOpenSignal?: number;
+}) {
   return (
     <Suspense
       fallback={
@@ -33,6 +39,7 @@ export function StandardModeSharedCreationPage({ action }: { action: SharedCreat
         experience="standard"
         contentExperience="professional"
         fixedFlow={FLOW_BY_ACTION[action]}
+        externalAiLogOpenSignal={aiLogOpenSignal}
       />
     </Suspense>
   );

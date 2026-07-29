@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { useState } from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   StandardModeWorkbenchNavigation,
@@ -31,12 +31,26 @@ function NavigationHarness({ locked = false, bookTitle = '月下长歌' }: { loc
 }
 
 describe('StandardModeWorkbenchNavigation', () => {
+  it('opens the active standard page AI log from the right-side toolbar', () => {
+    const onOpenLog = vi.fn();
+    render(
+      <StandardModeWorkbenchNavigation
+        bookTitle="月下长歌"
+        activeAction="settingsList"
+        onSelectAction={() => undefined}
+        onOpenLog={onOpenLog}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '日志' }));
+    expect(onOpenLog).toHaveBeenCalledOnce();
+  });
   it('renders the two requested compact capsule groups in a single row', () => {
     render(<NavigationHarness />);
 
     expect(screen.getByRole('banner')).toHaveClass('h-12', 'overflow-x-auto', 'overflow-y-hidden');
     const navigation = screen.getByRole('navigation', { name: '标准模式创作导航' });
-    expect(navigation).toHaveClass('min-w-max', 'justify-start', 'gap-10');
+    expect(navigation).toHaveClass('min-w-full', 'w-max', 'justify-start', 'gap-10');
     expect(navigation).not.toHaveClass('justify-center', 'gap-4');
     const creation = screen.getByRole('region', { name: '书名：月下长歌' });
     const tools = screen.getByRole('region', { name: '功能栏' });
@@ -86,7 +100,7 @@ describe('StandardModeWorkbenchNavigation', () => {
     const title = creation.querySelector('[data-standard-navigation-book-title="true"]');
     expect(title).toHaveAttribute('title', '这是一部刚好需要限制到十五个中文字符以上的作品');
     expect(title).toHaveClass('max-w-[calc(15.5em+2rem)]');
-    expect(screen.getByRole('navigation', { name: '标准模式创作导航' })).toHaveClass('min-w-max', 'gap-10');
+    expect(screen.getByRole('navigation', { name: '标准模式创作导航' })).toHaveClass('min-w-full', 'w-max', 'gap-10');
   });
 
   it('selects actions independently across the creation flow and tool groups', () => {
@@ -140,6 +154,7 @@ describe('StandardModeWorkbenchNavigation', () => {
     expect(source).toContain("activeAction === 'storyAudit'");
     expect(source).toContain("activeAction === 'statusUpdate'");
     expect(source).toContain("activeAction === 'summary'");
+    expect(source).toContain('aiLogOpenSignal={aiLogOpenSignal}');
     expect(source).not.toContain('PROCESS_STEPS');
   });
 });

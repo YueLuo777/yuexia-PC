@@ -20,7 +20,7 @@ describe('standard mode shared chapter creation pages', () => {
     expect(adapter).toContain("statusUpdate: 'status'");
     expect(standardPage).toContain("activeAction === 'chapterOutline'");
     expect(standardPage).toContain("activeAction === 'settingsList'");
-    expect(standardPage).toContain('<StandardModeSharedCreationPage action={activeAction} />');
+    expect(standardPage).toContain('<StandardModeSharedCreationPage action={activeAction} aiLogOpenSignal={aiLogOpenSignal} />');
     expect(workbenchPage).toContain("experience?: 'professional' | 'standard'");
     expect(workbenchPage).toContain("'outline' | 'chapterOutline' | 'writing'");
     expect(workbenchPage).toContain("experience === 'professional' ? (");
@@ -75,6 +75,8 @@ describe('standard mode shared chapter creation pages', () => {
     expect(settingBranch).toContain(
       'getLatestUsefulAiText(activeIsBrainstorm ? aiResult || aiOutput : aiOutput)',
     );
+    expect(settingBranch).toContain('activeIsBrainstorm || showStandardSettingPageLog');
+    expect(settingBranch).toContain('readWorkbenchPageAiRequestLog(scope.storageKey, activeTab)');
     expect(generationPanel).not.toContain('publishStandardSettingGenerationLock(isGenerating)');
     expect(generationPanel).not.toContain('<CombinedAiConfigSelect');
     expect(settingWorkspace).toContain(

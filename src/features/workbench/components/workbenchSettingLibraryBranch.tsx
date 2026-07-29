@@ -195,6 +195,7 @@ import {
   formatSettingUserRequirementForAi,
   getBrainstormQuestionRows,
   renderAiChatContent,
+  readWorkbenchPageAiRequestLog,
   type LibraryAiRequestLog,
 } from './workbenchLibraryRequestLog';
 import { LibraryAiLogModal, type LibraryAiLogViewTab } from './workbenchLibraryAiLogModal';
@@ -580,14 +581,15 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
       showInlineFieldSizeButton &&
       (showInlineLibraryAiLogButton ||
         (!activeIsBrainstorm && (activeTab !== SETTING_TAB || showHeaderLibraryAiLogButton)));
+    const showStandardSettingPageLog = Boolean(scope.standardMode) && activeTab === SETTING_TAB;
     const libraryToolbarPortalTarget =
-      toolbarPortalId && activeIsBrainstorm && typeof document !== 'undefined'
+      toolbarPortalId && (activeIsBrainstorm || showStandardSettingPageLog) && typeof document !== 'undefined'
         ? document.getElementById(toolbarPortalId)
         : null;
     const libraryToolbarPortal = libraryToolbarPortalTarget
       ? createPortal(
           <>
-            {renderFieldSizeButton()}
+            {activeIsBrainstorm ? renderFieldSizeButton() : null}
             {renderLibraryAiLogButton('library')}
           </>,
           libraryToolbarPortalTarget,
@@ -644,10 +646,14 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
       ? buildBrainstormPromptFromQuestions(brainstormQuestionDraft)
       : aiInput.trim();
     const previewAiRequestLog =
-      activeTab === SETTING_TAB || activeIsBrainstorm
+      (!showStandardSettingPageLog && activeTab === SETTING_TAB) || activeIsBrainstorm
         ? buildLibraryAiRequestPayload(previewAiRequestText, activeIsBrainstorm ? previewAiRequestText : undefined).log
         : null;
-    const visibleAiRequestLog = previewAiRequestLog ?? lastLibraryAiRequestLog;
+    const persistedActivePageAiRequestLog = readWorkbenchPageAiRequestLog(scope.storageKey, activeTab);
+    const activePageLastRequestLog = lastLibraryAiRequestLog?.tab === activeTab
+      ? lastLibraryAiRequestLog
+      : persistedActivePageAiRequestLog;
+    const visibleAiRequestLog = previewAiRequestLog ?? activePageLastRequestLog;
     const visibleAiRequestLogGroups = visibleAiRequestLog
       ? buildLibraryLogGroups(visibleAiRequestLog, {
           includeContext: !activeIsBrainstorm,

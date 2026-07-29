@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   buildCurrentSettingLinkSnapshot,
@@ -6,9 +6,26 @@ import {
   formatSettingLinkedContextForAi,
   formatSettingLinkedContextForDisplay,
   hasSettingLinkedContext,
+  readWorkbenchPageAiRequestLog,
+  writeWorkbenchPageAiRequestLog,
 } from './workbenchLibraryRequestLog';
 
 describe('setting linked context formatting', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('keeps the latest AI request log independent for each workbench page', () => {
+    const baseLog = {
+      createdAt: '2026-07-29', modelName: 'model', promptName: 'prompt', hasLinkedBrainstorm: false,
+      linkedBrainstormTitle: '', visibleUserText: '', systemPrompt: '', contextTitle: '', contextText: '',
+      contextWordCount: 0,
+    };
+    writeWorkbenchPageAiRequestLog('book-1', '作品设定', { ...baseLog, tab: '作品设定', userContent: '设定请求' });
+    writeWorkbenchPageAiRequestLog('book-1', '脑洞', { ...baseLog, tab: '脑洞', userContent: '脑洞请求' });
+
+    expect(readWorkbenchPageAiRequestLog('book-1', '作品设定')?.userContent).toBe('设定请求');
+    expect(readWorkbenchPageAiRequestLog('book-1', '脑洞')?.userContent).toBe('脑洞请求');
+    expect(readWorkbenchPageAiRequestLog('book-2', '作品设定')).toBeNull();
+  });
   it('keeps an empty current setting linked as the update target with its full path', () => {
     const snapshot = {
       source: 'current' as const,

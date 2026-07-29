@@ -2,6 +2,17 @@ import type { ErrorLogEntry } from './errorLogEntryTypes';
 
 export const defaultEntriesPart60: ErrorLogEntry[] = [
   {
+    id: 'standard-setting-page-independent-ai-request-log-001',
+    title: '标准作品设定缺少独立AI请求日志',
+    area: '标准模式 / 作品设定 / AI日志',
+    symptom: '作品设定页无法查看分步生成实际发送给AI的完整请求，且专业模式共用最后一条日志时可能被其他页面请求覆盖。',
+    cause: '标准设定页没有把专业模式日志按钮挂到顶部工具区；完整请求覆盖模式仍按普通设定输入拆分日志，并且日志只保存在单个共享状态中。',
+    solution: '复用专业模式日志按钮和弹窗，在作品设定顶部右侧增加日志入口；完整覆盖请求按实际prompt和userContent记录，并按书籍与页面分别持久化最后一次请求。',
+    prevention: '所有AI正式页面必须拥有独立日志键并记录最终传给模型适配层的prompt与userContent；回归测试覆盖跨页面、跨书籍互不覆盖。',
+    keywords: ['作品设定', 'AI日志', '实际请求', '页面独立', '专业模式日志'],
+    updatedAt: '2026-07-29',
+  },
+  {
     id: 'standard-setting-progress-linked-control-overlap-001',
     title: '新增生成进度后关联按钮遮挡用户要求输入框',
     area: '标准模式 / 作品设定 / 右侧生成面板布局',

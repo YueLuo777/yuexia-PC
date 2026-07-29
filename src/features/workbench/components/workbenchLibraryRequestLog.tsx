@@ -20,6 +20,34 @@ export type LibraryAiRequestLog = {
   readerContextWordCount?: number;
 };
 
+const PAGE_AI_REQUEST_LOG_STORAGE_SUFFIX = ':page_ai_request_logs_v1';
+
+export function readWorkbenchPageAiRequestLog(storageKey: string, pageKey: string) {
+  if (!storageKey || !pageKey || typeof localStorage === 'undefined') return null;
+  try {
+    const logs = JSON.parse(localStorage.getItem(`${storageKey}${PAGE_AI_REQUEST_LOG_STORAGE_SUFFIX}`) ?? '{}') as Record<string, LibraryAiRequestLog>;
+    return logs[pageKey] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeWorkbenchPageAiRequestLog(
+  storageKey: string,
+  pageKey: string,
+  log: LibraryAiRequestLog,
+) {
+  if (!storageKey || !pageKey || typeof localStorage === 'undefined') return;
+  const key = `${storageKey}${PAGE_AI_REQUEST_LOG_STORAGE_SUFFIX}`;
+  let logs: Record<string, LibraryAiRequestLog> = {};
+  try {
+    logs = JSON.parse(localStorage.getItem(key) ?? '{}') as Record<string, LibraryAiRequestLog>;
+  } catch {
+    logs = {};
+  }
+  localStorage.setItem(key, JSON.stringify({ ...logs, [pageKey]: log }));
+}
+
 function countTextWords(content: string) {
   return content.replace(/\s/g, '').length;
 }

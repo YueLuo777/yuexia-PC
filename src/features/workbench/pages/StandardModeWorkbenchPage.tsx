@@ -28,6 +28,7 @@ import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 export function StandardModeWorkbenchPage() {
   const [activeAction, setActiveAction] = useState<StandardStageAction>('writing');
   const [templateChangeWarningOpen, setTemplateChangeWarningOpen] = useState(false);
+  const [aiLogOpenSignal, setAiLogOpenSignal] = useState(0);
   const [, setSettingsMigrationRevision] = useState(0);
   const { tabs, activeTabId } = useWorkspaceTabs();
   const { currentNovel, currentNovelId, volumes, setCurrentNovel, updateCurrentNovelDetails } = useWorkbenchData();
@@ -116,6 +117,7 @@ export function StandardModeWorkbenchPage() {
       <StandardModeWorkbenchNavigation
         bookTitle={currentNovel.title}
         activeAction={activeAction}
+        onOpenLog={isSharedCreationPage ? () => setAiLogOpenSignal((value) => value + 1) : undefined}
         onSelectAction={(_group, action) => {
           if (action === 'settingsList') {
             setActiveAction(hasSettings ? 'settingsList' : 'createSettings');
@@ -198,7 +200,7 @@ export function StandardModeWorkbenchPage() {
         </main>
       ) : isSharedCreationPage ? (
         <main className="min-h-0 flex-1 overflow-hidden">
-          <StandardModeSharedCreationPage action={activeAction} />
+          <StandardModeSharedCreationPage action={activeAction} aiLogOpenSignal={aiLogOpenSignal} />
         </main>
       ) : (
         <main className="grid min-h-0 flex-1 place-items-center bg-white text-sm font-semibold text-[#7b8794]">

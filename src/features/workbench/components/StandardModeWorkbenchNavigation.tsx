@@ -51,6 +51,7 @@ interface StandardModeWorkbenchNavigationProps {
   bookTitle: string;
   activeAction: StandardStageAction;
   onSelectAction: (group: StandardNavigationGroup, action: StandardStageAction) => void;
+  onOpenLog?: () => void;
 }
 
 export function StandardModeWorkbenchNavigation({
@@ -58,6 +59,7 @@ export function StandardModeWorkbenchNavigation({
   bookTitle,
   activeAction,
   onSelectAction,
+  onOpenLog,
 }: StandardModeWorkbenchNavigationProps) {
   const renderGroup = (
     group: StandardNavigationGroup,
@@ -107,10 +109,19 @@ export function StandardModeWorkbenchNavigation({
     >
       <nav
         aria-label="标准模式创作导航"
-        className="flex h-full min-w-max items-center justify-start gap-10 px-4"
+        className="flex h-full w-max min-w-full items-center justify-start gap-10 px-4"
       >
         {renderGroup('creationFlow', bookTitle.trim() || '未命名作品', CREATION_FLOW_ACTIONS)}
         {renderGroup('tools', '功能栏', TOOL_ACTIONS)}
+        {onOpenLog ? (
+          <button
+            type="button"
+            onClick={onOpenLog}
+            className="ml-auto h-8 shrink-0 rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 shadow-sm hover:border-[#08AACE] hover:text-[#078FAB]"
+          >
+            日志
+          </button>
+        ) : null}
       </nav>
     </header>
   );

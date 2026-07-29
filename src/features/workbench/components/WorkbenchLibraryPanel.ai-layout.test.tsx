@@ -140,7 +140,7 @@ describe('WorkbenchLibraryPanel AI and shared layout contracts', () => {
     expect(settingRequestSource).not.toContainSource("'【其他要求】'");
     expect(settingRequestSource).not.toContainSource("'【用户要求】'");
     expect(panelSource).toContainSource(
-      'userContent: activeTab === SETTING_TAB ? settingUserRequirementForAi : requestText',
+      'userContent: activeTab === SETTING_TAB && overrideText === undefined ? settingUserRequirementForAi : requestText',
     );
     expect(panelSource).toContainSource(
       "userTitle: activeTab === SETTING_TAB ? '修改要求' : activeIsBrainstorm ? '其他要求' : undefined",
