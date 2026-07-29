@@ -1,10 +1,10 @@
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { createWriteStream, existsSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { rotateLogFile } from './scripts/logRotation.mjs';
+import { getDevServerFingerprint } from './scripts/devServerFingerprint.mjs';
 import { inspectViteOptimizedDeps } from './scripts/viteOptimizedDepsHealth.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -204,27 +204,16 @@ function cleanupPidFile() {
   }
 }
 
-function getDevServerFingerprint() {
-  const fingerprintFiles = ['package.json', 'package-lock.json', 'vite.config.ts'];
-  const hash = createHash('sha256');
-  fingerprintFiles.forEach((fileName) => {
-    const filePath = path.join(root, fileName);
-    hash.update(fileName);
-    hash.update(existsSync(filePath) ? readFileSync(filePath) : 'missing');
-  });
-  return hash.digest('hex');
-}
-
 function isDevServerFingerprintCurrent() {
   try {
-    return readFileSync(devServerFingerprintFile, 'utf8').trim() === getDevServerFingerprint();
+    return readFileSync(devServerFingerprintFile, 'utf8').trim() === getDevServerFingerprint(root);
   } catch {
     return false;
   }
 }
 
 function writeDevServerFingerprint() {
-  writeFileSync(devServerFingerprintFile, getDevServerFingerprint());
+  writeFileSync(devServerFingerprintFile, getDevServerFingerprint(root));
 }
 
 async function isReady(url) {
@@ -360,7 +349,7 @@ async function ensureDevServer() {
       log('dev server ready but optimized deps are stale; restarting');
       removeIfExists(viteOptimizedDepsDir);
     } else {
-      log('dev server dependency fingerprint changed; restarting');
+      log('dev server source/dependency fingerprint changed; restarting');
     }
     cleanupProjectViteProcesses();
     for (let attempt = 0; attempt < 30 && (await isReady(baseUrl)); attempt += 1) {

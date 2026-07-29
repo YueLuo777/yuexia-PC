@@ -2,6 +2,17 @@ import type { ErrorLogEntry } from './errorLogEntryTypes';
 
 export const defaultEntriesPart60: ErrorLogEntry[] = [
   {
+    id: 'vbs-stale-vite-source-fingerprint-001',
+    title: 'VBS 启动后仍显示新增页面之前的旧界面',
+    area: '桌面启动器 / VBS / Vite 开发服务',
+    symptom: '源码、构建和提交中已经存在模板管理页面，但用户再次通过 VBS 启动后，主页导航仍看不到模板管理入口。',
+    cause: '新增页面时 App 路由先触发热更新，新页面文件尚未被 Vite 监听到，导致当次模块导入失败并保留旧界面；VBS 启动器的指纹又只检查依赖配置，没有检查 src 源码树，因此继续复用这台过期的开发服务。',
+    solution: '将 src 中的 TypeScript、JavaScript、JSON 和 CSS 文件以及路由配置纳入稳定指纹，按相对路径排序并同时散列路径与内容；VBS 每次启动时发现源码修改、新增、删除或改名，就只重启当前项目端口对应的 Vite 服务，再打开 Electron。',
+    prevention: '启动器回归测试必须覆盖源码内容修改、文件新增、文件删除和非源码输出不影响指纹；新增页面或路由后的 VBS 验收必须确认开发服务发生刷新并从正式主页看到新入口。',
+    keywords: ['VBS', '模板管理', 'Vite', '热更新失败', '源码指纹', '旧界面'],
+    updatedAt: '2026-07-29',
+  },
+  {
     id: 'standard-setting-paused-log-and-stop-control-001',
     title: '设定生成暂停后日志为空且生成中缺少暂停按钮',
     area: '标准模式 / 作品设定 / 生成控制与AI日志',
