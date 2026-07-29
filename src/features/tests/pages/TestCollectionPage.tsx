@@ -78,6 +78,11 @@ const FourLevelSettingStructureTestPage = lazy(() =>
     default: module.FourLevelSettingStructureTestPage,
   })),
 );
+const SettingTemplateAssemblerTestPage = lazy(() =>
+  import('@/features/tests/pages/SettingTemplateAssemblerTestPage').then((module) => ({
+    default: module.SettingTemplateAssemblerTestPage,
+  })),
+);
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
 );
@@ -226,6 +231,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <StandardModeGuidedNavigationTestPage />;
       case '/four-level-setting-structure-test':
         return <FourLevelSettingStructureTestPage />;
+      case '/setting-template-assembler-test':
+        return <SettingTemplateAssemblerTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':

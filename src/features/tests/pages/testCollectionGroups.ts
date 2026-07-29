@@ -163,6 +163,14 @@ export const testGroups: TestGroup[] = [
         icon: FolderTree,
         badge: '4 Levels',
       },
+      {
+        serial: 30,
+        title: '快速设定模板装配器方案',
+        description: '通过精简、标准和完整预设起步，用明确复选框增减字段，并在右侧实时查看当前模板汇总。',
+        path: '/setting-template-assembler-test',
+        icon: FolderTree,
+        badge: 'Assembler',
+      },
     ],
   },
   {

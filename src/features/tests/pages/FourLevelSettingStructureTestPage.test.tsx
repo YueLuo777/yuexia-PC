@@ -6,10 +6,10 @@ import { testGroups } from './testCollectionGroups';
 import { readTestCollectionSource } from './testCollectionSource.testUtils';
 
 describe('FourLevelSettingStructureTestPage', () => {
-  it('registers the prototype at the end of the UI test group', () => {
+  it('keeps the four-level prototype registered in the UI test group', () => {
     const uiGroup = testGroups.find((group) => group.title === 'UI 与主题');
 
-    expect(uiGroup?.items.at(-1)).toMatchObject({
+    expect(uiGroup?.items.find((item) => item.path === '/four-level-setting-structure-test')).toMatchObject({
       serial: 29,
       title: '设定模板四级完整展示方案',
       path: '/four-level-setting-structure-test',
