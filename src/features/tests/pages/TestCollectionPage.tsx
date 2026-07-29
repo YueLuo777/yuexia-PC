@@ -73,6 +73,11 @@ const StandardModeGuidedNavigationTestPage = lazy(() =>
     default: module.StandardModeGuidedNavigationTestPage,
   })),
 );
+const FourLevelSettingStructureTestPage = lazy(() =>
+  import('@/features/tests/pages/FourLevelSettingStructureTestPage').then((module) => ({
+    default: module.FourLevelSettingStructureTestPage,
+  })),
+);
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
 );
@@ -219,6 +224,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <StandardModeProjectProgressTestPage />;
       case '/standard-mode-guided-navigation-test':
         return <StandardModeGuidedNavigationTestPage />;
+      case '/four-level-setting-structure-test':
+        return <FourLevelSettingStructureTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':

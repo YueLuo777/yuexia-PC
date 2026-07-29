@@ -155,6 +155,14 @@ export const testGroups: TestGroup[] = [
         icon: Workflow,
         badge: 'Guided Nav',
       },
+      {
+        serial: 29,
+        title: '设定模板四级完整展示方案',
+        description: '取消画布、缩放和连线，改用一级与二级按钮切换，并把三级设定和四级字段逐组完整展开。',
+        path: '/four-level-setting-structure-test',
+        icon: FolderTree,
+        badge: '4 Levels',
+      },
     ],
   },
   {

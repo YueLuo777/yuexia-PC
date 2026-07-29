@@ -6,9 +6,9 @@ import { testGroups } from './testCollectionGroups';
 import { readTestCollectionSource } from './testCollectionSource.testUtils';
 
 describe('StandardModeGuidedNavigationTestPage', () => {
-  it('registers the new prototypes at the end of the workbench test group', () => {
+  it('keeps the guided navigation prototype registered in the UI test group', () => {
     const group = testGroups.find((item) => item.title === 'UI 与主题');
-    const entry = group?.items.at(-1);
+    const entry = group?.items.find((item) => item.path === '/standard-mode-guided-navigation-test');
 
     expect(entry).toMatchObject({
       serial: 28,
