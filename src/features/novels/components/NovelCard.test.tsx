@@ -11,12 +11,15 @@ const readSource = (relativePath: string) =>
   readFileSync(join(dirname(fileURLToPath(import.meta.url)), relativePath), 'utf8');
 
 describe('NovelCard cover and menu behavior', () => {
-  it('keeps every card width large enough for two single-line workbench actions', () => {
-    expect(NOVEL_CARD_WIDTHS.small).toBeGreaterThanOrEqual(224);
+  it('keeps card sizes compact and caps the largest card at the confirmed test-10 proportions', () => {
+    expect(NOVEL_CARD_WIDTHS.small).toBe(200);
     expect(NOVEL_CARD_WIDTHS.medium).toBeGreaterThan(NOVEL_CARD_WIDTHS.small);
-    expect(NOVEL_CARD_WIDTHS.large).toBeGreaterThan(NOVEL_CARD_WIDTHS.medium);
+    expect(NOVEL_CARD_WIDTHS.large).toBe(238);
 
     const cardSource = readSource('NovelCard.tsx');
+    expect(cardSource).toContainSource('large: 286');
+    expect(cardSource).toContainSource('rounded-lg border border-slate-200 bg-white shadow-sm');
+    expect(cardSource).toContainSource('px-4 pb-3 pt-4');
     expect(cardSource).toContainSource('grid grid-cols-2');
     expect(cardSource.match(/whitespace-nowrap/g)).toHaveLength(2);
   });
@@ -32,7 +35,7 @@ describe('NovelCard cover and menu behavior', () => {
     expect(cardSource).toContainSource("alt={novel.cover ? '封面' : '默认封面'}");
     expect(cardSource).not.toContainSource('isSelected');
     expect(cardSource).not.toContainSource('border-[#1e71ef] ring-2 ring-[#1e71ef]/20');
-    expect(cardSource).toContainSource('border border-[#d8dde6]');
+    expect(cardSource).toContainSource('border border-slate-200');
     expect(cardSource).not.toContainSource('私密');
     expect(cardSource).not.toContainSource('绉佸瘑');
   });

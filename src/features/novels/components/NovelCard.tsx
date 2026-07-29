@@ -40,21 +40,15 @@ interface NovelCardProps {
 }
 
 export const NOVEL_CARD_WIDTHS = {
-  small: 224,
-  medium: 240,
-  large: 260,
+  small: 200,
+  medium: 220,
+  large: 238,
 } as const;
 
 export const NOVEL_COVER_HEIGHTS = {
-  small: 192,
-  medium: 208,
-  large: 236,
-} as const;
-
-const statFontMap = {
-  small: 'text-xs',
-  medium: 'text-[13px]',
-  large: 'text-[15px]',
+  small: 240,
+  medium: 264,
+  large: 286,
 } as const;
 
 function getMenuLabel(label: string) {
@@ -83,7 +77,6 @@ export function NovelCard({
   const [isMoveMenuOpen, setIsMoveMenuOpen] = useState(false);
   const cardRef = useRef<HTMLElement | null>(null);
   const btnOrder = settings.btnOrder?.length ? settings.btnOrder : ['重命名', '封面', '导出', '删除'];
-  const statFont = statFontMap[settings.statFontSize ?? 'medium'];
   const configuredMenuItems = btnOrder.filter((label) => Boolean(label) && label !== '移入');
   const deleteItemIndex = configuredMenuItems.indexOf('删除');
   const menuItems =
@@ -142,7 +135,7 @@ export function NovelCard({
   return (
     <article
       ref={cardRef}
-      className="group relative flex flex-col rounded-[6px] border border-[#d8dde6] bg-white shadow-[0_2px_8px_rgba(15,23,42,0.10)] transition-colors hover:border-[#9DDFEA]"
+      className="group relative flex shrink-0 flex-col rounded-lg border border-slate-200 bg-white shadow-sm transition-colors hover:border-[#9DDFEA]"
       style={{ width: NOVEL_CARD_WIDTHS[settings.cardWidth] }}
     >
       <button
@@ -152,13 +145,17 @@ export function NovelCard({
         onPointerEnter={() => onPrepareStandardWorkbench?.(novel.id)}
         onPointerDown={() => onPrepareStandardWorkbench?.(novel.id)}
         onFocus={() => onPrepareStandardWorkbench?.(novel.id)}
-        className={`xy-wa-book-cover ${coverSrc ? 'xy-wa-book-cover-image' : 'xy-wa-book-cover-empty'} relative flex shrink-0 flex-col items-center justify-center overflow-hidden rounded-t-[5px] border-b border-[#d8dde6] bg-[#f4f7fb] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#08AACE]/40`}
+        className={`xy-wa-book-cover ${coverSrc ? 'xy-wa-book-cover-image' : 'xy-wa-book-cover-empty'} relative flex shrink-0 flex-col items-center justify-center overflow-hidden rounded-t-lg border-b border-slate-200 bg-slate-100 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#08AACE]/40`}
         style={{
           height: NOVEL_COVER_HEIGHTS[settings.coverHeight],
         }}
       >
         {coverSrc ? (
-          <img src={coverSrc} alt={novel.cover ? '封面' : '默认封面'} className="h-full w-full object-cover" />
+          <img
+            src={coverSrc}
+            alt={novel.cover ? '封面' : '默认封面'}
+            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+          />
         ) : (
           <Feather
             className="pointer-events-none absolute bottom-7 right-4 h-14 w-14 -rotate-12 text-[#4b8fe8]/35"
@@ -167,9 +164,9 @@ export function NovelCard({
         )}
       </button>
 
-      <div className="flex flex-col px-3 pb-3 pt-2.5">
+      <div className="flex flex-col px-4 pb-3 pt-4">
         <div className="flex min-w-0 items-center gap-2">
-          <h3 className="min-w-0 flex-1 truncate text-[15px] font-semibold leading-5 text-[#1f2933]" title={novel.title}>
+          <h3 className="min-w-0 flex-1 truncate text-base font-black text-slate-900" title={novel.title}>
             {novel.title}
           </h3>
           <button
@@ -181,26 +178,26 @@ export function NovelCard({
             }}
             aria-haspopup="menu"
             aria-expanded={isMenuOpen}
-            className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-[#cfd6df] bg-white text-[#68727f] transition-colors hover:border-[#1e71ef] hover:text-[#1e71ef]"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-slate-300 bg-white text-slate-500 transition-colors hover:border-[#08AACE] hover:text-[#078FAB]"
             title="更多"
           >
             <MoreHorizontal className="h-4 w-4" />
           </button>
         </div>
-        <div className={`mt-2 flex items-center justify-between font-bold text-[#9aa3af] ${statFont}`} aria-label="作品统计">
+        <div className="mt-2 flex items-center justify-between text-xs font-bold text-slate-400" aria-label="作品统计">
           <span>{stats.chapterCount}章</span>
           <span>{formatNovelCardStatValue(stats.wordCount)}字</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 overflow-hidden rounded-b-[5px] border-t border-slate-200">
+      <div className="grid grid-cols-2 overflow-hidden rounded-b-lg border-t border-slate-200">
         <button
           type="button"
           aria-label={`进入《${novel.title}》标准工作台`}
           onClick={() => onOpenStandardWorkbench(novel.id)}
           onPointerEnter={() => onPrepareStandardWorkbench?.(novel.id)}
           onFocus={() => onPrepareStandardWorkbench?.(novel.id)}
-          className="h-10 whitespace-nowrap bg-slate-50 text-[11px] font-bold text-[#078FAB] transition-colors hover:bg-[#EAF9FD]"
+          className="h-11 whitespace-nowrap bg-slate-50 text-xs font-black text-[#078FAB] transition-colors hover:bg-[#EAF9FD]"
         >
           进入标准工作台
         </button>
@@ -210,7 +207,7 @@ export function NovelCard({
           onClick={() => onOpen(novel.id)}
           onPointerEnter={() => onPrepareOpen?.(novel.id)}
           onFocus={() => onPrepareOpen?.(novel.id)}
-          className="h-10 whitespace-nowrap border-l border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-600 transition-colors hover:bg-slate-100"
+          className="h-11 whitespace-nowrap border-l border-slate-200 bg-slate-50 text-xs font-black text-slate-600 transition-colors hover:bg-slate-100"
         >
           进入专业工作台
         </button>

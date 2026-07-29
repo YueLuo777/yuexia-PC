@@ -31,7 +31,7 @@ export function DiyLockButton({
           : 'border-slate-200 bg-white text-slate-500 hover:border-[#9DDFEA] hover:text-[#078FAB]'
       }`}
     >
-      {locked ? '已锁定' : '锁定'}
+      {locked ? '解锁' : '锁定'}
     </button>
   );
 }
@@ -51,7 +51,7 @@ export function DiyDeleteButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="h-7 shrink-0 rounded px-2 text-[11px] font-bold text-slate-400 hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+      className="h-7 shrink-0 rounded px-2 text-[11px] font-bold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
     >
       删除
     </button>

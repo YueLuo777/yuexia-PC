@@ -70,9 +70,14 @@ describe('TemplateManagePage', () => {
     const { unmount } = render(<TemplateManagePage />);
     const editor = screen.getByRole('region', { name: '四栏DIY模板编辑器' });
     const monsterDelete = within(editor).getByRole('button', { name: '删除一级分类：怪物图鉴' });
+    const domainLock = within(editor).getByRole('button', { name: '一级删除已锁定，点击解锁' });
     expect(monsterDelete).toBeDisabled();
+    expect(domainLock).toHaveTextContent('解锁');
+    expect(monsterDelete).toHaveClass('disabled:text-slate-300');
 
-    fireEvent.click(within(editor).getByRole('button', { name: '一级删除已锁定，点击解锁' }));
+    fireEvent.click(domainLock);
+    expect(within(editor).getByRole('button', { name: '一级删除未锁定，点击锁定' })).toHaveTextContent('锁定');
+    expect(monsterDelete).toHaveClass('text-red-500');
     fireEvent.click(monsterDelete);
     expect(editor).toHaveAttribute('data-domain-count', '6');
 
