@@ -88,6 +88,11 @@ const ProfessionalTemplateHierarchyVariantsTestPage = lazy(() =>
     default: module.ProfessionalTemplateHierarchyVariantsTestPage,
   })),
 );
+const ProfessionalTemplateDiyVariantsTestPage = lazy(() =>
+  import('@/features/tests/pages/ProfessionalTemplateDiyVariantsTestPage').then((module) => ({
+    default: module.ProfessionalTemplateDiyVariantsTestPage,
+  })),
+);
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
 );
@@ -240,6 +245,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <SettingTemplateAssemblerTestPage />;
       case '/professional-template-hierarchy-variants-test':
         return <ProfessionalTemplateHierarchyVariantsTestPage />;
+      case '/professional-template-diy-variants-test':
+        return <ProfessionalTemplateDiyVariantsTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':

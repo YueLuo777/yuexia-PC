@@ -179,6 +179,14 @@ export const testGroups: TestGroup[] = [
         icon: FolderTree,
         badge: 'Pro Hierarchy',
       },
+      {
+        serial: 32,
+        title: '专业模板DIY编辑多方案',
+        description: '对比四栏联动、层级树、分层卡片和路径工作台四种可逐级新增、删除与锁定的模板编辑方案。',
+        path: '/professional-template-diy-variants-test',
+        icon: FolderTree,
+        badge: 'DIY Template',
+      },
     ],
   },
   {
