@@ -83,6 +83,11 @@ const SettingTemplateAssemblerTestPage = lazy(() =>
     default: module.SettingTemplateAssemblerTestPage,
   })),
 );
+const ProfessionalTemplateHierarchyVariantsTestPage = lazy(() =>
+  import('@/features/tests/pages/ProfessionalTemplateHierarchyVariantsTestPage').then((module) => ({
+    default: module.ProfessionalTemplateHierarchyVariantsTestPage,
+  })),
+);
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
 );
@@ -233,6 +238,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <FourLevelSettingStructureTestPage />;
       case '/setting-template-assembler-test':
         return <SettingTemplateAssemblerTestPage />;
+      case '/professional-template-hierarchy-variants-test':
+        return <ProfessionalTemplateHierarchyVariantsTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':

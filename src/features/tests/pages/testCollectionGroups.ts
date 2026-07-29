@@ -171,6 +171,14 @@ export const testGroups: TestGroup[] = [
         icon: FolderTree,
         badge: 'Assembler',
       },
+      {
+        serial: 31,
+        title: '专业模板四级层级多方案',
+        description: '为有经验用户提供全景树、四栏联动、路径矩阵和结构卡片四种四级设定展示与自由删减方案。',
+        path: '/professional-template-hierarchy-variants-test',
+        icon: FolderTree,
+        badge: 'Pro Hierarchy',
+      },
     ],
   },
   {

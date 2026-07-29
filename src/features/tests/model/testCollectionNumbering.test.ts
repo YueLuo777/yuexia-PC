@@ -30,7 +30,8 @@ describe('test collection numbering', () => {
     expect(registry.get('/standard-mode-guided-navigation-test')).toBe(28);
     expect(registry.get('/four-level-setting-structure-test')).toBe(29);
     expect(registry.get('/setting-template-assembler-test')).toBe(30);
-    expect(getNextTestSerial(testGroups)).toBe(31);
+    expect(registry.get('/professional-template-hierarchy-variants-test')).toBe(31);
+    expect(getNextTestSerial(testGroups)).toBe(32);
     expect(testGroups.find((group) => group.title === '未做')?.items.some((item) => item.serial === 19)).toBe(true);
   });
 

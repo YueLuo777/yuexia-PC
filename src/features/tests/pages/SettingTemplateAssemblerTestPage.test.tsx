@@ -6,9 +6,9 @@ import { testGroups } from './testCollectionGroups';
 import { readTestCollectionSource } from './testCollectionSource.testUtils';
 
 describe('SettingTemplateAssemblerTestPage', () => {
-  it('registers the assembler as test 30 at the end of the UI group', () => {
+  it('keeps the assembler registered as test 30 in the UI group', () => {
     const uiGroup = testGroups.find((group) => group.title === 'UI 与主题');
-    expect(uiGroup?.items.at(-1)).toMatchObject({
+    expect(uiGroup?.items.find((item) => item.path === '/setting-template-assembler-test')).toMatchObject({
       serial: 30,
       title: '快速设定模板装配器方案',
       path: '/setting-template-assembler-test',
