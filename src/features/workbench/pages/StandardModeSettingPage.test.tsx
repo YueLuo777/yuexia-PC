@@ -54,7 +54,7 @@ describe('StandardModeSettingPage', () => {
     expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠');
   });
 
-  it('recommends xianxia and opens the first domain automatically', () => {
+  it('recommends xianxia and opens the shared four-column template editor', () => {
     renderPage();
     const recommendationBasis = screen.getByRole('region', { name: '模板推荐依据' });
     expect(within(recommendationBasis).getByText('男频')).toBeInTheDocument();
@@ -62,25 +62,27 @@ describe('StandardModeSettingPage', () => {
     expect(within(recommendationBasis).getByText('100万字')).toBeInTheDocument();
     expect(screen.queryByText(/已根据“玄幻”推荐/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: '作品设定' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('当前选中：作品设定')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '模板节点：核心设定' })).toBeInTheDocument();
-    const positioning = screen.getByRole('button', { name: '模板节点：作品定位' }).closest('[data-template-node-id]');
-    expect(positioning).not.toBeNull();
-    expect(within(positioning as HTMLElement).getByRole('button', { name: '模板节点：基础设定' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '男频' })).toHaveAttribute('aria-selected', 'true');
+    const editor = screen.getByRole('region', { name: '四栏DIY模板编辑器' });
+    expect(within(editor).getByRole('region', { name: 'DIY一级分类' })).toBeInTheDocument();
+    expect(within(editor).getByRole('region', { name: 'DIY二级分组' })).toBeInTheDocument();
+    expect(within(editor).getByRole('region', { name: 'DIY三级设定' })).toBeInTheDocument();
+    expect(within(editor).getByRole('region', { name: 'DIY四级设定' })).toBeInTheDocument();
+    expect(within(editor).getByRole('button', { name: '作品设定' })).toBeInTheDocument();
+    expect(within(editor).getByRole('button', { name: '核心设定' })).toBeInTheDocument();
+    expect(within(editor).getByRole('button', { name: '作品定位' })).toBeInTheDocument();
+    expect(within(editor).getByRole('button', { name: '小说类型' })).toBeInTheDocument();
+    expect(screen.queryByTestId('mind-map-canvas')).not.toBeInTheDocument();
   });
 
-  it('separates node operations and template saving in the right workbench', () => {
+  it('reuses the template-management editor and keeps template confirmation separate', () => {
     renderPage();
 
-    const workbench = screen.getByTestId('template-node-workbench');
-    expect(workbench).toHaveClass('grid', 'grid-rows-[minmax(0,1fr)_auto]');
-    const nodeOperations = within(workbench).getByRole('region', { name: '设定操作' });
-    const saveTemplate = within(workbench).getByRole('region', { name: '保存模板' });
-    expect(within(nodeOperations).getByText('当前选中：作品设定')).toBeInTheDocument();
-    expect(within(nodeOperations).getByRole('button', { name: '改名' })).toHaveAttribute('aria-pressed', 'true');
-    expect(within(nodeOperations).getByRole('textbox', { name: '当前节点名称' })).toHaveValue('作品设定');
-    expect(within(nodeOperations).getByRole('button', { name: '新增下级' })).toBeInTheDocument();
+    const editor = screen.getByRole('region', { name: '四栏DIY模板编辑器' });
+    const saveTemplate = within(editor).getByRole('region', { name: '保存模板' });
+    expect(editor).toHaveAttribute('data-template-diy-columns-editor', 'true');
+    expect(within(editor).getByText(/当前路径：/)).toHaveTextContent('作品设定 ＞ 核心设定 ＞ 作品定位');
+    expect(within(editor).getByRole('button', { name: '一级删除已锁定，点击解锁' })).toHaveTextContent('解锁');
     expect(within(saveTemplate).getByRole('textbox', { name: '保存模板名称' })).toHaveValue('测试小说模板');
     expect(within(saveTemplate).getByRole('button', { name: '保存到我的模板' })).toBeInTheDocument();
 
@@ -91,7 +93,7 @@ describe('StandardModeSettingPage', () => {
 
   it('saves the edited structure from the right-side template panel', () => {
     renderPage();
-    const savePanel = within(screen.getByTestId('template-node-workbench'))
+    const savePanel = within(screen.getByRole('region', { name: '四栏DIY模板编辑器' }))
       .getByRole('region', { name: '保存模板' });
 
     fireEvent.change(within(savePanel).getByRole('textbox', { name: '保存模板名称' }), {
@@ -109,39 +111,41 @@ describe('StandardModeSettingPage', () => {
     expect(within(recommendationBasis).getByText('未填写')).toBeInTheDocument();
   });
 
-  it('switches from recommended templates to all category templates without changing the current selection', () => {
+  it('filters built-in templates through male, female, and saved tabs', () => {
     renderPage();
     const initializer = document.querySelector('[data-standard-setting-initializer="true"]');
     expect(initializer).toHaveClass('h-full', 'grid-rows-[minmax(0,1fr)_auto]', 'overflow-hidden');
     expect(initializer?.firstElementChild).toHaveClass('relative', 'z-0', 'overflow-hidden');
-    expect(initializer?.querySelector('footer')).toHaveClass('relative', 'z-20');
+    expect(document.querySelector('[data-standard-setting-initializer="true"] > footer')).toHaveClass('relative', 'z-20');
+    expect(screen.getByRole('tab', { name: '男频' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: '女频' })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tab', { name: '我的模板' })).toHaveAttribute('aria-selected', 'false');
     expect(screen.queryByRole('button', { name: '选择内置模板：现代总裁' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', { name: '其他分类模板' }));
+    fireEvent.click(screen.getByRole('tab', { name: '女频' }));
 
-    expect(screen.getByRole('region', { name: '男频模板' })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: '女频模板' })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: '通用模板' })).toBeInTheDocument();
-    expect(document.querySelector('[data-template-genre-category="都市"]')).toBeInTheDocument();
-    expect(document.querySelector('[data-template-genre-category="现代言情"]')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '女频' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('button', { name: '选择内置模板：现代总裁' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '选择内置模板：玄幻仙侠' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: '男频' }));
     expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '确认模板并创建设定' })).toBeInTheDocument();
   });
 
-  it('recommends both urban templates for an urban work', () => {
+  it('selects the recommended urban template while showing the full male catalog', () => {
     renderPage({ novelCategory: '都市' });
 
     expect(screen.getByRole('button', { name: '选择内置模板：都市（无修炼）' }))
       .toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '选择内置模板：都市（有修炼）' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '选择内置模板：玄幻仙侠' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠' })).toBeInTheDocument();
   });
 
   it('confirms and persists a channel change before selecting a female template', () => {
     const onNovelChannelChange = vi.fn();
     renderPage({ onNovelChannelChange });
-    fireEvent.click(screen.getByRole('tab', { name: '其他分类模板' }));
+    fireEvent.click(screen.getByRole('tab', { name: '女频' }));
     fireEvent.click(screen.getByRole('button', { name: '选择内置模板：现代总裁' }));
 
     expect(screen.getByText('切换作品频道？')).toBeInTheDocument();
@@ -156,48 +160,33 @@ describe('StandardModeSettingPage', () => {
       .toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('edits internal categories before creating the per-book setting list', async () => {
+  it('edits the four-level structure before creating the per-book setting list', async () => {
     renderPage();
-    const positioning = screen.getByRole('button', { name: '模板节点：作品定位' }).closest('[data-template-node-id]');
-    expect(positioning).not.toBeNull();
-    fireEvent.click(within(positioning as HTMLElement).getByRole('button', { name: '模板节点：基础设定' }));
-    fireEvent.change(screen.getByRole('textbox', { name: '当前节点名称' }), {
-      target: { value: '作品基础信息' },
-    });
-    expect(screen.queryByRole('button', { name: '模板节点：作品基础信息' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '确认改名' }));
-    expect(screen.getByRole('button', { name: '模板节点：作品基础信息' })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: '新增同级' }));
-    fireEvent.change(screen.getByRole('textbox', { name: '新节点名称' }), {
+    const editor = screen.getByRole('region', { name: '四栏DIY模板编辑器' });
+    const fieldColumn = within(editor).getByRole('region', { name: 'DIY四级设定' });
+    fireEvent.change(within(fieldColumn).getByRole('textbox', { name: '输入四级设定名称' }), {
       target: { value: '补充要求' },
     });
-    fireEvent.click(screen.getByRole('button', { name: '确认新增同级' }));
-    expect(screen.getByRole('button', { name: '模板节点：补充要求' })).toBeInTheDocument();
+    fireEvent.click(within(fieldColumn).getByRole('button', { name: '新增' }));
+    expect(within(editor).getByRole('button', { name: '补充要求' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '确认模板并创建设定' }));
     await waitFor(() => expect(screen.getByLabelText('设定名')).toHaveValue('作品定位'));
-    expect(screen.getByText('作品基础信息')).toBeInTheDocument();
+    expect(screen.getByLabelText('补充要求')).toBeInTheDocument();
     const directory = screen.getByRole('navigation', { name: '设定目录' });
     expect(within(directory).getByText('作品定位')).toBeInTheDocument();
   });
 
-  it('resets the single-task panel, hides invalid child creation, and keeps delete confirmation', () => {
+  it('keeps every template level protected until its delete lock is explicitly released', () => {
     renderPage();
-
-    fireEvent.click(screen.getByRole('button', { name: '新增同级' }));
-    expect(screen.getByRole('button', { name: '新增同级' })).toHaveAttribute('aria-pressed', 'true');
-
-    fireEvent.click(screen.getByRole('button', { name: '模板节点：小说类型' }));
-    expect(screen.getByText('当前选中：小说类型')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '改名' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.queryByRole('button', { name: '新增下级' })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: '删除' }));
-    expect(screen.getByText('删除“小说类型”？')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '继续删除' }));
-    expect(screen.getByText('删除设定节点？')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '确认删除' })).toBeInTheDocument();
+    const editor = screen.getByRole('region', { name: '四栏DIY模板编辑器' });
+    const fieldDelete = within(editor).getByRole('button', { name: '删除四级设定：小说类型' });
+    expect(fieldDelete).toBeDisabled();
+    fireEvent.click(within(editor).getByRole('button', { name: '四级删除已锁定，点击解锁' }));
+    expect(within(editor).getByRole('button', { name: '四级删除未锁定，点击锁定' })).toHaveTextContent('锁定');
+    expect(fieldDelete).toBeEnabled();
+    fireEvent.click(fieldDelete);
+    expect(within(editor).queryByRole('button', { name: '小说类型' })).not.toBeInTheDocument();
   });
 
   it('creates the setting list from the selected template and preserves internal categories', async () => {
@@ -271,7 +260,7 @@ describe('StandardModeSettingPage', () => {
     expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠');
   });
 
-  it('opens the template canvas directly after replacement was already confirmed outside the page', () => {
+  it('opens the template-management editor directly after replacement was already confirmed outside the page', () => {
     writeStandardSettingTemplateState('novel-a', {
       version: 2,
       mode: 'template',
@@ -283,7 +272,8 @@ describe('StandardModeSettingPage', () => {
     renderPage({ startInTemplateSelector: true, onTemplateChangeCancelled });
 
     expect(screen.queryByText('更换设定模板？')).not.toBeInTheDocument();
-    expect(screen.getByTestId('mind-map-canvas')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '四栏DIY模板编辑器' })).toBeInTheDocument();
+    expect(screen.queryByTestId('mind-map-canvas')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '返回设定列表' }));
     expect(onTemplateChangeCancelled).toHaveBeenCalledTimes(1);

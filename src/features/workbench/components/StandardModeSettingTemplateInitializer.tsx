@@ -3,7 +3,6 @@ import { useMemo, useState } from 'react';
 import {
   SMART_TEMPLATE_PRESETS,
   cloneSmartTemplateStructure,
-  getRecommendedTemplatesForNovelCategory,
   recommendTemplateForNovelCategory,
   type BookChannel,
 } from '@/features/workbench/model/standardModeSmartSettingFlowModel';
@@ -12,8 +11,8 @@ import {
   saveSettingTemplate,
   type TemplateStructure,
 } from '@/features/workbench/model/standardModeTemplateModel';
+import { ManagedTemplateDiyEditor } from '@/features/templates/components/ManagedTemplateDiyEditor';
 
-import { StandardModeTemplateMindMap } from './StandardModeTemplateMindMap';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 type ConfirmedTemplate = {
@@ -33,11 +32,13 @@ type StandardModeSettingTemplateInitializerProps = {
   onCancel?: () => void;
 };
 
-const TEMPLATE_CHANNEL_GROUPS = [
-  { channel: 'male', title: '男频模板' },
-  { channel: 'female', title: '女频模板' },
-  { channel: 'general', title: '通用模板' },
-] as const;
+type TemplateListMode = 'male' | 'female' | 'saved';
+
+const CHANNEL_LABELS = {
+  male: '男频',
+  female: '女频',
+  general: '通用',
+} as const;
 
 function formatTargetWordCount(value?: number) {
   if (!Number.isFinite(value) || !value || value <= 0) return '未填写';
@@ -64,11 +65,13 @@ export function StandardModeSettingTemplateInitializer({
   const [structure, setStructure] = useState(() => cloneSmartTemplateStructure(recommended.structure));
   const [savedTemplates, setSavedTemplates] = useState(readSavedSettingTemplates);
   const [saveName, setSaveName] = useState(`${novelTitle}模板`);
-  const [templateListMode, setTemplateListMode] = useState<'recommended' | 'all'>('recommended');
+  const [templateListMode, setTemplateListMode] = useState<TemplateListMode>(novelChannel);
   const [pendingChannelPresetId, setPendingChannelPresetId] = useState<string | null>(null);
-  const recommendedPresets = useMemo(
-    () => getRecommendedTemplatesForNovelCategory(novelCategory, novelChannel),
-    [novelCategory, novelChannel],
+  const visibleBuiltInTemplates = useMemo(
+    () => templateListMode === 'saved'
+      ? []
+      : SMART_TEMPLATE_PRESETS.filter((preset) => preset.channel === templateListMode || preset.channel === 'general'),
+    [templateListMode],
   );
 
   const applyBuiltIn = (id: string) => {
@@ -104,6 +107,7 @@ export function StandardModeSettingTemplateInitializer({
     setSavedTemplates(next);
     setSelectedTemplateId(next[0].id);
     setSelectedTemplateName(name);
+    setTemplateListMode('saved');
   };
 
   const renderPresetButton = (preset: (typeof SMART_TEMPLATE_PRESETS)[number]) => (
@@ -120,7 +124,12 @@ export function StandardModeSettingTemplateInitializer({
       }`}
     >
       <strong className="block text-sm">{preset.title}</strong>
-      <span className="mt-1.5 block text-xs font-medium leading-5 text-slate-500">{preset.description}</span>
+      <span className="mt-1.5 flex items-start justify-between gap-2 text-xs font-medium leading-5 text-slate-500">
+        <span>{preset.description}</span>
+        <span className="shrink-0 rounded-full border border-cyan-200 bg-[#EAF9FD] px-2 py-0.5 text-[10px] font-bold text-[#078FAB]">
+          {CHANNEL_LABELS[preset.channel]} · {preset.genreCategory}
+        </span>
+      </span>
     </button>
   );
 
@@ -153,96 +162,80 @@ export function StandardModeSettingTemplateInitializer({
           </section>
           <div
             role="tablist"
-            aria-label="模板分类"
-            className="grid shrink-0 grid-cols-2 overflow-hidden rounded-md border border-slate-300 bg-white p-0.5"
+            aria-label="模板来源"
+            className="grid shrink-0 grid-cols-3 overflow-hidden rounded-md border border-slate-300 bg-white p-0.5"
           >
             <button
               type="button"
               role="tab"
-              aria-selected={templateListMode === 'recommended'}
-              onClick={() => setTemplateListMode('recommended')}
+              aria-selected={templateListMode === 'male'}
+              onClick={() => setTemplateListMode('male')}
               className={`h-8 rounded text-xs font-bold ${
-                templateListMode === 'recommended' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'
+                templateListMode === 'male' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'
               }`}
             >
-              推荐模板
+              男频
             </button>
             <button
               type="button"
               role="tab"
-              aria-selected={templateListMode === 'all'}
-              onClick={() => setTemplateListMode('all')}
+              aria-selected={templateListMode === 'female'}
+              onClick={() => setTemplateListMode('female')}
               className={`h-8 rounded text-xs font-bold ${
-                templateListMode === 'all' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'
+                templateListMode === 'female' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'
               }`}
             >
-              其他分类模板
+              女频
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={templateListMode === 'saved'}
+              onClick={() => setTemplateListMode('saved')}
+              className={`h-8 rounded text-xs font-bold ${
+                templateListMode === 'saved' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'
+              }`}
+            >
+              我的模板
             </button>
           </div>
           <div className="editor-scrollbar mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
-            {templateListMode === 'recommended' ? (
-              <>
-                <div className="space-y-2">{recommendedPresets.map(renderPresetButton)}</div>
-                <div className="mb-3 mt-6 border-t border-slate-200 pt-4 text-sm font-bold">我的模板</div>
-                {savedTemplates.length === 0 ? (
-                  <div className="text-xs font-semibold text-slate-400">还没有保存的模板。</div>
-                ) : (
-                  <div className="space-y-2">
-                    {savedTemplates.map((template) => (
-                      <button
-                        key={template.id}
-                        type="button"
-                        aria-label={`选择我的模板：${template.name}`}
-                        aria-pressed={selectedTemplateId === template.id}
-                        onClick={() => selectSaved(template.id)}
-                        className={`w-full rounded-md border px-3 py-3 text-left text-sm font-bold ${
-                          selectedTemplateId === template.id
-                            ? 'border-[#08AACE] bg-[#EAF9FD]'
-                            : 'border-slate-200 bg-white'
-                        }`}
-                      >
-                        {template.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="space-y-5">
-                {TEMPLATE_CHANNEL_GROUPS.map((group) => (
-                  <section key={group.channel} aria-label={group.title}>
-                    <div className="mb-2 text-xs font-bold text-slate-500">{group.title}</div>
-                    <div className="space-y-4">
-                      {Array.from(new Set(
-                        SMART_TEMPLATE_PRESETS
-                          .filter((preset) => preset.channel === group.channel)
-                          .map((preset) => preset.genreCategory),
-                      )).map((genreCategory) => (
-                        <div key={genreCategory} data-template-genre-category={genreCategory}>
-                          <div className="mb-2 border-l-2 border-[#08AACE] pl-2 text-xs font-bold text-slate-700">
-                            {genreCategory}
-                          </div>
-                          <div className="space-y-2">
-                            {SMART_TEMPLATE_PRESETS
-                              .filter((preset) =>
-                                preset.channel === group.channel && preset.genreCategory === genreCategory,
-                              )
-                              .map(renderPresetButton)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
+            {templateListMode !== 'saved' ? (
+              <div className="space-y-2">{visibleBuiltInTemplates.map(renderPresetButton)}</div>
+            ) : savedTemplates.length > 0 ? (
+              <div className="space-y-2">
+                {savedTemplates.map((template) => (
+                  <button
+                    key={template.id}
+                    type="button"
+                    aria-label={`选择我的模板：${template.name}`}
+                    aria-pressed={selectedTemplateId === template.id}
+                    onClick={() => selectSaved(template.id)}
+                    className={`w-full rounded-md border px-3 py-3 text-left text-sm font-bold ${
+                      selectedTemplateId === template.id
+                        ? 'border-[#08AACE] bg-[#EAF9FD] shadow-[0_0_0_1px_#08AACE]'
+                        : 'border-slate-200 bg-white hover:border-[#9DDFEA]'
+                    }`}
+                  >
+                    <span className="block truncate">{template.name}</span>
+                    <span className="mt-1.5 block text-xs font-semibold text-slate-400">最后保存：{template.updatedAt}</span>
+                  </button>
                 ))}
+              </div>
+            ) : (
+              <div className="rounded-md border border-dashed border-slate-300 bg-white px-4 py-8 text-center">
+                <strong className="block text-sm text-slate-600">还没有自定义模板</strong>
+                <span className="mt-2 block text-xs font-semibold leading-5 text-slate-400">
+                  请先到首页的模板管理中创建并保存模板。
+                </span>
               </div>
             )}
           </div>
         </aside>
 
-        <StandardModeTemplateMindMap
+        <ManagedTemplateDiyEditor
           key={selectedTemplateId}
-          structure={structure}
-          initialActiveDomainId={structure[0]?.id}
+          initialStructure={structure}
           onChange={setStructure}
           saveName={saveName}
           onSaveNameChange={setSaveName}
