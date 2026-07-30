@@ -5,6 +5,9 @@ import {
   buildStandardSettingGenerationOutputTemplate,
   readStandardSettingGenerationTargets,
 } from './standardModeSettingGenerationTargets';
+import { replaceProfessionalSettingEntriesFromTemplate } from './standardModeDefaultSettingAdapter';
+import { writeStandardSettingTemplateState } from './standardModeSettingModel';
+import { MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE } from './standardModeXianxiaSettingTemplates';
 
 describe('standard mode setting generation targets', () => {
   beforeEach(() => localStorage.clear());
@@ -42,5 +45,31 @@ describe('standard mode setting generation targets', () => {
     expect(allIds.length).toBeGreaterThan(0);
     expect(new Set(allIds).size).toBe(allIds.length);
     expect(targetGroups.every((targets) => targets.length > 0)).toBe(true);
+  });
+
+  it('assigns every lightweight template entry to one step and keeps all five steps writable', () => {
+    const storageKey = 'xinyuexia_workbench_settings_light-target-test';
+    replaceProfessionalSettingEntriesFromTemplate(storageKey, MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE);
+    writeStandardSettingTemplateState('light-target-test', {
+      version: 2,
+      mode: 'template',
+      templateId: 'male-fantasy-xianxia-light',
+      templateName: '玄幻仙侠（轻量版）',
+      structure: MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE,
+    });
+
+    const targetGroups = STANDARD_SETTING_GENERATION_STEPS.map((step) =>
+      readStandardSettingGenerationTargets(storageKey, step),
+    );
+    const allIds = targetGroups.flat().map((target) => target.id);
+
+    expect(targetGroups.every((targets) => targets.length > 0)).toBe(true);
+    expect(new Set(allIds).size).toBe(allIds.length);
+    expect(targetGroups[3].map((target) => target.title)).toEqual(
+      expect.arrayContaining(['主角起始地点', '宗门势力（可重复）']),
+    );
+    expect(targetGroups[4].map((target) => target.title)).toEqual(
+      expect.arrayContaining(['功法档案（可重复）', '长线伏笔（可重复）']),
+    );
   });
 });

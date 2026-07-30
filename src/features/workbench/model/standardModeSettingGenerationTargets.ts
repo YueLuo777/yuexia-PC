@@ -34,14 +34,17 @@ function belongsToStep(target: StandardSettingGenerationTarget, stepId: string) 
   const searchable = `${target.groupTitle} ${target.title}`;
   const isPlotPlanning = /(剧情|主线|分卷|爽点|创作规划|情节)/.test(searchable);
   const isWorldFoundation = /(核心设定|基础设定|世界基础|作品定位|世界背景|力量体系|修炼体系|设定红线)/.test(searchable);
+  const isPlacesAndFactions = !isPlotPlanning && (
+    target.domainId === 'setting:location'
+    || target.domainId === 'setting:faction'
+    || /(地点|地图|区域|势力|宗门|组织|阵营)/.test(searchable)
+  );
   if (stepId === 'world-foundation') return target.domainId === 'work' && isWorldFoundation;
   if (stepId === 'plot-planning') return target.domainId === 'work' && isPlotPlanning;
   if (stepId === 'main-characters') return target.domainId === 'character';
-  if (stepId === 'places-and-factions') {
-    return target.domainId === 'setting:location' || target.domainId === 'setting:faction';
-  }
+  if (stepId === 'places-and-factions') return isPlacesAndFactions;
   if (stepId === 'creation-supplements') {
-    return (target.domainId === 'work' && !isWorldFoundation && !isPlotPlanning)
+    return (target.domainId === 'work' && !isWorldFoundation && !isPlotPlanning && !isPlacesAndFactions)
       || !['work', 'character', 'setting:location', 'setting:faction'].includes(target.domainId);
   }
   return false;

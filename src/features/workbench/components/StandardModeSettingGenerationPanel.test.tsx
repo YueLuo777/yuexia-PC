@@ -312,6 +312,71 @@ describe('StandardModeSettingGenerationPanel', () => {
     await waitFor(() => expect(onImport).toHaveBeenCalledOnce());
   });
 
+  it('resumes the queued one-click step when character import rebuilds the setting panel', async () => {
+    const firstGenerate = vi.fn();
+    let view: ReturnType<typeof render>;
+    const onImport = vi.fn(() => {
+      view.unmount();
+      return true;
+    });
+    view = render(
+      <StandardModeSettingGenerationPanel
+        settingsStorageKey="settings-auto-remount"
+        entries={[]}
+        latestOutput=""
+        isGenerating={false}
+        onGenerate={firstGenerate}
+        onStop={vi.fn()}
+        onImport={onImport}
+        onJumpToEmptyField={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '一键生成全部' }));
+    view.rerender(
+      <StandardModeSettingGenerationPanel
+        settingsStorageKey="settings-auto-remount"
+        entries={[]}
+        latestOutput="<核心设定>\n*作品定位*：\n【小说类型】：玄幻\n</核心设定>"
+        isGenerating
+        onGenerate={firstGenerate}
+        onStop={vi.fn()}
+        onImport={onImport}
+        onJumpToEmptyField={vi.fn()}
+      />,
+    );
+    view.rerender(
+      <StandardModeSettingGenerationPanel
+        settingsStorageKey="settings-auto-remount"
+        entries={[]}
+        latestOutput="<核心设定>\n*作品定位*：\n【小说类型】：玄幻\n</核心设定>"
+        isGenerating={false}
+        onGenerate={firstGenerate}
+        onStop={vi.fn()}
+        onImport={onImport}
+        onJumpToEmptyField={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(onImport).toHaveBeenCalledOnce());
+
+    const resumedGenerate = vi.fn();
+    render(
+      <StandardModeSettingGenerationPanel
+        settingsStorageKey="settings-auto-remount"
+        entries={[]}
+        latestOutput=""
+        isGenerating={false}
+        onGenerate={resumedGenerate}
+        onStop={vi.fn()}
+        onImport={() => true}
+        onJumpToEmptyField={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => expect(resumedGenerate).toHaveBeenCalledOnce());
+    expect(resumedGenerate.mock.calls[0][0]).toContain('剧情规划');
+  });
+
   it('does not treat the visible user request as a completed AI response', () => {
     const onImport = vi.fn(() => false);
     const view = render(

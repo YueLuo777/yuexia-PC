@@ -41,6 +41,30 @@ import { BrainstormReaderModal } from './BrainstormReaderModal';
 
 const FALLBACK_SETTING_PROMPT =
   '你是专业网文设定策划。根据当前模板生成具体、前后一致、可直接用于后续章纲和正文创作的设定。';
+const pendingAutoContinueSteps = new Map<string, number>();
+const autoContinueTimers = new Map<string, number>();
+const autoContinueRunners = new Map<string, (stepIndex: number) => void>();
+
+function clearPendingAutoContinue(storageKey: string) {
+  pendingAutoContinueSteps.delete(storageKey);
+  const timer = autoContinueTimers.get(storageKey);
+  if (timer !== undefined) window.clearTimeout(timer);
+  autoContinueTimers.delete(storageKey);
+}
+
+function schedulePendingAutoContinue(storageKey: string, stepIndex: number) {
+  const existingTimer = autoContinueTimers.get(storageKey);
+  if (existingTimer !== undefined) window.clearTimeout(existingTimer);
+  pendingAutoContinueSteps.set(storageKey, stepIndex);
+  const timer = window.setTimeout(() => {
+    autoContinueTimers.delete(storageKey);
+    const runner = autoContinueRunners.get(storageKey);
+    if (!runner) return;
+    pendingAutoContinueSteps.delete(storageKey);
+    runner(stepIndex);
+  }, 250);
+  autoContinueTimers.set(storageKey, timer);
+}
 
 function buildExistingSettingContext(
   entries: WorkbenchLibraryEntry[],
@@ -132,7 +156,12 @@ export function StandardModeSettingGenerationPanel({
     if (snapshot && !requestIsActive) {
       clearStandardSettingGenerationSnapshot(settingsStorageKey);
     }
-    setQueuedStepIndex(null);
+    const pendingStepIndex = pendingAutoContinueSteps.get(settingsStorageKey);
+    const canResumePendingStep = pendingStepIndex !== undefined
+      && restoredFlow.status === 'idle'
+      && restoredFlow.autoContinue
+      && restoredFlow.currentStepIndex === pendingStepIndex;
+    setQueuedStepIndex(canResumePendingStep ? pendingStepIndex : null);
     setPanelMode('generate');
     setCheckResults(null);
     setLinkedBrainstorm(readStandardModeBrainstormLinkFromSettingsKey(settingsStorageKey));
@@ -144,6 +173,7 @@ export function StandardModeSettingGenerationPanel({
       if (event.storageKey !== settingsStorageKey || event.action !== 'settings-cleared') return;
       setFlow(createStandardSettingGenerationState());
       setQueuedStepIndex(null);
+      clearPendingAutoContinue(settingsStorageKey);
       setPanelMode('generate');
       setCheckResults(null);
       generationObservedRef.current = false;
@@ -161,9 +191,13 @@ export function StandardModeSettingGenerationPanel({
     (stepIndex: number, autoContinue: boolean) => {
       const step = STANDARD_SETTING_GENERATION_STEPS[stepIndex];
       if (!step || isGenerating) return;
-      if (!autoContinue) setQueuedStepIndex(null);
+      if (!autoContinue) {
+        setQueuedStepIndex(null);
+        clearPendingAutoContinue(settingsStorageKey);
+      }
       const targets = readStandardSettingGenerationTargets(settingsStorageKey, step);
       if (targets.length === 0) {
+        clearPendingAutoContinue(settingsStorageKey);
         setFlow((current) => ({ ...current, status: 'failed', error: '当前模板在本步骤中没有可写入的原有设定。' }));
         return;
       }
@@ -206,6 +240,23 @@ export function StandardModeSettingGenerationPanel({
   );
 
   useEffect(() => {
+    const runner = (stepIndex: number) => {
+      setQueuedStepIndex(null);
+      runStep(stepIndex, true);
+    };
+    autoContinueRunners.set(settingsStorageKey, runner);
+    const pendingStepIndex = pendingAutoContinueSteps.get(settingsStorageKey);
+    if (pendingStepIndex !== undefined && !autoContinueTimers.has(settingsStorageKey)) {
+      schedulePendingAutoContinue(settingsStorageKey, pendingStepIndex);
+    }
+    return () => {
+      if (autoContinueRunners.get(settingsStorageKey) === runner) {
+        autoContinueRunners.delete(settingsStorageKey);
+      }
+    };
+  }, [runStep, settingsStorageKey]);
+
+  useEffect(() => {
     if (isGenerating && flow.status === 'running') {
       generationObservedRef.current = true;
       return;
@@ -214,6 +265,7 @@ export function StandardModeSettingGenerationPanel({
     if (!generationObservedRef.current) return;
     generationObservedRef.current = false;
     if (!latestOutput.trim() || latestOutput.includes('【错误】')) {
+      clearPendingAutoContinue(settingsStorageKey);
       clearStandardSettingGenerationSnapshot(settingsStorageKey);
       generationVisualSnapshotRef.current = null;
       setFlow((current) => ({ ...current, status: 'failed', error: '本步骤生成失败，请重试。' }));
@@ -221,6 +273,7 @@ export function StandardModeSettingGenerationPanel({
     }
     const completedStep = STANDARD_SETTING_GENERATION_STEPS[flow.currentStepIndex];
     if (!onImport(generationTargetEntryIdsRef.current, completedStep.id)) {
+      clearPendingAutoContinue(settingsStorageKey);
       clearStandardSettingGenerationSnapshot(settingsStorageKey);
       generationVisualSnapshotRef.current = null;
       setFlow((current) => ({
@@ -234,7 +287,10 @@ export function StandardModeSettingGenerationPanel({
     const completedStepIds = Array.from(new Set([...flow.completedStepIds, completedStep.id]));
     const nextIndex = flow.currentStepIndex + 1;
     const finished = nextIndex >= STANDARD_SETTING_GENERATION_STEPS.length;
-    if (finished || !flow.autoContinue) generationVisualSnapshotRef.current = null;
+    if (finished || !flow.autoContinue) {
+      generationVisualSnapshotRef.current = null;
+      clearPendingAutoContinue(settingsStorageKey);
+    }
     const completedFlow: StandardSettingGenerationState = {
       ...flow,
       completedStepIds,
@@ -244,7 +300,10 @@ export function StandardModeSettingGenerationPanel({
     };
     writeStandardSettingGenerationState(settingsStorageKey, completedFlow);
     setFlow(completedFlow);
-    if (!finished && flow.autoContinue) setQueuedStepIndex(nextIndex);
+    if (!finished && flow.autoContinue) {
+      setQueuedStepIndex(nextIndex);
+      schedulePendingAutoContinue(settingsStorageKey, nextIndex);
+    }
   }, [
     flow,
     isGenerating,
@@ -252,16 +311,6 @@ export function StandardModeSettingGenerationPanel({
     onImport,
     settingsStorageKey,
   ]);
-
-  useEffect(() => {
-    if (queuedStepIndex === null) return;
-    const timer = window.setTimeout(() => {
-      const nextIndex = queuedStepIndex;
-      setQueuedStepIndex(null);
-      runStep(nextIndex, true);
-    }, 250);
-    return () => window.clearTimeout(timer);
-  }, [queuedStepIndex, runStep]);
 
   const generationInteractionLocked = isGenerating || flow.status === 'running' || queuedStepIndex !== null;
   const visibleFlow = generationInteractionLocked && generationVisualSnapshotRef.current
@@ -281,6 +330,7 @@ export function StandardModeSettingGenerationPanel({
   };
   const pauseGeneration = () => {
     setQueuedStepIndex(null);
+    clearPendingAutoContinue(settingsStorageKey);
     generationObservedRef.current = false;
     generationVisualSnapshotRef.current = null;
     clearStandardSettingGenerationSnapshot(settingsStorageKey);
