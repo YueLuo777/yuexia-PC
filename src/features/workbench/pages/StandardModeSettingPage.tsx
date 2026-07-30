@@ -54,9 +54,10 @@ export function StandardModeSettingPage({
 
   useEffect(() => {
     if (forceTemplateSelection && settings.hasExistingSettings && !reselectingTemplate) {
-      setTemplateWarningOpen(true);
+      if (settings.hasSettingContent) setTemplateWarningOpen(true);
+      else setReselectingTemplate(true);
     }
-  }, [forceTemplateSelection, reselectingTemplate, settings.hasExistingSettings]);
+  }, [forceTemplateSelection, reselectingTemplate, settings.hasExistingSettings, settings.hasSettingContent]);
 
   const finishInitialization = (template: { id: string; name: string; structure: TemplateStructure }) => {
     if (settings.hasExistingSettings) {
@@ -131,7 +132,10 @@ export function StandardModeSettingPage({
               storageKey={settingsStorageKey}
               canUpgradeTemplate={canUpgradeTemplate}
               onUpgradeTemplate={() => setTemplateUpgradeOpen(true)}
-              onChangeTemplate={() => setTemplateWarningOpen(true)}
+              onChangeTemplate={() => {
+                if (settings.hasSettingContent) setTemplateWarningOpen(true);
+                else setReselectingTemplate(true);
+              }}
             />
           )}
         />
@@ -186,7 +190,7 @@ export function TemplateReplacementWarning({
     <ConfirmDialog
       isOpen={isOpen}
       title="更换设定模板？"
-      description={`当前使用模板：${currentTemplateName}\n\n当前作品已经有设定内容。继续更换模板会清空全部作品设定、人物设定、地点、势力、道具、伏笔和怪物内容。脑洞、章纲和正文不会受到影响。`}
+      description={`当前使用模板：${currentTemplateName}\n\n更换模板会清空全部设定，脑洞、章纲和正文则不会受到影响，是否继续？`}
       confirmText="继续更换模板"
       cancelText="取消"
       confirmVariant="danger"

@@ -14,6 +14,7 @@ import {
   type StandardSettingTemplateState,
 } from '@/features/workbench/model/standardModeSettingModel';
 import { subscribeStandardModeSettingNavigationAction } from '@/features/workbench/model/standardModeSettingNavigationEvents';
+import { hasStandardModeSettingContent } from '@/features/workbench/model/standardModeSettingContent';
 import {
   cloneTemplateStructure,
   type TemplateStructure,
@@ -76,6 +77,10 @@ export function useStandardModeSettings(novelId: string, settingsStorageKey: str
   );
 
   const entries = useMemo(() => template ? buildTemplateSettingEntries(template.structure) : [], [template]);
+  const hasSettingContent = useMemo(
+    () => hasStandardModeSettingContent(settingsStorageKey, template),
+    [settingsStorageKey, template],
+  );
 
   useEffect(() => {
     if (entries.length === 0) {
@@ -134,6 +139,7 @@ export function useStandardModeSettings(novelId: string, settingsStorageKey: str
   return {
     template,
     hasExistingSettings,
+    hasSettingContent,
     entries,
     selectedEntryId,
     selectedEntry: entries.find((entry) => entry.id === selectedEntryId) ?? null,

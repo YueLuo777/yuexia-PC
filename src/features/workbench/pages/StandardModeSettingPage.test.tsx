@@ -29,6 +29,12 @@ function renderPage(overrides: Partial<React.ComponentProps<typeof StandardModeS
   );
 }
 
+function buildFilledDefaultTemplateStructure() {
+  const structure = buildDefaultTemplateStructure();
+  structure[0].groups[0].entries[0].sections[0].fields[0].value = '已填写设定';
+  return structure;
+}
+
 describe('StandardModeSettingPage', () => {
   beforeEach(() => localStorage.clear());
 
@@ -47,15 +53,27 @@ describe('StandardModeSettingPage', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: '确认模板并创建设定' }));
     await waitFor(() => expect(screen.getByRole('button', { name: '更换模板' })).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('小说类型'), { target: { value: '玄幻升级流' } });
 
     fireEvent.click(screen.getByRole('button', { name: '更换模板' }));
     expect(screen.getByRole('dialog', { name: '更换设定模板？' }))
       .toHaveTextContent('当前使用模板：玄幻仙侠（标准版）');
-    expect(screen.getByText(/继续更换模板会清空全部作品设定/)).toBeInTheDocument();
+    expect(screen.getByText(/更换模板会清空全部设定，脑洞、章纲和正文则不会受到影响，是否继续？/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '取消' }));
 
     expect(screen.getByRole('button', { name: '一键检查' })).toBeInTheDocument();
     expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠（标准版）');
+  });
+
+  it('opens template selection directly when the current template has no filled content', async () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '确认模板并创建设定' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '更换模板' })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: '更换模板' }));
+
+    expect(screen.queryByRole('dialog', { name: '更换设定模板？' })).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '逐级DIY模板编辑器' })).toBeInTheDocument();
   });
 
   it('creates and reports the lightweight template that the user selected', async () => {
@@ -73,6 +91,7 @@ describe('StandardModeSettingPage', () => {
     expect(saved?.templateName).toBe('玄幻仙侠（轻量版）');
     expect(countTemplateFields(saved?.structure ?? [])).toBe(100);
 
+    fireEvent.change(screen.getByLabelText('小说类型'), { target: { value: '轻量版内容' } });
     fireEvent.click(screen.getByRole('button', { name: '更换模板' }));
     expect(screen.getByRole('dialog', { name: '更换设定模板？' }))
       .toHaveTextContent('当前使用模板：玄幻仙侠（轻量版）');
@@ -90,6 +109,7 @@ describe('StandardModeSettingPage', () => {
 
     await waitFor(() => expect(readStandardSettingTemplateState('novel-a')?.templateId).toBe('custom-template'));
     expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('自定义');
+    fireEvent.change(screen.getByLabelText('小说类型'), { target: { value: '自定义内容' } });
     fireEvent.click(screen.getByRole('button', { name: '更换模板' }));
     expect(screen.getByRole('dialog', { name: '更换设定模板？' }))
       .toHaveTextContent('当前使用模板：自定义');
@@ -339,7 +359,7 @@ describe('StandardModeSettingPage', () => {
       mode: 'template',
       templateId: 'existing',
       templateName: '旧模板',
-      structure: buildDefaultTemplateStructure(),
+      structure: buildFilledDefaultTemplateStructure(),
     });
     const onInitialized = vi.fn();
     const onTemplateChangeCancelled = vi.fn();
@@ -371,7 +391,7 @@ describe('StandardModeSettingPage', () => {
       mode: 'template',
       templateId: 'existing',
       templateName: '旧模板',
-      structure: buildDefaultTemplateStructure(),
+      structure: buildFilledDefaultTemplateStructure(),
     });
     const onTemplateChangeCancelled = vi.fn();
     renderPage({ startInTemplateSelector: true, onTemplateChangeCancelled });
@@ -418,7 +438,7 @@ describe('StandardModeSettingPage', () => {
       mode: 'template',
       templateId: 'existing',
       templateName: '旧模板',
-      structure: buildDefaultTemplateStructure(),
+      structure: buildFilledDefaultTemplateStructure(),
     });
     const onTemplateChangeCancelled = vi.fn();
     renderPage({ forceTemplateSelection: true, onTemplateChangeCancelled });

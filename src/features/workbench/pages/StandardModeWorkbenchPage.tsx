@@ -16,6 +16,7 @@ import {
 } from '@/features/workbench/model/standardModeDefaultSettingAdapter';
 import { readStandardSettingTemplateState } from '@/features/workbench/model/standardModeSettingModel';
 import { subscribeStandardModeSettingNavigationAction } from '@/features/workbench/model/standardModeSettingNavigationEvents';
+import { hasStandardModeSettingContent } from '@/features/workbench/model/standardModeSettingContent';
 import { getCurrentSettingTemplateName } from '@/features/workbench/model/standardModeTemplateIdentity';
 import { upgradeStandardModeBookTemplate } from '@/features/workbench/model/standardModeTemplateUpgrade';
 import { buildStandardModeWorkbenchStats } from '@/features/workbench/model/standardModeWorkbenchStats';
@@ -61,7 +62,14 @@ export function StandardModeWorkbenchPage() {
     () => subscribeStandardModeSettingNavigationAction((event) => {
       if (event.storageKey !== settingsStorageKey) return;
       if (event.action === 'change-template') {
-        setTemplateChangeWarningOpen(true);
+        const currentTemplate = currentNovel
+          ? readStandardSettingTemplateState(String(currentNovel.id))
+          : null;
+        if (hasStandardModeSettingContent(settingsStorageKey, currentTemplate)) {
+          setTemplateChangeWarningOpen(true);
+        } else {
+          setActiveAction('changeSettingTemplate');
+        }
         return;
       }
       if (event.action === 'upgrade-template') {
@@ -71,7 +79,7 @@ export function StandardModeWorkbenchPage() {
       setSettingsMigrationRevision((revision) => revision + 1);
       setActiveAction('settingsList');
     }),
-    [settingsStorageKey],
+    [currentNovel, settingsStorageKey],
   );
 
   const stats = useMemo(() => {
