@@ -44,6 +44,11 @@ describe('StandardModeSettingGenerationPanel', () => {
     expect(screen.getAllByText('未生成')).toHaveLength(5);
     expect(screen.getByRole('progressbar', { name: '作品设定生成进度' })).toHaveAttribute('aria-valuenow', '0');
     expect(screen.getByRole('textbox', { name: '作品设定用户要求' })).toHaveClass('h-24', 'flex-none');
+    expect(screen.getByRole('button', { name: '一键生成' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '逐步生成' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByRole('button', { name: '生成' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '逐步生成' }));
+    expect(screen.queryByRole('button', { name: '一键生成全部' })).not.toBeInTheDocument();
     const stepGenerateButtons = screen.getAllByRole('button', { name: '生成' });
     expect(stepGenerateButtons).toHaveLength(1);
     expect(stepGenerateButtons[0]).toBeEnabled();
@@ -112,6 +117,41 @@ describe('StandardModeSettingGenerationPanel', () => {
     expect(onGenerate.mock.calls[0][1]).toBe('生成设定：基础设定');
   });
 
+  it('restarts the complete workflow from step one on the one-click page', async () => {
+    writeStandardSettingGenerationState('settings-one-click-restart', {
+      ...createStandardSettingGenerationState(),
+      currentStepIndex: 4,
+      completedStepIds: [
+        'world-foundation',
+        'plot-planning',
+        'main-characters',
+        'places-and-factions',
+        'creation-supplements',
+      ],
+      status: 'completed',
+      autoContinue: true,
+    });
+    const onGenerate = vi.fn();
+    render(
+      <StandardModeSettingGenerationPanel
+        settingsStorageKey="settings-one-click-restart"
+        entries={[]}
+        latestOutput=""
+        isGenerating={false}
+        onGenerate={onGenerate}
+        onStop={vi.fn()}
+        onImport={() => true}
+        onJumpToEmptyField={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: '重新生成' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '重新一键生成全部' }));
+
+    await waitFor(() => expect(onGenerate).toHaveBeenCalledOnce());
+    expect(onGenerate.mock.calls[0][0]).toContain('基础设定');
+  });
+
   it('sends only visible setting content instead of internal storage JSON', () => {
     const onGenerate = vi.fn();
     render(
@@ -140,6 +180,7 @@ describe('StandardModeSettingGenerationPanel', () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole('button', { name: '逐步生成' }));
     fireEvent.click(screen.getAllByRole('button', { name: '生成' })[0]);
 
     const request = onGenerate.mock.calls[0][0] as string;
@@ -166,7 +207,7 @@ describe('StandardModeSettingGenerationPanel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '一键检查' }));
 
-    expect(screen.getByRole('button', { name: /检查设定/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '一键生成' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText(/发现 \d+ 处未填写/)).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: '跳转' }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: '一键生成全部' })).not.toBeInTheDocument();
@@ -269,6 +310,7 @@ describe('StandardModeSettingGenerationPanel', () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole('button', { name: '逐步生成' }));
     fireEvent.click(screen.getAllByRole('button', { name: '生成' })[0]);
     view.rerender(
       <StandardModeSettingGenerationPanel
@@ -392,6 +434,7 @@ describe('StandardModeSettingGenerationPanel', () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole('button', { name: '逐步生成' }));
     fireEvent.click(screen.getAllByRole('button', { name: '生成' })[0]);
     view.rerender(
       <StandardModeSettingGenerationPanel
@@ -431,6 +474,7 @@ describe('StandardModeSettingGenerationPanel', () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole('button', { name: '逐步生成' }));
     const stepGenerateButtons = screen.getAllByRole('button', { name: /^(生成|重新生成)$/ });
     expect(stepGenerateButtons).toHaveLength(2);
     expect(stepGenerateButtons[0]).toHaveTextContent('重新生成');
@@ -456,7 +500,7 @@ describe('StandardModeSettingGenerationPanel', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: '一键检查' }));
-    expect(screen.getByRole('button', { name: /检查设定 \d+/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '重新检查' })).toBeInTheDocument();
     view.unmount();
 
     render(
@@ -471,7 +515,8 @@ describe('StandardModeSettingGenerationPanel', () => {
         onJumpToEmptyField={vi.fn()}
       />,
     );
-    expect(screen.getByRole('button', { name: '检查设定' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '一键生成' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '一键检查' })).toBeInTheDocument();
   });
 
   it('does not show output from a generation history that has been reset', () => {

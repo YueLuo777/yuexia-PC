@@ -131,7 +131,7 @@ export function StandardModeSettingGenerationPanel({
     readStandardSettingGenerationState(settingsStorageKey),
   );
   const [queuedStepIndex, setQueuedStepIndex] = useState<number | null>(null);
-  const [panelMode, setPanelMode] = useState<'generate' | 'check'>('generate');
+  const [panelMode, setPanelMode] = useState<'one-click' | 'step-by-step'>('one-click');
   const [checkResults, setCheckResults] = useState<StandardSettingEmptyField[] | null>(null);
   const [linkedBrainstorm, setLinkedBrainstorm] = useState(() =>
     readStandardModeBrainstormLinkFromSettingsKey(settingsStorageKey),
@@ -162,7 +162,7 @@ export function StandardModeSettingGenerationPanel({
       && restoredFlow.autoContinue
       && restoredFlow.currentStepIndex === pendingStepIndex;
     setQueuedStepIndex(canResumePendingStep ? pendingStepIndex : null);
-    setPanelMode('generate');
+    setPanelMode('one-click');
     setCheckResults(null);
     setLinkedBrainstorm(readStandardModeBrainstormLinkFromSettingsKey(settingsStorageKey));
     setIsBrainstormReaderOpen(false);
@@ -174,7 +174,7 @@ export function StandardModeSettingGenerationPanel({
       setFlow(createStandardSettingGenerationState());
       setQueuedStepIndex(null);
       clearPendingAutoContinue(settingsStorageKey);
-      setPanelMode('generate');
+      setPanelMode('one-click');
       setCheckResults(null);
       generationObservedRef.current = false;
       generationVisualSnapshotRef.current = null;
@@ -326,7 +326,6 @@ export function StandardModeSettingGenerationPanel({
   const checkSettings = () => {
     const emptyFields = findEmptyStandardSettingFields(readDefaultStandardSettingEntries(settingsStorageKey));
     setCheckResults(emptyFields);
-    setPanelMode('check');
   };
   const pauseGeneration = () => {
     setQueuedStepIndex(null);
@@ -336,6 +335,25 @@ export function StandardModeSettingGenerationPanel({
     clearStandardSettingGenerationSnapshot(settingsStorageKey);
     setFlow((current) => ({ ...current, status: 'paused', autoContinue: false, error: '' }));
     onStop();
+  };
+  const startOneClickGeneration = () => {
+    if (visibleFlow.status !== 'completed') {
+      runStep(flow.currentStepIndex, true);
+      return;
+    }
+    const restartedFlow: StandardSettingGenerationState = {
+      ...flow,
+      currentStepIndex: 0,
+      completedStepIds: [],
+      status: 'idle',
+      autoContinue: true,
+      error: '',
+    };
+    generationVisualSnapshotRef.current = null;
+    writeStandardSettingGenerationState(settingsStorageKey, restartedFlow);
+    setFlow(restartedFlow);
+    setQueuedStepIndex(0);
+    schedulePendingAutoContinue(settingsStorageKey, 0);
   };
   const openBrainstormReader = () => {
     const nextEntries = readWorkbenchLibraryEntries(GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY);
@@ -371,24 +389,30 @@ export function StandardModeSettingGenerationPanel({
         <button
           type="button"
           disabled={generationInteractionLocked}
-          aria-pressed={panelMode === 'generate'}
-          onClick={() => setPanelMode('generate')}
-          className={`h-8 rounded text-xs font-bold ${panelMode === 'generate' ? 'bg-[#08AACE] text-white' : 'text-[#52606d] hover:bg-[#EAF9FD]'}`}
+          aria-pressed={panelMode === 'one-click'}
+          onClick={() => {
+            setPanelMode('one-click');
+            setCheckResults(null);
+          }}
+          className={`h-8 rounded text-xs font-bold ${panelMode === 'one-click' ? 'bg-[#08AACE] text-white' : 'text-[#52606d] hover:bg-[#EAF9FD]'}`}
         >
-          生成设定
+          一键生成
         </button>
         <button
           type="button"
           disabled={generationInteractionLocked}
-          aria-pressed={panelMode === 'check'}
-          onClick={() => setPanelMode('check')}
-          className={`h-8 rounded text-xs font-bold ${panelMode === 'check' ? 'bg-[#08AACE] text-white' : 'text-[#52606d] hover:bg-[#EAF9FD]'}`}
+          aria-pressed={panelMode === 'step-by-step'}
+          onClick={() => {
+            setPanelMode('step-by-step');
+            setCheckResults(null);
+          }}
+          className={`h-8 rounded text-xs font-bold ${panelMode === 'step-by-step' ? 'bg-[#08AACE] text-white' : 'text-[#52606d] hover:bg-[#EAF9FD]'}`}
         >
-          检查设定{checkResults ? ` ${checkResults.length}` : ''}
+          逐步生成
         </button>
       </div>
 
-      {panelMode === 'generate' ? (
+      {checkResults === null ? (
         <div className="editor-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto py-3 pr-1">
           <ol className="shrink-0 space-y-2" aria-label="作品设定生成步骤">
             {STANDARD_SETTING_GENERATION_STEPS.map((step, index) => {
@@ -439,23 +463,25 @@ export function StandardModeSettingGenerationPanel({
                           >
                             {statusText}
                           </span>
-                          <span
-                            aria-hidden={unlocked ? undefined : true}
-                            className="flex h-7 w-20 shrink-0 items-center justify-center"
-                            data-standard-setting-action-slot="true"
-                          >
-                            {unlocked ? (
-                              <button
-                                type="button"
-                                disabled={generationInteractionLocked}
-                                onClick={() => runStep(index, false)}
-                                className="h-7 w-full whitespace-nowrap rounded-md border border-[#08AACE] bg-white px-2 text-xs font-bold text-[#078FAB] hover:bg-[#E9FAFE]"
-                                title={`${completed ? '重新生成' : '生成'}${step.name}`}
-                              >
-                                {completed ? '重新生成' : '生成'}
-                              </button>
-                            ) : null}
-                          </span>
+                          {panelMode === 'step-by-step' ? (
+                            <span
+                              aria-hidden={unlocked ? undefined : true}
+                              className="flex h-7 w-20 shrink-0 items-center justify-center"
+                              data-standard-setting-action-slot="true"
+                            >
+                              {unlocked ? (
+                                <button
+                                  type="button"
+                                  disabled={generationInteractionLocked}
+                                  onClick={() => runStep(index, false)}
+                                  className="h-7 w-full whitespace-nowrap rounded-md border border-[#08AACE] bg-white px-2 text-xs font-bold text-[#078FAB] hover:bg-[#E9FAFE]"
+                                  title={`${completed ? '重新生成' : '生成'}${step.name}`}
+                                >
+                                  {completed ? '重新生成' : '生成'}
+                                </button>
+                              ) : null}
+                            </span>
+                          ) : null}
                         </span>
                       </span>
                       <span className="mt-1 block text-xs font-medium leading-5 text-[#7b8794]">{step.scope}</span>
@@ -543,7 +569,7 @@ export function StandardModeSettingGenerationPanel({
       )}
 
       <footer className="shrink-0 space-y-2 border-t border-[#D2D8E0] pt-3">
-        {panelMode === 'generate' ? (
+        {checkResults === null && (isGenerating || panelMode === 'one-click') ? (
           isGenerating ? (
             <button
               type="button"
@@ -556,7 +582,7 @@ export function StandardModeSettingGenerationPanel({
             <button
               type="button"
               disabled={generationInteractionLocked}
-              onClick={() => runStep(flow.currentStepIndex, true)}
+              onClick={startOneClickGeneration}
               className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#08AACE] text-sm font-bold text-white hover:bg-[#0797B8]"
             >
               {visibleFlow.status === 'failed'
@@ -564,7 +590,7 @@ export function StandardModeSettingGenerationPanel({
                 : visibleFlow.status === 'paused'
                   ? '继续当前步骤'
                   : visibleFlow.status === 'completed'
-                    ? '重新生成当前步骤'
+                    ? '重新一键生成全部'
                     : visibleFlow.completedStepIds.length
                       ? '继续生成'
                       : '一键生成全部'}
@@ -577,7 +603,7 @@ export function StandardModeSettingGenerationPanel({
           onClick={checkSettings}
           className="h-10 w-full rounded-md border border-[#BFC8D2] bg-white text-sm font-bold text-[#52606d] hover:border-[#63C6D9] hover:text-[#078FAB]"
         >
-          {panelMode === 'check' ? '重新检查' : '一键检查'}
+          {checkResults ? '重新检查' : '一键检查'}
         </button>
       </footer>
       <BrainstormReaderModal
