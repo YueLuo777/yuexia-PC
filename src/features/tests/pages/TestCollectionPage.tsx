@@ -97,6 +97,16 @@ const FantasyTemplateFieldReductionTestPage = lazy(() =>
     default: module.FantasyTemplateFieldReductionTestPage,
   })),
 );
+const TemplateGenerationStepCardsTestPage = lazy(() =>
+  import('@/features/tests/pages/TemplateGenerationStepCardsTestPage').then((module) => ({
+    default: module.TemplateGenerationStepCardsTestPage,
+  })),
+);
+const CommercialSandboxMigrationTestPage = lazy(() =>
+  import('@/features/tests/pages/CommercialSandboxMigrationTestPage').then((module) => ({
+    default: module.CommercialSandboxMigrationTestPage,
+  })),
+);
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
 );
@@ -261,6 +271,10 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <ProfessionalTemplateDiyVariantsTestPage />;
       case '/fantasy-template-field-reduction-test':
         return <FantasyTemplateFieldReductionTestPage />;
+      case '/template-generation-step-cards-test':
+        return <TemplateGenerationStepCardsTestPage />;
+      case '/commercial-sandbox-migration-test':
+        return <CommercialSandboxMigrationTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':

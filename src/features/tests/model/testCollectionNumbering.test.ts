@@ -37,7 +37,9 @@ describe('test collection numbering', () => {
     expect(registry.get('/ai-ranking-book-search-idea-test')).toBe(34);
     expect(registry.get('/fantasy-template-field-reduction-test')).toBe(35);
     expect(RETIRED_TEST_SERIALS).toContainEqual({ serial: 36, path: '/template-management-cascade-test' });
-    expect(getNextTestSerial(testGroups)).toBe(37);
+    expect(registry.get('/template-generation-step-cards-test')).toBe(37);
+    expect(registry.get('/commercial-sandbox-migration-test')).toBe(38);
+    expect(getNextTestSerial(testGroups)).toBe(39);
     expect(testGroups.find((group) => group.title === '未做')?.items.some((item) => item.serial === 19)).toBe(true);
   });
 

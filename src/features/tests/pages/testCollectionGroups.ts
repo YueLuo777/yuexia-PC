@@ -188,6 +188,22 @@ export const testGroups: TestGroup[] = [
         icon: Sparkles,
         badge: 'Field Plan',
       },
+      {
+        serial: 37,
+        title: '模板生成步骤设定卡片方案',
+        description: '从模板结构读取四级设定，按金、紫、蓝、绿底色标明级别，并把设定卡片嵌入生成步骤里调整顺序。',
+        path: '/template-generation-step-cards-test',
+        icon: FolderTree,
+        badge: 'Step Cards',
+      },
+      {
+        serial: 38,
+        title: '用户系统与用户裂变本地沙箱',
+        description: '参考镜语测试沙箱的业务边界，在本地验证会员、积分、管理员、任务冻结结算、一级邀请和退款撤回，不接真实支付。',
+        path: '/commercial-sandbox-migration-test',
+        icon: BrainCircuit,
+        badge: 'Commerce',
+      },
     ],
   },
   {
