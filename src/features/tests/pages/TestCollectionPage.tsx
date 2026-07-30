@@ -92,6 +92,11 @@ const ProfessionalTemplateDiyVariantsTestPage = lazy(() =>
     default: module.ProfessionalTemplateDiyVariantsTestPage,
   })),
 );
+const FantasyTemplateFieldReductionTestPage = lazy(() =>
+  import('@/features/tests/pages/FantasyTemplateFieldReductionTestPage').then((module) => ({
+    default: module.FantasyTemplateFieldReductionTestPage,
+  })),
+);
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
 );
@@ -254,6 +259,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <ProfessionalTemplateHierarchyVariantsTestPage />;
       case '/professional-template-diy-variants-test':
         return <ProfessionalTemplateDiyVariantsTestPage />;
+      case '/fantasy-template-field-reduction-test':
+        return <FantasyTemplateFieldReductionTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':

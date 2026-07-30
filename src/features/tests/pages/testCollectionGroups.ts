@@ -180,6 +180,14 @@ export const testGroups: TestGroup[] = [
         icon: FolderTree,
         badge: 'DIY Template',
       },
+      {
+        serial: 35,
+        title: '玄幻仙侠字段精简方案',
+        description: '对比极简开书、连载实用、剧情优先、世界观优先和分阶段解锁五种字段缩减思路，仅展示方案，不修改正式模板。',
+        path: '/fantasy-template-field-reduction-test',
+        icon: Sparkles,
+        badge: 'Field Plan',
+      },
     ],
   },
   {

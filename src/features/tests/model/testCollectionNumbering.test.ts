@@ -35,7 +35,8 @@ describe('test collection numbering', () => {
     expect(registry.get('/professional-template-hierarchy-variants-test')).toBe(31);
     expect(registry.get('/multi-ai-writing-idea-test')).toBe(33);
     expect(registry.get('/ai-ranking-book-search-idea-test')).toBe(34);
-    expect(getNextTestSerial(testGroups)).toBe(35);
+    expect(registry.get('/fantasy-template-field-reduction-test')).toBe(35);
+    expect(getNextTestSerial(testGroups)).toBe(36);
     expect(testGroups.find((group) => group.title === '未做')?.items.some((item) => item.serial === 19)).toBe(true);
   });
 

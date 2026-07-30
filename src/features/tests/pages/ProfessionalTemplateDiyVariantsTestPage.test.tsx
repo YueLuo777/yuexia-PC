@@ -6,9 +6,9 @@ import { testGroups } from './testCollectionGroups';
 import { readTestCollectionSource } from './testCollectionSource.testUtils';
 
 describe('ProfessionalTemplateDiyVariantsTestPage', () => {
-  it('registers the DIY comparison as test 32 at the end of the UI group', () => {
+  it('keeps the DIY comparison registered as test 32', () => {
     const uiGroup = testGroups.find((group) => group.title === 'UI 与主题');
-    expect(uiGroup?.items.at(-1)).toMatchObject({
+    expect(uiGroup?.items.find((item) => item.serial === 32)).toMatchObject({
       serial: 32,
       title: '专业模板DIY编辑多方案',
       path: '/professional-template-diy-variants-test',
