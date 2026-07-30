@@ -136,6 +136,15 @@ describe('StandardModeSettingPage', () => {
 
     const footer = editor.querySelector('[data-template-editor-footer="true"]') as HTMLElement;
     const confirmActions = footer.querySelector('[data-template-confirm-actions="true"]') as HTMLElement;
+    const summaryRow = footer.querySelector('[data-template-summary-row="true"]') as HTMLElement;
+    const saveRow = footer.querySelector('[data-template-save-row="true"]') as HTMLElement;
+    expect(footer).toHaveClass('min-h-[96px]', 'grid-cols-[minmax(0,1fr)_auto]');
+    expect(summaryRow).toHaveTextContent('当前结构：');
+    expect(summaryRow.compareDocumentPosition(saveRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(saveRow).toHaveClass('items-end', 'justify-between');
+    expect(within(saveRow).getByRole('region', { name: '保存模板' }).lastElementChild)
+      .toHaveTextContent('保存到我的模板');
+    expect(confirmActions).toHaveClass('items-end');
     expect(within(footer).getByRole('textbox', { name: '保存模板名称' })).toBeInTheDocument();
     expect(within(confirmActions).getByRole('button', { name: '确认模板并创建设定' })).toBeInTheDocument();
     expect(document.querySelector('[data-standard-setting-initializer="true"] > footer')).not.toBeInTheDocument();

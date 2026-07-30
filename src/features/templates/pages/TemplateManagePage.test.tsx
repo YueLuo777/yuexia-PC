@@ -53,6 +53,7 @@ describe('TemplateManagePage', () => {
     render(<TemplateManagePage />);
 
     const editor = screen.getByRole('region', { name: '逐级DIY模板编辑器' });
+    expect(editor.querySelector('[data-template-cascade-scroll="true"]')).toHaveClass('bg-white');
     const navigations = [
       within(editor).getByRole('navigation', { name: '模板一级设定' }),
       within(editor).getByRole('navigation', { name: '模板二级设定' }),
@@ -64,6 +65,9 @@ describe('TemplateManagePage', () => {
     expect(fixedCards.length).toBeGreaterThan(0);
     fixedCards.forEach((card) => expect(card).toHaveClass('w-[220px]', 'shrink-0'));
     const fourthLevel = within(editor).getByRole('region', { name: 'DIY四级设定' });
+    expect(fourthLevel).toHaveAttribute('data-template-fourth-level', 'true');
+    expect(fourthLevel).toHaveClass('bg-white');
+    expect(fourthLevel).not.toHaveClass('bg-[#F5F8FA]');
     expect(fourthLevel.querySelector('.grid'))
       .toHaveClass('grid-cols-[repeat(auto-fit,minmax(220px,1fr))]');
     const selectionSurfaces = editor.querySelectorAll('[data-template-cascade-card-select="true"]');

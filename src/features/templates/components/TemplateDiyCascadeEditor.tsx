@@ -102,7 +102,10 @@ export function TemplateDiyCascadeEditor({
   const { structure, domain, group, entry, fields, fieldId, lockedLevels } = controller;
 
   return (
-    <div className="editor-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#F5F8FA]">
+    <div
+      className="editor-scrollbar min-h-0 flex-1 overflow-y-auto bg-white"
+      data-template-cascade-scroll="true"
+    >
       <section className="border-b border-slate-200 bg-white px-4 py-3" aria-label="DIY一级分类">
         <CascadeLevelHeader
           level="domain"
@@ -180,7 +183,11 @@ export function TemplateDiyCascadeEditor({
         {group && group.entries.length === 0 ? <DiyEmptyState>该分组暂无三级设定。</DiyEmptyState> : null}
       </section>
 
-      <section className="bg-[#F5F8FA] px-4 py-3" aria-label="DIY四级设定">
+      <section
+        className="bg-white px-4 py-3"
+        aria-label="DIY四级设定"
+        data-template-fourth-level="true"
+      >
         <CascadeLevelHeader
           level="field"
           title={`第四级设定 · 共 ${fields.length} 项`}
