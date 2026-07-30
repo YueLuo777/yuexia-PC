@@ -73,15 +73,15 @@ function TemplateListButton({
       }`}
     >
       <button type="button" onClick={onClick} className="w-full px-3 py-3 text-left">
-        <span className="flex items-center justify-between gap-2">
-          <strong className="min-w-0 truncate text-sm text-slate-800">{title}</strong>
+        <strong className="block text-sm leading-5 text-slate-800">{title}</strong>
+        <span className="mt-1.5 flex items-start justify-between gap-2 text-xs font-semibold leading-5 text-slate-500">
+          <span className="line-clamp-2 min-w-0">{description}</span>
           {badge ? (
             <span className="shrink-0 rounded-full border border-cyan-200 bg-[#EAF9FD] px-2 py-0.5 text-[11px] font-bold text-[#078FAB]">
               {badge}
             </span>
           ) : null}
         </span>
-        <span className="mt-1.5 block line-clamp-2 text-xs font-semibold leading-5 text-slate-500">{description}</span>
       </button>
       {action ? <div className="border-t border-slate-100 px-3 py-2">{action}</div> : null}
     </div>

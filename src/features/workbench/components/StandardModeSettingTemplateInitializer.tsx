@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import {
   SMART_TEMPLATE_PRESETS,
   cloneSmartTemplateStructure,
+  getRecommendedTemplatesForNovelCategory,
   recommendTemplateForNovelCategory,
   type BookChannel,
 } from '@/features/workbench/model/standardModeSmartSettingFlowModel';
@@ -73,6 +74,17 @@ export function StandardModeSettingTemplateInitializer({
       : SMART_TEMPLATE_PRESETS.filter((preset) => preset.channel === templateListMode || preset.channel === 'general'),
     [templateListMode],
   );
+  const groupedBuiltInTemplates = useMemo(() => {
+    if (templateListMode === 'saved') return { matching: [], others: [], otherLabel: '' };
+    const matchingIds = new Set(
+      getRecommendedTemplatesForNovelCategory(novelCategory, templateListMode).map((preset) => preset.id),
+    );
+    return {
+      matching: visibleBuiltInTemplates.filter((preset) => matchingIds.has(preset.id)),
+      others: visibleBuiltInTemplates.filter((preset) => !matchingIds.has(preset.id)),
+      otherLabel: `其他${templateListMode === 'female' ? '女频' : '男频'}题材模板`,
+    };
+  }, [novelCategory, templateListMode, visibleBuiltInTemplates]);
 
   const applyBuiltIn = (id: string) => {
     const preset = SMART_TEMPLATE_PRESETS.find((item) => item.id === id);
@@ -201,7 +213,21 @@ export function StandardModeSettingTemplateInitializer({
           </div>
           <div className="editor-scrollbar mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
             {templateListMode !== 'saved' ? (
-              <div className="space-y-2">{visibleBuiltInTemplates.map(renderPresetButton)}</div>
+              <div className="space-y-2">
+                {groupedBuiltInTemplates.matching.map(renderPresetButton)}
+                {groupedBuiltInTemplates.others.length > 0 ? (
+                  <div
+                    role="separator"
+                    aria-label={groupedBuiltInTemplates.otherLabel}
+                    className="flex items-center gap-2 py-1 text-[11px] font-bold text-slate-400"
+                  >
+                    <span className="h-px min-w-3 flex-1 bg-slate-200" />
+                    <span className="shrink-0">{groupedBuiltInTemplates.otherLabel}</span>
+                    <span className="h-px min-w-3 flex-1 bg-slate-200" />
+                  </div>
+                ) : null}
+                {groupedBuiltInTemplates.others.map(renderPresetButton)}
+              </div>
             ) : savedTemplates.length > 0 ? (
               <div className="space-y-2">
                 {savedTemplates.map((template) => (

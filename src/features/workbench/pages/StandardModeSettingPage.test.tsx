@@ -51,7 +51,7 @@ describe('StandardModeSettingPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '取消' }));
 
     expect(screen.getByRole('button', { name: '一键检查' })).toBeInTheDocument();
-    expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠');
+    expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠（标准版）');
   });
 
   it('recommends xianxia and opens the shared four-column template editor', () => {
@@ -61,7 +61,10 @@ describe('StandardModeSettingPage', () => {
     expect(within(recommendationBasis).getByText('玄幻')).toBeInTheDocument();
     expect(within(recommendationBasis).getByText('100万字')).toBeInTheDocument();
     expect(screen.queryByText(/已根据“玄幻”推荐/)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（标准版）' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（完整版）' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（轻量版）' })).toBeInTheDocument();
+    expect(screen.getByRole('separator', { name: '其他男频题材模板' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '男频' })).toHaveAttribute('aria-selected', 'true');
     const editor = screen.getByRole('region', { name: '四栏DIY模板编辑器' });
     expect(within(editor).getByRole('region', { name: 'DIY一级分类' })).toBeInTheDocument();
@@ -126,10 +129,10 @@ describe('StandardModeSettingPage', () => {
 
     expect(screen.getByRole('tab', { name: '女频' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('button', { name: '选择内置模板：现代总裁' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '选择内置模板：玄幻仙侠' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '选择内置模板：玄幻仙侠（标准版）' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('tab', { name: '男频' }));
-    expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（标准版）' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '确认模板并创建设定' })).toBeInTheDocument();
   });
 
@@ -139,7 +142,11 @@ describe('StandardModeSettingPage', () => {
     expect(screen.getByRole('button', { name: '选择内置模板：都市（无修炼）' }))
       .toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '选择内置模板：都市（有修炼）' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠' })).toBeInTheDocument();
+    const urbanTemplate = screen.getByRole('button', { name: '选择内置模板：都市（无修炼）' });
+    const otherTemplates = screen.getByRole('separator', { name: '其他男频题材模板' });
+    const xianxiaTemplate = screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（标准版）' });
+    expect(urbanTemplate.compareDocumentPosition(otherTemplates) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(otherTemplates.compareDocumentPosition(xianxiaTemplate) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('confirms and persists a channel change before selecting a female template', () => {
@@ -209,7 +216,7 @@ describe('StandardModeSettingPage', () => {
     view.unmount();
     renderPage();
     expect(screen.getByLabelText('小说类型')).toHaveValue('东方玄幻');
-    expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠');
+    expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠（标准版）');
   });
 
   it('clears filled values without leaving the current template or removing its setting structure', async () => {
@@ -225,7 +232,7 @@ describe('StandardModeSettingPage', () => {
     expect(screen.getByRole('navigation', { name: '设定目录' })).toBeInTheDocument();
     expect(screen.getByLabelText('设定名')).toHaveValue('作品定位');
     expect(screen.queryByRole('button', { name: '确认模板并创建设定' })).not.toBeInTheDocument();
-    expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠');
+    expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠（标准版）');
   });
 
   it('requires confirmation before rebuilding an existing book template', async () => {
@@ -257,7 +264,7 @@ describe('StandardModeSettingPage', () => {
     expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('旧模板');
     fireEvent.click(screen.getByRole('button', { name: '确认模板并创建设定' }));
     await waitFor(() => expect(onInitialized).toHaveBeenCalledTimes(1));
-    expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠');
+    expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠（标准版）');
   });
 
   it('opens the template-management editor directly after replacement was already confirmed outside the page', () => {
@@ -274,7 +281,7 @@ describe('StandardModeSettingPage', () => {
     expect(screen.queryByText('更换设定模板？')).not.toBeInTheDocument();
     expect(screen.getByRole('region', { name: '四栏DIY模板编辑器' })).toBeInTheDocument();
     expect(screen.queryByTestId('mind-map-canvas')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（标准版）' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '返回设定列表' }));
     expect(onTemplateChangeCancelled).toHaveBeenCalledTimes(1);
   });
@@ -300,7 +307,7 @@ describe('StandardModeSettingPage', () => {
 
     renderPage({ startInTemplateSelector: true });
     fireEvent.click(screen.getByRole('button', { name: '确认模板并创建设定' }));
-    await waitFor(() => expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠'));
+    await waitFor(() => expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠（标准版）'));
 
     expect(localStorage.getItem(getStandardSettingGenerationStorageKey('xinyuexia_workbench_settings_novel-a')))
       .toBeNull();

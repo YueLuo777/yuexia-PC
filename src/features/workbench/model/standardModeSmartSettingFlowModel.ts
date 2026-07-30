@@ -4,6 +4,10 @@ import {
   MALE_URBAN_CULTIVATION_STRUCTURE,
   MALE_URBAN_NO_CULTIVATION_STRUCTURE,
 } from './standardModeUrbanSettingTemplates';
+import {
+  MALE_FANTASY_XIANXIA_FULL_STRUCTURE,
+  MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE,
+} from './standardModeXianxiaSettingTemplates';
 
 export type BookChannel = 'male' | 'female' | 'general';
 export type BookSource = 'blank' | 'brainstorm';
@@ -239,12 +243,30 @@ export const SMART_TEMPLATE_PRESETS: SmartTemplatePreset[] = [
   },
   {
     id: 'male-fantasy-xianxia',
-    title: '玄幻仙侠',
+    title: '玄幻仙侠（标准版）',
     channel: 'male',
     genreCategory: '玄幻仙侠',
     keywords: ['玄幻', '仙侠', '修仙', '宗门', '凡人流'],
     description: '保留玄幻仙侠创作必需的世界、修炼、人物和剧情结构，合并重复字段并删除过程记录。',
     structure: MALE_FANTASY_XIANXIA_STRUCTURE,
+  },
+  {
+    id: 'male-fantasy-xianxia-full',
+    title: '玄幻仙侠（完整版）',
+    channel: 'male',
+    genreCategory: '玄幻仙侠',
+    keywords: ['玄幻', '仙侠', '修仙', '宗门', '凡人流'],
+    description: '覆盖世界规则、剧情阶段、人物关系、地点势力、资源伏笔和怪物种族，适合完整规划与长期创作。',
+    structure: MALE_FANTASY_XIANXIA_FULL_STRUCTURE,
+  },
+  {
+    id: 'male-fantasy-xianxia-light',
+    title: '玄幻仙侠（轻量版）',
+    channel: 'male',
+    genreCategory: '玄幻仙侠',
+    keywords: ['玄幻', '仙侠', '修仙', '宗门', '凡人流'],
+    description: '只保留开书和前期创作必需的核心设定，适合先快速确定方向并开始写作。',
+    structure: MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE,
   },
   {
     id: 'male-urban-no-cultivation',
@@ -370,6 +392,9 @@ export function cloneSmartTemplateStructure(structure: TemplateStructure): Templ
 export function getRecommendedTemplatesForNovelCategory(category: string, selectedChannel?: BookChannel) {
   const normalized = category.trim();
   const channel = selectedChannel ?? (/(总裁|言情|甜宠|古言|女频)/.test(normalized) ? 'female' : 'male');
+  if (channel === 'male' && /^(玄幻|仙侠)$/.test(normalized)) {
+    return SMART_TEMPLATE_PRESETS.filter((preset) => preset.genreCategory === '玄幻仙侠');
+  }
   if (channel === 'male' && (normalized === '都市' || normalized.startsWith('都市（'))) {
     return SMART_TEMPLATE_PRESETS.filter((preset) => preset.genreCategory === '都市');
   }

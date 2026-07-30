@@ -19,7 +19,9 @@ describe('TemplateManagePage', () => {
     expect(screen.getByRole('tab', { name: '男频' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tab', { name: '女频' })).toHaveAttribute('aria-selected', 'false');
     expect(screen.getByRole('tab', { name: '我的模板' })).toHaveAttribute('aria-selected', 'false');
-    expect(screen.getByText('玄幻仙侠')).toBeInTheDocument();
+    expect(screen.getByText('玄幻仙侠（标准版）')).toBeInTheDocument();
+    expect(screen.getByText('玄幻仙侠（完整版）')).toBeInTheDocument();
+    expect(screen.getByText('玄幻仙侠（轻量版）')).toBeInTheDocument();
     expect(screen.getByText('通用小说基础')).toBeInTheDocument();
     expect(screen.queryByText('现代总裁')).not.toBeInTheDocument();
     for (const type of ['作品设定', '人物设定', '地点地图', '势力设定', '道具资源', '伏笔线索', '怪物图鉴']) {
@@ -36,7 +38,9 @@ describe('TemplateManagePage', () => {
     expect(screen.getByText('现代总裁')).toBeInTheDocument();
     expect(screen.getByText('甜宠')).toBeInTheDocument();
     expect(screen.getByText('通用小说基础')).toBeInTheDocument();
-    expect(screen.queryByText('玄幻仙侠')).not.toBeInTheDocument();
+    expect(screen.queryByText('玄幻仙侠（标准版）')).not.toBeInTheDocument();
+    expect(screen.queryByText('玄幻仙侠（完整版）')).not.toBeInTheDocument();
+    expect(screen.queryByText('玄幻仙侠（轻量版）')).not.toBeInTheDocument();
   });
 
   it('creates and saves a user template from the management page', () => {
