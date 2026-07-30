@@ -6,6 +6,7 @@ import {
 } from '@/features/workbench/model/standardModeDefaultSettingAdapter';
 import {
   buildTemplateSettingEntries,
+  createStandardSettingTemplateState,
   findEmptyStandardSettingFields,
   readStandardSettingTemplateState,
   updateTemplateSettingField,
@@ -19,9 +20,23 @@ import {
   cloneTemplateStructure,
   type TemplateStructure,
 } from '@/features/workbench/model/standardModeTemplateModel';
+import type {
+  SettingGenerationPromptProfile,
+  TemplateGenerationBlueprint,
+} from '@/features/workbench/model/standardModeTemplateGenerationModel';
 import { upgradeStandardModeBookTemplate } from '@/features/workbench/model/standardModeTemplateUpgrade';
 
-function createBookTemplateState(templateId: string, templateName: string, structure: TemplateStructure) {
+type BookTemplatePackage = {
+  id: string;
+  name: string;
+  revision: number;
+  structure: TemplateStructure;
+  generationBlueprint: TemplateGenerationBlueprint;
+  promptProfile: SettingGenerationPromptProfile;
+};
+
+function createBookTemplateState(templatePackage: BookTemplatePackage) {
+  const { id, name, revision, structure, generationBlueprint, promptProfile } = templatePackage;
   const cleanStructure = cloneTemplateStructure(structure).map((domain) => ({
     ...domain,
     groups: domain.groups.map((group) => ({
@@ -35,13 +50,14 @@ function createBookTemplateState(templateId: string, templateName: string, struc
       })),
     })),
   }));
-  return {
-    version: 2,
-    mode: 'template',
-    templateId,
-    templateName,
+  return createStandardSettingTemplateState({
+    templateId: id,
+    templateName: name,
+    templateRevision: revision,
     structure: cleanStructure,
-  } satisfies StandardSettingTemplateState;
+    generationBlueprint,
+    promptProfile,
+  });
 }
 
 export function useStandardModeSettings(novelId: string, settingsStorageKey: string) {
@@ -92,9 +108,9 @@ export function useStandardModeSettings(novelId: string, settingsStorageKey: str
     }
   }, [entries, selectedEntryId]);
 
-  const initializeTemplate = useCallback((templateId: string, templateName: string, structure: TemplateStructure) => {
-    const next = createBookTemplateState(templateId, templateName, structure);
-    replaceProfessionalSettingEntriesFromTemplate(settingsStorageKey, next.structure);
+  const initializeTemplate = useCallback((templatePackage: BookTemplatePackage) => {
+    const next = createBookTemplateState(templatePackage);
+    replaceProfessionalSettingEntriesFromTemplate(settingsStorageKey, next.structure, next.generationBlueprint);
     writeStandardSettingTemplateState(novelId, next);
     setTemplate(next);
     setHasExistingSettings(true);

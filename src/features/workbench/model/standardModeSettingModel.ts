@@ -4,6 +4,15 @@ import {
   cloneTemplateStructure,
   type TemplateStructure,
 } from '@/features/workbench/model/standardModeTemplateModel';
+import {
+  SETTING_GENERATION_CONTRACT_VERSION,
+  buildXianxiaTemplateGenerationBlueprint,
+  createDefaultSettingGenerationPromptProfile,
+  normalizeTemplateGenerationBlueprint,
+  normalizeSettingGenerationPromptProfile,
+  type SettingGenerationPromptProfile,
+  type TemplateGenerationBlueprint,
+} from '@/features/workbench/model/standardModeTemplateGenerationModel';
 
 export type StandardSettingTemplateMode = 'template';
 
@@ -26,12 +35,26 @@ export type StandardSettingCustomGroup = {
 };
 
 export type StandardSettingTemplateState = {
+  version: 3;
+  mode: StandardSettingTemplateMode;
+  templateId: string;
+  templateName: string;
+  templateRevision: number;
+  structure: TemplateStructure;
+  generationBlueprint: TemplateGenerationBlueprint;
+  promptProfile: SettingGenerationPromptProfile;
+  contractVersion: typeof SETTING_GENERATION_CONTRACT_VERSION;
+};
+
+export type LegacyStandardSettingTemplateState = {
   version: 2;
   mode: StandardSettingTemplateMode;
   templateId: string;
   templateName: string;
   structure: TemplateStructure;
 };
+
+export type StandardSettingTemplateSnapshot = StandardSettingTemplateState | LegacyStandardSettingTemplateState;
 
 export type StandardSettingFieldDescriptor = {
   key: string;
@@ -70,7 +93,38 @@ export type StandardSettingEmptyField = {
   fieldTitle: string;
 };
 
-export const STANDARD_SETTING_TEMPLATE_VERSION = 2 as const;
+export const STANDARD_SETTING_TEMPLATE_VERSION = 3 as const;
+
+export type CreateStandardSettingTemplateStateInput = {
+  templateId: string;
+  templateName: string;
+  structure: TemplateStructure;
+  templateRevision?: number;
+  generationBlueprint?: TemplateGenerationBlueprint;
+  promptProfile?: SettingGenerationPromptProfile;
+};
+
+export function createStandardSettingTemplateState({
+  templateId,
+  templateName,
+  structure,
+  templateRevision = 1,
+  generationBlueprint,
+  promptProfile,
+}: CreateStandardSettingTemplateStateInput): StandardSettingTemplateState {
+  const clonedStructure = cloneTemplateStructure(structure);
+  return {
+    version: STANDARD_SETTING_TEMPLATE_VERSION,
+    mode: 'template',
+    templateId,
+    templateName,
+    templateRevision: Math.max(1, Math.floor(templateRevision)),
+    structure: clonedStructure,
+    generationBlueprint: normalizeTemplateGenerationBlueprint(clonedStructure, generationBlueprint),
+    promptProfile: normalizeSettingGenerationPromptProfile(templateId, templateName, promptProfile),
+    contractVersion: SETTING_GENERATION_CONTRACT_VERSION,
+  };
+}
 
 export function getStandardSettingTemplateStorageKey(novelId: string) {
   return `xinyuexia_standard_setting_template_${novelId}`;
@@ -110,33 +164,58 @@ export function readStandardSettingTemplateState(novelId: string): StandardSetti
       mode?: string;
       templateId?: unknown;
       templateName?: unknown;
+      templateRevision?: unknown;
       structure?: unknown;
+      generationBlueprint?: unknown;
+      promptProfile?: unknown;
+      contractVersion?: unknown;
     };
     if (parsed.version === 1 && (parsed.mode === 'default' || parsed.mode === 'custom')) {
-      return {
-        version: STANDARD_SETTING_TEMPLATE_VERSION,
-        mode: 'template',
+      const structure = buildDefaultTemplateStructure();
+      return createStandardSettingTemplateState({
         templateId: 'legacy-default',
         templateName: '原默认模板',
-        structure: buildDefaultTemplateStructure(),
-      };
+        structure,
+        promptProfile: createDefaultSettingGenerationPromptProfile('setting-prompt:legacy-default', '原默认模板提示词'),
+      });
     }
-    if (parsed.version !== STANDARD_SETTING_TEMPLATE_VERSION || parsed.mode !== 'template') return null;
-    return {
-      version: STANDARD_SETTING_TEMPLATE_VERSION,
-      mode: 'template',
-      templateId: typeof parsed.templateId === 'string' ? parsed.templateId : 'custom-template',
-      templateName: typeof parsed.templateName === 'string' ? parsed.templateName : '未命名模板',
-      structure: Array.isArray(parsed.structure)
-        ? cloneTemplateStructure(parsed.structure as TemplateStructure)
-        : [],
-    };
+    if (![2, STANDARD_SETTING_TEMPLATE_VERSION].includes(parsed.version ?? 0) || parsed.mode !== 'template') return null;
+    const structure = Array.isArray(parsed.structure)
+      ? cloneTemplateStructure(parsed.structure as TemplateStructure)
+      : [];
+    const templateId = typeof parsed.templateId === 'string' ? parsed.templateId : 'custom-template';
+    const templateName = typeof parsed.templateName === 'string' ? parsed.templateName : '未命名模板';
+    const promptProfile = parsed.promptProfile
+      && typeof parsed.promptProfile === 'object'
+      && (parsed.promptProfile as SettingGenerationPromptProfile).contractVersion === SETTING_GENERATION_CONTRACT_VERSION
+      ? { ...(parsed.promptProfile as SettingGenerationPromptProfile) }
+      : createDefaultSettingGenerationPromptProfile(`setting-prompt:${templateId}`, `${templateName}提示词`);
+    const migratedBlueprint = !parsed.generationBlueprint
+      && ['male-fantasy-xianxia-light', 'male-fantasy-xianxia', 'male-fantasy-xianxia-full'].includes(templateId)
+      ? buildXianxiaTemplateGenerationBlueprint(structure, templateId)
+      : parsed.generationBlueprint as Partial<TemplateGenerationBlueprint> | undefined;
+    return createStandardSettingTemplateState({
+      templateId,
+      templateName,
+      templateRevision: Number.isInteger(parsed.templateRevision) && Number(parsed.templateRevision) > 0
+        ? Number(parsed.templateRevision)
+        : 1,
+      structure,
+      generationBlueprint: normalizeTemplateGenerationBlueprint(
+        structure,
+        migratedBlueprint,
+      ),
+      promptProfile,
+    });
   } catch {
     return null;
   }
 }
 
-export function writeStandardSettingTemplateState(novelId: string, state: StandardSettingTemplateState) {
+export function writeStandardSettingTemplateState(
+  novelId: string,
+  state: StandardSettingTemplateState | LegacyStandardSettingTemplateState,
+) {
   localStorage.setItem(getStandardSettingTemplateStorageKey(novelId), JSON.stringify(state));
 }
 

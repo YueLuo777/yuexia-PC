@@ -1,121 +1,178 @@
 import { readDefaultStandardSettingEntries } from './standardModeDefaultSettingAdapter';
 import { readStandardSettingTemplateState } from './standardModeSettingModel';
 import type { StandardSettingGenerationStep } from './standardModeSettingGenerationFlow';
-import { normalizeImportedSettingKey } from '@/features/workbench/components/workbenchSmartImport';
+import type { TemplateEntryGenerationRule } from './standardModeTemplateGenerationModel';
+
+export type StandardSettingGenerationTargetField = {
+  id: string;
+  title: string;
+};
 
 export type StandardSettingGenerationTarget = {
   id: string;
+  templateEntryId?: string;
+  existingEntryIds?: string[];
   title: string;
   domainId: string;
   domainTitle: string;
   groupTitle: string;
   sourceKind: 'setting' | 'role' | 'custom';
+  fields?: StandardSettingGenerationTargetField[];
   fieldTitles: string[];
+  rule?: TemplateEntryGenerationRule;
 };
 
 const SETTINGS_STORAGE_PREFIX = 'xinyuexia_workbench_settings_';
 
-function getTemplateContext(settingsStorageKey: string) {
-  const novelId = settingsStorageKey.startsWith(SETTINGS_STORAGE_PREFIX)
+function getNovelId(settingsStorageKey: string) {
+  return settingsStorageKey.startsWith(SETTINGS_STORAGE_PREFIX)
     ? settingsStorageKey.slice(SETTINGS_STORAGE_PREFIX.length)
     : '';
-  const templateState = readStandardSettingTemplateState(novelId);
-  if (!templateState) return { templateId: '', entryIds: null };
-  return {
-    templateId: templateState.templateId,
-    entryIds: new Set(templateState.structure
-      .filter((domain) => domain.enabled)
-      .flatMap((domain) => domain.groups.filter((group) => group.enabled))
-      .flatMap((group) => group.entries.filter((entry) => entry.enabled))
-      .map((entry) => entry.id)),
-  };
 }
 
-function belongsToXianxiaStep(target: StandardSettingGenerationTarget, stepId: string) {
-  const searchable = `${target.domainTitle} ${target.groupTitle} ${target.title}`;
-  const isPlotPlanning = /(剧情规划|全书规划|故事主线|主角成长线|分卷|第一卷|冲突|爽点|悬念|节奏|情节)/.test(searchable);
-  const isMainCharacter = target.domainId === 'character' || target.sourceKind === 'role';
-  const isGoldFinger = /金手指/.test(searchable);
-  const isPlacesAndFactions = !isPlotPlanning && (
-    target.domainId === 'setting:location'
-    || target.domainId === 'setting:faction'
-    || /(地点|地图|区域|秘境|遗迹|势力|宗门|组织|阵营|王朝|家族)/.test(searchable)
-  );
-  const isWorldFoundation = !isPlotPlanning && !isGoldFinger && !isPlacesAndFactions && (
-    /(核心设定|作品定位|核心脑洞|世界|力量体系|修炼资源|天赋|资质|社会|文明|经济|文化|规则|设定红线)/.test(searchable)
-  );
-  if (stepId === 'world-foundation') return isWorldFoundation;
-  if (stepId === 'main-characters') return isMainCharacter || isGoldFinger || /主角成长线/.test(searchable);
-  if (stepId === 'plot-planning') return isPlotPlanning && !/主角成长线/.test(searchable);
-  if (stepId === 'places-and-factions') return isPlacesAndFactions;
+function belongsToLegacyStep(
+  entry: ReturnType<typeof readDefaultStandardSettingEntries>[number],
+  stepId: string,
+) {
+  if (stepId === 'main-characters') return entry.sourceKind === 'role' || entry.domainId === 'character';
+  if (stepId === 'plot-planning') return entry.domainId === 'setting:plot' || /剧情|主线|分卷|爽点/.test(`${entry.groupTitle}${entry.title}`);
+  if (stepId === 'places-and-factions') return entry.domainId === 'setting:location' || entry.domainId === 'setting:faction';
+  if (stepId === 'world-foundation') return entry.domainId === 'work' && !/剧情|主线|分卷|爽点/.test(`${entry.groupTitle}${entry.title}`);
   if (stepId === 'creation-supplements') {
-    return !isWorldFoundation && !isMainCharacter && !isGoldFinger && !isPlotPlanning && !isPlacesAndFactions;
+    return !['work', 'character', 'setting:plot', 'setting:location', 'setting:faction'].includes(entry.domainId);
   }
   return false;
 }
 
-function belongsToStep(target: StandardSettingGenerationTarget, stepId: string, templateId: string) {
-  if (['male-fantasy-xianxia-light', 'male-fantasy-xianxia', 'male-fantasy-xianxia-full'].includes(templateId)) {
-    return belongsToXianxiaStep(target, stepId);
-  }
-  const searchable = `${target.groupTitle} ${target.title}`;
-  const isPlotPlanning = /(剧情|主线|分卷|爽点|创作规划|情节)/.test(searchable);
-  const isWorldFoundation = /(核心设定|基础设定|世界基础|作品定位|世界背景|力量体系|修炼体系|设定红线)/.test(searchable);
-  const isPlacesAndFactions = !isPlotPlanning && (
-    target.domainId === 'setting:location'
-    || target.domainId === 'setting:faction'
-    || /(地点|地图|区域|势力|宗门|组织|阵营)/.test(searchable)
-  );
-  if (stepId === 'world-foundation') return target.domainId === 'work' && isWorldFoundation;
-  if (stepId === 'plot-planning') return target.domainId === 'work' && isPlotPlanning;
-  if (stepId === 'main-characters') return target.domainId === 'character';
-  if (stepId === 'places-and-factions') return isPlacesAndFactions;
-  if (stepId === 'creation-supplements') {
-    return (target.domainId === 'work' && !isWorldFoundation && !isPlotPlanning && !isPlacesAndFactions)
-      || !['work', 'character', 'setting:location', 'setting:faction'].includes(target.domainId);
-  }
-  return false;
+function readLegacyTargets(settingsStorageKey: string, step: StandardSettingGenerationStep) {
+  return readDefaultStandardSettingEntries(settingsStorageKey)
+    .filter((entry) => belongsToLegacyStep(entry, step.id))
+    .map((entry): StandardSettingGenerationTarget => {
+      const fields = entry.sections.flatMap((section) => section.fields.map((field) => ({
+        id: field.key,
+        title: field.title,
+      })));
+      return {
+        id: entry.id,
+        templateEntryId: entry.id,
+        existingEntryIds: [entry.id],
+        title: entry.title,
+        domainId: entry.domainId,
+        domainTitle: entry.domainTitle,
+        groupTitle: entry.groupTitle,
+        sourceKind: entry.sourceKind,
+        fields,
+        fieldTitles: fields.map((field) => field.title),
+        rule: {
+          entryId: entry.id,
+          mode: 'single',
+          required: true,
+          minCount: 1,
+          recommendedCount: 1,
+          maxCount: 1,
+          stageId: step.id,
+          dependencyEntryIds: [],
+          promptGuidance: '',
+        },
+      };
+    });
+}
+
+export function usesTemplateSettingGenerationProtocol(settingsStorageKey: string) {
+  return Boolean(readStandardSettingTemplateState(getNovelId(settingsStorageKey)));
 }
 
 export function readStandardSettingGenerationTargets(
   settingsStorageKey: string,
   step: StandardSettingGenerationStep,
 ) {
-  const templateContext = getTemplateContext(settingsStorageKey);
-  return readDefaultStandardSettingEntries(settingsStorageKey)
-    .filter((entry) => templateContext.entryIds
-      ? templateContext.entryIds.has(entry.id)
-      : entry.sourceKind === 'role'
-        || (entry.title === normalizeImportedSettingKey(entry.title) && !/[<>：:]/.test(entry.title)))
-    .map((entry) => ({
-      id: entry.id,
-      title: entry.title,
-      domainId: entry.domainId,
-      domainTitle: entry.domainTitle,
-      groupTitle: entry.groupTitle,
-      sourceKind: entry.sourceKind,
-      fieldTitles: entry.sections.flatMap((section) => section.fields.map((field) => field.title)),
-    }) satisfies StandardSettingGenerationTarget)
-    .filter((entry) => belongsToStep(entry, step.id, templateContext.templateId));
+  const templateState = readStandardSettingTemplateState(getNovelId(settingsStorageKey));
+  if (!templateState) return readLegacyTargets(settingsStorageKey, step);
+  const descriptors = readDefaultStandardSettingEntries(settingsStorageKey);
+  const descriptorIdsByTemplateEntryId = new Map<string, string[]>();
+  descriptors.forEach((descriptor) => {
+    const templateEntryId = descriptor.sourceEntry?.standardTemplateEntryId ?? descriptor.id;
+    descriptorIdsByTemplateEntryId.set(templateEntryId, [
+      ...(descriptorIdsByTemplateEntryId.get(templateEntryId) ?? []),
+      descriptor.id,
+    ]);
+  });
+
+  const targets: StandardSettingGenerationTarget[] = [];
+  templateState.structure.filter((domain) => domain.enabled).forEach((domain) => {
+    domain.groups.filter((group) => group.enabled).forEach((group) => {
+      group.entries.filter((entry) => entry.enabled).forEach((entry) => {
+        const rule = templateState.generationBlueprint.entryRules[entry.id];
+        if (!rule || rule.stageId !== step.id) return;
+        const fields = entry.sections
+          .filter((section) => section.enabled)
+          .flatMap((section) => section.fields
+            .filter((field) => field.enabled)
+            .map((field) => ({ id: field.id, title: field.title })));
+        targets.push({
+          id: entry.id,
+          templateEntryId: entry.id,
+          existingEntryIds: descriptorIdsByTemplateEntryId.get(entry.id) ?? [],
+          title: entry.title,
+          domainId: domain.id,
+          domainTitle: domain.title,
+          groupTitle: group.title,
+          sourceKind: domain.title === '人物设定' ? 'role' : 'setting',
+          fields,
+          fieldTitles: fields.map((field) => field.title),
+          rule,
+        });
+      });
+    });
+  });
+  const byId = new Map(targets.map((target) => [target.templateEntryId ?? target.id, target]));
+  const ordered: StandardSettingGenerationTarget[] = [];
+  const visited = new Set<string>();
+  const append = (target: StandardSettingGenerationTarget) => {
+    const id = target.templateEntryId ?? target.id;
+    if (visited.has(id)) return;
+    visited.add(id);
+    target.rule?.dependencyEntryIds.forEach((dependencyId) => {
+      const dependency = byId.get(dependencyId);
+      if (dependency) append(dependency);
+    });
+    ordered.push(target);
+  };
+  targets.forEach(append);
+  return ordered;
 }
 
 export function formatStandardSettingGenerationTargets(targets: StandardSettingGenerationTarget[]) {
   return targets.map((target, index) => [
-    `${index + 1}. 设定名：${target.title}`,
-    `所属分组：${target.sourceKind === 'role' ? target.domainTitle : target.groupTitle}`,
-    `必须填写的原有字段：${target.fieldTitles.join('、') || '设定内容'}`,
+    `${index + 1}. 设定类型：${target.title}`,
+    `所属分组：${target.groupTitle}`,
+    target.rule?.mode === 'collection'
+      ? `生成数量：推荐 ${target.rule.recommendedCount} 项，允许 ${target.rule.minCount}-${target.rule.maxCount} 项`
+      : '生成数量：固定 1 项',
+    `必须填写字段：${target.fieldTitles.join('、') || '设定内容'}`,
   ].join('\n')).join('\n\n');
 }
 
+function buildItemProtocol(target: StandardSettingGenerationTarget) {
+  const fields = target.fields ?? target.fieldTitles.map((title, index) => ({
+    id: `legacy-field-${index + 1}`,
+    title,
+  }));
+  return [
+    '[[ITEM]]',
+    `[[TITLE]]${target.rule?.titleFieldId ? '填写真实名称' : target.title}`,
+    ...fields.map((field) => `[[FIELD:${field.id}]]填写“${field.title}”的完整内容`),
+    '[[END_ITEM]]',
+  ].join('\n');
+}
+
 export function buildStandardSettingGenerationOutputTemplate(targets: StandardSettingGenerationTarget[]) {
-  return targets.map((target) => {
-    const group = target.sourceKind === 'role' ? target.domainTitle : target.groupTitle;
-    const fields = target.fieldTitles.length > 0 ? target.fieldTitles : ['设定内容'];
-    return [
-      `<${group}>`,
-      `*${target.title}*：`,
-      ...fields.map((field) => `【${field}】：填写该字段内容`),
-      `</${group}>`,
-    ].join('\n');
-  }).join('\n\n');
+  return targets.map((target) => [
+    `[[SETTING_ENTRY:${target.templateEntryId ?? target.id}]]`,
+    buildItemProtocol(target),
+    ...(target.rule?.mode === 'collection' && target.rule.recommendedCount > 1
+      ? [`（请按相同格式继续输出到共 ${target.rule.recommendedCount} 个 [[ITEM]]）`]
+      : []),
+    '[[END_SETTING_ENTRY]]',
+  ].join('\n')).join('\n\n');
 }

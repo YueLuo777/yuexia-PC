@@ -96,7 +96,26 @@ describe('TemplateManagePage', () => {
     const saved = JSON.parse(localStorage.getItem(SAVED_SETTING_TEMPLATES_STORAGE_KEY) ?? '[]');
     expect(saved).toHaveLength(1);
     expect(saved[0].name).toBe('我的人物模板');
+    expect(saved[0]).toMatchObject({ formatVersion: 3, source: 'custom' });
+    expect(saved[0].generationBlueprint.stages.length).toBeGreaterThan(0);
+    expect(saved[0].promptProfile.contractVersion).toBe('setting-generation-v2');
     expect(screen.getByRole('tab', { name: '我的模板' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('edits generation order, collection counts, dependencies, and prompt guidance with the template', () => {
+    render(<TemplateManagePage />);
+
+    fireEvent.click(screen.getByRole('tab', { name: '生成设置' }));
+    expect(screen.getByRole('region', { name: '模板生成步骤' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '三级设定生成规则' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '模板总提示词' })).toBeInTheDocument();
+    const stagePrompt = screen.getByRole('textbox', { name: '世界规则与力量步骤专属提示词' });
+    fireEvent.change(stagePrompt, { target: { value: '先锁定世界规则，再生成后续人物和剧情。' } });
+    expect(stagePrompt).toHaveValue('先锁定世界规则，再生成后续人物和剧情。');
+    fireEvent.change(screen.getByRole('combobox', { name: '生成方式' }), { target: { value: 'collection' } });
+    expect(screen.getByText('推荐数量')).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('textbox', { name: '生成目标' }), { target: { value: '只生成可直接写作的具体设定' } });
+    expect(screen.getByDisplayValue('只生成可直接写作的具体设定')).toBeInTheDocument();
   });
 
   it('requires confirmation before deleting only the selected user template', () => {

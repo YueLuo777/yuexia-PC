@@ -7,7 +7,7 @@ import {
   parseSettingContent,
   parseStructuredSettingFields,
 } from '@/features/workbench/components/workbenchStructuredSettings';
-import type { StandardSettingTemplateState } from '@/features/workbench/model/standardModeSettingModel';
+import type { StandardSettingTemplateSnapshot } from '@/features/workbench/model/standardModeSettingModel';
 import { readWorkbenchLibraryEntriesWithGlobalBrainstorm } from '@/features/workbench/model/workbenchLibraryStorage';
 
 function hasItems(value: unknown[] | undefined) {
@@ -20,7 +20,7 @@ function hasKeys(value: object | undefined) {
 
 export function hasStandardModeSettingContent(
   storageKey: string,
-  template: StandardSettingTemplateState | null,
+  template: StandardSettingTemplateSnapshot | null,
 ) {
   const templateHasContent = template?.structure.some((domain) => domain.groups.some((group) =>
     group.entries.some((entry) => entry.sections.some((section) =>

@@ -54,6 +54,7 @@ import {
 } from '@/features/workbench/model/workbenchSettingTaxonomy';
 
 import type { StandardSettingEntryDescriptor, StandardSettingSectionDescriptor } from './standardModeSettingModel';
+import type { TemplateGenerationBlueprint } from './standardModeTemplateGenerationModel';
 import type { TemplateEntryNode, TemplateStructure } from './standardModeTemplateModel';
 
 const DOMAIN_TITLES: Record<string, string> = {
@@ -233,7 +234,10 @@ function getEnabledTemplateFields(structure: TemplateStructure) {
     );
 }
 
-function createRoleEntryFromTemplate(item: ReturnType<typeof getEnabledTemplateFields>[number]): WorkbenchLibraryEntry {
+function createRoleEntryFromTemplate(
+  item: ReturnType<typeof getEnabledTemplateFields>[number],
+  generationBlueprint?: TemplateGenerationBlueprint,
+): WorkbenchLibraryEntry {
   const roleType = item.entry.title.trim() || '未分类';
   const stateSettings = createEmptyRoleStateSettings();
   let relationship = '';
@@ -254,6 +258,9 @@ function createRoleEntryFromTemplate(item: ReturnType<typeof getEnabledTemplateF
   return {
     ...createWorkbenchLibraryEntry(ROLE_TAB, item.entry.title.trim() || roleType),
     id: item.entry.id,
+    standardTemplateEntryId: item.entry.id,
+    standardTemplatePlaceholder: generationBlueprint?.entryRules[item.entry.id]?.mode === 'collection',
+    standardTemplateCollection: generationBlueprint?.entryRules[item.entry.id]?.mode === 'collection',
     content: stringifyRoleContent({
       type: roleType,
       lifeStatus: '存活',
@@ -271,6 +278,7 @@ function createRoleEntryFromTemplate(item: ReturnType<typeof getEnabledTemplateF
 
 function createSettingEntryFromTemplate(
   item: ReturnType<typeof getEnabledTemplateFields>[number],
+  generationBlueprint?: TemplateGenerationBlueprint,
 ): WorkbenchLibraryEntry {
   const settingType = item.group.title.trim() || '未分类';
   const title = item.entry.title.trim() || '新建设定';
@@ -281,6 +289,9 @@ function createSettingEntryFromTemplate(
   return {
     ...createWorkbenchLibraryEntry(SETTING_TAB, title),
     id: item.entry.id,
+    standardTemplateEntryId: item.entry.id,
+    standardTemplatePlaceholder: generationBlueprint?.entryRules[item.entry.id]?.mode === 'collection',
+    standardTemplateCollection: generationBlueprint?.entryRules[item.entry.id]?.mode === 'collection',
     content: stringifySettingContent({
       type: settingType,
       body,
@@ -326,7 +337,11 @@ function buildTemplateFieldLayout(entry: TemplateEntryNode) {
   };
 }
 
-export function replaceProfessionalSettingEntriesFromTemplate(storageKey: string, structure: TemplateStructure) {
+export function replaceProfessionalSettingEntriesFromTemplate(
+  storageKey: string,
+  structure: TemplateStructure,
+  generationBlueprint?: TemplateGenerationBlueprint,
+) {
   resetStandardModeSettingEntries(storageKey);
   const enabledItems = getEnabledTemplateFields(structure);
   const roleItems = enabledItems.filter((item) => item.domain.title === '人物设定');
@@ -368,8 +383,8 @@ export function replaceProfessionalSettingEntriesFromTemplate(storageKey: string
     return tab !== ROLE_TAB && tab !== SETTING_TAB;
   });
   writeWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey, [
-    ...roleItems.map(createRoleEntryFromTemplate),
-    ...settingItems.map(createSettingEntryFromTemplate),
+    ...roleItems.map((item) => createRoleEntryFromTemplate(item, generationBlueprint)),
+    ...settingItems.map((item) => createSettingEntryFromTemplate(item, generationBlueprint)),
     ...preservedEntries,
   ]);
 }
@@ -452,6 +467,7 @@ function mergeSettingEntryForUpgrade(
 export function syncProfessionalSettingFieldLayoutsFromTemplate(
   storageKey: string,
   structure: TemplateStructure,
+  generationBlueprint?: TemplateGenerationBlueprint,
 ) {
   const currentTypeDomains = readStoredTypeDomains(storageKey);
   const templateTypeDomains = Object.fromEntries(
@@ -473,14 +489,30 @@ export function syncProfessionalSettingFieldLayoutsFromTemplate(
   const entries = readWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey);
   let changed = false;
   const nextEntries = entries.map((entry) => {
-    const layout = layoutsByEntryId.get(entry.id);
-    if (!layout || normalizeTabName(entry.tab) !== SETTING_TAB) return entry;
-    const setting = parseSettingContent(entry.content);
-    if (JSON.stringify(setting.templateFieldLayout) === JSON.stringify(layout)) return entry;
+    const templateEntryId = entry.standardTemplateEntryId ?? entry.id;
+    const rule = generationBlueprint?.entryRules[templateEntryId];
+    const metadataChanged = Boolean(rule) && (
+      entry.standardTemplateEntryId !== templateEntryId
+      || entry.standardTemplateCollection !== (rule?.mode === 'collection')
+    );
+    const layout = layoutsByEntryId.get(templateEntryId);
+    const setting = normalizeTabName(entry.tab) === SETTING_TAB ? parseSettingContent(entry.content) : null;
+    const layoutChanged = Boolean(layout && setting)
+      && JSON.stringify(setting?.templateFieldLayout) !== JSON.stringify(layout);
+    if (!metadataChanged && !layoutChanged) return entry;
     changed = true;
     return {
       ...entry,
-      content: stringifySettingContent({ ...setting, templateFieldLayout: layout }),
+      ...(rule ? {
+        standardTemplateEntryId: templateEntryId,
+        standardTemplateCollection: rule.mode === 'collection',
+        standardTemplatePlaceholder: entry.standardTemplateGenerated
+          ? false
+          : entry.standardTemplatePlaceholder ?? rule.mode === 'collection',
+      } : {}),
+      ...(layout && setting
+        ? { content: stringifySettingContent({ ...setting, templateFieldLayout: layout }) }
+        : {}),
     };
   });
   if (changed) writeWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey, nextEntries);
@@ -527,7 +559,11 @@ function readStoredTypeDomains(storageKey: string) {
   }
 }
 
-export function upgradeProfessionalSettingEntriesFromTemplate(storageKey: string, structure: TemplateStructure) {
+export function upgradeProfessionalSettingEntriesFromTemplate(
+  storageKey: string,
+  structure: TemplateStructure,
+  generationBlueprint?: TemplateGenerationBlueprint,
+) {
   const enabledItems = getEnabledTemplateFields(structure);
   const roleItems = enabledItems.filter((item) => item.domain.title === '人物设定');
   const settingItems = enabledItems.filter((item) => item.domain.title !== '人物设定');
@@ -583,11 +619,23 @@ export function upgradeProfessionalSettingEntriesFromTemplate(storageKey: string
   const upgradedTemplateEntries = [
     ...roleItems.map((item) => {
       const existing = existingById.get(item.entry.id);
-      return existing ? mergeRoleEntryForUpgrade(existing, item) : createRoleEntryFromTemplate(item);
+      return existing
+        ? {
+            ...mergeRoleEntryForUpgrade(existing, item),
+            standardTemplateEntryId: item.entry.id,
+            standardTemplateCollection: generationBlueprint?.entryRules[item.entry.id]?.mode === 'collection',
+          }
+        : createRoleEntryFromTemplate(item, generationBlueprint);
     }),
     ...settingItems.map((item) => {
       const existing = existingById.get(item.entry.id);
-      return existing ? mergeSettingEntryForUpgrade(existing, item) : createSettingEntryFromTemplate(item);
+      return existing
+        ? {
+            ...mergeSettingEntryForUpgrade(existing, item),
+            standardTemplateEntryId: item.entry.id,
+            standardTemplateCollection: generationBlueprint?.entryRules[item.entry.id]?.mode === 'collection',
+          }
+        : createSettingEntryFromTemplate(item, generationBlueprint);
     }),
   ];
   const preservedEntries = existingEntries.filter((entry) => !targetIds.has(entry.id));

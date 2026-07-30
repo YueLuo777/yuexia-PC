@@ -4,6 +4,7 @@ import {
   SMART_TEMPLATE_PRESETS,
   cloneSmartTemplateStructure,
   getRecommendedTemplatesForNovelCategory,
+  getSmartTemplatePackage,
   recommendTemplateForNovelCategory,
   sortSmartTemplatePresetsForDisplay,
   type BookChannel,
@@ -13,6 +14,12 @@ import {
   saveSettingTemplate,
   type TemplateStructure,
 } from '@/features/workbench/model/standardModeTemplateModel';
+import {
+  normalizeTemplateGenerationBlueprint,
+  validateTemplateGenerationBlueprint,
+  type SettingGenerationPromptProfile,
+  type TemplateGenerationBlueprint,
+} from '@/features/workbench/model/standardModeTemplateGenerationModel';
 import {
   CUSTOM_SETTING_TEMPLATE_ID,
   CUSTOM_SETTING_TEMPLATE_NAME,
@@ -25,7 +32,10 @@ import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 type ConfirmedTemplate = {
   id: string;
   name: string;
+  revision: number;
   structure: TemplateStructure;
+  generationBlueprint: TemplateGenerationBlueprint;
+  promptProfile: SettingGenerationPromptProfile;
 };
 
 type StandardModeSettingTemplateInitializerProps = {
@@ -65,18 +75,23 @@ export function StandardModeSettingTemplateInitializer({
     [novelCategory, novelChannel],
   );
   const selectionRef = useRef<TemplateSelectionSnapshot>({
-    id: recommended.id,
-    name: recommended.title,
+    ...getSmartTemplatePackage(recommended),
     structure: cloneSmartTemplateStructure(recommended.structure),
     sourceStructure: recommended.structure,
     customized: false,
   });
   const [selectedTemplateId, setSelectedTemplateId] = useState(recommended.id);
   const [structure, setStructure] = useState(() => selectionRef.current.structure);
+  const [generationBlueprint, setGenerationBlueprint] = useState(() => selectionRef.current.generationBlueprint);
+  const [promptProfile, setPromptProfile] = useState(() => selectionRef.current.promptProfile);
   const [savedTemplates, setSavedTemplates] = useState(readSavedSettingTemplates);
   const [saveName, setSaveName] = useState(`${novelTitle}模板`);
   const [templateListMode, setTemplateListMode] = useState<TemplateListMode>(novelChannel);
   const [pendingChannelPresetId, setPendingChannelPresetId] = useState<string | null>(null);
+  const generationConfigurationValid = validateTemplateGenerationBlueprint(
+    structure,
+    generationBlueprint,
+  ).valid;
   const visibleBuiltInTemplates = useMemo(
     () => templateListMode === 'saved'
       ? []
@@ -100,16 +115,18 @@ export function StandardModeSettingTemplateInitializer({
   const applyBuiltIn = (id: string) => {
     const preset = SMART_TEMPLATE_PRESETS.find((item) => item.id === id);
     if (!preset) return;
-    const nextStructure = cloneSmartTemplateStructure(preset.structure);
+    const templatePackage = getSmartTemplatePackage(preset);
+    const nextStructure = cloneSmartTemplateStructure(templatePackage.structure);
     selectionRef.current = {
-      id: preset.id,
-      name: preset.title,
+      ...templatePackage,
       structure: nextStructure,
       sourceStructure: preset.structure,
       customized: false,
     };
     setSelectedTemplateId(preset.id);
     setStructure(nextStructure);
+    setGenerationBlueprint(templatePackage.generationBlueprint);
+    setPromptProfile(templatePackage.promptProfile);
   };
 
   const selectBuiltIn = (id: string) => {
@@ -129,43 +146,80 @@ export function StandardModeSettingTemplateInitializer({
     selectionRef.current = {
       id: template.id,
       name: template.name,
+      revision: template.revision,
       structure: nextStructure,
+      generationBlueprint: template.generationBlueprint,
+      promptProfile: template.promptProfile,
       sourceStructure: template.structure,
       customized: false,
     };
     setSelectedTemplateId(template.id);
     setSaveName(template.name);
     setStructure(nextStructure);
+    setGenerationBlueprint(template.generationBlueprint);
+    setPromptProfile(template.promptProfile);
   };
 
   const saveCurrentTemplate = () => {
+    if (!generationConfigurationValid) return;
     const name = saveName.trim() || '未命名模板';
-    const next = saveSettingTemplate(name, selectionRef.current.structure);
+    const next = saveSettingTemplate(
+      name,
+      selectionRef.current.structure,
+      selectionRef.current.generationBlueprint,
+      selectionRef.current.promptProfile,
+    );
     selectionRef.current = {
       id: next[0].id,
       name,
+      revision: next[0].revision,
       structure: next[0].structure,
+      generationBlueprint: next[0].generationBlueprint,
+      promptProfile: next[0].promptProfile,
       sourceStructure: next[0].structure,
       customized: false,
     };
     setSavedTemplates(next);
     setSelectedTemplateId(next[0].id);
     setStructure(next[0].structure);
+    setGenerationBlueprint(next[0].generationBlueprint);
+    setPromptProfile(next[0].promptProfile);
     setTemplateListMode('saved');
   };
 
   const updateStructure = (nextStructure: TemplateStructure) => {
     const customized = !hasSameTemplateDefinition(nextStructure, selectionRef.current.sourceStructure);
-    selectionRef.current = { ...selectionRef.current, structure: nextStructure, customized };
+    const nextBlueprint = normalizeTemplateGenerationBlueprint(nextStructure, generationBlueprint);
+    selectionRef.current = {
+      ...selectionRef.current,
+      structure: nextStructure,
+      generationBlueprint: nextBlueprint,
+      customized,
+    };
     setStructure(nextStructure);
+    setGenerationBlueprint(nextBlueprint);
+  };
+
+  const updateGenerationBlueprint = (nextBlueprint: TemplateGenerationBlueprint) => {
+    selectionRef.current = { ...selectionRef.current, generationBlueprint: nextBlueprint, customized: true };
+    setGenerationBlueprint(nextBlueprint);
+  };
+
+  const updatePromptProfile = (nextProfile: SettingGenerationPromptProfile) => {
+    selectionRef.current = { ...selectionRef.current, promptProfile: nextProfile, customized: true };
+    setPromptProfile(nextProfile);
   };
 
   const confirmCurrentTemplate = () => {
+    if (!generationConfigurationValid) return;
     const selected = selectionRef.current;
     onConfirm({
       id: selected.customized ? CUSTOM_SETTING_TEMPLATE_ID : selected.id,
       name: selected.customized ? CUSTOM_SETTING_TEMPLATE_NAME : selected.name,
+      revision: selected.revision,
       structure: selected.structure,
+      generationBlueprint: selected.generationBlueprint,
+      promptProfile: selected.promptProfile,
     });
   };
 
@@ -290,6 +344,10 @@ export function StandardModeSettingTemplateInitializer({
           key={selectedTemplateId}
           initialStructure={structure}
           onChange={updateStructure}
+          generationBlueprint={generationBlueprint}
+          onGenerationBlueprintChange={updateGenerationBlueprint}
+          promptProfile={promptProfile}
+          onPromptProfileChange={updatePromptProfile}
           saveName={saveName}
           onSaveNameChange={setSaveName}
           onSaveTemplate={saveCurrentTemplate}
@@ -306,8 +364,9 @@ export function StandardModeSettingTemplateInitializer({
               ) : null}
               <button
                 type="button"
+                disabled={!generationConfigurationValid}
                 onClick={confirmCurrentTemplate}
-                className="h-10 rounded-md bg-[#08AACE] px-6 text-sm font-bold text-white"
+                className="h-10 rounded-md bg-[#08AACE] px-6 text-sm font-bold text-white disabled:bg-slate-200 disabled:text-slate-400"
               >
                 确认模板并创建设定
               </button>

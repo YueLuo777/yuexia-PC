@@ -48,7 +48,10 @@ describe('standard mode setting model', () => {
       structure,
     });
     expect(getStandardSettingTemplateStorageKey('novel-a')).not.toBe(getStandardSettingTemplateStorageKey('novel-b'));
-    expect(readStandardSettingTemplateState('novel-a')?.structure[0].title).toBe('人物设定');
+    const migrated = readStandardSettingTemplateState('novel-a');
+    expect(migrated?.structure[0].title).toBe('人物设定');
+    expect(migrated).toMatchObject({ version: 3, templateRevision: 1, contractVersion: 'setting-generation-v2' });
+    expect(migrated?.generationBlueprint.entryRules.hero).toBeTruthy();
     expect(readStandardSettingTemplateState('novel-b')).toBeNull();
   });
 

@@ -1,5 +1,5 @@
 import { SMART_TEMPLATE_PRESETS } from '@/features/workbench/model/standardModeSmartSettingFlowModel';
-import type { StandardSettingTemplateState } from '@/features/workbench/model/standardModeSettingModel';
+import type { StandardSettingTemplateSnapshot } from '@/features/workbench/model/standardModeSettingModel';
 import type { TemplateStructure } from '@/features/workbench/model/standardModeTemplateModel';
 
 export const CUSTOM_SETTING_TEMPLATE_ID = 'custom-template';
@@ -13,7 +13,7 @@ export function hasSameTemplateDefinition(left: TemplateStructure, right: Templa
   return templateDefinition(left) === templateDefinition(right);
 }
 
-export function getCurrentSettingTemplateName(template: StandardSettingTemplateState | null) {
+export function getCurrentSettingTemplateName(template: StandardSettingTemplateSnapshot | null) {
   if (!template) return CUSTOM_SETTING_TEMPLATE_NAME;
   const preset = SMART_TEMPLATE_PRESETS.find((item) => item.id === template.templateId);
   if (!preset || !hasSameTemplateDefinition(template.structure, preset.structure)) {

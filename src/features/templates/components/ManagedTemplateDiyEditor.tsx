@@ -1,11 +1,21 @@
 import { TemplateDiyCascadeEditor } from '@/features/templates/components/TemplateDiyCascadeEditor';
+import { TemplateGenerationSettingsPanel } from '@/features/templates/components/TemplateGenerationSettingsPanel';
 import { useTemplateDiyController } from '@/features/templates/hooks/useTemplateDiyController';
 import type { TemplateStructure } from '@/features/workbench/model/standardModeTemplateModel';
-import type { ReactNode } from 'react';
+import type {
+  SettingGenerationPromptProfile,
+  TemplateGenerationBlueprint,
+} from '@/features/workbench/model/standardModeTemplateGenerationModel';
+import { validateTemplateGenerationBlueprint } from '@/features/workbench/model/standardModeTemplateGenerationModel';
+import { useRef, useState, type ReactNode } from 'react';
 
 export function ManagedTemplateDiyEditor({
   initialStructure,
   onChange,
+  generationBlueprint,
+  onGenerationBlueprintChange,
+  promptProfile,
+  onPromptProfileChange,
   saveName,
   onSaveNameChange,
   onSaveTemplate,
@@ -13,13 +23,29 @@ export function ManagedTemplateDiyEditor({
 }: {
   initialStructure: TemplateStructure;
   onChange: (structure: TemplateStructure) => void;
+  generationBlueprint: TemplateGenerationBlueprint;
+  onGenerationBlueprintChange: (blueprint: TemplateGenerationBlueprint) => void;
+  promptProfile: SettingGenerationPromptProfile;
+  onPromptProfileChange: (profile: SettingGenerationPromptProfile) => void;
   saveName: string;
   onSaveNameChange: (name: string) => void;
   onSaveTemplate: () => void;
   footerActions?: ReactNode;
 }) {
   const controller = useTemplateDiyController({ initialStructure, onChange });
+  const [editorMode, setEditorMode] = useState<'structure' | 'generation'>('structure');
+  const initialGenerationBlueprintRef = useRef(structuredClone(generationBlueprint));
+  const initialPromptProfileRef = useRef(structuredClone(promptProfile));
   const { summary } = controller;
+  const generationConfigurationValid = validateTemplateGenerationBlueprint(
+    controller.structure,
+    generationBlueprint,
+  ).valid;
+  const resetAll = () => {
+    controller.resetStructure();
+    onGenerationBlueprintChange(structuredClone(initialGenerationBlueprintRef.current));
+    onPromptProfileChange(structuredClone(initialPromptProfileRef.current));
+  };
   return (
     <section
       className="flex min-h-0 flex-col overflow-hidden bg-[#F5F8FA]"
@@ -35,10 +61,26 @@ export function ManagedTemplateDiyEditor({
             {controller.entry?.title ?? '未选择'}
           </span>
         </div>
-        <span className="shrink-0 text-xs font-semibold text-slate-400">删除默认锁定；解锁后仅修改当前模板草稿</span>
+        <div className="flex shrink-0 items-center gap-3">
+          <div role="tablist" aria-label="模板编辑内容" className="grid grid-cols-2 rounded-md border border-slate-300 bg-white p-0.5">
+            <button type="button" role="tab" aria-selected={editorMode === 'structure'} onClick={() => setEditorMode('structure')} className={`h-8 rounded px-4 text-xs font-bold ${editorMode === 'structure' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'}`}>模板结构</button>
+            <button type="button" role="tab" aria-selected={editorMode === 'generation'} onClick={() => setEditorMode('generation')} className={`h-8 rounded px-4 text-xs font-bold ${editorMode === 'generation' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'}`}>生成设置</button>
+          </div>
+          <span className="text-xs font-semibold text-slate-400">删除默认锁定；解锁后仅修改当前模板草稿</span>
+        </div>
       </div>
 
-      <TemplateDiyCascadeEditor controller={controller} />
+      {editorMode === 'structure' ? (
+        <TemplateDiyCascadeEditor controller={controller} />
+      ) : (
+        <TemplateGenerationSettingsPanel
+          controller={controller}
+          blueprint={generationBlueprint}
+          onBlueprintChange={onGenerationBlueprintChange}
+          promptProfile={promptProfile}
+          onPromptProfileChange={onPromptProfileChange}
+        />
+      )}
 
       <footer
         className={`shrink-0 border-t border-slate-200 bg-white ${
@@ -60,9 +102,11 @@ export function ManagedTemplateDiyEditor({
               </div>
               <SaveTemplateActions
                 controller={controller}
+                onReset={resetAll}
                 saveName={saveName}
                 onSaveNameChange={onSaveNameChange}
                 onSaveTemplate={onSaveTemplate}
+                canSave={generationConfigurationValid}
               />
             </div>
           </div>
@@ -79,9 +123,11 @@ export function ManagedTemplateDiyEditor({
             </div>
             <SaveTemplateActions
               controller={controller}
+              onReset={resetAll}
               saveName={saveName}
               onSaveNameChange={onSaveNameChange}
               onSaveTemplate={onSaveTemplate}
+              canSave={generationConfigurationValid}
             />
           </>
         )}
@@ -97,20 +143,24 @@ export function ManagedTemplateDiyEditor({
 
 function SaveTemplateActions({
   controller,
+  onReset,
   saveName,
   onSaveNameChange,
   onSaveTemplate,
+  canSave,
 }: {
   controller: ReturnType<typeof useTemplateDiyController>;
+  onReset: () => void;
   saveName: string;
   onSaveNameChange: (name: string) => void;
   onSaveTemplate: () => void;
+  canSave: boolean;
 }) {
   return (
     <div className="flex shrink-0 items-center gap-2" role="region" aria-label="保存模板">
       <button
         type="button"
-        onClick={controller.resetStructure}
+        onClick={onReset}
         className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-500 hover:border-[#9DDFEA] hover:text-[#078FAB]"
       >
         撤销本次修改
@@ -123,7 +173,7 @@ function SaveTemplateActions({
       />
       <button
         type="button"
-        disabled={!saveName.trim()}
+        disabled={!saveName.trim() || !canSave}
         onClick={onSaveTemplate}
         className="h-10 rounded-md bg-[#08AACE] px-4 text-sm font-black text-white hover:bg-[#0798B8] disabled:bg-slate-200 disabled:text-slate-400"
       >

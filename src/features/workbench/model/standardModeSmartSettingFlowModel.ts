@@ -1,4 +1,11 @@
 import { cloneTemplateStructure, type TemplateStructure } from './standardModeTemplateModel';
+import {
+  buildDefaultTemplateGenerationBlueprint,
+  buildXianxiaTemplateGenerationBlueprint,
+  createDefaultSettingGenerationPromptProfile,
+  createSettingTemplatePackage,
+  type SettingTemplatePackage,
+} from './standardModeTemplateGenerationModel';
 import { createSmartTemplateStructure } from './standardModeSmartSettingTemplateFactory';
 import {
   MALE_URBAN_CULTIVATION_STRUCTURE,
@@ -255,6 +262,36 @@ export const SMART_TEMPLATE_PRESETS: SmartTemplatePreset[] = [
     structure: GENERAL_STRUCTURE,
   },
 ];
+
+export function getSmartTemplatePackage(preset: SmartTemplatePreset): SettingTemplatePackage {
+  const xianxia = preset.id === 'male-fantasy-xianxia-light'
+    || preset.id === 'male-fantasy-xianxia'
+    || preset.id === 'male-fantasy-xianxia-full';
+  const generationBlueprint = xianxia
+    ? buildXianxiaTemplateGenerationBlueprint(preset.structure, preset.id)
+    : buildDefaultTemplateGenerationBlueprint(preset.structure);
+  const promptProfile = createDefaultSettingGenerationPromptProfile(
+    `setting-prompt:${preset.id}`,
+    `${preset.title}提示词`,
+  );
+  promptProfile.stageGuidance = Object.fromEntries(
+    generationBlueprint.stages.map((stage) => [stage.id, stage.promptGuidance]),
+  );
+  promptProfile.entryGuidance = Object.fromEntries(
+    Object.values(generationBlueprint.entryRules)
+      .filter((rule) => rule.promptGuidance.trim())
+      .map((rule) => [rule.entryId, rule.promptGuidance]),
+  );
+  return createSettingTemplatePackage({
+    id: preset.id,
+    name: preset.title,
+    source: 'built-in',
+    structure: preset.structure,
+    generationBlueprint,
+    promptProfile,
+    updatedAt: '内置模板',
+  });
+}
 
 export const BOOK_GENRE_OPTIONS: Record<BookChannel, BookGenreOption[]> = {
   male: [

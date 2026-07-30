@@ -103,7 +103,11 @@ export function StandardModeWorkbenchPage() {
 
   useEffect(() => {
     if (!templateState || !needsProfessionalSettingMigration) return;
-    replaceProfessionalSettingEntriesFromTemplate(settingsStorageKey, templateState.structure);
+    replaceProfessionalSettingEntriesFromTemplate(
+      settingsStorageKey,
+      templateState.structure,
+      templateState.generationBlueprint,
+    );
     setSettingsMigrationRevision((revision) => revision + 1);
   }, [needsProfessionalSettingMigration, settingsStorageKey, templateState]);
 
@@ -111,7 +115,11 @@ export function StandardModeWorkbenchPage() {
     if (!currentNovel || needsProfessionalSettingMigration) return;
     const currentTemplate = readStandardSettingTemplateState(String(currentNovel.id));
     const layoutChanged = currentTemplate
-      ? syncProfessionalSettingFieldLayoutsFromTemplate(settingsStorageKey, currentTemplate.structure)
+      ? syncProfessionalSettingFieldLayoutsFromTemplate(
+          settingsStorageKey,
+          currentTemplate.structure,
+          currentTemplate.generationBlueprint,
+        )
       : false;
     if (layoutChanged || repairStandardModeGeneratedSettingEntries(settingsStorageKey)) {
       setSettingsMigrationRevision((revision) => revision + 1);

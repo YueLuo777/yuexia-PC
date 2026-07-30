@@ -1,4 +1,13 @@
 import { readDefaultStandardSettingEntries } from '@/features/workbench/model/standardModeDefaultSettingAdapter';
+import {
+  SETTING_GENERATION_CONTRACT_VERSION,
+  buildDefaultTemplateGenerationBlueprint,
+  createSettingTemplatePackage,
+  normalizeTemplateGenerationBlueprint,
+  normalizeSettingGenerationPromptProfile,
+  type SettingGenerationPromptProfile,
+  type TemplateGenerationBlueprint,
+} from './standardModeTemplateGenerationModel';
 
 export type TemplateFieldNode = {
   id: string;
@@ -44,10 +53,16 @@ export type TemplateDomainNode = {
 export type TemplateStructure = TemplateDomainNode[];
 
 export type SavedSettingTemplate = {
+  formatVersion: 3;
   id: string;
   name: string;
+  revision: number;
+  source: 'custom';
   updatedAt: string;
   structure: TemplateStructure;
+  generationBlueprint: TemplateGenerationBlueprint;
+  promptProfile: SettingGenerationPromptProfile;
+  contractVersion: typeof SETTING_GENERATION_CONTRACT_VERSION;
 };
 
 export type TemplateNodeTarget = {
@@ -284,7 +299,30 @@ export function summarizeTemplate(structure: TemplateStructure) {
 export function readSavedSettingTemplates(): SavedSettingTemplate[] {
   try {
     const parsed = JSON.parse(localStorage.getItem(SAVED_SETTING_TEMPLATES_STORAGE_KEY) ?? '[]');
-    return Array.isArray(parsed) ? parsed as SavedSettingTemplate[] : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((value, index): SavedSettingTemplate[] => {
+      if (!value || typeof value !== 'object') return [];
+      const input = value as Partial<SavedSettingTemplate>;
+      const structure = Array.isArray(input.structure)
+        ? cloneTemplateStructure(input.structure as TemplateStructure)
+        : [];
+      const id = typeof input.id === 'string' && input.id ? input.id : `legacy-setting-template-${index + 1}`;
+      const name = typeof input.name === 'string' && input.name.trim() ? input.name : '未命名模板';
+      const generationBlueprint = normalizeTemplateGenerationBlueprint(structure, input.generationBlueprint);
+      const promptProfile = normalizeSettingGenerationPromptProfile(id, name, input.promptProfile);
+      return [{
+        formatVersion: 3,
+        id,
+        name,
+        revision: Number.isInteger(input.revision) && Number(input.revision) > 0 ? Number(input.revision) : 1,
+        source: 'custom',
+        updatedAt: typeof input.updatedAt === 'string' ? input.updatedAt : new Date().toLocaleString('zh-CN'),
+        structure,
+        generationBlueprint,
+        promptProfile,
+        contractVersion: SETTING_GENERATION_CONTRACT_VERSION,
+      }];
+    });
   } catch {
     return [];
   }
@@ -299,22 +337,51 @@ export function saveSettingTemplateById(
   templateId: string | null,
   name: string,
   structure: TemplateStructure,
+  generationBlueprint?: TemplateGenerationBlueprint,
+  promptProfile?: SettingGenerationPromptProfile,
 ) {
   const templates = readSavedSettingTemplates();
   const normalizedName = name.trim() || '未命名模板';
-  const saved: SavedSettingTemplate = {
-    id: templateId ?? `setting-template-${Date.now()}`,
+  const existing = templateId ? templates.find((template) => template.id === templateId) : null;
+  const id = templateId ?? `setting-template-${Date.now()}`;
+  const normalizedPromptProfile = normalizeSettingGenerationPromptProfile(
+    id,
+    normalizedName,
+    promptProfile ?? existing?.promptProfile,
+  );
+  const saved = createSettingTemplatePackage({
+    id,
     name: normalizedName,
-    updatedAt: new Date().toLocaleString('zh-CN'),
+    source: 'custom',
+    revision: (existing?.revision ?? 0) + 1,
     structure: cloneTemplateStructure(structure),
-  };
+    generationBlueprint: normalizeTemplateGenerationBlueprint(
+      structure,
+      generationBlueprint ?? existing?.generationBlueprint ?? buildDefaultTemplateGenerationBlueprint(structure),
+    ),
+    promptProfile: {
+      ...normalizedPromptProfile,
+      revision: existing ? Math.max(existing.promptProfile.revision, normalizedPromptProfile.revision) + 1 : 1,
+    },
+  }) satisfies SavedSettingTemplate;
   return writeSavedSettingTemplates([saved, ...templates.filter((template) => template.id !== saved.id)]);
 }
 
-export function saveSettingTemplate(name: string, structure: TemplateStructure) {
+export function saveSettingTemplate(
+  name: string,
+  structure: TemplateStructure,
+  generationBlueprint?: TemplateGenerationBlueprint,
+  promptProfile?: SettingGenerationPromptProfile,
+) {
   const templates = readSavedSettingTemplates();
   const existing = templates.find((template) => template.name === name);
-  return saveSettingTemplateById(existing?.id ?? null, name, structure);
+  return saveSettingTemplateById(
+    existing?.id ?? null,
+    name,
+    structure,
+    generationBlueprint,
+    promptProfile,
+  );
 }
 
 export function deleteSavedSettingTemplate(templateId: string) {

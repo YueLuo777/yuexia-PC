@@ -3,6 +3,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import {
   SMART_TEMPLATE_PRESETS,
   cloneSmartTemplateStructure,
+  getSmartTemplatePackage,
   sortSmartTemplatePresetsForDisplay,
 } from '@/features/workbench/model/standardModeSmartSettingFlowModel';
 import {
@@ -15,6 +16,14 @@ import {
   type SavedSettingTemplate,
   type TemplateStructure,
 } from '@/features/workbench/model/standardModeTemplateModel';
+import {
+  buildDefaultTemplateGenerationBlueprint,
+  createDefaultSettingGenerationPromptProfile,
+  normalizeTemplateGenerationBlueprint,
+  validateTemplateGenerationBlueprint,
+  type SettingGenerationPromptProfile,
+  type TemplateGenerationBlueprint,
+} from '@/features/workbench/model/standardModeTemplateGenerationModel';
 import { ManagedTemplateDiyEditor } from '@/features/templates/components/ManagedTemplateDiyEditor';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
@@ -45,9 +54,12 @@ function ensureManagedTemplateDomains(structure: TemplateStructure) {
 
 function getInitialTemplate() {
   const preset = SMART_TEMPLATE_PRESETS.find((item) => item.channel === 'male') ?? SMART_TEMPLATE_PRESETS[0];
+  const templatePackage = getSmartTemplatePackage(preset);
   return {
     source: { kind: 'builtIn', id: preset.id } as TemplateSource,
     structure: ensureManagedTemplateDomains(cloneSmartTemplateStructure(preset.structure)),
+    generationBlueprint: templatePackage.generationBlueprint,
+    promptProfile: templatePackage.promptProfile,
     saveName: `${preset.title}副本`,
   };
 }
@@ -94,6 +106,10 @@ export function TemplateManagePage() {
   const [listMode, setListMode] = useState<TemplateListMode>('male');
   const [source, setSource] = useState<TemplateSource>(initial.source);
   const [structure, setStructure] = useState<TemplateStructure>(initial.structure);
+  const [generationBlueprint, setGenerationBlueprint] = useState<TemplateGenerationBlueprint>(
+    initial.generationBlueprint,
+  );
+  const [promptProfile, setPromptProfile] = useState<SettingGenerationPromptProfile>(initial.promptProfile);
   const [saveName, setSaveName] = useState(initial.saveName);
   const [savedTemplates, setSavedTemplates] = useState(readSavedSettingTemplates);
   const [pendingDelete, setPendingDelete] = useState<SavedSettingTemplate | null>(null);
@@ -112,8 +128,12 @@ export function TemplateManagePage() {
   const selectBuiltIn = (presetId: string) => {
     const preset = SMART_TEMPLATE_PRESETS.find((item) => item.id === presetId);
     if (!preset) return;
+    const templatePackage = getSmartTemplatePackage(preset);
     setSource({ kind: 'builtIn', id: preset.id });
-    setStructure(ensureManagedTemplateDomains(cloneSmartTemplateStructure(preset.structure)));
+    const nextStructure = ensureManagedTemplateDomains(cloneSmartTemplateStructure(preset.structure));
+    setStructure(nextStructure);
+    setGenerationBlueprint(normalizeTemplateGenerationBlueprint(nextStructure, templatePackage.generationBlueprint));
+    setPromptProfile(templatePackage.promptProfile);
     setSaveName(`${preset.title}副本`);
     setNotice('内置模板已载入；修改后请保存到“我的模板”。');
   };
@@ -121,6 +141,8 @@ export function TemplateManagePage() {
   const selectSaved = (template: SavedSettingTemplate) => {
     setSource({ kind: 'saved', id: template.id });
     setStructure(cloneTemplateStructure(template.structure));
+    setGenerationBlueprint(template.generationBlueprint);
+    setPromptProfile(template.promptProfile);
     setSaveName(template.name);
     setNotice('');
   };
@@ -128,14 +150,28 @@ export function TemplateManagePage() {
   const createTemplate = () => {
     setListMode('saved');
     setSource({ kind: 'new' });
-    setStructure(buildDefaultTemplateStructure());
+    const nextStructure = buildDefaultTemplateStructure();
+    setStructure(nextStructure);
+    setGenerationBlueprint(buildDefaultTemplateGenerationBlueprint(nextStructure));
+    setPromptProfile(createDefaultSettingGenerationPromptProfile());
     setSaveName('新建模板');
     setNotice('新模板已创建，请编辑各类型后保存。');
   };
 
   const saveCurrentTemplate = () => {
+    const validation = validateTemplateGenerationBlueprint(structure, generationBlueprint);
+    if (!validation.valid) {
+      setNotice(validation.errors[0]?.message ?? '请先修复生成设置。');
+      return;
+    }
     const templateId = source.kind === 'saved' ? source.id : null;
-    const next = saveSettingTemplateById(templateId, saveName, structure);
+    const next = saveSettingTemplateById(
+      templateId,
+      saveName,
+      structure,
+      generationBlueprint,
+      promptProfile,
+    );
     const saved = next[0];
     setSavedTemplates(next);
     setSource({ kind: 'saved', id: saved.id });
@@ -261,7 +297,14 @@ export function TemplateManagePage() {
         <ManagedTemplateDiyEditor
           key={sourceKey}
           initialStructure={structure}
-          onChange={setStructure}
+          onChange={(nextStructure) => {
+            setStructure(nextStructure);
+            setGenerationBlueprint((current) => normalizeTemplateGenerationBlueprint(nextStructure, current));
+          }}
+          generationBlueprint={generationBlueprint}
+          onGenerationBlueprintChange={setGenerationBlueprint}
+          promptProfile={promptProfile}
+          onPromptProfileChange={setPromptProfile}
           saveName={saveName}
           onSaveNameChange={setSaveName}
           onSaveTemplate={saveCurrentTemplate}

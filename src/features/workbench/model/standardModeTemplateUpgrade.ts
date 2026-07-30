@@ -1,6 +1,7 @@
 import {
   SMART_TEMPLATE_PRESETS,
   cloneSmartTemplateStructure,
+  getSmartTemplatePackage,
 } from './standardModeSmartSettingFlowModel';
 import {
   mergeProfessionalSettingValuesIntoTemplate,
@@ -8,6 +9,7 @@ import {
 } from './standardModeDefaultSettingAdapter';
 import {
   readStandardSettingTemplateState,
+  createStandardSettingTemplateState,
   writeStandardSettingTemplateState,
   type StandardSettingTemplateState,
 } from './standardModeSettingModel';
@@ -156,13 +158,31 @@ export function upgradeStandardModeBookTemplate(
     settingsStorageKey,
     current.structure,
   );
-  const next: StandardSettingTemplateState = {
-    ...current,
+  const targetPreset = SMART_TEMPLATE_PRESETS.find((preset) => preset.id === target.id);
+  if (!targetPreset) return null;
+  const targetPackage = getSmartTemplatePackage(targetPreset);
+  const structure = mergeTemplateStructuresForUpgrade(currentWithProfessionalValues, target.structure);
+  const next: StandardSettingTemplateState = createStandardSettingTemplateState({
     templateId: target.id,
     templateName: target.name,
-    structure: mergeTemplateStructuresForUpgrade(currentWithProfessionalValues, target.structure),
-  };
-  upgradeProfessionalSettingEntriesFromTemplate(settingsStorageKey, next.structure);
+    templateRevision: targetPackage.revision,
+    structure,
+    generationBlueprint: targetPackage.generationBlueprint,
+    promptProfile: {
+      ...targetPackage.promptProfile,
+      globalGuidance: current.promptProfile.globalGuidance,
+      forbiddenGuidance: current.promptProfile.forbiddenGuidance,
+      stageGuidance: {
+        ...targetPackage.promptProfile.stageGuidance,
+        ...current.promptProfile.stageGuidance,
+      },
+      entryGuidance: {
+        ...targetPackage.promptProfile.entryGuidance,
+        ...current.promptProfile.entryGuidance,
+      },
+    },
+  });
+  upgradeProfessionalSettingEntriesFromTemplate(settingsStorageKey, next.structure, next.generationBlueprint);
   writeStandardSettingTemplateState(novelId, next);
   return next;
 }

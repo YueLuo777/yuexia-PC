@@ -1,5 +1,5 @@
 import { Check, Circle, LoaderCircle } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { usePrompts } from '@/features/prompts/hooks/usePrompts';
 import { countTextWords } from '@/features/workbench/model/workbenchLibraryPanelModel';
@@ -16,10 +16,12 @@ import { createVersionFromBrainstormEntry } from '@/features/workbench/model/sta
 import { readDefaultStandardSettingEntries } from '@/features/workbench/model/standardModeDefaultSettingAdapter';
 import {
   buildStandardSettingStepRequest,
+  buildStandardSettingTemplatePromptContent,
   clearStandardSettingGenerationSnapshot,
   createStandardSettingGenerationState,
   findBuiltInSettingPrompt,
   getStandardSettingGenerationSteps,
+  getNovelIdFromStandardSettingStorageKey,
   readStandardSettingGenerationState,
   readStandardSettingGenerationSnapshot,
   writeStandardSettingLastRequest,
@@ -27,9 +29,16 @@ import {
   writeStandardSettingGenerationSnapshot,
   type StandardSettingGenerationState,
 } from '@/features/workbench/model/standardModeSettingGenerationFlow';
+import { importStandardSettingGenerationOutput } from '@/features/workbench/model/standardModeGenerationImporter';
 import { findEmptyStandardSettingFields } from '@/features/workbench/model/standardModeSettingModel';
+import { readStandardSettingTemplateState } from '@/features/workbench/model/standardModeSettingModel';
 import type { StandardSettingEmptyField } from '@/features/workbench/model/standardModeSettingModel';
-import { readStandardSettingGenerationTargets } from '@/features/workbench/model/standardModeSettingGenerationTargets';
+import { getCurrentSettingTemplateName } from '@/features/workbench/model/standardModeTemplateIdentity';
+import {
+  readStandardSettingGenerationTargets,
+  usesTemplateSettingGenerationProtocol,
+  type StandardSettingGenerationTarget,
+} from '@/features/workbench/model/standardModeSettingGenerationTargets';
 import {
   GLOBAL_BRAINSTORM_LIBRARY_STORAGE_KEY,
   readWorkbenchLibraryEntries,
@@ -68,19 +77,27 @@ function schedulePendingAutoContinue(storageKey: string, stepIndex: number) {
 
 function buildExistingSettingContext(
   entries: WorkbenchLibraryEntry[],
-  targets: Array<{ id: string; title: string }>,
+  targets: StandardSettingGenerationTarget[],
 ) {
-  const targetIds = new Set(targets.map((target) => target.id));
+  const targetByExistingId = new Map(targets.flatMap((target) =>
+    (target.existingEntryIds ?? [target.id]).map((entryId) => [entryId, target] as const),
+  ));
   const normalizedTargetTitles = targets.map((target) => normalizeImportedSettingKey(target.title));
   return entries
     .filter((entry) => entry.tab === '大纲' || entry.tab === '角色')
     .filter((entry) => {
       if (/^<[^<>]+>$/.test(entry.title.trim())) return false;
+      const currentTarget = targetByExistingId.get(entry.id);
+      if (currentTarget) {
+        return currentTarget.rule?.mode === 'collection'
+          && !entry.standardTemplateGenerated
+          && !entry.standardTemplatePlaceholder;
+      }
       const title = normalizeImportedSettingKey(entry.title);
       const matchesTargetTitle = normalizedTargetTitles.some((targetTitle) =>
         title === targetTitle || title.startsWith(`${targetTitle}：`) || title.startsWith(`${targetTitle}:`),
       );
-      if (!matchesTargetTitle || targetIds.has(entry.id) || entry.tab === '角色') return true;
+      if (!matchesTargetTitle || entry.tab === '角色') return true;
       const setting = parseSettingContent(entry.content);
       return Boolean(setting.lockedDefaultEntryId || setting.structuredFieldSetId);
     })
@@ -127,7 +144,18 @@ export function StandardModeSettingGenerationPanel({
   onJumpToEmptyField,
 }: StandardModeSettingGenerationPanelProps) {
   const { prompts } = usePrompts();
-  const generationSteps = getStandardSettingGenerationSteps(settingsStorageKey);
+  const novelId = useMemo(
+    () => getNovelIdFromStandardSettingStorageKey(settingsStorageKey),
+    [settingsStorageKey],
+  );
+  const generationSteps = useMemo(
+    () => getStandardSettingGenerationSteps(settingsStorageKey),
+    [settingsStorageKey],
+  );
+  const currentTemplateName = useMemo(
+    () => getCurrentSettingTemplateName(readStandardSettingTemplateState(novelId)),
+    [novelId],
+  );
   const [flow, setFlow] = useState<StandardSettingGenerationState>(() =>
     readStandardSettingGenerationState(settingsStorageKey),
   );
@@ -143,6 +171,7 @@ export function StandardModeSettingGenerationPanel({
   const generationObservedRef = useRef(false);
   const generationVisualSnapshotRef = useRef<StandardSettingGenerationState | null>(null);
   const generationTargetEntryIdsRef = useRef<string[]>([]);
+  const generationTargetsRef = useRef<StandardSettingGenerationTarget[]>([]);
   const isGeneratingRef = useRef(isGenerating);
   isGeneratingRef.current = isGenerating;
 
@@ -153,6 +182,10 @@ export function StandardModeSettingGenerationPanel({
     setFlow(snapshot && requestIsActive ? { ...restoredFlow, status: 'running', error: '' } : restoredFlow);
     generationVisualSnapshotRef.current = null;
     generationTargetEntryIdsRef.current = snapshot?.targetEntryIds ?? [];
+    const restoredStep = generationSteps.find((step) => step.id === snapshot?.stepId);
+    generationTargetsRef.current = restoredStep
+      ? readStandardSettingGenerationTargets(settingsStorageKey, restoredStep)
+      : [];
     generationObservedRef.current = Boolean(snapshot && requestIsActive);
     if (snapshot && !requestIsActive) {
       clearStandardSettingGenerationSnapshot(settingsStorageKey);
@@ -167,12 +200,12 @@ export function StandardModeSettingGenerationPanel({
     setCheckResults(null);
     setLinkedBrainstorm(readStandardModeBrainstormLinkFromSettingsKey(settingsStorageKey));
     setIsBrainstormReaderOpen(false);
-  }, [settingsStorageKey]);
+  }, [generationSteps, settingsStorageKey]);
 
   useEffect(() => {
     return subscribeStandardModeSettingNavigationAction((event) => {
       if (event.storageKey !== settingsStorageKey || event.action !== 'settings-cleared') return;
-      setFlow(createStandardSettingGenerationState());
+      setFlow(createStandardSettingGenerationState(settingsStorageKey));
       setQueuedStepIndex(null);
       clearPendingAutoContinue(settingsStorageKey);
       setPanelMode('one-click');
@@ -180,6 +213,7 @@ export function StandardModeSettingGenerationPanel({
       generationObservedRef.current = false;
       generationVisualSnapshotRef.current = null;
       generationTargetEntryIdsRef.current = [];
+      generationTargetsRef.current = [];
       clearStandardSettingGenerationSnapshot(settingsStorageKey);
     });
   }, [settingsStorageKey]);
@@ -203,6 +237,7 @@ export function StandardModeSettingGenerationPanel({
         return;
       }
       const prompt = findBuiltInSettingPrompt(prompts, step);
+      const templatePrompt = buildStandardSettingTemplatePromptContent(settingsStorageKey, step, targets);
       const request = buildStandardSettingStepRequest({
         step,
         requirement: flow.requirement,
@@ -210,12 +245,13 @@ export function StandardModeSettingGenerationPanel({
           ? [linkedBrainstorm.title, linkedBrainstorm.content].filter(Boolean).join('\n')
           : '',
         existingSettings: buildExistingSettingContext(entries, targets),
-        promptContent: prompt?.content ?? FALLBACK_SETTING_PROMPT,
+        promptContent: [prompt?.content ?? FALLBACK_SETTING_PROMPT, templatePrompt].filter(Boolean).join('\n\n'),
         targets,
       });
       generationObservedRef.current = false;
       generationVisualSnapshotRef.current ??= flow;
       generationTargetEntryIdsRef.current = targets.map((target) => target.id);
+      generationTargetsRef.current = targets;
       writeStandardSettingGenerationSnapshot(settingsStorageKey, {
         stepId: step.id,
         targetEntryIds: targets.map((target) => target.id),
@@ -274,14 +310,24 @@ export function StandardModeSettingGenerationPanel({
       return;
     }
     const completedStep = generationSteps[flow.currentStepIndex];
-    if (!onImport(generationTargetEntryIdsRef.current, completedStep.id)) {
+    const importResult = usesTemplateSettingGenerationProtocol(settingsStorageKey)
+      ? importStandardSettingGenerationOutput({
+          settingsStorageKey,
+          output: latestOutput,
+          stepId: completedStep.id,
+          targets: generationTargetsRef.current,
+        })
+      : onImport(generationTargetEntryIdsRef.current, completedStep.id)
+        ? { ok: true as const, importedEntryIds: generationTargetEntryIdsRef.current }
+        : { ok: false as const, error: 'AI返回内容无法识别为设定，请调整内置提示词后重试。' };
+    if (!importResult.ok) {
       clearPendingAutoContinue(settingsStorageKey);
       clearStandardSettingGenerationSnapshot(settingsStorageKey);
       generationVisualSnapshotRef.current = null;
       setFlow((current) => ({
         ...current,
         status: 'failed',
-        error: 'AI返回内容无法识别为设定，请调整内置提示词后重试。',
+        error: importResult.error,
       }));
       return;
     }
@@ -415,6 +461,10 @@ export function StandardModeSettingGenerationPanel({
         >
           逐步生成
         </button>
+      </div>
+
+      <div className="mt-2 shrink-0 text-right text-xs font-semibold text-slate-400">
+        当前模板：<span className="font-bold text-[#078FAB]">{currentTemplateName}</span>
       </div>
 
       {checkResults === null ? (

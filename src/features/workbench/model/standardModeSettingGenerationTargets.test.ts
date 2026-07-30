@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { STANDARD_SETTING_GENERATION_STEPS, getStandardSettingGenerationSteps } from './standardModeSettingGenerationFlow';
+import { getStandardSettingGenerationSteps } from './standardModeSettingGenerationFlow';
 import {
   buildStandardSettingGenerationOutputTemplate,
   readStandardSettingGenerationTargets,
 } from './standardModeSettingGenerationTargets';
 import { replaceProfessionalSettingEntriesFromTemplate } from './standardModeDefaultSettingAdapter';
-import { writeStandardSettingTemplateState } from './standardModeSettingModel';
+import { createStandardSettingTemplateState, writeStandardSettingTemplateState } from './standardModeSettingModel';
+import { getSmartTemplatePackage, SMART_TEMPLATE_PRESETS } from './standardModeSmartSettingFlowModel';
 import {
   MALE_FANTASY_XIANXIA_FULL_STRUCTURE,
   MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE,
@@ -23,37 +24,58 @@ describe('standard mode setting generation targets', () => {
     .length;
 
   it('targets the original world-foundation entries and emits their exact names and fields', () => {
-    localStorage.setItem('xinyuexia_workbench_settings_target-test', JSON.stringify([
+    const storageKey = 'xinyuexia_workbench_settings_target-test';
+    const preset = SMART_TEMPLATE_PRESETS.find((item) => item.id === 'male-fantasy-xianxia-light')!;
+    const templatePackage = getSmartTemplatePackage(preset);
+    replaceProfessionalSettingEntriesFromTemplate(storageKey, templatePackage.structure, templatePackage.generationBlueprint);
+    writeStandardSettingTemplateState('target-test', createStandardSettingTemplateState({
+      templateId: templatePackage.id,
+      templateName: templatePackage.name,
+      structure: templatePackage.structure,
+      generationBlueprint: templatePackage.generationBlueprint,
+      promptProfile: templatePackage.promptProfile,
+    }));
+    const existing = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+    localStorage.setItem(storageKey, JSON.stringify([...existing,
       { id: 'bad-group', tab: '大纲', title: '<基础设定>', content: JSON.stringify({ type: '基础设定', body: '错误分组' }), updatedAt: '' },
       { id: 'bad-world', tab: '大纲', title: '世界背景：世界名为九州', content: JSON.stringify({ type: '核心设定', body: '错误副本' }), updatedAt: '' },
     ]));
     const targets = readStandardSettingGenerationTargets(
-      'xinyuexia_workbench_settings_target-test',
-      STANDARD_SETTING_GENERATION_STEPS[0],
+      storageKey,
+      getStandardSettingGenerationSteps(storageKey)[0],
     );
 
-    expect(targets.map((target) => target.title)).toEqual([
-      '作品定位',
-      '世界背景',
-      '力量体系',
-      '设定红线',
-    ]);
+    expect(targets.map((target) => target.title)).toEqual(
+      expect.arrayContaining(['作品定位', '世界背景', '力量体系', '设定红线']),
+    );
     const template = buildStandardSettingGenerationOutputTemplate(targets);
-    expect(template).toContain('<核心设定>');
-    expect(template).toContain('*作品定位*：');
-    expect(template).toContain('【小说类型】：填写该字段内容');
-    expect(template).not.toContain('*基础设定*：');
+    expect(template).toContain('[[SETTING_ENTRY:');
+    expect(template).toContain('[[TITLE]]作品定位');
+    expect(template).toContain('[[FIELD:');
+    expect(template).not.toContain('bad-group');
     expect(targets.map((target) => target.id)).not.toEqual(expect.arrayContaining(['bad-group', 'bad-world']));
   });
 
   it('assigns every original template entry to one generation step only', () => {
-    const targetGroups = STANDARD_SETTING_GENERATION_STEPS.map((step) =>
-      readStandardSettingGenerationTargets('xinyuexia_workbench_settings_target-test', step),
+    const storageKey = 'xinyuexia_workbench_settings_target-test';
+    const preset = SMART_TEMPLATE_PRESETS.find((item) => item.id === 'male-fantasy-xianxia')!;
+    const templatePackage = getSmartTemplatePackage(preset);
+    replaceProfessionalSettingEntriesFromTemplate(storageKey, templatePackage.structure, templatePackage.generationBlueprint);
+    writeStandardSettingTemplateState('target-test', createStandardSettingTemplateState({
+      templateId: templatePackage.id,
+      templateName: templatePackage.name,
+      structure: templatePackage.structure,
+      generationBlueprint: templatePackage.generationBlueprint,
+      promptProfile: templatePackage.promptProfile,
+    }));
+    const targetGroups = getStandardSettingGenerationSteps(storageKey).map((step) =>
+      readStandardSettingGenerationTargets(storageKey, step),
     );
     const allIds = targetGroups.flat().map((target) => target.id);
 
     expect(allIds.length).toBeGreaterThan(0);
     expect(new Set(allIds).size).toBe(allIds.length);
+    expect(allIds).toHaveLength(countEnabledEntries(templatePackage.structure));
     expect(targetGroups.every((targets) => targets.length > 0)).toBe(true);
   });
 

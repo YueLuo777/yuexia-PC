@@ -11,6 +11,10 @@ import { clearStandardModeBrainstormLinkFromSettingsKey } from '@/features/workb
 import { clearStandardSettingGenerationState } from '@/features/workbench/model/standardModeSettingGenerationFlow';
 import type { BookChannel } from '@/features/workbench/model/standardModeSmartSettingFlowModel';
 import type { TemplateStructure } from '@/features/workbench/model/standardModeTemplateModel';
+import type {
+  SettingGenerationPromptProfile,
+  TemplateGenerationBlueprint,
+} from '@/features/workbench/model/standardModeTemplateGenerationModel';
 import { getCurrentSettingTemplateName } from '@/features/workbench/model/standardModeTemplateIdentity';
 import { getStandardTemplateUpgradeOptions } from '@/features/workbench/model/standardModeTemplateUpgrade';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
@@ -49,7 +53,10 @@ export function StandardModeSettingPage({
   const [pendingTemplate, setPendingTemplate] = useState<{
     id: string;
     name: string;
+    revision: number;
     structure: TemplateStructure;
+    generationBlueprint: TemplateGenerationBlueprint;
+    promptProfile: SettingGenerationPromptProfile;
   } | null>(null);
 
   useEffect(() => {
@@ -59,12 +66,19 @@ export function StandardModeSettingPage({
     }
   }, [forceTemplateSelection, reselectingTemplate, settings.hasExistingSettings, settings.hasSettingContent]);
 
-  const finishInitialization = (template: { id: string; name: string; structure: TemplateStructure }) => {
+  const finishInitialization = (template: {
+    id: string;
+    name: string;
+    revision: number;
+    structure: TemplateStructure;
+    generationBlueprint: TemplateGenerationBlueprint;
+    promptProfile: SettingGenerationPromptProfile;
+  }) => {
     if (settings.hasExistingSettings) {
       clearStandardSettingGenerationState(settingsStorageKey);
       clearStandardModeBrainstormLinkFromSettingsKey(settingsStorageKey);
     }
-    settings.initializeTemplate(template.id, template.name, template.structure);
+    settings.initializeTemplate(template);
     setReselectingTemplate(false);
     onInitialized?.();
   };

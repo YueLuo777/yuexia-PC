@@ -27,6 +27,7 @@ import {
 } from '../components/workbenchLibraryTabs';
 import { parseSettingContent, stringifySettingContent } from '../components/workbenchStructuredSettings';
 import { canCreateWorkbenchRoleInType } from '../model/workbenchRoleTypes';
+import { createManualStandardTemplateSettingInstance } from '../model/standardModeTemplateInstance';
 
 type EntryActionsInput = {
   activeTab: string;
@@ -170,13 +171,13 @@ export function useWorkbenchLibraryEntryActions({
       titleDraft.trim() ||
       getDefaultWorkbenchLibraryEntryTitle(tab);
     const selectedType = typeDraft ?? getSelectedSettingWorkspaceType();
-    const entry = {
-      ...createWorkbenchLibraryEntry(tab, title),
-      content: stringifySettingContent({
-        type: tab === SETTING_TAB ? (selectedType ?? DEFAULT_SETTING_ENTRY_TYPE) : DEFAULT_SETTING_ENTRY_TYPE,
-        body: '',
-      }),
-    };
+    const selectedId = tabConfigs[activeTab]?.selectedId;
+    const selectedTemplateEntry = selectedId ? entries.find((item) => item.id === selectedId) : null;
+    const entry = createManualStandardTemplateSettingInstance({
+      source: selectedTemplateEntry ?? null,
+      title,
+      type: tab === SETTING_TAB ? (selectedType ?? DEFAULT_SETTING_ENTRY_TYPE) : DEFAULT_SETTING_ENTRY_TYPE,
+    });
     persist([entry, ...entries]);
     setRememberedActiveTab(tab);
     setSelectedIdForTab(tab, entry.id);

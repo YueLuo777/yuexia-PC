@@ -174,13 +174,13 @@ describe('standard mode setting generation flow', () => {
     expect(request).toContain('只写用户可见的中文设定内容');
     expect(request).toContain('禁止输出JSON');
     expect(request).toContain('structuredFieldSetId');
-    expect(request).toContain('只能写入以下原有设定');
-    expect(request).toContain('*整体剧情*：');
-    expect(request).toContain('【开局事件】：填写该字段内容');
-    expect(request).toContain('禁止新增、改名、合并');
+    expect(request).toContain('【锁定输出协议】');
+    expect(request).toContain('[[SETTING_ENTRY:plot-overview]]');
+    expect(request).toContain('[[FIELD:legacy-field-1]]');
+    expect(request).toContain('不得省略、改名或改写标记');
   });
 
-  it('uses a create-and-name contract for the character step instead of the existing-only contract', () => {
+  it('uses the same locked id protocol for character generation', () => {
     const request = buildStandardSettingStepRequest({
       step: STANDARD_SETTING_GENERATION_STEPS[2],
       requirement: '',
@@ -198,18 +198,14 @@ describe('standard mode setting generation flow', () => {
       }],
     });
 
-    expect(request).toContain('本步骤不是填写固定人物占位条目，而是创建完整的人物设定');
-    expect(request).toContain('条目名与【人物姓名】必须完全一致');
-    expect(request).toContain('重要正派角色、正派配角、重要反派角色、反派配角和龙套角色');
-    expect(request).toContain('*真实姓名*：');
-    expect(request).toContain('【人物出身】：具体内容');
-    expect(request).toContain('【行为原则】：具体内容');
-    expect(request).not.toContain('本步骤只能写入以下原有设定');
-    expect(request).not.toContain('禁止新增、改名、合并');
-    expect(request).not.toContain('*男主角*：');
+    expect(request).toContain('【锁定输出协议】');
+    expect(request).toContain('[[SETTING_ENTRY:male-placeholder]]');
+    expect(request).toContain('[[TITLE]]男主角');
+    expect(request).toContain('[[FIELD:legacy-field-1]]');
+    expect(request).not.toContain('重要正派角色、正派配角、重要反派角色、反派配角和龙套角色');
   });
 
-  it('keeps non-character template fields writable in the character step', () => {
+  it('keeps every blueprint target writable in a mixed step', () => {
     const request = buildStandardSettingStepRequest({
       step: getStandardSettingGenerationSteps('')[2],
       requirement: '',
@@ -238,9 +234,9 @@ describe('standard mode setting generation flow', () => {
       ],
     });
 
-    expect(request).toContain('【本步骤人物创建规则】');
-    expect(request).toContain('【本步骤同时填写以下原有设定】');
-    expect(request).toContain('*金手指核心*：');
-    expect(request).toContain('【能力本质】：填写该字段内容');
+    expect(request).toContain('[[SETTING_ENTRY:male-placeholder]]');
+    expect(request).toContain('[[SETTING_ENTRY:gold-finger]]');
+    expect(request).toContain('[[FIELD:legacy-field-1]]');
+    expect(request).toContain('能力本质');
   });
 });

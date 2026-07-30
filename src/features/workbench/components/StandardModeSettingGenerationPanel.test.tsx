@@ -15,6 +15,9 @@ import {
   writeStandardSettingGenerationState,
 } from '@/features/workbench/model/standardModeSettingGenerationFlow';
 import { publishStandardModeSettingNavigationAction } from '@/features/workbench/model/standardModeSettingNavigationEvents';
+import { createStandardSettingTemplateState, writeStandardSettingTemplateState } from '@/features/workbench/model/standardModeSettingModel';
+import { buildDefaultTemplateGenerationBlueprint } from '@/features/workbench/model/standardModeTemplateGenerationModel';
+import { createSmartTemplateStructure } from '@/features/workbench/model/standardModeSmartSettingTemplateFactory';
 
 describe('StandardModeSettingGenerationPanel', () => {
   beforeEach(() => localStorage.clear());
@@ -60,6 +63,40 @@ describe('StandardModeSettingGenerationPanel', () => {
     });
     expect(stepCards.slice(1).every((card) => card?.querySelector('[data-standard-setting-action-slot="true"]')?.childElementCount === 0)).toBe(true);
     expect(stepGenerateButtons[0]).toHaveClass('whitespace-nowrap');
+  });
+
+  it('reads custom step names and order from the current work template snapshot', () => {
+    const structure = createSmartTemplateStructure('dynamic-panel', [
+      ['作品设定', [['核心设定', [['作品定位', ['小说类型']]]]]],
+      ['道具资源', [['功法技能', [['功法档案', ['功法名称']]]]]],
+    ]);
+    const generationBlueprint = buildDefaultTemplateGenerationBlueprint(structure);
+    generationBlueprint.stages[0].name = '先定作品';
+    generationBlueprint.stages[1].name = '再生功法';
+    writeStandardSettingTemplateState('dynamic-panel', createStandardSettingTemplateState({
+      templateId: 'custom-template',
+      templateName: '我的动态模板',
+      structure,
+      generationBlueprint,
+    }));
+
+    render(
+      <StandardModeSettingGenerationPanel
+        settingsStorageKey="xinyuexia_workbench_settings_dynamic-panel"
+        entries={[]}
+        latestOutput=""
+        isGenerating={false}
+        onGenerate={vi.fn()}
+        onStop={vi.fn()}
+        onImport={() => true}
+        onJumpToEmptyField={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/先定作品/)).toBeInTheDocument();
+    expect(screen.getByText(/再生功法/)).toBeInTheDocument();
+    expect(screen.getAllByText('未生成')).toHaveLength(2);
+    expect(screen.getByText('自定义')).toBeInTheDocument();
   });
 
   it('resets the visible generation steps when setting content is cleared', async () => {

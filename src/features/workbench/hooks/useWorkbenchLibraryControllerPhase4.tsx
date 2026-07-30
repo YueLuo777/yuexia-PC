@@ -9,6 +9,7 @@ import {
   buildOtherSettingLinkedContext,
   buildSettingLinkedContextPayload,
 } from '../components/workbenchSettingLinkedContext';
+import { createManualStandardTemplateRoleInstance } from '../model/standardModeTemplateInstance';
 export function useWorkbenchLibraryControllerPhase4(scope: Record<string, any>) {
   const phaseActionsRef = { current: getWorkbenchLibraryPhaseActions(scope.settingTypeOptionsRef) };
   const getRoleEntries = () => phaseActionsRef.current.roleEntries ?? [];
@@ -1131,22 +1132,12 @@ export function useWorkbenchLibraryControllerPhase4(scope: Record<string, any>) 
     )
       return;
     const title = options.title?.trim() || roleNameDraft.trim() || '新建角色';
-    const entry = createWorkbenchLibraryEntry(ROLE_TAB, title);
-    const stateSettings = createEmptyRoleStateSettings();
-    const roleEntry = {
-      ...entry,
-      content: stringifyRoleContent({
-        type: normalizedType,
-        lifeStatus: '存活',
-        baseSetting: '',
-        relationship: '',
-        stateSettings,
-        personality: '',
-        background: '',
-        status: '',
-        history: [],
-      }),
-    };
+    const roleEntry = createManualStandardTemplateRoleInstance({
+      entries,
+      selectedRoleId: tabConfigs[ROLE_TAB]?.selectedId ?? null,
+      title,
+      type: normalizedType,
+    });
     persist([roleEntry, ...entries]);
     if (options.switchToRoleTab !== false) setRememberedActiveTab(ROLE_TAB);
     setSelectedIdForTab(ROLE_TAB, roleEntry.id);

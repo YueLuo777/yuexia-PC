@@ -6,6 +6,7 @@ import {
   deleteSavedSettingTemplate,
   readSavedSettingTemplates,
   renameTemplateNode,
+  SAVED_SETTING_TEMPLATES_STORAGE_KEY,
   saveSettingTemplateById,
   type TemplateStructure,
 } from './standardModeTemplateModel';
@@ -68,5 +69,26 @@ describe('standard mode template model', () => {
     expect(readSavedSettingTemplates()).toEqual(updated);
     expect(deleteSavedSettingTemplate(templateId)).toEqual([]);
     expect(readSavedSettingTemplates()).toEqual([]);
+  });
+
+  it('migrates a structure-only saved template to a complete V3 package without changing its ids', () => {
+    localStorage.setItem(SAVED_SETTING_TEMPLATES_STORAGE_KEY, JSON.stringify([{
+      id: 'legacy-template',
+      name: '旧自定义模板',
+      updatedAt: '2026-07-01',
+      structure,
+    }]));
+
+    const [migrated] = readSavedSettingTemplates();
+    expect(migrated).toMatchObject({
+      formatVersion: 3,
+      id: 'legacy-template',
+      name: '旧自定义模板',
+      revision: 1,
+      source: 'custom',
+      contractVersion: 'setting-generation-v2',
+    });
+    expect(migrated.structure[0].groups[0].entries[0].id).toBe('hero');
+    expect(migrated.generationBlueprint.entryRules.hero).toBeTruthy();
   });
 });

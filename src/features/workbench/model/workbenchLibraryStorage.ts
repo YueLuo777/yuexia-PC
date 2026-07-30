@@ -11,6 +11,10 @@ export interface WorkbenchLibraryEntry {
   brainstormSerialNumber?: number;
   brainstormCategoryId?: string;
   standardGenerationStepId?: string;
+  standardTemplateEntryId?: string;
+  standardTemplateGenerated?: boolean;
+  standardTemplatePlaceholder?: boolean;
+  standardTemplateCollection?: boolean;
 }
 
 export const WORKBENCH_LIBRARY_UPDATED_EVENT = 'xinyuexia_workbench_library_updated';
