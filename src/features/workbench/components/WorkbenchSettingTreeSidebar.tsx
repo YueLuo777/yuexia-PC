@@ -91,12 +91,13 @@ const hasPendingStatus = (entry: WorkbenchLibraryEntry, role: boolean) =>
 
 const DOMAIN_ORDER: Record<string, number> = {
   work: 1,
-  character: 2,
-  'setting:location': 3,
-  'setting:faction': 4,
-  'setting:item': 5,
-  'setting:foreshadow': 6,
-  'setting:monster': 7,
+  'setting:plot': 2,
+  character: 3,
+  'setting:location': 4,
+  'setting:faction': 5,
+  'setting:item': 6,
+  'setting:foreshadow': 7,
+  'setting:monster': 8,
 };
 const LOCKED_DEFAULT_SETTING_TOOLTIP = '内置设定，无法删除';
 

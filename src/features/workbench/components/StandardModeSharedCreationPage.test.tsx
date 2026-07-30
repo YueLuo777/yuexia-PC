@@ -20,7 +20,10 @@ describe('standard mode shared chapter creation pages', () => {
     expect(adapter).toContain("statusUpdate: 'status'");
     expect(standardPage).toContain("activeAction === 'chapterOutline'");
     expect(standardPage).toContain("activeAction === 'settingsList'");
-    expect(standardPage).toContain('<StandardModeSharedCreationPage action={activeAction} aiLogOpenSignal={aiLogOpenSignal} />');
+    expect(standardPage).toContain('<StandardModeSharedCreationPage');
+    expect(standardPage).toContain('key={`${currentNovel.id}:${settingsMigrationRevision}`}');
+    expect(standardPage).toContain('action={activeAction}');
+    expect(standardPage).toContain('aiLogOpenSignal={aiLogOpenSignal}');
     expect(workbenchPage).toContain("experience?: 'professional' | 'standard'");
     expect(workbenchPage).toContain("'outline' | 'chapterOutline' | 'writing'");
     expect(workbenchPage).toContain("experience === 'professional' ? (");

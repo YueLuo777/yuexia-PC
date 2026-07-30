@@ -24,12 +24,15 @@ const SETTING_DOMAIN_WORKSPACE_IDS = {
   monster: 'setting:monster',
 } as const;
 
-export const SETTING_WORKSPACE_DOMAIN_GROUPS = Object.fromEntries(
-  SETTING_DOMAIN_IDS.map((domainId) => [
-    SETTING_DOMAIN_WORKSPACE_IDS[domainId],
-    getPromptTaxonomyDomain(domainId).groups.map((group) => group.title),
-  ]),
-) as Record<(typeof SETTING_DOMAIN_WORKSPACE_IDS)[(typeof SETTING_DOMAIN_IDS)[number]], string[]>;
+export const SETTING_WORKSPACE_DOMAIN_GROUPS: Record<string, string[]> = {
+  'setting:plot': [],
+  ...Object.fromEntries(
+    SETTING_DOMAIN_IDS.map((domainId) => [
+      SETTING_DOMAIN_WORKSPACE_IDS[domainId],
+      getPromptTaxonomyDomain(domainId).groups.map((group) => group.title),
+    ]),
+  ),
+};
 
 export const DEFAULT_WORK_SETTING_STARTER_ENTRIES = [
   ...WORK_DOMAIN.groups.flatMap((group) =>

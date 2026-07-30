@@ -78,13 +78,13 @@ describe('standard mode setting generation targets', () => {
     expect(new Set(allIds).size).toBe(allIds.length);
     expect(allIds).toHaveLength(countEnabledEntries(MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE));
     expect(targetGroups[3].map((target) => target.title)).toEqual(
-      expect.arrayContaining(['主角起始地点', '宗门势力（可重复）']),
+      expect.arrayContaining(['主角起始地点', '关键地点档案', '宗门势力档案']),
     );
     expect(targetGroups[1].map((target) => target.title)).toEqual(
       expect.arrayContaining(['金手指核心', '主角成长线']),
     );
     expect(targetGroups[4].map((target) => target.title)).toEqual(
-      expect.arrayContaining(['功法档案（可重复）', '长线伏笔（可重复）']),
+      expect.arrayContaining(['功法档案', '技能档案', '法宝装备', '长线伏笔', '妖兽档案']),
     );
   });
 

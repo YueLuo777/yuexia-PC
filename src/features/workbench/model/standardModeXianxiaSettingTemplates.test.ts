@@ -59,14 +59,17 @@ describe('xianxia setting template variants', () => {
       '作品设定', '剧情规划', '人物设定', '地点地图', '势力设定', '道具资源', '伏笔线索', '怪物图鉴',
     ]);
     expect(light?.structure.map((domain) => domain.title)).toEqual([
-      '作品设定', '剧情规划', '人物设定', '地点地图', '势力设定', '道具资源', '伏笔线索',
+      '作品设定', '剧情规划', '人物设定', '地点地图', '势力设定', '道具资源', '伏笔线索', '怪物图鉴',
     ]);
     expect(getEntries(full!.structure).map((entry) => entry.title)).toEqual(expect.arrayContaining([
       '世界层级与连接', '后续分卷模板（可重复）', '宗门势力（可重复）', '妖兽档案（可重复）',
     ]));
     expect(getEntries(light!.structure).map((entry) => entry.title)).toEqual(expect.arrayContaining([
-      '作品定位', '第一卷', '主角档案', '主角起始地点', '宗门势力（可重复）', '功法档案（可重复）',
+      '作品定位', '第一卷', '主角档案', '女主角档案', '重要配角档案', '阶段反派档案',
+      '主角起始地点', '关键地点档案', '宗门势力档案', '功法档案', '技能档案',
+      '法宝装备', '长线伏笔', '妖兽档案',
     ]));
+    expect(getEntries(light!.structure).some((entry) => entry.title.includes('可重复'))).toBe(false);
     expect(getFieldCount(light!.structure)).toBe(100);
     expect(getFieldCount(standard!.structure)).toBeGreaterThan(getFieldCount(light!.structure));
     expect(getFieldCount(full!.structure)).toBeGreaterThan(getFieldCount(standard!.structure));

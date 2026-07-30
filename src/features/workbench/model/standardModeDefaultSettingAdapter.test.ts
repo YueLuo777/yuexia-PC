@@ -103,6 +103,25 @@ describe('standard mode default setting adapter', () => {
     expect(entries.some((entry) => entry.title === '男主角')).toBe(true);
   });
 
+  it('keeps the redesigned lightweight entries under all eight top-level domains', () => {
+    const storageKey = 'xinyuexia_workbench_settings_novel-light-domains';
+    replaceProfessionalSettingEntriesFromTemplate(storageKey, MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE);
+
+    const entries = readDefaultStandardSettingEntries(storageKey);
+    expect([...new Set(entries.map((entry) => entry.domainTitle))]).toEqual([
+      '作品设定', '剧情规划', '人物设定', '地点地图', '势力设定', '道具资源', '伏笔线索', '怪物图鉴',
+    ]);
+    expect(entries.find((entry) => entry.title === '功法档案')?.domainTitle).toBe('道具资源');
+    expect(entries.find((entry) => entry.title === '功法档案')?.groupTitle).toBe('功法技能');
+    expect(entries.some((entry) => entry.title.includes('可重复'))).toBe(false);
+
+    const storedDomains = JSON.parse(
+      localStorage.getItem(`${storageKey}_setting_type_domains`) ?? '{}',
+    );
+    expect(storedDomains['全书规划']).toBe('setting:plot');
+    expect(storedDomains['功法技能']).toBe('setting:item');
+  });
+
   it('renders every standard xianxia world rule as its own editable field', () => {
     const storageKey = 'xinyuexia_workbench_settings_novel-standard-rules';
     replaceProfessionalSettingEntriesFromTemplate(storageKey, MALE_FANTASY_XIANXIA_STANDARD_STRUCTURE);

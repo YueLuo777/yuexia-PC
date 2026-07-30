@@ -58,6 +58,7 @@ import type { TemplateEntryNode, TemplateStructure } from './standardModeTemplat
 
 const DOMAIN_TITLES: Record<string, string> = {
   work: '作品设定',
+  'setting:plot': '剧情规划',
   character: '人物设定',
   'setting:location': '地点地图',
   'setting:faction': '势力设定',
@@ -67,6 +68,7 @@ const DOMAIN_TITLES: Record<string, string> = {
 };
 const DOMAIN_ORDER = [
   'work',
+  'setting:plot',
   'character',
   'setting:location',
   'setting:faction',
@@ -91,6 +93,20 @@ function getRoleGroup(type: string) {
 function getSettingDomain(type: string) {
   if (DEFAULT_WORK_SETTING_TYPES.includes(type)) return 'work';
   return SETTING_DOMAIN_BY_TYPE.get(type) ?? 'work';
+}
+
+const TEMPLATE_WORKSPACE_DOMAINS: Record<string, string> = {
+  作品设定: 'work',
+  剧情规划: 'setting:plot',
+  地点地图: 'setting:location',
+  势力设定: 'setting:faction',
+  道具资源: 'setting:item',
+  伏笔线索: 'setting:foreshadow',
+  怪物图鉴: 'setting:monster',
+};
+
+function getTemplateWorkspaceDomain(domainTitle: string) {
+  return TEMPLATE_WORKSPACE_DOMAINS[domainTitle] ?? 'work';
 }
 
 function buildRoleDescriptor(entry: WorkbenchLibraryEntry): StandardSettingEntryDescriptor {
@@ -120,10 +136,14 @@ function buildRoleDescriptor(entry: WorkbenchLibraryEntry): StandardSettingEntry
   };
 }
 
-function buildSettingDescriptor(entry: WorkbenchLibraryEntry): StandardSettingEntryDescriptor {
+function buildSettingDescriptor(
+  entry: WorkbenchLibraryEntry,
+  storedTypeDomains: Record<string, string>,
+): StandardSettingEntryDescriptor {
   const setting = parseSettingContent(entry.content);
   const fieldSet = getStructuredSettingFieldSet(entry, setting);
-  const domainId = getSettingDomain(setting.type);
+  const storedDomain = storedTypeDomains[setting.type];
+  const domainId = storedDomain && DOMAIN_TITLES[storedDomain] ? storedDomain : getSettingDomain(setting.type);
   const groups = fieldSet?.groups ?? [
     {
       title: entry.title,
@@ -164,10 +184,13 @@ function buildSettingDescriptor(entry: WorkbenchLibraryEntry): StandardSettingEn
 }
 
 export function readDefaultStandardSettingEntries(storageKey: string) {
+  const storedTypeDomains = readStoredTypeDomains(storageKey);
   const entries = readNormalizedEntriesWithVisibleDefaults(storageKey, [ROLE_TAB, SETTING_TAB]);
   return entries
     .filter((entry) => entry.tab === ROLE_TAB || entry.tab === SETTING_TAB)
-    .map((entry) => (entry.tab === ROLE_TAB ? buildRoleDescriptor(entry) : buildSettingDescriptor(entry)))
+    .map((entry) => (entry.tab === ROLE_TAB
+      ? buildRoleDescriptor(entry)
+      : buildSettingDescriptor(entry, storedTypeDomains)))
     .sort((left, right) => DOMAIN_ORDER.indexOf(left.domainId) - DOMAIN_ORDER.indexOf(right.domainId));
 }
 
@@ -313,7 +336,7 @@ export function replaceProfessionalSettingEntriesFromTemplate(storageKey: string
   const customSettingTypeDomains = Object.fromEntries(
     settingItems
       .filter((item) => item.group.title.trim())
-      .map((item) => [item.group.title.trim(), item.domain.id === 'work' ? 'work' : item.domain.id]),
+      .map((item) => [item.group.title.trim(), getTemplateWorkspaceDomain(item.domain.title)]),
   );
 
   localStorage.setItem(
@@ -430,6 +453,17 @@ export function syncProfessionalSettingFieldLayoutsFromTemplate(
   storageKey: string,
   structure: TemplateStructure,
 ) {
+  const currentTypeDomains = readStoredTypeDomains(storageKey);
+  const templateTypeDomains = Object.fromEntries(
+    getEnabledTemplateFields(structure)
+      .filter((item) => item.domain.title !== '人物设定' && item.group.title.trim())
+      .map((item) => [item.group.title.trim(), getTemplateWorkspaceDomain(item.domain.title)]),
+  );
+  const nextTypeDomains = { ...currentTypeDomains, ...templateTypeDomains };
+  const typeDomainsChanged = JSON.stringify(currentTypeDomains) !== JSON.stringify(nextTypeDomains);
+  if (typeDomainsChanged) {
+    localStorage.setItem(getSettingTypeDomainsStorageKey(storageKey), JSON.stringify(nextTypeDomains));
+  }
   const layoutsByEntryId = new Map(
     getEnabledTemplateFields(structure)
       .filter((item) => item.domain.title !== '人物设定')
@@ -450,7 +484,7 @@ export function syncProfessionalSettingFieldLayoutsFromTemplate(
     };
   });
   if (changed) writeWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey, nextEntries);
-  return changed;
+  return changed || typeDomainsChanged;
 }
 
 function mergeRoleEntryForUpgrade(
@@ -519,7 +553,7 @@ export function upgradeProfessionalSettingEntriesFromTemplate(storageKey: string
   const customSettingTypeDomains = Object.fromEntries(
     settingItems
       .filter((item) => item.group.title.trim())
-      .map((item) => [item.group.title.trim(), item.domain.id === 'work' ? 'work' : item.domain.id]),
+      .map((item) => [item.group.title.trim(), getTemplateWorkspaceDomain(item.domain.title)]),
   );
 
   localStorage.setItem(

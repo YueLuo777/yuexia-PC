@@ -548,6 +548,9 @@ export function renderSettingLibraryBranch(scope: Record<string, any>) {
     const getLibrarySidebarEntryWordCount = (entry: WorkbenchLibraryEntry) => countTextWords(getWorkbenchSidebarWordCountSource(entry, activeIsSettingLike ? getParsedSettingEntry(entry) : null, isOutlineCharacterScope ? getParsedRoleEntry(entry) : null));
     const settingTreeDomains = [
       { id: 'work', label: '作品设定', settingDomain: null },
+      ...(scope.standardMode
+        ? [{ id: 'setting:plot', label: '剧情规划', settingDomain: 'setting:plot' }]
+        : []),
       { id: 'character', label: '人物设定', settingDomain: null },
       { id: 'setting:location', label: '地点地图', settingDomain: 'setting:location' },
       { id: 'setting:faction', label: '势力设定', settingDomain: 'setting:faction' },

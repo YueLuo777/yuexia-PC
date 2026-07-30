@@ -35,7 +35,7 @@ export function StandardModeWorkbenchPage() {
   const [templateChangeWarningOpen, setTemplateChangeWarningOpen] = useState(false);
   const [templateUpgradeOpen, setTemplateUpgradeOpen] = useState(false);
   const [aiLogOpenSignal, setAiLogOpenSignal] = useState(0);
-  const [, setSettingsMigrationRevision] = useState(0);
+  const [settingsMigrationRevision, setSettingsMigrationRevision] = useState(0);
   const { tabs, activeTabId } = useWorkspaceTabs();
   const { currentNovel, currentNovelId, volumes, setCurrentNovel, updateCurrentNovelDetails } = useWorkbenchData();
   const reviewTasks = useSyncExternalStore(
@@ -240,7 +240,11 @@ export function StandardModeWorkbenchPage() {
         </main>
       ) : isSharedCreationPage ? (
         <main className="min-h-0 flex-1 overflow-hidden">
-          <StandardModeSharedCreationPage action={activeAction} aiLogOpenSignal={aiLogOpenSignal} />
+          <StandardModeSharedCreationPage
+            key={`${currentNovel.id}:${settingsMigrationRevision}`}
+            action={activeAction}
+            aiLogOpenSignal={aiLogOpenSignal}
+          />
         </main>
       ) : (
         <main className="grid min-h-0 flex-1 place-items-center bg-white text-sm font-semibold text-[#7b8794]">

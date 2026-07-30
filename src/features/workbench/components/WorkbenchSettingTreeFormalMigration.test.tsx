@@ -45,12 +45,13 @@ describe('formal setting tree migration', () => {
 
     expect(tree).toContainSource('const DOMAIN_ORDER: Record<string, number> = {');
     expect(tree).toContainSource('work: 1,');
-    expect(tree).toContainSource('character: 2,');
-    expect(tree).toContainSource("'setting:location': 3,");
-    expect(tree).toContainSource("'setting:faction': 4,");
-    expect(tree).toContainSource("'setting:item': 5,");
-    expect(tree).toContainSource("'setting:foreshadow': 6,");
-    expect(tree).toContainSource("'setting:monster': 7,");
+    expect(tree).toContainSource("'setting:plot': 2,");
+    expect(tree).toContainSource('character: 3,');
+    expect(tree).toContainSource("'setting:location': 4,");
+    expect(tree).toContainSource("'setting:faction': 5,");
+    expect(tree).toContainSource("'setting:item': 6,");
+    expect(tree).toContainSource("'setting:foreshadow': 7,");
+    expect(tree).toContainSource("'setting:monster': 8,");
     expect(tree).toContainSource('const [expandedDomainIds, setExpandedDomainIds] = useState(() => new Set([activeDomainId]));');
     expect(tree).toContainSource('return (DOMAIN_ORDER[left.id] ?? 99) - (DOMAIN_ORDER[right.id] ?? 99);');
     expect(tree).toContainSource('const domainOpen = Boolean(normalizedQuery) || expandedDomainIds.has(domain.id);');
