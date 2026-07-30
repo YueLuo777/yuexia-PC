@@ -16,6 +16,7 @@ import {
 } from '@/features/workbench/model/standardModeDefaultSettingAdapter';
 import { readStandardSettingTemplateState } from '@/features/workbench/model/standardModeSettingModel';
 import { subscribeStandardModeSettingNavigationAction } from '@/features/workbench/model/standardModeSettingNavigationEvents';
+import { getCurrentSettingTemplateName } from '@/features/workbench/model/standardModeTemplateIdentity';
 import { upgradeStandardModeBookTemplate } from '@/features/workbench/model/standardModeTemplateUpgrade';
 import { buildStandardModeWorkbenchStats } from '@/features/workbench/model/standardModeWorkbenchStats';
 import { readWorkbenchLibraryEntries } from '@/features/workbench/model/workbenchLibraryStorage';
@@ -136,6 +137,7 @@ export function StandardModeWorkbenchPage() {
       />
       <TemplateReplacementWarning
         isOpen={templateChangeWarningOpen}
+        currentTemplateName={getCurrentSettingTemplateName(templateState)}
         onClose={() => setTemplateChangeWarningOpen(false)}
         onConfirm={() => {
           setTemplateChangeWarningOpen(false);

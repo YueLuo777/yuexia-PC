@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import {
   SMART_TEMPLATE_PRESETS,
@@ -13,6 +13,11 @@ import {
   saveSettingTemplate,
   type TemplateStructure,
 } from '@/features/workbench/model/standardModeTemplateModel';
+import {
+  CUSTOM_SETTING_TEMPLATE_ID,
+  CUSTOM_SETTING_TEMPLATE_NAME,
+  hasSameTemplateDefinition,
+} from '@/features/workbench/model/standardModeTemplateIdentity';
 import { ManagedTemplateDiyEditor } from '@/features/templates/components/ManagedTemplateDiyEditor';
 
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
@@ -36,6 +41,11 @@ type StandardModeSettingTemplateInitializerProps = {
 
 type TemplateListMode = 'male' | 'female' | 'saved';
 
+type TemplateSelectionSnapshot = ConfirmedTemplate & {
+  sourceStructure: TemplateStructure;
+  customized: boolean;
+};
+
 const CHANNEL_LABELS = {
   male: '男频',
   female: '女频',
@@ -54,9 +64,15 @@ export function StandardModeSettingTemplateInitializer({
     () => recommendTemplateForNovelCategory(novelCategory, novelChannel),
     [novelCategory, novelChannel],
   );
+  const selectionRef = useRef<TemplateSelectionSnapshot>({
+    id: recommended.id,
+    name: recommended.title,
+    structure: cloneSmartTemplateStructure(recommended.structure),
+    sourceStructure: recommended.structure,
+    customized: false,
+  });
   const [selectedTemplateId, setSelectedTemplateId] = useState(recommended.id);
-  const [selectedTemplateName, setSelectedTemplateName] = useState(recommended.title);
-  const [structure, setStructure] = useState(() => cloneSmartTemplateStructure(recommended.structure));
+  const [structure, setStructure] = useState(() => selectionRef.current.structure);
   const [savedTemplates, setSavedTemplates] = useState(readSavedSettingTemplates);
   const [saveName, setSaveName] = useState(`${novelTitle}模板`);
   const [templateListMode, setTemplateListMode] = useState<TemplateListMode>(novelChannel);
@@ -84,9 +100,16 @@ export function StandardModeSettingTemplateInitializer({
   const applyBuiltIn = (id: string) => {
     const preset = SMART_TEMPLATE_PRESETS.find((item) => item.id === id);
     if (!preset) return;
+    const nextStructure = cloneSmartTemplateStructure(preset.structure);
+    selectionRef.current = {
+      id: preset.id,
+      name: preset.title,
+      structure: nextStructure,
+      sourceStructure: preset.structure,
+      customized: false,
+    };
     setSelectedTemplateId(preset.id);
-    setSelectedTemplateName(preset.title);
-    setStructure(cloneSmartTemplateStructure(preset.structure));
+    setStructure(nextStructure);
   };
 
   const selectBuiltIn = (id: string) => {
@@ -102,19 +125,48 @@ export function StandardModeSettingTemplateInitializer({
   const selectSaved = (id: string) => {
     const template = savedTemplates.find((item) => item.id === id);
     if (!template) return;
+    const nextStructure = cloneSmartTemplateStructure(template.structure);
+    selectionRef.current = {
+      id: template.id,
+      name: template.name,
+      structure: nextStructure,
+      sourceStructure: template.structure,
+      customized: false,
+    };
     setSelectedTemplateId(template.id);
-    setSelectedTemplateName(template.name);
     setSaveName(template.name);
-    setStructure(cloneSmartTemplateStructure(template.structure));
+    setStructure(nextStructure);
   };
 
   const saveCurrentTemplate = () => {
     const name = saveName.trim() || '未命名模板';
-    const next = saveSettingTemplate(name, structure);
+    const next = saveSettingTemplate(name, selectionRef.current.structure);
+    selectionRef.current = {
+      id: next[0].id,
+      name,
+      structure: next[0].structure,
+      sourceStructure: next[0].structure,
+      customized: false,
+    };
     setSavedTemplates(next);
     setSelectedTemplateId(next[0].id);
-    setSelectedTemplateName(name);
+    setStructure(next[0].structure);
     setTemplateListMode('saved');
+  };
+
+  const updateStructure = (nextStructure: TemplateStructure) => {
+    const customized = !hasSameTemplateDefinition(nextStructure, selectionRef.current.sourceStructure);
+    selectionRef.current = { ...selectionRef.current, structure: nextStructure, customized };
+    setStructure(nextStructure);
+  };
+
+  const confirmCurrentTemplate = () => {
+    const selected = selectionRef.current;
+    onConfirm({
+      id: selected.customized ? CUSTOM_SETTING_TEMPLATE_ID : selected.id,
+      name: selected.customized ? CUSTOM_SETTING_TEMPLATE_NAME : selected.name,
+      structure: selected.structure,
+    });
   };
 
   const renderPresetButton = (preset: (typeof SMART_TEMPLATE_PRESETS)[number]) => (
@@ -237,7 +289,7 @@ export function StandardModeSettingTemplateInitializer({
         <ManagedTemplateDiyEditor
           key={selectedTemplateId}
           initialStructure={structure}
-          onChange={setStructure}
+          onChange={updateStructure}
           saveName={saveName}
           onSaveNameChange={setSaveName}
           onSaveTemplate={saveCurrentTemplate}
@@ -254,7 +306,7 @@ export function StandardModeSettingTemplateInitializer({
               ) : null}
               <button
                 type="button"
-                onClick={() => onConfirm({ id: selectedTemplateId, name: selectedTemplateName, structure })}
+                onClick={confirmCurrentTemplate}
                 className="h-10 rounded-md bg-[#08AACE] px-6 text-sm font-bold text-white"
               >
                 确认模板并创建设定

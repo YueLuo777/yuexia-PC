@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -49,11 +49,50 @@ describe('StandardModeSettingPage', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: '更换模板' })).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: '更换模板' }));
+    expect(screen.getByRole('dialog', { name: '更换设定模板？' }))
+      .toHaveTextContent('当前使用模板：玄幻仙侠（标准版）');
     expect(screen.getByText(/继续更换模板会清空全部作品设定/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '取消' }));
 
     expect(screen.getByRole('button', { name: '一键检查' })).toBeInTheDocument();
     expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠（标准版）');
+  });
+
+  it('creates and reports the lightweight template that the user selected', async () => {
+    renderPage();
+    const lightTemplate = screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（轻量版）' });
+    const confirmTemplate = screen.getByRole('button', { name: '确认模板并创建设定' });
+    act(() => {
+      lightTemplate.click();
+      confirmTemplate.click();
+    });
+
+    await waitFor(() => expect(readStandardSettingTemplateState('novel-a')?.templateId)
+      .toBe('male-fantasy-xianxia-light'));
+    const saved = readStandardSettingTemplateState('novel-a');
+    expect(saved?.templateName).toBe('玄幻仙侠（轻量版）');
+    expect(countTemplateFields(saved?.structure ?? [])).toBe(100);
+
+    fireEvent.click(screen.getByRole('button', { name: '更换模板' }));
+    expect(screen.getByRole('dialog', { name: '更换设定模板？' }))
+      .toHaveTextContent('当前使用模板：玄幻仙侠（轻量版）');
+  });
+
+  it('stores a structurally edited built-in template as custom', async () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（轻量版）' }));
+    const fourthLevel = screen.getByRole('region', { name: 'DIY四级设定' });
+    fireEvent.change(within(fourthLevel).getByRole('textbox', { name: '输入四级设定名称' }), {
+      target: { value: '自定义字段' },
+    });
+    fireEvent.click(within(fourthLevel).getByRole('button', { name: '新增' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认模板并创建设定' }));
+
+    await waitFor(() => expect(readStandardSettingTemplateState('novel-a')?.templateId).toBe('custom-template'));
+    expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('自定义');
+    fireEvent.click(screen.getByRole('button', { name: '更换模板' }));
+    expect(screen.getByRole('dialog', { name: '更换设定模板？' }))
+      .toHaveTextContent('当前使用模板：自定义');
   });
 
   it('upgrades lightweight directly to full without clearing content or generation context', async () => {

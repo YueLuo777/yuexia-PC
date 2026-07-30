@@ -11,6 +11,7 @@ import { clearStandardModeBrainstormLinkFromSettingsKey } from '@/features/workb
 import { clearStandardSettingGenerationState } from '@/features/workbench/model/standardModeSettingGenerationFlow';
 import type { BookChannel } from '@/features/workbench/model/standardModeSmartSettingFlowModel';
 import type { TemplateStructure } from '@/features/workbench/model/standardModeTemplateModel';
+import { getCurrentSettingTemplateName } from '@/features/workbench/model/standardModeTemplateIdentity';
 import { getStandardTemplateUpgradeOptions } from '@/features/workbench/model/standardModeTemplateUpgrade';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
@@ -90,6 +91,7 @@ export function StandardModeSettingPage({
         />
         <TemplateReplacementWarning
           isOpen={templateWarningOpen}
+          currentTemplateName={getCurrentSettingTemplateName(settings.template)}
           onClose={() => {
             setTemplateWarningOpen(false);
             setPendingTemplate(null);
@@ -146,6 +148,7 @@ export function StandardModeSettingPage({
       </div>
       <TemplateReplacementWarning
         isOpen={templateWarningOpen}
+        currentTemplateName={getCurrentSettingTemplateName(settings.template)}
         onClose={() => {
           setTemplateWarningOpen(false);
           onTemplateChangeCancelled?.();
@@ -170,10 +173,12 @@ export function StandardModeSettingPage({
 
 export function TemplateReplacementWarning({
   isOpen,
+  currentTemplateName,
   onClose,
   onConfirm,
 }: {
   isOpen: boolean;
+  currentTemplateName: string;
   onClose: () => void;
   onConfirm: () => void;
 }) {
@@ -181,7 +186,7 @@ export function TemplateReplacementWarning({
     <ConfirmDialog
       isOpen={isOpen}
       title="更换设定模板？"
-      description="当前作品已经有设定内容。继续更换模板会清空全部作品设定、人物设定、地点、势力、道具、伏笔和怪物内容。脑洞、章纲和正文不会受到影响。"
+      description={`当前使用模板：${currentTemplateName}\n\n当前作品已经有设定内容。继续更换模板会清空全部作品设定、人物设定、地点、势力、道具、伏笔和怪物内容。脑洞、章纲和正文不会受到影响。`}
       confirmText="继续更换模板"
       cancelText="取消"
       confirmVariant="danger"
