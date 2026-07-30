@@ -61,7 +61,7 @@ function CascadeLevelButton({
 }) {
   return (
     <div
-      className={`flex min-h-11 w-[220px] shrink-0 items-center rounded-md border px-1.5 transition-colors ${
+      className={`relative flex min-h-11 w-[220px] shrink-0 items-center rounded-md border px-1.5 transition-colors ${
         active
           ? 'border-[#08AACE] bg-[#EAF9FD] text-[#078FAB] shadow-[0_0_0_1px_#08AACE]'
           : 'border-slate-200 bg-white text-slate-600 hover:border-[#9DDFEA]'
@@ -72,9 +72,11 @@ function CascadeLevelButton({
         type="button"
         aria-label={title}
         aria-pressed={active}
+        data-template-cascade-card-select="true"
         onClick={onSelect}
-        className="flex min-w-0 flex-1 items-center justify-between gap-2 px-1.5 py-2 text-left"
-      >
+        className="absolute inset-0 z-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#08AACE] focus-visible:ring-offset-1"
+      />
+      <div className="pointer-events-none relative z-[1] flex min-w-0 flex-1 items-center justify-between gap-2 px-1.5 py-2 text-left">
         <strong className="truncate text-sm font-black" title={title}>{title}</strong>
         <span
           className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black ${
@@ -84,8 +86,10 @@ function CascadeLevelButton({
         >
           {count}
         </span>
-      </button>
-      <DiyDeleteButton label={deleteLabel} disabled={deleteDisabled} onClick={onDelete} />
+      </div>
+      <div className="relative z-10">
+        <DiyDeleteButton label={deleteLabel} disabled={deleteDisabled} onClick={onDelete} />
+      </div>
     </div>
   );
 }
@@ -185,10 +189,11 @@ export function TemplateDiyCascadeEditor({
           controller={controller}
         />
         <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3 pb-4">
-          {fields.map((item, index) => (
+          {fields.map((item) => (
             <article
               key={item.id}
-              className={`flex min-h-16 items-center gap-2 rounded-lg border bg-white px-3 py-2 shadow-[0_2px_8px_rgba(15,23,42,0.03)] ${
+              data-template-cascade-field-card="true"
+              className={`relative flex min-h-16 items-center gap-2 rounded-lg border bg-white px-3 py-2 shadow-[0_2px_8px_rgba(15,23,42,0.03)] ${
                 item.id === fieldId ? 'border-[#08AACE] bg-[#EAF9FD]' : 'border-slate-200'
               }`}
             >
@@ -196,17 +201,20 @@ export function TemplateDiyCascadeEditor({
                 type="button"
                 aria-label={item.title}
                 aria-pressed={item.id === fieldId}
+                data-template-cascade-card-select="true"
                 onClick={() => controller.selectField(item.id)}
-                className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
-              >
-                <strong className="truncate text-sm font-black text-slate-700" title={item.title}>{item.title}</strong>
-                <span className="shrink-0 text-[11px] font-black text-slate-300">{String(index + 1).padStart(2, '0')}</span>
-              </button>
-              <DiyDeleteButton
-                label={`删除四级设定：${item.title}`}
-                disabled={lockedLevels.field}
-                onClick={() => controller.deleteField(item.id, item.title)}
+                className="absolute inset-0 z-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#08AACE] focus-visible:ring-offset-1"
               />
+              <strong className="pointer-events-none relative z-[1] min-w-0 flex-1 truncate text-sm font-black text-slate-700" title={item.title}>
+                {item.title}
+              </strong>
+              <div className="relative z-10">
+                <DiyDeleteButton
+                  label={`删除四级设定：${item.title}`}
+                  disabled={lockedLevels.field}
+                  onClick={() => controller.deleteField(item.id, item.title)}
+                />
+              </div>
             </article>
           ))}
         </div>

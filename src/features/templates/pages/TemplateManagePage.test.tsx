@@ -63,8 +63,13 @@ describe('TemplateManagePage', () => {
     const fixedCards = editor.querySelectorAll('[data-template-cascade-level-button="true"]');
     expect(fixedCards.length).toBeGreaterThan(0);
     fixedCards.forEach((card) => expect(card).toHaveClass('w-[220px]', 'shrink-0'));
-    expect(within(editor).getByRole('region', { name: 'DIY四级设定' }).querySelector('.grid'))
+    const fourthLevel = within(editor).getByRole('region', { name: 'DIY四级设定' });
+    expect(fourthLevel.querySelector('.grid'))
       .toHaveClass('grid-cols-[repeat(auto-fit,minmax(220px,1fr))]');
+    const selectionSurfaces = editor.querySelectorAll('[data-template-cascade-card-select="true"]');
+    expect(selectionSurfaces.length).toBeGreaterThan(0);
+    selectionSurfaces.forEach((surface) => expect(surface).toHaveClass('absolute', 'inset-0'));
+    expect(within(fourthLevel).queryByText(/^0\d$/)).not.toBeInTheDocument();
   });
 
   it('creates and saves a user template from the management page', () => {
