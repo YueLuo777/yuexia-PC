@@ -3,6 +3,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import {
   SMART_TEMPLATE_PRESETS,
   cloneSmartTemplateStructure,
+  sortSmartTemplatePresetsForDisplay,
 } from '@/features/workbench/model/standardModeSmartSettingFlowModel';
 import {
   buildDefaultTemplateStructure,
@@ -72,10 +73,10 @@ function TemplateListButton({
         active ? 'border-[#08AACE] shadow-[0_0_0_1px_#08AACE]' : 'border-slate-200 hover:border-[#9DDFEA]'
       }`}
     >
-      <button type="button" onClick={onClick} className="w-full px-3 py-3 text-left">
+      <button type="button" onClick={onClick} className="flex min-h-[132px] w-full flex-col px-3 py-3 text-left">
         <strong className="block text-sm leading-5 text-slate-800">{title}</strong>
-        <span className="mt-1.5 flex items-start justify-between gap-2 text-xs font-semibold leading-5 text-slate-500">
-          <span className="line-clamp-2 min-w-0">{description}</span>
+        <span className="mt-1.5 line-clamp-3 min-w-0 text-xs font-semibold leading-5 text-slate-500">{description}</span>
+        <span className="mt-auto flex justify-end pt-3">
           {badge ? (
             <span className="shrink-0 rounded-full border border-cyan-200 bg-[#EAF9FD] px-2 py-0.5 text-[11px] font-bold text-[#078FAB]">
               {badge}
@@ -102,7 +103,9 @@ export function TemplateManagePage() {
     () =>
       listMode === 'saved'
         ? []
-        : SMART_TEMPLATE_PRESETS.filter((preset) => preset.channel === listMode || preset.channel === 'general'),
+        : sortSmartTemplatePresetsForDisplay(
+            SMART_TEMPLATE_PRESETS.filter((preset) => preset.channel === listMode || preset.channel === 'general'),
+          ),
     [listMode],
   );
 

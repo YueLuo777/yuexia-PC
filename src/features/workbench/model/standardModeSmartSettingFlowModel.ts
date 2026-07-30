@@ -38,6 +38,19 @@ export type SmartTemplatePreset = {
   structure: TemplateStructure;
 };
 
+const XIANXIA_TEMPLATE_DISPLAY_ORDER: Record<string, number> = {
+  'male-fantasy-xianxia-light': 0,
+  'male-fantasy-xianxia': 1,
+  'male-fantasy-xianxia-full': 2,
+};
+
+export function sortSmartTemplatePresetsForDisplay(presets: SmartTemplatePreset[]) {
+  return [...presets].sort((left, right) => (
+    (XIANXIA_TEMPLATE_DISPLAY_ORDER[left.id] ?? Number.MAX_SAFE_INTEGER)
+    - (XIANXIA_TEMPLATE_DISPLAY_ORDER[right.id] ?? Number.MAX_SAFE_INTEGER)
+  ));
+}
+
 export type SmartTemplateBrainstorm = {
   id: string;
   title: string;

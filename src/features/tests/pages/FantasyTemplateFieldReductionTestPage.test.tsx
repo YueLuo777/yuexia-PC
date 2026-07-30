@@ -11,10 +11,10 @@ import {
 import { testGroups } from '@/features/tests/pages/testCollectionGroups';
 
 describe('FantasyTemplateFieldReductionTestPage', () => {
-  it('registers test 35 at the end of the UI group without replacing the formal template', () => {
+  it('keeps test 35 registered without replacing the formal template', () => {
     const uiGroup = testGroups.find((group) => group.title === 'UI 与主题');
 
-    expect(uiGroup?.items.at(-1)).toMatchObject({
+    expect(uiGroup?.items.find((item) => item.path === '/fantasy-template-field-reduction-test')).toMatchObject({
       serial: 35,
       title: '玄幻仙侠字段精简方案',
       path: '/fantasy-template-field-reduction-test',

@@ -188,6 +188,14 @@ export const testGroups: TestGroup[] = [
         icon: Sparkles,
         badge: 'Field Plan',
       },
+      {
+        serial: 36,
+        title: '模板管理逐级选择方案',
+        description: '左侧保留男频、女频和我的模板，右侧按一级、二级、三级逐行选择，并在下方自适应展示四级设定。',
+        path: '/template-management-cascade-test',
+        icon: FolderTree,
+        badge: 'Cascade',
+      },
     ],
   },
   {

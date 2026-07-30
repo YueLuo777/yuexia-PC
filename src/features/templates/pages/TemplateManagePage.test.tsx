@@ -22,6 +22,12 @@ describe('TemplateManagePage', () => {
     expect(screen.getByText('玄幻仙侠（标准版）')).toBeInTheDocument();
     expect(screen.getByText('玄幻仙侠（完整版）')).toBeInTheDocument();
     expect(screen.getByText('玄幻仙侠（轻量版）')).toBeInTheDocument();
+    const light = screen.getByText('玄幻仙侠（轻量版）').closest('button') as HTMLButtonElement;
+    const standard = screen.getByText('玄幻仙侠（标准版）').closest('button') as HTMLButtonElement;
+    const full = screen.getByText('玄幻仙侠（完整版）').closest('button') as HTMLButtonElement;
+    expect(light.compareDocumentPosition(standard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(standard.compareDocumentPosition(full) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(light).getByText('男频 · 玄幻仙侠')).toBeInTheDocument();
     expect(screen.getByText('通用小说基础')).toBeInTheDocument();
     expect(screen.queryByText('现代总裁')).not.toBeInTheDocument();
     for (const type of ['作品设定', '人物设定', '地点地图', '势力设定', '道具资源', '伏笔线索', '怪物图鉴']) {

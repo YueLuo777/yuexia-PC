@@ -97,6 +97,11 @@ const FantasyTemplateFieldReductionTestPage = lazy(() =>
     default: module.FantasyTemplateFieldReductionTestPage,
   })),
 );
+const TemplateManagementCascadeTestPage = lazy(() =>
+  import('@/features/tests/pages/TemplateManagementCascadeTestPage').then((module) => ({
+    default: module.TemplateManagementCascadeTestPage,
+  })),
+);
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
 );
@@ -261,6 +266,8 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <ProfessionalTemplateDiyVariantsTestPage />;
       case '/fantasy-template-field-reduction-test':
         return <FantasyTemplateFieldReductionTestPage />;
+      case '/template-management-cascade-test':
+        return <TemplateManagementCascadeTestPage />;
       case '/test-browser':
         return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':

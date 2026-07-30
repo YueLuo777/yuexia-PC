@@ -98,16 +98,17 @@ describe('StandardModeSettingPage', () => {
     expect(localStorage.getItem('xinyuexia_standard_brainstorm_link_novel-a')).toContain('brainstorm-upgrade');
   });
 
-  it('recommends xianxia and opens the shared four-column template editor', () => {
+  it('opens the xianxia catalog without reserving a recommendation-basis block', () => {
     renderPage();
-    const recommendationBasis = screen.getByRole('region', { name: '模板推荐依据' });
-    expect(within(recommendationBasis).getByText('男频')).toBeInTheDocument();
-    expect(within(recommendationBasis).getByText('玄幻')).toBeInTheDocument();
-    expect(within(recommendationBasis).getByText('100万字')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: '模板推荐依据' })).not.toBeInTheDocument();
     expect(screen.queryByText(/已根据“玄幻”推荐/)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（标准版）' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（完整版）' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（轻量版）' })).toBeInTheDocument();
+    const lightTemplate = screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（轻量版）' });
+    const standardTemplate = screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（标准版）' });
+    const fullTemplate = screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（完整版）' });
+    expect(standardTemplate).toHaveAttribute('aria-pressed', 'true');
+    expect(lightTemplate.compareDocumentPosition(standardTemplate) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(standardTemplate.compareDocumentPosition(fullTemplate) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(lightTemplate).getByText('男频 · 玄幻仙侠')).toBeInTheDocument();
     expect(screen.getByRole('separator', { name: '其他男频题材模板' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '男频' })).toHaveAttribute('aria-selected', 'true');
     const editor = screen.getByRole('region', { name: '四栏DIY模板编辑器' });
@@ -151,11 +152,11 @@ describe('StandardModeSettingPage', () => {
     expect(screen.getByRole('button', { name: '选择我的模板：我的玄幻模板' })).toBeInTheDocument();
   });
 
-  it('shows an explicit empty state when the expected length is not filled in', () => {
+  it('does not restore recommendation metadata when the expected length is empty', () => {
     renderPage({ novelTargetWordCount: undefined });
 
-    const recommendationBasis = screen.getByRole('region', { name: '模板推荐依据' });
-    expect(within(recommendationBasis).getByText('未填写')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: '模板推荐依据' })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '男频' })).toBeInTheDocument();
   });
 
   it('filters built-in templates through male, female, and saved tabs', () => {

@@ -5,6 +5,7 @@ import {
   cloneSmartTemplateStructure,
   getRecommendedTemplatesForNovelCategory,
   recommendTemplateForNovelCategory,
+  sortSmartTemplatePresetsForDisplay,
   type BookChannel,
 } from '@/features/workbench/model/standardModeSmartSettingFlowModel';
 import {
@@ -41,18 +42,10 @@ const CHANNEL_LABELS = {
   general: '通用',
 } as const;
 
-function formatTargetWordCount(value?: number) {
-  if (!Number.isFinite(value) || !value || value <= 0) return '未填写';
-  if (value < 10_000) return `${Math.round(value).toLocaleString('zh-CN')}字`;
-  const tenThousands = value / 10_000;
-  return `${Number.isInteger(tenThousands) ? tenThousands : Number(tenThousands.toFixed(1))}万字`;
-}
-
 export function StandardModeSettingTemplateInitializer({
   novelTitle,
   novelCategory,
   novelChannel,
-  novelTargetWordCount,
   onConfirm,
   onNovelChannelChange,
   onCancel,
@@ -71,7 +64,9 @@ export function StandardModeSettingTemplateInitializer({
   const visibleBuiltInTemplates = useMemo(
     () => templateListMode === 'saved'
       ? []
-      : SMART_TEMPLATE_PRESETS.filter((preset) => preset.channel === templateListMode || preset.channel === 'general'),
+      : sortSmartTemplatePresetsForDisplay(
+          SMART_TEMPLATE_PRESETS.filter((preset) => preset.channel === templateListMode || preset.channel === 'general'),
+        ),
     [templateListMode],
   );
   const groupedBuiltInTemplates = useMemo(() => {
@@ -129,15 +124,15 @@ export function StandardModeSettingTemplateInitializer({
       aria-label={`选择内置模板：${preset.title}`}
       aria-pressed={selectedTemplateId === preset.id}
       onClick={() => selectBuiltIn(preset.id)}
-      className={`w-full rounded-md border px-3 py-3 text-left ${
+      className={`flex min-h-[132px] w-full flex-col rounded-md border px-3 py-3 text-left ${
         selectedTemplateId === preset.id
           ? 'border-[#08AACE] bg-[#EAF9FD] shadow-[0_0_0_1px_#08AACE]'
           : 'border-slate-200 bg-white hover:border-[#9DDFEA]'
       }`}
     >
       <strong className="block text-sm">{preset.title}</strong>
-      <span className="mt-1.5 flex items-start justify-between gap-2 text-xs font-medium leading-5 text-slate-500">
-        <span>{preset.description}</span>
+      <span className="mt-1.5 line-clamp-3 text-xs font-medium leading-5 text-slate-500">{preset.description}</span>
+      <span className="mt-auto flex justify-end pt-3">
         <span className="shrink-0 rounded-full border border-cyan-200 bg-[#EAF9FD] px-2 py-0.5 text-[10px] font-bold text-[#078FAB]">
           {CHANNEL_LABELS[preset.channel]} · {preset.genreCategory}
         </span>
@@ -152,26 +147,6 @@ export function StandardModeSettingTemplateInitializer({
     >
       <div className="relative z-0 grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)] overflow-hidden">
         <aside className="flex min-h-0 flex-col border-r border-slate-200 bg-[#F7F9FB] p-4">
-          <section
-            aria-label="模板推荐依据"
-            className="mb-3 shrink-0 rounded-md border border-[#B9E8F0] bg-[#F1FBFD] px-3 py-2.5"
-          >
-            <div className="text-xs font-bold text-[#078FAB]">推荐依据</div>
-            <dl className="mt-2 space-y-1.5 text-xs font-semibold">
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-slate-500">作品频道</dt>
-                <dd className="truncate text-slate-800">{novelChannel === 'female' ? '女频' : '男频'}</dd>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-slate-500">作品题材</dt>
-                <dd className="truncate text-slate-800" title={novelCategory || '未填写'}>{novelCategory || '未填写'}</dd>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-slate-500">预计篇幅</dt>
-                <dd className="truncate text-slate-800">{formatTargetWordCount(novelTargetWordCount)}</dd>
-              </div>
-            </dl>
-          </section>
           <div
             role="tablist"
             aria-label="模板来源"
