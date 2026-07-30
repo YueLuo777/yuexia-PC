@@ -6,6 +6,7 @@ import {
   type StandardStageAction,
 } from '@/features/workbench/components/StandardModeWorkbenchNavigation';
 import { StandardModeSharedCreationPage } from '@/features/workbench/components/StandardModeSharedCreationPage';
+import { StandardModeTemplateUpgradeDialog } from '@/features/workbench/components/StandardModeTemplateUpgradeDialog';
 import { StandardModeWorkDetailsPage } from '@/features/workbench/components/StandardModeWorkDetailsPage';
 import { useWorkbenchData, readChapterContent } from '@/features/workbench/hooks/useWorkbenchData';
 import {
@@ -15,6 +16,7 @@ import {
 } from '@/features/workbench/model/standardModeDefaultSettingAdapter';
 import { readStandardSettingTemplateState } from '@/features/workbench/model/standardModeSettingModel';
 import { subscribeStandardModeSettingNavigationAction } from '@/features/workbench/model/standardModeSettingNavigationEvents';
+import { upgradeStandardModeBookTemplate } from '@/features/workbench/model/standardModeTemplateUpgrade';
 import { buildStandardModeWorkbenchStats } from '@/features/workbench/model/standardModeWorkbenchStats';
 import { readWorkbenchLibraryEntries } from '@/features/workbench/model/workbenchLibraryStorage';
 import { StandardModeBrainstormPage } from '@/features/workbench/pages/StandardModeBrainstormPage';
@@ -28,6 +30,7 @@ import { useWorkspaceTabs } from '@/shared/tabs/WorkspaceTabsContext';
 export function StandardModeWorkbenchPage() {
   const [activeAction, setActiveAction] = useState<StandardStageAction>('writing');
   const [templateChangeWarningOpen, setTemplateChangeWarningOpen] = useState(false);
+  const [templateUpgradeOpen, setTemplateUpgradeOpen] = useState(false);
   const [aiLogOpenSignal, setAiLogOpenSignal] = useState(0);
   const [, setSettingsMigrationRevision] = useState(0);
   const { tabs, activeTabId } = useWorkspaceTabs();
@@ -50,6 +53,7 @@ export function StandardModeWorkbenchPage() {
   useEffect(() => {
     setActiveAction('writing');
     setTemplateChangeWarningOpen(false);
+    setTemplateUpgradeOpen(false);
   }, [currentNovelId]);
 
   useEffect(
@@ -57,6 +61,10 @@ export function StandardModeWorkbenchPage() {
       if (event.storageKey !== settingsStorageKey) return;
       if (event.action === 'change-template') {
         setTemplateChangeWarningOpen(true);
+        return;
+      }
+      if (event.action === 'upgrade-template') {
+        setTemplateUpgradeOpen(true);
         return;
       }
       setSettingsMigrationRevision((revision) => revision + 1);
@@ -134,6 +142,23 @@ export function StandardModeWorkbenchPage() {
           setActiveAction('changeSettingTemplate');
         }}
       />
+      {templateState ? (
+        <StandardModeTemplateUpgradeDialog
+          isOpen={templateUpgradeOpen}
+          template={templateState}
+          onClose={() => setTemplateUpgradeOpen(false)}
+          onConfirm={(option) => {
+            const upgraded = upgradeStandardModeBookTemplate(
+              String(currentNovel.id),
+              settingsStorageKey,
+              option,
+            );
+            if (!upgraded) return;
+            setTemplateUpgradeOpen(false);
+            setSettingsMigrationRevision((revision) => revision + 1);
+          }}
+        />
+      ) : null}
 
       {activeAction === 'workDetails' || activeAction === 'naming' ? (
         <StandardModeWorkDetailsPage

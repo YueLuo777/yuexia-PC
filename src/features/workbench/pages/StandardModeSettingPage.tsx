@@ -5,11 +5,13 @@ import { StandardModeSettingEditor } from '@/features/workbench/components/Stand
 import { StandardModeSettingSidebarActions } from '@/features/workbench/components/StandardModeSettingSidebarActions';
 import { StandardModeSettingSidebar } from '@/features/workbench/components/StandardModeSettingSidebar';
 import { StandardModeSettingTemplateInitializer } from '@/features/workbench/components/StandardModeSettingTemplateInitializer';
+import { StandardModeTemplateUpgradeDialog } from '@/features/workbench/components/StandardModeTemplateUpgradeDialog';
 import { useStandardModeSettings } from '@/features/workbench/hooks/useStandardModeSettings';
 import { clearStandardModeBrainstormLinkFromSettingsKey } from '@/features/workbench/model/standardModeBrainstormLink';
 import { clearStandardSettingGenerationState } from '@/features/workbench/model/standardModeSettingGenerationFlow';
 import type { BookChannel } from '@/features/workbench/model/standardModeSmartSettingFlowModel';
 import type { TemplateStructure } from '@/features/workbench/model/standardModeTemplateModel';
+import { getStandardTemplateUpgradeOptions } from '@/features/workbench/model/standardModeTemplateUpgrade';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 type StandardModeSettingPageProps = {
@@ -42,6 +44,7 @@ export function StandardModeSettingPage({
   const settings = useStandardModeSettings(novelId, settingsStorageKey);
   const [reselectingTemplate, setReselectingTemplate] = useState(startInTemplateSelector);
   const [templateWarningOpen, setTemplateWarningOpen] = useState(false);
+  const [templateUpgradeOpen, setTemplateUpgradeOpen] = useState(false);
   const [pendingTemplate, setPendingTemplate] = useState<{
     id: string;
     name: string;
@@ -105,6 +108,11 @@ export function StandardModeSettingPage({
     );
   }
 
+  const canUpgradeTemplate = getStandardTemplateUpgradeOptions(
+    settings.template.templateId,
+    settings.template.structure,
+  ).length > 0;
+
   return (
     <>
       <div
@@ -119,6 +127,8 @@ export function StandardModeSettingPage({
           footerActions={(
             <StandardModeSettingSidebarActions
               storageKey={settingsStorageKey}
+              canUpgradeTemplate={canUpgradeTemplate}
+              onUpgradeTemplate={() => setTemplateUpgradeOpen(true)}
               onChangeTemplate={() => setTemplateWarningOpen(true)}
             />
           )}
@@ -143,6 +153,15 @@ export function StandardModeSettingPage({
         onConfirm={() => {
           setTemplateWarningOpen(false);
           setReselectingTemplate(true);
+        }}
+      />
+      <StandardModeTemplateUpgradeDialog
+        isOpen={templateUpgradeOpen}
+        template={settings.template}
+        onClose={() => setTemplateUpgradeOpen(false)}
+        onConfirm={(option) => {
+          settings.upgradeTemplate(option.id, option.name, option.structure);
+          setTemplateUpgradeOpen(false);
         }}
       />
     </>

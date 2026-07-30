@@ -25,6 +25,7 @@ import {
 } from '@/features/workbench/components/workbenchPromptRoleFields';
 import {
   createEmptyRoleStateSettings,
+  getRoleBaseSetting,
   getRoleStateSettings,
   parseRoleContent,
   stringifyRoleContent,
@@ -32,6 +33,7 @@ import {
 import {
   getSettingImportFormatFieldSet,
   getStructuredSettingFieldSet,
+  parseSectionedSettingBody,
   parseSettingContent,
   parseStructuredSettingFields,
   stringifySettingContent,
@@ -313,6 +315,190 @@ export function replaceProfessionalSettingEntriesFromTemplate(storageKey: string
   writeWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey, [
     ...roleItems.map(createRoleEntryFromTemplate),
     ...settingItems.map(createSettingEntryFromTemplate),
+    ...preservedEntries,
+  ]);
+}
+
+function getProfessionalEntryFieldValues(entry: WorkbenchLibraryEntry, roleEntry: boolean) {
+  if (!roleEntry) return parseSectionedSettingBody(parseSettingContent(entry.content).body);
+  const role = parseRoleContent(entry.content);
+  const values = parseSectionedSettingBody(getRoleBaseSetting(role));
+  const stateSettings = getRoleStateSettings(role);
+  Object.entries(stateSettings).forEach(([key, value]) => {
+    const field = getPromptRoleFieldSections(role.type)
+      .flatMap((section) => section.fields)
+      .find((item) => getPromptRoleStateKey(item.label) === key);
+    if (field) values[field.label] = value;
+  });
+  if (role.relationship.trim()) values['人物关系'] = role.relationship;
+  return values;
+}
+
+export function mergeProfessionalSettingValuesIntoTemplate(
+  storageKey: string,
+  structure: TemplateStructure,
+): TemplateStructure {
+  const entriesById = new Map(
+    readWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey).map((entry) => [entry.id, entry]),
+  );
+  return structure.map((domain) => ({
+    ...domain,
+    groups: domain.groups.map((group) => ({
+      ...group,
+      entries: group.entries.map((entry) => {
+        const professionalEntry = entriesById.get(entry.id);
+        if (!professionalEntry) return entry;
+        const values = getProfessionalEntryFieldValues(
+          professionalEntry,
+          normalizeTabName(professionalEntry.tab) === ROLE_TAB,
+        );
+        return {
+          ...entry,
+          sections: entry.sections.map((section) => ({
+            ...section,
+            fields: section.fields.map((field) => ({
+              ...field,
+              value: values[field.title]?.trim() ? values[field.title] : (field.value ?? ''),
+            })),
+          })),
+        };
+      }),
+    })),
+  }));
+}
+
+function appendUnmappedSections(body: string, existingBody: string, targetTitles: Set<string>) {
+  const extras = Object.entries(parseSectionedSettingBody(existingBody))
+    .filter(([title]) => !targetTitles.has(title))
+    .map(([title, value]) => `【${title}】：\n${value}`);
+  return [body.trim(), ...extras].filter(Boolean).join('\n\n');
+}
+
+function mergeSettingEntryForUpgrade(
+  existing: WorkbenchLibraryEntry,
+  item: ReturnType<typeof getEnabledTemplateFields>[number],
+) {
+  const generatedSetting = parseSettingContent(createSettingEntryFromTemplate(item).content);
+  const existingSetting = parseSettingContent(existing.content);
+  const targetTitles = new Set(item.fields.map((field) => field.title));
+  return {
+    ...existing,
+    content: stringifySettingContent({
+      ...existingSetting,
+      type: item.group.title.trim() || existingSetting.type,
+      body: appendUnmappedSections(generatedSetting.body, existingSetting.body, targetTitles),
+      structuredFieldSetId: generatedSetting.structuredFieldSetId,
+    }),
+    updatedAt: new Date().toLocaleString('zh-CN'),
+  };
+}
+
+function mergeRoleEntryForUpgrade(
+  existing: WorkbenchLibraryEntry,
+  item: ReturnType<typeof getEnabledTemplateFields>[number],
+) {
+  const generatedRole = parseRoleContent(createRoleEntryFromTemplate(item).content);
+  const existingRole = parseRoleContent(existing.content);
+  const targetTitles = new Set(item.fields.map((field) => field.title));
+  const existingStateSettings = getRoleStateSettings(existingRole);
+  const generatedStateSettings = getRoleStateSettings(generatedRole);
+  const mergedStateSettings = createEmptyRoleStateSettings();
+  (Object.keys(mergedStateSettings) as Array<keyof typeof mergedStateSettings>).forEach((key) => {
+    mergedStateSettings[key] = generatedStateSettings[key]?.trim()
+      ? generatedStateSettings[key]
+      : existingStateSettings[key];
+  });
+  return {
+    ...existing,
+    content: stringifyRoleContent({
+      ...existingRole,
+      baseSetting: appendUnmappedSections(
+        getRoleBaseSetting(generatedRole),
+        getRoleBaseSetting(existingRole),
+        targetTitles,
+      ),
+      relationship: generatedRole.relationship || existingRole.relationship,
+      stateSettings: mergedStateSettings,
+    }),
+    updatedAt: new Date().toLocaleString('zh-CN'),
+  };
+}
+
+function readStoredTypeDomains(storageKey: string) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(getSettingTypeDomainsStorageKey(storageKey)) ?? '{}');
+    return parsed && typeof parsed === 'object' ? parsed as Record<string, string> : {};
+  } catch {
+    return {};
+  }
+}
+
+export function upgradeProfessionalSettingEntriesFromTemplate(storageKey: string, structure: TemplateStructure) {
+  const enabledItems = getEnabledTemplateFields(structure);
+  const roleItems = enabledItems.filter((item) => item.domain.title === '人物设定');
+  const settingItems = enabledItems.filter((item) => item.domain.title !== '人物设定');
+  const existingEntries = readWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey);
+  const existingById = new Map(existingEntries.map((entry) => [entry.id, entry]));
+  const targetIds = new Set(enabledItems.map((item) => item.entry.id));
+  const existingRoleTypes = existingEntries
+    .filter((entry) => normalizeTabName(entry.tab) === ROLE_TAB)
+    .map((entry) => parseRoleContent(entry.content).type.trim())
+    .filter(Boolean);
+  const existingSettingTypes = existingEntries
+    .filter((entry) => normalizeTabName(entry.tab) === SETTING_TAB)
+    .map((entry) => parseSettingContent(entry.content).type.trim())
+    .filter(Boolean);
+  const roleTypes = Array.from(new Set([
+    ...existingRoleTypes,
+    ...roleItems.map((item) => item.entry.title.trim()).filter(Boolean),
+  ]));
+  const settingTypes = Array.from(new Set([
+    ...existingSettingTypes,
+    ...settingItems.map((item) => item.group.title.trim()).filter(Boolean),
+  ]));
+  const customSettingTypeDomains = Object.fromEntries(
+    settingItems
+      .filter((item) => item.group.title.trim())
+      .map((item) => [item.group.title.trim(), item.domain.id === 'work' ? 'work' : item.domain.id]),
+  );
+
+  localStorage.setItem(
+    getRoleTypesStorageKey(storageKey),
+    JSON.stringify(roleTypes.filter((type) => !DEFAULT_ROLE_TYPES.includes(type))),
+  );
+  localStorage.setItem(
+    getHiddenRoleTypesStorageKey(storageKey),
+    JSON.stringify(DEFAULT_ROLE_TYPES.filter((type) => !roleTypes.includes(type))),
+  );
+  localStorage.setItem(getRoleTaxonomyDefaultsVersionStorageKey(storageKey), ROLE_TAXONOMY_DEFAULTS_VERSION);
+  localStorage.setItem(
+    getSettingTypesStorageKey(storageKey),
+    JSON.stringify(settingTypes.filter((type) => !DEFAULT_SETTING_TYPES.includes(type))),
+  );
+  localStorage.setItem(
+    getHiddenSettingTypesStorageKey(storageKey),
+    JSON.stringify(DEFAULT_SETTING_TYPES.filter((type) => !settingTypes.includes(type))),
+  );
+  localStorage.setItem(
+    getSettingTypeDomainsStorageKey(storageKey),
+    JSON.stringify({ ...DEFAULT_SETTING_TYPE_DOMAINS, ...readStoredTypeDomains(storageKey), ...customSettingTypeDomains }),
+  );
+  localStorage.setItem(getSettingTaxonomyDefaultsVersionStorageKey(storageKey), SETTING_TAXONOMY_DEFAULTS_VERSION);
+  localStorage.setItem(getDefaultWorkSettingStarterVersionStorageKey(storageKey), DEFAULT_WORK_SETTING_STARTER_VERSION);
+
+  const upgradedTemplateEntries = [
+    ...roleItems.map((item) => {
+      const existing = existingById.get(item.entry.id);
+      return existing ? mergeRoleEntryForUpgrade(existing, item) : createRoleEntryFromTemplate(item);
+    }),
+    ...settingItems.map((item) => {
+      const existing = existingById.get(item.entry.id);
+      return existing ? mergeSettingEntryForUpgrade(existing, item) : createSettingEntryFromTemplate(item);
+    }),
+  ];
+  const preservedEntries = existingEntries.filter((entry) => !targetIds.has(entry.id));
+  writeWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey, [
+    ...upgradedTemplateEntries,
     ...preservedEntries,
   ]);
 }

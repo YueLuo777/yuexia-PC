@@ -100,7 +100,7 @@ try {
 
   await page.getByRole('button', { name: '新建小说' }).click();
   await page.locator('input:visible').last().fill(smokeNovelTitle);
-  await page.getByRole('button', { name: '确认', exact: true }).last().click();
+  await page.getByRole('button', { name: /^确[定认]$/ }).last().click();
 
   const smokeNovelCard = page.getByText(smokeNovelTitle, { exact: true }).last().locator('xpath=ancestor::article');
   await smokeNovelCard.waitFor({ timeout: 15_000 });
@@ -121,7 +121,7 @@ try {
   assert.equal(await chapterTitleInput.inputValue(), smokeChapterTitle, 'chapter title should survive reload');
   assert.equal(await chapterEditor.inputValue(), smokeChapterContent, 'chapter content should survive reload');
 
-  const auditButton = page.getByRole('button', { name: /剧情审核/ });
+  const auditButton = page.getByRole('button', { name: /审核检查|剧情审核/ });
   await auditButton.waitFor({ timeout: 30_000 });
   await auditButton.click();
   await page.getByText('第1章 剧情审核', { exact: true }).waitFor({ timeout: 30_000 });
@@ -142,7 +142,7 @@ try {
   await returnedSmokeCard.locator('button[title="更多"]').click();
   await page.getByRole('menuitem', { name: '重命名', exact: true }).click();
   await page.locator('input:visible').last().fill(renamedSmokeNovelTitle);
-  await page.getByRole('button', { name: '确认', exact: true }).last().click();
+  await page.getByRole('button', { name: /^确[定认]$/ }).last().click();
   await page.getByText(renamedSmokeNovelTitle, { exact: true }).last().waitFor();
 
   const renamedSmokeCard = page

@@ -1,4 +1,4 @@
-export type StandardModeSettingNavigationAction = 'change-template' | 'settings-cleared';
+export type StandardModeSettingNavigationAction = 'change-template' | 'upgrade-template' | 'settings-cleared';
 
 export type StandardModeSettingNavigationEvent = {
   action: StandardModeSettingNavigationAction;

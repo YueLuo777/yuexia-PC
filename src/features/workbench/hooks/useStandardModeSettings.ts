@@ -18,6 +18,7 @@ import {
   cloneTemplateStructure,
   type TemplateStructure,
 } from '@/features/workbench/model/standardModeTemplateModel';
+import { upgradeStandardModeBookTemplate } from '@/features/workbench/model/standardModeTemplateUpgrade';
 
 function createBookTemplateState(templateId: string, templateName: string, structure: TemplateStructure) {
   const cleanStructure = cloneTemplateStructure(structure).map((domain) => ({
@@ -96,6 +97,18 @@ export function useStandardModeSettings(novelId: string, settingsStorageKey: str
     setSelectedEntryId(null);
   }, [novelId, settingsStorageKey]);
 
+  const upgradeTemplate = useCallback((templateId: string, templateName: string, structure: TemplateStructure) => {
+    const next = upgradeStandardModeBookTemplate(novelId, settingsStorageKey, {
+      id: templateId,
+      name: templateName,
+      structure,
+    });
+    if (!next) return;
+    setTemplate(next);
+    setHasExistingSettings(true);
+    setCheckResults(null);
+  }, [novelId, settingsStorageKey]);
+
   const updateField = useCallback((entryId: string, fieldKey: string, _fieldTitle: string, value: string) => {
     if (!template) return;
     const next: StandardSettingTemplateState = {
@@ -128,6 +141,7 @@ export function useStandardModeSettings(novelId: string, settingsStorageKey: str
     focusTarget,
     setSelectedEntryId,
     initializeTemplate,
+    upgradeTemplate,
     updateField,
     runCheck,
     jumpToEmptyField,

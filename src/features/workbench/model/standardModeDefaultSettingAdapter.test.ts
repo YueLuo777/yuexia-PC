@@ -1,12 +1,28 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
+  mergeProfessionalSettingValuesIntoTemplate,
   readDefaultStandardSettingEntries,
   repairStandardModeGeneratedSettingEntries,
   replaceProfessionalSettingEntriesFromTemplate,
   resetStandardModeSettingEntries,
+  upgradeProfessionalSettingEntriesFromTemplate,
   writeDefaultStandardSettingField,
 } from './standardModeDefaultSettingAdapter';
+import {
+  createEmptyRoleStateSettings,
+  stringifyRoleContent,
+} from '@/features/workbench/components/workbenchRoleContent';
+import { parseSettingContent, stringifySettingContent } from '@/features/workbench/components/workbenchStructuredSettings';
+import {
+  readWorkbenchLibraryEntriesWithGlobalBrainstorm,
+  writeWorkbenchLibraryEntriesWithGlobalBrainstorm,
+} from './workbenchLibraryStorage';
+import {
+  MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE,
+  MALE_FANTASY_XIANXIA_STANDARD_STRUCTURE,
+} from './standardModeXianxiaSettingTemplates';
+import { mergeTemplateStructuresForUpgrade } from './standardModeTemplateUpgrade';
 import { buildDefaultTemplateStructure } from './standardModeTemplateModel';
 
 describe('standard mode default setting adapter', () => {
@@ -84,6 +100,51 @@ describe('standard mode default setting adapter', () => {
       positioning?.sections.flatMap((section) => section.fields).find((field) => field.title === '小说类型')?.value,
     ).toBe('东方玄幻');
     expect(entries.some((entry) => entry.title === '男主角')).toBe(true);
+  });
+
+  it('upgrades template entries without losing generated content or dynamic characters', () => {
+    const storageKey = 'xinyuexia_workbench_settings_novel-upgrade';
+    replaceProfessionalSettingEntriesFromTemplate(storageKey, MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE);
+    const entries = readWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey);
+    const positioning = entries.find((entry) => entry.title === '作品定位');
+    expect(positioning).toBeDefined();
+    const positioningSetting = parseSettingContent(positioning!.content);
+    positioning!.content = stringifySettingContent({
+      ...positioningSetting,
+      body: positioningSetting.body.replace('【小说类型】：\n', '【小说类型】：\nAI生成的东方玄幻'),
+    });
+    entries.push({
+      id: 'generated-supporting-role',
+      tab: '角色',
+      title: '林青竹',
+      content: stringifyRoleContent({
+        type: '重要配角',
+        lifeStatus: '存活',
+        baseSetting: '【人物姓名】：\n林青竹',
+        relationship: '主角盟友',
+        stateSettings: createEmptyRoleStateSettings(),
+        stateUpdateChapters: {},
+        personality: '',
+        background: '',
+        status: '',
+        history: [],
+      }),
+      updatedAt: '2026/7/30',
+    });
+    writeWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey, entries);
+
+    const hydrated = mergeProfessionalSettingValuesIntoTemplate(
+      storageKey,
+      MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE,
+    );
+    const upgraded = mergeTemplateStructuresForUpgrade(hydrated, MALE_FANTASY_XIANXIA_STANDARD_STRUCTURE);
+    upgradeProfessionalSettingEntriesFromTemplate(storageKey, upgraded);
+
+    const upgradedEntries = readWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey);
+    const upgradedPositioning = upgradedEntries.find((entry) => entry.id === positioning!.id);
+    expect(parseSettingContent(upgradedPositioning!.content).body).toContain('【小说类型】：\nAI生成的东方玄幻');
+    expect(parseSettingContent(upgradedPositioning!.content).body).toContain('【故事发生年代】：');
+    expect(upgradedEntries.find((entry) => entry.id === 'generated-supporting-role')?.title).toBe('林青竹');
   });
 
   it('repairs leaked JSON and merges decorative duplicate titles into the locked template entry', () => {

@@ -11,6 +11,7 @@ import {
   getStandardSettingGenerationStorageKey,
   writeStandardSettingGenerationState,
 } from '@/features/workbench/model/standardModeSettingGenerationFlow';
+import { countTemplateFields } from '@/features/workbench/model/standardModeTemplateUpgrade';
 
 import { StandardModeSettingPage } from './StandardModeSettingPage';
 
@@ -38,6 +39,7 @@ describe('StandardModeSettingPage', () => {
     expect(screen.getByText('点击下方按钮，检查所有设定中还没有填写的内容。')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '一键检查' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '更换模板' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '升级模板' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '清空设定' })).toBeInTheDocument();
   });
 
@@ -52,6 +54,48 @@ describe('StandardModeSettingPage', () => {
 
     expect(screen.getByRole('button', { name: '一键检查' })).toBeInTheDocument();
     expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('玄幻仙侠（标准版）');
+  });
+
+  it('upgrades lightweight directly to full without clearing content or generation context', async () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（轻量版）' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认模板并创建设定' }));
+    await waitFor(() => expect(screen.getByLabelText('小说类型')).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('小说类型'), { target: { value: '保留的东方玄幻' } });
+    writeStandardSettingGenerationState('xinyuexia_workbench_settings_novel-a', {
+      ...createStandardSettingGenerationState(),
+      currentStepIndex: 1,
+      completedStepIds: ['world-foundation'],
+    });
+    localStorage.setItem('xinyuexia_standard_brainstorm_link_novel-a', JSON.stringify({
+      id: 'brainstorm-upgrade',
+      title: '升级前脑洞',
+      content: '保留关联内容',
+    }));
+
+    fireEvent.click(screen.getByRole('button', { name: '升级模板' }));
+    expect(screen.getByRole('dialog', { name: '升级设定模板' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '升级到玄幻仙侠（标准版）' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: '升级到玄幻仙侠（完整版）' })).toBeInTheDocument();
+    expect(screen.getByText('新增 198 个字段')).toBeInTheDocument();
+    expect(screen.getByText('新增 548 个字段')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: '升级到玄幻仙侠（完整版）' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认升级' }));
+
+    await waitFor(() => expect(readStandardSettingTemplateState('novel-a')?.templateId)
+      .toBe('male-fantasy-xianxia-full'));
+    const upgraded = readStandardSettingTemplateState('novel-a');
+    expect(countTemplateFields(upgraded?.structure ?? [])).toBe(648);
+    expect(upgraded?.structure.flatMap((domain) => domain.groups)
+      .flatMap((group) => group.entries)
+      .flatMap((entry) => entry.sections)
+      .flatMap((section) => section.fields)
+      .find((field) => field.title === '小说类型')?.value).toBe('保留的东方玄幻');
+    expect(screen.getByLabelText('小说类型')).toHaveValue('保留的东方玄幻');
+    expect(screen.getByRole('button', { name: '升级模板' })).toBeDisabled();
+    expect(localStorage.getItem(getStandardSettingGenerationStorageKey('xinyuexia_workbench_settings_novel-a')))
+      .not.toBeNull();
+    expect(localStorage.getItem('xinyuexia_standard_brainstorm_link_novel-a')).toContain('brainstorm-upgrade');
   });
 
   it('recommends xianxia and opens the shared four-column template editor', () => {
