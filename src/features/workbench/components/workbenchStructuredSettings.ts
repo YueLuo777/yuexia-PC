@@ -16,6 +16,7 @@ import {
   type StructuredSettingFieldGroup,
   type StructuredSettingFieldSet,
   type StructuredSettingFieldDraft,
+  type TemplateSettingFieldLayout,
   STRUCTURED_SETTING_TABS,
   type StructuredSettingTab,
   MONSTER_BESTIARY_FIELDS,
@@ -38,6 +39,39 @@ export function normalizeSettingType(value: string | undefined) {
   return value?.trim() || STRUCTURED_SETTING_UNCATEGORIZED_TYPE;
 }
 
+function normalizeTemplateFieldLayout(value: unknown): TemplateSettingFieldLayout | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const candidate = value as Partial<TemplateSettingFieldLayout>;
+  if (typeof candidate.id !== 'string' || !candidate.id.trim() || !Array.isArray(candidate.sections)) {
+    return undefined;
+  }
+  const sections = candidate.sections.flatMap((section) => {
+    if (!section || typeof section !== 'object') return [];
+    const current = section as TemplateSettingFieldLayout['sections'][number];
+    if (typeof current.title !== 'string' || !Array.isArray(current.fields)) return [];
+    const fields = current.fields.flatMap((field) => {
+      if (!field || typeof field !== 'object') return [];
+      const definition = field as StructuredSettingFieldDefinition;
+      if (typeof definition.key !== 'string' || !definition.key.trim() || typeof definition.title !== 'string') {
+        return [];
+      }
+      return [{
+        key: definition.key,
+        title: definition.title,
+        ...(typeof definition.placeholder === 'string' ? { placeholder: definition.placeholder } : {}),
+        ...(definition.control === 'input' || definition.control === 'textarea' ? { control: definition.control } : {}),
+        ...(typeof definition.maxLength === 'number' ? { maxLength: definition.maxLength } : {}),
+        ...(typeof definition.fieldClassName === 'string' ? { fieldClassName: definition.fieldClassName } : {}),
+        ...(['compact', 'standard', 'expanded'].includes(definition.displaySize ?? '')
+          ? { displaySize: definition.displaySize }
+          : {}),
+      }];
+    });
+    return fields.length > 0 ? [{ title: current.title, fields }] : [];
+  });
+  return sections.length > 0 ? { id: candidate.id, sections } : undefined;
+}
+
 export function parseSettingContent(content: string): SettingContent {
   try {
     const parsed = JSON.parse(content) as Partial<SettingContent>;
@@ -45,6 +79,7 @@ export function parseSettingContent(content: string): SettingContent {
       type: normalizeSettingType(parsed.type),
       body: parsed.body || '',
       structuredFieldSetId: typeof parsed.structuredFieldSetId === 'string' ? parsed.structuredFieldSetId : undefined,
+      templateFieldLayout: normalizeTemplateFieldLayout(parsed.templateFieldLayout),
       lockedDefaultEntryId: typeof parsed.lockedDefaultEntryId === 'string' ? parsed.lockedDefaultEntryId : undefined,
       statusHistory: normalizeSettingFieldHistory(parsed.statusHistory),
       pendingStatusUpdates: normalizePendingSettingFieldUpdates(parsed.pendingStatusUpdates),
@@ -169,6 +204,21 @@ export function createStructuredSettingFieldDraft(
 }
 
 export function getStructuredSettingFieldSet(entry: WorkbenchLibraryEntry, setting: SettingContent | null) {
+  if (setting?.templateFieldLayout) {
+    const fields = setting.templateFieldLayout.sections.flatMap((section) => section.fields);
+    return {
+      id: setting.templateFieldLayout.id,
+      entryType: setting.type,
+      entryTitle: entry.title,
+      gridColumnsClassName: 'grid-cols-2',
+      fields,
+      groups: setting.templateFieldLayout.sections.map((section) => ({
+        title: section.title,
+        description: '',
+        fieldKeys: section.fields.map((field) => field.key),
+      })),
+    } satisfies StructuredSettingFieldSet;
+  }
   if (setting?.structuredFieldSetId) {
     const fieldSet = STRUCTURED_SETTING_FIELD_SETS.find((item) => item.id === setting.structuredFieldSetId);
     if (fieldSet) return fieldSet;

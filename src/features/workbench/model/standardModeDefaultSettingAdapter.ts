@@ -54,7 +54,7 @@ import {
 } from '@/features/workbench/model/workbenchSettingTaxonomy';
 
 import type { StandardSettingEntryDescriptor, StandardSettingSectionDescriptor } from './standardModeSettingModel';
-import type { TemplateStructure } from './standardModeTemplateModel';
+import type { TemplateEntryNode, TemplateStructure } from './standardModeTemplateModel';
 
 const DOMAIN_TITLES: Record<string, string> = {
   work: '作品设定',
@@ -251,13 +251,8 @@ function createSettingEntryFromTemplate(
 ): WorkbenchLibraryEntry {
   const settingType = item.group.title.trim() || '未分类';
   const title = item.entry.title.trim() || '新建设定';
-  const fieldSet = getSettingImportFormatFieldSet(settingType, title);
-  const templateFieldTitles = item.fields.map((field) => field.title);
-  const fieldSetMatches = Boolean(
-    fieldSet &&
-    fieldSet.fields.length === templateFieldTitles.length &&
-    fieldSet.fields.every((field, index) => field.title === templateFieldTitles[index]),
-  );
+  const fieldSet = getMatchingTemplateFieldSet(item);
+  const templateFieldLayout = fieldSet ? undefined : buildTemplateFieldLayout(item.entry);
   const body = item.fields.map((field) => `【${field.title}】：\n${field.value?.trim() ?? ''}`).join('\n\n');
 
   return {
@@ -266,8 +261,45 @@ function createSettingEntryFromTemplate(
     content: stringifySettingContent({
       type: settingType,
       body,
-      ...(fieldSetMatches && fieldSet ? { structuredFieldSetId: fieldSet.id } : {}),
+      templateFieldLayout,
+      ...(fieldSet ? { structuredFieldSetId: fieldSet.id } : {}),
     }),
+  };
+}
+
+function getMatchingTemplateFieldSet(item: ReturnType<typeof getEnabledTemplateFields>[number]) {
+  const settingType = item.group.title.trim() || '未分类';
+  const title = item.entry.title.trim() || '新建设定';
+  const fieldSet = getSettingImportFormatFieldSet(settingType, title);
+  const templateFieldTitles = item.fields.map((field) => field.title);
+  const fieldSetMatches = Boolean(
+    fieldSet &&
+    fieldSet.fields.length === templateFieldTitles.length &&
+    fieldSet.fields.every((field, index) => field.title === templateFieldTitles[index]),
+  );
+  return fieldSetMatches ? fieldSet : null;
+}
+
+function buildTemplateFieldLayout(entry: TemplateEntryNode) {
+  return {
+    id: `template-layout:${entry.id}`,
+    sections: entry.sections
+      .filter((section) => section.enabled)
+      .map((section) => ({
+        title: section.title,
+        fields: section.fields
+          .filter((field) => field.enabled)
+          .map((field) => ({
+            key: field.id,
+            title: field.title,
+            placeholder: field.placeholder || `填写${field.title}`,
+            control: field.control,
+            maxLength: field.maxLength,
+            fieldClassName: field.fieldClassName,
+            displaySize: field.displaySize,
+          })),
+      }))
+      .filter((section) => section.fields.length > 0),
   };
 }
 
@@ -388,9 +420,37 @@ function mergeSettingEntryForUpgrade(
       type: item.group.title.trim() || existingSetting.type,
       body: appendUnmappedSections(generatedSetting.body, existingSetting.body, targetTitles),
       structuredFieldSetId: generatedSetting.structuredFieldSetId,
+      templateFieldLayout: generatedSetting.templateFieldLayout,
     }),
     updatedAt: new Date().toLocaleString('zh-CN'),
   };
+}
+
+export function syncProfessionalSettingFieldLayoutsFromTemplate(
+  storageKey: string,
+  structure: TemplateStructure,
+) {
+  const layoutsByEntryId = new Map(
+    getEnabledTemplateFields(structure)
+      .filter((item) => item.domain.title !== '人物设定')
+      .filter((item) => !getMatchingTemplateFieldSet(item))
+      .map((item) => [item.entry.id, buildTemplateFieldLayout(item.entry)] as const),
+  );
+  const entries = readWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey);
+  let changed = false;
+  const nextEntries = entries.map((entry) => {
+    const layout = layoutsByEntryId.get(entry.id);
+    if (!layout || normalizeTabName(entry.tab) !== SETTING_TAB) return entry;
+    const setting = parseSettingContent(entry.content);
+    if (JSON.stringify(setting.templateFieldLayout) === JSON.stringify(layout)) return entry;
+    changed = true;
+    return {
+      ...entry,
+      content: stringifySettingContent({ ...setting, templateFieldLayout: layout }),
+    };
+  });
+  if (changed) writeWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey, nextEntries);
+  return changed;
 }
 
 function mergeRoleEntryForUpgrade(

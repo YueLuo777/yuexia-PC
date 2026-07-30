@@ -64,11 +64,20 @@ export interface SettingContent {
   type: string;
   body: string;
   structuredFieldSetId?: string;
+  templateFieldLayout?: TemplateSettingFieldLayout;
   lockedDefaultEntryId?: string;
   statusHistory?: SettingFieldHistoryEvent[];
   pendingStatusUpdates?: PendingSettingFieldUpdate[];
   fieldUpdatePolicies?: Record<string, SettingFieldUpdatePolicy>;
 }
+
+export type TemplateSettingFieldLayout = {
+  id: string;
+  sections: Array<{
+    title: string;
+    fields: Array<StructuredSettingFieldDefinition>;
+  }>;
+};
 
 export type StructuredSettingFieldDefinition = {
   key: string;

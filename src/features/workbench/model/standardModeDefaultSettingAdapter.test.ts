@@ -6,6 +6,7 @@ import {
   repairStandardModeGeneratedSettingEntries,
   replaceProfessionalSettingEntriesFromTemplate,
   resetStandardModeSettingEntries,
+  syncProfessionalSettingFieldLayoutsFromTemplate,
   upgradeProfessionalSettingEntriesFromTemplate,
   writeDefaultStandardSettingField,
 } from './standardModeDefaultSettingAdapter';
@@ -100,6 +101,50 @@ describe('standard mode default setting adapter', () => {
       positioning?.sections.flatMap((section) => section.fields).find((field) => field.title === '小说类型')?.value,
     ).toBe('东方玄幻');
     expect(entries.some((entry) => entry.title === '男主角')).toBe(true);
+  });
+
+  it('renders every standard xianxia world rule as its own editable field', () => {
+    const storageKey = 'xinyuexia_workbench_settings_novel-standard-rules';
+    replaceProfessionalSettingEntriesFromTemplate(storageKey, MALE_FANTASY_XIANXIA_STANDARD_STRUCTURE);
+
+    const worldRules = readDefaultStandardSettingEntries(storageKey).find((entry) => entry.title === '世界规则');
+    expect(worldRules?.sections.flatMap((section) => section.fields).map((field) => field.title)).toEqual([
+      '生死规则', '寿命规则', '灵魂规则', '天劫规则', '气运规则',
+    ]);
+    expect(worldRules?.sections.flatMap((section) => section.fields).every((field) => field.key !== 'body')).toBe(true);
+
+    const lifeRule = worldRules!.sections.flatMap((section) => section.fields)[0];
+    writeDefaultStandardSettingField(storageKey, worldRules!.id, lifeRule.key, lifeRule.title, '死亡后不可复生');
+    const updated = readDefaultStandardSettingEntries(storageKey).find((entry) => entry.id === worldRules!.id);
+    expect(updated?.sections.flatMap((section) => section.fields)[0].value).toBe('死亡后不可复生');
+    expect(updated?.sections.flatMap((section) => section.fields)[1].value).toBe('');
+  });
+
+  it('adds separate template fields to an existing standard edition without losing content', () => {
+    const storageKey = 'xinyuexia_workbench_settings_novel-existing-standard';
+    replaceProfessionalSettingEntriesFromTemplate(storageKey, MALE_FANTASY_XIANXIA_STANDARD_STRUCTURE);
+    const stored = readWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey);
+    const worldRules = stored.find((entry) => entry.title === '世界规则')!;
+    const legacySetting = parseSettingContent(worldRules.content);
+    worldRules.content = stringifySettingContent({
+      ...legacySetting,
+      templateFieldLayout: undefined,
+      body: legacySetting.body.replace('【生死规则】：\n', '【生死规则】：\n死亡后不可复生'),
+    });
+    writeWorkbenchLibraryEntriesWithGlobalBrainstorm(storageKey, stored);
+
+    expect(readDefaultStandardSettingEntries(storageKey).find((entry) => entry.id === worldRules.id)
+      ?.sections.flatMap((section) => section.fields).map((field) => field.title)).toEqual(['设定内容']);
+    expect(syncProfessionalSettingFieldLayoutsFromTemplate(
+      storageKey,
+      MALE_FANTASY_XIANXIA_STANDARD_STRUCTURE,
+    )).toBe(true);
+
+    const migrated = readDefaultStandardSettingEntries(storageKey).find((entry) => entry.id === worldRules.id)!;
+    expect(migrated.sections.flatMap((section) => section.fields).map((field) => field.title)).toEqual([
+      '生死规则', '寿命规则', '灵魂规则', '天劫规则', '气运规则',
+    ]);
+    expect(migrated.sections.flatMap((section) => section.fields)[0].value).toBe('死亡后不可复生');
   });
 
   it('upgrades template entries without losing generated content or dynamic characters', () => {

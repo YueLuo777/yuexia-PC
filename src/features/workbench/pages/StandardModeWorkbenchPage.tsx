@@ -13,6 +13,7 @@ import {
   hasStandardModeSettingEntries,
   repairStandardModeGeneratedSettingEntries,
   replaceProfessionalSettingEntriesFromTemplate,
+  syncProfessionalSettingFieldLayoutsFromTemplate,
 } from '@/features/workbench/model/standardModeDefaultSettingAdapter';
 import { readStandardSettingTemplateState } from '@/features/workbench/model/standardModeSettingModel';
 import { subscribeStandardModeSettingNavigationAction } from '@/features/workbench/model/standardModeSettingNavigationEvents';
@@ -108,7 +109,11 @@ export function StandardModeWorkbenchPage() {
 
   useEffect(() => {
     if (!currentNovel || needsProfessionalSettingMigration) return;
-    if (repairStandardModeGeneratedSettingEntries(settingsStorageKey)) {
+    const currentTemplate = readStandardSettingTemplateState(String(currentNovel.id));
+    const layoutChanged = currentTemplate
+      ? syncProfessionalSettingFieldLayoutsFromTemplate(settingsStorageKey, currentTemplate.structure)
+      : false;
+    if (layoutChanged || repairStandardModeGeneratedSettingEntries(settingsStorageKey)) {
       setSettingsMigrationRevision((revision) => revision + 1);
     }
   }, [currentNovel, needsProfessionalSettingMigration, settingsStorageKey]);
