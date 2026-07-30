@@ -8,6 +8,13 @@ export { FANTASY_REDUCTION_PLANS } from './fantasyTemplateFieldReductionPlans';
 
 const currentFantasyTemplate = SMART_TEMPLATE_PRESETS.find((preset) => preset.id === 'male-fantasy-xianxia');
 
+export const CURRENT_FANTASY_DOMAIN_COUNT = currentFantasyTemplate?.structure.length ?? 0;
+
+export const CURRENT_FANTASY_GROUP_COUNT = currentFantasyTemplate?.structure.reduce(
+  (total, domain) => total + domain.groups.length,
+  0,
+) ?? 0;
+
 export const CURRENT_FANTASY_FIELD_COUNT = currentFantasyTemplate?.structure.reduce(
   (domainTotal, domain) => domainTotal + domain.groups.reduce(
     (groupTotal, group) => groupTotal + group.entries.reduce(
@@ -42,7 +49,9 @@ export function FantasyTemplateFieldReductionTestPage() {
             </div>
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-right">
               <div className="text-xs font-bold text-amber-700">当前基线</div>
-              <div className="mt-1 text-xl font-black text-amber-900">7类 · 19设定 · {CURRENT_FANTASY_FIELD_COUNT}字段</div>
+              <div className="mt-1 text-xl font-black text-amber-900">
+                {CURRENT_FANTASY_DOMAIN_COUNT}类 · {CURRENT_FANTASY_GROUP_COUNT}设定 · {CURRENT_FANTASY_FIELD_COUNT}字段
+              </div>
             </div>
           </div>
         </header>

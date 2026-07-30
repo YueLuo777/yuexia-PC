@@ -68,27 +68,16 @@ describe('standard mode setting model', () => {
     expect(buildTemplateSettingEntries(next)[0].sections[0].fields[1].value).toBe('踏入仙门');
   });
 
-  it('keeps the requested male protagonist category order in the xianxia template', () => {
+  it('keeps the standard protagonist as an expanded version of the lightweight protagonist', () => {
     const xianxia = SMART_TEMPLATE_PRESETS.find((item) => item.id === 'male-fantasy-xianxia');
-    const protagonist = buildTemplateSettingEntries(xianxia!.structure).find((entry) => entry.title === '男主角');
+    const protagonist = buildTemplateSettingEntries(xianxia!.structure).find((entry) => entry.title === '主角档案');
+    const fieldTitles = protagonist?.sections.flatMap((section) => section.fields.map((field) => field.title));
 
-    expect(protagonist?.sections.map((section) => section.title)).toEqual([
-      '基础档案',
-      '动机与行为规则',
-      '金手指',
-      '实力与手段',
-      '当前状态',
-      '关系',
-    ]);
-    expect(protagonist?.sections.find((section) => section.title === '基础档案')?.fields.map((field) => field.title))
-      .toEqual(expect.arrayContaining(['人物背景', '当前目标']));
-    expect(protagonist?.sections.find((section) => section.title === '金手指')?.fields.map((field) => field.title))
-      .toEqual([
-        '金手指来源',
-        '金手指当前功能',
-        '金手指升级方式',
-        '金手指限制与代价',
-        '金手指当前解锁状态',
-      ]);
+    expect(fieldTitles).toEqual(expect.arrayContaining([
+      '人物姓名', '身份定位', '人物出身', '当前目标', '核心动机', '行为底线', '当前境界', '人物成长路线',
+    ]));
+    expect(fieldTitles).toEqual(expect.arrayContaining([
+      '年龄', '外貌特征', '最大优点', '最大缺点', '隐藏秘密', '战斗技能',
+    ]));
   });
 });

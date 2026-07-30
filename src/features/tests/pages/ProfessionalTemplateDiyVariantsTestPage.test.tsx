@@ -23,7 +23,7 @@ describe('ProfessionalTemplateDiyVariantsTestPage', () => {
     render(<ProfessionalTemplateDiyVariantsTestPage />);
     const page = screen.getByTestId('professional-template-diy-variants-test');
     expect(page).toHaveAttribute('data-active-variant', 'columns');
-    expect(page).toHaveAttribute('data-domain-count', '7');
+    expect(page).toHaveAttribute('data-domain-count', '8');
 
     const monsterDelete = screen.getByRole('button', { name: '删除一级分类：怪物图鉴' });
     expect(monsterDelete).toBeDisabled();
@@ -32,7 +32,7 @@ describe('ProfessionalTemplateDiyVariantsTestPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '一级删除已锁定，点击解锁' }));
     expect(monsterDelete).toBeEnabled();
     fireEvent.click(monsterDelete);
-    expect(page).toHaveAttribute('data-domain-count', '6');
+    expect(page).toHaveAttribute('data-domain-count', '7');
   });
 
   it('builds and removes a complete path, then keeps it while comparing all four designs', () => {
@@ -61,7 +61,7 @@ describe('ProfessionalTemplateDiyVariantsTestPage', () => {
       target: { value: 'A字段' },
     });
     fireEvent.click(within(fieldColumn).getByRole('button', { name: '新增' }));
-    expect(page).toHaveAttribute('data-domain-count', '8');
+    expect(page).toHaveAttribute('data-domain-count', '9');
 
     fireEvent.click(screen.getByRole('button', { name: /F · 层级树/ }));
     expect(page).toHaveAttribute('data-active-variant', 'tree');
@@ -86,6 +86,6 @@ describe('ProfessionalTemplateDiyVariantsTestPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '删除三级设定：A设定' }));
     fireEvent.click(screen.getByRole('button', { name: '删除二级分组：A分组' }));
     fireEvent.click(screen.getByRole('button', { name: '删除一级分类：A' }));
-    expect(page).toHaveAttribute('data-domain-count', '7');
+    expect(page).toHaveAttribute('data-domain-count', '8');
   });
 });

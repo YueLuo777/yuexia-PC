@@ -2,7 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import {
+  CURRENT_FANTASY_DOMAIN_COUNT,
   CURRENT_FANTASY_FIELD_COUNT,
+  CURRENT_FANTASY_GROUP_COUNT,
   FANTASY_REDUCTION_PLANS,
   FantasyTemplateFieldReductionTestPage,
 } from '@/features/tests/pages/FantasyTemplateFieldReductionTestPage';
@@ -17,7 +19,9 @@ describe('FantasyTemplateFieldReductionTestPage', () => {
       title: '玄幻仙侠字段精简方案',
       path: '/fantasy-template-field-reduction-test',
     });
-    expect(CURRENT_FANTASY_FIELD_COUNT).toBe(155);
+    expect(CURRENT_FANTASY_DOMAIN_COUNT).toBe(8);
+    expect(CURRENT_FANTASY_GROUP_COUNT).toBe(20);
+    expect(CURRENT_FANTASY_FIELD_COUNT).toBe(298);
     expect(FANTASY_REDUCTION_PLANS).toHaveLength(5);
     expect(FANTASY_REDUCTION_PLANS.slice(0, 4).map((plan) => (
       plan.categories.reduce((total, category) => total + category.fields.length, 0)
@@ -32,7 +36,7 @@ describe('FantasyTemplateFieldReductionTestPage', () => {
     render(<FantasyTemplateFieldReductionTestPage />);
 
     expect(screen.getByText('只读方案对比 · 不生成模板')).toBeInTheDocument();
-    expect(screen.getByText('7类 · 19设定 · 155字段')).toBeInTheDocument();
+    expect(screen.getByText('8类 · 20设定 · 298字段')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /B · 连载实用/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText(/保留影响连续剧情/)).toBeInTheDocument();
     expect(screen.getByText('主角·金手指规则')).toBeInTheDocument();

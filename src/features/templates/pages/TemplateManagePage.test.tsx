@@ -83,7 +83,7 @@ describe('TemplateManagePage', () => {
     expect(within(editor).getByRole('button', { name: '一级删除未锁定，点击锁定' })).toHaveTextContent('锁定');
     expect(monsterDelete).toHaveClass('text-red-500');
     fireEvent.click(monsterDelete);
-    expect(editor).toHaveAttribute('data-domain-count', '6');
+    expect(editor).toHaveAttribute('data-domain-count', '7');
 
     const domainColumn = within(editor).getByRole('region', { name: 'DIY一级分类' });
     fireEvent.change(within(domainColumn).getByRole('textbox', { name: '输入一级分类名称' }), {

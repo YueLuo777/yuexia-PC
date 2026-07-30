@@ -27,8 +27,8 @@ describe('SettingTemplateAssemblerTestPage', () => {
     expect(within(primaryNavigation).getByRole('button', { name: /^作品设定/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '核心设定' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('checkbox', { name: '小说类型' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: '故事发生时代' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: '一句话写清主线' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: '故事发生年代' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: '核心卖点' })).not.toBeChecked();
     expect(screen.queryByTestId('mind-map-canvas')).not.toBeInTheDocument();
   });
 
@@ -52,16 +52,16 @@ describe('SettingTemplateAssemblerTestPage', () => {
     expect(screen.getByRole('button', { name: /标准模板/ })).toHaveAttribute('aria-pressed', 'false');
 
     fireEvent.change(screen.getByRole('textbox', { name: '搜索全部设定' }), {
-      target: { value: '金手指限制' },
+      target: { value: '战斗技能' },
     });
-    expect(screen.getByText(/人物设定 ＞ 主角 ＞ 男主角 ＞ 金手指限制与代价/)).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: '搜索结果：金手指限制与代价' })).toBeChecked();
+    expect(screen.getByText(/人物设定 ＞ 主角人物 ＞ 主角档案 ＞ 战斗技能/)).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: '搜索结果：战斗技能' })).toBeChecked();
 
     fireEvent.change(screen.getByRole('textbox', { name: '搜索全部设定' }), { target: { value: '' } });
     const primaryNavigation = screen.getByRole('complementary', { name: '一级设定分类' });
     fireEvent.click(within(primaryNavigation).getByRole('button', { name: /^人物设定/ }));
     const secondLevel = screen.getByRole('navigation', { name: '二级设定分类' });
-    expect(within(secondLevel).getByRole('button', { name: '主角' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(secondLevel).getByRole('button', { name: '主角人物' })).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(screen.getByRole('button', { name: '清空全部' }));
     expect(page).toHaveAttribute('data-selected-total', '0');
