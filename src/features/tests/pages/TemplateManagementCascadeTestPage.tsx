@@ -106,8 +106,9 @@ function LevelButton({
     <button
       type="button"
       aria-pressed={active}
+      data-cascade-level-button="true"
       onClick={onClick}
-      className={`flex min-h-11 min-w-0 items-center justify-between gap-3 rounded-md border px-3 text-left transition-colors ${
+      className={`flex min-h-11 w-[220px] shrink-0 items-center justify-between gap-3 rounded-md border px-3 text-left transition-colors ${
         active
           ? 'border-[#08AACE] bg-[#EAF9FD] text-[#078FAB] shadow-[0_0_0_1px_#08AACE]'
           : 'border-slate-200 bg-white text-slate-600 hover:border-[#9DDFEA] hover:text-[#078FAB]'
@@ -253,7 +254,7 @@ export function TemplateManagementCascadeTestPage() {
                 <h2 className="text-xs font-black text-slate-500">第一行 · 一级设定</h2>
                 <span className="text-[11px] font-semibold text-slate-400">数字表示包含的三级设定数量</span>
               </div>
-              <nav aria-label="测试一级设定" className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2">
+              <nav aria-label="测试一级设定" className="flex flex-wrap gap-2">
                 {structure.map((domain) => (
                   <LevelButton
                     key={domain.id}
@@ -269,7 +270,7 @@ export function TemplateManagementCascadeTestPage() {
 
             <div>
               <h2 className="mb-2 text-xs font-black text-slate-500">第二行 · 二级设定</h2>
-              <nav aria-label="测试二级设定" className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2">
+              <nav aria-label="测试二级设定" className="flex flex-wrap gap-2">
                 {activeDomain?.groups.map((group) => (
                   <LevelButton
                     key={group.id}
@@ -285,7 +286,7 @@ export function TemplateManagementCascadeTestPage() {
 
             <div>
               <h2 className="mb-2 text-xs font-black text-slate-500">第三行 · 三级设定</h2>
-              <nav aria-label="测试三级设定" className="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-2">
+              <nav aria-label="测试三级设定" className="flex flex-wrap gap-2">
                 {activeGroup?.entries.map((entry) => (
                   <LevelButton
                     key={entry.id}

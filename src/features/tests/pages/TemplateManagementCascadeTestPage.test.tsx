@@ -53,6 +53,27 @@ describe('TemplateManagementCascadeTestPage', () => {
     expect(screen.getByText(/第四级设定 · 共/)).toBeInTheDocument();
   });
 
+  it('keeps the first three category levels at one fixed width and wraps from the left', () => {
+    render(<TemplateManagementCascadeTestPage />);
+
+    const levelNavigations = [
+      screen.getByRole('navigation', { name: '测试一级设定' }),
+      screen.getByRole('navigation', { name: '测试二级设定' }),
+      screen.getByRole('navigation', { name: '测试三级设定' }),
+    ];
+
+    levelNavigations.forEach((navigation) => {
+      expect(navigation).toHaveClass('flex', 'flex-wrap');
+      expect(navigation.className).not.toContain('auto-fit');
+    });
+
+    const levelButtons = document.querySelectorAll('[data-cascade-level-button="true"]');
+    expect(levelButtons.length).toBeGreaterThan(0);
+    levelButtons.forEach((button) => {
+      expect(button).toHaveClass('w-[220px]', 'shrink-0');
+    });
+  });
+
   it('keeps the three source tabs available', () => {
     render(<TemplateManagementCascadeTestPage />);
 
