@@ -1,4 +1,4 @@
-import { TemplateDiyColumnsEditor } from '@/features/templates/components/TemplateDiyColumnsEditor';
+import { TemplateDiyCascadeEditor } from '@/features/templates/components/TemplateDiyCascadeEditor';
 import { useTemplateDiyController } from '@/features/templates/hooks/useTemplateDiyController';
 import type { TemplateStructure } from '@/features/workbench/model/standardModeTemplateModel';
 
@@ -20,8 +20,8 @@ export function ManagedTemplateDiyEditor({
   return (
     <section
       className="flex min-h-0 flex-col overflow-hidden bg-[#F5F8FA]"
-      aria-label="四栏DIY模板编辑器"
-      data-template-diy-columns-editor="true"
+      aria-label="逐级DIY模板编辑器"
+      data-template-diy-cascade-editor="true"
       data-domain-count={summary.domainCount}
     >
       <div className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-white px-4">
@@ -35,7 +35,7 @@ export function ManagedTemplateDiyEditor({
         <span className="shrink-0 text-xs font-semibold text-slate-400">删除默认锁定；解锁后仅修改当前模板草稿</span>
       </div>
 
-      <TemplateDiyColumnsEditor controller={controller} />
+      <TemplateDiyCascadeEditor controller={controller} />
 
       <footer className="flex h-[72px] shrink-0 items-center justify-between gap-4 border-t border-slate-200 bg-white px-4">
         <div className="min-w-0">

@@ -13,6 +13,7 @@ export const RETIRED_TEST_SERIALS: RetiredTestSerial[] = [
   { serial: 24, path: '/standard-mode-compact-navigation-test' },
   { serial: 26, path: '/template-node-workbench-layout-test' },
   { serial: 27, path: '/creation-guide-variants-test' },
+  { serial: 36, path: '/template-management-cascade-test' },
 ];
 
 export function buildTestNumberByPath(groups: TestGroup[]) {

@@ -49,6 +49,24 @@ describe('TemplateManagePage', () => {
     expect(screen.queryByText('玄幻仙侠（轻量版）')).not.toBeInTheDocument();
   });
 
+  it('uses fixed-width cascade navigation for the first three levels and adaptive fourth-level cards', () => {
+    render(<TemplateManagePage />);
+
+    const editor = screen.getByRole('region', { name: '逐级DIY模板编辑器' });
+    const navigations = [
+      within(editor).getByRole('navigation', { name: '模板一级设定' }),
+      within(editor).getByRole('navigation', { name: '模板二级设定' }),
+      within(editor).getByRole('navigation', { name: '模板三级设定' }),
+    ];
+
+    navigations.forEach((navigation) => expect(navigation).toHaveClass('flex', 'flex-wrap'));
+    const fixedCards = editor.querySelectorAll('[data-template-cascade-level-button="true"]');
+    expect(fixedCards.length).toBeGreaterThan(0);
+    fixedCards.forEach((card) => expect(card).toHaveClass('w-[220px]', 'shrink-0'));
+    expect(within(editor).getByRole('region', { name: 'DIY四级设定' }).querySelector('.grid'))
+      .toHaveClass('grid-cols-[repeat(auto-fit,minmax(220px,1fr))]');
+  });
+
   it('creates and saves a user template from the management page', () => {
     render(<TemplateManagePage />);
 
@@ -78,7 +96,7 @@ describe('TemplateManagePage', () => {
 
   it('edits all four levels with deletion locks and persists the exact DIY structure', () => {
     const { unmount } = render(<TemplateManagePage />);
-    const editor = screen.getByRole('region', { name: '四栏DIY模板编辑器' });
+    const editor = screen.getByRole('region', { name: '逐级DIY模板编辑器' });
     const monsterDelete = within(editor).getByRole('button', { name: '删除一级分类：怪物图鉴' });
     const domainLock = within(editor).getByRole('button', { name: '一级删除已锁定，点击解锁' });
     expect(monsterDelete).toBeDisabled();
@@ -130,7 +148,7 @@ describe('TemplateManagePage', () => {
     render(<TemplateManagePage />);
     fireEvent.click(screen.getByRole('tab', { name: '我的模板' }));
     fireEvent.click(screen.getByRole('button', { name: /正式DIY模板/ }));
-    const restoredEditor = screen.getByRole('region', { name: '四栏DIY模板编辑器' });
+    const restoredEditor = screen.getByRole('region', { name: '逐级DIY模板编辑器' });
     expect(within(restoredEditor).getByRole('button', { name: 'A' })).toBeInTheDocument();
     expect(within(restoredEditor).queryByRole('button', { name: '怪物图鉴' })).not.toBeInTheDocument();
   });

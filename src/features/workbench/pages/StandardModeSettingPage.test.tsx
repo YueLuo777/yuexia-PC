@@ -111,7 +111,7 @@ describe('StandardModeSettingPage', () => {
     expect(within(lightTemplate).getByText('男频 · 玄幻仙侠')).toBeInTheDocument();
     expect(screen.getByRole('separator', { name: '其他男频题材模板' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '男频' })).toHaveAttribute('aria-selected', 'true');
-    const editor = screen.getByRole('region', { name: '四栏DIY模板编辑器' });
+    const editor = screen.getByRole('region', { name: '逐级DIY模板编辑器' });
     expect(within(editor).getByRole('region', { name: 'DIY一级分类' })).toBeInTheDocument();
     expect(within(editor).getByRole('region', { name: 'DIY二级分组' })).toBeInTheDocument();
     expect(within(editor).getByRole('region', { name: 'DIY三级设定' })).toBeInTheDocument();
@@ -126,9 +126,9 @@ describe('StandardModeSettingPage', () => {
   it('reuses the template-management editor and keeps template confirmation separate', () => {
     renderPage();
 
-    const editor = screen.getByRole('region', { name: '四栏DIY模板编辑器' });
+    const editor = screen.getByRole('region', { name: '逐级DIY模板编辑器' });
     const saveTemplate = within(editor).getByRole('region', { name: '保存模板' });
-    expect(editor).toHaveAttribute('data-template-diy-columns-editor', 'true');
+    expect(editor).toHaveAttribute('data-template-diy-cascade-editor', 'true');
     expect(within(editor).getByText(/当前路径：/)).toHaveTextContent('作品设定 ＞ 核心设定 ＞ 作品定位');
     expect(within(editor).getByRole('button', { name: '一级删除已锁定，点击解锁' })).toHaveTextContent('解锁');
     expect(within(saveTemplate).getByRole('textbox', { name: '保存模板名称' })).toHaveValue('测试小说模板');
@@ -141,7 +141,7 @@ describe('StandardModeSettingPage', () => {
 
   it('saves the edited structure from the right-side template panel', () => {
     renderPage();
-    const savePanel = within(screen.getByRole('region', { name: '四栏DIY模板编辑器' }))
+    const savePanel = within(screen.getByRole('region', { name: '逐级DIY模板编辑器' }))
       .getByRole('region', { name: '保存模板' });
 
     fireEvent.change(within(savePanel).getByRole('textbox', { name: '保存模板名称' }), {
@@ -214,7 +214,7 @@ describe('StandardModeSettingPage', () => {
 
   it('edits the four-level structure before creating the per-book setting list', async () => {
     renderPage();
-    const editor = screen.getByRole('region', { name: '四栏DIY模板编辑器' });
+    const editor = screen.getByRole('region', { name: '逐级DIY模板编辑器' });
     const fieldColumn = within(editor).getByRole('region', { name: 'DIY四级设定' });
     fireEvent.change(within(fieldColumn).getByRole('textbox', { name: '输入四级设定名称' }), {
       target: { value: '补充要求' },
@@ -231,7 +231,7 @@ describe('StandardModeSettingPage', () => {
 
   it('keeps every template level protected until its delete lock is explicitly released', () => {
     renderPage();
-    const editor = screen.getByRole('region', { name: '四栏DIY模板编辑器' });
+    const editor = screen.getByRole('region', { name: '逐级DIY模板编辑器' });
     const fieldDelete = within(editor).getByRole('button', { name: '删除四级设定：小说类型' });
     expect(fieldDelete).toBeDisabled();
     fireEvent.click(within(editor).getByRole('button', { name: '四级删除已锁定，点击解锁' }));
@@ -324,7 +324,7 @@ describe('StandardModeSettingPage', () => {
     renderPage({ startInTemplateSelector: true, onTemplateChangeCancelled });
 
     expect(screen.queryByText('更换设定模板？')).not.toBeInTheDocument();
-    expect(screen.getByRole('region', { name: '四栏DIY模板编辑器' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: '逐级DIY模板编辑器' })).toBeInTheDocument();
     expect(screen.queryByTestId('mind-map-canvas')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（标准版）' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '返回设定列表' }));
