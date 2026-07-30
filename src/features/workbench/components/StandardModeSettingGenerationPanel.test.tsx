@@ -43,7 +43,8 @@ describe('StandardModeSettingGenerationPanel', () => {
     expect(screen.queryByText('0/5')).not.toBeInTheDocument();
     expect(screen.getAllByText('未生成')).toHaveLength(5);
     expect(screen.getByRole('progressbar', { name: '作品设定生成进度' })).toHaveAttribute('aria-valuenow', '0');
-    expect(screen.getByRole('textbox', { name: '作品设定用户要求' })).toHaveClass('h-24', 'flex-none');
+    expect(screen.getByRole('textbox', { name: '作品设定用户要求' })).toHaveClass('min-h-24', 'flex-1');
+    expect(screen.getByText('用户要求').closest('label')).toHaveClass('min-h-24', 'flex-1');
     expect(screen.getByRole('button', { name: '一键生成' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '逐步生成' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.queryByRole('button', { name: '生成' })).not.toBeInTheDocument();
