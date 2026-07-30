@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   STANDARD_SETTING_GENERATION_STEPS,
   buildStandardSettingStepRequest,
   createStandardSettingGenerationState,
   findBuiltInSettingPrompt,
+  getStandardSettingGenerationSteps,
+  getStandardSettingGenerationStorageKey,
   readStandardSettingGenerationState,
   readStandardSettingLastRequest,
   writeStandardSettingLastRequest,
@@ -12,8 +14,82 @@ import {
   writeStandardSettingGenerationState,
   readStandardSettingGenerationSnapshot,
 } from './standardModeSettingGenerationFlow';
+import { writeStandardSettingTemplateState } from './standardModeSettingModel';
+import {
+  MALE_FANTASY_XIANXIA_FULL_STRUCTURE,
+  MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE,
+  MALE_FANTASY_XIANXIA_STANDARD_STRUCTURE,
+} from './standardModeXianxiaSettingTemplates';
 
 describe('standard mode setting generation flow', () => {
+  beforeEach(() => localStorage.clear());
+
+  it.each([
+    [
+      'male-fantasy-xianxia-light',
+      '玄幻仙侠（轻量版）',
+      MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE,
+      ['核心设定', '主角与金手指', '故事与首卷', '地点与势力', '功法与伏笔'],
+    ],
+    [
+      'male-fantasy-xianxia',
+      '玄幻仙侠（标准版）',
+      MALE_FANTASY_XIANXIA_STANDARD_STRUCTURE,
+      ['世界规则与力量', '主角阵容与金手指', '全书剧情与节奏', '地图势力与关系', '功法资源与伏笔'],
+    ],
+    [
+      'male-fantasy-xianxia-full',
+      '玄幻仙侠（完整版）',
+      MALE_FANTASY_XIANXIA_FULL_STRUCTURE,
+      ['完整世界体系', '完整人物与金手指', '完整剧情规划', '完整地图与势力', '资源伏笔与怪物'],
+    ],
+  ])('binds %s to its own generation order', (templateId, templateName, structure, expectedNames) => {
+    const novelId = `${templateId}-flow-test`;
+    writeStandardSettingTemplateState(novelId, {
+      version: 2,
+      mode: 'template',
+      templateId,
+      templateName,
+      structure,
+    });
+
+    const steps = getStandardSettingGenerationSteps(`xinyuexia_workbench_settings_${novelId}`);
+
+    expect(steps.map((step) => step.name)).toEqual(expectedNames);
+    expect(steps.map((step) => step.id)).toEqual([
+      'world-foundation',
+      'main-characters',
+      'plot-planning',
+      'places-and-factions',
+      'creation-supplements',
+    ]);
+  });
+
+  it('migrates a legacy index to the same stable step id after the template order changes', () => {
+    const novelId = 'legacy-light-flow-test';
+    const settingsStorageKey = `xinyuexia_workbench_settings_${novelId}`;
+    writeStandardSettingTemplateState(novelId, {
+      version: 2,
+      mode: 'template',
+      templateId: 'male-fantasy-xianxia-light',
+      templateName: '玄幻仙侠（轻量版）',
+      structure: MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE,
+    });
+    localStorage.setItem(getStandardSettingGenerationStorageKey(settingsStorageKey), JSON.stringify({
+      version: 1,
+      currentStepIndex: 2,
+      completedStepIds: ['world-foundation', 'plot-planning'],
+      status: 'idle',
+      autoContinue: false,
+      requirement: '',
+      error: '',
+    }));
+
+    expect(readStandardSettingGenerationState(settingsStorageKey)).toMatchObject({
+      currentStepIndex: 1,
+      currentStepId: 'main-characters',
+    });
+  });
   it('uses the agreed five-step order', () => {
     expect(STANDARD_SETTING_GENERATION_STEPS.map((step) => step.name)).toEqual([
       '基础设定',
@@ -131,5 +207,40 @@ describe('standard mode setting generation flow', () => {
     expect(request).not.toContain('本步骤只能写入以下原有设定');
     expect(request).not.toContain('禁止新增、改名、合并');
     expect(request).not.toContain('*男主角*：');
+  });
+
+  it('keeps non-character template fields writable in the character step', () => {
+    const request = buildStandardSettingStepRequest({
+      step: getStandardSettingGenerationSteps('')[2],
+      requirement: '',
+      brainstorm: '',
+      existingSettings: '',
+      promptContent: '人物提示词',
+      targets: [
+        {
+          id: 'male-placeholder',
+          title: '男主角',
+          domainId: 'character',
+          domainTitle: '人物设定',
+          groupTitle: '主要人物',
+          sourceKind: 'role',
+          fieldTitles: ['人物姓名'],
+        },
+        {
+          id: 'gold-finger',
+          title: '金手指核心',
+          domainId: 'work',
+          domainTitle: '作品设定',
+          groupTitle: '主角设定',
+          sourceKind: 'setting',
+          fieldTitles: ['能力本质', '使用限制'],
+        },
+      ],
+    });
+
+    expect(request).toContain('【本步骤人物创建规则】');
+    expect(request).toContain('【本步骤同时填写以下原有设定】');
+    expect(request).toContain('*金手指核心*：');
+    expect(request).toContain('【能力本质】：填写该字段内容');
   });
 });

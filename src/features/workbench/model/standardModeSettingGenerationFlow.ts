@@ -1,4 +1,5 @@
 import type { PromptItem } from '@/features/prompts/model/promptTypes';
+import { readStandardSettingTemplateState } from './standardModeSettingModel';
 import {
   buildStandardSettingGenerationOutputTemplate,
   formatStandardSettingGenerationTargets,
@@ -17,6 +18,7 @@ export type StandardSettingGenerationStatus = 'idle' | 'running' | 'paused' | 'f
 export type StandardSettingGenerationState = {
   version: 1;
   currentStepIndex: number;
+  currentStepId: string;
   completedStepIds: string[];
   status: StandardSettingGenerationStatus;
   autoContinue: boolean;
@@ -57,10 +59,123 @@ export const STANDARD_SETTING_GENERATION_STEPS: StandardSettingGenerationStep[] 
   },
 ];
 
+export const LIGHT_XIANXIA_SETTING_GENERATION_STEPS: StandardSettingGenerationStep[] = [
+  {
+    id: 'world-foundation',
+    name: '核心设定',
+    scope: '作品定位、核心脑洞、世界背景、力量体系、设定红线',
+    promptName: '作品设定生成-世界基础',
+  },
+  {
+    id: 'main-characters',
+    name: '主角与金手指',
+    scope: '主角、重要正反派、金手指核心、主角成长路线',
+    promptName: '作品设定生成-主要人物',
+  },
+  {
+    id: 'plot-planning',
+    name: '故事与首卷',
+    scope: '故事主线、第一卷规划、开篇节奏与核心爽点',
+    promptName: '作品设定生成-剧情规划',
+  },
+  {
+    id: 'places-and-factions',
+    name: '地点与势力',
+    scope: '主角起始地点、宗门势力及其资源、冲突与秘密',
+    promptName: '作品设定生成-地点与势力',
+  },
+  {
+    id: 'creation-supplements',
+    name: '功法与伏笔',
+    scope: '主角核心功法、长线伏笔及前面步骤遗漏的必要设定',
+    promptName: '作品设定生成-创作补充',
+  },
+];
+
+export const STANDARD_XIANXIA_SETTING_GENERATION_STEPS: StandardSettingGenerationStep[] = [
+  {
+    id: 'world-foundation',
+    name: '世界规则与力量',
+    scope: '作品核心、世界结构、力量体系、修炼资源、社会规则与设定红线',
+    promptName: '作品设定生成-世界基础',
+  },
+  {
+    id: 'main-characters',
+    name: '主角阵容与金手指',
+    scope: '主角、女主角、重要正反派、人物关系、金手指及成长路线',
+    promptName: '作品设定生成-主要人物',
+  },
+  {
+    id: 'plot-planning',
+    name: '全书剧情与节奏',
+    scope: '故事主线、阶段规划、第一卷、核心冲突、爽点、悬念与节奏',
+    promptName: '作品设定生成-剧情规划',
+  },
+  {
+    id: 'places-and-factions',
+    name: '地图势力与关系',
+    scope: '世界地图、关键地点、主要势力、势力关系及活动范围',
+    promptName: '作品设定生成-地点与势力',
+  },
+  {
+    id: 'creation-supplements',
+    name: '功法资源与伏笔',
+    scope: '功法技能、装备资源、世界秘密、线索伏笔及遗漏设定',
+    promptName: '作品设定生成-创作补充',
+  },
+];
+
+export const FULL_XIANXIA_SETTING_GENERATION_STEPS: StandardSettingGenerationStep[] = [
+  {
+    id: 'world-foundation',
+    name: '完整世界体系',
+    scope: '作品核心、世界层级、力量规则、修炼资源、社会文明与全部设定红线',
+    promptName: '作品设定生成-世界基础',
+  },
+  {
+    id: 'main-characters',
+    name: '完整人物与金手指',
+    scope: '主角、女主角、正反派阵容、人物关系、金手指成长限制与隐藏真相',
+    promptName: '作品设定生成-主要人物',
+  },
+  {
+    id: 'plot-planning',
+    name: '完整剧情规划',
+    scope: '全书阶段、分卷剧情、冲突体系、爽点体系、悬念体系与节奏规则',
+    promptName: '作品设定生成-剧情规划',
+  },
+  {
+    id: 'places-and-factions',
+    name: '完整地图与势力',
+    scope: '世界地图、区域地点、秘境遗迹、势力格局、组织档案与势力关系',
+    promptName: '作品设定生成-地点与势力',
+  },
+  {
+    id: 'creation-supplements',
+    name: '资源伏笔与怪物',
+    scope: '功法装备、资源传承、秘密伏笔、线索链、种族怪物及遗漏设定',
+    promptName: '作品设定生成-创作补充',
+  },
+];
+
+const SETTINGS_STORAGE_PREFIX = 'xinyuexia_workbench_settings_';
+
+export function getStandardSettingGenerationSteps(settingsStorageKey: string) {
+  const novelId = settingsStorageKey.startsWith(SETTINGS_STORAGE_PREFIX)
+    ? settingsStorageKey.slice(SETTINGS_STORAGE_PREFIX.length)
+    : '';
+  const templateId = readStandardSettingTemplateState(novelId)?.templateId;
+  if (templateId === 'male-fantasy-xianxia-light') return LIGHT_XIANXIA_SETTING_GENERATION_STEPS;
+  if (templateId === 'male-fantasy-xianxia') return STANDARD_XIANXIA_SETTING_GENERATION_STEPS;
+  if (templateId === 'male-fantasy-xianxia-full') return FULL_XIANXIA_SETTING_GENERATION_STEPS;
+  return STANDARD_SETTING_GENERATION_STEPS;
+}
+
 export function createStandardSettingGenerationState(): StandardSettingGenerationState {
   return {
     version: 1,
     currentStepIndex: 0,
+    currentStepId: 'world-foundation',
     completedStepIds: [],
     status: 'idle',
     autoContinue: false,
@@ -84,13 +199,18 @@ export function readStandardSettingGenerationState(settingsStorageKey: string) {
     const completedStepIds = Array.isArray(parsed.completedStepIds)
       ? parsed.completedStepIds.filter((id): id is string => typeof id === 'string')
       : [];
-    const currentStepIndex = Math.max(
+    const generationSteps = getStandardSettingGenerationSteps(settingsStorageKey);
+    const legacyStep = STANDARD_SETTING_GENERATION_STEPS[Math.max(
       0,
       Math.min(STANDARD_SETTING_GENERATION_STEPS.length - 1, Number(parsed.currentStepIndex) || 0),
-    );
+    )];
+    const currentStepId = typeof parsed.currentStepId === 'string' ? parsed.currentStepId : legacyStep.id;
+    const resolvedStepIndex = generationSteps.findIndex((step) => step.id === currentStepId);
+    const currentStepIndex = resolvedStepIndex >= 0 ? resolvedStepIndex : 0;
     return {
       version: 1,
       currentStepIndex,
+      currentStepId: generationSteps[currentStepIndex]?.id ?? 'world-foundation',
       completedStepIds,
       status: parsed.status === 'running' ? 'paused' : (parsed.status ?? 'idle'),
       autoContinue: parsed.autoContinue !== false,
@@ -106,7 +226,13 @@ export function readStandardSettingGenerationState(settingsStorageKey: string) {
 
 export function writeStandardSettingGenerationState(settingsStorageKey: string, state: StandardSettingGenerationState) {
   if (!settingsStorageKey) return;
-  localStorage.setItem(getStandardSettingGenerationStorageKey(settingsStorageKey), JSON.stringify(state));
+  const generationSteps = getStandardSettingGenerationSteps(settingsStorageKey);
+  const currentStepIndex = Math.max(0, Math.min(generationSteps.length - 1, state.currentStepIndex));
+  localStorage.setItem(getStandardSettingGenerationStorageKey(settingsStorageKey), JSON.stringify({
+    ...state,
+    currentStepIndex,
+    currentStepId: generationSteps[currentStepIndex]?.id ?? 'world-foundation',
+  }));
 }
 
 export function clearStandardSettingGenerationState(settingsStorageKey: string) {
@@ -195,6 +321,15 @@ export function buildStandardSettingStepRequest({
   targets: StandardSettingGenerationTarget[];
 }) {
   const isCharacterStep = step.id === 'main-characters';
+  const characterSettingTargets = targets.filter((target) => target.sourceKind !== 'role');
+  const characterSettingRules = characterSettingTargets.length > 0
+    ? [
+        '【本步骤同时填写以下原有设定】',
+        formatStandardSettingGenerationTargets(characterSettingTargets),
+        '人物标签输出完成后，继续严格照下面的标签骨架填写这些原有设定；不得新增、改名或遗漏：',
+        buildStandardSettingGenerationOutputTemplate(characterSettingTargets),
+      ].join('\n\n')
+    : '';
   const writeRules = isCharacterStep
     ? [
         '【本步骤人物创建规则】',
@@ -246,7 +381,8 @@ export function buildStandardSettingStepRequest({
         '【人物关系】：具体内容',
         '【隶属势力】：具体内容',
         '</人物设定>',
-      ].join('\n')
+        characterSettingRules,
+      ].filter(Boolean).join('\n\n')
     : [
         '以下写入规则优先级最高；如果前面的提示词要求新建设定、自由命名或改变分组，以这里的规则为准。',
         '【本步骤只能写入以下原有设定】',

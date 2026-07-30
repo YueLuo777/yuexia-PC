@@ -67,7 +67,7 @@ describe('standard mode shared chapter creation pages', () => {
     expect(settingView).toContain('silentDuringRun: true');
     expect(settingView).toContain('standardGenerationStepId,');
     expect(settingView).toContain('renderSettingLibraryAiConfigHeader(scope)');
-    expect(generationPanel).toContain('STANDARD_SETTING_GENERATION_STEPS.map');
+    expect(generationPanel).toContain('generationSteps.map');
     expect(generationPanel).toContain('onClick={() => runStep(index, false)}');
     expect(generationPanel).toContain('slice(0, index)');
     expect(generationPanel).toContain('completedStep.id');

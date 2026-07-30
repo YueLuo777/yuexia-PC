@@ -15,11 +15,11 @@ import { subscribeStandardModeSettingNavigationAction } from '@/features/workben
 import { createVersionFromBrainstormEntry } from '@/features/workbench/model/standardModeBrainstormModel';
 import { readDefaultStandardSettingEntries } from '@/features/workbench/model/standardModeDefaultSettingAdapter';
 import {
-  STANDARD_SETTING_GENERATION_STEPS,
   buildStandardSettingStepRequest,
   clearStandardSettingGenerationSnapshot,
   createStandardSettingGenerationState,
   findBuiltInSettingPrompt,
+  getStandardSettingGenerationSteps,
   readStandardSettingGenerationState,
   readStandardSettingGenerationSnapshot,
   writeStandardSettingLastRequest,
@@ -127,6 +127,7 @@ export function StandardModeSettingGenerationPanel({
   onJumpToEmptyField,
 }: StandardModeSettingGenerationPanelProps) {
   const { prompts } = usePrompts();
+  const generationSteps = getStandardSettingGenerationSteps(settingsStorageKey);
   const [flow, setFlow] = useState<StandardSettingGenerationState>(() =>
     readStandardSettingGenerationState(settingsStorageKey),
   );
@@ -189,7 +190,7 @@ export function StandardModeSettingGenerationPanel({
 
   const runStep = useCallback(
     (stepIndex: number, autoContinue: boolean) => {
-      const step = STANDARD_SETTING_GENERATION_STEPS[stepIndex];
+      const step = generationSteps[stepIndex];
       if (!step || isGenerating) return;
       if (!autoContinue) {
         setQueuedStepIndex(null);
@@ -222,6 +223,7 @@ export function StandardModeSettingGenerationPanel({
       const runningFlow = {
         ...flow,
         currentStepIndex: stepIndex,
+        currentStepId: step.id,
         status: 'running' as const,
         autoContinue,
         error: '',
@@ -236,7 +238,7 @@ export function StandardModeSettingGenerationPanel({
       });
       onGenerate(request, `生成设定：${step.name}`);
     },
-    [entries, flow, isGenerating, linkedBrainstorm, onGenerate, prompts, settingsStorageKey],
+    [entries, flow, generationSteps, isGenerating, linkedBrainstorm, onGenerate, prompts, settingsStorageKey],
   );
 
   useEffect(() => {
@@ -271,7 +273,7 @@ export function StandardModeSettingGenerationPanel({
       setFlow((current) => ({ ...current, status: 'failed', error: '本步骤生成失败，请重试。' }));
       return;
     }
-    const completedStep = STANDARD_SETTING_GENERATION_STEPS[flow.currentStepIndex];
+    const completedStep = generationSteps[flow.currentStepIndex];
     if (!onImport(generationTargetEntryIdsRef.current, completedStep.id)) {
       clearPendingAutoContinue(settingsStorageKey);
       clearStandardSettingGenerationSnapshot(settingsStorageKey);
@@ -286,7 +288,7 @@ export function StandardModeSettingGenerationPanel({
     clearStandardSettingGenerationSnapshot(settingsStorageKey);
     const completedStepIds = Array.from(new Set([...flow.completedStepIds, completedStep.id]));
     const nextIndex = flow.currentStepIndex + 1;
-    const finished = nextIndex >= STANDARD_SETTING_GENERATION_STEPS.length;
+    const finished = nextIndex >= generationSteps.length;
     if (finished || !flow.autoContinue) {
       generationVisualSnapshotRef.current = null;
       clearPendingAutoContinue(settingsStorageKey);
@@ -295,6 +297,7 @@ export function StandardModeSettingGenerationPanel({
       ...flow,
       completedStepIds,
       currentStepIndex: finished ? flow.currentStepIndex : nextIndex,
+      currentStepId: finished ? completedStep.id : generationSteps[nextIndex].id,
       status: finished ? 'completed' : 'idle',
       error: '',
     };
@@ -309,6 +312,7 @@ export function StandardModeSettingGenerationPanel({
     isGenerating,
     latestOutput,
     onImport,
+    generationSteps,
     settingsStorageKey,
   ]);
 
@@ -317,11 +321,11 @@ export function StandardModeSettingGenerationPanel({
     ? generationVisualSnapshotRef.current
     : flow;
   const regeneratingCompletedStep = isGenerating
-    && visibleFlow.completedStepIds.includes(STANDARD_SETTING_GENERATION_STEPS[flow.currentStepIndex]?.id ?? '');
+    && visibleFlow.completedStepIds.includes(generationSteps[flow.currentStepIndex]?.id ?? '');
   const completedProgressCount = visibleFlow.completedStepIds.length - (regeneratingCompletedStep ? 1 : 0);
   const progressPercent = Math.min(
     100,
-    Math.round(((completedProgressCount + (isGenerating ? 0.5 : 0)) / STANDARD_SETTING_GENERATION_STEPS.length) * 100),
+    Math.round(((completedProgressCount + (isGenerating ? 0.5 : 0)) / generationSteps.length) * 100),
   );
   const checkSettings = () => {
     const emptyFields = findEmptyStandardSettingFields(readDefaultStandardSettingEntries(settingsStorageKey));
@@ -344,6 +348,7 @@ export function StandardModeSettingGenerationPanel({
     const restartedFlow: StandardSettingGenerationState = {
       ...flow,
       currentStepIndex: 0,
+      currentStepId: generationSteps[0].id,
       completedStepIds: [],
       status: 'idle',
       autoContinue: true,
@@ -415,7 +420,7 @@ export function StandardModeSettingGenerationPanel({
       {checkResults === null ? (
         <div className="editor-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto py-3 pr-1">
           <ol className="shrink-0 space-y-2" aria-label="作品设定生成步骤">
-            {STANDARD_SETTING_GENERATION_STEPS.map((step, index) => {
+            {generationSteps.map((step, index) => {
               const completed = visibleFlow.completedStepIds.includes(step.id);
               const active = index === visibleFlow.currentStepIndex;
               const generating = isGenerating && active;
@@ -423,7 +428,7 @@ export function StandardModeSettingGenerationPanel({
               const paused = active && visibleFlow.status === 'paused';
               const unlocked =
                 index === 0 ||
-                STANDARD_SETTING_GENERATION_STEPS.slice(0, index).every((previousStep) =>
+                generationSteps.slice(0, index).every((previousStep) =>
                   visibleFlow.completedStepIds.includes(previousStep.id),
                 );
               const statusText = generating
@@ -496,7 +501,7 @@ export function StandardModeSettingGenerationPanel({
             <div className="mb-1.5 flex items-center justify-between gap-3 text-xs font-bold">
               <span className="truncate text-[#52606d]">
                 {isGenerating
-                  ? `正在生成：${STANDARD_SETTING_GENERATION_STEPS[flow.currentStepIndex]?.name ?? '作品设定'}`
+                  ? `正在生成：${generationSteps[flow.currentStepIndex]?.name ?? '作品设定'}`
                   : visibleFlow.status === 'completed'
                     ? '作品设定生成完成'
                     : '作品设定生成进度'}

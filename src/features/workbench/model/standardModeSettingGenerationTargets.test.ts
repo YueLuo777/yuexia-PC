@@ -1,16 +1,26 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { STANDARD_SETTING_GENERATION_STEPS } from './standardModeSettingGenerationFlow';
+import { STANDARD_SETTING_GENERATION_STEPS, getStandardSettingGenerationSteps } from './standardModeSettingGenerationFlow';
 import {
   buildStandardSettingGenerationOutputTemplate,
   readStandardSettingGenerationTargets,
 } from './standardModeSettingGenerationTargets';
 import { replaceProfessionalSettingEntriesFromTemplate } from './standardModeDefaultSettingAdapter';
 import { writeStandardSettingTemplateState } from './standardModeSettingModel';
-import { MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE } from './standardModeXianxiaSettingTemplates';
+import {
+  MALE_FANTASY_XIANXIA_FULL_STRUCTURE,
+  MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE,
+  MALE_FANTASY_XIANXIA_STANDARD_STRUCTURE,
+} from './standardModeXianxiaSettingTemplates';
 
 describe('standard mode setting generation targets', () => {
   beforeEach(() => localStorage.clear());
+
+  const countEnabledEntries = (structure: typeof MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE) => structure
+    .filter((domain) => domain.enabled)
+    .flatMap((domain) => domain.groups.filter((group) => group.enabled))
+    .flatMap((group) => group.entries.filter((entry) => entry.enabled))
+    .length;
 
   it('targets the original world-foundation entries and emits their exact names and fields', () => {
     localStorage.setItem('xinyuexia_workbench_settings_target-test', JSON.stringify([
@@ -58,18 +68,54 @@ describe('standard mode setting generation targets', () => {
       structure: MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE,
     });
 
-    const targetGroups = STANDARD_SETTING_GENERATION_STEPS.map((step) =>
+    const generationSteps = getStandardSettingGenerationSteps(storageKey);
+    const targetGroups = generationSteps.map((step) =>
       readStandardSettingGenerationTargets(storageKey, step),
     );
     const allIds = targetGroups.flat().map((target) => target.id);
 
     expect(targetGroups.every((targets) => targets.length > 0)).toBe(true);
     expect(new Set(allIds).size).toBe(allIds.length);
+    expect(allIds).toHaveLength(countEnabledEntries(MALE_FANTASY_XIANXIA_LIGHT_STRUCTURE));
     expect(targetGroups[3].map((target) => target.title)).toEqual(
       expect.arrayContaining(['主角起始地点', '宗门势力（可重复）']),
+    );
+    expect(targetGroups[1].map((target) => target.title)).toEqual(
+      expect.arrayContaining(['金手指核心', '主角成长线']),
     );
     expect(targetGroups[4].map((target) => target.title)).toEqual(
       expect.arrayContaining(['功法档案（可重复）', '长线伏笔（可重复）']),
     );
+  });
+
+  it.each([
+    ['male-fantasy-xianxia', '玄幻仙侠（标准版）', MALE_FANTASY_XIANXIA_STANDARD_STRUCTURE],
+    ['male-fantasy-xianxia-full', '玄幻仙侠（完整版）', MALE_FANTASY_XIANXIA_FULL_STRUCTURE],
+  ])('binds every %s template entry to one writable ordered step', (templateId, templateName, structure) => {
+    const novelId = `${templateId}-target-test`;
+    const storageKey = `xinyuexia_workbench_settings_${novelId}`;
+    replaceProfessionalSettingEntriesFromTemplate(storageKey, structure);
+    writeStandardSettingTemplateState(novelId, {
+      version: 2,
+      mode: 'template',
+      templateId,
+      templateName,
+      structure,
+    });
+
+    const generationSteps = getStandardSettingGenerationSteps(storageKey);
+    const targetGroups = generationSteps.map((step) => readStandardSettingGenerationTargets(storageKey, step));
+    const allIds = targetGroups.flat().map((target) => target.id);
+
+    expect(generationSteps.map((step) => step.id)).toEqual([
+      'world-foundation',
+      'main-characters',
+      'plot-planning',
+      'places-and-factions',
+      'creation-supplements',
+    ]);
+    expect(targetGroups.every((targets) => targets.length > 0)).toBe(true);
+    expect(new Set(allIds).size).toBe(allIds.length);
+    expect(allIds).toHaveLength(countEnabledEntries(structure));
   });
 });
