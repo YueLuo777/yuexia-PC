@@ -33,8 +33,8 @@ function CascadeLevelHeader({
           onToggle={() => controller.toggleLevelLock(level, title)}
         />
       </div>
-      <div className="w-[360px] max-w-full">
-        <DiyAddRow level={level} disabled={disabled} onAdd={onAdd} compact />
+      <div className="w-[260px] max-w-full" data-template-name-input-wrap="true">
+        <DiyAddRow level={level} disabled={disabled} onAdd={onAdd} compact maxLength={15} />
       </div>
     </div>
   );

@@ -142,11 +142,11 @@ export function StandardModeSettingTemplateInitializer({
 
   return (
     <main
-      className="grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-white"
+      className="h-full min-h-0 overflow-hidden bg-white"
       data-standard-setting-initializer="true"
     >
-      <div className="relative z-0 grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)] overflow-hidden">
-        <aside className="flex min-h-0 flex-col border-r border-slate-200 bg-[#F7F9FB] p-4">
+      <div className="relative z-0 grid h-full min-h-0 grid-cols-[280px_minmax(0,1fr)] overflow-hidden">
+        <aside className="flex h-full min-h-0 flex-col border-r border-slate-200 bg-[#F7F9FB] p-4" data-template-list-panel="true">
           <div
             role="tablist"
             aria-label="模板来源"
@@ -241,27 +241,28 @@ export function StandardModeSettingTemplateInitializer({
           saveName={saveName}
           onSaveNameChange={setSaveName}
           onSaveTemplate={saveCurrentTemplate}
+          footerActions={(
+            <>
+              {onCancel ? (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="h-10 rounded-md border border-[#dce1e8] bg-white px-5 text-sm font-semibold text-[#657180]"
+                >
+                  返回设定列表
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => onConfirm({ id: selectedTemplateId, name: selectedTemplateName, structure })}
+                className="h-10 rounded-md bg-[#08AACE] px-6 text-sm font-bold text-white"
+              >
+                确认模板并创建设定
+              </button>
+            </>
+          )}
         />
       </div>
-
-      <footer className="relative z-20 flex items-center justify-end gap-3 border-t border-slate-200 bg-white px-5 py-3">
-        {onCancel ? (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="h-10 rounded-md border border-[#dce1e8] bg-white px-5 text-sm font-semibold text-[#657180]"
-          >
-            返回设定列表
-          </button>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => onConfirm({ id: selectedTemplateId, name: selectedTemplateName, structure })}
-          className="h-10 rounded-md bg-[#08AACE] px-6 text-sm font-bold text-white"
-        >
-          确认模板并创建设定
-        </button>
-      </footer>
       <ConfirmDialog
         isOpen={pendingChannelPresetId !== null}
         title="切换作品频道？"

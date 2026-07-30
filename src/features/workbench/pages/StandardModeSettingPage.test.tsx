@@ -134,9 +134,11 @@ describe('StandardModeSettingPage', () => {
     expect(within(saveTemplate).getByRole('textbox', { name: '保存模板名称' })).toHaveValue('测试小说模板');
     expect(within(saveTemplate).getByRole('button', { name: '保存到我的模板' })).toBeInTheDocument();
 
-    const footer = document.querySelector('[data-standard-setting-initializer="true"] > footer') as HTMLElement;
-    expect(within(footer).queryByRole('textbox', { name: '保存模板名称' })).not.toBeInTheDocument();
-    expect(within(footer).queryByRole('button', { name: '保存到我的模板' })).not.toBeInTheDocument();
+    const footer = editor.querySelector('[data-template-editor-footer="true"]') as HTMLElement;
+    const confirmActions = footer.querySelector('[data-template-confirm-actions="true"]') as HTMLElement;
+    expect(within(footer).getByRole('textbox', { name: '保存模板名称' })).toBeInTheDocument();
+    expect(within(confirmActions).getByRole('button', { name: '确认模板并创建设定' })).toBeInTheDocument();
+    expect(document.querySelector('[data-standard-setting-initializer="true"] > footer')).not.toBeInTheDocument();
   });
 
   it('saves the edited structure from the right-side template panel', () => {
@@ -162,9 +164,12 @@ describe('StandardModeSettingPage', () => {
   it('filters built-in templates through male, female, and saved tabs', () => {
     renderPage();
     const initializer = document.querySelector('[data-standard-setting-initializer="true"]');
-    expect(initializer).toHaveClass('h-full', 'grid-rows-[minmax(0,1fr)_auto]', 'overflow-hidden');
-    expect(initializer?.firstElementChild).toHaveClass('relative', 'z-0', 'overflow-hidden');
-    expect(document.querySelector('[data-standard-setting-initializer="true"] > footer')).toHaveClass('relative', 'z-20');
+    expect(initializer).toHaveClass('h-full', 'min-h-0', 'overflow-hidden');
+    expect(initializer).not.toHaveClass('grid-rows-[minmax(0,1fr)_auto]');
+    expect(initializer?.firstElementChild).toHaveClass('relative', 'z-0', 'h-full', 'overflow-hidden');
+    expect(document.querySelector('[data-template-list-panel="true"]')).toHaveClass('h-full');
+    expect(document.querySelector('[data-template-confirm-actions="true"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-standard-setting-initializer="true"] > footer')).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '男频' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tab', { name: '女频' })).toHaveAttribute('aria-selected', 'false');
     expect(screen.getByRole('tab', { name: '我的模板' })).toHaveAttribute('aria-selected', 'false');

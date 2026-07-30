@@ -63,11 +63,13 @@ export function DiyAddRow({
   disabled = false,
   onAdd,
   compact = false,
+  maxLength,
 }: {
   level: DiyLevel;
   disabled?: boolean;
   onAdd: (value: string) => boolean;
   compact?: boolean;
+  maxLength?: number;
 }) {
   const [value, setValue] = useState('');
   const add = () => {
@@ -78,6 +80,7 @@ export function DiyAddRow({
       <input
         value={value}
         disabled={disabled}
+        maxLength={maxLength}
         aria-label={DIY_LEVEL_META[level].placeholder}
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={(event) => {

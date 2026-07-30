@@ -69,6 +69,15 @@ describe('TemplateManagePage', () => {
     const selectionSurfaces = editor.querySelectorAll('[data-template-cascade-card-select="true"]');
     expect(selectionSurfaces.length).toBeGreaterThan(0);
     selectionSurfaces.forEach((surface) => expect(surface).toHaveClass('absolute', 'inset-0'));
+    const nameInputs = [
+      '输入一级分类名称',
+      '输入二级分组名称',
+      '输入三级设定名称',
+      '输入四级设定名称',
+    ].map((name) => within(editor).getByRole('textbox', { name }));
+    nameInputs.forEach((input) => expect(input).toHaveAttribute('maxLength', '15'));
+    editor.querySelectorAll('[data-template-name-input-wrap="true"]')
+      .forEach((wrap) => expect(wrap).toHaveClass('w-[260px]'));
     expect(within(fourthLevel).queryByText(/^0\d$/)).not.toBeInTheDocument();
   });
 
