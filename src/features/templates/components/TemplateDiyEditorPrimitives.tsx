@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 
+import { getDiyLevelTheme } from '@/features/templates/components/TemplateDiyLevelTheme';
 import type { DiyLevel, TemplateDiyController } from '@/features/templates/hooks/useTemplateDiyController';
 
 export const DIY_LEVEL_META: Record<DiyLevel, { short: string; title: string; placeholder: string }> = {
@@ -113,10 +114,11 @@ export function DiyLevelHeading({
   className?: string;
 }) {
   const meta = DIY_LEVEL_META[level];
+  const theme = getDiyLevelTheme(level);
   return (
     <div className={`flex h-12 items-center gap-2 border-b border-slate-200 bg-[#F8FBFC] px-3 ${className}`}>
-      <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-black text-slate-600">{meta.short}</span>
-      <strong className="min-w-0 truncate text-sm font-black text-slate-700">{title}</strong>
+      <span className={`rounded px-1.5 py-0.5 text-[10px] font-black ring-1 ${theme.name}`}>{meta.short}</span>
+      <strong className={`min-w-0 truncate text-sm font-black ${theme.text}`}>{title}</strong>
       <DiyLockButton
         level={level}
         locked={controller.lockedLevels[level]}

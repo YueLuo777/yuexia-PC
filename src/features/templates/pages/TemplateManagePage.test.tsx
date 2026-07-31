@@ -85,6 +85,42 @@ describe('TemplateManagePage', () => {
     expect(within(fourthLevel).queryByText(/^0\d$/)).not.toBeInTheDocument();
   });
 
+  it('shows gold, purple, blue, and green level colors in structure and generation settings', () => {
+    render(<TemplateManagePage />);
+
+    const editor = document.querySelector('[data-template-diy-cascade-editor="true"]') as HTMLElement;
+    const domainCard = editor.querySelector('[data-template-cascade-level-button="true"][data-template-diy-level="domain"]');
+    const groupCard = editor.querySelector('[data-template-cascade-level-button="true"][data-template-diy-level="group"]');
+    const entryCard = editor.querySelector('[data-template-cascade-level-button="true"][data-template-diy-level="entry"]');
+    const fieldCard = editor.querySelector('[data-template-cascade-field-card="true"][data-template-diy-level="field"]');
+
+    expect(domainCard).toHaveClass('bg-[#FFF7DA]', 'text-[#7A5410]');
+    expect(groupCard).toHaveClass('bg-[#F5EDFF]', 'text-[#6338A6]');
+    expect(entryCard).toHaveClass('bg-[#EAF5FF]', 'text-[#235C9A]');
+    expect(fieldCard).toHaveClass('bg-[#ECFAF1]', 'text-[#247446]');
+
+    const editorTabs = editor.querySelectorAll('[role="tab"]');
+    fireEvent.click(editorTabs[1] as HTMLElement);
+    const generationPanel = document.querySelector('[data-template-generation-settings="true"]') as HTMLElement;
+    const stageCards = generationPanel.querySelectorAll('[data-template-generation-stage-level]');
+    expect(stageCards[0]).toHaveAttribute('data-template-generation-stage-level', 'domain');
+    expect(stageCards[0]).toHaveClass('bg-[#FFF7DA]', 'text-[#7A5410]');
+    expect(stageCards[1]).toHaveAttribute('data-template-generation-stage-level', 'group');
+    expect(stageCards[1]).toHaveClass('bg-[#F5EDFF]', 'text-[#6338A6]');
+    expect(stageCards[2]).toHaveAttribute('data-template-generation-stage-level', 'entry');
+    expect(stageCards[2]).toHaveClass('bg-[#EAF5FF]', 'text-[#235C9A]');
+    expect(stageCards[3]).toHaveAttribute('data-template-generation-stage-level', 'field');
+    expect(stageCards[3]).toHaveClass('bg-[#ECFAF1]', 'text-[#247446]');
+
+    const selectedPathNames = generationPanel.querySelectorAll('[data-template-generation-selected-path="true"] [data-template-generation-level-name]');
+    expect(selectedPathNames[0]).toHaveAttribute('data-template-generation-level-name', 'domain');
+    expect(selectedPathNames[0]).toHaveClass('bg-[#F8D36A]', 'text-[#5F3E00]');
+    expect(selectedPathNames[1]).toHaveAttribute('data-template-generation-level-name', 'group');
+    expect(selectedPathNames[1]).toHaveClass('bg-[#D7B8FF]', 'text-[#4C238A]');
+    expect(selectedPathNames[2]).toHaveAttribute('data-template-generation-level-name', 'entry');
+    expect(selectedPathNames[2]).toHaveClass('bg-[#B9DBFF]', 'text-[#174C86]');
+  });
+
   it('creates and saves a user template from the management page', () => {
     render(<TemplateManagePage />);
 

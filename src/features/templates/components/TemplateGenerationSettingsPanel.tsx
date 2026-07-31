@@ -1,4 +1,7 @@
-import type { TemplateDiyController } from '@/features/templates/hooks/useTemplateDiyController';
+import type { ReactNode } from 'react';
+
+import { getDiyLevelByIndex, getDiyLevelTheme } from '@/features/templates/components/TemplateDiyLevelTheme';
+import type { DiyLevel, TemplateDiyController } from '@/features/templates/hooks/useTemplateDiyController';
 import {
   validateTemplateGenerationBlueprint,
   type SettingGenerationPromptProfile,
@@ -39,6 +42,26 @@ function NumberField({
         className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold outline-none focus:border-[#08AACE]"
       />
     </label>
+  );
+}
+
+function LevelName({
+  level,
+  children,
+  className = '',
+}: {
+  level: DiyLevel;
+  children: ReactNode;
+  className?: string;
+}) {
+  const theme = getDiyLevelTheme(level);
+  return (
+    <span
+      className={`inline-flex max-w-full items-center truncate rounded px-2 py-0.5 font-black ring-1 ${theme.name} ${className}`}
+      data-template-generation-level-name={level}
+    >
+      {children}
+    </span>
   );
 }
 
@@ -129,45 +152,53 @@ export function TemplateGenerationSettingsPanel({
           </button>
         </div>
         <div className="mt-3 space-y-2">
-          {blueprint.stages.map((stage, index) => (
-            <article key={stage.id} className="rounded-md border border-slate-200 bg-white p-2">
-              <div className="grid grid-cols-[44px_minmax(150px,0.55fr)_minmax(240px,1fr)_auto] items-center gap-2">
-                <span className="text-center text-sm font-black text-[#078FAB]">{index + 1}</span>
-                <input
-                  aria-label={`步骤名称：${stage.name}`}
-                  value={stage.name}
-                  maxLength={15}
-                  onChange={(event) => updateStage(stage.id, { name: event.target.value })}
-                  className="h-9 min-w-0 rounded-md border border-slate-300 px-3 text-sm font-bold outline-none focus:border-[#08AACE]"
-                />
-                <input
-                  aria-label={`${stage.name}生成范围`}
-                  value={stage.description}
-                  onChange={(event) => updateStage(stage.id, { description: event.target.value })}
-                  placeholder="说明本步骤生成哪些内容"
-                  className="h-9 min-w-0 rounded-md border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-[#08AACE]"
-                />
-                <div className="flex items-center gap-1">
-                  <button type="button" disabled={index === 0} onClick={() => moveStage(stage.id, -1)} className="h-8 rounded border border-slate-200 px-2 text-xs font-bold disabled:text-slate-300">上移</button>
-                  <button type="button" disabled={index === blueprint.stages.length - 1} onClick={() => moveStage(stage.id, 1)} className="h-8 rounded border border-slate-200 px-2 text-xs font-bold disabled:text-slate-300">下移</button>
-                  <button type="button" disabled={blueprint.stages.length <= 1} onClick={() => deleteStage(stage.id)} className="h-8 rounded border border-red-200 px-2 text-xs font-bold text-red-500 disabled:text-slate-300">删除</button>
+          {blueprint.stages.map((stage, index) => {
+            const stageLevel = getDiyLevelByIndex(index);
+            const stageTheme = getDiyLevelTheme(stageLevel);
+            return (
+              <article
+                key={stage.id}
+                className={`rounded-md border p-2 ${stageTheme.card}`}
+                data-template-generation-stage-level={stageLevel}
+              >
+                <div className="grid grid-cols-[44px_minmax(150px,0.55fr)_minmax(240px,1fr)_auto] items-center gap-2">
+                  <span className={`mx-auto rounded px-2 py-0.5 text-center text-sm font-black ring-1 ${stageTheme.name}`}>{index + 1}</span>
+                  <input
+                    aria-label={`步骤名称：${stage.name}`}
+                    value={stage.name}
+                    maxLength={15}
+                    onChange={(event) => updateStage(stage.id, { name: event.target.value })}
+                    className="h-9 min-w-0 rounded-md border border-slate-300 px-3 text-sm font-bold outline-none focus:border-[#08AACE]"
+                  />
+                  <input
+                    aria-label={`${stage.name}生成范围`}
+                    value={stage.description}
+                    onChange={(event) => updateStage(stage.id, { description: event.target.value })}
+                    placeholder="说明本步骤生成哪些内容"
+                    className="h-9 min-w-0 rounded-md border border-slate-300 px-3 text-sm font-semibold outline-none focus:border-[#08AACE]"
+                  />
+                  <div className="flex items-center gap-1">
+                    <button type="button" disabled={index === 0} onClick={() => moveStage(stage.id, -1)} className="h-8 rounded border border-slate-200 px-2 text-xs font-bold disabled:text-slate-300">上移</button>
+                    <button type="button" disabled={index === blueprint.stages.length - 1} onClick={() => moveStage(stage.id, 1)} className="h-8 rounded border border-slate-200 px-2 text-xs font-bold disabled:text-slate-300">下移</button>
+                    <button type="button" disabled={blueprint.stages.length <= 1} onClick={() => deleteStage(stage.id)} className="h-8 rounded border border-red-200 px-2 text-xs font-bold text-red-500 disabled:text-slate-300">删除</button>
+                  </div>
                 </div>
-              </div>
-              <label className="mt-2 grid grid-cols-[44px_minmax(0,1fr)] items-start gap-2">
-                <span className="pt-2 text-center text-[11px] font-bold text-slate-400">提示词</span>
-                <textarea
-                  aria-label={`${stage.name}步骤专属提示词`}
-                  value={promptProfile.stageGuidance[stage.id] ?? stage.promptGuidance}
-                  onChange={(event) => onPromptProfileChange({
-                    ...promptProfile,
-                    stageGuidance: { ...promptProfile.stageGuidance, [stage.id]: event.target.value },
-                  })}
-                  placeholder="说明本步骤的生成重点、质量要求和与前序设定的衔接方式"
-                  className="h-16 w-full resize-none rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold leading-5 outline-none focus:border-[#08AACE]"
-                />
-              </label>
-            </article>
-          ))}
+                <label className="mt-2 grid grid-cols-[44px_minmax(0,1fr)] items-start gap-2">
+                  <span className="pt-2 text-center text-[11px] font-bold text-slate-400">提示词</span>
+                  <textarea
+                    aria-label={`${stage.name}步骤专属提示词`}
+                    value={promptProfile.stageGuidance[stage.id] ?? stage.promptGuidance}
+                    onChange={(event) => onPromptProfileChange({
+                      ...promptProfile,
+                      stageGuidance: { ...promptProfile.stageGuidance, [stage.id]: event.target.value },
+                    })}
+                    placeholder="说明本步骤的生成重点、质量要求和与前序设定的衔接方式"
+                    className="h-16 w-full resize-none rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold leading-5 outline-none focus:border-[#08AACE]"
+                  />
+                </label>
+              </article>
+            );
+          })}
         </div>
       </section>
 
@@ -189,6 +220,13 @@ export function TemplateGenerationSettingsPanel({
                 ))}
               </select>
             </label>
+            {selected ? (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]" data-template-generation-selected-path="true">
+                <LevelName level="domain">{selected.domain.title}</LevelName>
+                <LevelName level="group">{selected.group.title}</LevelName>
+                <LevelName level="entry">{selected.entry.title}</LevelName>
+              </div>
+            ) : null}
             {rule ? (
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <label>
@@ -219,6 +257,10 @@ export function TemplateGenerationSettingsPanel({
                   <div className="grid grid-cols-4 gap-3">
                     <label>
                       <span className="mb-1.5 block text-xs font-bold text-slate-500">名称字段</span>
+                      <LevelName level="field" className="mb-1.5 text-[11px]">
+                        {selected.entry.sections.flatMap((section) => section.fields)
+                          .find((field) => field.id === rule.titleFieldId)?.title ?? '四级字段'}
+                      </LevelName>
                       <select value={rule.titleFieldId ?? ''} onChange={(event) => updateRule({ titleFieldId: event.target.value })} className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm font-semibold">
                         {selected.entry.sections.flatMap((section) => section.fields).map((field) => <option key={field.id} value={field.id}>{field.title}</option>)}
                       </select>
@@ -267,7 +309,7 @@ export function TemplateGenerationSettingsPanel({
                           : rule.dependencyEntryIds.filter((id) => id !== entry.id),
                       })}
                     />
-                    {entry.title}
+                    <LevelName level="entry" className="text-[11px]">{entry.title}</LevelName>
                   </label>
                 ))}
               </div>
