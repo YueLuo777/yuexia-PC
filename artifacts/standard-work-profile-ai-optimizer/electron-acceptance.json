@@ -1,0 +1,52 @@
+{
+  "route": "标准模式 -> 书籍 -> 进入工作台 -> 作品详情 -> AI优化作品资料",
+  "window": {
+    "secondaryAvailable": true,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "visible": true,
+    "focused": false,
+    "zoomFactor": 1.1
+  },
+  "assertions": {
+    "twoFormalEntrypointsVisible": true,
+    "requirementsCountStyleAndReferencesAreConfigurable": true,
+    "realModelRequestReturnsParsedCandidates": true,
+    "candidateOnlyAppliesAfterExplicitConfirmation": true,
+    "savePersistsAndSynopsisEntryUsesSynopsisTarget": true,
+    "modalFitsViewportWithoutUnexpectedOverflow": true
+  },
+  "screenshots": {
+    "01-work-details-ai-entry": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-work-profile-ai-optimizer\\01-work-details-ai-entry.png",
+    "02-optimizer-configuration": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-work-profile-ai-optimizer\\02-optimizer-configuration.png",
+    "03-generated-candidates": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-work-profile-ai-optimizer\\03-generated-candidates.png",
+    "04-synopsis-entry-and-persisted-details": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-work-profile-ai-optimizer\\04-synopsis-entry-and-persisted-details.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "geometry": {
+    "rect": {
+      "left": 344.3636474609375,
+      "top": 127.2727279663086,
+      "right": 1384.3636474609375,
+      "bottom": 847.2727279663086,
+      "width": 1040,
+      "height": 720
+    },
+    "viewport": {
+      "width": 1729,
+      "height": 974
+    },
+    "overflowing": []
+  }
+}

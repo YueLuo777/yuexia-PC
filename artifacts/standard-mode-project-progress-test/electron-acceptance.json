@@ -1,0 +1,62 @@
+{
+  "route": "测试板块 -> 25号测试 -> 标准模式项目进度与功能取舍",
+  "window": {
+    "secondaryAvailable": true,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "visible": true,
+    "focused": false,
+    "zoomFactor": 1.1
+  },
+  "assertions": {
+    "testSerialIsMonotonic25": true,
+    "itemsAreOrderedByFunctionalGroup": true,
+    "statusAndRecommendationAreVisible": true,
+    "statusFilterWorksWithoutReorderingGroups": true,
+    "selectionAndDecisionPersist": true,
+    "selectedListCanBeCopied": true,
+    "noUnexpectedHorizontalOverflow": true,
+    "selectionAndDecisionSurviveReload": true
+  },
+  "screenshots": {
+    "01-test-25-entry": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-project-progress-test\\01-test-25-entry.png",
+    "02-functional-progress-board": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-project-progress-test\\02-functional-progress-board.png",
+    "03-selected-smart-association": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-project-progress-test\\03-selected-smart-association.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "geometry": {
+    "clientWidth": 1348,
+    "scrollWidth": 1348,
+    "clientHeight": 794,
+    "scrollHeight": 794,
+    "scroller": {
+      "clientWidth": 1338,
+      "scrollWidth": 1338,
+      "left": 246.4000244140625,
+      "right": 1728.7249755859375
+    },
+    "selectedRow": {
+      "left": 273.6000061035156,
+      "right": 1691.1250305175781,
+      "width": 1417.5250244140625
+    },
+    "lastDecisionButton": {
+      "left": 1603.5875244140625,
+      "right": 1672.724952697754,
+      "width": 69.1374282836914
+    },
+    "viewportWidth": 1729,
+    "overflowingRows": []
+  }
+}

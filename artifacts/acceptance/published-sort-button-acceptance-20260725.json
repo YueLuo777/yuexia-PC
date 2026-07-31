@@ -1,0 +1,46 @@
+{
+  "windowState": {
+    "primaryId": 2237594110,
+    "secondaryId": 289650990,
+    "displayId": 289650990,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2272,
+      "y": 102,
+      "width": 1600,
+      "height": 900
+    }
+  },
+  "before": {
+    "retract": {
+      "text": "收回已发布",
+      "className": "flex h-8 shrink-0 items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-2 text-sm text-white transition-colors hover:bg-[#0798b8]",
+      "backgroundColor": "rgb(8, 170, 206)",
+      "color": "rgb(255, 255, 255)",
+      "borderRadius": "8px",
+      "width": 94.59999084472656,
+      "height": 35.20000076293945
+    },
+    "sort": {
+      "text": "正序",
+      "className": "flex h-8 shrink-0 items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-2 text-sm text-white transition-colors hover:bg-[#0798b8]",
+      "backgroundColor": "rgb(8, 170, 206)",
+      "color": "rgb(255, 255, 255)",
+      "borderRadius": "8px",
+      "width": 48.400001525878906,
+      "height": 35.20000076293945
+    }
+  },
+  "after": {
+    "text": "倒序",
+    "className": "flex h-8 shrink-0 items-center justify-center whitespace-nowrap rounded-md bg-[#08AACE] px-2 text-sm text-white transition-colors hover:bg-[#0798b8]",
+    "backgroundColor": "rgb(8, 170, 206)",
+    "color": "rgb(255, 255, 255)",
+    "borderRadius": "8px",
+    "width": 48.400001525878906,
+    "height": 35.20000076293945
+  },
+  "beforeScreenshot": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\published-sort-button-framed-20260725.png",
+  "afterScreenshot": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\published-sort-button-framed-reversed-20260725.png"
+}

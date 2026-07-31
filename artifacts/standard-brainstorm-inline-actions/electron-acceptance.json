@@ -1,0 +1,70 @@
+{
+  "route": "标准模式书籍 -> 进入工作台 -> 生成脑洞 -> 生成完成 -> 复制内容/保存脑洞",
+  "assertions": {
+    "generatedInstructionRemoved": true,
+    "actionsAreAttachedToInput": true,
+    "copyAndSaveOrderIsCorrect": true,
+    "saveStillWorks": true,
+    "noRuntimeErrors": true
+  },
+  "screenshots": {
+    "01-generated-actions-attached": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-inline-actions\\01-generated-actions-attached.png",
+    "02-saved-result": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-inline-actions\\02-saved-result.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "secondaryAvailable": true,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    }
+  },
+  "measurements": {
+    "inputField": {
+      "x": 325.6000061035156,
+      "y": 955.3900756835938,
+      "width": 1128.517578125,
+      "height": 50.60000228881836,
+      "top": 955.3900756835938,
+      "right": 1454.1175842285156,
+      "bottom": 1005.9900779724121,
+      "left": 325.6000061035156
+    },
+    "actions": {
+      "x": 325.6000061035156,
+      "y": 1014.7900390625,
+      "width": 1128.517578125,
+      "height": 39.60000228881836,
+      "top": 1014.7900390625,
+      "right": 1454.1175842285156,
+      "bottom": 1054.3900413513184,
+      "left": 325.6000061035156
+    },
+    "copyButton": {
+      "x": 1239.3975830078125,
+      "y": 1014.7900390625,
+      "width": 98.5599594116211,
+      "height": 39.60000228881836,
+      "top": 1014.7900390625,
+      "right": 1337.9575424194336,
+      "bottom": 1054.3900413513184,
+      "left": 1239.3975830078125
+    },
+    "saveButton": {
+      "x": 1346.757568359375,
+      "y": 1014.7900390625,
+      "width": 107.36006164550781,
+      "height": 39.60000228881836,
+      "top": 1014.7900390625,
+      "right": 1454.1176300048828,
+      "bottom": 1054.3900413513184,
+      "left": 1346.757568359375
+    },
+    "actionsParentIsField": true
+  }
+}

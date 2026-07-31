@@ -1,0 +1,52 @@
+
+> xinyuexia@0.1.0 dev
+> vite --host 127.0.0.1 --port 5187
+
+
+  [32m[1mVITE[22m v7.3.6[39m  [2mready in [0m[1m322[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5187[22m/[39m
+[2m01:29:26[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/SettingAiReadyTaxonomyTestPage.tsx[22m
+[2m01:29:42[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m01:35:16[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/SettingAiReadyTaxonomyTestPage.tsx[22m
+[2m01:36:32[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/SettingAiReadyTaxonomyTestPage.tsx[22m
+[2m01:38:01[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/SettingAiReadyTaxonomyTestPage.tsx[22m
+[2m01:38:30[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m01:38:42[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m01:40:26[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/SettingAiReadyTaxonomyTestPage.tsx[22m
+[2m01:41:28[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/SettingAiReadyTaxonomyTestPage.tsx[22m
+[2m01:42:17[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/SettingAiReadyTaxonomyTestPage.tsx[22m
+[2m01:42:53[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/SettingAiReadyTaxonomyTestPage.tsx[22m
+[2m01:43:45[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m01:46:46[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/SettingAiReadyTaxonomyTestPage.tsx[22m
+[2m01:46:46[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m01:47:00[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/SettingAiReadyTaxonomyTestPage.tsx[22m
+[2m01:47:00[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m01:50:43[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/SettingAiReadyTaxonomyTestPage.tsx[22m
+[2m01:51:11[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m01:51:35[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/SettingAiReadyTaxonomyTestPage.tsx[22m
+[2m01:51:47[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m01:56:43[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/SettingAiReadyTaxonomyTestPage.tsx[22m
+[2m01:57:18[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m02:38:57[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/TestCollectionPage.tsx[22m
+[2m02:42:19[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m02:42:19[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m02:58:01[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/PromptBasedSettingTaxonomyTestPage.tsx[22m
+[2m02:59:12[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/PromptBasedSettingTaxonomyTestPage.tsx[22m
+[2m03:02:50[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/PromptBasedSettingTaxonomyTestPage.tsx[22m
+[2m03:07:13[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/PromptBasedSettingTaxonomyTestPage.tsx[22m
+[2m03:07:13[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/PromptBasedSettingTaxonomyTestPage.tsx[22m
+[2m03:07:49[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m03:12:11[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/PromptBasedSettingTaxonomyTestPage.tsx[22m
+[2m03:12:11[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m03:12:11[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/SettingAiReadyTaxonomyTestPage.tsx[22m
+[2m03:12:11[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m03:12:53[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m03:12:53[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/PromptBasedSettingTaxonomyTestPage.tsx[22m
+[2m03:17:20[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/PromptBasedSettingTaxonomyTestPage.tsx[22m
+[2m03:17:20[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m03:17:20[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/SettingAiReadyTaxonomyTestPage.tsx[22m
+[2m03:17:20[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m03:34:21[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/PromptBasedSettingTaxonomyTestPage.tsx[22m
+[2m03:34:21[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m03:36:03[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/tests/pages/PromptBasedSettingTaxonomyTestPage.tsx[22m

@@ -1,0 +1,76 @@
+{
+  "route": "标准模式书籍 -> 工作台首页 -> 脑洞 -> 设定 -> 章纲 -> 正文 -> 检查",
+  "assertions": {
+    "compactFourStageNavigationAndBookMetadata": true,
+    "brainstormLibraryUsesPreviewAndActionPanel": true,
+    "brainstormGenerationStartsBlankAndUsesSelectableConditions": true,
+    "templateFitsAndSettingCheckStartsCompact": true,
+    "outlineStatusStartsCollapsedAndCanExpand": true,
+    "writingKeepsEssentialToolsAndMovesAdvancedToolsToMore": true,
+    "allCheckStageActionsOpenSharedProfessionalCore": true,
+    "noUnexpectedWorkbenchOverflow": true
+  },
+  "screenshots": {
+    "01-home-compact-navigation": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-standard-workbench\\01-home-compact-navigation.png",
+    "02-brainstorm-library": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-standard-workbench\\02-brainstorm-library.png",
+    "03-brainstorm-generation": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-standard-workbench\\03-brainstorm-generation.png",
+    "04-setting-check": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-standard-workbench\\04-setting-check.png",
+    "05-outline-status-expanded": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-standard-workbench\\05-outline-status-expanded.png",
+    "06-writing-more": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-standard-workbench\\06-writing-more.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "secondaryAvailable": true,
+    "primary": {
+      "x": 0,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "bounds": {
+      "x": 2172,
+      "y": 32,
+      "width": 1802,
+      "height": 1041
+    },
+    "visible": true,
+    "focused": false
+  },
+  "brainstormTopRowBoxes": {
+    "titleBox": {
+      "x": 325.6000061035156,
+      "y": 149.1999969482422,
+      "width": 162.79998779296875,
+      "height": 52.80000305175781
+    },
+    "copyBox": {
+      "x": 1148.7987060546875,
+      "y": 149.1999969482422,
+      "width": 89.7601318359375,
+      "height": 39.600006103515625
+    },
+    "deleteBox": {
+      "x": 1247.3587646484375,
+      "y": 149.1999969482422,
+      "width": 105.1600341796875,
+      "height": 39.600006103515625
+    }
+  },
+  "finalWindow": {
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2172,
+      "y": 32,
+      "width": 1802,
+      "height": 1041
+    }
+  }
+}

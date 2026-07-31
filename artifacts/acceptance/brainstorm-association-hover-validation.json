@@ -1,0 +1,14 @@
+{
+  "displayState": {
+    "hasSecondary": true,
+    "focused": false,
+    "displayId": 289650990,
+    "primaryId": 2237594110
+  },
+  "hoverText": "",
+  "checkedText": "✓",
+  "focusedAfter": false,
+  "runtimeErrors": [],
+  "hoverScreenshot": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\brainstorm-association-hover-unchecked.png",
+  "checkedScreenshot": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\brainstorm-association-after-click.png"
+}

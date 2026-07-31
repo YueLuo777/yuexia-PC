@@ -1,0 +1,38 @@
+{
+  "route": "我的小说 -> 测试板块 -> 标准模式精简创作工作台",
+  "assertions": {
+    "twoColumnLayoutWithoutAiPanel": true,
+    "noPageOverflow": true,
+    "allNineProfessionalWorkspacesReachable": true,
+    "singlePageActionReportsResult": true
+  },
+  "screenshots": {
+    "brainstorm": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\simplified-standard-workbench-brainstorm-20260726.png",
+    "settings": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\simplified-standard-workbench-settings-20260726.png",
+    "chapter-outline": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\simplified-standard-workbench-chapter-outline-20260726.png",
+    "writing": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\simplified-standard-workbench-writing-20260726.png",
+    "audit": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\simplified-standard-workbench-audit-20260726.png",
+    "status": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\simplified-standard-workbench-status-20260726.png",
+    "summary": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\simplified-standard-workbench-summary-20260726.png",
+    "polish": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\simplified-standard-workbench-polish-20260726.png",
+    "review": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\simplified-standard-workbench-review-20260726.png"
+  },
+  "runtimeErrors": [],
+  "window": {
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "bounds": {
+      "x": 2272,
+      "y": 72,
+      "width": 1602,
+      "height": 961
+    },
+    "visible": true,
+    "focused": false
+  },
+  "status": "PASS"
+}

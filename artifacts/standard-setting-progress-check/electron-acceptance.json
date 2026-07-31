@@ -1,0 +1,51 @@
+{
+  "route": "standard workbench -> work settings -> generation and check panel",
+  "assertions": {
+    "missingTemplateRoutesToTemplateSelection": true,
+    "existingTemplateRoutesDirectlyToSettings": true,
+    "linkedBrainstormNameAndWordCountAreVisible": true,
+    "checkTabUsesSettingLabel": true,
+    "fiveStepsHaveVisibleStatuses": true,
+    "redundantGenerationHeaderRemoved": true,
+    "modeSwitchStartsAtPanelTop": true,
+    "requirementFillsRemainingSpace": true,
+    "interruptedRunRestoresAsPaused": true,
+    "checkShowsDetailedEmptyFields": true,
+    "jumpSelectsEntryAndFocusesField": true,
+    "jumpAlsoSupportsCharacterSettings": true,
+    "noRuntimeErrors": true
+  },
+  "screenshots": {
+    "00a-missing-template-routed-to-template-selection": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-progress-check\\00a-missing-template-routed-to-template-selection.png",
+    "00b-linked-brainstorm-routed-to-existing-settings": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-progress-check\\00b-linked-brainstorm-routed-to-existing-settings.png",
+    "01-generation-status-and-adaptive-requirement": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-progress-check\\01-generation-status-and-adaptive-requirement.png",
+    "02-interrupted-run-paused": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-progress-check\\02-interrupted-run-paused.png",
+    "03-check-result-jumped-to-field": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-progress-check\\03-check-result-jumped-to-field.png",
+    "04-check-result-jumped-to-character-field": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-progress-check\\04-check-result-jumped-to-character-field.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "codexDisplayId": 3419595392,
+    "primaryDisplayId": 2882211613,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    }
+  },
+  "measurements": {
+    "modeSwitchTopGap": 3.0800018310546875,
+    "requirementHeight": 229.35003662109375,
+    "requirementToGenerateGap": 27.27996826171875
+  }
+}

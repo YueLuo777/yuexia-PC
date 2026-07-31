@@ -1,0 +1,13 @@
+
+> xinyuexia@0.1.0 dev
+> vite --host 127.0.0.1 --port 4175
+
+
+  [32m[1mVITE[22m v7.3.6[39m  [2mready in [0m[1m277[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m4175[22m/[39m
+[2m14:27:18[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/workbench/components/WorkbenchLibraryPanel.tsx[22m
+[2m14:27:18[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/novels/pages/NovelLibraryPage.tsx, /src/features/novels/components/StandardModeNovelCard.tsx, /src/features/workbench/components/WorkbenchLibraryPanel.tsx, /src/features/workbench/pages/StandardModeWorkbenchPage.tsx, /src/features/workbench/components/workbenchLibrarySidebar.tsx, /src/features/workbench/components/workbenchRoleEditor.tsx, /src/features/workbench/pages/StandardModeSettingPage.tsx, /src/features/workbench/components/StandardModeSettingTemplateInitializer.tsx, /src/features/workbench/components/StandardModeWorkDetailsPage.tsx, /src/features/workbench/components/StandardModeTemplateMindMap.tsx, /src/features/workbench/components/WorkbenchSettingTreeSidebar.tsx, /src/features/workbench/pages/StandardModeBrainstormPage.tsx, /src/features/workbench/components/StandardModeBrainstormPreview.tsx, /src/features/workbench/pages/WorkbenchPage.tsx, /src/features/workbench/components/ChapterEditor.tsx[22m
+[2m14:27:18[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/workbench/components/WorkbenchLibraryPanel.tsx, /src/features/workbench/components/workbenchLibrarySidebar.tsx, /src/features/workbench/components/workbenchRoleEditor.tsx, /src/features/workbench/pages/StandardModeWorkbenchPage.tsx, /src/features/workbench/pages/StandardModeSettingPage.tsx, /src/features/workbench/components/StandardModeSettingTemplateInitializer.tsx, /src/features/workbench/components/StandardModeWorkDetailsPage.tsx, /src/features/workbench/components/StandardModeTemplateMindMap.tsx, /src/features/workbench/components/WorkbenchSettingTreeSidebar.tsx, /src/features/workbench/pages/StandardModeBrainstormPage.tsx[22m
+[2m14:27:18[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css[22m
+[2m14:31:58[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/shared/styles/index.css, /src/features/workbench/components/WorkbenchLibraryPanel.tsx[22m

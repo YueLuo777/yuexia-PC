@@ -1,0 +1,60 @@
+{
+  "route": "作品概览 -> 测试板块 -> 28号测试：标准模式导航与创作指导新方案",
+  "window": {
+    "bounds": {
+      "x": 2128,
+      "y": 24,
+      "width": 1842,
+      "height": 1057
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1104
+    },
+    "visible": true,
+    "focused": false
+  },
+  "assertions": {
+    "fiveIndependentProposalsVisible": true,
+    "noHorizontalOverflow": true,
+    "replaceableAndProtectedBoundariesVisible": true,
+    "relayCrossStageSelectionWorks": true,
+    "guideCardNextStepUpdates": true
+  },
+  "geometry": [
+    {
+      "name": "方案 A · 任务接力棒",
+      "clientWidth": 1557,
+      "scrollWidth": 1557,
+      "height": 263.0099792480469
+    },
+    {
+      "name": "方案 B · 路线站点",
+      "clientWidth": 1557,
+      "scrollWidth": 1557,
+      "height": 292.1600646972656
+    },
+    {
+      "name": "方案 C · 阶段目录",
+      "clientWidth": 1557,
+      "scrollWidth": 1557,
+      "height": 222.6399383544922
+    },
+    {
+      "name": "方案 D · 焦点伸缩",
+      "clientWidth": 1557,
+      "scrollWidth": 1557,
+      "height": 246.40000915527344
+    },
+    {
+      "name": "方案 E · 导航 + 指导卡",
+      "clientWidth": 1557,
+      "scrollWidth": 1557,
+      "height": 240.2400360107422
+    }
+  ],
+  "runtimeErrors": [],
+  "status": "PASS"
+}

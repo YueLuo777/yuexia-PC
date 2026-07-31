@@ -1,0 +1,108 @@
+{
+  "route": "作品概览 -> 测试板块 -> 24号测试：标准模式顶部导航紧凑方案",
+  "window": {
+    "secondaryAvailable": true,
+    "bounds": {
+      "x": 2172,
+      "y": 32,
+      "width": 1802,
+      "height": 1041
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "visible": true,
+    "focused": false
+  },
+  "assertions": {
+    "fiveAllVisibleCandidatesVisible": true,
+    "allButtonsStayBelowOneHundredFiftyPixels": true,
+    "allActionsRemainOneClickReachable": true
+  },
+  "screenshots": {
+    "01-four-candidates": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-compact-navigation-test\\01-four-candidates.png",
+    "02-cross-stage-actions": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-compact-navigation-test\\02-cross-stage-actions.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "metrics": {
+    "方案A紧凑分组导航": {
+      "clientWidth": 1316,
+      "scrollWidth": 1316,
+      "buttonWidths": [
+        67.760009765625,
+        80.96001434326172,
+        80.96001434326172,
+        107.3600082397461,
+        54.56000900268555,
+        54.56000900268555,
+        80.9600601196289,
+        80.9599609375,
+        80.9599609375
+      ]
+    },
+    "方案B对齐流程轨导航": {
+      "clientWidth": 1316,
+      "scrollWidth": 1316,
+      "buttonWidths": [
+        60.06000900268555,
+        72.15998840332031,
+        72.1600112915039,
+        96.3600082397461,
+        47.96001052856445,
+        47.96001052856445,
+        72.15996551513672,
+        72.1600570678711,
+        72.15996551513672
+      ]
+    },
+    "方案C单行分区导航": {
+      "clientWidth": 1314,
+      "scrollWidth": 1314,
+      "buttonWidths": [
+        60.05998611450195,
+        72.1600112915039,
+        72.1600112915039,
+        96.3600082397461,
+        47.9599609375,
+        47.960060119628906,
+        72.15996551513672,
+        72.1600570678711,
+        72.15996551513672
+      ]
+    },
+    "方案D共用外框导航": {
+      "clientWidth": 1314,
+      "scrollWidth": 1314,
+      "buttonWidths": [
+        60.06000900268555,
+        72.1600112915039,
+        72.1600112915039,
+        96.3600082397461,
+        47.96001052856445,
+        47.96001052856445,
+        72.1600112915039,
+        72.15996551513672,
+        72.1600570678711
+      ]
+    },
+    "方案E极简下划线导航": {
+      "clientWidth": 1316,
+      "scrollWidth": 1316,
+      "buttonWidths": [
+        60.06000900268555,
+        72.15998840332031,
+        72.1600112915039,
+        96.3600082397461,
+        47.96001052856445,
+        47.96001052856445,
+        72.15996551513672,
+        72.1600570678711,
+        72.15996551513672
+      ]
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "secondaryDisplay": true,
+  "male": {
+    "selected": "true",
+    "maleTemplateVisible": true,
+    "generalTemplateVisible": true,
+    "femaleTemplateCount": 0
+  },
+  "female": {
+    "selected": "true",
+    "femaleTemplateVisible": true,
+    "generalTemplateVisible": true,
+    "maleTemplateCount": 0
+  },
+  "mine": {
+    "selected": "true",
+    "emptyStateVisible": true
+  },
+  "screenshots": [
+    "E:\\0yuexia\\0,月下PC\\artifacts\\template-manage-channel-tabs\\01-male-tab.png",
+    "E:\\0yuexia\\0,月下PC\\artifacts\\template-manage-channel-tabs\\02-female-tab.png",
+    "E:\\0yuexia\\0,月下PC\\artifacts\\template-manage-channel-tabs\\03-my-templates-tab.png"
+  ],
+  "geometry": {
+    "secondary": true,
+    "bounds": {
+      "x": 2352,
+      "y": 102,
+      "width": 1442,
+      "height": 902
+    },
+    "workArea": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1104
+    }
+  }
+}

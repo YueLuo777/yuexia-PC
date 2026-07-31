@@ -1,0 +1,38 @@
+{
+  "route": "我的小说 -> 测试板块 -> 专业模式九页原样基线",
+  "assertions": {
+    "allNineFormalFlowsReachable": true,
+    "formalHeaderAndActiveStatesPreserved": true,
+    "simplifiedControlsRemoved": true,
+    "noPageOverflow": true
+  },
+  "screenshots": {
+    "brainstorm": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\professional-workbench-baseline-brainstorm-20260726.png",
+    "outline": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\professional-workbench-baseline-outline-20260726.png",
+    "chapter-outline": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\professional-workbench-baseline-chapter-outline-20260726.png",
+    "writing": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\professional-workbench-baseline-writing-20260726.png",
+    "audit": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\professional-workbench-baseline-audit-20260726.png",
+    "status": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\professional-workbench-baseline-status-20260726.png",
+    "summary": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\professional-workbench-baseline-summary-20260726.png",
+    "polish": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\professional-workbench-baseline-polish-20260726.png",
+    "comment": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\professional-workbench-baseline-comment-20260726.png"
+  },
+  "runtimeErrors": [],
+  "window": {
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "bounds": {
+      "x": 2272,
+      "y": 72,
+      "width": 1602,
+      "height": 961
+    },
+    "visible": true,
+    "focused": false
+  },
+  "status": "PASS"
+}

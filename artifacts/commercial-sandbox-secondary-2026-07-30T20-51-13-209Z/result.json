@@ -1,0 +1,55 @@
+{
+  "artifactDir": "E:\\0yuexia\\0,月下PC\\artifacts\\commercial-sandbox-secondary-2026-07-30T20-51-13-209Z",
+  "userDataDir": "C:\\Users\\87248\\AppData\\Local\\Temp\\moonxia-commercial-sandbox-2026-07-30T20-51-13-209Z",
+  "display": {
+    "displays": [
+      {
+        "id": 1890178978,
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 2048,
+          "height": 1152
+        },
+        "workArea": {
+          "x": 0,
+          "y": 0,
+          "width": 2048,
+          "height": 1104
+        },
+        "primary": true
+      },
+      {
+        "id": 2039290676,
+        "bounds": {
+          "x": 2048,
+          "y": 0,
+          "width": 2048,
+          "height": 1152
+        },
+        "workArea": {
+          "x": 2048,
+          "y": 0,
+          "width": 2048,
+          "height": 1104
+        },
+        "primary": false
+      }
+    ],
+    "primaryId": 1890178978,
+    "targetId": 2039290676,
+    "currentId": 2039290676,
+    "bounds": {
+      "x": 2128,
+      "y": 70,
+      "width": 1482,
+      "height": 901
+    }
+  },
+  "route": null,
+  "assertions": [],
+  "errors": [
+    "[warning] Renderer console level=warning node:electron/js2c/sandbox_bundle:2 %cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security\n  Policy set or a policy with \"unsafe-eval\" enabled. This exposes users of\n  this app to unnecessary security risks.\n\nFor more information and help, consult\nhttps://electronjs.org/docs/tutorial/security.\nThis warning will not show up\nonce the app is packaged."
+  ],
+  "error": "page.waitForTimeout: Target page, context or browser has been closed\n    at [stdin]:55:16"
+}

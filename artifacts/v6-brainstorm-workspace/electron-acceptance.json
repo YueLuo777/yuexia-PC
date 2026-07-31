@@ -1,0 +1,273 @@
+{
+  "route": "标准模式书籍 -> 脑洞库 -> 生成脑洞 -> 较小窗口",
+  "assertions": {
+    "libraryUsesUnifiedLightFields": true,
+    "revisionActionsStayInsideTextarea": true,
+    "libraryActionsAreGroupedBelowMetadata": true,
+    "copyLabelsAreUnambiguous": true,
+    "missingLegacyCreatedTimeIsNotShown": true,
+    "generatorUsesTheSameWorkspacePositions": true,
+    "compactWindowHasNoBrokenLinesOrOverflow": true,
+    "noRuntimeErrors": true
+  },
+  "screenshots": {
+    "01-brainstorm-library-unified": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-brainstorm-workspace\\01-brainstorm-library-unified.png",
+    "02-brainstorm-generator-unified": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-brainstorm-workspace\\02-brainstorm-generator-unified.png",
+    "03-brainstorm-generator-compact": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-brainstorm-workspace\\03-brainstorm-generator-compact.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "secondaryAvailable": true,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2172,
+      "y": 32,
+      "width": 1802,
+      "height": 1041
+    }
+  },
+  "measurements": {
+    "library": {
+      "workspace": {
+        "left": 308,
+        "right": 1370.9989013671875,
+        "top": 131.60000610351562,
+        "bottom": 1039.9937438964844,
+        "width": 1062.9989013671875,
+        "height": 908.3937377929688
+      },
+      "titleField": {
+        "left": 325.6000061035156,
+        "right": 488.40000915527344,
+        "top": 149.1999969482422,
+        "bottom": 215.1999969482422,
+        "width": 162.8000030517578,
+        "height": 66
+      },
+      "previewField": {
+        "left": 325.6000061035156,
+        "right": 1352.5188293457031,
+        "top": 228.40000915527344,
+        "bottom": 748.9338226318359,
+        "width": 1026.9188232421875,
+        "height": 520.5338134765625
+      },
+      "previewTextarea": {
+        "left": 325.6000061035156,
+        "right": 1352.5188293457031,
+        "top": 254.8000030517578,
+        "bottom": 748.9337921142578,
+        "width": 1026.9188232421875,
+        "height": 494.1337890625
+      },
+      "revisionField": {
+        "left": 325.6000061035156,
+        "right": 1352.5188293457031,
+        "top": 762.1337890625,
+        "bottom": 1022.3937683105469,
+        "width": 1026.9188232421875,
+        "height": 260.2599792480469
+      },
+      "revisionTextarea": {
+        "left": 325.6000061035156,
+        "right": 1352.5188293457031,
+        "top": 792.9337768554688,
+        "bottom": 1022.3937377929688,
+        "width": 1026.9188232421875,
+        "height": 229.4599609375
+      },
+      "revisionActions": {
+        "left": 1266.71875,
+        "right": 1343.71875,
+        "top": 978.3937377929688,
+        "bottom": 1013.5937385559082,
+        "width": 77,
+        "height": 35.20000076293945
+      },
+      "sendButton": {
+        "left": 1266.71875,
+        "right": 1301.9187507629395,
+        "top": 978.3937377929688,
+        "bottom": 1013.5937385559082,
+        "width": 35.20000076293945,
+        "height": 35.20000076293945
+      },
+      "stopButton": {
+        "left": 1308.518798828125,
+        "right": 1343.7187995910645,
+        "top": 978.3937377929688,
+        "bottom": 1013.5937385559082,
+        "width": 35.20000076293945,
+        "height": 35.20000076293945
+      },
+      "previewBorder": "rgb(220, 225, 232)",
+      "revisionBorder": "rgb(220, 225, 232)",
+      "previewResize": "none",
+      "revisionResize": "none",
+      "scrollWidth": 966,
+      "clientWidth": 966
+    },
+    "generator": {
+      "workspace": {
+        "left": 308,
+        "right": 1370.9989013671875,
+        "top": 131.60000610351562,
+        "bottom": 1039.9937438964844,
+        "width": 1062.9989013671875,
+        "height": 908.3937377929688
+      },
+      "titleField": {
+        "left": 325.6000061035156,
+        "right": 488.40000915527344,
+        "top": 149.1999969482422,
+        "bottom": 215.1999969482422,
+        "width": 162.8000030517578,
+        "height": 66
+      },
+      "previewField": {
+        "left": 325.6000061035156,
+        "right": 1352.5188293457031,
+        "top": 228.40000915527344,
+        "bottom": 705.8137969970703,
+        "width": 1026.9188232421875,
+        "height": 477.4137878417969
+      },
+      "previewTextarea": {
+        "left": 325.6000061035156,
+        "right": 1352.5188293457031,
+        "top": 254.8000030517578,
+        "bottom": 705.8137664794922,
+        "width": 1026.9188232421875,
+        "height": 451.0137634277344
+      },
+      "revisionField": {
+        "left": 325.6000061035156,
+        "right": 1352.5188293457031,
+        "top": 719.0137939453125,
+        "bottom": 957.7137908935547,
+        "width": 1026.9188232421875,
+        "height": 238.6999969482422
+      },
+      "revisionTextarea": {
+        "left": 325.6000061035156,
+        "right": 1352.5188293457031,
+        "top": 749.8137817382812,
+        "bottom": 957.7137908935547,
+        "width": 1026.9188232421875,
+        "height": 207.90000915527344
+      },
+      "revisionActions": {
+        "left": 1266.71875,
+        "right": 1343.71875,
+        "top": 913.7138061523438,
+        "bottom": 948.9138069152832,
+        "width": 77,
+        "height": 35.20000076293945
+      },
+      "sendButton": {
+        "left": 1266.71875,
+        "right": 1301.9187507629395,
+        "top": 913.7138061523438,
+        "bottom": 948.9138069152832,
+        "width": 35.20000076293945,
+        "height": 35.20000076293945
+      },
+      "stopButton": {
+        "left": 1308.518798828125,
+        "right": 1343.7187995910645,
+        "top": 913.7138061523438,
+        "bottom": 948.9138069152832,
+        "width": 35.20000076293945,
+        "height": 35.20000076293945
+      },
+      "previewBorder": "rgb(220, 225, 232)",
+      "revisionBorder": "rgb(220, 225, 232)",
+      "previewResize": "none",
+      "revisionResize": "none",
+      "scrollWidth": 966,
+      "clientWidth": 966
+    },
+    "compact": {
+      "workspace": {
+        "left": 308,
+        "right": 970.99755859375,
+        "top": 131.60000610351562,
+        "bottom": 901.6000061035156,
+        "width": 662.99755859375,
+        "height": 770
+      },
+      "titleField": {
+        "left": 325.6000061035156,
+        "right": 488.40000915527344,
+        "top": 149.1999969482422,
+        "bottom": 215.1999969482422,
+        "width": 162.8000030517578,
+        "height": 66
+      },
+      "previewField": {
+        "left": 325.6000061035156,
+        "right": 952.5174865722656,
+        "top": 228.40000915527344,
+        "bottom": 608.1200408935547,
+        "width": 626.91748046875,
+        "height": 379.72003173828125
+      },
+      "previewTextarea": {
+        "left": 325.6000061035156,
+        "right": 952.5174865722656,
+        "top": 254.8000030517578,
+        "bottom": 608.1200408935547,
+        "width": 626.91748046875,
+        "height": 353.3200378417969
+      },
+      "revisionField": {
+        "left": 325.6000061035156,
+        "right": 952.5174865722656,
+        "top": 621.3200073242188,
+        "bottom": 819.3200073242188,
+        "width": 626.91748046875,
+        "height": 198
+      },
+      "revisionTextarea": {
+        "left": 325.6000061035156,
+        "right": 952.5174865722656,
+        "top": 652.1200561523438,
+        "bottom": 819.3200531005859,
+        "width": 626.91748046875,
+        "height": 167.1999969482422
+      },
+      "revisionActions": {
+        "left": 866.7174682617188,
+        "right": 943.7174682617188,
+        "top": 775.3200073242188,
+        "bottom": 810.5200080871582,
+        "width": 77,
+        "height": 35.20000076293945
+      },
+      "sendButton": {
+        "left": 866.7174682617188,
+        "right": 901.9174690246582,
+        "top": 775.3200073242188,
+        "bottom": 810.5200080871582,
+        "width": 35.20000076293945,
+        "height": 35.20000076293945
+      },
+      "stopButton": {
+        "left": 908.5175170898438,
+        "right": 943.7175178527832,
+        "top": 775.3200073242188,
+        "bottom": 810.5200080871582,
+        "width": 35.20000076293945,
+        "height": 35.20000076293945
+      },
+      "previewBorder": "rgb(220, 225, 232)",
+      "revisionBorder": "rgb(220, 225, 232)",
+      "previewResize": "none",
+      "revisionResize": "none",
+      "scrollWidth": 602,
+      "clientWidth": 602
+    }
+  }
+}

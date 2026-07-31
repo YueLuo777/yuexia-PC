@@ -1,0 +1,90 @@
+{
+  "route": "标准模式书籍 -> 脑洞库 -> 创建脑洞副本 -> 生成脑洞 -> 测试模式内置提示词草稿",
+  "assertions": {
+    "initialSerialOrder": [
+      "1",
+      "2",
+      "3"
+    ],
+    "sidebarActionsShareEqualRow": {
+      "add": {
+        "x": 13.199999809265137,
+        "y": 966.3900756835938,
+        "width": 135.9600067138672,
+        "height": 39.60000228881836
+      },
+      "remove": {
+        "x": 157.9600067138672,
+        "y": 966.3900756835938,
+        "width": 135.9600067138672,
+        "height": 39.60000228881836
+      }
+    },
+    "copyAndDuplicateShareEqualRow": {
+      "copy": {
+        "x": 1491.0775146484375,
+        "y": 1014.7900390625,
+        "width": 192.05996704101562,
+        "height": 39.60000228881836
+      },
+      "duplicate": {
+        "x": 1691.9375,
+        "y": 1014.7900390625,
+        "width": 192.05996704101562,
+        "height": 39.60000228881836
+      }
+    },
+    "previewHeaderHasNoDuplicateCopy": true,
+    "largerPreviewLabels": [
+      {
+        "text": "脑洞名",
+        "size": "14px"
+      },
+      {
+        "text": "脑洞预览",
+        "size": "14px"
+      }
+    ],
+    "newBrainstormAppearsLast": {
+      "serials": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "lastTitle": "4三号脑洞 副本7字"
+    },
+    "generatorTitleAndCopyWording": true,
+    "ownerDraftSeparatedSavedAndExported": true,
+    "ownerDraftSurvivesReload": true,
+    "noRuntimeErrors": true
+  },
+  "screenshots": {
+    "01-ordered-library-aligned-actions": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-order-prompt-drafts\\01-ordered-library-aligned-actions.png",
+    "02-new-brainstorm-at-bottom": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-order-prompt-drafts\\02-new-brainstorm-at-bottom.png",
+    "03-generator-wording": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-order-prompt-drafts\\03-generator-wording.png",
+    "04-owner-prompt-draft-library": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-order-prompt-drafts\\04-owner-prompt-draft-library.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "displayCount": 3,
+    "codexDisplayId": 3419595392,
+    "primaryDisplayId": 2882211613,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    }
+  },
+  "export": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-order-prompt-drafts\\内置提示词草稿导出.json"
+}

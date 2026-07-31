@@ -1,0 +1,134 @@
+{
+  "route": "作品概览 -> 标准模式书籍 -> 进入工作台",
+  "window": {
+    "secondaryAvailable": true,
+    "bounds": {
+      "x": 2172,
+      "y": 32,
+      "width": 1802,
+      "height": 1041
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "visible": true,
+    "focused": false
+  },
+  "assertions": {
+    "allTenActionsVisible": true,
+    "contentWidthActions": true,
+    "settingsCreationGapCentered": true,
+    "allStageBottomBordersVisible": true,
+    "stageFlowArrowsVisible": true,
+    "openingStageContainsTitleDetailsAndBrainstormActions": true,
+    "navigationHeightRemains76": true,
+    "renamedCreationActionsRouteCorrectly": true,
+    "crossStageActionIsOneClick": true,
+    "openingStageDetailsRouteCorrectly": true
+  },
+  "screenshots": {
+    "01-opening-stage-navigation": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-opening-stage-navigation\\01-opening-stage-navigation.png",
+    "02-opening-stage-details-selected": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-opening-stage-navigation\\02-opening-stage-details-selected.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "metrics": {
+    "navigationCenter": 899.9994144439697,
+    "headerHeight": 75,
+    "stageGapCenter": 899.9925050735474,
+    "stageGap": 30.800024032592773,
+    "centerArrowCenter": 899.9925050735474,
+    "flowArrowCount": 3,
+    "stageCardBorders": [
+      {
+        "bottom": 123.2400016784668,
+        "navigationBottom": 124.11999893188477,
+        "borderBottomWidth": "0.8px"
+      },
+      {
+        "bottom": 123.2400016784668,
+        "navigationBottom": 124.11999893188477,
+        "borderBottomWidth": "0.8px"
+      },
+      {
+        "bottom": 123.2400016784668,
+        "navigationBottom": 124.11999893188477,
+        "borderBottomWidth": "0.8px"
+      },
+      {
+        "bottom": 123.2400016784668,
+        "navigationBottom": 124.11999893188477,
+        "borderBottomWidth": "0.8px"
+      }
+    ],
+    "buttonWidths": [
+      {
+        "text": "1开书阶段·导航验收作品",
+        "width": 242.8800048828125
+      },
+      {
+        "text": "作品详情",
+        "width": 80.9599838256836
+      },
+      {
+        "text": "生成脑洞",
+        "width": 80.96001434326172
+      },
+      {
+        "text": "脑洞库",
+        "width": 67.760009765625
+      },
+      {
+        "text": "2设定阶段",
+        "width": 194.9199676513672
+      },
+      {
+        "text": "作品设定",
+        "width": 80.96001434326172
+      },
+      {
+        "text": "更换设定模板",
+        "width": 107.3599624633789
+      },
+      {
+        "text": "3创作阶段",
+        "width": 168.51992797851562
+      },
+      {
+        "text": "生成章纲",
+        "width": 80.9599609375
+      },
+      {
+        "text": "生成正文",
+        "width": 80.9599609375
+      },
+      {
+        "text": "4检查阶段",
+        "width": 256.0799865722656
+      },
+      {
+        "text": "审核剧情",
+        "width": 80.9599609375
+      },
+      {
+        "text": "更新状态",
+        "width": 80.9600601196289
+      },
+      {
+        "text": "生成梗概",
+        "width": 80.9599609375
+      }
+    ],
+    "openingStageActionCount": 3,
+    "openingStageActions": [
+      "作品详情",
+      "生成脑洞",
+      "脑洞库"
+    ],
+    "openingTitle": "导航验收作品",
+    "legacyTitleCapsuleCount": 0
+  }
+}

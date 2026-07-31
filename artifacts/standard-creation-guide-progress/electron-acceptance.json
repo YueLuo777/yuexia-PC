@@ -1,0 +1,157 @@
+{
+  "route": "作品概览 -> 新建小说 -> 工作台作品详情 -> 创作向导",
+  "window": {
+    "secondaryAvailable": true,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "visible": true,
+    "focused": false
+  },
+  "assertions": {
+    "fixturePrepared": true,
+    "guideShowsBrainstormAndSettingCompletion": true,
+    "guideShowsEmptyCreationAndReviewCounts": true,
+    "fiveStepsUseAlignedCards": true,
+    "scrollbarHasSafeTextClearance": true,
+    "actionsUseConsistentButtons": true,
+    "fixedNextStepFooterDoesNotOverlap": true
+  },
+  "screenshots": {
+    "01-guide-progress": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-creation-guide-progress\\01-guide-progress.png",
+    "guidePanel": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-creation-guide-progress\\02-guide-panel.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "geometry": {
+    "guide": {
+      "left": 1332.72509765625,
+      "right": 1728.7250061035156,
+      "top": 131.60000610351562,
+      "bottom": 974.5375061035156,
+      "width": 395.9999084472656,
+      "height": 842.9375
+    },
+    "list": {
+      "left": 1355.5250244140625,
+      "right": 1706.7249755859375,
+      "top": 227,
+      "bottom": 876.9375,
+      "width": 351.199951171875,
+      "height": 649.9375
+    },
+    "cards": [
+      {
+        "left": 1401.72509765625,
+        "right": 1678.7250061035156,
+        "top": 240.1999969482422,
+        "bottom": 395.75,
+        "width": 276.9999084472656,
+        "height": 155.5500030517578
+      },
+      {
+        "left": 1401.72509765625,
+        "right": 1678.7250061035156,
+        "top": 408.9500427246094,
+        "bottom": 564.5000305175781,
+        "width": 276.9999084472656,
+        "height": 155.54998779296875
+      },
+      {
+        "left": 1401.72509765625,
+        "right": 1678.7250061035156,
+        "top": 577.7000122070312,
+        "bottom": 733.25,
+        "width": 276.9999084472656,
+        "height": 155.54998779296875
+      },
+      {
+        "left": 1401.72509765625,
+        "right": 1678.7250061035156,
+        "top": 746.4500122070312,
+        "bottom": 902,
+        "width": 276.9999084472656,
+        "height": 155.54998779296875
+      },
+      {
+        "left": 1401.72509765625,
+        "right": 1678.7250061035156,
+        "top": 915.2000732421875,
+        "bottom": 1070.7500610351562,
+        "width": 276.9999084472656,
+        "height": 155.54998779296875
+      }
+    ],
+    "footer": {
+      "left": 1355.5250244140625,
+      "right": 1706.7249755859375,
+      "top": 890.1375732421875,
+      "bottom": 952.5376091003418,
+      "width": 351.199951171875,
+      "height": 62.4000358581543
+    },
+    "contentToScrollbarClearance": 27.999969482421875,
+    "listClientHeight": 591,
+    "listScrollHeight": 779,
+    "listClientWidth": 310,
+    "listScrollWidth": 310,
+    "actionButtons": [
+      {
+        "left": 1415.72509765625,
+        "right": 1496.5250854492188,
+        "top": 346.5500183105469,
+        "bottom": 381.75001525878906,
+        "width": 80.79998779296875,
+        "height": 35.19999694824219
+      },
+      {
+        "left": 1415.72509765625,
+        "right": 1496.5250854492188,
+        "top": 515.300048828125,
+        "bottom": 550.5000228881836,
+        "width": 80.79998779296875,
+        "height": 35.199974060058594
+      },
+      {
+        "left": 1415.72509765625,
+        "right": 1496.5250854492188,
+        "top": 684.050048828125,
+        "bottom": 719.2500228881836,
+        "width": 80.79998779296875,
+        "height": 35.199974060058594
+      },
+      {
+        "left": 1415.72509765625,
+        "right": 1496.5250854492188,
+        "top": 852.7999877929688,
+        "bottom": 888.0000076293945,
+        "width": 80.79998779296875,
+        "height": 35.20001983642578
+      },
+      {
+        "left": 1415.72509765625,
+        "right": 1496.5250854492188,
+        "top": 1021.5499877929688,
+        "bottom": 1056.7500076293945,
+        "width": 80.79998779296875,
+        "height": 35.20001983642578
+      }
+    ],
+    "statusWidths": [
+      276.9999084472656,
+      276.9999084472656,
+      276.9999084472656,
+      276.9999084472656,
+      276.9999084472656
+    ]
+  }
+}

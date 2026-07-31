@@ -1,0 +1,76 @@
+{
+  "status": "PASS",
+  "route": "首页 -> 标准模式 -> 默认书籍 -> 工作台 -> 开始设定 -> 更换设定模板 -> 其他分类模板",
+  "assertions": {
+    "summaryRowRemoved": true,
+    "recommendedAndAllTabsWork": true,
+    "allTemplateChannelsVisible": true,
+    "footerFullyVisibleAt110Percent": true,
+    "footerNotCovered": true,
+    "noRuntimeErrors": true
+  },
+  "geometry": {
+    "viewport": {
+      "width": 1862,
+      "height": 1004
+    },
+    "buttons": [
+      {
+        "text": "保存到我的模板",
+        "top": 946.4249877929688,
+        "bottom": 990.4249877929688,
+        "left": 1330.6126708984375,
+        "right": 1484.0126190185547,
+        "width": 153.3999481201172,
+        "height": 44,
+        "topmost": true
+      },
+      {
+        "text": "返回设定列表",
+        "top": 946.4249877929688,
+        "bottom": 990.4249877929688,
+        "left": 1497.2125244140625,
+        "right": 1635.2125244140625,
+        "width": 138,
+        "height": 44,
+        "topmost": true
+      },
+      {
+        "text": "确认模板并创建设定",
+        "top": 946.4249877929688,
+        "bottom": 990.4249877929688,
+        "left": 1648.4124755859375,
+        "right": 1839.812515258789,
+        "width": 191.40003967285156,
+        "height": 44,
+        "topmost": true
+      }
+    ],
+    "initializer": {
+      "top": 131.60000610351562,
+      "bottom": 1003.6250915527344,
+      "height": 872.0250854492188
+    }
+  },
+  "window": {
+    "targetId": 3419595392,
+    "primaryId": 2882211613,
+    "bounds": {
+      "x": 2096,
+      "y": 12,
+      "width": 1940,
+      "height": 1080
+    },
+    "targetBounds": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "zoom": 1.1
+  },
+  "screenshots": [
+    "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-selector-categories\\01-recommended-without-summary-row.png",
+    "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-selector-categories\\02-all-categories-footer-visible-110-percent.png"
+  ]
+}

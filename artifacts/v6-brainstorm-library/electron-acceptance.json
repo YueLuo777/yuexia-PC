@@ -1,0 +1,26 @@
+{
+  "route": "标准模式书籍 -> 进入工作台 -> 准备阶段 -> 脑洞库",
+  "assertions": {
+    "associateActionIsRemoved": true,
+    "remainingActionsUseFullWidthRows": true,
+    "duplicateActionStillWorks": true,
+    "noRuntimeErrors": true
+  },
+  "screenshots": {
+    "01-brainstorm-library-actions": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-brainstorm-library\\01-brainstorm-library-actions.png",
+    "02-brainstorm-library-duplicated": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-brainstorm-library\\02-brainstorm-library-duplicated.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "secondaryAvailable": true,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2172,
+      "y": 32,
+      "width": 1802,
+      "height": 1041
+    }
+  }
+}

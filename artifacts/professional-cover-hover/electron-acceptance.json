@@ -1,0 +1,28 @@
+{
+  "secondaryDisplay": true,
+  "modeToggleHidden": true,
+  "initialOpacity": "0",
+  "hoverOpacity": "1",
+  "titleAreaOpacity": "0",
+  "workbenchOpened": true,
+  "screenshots": [
+    "E:\\0yuexia\\0,月下PC\\artifacts\\professional-cover-hover\\01-professional-card-default.png",
+    "E:\\0yuexia\\0,月下PC\\artifacts\\professional-cover-hover\\02-cover-hover-workbench-button.png"
+  ],
+  "geometry": {
+    "secondary": true,
+    "bounds": {
+      "x": 2352,
+      "y": 102,
+      "width": 1442,
+      "height": 902
+    },
+    "workArea": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1104
+    }
+  },
+  "url": "http://127.0.0.1:18328/#/workbench"
+}

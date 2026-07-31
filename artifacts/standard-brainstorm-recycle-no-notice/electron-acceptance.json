@@ -1,0 +1,65 @@
+{
+  "route": "标准模式书籍 -> 工作台 -> 脑洞库 -> 删除脑洞 -> 脑洞回收站 -> 恢复脑洞",
+  "assertions": {
+    "searchReplacedByProfessionalRecycleButton": {
+      "text": "脑洞回收站0",
+      "height": 48.400001525878906,
+      "cssHeight": "44px",
+      "borderRadius": "14px",
+      "backgroundColor": "rgb(254, 242, 242)",
+      "borderColor": "rgb(254, 226, 226)"
+    },
+    "deleteHasNoNoticeAndKeepsInputGeometry": {
+      "beforeDeleteRect": {
+        "x": 325.6000061035156,
+        "y": 1003.7900390625,
+        "width": 1128.517578125,
+        "height": 50.60000228881836,
+        "top": 1003.7900390625,
+        "right": 1454.1175842285156,
+        "bottom": 1054.3900413513184,
+        "left": 325.6000061035156
+      },
+      "afterDeleteRect": {
+        "x": 325.6000061035156,
+        "y": 1003.7900390625,
+        "width": 1128.517578125,
+        "height": 50.60000228881836,
+        "top": 1003.7900390625,
+        "right": 1454.1175842285156,
+        "bottom": 1054.3900413513184,
+        "left": 325.6000061035156
+      }
+    },
+    "professionalRecycleModalReused": true,
+    "restoreReturnsBrainstormAndClearsRecycle": true,
+    "noRuntimeErrors": true
+  },
+  "screenshots": {
+    "01-recycle-button-before-delete": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-recycle-no-notice\\01-recycle-button-before-delete.png",
+    "02-after-delete-without-notice": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-recycle-no-notice\\02-after-delete-without-notice.png",
+    "03-professional-recycle-modal": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-recycle-no-notice\\03-professional-recycle-modal.png",
+    "04-restored-without-notice": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-recycle-no-notice\\04-restored-without-notice.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "displayCount": 3,
+    "codexDisplayId": 3419595392,
+    "primaryDisplayId": 2882211613,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    }
+  }
+}

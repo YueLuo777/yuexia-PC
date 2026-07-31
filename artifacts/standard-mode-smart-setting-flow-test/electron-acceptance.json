@@ -1,0 +1,130 @@
+{
+  "route": "测试板块 -> 16号测试：新建书籍与智能设定模板流程",
+  "window": {
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "bounds": {
+      "x": 2172,
+      "y": 32,
+      "width": 1802,
+      "height": 1041
+    },
+    "visible": true,
+    "focused": false
+  },
+  "assertions": {
+    "xuanxiaUsesProfessionalStructure": true,
+    "blankCreationDefaultsToMale": true,
+    "maleAndFemaleGenresAreAvailable": true,
+    "genresAreGroupedAndSingleSelect": true,
+    "brainstormPickerReadsLibraryAndWritesBack": true,
+    "canvasHasNoInlineDeleteOrAddControls": true,
+    "domainNavigationLimitsCanvas": true,
+    "unselectedWorkbenchStaysBlank": true,
+    "groupsAndEntriesAreHorizontalWhileFieldsStayVertical": true,
+    "canvasDragDoesNotSelectText": true,
+    "domainSelectionShowsAllSettingEntries": true,
+    "selectedPathStaysInsideCanvas": true,
+    "entryFieldsUseCompactList": true,
+    "nodeSelectionKeepsSiblingSettingsVisible": true,
+    "noCultivationTemplateHasNoCultivationTree": true,
+    "cultivationTemplateAddsCultivationTree": true,
+    "noPageOverflow": true
+  },
+  "screenshots": {
+    "brainstorm-picker": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-smart-setting-flow-test\\electron-brainstorm-picker.png",
+    "brainstorm-selected": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-smart-setting-flow-test\\electron-brainstorm-selected.png",
+    "book-genres": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-smart-setting-flow-test\\electron-book-genres.png",
+    "xuanxia-root": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-smart-setting-flow-test\\electron-xuanxia-root.png",
+    "xuanxia-expanded-domain": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-smart-setting-flow-test\\electron-xuanxia-expanded-domain.png",
+    "xuanxia-branch": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-smart-setting-flow-test\\electron-xuanxia-branch.png",
+    "xuanxia-entry-fields": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-smart-setting-flow-test\\electron-xuanxia-entry-fields.png",
+    "urban-no-cultivation": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-smart-setting-flow-test\\electron-urban-no-cultivation.png",
+    "urban-cultivation": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-smart-setting-flow-test\\electron-urban-cultivation.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "layoutMetrics": {
+    "canvas": {
+      "x": 521.4000244140625,
+      "width": 926.5988159179688
+    },
+    "content": {
+      "x": 521.4000244140625,
+      "width": 926.5988159179688
+    },
+    "navigation": {
+      "x": 521.4000244140625,
+      "width": 926.5988159179688
+    },
+    "work": {
+      "x": 543.4000244140625,
+      "width": 118.53877258300781
+    },
+    "canvasClientWidth": 842,
+    "contentScrollWidth": 842,
+    "contentStyle": "transform: translate(0px, 0px) scale(1); transform-origin: left top;",
+    "contentTransform": "matrix(1, 0, 0, 1, 0, 0)"
+  },
+  "expandedDomainMetrics": {
+    "canvasClientWidth": 842,
+    "canvasClientHeight": 571,
+    "contentScrollWidth": 1408,
+    "contentScrollHeight": 473,
+    "contentStyle": "transform: translate(24px, 16px) scale(0.56392); transform-origin: left top;"
+  },
+  "hierarchyLayout": {
+    "core": {
+      "x": 777.1915893554688,
+      "y": 383.9487609863281,
+      "width": 83.3700180053711,
+      "height": 29.77497673034668
+    },
+    "plot": {
+      "x": 1189.0791015625,
+      "y": 383.9487609863281,
+      "width": 83.3700180053711,
+      "height": 29.77497673034668
+    },
+    "positioning": {
+      "x": 583.0337524414062,
+      "y": 439.5287780761719,
+      "width": 100.73876953125,
+      "height": 24.8125
+    },
+    "world": {
+      "x": 692.208740234375,
+      "y": 439.5287780761719,
+      "width": 126.7918930053711,
+      "height": 24.8125
+    },
+    "cultivation": {
+      "x": 827.4369506835938,
+      "y": 439.5287780761719,
+      "width": 109.42314910888672,
+      "height": 24.8125
+    },
+    "type": {
+      "x": 587.9962768554688,
+      "y": 469.30377197265625,
+      "width": 90.81377410888672,
+      "height": 22.33125114440918
+    },
+    "era": {
+      "x": 587.9962768554688,
+      "y": 495.3569030761719,
+      "width": 90.81377410888672,
+      "height": 22.33125114440918
+    },
+    "sellingPoint": {
+      "x": 587.9962768554688,
+      "y": 521.4100341796875,
+      "width": 90.81377410888672,
+      "height": 22.33125114440918
+    }
+  }
+}

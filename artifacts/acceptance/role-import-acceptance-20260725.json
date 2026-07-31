@@ -1,0 +1,51 @@
+{
+  "window": {
+    "primaryId": 2237594110,
+    "secondaryId": 289650990,
+    "bounds": {
+      "x": 2272,
+      "y": 102,
+      "width": 1600,
+      "height": 900
+    },
+    "displayId": 289650990,
+    "visible": true,
+    "focused": false
+  },
+  "outline": {
+    "text": "第1章 章纲",
+    "count": 1,
+    "gluedCount": 0
+  },
+  "typography": {
+    "requirement": {
+      "text": "请输入要求",
+      "fontFamily": "\"Microsoft YaHei UI\", \"Microsoft YaHei\", sans-serif",
+      "fontSize": "16px",
+      "fontWeight": "900",
+      "lineHeight": "24px"
+    },
+    "output": {
+      "text": "生成设定",
+      "fontFamily": "\"Microsoft YaHei UI\", \"Microsoft YaHei\", sans-serif",
+      "fontSize": "16px",
+      "fontWeight": "900",
+      "lineHeight": "24px"
+    }
+  },
+  "import": {
+    "title": "林刻",
+    "tab": "角色",
+    "type": "男主角",
+    "lifeStatus": "存活",
+    "currentGoal": "通过天剑宗入门考核。",
+    "abilityState": "只能检查黄阶功法，每日三次。",
+    "relationship": "与赵玄因考核名额发生冲突。",
+    "baseSetting": "【外貌】：\n\n\n【性格】：\n冷静克制，遇到弱者受欺时会主动出手。\n\n【称号】：\n\n\n【别名】：\n\n\n【人物出身】：\n\n\n【人物经历】：\n\n\n【人物秘密】：\n\n\n【主角核心动机】：\n\n\n【主角行为原则】：\n\n\n【主角行为底线】：\n\n\n【主角语言习惯】：\n\n\n【主角标志动作】：\n\n\n【主角已知信息】：\n\n\n【主角错误认知】：\n\n\n【金手指当前功能】：\n能够识别功法缺陷。\n\n【金手指来源】：\n\n\n【金手指升级方式】：\n\n\n【金手指解锁条件】：\n\n\n【金手指使用限制】：\n\n\n【金手指使用代价】：\n\n\n【金手指真实来历】：\n\n\n【金手指隐藏目的】：\n\n\n【当前境界】：\n炼气六层。\n\n【当前根基状态】：\n\n\n【当前修炼功法】：\n\n\n【当前战斗技能】：\n\n\n【当前其他技能】：\n\n\n【可战胜敌人层级】：\n\n\n【自身弱点】：\n\n\n【当前任务】：\n\n\n【任务截止时间】：\n\n\n【当前地点】：\n\n\n【可能移动方向】：\n\n\n【伤势状态】：\n\n\n【精神状态】：\n\n\n【隶属势力】：\n"
+  },
+  "screenshots": {
+    "role-import-outline-space-20260725.png": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\role-import-outline-space-20260725.png",
+    "role-import-before-smart-import-20260725.png": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\role-import-before-smart-import-20260725.png",
+    "role-import-after-smart-import-20260725.png": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\role-import-after-smart-import-20260725.png"
+  }
+}

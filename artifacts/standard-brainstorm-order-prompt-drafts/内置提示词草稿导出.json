@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-07-27T12:10:55.278Z",
+  "prompts": [
+    {
+      "id": "brainstorm-generate",
+      "name": "脑洞生成",
+      "description": "",
+      "content": "这是重新编写的脑洞生成内置提示词。",
+      "updatedAt": "2026-07-27T12:10:55.254Z"
+    },
+    {
+      "id": "brainstorm-revise",
+      "name": "脑洞修改",
+      "description": "",
+      "content": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "settings-generate",
+      "name": "作品设定生成",
+      "description": "",
+      "content": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "chapter-outline-generate",
+      "name": "章纲生成",
+      "description": "",
+      "content": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "chapter-content-generate",
+      "name": "正文生成",
+      "description": "",
+      "content": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "story-audit",
+      "name": "剧情审核",
+      "description": "",
+      "content": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "state-update",
+      "name": "状态更新",
+      "description": "",
+      "content": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "chapter-summary",
+      "name": "章节梗概",
+      "description": "",
+      "content": "",
+      "updatedAt": ""
+    }
+  ]
+}

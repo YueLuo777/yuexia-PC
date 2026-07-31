@@ -1,0 +1,36 @@
+{
+  "route": "标准模式作品 -> 生成脑洞 -> 脑洞库 -> 作品设定 -> 内置提示词",
+  "assertions": {
+    "generationSelectionOpensLibrary": true,
+    "standardSettingUsesFiveStepPanelWithoutSelectors": true,
+    "missingModelStopsOnCurrentStep": true,
+    "promptManagerIsLeftOfModeAndOpensBuiltInCategory": true,
+    "noRuntimeErrors": true
+  },
+  "screenshots": {
+    "01-brainstorm-library-after-selection": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-prompt-and-setting-flow\\01-brainstorm-library-after-selection.png",
+    "02-standard-setting-five-step-panel": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-prompt-and-setting-flow\\02-standard-setting-five-step-panel.png",
+    "03-built-in-prompt-manager": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-prompt-and-setting-flow\\03-built-in-prompt-manager.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "displayCount": 3,
+    "codexDisplayId": 3419595392,
+    "primaryDisplayId": 2882211613,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    }
+  }
+}

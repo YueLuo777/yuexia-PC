@@ -1,0 +1,19 @@
+{
+  "artifactDir": "E:\\0yuexia\\0,月下PC\\artifacts\\commercial-sandbox-secondary-final6-2026-07-30T21-03-15-335Z",
+  "display": {
+    "primaryId": 1890178978,
+    "currentId": 2039290676,
+    "bounds": {
+      "x": 2128,
+      "y": 70,
+      "width": 1482,
+      "height": 902
+    }
+  },
+  "assertions": [
+    {
+      "name": "user-a-final",
+      "text": "测试用户A\n入门会员 · 可用 855 · 冻结 0"
+    }
+  ]
+}

@@ -27,6 +27,9 @@ describe('TemplateManagePage', () => {
     const full = screen.getByText('玄幻仙侠（完整版）').closest('button') as HTMLButtonElement;
     expect(light.compareDocumentPosition(standard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(standard.compareDocumentPosition(full) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(light).toHaveAttribute('aria-pressed', 'true');
+    expect(standard).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('textbox', { name: '保存模板名称' })).toHaveValue('玄幻仙侠（轻量版）副本');
     expect(within(light).getByText('男频 · 玄幻仙侠')).toBeInTheDocument();
     expect(screen.getByText('通用小说基础')).toBeInTheDocument();
     expect(screen.queryByText('现代总裁')).not.toBeInTheDocument();

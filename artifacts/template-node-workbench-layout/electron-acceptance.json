@@ -1,0 +1,57 @@
+{
+  "route": "测试板块 -> 26号测试",
+  "window": {
+    "secondaryAvailable": true,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "visible": true,
+    "focused": false
+  },
+  "assertions": {
+    "threeProposalsVisible": true,
+    "threePanelsHaveStableDimensions": true,
+    "levelSwitchProtectsInvalidChildAction": true
+  },
+  "screenshots": {
+    "01-three-layout-proposals": "E:\\0yuexia\\0,月下PC\\artifacts\\template-node-workbench-layout\\01-three-layout-proposals.png",
+    "02-level-switch-and-interaction": "E:\\0yuexia\\0,月下PC\\artifacts\\template-node-workbench-layout\\02-level-switch-and-interaction.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "geometry": [
+    {
+      "left": 270.9987487792969,
+      "right": 794.5987854003906,
+      "top": 222.6800079345703,
+      "bottom": 970.6800079345703,
+      "width": 523.6000366210938,
+      "height": 748
+    },
+    {
+      "left": 812.1987915039062,
+      "right": 1335.7987670898438,
+      "top": 222.6800079345703,
+      "bottom": 970.6800079345703,
+      "width": 523.5999755859375,
+      "height": 748
+    },
+    {
+      "left": 1353.3988037109375,
+      "right": 1876.9988403320312,
+      "top": 222.6800079345703,
+      "bottom": 970.6800079345703,
+      "width": 523.6000366210938,
+      "height": 748
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "route": "我的小说 -> 测试板块 -> 专业与标准模式首页切换",
+  "assertions": {
+    "professionalModeUsesCurrentCards": true,
+    "navigationRemainsUnchanged": true,
+    "onlyStandardCardsExposeWorkbench": true,
+    "noHorizontalOverflow": true,
+    "standardCardOpensGuidedWorkbench": true,
+    "bookClickOpensSharedBodyEditor": true
+  },
+  "screenshots": {
+    "professional": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\mode-switch-library-professional-20260726.png",
+    "standard": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\mode-switch-library-standard-20260726.png",
+    "workbench": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\mode-switch-library-workbench-20260726.png",
+    "shared-editor": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\mode-switch-library-shared-editor-20260726.png"
+  },
+  "runtimeErrors": [],
+  "window": {
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "bounds": {
+      "x": 2272,
+      "y": 72,
+      "width": 1602,
+      "height": 961
+    },
+    "visible": true,
+    "focused": false
+  },
+  "status": "PASS"
+}

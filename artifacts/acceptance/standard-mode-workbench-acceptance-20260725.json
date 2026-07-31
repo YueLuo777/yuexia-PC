@@ -1,0 +1,107 @@
+{
+  "route": "novel library -> titlebar test collection -> standard mode workbench test",
+  "userDataDir": "C:\\Users\\87248\\AppData\\Local\\Temp\\xinyuexia-standard-mode-acceptance-89FSQQ",
+  "screenshots": {
+    "test-collection": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-mode-test-collection-20260725.png",
+    "library": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-mode-library-20260725.png",
+    "professional-editor": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-mode-professional-editor-20260725.png",
+    "three-column-workbench": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-mode-three-column-workbench-20260725.png",
+    "outline-console": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-mode-outline-console-20260725.png",
+    "new-book-workbench": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-mode-new-book-workbench-20260725.png",
+    "new-book-professional-editor": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-mode-new-book-professional-editor-20260725.png"
+  },
+  "assertions": {
+    "testEntryVisible": true,
+    "titlebarTestButtonOpensCollection": true,
+    "testEntryOpensPrototype": true,
+    "libraryHasTwoCardsWithoutHorizontalOverflow": true,
+    "ongoingBookUsesProfessionalChapterSidebar": true,
+    "ongoingBookUsesProfessionalEditorAndAiPanel": true,
+    "ongoingWorkbenchShowsNextOutline": true,
+    "ongoingWorkbenchShowsContextAction": true,
+    "workbenchUsesThreeStableColumns": true,
+    "outlineFunctionChangesCenterContent": true,
+    "outlineActionRunsInRightConsole": true,
+    "workbenchWritingFunctionUsesSameProfessionalEditor": true,
+    "newBookStartsAtBrainstormFunction": true,
+    "newBookBrainstormActionRuns": true,
+    "newBookCanJumpDirectlyToChapterOutline": true,
+    "newBookUsesSameProfessionalEditor": true
+  },
+  "runtimeErrors": [],
+  "window": {
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "workArea": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1104
+    },
+    "bounds": {
+      "x": 2302,
+      "y": 82,
+      "width": 1542,
+      "height": 942
+    },
+    "visible": true,
+    "focused": false
+  },
+  "replaceControlMetrics": {
+    "rect": {
+      "left": 884.9638061523438,
+      "right": 903.4437866210938,
+      "width": 18.47998046875,
+      "height": 33.43999099731445
+    },
+    "iconRect": {
+      "left": 885.84375,
+      "right": 903.4437503814697,
+      "width": 17.600000381469727,
+      "height": 17.600000381469727
+    },
+    "parentRect": {
+      "left": 760.0037841796875,
+      "right": 860.9150619506836,
+      "width": 100.9112777709961
+    },
+    "color": "rgb(8, 170, 206)",
+    "backgroundColor": "rgba(0, 0, 0, 0)",
+    "overflow": "visible"
+  },
+  "leftToolStyles": {
+    "brainstorm": {
+      "className": "flex h-11 w-full items-center justify-between rounded-md border px-3 text-left text-sm font-black outline-none transition-[background-color,color] text-slate-600 hover:bg-white",
+      "ariaCurrent": null,
+      "focused": false,
+      "borderColor": "rgba(0, 0, 0, 0)",
+      "outline": "rgba(0, 0, 0, 0) solid 1.6px",
+      "boxShadow": "none",
+      "backgroundColor": "rgb(255, 255, 255)"
+    },
+    "chapterOutline": {
+      "className": "flex h-11 w-full items-center justify-between rounded-md border px-3 text-left text-sm font-black outline-none transition-[background-color,color] bg-white text-[#078FAB]",
+      "ariaCurrent": "page",
+      "focused": true,
+      "borderColor": "rgb(8, 170, 206)",
+      "outline": "rgb(71, 85, 105) none 2.4px",
+      "boxShadow": "none",
+      "backgroundColor": "rgba(255, 255, 255, 0.008)"
+    }
+  },
+  "finalWindow": {
+    "bounds": {
+      "x": 2302,
+      "y": 82,
+      "width": 1542,
+      "height": 942
+    },
+    "focused": false,
+    "visible": true
+  },
+  "status": "PASS"
+}

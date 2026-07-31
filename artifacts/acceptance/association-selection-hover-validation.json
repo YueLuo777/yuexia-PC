@@ -1,0 +1,21 @@
+{
+  "initiallyVisible": false,
+  "displayState": {
+    "hasSecondary": true,
+    "focused": false,
+    "bounds": {
+      "x": 2272,
+      "y": 102,
+      "width": 1602,
+      "height": 902
+    },
+    "displayId": 289650990,
+    "primaryId": 2237594110
+  },
+  "hoverText": "",
+  "checkedText": "✓",
+  "focusedAfter": false,
+  "runtimeErrors": [],
+  "hoverScreenshot": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\association-selection-hover-unchecked.png",
+  "checkedScreenshot": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\association-selection-after-click.png"
+}

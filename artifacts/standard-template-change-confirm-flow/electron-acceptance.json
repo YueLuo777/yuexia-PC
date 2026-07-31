@@ -1,0 +1,100 @@
+{
+  "route": "标准模式书籍 -> 工作台 -> 作品设定 -> 更换模板 -> 玄幻仙侠三版本与其他题材分隔 -> 四栏DIY模板编辑器",
+  "assertions": {
+    "warningDoesNotNavigateAndUsesRequestedButtonOrder": [
+      {
+        "text": "继续更换模板",
+        "left": 939.2000122070312,
+        "right": 1056.8000106811523,
+        "background": "rgb(255, 255, 255)",
+        "color": "rgb(220, 38, 38)",
+        "border": "rgb(252, 165, 165)"
+      },
+      {
+        "text": "取消",
+        "left": 1068.800048828125,
+        "right": 1156.800048828125,
+        "background": "rgb(8, 170, 206)",
+        "color": "rgb(255, 255, 255)",
+        "border": "rgb(228, 228, 231)"
+      }
+    ],
+    "cancelKeepsCurrentSettingPageAndData": true,
+    "progressiveTemplateFieldCounts": {
+      "lightweight": 100,
+      "standard": 298,
+      "complete": 648
+    },
+    "continueOpensTemplateManagementEditorWithoutSecondWarningOrEarlyDeletion": {
+      "clientWidth": 1729,
+      "scrollWidth": 1729,
+      "clientHeight": 883,
+      "scrollHeight": 883
+    },
+    "xianxiaVariantsAndOtherGenreDivider": [
+      {
+        "label": "选择内置模板：玄幻仙侠（标准版）",
+        "top": 302.32000732421875
+      },
+      {
+        "label": "选择内置模板：玄幻仙侠（完整版）",
+        "top": 477.8800354003906
+      },
+      {
+        "label": "选择内置模板：玄幻仙侠（轻量版）",
+        "top": 653.4400024414062
+      },
+      {
+        "label": "其他男频题材模板",
+        "top": 807
+      },
+      {
+        "label": "选择内置模板：都市（无修炼）",
+        "top": 842.75
+      }
+    ],
+    "returnFromEditorKeepsExistingSettings": true,
+    "confirmReplacementCreatesTemplateSettingsAndClearsDependentState": true,
+    "homeTemplateManagementExposesSameThreeVariants": true,
+    "noRuntimeErrors": true
+  },
+  "screenshots": {
+    "01-warning-over-current-setting-page": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-change-confirm-flow\\01-warning-over-current-setting-page.png",
+    "02-lightweight-template-100-fields": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-change-confirm-flow\\02-lightweight-template-100-fields.png",
+    "02-template-management-editor-after-confirmation": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-change-confirm-flow\\02-template-management-editor-after-confirmation.png",
+    "03-returned-setting-page": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-change-confirm-flow\\03-returned-setting-page.png",
+    "04-confirmed-template-replacement": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-change-confirm-flow\\04-confirmed-template-replacement.png",
+    "05-home-template-management-full-variant": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-change-confirm-flow\\05-home-template-management-full-variant.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "displayCount": 3,
+    "codexDisplayId": 2039290676,
+    "primaryDisplayId": 1890178978,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    }
+  },
+  "finalWindow": {
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    }
+  }
+}

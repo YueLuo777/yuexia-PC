@@ -1,0 +1,36 @@
+{
+  "route": "file:///E:/0yuexia/0,%E6%9C%88%E4%B8%8BPC/dist/index.html#/workbench",
+  "path": [
+    "作品库",
+    "新建临时作品",
+    "设定",
+    "关联脑洞"
+  ],
+  "targetWindowState": {
+    "displayId": 289650990,
+    "primaryId": 2237594110,
+    "bounds": {
+      "x": 2272,
+      "y": 102,
+      "width": 1602,
+      "height": 902
+    },
+    "visible": true,
+    "focused": false
+  },
+  "focusedAfterScreenshot": false,
+  "measured": {
+    "metaText": "79 字·2026/7/6 16:49:52",
+    "metaFontSize": "14px",
+    "metaIconCount": 0,
+    "headingHasBrainstormLibrary": false,
+    "contentPaddingTop": "8px",
+    "contentPaddingRight": "20px",
+    "contentPaddingBottom": "20px",
+    "contentPaddingLeft": "20px",
+    "firstTextTopGap": 16,
+    "contentText": "书名：《万界吞噬》\n卖点：吞噬诸天万界，掠夺血脉功法\n主角：林刻\n金手指：吞噬系统，吞敌即得对方力量\n世界观：九重天界，神魔争霸\n爽感闭环：每吞一敌，战力翻倍，无敌之路"
+  },
+  "runtimeErrors": [],
+  "screenshot": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\brainstorm-reader-spacing-metadata-20260725.png"
+}

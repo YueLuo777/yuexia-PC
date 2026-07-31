@@ -1,0 +1,74 @@
+{
+  "route": "作品概览 -> 新建小说 -> 女频题材 -> 创建书籍 -> 进入工作台 -> 作品详情 -> 创作向导",
+  "window": {
+    "secondaryAvailable": true,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "visible": true,
+    "focused": false,
+    "zoomFactor": 1.1
+  },
+  "assertions": {
+    "femaleChannelUsesFemaleGenresOnly": true,
+    "createdFemaleNovelPersistsChannelAndGenre": true,
+    "creationGuideReplacesInspection": true,
+    "workDetailsFillAvailableMiddleArea": true,
+    "noUnexpectedPageOverflow": true,
+    "workDetailsPersistAfterReload": true,
+    "guideOpensFormalOutlineInOneClick": true
+  },
+  "screenshots": {
+    "01-female-genres": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-female-genres-creation-guide\\01-female-genres.png",
+    "02-work-details-creation-guide": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-female-genres-creation-guide\\02-work-details-creation-guide.png",
+    "03-guide-opens-outline": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-female-genres-creation-guide\\03-guide-opens-outline.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "geometry": {
+    "centerRect": {
+      "left": 275,
+      "right": 1332.72509765625,
+      "top": 131.60000610351562,
+      "bottom": 974.5375061035156,
+      "width": 1057.72509765625
+    },
+    "guideRect": {
+      "left": 1332.72509765625,
+      "right": 1728.7250061035156,
+      "width": 395.9999084472656
+    },
+    "gridRect": {
+      "left": 297,
+      "right": 1295.9251098632812,
+      "width": 998.9251098632812
+    },
+    "synopsisRect": {
+      "left": 297,
+      "right": 1295.9251098632812,
+      "height": 327.3375549316406
+    },
+    "saveRect": {
+      "right": 1295.9251174926758,
+      "bottom": 948.1375732421875
+    },
+    "centerPaddingLeft": 20,
+    "centerPaddingRight": 20,
+    "guideOverflowingElements": [],
+    "layout": {
+      "clientWidth": 1572,
+      "scrollWidth": 1572,
+      "clientHeight": 766,
+      "scrollHeight": 766
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "route": "作品概览 -> 新建小说 -> 进入工作台 -> 开始设定 -> 模板画布",
+  "window": {
+    "secondaryAvailable": true,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "visible": true,
+    "focused": false,
+    "zoomFactor": 1.1
+  },
+  "assertions": {
+    "rightSidebarSplitIntoOperationAndSaveRegions": true,
+    "regionsAlignedWithoutOverlap": true,
+    "footerHasNoDuplicateSaveControls": true,
+    "noUnexpectedPageOverflow": true,
+    "savedTemplateAppearsImmediately": true
+  },
+  "screenshots": {
+    "01-right-sidebar-split": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-right-sidebar-save\\01-right-sidebar-split.png",
+    "01a-right-sidebar-region": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-right-sidebar-save\\01a-right-sidebar-region.png",
+    "01b-page-footer": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-right-sidebar-save\\01b-page-footer.png",
+    "02-template-saved": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-right-sidebar-save\\02-template-saved.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "geometry": {
+    "workbench": {
+      "left": 1299.72509765625,
+      "right": 1728.7250366210938,
+      "top": 131.60000610351562,
+      "bottom": 903.3376159667969,
+      "width": 428.99993896484375,
+      "height": 771.7376098632812
+    },
+    "operations": {
+      "left": 1300.5250244140625,
+      "right": 1728.7249755859375,
+      "top": 131.60000610351562,
+      "bottom": 704.5375061035156,
+      "width": 428.199951171875,
+      "height": 572.9375
+    },
+    "save": {
+      "left": 1300.5250244140625,
+      "right": 1728.7249755859375,
+      "top": 704.5375366210938,
+      "bottom": 903.3375701904297,
+      "width": 428.199951171875,
+      "height": 198.80003356933594
+    },
+    "saveButton": {
+      "left": 1322.5250244140625,
+      "right": 1706.7249755859375,
+      "top": 841.7374877929688,
+      "bottom": 885.7374877929688,
+      "width": 384.199951171875,
+      "height": 44
+    },
+    "footer": {
+      "left": 0,
+      "right": 1728.7249755859375,
+      "top": 903.3375854492188,
+      "bottom": 974.5376052856445,
+      "width": 1728.7249755859375,
+      "height": 71.20001983642578
+    },
+    "layout": {
+      "clientWidth": 1572,
+      "scrollWidth": 1572,
+      "clientHeight": 766,
+      "scrollHeight": 766
+    }
+  }
+}

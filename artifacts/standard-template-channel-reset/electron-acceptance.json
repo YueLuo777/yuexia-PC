@@ -1,0 +1,45 @@
+{
+  "route": "作品概览 -> 标准模式 -> 新建玄幻作品 -> 开始设定 -> 其他分类模板 -> 女频模板 -> 更换模板",
+  "window": {
+    "secondaryAvailable": true,
+    "primary": {
+      "x": 0,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "bounds": {
+      "x": 2172,
+      "y": 32,
+      "width": 1802,
+      "height": 1041
+    },
+    "visible": true,
+    "focused": false
+  },
+  "assertions": {
+    "requiredMarksVisible": true,
+    "xianxiaOnlyRecommendedByCategory": true,
+    "otherTemplatesGroupedByChannelAndGenre": true,
+    "channelSwitchUsesPrimaryActionStyle": true,
+    "generationHistoryResetAfterTemplateReplacement": true,
+    "brainstormAssociationResetAfterTemplateReplacement": true,
+    "channelPersistedAsFemale": true,
+    "workDetailsRequiredTitleAndFieldOrder": true,
+    "channelAndResetPersistAfterReload": true
+  },
+  "screenshots": {
+    "01-xuanhuan-recommended": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-channel-reset\\01-xuanhuan-recommended.png",
+    "02-other-template-categories": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-channel-reset\\02-other-template-categories.png",
+    "03-channel-switch-confirm": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-channel-reset\\03-channel-switch-confirm.png",
+    "04-reset-complete-work-details": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-template-channel-reset\\04-reset-complete-work-details.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS"
+}

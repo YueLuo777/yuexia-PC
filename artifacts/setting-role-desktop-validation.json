@@ -1,0 +1,39 @@
+{
+  "setting": {
+    "header": {
+      "x": 334.4,
+      "y": 178.9,
+      "width": 255.2,
+      "height": 52.8
+    },
+    "firstField": {
+      "x": 334.4,
+      "y": 249.3,
+      "width": 368.94,
+      "height": 173.8
+    }
+  },
+  "role": {
+    "header": {
+      "x": 334.4,
+      "y": 178.9,
+      "width": 255.2,
+      "height": 52.8
+    },
+    "firstField": {
+      "x": 334.4,
+      "y": 249.3,
+      "width": 241.56,
+      "height": 109.12
+    }
+  },
+  "deltas": {
+    "headerX": 0,
+    "headerY": 0,
+    "firstFieldX": 0,
+    "firstFieldY": 0
+  },
+  "windowVisible": false,
+  "runtimeErrors": [],
+  "screenshot": "E:\\0yuexia\\0,月下PC\\artifacts\\role-editor-alignment-reference.png"
+}

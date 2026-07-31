@@ -1,0 +1,118 @@
+{
+  "route": "标准模式书籍 -> 脑洞库 -> 输入修改要求 -> AI前后对比 -> 保留原脑洞 -> 应用修改 -> 刷新",
+  "assertions": {
+    "revisionInputReusesProfessionalInlineControl": {
+      "field": {
+        "x": 325.6000061035156,
+        "y": 1003.7900390625,
+        "width": 1128.517578125,
+        "height": 50.60000228881836,
+        "top": 1003.7900390625,
+        "right": 1454.1175842285156,
+        "bottom": 1054.3900413513184,
+        "left": 325.6000061035156
+      },
+      "input": {
+        "x": 325.6000061035156,
+        "y": 1003.7900390625,
+        "width": 1128.517578125,
+        "height": 50.60000228881836,
+        "top": 1003.7900390625,
+        "right": 1454.1175842285156,
+        "bottom": 1054.3900413513184,
+        "left": 325.6000061035156
+      },
+      "send": {
+        "x": 1348.5174560546875,
+        "y": 1005.9900512695312,
+        "width": 56.92509841918945,
+        "height": 46.20000076293945,
+        "top": 1005.9900512695312,
+        "right": 1405.442554473877,
+        "bottom": 1052.1900520324707,
+        "left": 1348.5174560546875
+      },
+      "stop": {
+        "x": 1405.442626953125,
+        "y": 1005.9900512695312,
+        "width": 46.47500228881836,
+        "height": 46.20000076293945,
+        "top": 1005.9900512695312,
+        "right": 1451.9176292419434,
+        "bottom": 1052.1900520324707,
+        "left": 1405.442626953125
+      },
+      "borderColor": "rgb(17, 24, 39)",
+      "borderWidth": "1.6px",
+      "borderRadius": "16px"
+    },
+    "aiRevisionAppearsBesideOriginalWithoutSaving": {
+      "original": {
+        "x": 325.6000061035156,
+        "y": 254.8000030517578,
+        "width": 557.6588134765625,
+        "height": 656.5900268554688,
+        "top": 254.8000030517578,
+        "right": 883.2588195800781,
+        "bottom": 911.3900299072266,
+        "left": 325.6000061035156
+      },
+      "revised": {
+        "x": 896.4588012695312,
+        "y": 254.8000030517578,
+        "width": 557.6588134765625,
+        "height": 656.5900268554688,
+        "top": 254.8000030517578,
+        "right": 1454.1176147460938,
+        "bottom": 911.3900299072266,
+        "left": 896.4588012695312
+      },
+      "noOverlap": true,
+      "equalHeight": true,
+      "equalWidth": true
+    },
+    "retainOriginalDiscardsCandidate": true,
+    "applyRevisionPersistsAfterReload": true,
+    "noRuntimeErrors": true
+  },
+  "screenshots": {
+    "01-professional-inline-revision-input": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-revision-comparison\\01-professional-inline-revision-input.png",
+    "02-original-and-ai-revision-comparison": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-revision-comparison\\02-original-and-ai-revision-comparison.png",
+    "03-applied-revision-after-reload": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-revision-comparison\\03-applied-revision-after-reload.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "secondaryAvailable": true,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "primary": {
+      "x": 0,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    }
+  },
+  "finalWindow": {
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    }
+  }
+}

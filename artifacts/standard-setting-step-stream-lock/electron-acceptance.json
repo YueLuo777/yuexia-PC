@@ -1,0 +1,51 @@
+{
+  "route": "standard workbench -> create settings -> generate first step -> stream import -> unlock second step -> restart",
+  "assertions": {
+    "associationIsCompactAndBetweenRequirementAndOneClick": true,
+    "unlinkedStateCanManuallySelectBrainstorm": true,
+    "onlyFirstStepStartsUnlocked": true,
+    "leftAndMiddleAreLockedDuringGeneration": true,
+    "workbenchNavigationIsLockedDuringGeneration": true,
+    "appTabsAndToolsAreLockedDuringGeneration": true,
+    "windowControlsRemainAvailableDuringGeneration": true,
+    "partialOutputStreamsIntoSettingField": true,
+    "pauseRemainsAvailable": true,
+    "internalJsonIsNotSentAndLeakedJsonOutputIsCleaned": true,
+    "decorativeTitlesUpdateCanonicalEntriesWithoutDuplicates": true,
+    "secondStepUnlocksOnlyAfterFirstCompletes": true,
+    "checkResultsClearAfterRestart": true,
+    "generationProgressPersistsAfterRestart": true,
+    "legacyDuplicateEntriesAreRepairedOnRestart": true,
+    "brainstormPageJumpAutomaticallyLinksSelectedBrainstorm": true,
+    "noRuntimeErrors": true
+  },
+  "screenshots": {
+    "00-unlinked-brainstorm-control": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-step-stream-lock\\00-unlinked-brainstorm-control.png",
+    "00b-manual-brainstorm-reader": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-step-stream-lock\\00b-manual-brainstorm-reader.png",
+    "01-compact-association-and-sequential-steps": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-step-stream-lock\\01-compact-association-and-sequential-steps.png",
+    "02-streaming-middle-and-locked-workspace": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-step-stream-lock\\02-streaming-middle-and-locked-workspace.png",
+    "03-first-complete-and-second-unlocked": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-step-stream-lock\\03-first-complete-and-second-unlocked.png",
+    "04-restarted-with-cleared-check-results": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-step-stream-lock\\04-restarted-with-cleared-check-results.png",
+    "05-auto-linked-from-brainstorm-page": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-step-stream-lock\\05-auto-linked-from-brainstorm-page.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "codexDisplayId": 3419595392,
+    "primaryDisplayId": 2882211613,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    }
+  }
+}

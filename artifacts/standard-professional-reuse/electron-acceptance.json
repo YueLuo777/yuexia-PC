@@ -1,0 +1,70 @@
+{
+  "route": "标准模式书籍卡片 -> 脑洞库 -> 删除 -> 更换模板确认 -> 作品设定 -> 正文 -> 测试板块23号测试",
+  "assertions": {
+    "brainstormActions": {
+      "copyContent": true,
+      "createDuplicate": true,
+      "deleteCurrent": true
+    },
+    "brainstormDelete": {
+      "remainingIds": [
+        "accept-brain-2"
+      ],
+      "recycleIds": [
+        "accept-brain-1"
+      ],
+      "nextPreview": "主角从外门弟子开始，在宗门规则里求生。"
+    },
+    "templateDialog": {
+      "cancel": {
+        "backgroundColor": "rgb(8, 170, 206)",
+        "color": "rgb(255, 255, 255)",
+        "focused": true
+      },
+      "replace": {
+        "backgroundColor": "rgb(255, 255, 255)",
+        "color": "rgb(220, 38, 38)",
+        "borderColor": "rgb(252, 165, 165)"
+      }
+    },
+    "professionalSettings": {
+      "professionalLibraryVisible": true,
+      "compactStandardPageCount": 0,
+      "collapseButtonCount": 0,
+      "settingTabVisible": true,
+      "positioningVisible": true
+    },
+    "professionalWriting": {
+      "toolbar": {
+        "字体设置": true,
+        "智能排版": true,
+        "词语高亮": true,
+        "文字替换": true
+      },
+      "moreButtonCount": 0,
+      "experience": "standard"
+    },
+    "test23": {
+      "visible": true,
+      "title": "23号测试：标准模式三栏设定页面旧方案",
+      "checkButton": true
+    }
+  },
+  "screenshots": {
+    "01-brainstorm-actions": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-professional-reuse\\01-brainstorm-actions.png",
+    "02-brainstorm-delete-next": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-professional-reuse\\02-brainstorm-delete-next.png",
+    "03-template-dialog": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-professional-reuse\\03-template-dialog.png",
+    "04-professional-settings": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-professional-reuse\\04-professional-settings.png",
+    "05-professional-writing-editor": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-professional-reuse\\05-professional-writing-editor.png",
+    "06-test-23-compact-settings": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-professional-reuse\\06-test-23-compact-settings.png"
+  },
+  "runtimeErrors": [],
+  "window": {
+    "x": 2122,
+    "y": 16,
+    "width": 1902,
+    "height": 1073,
+    "display": "Codex所在副屏DISPLAY3"
+  },
+  "status": "PASS"
+}

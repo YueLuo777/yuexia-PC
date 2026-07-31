@@ -1,0 +1,29 @@
+{
+  "userDataDir": "C:\\Users\\87248\\AppData\\Local\\Temp\\xinyuexia-test09-acceptance-OCGg39",
+  "window": {
+    "displayCount": 3,
+    "usedSecondaryDisplay": true,
+    "bounds": {
+      "x": 2302,
+      "y": 82,
+      "width": 1542,
+      "height": 942
+    },
+    "visible": true,
+    "focused": false
+  },
+  "screenshots": {
+    "05-formal-empty-state": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-shared-pages-and-test09-20260727\\05-formal-empty-state.png",
+    "06-test-09-final-selections": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-shared-pages-and-test09-20260727\\06-test-09-final-selections.png",
+    "07-standard-outline-no-runtime-warning": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-shared-pages-and-test09-20260727\\07-standard-outline-no-runtime-warning.png",
+    "08-standard-writing-persisted": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-shared-pages-and-test09-20260727\\08-standard-writing-persisted.png"
+  },
+  "assertions": {
+    "formalNovelLibraryUsesRecommendedEmptyState": true,
+    "test09KeepsOnlyChoicesOneTwoAndFour": true,
+    "standardOutlineUsesSharedCoreWithoutProfessionalHeader": true,
+    "standardWritingPersistsAfterReload": true,
+    "noRendererErrors": true
+  },
+  "runtimeErrors": []
+}

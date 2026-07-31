@@ -1,0 +1,54 @@
+{
+  "route": "标准模式书籍 -> 脑洞库 -> 新增脑洞分类 -> 移动脑洞 -> 调整字号 -> 刷新 -> 生成脑洞",
+  "assertions": {
+    "legacyBrainstormsAppearInUncategorized": true,
+    "deleteButtonIsAboveSearch": {
+      "deleteButton": {
+        "x": 13.199999809265137,
+        "y": 966.3900756835938,
+        "width": 280.7200012207031,
+        "height": 39.60000228881836,
+        "top": 966.3900756835938,
+        "right": 293.92000102996826,
+        "bottom": 1005.9900779724121,
+        "left": 13.199999809265137
+      },
+      "search": {
+        "x": 53.68000030517578,
+        "y": 1025.7900390625,
+        "width": 226.16001892089844,
+        "height": 22,
+        "top": 1025.7900390625,
+        "right": 279.8400192260742,
+        "bottom": 1047.7900390625,
+        "left": 53.68000030517578
+      },
+      "deleteBeforeSearch": true
+    },
+    "previewFontSizeUsesSharedTool": true,
+    "categoryCreatedAndEntryMoved": true,
+    "categoryCollapseAndFontSizeSurviveReload": true,
+    "generatedDraftUsesUnnamedTitle": true,
+    "deletedCategoryReturnsEntriesToUncategorized": true,
+    "noRuntimeErrors": true
+  },
+  "screenshots": {
+    "01-category-tree-and-font-tool": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-categories-font\\01-category-tree-and-font-tool.png",
+    "02-reloaded-category-state": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-categories-font\\02-reloaded-category-state.png",
+    "03-generated-draft-unnamed": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-categories-font\\03-generated-draft-unnamed.png",
+    "04-category-deleted-with-content-kept": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-brainstorm-categories-font\\04-category-deleted-with-content-kept.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "secondaryAvailable": true,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    }
+  }
+}

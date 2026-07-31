@@ -1,0 +1,34 @@
+{
+  "secondaryDisplay": true,
+  "initialMode": "professional",
+  "buttonTarget": {
+    "url": "http://127.0.0.1:18328/#/workbench?experience=standard",
+    "standardVisible": true,
+    "professionalCount": 0
+  },
+  "cardTarget": {
+    "url": "http://127.0.0.1:18328/#/workbench",
+    "professionalVisible": true,
+    "standardCount": 0
+  },
+  "finalMode": "professional",
+  "screenshots": [
+    "E:\\0yuexia\\0,月下PC\\artifacts\\professional-cover-standard-workbench\\01-hover-button-standard-workbench.png",
+    "E:\\0yuexia\\0,月下PC\\artifacts\\professional-cover-standard-workbench\\02-card-click-original-editor.png"
+  ],
+  "geometry": {
+    "secondary": true,
+    "bounds": {
+      "x": 2352,
+      "y": 102,
+      "width": 1442,
+      "height": 902
+    },
+    "workArea": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1104
+    }
+  }
+}

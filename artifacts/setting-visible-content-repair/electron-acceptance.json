@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "route": "标准模式工作台 -> 作品设定 -> 作品定位 -> 关闭并重启应用",
+  "assertions": {
+    "oneCanonicalEntryAfterRepair": true,
+    "internalJsonNotDisplayed": true,
+    "novelTypeVisibleAfterRestart": true,
+    "sellingPointVisibleAfterRestart": true,
+    "noRuntimeErrors": true
+  },
+  "window": {
+    "targetId": 3419595392,
+    "primaryId": 2882211613,
+    "bounds": {
+      "x": 2112,
+      "y": 16,
+      "width": 1900,
+      "height": 1070
+    },
+    "targetBounds": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    }
+  },
+  "screenshots": [
+    "E:\\0yuexia\\0,月下PC\\artifacts\\setting-visible-content-repair\\01-visible-content-after-repair.png",
+    "E:\\0yuexia\\0,月下PC\\artifacts\\setting-visible-content-repair\\02-visible-content-after-restart.png"
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "route": "standard workbench -> work settings -> change setting template",
+  "assertions": {
+    "dragPreservesExactDialogSize": true,
+    "dialogMovedOnBothAxes": true,
+    "reopenIsCenteredFromImmediateRender": true,
+    "reopenPositionRemainsStableAcrossFrames": true,
+    "noRuntimeErrors": true
+  },
+  "screenshots": {
+    "01-before-drag": "E:\\0yuexia\\0,月下PC\\artifacts\\compact-confirm-dialog-drag\\01-before-drag.png",
+    "02-after-drag": "E:\\0yuexia\\0,月下PC\\artifacts\\compact-confirm-dialog-drag\\02-after-drag.png",
+    "03-reopened-centered-without-flash": "E:\\0yuexia\\0,月下PC\\artifacts\\compact-confirm-dialog-drag\\03-reopened-centered-without-flash.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "codexDisplayId": 3419595392,
+    "primaryDisplayId": 2882211613,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    }
+  },
+  "measurements": {
+    "before": {
+      "x": 720.7999877929688,
+      "y": 412.20001220703125,
+      "width": 460.00006103515625,
+      "height": 247.5999755859375
+    },
+    "after": {
+      "x": 841,
+      "y": 502,
+      "width": 460,
+      "height": 248
+    },
+    "reopenSamples": {
+      "immediate": {
+        "x": 720.7999877929688,
+        "y": 412.20001220703125,
+        "width": 460,
+        "height": 247.60000610351562,
+        "expectedX": 721,
+        "expectedY": 412.1999969482422
+      },
+      "frames": [
+        {
+          "x": 720.7999877929688,
+          "y": 412.20001220703125,
+          "width": 460,
+          "height": 247.60000610351562,
+          "expectedX": 721,
+          "expectedY": 412.1999969482422
+        },
+        {
+          "x": 720.7999877929688,
+          "y": 412.20001220703125,
+          "width": 460,
+          "height": 247.60000610351562,
+          "expectedX": 721,
+          "expectedY": 412.1999969482422
+        }
+      ]
+    }
+  }
+}

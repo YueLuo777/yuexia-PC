@@ -1,0 +1,79 @@
+{
+  "route": "file:///E:/0yuexia/0,%E6%9C%88%E4%B8%8BPC/dist/index.html#/workbench",
+  "path": [
+    "作品库",
+    "新建临时作品",
+    "正文",
+    "资料",
+    "确认关联"
+  ],
+  "seeded": {
+    "novelId": 2,
+    "firstChapterId": 91001,
+    "secondChapterId": 91002
+  },
+  "thinkingWindowState": {
+    "displayId": 289650990,
+    "primaryId": 2237594110,
+    "bounds": {
+      "x": 2272,
+      "y": 102,
+      "width": 1602,
+      "height": 902
+    },
+    "visible": true,
+    "focused": false
+  },
+  "thinkingMetrics": {
+    "backgroundColor": "rgb(231, 248, 253)",
+    "borderColor": "rgb(189, 238, 247)",
+    "labelColor": "rgb(8, 170, 206)",
+    "labelWeight": "900",
+    "text": "正在思考（3 秒）正在分析人物动机、章节冲突和后续节奏。"
+  },
+  "contextWindowState": {
+    "displayId": 289650990,
+    "primaryId": 2237594110,
+    "bounds": {
+      "x": 2272,
+      "y": 102,
+      "width": 1602,
+      "height": 902
+    },
+    "visible": true,
+    "focused": false
+  },
+  "footerMetrics": {
+    "height": 64.8,
+    "summaryText": "正文3868 字梗概无章纲无合计3868 字",
+    "childTops": [
+      785.5,
+      787.5,
+      785.5,
+      787.5,
+      785.5,
+      787.5,
+      785.5
+    ]
+  },
+  "confirmEnabled": true,
+  "confirmedWindowState": {
+    "displayId": 289650990,
+    "primaryId": 2237594110,
+    "bounds": {
+      "x": 2272,
+      "y": 102,
+      "width": 1602,
+      "height": 902
+    },
+    "visible": true,
+    "focused": false
+  },
+  "confirmed": true,
+  "runtimeErrors": [],
+  "screenshots": {
+    "thinkingScreenshot": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\ai-thinking-blue-unified-20260725.png",
+    "contextScreenshot": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\context-library-compact-confirm-20260725.png",
+    "confirmedScreenshot": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\context-library-confirmed-20260725.png"
+  }
+}

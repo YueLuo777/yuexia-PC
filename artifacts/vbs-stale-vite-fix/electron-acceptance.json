@@ -1,0 +1,25 @@
+{
+  "entryVisible": true,
+  "pageVisible": true,
+  "secondaryDisplay": true,
+  "screenshots": [
+    "E:\\0yuexia\\0,月下PC\\artifacts\\vbs-stale-vite-fix\\01-vbs-dev-home-template-entry.png",
+    "E:\\0yuexia\\0,月下PC\\artifacts\\vbs-stale-vite-fix\\02-template-manage-page.png"
+  ],
+  "url": "http://127.0.0.1:18328/#/template-manage",
+  "geometry": {
+    "secondary": true,
+    "bounds": {
+      "x": 2352,
+      "y": 102,
+      "width": 1442,
+      "height": 902
+    },
+    "workArea": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1104
+    }
+  }
+}

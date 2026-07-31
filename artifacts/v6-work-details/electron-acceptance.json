@@ -1,0 +1,201 @@
+{
+  "route": "标准模式书籍 -> 进入工作台 -> 专业模式同款作品详情入口 -> 内容定宽表单 -> 指定章节正文 -> 保存并刷新 -> 较小窗口检查",
+  "assertions": {
+    "workDetailsIsTheSelectedFirstStage": true,
+    "uninitializedBookShowsOnlyStartSetting": true,
+    "compactTwoColumnLayoutUsesTwentyFourPixelSidePadding": true,
+    "progressIsInDetailsHeading": true,
+    "compactControlsTitleWidthAndSynopsisHeight": true,
+    "workDetailsEntryMatchesProfessionalWorkInfoCapsule": true,
+    "contentControlsUseRequestedStableWidths": true,
+    "groupedGenreDropdownIsHeightLimitedAndScrollable": true,
+    "selectedStyleDoesNotChangeAfterFocusMoves": true,
+    "channelStatusAndTopActionUseTheSameSelectedAppearance": true,
+    "chapterTwoShortcutOpensChapterTwoWritingPage": true,
+    "workDetailsPersistAfterReload": true,
+    "compactWindowHasNoHorizontalOverflow": true,
+    "noUnexpectedWorkbenchOverflow": true
+  },
+  "screenshots": {
+    "01-work-details-genre-dropdown": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-work-details\\01-work-details-genre-dropdown.png",
+    "01-work-details-initial": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-work-details\\01-work-details-initial.png",
+    "02-chapter-two-writing-page": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-work-details\\02-chapter-two-writing-page.png",
+    "02-work-details-saved": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-work-details\\02-work-details-saved.png",
+    "03-work-details-compact-window": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-work-details\\03-work-details-compact-window.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "secondaryAvailable": true,
+    "primary": {
+      "x": 0,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "bounds": {
+      "x": 2172,
+      "y": 32,
+      "width": 1802,
+      "height": 1041
+    },
+    "visible": true,
+    "focused": false
+  },
+  "measurements": {
+    "page": {
+      "left": 0,
+      "right": 1799.9989013671875,
+      "top": 131.60000610351562,
+      "bottom": 1039.9937438964844,
+      "width": 1799.9989013671875,
+      "height": 908.3937377929688
+    },
+    "content": {
+      "left": 26.399999618530273,
+      "right": 1773.5988521575928,
+      "top": 149.1999969482422,
+      "bottom": 863.7599945068359,
+      "width": 1747.1988525390625,
+      "height": 714.5599975585938
+    },
+    "body": {
+      "left": 26.399999618530273,
+      "right": 1773.5988521575928,
+      "top": 202,
+      "bottom": 863.7599487304688,
+      "width": 1747.1988525390625,
+      "height": 661.7599487304688
+    },
+    "formGrid": {
+      "left": 360.8000183105469,
+      "right": 1773.5988464355469,
+      "top": 224,
+      "bottom": 450.6000061035156,
+      "width": 1412.798828125,
+      "height": 226.60000610351562
+    },
+    "progress": {
+      "left": 198,
+      "right": 1773.598876953125,
+      "top": 155.36000061035156,
+      "bottom": 181.76000022888184,
+      "width": 1575.598876953125,
+      "height": 26.399999618530273
+    },
+    "titleInput": {
+      "left": 360.8000183105469,
+      "right": 734.8000183105469,
+      "top": 248.1999969482422,
+      "bottom": 287.79999923706055,
+      "width": 374,
+      "height": 39.60000228881836
+    },
+    "genreButton": {
+      "left": 761.2000122070312,
+      "right": 1038.4000244140625,
+      "top": 248.1999969482422,
+      "bottom": 287.79999923706055,
+      "width": 277.20001220703125,
+      "height": 39.60000228881836
+    },
+    "statusGroup": {
+      "left": 761.2000122070312,
+      "right": 1038.4000244140625,
+      "top": 329.6000061035156,
+      "bottom": 369.200008392334,
+      "width": 277.20001220703125,
+      "height": 39.60000228881836
+    },
+    "workTime": {
+      "left": 761.2000122070312,
+      "right": 1038.4000244140625,
+      "top": 411,
+      "bottom": 450.60000228881836,
+      "width": 277.20001220703125,
+      "height": 39.60000228881836
+    },
+    "expectedLengthControl": {
+      "left": 360.8000183105469,
+      "right": 536.8000183105469,
+      "top": 411,
+      "bottom": 450.60000228881836,
+      "width": 176,
+      "height": 39.60000228881836
+    },
+    "synopsis": {
+      "left": 360.8000183105469,
+      "right": 1038.4000549316406,
+      "top": 492.3999938964844,
+      "bottom": 690.3999938964844,
+      "width": 677.6000366210938,
+      "height": 198
+    },
+    "chapterAccess": {
+      "left": 360.8000183105469,
+      "right": 1773.5988464355469,
+      "top": 708,
+      "bottom": 810.9600143432617,
+      "width": 1412.798828125,
+      "height": 102.96001434326172
+    },
+    "firstChapterButton": {
+      "left": 370.4800109863281,
+      "right": 722.4800415039062,
+      "top": 766.0800170898438,
+      "bottom": 801.2800178527832,
+      "width": 352.0000305175781,
+      "height": 35.20000076293945
+    },
+    "saveButton": {
+      "left": 1659.1988525390625,
+      "right": 1773.5988540649414,
+      "top": 824.1599731445312,
+      "bottom": 863.7599754333496,
+      "width": 114.4000015258789,
+      "height": 39.60000228881836
+    },
+    "selectedStyle": {
+      "color": "rgb(7, 143, 171)",
+      "backgroundColor": "rgb(223, 246, 251)",
+      "borderColor": "rgb(189, 238, 247)",
+      "boxShadow": "none"
+    },
+    "scrollWidth": 1636,
+    "clientWidth": 1636,
+    "leftGap": 26.399999618530273,
+    "rightGap": 26.400049209594727,
+    "devicePixelRatio": 1.25,
+    "zoomRatio": 0.9911894273127754,
+    "appZoom": 1,
+    "pagePaddingLeft": 24,
+    "pagePaddingRight": 24,
+    "titleInputCssHeight": 36,
+    "titleInputCssWidth": 340,
+    "genreButtonCssHeight": 36,
+    "genreButtonCssWidth": 252,
+    "statusGroupCssWidth": 252,
+    "workTimeCssWidth": 252,
+    "expectedLengthCssWidth": 160,
+    "synopsisCssHeight": 180,
+    "synopsisCssWidth": 616,
+    "firstChapterButtonCssWidth": 320,
+    "nativeGenreSelectCount": 0
+  },
+  "finalWindow": {
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2372,
+      "y": 102,
+      "width": 1402,
+      "height": 902
+    }
+  }
+}

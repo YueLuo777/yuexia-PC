@@ -1,0 +1,52 @@
+{
+  "route": "homepage -> test collection -> standard mode flow prototype",
+  "userDataDir": "C:\\Users\\87248\\AppData\\Local\\Temp\\xinyuexia-standard-flow-kbdUJY",
+  "screenshots": {
+    "library": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-mode-flow-library-20260725.png",
+    "creation-methods": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-mode-flow-creation-methods-20260725.png",
+    "blank-workbench": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-mode-flow-blank-workbench-20260725.png",
+    "setting-workspace": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-mode-flow-setting-workspace-20260725.png",
+    "writing-workspace": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-mode-flow-writing-workspace-20260725.png",
+    "workflow-interactions": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-mode-flow-workflow-interactions-20260725.png",
+    "brainstorm-picker": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-mode-flow-brainstorm-picker-20260725.png",
+    "linked-template-workbench": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-mode-flow-linked-template-workbench-20260725.png"
+  },
+  "assertions": {
+    "formalTestEntryOpensPrototype": true,
+    "blankBookStartsAtBrainstorm": true,
+    "redundantTopWorkflowIsRemovedAndThreeColumnsAreVisible": true,
+    "leftShortcutsUseTwoRowBrainstormAndCompactWorkflowGrid": true,
+    "settingWorkspaceHasNoHorizontalOverflow": true,
+    "leftShortcutsOpenDistinctBusinessWorkspaces": true,
+    "brainstormLinkAndTemplateSelectionContinueInSameWorkbench": true,
+    "brainstormPickerUsesDirectoryPreviewAndExplicitSelection": true
+  },
+  "runtimeErrors": [],
+  "window": {
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "bounds": {
+      "x": 2272,
+      "y": 72,
+      "width": 1602,
+      "height": 961
+    },
+    "visible": true,
+    "focused": false
+  },
+  "finalWindow": {
+    "focused": false,
+    "visible": true,
+    "bounds": {
+      "x": 2272,
+      "y": 72,
+      "width": 1602,
+      "height": 961
+    }
+  },
+  "status": "PASS"
+}

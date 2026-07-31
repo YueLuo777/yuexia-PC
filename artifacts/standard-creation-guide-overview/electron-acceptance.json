@@ -1,0 +1,107 @@
+{
+  "route": "作品概览 -> 新建小说 -> 工作台作品详情 -> 创作向导",
+  "window": {
+    "secondaryAvailable": true,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "visible": true,
+    "focused": false
+  },
+  "assertions": {
+    "fixturePrepared": true,
+    "fakeNextStepButtonRemoved": true,
+    "guideShowsBrainstormAndSettingCompletion": true,
+    "guideShowsEmptyCreationAndReviewCounts": true,
+    "fiveStepOverviewUsesEqualTabs": true,
+    "currentTaskSwitchesWithoutOverflow": true,
+    "formalOutlineActionOpens": true
+  },
+  "screenshots": {
+    "01-guide-overview": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-creation-guide-overview\\01-guide-overview.png",
+    "guidePanel": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-creation-guide-overview\\02-guide-panel.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "geometry": {
+    "guide": {
+      "left": 1332.72509765625,
+      "right": 1728.7250061035156,
+      "top": 131.60000610351562,
+      "bottom": 974.5375061035156,
+      "width": 395.9999084472656,
+      "height": 842.9375
+    },
+    "overview": {
+      "left": 1355.5250244140625,
+      "right": 1706.7249755859375,
+      "top": 244.6000213623047,
+      "bottom": 319.3500213623047,
+      "width": 351.199951171875,
+      "height": 74.75
+    },
+    "tabs": [
+      {
+        "left": 1355.5250244140625,
+        "right": 1420.4750442504883,
+        "top": 244.6000213623047,
+        "bottom": 319.3500213623047,
+        "width": 64.95001983642578,
+        "height": 74.75
+      },
+      {
+        "left": 1427.0750732421875,
+        "right": 1492.0375213623047,
+        "top": 244.6000213623047,
+        "bottom": 319.3500213623047,
+        "width": 64.96244812011719,
+        "height": 74.75
+      },
+      {
+        "left": 1498.6376953125,
+        "right": 1563.6000518798828,
+        "top": 244.6000213623047,
+        "bottom": 319.3500213623047,
+        "width": 64.96235656738281,
+        "height": 74.75
+      },
+      {
+        "left": 1570.2001953125,
+        "right": 1635.1625518798828,
+        "top": 244.6000213623047,
+        "bottom": 319.3500213623047,
+        "width": 64.96235656738281,
+        "height": 74.75
+      },
+      {
+        "left": 1641.7626953125,
+        "right": 1706.7126235961914,
+        "top": 244.6000213623047,
+        "bottom": 319.3500213623047,
+        "width": 64.9499282836914,
+        "height": 74.75
+      }
+    ],
+    "task": {
+      "left": 1355.5250244140625,
+      "right": 1706.7249755859375,
+      "top": 336.95001220703125,
+      "bottom": 576.7000427246094,
+      "width": 351.199951171875,
+      "height": 239.75003051757812
+    },
+    "clientWidth": 359,
+    "scrollWidth": 359,
+    "clientHeight": 766,
+    "scrollHeight": 766
+  }
+}

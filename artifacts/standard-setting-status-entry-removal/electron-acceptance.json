@@ -1,0 +1,51 @@
+{
+  "route": "标准模式书籍 -> 工作台 -> 作品设定 -> 第四阶段更新状态 -> 专业模式设定",
+  "assertions": {
+    "standardSettingDirectlyShowsEditorWithoutStatusSwitch": {
+      "width": 1901.5975341796875,
+      "height": 940.3900756835938,
+      "scrollWidth": 1729,
+      "scrollHeight": 855,
+      "redundantTabRows": 0
+    },
+    "fourthStageRemainsTheSingleStandardStatusEntry": true,
+    "professionalSettingStatusSwitchIsPreserved": true,
+    "noRuntimeErrors": true
+  },
+  "screenshots": {
+    "01-standard-setting-without-status-switch": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-status-entry-removal\\01-standard-setting-without-status-switch.png",
+    "02-fourth-stage-status-page": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-status-entry-removal\\02-fourth-stage-status-page.png",
+    "03-professional-setting-switch-preserved": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-status-entry-removal\\03-professional-setting-switch-preserved.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "displayCount": 3,
+    "codexDisplayId": 3419595392,
+    "primaryDisplayId": 2882211613,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    }
+  },
+  "finalWindow": {
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    }
+  }
+}

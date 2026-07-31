@@ -1,0 +1,31 @@
+{
+  "route": "测试板块 -> 21号测试 -> 设定 -> 章纲 -> 正文 -> 审核剧情",
+  "assertions": {
+    "settingMatchesBrainstormThreeColumnLanguage": true,
+    "settingControlsUseSharedDarkerBorders": true,
+    "settingActionsAreInteractive": true,
+    "outlineKeepsChapterDirectoryAndSimplifiesGeneration": true,
+    "writingKeepsTheEditorAndHidesProfessionalConfiguration": true,
+    "auditKeepsOutlineBodyResultAndOneClickFlow": true,
+    "noRuntimeErrors": true
+  },
+  "screenshots": {
+    "01-setting-design": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-creation-page-design\\01-setting-design.png",
+    "02-outline-design": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-creation-page-design\\02-outline-design.png",
+    "03-writing-design": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-creation-page-design\\03-writing-design.png",
+    "04-audit-design": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-mode-creation-page-design\\04-audit-design.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "secondaryAvailable": true,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2172,
+      "y": 32,
+      "width": 1802,
+      "height": 1041
+    }
+  }
+}

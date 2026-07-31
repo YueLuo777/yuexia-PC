@@ -40,6 +40,12 @@ const CHANNEL_LABELS = {
   general: '通用',
 } as const;
 
+function getVisibleBuiltInTemplates(mode: Exclude<TemplateListMode, 'saved'>) {
+  return sortSmartTemplatePresetsForDisplay(
+    SMART_TEMPLATE_PRESETS.filter((preset) => preset.channel === mode || preset.channel === 'general'),
+  );
+}
+
 function ensureManagedTemplateDomains(structure: TemplateStructure) {
   const canonicalDomains = buildDefaultTemplateStructure();
   const canonicalTitles = new Set(canonicalDomains.map((domain) => domain.title.trim()));
@@ -53,7 +59,7 @@ function ensureManagedTemplateDomains(structure: TemplateStructure) {
 }
 
 function getInitialTemplate() {
-  const preset = SMART_TEMPLATE_PRESETS.find((item) => item.channel === 'male') ?? SMART_TEMPLATE_PRESETS[0];
+  const preset = getVisibleBuiltInTemplates('male')[0] ?? SMART_TEMPLATE_PRESETS[0];
   const templatePackage = getSmartTemplatePackage(preset);
   return {
     source: { kind: 'builtIn', id: preset.id } as TemplateSource,
@@ -85,7 +91,12 @@ function TemplateListButton({
         active ? 'border-[#08AACE] shadow-[0_0_0_1px_#08AACE]' : 'border-slate-200 hover:border-[#9DDFEA]'
       }`}
     >
-      <button type="button" onClick={onClick} className="flex min-h-[132px] w-full flex-col px-3 py-3 text-left">
+      <button
+        type="button"
+        aria-pressed={active}
+        onClick={onClick}
+        className="flex min-h-[132px] w-full flex-col px-3 py-3 text-left"
+      >
         <strong className="block text-sm leading-5 text-slate-800">{title}</strong>
         <span className="mt-1.5 line-clamp-3 min-w-0 text-xs font-semibold leading-5 text-slate-500">{description}</span>
         <span className="mt-auto flex justify-end pt-3">
@@ -119,9 +130,7 @@ export function TemplateManagePage() {
     () =>
       listMode === 'saved'
         ? []
-        : sortSmartTemplatePresetsForDisplay(
-            SMART_TEMPLATE_PRESETS.filter((preset) => preset.channel === listMode || preset.channel === 'general'),
-          ),
+        : getVisibleBuiltInTemplates(listMode),
     [listMode],
   );
 

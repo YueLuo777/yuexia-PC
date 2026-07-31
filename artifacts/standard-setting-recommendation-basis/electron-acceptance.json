@@ -1,0 +1,77 @@
+{
+  "route": "作品概览 -> 新建小说 -> 作品详情填写预计篇幅 -> 开始设定 -> 模板推荐依据",
+  "window": {
+    "secondaryAvailable": true,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "visible": true,
+    "focused": false,
+    "zoomFactor": 1.1
+  },
+  "assertions": {
+    "expectedLengthPersistsBeforeSettingSetup": true,
+    "recommendationBasisShowsCurrentWorkDetails": true,
+    "recommendationBasisDoesNotDisplaceTemplateActions": true,
+    "noUnexpectedPageOverflow": true
+  },
+  "screenshots": {
+    "01-setting-template-recommendation-basis": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-recommendation-basis\\01-setting-template-recommendation-basis.png",
+    "02-setting-initializer-region": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-recommendation-basis\\02-setting-initializer-region.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "geometry": {
+    "initializer": {
+      "top": 131.60000610351562,
+      "bottom": 974.5375061035156,
+      "height": 842.9375
+    },
+    "aside": {
+      "top": 131.60000610351562,
+      "bottom": 903.3376159667969,
+      "width": 308
+    },
+    "basis": {
+      "top": 149.20001220703125,
+      "bottom": 265.2000045776367,
+      "width": 272
+    },
+    "tablist": {
+      "top": 278.4000244140625,
+      "bottom": 319.6000213623047,
+      "width": 272
+    },
+    "footer": {
+      "top": 903.3375854492188,
+      "bottom": 974.5376052856445,
+      "text": "保存到我的模板确认模板并创建设定",
+      "display": "flex",
+      "visibility": "visible",
+      "zIndex": "20",
+      "elementAtCenter": "",
+      "confirmButton": {
+        "left": 1515.3251953125,
+        "right": 1706.7250518798828,
+        "top": 917.3375854492188,
+        "bottom": 961.3375854492188,
+        "elementAtCenter": "确认模板并创建设定"
+      }
+    },
+    "layout": {
+      "clientWidth": 1572,
+      "scrollWidth": 1572,
+      "clientHeight": 766,
+      "scrollHeight": 766
+    }
+  }
+}

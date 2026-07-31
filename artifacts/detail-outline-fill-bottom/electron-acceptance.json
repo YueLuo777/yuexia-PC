@@ -1,0 +1,61 @@
+{
+  "route": "作品概览 -> 新建小说 -> 进入工作台 -> 生成章纲",
+  "window": {
+    "bounds": {
+      "x": 2128,
+      "y": 24,
+      "width": 1842,
+      "height": 1057
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1104
+    },
+    "zoomFactor": 1.1,
+    "visible": true,
+    "focused": true
+  },
+  "shorterWindow": {
+    "x": 2128,
+    "y": 24,
+    "width": 1844,
+    "height": 901
+  },
+  "assertions": {
+    "standardModeFormalEntryUsed": true,
+    "zoomOneHundredTenPercent": true,
+    "stateFrameFillsRemainingHeight": true,
+    "stateFrameBottomAligned": true,
+    "resizeKeepsBottomAligned": true
+  },
+  "geometry": {
+    "gridTemplateRows": "421.034px 258.045px",
+    "layout": {
+      "top": 164.60000610351562,
+      "bottom": 938.0000915527344,
+      "height": 773.4000854492188
+    },
+    "outline": {
+      "top": 164.60000610351562,
+      "bottom": 627.737548828125,
+      "height": 463.1375427246094
+    },
+    "state": {
+      "top": 654.1375122070312,
+      "bottom": 937.9874877929688,
+      "height": 283.8499755859375
+    },
+    "stateStyle": {
+      "display": "block",
+      "flex": "0 1 auto",
+      "height": "258.045px"
+    },
+    "stateClass": "xy-floating-field xy-floating-outline-fixed xy-floating-outline-preview xy-floating-fill h-full min-h-0 ",
+    "bottomDelta": 0.012603759765625
+  },
+  "shorterBottomDelta": 0.000030517578125,
+  "runtimeErrors": [],
+  "status": "PASS"
+}

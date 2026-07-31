@@ -1,0 +1,65 @@
+{
+  "route": "标准模式书籍 -> 进入工作台 -> 作品详情 -> 一键检测 -> 作品设定 -> 更换设定模板 -> 审核剧情",
+  "assertions": {
+    "workDetailsUsesThreeColumnsWithoutOldChapterBlock": true,
+    "coverHistoryStartsEmptyAndSoftwareDefaultsAreSeparate": true,
+    "workDetailsUsesThreeAlignedEqualWidthRows": true,
+    "synopsisIsLimitedTo240CssPixels": {
+      "rectHeight": 264,
+      "computedHeight": "240px",
+      "className": "editor-scrollbar h-[240px] w-full resize-none rounded-md border bg-white p-3 text-sm font-medium leading-6 text-[#1f2933] outline-none placeholder:text-[#9aa3af] focus:border-[#08AACE]"
+    },
+    "shortTitleUsesAdaptiveCapsule": true,
+    "replacedSavedCoverMovesIntoHistoryWithoutMixingDefaults": true,
+    "inspectionUsesRealSynopsisSettingsAndAuditCounts": true,
+    "workDetailsPersistAfterReload": true,
+    "longTitleExpandsTheCapsule": true,
+    "settingSidebarIsPreservedAndMiddleUsesNormalTwoColumnFields": true,
+    "safeActionIsPrimaryFocusedAndAllCancelPathsRetainSettings": true,
+    "closeButtonUsesTheSharedModalHeader": true,
+    "auditQuickActionUsesTheSharedFormalAuditPage": true
+  },
+  "screenshots": {
+    "01-work-details-three-columns": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-details-settings-formal\\01-work-details-three-columns.png",
+    "01b-cover-history-and-software-defaults": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-details-settings-formal\\01b-cover-history-and-software-defaults.png",
+    "02-work-detection": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-details-settings-formal\\02-work-detection.png",
+    "03-formal-settings-normal-fields": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-details-settings-formal\\03-formal-settings-normal-fields.png",
+    "04-safe-template-dialog": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-details-settings-formal\\04-safe-template-dialog.png",
+    "05-shared-audit-page": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-details-settings-formal\\05-shared-audit-page.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "secondaryAvailable": true,
+    "primary": {
+      "x": 0,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "visible": true,
+    "focused": false
+  },
+  "finalWindow": {
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    }
+  }
+}

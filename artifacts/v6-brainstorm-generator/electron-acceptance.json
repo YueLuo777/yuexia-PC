@@ -1,0 +1,143 @@
+{
+  "route": "标准模式书籍 -> 进入工作台 -> 准备阶段 -> 生成脑洞",
+  "assertions": {
+    "titleIsAboveTheTextarea": true,
+    "textareaFillsRemainingGeneratorHeight": true,
+    "generateButtonRemainsVisible": true,
+    "noHorizontalOverflow": true,
+    "compactWindowKeepsTheExpandableTextarea": true,
+    "compactWindowKeepsTheGenerateButtonVisible": true,
+    "noRuntimeErrors": true
+  },
+  "screenshots": {
+    "01-generator-normal-window": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-brainstorm-generator\\01-generator-normal-window.png",
+    "02-generator-compact-window": "E:\\0yuexia\\0,月下PC\\artifacts\\v6-brainstorm-generator\\02-generator-compact-window.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "window": {
+    "secondaryAvailable": true,
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2172,
+      "y": 32,
+      "width": 1802,
+      "height": 1041
+    }
+  },
+  "measurements": {
+    "normal": {
+      "textarea": {
+        "left": 1390.798828125,
+        "right": 1780.1988220214844,
+        "top": 766.0800170898438,
+        "bottom": 946.7137603759766,
+        "width": 389.3999938964844,
+        "height": 180.6337432861328
+      },
+      "field": {
+        "left": 1390.798828125,
+        "right": 1780.1988220214844,
+        "top": 739.6800537109375,
+        "bottom": 946.7137908935547,
+        "width": 389.3999938964844,
+        "height": 207.0337371826172
+      },
+      "generator": {
+        "left": 1370.9989013671875,
+        "right": 1799.9989013671875,
+        "top": 131.60000610351562,
+        "bottom": 1039.9937438964844,
+        "width": 429,
+        "height": 908.3937377929688
+      },
+      "body": {
+        "left": 1388.598876953125,
+        "right": 1782.3988952636719,
+        "top": 211.6800079345703,
+        "bottom": 964.3137969970703,
+        "width": 393.8000183105469,
+        "height": 752.6337890625
+      },
+      "heading": {
+        "left": 1390.798828125,
+        "right": 1780.1988220214844,
+        "top": 739.6800537109375,
+        "bottom": 757.2800540924072,
+        "width": 389.3999938964844,
+        "height": 17.600000381469727
+      },
+      "generateButton": {
+        "left": 1388.598876953125,
+        "right": 1782.3988952636719,
+        "top": 978.3937377929688,
+        "bottom": 1022.3937377929688,
+        "width": 393.8000183105469,
+        "height": 44
+      },
+      "headingText": "其他要求",
+      "headingTag": "SPAN",
+      "textareaBorderColor": "rgb(189, 238, 247)",
+      "textareaResize": "none",
+      "generatorScrollWidth": 390,
+      "generatorClientWidth": 390
+    },
+    "compact": {
+      "textarea": {
+        "left": 990.7975463867188,
+        "right": 1380.1975402832031,
+        "top": 663.1200561523438,
+        "bottom": 808.3200531005859,
+        "width": 389.3999938964844,
+        "height": 145.1999969482422
+      },
+      "field": {
+        "left": 990.7975463867188,
+        "right": 1380.1975402832031,
+        "top": 636.7200317382812,
+        "bottom": 808.3200378417969,
+        "width": 389.3999938964844,
+        "height": 171.60000610351562
+      },
+      "generator": {
+        "left": 970.99755859375,
+        "right": 1399.99755859375,
+        "top": 131.60000610351562,
+        "bottom": 901.6000061035156,
+        "width": 429,
+        "height": 770
+      },
+      "body": {
+        "left": 988.5975952148438,
+        "right": 1382.3976135253906,
+        "top": 211.6800079345703,
+        "bottom": 825.9200592041016,
+        "width": 393.8000183105469,
+        "height": 614.2400512695312
+      },
+      "heading": {
+        "left": 990.7975463867188,
+        "right": 1380.1975402832031,
+        "top": 636.7200317382812,
+        "bottom": 654.320032119751,
+        "width": 389.3999938964844,
+        "height": 17.600000381469727
+      },
+      "generateButton": {
+        "left": 988.5975952148438,
+        "right": 1382.3976135253906,
+        "top": 840,
+        "bottom": 884,
+        "width": 393.8000183105469,
+        "height": 44
+      },
+      "headingText": "其他要求",
+      "headingTag": "SPAN",
+      "textareaBorderColor": "rgb(189, 238, 247)",
+      "textareaResize": "none",
+      "generatorScrollWidth": 390,
+      "generatorClientWidth": 390
+    }
+  }
+}

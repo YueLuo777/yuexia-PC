@@ -1,0 +1,155 @@
+{
+  "setting": {
+    "headers": {
+      "设定名": {
+        "x": 334.4,
+        "y": 178.9,
+        "width": 255.2,
+        "height": 52.8
+      },
+      "所属分组": {
+        "x": 602.8,
+        "y": 178.9,
+        "width": 198,
+        "height": 52.8
+      }
+    },
+    "fields": [
+      {
+        "label": "故事类型",
+        "x": 334.4,
+        "y": 249.3,
+        "width": 368.94,
+        "height": 173.8
+      },
+      {
+        "label": "核心创意",
+        "x": 716.54,
+        "y": 249.3,
+        "width": 368.94,
+        "height": 173.8
+      },
+      {
+        "label": "一句话概括",
+        "x": 334.4,
+        "y": 436.3,
+        "width": 368.94,
+        "height": 173.8
+      }
+    ]
+  },
+  "role": {
+    "headers": {
+      "人物姓名": {
+        "x": 334.4,
+        "y": 178.9,
+        "width": 255.2,
+        "height": 52.8
+      },
+      "身份定位": {
+        "x": 602.8,
+        "y": 178.9,
+        "width": 198,
+        "height": 52.8
+      },
+      "存活死亡": {
+        "x": 814,
+        "y": 178.9,
+        "width": 156.2,
+        "height": 52.8
+      }
+    },
+    "fields": [
+      {
+        "label": "外貌",
+        "x": 334.4,
+        "y": 249.3,
+        "width": 241.56,
+        "height": 109.12
+      },
+      {
+        "label": "性格",
+        "x": 589.16,
+        "y": 249.3,
+        "width": 241.56,
+        "height": 109.12
+      },
+      {
+        "label": "称号/外号/别称",
+        "x": 843.92,
+        "y": 249.3,
+        "width": 241.56,
+        "height": 109.12
+      },
+      {
+        "label": "人物背景",
+        "x": 334.4,
+        "y": 371.62,
+        "width": 368.94,
+        "height": 144.32
+      },
+      {
+        "label": "当前目标",
+        "x": 716.54,
+        "y": 371.62,
+        "width": 368.94,
+        "height": 144.32
+      },
+      {
+        "label": "金手指/能力",
+        "x": 334.4,
+        "y": 529.14,
+        "width": 368.94,
+        "height": 144.32
+      },
+      {
+        "label": "能力状态",
+        "x": 716.54,
+        "y": 529.14,
+        "width": 368.94,
+        "height": 144.32
+      },
+      {
+        "label": "资源状态",
+        "x": 334.4,
+        "y": 686.66,
+        "width": 368.94,
+        "height": 144.32
+      },
+      {
+        "label": "当前处境",
+        "x": 716.54,
+        "y": 686.66,
+        "width": 368.94,
+        "height": 144.32
+      },
+      {
+        "label": "人物关系",
+        "x": 334.4,
+        "y": 844.18,
+        "width": 368.94,
+        "height": 144.32
+      },
+      {
+        "label": "其他",
+        "x": 716.54,
+        "y": 844.18,
+        "width": 368.94,
+        "height": 144.32
+      }
+    ]
+  },
+  "deltas": {
+    "headerFirstX": 0,
+    "headerSecondX": 0,
+    "firstFieldX": 0,
+    "firstFieldY": 0,
+    "settingSecondColumnVsRoleTwoColumn": 0
+  },
+  "windowVisible": false,
+  "runtimeErrors": [],
+  "screenshots": {
+    "settingShot": "E:\\0yuexia\\0,月下PC\\artifacts\\setting-editor-aligned-after.png",
+    "roleShot": "E:\\0yuexia\\0,月下PC\\artifacts\\role-editor-alignment-reference.png"
+  }
+}

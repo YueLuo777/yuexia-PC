@@ -1,0 +1,67 @@
+{
+  "route": "首页 -> 进入标准模式 -> 新建玄幻小说 -> 进入工作台 -> 新建设定 -> 设定列表",
+  "window": {
+    "secondaryAvailable": true,
+    "primary": {
+      "x": 0,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "bounds": {
+      "x": 2172,
+      "y": 32,
+      "width": 1802,
+      "height": 1041
+    },
+    "visible": true,
+    "focused": false
+  },
+  "assertions": {
+    "bookOpensIndependentStandardWorkbench": true,
+    "xianxiaOpensWorkSettingsAutomatically": true,
+    "xianxiaUsesReducedNineteenEntryTemplate": true,
+    "internalCategoryCanBeRenamedAddedAndDeleted": true,
+    "protagonistShowsSixProfessionalStyleCategories": true,
+    "formalListUsesEditedPerBookTemplate": true,
+    "fieldAndInternalCategoryPersistAfterReload": true,
+    "cancelResetKeepsExistingSettingContent": true,
+    "noUnexpectedPageOverflow": true
+  },
+  "screenshots": {
+    "01-template-default-work-settings": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-template-formal\\01-template-default-work-settings.png",
+    "02-template-internal-category-edited": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-template-formal\\02-template-internal-category-edited.png",
+    "03-template-protagonist-categories": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-template-formal\\03-template-protagonist-categories.png",
+    "03b-template-protagonist-all-categories": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-template-formal\\03b-template-protagonist-all-categories.png",
+    "04-formal-setting-list": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-template-formal\\04-formal-setting-list.png",
+    "05-formal-setting-list-after-reload": "E:\\0yuexia\\0,月下PC\\artifacts\\standard-setting-template-formal\\05-formal-setting-list-after-reload.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "visual": {
+    "viewportWidth": 1800,
+    "bodyWidth": 1800,
+    "duplicateVisibleLabels": [
+      "作品基础信息",
+      "剧情安排",
+      "补充要求"
+    ],
+    "settingDomains": 7
+  },
+  "finalWindow": {
+    "visible": true,
+    "focused": false,
+    "bounds": {
+      "x": 2172,
+      "y": 32,
+      "width": 1802,
+      "height": 1041
+    }
+  }
+}

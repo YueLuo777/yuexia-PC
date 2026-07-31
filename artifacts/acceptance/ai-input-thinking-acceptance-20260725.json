@@ -1,0 +1,31 @@
+{
+  "windowState": {
+    "visible": true,
+    "focused": false,
+    "focusable": false,
+    "bounds": {
+      "x": 2272,
+      "y": 102,
+      "width": 1602,
+      "height": 902
+    },
+    "primaryDisplayId": 2237594110,
+    "displayId": 289650990
+  },
+  "inputStyle": {
+    "className": "xy-border-embedded-transparent-backplate",
+    "backgroundColor": "rgba(0, 0, 0, 0)",
+    "backgroundImage": "linear-gradient(rgba(0, 0, 0, 0) calc(50% - 3.84px), rgb(248, 250, 252) calc(50% - 3.84px), rgb(248, 250, 252) calc(50% + 3.84px), rgba(0, 0, 0, 0) calc(50% + 3.84px))",
+    "paddingLeft": "0px",
+    "paddingRight": "0px"
+  },
+  "thinkingStyle": {
+    "text": "正在思考（0 秒）",
+    "className": "rounded-xl border border-[#08AACE]/25 bg-[#EAF9FD] text-slate-600 group px-3 py-2",
+    "backgroundColor": "rgb(231, 248, 253)",
+    "borderColor": "rgb(189, 238, 247)",
+    "wrapperClassName": "space-y-3"
+  },
+  "inputScreenshot": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\ai-input-transparent-backplate-20260725.png",
+  "thinkingScreenshot": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\ai-thinking-first-frame-20260725.png"
+}

@@ -1,0 +1,49 @@
+{
+  "route": "标准模式书籍 -> 进入工作台 -> 作品设定 -> 人物设定 -> 男主角/普通人物",
+  "window": {
+    "secondaryAvailable": true,
+    "bounds": {
+      "x": 2122,
+      "y": 16,
+      "width": 1902,
+      "height": 1073
+    },
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "visible": true,
+    "focused": false
+  },
+  "assertions": {
+    "survivalMatchesIdentityFieldFrame": true,
+    "maleProtagonistForcedAliveAndDisabled": true,
+    "ordinaryRoleCanSwitchAndPersistDeath": true
+  },
+  "screenshots": {
+    "01-male-protagonist-survival-locked": "E:\\0yuexia\\0,月下PC\\artifacts\\role-survival-field-formal\\01-male-protagonist-survival-locked.png",
+    "02-ordinary-role-survival-changed": "E:\\0yuexia\\0,月下PC\\artifacts\\role-survival-field-formal\\02-ordinary-role-survival-changed.png"
+  },
+  "runtimeErrors": [],
+  "status": "PASS",
+  "metrics": {
+    "identity": {
+      "top": 156.90000915527344,
+      "bottom": 209.70000839233398,
+      "width": 154,
+      "cssWidth": 140,
+      "height": 52.79999923706055,
+      "borderWidth": "1.6px"
+    },
+    "survival": {
+      "top": 156.90000915527344,
+      "bottom": 209.70000839233398,
+      "width": 154,
+      "cssWidth": 140,
+      "height": 52.79999923706055,
+      "borderWidth": "1.6px"
+    }
+  }
+}

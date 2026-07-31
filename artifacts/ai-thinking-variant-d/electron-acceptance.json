@@ -1,0 +1,38 @@
+{
+  "route": "首页 -> 验收小说 -> 正文 -> AI输出思考记录",
+  "window": {
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1104
+    },
+    "bounds": {
+      "x": 2272,
+      "y": 102,
+      "width": 1602,
+      "height": 902
+    },
+    "visible": true,
+    "focused": false
+  },
+  "collapsed": {
+    "headerBackground": "rgb(231, 248, 253)",
+    "shellBackground": "rgb(255, 255, 255)",
+    "shellBorderColor": "rgb(189, 238, 247)",
+    "messageFrameClass": "space-y-3"
+  },
+  "expanded": {
+    "background": "rgb(255, 255, 255)",
+    "text": "正在核对人物动机、章节冲突和后续节奏。"
+  },
+  "runtimeErrors": [],
+  "screenshots": {
+    "home": "E:\\0yuexia\\0,月下PC\\artifacts\\ai-thinking-variant-d\\thinking-d-home.png",
+    "collapsed": "E:\\0yuexia\\0,月下PC\\artifacts\\ai-thinking-variant-d\\thinking-d-collapsed.png",
+    "expanded": "E:\\0yuexia\\0,月下PC\\artifacts\\ai-thinking-variant-d\\thinking-d-expanded.png"
+  },
+  "status": "PASS",
+  "homeText": "首页\n进入测试模式\n进入标准模式\n主题\n100%\n月下作者\n我的小说\n番茄浏览器\n提示词管理\n模型管理\nToken用量\n测试板块\n设置\n\n用户签到\n\n功能预留\n连续签到\n-- 天\n\n用户系统接入后开放\n\n作品概览\n\n预留 --\n作品\n1 本\n昨日更新\n0 字\n字数\n8 字\n平均字数\n8 字\n最近编辑：\n最多显示 3 本\nD方案思考样式验收\n2026/7/27\n全部\n1\n未分类\n0\n玄幻\n1\n都市\n0\n仙侠\n0\n科幻\n0\n历史\n0\n游戏\n0\n悬疑\n0\n回收站（0）\n卡片设置\n导入小说\n新建小说\nD方案思考样式验收\n8 字",
+  "pageText": "首页\nD方案思考样式验收\n进入测试模式\n进入标准模式\n主题\n100%\n月下作者\n我的小说\n番茄浏览器\n提示词管理\n模型管理\nToken用量\n测试板块\n设置\n\n用户签到\n\n功能预留\n连续签到\n-- 天\n\n用户系统接入后开放\n\n作品概览\n\n预留 --\n作品\n1 本\n昨日更新\n0 字\n字数\n8 字\n平均字数\n8 字\n最近编辑：\n最多显示 3 本\nD方案思考样式验收\n2026/7/27\n全部\n1\n未分类\n0\n玄幻\n1\n都市\n0\n仙侠\n0\n科幻\n0\n历史\n0\n游戏\n0\n悬疑\n0\n回收站（0）\n卡片设置\n导入小说\n新建小说\nD方案思考样式验收\n8 字"
+}

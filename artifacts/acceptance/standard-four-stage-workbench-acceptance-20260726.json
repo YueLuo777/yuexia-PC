@@ -1,0 +1,43 @@
+{
+  "route": "我的小说 -> 测试板块 -> 标准模式四阶段创作流程",
+  "assertions": {
+    "settingResumeAfterInterruption": true,
+    "bookReopensWithoutSetup": true,
+    "bookRequiredAndPersisted": true,
+    "brainstormGeneratedSavedEdited": true,
+    "brainstormAutomaticallyLinkedToSettings": true,
+    "settingsStreamedCheckedAndCompleted": true,
+    "multiChapterMultiVersionOutlineGenerated": true,
+    "bodyGeneratedAndRevised": true,
+    "auditComparedOutlineBodyAndResult": true,
+    "noPageOrNavigationOverflow": true
+  },
+  "screenshots": {
+    "book-setup": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-four-stage-workbench-book-setup-20260726.png",
+    "brainstorm-generate": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-four-stage-workbench-brainstorm-generate-20260726.png",
+    "brainstorm-library": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-four-stage-workbench-brainstorm-library-20260726.png",
+    "settings-linked": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-four-stage-workbench-settings-linked-20260726.png",
+    "settings-complete": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-four-stage-workbench-settings-complete-20260726.png",
+    "outline-versions": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-four-stage-workbench-outline-versions-20260726.png",
+    "writing": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-four-stage-workbench-writing-20260726.png",
+    "audit": "E:\\0yuexia\\0,月下PC\\artifacts\\acceptance\\standard-four-stage-workbench-audit-20260726.png"
+  },
+  "runtimeErrors": [],
+  "window": {
+    "display": {
+      "x": 2048,
+      "y": 0,
+      "width": 2048,
+      "height": 1152
+    },
+    "bounds": {
+      "x": 2272,
+      "y": 72,
+      "width": 1602,
+      "height": 961
+    },
+    "visible": true,
+    "focused": false
+  },
+  "status": "PASS"
+}
