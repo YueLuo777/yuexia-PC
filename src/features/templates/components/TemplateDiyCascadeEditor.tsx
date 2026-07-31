@@ -17,27 +17,33 @@ function CascadeLevelHeader({
   disabled = false,
   onAdd,
   controller,
+  readOnly,
 }: {
   level: DiyLevel;
   title: string;
   disabled?: boolean;
   onAdd: (value: string) => boolean;
   controller: TemplateDiyController;
+  readOnly: boolean;
 }) {
   const theme = getDiyLevelTheme(level);
   return (
     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
       <div className="flex items-center gap-2">
         <h2 className={`text-xs font-black ${theme.text}`}>{title}</h2>
-        <DiyLockButton
-          level={level}
-          locked={controller.lockedLevels[level]}
-          onToggle={() => controller.toggleLevelLock(level, title)}
-        />
+        {!readOnly ? (
+          <DiyLockButton
+            level={level}
+            locked={controller.lockedLevels[level]}
+            onToggle={() => controller.toggleLevelLock(level, title)}
+          />
+        ) : null}
       </div>
-      <div className="w-[260px] max-w-full" data-template-name-input-wrap="true">
-        <DiyAddRow level={level} disabled={disabled} onAdd={onAdd} compact maxLength={15} />
-      </div>
+      {!readOnly ? (
+        <div className="w-[260px] max-w-full" data-template-name-input-wrap="true">
+          <DiyAddRow level={level} disabled={disabled} onAdd={onAdd} compact maxLength={15} />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -45,6 +51,7 @@ function CascadeLevelHeader({
 function CascadeLevelButton({
   level,
   active,
+  dimmed,
   title,
   count,
   countLabel,
@@ -52,9 +59,11 @@ function CascadeLevelButton({
   deleteDisabled,
   onSelect,
   onDelete,
+  readOnly,
 }: {
   level: DiyLevel;
   active: boolean;
+  dimmed: boolean;
   title: string;
   count: number;
   countLabel: string;
@@ -62,17 +71,23 @@ function CascadeLevelButton({
   deleteDisabled: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  readOnly: boolean;
 }) {
   const theme = getDiyLevelTheme(level);
   return (
     <div
-      className={`relative flex min-h-11 w-[220px] shrink-0 items-center rounded-md border px-1.5 transition-colors ${
+      className={`relative flex min-h-11 shrink-0 items-center rounded-md border px-1.5 transition-colors ${
+        level === 'domain' ? 'w-[145px]' : 'w-[220px]'
+      } ${
         active
           ? `${theme.card} shadow-[0_0_0_1px_currentColor]`
-          : theme.cardInactive
+          : dimmed
+            ? 'border-slate-200 bg-slate-100 text-slate-400 opacity-70 grayscale hover:border-slate-300 hover:bg-slate-50'
+            : theme.cardInactive
       }`}
       data-template-cascade-level-button="true"
       data-template-diy-level={level}
+      data-template-selection-state={active ? 'selected' : dimmed ? 'dimmed' : 'available'}
     >
       <button
         type="button"
@@ -82,28 +97,43 @@ function CascadeLevelButton({
         onClick={onSelect}
         className={`absolute inset-0 z-0 rounded-md outline-none focus-visible:ring-2 ${theme.focus} focus-visible:ring-offset-1`}
       />
-      <div className="pointer-events-none relative z-[1] flex min-w-0 flex-1 items-center justify-between gap-2 px-1.5 py-2 text-left">
+      <div className={`pointer-events-none relative z-[1] flex min-w-0 flex-1 items-center justify-between py-2 text-left ${
+        level === 'domain' ? 'gap-1 px-0.5' : 'gap-2 px-1.5'
+      }`}>
         <strong className="truncate text-sm font-black" title={title}>{title}</strong>
         <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black ${
-            active ? 'bg-white/80' : `ring-1 ${theme.name}`
+          className={`shrink-0 rounded-full py-0.5 text-[11px] font-black ${
+            level === 'domain' ? 'px-1.5' : 'px-2'
+          } ${
+            active
+              ? 'bg-white/80'
+              : dimmed
+                ? 'bg-white/70 text-slate-400 ring-1 ring-slate-200'
+                : `ring-1 ${theme.name}`
           }`}
           aria-label={`${title}包含${count}个${countLabel}`}
         >
           {count}
         </span>
       </div>
-      <div className="relative z-10">
-        <DiyDeleteButton label={deleteLabel} disabled={deleteDisabled} onClick={onDelete} />
-      </div>
+      {!readOnly ? <div className="relative z-10">
+        <DiyDeleteButton
+          label={deleteLabel}
+          disabled={deleteDisabled}
+          onClick={onDelete}
+          compact={level === 'domain'}
+        />
+      </div> : null}
     </div>
   );
 }
 
 export function TemplateDiyCascadeEditor({
   controller,
+  readOnly = false,
 }: {
   controller: TemplateDiyController;
+  readOnly?: boolean;
 }) {
   const { structure, domain, group, entry, fields, fieldId, lockedLevels } = controller;
 
@@ -115,9 +145,10 @@ export function TemplateDiyCascadeEditor({
       <section className="border-b border-slate-200 bg-white px-4 py-3" aria-label="DIY一级分类">
         <CascadeLevelHeader
           level="domain"
-          title="第一行 · 一级设定"
+          title="一级设定"
           onAdd={controller.addDomain}
           controller={controller}
+          readOnly={readOnly}
         />
         <nav aria-label="模板一级设定" className="flex flex-wrap gap-2">
           {structure.map((item) => (
@@ -125,6 +156,7 @@ export function TemplateDiyCascadeEditor({
               key={item.id}
               level="domain"
               active={item.id === domain?.id}
+              dimmed={Boolean(domain) && item.id !== domain?.id}
               title={item.title}
               count={item.groups.reduce((total, itemGroup) => total + itemGroup.entries.length, 0)}
               countLabel="三级设定"
@@ -132,6 +164,7 @@ export function TemplateDiyCascadeEditor({
               deleteDisabled={lockedLevels.domain}
               onSelect={() => controller.selectDomain(item.id)}
               onDelete={() => controller.deleteDomain(item.id, item.title)}
+              readOnly={readOnly}
             />
           ))}
         </nav>
@@ -141,10 +174,11 @@ export function TemplateDiyCascadeEditor({
       <section className="border-b border-slate-200 bg-white px-4 py-3" aria-label="DIY二级分组">
         <CascadeLevelHeader
           level="group"
-          title="第二行 · 二级设定"
+          title="二级设定"
           disabled={!domain}
           onAdd={controller.addGroup}
           controller={controller}
+          readOnly={readOnly}
         />
         <nav aria-label="模板二级设定" className="flex flex-wrap gap-2">
           {domain?.groups.map((item) => (
@@ -152,6 +186,7 @@ export function TemplateDiyCascadeEditor({
               key={item.id}
               level="group"
               active={item.id === group?.id}
+              dimmed={Boolean(group) && item.id !== group?.id}
               title={item.title}
               count={item.entries.length}
               countLabel="三级设定"
@@ -159,6 +194,7 @@ export function TemplateDiyCascadeEditor({
               deleteDisabled={lockedLevels.group}
               onSelect={() => controller.selectGroup(item.id)}
               onDelete={() => controller.deleteGroup(item.id, item.title)}
+              readOnly={readOnly}
             />
           ))}
         </nav>
@@ -168,10 +204,11 @@ export function TemplateDiyCascadeEditor({
       <section className="border-b border-slate-200 bg-white px-4 py-3" aria-label="DIY三级设定">
         <CascadeLevelHeader
           level="entry"
-          title="第三行 · 三级设定"
+          title="三级设定"
           disabled={!group}
           onAdd={controller.addEntry}
           controller={controller}
+          readOnly={readOnly}
         />
         <nav aria-label="模板三级设定" className="flex flex-wrap gap-2">
           {group?.entries.map((item) => (
@@ -179,6 +216,7 @@ export function TemplateDiyCascadeEditor({
               key={item.id}
               level="entry"
               active={item.id === entry?.id}
+              dimmed={Boolean(entry) && item.id !== entry?.id}
               title={item.title}
               count={getDiyEntryFields(item).length}
               countLabel="四级设定"
@@ -186,6 +224,7 @@ export function TemplateDiyCascadeEditor({
               deleteDisabled={lockedLevels.entry}
               onSelect={() => controller.selectEntry(item.id)}
               onDelete={() => controller.deleteEntry(item.id, item.title)}
+              readOnly={readOnly}
             />
           ))}
         </nav>
@@ -199,10 +238,11 @@ export function TemplateDiyCascadeEditor({
       >
         <CascadeLevelHeader
           level="field"
-          title={`第四级设定 · 共 ${fields.length} 项`}
+          title="四级设定"
           disabled={!entry}
           onAdd={controller.addField}
           controller={controller}
+          readOnly={readOnly}
         />
         <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3 pb-4">
           {fields.map((item) => (
@@ -225,13 +265,13 @@ export function TemplateDiyCascadeEditor({
               <strong className={`pointer-events-none relative z-[1] min-w-0 flex-1 truncate text-sm font-black ${getDiyLevelTheme('field').text}`} title={item.title}>
                 {item.title}
               </strong>
-              <div className="relative z-10">
+              {!readOnly ? <div className="relative z-10">
                 <DiyDeleteButton
                   label={`删除四级设定：${item.title}`}
                   disabled={lockedLevels.field}
                   onClick={() => controller.deleteField(item.id, item.title)}
                 />
-              </div>
+              </div> : null}
             </article>
           ))}
         </div>

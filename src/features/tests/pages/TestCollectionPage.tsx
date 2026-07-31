@@ -21,35 +21,10 @@ const Shuimo2DeepPalettePreviewTestPage = lazy(() =>
     default: module.Shuimo2DeepPalettePreviewTestPage,
   })),
 );
-const WorkSettingTaxonomyProposalTestPage = lazy(() =>
-  import('@/features/tests/pages/WorkSettingTaxonomyProposalTestPage').then((module) => ({
-    default: module.WorkSettingTaxonomyProposalTestPage,
-  })),
-);
-const SettingAiReadyTaxonomyTestPage = lazy(() =>
-  import('@/features/tests/pages/SettingAiReadyTaxonomyTestPage').then((module) => ({
-    default: module.SettingAiReadyTaxonomyTestPage,
-  })),
-);
-const PromptDrivenNovelWorkspaceTestPage = lazy(() =>
-  import('@/features/tests/pages/PromptDrivenNovelWorkspaceTestPage').then((module) => ({
-    default: module.PromptDrivenNovelWorkspaceTestPage,
-  })),
-);
 const UiConsistencyComparisonTestPage = lazy(() => import('@/features/tests/pages/UiConsistencyComparisonTestPage'));
 const ProfessionalWorkbenchBaselineTestPage = lazy(() =>
   import('@/features/tests/pages/ProfessionalWorkbenchBaselineTestPage').then((module) => ({
     default: module.ProfessionalWorkbenchBaselineTestPage,
-  })),
-);
-const StandardModeFourStageWorkbenchTestPage = lazy(() =>
-  import('@/features/tests/pages/StandardModeFourStageWorkbenchTestPage').then((module) => ({
-    default: module.StandardModeFourStageWorkbenchTestPage,
-  })),
-);
-const StandardModeSettingTemplateChoiceTestPage = lazy(() =>
-  import('@/features/tests/pages/StandardModeSettingTemplateChoiceTestPage').then((module) => ({
-    default: module.StandardModeSettingTemplateChoiceTestPage,
   })),
 );
 const StandardModeCreationPagesDesignTestPage = lazy(() =>
@@ -57,49 +32,14 @@ const StandardModeCreationPagesDesignTestPage = lazy(() =>
     default: module.StandardModeCreationPagesDesignTestPage,
   })),
 );
-const StandardModeCompactSettingWorkspaceTestPage = lazy(() =>
-  import('@/features/tests/pages/StandardModeCompactSettingWorkspaceTestPage').then((module) => ({
-    default: module.StandardModeCompactSettingWorkspaceTestPage,
-  })),
-);
 const StandardModeProjectProgressTestPage = lazy(() =>
   import('@/features/tests/pages/StandardModeProjectProgressTestPage').then((module) => ({
     default: module.StandardModeProjectProgressTestPage,
   })),
 );
-const StandardModeGuidedNavigationTestPage = lazy(() =>
-  import('@/features/tests/pages/StandardModeGuidedNavigationTestPage').then((module) => ({
-    default: module.StandardModeGuidedNavigationTestPage,
-  })),
-);
-const FourLevelSettingStructureTestPage = lazy(() =>
-  import('@/features/tests/pages/FourLevelSettingStructureTestPage').then((module) => ({
-    default: module.FourLevelSettingStructureTestPage,
-  })),
-);
-const SettingTemplateAssemblerTestPage = lazy(() =>
-  import('@/features/tests/pages/SettingTemplateAssemblerTestPage').then((module) => ({
-    default: module.SettingTemplateAssemblerTestPage,
-  })),
-);
-const ProfessionalTemplateHierarchyVariantsTestPage = lazy(() =>
-  import('@/features/tests/pages/ProfessionalTemplateHierarchyVariantsTestPage').then((module) => ({
-    default: module.ProfessionalTemplateHierarchyVariantsTestPage,
-  })),
-);
-const ProfessionalTemplateDiyVariantsTestPage = lazy(() =>
-  import('@/features/tests/pages/ProfessionalTemplateDiyVariantsTestPage').then((module) => ({
-    default: module.ProfessionalTemplateDiyVariantsTestPage,
-  })),
-);
 const FantasyTemplateFieldReductionTestPage = lazy(() =>
   import('@/features/tests/pages/FantasyTemplateFieldReductionTestPage').then((module) => ({
     default: module.FantasyTemplateFieldReductionTestPage,
-  })),
-);
-const TemplateGenerationStepCardsTestPage = lazy(() =>
-  import('@/features/tests/pages/TemplateGenerationStepCardsTestPage').then((module) => ({
-    default: module.TemplateGenerationStepCardsTestPage,
   })),
 );
 const CommercialSandboxMigrationTestPage = lazy(() =>
@@ -109,19 +49,6 @@ const CommercialSandboxMigrationTestPage = lazy(() =>
 );
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
-);
-const PromptLibraryStructureTestPage = lazy(() =>
-  import('@/features/tests/pages/PromptLibraryStructureTestPage').then((module) => ({
-    default: module.PromptLibraryStructureTestPage,
-  })),
-);
-const PromptWorkflowPreviewTestPage = lazy(() =>
-  import('@/features/tests/pages/PromptWorkflowPreviewTestPage').then((module) => ({
-    default: module.PromptWorkflowPreviewTestPage,
-  })),
-);
-const TestBrowserPage = lazy(() =>
-  import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })),
 );
 const TomatoGenreIterationTestPage = lazy(() =>
   import('@/features/tests/pages/TomatoGenreIterationTestPage').then((module) => ({
@@ -141,6 +68,16 @@ const MultiAiWritingIdeaTestPage = lazy(() =>
 const AiRankingBookSearchIdeaTestPage = lazy(() =>
   import('@/features/tests/pages/AiRankingBookSearchIdeaTestPage').then((module) => ({
     default: module.AiRankingBookSearchIdeaTestPage,
+  })),
+);
+const DeferredTemplateFeatureTestPage = lazy(() =>
+  import('@/features/tests/pages/DeferredTemplateFeatureTestPage').then((module) => ({
+    default: module.DeferredTemplateFeatureTestPage,
+  })),
+);
+const StoryAnalysisFusionTestPage = lazy(() =>
+  import('@/features/tests/pages/StoryAnalysisFusionTestPage').then((module) => ({
+    default: module.StoryAnalysisFusionTestPage,
   })),
 );
 
@@ -225,10 +162,6 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
 
   const renderActiveTest = () => {
     switch (activePath) {
-      case '/prompt-library-structure-test':
-        return <PromptLibraryStructureTestPage />;
-      case '/prompt-workflow-preview-test':
-        return <PromptWorkflowPreviewTestPage />;
       case '/hidden-pages-test':
         return <HiddenPagesTestPage />;
       case '/error-log':
@@ -239,44 +172,18 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <DarkThemeColorPage variant="modal" onClose={() => setActivePath(null)} />;
       case '/shuimo2-deep-palette-preview-test':
         return <Shuimo2DeepPalettePreviewTestPage />;
-      case '/work-setting-taxonomy-proposal-test':
-        return <WorkSettingTaxonomyProposalTestPage />;
-      case '/setting-ai-ready-taxonomy-test':
-        return <SettingAiReadyTaxonomyTestPage />;
-      case '/prompt-driven-novel-workspace-test':
-        return <PromptDrivenNovelWorkspaceTestPage />;
       case '/ui-consistency-comparison-test':
         return <UiConsistencyComparisonTestPage />;
       case '/professional-workbench-baseline-test':
         return <ProfessionalWorkbenchBaselineTestPage />;
-      case '/standard-mode-four-stage-workbench-test':
-        return <StandardModeFourStageWorkbenchTestPage />;
-      case '/standard-mode-setting-template-choice-test':
-        return <StandardModeSettingTemplateChoiceTestPage />;
       case '/standard-mode-creation-pages-design-test':
         return <StandardModeCreationPagesDesignTestPage />;
-      case '/standard-mode-compact-setting-workspace-test':
-        return <StandardModeCompactSettingWorkspaceTestPage />;
       case '/standard-mode-project-progress-test':
         return <StandardModeProjectProgressTestPage />;
-      case '/standard-mode-guided-navigation-test':
-        return <StandardModeGuidedNavigationTestPage />;
-      case '/four-level-setting-structure-test':
-        return <FourLevelSettingStructureTestPage />;
-      case '/setting-template-assembler-test':
-        return <SettingTemplateAssemblerTestPage />;
-      case '/professional-template-hierarchy-variants-test':
-        return <ProfessionalTemplateHierarchyVariantsTestPage />;
-      case '/professional-template-diy-variants-test':
-        return <ProfessionalTemplateDiyVariantsTestPage />;
       case '/fantasy-template-field-reduction-test':
         return <FantasyTemplateFieldReductionTestPage />;
-      case '/template-generation-step-cards-test':
-        return <TemplateGenerationStepCardsTestPage />;
       case '/commercial-sandbox-migration-test':
         return <CommercialSandboxMigrationTestPage />;
-      case '/test-browser':
-        return <TestBrowserPage />;
       case '/tomato-genre-iteration-test':
         return <TomatoGenreIterationTestPage />;
       case '/built-in-ai-product-idea-test':
@@ -285,6 +192,12 @@ export function TestCollectionPage({ embedded = false, onClose }: TestCollection
         return <MultiAiWritingIdeaTestPage />;
       case '/ai-ranking-book-search-idea-test':
         return <AiRankingBookSearchIdeaTestPage />;
+      case '/custom-setting-template-idea-test':
+        return <DeferredTemplateFeatureTestPage kind="custom-template" />;
+      case '/custom-generation-order-idea-test':
+        return <DeferredTemplateFeatureTestPage kind="generation-order" />;
+      case '/story-analysis-fusion-test':
+        return <StoryAnalysisFusionTestPage />;
       default:
         return null;
     }

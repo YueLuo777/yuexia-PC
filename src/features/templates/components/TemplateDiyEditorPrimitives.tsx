@@ -41,10 +41,12 @@ export function DiyDeleteButton({
   label,
   disabled,
   onClick,
+  compact = false,
 }: {
   label: string;
   disabled: boolean;
   onClick: () => void;
+  compact?: boolean;
 }) {
   return (
     <button
@@ -52,7 +54,9 @@ export function DiyDeleteButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="h-7 shrink-0 rounded px-2 text-[11px] font-bold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+      className={`h-7 shrink-0 rounded font-bold text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent ${
+        compact ? 'px-1 text-[10px]' : 'px-2 text-[11px]'
+      }`}
     >
       删除
     </button>

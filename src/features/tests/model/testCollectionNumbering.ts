@@ -6,14 +6,30 @@ export type RetiredTestSerial = {
 };
 
 export const RETIRED_TEST_SERIALS: RetiredTestSerial[] = [
+  { serial: 6, path: '/work-setting-taxonomy-proposal-test' },
+  { serial: 7, path: '/setting-ai-ready-taxonomy-test' },
+  { serial: 8, path: '/prompt-driven-novel-workspace-test' },
   { serial: 10, path: '/standard-mode-workbench-test' },
   { serial: 11, path: '/mode-switch-novel-library-test' },
+  { serial: 13, path: '/standard-mode-four-stage-workbench-test' },
+  { serial: 14, path: '/standard-mode-setting-template-choice-test' },
   { serial: 15, path: '/standard-mode-smart-setting-flow-test' },
+  { serial: 16, path: '/prompt-library-structure-test' },
+  { serial: 17, path: '/prompt-workflow-preview-test' },
+  { serial: 18, path: '/test-browser' },
   { serial: 22, path: '/standard-mode-details-settings-redesign-test' },
+  { serial: 23, path: '/standard-mode-compact-setting-workspace-test' },
   { serial: 24, path: '/standard-mode-compact-navigation-test' },
   { serial: 26, path: '/template-node-workbench-layout-test' },
   { serial: 27, path: '/creation-guide-variants-test' },
+  { serial: 28, path: '/standard-mode-guided-navigation-test' },
+  { serial: 29, path: '/four-level-setting-structure-test' },
+  { serial: 30, path: '/setting-template-assembler-test' },
+  { serial: 31, path: '/professional-template-hierarchy-variants-test' },
+  { serial: 32, path: '/professional-template-diy-variants-test' },
   { serial: 36, path: '/template-management-cascade-test' },
+  { serial: 37, path: '/template-generation-step-cards-test' },
+  { serial: 39, path: '/simplified-template-generation-settings-test' },
 ];
 
 export function buildTestNumberByPath(groups: TestGroup[]) {

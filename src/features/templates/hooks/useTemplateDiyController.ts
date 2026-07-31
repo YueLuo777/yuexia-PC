@@ -43,12 +43,12 @@ export function useTemplateDiyController({
   const [fieldId, setFieldId] = useState(getDiyEntryFields(entry)[0]?.id ?? '');
   const fields = useMemo(() => getDiyEntryFields(entry), [entry]);
   const [lockedLevels, setLockedLevels] = useState<DiyLockedLevels>({
-    domain: true,
-    group: true,
-    entry: true,
-    field: true,
+    domain: false,
+    group: false,
+    entry: false,
+    field: false,
   });
-  const [feedback, setFeedback] = useState('四级删除默认锁定；新增、查看和切换不受影响。');
+  const [feedback, setFeedback] = useState('四级删除默认解锁；需要防止误删时可单独锁定。');
   const summary = summarizeTemplate(structure);
 
   const selectDomain = (nextDomainId: string) => {
@@ -240,8 +240,8 @@ export function useTemplateDiyController({
     setGroupId(nextGroup?.id ?? '');
     setEntryId(nextEntry?.id ?? '');
     setFieldId(getDiyEntryFields(nextEntry)[0]?.id ?? '');
-    setLockedLevels({ domain: true, group: true, entry: true, field: true });
-    setFeedback('已恢复默认完整结构，四级删除均已重新锁定。');
+    setLockedLevels({ domain: false, group: false, entry: false, field: false });
+    setFeedback('已恢复本次编辑前的结构，四级删除保持解锁。');
   };
 
   return {

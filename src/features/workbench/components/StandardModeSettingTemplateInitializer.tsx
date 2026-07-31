@@ -15,6 +15,8 @@ import {
   type TemplateStructure,
 } from '@/features/workbench/model/standardModeTemplateModel';
 import {
+  buildDefaultTemplateGenerationBlueprint,
+  createDefaultSettingGenerationPromptProfile,
   normalizeTemplateGenerationBlueprint,
   validateTemplateGenerationBlueprint,
   type SettingGenerationPromptProfile,
@@ -83,7 +85,6 @@ export function StandardModeSettingTemplateInitializer({
   const [selectedTemplateId, setSelectedTemplateId] = useState(recommended.id);
   const [structure, setStructure] = useState(() => selectionRef.current.structure);
   const [generationBlueprint, setGenerationBlueprint] = useState(() => selectionRef.current.generationBlueprint);
-  const [promptProfile, setPromptProfile] = useState(() => selectionRef.current.promptProfile);
   const [savedTemplates, setSavedTemplates] = useState(readSavedSettingTemplates);
   const [saveName, setSaveName] = useState(`${novelTitle}模板`);
   const [templateListMode, setTemplateListMode] = useState<TemplateListMode>(novelChannel);
@@ -126,7 +127,6 @@ export function StandardModeSettingTemplateInitializer({
     setSelectedTemplateId(preset.id);
     setStructure(nextStructure);
     setGenerationBlueprint(templatePackage.generationBlueprint);
-    setPromptProfile(templatePackage.promptProfile);
   };
 
   const selectBuiltIn = (id: string) => {
@@ -143,21 +143,22 @@ export function StandardModeSettingTemplateInitializer({
     const template = savedTemplates.find((item) => item.id === id);
     if (!template) return;
     const nextStructure = cloneSmartTemplateStructure(template.structure);
+    const nextGenerationBlueprint = buildDefaultTemplateGenerationBlueprint(nextStructure);
+    const nextPromptProfile = createDefaultSettingGenerationPromptProfile();
     selectionRef.current = {
       id: template.id,
       name: template.name,
       revision: template.revision,
       structure: nextStructure,
-      generationBlueprint: template.generationBlueprint,
-      promptProfile: template.promptProfile,
+      generationBlueprint: nextGenerationBlueprint,
+      promptProfile: nextPromptProfile,
       sourceStructure: template.structure,
       customized: false,
     };
     setSelectedTemplateId(template.id);
     setSaveName(template.name);
     setStructure(nextStructure);
-    setGenerationBlueprint(template.generationBlueprint);
-    setPromptProfile(template.promptProfile);
+    setGenerationBlueprint(nextGenerationBlueprint);
   };
 
   const saveCurrentTemplate = () => {
@@ -168,6 +169,14 @@ export function StandardModeSettingTemplateInitializer({
       selectionRef.current.structure,
       selectionRef.current.generationBlueprint,
       selectionRef.current.promptProfile,
+      {
+        channel: novelChannel,
+        applicability: novelCategory.trim() ? 'genre' : 'general',
+        genreCategory: novelCategory.trim() || '通用',
+        ...(SMART_TEMPLATE_PRESETS.some((preset) => preset.id === selectedTemplateId)
+          ? { basePresetId: selectedTemplateId }
+          : null),
+      },
     );
     selectionRef.current = {
       id: next[0].id,
@@ -183,7 +192,6 @@ export function StandardModeSettingTemplateInitializer({
     setSelectedTemplateId(next[0].id);
     setStructure(next[0].structure);
     setGenerationBlueprint(next[0].generationBlueprint);
-    setPromptProfile(next[0].promptProfile);
     setTemplateListMode('saved');
   };
 
@@ -198,16 +206,6 @@ export function StandardModeSettingTemplateInitializer({
     };
     setStructure(nextStructure);
     setGenerationBlueprint(nextBlueprint);
-  };
-
-  const updateGenerationBlueprint = (nextBlueprint: TemplateGenerationBlueprint) => {
-    selectionRef.current = { ...selectionRef.current, generationBlueprint: nextBlueprint, customized: true };
-    setGenerationBlueprint(nextBlueprint);
-  };
-
-  const updatePromptProfile = (nextProfile: SettingGenerationPromptProfile) => {
-    selectionRef.current = { ...selectionRef.current, promptProfile: nextProfile, customized: true };
-    setPromptProfile(nextProfile);
   };
 
   const confirmCurrentTemplate = () => {
@@ -344,13 +342,10 @@ export function StandardModeSettingTemplateInitializer({
           key={selectedTemplateId}
           initialStructure={structure}
           onChange={updateStructure}
-          generationBlueprint={generationBlueprint}
-          onGenerationBlueprintChange={updateGenerationBlueprint}
-          promptProfile={promptProfile}
-          onPromptProfileChange={updatePromptProfile}
           saveName={saveName}
           onSaveNameChange={setSaveName}
           onSaveTemplate={saveCurrentTemplate}
+          readOnly={SMART_TEMPLATE_PRESETS.some((preset) => preset.id === selectedTemplateId)}
           footerActions={(
             <>
               {onCancel ? (

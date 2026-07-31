@@ -5,11 +5,11 @@ import { AiRankingBookSearchIdeaTestPage } from '@/features/tests/pages/AiRankin
 import { testGroups } from '@/features/tests/pages/testCollectionGroups';
 
 describe('AiRankingBookSearchIdeaTestPage', () => {
-  it('registers the idea at the end of the unfinished group', () => {
+  it('keeps the idea registered in the unfinished group', () => {
     const unfinishedGroup = testGroups.at(-1);
 
     expect(unfinishedGroup?.title).toBe('未做');
-    expect(unfinishedGroup?.items.at(-1)).toMatchObject({
+    expect(unfinishedGroup?.items.find((item) => item.path === '/ai-ranking-book-search-idea-test')).toMatchObject({
       serial: 34,
       title: 'AI 排行榜找书',
       path: '/ai-ranking-book-search-idea-test',

@@ -14,7 +14,6 @@ export type InternalRouteComponentKey =
   | 'errorLog'
   | 'hiddenPages'
   | 'softwareUiCatalog'
-  | 'testBrowser'
   | 'testCollection';
 
 type RouteNavigationMetadata = {

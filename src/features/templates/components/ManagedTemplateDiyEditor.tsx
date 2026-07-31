@@ -1,51 +1,27 @@
 import { TemplateDiyCascadeEditor } from '@/features/templates/components/TemplateDiyCascadeEditor';
-import { TemplateGenerationSettingsPanel } from '@/features/templates/components/TemplateGenerationSettingsPanel';
 import { useTemplateDiyController } from '@/features/templates/hooks/useTemplateDiyController';
 import type { TemplateStructure } from '@/features/workbench/model/standardModeTemplateModel';
-import type {
-  SettingGenerationPromptProfile,
-  TemplateGenerationBlueprint,
-} from '@/features/workbench/model/standardModeTemplateGenerationModel';
-import { validateTemplateGenerationBlueprint } from '@/features/workbench/model/standardModeTemplateGenerationModel';
-import { useRef, useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 export function ManagedTemplateDiyEditor({
   initialStructure,
   onChange,
-  generationBlueprint,
-  onGenerationBlueprintChange,
-  promptProfile,
-  onPromptProfileChange,
   saveName,
   onSaveNameChange,
   onSaveTemplate,
   footerActions,
+  readOnly = false,
 }: {
   initialStructure: TemplateStructure;
   onChange: (structure: TemplateStructure) => void;
-  generationBlueprint: TemplateGenerationBlueprint;
-  onGenerationBlueprintChange: (blueprint: TemplateGenerationBlueprint) => void;
-  promptProfile: SettingGenerationPromptProfile;
-  onPromptProfileChange: (profile: SettingGenerationPromptProfile) => void;
   saveName: string;
   onSaveNameChange: (name: string) => void;
   onSaveTemplate: () => void;
   footerActions?: ReactNode;
+  readOnly?: boolean;
 }) {
   const controller = useTemplateDiyController({ initialStructure, onChange });
-  const [editorMode, setEditorMode] = useState<'structure' | 'generation'>('structure');
-  const initialGenerationBlueprintRef = useRef(structuredClone(generationBlueprint));
-  const initialPromptProfileRef = useRef(structuredClone(promptProfile));
   const { summary } = controller;
-  const generationConfigurationValid = validateTemplateGenerationBlueprint(
-    controller.structure,
-    generationBlueprint,
-  ).valid;
-  const resetAll = () => {
-    controller.resetStructure();
-    onGenerationBlueprintChange(structuredClone(initialGenerationBlueprintRef.current));
-    onPromptProfileChange(structuredClone(initialPromptProfileRef.current));
-  };
   return (
     <section
       className="flex min-h-0 flex-col overflow-hidden bg-[#F5F8FA]"
@@ -62,25 +38,13 @@ export function ManagedTemplateDiyEditor({
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          <div role="tablist" aria-label="模板编辑内容" className="grid grid-cols-2 rounded-md border border-slate-300 bg-white p-0.5">
-            <button type="button" role="tab" aria-selected={editorMode === 'structure'} onClick={() => setEditorMode('structure')} className={`h-8 rounded px-4 text-xs font-bold ${editorMode === 'structure' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'}`}>模板结构</button>
-            <button type="button" role="tab" aria-selected={editorMode === 'generation'} onClick={() => setEditorMode('generation')} className={`h-8 rounded px-4 text-xs font-bold ${editorMode === 'generation' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'}`}>生成设置</button>
-          </div>
-          <span className="text-xs font-semibold text-slate-400">删除默认锁定；解锁后仅修改当前模板草稿</span>
+          <span className="text-xs font-semibold text-slate-400">
+            {readOnly ? '内置模板固定，只能查看结构' : '删除默认解锁；生成步骤由系统按当前结构自动安排'}
+          </span>
         </div>
       </div>
 
-      {editorMode === 'structure' ? (
-        <TemplateDiyCascadeEditor controller={controller} />
-      ) : (
-        <TemplateGenerationSettingsPanel
-          controller={controller}
-          blueprint={generationBlueprint}
-          onBlueprintChange={onGenerationBlueprintChange}
-          promptProfile={promptProfile}
-          onPromptProfileChange={onPromptProfileChange}
-        />
-      )}
+      <TemplateDiyCascadeEditor controller={controller} readOnly={readOnly} />
 
       <footer
         className={`shrink-0 border-t border-slate-200 bg-white ${
@@ -88,7 +52,17 @@ export function ManagedTemplateDiyEditor({
         }`}
         data-template-editor-footer="true"
       >
-        {footerActions ? (
+        {readOnly ? (
+          <div className={footerActions ? 'min-w-0 px-4 py-3' : 'min-w-0'}>
+            <div className="text-sm font-black text-slate-700">
+              当前结构：{summary.domainCount} 个一级 · {summary.groupCount} 个二级 · {summary.entryCount} 个三级 ·{' '}
+              {summary.fieldCount} 个四级
+            </div>
+            <div className="mt-1 text-xs font-semibold text-slate-400">
+              内置模板不支持修改或保存；需要扩展时，请到“我的模板”新建模板并选择此模板作为基础。
+            </div>
+          </div>
+        ) : footerActions ? (
           <div className="grid min-w-0 grid-rows-[auto_auto] gap-2 px-4 py-3">
             <div className="min-w-0" data-template-summary-row="true">
               <div className="text-sm font-black text-slate-700">
@@ -102,11 +76,11 @@ export function ManagedTemplateDiyEditor({
               </div>
               <SaveTemplateActions
                 controller={controller}
-                onReset={resetAll}
+                onReset={controller.resetStructure}
                 saveName={saveName}
                 onSaveNameChange={onSaveNameChange}
                 onSaveTemplate={onSaveTemplate}
-                canSave={generationConfigurationValid}
+                canSave
               />
             </div>
           </div>
@@ -123,11 +97,11 @@ export function ManagedTemplateDiyEditor({
             </div>
             <SaveTemplateActions
               controller={controller}
-              onReset={resetAll}
+              onReset={controller.resetStructure}
               saveName={saveName}
               onSaveNameChange={onSaveNameChange}
               onSaveTemplate={onSaveTemplate}
-              canSave={generationConfigurationValid}
+              canSave
             />
           </>
         )}

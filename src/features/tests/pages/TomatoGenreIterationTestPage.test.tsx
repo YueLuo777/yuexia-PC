@@ -8,13 +8,12 @@ const root = process.cwd();
 const readSource = (file: string) => fs.readFileSync(path.join(root, file), 'utf8');
 
 describe('tomato genre iteration test page', () => {
-  it('adds the tomato genre iteration prototype to the test collection tools group', () => {
+  it('keeps the tomato genre iteration prototype in the test collection', () => {
     const collection = readTestCollectionSource();
 
     expect(collection).toContainSource('TomatoGenreIterationTestPage');
     expect(collection).toContainSource('/tomato-genre-iteration-test');
     expect(collection).toContainSource('番茄题材迭代原型');
-    expect(collection.indexOf('/test-browser')).toBeLessThan(collection.indexOf('/tomato-genre-iteration-test'));
   });
 
   it('lays out a three-column browser-driven topic iteration workflow without crawling full text', () => {

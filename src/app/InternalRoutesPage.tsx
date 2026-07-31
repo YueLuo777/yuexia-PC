@@ -15,15 +15,11 @@ const HiddenPagesTestPage = lazy(() =>
 const ErrorLogPage = lazy(() =>
   import('@/features/tests/pages/ErrorLogPage').then((module) => ({ default: module.ErrorLogPage })),
 );
-const TestBrowserPage = lazy(() =>
-  import('@/features/browser/pages/TestBrowserPage').then((module) => ({ default: module.TestBrowserPage })),
-);
 
 const INTERNAL_ROUTE_COMPONENTS = {
   errorLog: ErrorLogPage,
   hiddenPages: HiddenPagesTestPage,
   softwareUiCatalog: SoftwareUiCatalogPage,
-  testBrowser: TestBrowserPage,
   testCollection: TestCollectionPage,
 } satisfies Record<InternalRouteComponentKey, ComponentType>;
 

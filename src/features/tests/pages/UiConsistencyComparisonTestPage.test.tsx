@@ -7,12 +7,9 @@ import { readTestCollectionSource } from './testCollectionSource.testUtils';
 describe('UiConsistencyComparisonTestPage', () => {
   beforeEach(() => localStorage.clear());
 
-  it('is registered at the end of the UI group and exposes all five comparisons', () => {
+  it('stays registered and exposes all five comparisons', () => {
     const collection = readTestCollectionSource();
     expect(collection).toContain("path: '/ui-consistency-comparison-test'");
-    expect(collection.indexOf("path: '/prompt-driven-novel-workspace-test'")).toBeLessThan(
-      collection.indexOf("path: '/ui-consistency-comparison-test'"),
-    );
 
     render(<UiConsistencyComparisonTestPage />);
     expect(screen.getByText('空状态为什么看起来不一样')).toBeInTheDocument();

@@ -11,6 +11,17 @@ import { TemplateManagePage } from './TemplateManagePage';
 describe('TemplateManagePage', () => {
   beforeEach(() => localStorage.clear());
 
+  const openCreateDialog = () => {
+    fireEvent.click(screen.getByRole('tab', { name: '我的模板' }));
+    fireEvent.click(screen.getByRole('button', { name: '新建模板' }));
+    return screen.getByRole('dialog', { name: '新建我的模板' });
+  };
+
+  const createFromDefaultPreset = () => {
+    const dialog = openCreateDialog();
+    fireEvent.click(within(dialog).getByRole('button', { name: '创建模板' }));
+  };
+
   it('shows male, female, and saved template tabs with male selected by default', () => {
     render(<TemplateManagePage />);
 
@@ -29,7 +40,11 @@ describe('TemplateManagePage', () => {
     expect(standard.compareDocumentPosition(full) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(light).toHaveAttribute('aria-pressed', 'true');
     expect(standard).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByRole('textbox', { name: '保存模板名称' })).toHaveValue('玄幻仙侠（轻量版）副本');
+    expect(screen.queryByRole('textbox', { name: '保存模板名称' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '保存到我的模板' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /删除一级分类/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /一级删除/ })).not.toBeInTheDocument();
+    expect(screen.getByText('内置模板固定，只能查看结构')).toBeInTheDocument();
     expect(within(light).getByText('男频 · 玄幻仙侠')).toBeInTheDocument();
     expect(screen.getByText('通用小说基础')).toBeInTheDocument();
     expect(screen.queryByText('现代总裁')).not.toBeInTheDocument();
@@ -44,7 +59,9 @@ describe('TemplateManagePage', () => {
     fireEvent.click(screen.getByRole('tab', { name: '女频' }));
 
     expect(screen.getByRole('tab', { name: '女频' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByText('现代总裁')).toBeInTheDocument();
+    const firstFemaleTemplate = screen.getByText('现代总裁').closest('button') as HTMLButtonElement;
+    expect(firstFemaleTemplate).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('textbox', { name: '保存模板名称' })).not.toBeInTheDocument();
     expect(screen.getByText('甜宠')).toBeInTheDocument();
     expect(screen.getByText('通用小说基础')).toBeInTheDocument();
     expect(screen.queryByText('玄幻仙侠（标准版）')).not.toBeInTheDocument();
@@ -52,7 +69,7 @@ describe('TemplateManagePage', () => {
     expect(screen.queryByText('玄幻仙侠（轻量版）')).not.toBeInTheDocument();
   });
 
-  it('uses fixed-width cascade navigation for the first three levels and adaptive fourth-level cards', () => {
+  it('shows concise level names, fits eight first-level cards per row, and keeps adaptive fourth-level cards', () => {
     render(<TemplateManagePage />);
 
     const editor = screen.getByRole('region', { name: '逐级DIY模板编辑器' });
@@ -64,9 +81,16 @@ describe('TemplateManagePage', () => {
     ];
 
     navigations.forEach((navigation) => expect(navigation).toHaveClass('flex', 'flex-wrap'));
-    const fixedCards = editor.querySelectorAll('[data-template-cascade-level-button="true"]');
-    expect(fixedCards.length).toBeGreaterThan(0);
-    fixedCards.forEach((card) => expect(card).toHaveClass('w-[220px]', 'shrink-0'));
+    expect(within(editor).getByRole('heading', { name: /^一级设定$/ })).toBeInTheDocument();
+    expect(within(editor).getByRole('heading', { name: /^二级设定$/ })).toBeInTheDocument();
+    expect(within(editor).getByRole('heading', { name: /^三级设定$/ })).toBeInTheDocument();
+    expect(within(editor).getByRole('heading', { name: /^四级设定$/ })).toBeInTheDocument();
+    expect(within(editor).queryByText(/第一行|第二行|第三行|共 \d+ 项/)).not.toBeInTheDocument();
+    const domainCards = editor.querySelectorAll('[data-template-cascade-level-button="true"][data-template-diy-level="domain"]');
+    const deeperCards = editor.querySelectorAll('[data-template-cascade-level-button="true"]:not([data-template-diy-level="domain"])');
+    expect(domainCards.length).toBe(8);
+    domainCards.forEach((card) => expect(card).toHaveClass('w-[145px]', 'shrink-0'));
+    deeperCards.forEach((card) => expect(card).toHaveClass('w-[220px]', 'shrink-0'));
     const fourthLevel = within(editor).getByRole('region', { name: 'DIY四级设定' });
     expect(fourthLevel).toHaveAttribute('data-template-fourth-level', 'true');
     expect(fourthLevel).toHaveClass('bg-white');
@@ -76,85 +100,107 @@ describe('TemplateManagePage', () => {
     const selectionSurfaces = editor.querySelectorAll('[data-template-cascade-card-select="true"]');
     expect(selectionSurfaces.length).toBeGreaterThan(0);
     selectionSurfaces.forEach((surface) => expect(surface).toHaveClass('absolute', 'inset-0'));
-    const nameInputs = [
-      '输入一级分类名称',
-      '输入二级分组名称',
-      '输入三级设定名称',
-      '输入四级设定名称',
-    ].map((name) => within(editor).getByRole('textbox', { name }));
-    nameInputs.forEach((input) => expect(input).toHaveAttribute('maxLength', '15'));
-    editor.querySelectorAll('[data-template-name-input-wrap="true"]')
-      .forEach((wrap) => expect(wrap).toHaveClass('w-[260px]'));
+    expect(editor.querySelectorAll('[data-template-name-input-wrap="true"]')).toHaveLength(0);
     expect(within(fourthLevel).queryByText(/^0\d$/)).not.toBeInTheDocument();
   });
 
-  it('shows gold, purple, blue, and green level colors in structure and generation settings', () => {
+  it('dims unselected first-to-third-level cards while leaving fourth-level colors unaffected', () => {
     render(<TemplateManagePage />);
 
     const editor = document.querySelector('[data-template-diy-cascade-editor="true"]') as HTMLElement;
-    const domainCard = editor.querySelector('[data-template-cascade-level-button="true"][data-template-diy-level="domain"]');
-    const groupCard = editor.querySelector('[data-template-cascade-level-button="true"][data-template-diy-level="group"]');
-    const entryCard = editor.querySelector('[data-template-cascade-level-button="true"][data-template-diy-level="entry"]');
-    const fieldCard = editor.querySelector('[data-template-cascade-field-card="true"][data-template-diy-level="field"]');
+    const domainCards = editor.querySelectorAll('[data-template-cascade-level-button="true"][data-template-diy-level="domain"]');
+    const groupCards = editor.querySelectorAll('[data-template-cascade-level-button="true"][data-template-diy-level="group"]');
+    const entryCards = editor.querySelectorAll('[data-template-cascade-level-button="true"][data-template-diy-level="entry"]');
+    const fieldCards = editor.querySelectorAll('[data-template-cascade-field-card="true"][data-template-diy-level="field"]');
 
-    expect(domainCard).toHaveClass('bg-[#FFF7DA]', 'text-[#7A5410]');
-    expect(groupCard).toHaveClass('bg-[#F5EDFF]', 'text-[#6338A6]');
-    expect(entryCard).toHaveClass('bg-[#EAF5FF]', 'text-[#235C9A]');
-    expect(fieldCard).toHaveClass('bg-[#ECFAF1]', 'text-[#247446]');
+    expect(domainCards[0]).toHaveClass('bg-[#FFF7DA]', 'text-[#7A5410]');
+    expect(groupCards[0]).toHaveClass('bg-[#F5EDFF]', 'text-[#6338A6]');
+    expect(entryCards[0]).toHaveClass('bg-[#EAF5FF]', 'text-[#235C9A]');
+    expect(domainCards[1]).toHaveAttribute('data-template-selection-state', 'dimmed');
+    expect(domainCards[1]).toHaveClass('bg-slate-100', 'text-slate-400', 'grayscale');
+    expect(groupCards[1]).toHaveAttribute('data-template-selection-state', 'dimmed');
+    expect(groupCards[1]).toHaveClass('bg-slate-100', 'text-slate-400', 'grayscale');
+    expect(entryCards[1]).toHaveAttribute('data-template-selection-state', 'dimmed');
+    expect(entryCards[1]).toHaveClass('bg-slate-100', 'text-slate-400', 'grayscale');
+    expect(fieldCards[0]).toHaveClass('bg-[#ECFAF1]', 'text-[#247446]');
+    expect(fieldCards[1]).toHaveClass('bg-[#ECFAF1]', 'text-[#247446]');
+    expect(fieldCards[1]).not.toHaveClass('bg-slate-100', 'grayscale');
 
-    const editorTabs = editor.querySelectorAll('[role="tab"]');
-    fireEvent.click(editorTabs[1] as HTMLElement);
-    const generationPanel = document.querySelector('[data-template-generation-settings="true"]') as HTMLElement;
-    const stageCards = generationPanel.querySelectorAll('[data-template-generation-stage-level]');
-    expect(stageCards[0]).toHaveAttribute('data-template-generation-stage-level', 'domain');
-    expect(stageCards[0]).toHaveClass('bg-[#FFF7DA]', 'text-[#7A5410]');
-    expect(stageCards[1]).toHaveAttribute('data-template-generation-stage-level', 'group');
-    expect(stageCards[1]).toHaveClass('bg-[#F5EDFF]', 'text-[#6338A6]');
-    expect(stageCards[2]).toHaveAttribute('data-template-generation-stage-level', 'entry');
-    expect(stageCards[2]).toHaveClass('bg-[#EAF5FF]', 'text-[#235C9A]');
-    expect(stageCards[3]).toHaveAttribute('data-template-generation-stage-level', 'field');
-    expect(stageCards[3]).toHaveClass('bg-[#ECFAF1]', 'text-[#247446]');
-
-    const selectedPathNames = generationPanel.querySelectorAll('[data-template-generation-selected-path="true"] [data-template-generation-level-name]');
-    expect(selectedPathNames[0]).toHaveAttribute('data-template-generation-level-name', 'domain');
-    expect(selectedPathNames[0]).toHaveClass('bg-[#F8D36A]', 'text-[#5F3E00]');
-    expect(selectedPathNames[1]).toHaveAttribute('data-template-generation-level-name', 'group');
-    expect(selectedPathNames[1]).toHaveClass('bg-[#D7B8FF]', 'text-[#4C238A]');
-    expect(selectedPathNames[2]).toHaveAttribute('data-template-generation-level-name', 'entry');
-    expect(selectedPathNames[2]).toHaveClass('bg-[#B9DBFF]', 'text-[#174C86]');
+    fireEvent.click(within(editor).getByRole('button', { name: '剧情规划' }));
+    const workSettingCard = within(editor)
+      .getByRole('button', { name: '作品设定' })
+      .closest('[data-template-cascade-level-button="true"]');
+    const plotPlanningCard = within(editor)
+      .getByRole('button', { name: '剧情规划' })
+      .closest('[data-template-cascade-level-button="true"]');
+    expect(workSettingCard).toHaveAttribute('data-template-selection-state', 'dimmed');
+    expect(plotPlanningCard).toHaveAttribute('data-template-selection-state', 'selected');
+    expect(plotPlanningCard).toHaveClass('bg-[#FFF7DA]', 'text-[#7A5410]');
   });
 
   it('creates and saves a user template from the management page', () => {
     render(<TemplateManagePage />);
 
-    fireEvent.click(screen.getByRole('button', { name: '新建模板' }));
+    createFromDefaultPreset();
     const nameInput = screen.getByRole('textbox', { name: '保存模板名称' });
+    expect(nameInput).toHaveValue('玄幻仙侠（轻量版）扩展');
+    expect(screen.getByRole('button', { name: '一级删除未锁定，点击锁定' })).toHaveTextContent('锁定');
     fireEvent.change(nameInput, { target: { value: '我的人物模板' } });
     fireEvent.click(screen.getByRole('button', { name: '保存到我的模板' }));
 
     const saved = JSON.parse(localStorage.getItem(SAVED_SETTING_TEMPLATES_STORAGE_KEY) ?? '[]');
     expect(saved).toHaveLength(1);
     expect(saved[0].name).toBe('我的人物模板');
-    expect(saved[0]).toMatchObject({ formatVersion: 3, source: 'custom' });
+    expect(saved[0]).toMatchObject({
+      formatVersion: 3,
+      source: 'custom',
+      channel: 'male',
+      applicability: 'genre',
+      genreCategory: '玄幻仙侠',
+      basePresetId: 'male-fantasy-xianxia-light',
+    });
     expect(saved[0].generationBlueprint.stages.length).toBeGreaterThan(0);
     expect(saved[0].promptProfile.contractVersion).toBe('setting-generation-v2');
     expect(screen.getByRole('tab', { name: '我的模板' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('edits generation order, collection counts, dependencies, and prompt guidance with the template', () => {
+  it('creates a female general empty template with channel-specific classification', () => {
+    render(<TemplateManagePage />);
+    const dialog = openCreateDialog();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /^女频/ }));
+    fireEvent.click(within(dialog).getByRole('button', { name: /^女频通用/ }));
+    fireEvent.click(within(dialog).getByRole('button', { name: /^新建空模板/ }));
+    fireEvent.click(within(dialog).getByRole('button', { name: '创建模板' }));
+
+    expect(screen.getByRole('textbox', { name: '保存模板名称' })).toHaveValue('女频通用空模板');
+    expect(screen.getByText('暂无一级分类，请在上方新增。')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '保存到我的模板' }));
+
+    const saved = JSON.parse(localStorage.getItem(SAVED_SETTING_TEMPLATES_STORAGE_KEY) ?? '[]');
+    expect(saved[0]).toMatchObject({
+      channel: 'female',
+      applicability: 'general',
+      genreCategory: '通用',
+    });
+    expect(saved[0].basePresetId).toBeUndefined();
+  });
+
+  it('removes manual generation settings while keeping system-generated steps in saved packages', () => {
     render(<TemplateManagePage />);
 
-    fireEvent.click(screen.getByRole('tab', { name: '生成设置' }));
-    expect(screen.getByRole('region', { name: '模板生成步骤' })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: '三级设定生成规则' })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: '模板总提示词' })).toBeInTheDocument();
-    const stagePrompt = screen.getByRole('textbox', { name: '世界规则与力量步骤专属提示词' });
-    fireEvent.change(stagePrompt, { target: { value: '先锁定世界规则，再生成后续人物和剧情。' } });
-    expect(stagePrompt).toHaveValue('先锁定世界规则，再生成后续人物和剧情。');
-    fireEvent.change(screen.getByRole('combobox', { name: '生成方式' }), { target: { value: 'collection' } });
-    expect(screen.getByText('推荐数量')).toBeInTheDocument();
-    fireEvent.change(screen.getByRole('textbox', { name: '生成目标' }), { target: { value: '只生成可直接写作的具体设定' } });
-    expect(screen.getByDisplayValue('只生成可直接写作的具体设定')).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: '生成设置' })).not.toBeInTheDocument();
+    expect(document.querySelector('[data-template-generation-settings="true"]')).not.toBeInTheDocument();
+    createFromDefaultPreset();
+    expect(screen.getByText(/生成步骤由系统按当前结构自动安排/)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('textbox', { name: '保存模板名称' }), {
+      target: { value: '系统步骤模板' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '保存到我的模板' }));
+    const saved = JSON.parse(localStorage.getItem(SAVED_SETTING_TEMPLATES_STORAGE_KEY) ?? '[]');
+    expect(saved[0].generationBlueprint.stages.length).toBeGreaterThan(0);
+    expect(saved[0].promptProfile.contractVersion).toBe('setting-generation-v2');
   });
 
   it('requires confirmation before deleting only the selected user template', () => {
@@ -162,6 +208,8 @@ describe('TemplateManagePage', () => {
     render(<TemplateManagePage />);
 
     fireEvent.click(screen.getByRole('tab', { name: '我的模板' }));
+    expect(screen.getByRole('tab', { name: '我的模板' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('人物模板').closest('button')).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(screen.getByRole('button', { name: '删除模板' }));
     const dialog = screen.getByRole('dialog', { name: '删除模板？' });
     expect(dialog).toHaveTextContent('内置模板不会受到影响');
@@ -172,14 +220,10 @@ describe('TemplateManagePage', () => {
 
   it('edits all four levels with deletion locks and persists the exact DIY structure', () => {
     const { unmount } = render(<TemplateManagePage />);
+    createFromDefaultPreset();
     const editor = screen.getByRole('region', { name: '逐级DIY模板编辑器' });
     const monsterDelete = within(editor).getByRole('button', { name: '删除一级分类：怪物图鉴' });
-    const domainLock = within(editor).getByRole('button', { name: '一级删除已锁定，点击解锁' });
-    expect(monsterDelete).toBeDisabled();
-    expect(domainLock).toHaveTextContent('解锁');
-    expect(monsterDelete).toHaveClass('disabled:text-slate-300');
-
-    fireEvent.click(domainLock);
+    expect(monsterDelete).toBeEnabled();
     expect(within(editor).getByRole('button', { name: '一级删除未锁定，点击锁定' })).toHaveTextContent('锁定');
     expect(monsterDelete).toHaveClass('text-red-500');
     fireEvent.click(monsterDelete);

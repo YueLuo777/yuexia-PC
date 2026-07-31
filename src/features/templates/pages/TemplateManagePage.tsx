@@ -3,7 +3,6 @@ import { useMemo, useState, type ReactNode } from 'react';
 import {
   SMART_TEMPLATE_PRESETS,
   cloneSmartTemplateStructure,
-  getSmartTemplatePackage,
   sortSmartTemplatePresetsForDisplay,
 } from '@/features/workbench/model/standardModeSmartSettingFlowModel';
 import {
@@ -14,23 +13,25 @@ import {
   saveSettingTemplateById,
   summarizeTemplate,
   type SavedSettingTemplate,
+  type SavedTemplateClassification,
   type TemplateStructure,
 } from '@/features/workbench/model/standardModeTemplateModel';
 import {
   buildDefaultTemplateGenerationBlueprint,
   createDefaultSettingGenerationPromptProfile,
-  normalizeTemplateGenerationBlueprint,
-  validateTemplateGenerationBlueprint,
-  type SettingGenerationPromptProfile,
-  type TemplateGenerationBlueprint,
 } from '@/features/workbench/model/standardModeTemplateGenerationModel';
 import { ManagedTemplateDiyEditor } from '@/features/templates/components/ManagedTemplateDiyEditor';
+import {
+  TemplateCreateDialog,
+  type TemplateCreationChoice,
+} from '@/features/templates/components/TemplateCreateDialog';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 type TemplateSource =
   | { kind: 'builtIn'; id: string }
   | { kind: 'saved'; id: string }
-  | { kind: 'new' };
+  | { kind: 'new' }
+  | { kind: 'none' };
 
 type TemplateListMode = 'male' | 'female' | 'saved';
 
@@ -60,12 +61,9 @@ function ensureManagedTemplateDomains(structure: TemplateStructure) {
 
 function getInitialTemplate() {
   const preset = getVisibleBuiltInTemplates('male')[0] ?? SMART_TEMPLATE_PRESETS[0];
-  const templatePackage = getSmartTemplatePackage(preset);
   return {
     source: { kind: 'builtIn', id: preset.id } as TemplateSource,
     structure: ensureManagedTemplateDomains(cloneSmartTemplateStructure(preset.structure)),
-    generationBlueprint: templatePackage.generationBlueprint,
-    promptProfile: templatePackage.promptProfile,
     saveName: `${preset.title}副本`,
   };
 }
@@ -117,13 +115,15 @@ export function TemplateManagePage() {
   const [listMode, setListMode] = useState<TemplateListMode>('male');
   const [source, setSource] = useState<TemplateSource>(initial.source);
   const [structure, setStructure] = useState<TemplateStructure>(initial.structure);
-  const [generationBlueprint, setGenerationBlueprint] = useState<TemplateGenerationBlueprint>(
-    initial.generationBlueprint,
-  );
-  const [promptProfile, setPromptProfile] = useState<SettingGenerationPromptProfile>(initial.promptProfile);
   const [saveName, setSaveName] = useState(initial.saveName);
   const [savedTemplates, setSavedTemplates] = useState(readSavedSettingTemplates);
   const [pendingDelete, setPendingDelete] = useState<SavedSettingTemplate | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [draftClassification, setDraftClassification] = useState<SavedTemplateClassification>({
+    channel: 'male',
+    applicability: 'general',
+    genreCategory: '通用',
+  });
   const [notice, setNotice] = useState('');
   const summary = useMemo(() => summarizeTemplate(structure), [structure]);
   const visibleBuiltInTemplates = useMemo(
@@ -137,49 +137,73 @@ export function TemplateManagePage() {
   const selectBuiltIn = (presetId: string) => {
     const preset = SMART_TEMPLATE_PRESETS.find((item) => item.id === presetId);
     if (!preset) return;
-    const templatePackage = getSmartTemplatePackage(preset);
     setSource({ kind: 'builtIn', id: preset.id });
     const nextStructure = ensureManagedTemplateDomains(cloneSmartTemplateStructure(preset.structure));
     setStructure(nextStructure);
-    setGenerationBlueprint(normalizeTemplateGenerationBlueprint(nextStructure, templatePackage.generationBlueprint));
-    setPromptProfile(templatePackage.promptProfile);
-    setSaveName(`${preset.title}副本`);
-    setNotice('内置模板已载入；修改后请保存到“我的模板”。');
+    setSaveName('');
+    setNotice('内置模板为固定模板，只能查看。');
   };
 
   const selectSaved = (template: SavedSettingTemplate) => {
     setSource({ kind: 'saved', id: template.id });
     setStructure(cloneTemplateStructure(template.structure));
-    setGenerationBlueprint(template.generationBlueprint);
-    setPromptProfile(template.promptProfile);
     setSaveName(template.name);
+    setDraftClassification({
+      channel: template.channel,
+      applicability: template.applicability,
+      genreCategory: template.genreCategory,
+      ...(template.basePresetId ? { basePresetId: template.basePresetId } : null),
+    });
     setNotice('');
   };
 
-  const createTemplate = () => {
+  const changeListMode = (nextMode: TemplateListMode) => {
+    setListMode(nextMode);
+    if (nextMode === 'saved') {
+      const firstSavedTemplate = savedTemplates[0];
+      if (firstSavedTemplate) selectSaved(firstSavedTemplate);
+      else {
+        setSource({ kind: 'none' });
+        setStructure([]);
+        setSaveName('');
+        setNotice('还没有我的模板，请先新建。');
+      }
+      return;
+    }
+    const firstBuiltInTemplate = getVisibleBuiltInTemplates(nextMode)[0];
+    if (firstBuiltInTemplate) selectBuiltIn(firstBuiltInTemplate.id);
+  };
+
+  const createTemplate = (choice: TemplateCreationChoice) => {
     setListMode('saved');
     setSource({ kind: 'new' });
-    const nextStructure = buildDefaultTemplateStructure();
+    const preset = choice.baseMode === 'preset'
+      ? SMART_TEMPLATE_PRESETS.find((item) => item.id === choice.basePresetId)
+      : undefined;
+    const nextStructure = preset
+      ? ensureManagedTemplateDomains(cloneSmartTemplateStructure(preset.structure))
+      : [];
     setStructure(nextStructure);
-    setGenerationBlueprint(buildDefaultTemplateGenerationBlueprint(nextStructure));
-    setPromptProfile(createDefaultSettingGenerationPromptProfile());
-    setSaveName('新建模板');
-    setNotice('新模板已创建，请编辑各类型后保存。');
+    setSaveName(choice.suggestedName);
+    setDraftClassification({
+      channel: choice.channel,
+      applicability: choice.applicability,
+      genreCategory: choice.genreCategory,
+      ...(choice.basePresetId ? { basePresetId: choice.basePresetId } : null),
+    });
+    setCreateDialogOpen(false);
+    setNotice(choice.baseMode === 'preset' ? '已基于内置模板创建草稿。' : '空模板草稿已创建。');
   };
 
   const saveCurrentTemplate = () => {
-    const validation = validateTemplateGenerationBlueprint(structure, generationBlueprint);
-    if (!validation.valid) {
-      setNotice(validation.errors[0]?.message ?? '请先修复生成设置。');
-      return;
-    }
     const templateId = source.kind === 'saved' ? source.id : null;
     const next = saveSettingTemplateById(
       templateId,
       saveName,
       structure,
-      generationBlueprint,
-      promptProfile,
+      buildDefaultTemplateGenerationBlueprint(structure),
+      createDefaultSettingGenerationPromptProfile(),
+      draftClassification,
     );
     const saved = next[0];
     setSavedTemplates(next);
@@ -195,13 +219,18 @@ export function TemplateManagePage() {
     setSavedTemplates(next);
     if (source.kind === 'saved' && source.id === pendingDelete.id) {
       if (next[0]) selectSaved(next[0]);
-      else createTemplate();
+      else {
+        setSource({ kind: 'none' });
+        setStructure([]);
+        setSaveName('');
+        setNotice('模板已删除，可以新建新的模板。');
+      }
     }
     setPendingDelete(null);
     setNotice('模板已删除');
   };
 
-  const sourceKey = source.kind === 'new' ? 'new' : `${source.kind}-${source.id}`;
+  const sourceKey = source.kind === 'new' || source.kind === 'none' ? source.kind : `${source.kind}-${source.id}`;
 
   return (
     <main className="flex h-full min-h-0 flex-col overflow-hidden bg-white" data-template-manage-page="true">
@@ -219,13 +248,6 @@ export function TemplateManagePage() {
           <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600">
             {summary.domainCount} 类型 · {summary.entryCount} 设定 · {summary.fieldCount} 字段
           </div>
-          <button
-            type="button"
-            onClick={createTemplate}
-            className="h-10 rounded-md bg-[#08AACE] px-4 text-sm font-bold text-white hover:bg-[#0797B8]"
-          >
-            新建模板
-          </button>
         </div>
       </header>
 
@@ -236,7 +258,7 @@ export function TemplateManagePage() {
               type="button"
               role="tab"
               aria-selected={listMode === 'male'}
-              onClick={() => setListMode('male')}
+              onClick={() => changeListMode('male')}
               className={`h-9 rounded text-sm font-bold ${listMode === 'male' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'}`}
             >
               男频
@@ -245,7 +267,7 @@ export function TemplateManagePage() {
               type="button"
               role="tab"
               aria-selected={listMode === 'female'}
-              onClick={() => setListMode('female')}
+              onClick={() => changeListMode('female')}
               className={`h-9 rounded text-sm font-bold ${listMode === 'female' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'}`}
             >
               女频
@@ -254,12 +276,22 @@ export function TemplateManagePage() {
               type="button"
               role="tab"
               aria-selected={listMode === 'saved'}
-              onClick={() => setListMode('saved')}
+              onClick={() => changeListMode('saved')}
               className={`h-9 rounded text-sm font-bold ${listMode === 'saved' ? 'bg-[#08AACE] text-white' : 'text-slate-600 hover:bg-[#EAF9FD]'}`}
             >
               我的模板
             </button>
           </div>
+
+          {listMode === 'saved' ? (
+            <button
+              type="button"
+              onClick={() => setCreateDialogOpen(true)}
+              className="mt-3 h-10 shrink-0 rounded-md bg-[#08AACE] px-4 text-sm font-bold text-white hover:bg-[#0797B8]"
+            >
+              新建模板
+            </button>
+          ) : null}
 
           <div className="editor-scrollbar mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
             {listMode !== 'saved' ? (
@@ -279,6 +311,7 @@ export function TemplateManagePage() {
                   key={template.id}
                   title={template.name}
                   description={`最后保存：${template.updatedAt}`}
+                  badge={`${CHANNEL_LABELS[template.channel]} · ${template.applicability === 'general' ? '通用' : template.genreCategory}`}
                   active={source.kind === 'saved' && source.id === template.id}
                   onClick={() => selectSaved(template)}
                   action={
@@ -296,28 +329,33 @@ export function TemplateManagePage() {
               <div className="rounded-md border border-dashed border-slate-300 bg-white px-4 py-8 text-center">
                 <strong className="block text-sm text-slate-600">还没有自定义模板</strong>
                 <span className="mt-2 block text-xs font-semibold leading-5 text-slate-400">
-                  可以新建空白模板，也可以从男频或女频模板修改后保存。
+                  点击上方“新建模板”，可以创建空模板，也可以基于内置模板扩展。
                 </span>
               </div>
             )}
           </div>
         </aside>
 
-        <ManagedTemplateDiyEditor
-          key={sourceKey}
-          initialStructure={structure}
-          onChange={(nextStructure) => {
-            setStructure(nextStructure);
-            setGenerationBlueprint((current) => normalizeTemplateGenerationBlueprint(nextStructure, current));
-          }}
-          generationBlueprint={generationBlueprint}
-          onGenerationBlueprintChange={setGenerationBlueprint}
-          promptProfile={promptProfile}
-          onPromptProfileChange={setPromptProfile}
-          saveName={saveName}
-          onSaveNameChange={setSaveName}
-          onSaveTemplate={saveCurrentTemplate}
-        />
+        {source.kind === 'none' ? (
+          <section className="grid min-h-0 place-items-center bg-white" aria-label="我的模板空状态">
+            <div className="max-w-md rounded-xl border border-dashed border-slate-300 bg-slate-50 px-8 py-10 text-center">
+              <strong className="block text-base font-black text-slate-700">先新建一个我的模板</strong>
+              <span className="mt-2 block text-sm font-semibold leading-6 text-slate-500">
+                可以从空模板开始，也可以选择一个内置模板作为基础继续扩展。
+              </span>
+            </div>
+          </section>
+        ) : (
+          <ManagedTemplateDiyEditor
+            key={sourceKey}
+            initialStructure={structure}
+            onChange={setStructure}
+            saveName={saveName}
+            onSaveNameChange={setSaveName}
+            onSaveTemplate={saveCurrentTemplate}
+            readOnly={source.kind === 'builtIn'}
+          />
+        )}
       </div>
 
       <ConfirmDialog
@@ -330,6 +368,11 @@ export function TemplateManagePage() {
         initialFocus="cancel"
         onClose={() => setPendingDelete(null)}
         onConfirm={confirmDelete}
+      />
+      <TemplateCreateDialog
+        isOpen={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        onCreate={createTemplate}
       />
     </main>
   );

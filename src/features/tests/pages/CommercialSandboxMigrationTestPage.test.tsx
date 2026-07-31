@@ -8,7 +8,7 @@ import { readTestCollectionSource } from './testCollectionSource.testUtils';
 describe('CommercialSandboxMigrationTestPage', () => {
   it('keeps the commercial sandbox registered as test 38', () => {
     const uiGroup = testGroups.find((group) => group.title === 'UI 与主题');
-    expect(uiGroup?.items.at(-1)).toMatchObject({
+    expect(uiGroup?.items.find((item) => item.path === '/commercial-sandbox-migration-test')).toMatchObject({
       serial: 38,
       title: '用户系统与用户裂变本地沙箱',
       path: '/commercial-sandbox-migration-test',

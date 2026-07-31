@@ -9,6 +9,8 @@ const testedStateHookPath = resolve(
   'src/features/tests/hooks/useTestCollectionTestedState.ts',
 );
 const testedStatePath = resolve(process.cwd(), 'src/features/tests/model/testCollectionTestedState.ts');
+const internalRoutesPagePath = resolve(process.cwd(), 'src/app/InternalRoutesPage.tsx');
+const routeRegistryPath = resolve(process.cwd(), 'config/app-routes.json');
 
 const removedMarkedTests = [
   ['/standard-mode-workbench-test', 'StandardModeWorkbenchTestPage'],
@@ -87,6 +89,22 @@ const removedMarkedTests = [
   ['/text-audit-review-workbench-test', 'TextAuditReviewWorkbenchTestPage'],
   ['/text-audit-diff-display-test', 'TextAuditDiffDisplayTestPage'],
   ['/standard-mode-smart-setting-flow-test', 'StandardModeSmartSettingFlowTestPage'],
+  ['/standard-mode-four-stage-workbench-test', 'StandardModeFourStageWorkbenchTestPage'],
+  ['/standard-mode-setting-template-choice-test', 'StandardModeSettingTemplateChoiceTestPage'],
+  ['/prompt-library-structure-test', 'PromptLibraryStructureTestPage'],
+  ['/four-level-setting-structure-test', 'FourLevelSettingStructureTestPage'],
+  ['/setting-template-assembler-test', 'SettingTemplateAssemblerTestPage'],
+  ['/professional-template-hierarchy-variants-test', 'ProfessionalTemplateHierarchyVariantsTestPage'],
+  ['/standard-mode-guided-navigation-test', 'StandardModeGuidedNavigationTestPage'],
+  ['/standard-mode-compact-setting-workspace-test', 'StandardModeCompactSettingWorkspaceTestPage'],
+  ['/work-setting-taxonomy-proposal-test', 'WorkSettingTaxonomyProposalTestPage'],
+  ['/prompt-driven-novel-workspace-test', 'PromptDrivenNovelWorkspaceTestPage'],
+  ['/setting-ai-ready-taxonomy-test', 'SettingAiReadyTaxonomyTestPage'],
+  ['/simplified-template-generation-settings-test', 'SimplifiedTemplateGenerationSettingsTestPage'],
+  ['/professional-template-diy-variants-test', 'ProfessionalTemplateDiyVariantsTestPage'],
+  ['/template-generation-step-cards-test', 'TemplateGenerationStepCardsTestPage'],
+  ['/prompt-workflow-preview-test', 'PromptWorkflowPreviewTestPage'],
+  ['/test-browser', 'TestBrowserPage'],
 ] as const;
 
 describe('TestCollectionPage delete marked cleanup', () => {
@@ -124,6 +142,14 @@ describe('TestCollectionPage delete marked cleanup', () => {
     ].forEach((requiredText) => {
       expect(combinedSource).toContainSource(requiredText);
     });
+  });
+
+  it('removes the retired standalone test browser route', async () => {
+    const internalRoutesSource = await readFile(internalRoutesPagePath, 'utf8');
+    const registrySource = await readFile(routeRegistryPath, 'utf8');
+
+    expect(internalRoutesSource).not.toContainSource('TestBrowserPage');
+    expect(registrySource).not.toContainSource('/test-browser');
   });
 
   it('keeps the current test page and collection tab when marking a test as completed', async () => {

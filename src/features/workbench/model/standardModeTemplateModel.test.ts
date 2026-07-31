@@ -57,14 +57,28 @@ describe('standard mode template model', () => {
   });
 
   it('creates, renames, updates, and deletes a saved template by stable id', () => {
-    const created = saveSettingTemplateById(null, '人物模板', structure);
+    const created = saveSettingTemplateById(
+      null,
+      '人物模板',
+      structure,
+      undefined,
+      undefined,
+      { channel: 'female', applicability: 'genre', genreCategory: '现代言情', basePresetId: 'female-ceo' },
+    );
     const templateId = created[0].id;
 
     const renamedStructure = renameTemplateNode(structure, { domainId: 'characters' }, '人物档案');
     const updated = saveSettingTemplateById(templateId, '人物模板 2', renamedStructure);
 
     expect(updated).toHaveLength(1);
-    expect(updated[0]).toMatchObject({ id: templateId, name: '人物模板 2' });
+    expect(updated[0]).toMatchObject({
+      id: templateId,
+      name: '人物模板 2',
+      channel: 'female',
+      applicability: 'genre',
+      genreCategory: '现代言情',
+      basePresetId: 'female-ceo',
+    });
     expect(updated[0].structure[0].title).toBe('人物档案');
     expect(readSavedSettingTemplates()).toEqual(updated);
     expect(deleteSavedSettingTemplate(templateId)).toEqual([]);
@@ -87,6 +101,9 @@ describe('standard mode template model', () => {
       revision: 1,
       source: 'custom',
       contractVersion: 'setting-generation-v2',
+      channel: 'male',
+      applicability: 'general',
+      genreCategory: '通用',
     });
     expect(migrated.structure[0].groups[0].entries[0].id).toBe('hero');
     expect(migrated.generationBlueprint.entryRules.hero).toBeTruthy();

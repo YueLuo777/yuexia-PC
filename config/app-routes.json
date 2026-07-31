@@ -95,11 +95,6 @@
       "id": "themeColors",
       "path": "/theme-colors",
       "redirectTo": "/settings?section=theme"
-    },
-    {
-      "id": "testBrowser",
-      "path": "/test-browser",
-      "component": "testBrowser"
     }
   ],
   "legacyRedirects": [

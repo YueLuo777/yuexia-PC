@@ -5,7 +5,10 @@ import {
   readStandardSettingTemplateState,
   writeStandardSettingTemplateState,
 } from '@/features/workbench/model/standardModeSettingModel';
-import { buildDefaultTemplateStructure } from '@/features/workbench/model/standardModeTemplateModel';
+import {
+  buildDefaultTemplateStructure,
+  saveSettingTemplateById,
+} from '@/features/workbench/model/standardModeTemplateModel';
 import {
   createStandardSettingGenerationState,
   getStandardSettingGenerationStorageKey,
@@ -37,6 +40,22 @@ function buildFilledDefaultTemplateStructure() {
 
 describe('StandardModeSettingPage', () => {
   beforeEach(() => localStorage.clear());
+
+  const prepareEditableTemplate = (name = '我的玄幻模板') => {
+    saveSettingTemplateById(
+      null,
+      name,
+      buildDefaultTemplateStructure(),
+      undefined,
+      undefined,
+      { channel: 'male', applicability: 'genre', genreCategory: '玄幻仙侠' },
+    );
+  };
+
+  const selectEditableTemplate = (name = '我的玄幻模板') => {
+    fireEvent.click(screen.getByRole('tab', { name: '我的模板' }));
+    fireEvent.click(screen.getByRole('button', { name: `选择我的模板：${name}` }));
+  };
 
   it('shows a compact setting-check explanation before the first check', async () => {
     renderPage();
@@ -97,22 +116,17 @@ describe('StandardModeSettingPage', () => {
       .toHaveTextContent('当前使用模板：玄幻仙侠（轻量版）');
   });
 
-  it('stores a structurally edited built-in template as custom', async () => {
+  it('keeps built-in templates fixed while still allowing direct confirmation', async () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: '选择内置模板：玄幻仙侠（轻量版）' }));
-    const fourthLevel = screen.getByRole('region', { name: 'DIY四级设定' });
-    fireEvent.change(within(fourthLevel).getByRole('textbox', { name: '输入四级设定名称' }), {
-      target: { value: '自定义字段' },
-    });
-    fireEvent.click(within(fourthLevel).getByRole('button', { name: '新增' }));
+    const editor = screen.getByRole('region', { name: '逐级DIY模板编辑器' });
+    expect(within(editor).queryByRole('textbox', { name: '输入四级设定名称' })).not.toBeInTheDocument();
+    expect(within(editor).queryByRole('button', { name: /删除四级设定/ })).not.toBeInTheDocument();
+    expect(within(editor).queryByRole('button', { name: '保存到我的模板' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '确认模板并创建设定' }));
 
-    await waitFor(() => expect(readStandardSettingTemplateState('novel-a')?.templateId).toBe('custom-template'));
-    expect(readStandardSettingTemplateState('novel-a')?.templateName).toBe('自定义');
-    fireEvent.change(screen.getByLabelText('小说类型'), { target: { value: '自定义内容' } });
-    fireEvent.click(screen.getByRole('button', { name: '更换模板' }));
-    expect(screen.getByRole('dialog', { name: '更换设定模板？' }))
-      .toHaveTextContent('当前使用模板：自定义');
+    await waitFor(() => expect(readStandardSettingTemplateState('novel-a')?.templateId)
+      .toBe('male-fantasy-xianxia-light'));
   });
 
   it('upgrades lightweight directly to full without clearing content or generation context', async () => {
@@ -186,31 +200,26 @@ describe('StandardModeSettingPage', () => {
     renderPage();
 
     const editor = screen.getByRole('region', { name: '逐级DIY模板编辑器' });
-    const saveTemplate = within(editor).getByRole('region', { name: '保存模板' });
     expect(editor).toHaveAttribute('data-template-diy-cascade-editor', 'true');
     expect(within(editor).getByText(/当前路径：/)).toHaveTextContent('作品设定 ＞ 核心设定 ＞ 作品定位');
-    expect(within(editor).getByRole('button', { name: '一级删除已锁定，点击解锁' })).toHaveTextContent('解锁');
-    expect(within(saveTemplate).getByRole('textbox', { name: '保存模板名称' })).toHaveValue('测试小说模板');
-    expect(within(saveTemplate).getByRole('button', { name: '保存到我的模板' })).toBeInTheDocument();
+    expect(within(editor).getByText('内置模板固定，只能查看结构')).toBeInTheDocument();
+    expect(within(editor).queryByRole('button', { name: /一级删除/ })).not.toBeInTheDocument();
+    expect(within(editor).queryByRole('region', { name: '保存模板' })).not.toBeInTheDocument();
 
     const footer = editor.querySelector('[data-template-editor-footer="true"]') as HTMLElement;
     const confirmActions = footer.querySelector('[data-template-confirm-actions="true"]') as HTMLElement;
-    const summaryRow = footer.querySelector('[data-template-summary-row="true"]') as HTMLElement;
-    const saveRow = footer.querySelector('[data-template-save-row="true"]') as HTMLElement;
     expect(footer).toHaveClass('min-h-[96px]', 'grid-cols-[minmax(0,1fr)_auto]');
-    expect(summaryRow).toHaveTextContent('当前结构：');
-    expect(summaryRow.compareDocumentPosition(saveRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(saveRow).toHaveClass('items-end', 'justify-between');
-    expect(within(saveRow).getByRole('region', { name: '保存模板' }).lastElementChild)
-      .toHaveTextContent('保存到我的模板');
+    expect(footer).toHaveTextContent('当前结构：');
+    expect(footer).toHaveTextContent('内置模板不支持修改或保存');
     expect(confirmActions).toHaveClass('items-end');
-    expect(within(footer).getByRole('textbox', { name: '保存模板名称' })).toBeInTheDocument();
     expect(within(confirmActions).getByRole('button', { name: '确认模板并创建设定' })).toBeInTheDocument();
     expect(document.querySelector('[data-standard-setting-initializer="true"] > footer')).not.toBeInTheDocument();
   });
 
   it('saves the edited structure from the right-side template panel', () => {
+    prepareEditableTemplate();
     renderPage();
+    selectEditableTemplate();
     const savePanel = within(screen.getByRole('region', { name: '逐级DIY模板编辑器' }))
       .getByRole('region', { name: '保存模板' });
 
@@ -286,7 +295,9 @@ describe('StandardModeSettingPage', () => {
   });
 
   it('edits the four-level structure before creating the per-book setting list', async () => {
+    prepareEditableTemplate();
     renderPage();
+    selectEditableTemplate();
     const editor = screen.getByRole('region', { name: '逐级DIY模板编辑器' });
     const fieldColumn = within(editor).getByRole('region', { name: 'DIY四级设定' });
     fireEvent.change(within(fieldColumn).getByRole('textbox', { name: '输入四级设定名称' }), {
@@ -302,16 +313,16 @@ describe('StandardModeSettingPage', () => {
     expect(within(directory).getByText('作品定位')).toBeInTheDocument();
   });
 
-  it('keeps every template level protected until its delete lock is explicitly released', () => {
+  it('keeps editable templates unlocked by default and allows locking each delete level', () => {
+    prepareEditableTemplate();
     renderPage();
+    selectEditableTemplate();
     const editor = screen.getByRole('region', { name: '逐级DIY模板编辑器' });
     const fieldDelete = within(editor).getByRole('button', { name: '删除四级设定：小说类型' });
-    expect(fieldDelete).toBeDisabled();
-    fireEvent.click(within(editor).getByRole('button', { name: '四级删除已锁定，点击解锁' }));
-    expect(within(editor).getByRole('button', { name: '四级删除未锁定，点击锁定' })).toHaveTextContent('锁定');
     expect(fieldDelete).toBeEnabled();
-    fireEvent.click(fieldDelete);
-    expect(within(editor).queryByRole('button', { name: '小说类型' })).not.toBeInTheDocument();
+    fireEvent.click(within(editor).getByRole('button', { name: '四级删除未锁定，点击锁定' }));
+    expect(within(editor).getByRole('button', { name: '四级删除已锁定，点击解锁' })).toHaveTextContent('解锁');
+    expect(fieldDelete).toBeDisabled();
   });
 
   it('creates the setting list from the selected template and preserves internal categories', async () => {

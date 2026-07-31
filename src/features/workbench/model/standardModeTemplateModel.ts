@@ -52,6 +52,16 @@ export type TemplateDomainNode = {
 
 export type TemplateStructure = TemplateDomainNode[];
 
+export type SavedTemplateChannel = 'male' | 'female';
+export type SavedTemplateApplicability = 'genre' | 'general';
+
+export type SavedTemplateClassification = {
+  channel: SavedTemplateChannel;
+  applicability: SavedTemplateApplicability;
+  genreCategory: string;
+  basePresetId?: string;
+};
+
 export type SavedSettingTemplate = {
   formatVersion: 3;
   id: string;
@@ -63,6 +73,10 @@ export type SavedSettingTemplate = {
   generationBlueprint: TemplateGenerationBlueprint;
   promptProfile: SettingGenerationPromptProfile;
   contractVersion: typeof SETTING_GENERATION_CONTRACT_VERSION;
+  channel: SavedTemplateChannel;
+  applicability: SavedTemplateApplicability;
+  genreCategory: string;
+  basePresetId?: string;
 };
 
 export type TemplateNodeTarget = {
@@ -310,6 +324,13 @@ export function readSavedSettingTemplates(): SavedSettingTemplate[] {
       const name = typeof input.name === 'string' && input.name.trim() ? input.name : '未命名模板';
       const generationBlueprint = normalizeTemplateGenerationBlueprint(structure, input.generationBlueprint);
       const promptProfile = normalizeSettingGenerationPromptProfile(id, name, input.promptProfile);
+      const channel: SavedTemplateChannel = input.channel === 'female' ? 'female' : 'male';
+      const applicability: SavedTemplateApplicability = input.applicability === 'genre' ? 'genre' : 'general';
+      const genreCategory = applicability === 'general'
+        ? '通用'
+        : typeof input.genreCategory === 'string' && input.genreCategory.trim()
+          ? input.genreCategory.trim()
+          : '通用';
       return [{
         formatVersion: 3,
         id,
@@ -321,6 +342,12 @@ export function readSavedSettingTemplates(): SavedSettingTemplate[] {
         generationBlueprint,
         promptProfile,
         contractVersion: SETTING_GENERATION_CONTRACT_VERSION,
+        channel,
+        applicability,
+        genreCategory,
+        ...(typeof input.basePresetId === 'string' && input.basePresetId
+          ? { basePresetId: input.basePresetId }
+          : null),
       }];
     });
   } catch {
@@ -339,6 +366,7 @@ export function saveSettingTemplateById(
   structure: TemplateStructure,
   generationBlueprint?: TemplateGenerationBlueprint,
   promptProfile?: SettingGenerationPromptProfile,
+  classification?: SavedTemplateClassification,
 ) {
   const templates = readSavedSettingTemplates();
   const normalizedName = name.trim() || '未命名模板';
@@ -349,7 +377,17 @@ export function saveSettingTemplateById(
     normalizedName,
     promptProfile ?? existing?.promptProfile,
   );
-  const saved = createSettingTemplatePackage({
+  const resolvedClassification: SavedTemplateClassification = classification ?? (existing ? {
+    channel: existing.channel,
+    applicability: existing.applicability,
+    genreCategory: existing.genreCategory,
+    ...(existing.basePresetId ? { basePresetId: existing.basePresetId } : null),
+  } : {
+    channel: 'male',
+    applicability: 'general',
+    genreCategory: '通用',
+  });
+  const templatePackage = createSettingTemplatePackage({
     id,
     name: normalizedName,
     source: 'custom',
@@ -363,7 +401,16 @@ export function saveSettingTemplateById(
       ...normalizedPromptProfile,
       revision: existing ? Math.max(existing.promptProfile.revision, normalizedPromptProfile.revision) + 1 : 1,
     },
-  }) satisfies SavedSettingTemplate;
+  });
+  const saved: SavedSettingTemplate = {
+    ...templatePackage,
+    channel: resolvedClassification.channel,
+    applicability: resolvedClassification.applicability,
+    genreCategory: resolvedClassification.applicability === 'general'
+      ? '通用'
+      : resolvedClassification.genreCategory.trim() || '通用',
+    ...(resolvedClassification.basePresetId ? { basePresetId: resolvedClassification.basePresetId } : null),
+  };
   return writeSavedSettingTemplates([saved, ...templates.filter((template) => template.id !== saved.id)]);
 }
 
@@ -372,6 +419,7 @@ export function saveSettingTemplate(
   structure: TemplateStructure,
   generationBlueprint?: TemplateGenerationBlueprint,
   promptProfile?: SettingGenerationPromptProfile,
+  classification?: SavedTemplateClassification,
 ) {
   const templates = readSavedSettingTemplates();
   const existing = templates.find((template) => template.name === name);
@@ -381,6 +429,7 @@ export function saveSettingTemplate(
     structure,
     generationBlueprint,
     promptProfile,
+    classification,
   );
 }
 
